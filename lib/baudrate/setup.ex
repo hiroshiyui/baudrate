@@ -33,6 +33,7 @@ defmodule Baudrate.Setup do
 
   import Ecto.Query
   alias Baudrate.Repo
+  alias Baudrate.Content
   alias Baudrate.Setup.{Permission, Role, RolePermission, Setting, User}
 
   @doc """
@@ -178,6 +179,9 @@ defmodule Baudrate.Setup do
       admin_role = Map.fetch!(roles, "admin")
       attrs = Map.put(user_attrs, "role_id", admin_role.id)
       %User{} |> User.registration_changeset(attrs) |> Repo.insert()
+    end)
+    |> Ecto.Multi.run(:sysop_board, fn _repo, %{admin_user: admin_user} ->
+      Content.seed_sysop_board(admin_user)
     end)
     |> Ecto.Multi.insert(
       :setup_completed,
