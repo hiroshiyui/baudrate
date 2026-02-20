@@ -1,0 +1,73 @@
+<div class="mx-auto max-w-sm mt-10">
+  <h1 class="text-2xl font-bold text-center mb-2">
+    <%= if @mode == :reset do %>
+      {gettext("Reset Authenticator")}
+    <% else %>
+      {gettext("Enable Two-Factor Authentication")}
+    <% end %>
+  </h1>
+  <p class="text-center text-base-content/70 mb-8">
+    <%= if @mode == :reset do %>
+      {gettext("Enter your password and current TOTP code to reset your authenticator.")}
+    <% else %>
+      {gettext("Enter your password to begin setting up two-factor authentication.")}
+    <% end %>
+  </p>
+
+  <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
+    <div class="form-control">
+      <label class="label" for="totp_reset_password">
+        <span class="label-text">{gettext("Password")}</span>
+      </label>
+      <input
+        type="password"
+        id="totp_reset_password"
+        name="totp_reset[password]"
+        value={@form[:password].value}
+        class="input input-bordered w-full"
+        autocomplete="current-password"
+        autofocus
+        required
+      />
+    </div>
+
+    <%= if @mode == :reset do %>
+      <div class="form-control">
+        <label class="label" for="totp_reset_code">
+          <span class="label-text">{gettext("Current TOTP Code")}</span>
+        </label>
+        <input
+          type="text"
+          id="totp_reset_code"
+          name="totp_reset[code]"
+          value={@form[:code].value}
+          class="input input-bordered w-full text-center text-2xl tracking-widest"
+          inputmode="numeric"
+          pattern="[0-9]{6}"
+          maxlength="6"
+          autocomplete="one-time-code"
+          required
+        />
+      </div>
+    <% end %>
+
+    <button type="submit" class="btn btn-primary w-full">
+      <%= if @mode == :reset do %>
+        {gettext("Reset Authenticator")}
+      <% else %>
+        {gettext("Continue")}
+      <% end %>
+    </button>
+  </.form>
+
+  <form id="totp-reset-form" action="/auth/totp-reset" method="post" phx-trigger-action={@trigger_action}>
+    <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+    <input type="hidden" name="token" value={assigns[:token]} />
+  </form>
+
+  <div class="text-center mt-4">
+    <.link navigate="/profile" class="link link-hover text-sm">
+      {gettext("Back to Profile")}
+    </.link>
+  </div>
+</div>

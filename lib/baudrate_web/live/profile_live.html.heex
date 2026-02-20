@@ -16,11 +16,19 @@
 
       <div>
         <div class="text-sm text-base-content/70">{gettext("Two-Factor Authentication")}</div>
-        <div class="text-lg font-semibold">
+        <div class="text-lg font-semibold flex items-center gap-2">
           <%= if @current_user.totp_enabled do %>
             <span class="badge badge-success">{gettext("Enabled")}</span>
+            <.link navigate="/profile/totp-reset" class="btn btn-sm btn-outline">
+              {gettext("Reset Authenticator")}
+            </.link>
           <% else %>
             <span class="badge badge-warning">{gettext("Disabled")}</span>
+            <%= if @totp_policy == :optional do %>
+              <.link navigate="/profile/totp-reset" class="btn btn-sm btn-primary">
+                {gettext("Enable TOTP")}
+              </.link>
+            <% end %>
           <% end %>
         </div>
       </div>

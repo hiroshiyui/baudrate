@@ -8,8 +8,12 @@ defmodule BaudrateWeb.ProfileLive do
 
   use BaudrateWeb, :live_view
 
+  alias Baudrate.Auth
+
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, socket}
+    user = socket.assigns.current_user
+    policy = Auth.totp_policy(user.role.name)
+    {:ok, assign(socket, :totp_policy, policy)}
   end
 end
