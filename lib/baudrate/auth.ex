@@ -43,9 +43,11 @@ defmodule Baudrate.Auth do
   """
 
   import Ecto.Query
-  alias Baudrate.Auth.{TotpVault, UserSession}
+  alias Baudrate.Auth.{RecoveryCode, TotpVault, UserSession}
   alias Baudrate.Repo
   alias Baudrate.Setup.User
+
+  @recovery_code_count 10
 
   @session_ttl_seconds 14 * 86_400
   @max_sessions_per_user 3
@@ -114,12 +116,15 @@ defmodule Baudrate.Auth do
   end
 
   @doc """
-  Generates an SVG QR code from an otpauth URI string.
+  Generates a Base64-encoded SVG data URI for QR code display.
   """
-  def totp_qr_svg(uri) do
-    uri
-    |> EQRCode.encode()
-    |> EQRCode.svg(width: 264)
+  def totp_qr_data_uri(uri) do
+    svg =
+      uri
+      |> EQRCode.encode()
+      |> EQRCode.svg(width: 264)
+
+    "data:image/svg+xml;base64," <> Base.encode64(svg)
   end
 
   @doc """
@@ -174,6 +179,109 @@ defmodule Baudrate.Auth do
   """
   def get_user(id) do
     Repo.one(from u in User, where: u.id == ^id, preload: :role)
+  end
+
+  @doc """
+  Verifies a user's password. Returns `true` if the password matches,
+  `false` otherwise. Uses constant-time comparison via bcrypt.
+  """
+  def verify_password(%User{hashed_password: hashed}, password) when is_binary(password) do
+    Bcrypt.verify_pass(password, hashed)
+  end
+
+  def verify_password(_, _) do
+    Bcrypt.no_user_verify()
+    false
+  end
+
+  @doc """
+  Disables TOTP for a user by clearing the encrypted secret and setting
+  `totp_enabled` to `false`.
+  """
+  def disable_totp(user) do
+    user
+    |> User.totp_changeset(%{totp_secret: nil, totp_enabled: false})
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes all server-side sessions for a given user ID.
+  Used during TOTP reset to invalidate all existing sessions.
+  """
+  def delete_all_sessions_for_user(user_id) do
+    from(s in UserSession, where: s.user_id == ^user_id)
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Generates #{@recovery_code_count} one-time recovery codes for a user.
+
+  Deletes any existing recovery codes, generates new random codes in the
+  format `a1b2-c3d4` (4 hex chars, dash, 4 hex chars), stores their SHA-256
+  hashes, and returns the raw codes for one-time display to the user.
+  """
+  def generate_recovery_codes(user) do
+    # Delete existing codes
+    from(rc in RecoveryCode, where: rc.user_id == ^user.id)
+    |> Repo.delete_all()
+
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    raw_codes =
+      for _ <- 1..@recovery_code_count do
+        part1 = :crypto.strong_rand_bytes(2) |> Base.encode16(case: :lower)
+        part2 = :crypto.strong_rand_bytes(2) |> Base.encode16(case: :lower)
+        "#{part1}-#{part2}"
+      end
+
+    entries =
+      Enum.map(raw_codes, fn code ->
+        %{
+          user_id: user.id,
+          code_hash: :crypto.hash(:sha256, code),
+          inserted_at: now
+        }
+      end)
+
+    Repo.insert_all(RecoveryCode, entries)
+
+    raw_codes
+  end
+
+  @doc """
+  Verifies a recovery code for a user.
+
+  Finds an unused code matching the SHA-256 hash, marks it as used with
+  a `used_at` timestamp, and returns `:ok`. Returns `:error` if no
+  matching unused code is found.
+  """
+  def verify_recovery_code(user, code) when is_binary(code) do
+    code_hash = :crypto.hash(:sha256, normalize_recovery_code(code))
+
+    query =
+      from(rc in RecoveryCode,
+        where: rc.user_id == ^user.id and rc.code_hash == ^code_hash and is_nil(rc.used_at)
+      )
+
+    case Repo.one(query) do
+      nil ->
+        :error
+
+      recovery_code ->
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+        recovery_code
+        |> RecoveryCode.changeset(%{used_at: now})
+        |> Repo.update()
+
+        :ok
+    end
+  end
+
+  def verify_recovery_code(_, _), do: :error
+
+  defp normalize_recovery_code(code) do
+    code |> String.trim() |> String.downcase()
   end
 
   # --- Server-side session management ---

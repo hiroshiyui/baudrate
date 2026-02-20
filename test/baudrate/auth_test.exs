@@ -107,12 +107,11 @@ defmodule Baudrate.AuthTest do
       assert uri =~ "issuer=Baudrate"
     end
 
-    test "totp_qr_svg generates SVG string" do
+    test "totp_qr_data_uri generates a data URI" do
       secret = Auth.generate_totp_secret()
       uri = Auth.totp_uri(secret, "testuser")
-      svg = Auth.totp_qr_svg(uri)
-      assert svg =~ "<svg"
-      assert svg =~ "</svg>"
+      data_uri = Auth.totp_qr_data_uri(uri)
+      assert String.starts_with?(data_uri, "data:image/svg+xml;base64,")
     end
 
     test "valid_totp? validates correct code" do
@@ -135,6 +134,120 @@ defmodule Baudrate.AuthTest do
       assert updated.totp_secret != secret
       # But can be decrypted back
       assert Auth.decrypt_totp_secret(updated) == secret
+    end
+  end
+
+  describe "verify_password/2" do
+    test "returns true for correct password" do
+      user = create_user("user", password: "SecurePass1!!")
+      assert Auth.verify_password(user, "SecurePass1!!")
+    end
+
+    test "returns false for wrong password" do
+      user = create_user("user", password: "SecurePass1!!")
+      refute Auth.verify_password(user, "WrongPass1!!")
+    end
+
+    test "returns false for nil user" do
+      refute Auth.verify_password(nil, "anything")
+    end
+  end
+
+  describe "disable_totp/1" do
+    test "clears TOTP secret and disables TOTP" do
+      user = create_user("user")
+      secret = Auth.generate_totp_secret()
+      {:ok, user} = Auth.enable_totp(user, secret)
+      assert user.totp_enabled
+
+      {:ok, user} = Auth.disable_totp(user)
+      refute user.totp_enabled
+      assert is_nil(user.totp_secret)
+    end
+  end
+
+  describe "delete_all_sessions_for_user/1" do
+    test "deletes all sessions for a user" do
+      user = create_user("user")
+      {:ok, _t1, _r1} = Auth.create_user_session(user.id)
+      {:ok, _t2, _r2} = Auth.create_user_session(user.id)
+
+      assert {2, _} = Auth.delete_all_sessions_for_user(user.id)
+    end
+
+    test "does not affect other users' sessions" do
+      user1 = create_user("user", username: "user1")
+      user2 = create_user("user", username: "user2")
+      {:ok, token, _r} = Auth.create_user_session(user1.id)
+      {:ok, _t2, _r2} = Auth.create_user_session(user2.id)
+
+      Auth.delete_all_sessions_for_user(user2.id)
+
+      assert {:ok, _} = Auth.get_user_by_session_token(token)
+    end
+  end
+
+  describe "generate_recovery_codes/1" do
+    test "generates 10 recovery codes" do
+      user = create_user("user")
+      codes = Auth.generate_recovery_codes(user)
+      assert length(codes) == 10
+    end
+
+    test "codes match format a1b2-c3d4" do
+      user = create_user("user")
+      codes = Auth.generate_recovery_codes(user)
+
+      for code <- codes do
+        assert String.match?(code, ~r/^[a-f0-9]{4}-[a-f0-9]{4}$/)
+      end
+    end
+
+    test "replaces old codes when regenerated" do
+      user = create_user("user")
+      old_codes = Auth.generate_recovery_codes(user)
+      new_codes = Auth.generate_recovery_codes(user)
+
+      # Old codes should no longer work
+      for code <- old_codes do
+        assert Auth.verify_recovery_code(user, code) == :error
+      end
+
+      # New codes should work
+      [first | _] = new_codes
+      assert Auth.verify_recovery_code(user, first) == :ok
+    end
+  end
+
+  describe "verify_recovery_code/2" do
+    test "accepts valid unused code" do
+      user = create_user("user")
+      [code | _] = Auth.generate_recovery_codes(user)
+      assert Auth.verify_recovery_code(user, code) == :ok
+    end
+
+    test "rejects already-used code" do
+      user = create_user("user")
+      [code | _] = Auth.generate_recovery_codes(user)
+      assert Auth.verify_recovery_code(user, code) == :ok
+      assert Auth.verify_recovery_code(user, code) == :error
+    end
+
+    test "rejects invalid code" do
+      user = create_user("user")
+      Auth.generate_recovery_codes(user)
+      assert Auth.verify_recovery_code(user, "zzzz-zzzz") == :error
+    end
+
+    test "rejects nil code" do
+      user = create_user("user")
+      assert Auth.verify_recovery_code(user, nil) == :error
+    end
+
+    test "is case-insensitive" do
+      user = create_user("user")
+      [code | _] = Auth.generate_recovery_codes(user)
+      assert Auth.verify_recovery_code(user, String.upcase(code)) == :ok
     end
   end
 
