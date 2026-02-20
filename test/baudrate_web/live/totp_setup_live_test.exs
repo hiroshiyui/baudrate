@@ -19,7 +19,7 @@ defmodule BaudrateWeb.TotpSetupLiveTest do
     {:ok, _lv, html} = live(conn, "/totp/setup")
 
     assert html =~ "Set Up Two-Factor Authentication"
-    assert html =~ "<svg"
+    assert html =~ "data:image/svg+xml;base64,"
     assert html =~ "requires two-factor authentication"
     assert html =~ "Verification Code"
   end

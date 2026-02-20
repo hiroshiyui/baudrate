@@ -7,7 +7,7 @@ defmodule BaudrateWeb.TotpSetupLive do
   and stored in the cookie session as `:totp_setup_secret`.
 
   On mount, this LiveView reads the secret from the session, generates a QR
-  code SVG via `Auth.totp_qr_svg/1`, and displays it alongside the Base32-encoded
+  code via `Auth.totp_qr_data_uri/1`, and displays it alongside the Base32-encoded
   secret for manual entry. The user scans the QR code with an authenticator app,
   enters the 6-digit code, and the form POSTs to `SessionController.totp_enable/2`
   which encrypts and persists the secret.
@@ -26,7 +26,7 @@ defmodule BaudrateWeb.TotpSetupLive do
     else
       username = socket.assigns.current_user.username
       uri = Auth.totp_uri(secret, username)
-      qr_svg = Auth.totp_qr_svg(uri)
+      qr_svg = Auth.totp_qr_data_uri(uri)
       secret_b32 = Base.encode32(secret, padding: false)
       policy = Auth.totp_policy(socket.assigns.current_user.role.name)
 
