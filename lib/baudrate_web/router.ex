@@ -107,6 +107,7 @@ defmodule BaudrateWeb.Router do
       layout: {BaudrateWeb.Layouts, :app},
       on_mount: [{BaudrateWeb.AuthHooks, :require_auth}] do
       live "/", HomeLive
+      live "/boards/:slug", BoardLive
     end
 
     delete "/logout", SessionController, :delete

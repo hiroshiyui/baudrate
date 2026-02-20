@@ -4,3 +4,15 @@
     {gettext("You are signed in as %{role}.", role: @current_user.role.name)}
   </p>
 </div>
+
+<div :if={@boards != []}>
+  <h2 class="text-xl font-bold mb-4">{gettext("Boards")}</h2>
+  <div class="space-y-2">
+    <.link :for={board <- @boards} navigate={~p"/boards/#{board.slug}"} class="card bg-base-200 shadow-sm hover:bg-base-300 transition-colors">
+      <div class="card-body p-4">
+        <h3 class="card-title text-base">{board.name}</h3>
+        <p :if={board.description} class="text-sm text-base-content/70">{board.description}</p>
+      </div>
+    </.link>
+  </div>
+</div>

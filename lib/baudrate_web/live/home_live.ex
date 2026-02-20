@@ -8,8 +8,11 @@ defmodule BaudrateWeb.HomeLive do
 
   use BaudrateWeb, :live_view
 
+  alias Baudrate.Content
+
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, socket}
+    boards = Content.list_top_boards()
+    {:ok, assign(socket, :boards, boards)}
   end
 end

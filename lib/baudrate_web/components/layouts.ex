@@ -35,8 +35,8 @@ defmodule BaudrateWeb.Layouts do
             <li>
               <.link navigate="/">{gettext("Home")}</.link>
             </li>
-            <li class="disabled">
-              <span class="opacity-50">{gettext("Boards")}</span>
+            <li>
+              <.link navigate="/">{gettext("Boards")}</.link>
             </li>
             <li class="divider my-1"></li>
             <li class="menu-title">{@current_user.username} ({@current_user.role.name})</li>
@@ -59,7 +59,7 @@ defmodule BaudrateWeb.Layouts do
             <.link navigate="/" class="btn btn-ghost">{gettext("Home")}</.link>
           </li>
           <li>
-            <span class="btn btn-ghost btn-disabled opacity-50">{gettext("Boards")}</span>
+            <.link navigate="/" class="btn btn-ghost">{gettext("Boards")}</.link>
           </li>
         </ul>
       </div>

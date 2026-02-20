@@ -1,0 +1,20 @@
+<div class="mb-4">
+  <.link navigate="/" class="text-sm text-base-content/70 hover:text-base-content">
+    &larr; {gettext("Boards")}
+  </.link>
+</div>
+
+<h1 class="text-2xl font-bold mb-2">{@board.name}</h1>
+<p :if={@board.description} class="text-base-content/70 mb-6">{@board.description}</p>
+
+<div :if={@articles == []} class="text-base-content/50 text-center py-8">
+  {gettext("No articles yet.")}
+</div>
+
+<div :if={@articles != []} class="space-y-2">
+  <div :for={article <- @articles} class="card bg-base-200 shadow-sm">
+    <div class="card-body p-4">
+      <h3 class="card-title text-base">{article.title}</h3>
+    </div>
+  </div>
+</div>
