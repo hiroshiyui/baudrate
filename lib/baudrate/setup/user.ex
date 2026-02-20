@@ -26,6 +26,7 @@ defmodule Baudrate.Setup.User do
     field :hashed_password, :string
     field :totp_secret, :binary
     field :totp_enabled, :boolean, default: false
+    field :avatar_id, :string
 
     belongs_to :role, Baudrate.Setup.Role
 
@@ -63,6 +64,11 @@ defmodule Baudrate.Setup.User do
     |> validate_format(:password, ~r/[0-9]/, message: "must contain a digit")
     |> validate_format(:password, ~r/[^a-zA-Z0-9]/, message: "must contain a special character")
     |> validate_confirmation(:password, message: "does not match password")
+  end
+
+  def avatar_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:avatar_id])
   end
 
   def totp_changeset(user, attrs) do

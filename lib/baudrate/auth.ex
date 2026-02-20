@@ -284,6 +284,26 @@ defmodule Baudrate.Auth do
     code |> String.trim() |> String.downcase()
   end
 
+  # --- Avatar management ---
+
+  @doc """
+  Updates a user's avatar_id.
+  """
+  def update_avatar(user, avatar_id) do
+    user
+    |> User.avatar_changeset(%{avatar_id: avatar_id})
+    |> Repo.update()
+  end
+
+  @doc """
+  Removes a user's avatar by setting avatar_id to nil.
+  """
+  def remove_avatar(user) do
+    user
+    |> User.avatar_changeset(%{avatar_id: nil})
+    |> Repo.update()
+  end
+
   # --- Server-side session management ---
 
   @doc """
@@ -373,7 +393,9 @@ defmodule Baudrate.Auth do
   def get_user_by_session_token(raw_token) do
     token_hash = hash_token(raw_token)
 
-    case Repo.one(from s in UserSession, where: s.token_hash == ^token_hash, preload: [user: :role]) do
+    case Repo.one(
+           from s in UserSession, where: s.token_hash == ^token_hash, preload: [user: :role]
+         ) do
       nil ->
         {:error, :not_found}
 
