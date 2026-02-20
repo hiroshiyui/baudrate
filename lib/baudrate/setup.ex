@@ -101,6 +101,41 @@ defmodule Baudrate.Setup do
   }
 
   @doc """
+  Returns the value of a setting by key, or nil if not found.
+  """
+  def get_setting(key) when is_binary(key) do
+    Repo.one(from s in Setting, where: s.key == ^key, select: s.value)
+  end
+
+  @doc """
+  Upserts a setting by key. Creates or updates the setting.
+  """
+  def set_setting(key, value) when is_binary(key) and is_binary(value) do
+    case Repo.one(from s in Setting, where: s.key == ^key) do
+      nil ->
+        %Setting{}
+        |> Setting.changeset(%{key: key, value: value})
+        |> Repo.insert()
+
+      setting ->
+        setting
+        |> Setting.changeset(%{value: value})
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Returns the current registration mode. Defaults to `"approval_required"`.
+
+  Possible values:
+    * `"open"` — users are immediately active after registration
+    * `"approval_required"` — users are created with `"pending"` status
+  """
+  def registration_mode do
+    get_setting("registration_mode") || "approval_required"
+  end
+
+  @doc """
   Returns true if the setup wizard has been completed.
   """
   def setup_completed? do

@@ -45,7 +45,8 @@ defmodule Baudrate.Auth do
   import Ecto.Query
   alias Baudrate.Auth.{RecoveryCode, TotpVault, UserSession}
   alias Baudrate.Repo
-  alias Baudrate.Setup.User
+  alias Baudrate.Setup
+  alias Baudrate.Setup.{Role, User}
 
   @recovery_code_count 10
 
@@ -282,6 +283,72 @@ defmodule Baudrate.Auth do
 
   defp normalize_recovery_code(code) do
     code |> String.trim() |> String.downcase()
+  end
+
+  # --- Registration & Approval ---
+
+  @doc """
+  Registers a new user with the `"user"` role.
+
+  The account status depends on `Setup.registration_mode/0`:
+    * `"open"` → status `"active"` (immediately usable)
+    * `"approval_required"` → status `"pending"` (can log in but restricted)
+  """
+  def register_user(attrs) do
+    role = Repo.one!(from r in Role, where: r.name == "user")
+
+    status =
+      case Setup.registration_mode() do
+        "open" -> "active"
+        _ -> "pending"
+      end
+
+    attrs =
+      attrs
+      |> Map.put("role_id", role.id)
+      |> Map.put("status", status)
+
+    %User{}
+    |> User.registration_changeset(Map.delete(attrs, "status"))
+    |> Ecto.Changeset.put_change(:status, status)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Approves a pending user by setting their status to `"active"`.
+  """
+  def approve_user(user) do
+    user
+    |> User.status_changeset(%{status: "active"})
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns all users with `status: "pending"`, ordered by registration date.
+  """
+  def list_pending_users do
+    from(u in User,
+      where: u.status == "pending",
+      order_by: [asc: u.inserted_at],
+      preload: :role
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns `true` if the user's account is active.
+  """
+  def user_active?(user), do: user.status == "active"
+
+  @doc """
+  Returns `true` if the user can create content.
+
+  Requires both:
+    1. Account status is `"active"` (pending users cannot post)
+    2. Role has the `"user.create_content"` permission
+  """
+  def can_create_content?(user) do
+    user_active?(user) && Setup.has_permission?(user.role.name, "user.create_content")
   end
 
   # --- Avatar management ---

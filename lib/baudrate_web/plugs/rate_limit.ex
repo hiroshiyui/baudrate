@@ -6,11 +6,13 @@ defmodule BaudrateWeb.Plugs.RateLimit do
 
       plug BaudrateWeb.Plugs.RateLimit, action: :login
       plug BaudrateWeb.Plugs.RateLimit, action: :totp
+      plug BaudrateWeb.Plugs.RateLimit, action: :register
 
   ## Rate Limits
 
     * `:login` — 10 attempts per 5 minutes per IP
     * `:totp` — 15 attempts per 5 minutes per IP
+    * `:register` — 5 attempts per hour per IP
 
   ## Bucket Naming
 
@@ -28,7 +30,8 @@ defmodule BaudrateWeb.Plugs.RateLimit do
 
   @limits %{
     login: {300_000, 10},
-    totp: {300_000, 15}
+    totp: {300_000, 15},
+    register: {3_600_000, 5}
   }
 
   @impl true

@@ -16,6 +16,12 @@ defmodule Baudrate.Setup.User do
     * `totp_secret` — AES-256-GCM encrypted TOTP secret (binary), or `nil`
       if TOTP has not been enabled. Never stores the raw secret.
     * `totp_enabled` — boolean flag; when `true`, login requires TOTP verification
+
+  ## Status
+
+    * `"active"` — fully functional account (default)
+    * `"pending"` — awaiting admin approval; can log in and browse,
+      but cannot create articles or upload avatars
   """
 
   use Ecto.Schema
@@ -27,6 +33,7 @@ defmodule Baudrate.Setup.User do
     field :totp_secret, :binary
     field :totp_enabled, :boolean, default: false
     field :avatar_id, :string
+    field :status, :string, default: "active"
 
     belongs_to :role, Baudrate.Setup.Role
 
@@ -74,6 +81,13 @@ defmodule Baudrate.Setup.User do
   def totp_changeset(user, attrs) do
     user
     |> cast(attrs, [:totp_secret, :totp_enabled])
+  end
+
+  def status_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:status])
+    |> validate_required([:status])
+    |> validate_inclusion(:status, ["active", "pending"])
   end
 
   defp hash_password(changeset) do
