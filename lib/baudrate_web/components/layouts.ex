@@ -41,6 +41,9 @@ defmodule BaudrateWeb.Layouts do
             <li class="divider my-1"></li>
             <li class="menu-title">{@current_user.username} ({@current_user.role.name})</li>
             <li>
+              <.link navigate="/profile">{gettext("Profile")}</.link>
+            </li>
+            <li>
               <.link href="/logout" method="delete">{gettext("Sign Out")}</.link>
             </li>
           </ul>
@@ -75,6 +78,9 @@ defmodule BaudrateWeb.Layouts do
             <.icon name="hero-chevron-down-micro" class="size-4" />
           </div>
           <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow">
+            <li>
+              <.link navigate="/profile">{gettext("Profile")}</.link>
+            </li>
             <li>
               <.link href="/logout" method="delete">{gettext("Sign Out")}</.link>
             </li>
