@@ -6,6 +6,18 @@
 @source "../js";
 @source "../../lib/baudrate_web";
 
+@font-face {
+  font-family: 'DotGothic16';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/DotGothic16-Regular.ttf') format('truetype');
+}
+
+@theme {
+  --font-sans: 'DotGothic16', sans-serif;
+}
+
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */
 @plugin "../vendor/heroicons";
