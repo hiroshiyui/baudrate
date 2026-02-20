@@ -1,7 +1,17 @@
 defmodule BaudrateWeb.Plugs.EnsureSetup do
   @moduledoc """
-  Redirects all routes to /setup until initial setup is complete.
-  After setup, blocks access to /setup and redirects to /.
+  Plug that gates access based on whether initial setup has been completed.
+
+  ## Redirect Logic
+
+    * **Setup not completed + not on `/setup`** → redirect to `/setup`
+      (forces the setup wizard before any other page is accessible)
+    * **Setup completed + on `/setup`** → redirect to `/`
+      (prevents re-running setup after it's done)
+    * **Otherwise** → pass through
+
+  Checks `Setup.setup_completed?/0` on every request (queries the `settings`
+  table for `setup_completed = "true"`).
   """
 
   import Plug.Conn

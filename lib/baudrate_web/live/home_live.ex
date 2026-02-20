@@ -1,4 +1,11 @@
 defmodule BaudrateWeb.HomeLive do
+  @moduledoc """
+  LiveView for the authenticated home page (`/`).
+
+  Requires full authentication via the `:require_auth` hook.
+  `@current_user` is available via the auto-layout.
+  """
+
   use BaudrateWeb, :live_view
 
   @impl true

@@ -1,7 +1,21 @@
 defmodule BaudrateWeb.Plugs.RefreshSession do
   @moduledoc """
-  Plug that rotates session and refresh tokens when the session
-  was last refreshed more than 1 day ago.
+  Plug that rotates session and refresh tokens periodically.
+
+  ## Rotation Interval
+
+  Tokens are rotated when `refreshed_at` is more than 1 day (86,400 seconds)
+  old. On successful rotation, both `session_token` and `refresh_token` in the
+  cookie are replaced with new values, and `refreshed_at` is updated.
+
+  ## Failure Behavior
+
+  If rotation fails (e.g., refresh token not found, session expired), the
+  entire cookie session is dropped (`configure_session(drop: true)`), which
+  forces the user to re-authenticate on the next request.
+
+  If session data is missing or malformed (no tokens, no timestamp), the plug
+  passes through without action.
   """
 
   import Plug.Conn

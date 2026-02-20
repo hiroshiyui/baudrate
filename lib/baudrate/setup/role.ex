@@ -1,4 +1,15 @@
 defmodule Baudrate.Setup.Role do
+  @moduledoc """
+  Schema for roles stored in the `roles` table.
+
+  Built-in roles seeded by `Setup.seed_roles_and_permissions/0`:
+
+    * `"admin"` — full system access
+    * `"moderator"` — content and user moderation
+    * `"user"` — standard user access
+    * `"guest"` — read-only access
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

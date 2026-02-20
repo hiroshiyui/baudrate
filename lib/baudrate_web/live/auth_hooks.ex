@@ -1,6 +1,20 @@
 defmodule BaudrateWeb.AuthHooks do
   @moduledoc """
-  LiveView on_mount hooks for authentication.
+  LiveView `on_mount` hooks for authentication enforcement.
+
+  Three hooks are provided, each attached to `live_session` scopes in the router:
+
+    * `:require_auth` — requires a fully authenticated session (`session_token`
+      present and valid). Used for the `:authenticated` live_session. Assigns
+      `@current_user` on success, redirects to `/login` on failure.
+
+    * `:require_password_auth` — requires password-level auth only (`user_id`
+      in session). Used for the `:totp` live_session where the user has passed
+      password auth but hasn't completed TOTP yet. Assigns `@current_user`.
+
+    * `:redirect_if_authenticated` — if the user already has a valid
+      `session_token`, redirects to `/`. Used for the `:public` live_session
+      (login page) to prevent authenticated users from seeing the login form.
   """
 
   import Phoenix.LiveView

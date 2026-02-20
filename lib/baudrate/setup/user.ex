@@ -1,4 +1,23 @@
 defmodule Baudrate.Setup.User do
+  @moduledoc """
+  Schema for users stored in the `users` table.
+
+  ## Password Policy
+
+  Enforced by `registration_changeset/2`:
+
+    * Minimum 12 characters, maximum 72 (bcrypt limit)
+    * Must contain: lowercase, uppercase, digit, and special character
+    * Passwords are hashed with bcrypt before storage; the plaintext is
+      deleted from the changeset after hashing
+
+  ## TOTP Fields
+
+    * `totp_secret` — AES-256-GCM encrypted TOTP secret (binary), or `nil`
+      if TOTP has not been enabled. Never stores the raw secret.
+    * `totp_enabled` — boolean flag; when `true`, login requires TOTP verification
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

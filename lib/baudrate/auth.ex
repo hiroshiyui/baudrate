@@ -1,6 +1,45 @@
 defmodule Baudrate.Auth do
   @moduledoc """
   The Auth context handles authentication and TOTP two-factor authentication.
+
+  ## Session State Machine
+
+      Unauthenticated
+          │
+          ▼
+      Password Auth ──→ login_next_step/1
+          │
+          ├─ :totp_verify  → user has TOTP enabled, must verify code
+          ├─ :totp_setup   → admin/moderator without TOTP, must enroll
+          └─ :authenticated → no TOTP needed, session established
+          │
+          ▼
+      Fully Authenticated (server-side session created)
+
+  ## Token Security Model
+
+  Sessions use a dual-token scheme:
+
+    * **Session token** — stored in the cookie, used for request authentication.
+      Only the SHA-256 hash is persisted in the database, so a database leak
+      does not compromise active sessions.
+    * **Refresh token** — also cookie-stored and hash-persisted. Used to rotate
+      both tokens after the refresh interval (see `RefreshSession` plug).
+
+  Both tokens are 32-byte cryptographically random values, URL-safe Base64 encoded.
+
+  ## TOTP Policy
+
+  TOTP requirements are role-based (see `totp_policy/1`):
+
+    * `:required` — admin, moderator (must enroll before first login completes)
+    * `:optional` — user (can enable voluntarily)
+    * `:disabled` — guest (no TOTP capability)
+
+  ## Key Constants
+
+    * `@session_ttl_seconds` — 14 days; both session and refresh tokens expire after this
+    * `@max_sessions_per_user` — 3; oldest session (by `refreshed_at`) is evicted when exceeded
   """
 
   import Ecto.Query
@@ -13,7 +52,12 @@ defmodule Baudrate.Auth do
 
   @doc """
   Authenticates a user by username and password.
+
   Returns `{:ok, user}` with role preloaded or `{:error, :invalid_credentials}`.
+
+  Uses `Bcrypt.no_user_verify/0` on failed lookups to maintain constant-time
+  behavior regardless of whether the username exists, preventing timing-based
+  user enumeration.
   """
   def authenticate_by_password(username, password) do
     user = Repo.one(from u in User, where: u.username == ^username, preload: :role)
@@ -40,9 +84,12 @@ defmodule Baudrate.Auth do
   @doc """
   Determines the next step after password authentication.
 
-  - `:totp_verify` — user has TOTP enabled, needs to verify code
-  - `:totp_setup` — admin/moderator without TOTP, must set up
-  - `:authenticated` — no TOTP needed, fully authenticated
+  This is the core state machine transition function. Given a user who has
+  passed password auth, it returns the next state:
+
+    * `:totp_verify` — user has TOTP enabled, needs to verify a code
+    * `:totp_setup` — role requires TOTP but user hasn't enrolled yet
+    * `:authenticated` — no TOTP needed, ready to establish a server-side session
   """
   def login_next_step(user) do
     cond do
@@ -78,8 +125,10 @@ defmodule Baudrate.Auth do
   @doc """
   Validates a TOTP code against a secret.
 
-  Accepts an optional `since:` unix timestamp to reject codes from the same
-  or earlier time period (replay protection).
+  Accepts an optional `since:` unix timestamp or `DateTime` to reject codes
+  from the same or earlier time period. This provides replay protection —
+  a code that was already used in a given 30-second window will be rejected
+  if `since` is set to the timestamp of the previous successful verification.
   """
   def valid_totp?(secret, code, opts \\ []) do
     nimble_opts =
@@ -93,8 +142,11 @@ defmodule Baudrate.Auth do
   end
 
   @doc """
-  Enables TOTP for a user by encrypting and storing the secret,
-  and setting totp_enabled to true.
+  Enables TOTP for a user by encrypting the raw secret via `TotpVault.encrypt/1`
+  and persisting the ciphertext alongside `totp_enabled: true`.
+
+  The raw secret never touches the database — only the AES-256-GCM ciphertext
+  is stored in `users.totp_secret`.
   """
   def enable_totp(user, secret) do
     encrypted = TotpVault.encrypt(secret)
@@ -143,12 +195,18 @@ defmodule Baudrate.Auth do
   @doc """
   Creates a new server-side session for the given user.
 
-  Enforces a maximum of #{@max_sessions_per_user} concurrent sessions per user,
-  evicting the oldest (by `refreshed_at`) when the limit is reached.
+  Generates a fresh session token and refresh token (both 32-byte random),
+  stores only their SHA-256 hashes in the database, and returns the raw tokens
+  to be placed into the cookie.
 
-  Options:
-    - `:ip_address` — client IP string
-    - `:user_agent` — client User-Agent string
+  Enforces a maximum of #{@max_sessions_per_user} concurrent sessions per user
+  within a transaction. When the limit is exceeded, the oldest session (by
+  `refreshed_at`) is evicted before inserting the new one.
+
+  ## Options
+
+    * `:ip_address` — client IP string (logged for security auditing)
+    * `:user_agent` — client User-Agent string
 
   Returns `{:ok, session_token, refresh_token}` or `{:error, changeset}`.
   """
@@ -222,7 +280,13 @@ defmodule Baudrate.Auth do
   end
 
   @doc """
-  Rotates both session and refresh tokens. Extends `expires_at` by #{@session_ttl_seconds} seconds.
+  Rotates both session and refresh tokens using the current refresh token.
+
+  Generates new random tokens, updates their hashes in the database, and resets
+  `expires_at` to #{@session_ttl_seconds} seconds from now. The old tokens become
+  immediately invalid after rotation.
+
+  If the session has expired, it is deleted and `{:error, :expired}` is returned.
 
   Returns `{:ok, new_session_token, new_refresh_token}` or `{:error, reason}`.
   """

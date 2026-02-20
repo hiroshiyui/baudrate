@@ -1,4 +1,21 @@
 defmodule BaudrateWeb.Endpoint do
+  @moduledoc """
+  Phoenix endpoint — the entry point for all HTTP requests.
+
+  ## Session Configuration
+
+  Sessions are stored in signed + encrypted cookies with the following settings:
+
+    * `store: :cookie` — no server-side session store needed (session data is
+      minimal: tokens and flags)
+    * `same_site: "Lax"` — CSRF protection for cross-origin requests
+    * `max_age: 14 days` — cookie expiry matching the server-side session TTL
+    * Signing and encryption salts are configured separately for defense in depth
+
+  The LiveView socket also receives session data via `connect_info`, enabling
+  `on_mount` hooks to access session tokens.
+  """
+
   use Phoenix.Endpoint, otp_app: :baudrate
 
   # The session will be stored in the cookie and both signed and encrypted.

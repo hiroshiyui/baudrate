@@ -1,11 +1,18 @@
 defmodule BaudrateWeb.Plugs.SetLocale do
   @moduledoc """
-  A plug that detects the user's preferred locale from the `Accept-Language`
+  Plug that detects the user's preferred locale from the `Accept-Language`
   header and sets it for Gettext.
 
-  Parses quality values, sorts by preference, normalizes language tags
-  (e.g. `zh-TW` → `zh_TW`), and falls back to the default locale when
-  no supported locale is found.
+  ## Locale Matching Algorithm
+
+    1. Parse the `Accept-Language` header into `{tag, quality}` pairs
+    2. Sort by quality value descending (highest preference first)
+    3. Normalize tags: replace hyphens with underscores (`zh-TW` → `zh_TW`)
+    4. For each preferred locale, attempt an exact match against known Gettext locales
+    5. If no exact match, try a prefix match (e.g., `zh` matches `zh_TW`)
+    6. If no match at all, fall back to the default Gettext locale
+
+  The detected locale is assigned to `conn.assigns.locale` for use in templates.
   """
 
   import Plug.Conn

@@ -1,4 +1,44 @@
 defmodule BaudrateWeb.SessionController do
+  @moduledoc """
+  Handles session lifecycle via POST endpoints, called by LiveView forms
+  using the `phx-trigger-action` pattern.
+
+  ## Authentication Flow
+
+      LoginLive (LiveView)
+          │ validates credentials in the LiveProcess
+          │ signs a short-lived Phoenix.Token containing user_id
+          ▼
+      POST /auth/session → create/2
+          │ verifies Phoenix.Token (max_age: 60s)
+          │ calls Auth.login_next_step/1
+          ├─ :totp_verify  → redirect to /totp/verify
+          ├─ :totp_setup   → store secret in session, redirect to /totp/setup
+          └─ :authenticated → establish_session/2
+          │
+      POST /auth/totp-verify → totp_verify/2
+      POST /auth/totp-enable → totp_enable/2
+          │ verify TOTP code
+          ▼
+      establish_session/2
+          │ creates server-side session (Auth.create_user_session/2)
+          │ stores session_token + refresh_token in cookie
+          │ clears intermediate session keys (user_id, totp_*)
+          ▼
+      redirect to /
+
+  ## TOTP Lockout
+
+  After 5 failed TOTP attempts (`@max_totp_attempts`), the session is dropped
+  and the user must re-authenticate from the login page. Attempt count is
+  tracked in the cookie session under `:totp_attempts`.
+
+  ## Security Logging
+
+  All auth events are logged with structured prefixes (`auth.login_success`,
+  `auth.totp_lockout`, etc.) including `user_id` and `ip` for audit trails.
+  """
+
   use BaudrateWeb, :controller
 
   require Logger
@@ -158,6 +198,9 @@ defmodule BaudrateWeb.SessionController do
     |> redirect(to: "/login")
   end
 
+  # Creates a server-side session, stores session_token and refresh_token
+  # in the cookie, clears all intermediate auth keys (user_id, totp_*),
+  # renews the session ID to prevent fixation, and redirects to /.
   defp establish_session(conn, user) do
     opts = [
       ip_address: remote_ip(conn),

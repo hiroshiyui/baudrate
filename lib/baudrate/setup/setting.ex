@@ -1,4 +1,14 @@
 defmodule Baudrate.Setup.Setting do
+  @moduledoc """
+  Key-value settings stored in the `settings` table.
+
+  Known keys:
+
+    * `"site_name"` — the forum's display name, set during initial setup
+    * `"setup_completed"` — `"true"` once the setup wizard finishes;
+      checked by `EnsureSetup` plug to gate access
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

@@ -1,4 +1,17 @@
 defmodule BaudrateWeb.SetupLive do
+  @moduledoc """
+  LiveView for the first-time setup wizard.
+
+  Guides the user through a 3-step process using `@step` assigns:
+
+    1. `:database` — verifies PostgreSQL connection and migration status
+    2. `:site_name` — collects the forum name (stored as a `Setting`)
+    3. `:admin_account` — creates the initial admin user with password validation
+
+  On completion, `Setup.complete_setup/2` runs all steps in a single transaction.
+  Uses `layout: :setup` (minimal layout without navigation bar).
+  """
+
   use BaudrateWeb, :live_view
 
   alias Baudrate.Setup

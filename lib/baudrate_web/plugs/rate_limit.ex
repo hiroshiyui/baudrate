@@ -2,14 +2,23 @@ defmodule BaudrateWeb.Plugs.RateLimit do
   @moduledoc """
   Plug for IP-based rate limiting using Hammer.
 
-  Usage in router:
+  ## Usage
 
       plug BaudrateWeb.Plugs.RateLimit, action: :login
       plug BaudrateWeb.Plugs.RateLimit, action: :totp
 
-  Rate limits:
-  - :login — 10 attempts per 5 minutes per IP
-  - :totp  — 15 attempts per 5 minutes per IP
+  ## Rate Limits
+
+    * `:login` — 10 attempts per 5 minutes per IP
+    * `:totp` — 15 attempts per 5 minutes per IP
+
+  ## Bucket Naming
+
+  Buckets are named `"action:ip"` (e.g., `"login:192.168.1.1"`), so each
+  IP is rate-limited independently per action type.
+
+  On rate limit errors (backend failure), the plug **fails open** to avoid
+  blocking legitimate users due to infrastructure issues.
   """
 
   import Plug.Conn

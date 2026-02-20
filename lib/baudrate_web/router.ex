@@ -1,4 +1,34 @@
 defmodule BaudrateWeb.Router do
+  @moduledoc """
+  Router defining the request pipeline and route scopes.
+
+  ## Route Structure
+
+  Four main scopes, each with different auth requirements:
+
+    1. **Public** (`/login`, `/setup`) — `live_session :public` with
+       `:redirect_if_authenticated` hook. `/setup` is outside any live_session
+       and uses the `:setup` layout.
+
+    2. **TOTP** (`/totp/*`) — `live_session :totp` with `:require_password_auth`
+       hook. For users who passed password auth but need TOTP verification/setup.
+
+    3. **Session controller** (`/auth/*`) — POST-only endpoints for session
+       mutations. Split into two scopes with separate rate-limit pipelines
+       (`:rate_limit_login` for `/auth/session`, `:rate_limit_totp` for TOTP).
+
+    4. **Authenticated** (`/`) — `live_session :authenticated` with
+       `:require_auth` hook. All pages requiring full authentication.
+
+  ## Browser Pipeline
+
+  All browser requests pass through:
+
+      :accepts → :fetch_session → :fetch_live_flash → :put_root_layout →
+      :protect_from_forgery → :put_secure_browser_headers (CSP, Permissions-Policy,
+      X-Frame-Options) → SetLocale → EnsureSetup → RefreshSession
+  """
+
   use BaudrateWeb, :router
 
   pipeline :browser do

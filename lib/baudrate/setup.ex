@@ -1,6 +1,34 @@
 defmodule Baudrate.Setup do
   @moduledoc """
   The Setup context handles first-time application configuration.
+
+  On first visit, the `EnsureSetup` plug redirects all routes to `/setup`,
+  which renders a multi-step wizard (see `SetupLive`). This context provides
+  the backing logic: database checks, role/permission seeding, and the atomic
+  `complete_setup/2` transaction.
+
+  ## RBAC Design
+
+  Roles and permissions use a normalized 3-table design:
+
+    * `roles` — named roles (admin, moderator, user, guest)
+    * `permissions` — named capabilities (e.g., `"admin.manage_users"`)
+    * `role_permissions` — join table mapping roles to their permissions
+
+  ## Permission Hierarchy
+
+  Permissions follow a `scope.action` naming convention. Higher roles inherit
+  all permissions of lower roles:
+
+      admin > moderator > user > guest
+
+  The full matrix is defined in `default_permissions/0`.
+
+  ## Atomic Setup
+
+  `complete_setup/2` runs the entire setup in a single `Ecto.Multi` transaction:
+  site name → roles/permissions → admin user → `setup_completed` flag. If any
+  step fails, the entire setup is rolled back.
   """
 
   import Ecto.Query
@@ -126,7 +154,16 @@ defmodule Baudrate.Setup do
 
   @doc """
   Completes the setup by inserting site name, roles/permissions, admin user,
-  and setup_completed flag in a single transaction.
+  and `setup_completed` flag in a single `Ecto.Multi` transaction.
+
+  Steps executed atomically:
+
+    1. Insert `site_name` setting
+    2. Seed all roles and permissions via `seed_roles_and_permissions/0`
+    3. Create the admin user with the `"admin"` role
+    4. Insert `setup_completed = "true"` setting
+
+  If any step fails, the entire transaction is rolled back.
   """
   def complete_setup(site_name, user_attrs) do
     Ecto.Multi.new()
@@ -150,7 +187,13 @@ defmodule Baudrate.Setup do
   end
 
   @doc """
-  Seeds all roles, permissions, and role_permission mappings into the database.
+  Seeds all roles, permissions, and role_permission join records into the database.
+
+  Creates the four built-in roles (admin, moderator, user, guest), all
+  permissions from `default_permissions/0`, and the join-table mappings.
+  Higher roles include all permissions of lower roles — e.g., admin has
+  every moderator, user, and guest permission.
+
   Returns `{:ok, %{roles: roles_map, permissions: permissions_list}}`.
   """
   def seed_roles_and_permissions do

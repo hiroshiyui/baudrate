@@ -1,4 +1,17 @@
 defmodule BaudrateWeb.LoginLive do
+  @moduledoc """
+  LiveView for the login page.
+
+  Uses the **phx-trigger-action** pattern: the LiveView validates credentials
+  and performs rate limiting in the LiveView process, then sets `@trigger_action`
+  to `true` with a signed `Phoenix.Token`. This causes the hidden form to
+  POST to `SessionController.create/2`, which runs as a regular controller
+  action with full access to `conn` for session writes.
+
+  This pattern is necessary because LiveView processes cannot write to the
+  HTTP session (cookie) directly — only controller actions can.
+  """
+
   use BaudrateWeb, :live_view
 
   require Logger

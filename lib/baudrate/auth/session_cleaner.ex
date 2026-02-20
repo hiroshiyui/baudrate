@@ -1,6 +1,12 @@
 defmodule Baudrate.Auth.SessionCleaner do
   @moduledoc """
-  Periodically purges expired sessions from the database.
+  GenServer that periodically purges expired sessions from the database.
+
+  Runs `Auth.purge_expired_sessions/0` every hour (see `@interval`). Started
+  as part of the application supervision tree (`Baudrate.Application`).
+
+  The first cleanup is scheduled on `init/1`, so it runs one interval after
+  the application boots — not immediately — to avoid slowing startup.
   """
 
   use GenServer

@@ -1,4 +1,13 @@
 defmodule BaudrateWeb.TotpVerifyLive do
+  @moduledoc """
+  LiveView for TOTP verification during login.
+
+  Shown after password auth when the user has TOTP enabled (`login_next_step/1`
+  returned `:totp_verify`). Validates the 6-digit format client-side, then uses
+  `phx-trigger-action` to POST the code to `SessionController.totp_verify/2`
+  for server-side verification and session establishment.
+  """
+
   use BaudrateWeb, :live_view
 
   @impl true
