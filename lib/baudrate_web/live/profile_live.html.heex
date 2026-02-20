@@ -3,6 +3,72 @@
     <h2 class="card-title text-2xl mb-4">{gettext("Profile")}</h2>
 
     <div class="space-y-4">
+      <%!-- Avatar section --%>
+      <div class="flex items-center gap-4">
+        <.avatar user={@current_user} size={48} />
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            phx-click={JS.dispatch("click", to: "#avatar-file-input")}
+          >
+            {gettext("Change Avatar")}
+          </button>
+          <button
+            :if={@current_user.avatar_id}
+            type="button"
+            class="btn btn-sm btn-outline btn-error"
+            phx-click="remove_avatar"
+            data-confirm={gettext("Are you sure you want to remove your avatar?")}
+          >
+            {gettext("Remove Avatar")}
+          </button>
+        </div>
+      </div>
+
+      <%!-- Hidden file input for avatar upload --%>
+      <form id="avatar-upload-form" phx-change="validate_avatar" class="hidden">
+        <.live_file_input upload={@uploads.avatar} id="avatar-file-input" />
+      </form>
+
+      <%!-- Upload errors --%>
+      <%= for entry <- @uploads.avatar.entries do %>
+        <%= for err <- upload_errors(@uploads.avatar, entry) do %>
+          <p class="text-sm text-error">
+            {upload_error_to_string(err)}
+          </p>
+        <% end %>
+      <% end %>
+
+      <%!-- Crop modal --%>
+      <div id="avatar-crop-hook" phx-hook="AvatarCropHook">
+        <dialog id="crop-modal" class="modal" {if @show_crop_modal, do: [open: true], else: []}>
+          <div class="modal-box max-w-lg">
+            <h3 class="text-lg font-bold mb-4">{gettext("Crop Avatar")}</h3>
+            <div data-avatar-crop-container>
+              <div class="max-h-96 overflow-hidden">
+                <img data-avatar-preview src="" class="max-w-full" />
+              </div>
+              <div class="modal-action">
+                <button type="button" class="btn btn-ghost" phx-click="cancel_crop">
+                  {gettext("Cancel")}
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  phx-click={JS.dispatch("avatar:save-crop", to: "#avatar-crop-hook")}
+                >
+                  {gettext("Save")}
+                </button>
+              </div>
+            </div>
+          </div>
+          <form method="dialog" class="modal-backdrop">
+            <button phx-click="cancel_crop">{gettext("close")}</button>
+          </form>
+        </dialog>
+      </div>
+
       <div>
         <div class="text-sm text-base-content/70">{gettext("Username")}</div>
         <div class="text-lg font-semibold">{@current_user.username}</div>
@@ -35,7 +101,9 @@
 
       <div>
         <div class="text-sm text-base-content/70">{gettext("Member Since")}</div>
-        <div class="text-lg font-semibold">{Calendar.strftime(@current_user.inserted_at, "%Y-%m-%d")}</div>
+        <div class="text-lg font-semibold">
+          {Calendar.strftime(@current_user.inserted_at, "%Y-%m-%d")}
+        </div>
       </div>
     </div>
   </div>
