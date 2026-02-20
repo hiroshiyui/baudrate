@@ -9,6 +9,7 @@ defmodule BaudrateWeb.Router do
     plug :protect_from_forgery
     plug :put_secure_browser_headers
     plug BaudrateWeb.Plugs.SetLocale
+    plug BaudrateWeb.Plugs.EnsureSetup
   end
 
   pipeline :api do
@@ -19,6 +20,7 @@ defmodule BaudrateWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/setup", SetupLive
   end
 
   # Other scopes may use custom stacks.

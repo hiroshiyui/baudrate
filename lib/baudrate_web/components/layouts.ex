@@ -116,6 +116,21 @@ defmodule BaudrateWeb.Layouts do
   end
 
   @doc """
+  Renders a minimal setup layout without navigation.
+  """
+  def setup(assigns) do
+    ~H"""
+    <main class="px-4 py-10 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-2xl space-y-4">
+        {@inner_content}
+      </div>
+    </main>
+
+    <.flash_group flash={@flash} />
+    """
+  end
+
+  @doc """
   Provides dark vs light theme toggle based on themes defined in app.css.
 
   See <head> in root.html.heex which applies the theme before page load.

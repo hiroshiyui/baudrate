@@ -36,3 +36,153 @@ msgstr "找不到網路連線"
 #, elixir-autogen, elixir-format
 msgid "close"
 msgstr "關閉"
+
+#: lib/baudrate_web/live/setup_live.html.heex:53
+#, elixir-autogen, elixir-format
+msgid "%{count} migration(s) applied"
+msgstr "已套用 %{count} 個遷移"
+
+#: lib/baudrate_web/live/setup_live.html.heex:16
+#: lib/baudrate_web/live/setup_live.html.heex:108
+#, elixir-autogen, elixir-format
+msgid "Admin Account"
+msgstr "管理員帳號"
+
+#: lib/baudrate_web/live/setup_live.html.heex:148
+#, elixir-autogen, elixir-format
+msgid "At least 12 characters"
+msgstr "至少 12 個字元"
+
+#: lib/baudrate_web/live/setup_live.html.heex:92
+#: lib/baudrate_web/live/setup_live.html.heex:228
+#, elixir-autogen, elixir-format
+msgid "Back"
+msgstr "返回"
+
+#: lib/baudrate_web/live/setup_live.html.heex:85
+#, elixir-autogen, elixir-format
+msgid "Choose a name for your application."
+msgstr "為您的應用程式選擇一個名稱。"
+
+#: lib/baudrate_web/live/setup_live.html.heex:232
+#, elixir-autogen, elixir-format
+msgid "Complete Setup"
+msgstr "完成設定"
+
+#: lib/baudrate_web/live/setup_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Configure your application before first use."
+msgstr "在首次使用前設定您的應用程式。"
+
+#: lib/baudrate_web/live/setup_live.html.heex:127
+#, elixir-autogen, elixir-format
+msgid "Confirm Password"
+msgstr "確認密碼"
+
+#: lib/baudrate_web/live/setup_live.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Connected"
+msgstr "已連線"
+
+#: lib/baudrate_web/live/setup_live.html.heex:190
+#, elixir-autogen, elixir-format
+msgid "Contains a digit"
+msgstr "包含數字"
+
+#: lib/baudrate_web/live/setup_live.html.heex:162
+#, elixir-autogen, elixir-format
+msgid "Contains a lowercase letter"
+msgstr "包含小寫字母"
+
+#: lib/baudrate_web/live/setup_live.html.heex:204
+#, elixir-autogen, elixir-format
+msgid "Contains a special character"
+msgstr "包含特殊字元"
+
+#: lib/baudrate_web/live/setup_live.html.heex:176
+#, elixir-autogen, elixir-format
+msgid "Contains an uppercase letter"
+msgstr "包含大寫字母"
+
+#: lib/baudrate_web/live/setup_live.html.heex:109
+#, elixir-autogen, elixir-format
+msgid "Create the administrator account."
+msgstr "建立管理員帳號。"
+
+#: lib/baudrate_web/live/setup_live.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Database"
+msgstr "資料庫"
+
+#: lib/baudrate_web/live/setup_live.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "Database Connection"
+msgstr "資料庫連線"
+
+#: lib/baudrate_web/live/setup_live.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "Database: %{name}"
+msgstr "資料庫：%{name}"
+
+#: lib/baudrate_web/live/setup_live.html.heex:32
+#, elixir-autogen, elixir-format
+msgid "Disconnected"
+msgstr "未連線"
+
+#: lib/baudrate_web/live/setup_live.html.heex:3
+#, elixir-autogen, elixir-format
+msgid "Initial Setup"
+msgstr "初始設定"
+
+#: lib/baudrate_web/live/setup_live.html.heex:48
+#, elixir-autogen, elixir-format
+msgid "Migrations"
+msgstr "資料庫遷移"
+
+#: lib/baudrate_web/live/setup_live.html.heex:73
+#: lib/baudrate_web/live/setup_live.html.heex:95
+#, elixir-autogen, elixir-format
+msgid "Next"
+msgstr "下一步"
+
+#: lib/baudrate_web/live/setup_live.html.heex:120
+#, elixir-autogen, elixir-format
+msgid "Password"
+msgstr "密碼"
+
+#: lib/baudrate_web/live/setup_live.html.heex:134
+#, elixir-autogen, elixir-format
+msgid "Password requirements:"
+msgstr "密碼要求："
+
+#: lib/baudrate_web/live/setup_live.html.heex:57
+#, elixir-autogen, elixir-format
+msgid "Pending migrations"
+msgstr "待執行的遷移"
+
+#: lib/baudrate_web/live/setup_live.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "Retry"
+msgstr "重試"
+
+#: lib/baudrate_web/live/setup_live.ex:80
+#, elixir-autogen, elixir-format
+msgid "Setup completed successfully!"
+msgstr "設定已成功完成！"
+
+#: lib/baudrate_web/live/setup_live.ex:89
+#, elixir-autogen, elixir-format
+msgid "Setup failed. Please try again."
+msgstr "設定失敗，請重試。"
+
+#: lib/baudrate_web/live/setup_live.html.heex:13
+#: lib/baudrate_web/live/setup_live.html.heex:83
+#: lib/baudrate_web/live/setup_live.html.heex:88
+#, elixir-autogen, elixir-format
+msgid "Site Name"
+msgstr "網站名稱"
+
+#: lib/baudrate_web/live/setup_live.html.heex:113
+#, elixir-autogen, elixir-format
+msgid "Username"
+msgstr "使用者名稱"

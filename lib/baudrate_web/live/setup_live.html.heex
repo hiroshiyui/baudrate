@@ -1,0 +1,239 @@
+<div class="space-y-8">
+  <.header>
+    {gettext("Initial Setup")}
+    <:subtitle>{gettext("Configure your application before first use.")}</:subtitle>
+  </.header>
+
+  <%!-- Steps indicator --%>
+  <ul class="steps steps-horizontal w-full">
+    <li class={["step", @step in [:database, :site_name, :admin_account] && "step-primary"]}>
+      {gettext("Database")}
+    </li>
+    <li class={["step", @step in [:site_name, :admin_account] && "step-primary"]}>
+      {gettext("Site Name")}
+    </li>
+    <li class={["step", @step == :admin_account && "step-primary"]}>
+      {gettext("Admin Account")}
+    </li>
+  </ul>
+
+  <%!-- Step 1: Database --%>
+  <div :if={@step == :database} class="space-y-6">
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title">{gettext("Database Connection")}</h2>
+        <div class="flex items-center gap-2">
+          <span :if={match?({:ok, _}, @db_status)} class="badge badge-success gap-1">
+            <.icon name="hero-check-circle-mini" class="size-4" />
+            {gettext("Connected")}
+          </span>
+          <span :if={match?({:error, _}, @db_status)} class="badge badge-error gap-1">
+            <.icon name="hero-x-circle-mini" class="size-4" />
+            {gettext("Disconnected")}
+          </span>
+        </div>
+        <div :if={match?({:ok, _info}, @db_status)} class="text-sm text-base-content/70">
+          <% {:ok, info} = @db_status %>
+          <p>{gettext("Database: %{name}", name: info.database)}</p>
+        </div>
+        <div :if={match?({:error, _reason}, @db_status)} class="text-sm text-error">
+          <% {:error, reason} = @db_status %>
+          <p>{reason}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title">{gettext("Migrations")}</h2>
+        <div class="flex items-center gap-2">
+          <span :if={match?({:ok, _}, @migrations_status)} class="badge badge-success gap-1">
+            <.icon name="hero-check-circle-mini" class="size-4" />
+            <% {:ok, count} = @migrations_status %>
+            {gettext("%{count} migration(s) applied", count: count)}
+          </span>
+          <span :if={match?({:error, _}, @migrations_status)} class="badge badge-error gap-1">
+            <.icon name="hero-x-circle-mini" class="size-4" />
+            {gettext("Pending migrations")}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-between">
+      <.button phx-click="check_database">
+        <.icon name="hero-arrow-path" class="size-4" />
+        {gettext("Retry")}
+      </.button>
+      <.button
+        variant="primary"
+        phx-click="next_from_database"
+        disabled={!match?({:ok, _}, @db_status) or !match?({:ok, _}, @migrations_status)}
+      >
+        {gettext("Next")}
+        <.icon name="hero-arrow-right-mini" class="size-4" />
+      </.button>
+    </div>
+  </div>
+
+  <%!-- Step 2: Site Name --%>
+  <div :if={@step == :site_name} class="space-y-6">
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title">{gettext("Site Name")}</h2>
+        <p class="text-sm text-base-content/70">
+          {gettext("Choose a name for your application.")}
+        </p>
+        <.form for={@site_name_form} phx-change="validate_site_name" phx-submit="save_site_name">
+          <.input field={@site_name_form[:site_name]} label={gettext("Site Name")} required />
+          <div class="flex justify-between mt-4">
+            <.button type="button" phx-click="back_to_database">
+              <.icon name="hero-arrow-left-mini" class="size-4" />
+              {gettext("Back")}
+            </.button>
+            <.button variant="primary" type="submit">
+              {gettext("Next")}
+              <.icon name="hero-arrow-right-mini" class="size-4" />
+            </.button>
+          </div>
+        </.form>
+      </div>
+    </div>
+  </div>
+
+  <%!-- Step 3: Admin Account --%>
+  <div :if={@step == :admin_account} class="space-y-6">
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title">{gettext("Admin Account")}</h2>
+        <p class="text-sm text-base-content/70">{gettext("Create the administrator account.")}</p>
+        <.form for={@admin_form} phx-change="validate_admin" phx-submit="complete_setup">
+          <.input
+            field={@admin_form[:username]}
+            label={gettext("Username")}
+            required
+            autocomplete="username"
+          />
+          <.input
+            field={@admin_form[:password]}
+            type="password"
+            label={gettext("Password")}
+            required
+            autocomplete="new-password"
+          />
+          <.input
+            field={@admin_form[:password_confirmation]}
+            type="password"
+            label={gettext("Confirm Password")}
+            required
+            autocomplete="new-password"
+          />
+
+          <%!-- Password strength checklist --%>
+          <div class="mt-2 space-y-1">
+            <p class="text-sm font-medium">{gettext("Password requirements:")}</p>
+            <ul class="text-sm space-y-0.5">
+              <li class="flex items-center gap-1.5">
+                <.icon
+                  name={
+                    if @password_strength.length,
+                      do: "hero-check-circle-mini",
+                      else: "hero-x-circle-mini"
+                  }
+                  class={[
+                    "size-4",
+                    if(@password_strength.length, do: "text-success", else: "text-error")
+                  ]}
+                />
+                {gettext("At least 12 characters")}
+              </li>
+              <li class="flex items-center gap-1.5">
+                <.icon
+                  name={
+                    if @password_strength.lowercase,
+                      do: "hero-check-circle-mini",
+                      else: "hero-x-circle-mini"
+                  }
+                  class={[
+                    "size-4",
+                    if(@password_strength.lowercase, do: "text-success", else: "text-error")
+                  ]}
+                />
+                {gettext("Contains a lowercase letter")}
+              </li>
+              <li class="flex items-center gap-1.5">
+                <.icon
+                  name={
+                    if @password_strength.uppercase,
+                      do: "hero-check-circle-mini",
+                      else: "hero-x-circle-mini"
+                  }
+                  class={[
+                    "size-4",
+                    if(@password_strength.uppercase, do: "text-success", else: "text-error")
+                  ]}
+                />
+                {gettext("Contains an uppercase letter")}
+              </li>
+              <li class="flex items-center gap-1.5">
+                <.icon
+                  name={
+                    if @password_strength.digit,
+                      do: "hero-check-circle-mini",
+                      else: "hero-x-circle-mini"
+                  }
+                  class={[
+                    "size-4",
+                    if(@password_strength.digit, do: "text-success", else: "text-error")
+                  ]}
+                />
+                {gettext("Contains a digit")}
+              </li>
+              <li class="flex items-center gap-1.5">
+                <.icon
+                  name={
+                    if @password_strength.special,
+                      do: "hero-check-circle-mini",
+                      else: "hero-x-circle-mini"
+                  }
+                  class={[
+                    "size-4",
+                    if(@password_strength.special, do: "text-success", else: "text-error")
+                  ]}
+                />
+                {gettext("Contains a special character")}
+              </li>
+            </ul>
+
+            <%!-- Password strength progress bar --%>
+            <% met = Enum.count(Map.values(@password_strength), & &1) %>
+            <progress
+              class={[
+                "progress w-full",
+                cond do
+                  met <= 1 -> "progress-error"
+                  met <= 3 -> "progress-warning"
+                  true -> "progress-success"
+                end
+              ]}
+              value={met}
+              max="5"
+            >
+            </progress>
+          </div>
+
+          <div class="flex justify-between mt-4">
+            <.button type="button" phx-click="back_to_site_name">
+              <.icon name="hero-arrow-left-mini" class="size-4" />
+              {gettext("Back")}
+            </.button>
+            <.button variant="primary" type="submit">
+              <.icon name="hero-check-mini" class="size-4" />
+              {gettext("Complete Setup")}
+            </.button>
+          </div>
+        </.form>
+      </div>
+    </div>
+  </div>
+</div>
