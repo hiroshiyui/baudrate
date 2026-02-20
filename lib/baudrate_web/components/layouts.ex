@@ -12,59 +12,80 @@ defmodule BaudrateWeb.Layouts do
   embed_templates "layouts/*"
 
   @doc """
-  Renders your app layout.
+  Renders the app layout with navigation bar.
 
-  This function is typically invoked from every template,
-  and it often contains your application menu, sidebar,
-  or similar.
-
-  ## Examples
-
-      <Layouts.app flash={@flash}>
-        <h1>Content</h1>
-      </Layouts.app>
-
+  Applied automatically via `layout:` in `live_session`.
+  Shows nav links and user menu when `@current_user` is present;
+  otherwise shows only the logo and theme toggle.
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
-
-  attr :current_scope, :map,
-    default: nil,
-    doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
-
-  slot :inner_block, required: true
+  attr :current_user, :map, default: nil, doc: "the currently authenticated user"
+  attr :inner_content, :any, default: nil, doc: "the inner content rendered by the layout"
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
-        </a>
+    <header class="navbar bg-base-100 px-4 sm:px-6 lg:px-8">
+      <%!-- Mobile hamburger (shown < lg) --%>
+      <div :if={@current_user} class="flex-none lg:hidden">
+        <div class="dropdown">
+          <div tabindex="0" role="button" class="btn btn-ghost">
+            <.icon name="hero-bars-3" class="size-5" />
+          </div>
+          <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow">
+            <li>
+              <.link navigate="/">{gettext("Home")}</.link>
+            </li>
+            <li class="disabled">
+              <span class="opacity-50">{gettext("Boards")}</span>
+            </li>
+            <li class="divider my-1"></li>
+            <li class="menu-title">{@current_user.username} ({@current_user.role.name})</li>
+            <li>
+              <.link href="/logout" method="delete">{gettext("Sign Out")}</.link>
+            </li>
+          </ul>
+        </div>
       </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
+
+      <%!-- Logo --%>
+      <div class="flex-1">
+        <.link navigate="/" class="btn btn-ghost text-xl">Baudrate</.link>
+      </div>
+
+      <%!-- Desktop nav links (shown >= lg) --%>
+      <div :if={@current_user} class="hidden lg:flex flex-none">
+        <ul class="menu menu-horizontal px-1 items-center">
           <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
+            <.link navigate="/" class="btn btn-ghost">{gettext("Home")}</.link>
           </li>
           <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
+            <span class="btn btn-ghost btn-disabled opacity-50">{gettext("Boards")}</span>
           </li>
         </ul>
+      </div>
+
+      <%!-- Right side: theme toggle + user dropdown --%>
+      <div class="flex-none flex items-center gap-2">
+        <.theme_toggle />
+
+        <%!-- Desktop user dropdown (shown >= lg) --%>
+        <div :if={@current_user} class="hidden lg:block dropdown dropdown-end">
+          <div tabindex="0" role="button" class="btn btn-ghost">
+            {@current_user.username}
+            <.icon name="hero-chevron-down-micro" class="size-4" />
+          </div>
+          <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow">
+            <li>
+              <.link href="/logout" method="delete">{gettext("Sign Out")}</.link>
+            </li>
+          </ul>
+        </div>
       </div>
     </header>
 
     <main class="px-4 py-20 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-2xl space-y-4">
-        {render_slot(@inner_block)}
+        {@inner_content}
       </div>
     </main>
 

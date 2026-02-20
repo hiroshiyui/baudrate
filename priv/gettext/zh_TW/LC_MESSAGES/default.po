@@ -16,18 +16,18 @@ msgstr ""
 msgid "Actions"
 msgstr "操作"
 
-#: lib/baudrate_web/components/layouts.ex:99
-#: lib/baudrate_web/components/layouts.ex:111
+#: lib/baudrate_web/components/layouts.ex:120
+#: lib/baudrate_web/components/layouts.ex:132
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "正在嘗試重新連線"
 
-#: lib/baudrate_web/components/layouts.ex:106
+#: lib/baudrate_web/components/layouts.ex:127
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "發生錯誤！"
 
-#: lib/baudrate_web/components/layouts.ex:94
+#: lib/baudrate_web/components/layouts.ex:115
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "找不到網路連線"
@@ -231,7 +231,8 @@ msgstr "設定雙因素驗證"
 msgid "Sign In"
 msgstr "登入"
 
-#: lib/baudrate_web/live/home_live.html.heex:7
+#: lib/baudrate_web/components/layouts.ex:44
+#: lib/baudrate_web/components/layouts.ex:79
 #, elixir-autogen, elixir-format
 msgid "Sign Out"
 msgstr "登出"
@@ -281,3 +282,15 @@ msgstr "登入嘗試次數過多，請稍後再試。"
 #, elixir-autogen, elixir-format
 msgid "Unable to connect to database. Check your configuration."
 msgstr "無法連線至資料庫，請檢查您的設定。"
+
+#: lib/baudrate_web/components/layouts.ex:39
+#: lib/baudrate_web/components/layouts.ex:62
+#, elixir-autogen, elixir-format
+msgid "Boards"
+msgstr "看板"
+
+#: lib/baudrate_web/components/layouts.ex:36
+#: lib/baudrate_web/components/layouts.ex:59
+#, elixir-autogen, elixir-format
+msgid "Home"
+msgstr "首頁"

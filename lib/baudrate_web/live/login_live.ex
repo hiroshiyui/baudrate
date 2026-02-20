@@ -24,7 +24,7 @@ defmodule BaudrateWeb.LoginLive do
       |> assign(:token, nil)
       |> assign(:peer_ip, peer_ip)
 
-    {:ok, socket, layout: {BaudrateWeb.Layouts, :setup}}
+    {:ok, socket}
   end
 
   @impl true

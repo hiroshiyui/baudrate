@@ -8,7 +8,7 @@ defmodule BaudrateWeb.TotpSetupLive do
     secret = session["totp_setup_secret"]
 
     if is_nil(secret) do
-      {:ok, redirect(socket, to: "/login"), layout: {BaudrateWeb.Layouts, :setup}}
+      {:ok, redirect(socket, to: "/login")}
     else
       username = socket.assigns.current_user.username
       uri = Auth.totp_uri(secret, username)
@@ -24,7 +24,7 @@ defmodule BaudrateWeb.TotpSetupLive do
         |> assign(:form, to_form(%{"code" => ""}, as: :totp))
         |> assign(:trigger_action, false)
 
-      {:ok, socket, layout: {BaudrateWeb.Layouts, :setup}}
+      {:ok, socket}
     end
   end
 

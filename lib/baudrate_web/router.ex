@@ -34,7 +34,9 @@ defmodule BaudrateWeb.Router do
   scope "/", BaudrateWeb do
     pipe_through :browser
 
-    live_session :public, on_mount: [{BaudrateWeb.AuthHooks, :redirect_if_authenticated}] do
+    live_session :public,
+      layout: {BaudrateWeb.Layouts, :app},
+      on_mount: [{BaudrateWeb.AuthHooks, :redirect_if_authenticated}] do
       live "/login", LoginLive
     end
 
@@ -45,7 +47,9 @@ defmodule BaudrateWeb.Router do
   scope "/totp", BaudrateWeb do
     pipe_through :browser
 
-    live_session :totp, on_mount: [{BaudrateWeb.AuthHooks, :require_password_auth}] do
+    live_session :totp,
+      layout: {BaudrateWeb.Layouts, :app},
+      on_mount: [{BaudrateWeb.AuthHooks, :require_password_auth}] do
       live "/verify", TotpVerifyLive
       live "/setup", TotpSetupLive
     end
@@ -69,7 +73,9 @@ defmodule BaudrateWeb.Router do
   scope "/", BaudrateWeb do
     pipe_through :browser
 
-    live_session :authenticated, on_mount: [{BaudrateWeb.AuthHooks, :require_auth}] do
+    live_session :authenticated,
+      layout: {BaudrateWeb.Layouts, :app},
+      on_mount: [{BaudrateWeb.AuthHooks, :require_auth}] do
       live "/", HomeLive
     end
 

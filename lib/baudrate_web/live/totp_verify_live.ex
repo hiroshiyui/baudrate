@@ -8,7 +8,7 @@ defmodule BaudrateWeb.TotpVerifyLive do
       |> assign(:form, to_form(%{"code" => ""}, as: :totp))
       |> assign(:trigger_action, false)
 
-    {:ok, socket, layout: {BaudrateWeb.Layouts, :setup}}
+    {:ok, socket}
   end
 
   @impl true
