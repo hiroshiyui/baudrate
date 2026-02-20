@@ -16,23 +16,24 @@ msgstr ""
 msgid "Actions"
 msgstr "操作"
 
-#: lib/baudrate_web/components/layouts.ex:126
-#: lib/baudrate_web/components/layouts.ex:138
+#: lib/baudrate_web/components/layouts.ex:130
+#: lib/baudrate_web/components/layouts.ex:142
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "正在嘗試重新連線"
 
-#: lib/baudrate_web/components/layouts.ex:133
+#: lib/baudrate_web/components/layouts.ex:137
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "發生錯誤！"
 
-#: lib/baudrate_web/components/layouts.ex:121
+#: lib/baudrate_web/components/layouts.ex:125
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "找不到網路連線"
 
 #: lib/baudrate_web/components/core_components.ex:74
+#: lib/baudrate_web/live/profile_live.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "close"
 msgstr "關閉"
@@ -185,7 +186,7 @@ msgid "Site Name"
 msgstr "網站名稱"
 
 #: lib/baudrate_web/live/login_live.html.heex:10
-#: lib/baudrate_web/live/profile_live.html.heex:7
+#: lib/baudrate_web/live/profile_live.html.heex:65
 #: lib/baudrate_web/live/setup_live.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Username"
@@ -233,13 +234,13 @@ msgstr "設定雙因素驗證"
 msgid "Sign In"
 msgstr "登入"
 
-#: lib/baudrate_web/components/layouts.ex:47
-#: lib/baudrate_web/components/layouts.ex:85
+#: lib/baudrate_web/components/layouts.ex:50
+#: lib/baudrate_web/components/layouts.ex:89
 #, elixir-autogen, elixir-format
 msgid "Sign Out"
 msgstr "登出"
 
-#: lib/baudrate_web/live/profile_live.html.heex:18
+#: lib/baudrate_web/live/profile_live.html.heex:76
 #: lib/baudrate_web/live/totp_verify_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Two-Factor Authentication"
@@ -288,7 +289,7 @@ msgid "Unable to connect to database. Check your configuration."
 msgstr "無法連線至資料庫，請檢查您的設定。"
 
 #: lib/baudrate_web/components/layouts.ex:39
-#: lib/baudrate_web/components/layouts.ex:65
+#: lib/baudrate_web/components/layouts.ex:68
 #: lib/baudrate_web/live/board_live.html.heex:3
 #: lib/baudrate_web/live/home_live.html.heex:9
 #, elixir-autogen, elixir-format
@@ -296,7 +297,7 @@ msgid "Boards"
 msgstr "看板"
 
 #: lib/baudrate_web/components/layouts.ex:36
-#: lib/baudrate_web/components/layouts.ex:62
+#: lib/baudrate_web/components/layouts.ex:65
 #, elixir-autogen, elixir-format
 msgid "Home"
 msgstr "首頁"
@@ -304,127 +305,127 @@ msgstr "首頁"
 #: lib/baudrate_web/live/totp_reset_live.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "Back to Profile"
-msgstr ""
+msgstr "返回個人檔案"
 
 #: lib/baudrate_web/live/recovery_code_verify_live.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "Back to TOTP verification"
-msgstr ""
+msgstr "返回 TOTP 驗證"
 
 #: lib/baudrate_web/live/totp_reset_live.html.heex:58
 #, elixir-autogen, elixir-format
 msgid "Continue"
-msgstr ""
+msgstr "繼續"
 
 #: lib/baudrate_web/live/totp_reset_live.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "Current TOTP Code"
-msgstr ""
+msgstr "目前的 TOTP 驗證碼"
 
-#: lib/baudrate_web/live/profile_live.html.heex:26
+#: lib/baudrate_web/live/profile_live.html.heex:84
 #, elixir-autogen, elixir-format
 msgid "Disabled"
-msgstr ""
+msgstr "已停用"
 
-#: lib/baudrate_web/live/profile_live.html.heex:29
+#: lib/baudrate_web/live/profile_live.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Enable TOTP"
-msgstr ""
+msgstr "啟用 TOTP"
 
 #: lib/baudrate_web/live/totp_reset_live.html.heex:6
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Enable Two-Factor Authentication"
 msgstr "設定雙因素驗證"
 
-#: lib/baudrate_web/live/profile_live.html.heex:21
+#: lib/baudrate_web/live/profile_live.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "Enabled"
-msgstr ""
+msgstr "已啟用"
 
 #: lib/baudrate_web/live/recovery_code_verify_live.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "Enter one of your recovery codes to log in."
-msgstr ""
+msgstr "輸入您的其中一組救援碼以登入。"
 
 #: lib/baudrate_web/live/totp_reset_live.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Enter your password and current TOTP code to reset your authenticator."
-msgstr ""
+msgstr "輸入您的密碼和目前的 TOTP 驗證碼以重設驗證器。"
 
 #: lib/baudrate_web/live/totp_reset_live.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Enter your password to begin setting up two-factor authentication."
-msgstr ""
+msgstr "輸入您的密碼以開始設定雙因素驗證。"
 
 #: lib/baudrate_web/live/recovery_codes_live.html.heex:25
 #, elixir-autogen, elixir-format
 msgid "I've saved my recovery codes"
-msgstr ""
+msgstr "我已儲存救援碼"
 
 #: lib/baudrate_web/live/totp_reset_live.ex:85
 #, elixir-autogen, elixir-format
 msgid "Invalid credentials. Please try again."
-msgstr ""
+msgstr "憑證無效，請重試。"
 
 #: lib/baudrate_web/live/totp_verify_live.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Lost your device? Use a recovery code"
-msgstr ""
+msgstr "遺失裝置？使用救援碼"
 
-#: lib/baudrate_web/live/profile_live.html.heex:37
+#: lib/baudrate_web/live/profile_live.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Member Since"
-msgstr ""
+msgstr "加入日期"
 
 #: lib/baudrate_web/live/board_live.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "No articles yet."
-msgstr ""
+msgstr "目前沒有文章。"
 
 #: lib/baudrate_web/live/recovery_code_verify_live.ex:44
 #, elixir-autogen, elixir-format
 msgid "Please enter a valid recovery code (e.g. a1b2-c3d4)."
-msgstr ""
+msgstr "請輸入有效的救援碼（例如 a1b2-c3d4）。"
 
-#: lib/baudrate_web/components/layouts.ex:44
-#: lib/baudrate_web/components/layouts.ex:82
+#: lib/baudrate_web/components/layouts.ex:47
+#: lib/baudrate_web/components/layouts.ex:86
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Profile"
-msgstr ""
+msgstr "個人檔案"
 
 #: lib/baudrate_web/live/recovery_code_verify_live.html.heex:2
 #: lib/baudrate_web/live/recovery_code_verify_live.html.heex:10
 #, elixir-autogen, elixir-format
 msgid "Recovery Code"
-msgstr ""
+msgstr "救援碼"
 
 #: lib/baudrate_web/live/recovery_codes_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Recovery Codes"
-msgstr ""
+msgstr "救援碼"
 
-#: lib/baudrate_web/live/profile_live.html.heex:23
+#: lib/baudrate_web/live/profile_live.html.heex:81
 #: lib/baudrate_web/live/totp_reset_live.html.heex:4
 #: lib/baudrate_web/live/totp_reset_live.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Reset Authenticator"
-msgstr ""
+msgstr "重設驗證器"
 
-#: lib/baudrate_web/live/profile_live.html.heex:12
+#: lib/baudrate_web/live/profile_live.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "Role"
-msgstr ""
+msgstr "角色"
 
 #: lib/baudrate_web/live/recovery_codes_live.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "Save these recovery codes in a safe place. Each code can only be used once. If you lose your authenticator device, you can use one of these codes to log in."
-msgstr ""
+msgstr "請將這些救援碼保存在安全的地方。每組救援碼只能使用一次。如果您遺失驗證器裝置，可以使用其中一組救援碼登入。"
 
 #: lib/baudrate_web/live/totp_setup_live.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "TOTP QR Code"
-msgstr ""
+msgstr "TOTP QR 碼"
 
 #: lib/baudrate_web/live/totp_reset_live.ex:47
 #, elixir-autogen, elixir-format, fuzzy
@@ -434,4 +435,76 @@ msgstr "登入嘗試次數過多，請稍後再試。"
 #: lib/baudrate_web/live/recovery_codes_live.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "You will not be able to see these codes again!"
-msgstr ""
+msgstr "您將無法再次查看這些救援碼！"
+
+#: lib/baudrate_web/live/profile_live.html.heex:18
+#, elixir-autogen, elixir-format
+msgid "Are you sure you want to remove your avatar?"
+msgstr "確定要移除頭像嗎？"
+
+#: lib/baudrate_web/live/profile_live.ex:81
+#, elixir-autogen, elixir-format
+msgid "Avatar removed."
+msgstr "頭像已移除。"
+
+#: lib/baudrate_web/live/profile_live.ex:111
+#, elixir-autogen, elixir-format
+msgid "Avatar updated successfully."
+msgstr "頭像已成功更新。"
+
+#: lib/baudrate_web/live/profile_live.html.heex:50
+#, elixir-autogen, elixir-format
+msgid "Cancel"
+msgstr "取消"
+
+#: lib/baudrate_web/live/profile_live.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "Change Avatar"
+msgstr "變更頭像"
+
+#: lib/baudrate_web/live/profile_live.html.heex:43
+#, elixir-autogen, elixir-format
+msgid "Crop Avatar"
+msgstr "裁剪頭像"
+
+#: lib/baudrate_web/live/profile_live.ex:129
+#, elixir-autogen, elixir-format
+msgid "Failed to process avatar image."
+msgstr "處理頭像圖片失敗。"
+
+#: lib/baudrate_web/live/profile_live.ex:144
+#, elixir-autogen, elixir-format
+msgid "Image file is too large."
+msgstr "圖片檔案過大。"
+
+#: lib/baudrate_web/live/profile_live.ex:120
+#: lib/baudrate_web/live/profile_live.ex:145
+#, elixir-autogen, elixir-format
+msgid "Invalid image file."
+msgstr "無效的圖片檔案。"
+
+#: lib/baudrate_web/live/profile_live.html.heex:20
+#, elixir-autogen, elixir-format
+msgid "Remove Avatar"
+msgstr "移除頭像"
+
+#: lib/baudrate_web/live/profile_live.html.heex:53
+#, elixir-autogen, elixir-format
+msgid "Save"
+msgstr "儲存"
+
+#: lib/baudrate_web/live/profile_live.ex:62
+#: lib/baudrate_web/live/profile_live.ex:86
+#, elixir-autogen, elixir-format
+msgid "Too many avatar changes. Please try again later."
+msgstr "頭像變更次數過多，請稍後再試。"
+
+#: lib/baudrate_web/live/profile_live.ex:146
+#, elixir-autogen, elixir-format
+msgid "Too many files."
+msgstr "檔案數量過多。"
+
+#: lib/baudrate_web/live/profile_live.ex:147
+#, elixir-autogen, elixir-format
+msgid "Upload error."
+msgstr "上傳錯誤。"
