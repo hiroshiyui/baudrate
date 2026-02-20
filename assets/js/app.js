@@ -32,6 +32,20 @@ const liveSocket = new LiveSocket("/live", Socket, {
   hooks: {...colocatedHooks},
 })
 
+// Theme switcher: apply saved theme and listen for toggle events
+const setTheme = (theme) => {
+  if (theme === "system") {
+    localStorage.removeItem("phx:theme")
+    document.documentElement.removeAttribute("data-theme")
+  } else {
+    localStorage.setItem("phx:theme", theme)
+    document.documentElement.setAttribute("data-theme", theme)
+  }
+}
+setTheme(localStorage.getItem("phx:theme") || "system")
+window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme))
+window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"))
+
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
