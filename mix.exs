@@ -69,7 +69,8 @@ defmodule Baudrate.MixProject do
       {:bcrypt_elixir, "~> 3.0"},
       {:nimble_totp, "~> 1.0"},
       {:eqrcode, "~> 0.2.1"},
-      {:hammer, "~> 6.2"}
+      {:hammer, "~> 6.2"},
+      {:image, "~> 0.54"}
     ]
   end
 
