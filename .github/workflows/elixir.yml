@@ -36,11 +36,16 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v4
     - name: Set up asdf
-      uses: asdf-vm/actions/setup@v3
+      uses: ynab/asdf-action@v1.2
+      with:
+        version: 0.16.7
+    - uses: actions/checkout@v4
     - name: Install Erlang and Elixir
-      uses: asdf-vm/actions/install@v3
+      run: |
+        asdf plugin add erlang
+        asdf plugin add elixir
+        asdf install
     - name: Restore dependencies cache
       uses: actions/cache@v3
       with:
