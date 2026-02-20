@@ -37,8 +37,7 @@
           <p>{gettext("Database: %{name}", name: info.database)}</p>
         </div>
         <div :if={match?({:error, _reason}, @db_status)} class="text-sm text-error">
-          <% {:error, reason} = @db_status %>
-          <p>{reason}</p>
+          <p>{gettext("Unable to connect to database. Check your configuration.")}</p>
         </div>
       </div>
     </div>

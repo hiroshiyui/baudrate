@@ -11,10 +11,12 @@ config :baudrate, BaudrateWeb.Endpoint, cache_static_manifest: "priv/static/cach
 # known as HSTS. If you have a health check endpoint, you may want to exclude it below.
 # Note `:force_ssl` is required to be set at compile-time.
 config :baudrate, BaudrateWeb.Endpoint,
-  force_ssl: [rewrite_on: [:x_forwarded_proto]],
-  exclude: [
-    # paths: ["/health"],
-    hosts: ["localhost", "127.0.0.1"]
+  force_ssl: [
+    rewrite_on: [:x_forwarded_proto],
+    hsts: true,
+    subdomains: true,
+    preload: true,
+    expires: 63_072_000
   ]
 
 # Configure Swoosh API Client
