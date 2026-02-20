@@ -445,6 +445,54 @@ defmodule BaudrateWeb.CoreComponents do
     """
   end
 
+  @doc """
+  Renders a user avatar.
+
+  Shows the uploaded avatar image if available, otherwise falls back to
+  a DaisyUI circle with the first letter of the username.
+
+  ## Examples
+
+      <.avatar user={@current_user} size={48} />
+      <.avatar user={@current_user} size={36} />
+  """
+  attr :user, :map, required: true
+  attr :size, :integer, default: 48, values: [48, 36]
+  attr :class, :string, default: nil
+
+  def avatar(%{user: %{avatar_id: avatar_id}} = assigns) when is_binary(avatar_id) do
+    assigns = assign(assigns, :url, Baudrate.Avatar.avatar_url(avatar_id, assigns.size))
+
+    ~H"""
+    <div class={[
+      "avatar",
+      @class
+    ]}>
+      <div class={size_class(@size)}>
+        <img src={@url} alt={@user.username} />
+      </div>
+    </div>
+    """
+  end
+
+  def avatar(assigns) do
+    assigns = assign(assigns, :initial, String.first(assigns.user.username) |> String.upcase())
+
+    ~H"""
+    <div class={[
+      "avatar avatar-placeholder",
+      @class
+    ]}>
+      <div class={["bg-neutral text-neutral-content", size_class(@size)]}>
+        <span class={if @size == 48, do: "text-lg", else: "text-sm"}>{@initial}</span>
+      </div>
+    </div>
+    """
+  end
+
+  defp size_class(48), do: "w-12 rounded-full"
+  defp size_class(36), do: "w-9 rounded-full"
+
   ## JS Commands
 
   def show(js \\ %JS{}, selector) do

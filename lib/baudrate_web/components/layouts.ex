@@ -31,7 +31,10 @@ defmodule BaudrateWeb.Layouts do
           <div tabindex="0" role="button" class="btn btn-ghost">
             <.icon name="hero-bars-3" class="size-5" />
           </div>
-          <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow">
+          <ul
+            tabindex="0"
+            class="menu menu-sm dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
+          >
             <li>
               <.link navigate="/">{gettext("Home")}</.link>
             </li>
@@ -39,7 +42,10 @@ defmodule BaudrateWeb.Layouts do
               <.link navigate="/">{gettext("Boards")}</.link>
             </li>
             <li class="divider my-1"></li>
-            <li class="menu-title">{@current_user.username} ({@current_user.role.name})</li>
+            <li class="menu-title flex flex-row items-center gap-2">
+              <.avatar user={@current_user} size={36} />
+              {@current_user.username} ({@current_user.role.name})
+            </li>
             <li>
               <.link navigate="/profile">{gettext("Profile")}</.link>
             </li>
@@ -73,11 +79,15 @@ defmodule BaudrateWeb.Layouts do
 
         <%!-- Desktop user dropdown (shown >= lg) --%>
         <div :if={@current_user} class="hidden lg:block dropdown dropdown-end">
-          <div tabindex="0" role="button" class="btn btn-ghost">
+          <div tabindex="0" role="button" class="btn btn-ghost gap-2">
+            <.avatar user={@current_user} size={36} />
             {@current_user.username}
             <.icon name="hero-chevron-down-micro" class="size-4" />
           </div>
-          <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow">
+          <ul
+            tabindex="0"
+            class="menu menu-sm dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
+          >
             <li>
               <.link navigate="/profile">{gettext("Profile")}</.link>
             </li>
