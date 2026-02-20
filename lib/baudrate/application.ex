@@ -12,8 +12,7 @@ defmodule Baudrate.Application do
       Baudrate.Repo,
       {DNSCluster, query: Application.get_env(:baudrate, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Baudrate.PubSub},
-      # Start a worker by calling: Baudrate.Worker.start_link(arg)
-      # {Baudrate.Worker, arg},
+      Baudrate.Auth.SessionCleaner,
       # Start to serve requests, typically the last entry
       BaudrateWeb.Endpoint
     ]

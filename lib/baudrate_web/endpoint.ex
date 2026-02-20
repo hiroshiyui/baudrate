@@ -8,7 +8,7 @@ defmodule BaudrateWeb.Endpoint do
     signing_salt: "mse//7wp",
     encryption_salt: "rK3nP+Qb",
     same_site: "Lax",
-    max_age: 86_400
+    max_age: 14 * 86_400
   ]
 
   socket "/live", Phoenix.LiveView.Socket,

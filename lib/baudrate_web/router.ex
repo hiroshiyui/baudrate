@@ -15,6 +15,7 @@ defmodule BaudrateWeb.Router do
     }
     plug BaudrateWeb.Plugs.SetLocale
     plug BaudrateWeb.Plugs.EnsureSetup
+    plug BaudrateWeb.Plugs.RefreshSession
   end
 
   pipeline :api do

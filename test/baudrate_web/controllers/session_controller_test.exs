@@ -18,8 +18,9 @@ defmodule BaudrateWeb.SessionControllerTest do
       token = Phoenix.Token.sign(BaudrateWeb.Endpoint, "user_auth", user.id)
       conn = post(conn, "/auth/session", %{"token" => token})
       assert redirected_to(conn) == "/"
-      assert get_session(conn, :user_id) == user.id
-      assert get_session(conn, :totp_verified) == true
+      assert get_session(conn, :session_token) != nil
+      assert get_session(conn, :refresh_token) != nil
+      assert is_nil(get_session(conn, :user_id))
     end
 
     test "redirects to /totp/setup for admin without TOTP", %{conn: conn} do
@@ -61,7 +62,9 @@ defmodule BaudrateWeb.SessionControllerTest do
         |> post("/auth/totp-verify", %{"code" => code})
 
       assert redirected_to(conn) == "/"
-      assert get_session(conn, :totp_verified) == true
+      assert get_session(conn, :session_token) != nil
+      assert get_session(conn, :refresh_token) != nil
+      assert is_nil(get_session(conn, :user_id))
     end
 
     test "rejects invalid TOTP code", %{conn: conn} do
@@ -110,9 +113,10 @@ defmodule BaudrateWeb.SessionControllerTest do
         |> post("/auth/totp-enable", %{"code" => code})
 
       assert redirected_to(conn) == "/"
-      assert get_session(conn, :totp_verified) == true
-      # Secret should be cleared from session
-      assert get_session(conn, :totp_setup_secret) == nil
+      assert get_session(conn, :session_token) != nil
+      assert get_session(conn, :refresh_token) != nil
+      assert is_nil(get_session(conn, :user_id))
+      assert is_nil(get_session(conn, :totp_setup_secret))
 
       updated_user = Auth.get_user(user.id)
       assert updated_user.totp_enabled == true

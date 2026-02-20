@@ -4,9 +4,12 @@ defmodule Baudrate.Auth do
   """
 
   import Ecto.Query
-  alias Baudrate.Auth.TotpVault
+  alias Baudrate.Auth.{TotpVault, UserSession}
   alias Baudrate.Repo
   alias Baudrate.Setup.User
+
+  @session_ttl_seconds 14 * 86_400
+  @max_sessions_per_user 3
 
   @doc """
   Authenticates a user by username and password.
@@ -119,5 +122,158 @@ defmodule Baudrate.Auth do
   """
   def get_user(id) do
     Repo.one(from u in User, where: u.id == ^id, preload: :role)
+  end
+
+  # --- Server-side session management ---
+
+  @doc """
+  Generates a random 32-byte token, returned as URL-safe Base64.
+  """
+  def generate_token do
+    :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+  end
+
+  @doc """
+  Returns the SHA-256 hash of a raw token (binary).
+  """
+  def hash_token(raw_token) do
+    :crypto.hash(:sha256, raw_token)
+  end
+
+  @doc """
+  Creates a new server-side session for the given user.
+
+  Enforces a maximum of #{@max_sessions_per_user} concurrent sessions per user,
+  evicting the oldest (by `refreshed_at`) when the limit is reached.
+
+  Options:
+    - `:ip_address` — client IP string
+    - `:user_agent` — client User-Agent string
+
+  Returns `{:ok, session_token, refresh_token}` or `{:error, changeset}`.
+  """
+  def create_user_session(user_id, opts \\ []) do
+    session_token = generate_token()
+    refresh_token = generate_token()
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+    expires_at = DateTime.add(now, @session_ttl_seconds, :second)
+
+    Repo.transaction(fn ->
+      evict_excess_sessions(user_id)
+
+      changeset =
+        UserSession.changeset(%UserSession{}, %{
+          user_id: user_id,
+          token_hash: hash_token(session_token),
+          refresh_token_hash: hash_token(refresh_token),
+          expires_at: expires_at,
+          refreshed_at: now,
+          ip_address: opts[:ip_address],
+          user_agent: opts[:user_agent]
+        })
+
+      case Repo.insert(changeset) do
+        {:ok, _session} -> {session_token, refresh_token}
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+    |> case do
+      {:ok, {session_token, refresh_token}} -> {:ok, session_token, refresh_token}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
+  defp evict_excess_sessions(user_id) do
+    sessions =
+      from(s in UserSession,
+        where: s.user_id == ^user_id,
+        order_by: [asc: s.refreshed_at],
+        select: s.id
+      )
+      |> Repo.all()
+
+    excess_count = length(sessions) - (@max_sessions_per_user - 1)
+
+    if excess_count > 0 do
+      ids_to_delete = Enum.take(sessions, excess_count)
+      from(s in UserSession, where: s.id in ^ids_to_delete) |> Repo.delete_all()
+    end
+  end
+
+  @doc """
+  Looks up a user by session token. Returns `{:ok, user}` if the session
+  is valid and not expired, or `{:error, :not_found | :expired}`.
+  """
+  def get_user_by_session_token(raw_token) do
+    token_hash = hash_token(raw_token)
+
+    case Repo.one(from s in UserSession, where: s.token_hash == ^token_hash, preload: [user: :role]) do
+      nil ->
+        {:error, :not_found}
+
+      session ->
+        if DateTime.compare(session.expires_at, DateTime.utc_now()) == :gt do
+          {:ok, session.user}
+        else
+          Repo.delete(session)
+          {:error, :expired}
+        end
+    end
+  end
+
+  @doc """
+  Rotates both session and refresh tokens. Extends `expires_at` by #{@session_ttl_seconds} seconds.
+
+  Returns `{:ok, new_session_token, new_refresh_token}` or `{:error, reason}`.
+  """
+  def refresh_user_session(raw_refresh_token) do
+    refresh_hash = hash_token(raw_refresh_token)
+
+    case Repo.one(from s in UserSession, where: s.refresh_token_hash == ^refresh_hash) do
+      nil ->
+        {:error, :not_found}
+
+      session ->
+        if DateTime.compare(session.expires_at, DateTime.utc_now()) == :gt do
+          new_session_token = generate_token()
+          new_refresh_token = generate_token()
+          now = DateTime.utc_now() |> DateTime.truncate(:second)
+          new_expires_at = DateTime.add(now, @session_ttl_seconds, :second)
+
+          session
+          |> Ecto.Changeset.change(%{
+            token_hash: hash_token(new_session_token),
+            refresh_token_hash: hash_token(new_refresh_token),
+            expires_at: new_expires_at,
+            refreshed_at: now
+          })
+          |> Repo.update()
+          |> case do
+            {:ok, _} -> {:ok, new_session_token, new_refresh_token}
+            {:error, changeset} -> {:error, changeset}
+          end
+        else
+          Repo.delete(session)
+          {:error, :expired}
+        end
+    end
+  end
+
+  @doc """
+  Deletes the session matching the given raw session token.
+  """
+  def delete_session_by_token(raw_token) do
+    token_hash = hash_token(raw_token)
+    from(s in UserSession, where: s.token_hash == ^token_hash) |> Repo.delete_all()
+    :ok
+  end
+
+  @doc """
+  Purges all expired sessions from the database.
+  Returns `{count, nil}` with the number of deleted rows.
+  """
+  def purge_expired_sessions do
+    now = DateTime.utc_now()
+    from(s in UserSession, where: s.expires_at < ^now) |> Repo.delete_all()
   end
 end

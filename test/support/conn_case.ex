@@ -67,10 +67,16 @@ defmodule BaudrateWeb.ConnCase do
   end
 
   @doc """
-  Sets session keys for a fully authenticated user.
+  Creates a DB session and sets session keys for a fully authenticated user.
   """
   def log_in_user(conn, user) do
+    {:ok, session_token, refresh_token} = Baudrate.Auth.create_user_session(user.id)
+
     conn
-    |> Plug.Test.init_test_session(%{user_id: user.id, totp_verified: true})
+    |> Plug.Test.init_test_session(%{
+      session_token: session_token,
+      refresh_token: refresh_token,
+      refreshed_at: DateTime.utc_now() |> DateTime.to_iso8601()
+    })
   end
 end

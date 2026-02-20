@@ -35,9 +35,7 @@ defmodule BaudrateWeb.SessionController do
               |> redirect(to: "/totp/setup")
 
             :authenticated ->
-              conn
-              |> put_session(:totp_verified, true)
-              |> redirect(to: "/")
+              establish_session(conn, user)
           end
         else
           conn
@@ -87,9 +85,7 @@ defmodule BaudrateWeb.SessionController do
 
         conn
         |> delete_session(:totp_attempts)
-        |> put_session(:totp_verified, true)
-        |> put_session(:totp_verified_at, System.os_time(:second))
-        |> redirect(to: "/")
+        |> establish_session(user)
 
       true ->
         Logger.warning("auth.totp_verify_failure: user_id=#{user.id} attempt=#{attempts + 1} ip=#{remote_ip(conn)}")
@@ -129,9 +125,7 @@ defmodule BaudrateWeb.SessionController do
             conn
             |> delete_session(:totp_setup_secret)
             |> delete_session(:totp_attempts)
-            |> put_session(:totp_verified, true)
-            |> put_session(:totp_verified_at, System.os_time(:second))
-            |> redirect(to: "/")
+            |> establish_session(user)
 
           {:error, _changeset} ->
             Logger.error("auth.totp_enable_failed: user_id=#{user.id} ip=#{remote_ip(conn)}")
@@ -152,12 +146,36 @@ defmodule BaudrateWeb.SessionController do
   end
 
   def delete(conn, _params) do
-    user_id = get_session(conn, :user_id)
-    if user_id, do: Logger.info("auth.logout: user_id=#{user_id} ip=#{remote_ip(conn)}")
+    session_token = get_session(conn, :session_token)
+
+    if session_token do
+      Logger.info("auth.logout: ip=#{remote_ip(conn)}")
+      Auth.delete_session_by_token(session_token)
+    end
 
     conn
     |> configure_session(drop: true)
     |> redirect(to: "/login")
+  end
+
+  defp establish_session(conn, user) do
+    opts = [
+      ip_address: remote_ip(conn),
+      user_agent: get_req_header(conn, "user-agent") |> List.first()
+    ]
+
+    {:ok, session_token, refresh_token} = Auth.create_user_session(user.id, opts)
+
+    conn
+    |> configure_session(renew: true)
+    |> delete_session(:user_id)
+    |> delete_session(:totp_verified)
+    |> delete_session(:totp_verified_at)
+    |> delete_session(:totp_setup_secret)
+    |> put_session(:session_token, session_token)
+    |> put_session(:refresh_token, refresh_token)
+    |> put_session(:refreshed_at, DateTime.utc_now() |> DateTime.to_iso8601())
+    |> redirect(to: "/")
   end
 
   defp remote_ip(conn) do
