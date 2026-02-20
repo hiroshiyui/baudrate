@@ -29,7 +29,8 @@ defmodule BaudrateWeb.Plugs.RefreshSession do
     refresh_token = get_session(conn, :refresh_token)
     refreshed_at_str = get_session(conn, :refreshed_at)
 
-    with true <- is_binary(session_token) and is_binary(refresh_token) and is_binary(refreshed_at_str),
+    with true <-
+           is_binary(session_token) and is_binary(refresh_token) and is_binary(refreshed_at_str),
          {:ok, refreshed_at, _} <- DateTime.from_iso8601(refreshed_at_str),
          true <- needs_refresh?(refreshed_at) do
       case Baudrate.Auth.refresh_user_session(refresh_token) do

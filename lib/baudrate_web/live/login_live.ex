@@ -46,7 +46,11 @@ defmodule BaudrateWeb.LoginLive do
   end
 
   @impl true
-  def handle_event("submit", %{"login" => %{"username" => username, "password" => password}}, socket) do
+  def handle_event(
+        "submit",
+        %{"login" => %{"username" => username, "password" => password}},
+        socket
+      ) do
     ip = socket.assigns.peer_ip
 
     case Hammer.check_rate("login:#{ip}", 300_000, 10) do

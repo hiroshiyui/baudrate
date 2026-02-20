@@ -154,7 +154,11 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       conn =
         conn
-        |> Plug.Test.init_test_session(%{user_id: user.id, totp_setup_secret: secret, totp_attempts: 5})
+        |> Plug.Test.init_test_session(%{
+          user_id: user.id,
+          totp_setup_secret: secret,
+          totp_attempts: 5
+        })
         |> post("/auth/totp-enable", %{"code" => "000000"})
 
       assert redirected_to(conn) == "/login"

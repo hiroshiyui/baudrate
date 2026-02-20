@@ -60,7 +60,12 @@
     </button>
   </.form>
 
-  <form id="totp-reset-form" action="/auth/totp-reset" method="post" phx-trigger-action={@trigger_action}>
+  <form
+    id="totp-reset-form"
+    action="/auth/totp-reset"
+    method="post"
+    phx-trigger-action={@trigger_action}
+  >
     <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
     <input type="hidden" name="token" value={assigns[:token]} />
   </form>

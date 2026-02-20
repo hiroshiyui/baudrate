@@ -40,7 +40,12 @@
     </button>
   </.form>
 
-  <form id="session-form" action="/auth/session" method="post" phx-trigger-action={@trigger_action}>
+  <form
+    id="session-form"
+    action="/auth/session"
+    method="post"
+    phx-trigger-action={@trigger_action}
+  >
     <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
     <input type="hidden" name="token" value={@token} />
   </form>

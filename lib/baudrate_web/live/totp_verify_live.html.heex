@@ -29,7 +29,12 @@
     </button>
   </.form>
 
-  <form id="totp-verify-form" action="/auth/totp-verify" method="post" phx-trigger-action={@trigger_action}>
+  <form
+    id="totp-verify-form"
+    action="/auth/totp-verify"
+    method="post"
+    phx-trigger-action={@trigger_action}
+  >
     <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
     <input type="hidden" name="code" value={assigns[:code]} />
   </form>

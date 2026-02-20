@@ -93,7 +93,9 @@ defmodule Baudrate.Auth.UserSessionTest do
       session = Repo.one!(from s in UserSession, where: s.user_id == ^user.id)
 
       session
-      |> Ecto.Changeset.change(%{expires_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.add(-1, :second)})
+      |> Ecto.Changeset.change(%{
+        expires_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.add(-1, :second)
+      })
       |> Repo.update!()
 
       assert {:error, :expired} = Auth.get_user_by_session_token(session_token)
@@ -129,7 +131,9 @@ defmodule Baudrate.Auth.UserSessionTest do
       session = Repo.one!(from s in UserSession, where: s.user_id == ^user.id)
 
       session
-      |> Ecto.Changeset.change(%{expires_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.add(-1, :second)})
+      |> Ecto.Changeset.change(%{
+        expires_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.add(-1, :second)
+      })
       |> Repo.update!()
 
       assert {:error, :expired} = Auth.refresh_user_session(refresh_token)
@@ -159,7 +163,9 @@ defmodule Baudrate.Auth.UserSessionTest do
       session = Repo.one!(from s in UserSession, where: s.user_id == ^user.id)
 
       session
-      |> Ecto.Changeset.change(%{expires_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.add(-1, :second)})
+      |> Ecto.Changeset.change(%{
+        expires_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.add(-1, :second)
+      })
       |> Repo.update!()
 
       assert {1, nil} = Auth.purge_expired_sessions()

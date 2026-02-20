@@ -53,7 +53,9 @@ defmodule BaudrateWeb.SessionController do
         user = Auth.get_user(user_id)
 
         if user do
-          Logger.info("auth.login_success: user_id=#{user.id} username=#{user.username} ip=#{remote_ip(conn)}")
+          Logger.info(
+            "auth.login_success: user_id=#{user.id} username=#{user.username} ip=#{remote_ip(conn)}"
+          )
 
           conn =
             conn
@@ -128,7 +130,9 @@ defmodule BaudrateWeb.SessionController do
         |> establish_session(user)
 
       true ->
-        Logger.warning("auth.totp_verify_failure: user_id=#{user.id} attempt=#{attempts + 1} ip=#{remote_ip(conn)}")
+        Logger.warning(
+          "auth.totp_verify_failure: user_id=#{user.id} attempt=#{attempts + 1} ip=#{remote_ip(conn)}"
+        )
 
         conn
         |> put_session(:totp_attempts, attempts + 1)
@@ -178,7 +182,9 @@ defmodule BaudrateWeb.SessionController do
         end
 
       true ->
-        Logger.warning("auth.totp_setup_failure: user_id=#{user.id} attempt=#{attempts + 1} ip=#{remote_ip(conn)}")
+        Logger.warning(
+          "auth.totp_setup_failure: user_id=#{user.id} attempt=#{attempts + 1} ip=#{remote_ip(conn)}"
+        )
 
         conn
         |> put_session(:totp_attempts, attempts + 1)
@@ -193,7 +199,9 @@ defmodule BaudrateWeb.SessionController do
         user = Auth.get_user(user_id)
 
         if user do
-          Logger.info("auth.totp_reset_start: user_id=#{user.id} mode=#{mode} ip=#{remote_ip(conn)}")
+          Logger.info(
+            "auth.totp_reset_start: user_id=#{user.id} mode=#{mode} ip=#{remote_ip(conn)}"
+          )
 
           # Delete all existing sessions for this user
           Auth.delete_all_sessions_for_user(user.id)
@@ -254,7 +262,9 @@ defmodule BaudrateWeb.SessionController do
         |> establish_session(user)
 
       true ->
-        Logger.warning("auth.recovery_verify_failure: user_id=#{user.id} attempt=#{attempts + 1} ip=#{remote_ip(conn)}")
+        Logger.warning(
+          "auth.recovery_verify_failure: user_id=#{user.id} attempt=#{attempts + 1} ip=#{remote_ip(conn)}"
+        )
 
         conn
         |> put_session(:totp_attempts, attempts + 1)

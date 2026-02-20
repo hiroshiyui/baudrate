@@ -4,8 +4,20 @@ defmodule Baudrate.Setup.RolePermissionTest do
   alias Baudrate.Setup.{Permission, Role, RolePermission}
 
   setup do
-    role = Repo.insert!(%Role{name: "admin", inserted_at: DateTime.utc_now() |> DateTime.truncate(:second), updated_at: DateTime.utc_now() |> DateTime.truncate(:second)})
-    permission = Repo.insert!(%Permission{name: "admin.manage_users", inserted_at: DateTime.utc_now() |> DateTime.truncate(:second), updated_at: DateTime.utc_now() |> DateTime.truncate(:second)})
+    role =
+      Repo.insert!(%Role{
+        name: "admin",
+        inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
+        updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+
+    permission =
+      Repo.insert!(%Permission{
+        name: "admin.manage_users",
+        inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
+        updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+
     %{role: role, permission: permission}
   end
 
@@ -55,9 +67,7 @@ defmodule Baudrate.Setup.RolePermissionTest do
 
     test "enforces role foreign key constraint" do
       {:error, changeset} =
-        Repo.insert(
-          RolePermission.changeset(%RolePermission{}, %{role_id: 0, permission_id: 0})
-        )
+        Repo.insert(RolePermission.changeset(%RolePermission{}, %{role_id: 0, permission_id: 0}))
 
       assert %{role: ["does not exist"]} = errors_on(changeset)
     end

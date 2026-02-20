@@ -41,7 +41,15 @@ defmodule Baudrate.Auth.UserSession do
 
   def changeset(session, attrs) do
     session
-    |> cast(attrs, [:user_id, :token_hash, :refresh_token_hash, :expires_at, :refreshed_at, :ip_address, :user_agent])
+    |> cast(attrs, [
+      :user_id,
+      :token_hash,
+      :refresh_token_hash,
+      :expires_at,
+      :refreshed_at,
+      :ip_address,
+      :user_agent
+    ])
     |> validate_required([:user_id, :token_hash, :refresh_token_hash, :expires_at, :refreshed_at])
     |> assoc_constraint(:user)
   end

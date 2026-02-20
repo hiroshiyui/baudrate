@@ -137,11 +137,12 @@ defmodule Baudrate.SetupTest do
 
   describe "has_permission?/2" do
     setup do
-      {:ok, _} = Setup.complete_setup("My Site", %{
-        "username" => "admin",
-        "password" => "SecurePass1!xyz",
-        "password_confirmation" => "SecurePass1!xyz"
-      })
+      {:ok, _} =
+        Setup.complete_setup("My Site", %{
+          "username" => "admin",
+          "password" => "SecurePass1!xyz",
+          "password_confirmation" => "SecurePass1!xyz"
+        })
 
       :ok
     end
@@ -173,11 +174,12 @@ defmodule Baudrate.SetupTest do
 
   describe "permissions_for_role/1" do
     setup do
-      {:ok, _} = Setup.complete_setup("My Site", %{
-        "username" => "admin",
-        "password" => "SecurePass1!xyz",
-        "password_confirmation" => "SecurePass1!xyz"
-      })
+      {:ok, _} =
+        Setup.complete_setup("My Site", %{
+          "username" => "admin",
+          "password" => "SecurePass1!xyz",
+          "password_confirmation" => "SecurePass1!xyz"
+        })
 
       :ok
     end
@@ -213,11 +215,12 @@ defmodule Baudrate.SetupTest do
     end
 
     test "returns all roles after setup" do
-      {:ok, _} = Setup.complete_setup("My Site", %{
-        "username" => "admin",
-        "password" => "SecurePass1!xyz",
-        "password_confirmation" => "SecurePass1!xyz"
-      })
+      {:ok, _} =
+        Setup.complete_setup("My Site", %{
+          "username" => "admin",
+          "password" => "SecurePass1!xyz",
+          "password_confirmation" => "SecurePass1!xyz"
+        })
 
       roles = Setup.all_roles()
       assert length(roles) == 4

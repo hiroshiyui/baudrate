@@ -38,11 +38,14 @@ defmodule Baudrate.AuthTest do
 
     test "returns error with wrong password" do
       create_user("admin", username: "admin2", password: "SecurePass1!!")
-      assert {:error, :invalid_credentials} = Auth.authenticate_by_password("admin2", "WrongPass1!!")
+
+      assert {:error, :invalid_credentials} =
+               Auth.authenticate_by_password("admin2", "WrongPass1!!")
     end
 
     test "returns error with nonexistent username" do
-      assert {:error, :invalid_credentials} = Auth.authenticate_by_password("nobody", "WrongPass1!!")
+      assert {:error, :invalid_credentials} =
+               Auth.authenticate_by_password("nobody", "WrongPass1!!")
     end
   end
 

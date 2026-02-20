@@ -28,7 +28,12 @@
     </button>
   </.form>
 
-  <form id="recovery-verify-form" action="/auth/recovery-verify" method="post" phx-trigger-action={@trigger_action}>
+  <form
+    id="recovery-verify-form"
+    action="/auth/recovery-verify"
+    method="post"
+    phx-trigger-action={@trigger_action}
+  >
     <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
     <input type="hidden" name="code" value={assigns[:code]} />
   </form>

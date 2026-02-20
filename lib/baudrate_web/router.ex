@@ -37,12 +37,14 @@ defmodule BaudrateWeb.Router do
     plug :fetch_live_flash
     plug :put_root_layout, html: {BaudrateWeb.Layouts, :root}
     plug :protect_from_forgery
+
     plug :put_secure_browser_headers, %{
       "content-security-policy" =>
         "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ws: wss:; frame-ancestors 'none'; form-action 'self'; base-uri 'self'",
       "permissions-policy" => "geolocation=(), microphone=(), camera=()",
       "x-frame-options" => "DENY"
     }
+
     plug BaudrateWeb.Plugs.SetLocale
     plug BaudrateWeb.Plugs.EnsureSetup
     plug BaudrateWeb.Plugs.RefreshSession
