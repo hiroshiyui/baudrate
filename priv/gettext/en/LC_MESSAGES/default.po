@@ -16,18 +16,18 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:120
-#: lib/baudrate_web/components/layouts.ex:132
+#: lib/baudrate_web/components/layouts.ex:126
+#: lib/baudrate_web/components/layouts.ex:138
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:127
+#: lib/baudrate_web/components/layouts.ex:133
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:115
+#: lib/baudrate_web/components/layouts.ex:121
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr ""
@@ -147,6 +147,7 @@ msgstr ""
 
 #: lib/baudrate_web/live/login_live.html.heex:25
 #: lib/baudrate_web/live/setup_live.html.heex:119
+#: lib/baudrate_web/live/totp_reset_live.html.heex:20
 #, elixir-autogen, elixir-format
 msgid "Password"
 msgstr ""
@@ -166,12 +167,12 @@ msgstr ""
 msgid "Retry"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.ex:80
+#: lib/baudrate_web/live/setup_live.ex:93
 #, elixir-autogen, elixir-format
 msgid "Setup completed successfully!"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.ex:89
+#: lib/baudrate_web/live/setup_live.ex:102
 #, elixir-autogen, elixir-format
 msgid "Setup failed. Please try again."
 msgstr ""
@@ -184,6 +185,7 @@ msgid "Site Name"
 msgstr ""
 
 #: lib/baudrate_web/live/login_live.html.heex:10
+#: lib/baudrate_web/live/profile_live.html.heex:7
 #: lib/baudrate_web/live/setup_live.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Username"
@@ -199,7 +201,7 @@ msgstr ""
 msgid "Enter your credentials to continue."
 msgstr ""
 
-#: lib/baudrate_web/live/login_live.ex:72
+#: lib/baudrate_web/live/login_live.ex:85
 #, elixir-autogen, elixir-format
 msgid "Invalid username or password."
 msgstr ""
@@ -209,8 +211,8 @@ msgstr ""
 msgid "Or enter this key manually:"
 msgstr ""
 
-#: lib/baudrate_web/live/totp_setup_live.ex:50
-#: lib/baudrate_web/live/totp_verify_live.ex:33
+#: lib/baudrate_web/live/totp_setup_live.ex:64
+#: lib/baudrate_web/live/totp_verify_live.ex:42
 #, elixir-autogen, elixir-format
 msgid "Please enter a 6-digit code."
 msgstr ""
@@ -231,12 +233,13 @@ msgstr ""
 msgid "Sign In"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:44
-#: lib/baudrate_web/components/layouts.ex:79
+#: lib/baudrate_web/components/layouts.ex:47
+#: lib/baudrate_web/components/layouts.ex:85
 #, elixir-autogen, elixir-format
 msgid "Sign Out"
 msgstr ""
 
+#: lib/baudrate_web/live/profile_live.html.heex:18
 #: lib/baudrate_web/live/totp_verify_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Two-Factor Authentication"
@@ -248,6 +251,7 @@ msgstr ""
 msgid "Verification Code"
 msgstr ""
 
+#: lib/baudrate_web/live/recovery_code_verify_live.html.heex:27
 #: lib/baudrate_web/live/totp_verify_live.html.heex:28
 #, elixir-autogen, elixir-format
 msgid "Verify"
@@ -273,7 +277,7 @@ msgstr ""
 msgid "Your role requires two-factor authentication. Scan the QR code below with your authenticator app."
 msgstr ""
 
-#: lib/baudrate_web/live/login_live.ex:45
+#: lib/baudrate_web/live/login_live.ex:58
 #, elixir-autogen, elixir-format
 msgid "Too many login attempts. Please try again later."
 msgstr ""
@@ -284,13 +288,150 @@ msgid "Unable to connect to database. Check your configuration."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:39
-#: lib/baudrate_web/components/layouts.ex:62
+#: lib/baudrate_web/components/layouts.ex:65
+#: lib/baudrate_web/live/board_live.html.heex:3
+#: lib/baudrate_web/live/home_live.html.heex:9
 #, elixir-autogen, elixir-format
 msgid "Boards"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:36
-#: lib/baudrate_web/components/layouts.ex:59
+#: lib/baudrate_web/components/layouts.ex:62
 #, elixir-autogen, elixir-format
 msgid "Home"
+msgstr ""
+
+#: lib/baudrate_web/live/totp_reset_live.html.heex:70
+#, elixir-autogen, elixir-format
+msgid "Back to Profile"
+msgstr ""
+
+#: lib/baudrate_web/live/recovery_code_verify_live.html.heex:38
+#, elixir-autogen, elixir-format
+msgid "Back to TOTP verification"
+msgstr ""
+
+#: lib/baudrate_web/live/totp_reset_live.html.heex:58
+#, elixir-autogen, elixir-format
+msgid "Continue"
+msgstr ""
+
+#: lib/baudrate_web/live/totp_reset_live.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "Current TOTP Code"
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "Disabled"
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex:29
+#, elixir-autogen, elixir-format
+msgid "Enable TOTP"
+msgstr ""
+
+#: lib/baudrate_web/live/totp_reset_live.html.heex:6
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Enable Two-Factor Authentication"
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex:21
+#, elixir-autogen, elixir-format
+msgid "Enabled"
+msgstr ""
+
+#: lib/baudrate_web/live/recovery_code_verify_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Enter one of your recovery codes to log in."
+msgstr ""
+
+#: lib/baudrate_web/live/totp_reset_live.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "Enter your password and current TOTP code to reset your authenticator."
+msgstr ""
+
+#: lib/baudrate_web/live/totp_reset_live.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "Enter your password to begin setting up two-factor authentication."
+msgstr ""
+
+#: lib/baudrate_web/live/recovery_codes_live.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "I've saved my recovery codes"
+msgstr ""
+
+#: lib/baudrate_web/live/totp_reset_live.ex:85
+#, elixir-autogen, elixir-format
+msgid "Invalid credentials. Please try again."
+msgstr ""
+
+#: lib/baudrate_web/live/totp_verify_live.html.heex:39
+#, elixir-autogen, elixir-format
+msgid "Lost your device? Use a recovery code"
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "Member Since"
+msgstr ""
+
+#: lib/baudrate_web/live/board_live.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "No articles yet."
+msgstr ""
+
+#: lib/baudrate_web/live/recovery_code_verify_live.ex:44
+#, elixir-autogen, elixir-format
+msgid "Please enter a valid recovery code (e.g. a1b2-c3d4)."
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex:44
+#: lib/baudrate_web/components/layouts.ex:82
+#: lib/baudrate_web/live/profile_live.html.heex:3
+#, elixir-autogen, elixir-format
+msgid "Profile"
+msgstr ""
+
+#: lib/baudrate_web/live/recovery_code_verify_live.html.heex:2
+#: lib/baudrate_web/live/recovery_code_verify_live.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Recovery Code"
+msgstr ""
+
+#: lib/baudrate_web/live/recovery_codes_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Recovery Codes"
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex:23
+#: lib/baudrate_web/live/totp_reset_live.html.heex:4
+#: lib/baudrate_web/live/totp_reset_live.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Reset Authenticator"
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "Role"
+msgstr ""
+
+#: lib/baudrate_web/live/recovery_codes_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Save these recovery codes in a safe place. Each code can only be used once. If you lose your authenticator device, you can use one of these codes to log in."
+msgstr ""
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "TOTP QR Code"
+msgstr ""
+
+#: lib/baudrate_web/live/totp_reset_live.ex:47
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Too many failed attempts. Please try again later."
+msgstr ""
+
+#: lib/baudrate_web/live/recovery_codes_live.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "You will not be able to see these codes again!"
 msgstr ""
