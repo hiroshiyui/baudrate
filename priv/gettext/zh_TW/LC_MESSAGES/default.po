@@ -37,34 +37,34 @@ msgstr "找不到網路連線"
 msgid "close"
 msgstr "關閉"
 
-#: lib/baudrate_web/live/setup_live.html.heex:53
+#: lib/baudrate_web/live/setup_live.html.heex:52
 #, elixir-autogen, elixir-format
 msgid "%{count} migration(s) applied"
 msgstr "已套用 %{count} 個遷移"
 
 #: lib/baudrate_web/live/setup_live.html.heex:16
-#: lib/baudrate_web/live/setup_live.html.heex:108
+#: lib/baudrate_web/live/setup_live.html.heex:107
 #, elixir-autogen, elixir-format
 msgid "Admin Account"
 msgstr "管理員帳號"
 
-#: lib/baudrate_web/live/setup_live.html.heex:148
+#: lib/baudrate_web/live/setup_live.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "At least 12 characters"
 msgstr "至少 12 個字元"
 
-#: lib/baudrate_web/live/setup_live.html.heex:92
-#: lib/baudrate_web/live/setup_live.html.heex:228
+#: lib/baudrate_web/live/setup_live.html.heex:91
+#: lib/baudrate_web/live/setup_live.html.heex:227
 #, elixir-autogen, elixir-format
 msgid "Back"
 msgstr "返回"
 
-#: lib/baudrate_web/live/setup_live.html.heex:85
+#: lib/baudrate_web/live/setup_live.html.heex:84
 #, elixir-autogen, elixir-format
 msgid "Choose a name for your application."
 msgstr "為您的應用程式選擇一個名稱。"
 
-#: lib/baudrate_web/live/setup_live.html.heex:232
+#: lib/baudrate_web/live/setup_live.html.heex:231
 #, elixir-autogen, elixir-format
 msgid "Complete Setup"
 msgstr "完成設定"
@@ -74,7 +74,7 @@ msgstr "完成設定"
 msgid "Configure your application before first use."
 msgstr "在首次使用前設定您的應用程式。"
 
-#: lib/baudrate_web/live/setup_live.html.heex:127
+#: lib/baudrate_web/live/setup_live.html.heex:126
 #, elixir-autogen, elixir-format
 msgid "Confirm Password"
 msgstr "確認密碼"
@@ -84,27 +84,27 @@ msgstr "確認密碼"
 msgid "Connected"
 msgstr "已連線"
 
-#: lib/baudrate_web/live/setup_live.html.heex:190
+#: lib/baudrate_web/live/setup_live.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Contains a digit"
 msgstr "包含數字"
 
-#: lib/baudrate_web/live/setup_live.html.heex:162
+#: lib/baudrate_web/live/setup_live.html.heex:161
 #, elixir-autogen, elixir-format
 msgid "Contains a lowercase letter"
 msgstr "包含小寫字母"
 
-#: lib/baudrate_web/live/setup_live.html.heex:204
+#: lib/baudrate_web/live/setup_live.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "Contains a special character"
 msgstr "包含特殊字元"
 
-#: lib/baudrate_web/live/setup_live.html.heex:176
+#: lib/baudrate_web/live/setup_live.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "Contains an uppercase letter"
 msgstr "包含大寫字母"
 
-#: lib/baudrate_web/live/setup_live.html.heex:109
+#: lib/baudrate_web/live/setup_live.html.heex:108
 #, elixir-autogen, elixir-format
 msgid "Create the administrator account."
 msgstr "建立管理員帳號。"
@@ -134,33 +134,34 @@ msgstr "未連線"
 msgid "Initial Setup"
 msgstr "初始設定"
 
-#: lib/baudrate_web/live/setup_live.html.heex:48
+#: lib/baudrate_web/live/setup_live.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Migrations"
 msgstr "資料庫遷移"
 
-#: lib/baudrate_web/live/setup_live.html.heex:73
-#: lib/baudrate_web/live/setup_live.html.heex:95
+#: lib/baudrate_web/live/setup_live.html.heex:72
+#: lib/baudrate_web/live/setup_live.html.heex:94
 #, elixir-autogen, elixir-format
 msgid "Next"
 msgstr "下一步"
 
-#: lib/baudrate_web/live/setup_live.html.heex:120
+#: lib/baudrate_web/live/login_live.html.heex:25
+#: lib/baudrate_web/live/setup_live.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Password"
 msgstr "密碼"
 
-#: lib/baudrate_web/live/setup_live.html.heex:134
+#: lib/baudrate_web/live/setup_live.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "Password requirements:"
 msgstr "密碼要求："
 
-#: lib/baudrate_web/live/setup_live.html.heex:57
+#: lib/baudrate_web/live/setup_live.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Pending migrations"
 msgstr "待執行的遷移"
 
-#: lib/baudrate_web/live/setup_live.html.heex:66
+#: lib/baudrate_web/live/setup_live.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Retry"
 msgstr "重試"
@@ -176,13 +177,107 @@ msgid "Setup failed. Please try again."
 msgstr "設定失敗，請重試。"
 
 #: lib/baudrate_web/live/setup_live.html.heex:13
-#: lib/baudrate_web/live/setup_live.html.heex:83
-#: lib/baudrate_web/live/setup_live.html.heex:88
+#: lib/baudrate_web/live/setup_live.html.heex:82
+#: lib/baudrate_web/live/setup_live.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Site Name"
 msgstr "網站名稱"
 
-#: lib/baudrate_web/live/setup_live.html.heex:113
+#: lib/baudrate_web/live/login_live.html.heex:10
+#: lib/baudrate_web/live/setup_live.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Username"
 msgstr "使用者名稱"
+
+#: lib/baudrate_web/live/totp_verify_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Enter the 6-digit code from your authenticator app."
+msgstr "輸入驗證器應用程式中的 6 位數驗證碼。"
+
+#: lib/baudrate_web/live/login_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Enter your credentials to continue."
+msgstr "輸入您的憑證以繼續。"
+
+#: lib/baudrate_web/live/login_live.ex:72
+#, elixir-autogen, elixir-format
+msgid "Invalid username or password."
+msgstr "使用者名稱或密碼無效。"
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:18
+#, elixir-autogen, elixir-format
+msgid "Or enter this key manually:"
+msgstr "或手動輸入此金鑰："
+
+#: lib/baudrate_web/live/totp_setup_live.ex:50
+#: lib/baudrate_web/live/totp_verify_live.ex:33
+#, elixir-autogen, elixir-format
+msgid "Please enter a 6-digit code."
+msgstr "請輸入 6 位數驗證碼。"
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:7
+#, elixir-autogen, elixir-format
+msgid "Scan the QR code below with your authenticator app to enable two-factor authentication."
+msgstr "使用驗證器應用程式掃描下方的 QR 碼以啟用雙因素驗證。"
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Set Up Two-Factor Authentication"
+msgstr "設定雙因素驗證"
+
+#: lib/baudrate_web/live/login_live.html.heex:2
+#: lib/baudrate_web/live/login_live.html.heex:39
+#, elixir-autogen, elixir-format
+msgid "Sign In"
+msgstr "登入"
+
+#: lib/baudrate_web/live/home_live.html.heex:7
+#, elixir-autogen, elixir-format
+msgid "Sign Out"
+msgstr "登出"
+
+#: lib/baudrate_web/live/totp_verify_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Two-Factor Authentication"
+msgstr "雙因素驗證"
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:27
+#: lib/baudrate_web/live/totp_verify_live.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Verification Code"
+msgstr "驗證碼"
+
+#: lib/baudrate_web/live/totp_verify_live.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Verify"
+msgstr "驗證"
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "Verify and Enable"
+msgstr "驗證並啟用"
+
+#: lib/baudrate_web/live/home_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Welcome, %{username}!"
+msgstr "歡迎，%{username}！"
+
+#: lib/baudrate_web/live/home_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "You are signed in as %{role}."
+msgstr "您已以 %{role} 身分登入。"
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:5
+#, elixir-autogen, elixir-format
+msgid "Your role requires two-factor authentication. Scan the QR code below with your authenticator app."
+msgstr "您的角色需要雙因素驗證。請使用驗證器應用程式掃描下方的 QR 碼。"
+
+#: lib/baudrate_web/live/login_live.ex:45
+#, elixir-autogen, elixir-format
+msgid "Too many login attempts. Please try again later."
+msgstr "登入嘗試次數過多，請稍後再試。"
+
+#: lib/baudrate_web/live/setup_live.html.heex:40
+#, elixir-autogen, elixir-format
+msgid "Unable to connect to database. Check your configuration."
+msgstr "無法連線至資料庫，請檢查您的設定。"

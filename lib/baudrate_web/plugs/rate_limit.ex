@@ -1,0 +1,57 @@
+defmodule BaudrateWeb.Plugs.RateLimit do
+  @moduledoc """
+  Plug for IP-based rate limiting using Hammer.
+
+  Usage in router:
+
+      plug BaudrateWeb.Plugs.RateLimit, action: :login
+      plug BaudrateWeb.Plugs.RateLimit, action: :totp
+
+  Rate limits:
+  - :login — 10 attempts per 5 minutes per IP
+  - :totp  — 15 attempts per 5 minutes per IP
+  """
+
+  import Plug.Conn
+  require Logger
+
+  @behaviour Plug
+
+  @limits %{
+    login: {300_000, 10},
+    totp: {300_000, 15}
+  }
+
+  @impl true
+  def init(opts), do: opts
+
+  @impl true
+  def call(conn, opts) do
+    action = Keyword.fetch!(opts, :action)
+    {scale_ms, limit} = Map.fetch!(@limits, action)
+    ip = remote_ip(conn)
+    bucket = "#{action}:#{ip}"
+
+    case Hammer.check_rate(bucket, scale_ms, limit) do
+      {:allow, _count} ->
+        conn
+
+      {:deny, _limit} ->
+        Logger.warning("rate_limit.denied: action=#{action} ip=#{ip}")
+
+        conn
+        |> put_resp_content_type("text/html")
+        |> send_resp(429, "Too many requests. Please try again later.")
+        |> halt()
+
+      {:error, reason} ->
+        Logger.error("rate_limit.error: action=#{action} reason=#{inspect(reason)}")
+        # Fail open to avoid blocking legitimate users on backend errors
+        conn
+    end
+  end
+
+  defp remote_ip(conn) do
+    conn.remote_ip |> :inet.ntoa() |> to_string()
+  end
+end

@@ -1,0 +1,47 @@
+<div class="mx-auto max-w-sm mt-10">
+  <h1 class="text-2xl font-bold text-center mb-2">{gettext("Sign In")}</h1>
+  <p class="text-center text-base-content/70 mb-8">
+    {gettext("Enter your credentials to continue.")}
+  </p>
+
+  <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
+    <div class="form-control">
+      <label class="label" for="login_username">
+        <span class="label-text">{gettext("Username")}</span>
+      </label>
+      <input
+        type="text"
+        id="login_username"
+        name="login[username]"
+        value={@form[:username].value}
+        class="input input-bordered w-full"
+        autocomplete="username"
+        required
+      />
+    </div>
+
+    <div class="form-control">
+      <label class="label" for="login_password">
+        <span class="label-text">{gettext("Password")}</span>
+      </label>
+      <input
+        type="password"
+        id="login_password"
+        name="login[password]"
+        value={@form[:password].value}
+        class="input input-bordered w-full"
+        autocomplete="current-password"
+        required
+      />
+    </div>
+
+    <button type="submit" class="btn btn-primary w-full">
+      {gettext("Sign In")}
+    </button>
+  </.form>
+
+  <form id="session-form" action="/auth/session" method="post" phx-trigger-action={@trigger_action}>
+    <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+    <input type="hidden" name="token" value={@token} />
+  </form>
+</div>

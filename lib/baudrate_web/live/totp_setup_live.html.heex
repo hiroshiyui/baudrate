@@ -1,0 +1,53 @@
+<div class="mx-auto max-w-sm mt-10">
+  <h1 class="text-2xl font-bold text-center mb-2">{gettext("Set Up Two-Factor Authentication")}</h1>
+  <p class="text-center text-base-content/70 mb-8">
+    <%= if @policy == :required do %>
+      {gettext("Your role requires two-factor authentication. Scan the QR code below with your authenticator app.")}
+    <% else %>
+      {gettext("Scan the QR code below with your authenticator app to enable two-factor authentication.")}
+    <% end %>
+  </p>
+
+  <div class="flex justify-center mb-6">
+    <div class="bg-white p-4 rounded-lg">
+      {raw(@qr_svg)}
+    </div>
+  </div>
+
+  <div class="mb-6">
+    <p class="text-sm text-base-content/70 text-center mb-2">{gettext("Or enter this key manually:")}</p>
+    <div class="bg-base-200 rounded-lg p-3 text-center font-mono text-sm break-all select-all">
+      {@secret_b32}
+    </div>
+  </div>
+
+  <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
+    <div class="form-control">
+      <label class="label" for="totp_code">
+        <span class="label-text">{gettext("Verification Code")}</span>
+      </label>
+      <input
+        type="text"
+        id="totp_code"
+        name="totp[code]"
+        value={@form[:code].value}
+        class="input input-bordered w-full text-center text-2xl tracking-widest"
+        inputmode="numeric"
+        pattern="[0-9]{6}"
+        maxlength="6"
+        autocomplete="one-time-code"
+        autofocus
+        required
+      />
+    </div>
+
+    <button type="submit" class="btn btn-primary w-full">
+      {gettext("Verify and Enable")}
+    </button>
+  </.form>
+
+  <form id="totp-enable-form" action="/auth/totp-enable" method="post" phx-trigger-action={@trigger_action}>
+    <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+    <input type="hidden" name="code" value={assigns[:code]} />
+  </form>
+</div>

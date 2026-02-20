@@ -1,0 +1,36 @@
+<div class="mx-auto max-w-sm mt-10">
+  <h1 class="text-2xl font-bold text-center mb-2">{gettext("Two-Factor Authentication")}</h1>
+  <p class="text-center text-base-content/70 mb-8">
+    {gettext("Enter the 6-digit code from your authenticator app.")}
+  </p>
+
+  <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
+    <div class="form-control">
+      <label class="label" for="totp_code">
+        <span class="label-text">{gettext("Verification Code")}</span>
+      </label>
+      <input
+        type="text"
+        id="totp_code"
+        name="totp[code]"
+        value={@form[:code].value}
+        class="input input-bordered w-full text-center text-2xl tracking-widest"
+        inputmode="numeric"
+        pattern="[0-9]{6}"
+        maxlength="6"
+        autocomplete="one-time-code"
+        autofocus
+        required
+      />
+    </div>
+
+    <button type="submit" class="btn btn-primary w-full">
+      {gettext("Verify")}
+    </button>
+  </.form>
+
+  <form id="totp-verify-form" action="/auth/totp-verify" method="post" phx-trigger-action={@trigger_action}>
+    <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+    <input type="hidden" name="code" value={assigns[:code]} />
+  </form>
+</div>

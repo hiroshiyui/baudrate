@@ -1,19 +1,19 @@
 defmodule BaudrateWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :baudrate
 
-  # The session will be stored in the cookie and signed,
-  # this means its contents can be read but not tampered with.
-  # Set :encryption_salt if you would also like to encrypt it.
+  # The session will be stored in the cookie and both signed and encrypted.
   @session_options [
     store: :cookie,
     key: "_baudrate_key",
     signing_salt: "mse//7wp",
-    same_site: "Lax"
+    encryption_salt: "rK3nP+Qb",
+    same_site: "Lax",
+    max_age: 86_400
   ]
 
   socket "/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [session: @session_options]],
-    longpoll: [connect_info: [session: @session_options]]
+    websocket: [connect_info: [:peer_data, session: @session_options]],
+    longpoll: [connect_info: [:peer_data, session: @session_options]]
 
   # Serve at "/" the static files from "priv/static" directory.
   #

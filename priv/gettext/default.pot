@@ -37,34 +37,34 @@ msgstr ""
 msgid "close"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:53
+#: lib/baudrate_web/live/setup_live.html.heex:52
 #, elixir-autogen, elixir-format
 msgid "%{count} migration(s) applied"
 msgstr ""
 
 #: lib/baudrate_web/live/setup_live.html.heex:16
-#: lib/baudrate_web/live/setup_live.html.heex:108
+#: lib/baudrate_web/live/setup_live.html.heex:107
 #, elixir-autogen, elixir-format
 msgid "Admin Account"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:148
+#: lib/baudrate_web/live/setup_live.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "At least 12 characters"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:92
-#: lib/baudrate_web/live/setup_live.html.heex:228
+#: lib/baudrate_web/live/setup_live.html.heex:91
+#: lib/baudrate_web/live/setup_live.html.heex:227
 #, elixir-autogen, elixir-format
 msgid "Back"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:85
+#: lib/baudrate_web/live/setup_live.html.heex:84
 #, elixir-autogen, elixir-format
 msgid "Choose a name for your application."
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:232
+#: lib/baudrate_web/live/setup_live.html.heex:231
 #, elixir-autogen, elixir-format
 msgid "Complete Setup"
 msgstr ""
@@ -74,7 +74,7 @@ msgstr ""
 msgid "Configure your application before first use."
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:127
+#: lib/baudrate_web/live/setup_live.html.heex:126
 #, elixir-autogen, elixir-format
 msgid "Confirm Password"
 msgstr ""
@@ -84,27 +84,27 @@ msgstr ""
 msgid "Connected"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:190
+#: lib/baudrate_web/live/setup_live.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Contains a digit"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:162
+#: lib/baudrate_web/live/setup_live.html.heex:161
 #, elixir-autogen, elixir-format
 msgid "Contains a lowercase letter"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:204
+#: lib/baudrate_web/live/setup_live.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "Contains a special character"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:176
+#: lib/baudrate_web/live/setup_live.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "Contains an uppercase letter"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:109
+#: lib/baudrate_web/live/setup_live.html.heex:108
 #, elixir-autogen, elixir-format
 msgid "Create the administrator account."
 msgstr ""
@@ -134,33 +134,34 @@ msgstr ""
 msgid "Initial Setup"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:48
+#: lib/baudrate_web/live/setup_live.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Migrations"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:73
-#: lib/baudrate_web/live/setup_live.html.heex:95
+#: lib/baudrate_web/live/setup_live.html.heex:72
+#: lib/baudrate_web/live/setup_live.html.heex:94
 #, elixir-autogen, elixir-format
 msgid "Next"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:120
+#: lib/baudrate_web/live/login_live.html.heex:25
+#: lib/baudrate_web/live/setup_live.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Password"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:134
+#: lib/baudrate_web/live/setup_live.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "Password requirements:"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:57
+#: lib/baudrate_web/live/setup_live.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Pending migrations"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:66
+#: lib/baudrate_web/live/setup_live.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Retry"
 msgstr ""
@@ -176,13 +177,107 @@ msgid "Setup failed. Please try again."
 msgstr ""
 
 #: lib/baudrate_web/live/setup_live.html.heex:13
-#: lib/baudrate_web/live/setup_live.html.heex:83
-#: lib/baudrate_web/live/setup_live.html.heex:88
+#: lib/baudrate_web/live/setup_live.html.heex:82
+#: lib/baudrate_web/live/setup_live.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Site Name"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.html.heex:113
+#: lib/baudrate_web/live/login_live.html.heex:10
+#: lib/baudrate_web/live/setup_live.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Username"
+msgstr ""
+
+#: lib/baudrate_web/live/totp_verify_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Enter the 6-digit code from your authenticator app."
+msgstr ""
+
+#: lib/baudrate_web/live/login_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Enter your credentials to continue."
+msgstr ""
+
+#: lib/baudrate_web/live/login_live.ex:72
+#, elixir-autogen, elixir-format
+msgid "Invalid username or password."
+msgstr ""
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:18
+#, elixir-autogen, elixir-format
+msgid "Or enter this key manually:"
+msgstr ""
+
+#: lib/baudrate_web/live/totp_setup_live.ex:50
+#: lib/baudrate_web/live/totp_verify_live.ex:33
+#, elixir-autogen, elixir-format
+msgid "Please enter a 6-digit code."
+msgstr ""
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:7
+#, elixir-autogen, elixir-format
+msgid "Scan the QR code below with your authenticator app to enable two-factor authentication."
+msgstr ""
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Set Up Two-Factor Authentication"
+msgstr ""
+
+#: lib/baudrate_web/live/login_live.html.heex:2
+#: lib/baudrate_web/live/login_live.html.heex:39
+#, elixir-autogen, elixir-format
+msgid "Sign In"
+msgstr ""
+
+#: lib/baudrate_web/live/home_live.html.heex:7
+#, elixir-autogen, elixir-format
+msgid "Sign Out"
+msgstr ""
+
+#: lib/baudrate_web/live/totp_verify_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Two-Factor Authentication"
+msgstr ""
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:27
+#: lib/baudrate_web/live/totp_verify_live.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Verification Code"
+msgstr ""
+
+#: lib/baudrate_web/live/totp_verify_live.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Verify"
+msgstr ""
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "Verify and Enable"
+msgstr ""
+
+#: lib/baudrate_web/live/home_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Welcome, %{username}!"
+msgstr ""
+
+#: lib/baudrate_web/live/home_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "You are signed in as %{role}."
+msgstr ""
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:5
+#, elixir-autogen, elixir-format
+msgid "Your role requires two-factor authentication. Scan the QR code below with your authenticator app."
+msgstr ""
+
+#: lib/baudrate_web/live/login_live.ex:45
+#, elixir-autogen, elixir-format
+msgid "Too many login attempts. Please try again later."
+msgstr ""
+
+#: lib/baudrate_web/live/setup_live.html.heex:40
+#, elixir-autogen, elixir-format
+msgid "Unable to connect to database. Check your configuration."
 msgstr ""

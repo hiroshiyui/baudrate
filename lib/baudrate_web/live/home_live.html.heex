@@ -1,0 +1,9 @@
+<div class="text-center">
+  <h1 class="text-2xl font-bold mb-4">{gettext("Welcome, %{username}!", username: @current_user.username)}</h1>
+  <p class="text-base-content/70 mb-8">
+    {gettext("You are signed in as %{role}.", role: @current_user.role.name)}
+  </p>
+  <.link href="/logout" method="delete" class="btn btn-outline">
+    {gettext("Sign Out")}
+  </.link>
+</div>

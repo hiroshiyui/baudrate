@@ -35,4 +35,42 @@ defmodule BaudrateWeb.ConnCase do
     Baudrate.DataCase.setup_sandbox(tags)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
+
+  @doc """
+  Seeds roles/permissions if needed and creates a user with the given role.
+  Returns the user with role preloaded.
+  """
+  def setup_user(role_name) do
+    import Ecto.Query
+    alias Baudrate.Repo
+    alias Baudrate.Setup
+    alias Baudrate.Setup.{Role, User}
+
+    # Seed roles if they don't exist
+    unless Repo.exists?(from(r in Role, where: r.name == "admin")) do
+      Setup.seed_roles_and_permissions()
+    end
+
+    role = Repo.one!(from(r in Role, where: r.name == ^role_name))
+
+    {:ok, user} =
+      %User{}
+      |> User.registration_changeset(%{
+        "username" => "test_#{role_name}_#{System.unique_integer([:positive])}",
+        "password" => "Password123!x",
+        "password_confirmation" => "Password123!x",
+        "role_id" => role.id
+      })
+      |> Repo.insert()
+
+    Repo.preload(user, :role)
+  end
+
+  @doc """
+  Sets session keys for a fully authenticated user.
+  """
+  def log_in_user(conn, user) do
+    conn
+    |> Plug.Test.init_test_session(%{user_id: user.id, totp_verified: true})
+  end
 end
