@@ -254,6 +254,42 @@ defmodule Baudrate.AuthTest do
     end
   end
 
+  describe "update_avatar/2" do
+    test "sets avatar_id on user" do
+      user = create_user("user")
+      assert is_nil(user.avatar_id)
+
+      {:ok, updated} = Auth.update_avatar(user, "abc123def456")
+      assert updated.avatar_id == "abc123def456"
+    end
+
+    test "replaces existing avatar_id" do
+      user = create_user("user")
+      {:ok, user} = Auth.update_avatar(user, "old_id")
+      {:ok, updated} = Auth.update_avatar(user, "new_id")
+      assert updated.avatar_id == "new_id"
+    end
+  end
+
+  describe "remove_avatar/1" do
+    test "sets avatar_id to nil" do
+      user = create_user("user")
+      {:ok, user} = Auth.update_avatar(user, "some_avatar_id")
+      assert user.avatar_id == "some_avatar_id"
+
+      {:ok, updated} = Auth.remove_avatar(user)
+      assert is_nil(updated.avatar_id)
+    end
+
+    test "is safe when avatar_id is already nil" do
+      user = create_user("user")
+      assert is_nil(user.avatar_id)
+
+      {:ok, updated} = Auth.remove_avatar(user)
+      assert is_nil(updated.avatar_id)
+    end
+  end
+
   describe "get_user/1" do
     test "returns user with role preloaded" do
       user = create_user("admin")
