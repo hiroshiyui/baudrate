@@ -208,10 +208,6 @@ mix test
 
 This project is licensed under the [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.html) (AGPL-3.0).
 
-### Third-party Licenses
-
-- **[DotGothic16](https://github.com/fontworks-fonts/DotGothic16)** font by Fontworks Inc. is licensed under the [SIL Open Font License 1.1](https://github.com/fontworks-fonts/DotGothic16/blob/master/OFL.txt).
-
 ## Acknowledges
 
 Built with these excellent open-source projects:
