@@ -159,13 +159,15 @@ defmodule BaudrateWeb.SessionController do
 
       Auth.valid_totp?(secret, code) ->
         case Auth.enable_totp(user, secret) do
-          {:ok, _user} ->
+          {:ok, updated_user} ->
             Logger.info("auth.totp_enabled: user_id=#{user.id} ip=#{remote_ip(conn)}")
+            raw_codes = Auth.generate_recovery_codes(updated_user)
 
             conn
             |> delete_session(:totp_setup_secret)
             |> delete_session(:totp_attempts)
-            |> establish_session(user)
+            |> put_session(:recovery_codes, raw_codes)
+            |> establish_session(updated_user, "/profile/recovery-codes")
 
           {:error, _changeset} ->
             Logger.error("auth.totp_enable_failed: user_id=#{user.id} ip=#{remote_ip(conn)}")
@@ -185,6 +187,88 @@ defmodule BaudrateWeb.SessionController do
     end
   end
 
+  def totp_reset(conn, %{"token" => token}) do
+    case Phoenix.Token.verify(conn, "totp_reset", token, max_age: 60) do
+      {:ok, %{user_id: user_id, mode: mode}} ->
+        user = Auth.get_user(user_id)
+
+        if user do
+          Logger.info("auth.totp_reset_start: user_id=#{user.id} mode=#{mode} ip=#{remote_ip(conn)}")
+
+          # Delete all existing sessions for this user
+          Auth.delete_all_sessions_for_user(user.id)
+
+          # Disable TOTP if resetting (not enabling for first time)
+          if mode == :reset do
+            Auth.disable_totp(user)
+          end
+
+          # Generate new TOTP secret and put in session for /totp/setup
+          secret = Auth.generate_totp_secret()
+
+          conn
+          |> configure_session(renew: true)
+          |> put_session(:user_id, user.id)
+          |> put_session(:totp_setup_secret, secret)
+          |> delete_session(:totp_attempts)
+          |> redirect(to: "/totp/setup")
+        else
+          conn
+          |> put_flash(:error, "Invalid session.")
+          |> redirect(to: "/login")
+        end
+
+      {:error, _reason} ->
+        Logger.warning("auth.totp_reset_invalid_token: ip=#{remote_ip(conn)}")
+
+        conn
+        |> put_flash(:error, "Invalid or expired token.")
+        |> redirect(to: "/profile")
+    end
+  end
+
+  def recovery_verify(conn, %{"code" => code}) do
+    user_id = get_session(conn, :user_id)
+    user = user_id && Auth.get_user(user_id)
+    attempts = get_session(conn, :totp_attempts) || 0
+
+    cond do
+      is_nil(user) ->
+        conn
+        |> put_flash(:error, "Session expired. Please log in again.")
+        |> redirect(to: "/login")
+
+      attempts >= @max_totp_attempts ->
+        Logger.warning("auth.recovery_lockout: user_id=#{user.id} ip=#{remote_ip(conn)}")
+
+        conn
+        |> configure_session(drop: true)
+        |> put_flash(:error, "Too many failed attempts. Please log in again.")
+        |> redirect(to: "/login")
+
+      Auth.verify_recovery_code(user, code) == :ok ->
+        Logger.info("auth.recovery_code_used: user_id=#{user.id} ip=#{remote_ip(conn)}")
+
+        conn
+        |> delete_session(:totp_attempts)
+        |> establish_session(user)
+
+      true ->
+        Logger.warning("auth.recovery_verify_failure: user_id=#{user.id} attempt=#{attempts + 1} ip=#{remote_ip(conn)}")
+
+        conn
+        |> put_session(:totp_attempts, attempts + 1)
+        |> put_flash(:error, "Invalid recovery code. Please try again.")
+        |> redirect(to: "/totp/recovery")
+    end
+  end
+
+  def ack_recovery_codes(conn, _params) do
+    conn
+    |> delete_session(:recovery_codes)
+    |> redirect(to: "/")
+  end
+
   def delete(conn, _params) do
     session_token = get_session(conn, :session_token)
 
@@ -200,8 +284,8 @@ defmodule BaudrateWeb.SessionController do
 
   # Creates a server-side session, stores session_token and refresh_token
   # in the cookie, clears all intermediate auth keys (user_id, totp_*),
-  # renews the session ID to prevent fixation, and redirects to /.
-  defp establish_session(conn, user) do
+  # renews the session ID to prevent fixation, and redirects to the given path.
+  defp establish_session(conn, user, redirect_to \\ "/") do
     opts = [
       ip_address: remote_ip(conn),
       user_agent: get_req_header(conn, "user-agent") |> List.first()
@@ -218,7 +302,7 @@ defmodule BaudrateWeb.SessionController do
     |> put_session(:session_token, session_token)
     |> put_session(:refresh_token, refresh_token)
     |> put_session(:refreshed_at, DateTime.utc_now() |> DateTime.to_iso8601())
-    |> redirect(to: "/")
+    |> redirect(to: redirect_to)
   end
 
   defp remote_ip(conn) do

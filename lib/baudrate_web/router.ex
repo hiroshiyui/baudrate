@@ -82,6 +82,7 @@ defmodule BaudrateWeb.Router do
       on_mount: [{BaudrateWeb.AuthHooks, :require_password_auth}] do
       live "/verify", TotpVerifyLive
       live "/setup", TotpSetupLive
+      live "/recovery", RecoveryCodeVerifyLive
     end
   end
 
@@ -97,6 +98,9 @@ defmodule BaudrateWeb.Router do
 
     post "/totp-verify", SessionController, :totp_verify
     post "/totp-enable", SessionController, :totp_enable
+    post "/totp-reset", SessionController, :totp_reset
+    post "/recovery-verify", SessionController, :recovery_verify
+    post "/ack-recovery-codes", SessionController, :ack_recovery_codes
   end
 
   # Authenticated routes
@@ -109,6 +113,8 @@ defmodule BaudrateWeb.Router do
       live "/", HomeLive
       live "/boards/:slug", BoardLive
       live "/profile", ProfileLive
+      live "/profile/totp-reset", TotpResetLive
+      live "/profile/recovery-codes", RecoveryCodesLive
     end
 
     delete "/logout", SessionController, :delete

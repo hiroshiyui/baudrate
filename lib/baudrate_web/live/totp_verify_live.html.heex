@@ -33,4 +33,10 @@
     <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
     <input type="hidden" name="code" value={assigns[:code]} />
   </form>
+
+  <div class="text-center mt-4">
+    <.link navigate="/totp/recovery" class="link link-hover text-sm">
+      {gettext("Lost your device? Use a recovery code")}
+    </.link>
+  </div>
 </div>
