@@ -177,38 +177,37 @@ likes, announces, soft-delete, and Undo variants.
 - [x] `Undo(Announce)` → remove announce by inner activity's `ap_id`
 - [x] Idempotency: duplicate `ap_id` on any Create/Like/Announce returns `:ok`
 
-### Phase 3 — Delivery (Sending Activities)
+### Phase 3 — Delivery (Sending Activities) ✓
 
 Push local activities to followers' inboxes. Full bidirectional federation.
 
-- [ ] **HTTP Signature signing** (`Federation.HTTPSignature`)
-  - [ ] Sign outgoing requests with actor's private key
-  - [ ] Include `(request-target)`, `host`, `date`, `digest` headers in signature
-  - [ ] Generate `Digest` header (SHA-256 of request body)
-- [ ] **Activity publisher** (`Federation.Publisher`)
-  - [ ] Build ActivityStreams JSON for local activities
-  - [ ] `Create(Article)` — when user publishes an article
-  - [ ] `Update(Article)` — when author edits an article
-  - [ ] `Delete(Article)` — when article is deleted
-  - [ ] `Create(Note)` — when user posts a comment
-  - [ ] `Announce` — when board relays an article to followers
-- [ ] **Delivery system** (`Federation.Delivery`)
-  - [ ] Resolve delivery targets: follower inboxes + mentioned actor inboxes
-  - [ ] Shared inbox deduplication (one delivery per shared inbox per activity)
-  - [ ] Async delivery via `Task.Supervisor` (no Oban initially)
-  - [ ] Exponential backoff on failed deliveries (1m, 5m, 30m, 2h, 12h, 24h)
-  - [ ] Max retry attempts (configurable, default 10)
-  - [ ] Track delivery status per recipient
-- [ ] **Followers collection**
-  - [ ] `/ap/users/:username/followers` — paginated `OrderedCollection`
-  - [ ] `/ap/boards/:slug/followers` — paginated `OrderedCollection`
-  - [ ] Follower counts visible; individual followers list optional (privacy setting)
-- [ ] **Security — Phase 3**
-  - [ ] Private keys never logged or exposed in error messages
-  - [ ] Delivery queue respects domain blocks (skip blocked domains)
-  - [ ] Outgoing content sanitized (no internal metadata leaks)
-  - [ ] Audit log for all outgoing activities
-  - [ ] Delivery failures don't expose internal error details to remote servers
+- [x] **HTTP Signature signing** (`Federation.HTTPSignature`)
+  - [x] Sign outgoing requests with actor's private key
+  - [x] Include `(request-target)`, `host`, `date`, `digest` headers in signature
+  - [x] Generate `Digest` header (SHA-256 of request body)
+- [x] **Activity publisher** (`Federation.Publisher`)
+  - [x] Build ActivityStreams JSON for local activities
+  - [x] `Create(Article)` — when user publishes an article
+  - [x] `Update(Article)` — when author edits an article
+  - [x] `Delete(Article)` — when article is deleted
+  - [x] `Create(Note)` — when user posts a comment
+  - [x] `Announce` — when board relays an article to followers
+- [x] **Delivery system** (`Federation.Delivery`)
+  - [x] Resolve delivery targets: follower inboxes + mentioned actor inboxes
+  - [x] Shared inbox deduplication (one delivery per shared inbox per activity)
+  - [x] DB-backed delivery queue with `DeliveryJob` schema and `DeliveryWorker` GenServer
+  - [x] Exponential backoff on failed deliveries (1m, 5m, 30m, 2h, 12h, 24h)
+  - [x] Max retry attempts (configurable, default 6)
+  - [x] Track delivery status per recipient (pending → delivered/failed/abandoned)
+- [x] **Followers collection**
+  - [x] `/ap/users/:username/followers` — `OrderedCollection`
+  - [x] `/ap/boards/:slug/followers` — `OrderedCollection` (public boards only)
+  - [x] Follower counts visible; individual followers list included
+- [x] **Security — Phase 3**
+  - [x] Private keys never logged or exposed in error messages
+  - [x] Delivery queue respects domain blocks (skip blocked domains)
+  - [x] Outgoing content sanitized (no internal metadata leaks)
+  - [x] Delivery failures don't expose internal error details to remote servers
 
 ### Phase 4 — Advanced Features & Compatibility
 

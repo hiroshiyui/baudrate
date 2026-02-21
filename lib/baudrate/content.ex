@@ -6,6 +6,11 @@ defmodule Baudrate.Content do
   cross-posted to multiple boards through the `board_articles` join table.
   Comments support threading via `parent_id`. Likes track article favorites
   from both local users and remote actors.
+
+  Content mutations that are federation-relevant (`create_article/2`,
+  `soft_delete_article/1`) automatically enqueue delivery of the
+  corresponding ActivityPub activities to remote followers via
+  `Federation.Publisher` and `Federation.TaskSupervisor`.
   """
 
   import Ecto.Query
@@ -83,25 +88,35 @@ defmodule Baudrate.Content do
     * `board_ids` — list of board IDs to place the article in
   """
   def create_article(attrs, board_ids) when is_list(board_ids) do
-    Ecto.Multi.new()
-    |> Ecto.Multi.insert(:article, Article.changeset(%Article{}, attrs))
-    |> Ecto.Multi.run(:board_articles, fn repo, %{article: article} ->
-      now = DateTime.utc_now() |> DateTime.truncate(:second)
+    result =
+      Ecto.Multi.new()
+      |> Ecto.Multi.insert(:article, Article.changeset(%Article{}, attrs))
+      |> Ecto.Multi.run(:board_articles, fn repo, %{article: article} ->
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-      entries =
-        Enum.map(board_ids, fn board_id ->
-          %{board_id: board_id, article_id: article.id, inserted_at: now, updated_at: now}
-        end)
+        entries =
+          Enum.map(board_ids, fn board_id ->
+            %{board_id: board_id, article_id: article.id, inserted_at: now, updated_at: now}
+          end)
 
-      {count, _} = repo.insert_all(BoardArticle, entries)
+        {count, _} = repo.insert_all(BoardArticle, entries)
 
-      if count == length(board_ids) do
-        {:ok, count}
-      else
-        {:error, :board_articles_insert_mismatch}
-      end
-    end)
-    |> Repo.transaction()
+        if count == length(board_ids) do
+          {:ok, count}
+        else
+          {:error, :board_articles_insert_mismatch}
+        end
+      end)
+      |> Repo.transaction()
+
+    with {:ok, %{article: article}} <- result do
+      schedule_federation_task(fn ->
+        article = Repo.preload(article, [:boards, :user])
+        Baudrate.Federation.Publisher.publish_article_created(article)
+      end)
+
+      result
+    end
   end
 
   @doc """
@@ -172,9 +187,22 @@ defmodule Baudrate.Content do
   Soft-deletes an article by setting `deleted_at`.
   """
   def soft_delete_article(%Article{} = article) do
-    article
-    |> Article.soft_delete_changeset()
-    |> Repo.update()
+    result =
+      article
+      |> Article.soft_delete_changeset()
+      |> Repo.update()
+
+    with {:ok, deleted_article} <- result do
+      # Only publish deletion for local articles (those with a user_id)
+      if deleted_article.user_id do
+        schedule_federation_task(fn ->
+          deleted_article = Repo.preload(deleted_article, [:boards, :user])
+          Baudrate.Federation.Publisher.publish_article_deleted(deleted_article)
+        end)
+      end
+
+      result
+    end
   end
 
   @doc """
@@ -260,6 +288,12 @@ defmodule Baudrate.Content do
   def count_article_likes(%Article{id: article_id}) do
     Repo.one(from(l in ArticleLike, where: l.article_id == ^article_id, select: count(l.id))) ||
       0
+  end
+
+  # --- Federation Hooks ---
+
+  defp schedule_federation_task(fun) do
+    Task.Supervisor.start_child(Baudrate.Federation.TaskSupervisor, fun)
   end
 
   # --- SysOp Board ---

@@ -44,7 +44,9 @@ lib/
 │   ├── federation/
 │   │   ├── actor_resolver.ex    # Remote actor fetching and caching (24h TTL)
 │   │   ├── announce.ex          # Announce (boost) schema
-│   │   ├── delivery.ex          # Outgoing activity delivery (Accept, etc.)
+│   │   ├── delivery.ex          # Outgoing activity delivery (Accept, queue, retry)
+│   │   ├── delivery_job.ex      # DeliveryJob schema (delivery queue records)
+│   │   ├── delivery_worker.ex   # GenServer: polls delivery queue, retries failed jobs
 │   │   ├── follower.ex          # Follower schema (remote → local follows)
 │   │   ├── http_client.ex       # SSRF-safe HTTP client for remote fetches
 │   │   ├── http_signature.ex    # HTTP Signature signing and verification
@@ -52,6 +54,7 @@ lib/
 │   │   ├── key_store.ex         # RSA-2048 keypair management for actors
 │   │   ├── key_vault.ex         # AES-256-GCM encryption for private keys at rest
 │   │   ├── remote_actor.ex      # RemoteActor schema (cached remote profiles)
+│   │   ├── publisher.ex         # ActivityStreams JSON builders for outgoing activities
 │   │   ├── sanitizer.ex         # Allowlist-based HTML sanitizer for federated content
 │   │   └── validator.ex         # AP input validation (URLs, sizes, attribution)
 │   ├── setup.ex                 # Setup context: first-run wizard, RBAC seeding, settings
@@ -256,6 +259,21 @@ The `Baudrate.Federation` context handles all federation logic.
 - `Update` — content and actor profile updates (with authorship check)
 - `Delete` — soft-delete with authorship verification
 
+**Outbound delivery** (via `Publisher` + `Delivery` + `DeliveryWorker`):
+- `Create(Article)` — automatically enqueued when a local user publishes an article
+- `Delete` with `Tombstone` — enqueued when an article is soft-deleted
+- `Announce` — board actor announces articles to board followers
+- `Update(Article)` — for article edits (builder available, not yet hooked)
+- Delivery targets: followers of the article's author + followers of all public boards
+- Shared inbox deduplication: multiple followers at the same instance → one delivery
+- DB-backed queue (`delivery_jobs` table) with `DeliveryWorker` GenServer polling
+- Exponential backoff: 1m → 5m → 30m → 2h → 12h → 24h, then abandoned after 6 attempts
+- Domain blocklist respected: deliveries to blocked domains are skipped
+
+**Followers collection endpoints:**
+- `/ap/users/:username/followers` — `OrderedCollection` of follower URIs
+- `/ap/boards/:slug/followers` — `OrderedCollection` (public boards only, 404 for private)
+
 **Security:**
 - HTTP Signature verification on all inbox requests
 - HTML sanitization (allowlist-based) before database storage
@@ -332,6 +350,7 @@ Baudrate.Supervisor (one_for_one)
 ├── Phoenix.PubSub                     # PubSub for LiveView
 ├── Baudrate.Auth.SessionCleaner       # Hourly expired session purge
 ├── Baudrate.Federation.TaskSupervisor # Async federation delivery tasks
+├── Baudrate.Federation.DeliveryWorker # Polls delivery queue every 60s
 └── BaudrateWeb.Endpoint               # HTTP server
 ```
 

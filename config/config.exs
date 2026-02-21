@@ -72,7 +72,11 @@ config :baudrate, Baudrate.Federation,
   max_content_size: 65_536,
   http_connect_timeout: 10_000,
   http_receive_timeout: 30_000,
-  max_redirects: 3
+  max_redirects: 3,
+  delivery_max_attempts: 6,
+  delivery_poll_interval: 60_000,
+  delivery_batch_size: 50,
+  delivery_backoff_schedule: [60, 300, 1800, 7200, 43200, 86400]
 
 config :gettext, default_locale: "en"
 config :baudrate, BaudrateWeb.Gettext, default_locale: "en", locales: ~w(en zh_TW)

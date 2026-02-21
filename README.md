@@ -16,7 +16,10 @@ Baudrate is a BBS built with [Elixir](https://elixir-lang.org/) and [Phoenix](ht
 - **ActivityPub federation** -- federate with Mastodon, Lemmy, and the Fediverse
   - WebFinger and NodeInfo discovery
   - Incoming follows, comments, likes, boosts, updates, and deletes
-  - HTTP Signature verification, HTML sanitization, SSRF-safe fetches
+  - Outbound delivery of articles, deletes, and announces to remote followers
+  - DB-backed delivery queue with exponential backoff retry
+  - Shared inbox deduplication for efficient delivery
+  - HTTP Signature verification and signing, HTML sanitization, SSRF-safe fetches
   - Domain blocklist for instance-level moderation
 - **Avatar system** -- upload, crop, WebP conversion with server-side security
 - **Admin dashboard** -- site settings, registration mode, pending user approval

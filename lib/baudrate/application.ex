@@ -14,6 +14,7 @@ defmodule Baudrate.Application do
       {Phoenix.PubSub, name: Baudrate.PubSub},
       Baudrate.Auth.SessionCleaner,
       {Task.Supervisor, name: Baudrate.Federation.TaskSupervisor},
+      Baudrate.Federation.DeliveryWorker,
       # Start to serve requests, typically the last entry
       BaudrateWeb.Endpoint
     ]

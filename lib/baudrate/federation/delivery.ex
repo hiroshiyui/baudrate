@@ -1,17 +1,32 @@
 defmodule Baudrate.Federation.Delivery do
   @moduledoc """
-  Minimal delivery module for sending Accept(Follow) responses.
+  Outgoing activity delivery for ActivityPub federation.
 
-  Signs the outgoing request with the local actor's private key
-  and POSTs to the remote actor's inbox.
+  Handles both immediate delivery (e.g., `Accept(Follow)`) and queued
+  delivery via `DeliveryJob` records. The queue provides retry with
+  exponential backoff for reliable delivery to remote inboxes.
+
+  ## Delivery Flow
+
+  1. Content hook calls `enqueue_for_article/3` or `enqueue_for_followers/2`
+  2. Follower inboxes are resolved, deduplicated by shared inbox
+  3. `DeliveryJob` records are created (one per unique inbox)
+  4. `DeliveryWorker` polls and calls `deliver_one/1` for each job
+  5. Job is signed with the actor's private key and POSTed to the inbox
+  6. On failure, job is rescheduled with exponential backoff
   """
 
   require Logger
 
+  import Ecto.Query
+
+  alias Baudrate.Repo
   alias Baudrate.Federation
-  alias Baudrate.Federation.{HTTPClient, HTTPSignature, KeyStore}
+  alias Baudrate.Federation.{DeliveryJob, Follower, HTTPClient, HTTPSignature, KeyStore, Validator}
 
   @as_context "https://www.w3.org/ns/activitystreams"
+
+  # --- Immediate Delivery (Accept) ---
 
   @doc """
   Sends an Accept(Follow) activity to the remote actor's inbox.
@@ -41,7 +56,157 @@ defmodule Baudrate.Federation.Delivery do
     }
   end
 
-  defp get_private_key(actor_uri) do
+  # --- Queued Delivery ---
+
+  @doc """
+  Creates `DeliveryJob` records for each unique inbox URL.
+
+  Deduplicates by inbox URL so that multiple followers on the same
+  instance sharing an inbox only result in one delivery.
+  """
+  def enqueue(activity_json, actor_uri, inboxes) when is_list(inboxes) do
+    activity_text =
+      case activity_json do
+        json when is_binary(json) -> json
+        map when is_map(map) -> Jason.encode!(map)
+      end
+
+    unique_inboxes = Enum.uniq(inboxes)
+
+    Enum.each(unique_inboxes, fn inbox_url ->
+      %DeliveryJob{}
+      |> DeliveryJob.create_changeset(%{
+        activity_json: activity_text,
+        inbox_url: inbox_url,
+        actor_uri: actor_uri
+      })
+      |> Repo.insert!()
+    end)
+
+    {:ok, length(unique_inboxes)}
+  end
+
+  @doc """
+  Signs and POSTs a delivery job to its target inbox.
+
+  On success, marks the job as delivered. On failure, marks it as
+  failed with exponential backoff scheduling.
+  """
+  def deliver_one(%DeliveryJob{} = job) do
+    # Check domain blocklist before delivery
+    inbox_uri = URI.parse(job.inbox_url)
+
+    if inbox_uri.host && Validator.domain_blocked?(inbox_uri.host) do
+      Logger.info("federation.delivery_skip: inbox=#{job.inbox_url} reason=domain_blocked")
+
+      job
+      |> DeliveryJob.mark_abandoned("domain_blocked")
+      |> Repo.update()
+    else
+      case do_deliver(job) do
+        {:ok, _response} ->
+          Logger.info("federation.delivery_ok: inbox=#{job.inbox_url}")
+
+          job
+          |> DeliveryJob.mark_delivered()
+          |> Repo.update()
+
+        {:error, reason} ->
+          error_msg = inspect(reason)
+          Logger.warning("federation.delivery_fail: inbox=#{job.inbox_url} error=#{error_msg}")
+
+          job
+          |> DeliveryJob.mark_failed(error_msg)
+          |> Repo.update()
+      end
+    end
+  end
+
+  defp do_deliver(%DeliveryJob{} = job) do
+    with {:ok, private_key_pem} <- get_private_key(job.actor_uri) do
+      key_id = "#{job.actor_uri}#main-key"
+      headers = HTTPSignature.sign(:post, job.inbox_url, job.activity_json, private_key_pem, key_id)
+      header_list = headers_to_list(headers)
+      HTTPClient.post(job.inbox_url, job.activity_json, header_list)
+    end
+  end
+
+  @doc """
+  Returns inbox URLs for all followers of the given actor URI.
+
+  Uses shared inbox when available, falls back to individual inbox.
+  This provides shared inbox deduplication — multiple followers at the
+  same instance result in a single inbox URL.
+  """
+  def resolve_follower_inboxes(actor_uri) do
+    from(f in Follower,
+      where: f.actor_uri == ^actor_uri,
+      join: ra in assoc(f, :remote_actor),
+      select: {ra.inbox, ra.shared_inbox}
+    )
+    |> Repo.all()
+    |> Enum.map(fn {inbox, shared_inbox} ->
+      if shared_inbox && shared_inbox != "", do: shared_inbox, else: inbox
+    end)
+    |> Enum.uniq()
+  end
+
+  @doc """
+  Resolves follower inboxes for the actor and enqueues delivery jobs.
+  """
+  def enqueue_for_followers(activity_json, actor_uri) do
+    inboxes = resolve_follower_inboxes(actor_uri)
+
+    if inboxes != [] do
+      enqueue(activity_json, actor_uri, inboxes)
+    else
+      {:ok, 0}
+    end
+  end
+
+  @doc """
+  Enqueues delivery for an article to all relevant inboxes.
+
+  Resolves followers of both the article's author and all public boards
+  the article is posted to, deduplicates by shared inbox, and creates
+  delivery jobs.
+  """
+  def enqueue_for_article(activity_json, actor_uri, article) do
+    article = Repo.preload(article, [:boards, :user])
+
+    # Collect inboxes from user followers
+    user_uri = Federation.actor_uri(:user, article.user.username)
+    user_inboxes = resolve_follower_inboxes(user_uri)
+
+    # Collect inboxes from board followers (public boards only)
+    board_inboxes =
+      article.boards
+      |> Enum.filter(&(&1.visibility == "public"))
+      |> Enum.flat_map(fn board ->
+        board_uri = Federation.actor_uri(:board, board.slug)
+        resolve_follower_inboxes(board_uri)
+      end)
+
+    all_inboxes = Enum.uniq(user_inboxes ++ board_inboxes)
+
+    if all_inboxes != [] do
+      enqueue(activity_json, actor_uri, all_inboxes)
+    else
+      {:ok, 0}
+    end
+  end
+
+  # --- Shared Helpers ---
+
+  @doc """
+  Retrieves the private key PEM for signing outgoing requests.
+
+  Dispatches based on the actor URI prefix to find the correct key:
+  - `/ap/users/:username` → user's encrypted private key
+  - `/ap/boards/:slug` → board's encrypted private key
+  - `/ap/site` → site-level private key
+  """
+  def get_private_key(actor_uri) do
     base = Federation.base_url()
 
     cond do

@@ -1,7 +1,7 @@
 defmodule Baudrate.Federation do
   @moduledoc """
   The Federation context provides ActivityPub endpoints, follower management,
-  and announce (boost) tracking.
+  announce (boost) tracking, and followers collection.
 
   Phase 1 exposes actors, outbox collections, and article objects as
   JSON-LD, along with WebFinger and NodeInfo discovery endpoints.
@@ -12,10 +12,14 @@ defmodule Baudrate.Federation do
   Phase 2b adds content activity handling: Create(Note/Article), Like,
   Announce, Delete, Update, and their Undo variants.
 
+  Phase 3 adds outbound delivery: when local users create, update, or
+  delete articles, activities are pushed to remote followers' inboxes
+  via a DB-backed delivery queue with exponential backoff retry.
+
   Private boards are excluded from all federation endpoints — WebFinger,
-  actor profiles, outbox, inbox, and audience resolution all return 404
-  or skip private boards. Articles exclusively in private boards are also
-  hidden from user outbox and article endpoints.
+  actor profiles, outbox, inbox, followers, and audience resolution all
+  return 404 or skip private boards. Articles exclusively in private
+  boards are also hidden from user outbox and article endpoints.
 
   ## Actor Mapping
 
@@ -33,6 +37,8 @@ defmodule Baudrate.Federation do
     * `/ap/inbox` — shared inbox (POST)
     * `/ap/users/:username/inbox` — user inbox (POST)
     * `/ap/boards/:slug/inbox` — board inbox (POST)
+    * `/ap/users/:username/followers` — user followers (GET)
+    * `/ap/boards/:slug/followers` — board followers (GET)
   """
 
   import Ecto.Query
@@ -341,7 +347,23 @@ defmodule Baudrate.Federation do
     }
   end
 
-  # --- Article Object ---
+  # --- Followers Collection ---
+
+  @doc """
+  Returns an `OrderedCollection` JSON-LD map for the given actor's followers.
+  """
+  def followers_collection(actor_uri) do
+    followers = list_followers(actor_uri)
+    follower_uris = Enum.map(followers, & &1.follower_uri)
+
+    %{
+      "@context" => @as_context,
+      "id" => "#{actor_uri}/followers",
+      "type" => "OrderedCollection",
+      "totalItems" => length(follower_uris),
+      "orderedItems" => follower_uris
+    }
+  end
 
   # --- Followers ---
 
