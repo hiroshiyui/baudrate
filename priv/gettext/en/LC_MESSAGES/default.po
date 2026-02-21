@@ -16,18 +16,18 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:136
-#: lib/baudrate_web/components/layouts.ex:148
+#: lib/baudrate_web/components/layouts.ex:156
+#: lib/baudrate_web/components/layouts.ex:168
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:143
+#: lib/baudrate_web/components/layouts.ex:163
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:131
+#: lib/baudrate_web/components/layouts.ex:151
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr ""
@@ -186,6 +186,7 @@ msgstr ""
 msgid "Setup failed. Please try again."
 msgstr ""
 
+#: lib/baudrate_web/live/admin/settings_live.html.heex:7
 #: lib/baudrate_web/live/setup_live.html.heex:13
 #: lib/baudrate_web/live/setup_live.html.heex:82
 #: lib/baudrate_web/live/setup_live.html.heex:87
@@ -245,8 +246,8 @@ msgstr ""
 msgid "Sign In"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:53
-#: lib/baudrate_web/components/layouts.ex:95
+#: lib/baudrate_web/components/layouts.ex:63
+#: lib/baudrate_web/components/layouts.ex:115
 #, elixir-autogen, elixir-format
 msgid "Sign Out"
 msgstr ""
@@ -300,7 +301,7 @@ msgid "Unable to connect to database. Check your configuration."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:42
-#: lib/baudrate_web/components/layouts.ex:71
+#: lib/baudrate_web/components/layouts.ex:81
 #: lib/baudrate_web/live/article_new_live.html.heex:15
 #: lib/baudrate_web/live/board_live.html.heex:3
 #: lib/baudrate_web/live/home_live.html.heex:11
@@ -309,7 +310,7 @@ msgid "Boards"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:39
-#: lib/baudrate_web/components/layouts.ex:68
+#: lib/baudrate_web/components/layouts.ex:78
 #, elixir-autogen, elixir-format
 msgid "Home"
 msgstr ""
@@ -399,8 +400,8 @@ msgstr ""
 msgid "Please enter a valid recovery code (e.g. a1b2-c3d4)."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:50
-#: lib/baudrate_web/components/layouts.ex:92
+#: lib/baudrate_web/components/layouts.ex:60
+#: lib/baudrate_web/components/layouts.ex:112
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Profile"
@@ -500,6 +501,7 @@ msgstr ""
 msgid "Remove Avatar"
 msgstr ""
 
+#: lib/baudrate_web/live/admin/settings_live.html.heex:19
 #: lib/baudrate_web/live/profile_live.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Save"
@@ -522,6 +524,7 @@ msgid "Upload error."
 msgstr ""
 
 #: lib/baudrate_web/live/admin/pending_users_live.ex:18
+#: lib/baudrate_web/live/admin/settings_live.ex:19
 #, elixir-autogen, elixir-format
 msgid "Access denied."
 msgstr ""
@@ -593,6 +596,8 @@ msgstr ""
 msgid "No pending users."
 msgstr ""
 
+#: lib/baudrate_web/components/layouts.ex:52
+#: lib/baudrate_web/components/layouts.ex:108
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Pending Users"
@@ -690,4 +695,46 @@ msgstr ""
 #: lib/baudrate_web/live/profile_live.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Using browser language settings."
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex:46
+#: lib/baudrate_web/components/layouts.ex:102
+#, elixir-autogen, elixir-format
+msgid "Admin"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Admin Settings"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:14
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Approval Required"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "Open"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "Registration Mode"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:18
+#, elixir-autogen, elixir-format
+msgid "Saving..."
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex:49
+#: lib/baudrate_web/components/layouts.ex:105
+#, elixir-autogen, elixir-format
+msgid "Settings"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.ex:43
+#, elixir-autogen, elixir-format
+msgid "Settings saved successfully."
 msgstr ""

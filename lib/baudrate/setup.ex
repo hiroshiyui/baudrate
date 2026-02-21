@@ -24,6 +24,12 @@ defmodule Baudrate.Setup do
 
   The full matrix is defined in `default_permissions/0`.
 
+  ## Admin Settings
+
+  `change_settings/1` and `save_settings/1` provide virtual-changeset-based
+  management of site-wide settings (site name, registration mode) used by
+  the admin settings UI.
+
   ## Atomic Setup
 
   `complete_setup/2` runs the entire setup in a single `Ecto.Multi` transaction:
@@ -168,6 +174,46 @@ defmodule Baudrate.Setup do
       {:ok, length(migrations)}
     else
       {:error, pending}
+    end
+  end
+
+  @valid_registration_modes ~w(open approval_required)
+
+  @doc """
+  Returns a virtual changeset for admin settings (site_name, registration_mode).
+
+  Used by `Admin.SettingsLive` for form validation.
+  """
+  def change_settings(attrs \\ %{}) do
+    types = %{site_name: :string, registration_mode: :string}
+
+    defaults = %{
+      site_name: get_setting("site_name") || "",
+      registration_mode: registration_mode()
+    }
+
+    {defaults, types}
+    |> Ecto.Changeset.cast(attrs, Map.keys(types))
+    |> Ecto.Changeset.validate_required([:site_name, :registration_mode])
+    |> Ecto.Changeset.validate_length(:site_name, min: 1, max: 255)
+    |> Ecto.Changeset.validate_inclusion(:registration_mode, @valid_registration_modes)
+  end
+
+  @doc """
+  Validates and persists admin settings.
+
+  Returns `{:ok, changes}` on success or `{:error, changeset}` on validation failure.
+  """
+  def save_settings(attrs) do
+    changeset = change_settings(attrs)
+
+    if changeset.valid? do
+      changes = Ecto.Changeset.apply_changes(changeset)
+      set_setting("site_name", changes.site_name)
+      set_setting("registration_mode", changes.registration_mode)
+      {:ok, changes}
+    else
+      {:error, Map.put(changeset, :action, :validate)}
     end
   end
 

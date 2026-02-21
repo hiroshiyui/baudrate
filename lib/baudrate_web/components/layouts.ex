@@ -41,6 +41,16 @@ defmodule BaudrateWeb.Layouts do
             <li>
               <.link navigate="/">{gettext("Boards")}</.link>
             </li>
+            <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
+            <li :if={@current_user.role.name == "admin"} class="menu-title">
+              {gettext("Admin")}
+            </li>
+            <li :if={@current_user.role.name == "admin"}>
+              <.link navigate="/admin/settings">{gettext("Settings")}</.link>
+            </li>
+            <li :if={@current_user.role.name == "admin"}>
+              <.link navigate="/admin/pending-users">{gettext("Pending Users")}</.link>
+            </li>
             <li class="divider my-1"></li>
             <li class="menu-title flex flex-row items-center gap-2">
               <.avatar user={@current_user} size={36} />
@@ -88,6 +98,16 @@ defmodule BaudrateWeb.Layouts do
             tabindex="0"
             class="menu menu-sm dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
           >
+            <li :if={@current_user.role.name == "admin"} class="menu-title">
+              {gettext("Admin")}
+            </li>
+            <li :if={@current_user.role.name == "admin"}>
+              <.link navigate="/admin/settings">{gettext("Settings")}</.link>
+            </li>
+            <li :if={@current_user.role.name == "admin"}>
+              <.link navigate="/admin/pending-users">{gettext("Pending Users")}</.link>
+            </li>
+            <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
             <li>
               <.link navigate="/profile">{gettext("Profile")}</.link>
             </li>

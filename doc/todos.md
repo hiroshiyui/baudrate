@@ -27,7 +27,7 @@
 
 ## System
 - [ ] Closed registration mode (invite-only)
-- [ ] Admin settings UI (registration mode, site name, etc.)
+- [x] Admin settings UI (registration mode, site name, etc.)
 - [ ] API endpoints (JSON)
 - [ ] Real-time updates via PubSub (new articles, comments)
 - [ ] Search indexing

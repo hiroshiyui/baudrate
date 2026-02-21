@@ -120,6 +120,77 @@ defmodule Baudrate.SetupTest do
     end
   end
 
+  describe "change_settings/1" do
+    setup do
+      Repo.insert!(%Setting{key: "site_name", value: "Test Site"})
+      Repo.insert!(%Setting{key: "registration_mode", value: "approval_required"})
+      :ok
+    end
+
+    test "returns valid changeset with current defaults" do
+      changeset = Setup.change_settings()
+      assert changeset.valid?
+      assert Ecto.Changeset.get_field(changeset, :site_name) == "Test Site"
+      assert Ecto.Changeset.get_field(changeset, :registration_mode) == "approval_required"
+    end
+
+    test "returns valid changeset for valid attrs" do
+      changeset = Setup.change_settings(%{"site_name" => "New Name", "registration_mode" => "open"})
+      assert changeset.valid?
+    end
+
+    test "returns invalid changeset when site_name is blank" do
+      changeset = Setup.change_settings(%{"site_name" => "", "registration_mode" => "open"})
+      refute changeset.valid?
+    end
+
+    test "returns invalid changeset when registration_mode is invalid" do
+      changeset = Setup.change_settings(%{"site_name" => "Test", "registration_mode" => "invalid"})
+      refute changeset.valid?
+    end
+
+    test "validates site_name max length" do
+      long_name = String.duplicate("a", 256)
+      changeset = Setup.change_settings(%{"site_name" => long_name, "registration_mode" => "open"})
+      refute changeset.valid?
+    end
+  end
+
+  describe "save_settings/1" do
+    setup do
+      Repo.insert!(%Setting{key: "site_name", value: "Original"})
+      Repo.insert!(%Setting{key: "registration_mode", value: "approval_required"})
+      :ok
+    end
+
+    test "saves valid settings" do
+      assert {:ok, changes} =
+               Setup.save_settings(%{"site_name" => "Updated", "registration_mode" => "open"})
+
+      assert changes.site_name == "Updated"
+      assert changes.registration_mode == "open"
+      assert Setup.get_setting("site_name") == "Updated"
+      assert Setup.get_setting("registration_mode") == "open"
+    end
+
+    test "returns error changeset for invalid attrs" do
+      assert {:error, changeset} =
+               Setup.save_settings(%{"site_name" => "", "registration_mode" => "open"})
+
+      refute changeset.valid?
+      assert changeset.action == :validate
+      # Original values unchanged
+      assert Setup.get_setting("site_name") == "Original"
+    end
+
+    test "returns error for invalid registration mode" do
+      assert {:error, changeset} =
+               Setup.save_settings(%{"site_name" => "Test", "registration_mode" => "closed"})
+
+      refute changeset.valid?
+    end
+  end
+
   describe "default_permissions/0" do
     test "returns a map with 4 roles" do
       permissions = Setup.default_permissions()

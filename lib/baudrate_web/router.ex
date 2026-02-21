@@ -121,6 +121,7 @@ defmodule BaudrateWeb.Router do
       live "/profile", ProfileLive
       live "/profile/totp-reset", TotpResetLive
       live "/profile/recovery-codes", RecoveryCodesLive
+      live "/admin/settings", Admin.SettingsLive
       live "/admin/pending-users", Admin.PendingUsersLive
     end
 

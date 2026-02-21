@@ -1,0 +1,25 @@
+<div class="space-y-6">
+  <h1 class="text-2xl font-bold">{gettext("Admin Settings")}</h1>
+
+  <div class="card bg-base-200 shadow-sm">
+    <div class="card-body">
+      <.form for={@form} id="settings-form" phx-change="validate" phx-submit="save">
+        <.input field={@form[:site_name]} type="text" label={gettext("Site Name")} required />
+        <.input
+          field={@form[:registration_mode]}
+          type="select"
+          label={gettext("Registration Mode")}
+          options={[
+            {gettext("Open"), "open"},
+            {gettext("Approval Required"), "approval_required"}
+          ]}
+        />
+        <div class="mt-4">
+          <.button variant="primary" type="submit" phx-disable-with={gettext("Saving...")}>
+            {gettext("Save")}
+          </.button>
+        </div>
+      </.form>
+    </div>
+  </div>
+</div>
