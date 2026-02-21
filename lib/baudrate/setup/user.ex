@@ -22,6 +22,12 @@ defmodule Baudrate.Setup.User do
     * `"active"` — fully functional account (default)
     * `"pending"` — awaiting admin approval; can log in and browse,
       but cannot create articles or upload avatars
+
+  ## Locale Preferences
+
+    * `preferred_locales` — ordered list of locale codes (e.g. `["zh_TW", "en"]`).
+      When non-empty, the first matching known Gettext locale is used instead of
+      the browser's `Accept-Language` header. Validated by `locale_changeset/2`.
   """
 
   use Ecto.Schema
@@ -34,6 +40,7 @@ defmodule Baudrate.Setup.User do
     field :totp_enabled, :boolean, default: false
     field :avatar_id, :string
     field :status, :string, default: "active"
+    field :preferred_locales, {:array, :string}, default: []
 
     belongs_to :role, Baudrate.Setup.Role
 
@@ -88,6 +95,22 @@ defmodule Baudrate.Setup.User do
     |> cast(attrs, [:status])
     |> validate_required([:status])
     |> validate_inclusion(:status, ["active", "pending"])
+  end
+
+  def locale_changeset(user, attrs) do
+    known = Gettext.known_locales(BaudrateWeb.Gettext)
+
+    user
+    |> cast(attrs, [:preferred_locales])
+    |> validate_change(:preferred_locales, fn :preferred_locales, locales ->
+      invalid = Enum.reject(locales, &(&1 in known))
+
+      if invalid == [] do
+        []
+      else
+        [preferred_locales: "contains unknown locales: #{Enum.join(invalid, ", ")}"]
+      end
+    end)
   end
 
   defp hash_password(changeset) do

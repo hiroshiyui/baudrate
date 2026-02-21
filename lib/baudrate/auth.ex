@@ -36,6 +36,12 @@ defmodule Baudrate.Auth do
     * `:optional` — user (can enable voluntarily)
     * `:disabled` — guest (no TOTP capability)
 
+  ## Locale Preferences
+
+  Users can set an ordered list of preferred locales via `update_preferred_locales/2`.
+  The first match against known Gettext locales wins. If empty, the system falls
+  back to the browser's `Accept-Language` header.
+
   ## Key Constants
 
     * `@session_ttl_seconds` — 14 days; both session and refresh tokens expire after this
@@ -349,6 +355,20 @@ defmodule Baudrate.Auth do
   """
   def can_create_content?(user) do
     user_active?(user) && Setup.has_permission?(user.role.name, "user.create_content")
+  end
+
+  # --- Locale preferences ---
+
+  @doc """
+  Updates a user's preferred locales list.
+
+  Validates that all entries are known Gettext locales via `User.locale_changeset/2`.
+  Returns `{:ok, user}` or `{:error, changeset}`.
+  """
+  def update_preferred_locales(user, locales) when is_list(locales) do
+    user
+    |> User.locale_changeset(%{preferred_locales: locales})
+    |> Repo.update()
   end
 
   # --- Avatar management ---
