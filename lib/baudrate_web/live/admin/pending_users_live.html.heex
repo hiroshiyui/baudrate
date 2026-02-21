@@ -1,0 +1,34 @@
+<div class="space-y-6">
+  <h1 class="text-2xl font-bold">{gettext("Pending Users")}</h1>
+
+  <div :if={@pending_users == []} class="text-base-content/50 text-center py-8">
+    {gettext("No pending users.")}
+  </div>
+
+  <div :if={@pending_users != []} class="overflow-x-auto">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>{gettext("Username")}</th>
+          <th>{gettext("Registered")}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr :for={user <- @pending_users}>
+          <td>{user.username}</td>
+          <td>{Calendar.strftime(user.inserted_at, "%Y-%m-%d %H:%M")}</td>
+          <td>
+            <button
+              phx-click="approve"
+              phx-value-id={user.id}
+              class="btn btn-sm btn-primary"
+            >
+              {gettext("Approve")}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
