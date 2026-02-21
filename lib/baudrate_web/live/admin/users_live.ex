@@ -12,6 +12,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
   alias Baudrate.Auth
+  alias Baudrate.Moderation
   alias Baudrate.Setup
 
   @valid_statuses ~w(active pending banned)
@@ -60,6 +61,12 @@ defmodule BaudrateWeb.Admin.UsersLive do
       user ->
         case Auth.approve_user(user) do
           {:ok, _user} ->
+            Moderation.log_action(socket.assigns.current_user.id, "approve_user",
+              target_type: "user",
+              target_id: user.id,
+              details: %{"username" => user.username}
+            )
+
             {:noreply,
              socket
              |> put_flash(:info, gettext("User approved successfully."))
@@ -116,6 +123,12 @@ defmodule BaudrateWeb.Admin.UsersLive do
 
         case Auth.ban_user(user, admin_id, reason) do
           {:ok, _user} ->
+            Moderation.log_action(admin_id, "ban_user",
+              target_type: "user",
+              target_id: user.id,
+              details: %{"username" => user.username, "reason" => reason}
+            )
+
             {:noreply,
              socket
              |> assign(ban_target: nil, ban_target_username: nil, ban_reason: "")
@@ -140,6 +153,12 @@ defmodule BaudrateWeb.Admin.UsersLive do
       user ->
         case Auth.unban_user(user) do
           {:ok, _user} ->
+            Moderation.log_action(socket.assigns.current_user.id, "unban_user",
+              target_type: "user",
+              target_id: user.id,
+              details: %{"username" => user.username}
+            )
+
             {:noreply,
              socket
              |> put_flash(:info, gettext("User unbanned successfully."))
@@ -159,9 +178,16 @@ defmodule BaudrateWeb.Admin.UsersLive do
 
       user ->
         admin_id = socket.assigns.current_user.id
+        old_role = user.role.name
 
         case Auth.update_user_role(user, String.to_integer(role_id), admin_id) do
-          {:ok, _user} ->
+          {:ok, updated_user} ->
+            Moderation.log_action(admin_id, "update_role",
+              target_type: "user",
+              target_id: user.id,
+              details: %{"username" => user.username, "old_role" => old_role, "new_role" => updated_user.role.name}
+            )
+
             {:noreply,
              socket
              |> put_flash(:info, gettext("User role updated successfully."))

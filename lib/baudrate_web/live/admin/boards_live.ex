@@ -15,6 +15,7 @@ defmodule BaudrateWeb.Admin.BoardsLive do
   alias Baudrate.Content
   alias Baudrate.Content.Board
   alias Baudrate.Federation.KeyStore
+  alias Baudrate.Moderation
 
   @impl true
   def mount(_params, _session, socket) do
@@ -71,6 +72,12 @@ defmodule BaudrateWeb.Admin.BoardsLive do
 
     case Content.delete_board(board) do
       {:ok, _board} ->
+        Moderation.log_action(socket.assigns.current_user.id, "delete_board",
+          target_type: "board",
+          target_id: board.id,
+          details: %{"name" => board.name, "slug" => board.slug}
+        )
+
         {:noreply,
          socket
          |> put_flash(:info, gettext("Board deleted successfully."))
@@ -96,6 +103,12 @@ defmodule BaudrateWeb.Admin.BoardsLive do
       {:ok, board} ->
         KeyStore.ensure_board_keypair(board)
 
+        Moderation.log_action(socket.assigns.current_user.id, "create_board",
+          target_type: "board",
+          target_id: board.id,
+          details: %{"name" => board.name, "slug" => board.slug}
+        )
+
         {:noreply,
          socket
          |> assign(show_form: false, editing_board: nil, form: nil)
@@ -112,7 +125,13 @@ defmodule BaudrateWeb.Admin.BoardsLive do
     board = Content.get_board!(socket.assigns.editing_board.id)
 
     case Content.update_board(board, params) do
-      {:ok, _board} ->
+      {:ok, updated_board} ->
+        Moderation.log_action(socket.assigns.current_user.id, "update_board",
+          target_type: "board",
+          target_id: board.id,
+          details: %{"name" => updated_board.name}
+        )
+
         {:noreply,
          socket
          |> assign(show_form: false, editing_board: nil, form: nil)

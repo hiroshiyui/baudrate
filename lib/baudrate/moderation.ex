@@ -10,7 +10,9 @@ defmodule Baudrate.Moderation do
   import Ecto.Query
 
   alias Baudrate.Repo
-  alias Baudrate.Moderation.Report
+  alias Baudrate.Moderation.{Log, Report}
+
+  @log_per_page 25
 
   @doc """
   Creates a new report.
@@ -81,5 +83,64 @@ defmodule Baudrate.Moderation do
   """
   def open_report_count do
     Repo.one(from(r in Report, where: r.status == "open", select: count(r.id))) || 0
+  end
+
+  # --- Moderation Log ---
+
+  @doc """
+  Records a moderation action in the log.
+
+  ## Options
+
+    * `:target_type` — type of target ("user", "article", "comment", "board", "report")
+    * `:target_id` — ID of the target entity
+    * `:details` — map of additional context (reason, old_role, new_role, etc.)
+  """
+  def log_action(actor_id, action, opts \\ []) do
+    %Log{}
+    |> Log.changeset(%{
+      actor_id: actor_id,
+      action: action,
+      target_type: Keyword.get(opts, :target_type),
+      target_id: Keyword.get(opts, :target_id),
+      details: Keyword.get(opts, :details, %{})
+    })
+    |> Repo.insert()
+  end
+
+  @doc """
+  Lists moderation logs with pagination and optional action filter.
+
+  ## Options
+
+    * `:page` — page number (default 1)
+    * `:action` — filter by action type
+  """
+  def list_moderation_logs(opts \\ []) do
+    page = max(Keyword.get(opts, :page, 1), 1)
+    offset = (page - 1) * @log_per_page
+    action_filter = Keyword.get(opts, :action)
+
+    base_query =
+      if action_filter && action_filter != "" do
+        from(l in Log, where: l.action == ^action_filter)
+      else
+        from(l in Log)
+      end
+
+    total = Repo.one(from(l in base_query, select: count(l.id)))
+
+    logs =
+      from(l in base_query,
+        order_by: [desc: l.inserted_at, desc: l.id],
+        offset: ^offset,
+        limit: ^@log_per_page,
+        preload: [:actor]
+      )
+      |> Repo.all()
+
+    total_pages = max(ceil(total / @log_per_page), 1)
+
+    %{logs: logs, page: page, total_pages: total_pages}
   end
 end

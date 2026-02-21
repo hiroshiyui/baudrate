@@ -1,0 +1,70 @@
+<div class="space-y-6">
+  <h1 class="text-2xl font-bold">{gettext("Moderation Log")}</h1>
+
+  <div class="flex flex-wrap gap-2">
+    <button
+      phx-click="filter"
+      phx-value-action=""
+      class={["btn btn-sm", if(is_nil(@action_filter) || @action_filter == "", do: "btn-primary", else: "btn-ghost")]}
+    >
+      {gettext("All")}
+    </button>
+    <button
+      :for={action <- @valid_actions}
+      phx-click="filter"
+      phx-value-action={action}
+      class={["btn btn-sm", if(@action_filter == action, do: "btn-primary", else: "btn-ghost")]}
+    >
+      {translate_action(action)}
+    </button>
+  </div>
+
+  <div :if={@logs == []} class="text-base-content/50 text-center py-8">
+    {gettext("No moderation actions recorded.")}
+  </div>
+
+  <div :if={@logs != []} class="overflow-x-auto">
+    <table class="table table-zebra w-full">
+      <thead>
+        <tr>
+          <th>{gettext("Date")}</th>
+          <th>{gettext("Actor")}</th>
+          <th>{gettext("Action")}</th>
+          <th>{gettext("Target")}</th>
+          <th>{gettext("Details")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr :for={log <- @logs}>
+          <td class="whitespace-nowrap text-sm">
+            {Calendar.strftime(log.inserted_at, "%Y-%m-%d %H:%M")}
+          </td>
+          <td>
+            <span :if={log.actor}>{log.actor.username}</span>
+            <span :if={!log.actor} class="text-base-content/50">{gettext("Deleted user")}</span>
+          </td>
+          <td>
+            <span class="badge badge-outline badge-sm">{translate_action(log.action)}</span>
+          </td>
+          <td class="text-sm">
+            <span :if={log.target_type}>
+              {log.target_type}#{log.target_id}
+            </span>
+          </td>
+          <td class="text-sm max-w-xs truncate">
+            <span :for={{key, val} <- log.details || %{}} class="mr-2">
+              <span class="font-semibold">{key}:</span> {val}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <.pagination
+    :if={@logs != []}
+    page={@page}
+    total_pages={@total_pages}
+    path={if @action_filter, do: ~p"/admin/moderation-log?action=#{@action_filter}", else: ~p"/admin/moderation-log"}
+  />
+</div>

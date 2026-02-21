@@ -39,6 +39,12 @@ defmodule BaudrateWeb.Admin.ModerationLive do
 
     case Moderation.resolve_report(report, socket.assigns.current_user.id, note) do
       {:ok, _} ->
+        Moderation.log_action(socket.assigns.current_user.id, "resolve_report",
+          target_type: "report",
+          target_id: report.id,
+          details: %{"note" => note}
+        )
+
         {:noreply,
          socket
          |> put_flash(:info, gettext("Report resolved."))
@@ -54,6 +60,11 @@ defmodule BaudrateWeb.Admin.ModerationLive do
 
     case Moderation.dismiss_report(report, socket.assigns.current_user.id) do
       {:ok, _} ->
+        Moderation.log_action(socket.assigns.current_user.id, "dismiss_report",
+          target_type: "report",
+          target_id: report.id
+        )
+
         {:noreply,
          socket
          |> put_flash(:info, gettext("Report dismissed."))
@@ -69,6 +80,12 @@ defmodule BaudrateWeb.Admin.ModerationLive do
 
     case Content.soft_delete_article(article) do
       {:ok, _} ->
+        Moderation.log_action(socket.assigns.current_user.id, "delete_article",
+          target_type: "article",
+          target_id: article.id,
+          details: %{"title" => article.title}
+        )
+
         {:noreply,
          socket
          |> put_flash(:info, gettext("Article deleted."))
@@ -84,6 +101,11 @@ defmodule BaudrateWeb.Admin.ModerationLive do
 
     case Content.soft_delete_comment(comment) do
       {:ok, _} ->
+        Moderation.log_action(socket.assigns.current_user.id, "delete_comment",
+          target_type: "comment",
+          target_id: comment.id
+        )
+
         {:noreply,
          socket
          |> put_flash(:info, gettext("Comment deleted."))
