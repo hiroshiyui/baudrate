@@ -169,6 +169,7 @@ defmodule BaudrateWeb.Router do
       on_mount: [{BaudrateWeb.AuthHooks, :require_auth}] do
       live "/boards/:slug/articles/new", ArticleNewLive
       live "/articles/new", ArticleNewLive
+      live "/articles/:slug/edit", ArticleEditLive
       live "/profile", ProfileLive
       live "/profile/totp-reset", TotpResetLive
       live "/profile/recovery-codes", RecoveryCodesLive
@@ -189,6 +190,7 @@ defmodule BaudrateWeb.Router do
       layout: {BaudrateWeb.Layouts, :app},
       on_mount: [{BaudrateWeb.AuthHooks, :optional_auth}] do
       live "/", HomeLive
+      live "/search", SearchLive
       live "/boards/:slug", BoardLive
       live "/articles/:slug", ArticleLive
     end

@@ -11,7 +11,7 @@ defmodule Baudrate.Content.Article do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Baudrate.Content.{ArticleLike, Board, BoardArticle, Comment}
+  alias Baudrate.Content.{Attachment, ArticleLike, Board, BoardArticle, Comment}
   alias Baudrate.Federation.RemoteActor
 
   schema "articles" do
@@ -25,6 +25,7 @@ defmodule Baudrate.Content.Article do
 
     belongs_to :user, Baudrate.Setup.User
     belongs_to :remote_actor, RemoteActor
+    has_many :attachments, Attachment
     has_many :board_articles, BoardArticle
     has_many :comments, Comment
     has_many :likes, ArticleLike
@@ -42,6 +43,13 @@ defmodule Baudrate.Content.Article do
     )
     |> assoc_constraint(:user)
     |> unique_constraint(:slug)
+  end
+
+  @doc "Changeset for updating a local article (title and body only, slug stays fixed)."
+  def update_changeset(article, attrs) do
+    article
+    |> cast(attrs, [:title, :body])
+    |> validate_required([:title, :body])
   end
 
   @doc "Changeset for remote articles received via ActivityPub."

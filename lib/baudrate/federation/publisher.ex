@@ -200,6 +200,15 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
+  Publishes a `Create(Note)` activity for a local comment to all relevant followers.
+  """
+  def publish_comment_created(comment, article) do
+    article = Repo.preload(article, [:boards, :user])
+    {activity, actor_uri} = build_create_comment(comment, article)
+    Delivery.enqueue_for_article(activity, actor_uri, article)
+  end
+
+  @doc """
   Publishes an `Update(Article)` activity to all relevant followers.
   """
   def publish_article_updated(article) do

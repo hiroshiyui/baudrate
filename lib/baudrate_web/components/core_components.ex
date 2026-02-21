@@ -493,6 +493,68 @@ defmodule BaudrateWeb.CoreComponents do
   defp size_class(48), do: "w-12 rounded-full"
   defp size_class(36), do: "w-9 rounded-full"
 
+  @doc """
+  Renders a pagination control using DaisyUI join buttons.
+
+  Uses `patch` navigation so LiveView updates without full reload.
+
+  ## Examples
+
+      <.pagination page={@page} total_pages={@total_pages} path={~p"/boards/general"} params={%{}} />
+  """
+  attr :page, :integer, required: true
+  attr :total_pages, :integer, required: true
+  attr :path, :string, required: true
+  attr :params, :map, default: %{}
+
+  def pagination(assigns) do
+    assigns = assign(assigns, :page_range, pagination_range(assigns.page, assigns.total_pages))
+
+    ~H"""
+    <div :if={@total_pages > 1} class="flex justify-center mt-6">
+      <div class="join">
+        <.link
+          :if={@page > 1}
+          patch={"#{@path}?#{URI.encode_query(Map.put(@params, "page", @page - 1))}"}
+          class="join-item btn btn-sm"
+        >
+          &laquo;
+        </.link>
+        <span :if={@page <= 1} class="join-item btn btn-sm btn-disabled">&laquo;</span>
+
+        <%= for p <- @page_range do %>
+          <.link
+            :if={p != @page}
+            patch={"#{@path}?#{URI.encode_query(Map.put(@params, "page", p))}"}
+            class="join-item btn btn-sm"
+          >
+            {p}
+          </.link>
+          <span :if={p == @page} class="join-item btn btn-sm btn-active">{p}</span>
+        <% end %>
+
+        <.link
+          :if={@page < @total_pages}
+          patch={"#{@path}?#{URI.encode_query(Map.put(@params, "page", @page + 1))}"}
+          class="join-item btn btn-sm"
+        >
+          &raquo;
+        </.link>
+        <span :if={@page >= @total_pages} class="join-item btn btn-sm btn-disabled">&raquo;</span>
+      </div>
+    </div>
+    """
+  end
+
+  defp pagination_range(_current, total) when total <= 7, do: Enum.to_list(1..total)
+
+  defp pagination_range(current, total) do
+    start = max(current - 3, 1)
+    finish = min(start + 6, total)
+    start = max(finish - 6, 1)
+    Enum.to_list(start..finish)
+  end
+
   ## JS Commands
 
   def show(js \\ %JS{}, selector) do

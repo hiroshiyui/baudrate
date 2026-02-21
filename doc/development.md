@@ -32,9 +32,11 @@ lib/
 │   │   └── user_session.ex      # Ecto schema for server-side sessions
 │   ├── avatar.ex                # Avatar image processing (crop, resize, WebP)
 │   ├── content.ex               # Content context: boards, articles, comments, likes
+│   ├── attachment_storage.ex     # File attachment processing (magic bytes, image re-encoding)
 │   ├── content/
 │   │   ├── article.ex           # Article schema (posts, local + remote, soft-delete)
 │   │   ├── article_like.ex      # ArticleLike schema (local + remote likes)
+│   │   ├── attachment.ex         # Attachment schema (files on articles, type/size validation)
 │   │   ├── board.ex             # Board schema (hierarchical via parent_id, visibility)
 │   │   ├── board_article.ex     # Join table: board ↔ article
 │   │   ├── board_moderator.ex   # Join table: board ↔ moderator
@@ -391,3 +393,15 @@ Baudrate.Supervisor (one_for_one)
 ```bash
 mix test
 ```
+
+## Development routines
+
+* Identify inconsistencies, contradictions, or deviations from the system design and industry standard practices.
+* Ensure consistency between documentation and implementation within the project.
+* Ensure uniformity between internationalization (i18n) and localization (l10n) efforts.
+* Audit potential security vulnerabilities.
+* Maintain test coverage.
+* Refactor code regularly to ensure readability, modularity, and long-term maintainability.
+* Implement robust error handling and structured logging for proactive issue tracking and debugging.
+* Enhance user interface responsiveness and accessibility to provide an inclusive and intuitive experience.
+* Address technical debt promptly to prevent code rot and ensure long-term project health.

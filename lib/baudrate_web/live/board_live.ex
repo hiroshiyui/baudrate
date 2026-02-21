@@ -4,6 +4,7 @@ defmodule BaudrateWeb.BoardLive do
 
   Accessible to both guests and authenticated users via `:optional_auth`.
   Guests can only view public boards; private boards redirect to `/login`.
+  Articles are paginated via `?page=N` query parameter.
   """
 
   use BaudrateWeb, :live_view
@@ -19,12 +20,29 @@ defmodule BaudrateWeb.BoardLive do
     if board.visibility == "private" and is_nil(current_user) do
       {:ok, redirect(socket, to: "/login")}
     else
-      articles = Content.list_articles_for_board(board)
-
       can_create =
         if current_user, do: Auth.can_create_content?(current_user), else: false
 
-      {:ok, assign(socket, board: board, articles: articles, can_create: can_create)}
+      {:ok, assign(socket, board: board, can_create: can_create)}
+    end
+  end
+
+  @impl true
+  def handle_params(params, _uri, socket) do
+    page = parse_page(params["page"])
+
+    %{articles: articles, page: page, total_pages: total_pages} =
+      Content.paginate_articles_for_board(socket.assigns.board, page: page)
+
+    {:noreply, assign(socket, articles: articles, page: page, total_pages: total_pages)}
+  end
+
+  defp parse_page(nil), do: 1
+
+  defp parse_page(str) when is_binary(str) do
+    case Integer.parse(str) do
+      {n, ""} when n > 0 -> n
+      _ -> 1
     end
   end
 end

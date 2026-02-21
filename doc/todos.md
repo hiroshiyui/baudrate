@@ -1,13 +1,13 @@
 # Planned Features
 
 ## Content
-- [ ] Article editing and deletion UI (backend soft-delete exists, needs UI buttons and edit function)
+- [x] Article editing and deletion UI (edit page, delete button, author/admin authorization)
 - [x] Comment schema and federation support (threaded, local + remote)
-- [ ] Comment UI on article pages (local posting, display)
+- [x] Comment UI on article pages (threaded display, local posting, reply)
 - [x] Markdown rendering for article body
-- [ ] Article search
-- [ ] Article pagination
-- [ ] File attachments on articles
+- [x] Article search (PostgreSQL full-text search with tsvector, pagination)
+- [x] Article pagination (offset pagination on board pages with DaisyUI controls)
+- [x] File attachments on articles (upload, download, delete; image re-encoding, magic bytes validation)
 
 ## Moderation
 - [x] Admin settings UI (site name, registration mode)
@@ -31,7 +31,7 @@
 
 ## System
 - [ ] Closed registration mode (invite-only)
-- [ ] API endpoints (JSON)
+- [ ] ActivityPub based API endpoints
 - [ ] Real-time updates via PubSub (new articles, comments)
 - [ ] Search indexing
 

@@ -1,0 +1,40 @@
+<div class="mx-auto max-w-2xl">
+  <div class="mb-4">
+    <.link
+      navigate={~p"/articles/#{@article.slug}"}
+      class="text-sm text-base-content/70 hover:text-base-content"
+    >
+      &larr; {gettext("Back to article")}
+    </.link>
+  </div>
+
+  <h1 class="text-2xl font-bold mb-6">{gettext("Edit Article")}</h1>
+
+  <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
+    <.input
+      field={@form[:title]}
+      label={gettext("Title")}
+      required
+    />
+
+    <.input
+      field={@form[:body]}
+      type="textarea"
+      label={gettext("Body")}
+      required
+    />
+
+    <div :if={@article.boards != []} class="fieldset mb-2">
+      <span class="label mb-1">{gettext("Board")}</span>
+      <div class="space-y-2">
+        <span :for={board <- @article.boards} class="badge badge-outline mr-2">
+          {board.name}
+        </span>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+      {gettext("Save Changes")}
+    </button>
+  </.form>
+</div>

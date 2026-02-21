@@ -15,7 +15,7 @@ defmodule Baudrate.Content do
 
   import Ecto.Query
   alias Baudrate.Repo
-  alias Baudrate.Content.{Article, ArticleLike, Board, BoardArticle, BoardModerator, Comment}
+  alias Baudrate.Content.{Article, Attachment, ArticleLike, Board, BoardArticle, BoardModerator, Comment}
 
   # --- Boards ---
 
@@ -67,6 +67,52 @@ defmodule Baudrate.Content do
       preload: :user
     )
     |> Repo.all()
+  end
+
+  @per_page 20
+
+  @doc """
+  Returns a paginated list of articles for a board.
+
+  ## Options
+
+    * `:page` — page number (default 1)
+    * `:per_page` — articles per page (default #{@per_page})
+
+  Returns `%{articles: [...], total: N, page: N, per_page: N, total_pages: N}`.
+  """
+  def paginate_articles_for_board(%Board{id: board_id}, opts \\ []) do
+    page = max(Keyword.get(opts, :page, 1), 1)
+    per_page = Keyword.get(opts, :per_page, @per_page)
+    offset = (page - 1) * per_page
+
+    base_query =
+      from(a in Article,
+        join: ba in BoardArticle,
+        on: ba.article_id == a.id,
+        where: ba.board_id == ^board_id and is_nil(a.deleted_at)
+      )
+
+    total = Repo.one(from(q in base_query, select: count(q.id)))
+
+    articles =
+      from(q in base_query,
+        order_by: [desc: q.pinned, desc: q.inserted_at],
+        offset: ^offset,
+        limit: ^per_page,
+        preload: :user
+      )
+      |> Repo.all()
+
+    total_pages = max(ceil(total / per_page), 1)
+
+    %{
+      articles: articles,
+      total: total,
+      page: page,
+      per_page: per_page,
+      total_pages: total_pages
+    }
   end
 
   @doc """
@@ -127,6 +173,45 @@ defmodule Baudrate.Content do
   end
 
   @doc """
+  Returns an article changeset for edit form tracking.
+  """
+  def change_article_for_edit(%Article{} = article, attrs \\ %{}) do
+    Article.update_changeset(article, attrs)
+  end
+
+  @doc """
+  Updates a local article's title and body.
+
+  Publishes an `Update(Article)` activity to federation after success.
+  """
+  def update_article(%Article{} = article, attrs) do
+    result =
+      article
+      |> Article.update_changeset(attrs)
+      |> Repo.update()
+
+    with {:ok, updated_article} <- result do
+      if updated_article.user_id do
+        schedule_federation_task(fn ->
+          updated_article = Repo.preload(updated_article, [:boards, :user])
+          Baudrate.Federation.Publisher.publish_article_updated(updated_article)
+        end)
+      end
+
+      result
+    end
+  end
+
+  @doc """
+  Returns `true` if the user can manage (edit/delete) the article.
+
+  A user can manage an article if they are the author or an admin.
+  """
+  def can_manage_article?(%{role: %{name: "admin"}}, %Article{}), do: true
+  def can_manage_article?(%{id: user_id}, %Article{user_id: article_user_id}), do: user_id == article_user_id
+  def can_manage_article?(_, _), do: false
+
+  @doc """
   Generates a URL-safe slug from a title string.
 
   Converts to lowercase, replaces non-alphanumeric characters with hyphens,
@@ -147,6 +232,68 @@ defmodule Baudrate.Content do
       "" -> suffix
       base -> "#{base}-#{suffix}"
     end
+  end
+
+  # --- Search ---
+
+  @doc """
+  Full-text search across articles by title and body.
+
+  Uses PostgreSQL `websearch_to_tsquery` for natural search syntax.
+  Only searches non-deleted articles in public boards.
+
+  Returns `%{articles, total, page, per_page, total_pages}`.
+  """
+  def search_articles(query_string, opts \\ []) do
+    page = max(Keyword.get(opts, :page, 1), 1)
+    per_page = Keyword.get(opts, :per_page, @per_page)
+    offset = (page - 1) * per_page
+
+    base_query =
+      from(a in Article,
+        join: ba in BoardArticle,
+        on: ba.article_id == a.id,
+        join: b in Board,
+        on: b.id == ba.board_id,
+        where:
+          is_nil(a.deleted_at) and
+            b.visibility == "public" and
+            fragment("?.search_vector @@ websearch_to_tsquery('english', ?)", a, ^query_string),
+        distinct: a.id
+      )
+
+    total = Repo.one(from(q in subquery(base_query), select: count()))
+
+    articles =
+      from(a in Article,
+        join: ba in BoardArticle,
+        on: ba.article_id == a.id,
+        join: b in Board,
+        on: b.id == ba.board_id,
+        where:
+          is_nil(a.deleted_at) and
+            b.visibility == "public" and
+            fragment("?.search_vector @@ websearch_to_tsquery('english', ?)", a, ^query_string),
+        distinct: a.id,
+        order_by: [
+          desc: fragment("ts_rank(?.search_vector, websearch_to_tsquery('english', ?))", a, ^query_string),
+          desc: a.inserted_at
+        ],
+        offset: ^offset,
+        limit: ^per_page,
+        preload: [:user, :boards]
+      )
+      |> Repo.all()
+
+    total_pages = max(ceil(total / per_page), 1)
+
+    %{
+      articles: articles,
+      total: total,
+      page: page,
+      per_page: per_page,
+      total_pages: total_pages
+    }
   end
 
   # --- Cross-post ---
@@ -230,6 +377,40 @@ defmodule Baudrate.Content do
   # --- Comments ---
 
   @doc """
+  Creates a local comment on an article.
+
+  Renders the body to HTML via `Markdown.to_html/1` and publishes a
+  `Create(Note)` activity to federation.
+  """
+  def create_comment(attrs) do
+    body_html = Baudrate.Content.Markdown.to_html(attrs["body"] || attrs[:body] || "")
+
+    result =
+      %Comment{}
+      |> Comment.changeset(Map.put(attrs, "body_html", body_html))
+      |> Repo.insert()
+
+    with {:ok, comment} <- result do
+      if comment.user_id do
+        schedule_federation_task(fn ->
+          comment = Repo.preload(comment, [:user])
+          article = Repo.get!(Article, comment.article_id) |> Repo.preload([:boards, :user])
+          Baudrate.Federation.Publisher.publish_comment_created(comment, article)
+        end)
+      end
+
+      result
+    end
+  end
+
+  @doc """
+  Returns a comment changeset for form tracking.
+  """
+  def change_comment(comment \\ %Comment{}, attrs \\ %{}) do
+    Comment.changeset(comment, attrs)
+  end
+
+  @doc """
   Creates a remote comment received via ActivityPub.
   """
   def create_remote_comment(attrs) do
@@ -302,6 +483,41 @@ defmodule Baudrate.Content do
     Repo.one(from(l in ArticleLike, where: l.article_id == ^article_id, select: count(l.id))) ||
       0
   end
+
+  # --- Attachments ---
+
+  @doc """
+  Creates an attachment record.
+  """
+  def create_attachment(attrs) do
+    %Attachment{}
+    |> Attachment.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Lists attachments for an article.
+  """
+  def list_attachments_for_article(%Article{id: article_id}) do
+    from(a in Attachment,
+      where: a.article_id == ^article_id,
+      order_by: [asc: a.inserted_at]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Deletes an attachment record and its file on disk.
+  """
+  def delete_attachment(%Attachment{} = attachment) do
+    Baudrate.AttachmentStorage.delete_attachment(attachment)
+    Repo.delete(attachment)
+  end
+
+  @doc """
+  Fetches an attachment by ID.
+  """
+  def get_attachment!(id), do: Repo.get!(Attachment, id)
 
   # --- Federation Hooks ---
 

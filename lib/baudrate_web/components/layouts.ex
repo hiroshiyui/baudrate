@@ -41,6 +41,9 @@ defmodule BaudrateWeb.Layouts do
             <li>
               <.link navigate="/">{gettext("Boards")}</.link>
             </li>
+            <li>
+              <.link navigate="/search">{gettext("Search")}</.link>
+            </li>
             <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
             <li :if={@current_user.role.name == "admin"} class="menu-title">
               {gettext("Admin")}
@@ -86,6 +89,9 @@ defmodule BaudrateWeb.Layouts do
           <li>
             <.link navigate="/" class="btn btn-ghost">{gettext("Boards")}</.link>
           </li>
+          <li>
+            <.link navigate="/search" class="btn btn-ghost">{gettext("Search")}</.link>
+          </li>
         </ul>
       </div>
 
@@ -95,6 +101,7 @@ defmodule BaudrateWeb.Layouts do
 
         <%!-- Guest auth links (shown when not logged in) --%>
         <div :if={!@current_user} class="flex items-center gap-2">
+          <.link navigate="/search" class="btn btn-ghost btn-sm">{gettext("Search")}</.link>
           <.link navigate="/login" class="btn btn-ghost btn-sm">{gettext("Sign In")}</.link>
           <.link navigate="/register" class="btn btn-primary btn-sm">{gettext("Register")}</.link>
         </div>

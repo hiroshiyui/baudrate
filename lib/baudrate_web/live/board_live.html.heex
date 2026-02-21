@@ -34,3 +34,10 @@
     </div>
   </div>
 </div>
+
+<.pagination
+  :if={@articles != []}
+  page={@page}
+  total_pages={@total_pages}
+  path={~p"/boards/#{@board.slug}"}
+/>
