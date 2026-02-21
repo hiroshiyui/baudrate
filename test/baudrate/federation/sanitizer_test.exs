@@ -188,4 +188,42 @@ defmodule Baudrate.Federation.SanitizerTest do
       refute result =~ "evil-class"
     end
   end
+
+  describe "sanitize_display_name/1" do
+    test "passes through nil as nil" do
+      assert Sanitizer.sanitize_display_name(nil) == nil
+    end
+
+    test "passes through normal names unchanged" do
+      assert Sanitizer.sanitize_display_name("Alice") == "Alice"
+      assert Sanitizer.sanitize_display_name("Bob Smith") == "Bob Smith"
+    end
+
+    test "strips HTML tags from display names" do
+      assert Sanitizer.sanitize_display_name("<b>Alice</b>") == "Alice"
+      assert Sanitizer.sanitize_display_name("<script>alert('xss')</script>Bob") == "alert('xss')Bob"
+      assert Sanitizer.sanitize_display_name("A<img src=x onerror=alert(1)>B") == "AB"
+    end
+
+    test "strips control characters" do
+      assert Sanitizer.sanitize_display_name("Alice\x00Bob") == "AliceBob"
+      assert Sanitizer.sanitize_display_name("Test\x07Name") == "TestName"
+      assert Sanitizer.sanitize_display_name("Hello\x7FWorld") == "HelloWorld"
+    end
+
+    test "trims whitespace" do
+      assert Sanitizer.sanitize_display_name("  Alice  ") == "Alice"
+    end
+
+    test "truncates long names to 100 chars" do
+      long_name = String.duplicate("a", 150)
+      result = Sanitizer.sanitize_display_name(long_name)
+      assert String.length(result) == 100
+    end
+
+    test "preserves unicode display names" do
+      assert Sanitizer.sanitize_display_name("アリス") == "アリス"
+      assert Sanitizer.sanitize_display_name("Ålice Böb") == "Ålice Böb"
+    end
+  end
 end

@@ -343,6 +343,61 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
     end
   end
 
+  # --- Federation Kill Switch ---
+
+  describe "federation kill switch" do
+    test "AP actor endpoints return 404 when federation is disabled", %{conn: conn} do
+      user = setup_user("user")
+      Repo.insert!(%Setting{key: "ap_federation_enabled", value: "false"})
+
+      conn = conn |> ap_conn() |> get("/ap/users/#{user.username}")
+      assert conn.status == 404
+    end
+
+    test "AP board endpoints return 404 when federation is disabled", %{conn: conn} do
+      board = setup_board()
+      Repo.insert!(%Setting{key: "ap_federation_enabled", value: "false"})
+
+      conn = conn |> ap_conn() |> get("/ap/boards/#{board.slug}")
+      assert conn.status == 404
+    end
+
+    test "AP site actor returns 404 when federation is disabled", %{conn: conn} do
+      Repo.insert!(%Setting{key: "ap_federation_enabled", value: "false"})
+
+      conn = conn |> ap_conn() |> get("/ap/site")
+      assert conn.status == 404
+    end
+
+    test "AP outbox returns 404 when federation is disabled", %{conn: conn} do
+      user = setup_user("user")
+      Repo.insert!(%Setting{key: "ap_federation_enabled", value: "false"})
+
+      conn = conn |> json_conn() |> get("/ap/users/#{user.username}/outbox")
+      assert conn.status == 404
+    end
+
+    test "WebFinger still works when federation is disabled", %{conn: conn} do
+      user = setup_user("user")
+      host = URI.parse(BaudrateWeb.Endpoint.url()).host
+      Repo.insert!(%Setting{key: "ap_federation_enabled", value: "false"})
+
+      conn =
+        conn
+        |> json_conn()
+        |> get("/.well-known/webfinger?resource=acct:#{user.username}@#{host}")
+
+      assert json_response(conn, 200)
+    end
+
+    test "NodeInfo still works when federation is disabled", %{conn: conn} do
+      Repo.insert!(%Setting{key: "ap_federation_enabled", value: "false"})
+
+      conn = conn |> json_conn() |> get("/.well-known/nodeinfo")
+      assert json_response(conn, 200)
+    end
+  end
+
   # --- Test Helpers ---
 
   defp setup_board do

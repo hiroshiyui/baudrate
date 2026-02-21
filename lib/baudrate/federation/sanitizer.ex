@@ -10,6 +10,9 @@ defmodule Baudrate.Federation.Sanitizer do
   `<span class="hashtag">`. These classes (plus `mention` and `invisible`)
   are preserved; all other class values are stripped.
 
+  `sanitize_display_name/1` strips HTML tags and control characters from
+  remote actor display names to prevent XSS and homograph attacks.
+
   Applied **before database storage**, not at render time.
   """
 
@@ -40,6 +43,26 @@ defmodule Baudrate.Federation.Sanitizer do
     |> strip_comments()
     |> sanitize_tags()
     |> strip_event_handlers()
+  end
+
+  @doc """
+  Sanitizes a remote actor display name.
+  Strips all HTML tags and control characters, trims whitespace,
+  and truncates to a reasonable length.
+  """
+  @spec sanitize_display_name(String.t() | nil) :: String.t() | nil
+  def sanitize_display_name(nil), do: nil
+
+  def sanitize_display_name(name) when is_binary(name) do
+    name
+    |> String.replace(~r/<[^>]*>/, "")
+    |> String.replace(~r/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/, "")
+    |> String.trim()
+    |> truncate_display_name(100)
+  end
+
+  defp truncate_display_name(name, max) do
+    if String.length(name) > max, do: String.slice(name, 0, max), else: name
   end
 
   # Completely remove <script>, <style>, <iframe>, <object>, <embed>,

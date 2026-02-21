@@ -30,7 +30,10 @@ defmodule Baudrate.Federation.DeliveryWorker do
 
   @impl true
   def handle_info(:poll, state) do
-    process_batch()
+    if Baudrate.Setup.federation_enabled?() do
+      process_batch()
+    end
+
     schedule_poll()
     {:noreply, state}
   end

@@ -240,7 +240,7 @@ Cross-platform compatibility, moderation tools, and admin controls.
   - [x] Board → Group actor: `Announce` wrapping for community-style federation (implemented in Phase 3)
   - [x] Cross-post detection and deduplication (same remote article arriving via multiple board inboxes links to all boards)
 - [ ] **Moderation tools**
-  - [ ] Domain blocklist management (admin UI)
+  - [x] Domain blocklist management (admin UI)
   - [ ] Instance allowlist mode (federate only with approved instances)
   - [ ] Remote content reporting → local moderation queue
   - [ ] `Flag` activity: send reports to remote instance admins
@@ -251,7 +251,7 @@ Cross-platform compatibility, moderation tools, and admin controls.
   - [ ] Delivery queue status and retry management
   - [ ] Federation health monitoring (failed deliveries, error rates)
   - [ ] Toggle federation on/off per board
-  - [ ] Instance-level federation kill switch
+  - [x] Instance-level federation kill switch
 - [ ] **Performance & scalability**
   - [ ] Consider migrating delivery to Oban for persistent job queues
   - [ ] Shared inbox aggregation to reduce delivery volume
@@ -262,5 +262,5 @@ Cross-platform compatibility, moderation tools, and admin controls.
   - [ ] Authorized fetch mode (require signatures on GET requests, optional)
   - [ ] Key rotation mechanism for actor keypairs
   - [ ] Regular audit of domain blocklist against known-bad-actor lists
-  - [ ] Content-Security-Policy headers for pages displaying remote content
-  - [ ] Sanitize remote actor display names (prevent homograph attacks)
+  - [x] Content-Security-Policy headers for pages displaying remote content
+  - [x] Sanitize remote actor display names (prevent homograph attacks)

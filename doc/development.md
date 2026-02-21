@@ -287,9 +287,14 @@ The `Baudrate.Federation` context handles all federation logic.
 - Outbound Article objects include `tag` array with `Hashtag` objects (extracted from body, code blocks excluded)
 - Cross-post deduplication: same remote article arriving via multiple board inboxes links to all boards
 
+**Admin controls:**
+- Federation kill switch — instance-level toggle (`ap_federation_enabled` setting); when disabled, all AP endpoints return 404, delivery worker skips, WebFinger/NodeInfo remain available for discovery
+- Domain blocklist — admin UI textarea for comma-separated blocked domains (`ap_domain_blocklist` setting); blocked domains are rejected at inbox and skipped during delivery
+
 **Security:**
 - HTTP Signature verification on all inbox requests
 - HTML sanitization (allowlist-based) before database storage
+- Remote actor display name sanitization — strips HTML tags, control characters, truncates to 100 chars
 - Attribution validation prevents impersonation
 - Content size limits (256 KB payload, 64 KB content)
 - Domain blocklist (configurable via admin settings)
@@ -297,6 +302,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - Per-domain rate limiting (60 req/min per remote domain)
 - Private keys encrypted at rest with AES-256-GCM
 - Private boards hidden from all AP endpoints (actor, outbox, inbox, WebFinger, audience resolution)
+- CSP `img-src` allows `https:` for remote avatars; all other directives remain restrictive
 
 ### Layout System
 

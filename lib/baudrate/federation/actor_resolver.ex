@@ -12,7 +12,7 @@ defmodule Baudrate.Federation.ActorResolver do
   import Ecto.Query
 
   alias Baudrate.Repo
-  alias Baudrate.Federation.{HTTPClient, RemoteActor, Validator}
+  alias Baudrate.Federation.{HTTPClient, RemoteActor, Sanitizer, Validator}
 
   @doc """
   Resolves a remote actor by their AP ID.
@@ -95,7 +95,7 @@ defmodule Baudrate.Federation.ActorResolver do
          ap_id: ap_id,
          username: username,
          domain: domain,
-         display_name: json["name"],
+         display_name: Sanitizer.sanitize_display_name(json["name"]),
          avatar_url: extract_avatar(json),
          public_key_pem: public_key_pem,
          inbox: inbox,

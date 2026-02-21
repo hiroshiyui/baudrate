@@ -37,6 +37,8 @@ defmodule BaudrateWeb.ActivityPubController do
   alias Baudrate.Federation
   alias Baudrate.Federation.KeyStore
 
+  plug :require_federation when action not in [:webfinger, :nodeinfo_redirect, :nodeinfo]
+
   @activity_json "application/activity+json"
   @jrd_json "application/jrd+json"
 
@@ -258,6 +260,14 @@ defmodule BaudrateWeb.ActivityPubController do
   end
 
   # --- Helpers ---
+
+  defp require_federation(conn, _opts) do
+    if Baudrate.Setup.federation_enabled?() do
+      conn
+    else
+      conn |> send_resp(404, "") |> halt()
+    end
+  end
 
   defp wants_json?(conn) do
     accept = get_req_header(conn, "accept") |> List.first("")

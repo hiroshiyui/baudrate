@@ -14,6 +14,22 @@
             {gettext("Approval Required"), "approval_required"}
           ]}
         />
+        <.input
+          field={@form[:ap_federation_enabled]}
+          type="select"
+          label={gettext("Federation")}
+          options={[
+            {gettext("Enabled"), "true"},
+            {gettext("Disabled"), "false"}
+          ]}
+        />
+        <.input
+          field={@form[:ap_domain_blocklist]}
+          type="textarea"
+          label={gettext("Blocked Domains (federation)")}
+          placeholder="spam.example, bad-actor.example"
+        />
+        <p class="text-sm opacity-60">{gettext("Comma-separated list of domains to block from federation.")}</p>
         <div class="mt-4">
           <.button variant="primary" type="submit" phx-disable-with={gettext("Saving...")}>
             {gettext("Save")}

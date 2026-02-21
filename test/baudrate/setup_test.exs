@@ -132,6 +132,13 @@ defmodule Baudrate.SetupTest do
       assert changeset.valid?
       assert Ecto.Changeset.get_field(changeset, :site_name) == "Test Site"
       assert Ecto.Changeset.get_field(changeset, :registration_mode) == "approval_required"
+      assert Ecto.Changeset.get_field(changeset, :ap_domain_blocklist) == ""
+    end
+
+    test "includes ap_domain_blocklist field" do
+      changeset = Setup.change_settings(%{"ap_domain_blocklist" => "spam.example, bad.example"})
+      assert changeset.valid?
+      assert Ecto.Changeset.get_field(changeset, :ap_domain_blocklist) == "spam.example, bad.example"
     end
 
     test "returns valid changeset for valid attrs" do
@@ -195,6 +202,34 @@ defmodule Baudrate.SetupTest do
                Setup.save_settings(%{"site_name" => "Test", "registration_mode" => "closed"})
 
       refute changeset.valid?
+    end
+
+    test "persists ap_domain_blocklist" do
+      assert {:ok, changes} =
+               Setup.save_settings(%{
+                 "site_name" => "Test",
+                 "registration_mode" => "open",
+                 "ap_domain_blocklist" => "spam.example, evil.example"
+               })
+
+      assert changes.ap_domain_blocklist == "spam.example, evil.example"
+      assert Setup.get_setting("ap_domain_blocklist") == "spam.example, evil.example"
+    end
+  end
+
+  describe "federation_enabled?/0" do
+    test "returns true when setting is not set" do
+      assert Setup.federation_enabled?()
+    end
+
+    test "returns true when setting is 'true'" do
+      Repo.insert!(%Setting{key: "ap_federation_enabled", value: "true"})
+      assert Setup.federation_enabled?()
+    end
+
+    test "returns false when setting is 'false'" do
+      Repo.insert!(%Setting{key: "ap_federation_enabled", value: "false"})
+      refute Setup.federation_enabled?()
     end
   end
 

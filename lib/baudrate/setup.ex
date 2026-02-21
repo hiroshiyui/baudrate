@@ -27,8 +27,10 @@ defmodule Baudrate.Setup do
   ## Admin Settings
 
   `change_settings/1` and `save_settings/1` provide virtual-changeset-based
-  management of site-wide settings (site name, registration mode) used by
-  the admin settings UI.
+  management of site-wide settings (site name, registration mode, federation
+  toggle, domain blocklist) used by the admin settings UI.
+
+  `federation_enabled?/0` returns whether federation is active (defaults to true).
 
   ## Atomic Setup
 
@@ -142,6 +144,13 @@ defmodule Baudrate.Setup do
   end
 
   @doc """
+  Returns true if federation is enabled. Defaults to true when unset.
+  """
+  def federation_enabled? do
+    get_setting("ap_federation_enabled") != "false"
+  end
+
+  @doc """
   Returns true if the setup wizard has been completed.
   """
   def setup_completed? do
@@ -185,11 +194,18 @@ defmodule Baudrate.Setup do
   Used by `Admin.SettingsLive` for form validation.
   """
   def change_settings(attrs \\ %{}) do
-    types = %{site_name: :string, registration_mode: :string}
+    types = %{
+      site_name: :string,
+      registration_mode: :string,
+      ap_domain_blocklist: :string,
+      ap_federation_enabled: :string
+    }
 
     defaults = %{
       site_name: get_setting("site_name") || "",
-      registration_mode: registration_mode()
+      registration_mode: registration_mode(),
+      ap_domain_blocklist: get_setting("ap_domain_blocklist") || "",
+      ap_federation_enabled: get_setting("ap_federation_enabled") || "true"
     }
 
     {defaults, types}
@@ -197,6 +213,7 @@ defmodule Baudrate.Setup do
     |> Ecto.Changeset.validate_required([:site_name, :registration_mode])
     |> Ecto.Changeset.validate_length(:site_name, min: 1, max: 255)
     |> Ecto.Changeset.validate_inclusion(:registration_mode, @valid_registration_modes)
+    |> Ecto.Changeset.validate_inclusion(:ap_federation_enabled, ["true", "false"])
   end
 
   @doc """
@@ -211,6 +228,8 @@ defmodule Baudrate.Setup do
       changes = Ecto.Changeset.apply_changes(changeset)
       set_setting("site_name", changes.site_name)
       set_setting("registration_mode", changes.registration_mode)
+      set_setting("ap_domain_blocklist", changes.ap_domain_blocklist || "")
+      set_setting("ap_federation_enabled", changes.ap_federation_enabled || "true")
       {:ok, changes}
     else
       {:error, Map.put(changeset, :action, :validate)}
