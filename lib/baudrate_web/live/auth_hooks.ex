@@ -27,6 +27,7 @@ defmodule BaudrateWeb.AuthHooks do
 
   import Phoenix.LiveView
   import Phoenix.Component
+  use Gettext, backend: BaudrateWeb.Gettext
 
   alias Baudrate.Auth
 
@@ -36,14 +37,21 @@ defmodule BaudrateWeb.AuthHooks do
     if session_token do
       case Auth.get_user_by_session_token(session_token) do
         {:ok, user} ->
-          locale = resolve_user_locale(user)
+          if user.status == "banned" do
+            {:halt,
+             socket
+             |> put_flash(:error, gettext("Your account has been banned."))
+             |> redirect(to: "/login")}
+          else
+            locale = resolve_user_locale(user)
 
-          socket =
-            socket
-            |> assign(:current_user, user)
-            |> assign(:locale, locale)
+            socket =
+              socket
+              |> assign(:current_user, user)
+              |> assign(:locale, locale)
 
-          {:cont, socket}
+            {:cont, socket}
+          end
 
         {:error, _reason} ->
           {:halt, redirect(socket, to: "/login")}

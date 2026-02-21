@@ -1,0 +1,183 @@
+<div class="space-y-6">
+  <h1 class="text-2xl font-bold">{gettext("User Management")}</h1>
+
+  <%!-- Stats bar --%>
+  <div class="stats stats-horizontal shadow w-full">
+    <div class="stat">
+      <div class="stat-title">{gettext("Total")}</div>
+      <div class="stat-value text-lg">
+        {Map.values(@status_counts) |> Enum.sum()}
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-title">{gettext("Active")}</div>
+      <div class="stat-value text-lg text-success">
+        {Map.get(@status_counts, "active", 0)}
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-title">{gettext("Pending")}</div>
+      <div class="stat-value text-lg text-warning">
+        {Map.get(@status_counts, "pending", 0)}
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-title">{gettext("Banned")}</div>
+      <div class="stat-value text-lg text-error">
+        {Map.get(@status_counts, "banned", 0)}
+      </div>
+    </div>
+  </div>
+
+  <%!-- Filter tabs + search --%>
+  <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+    <div role="tablist" class="tabs tabs-boxed">
+      <button
+        role="tab"
+        class={["tab", !@status_filter && "tab-active"]}
+        phx-click="filter"
+        phx-value-status=""
+      >
+        {gettext("All")}
+      </button>
+      <button
+        role="tab"
+        class={["tab", @status_filter == "active" && "tab-active"]}
+        phx-click="filter"
+        phx-value-status="active"
+      >
+        {gettext("Active")}
+      </button>
+      <button
+        role="tab"
+        class={["tab", @status_filter == "pending" && "tab-active"]}
+        phx-click="filter"
+        phx-value-status="pending"
+      >
+        {gettext("Pending")}
+      </button>
+      <button
+        role="tab"
+        class={["tab", @status_filter == "banned" && "tab-active"]}
+        phx-click="filter"
+        phx-value-status="banned"
+      >
+        {gettext("Banned")}
+      </button>
+    </div>
+
+    <form phx-change="search" class="flex-shrink-0">
+      <input
+        type="text"
+        name="search"
+        value={@search}
+        placeholder={gettext("Search username...")}
+        class="input input-bordered input-sm w-48"
+        phx-debounce="300"
+      />
+    </form>
+  </div>
+
+  <%!-- Users table --%>
+  <div :if={@users == []} class="text-base-content/50 text-center py-8">
+    {gettext("No users found.")}
+  </div>
+
+  <div :if={@users != []} class="overflow-x-auto">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>{gettext("Username")}</th>
+          <th>{gettext("Role")}</th>
+          <th>{gettext("Status")}</th>
+          <th>{gettext("Registered")}</th>
+          <th>{gettext("Actions")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr :for={user <- @users}>
+          <td class="font-medium">{user.username}</td>
+          <td>
+            <%= if user.id == @current_user.id do %>
+              <span class="badge badge-ghost">{user.role.name}</span>
+            <% else %>
+              <form phx-change="change_role" phx-value-id={user.id}>
+                <select name="role_id" class="select select-bordered select-xs">
+                  <option
+                    :for={role <- @roles}
+                    value={role.id}
+                    selected={role.id == user.role_id}
+                  >
+                    {role.name}
+                  </option>
+                </select>
+              </form>
+            <% end %>
+          </td>
+          <td>
+            <span class={[
+              "badge badge-sm",
+              user.status == "active" && "badge-success",
+              user.status == "pending" && "badge-warning",
+              user.status == "banned" && "badge-error"
+            ]}>
+              {user.status}
+            </span>
+          </td>
+          <td>{Calendar.strftime(user.inserted_at, "%Y-%m-%d %H:%M")}</td>
+          <td class="flex gap-1">
+            <button
+              :if={user.status == "pending"}
+              phx-click="approve"
+              phx-value-id={user.id}
+              class="btn btn-xs btn-primary"
+            >
+              {gettext("Approve")}
+            </button>
+            <button
+              :if={user.status != "banned" && user.id != @current_user.id}
+              phx-click="show_ban_modal"
+              phx-value-id={user.id}
+              class="btn btn-xs btn-error btn-outline"
+            >
+              {gettext("Ban")}
+            </button>
+            <button
+              :if={user.status == "banned"}
+              phx-click="unban"
+              phx-value-id={user.id}
+              class="btn btn-xs btn-success btn-outline"
+            >
+              {gettext("Unban")}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%!-- Ban modal --%>
+<div :if={@ban_target} class="modal modal-open">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg">{gettext("Ban User")}</h3>
+    <div class="py-4">
+      <label class="label">
+        <span class="label-text">{gettext("Reason (optional)")}</span>
+      </label>
+      <textarea
+        class="textarea textarea-bordered w-full"
+        rows="3"
+        phx-keyup="update_ban_reason"
+        phx-value-reason=""
+        name="reason"
+        value={@ban_reason}
+      ><%= @ban_reason %></textarea>
+    </div>
+    <div class="modal-action">
+      <button phx-click="cancel_ban" class="btn">{gettext("Cancel")}</button>
+      <button phx-click="confirm_ban" class="btn btn-error">{gettext("Confirm Ban")}</button>
+    </div>
+  </div>
+  <div class="modal-backdrop" phx-click="cancel_ban"></div>
+</div>

@@ -177,6 +177,8 @@ defmodule BaudrateWeb.Router do
       live "/admin/pending-users", Admin.PendingUsersLive
       live "/admin/federation", Admin.FederationLive
       live "/admin/moderation", Admin.ModerationLive
+      live "/admin/boards", Admin.BoardsLive
+      live "/admin/users", Admin.UsersLive
     end
 
     delete "/logout", SessionController, :delete

@@ -27,6 +27,12 @@ defmodule Baudrate.Setup.User do
     * `"active"` — fully functional account (default)
     * `"pending"` — awaiting admin approval; can log in and browse,
       but cannot create articles or upload avatars
+    * `"banned"` — account suspended by an admin; cannot log in
+
+  ## Ban Fields
+
+    * `banned_at` — UTC timestamp of when the ban was applied
+    * `ban_reason` — optional text reason provided by the admin
 
   ## Locale Preferences
 
@@ -46,6 +52,8 @@ defmodule Baudrate.Setup.User do
     field :avatar_id, :string
     field :status, :string, default: "active"
     field :preferred_locales, {:array, :string}, default: []
+    field :banned_at, :utc_datetime
+    field :ban_reason, :string
     field :ap_public_key, :string
     field :ap_private_key_encrypted, :binary
 
@@ -101,7 +109,21 @@ defmodule Baudrate.Setup.User do
     user
     |> cast(attrs, [:status])
     |> validate_required([:status])
-    |> validate_inclusion(:status, ["active", "pending"])
+    |> validate_inclusion(:status, ["active", "pending", "banned"])
+  end
+
+  def ban_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:status, :banned_at, :ban_reason])
+    |> validate_required([:status, :banned_at])
+    |> validate_inclusion(:status, ["banned"])
+  end
+
+  def unban_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:status, :banned_at, :ban_reason])
+    |> validate_required([:status])
+    |> validate_inclusion(:status, ["active"])
   end
 
   def ap_key_changeset(user, attrs) do

@@ -72,7 +72,11 @@ defmodule Baudrate.Auth do
     user = Repo.one(from u in User, where: u.username == ^username, preload: :role)
 
     if user && Bcrypt.verify_pass(password, user.hashed_password) do
-      {:ok, user}
+      if user.status == "banned" do
+        {:error, :banned}
+      else
+        {:ok, user}
+      end
     else
       Bcrypt.no_user_verify()
       {:error, :invalid_credentials}
@@ -355,6 +359,96 @@ defmodule Baudrate.Auth do
   """
   def can_create_content?(user) do
     user_active?(user) && Setup.has_permission?(user.role.name, "user.create_content")
+  end
+
+  # --- User Management ---
+
+  @doc """
+  Lists users with optional filters.
+
+  ## Options
+
+    * `:status` — filter by status (e.g. `"active"`, `"pending"`, `"banned"`)
+    * `:role` — filter by role name
+    * `:search` — ILIKE search on username
+  """
+  def list_users(opts \\ []) do
+    query = from(u in User, order_by: [desc: u.inserted_at], preload: :role)
+
+    query =
+      case Keyword.get(opts, :status) do
+        nil -> query
+        status -> from(u in query, where: u.status == ^status)
+      end
+
+    query =
+      case Keyword.get(opts, :role) do
+        nil -> query
+        role_name -> from(u in query, join: r in assoc(u, :role), where: r.name == ^role_name)
+      end
+
+    query =
+      case Keyword.get(opts, :search) do
+        nil -> query
+        "" -> query
+        term -> from(u in query, where: ilike(u.username, ^"%#{term}%"))
+      end
+
+    Repo.all(query)
+  end
+
+  @doc """
+  Returns a map of status counts, e.g. `%{"active" => 5, "pending" => 2, "banned" => 1}`.
+  """
+  def count_users_by_status do
+    from(u in User, group_by: u.status, select: {u.status, count(u.id)})
+    |> Repo.all()
+    |> Map.new()
+  end
+
+  @doc """
+  Bans a user. Guards against self-ban.
+
+  Sets status to `"banned"`, records `banned_at` and optional `ban_reason`,
+  then invalidates all existing sessions for the user.
+  """
+  def ban_user(%User{id: user_id}, admin_id, reason \\ nil) when user_id != admin_id do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+    user = get_user(user_id)
+
+    result =
+      user
+      |> User.ban_changeset(%{status: "banned", banned_at: now, ban_reason: reason})
+      |> Repo.update()
+
+    with {:ok, banned_user} <- result do
+      delete_all_sessions_for_user(banned_user.id)
+      {:ok, banned_user}
+    end
+  end
+
+  @doc """
+  Unbans a user by setting status back to `"active"` and clearing ban fields.
+  """
+  def unban_user(%User{} = user) do
+    user
+    |> User.unban_changeset(%{status: "active", banned_at: nil, ban_reason: nil})
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates a user's role. Guards against self-role-change.
+  """
+  def update_user_role(%User{id: user_id}, role_id, admin_id) when user_id != admin_id do
+    user = get_user(user_id)
+
+    user
+    |> Ecto.Changeset.change(%{role_id: role_id})
+    |> Repo.update()
+    |> case do
+      {:ok, user} -> {:ok, Repo.preload(user, :role, force: true)}
+      error -> error
+    end
   end
 
   # --- Locale preferences ---

@@ -47,6 +47,61 @@ defmodule Baudrate.Content do
   end
 
   @doc """
+  Fetches a board by ID or raises `Ecto.NoResultsError`.
+  """
+  def get_board!(id) do
+    Repo.get!(Board, id)
+  end
+
+  @doc """
+  Returns all boards ordered by position and name, with parent preloaded.
+  """
+  def list_all_boards do
+    from(b in Board, order_by: [asc: b.position, asc: b.name], preload: [:parent])
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns a board changeset for form tracking.
+  """
+  def change_board(board \\ %Board{}, attrs \\ %{}) do
+    Board.changeset(board, attrs)
+  end
+
+  @doc """
+  Creates a board.
+  """
+  def create_board(attrs) do
+    %Board{}
+    |> Board.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a board using `update_changeset` (slug excluded).
+  """
+  def update_board(%Board{} = board, attrs) do
+    board
+    |> Board.update_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a board if it has no linked articles.
+
+  Returns `{:error, :has_articles}` if the board has articles.
+  """
+  def delete_board(%Board{} = board) do
+    count = Repo.one(from(ba in BoardArticle, where: ba.board_id == ^board.id, select: count()))
+
+    if count > 0 do
+      {:error, :has_articles}
+    else
+      Repo.delete(board)
+    end
+  end
+
+  @doc """
   Fetches a board by slug or raises `Ecto.NoResultsError`.
   """
   def get_board_by_slug!(slug) do

@@ -1,0 +1,135 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">{gettext("Board Management")}</h1>
+    <button :if={!@show_form} phx-click="new" class="btn btn-primary btn-sm">
+      {gettext("New Board")}
+    </button>
+  </div>
+
+  <%!-- Board form (create / edit) --%>
+  <div :if={@show_form} class="card bg-base-200 shadow-md">
+    <div class="card-body">
+      <h2 class="card-title">
+        {if @editing_board, do: gettext("Edit Board"), else: gettext("New Board")}
+      </h2>
+
+      <.form for={@form} phx-change="validate" phx-submit="save">
+        <.input field={@form[:name]} type="text" label={gettext("Name")} required />
+
+        <%= if @editing_board do %>
+          <div class="fieldset mb-2">
+            <label>
+              <span class="label mb-1">{gettext("Slug")}</span>
+              <input
+                type="text"
+                value={@editing_board.slug}
+                class="w-full input"
+                disabled
+              />
+            </label>
+            <p class="text-sm opacity-60 mt-1">{gettext("Slug cannot be changed after creation.")}</p>
+          </div>
+        <% else %>
+          <.input field={@form[:slug]} type="text" label={gettext("Slug")} required />
+        <% end %>
+
+        <.input field={@form[:description]} type="textarea" label={gettext("Description")} rows="3" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <.input
+            field={@form[:visibility]}
+            type="select"
+            label={gettext("Visibility")}
+            options={[{gettext("Public"), "public"}, {gettext("Private"), "private"}]}
+          />
+
+          <.input field={@form[:position]} type="number" label={gettext("Position")} />
+
+          <.input
+            field={@form[:parent_id]}
+            type="select"
+            label={gettext("Parent Board")}
+            prompt={gettext("None")}
+            options={
+              for board <- @all_boards,
+                  !@editing_board || board.id != @editing_board.id,
+                  do: {board.name, board.id}
+            }
+          />
+        </div>
+
+        <.input
+          field={@form[:ap_enabled]}
+          type="select"
+          label={gettext("Federation")}
+          options={[{gettext("Enabled"), "true"}, {gettext("Disabled"), "false"}]}
+        />
+
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" phx-click="cancel" class="btn">{gettext("Cancel")}</button>
+          <button type="submit" class="btn btn-primary">{gettext("Save")}</button>
+        </div>
+      </.form>
+    </div>
+  </div>
+
+  <%!-- Boards table --%>
+  <div :if={@boards == []} class="text-base-content/50 text-center py-8">
+    {gettext("No boards yet.")}
+  </div>
+
+  <div :if={@boards != []} class="overflow-x-auto">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>{gettext("Name")}</th>
+          <th>{gettext("Slug")}</th>
+          <th>{gettext("Parent")}</th>
+          <th>{gettext("Visibility")}</th>
+          <th>{gettext("Position")}</th>
+          <th>{gettext("Federation")}</th>
+          <th>{gettext("Actions")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr :for={board <- @boards}>
+          <td class="font-medium">{board.name}</td>
+          <td class="font-mono text-sm">{board.slug}</td>
+          <td>{if board.parent, do: board.parent.name, else: "-"}</td>
+          <td>
+            <span class={[
+              "badge badge-sm",
+              board.visibility == "public" && "badge-success",
+              board.visibility == "private" && "badge-warning"
+            ]}>
+              {board.visibility}
+            </span>
+          </td>
+          <td>{board.position}</td>
+          <td>
+            <span class={[
+              "badge badge-sm",
+              board.ap_enabled && "badge-info",
+              !board.ap_enabled && "badge-ghost"
+            ]}>
+              {if board.ap_enabled, do: gettext("On"), else: gettext("Off")}
+            </span>
+          </td>
+          <td class="flex gap-1">
+            <button phx-click="edit" phx-value-id={board.id} class="btn btn-xs btn-ghost">
+              {gettext("Edit")}
+            </button>
+            <button
+              phx-click="delete"
+              phx-value-id={board.id}
+              data-confirm={gettext("Are you sure you want to delete this board?")}
+              class="btn btn-xs btn-error btn-outline"
+            >
+              {gettext("Delete")}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

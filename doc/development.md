@@ -1,5 +1,13 @@
 # Development Guide
 
+## Development Guidelines
+
+* Align with design: Ensure implementation matches specs and industry standards.
+* Manage code health: Refactor regularly and resolve technical debt.
+* Ensure reliability: Audit vulnerabilities, maintain test coverage, and handle errors.
+* Synchronize i18n/l10n: Keep localization and documentation consistent.
+* Optimize UX/UI: Improve responsiveness and accessibility.
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -83,10 +91,12 @@ lib/
 │   │   └── session_controller.ex  # POST endpoints for session mutations
 │   ├── live/
 │   │   ├── admin/
+│   │   │   ├── boards_live.ex          # Admin board CRUD (create, edit, delete)
 │   │   │   ├── federation_live.ex      # Admin federation dashboard
 │   │   │   ├── moderation_live.ex     # Moderation queue (reports)
 │   │   │   ├── pending_users_live.ex  # Admin approval of pending registrations
-│   │   │   └── settings_live.ex       # Admin site settings (name, registration, federation)
+│   │   │   ├── settings_live.ex       # Admin site settings (name, registration, federation)
+│   │   │   └── users_live.ex          # Admin user management (list, ban, unban, role change)
 │   │   ├── article_live.ex      # Single article view
 │   │   ├── article_new_live.ex  # Article creation form
 │   │   ├── auth_hooks.ex        # on_mount hooks: require_auth, optional_auth, etc.
@@ -393,15 +403,3 @@ Baudrate.Supervisor (one_for_one)
 ```bash
 mix test
 ```
-
-## Development routines
-
-* Identify inconsistencies, contradictions, or deviations from the system design and industry standard practices.
-* Ensure consistency between documentation and implementation within the project.
-* Ensure uniformity between internationalization (i18n) and localization (l10n) efforts.
-* Audit potential security vulnerabilities.
-* Maintain test coverage.
-* Refactor code regularly to ensure readability, modularity, and long-term maintainability.
-* Implement robust error handling and structured logging for proactive issue tracking and debugging.
-* Enhance user interface responsiveness and accessibility to provide an inclusive and intuitive experience.
-* Address technical debt promptly to prevent code rot and ensure long-term project health.

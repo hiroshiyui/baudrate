@@ -53,4 +53,15 @@ defmodule Baudrate.Content.Board do
     |> assoc_constraint(:parent)
     |> unique_constraint(:slug)
   end
+
+  @doc """
+  Changeset for updating an existing board. Excludes `:slug` (immutable after creation).
+  """
+  def update_changeset(board, attrs) do
+    board
+    |> cast(attrs, [:name, :description, :position, :parent_id, :visibility, :ap_enabled])
+    |> validate_required([:name])
+    |> validate_inclusion(:visibility, ["public", "private"])
+    |> assoc_constraint(:parent)
+  end
 end
