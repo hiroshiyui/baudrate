@@ -23,6 +23,7 @@ defmodule BaudrateWeb.ActivityPubController do
   """
 
   use BaudrateWeb, :controller
+  require Logger
 
   alias Baudrate.Federation
   alias Baudrate.Federation.KeyStore
@@ -73,7 +74,8 @@ defmodule BaudrateWeb.ActivityPubController do
   def user_actor(conn, %{"username" => username}) do
     if wants_json?(conn) do
       with true <- Regex.match?(@username_re, username),
-           user when not is_nil(user) <- Baudrate.Repo.get_by(Baudrate.Setup.User, username: username),
+           user when not is_nil(user) <-
+             Baudrate.Repo.get_by(Baudrate.Setup.User, username: username),
            {:ok, user} <- KeyStore.ensure_user_keypair(user) do
         conn
         |> put_resp_content_type(@activity_json)
@@ -89,7 +91,8 @@ defmodule BaudrateWeb.ActivityPubController do
   def board_actor(conn, %{"slug" => slug}) do
     if wants_json?(conn) do
       with true <- Regex.match?(@slug_re, slug),
-           board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
+           board when not is_nil(board) <-
+             Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
            {:ok, board} <- KeyStore.ensure_board_keypair(board) do
         conn
         |> put_resp_content_type(@activity_json)
@@ -116,7 +119,8 @@ defmodule BaudrateWeb.ActivityPubController do
 
   def user_outbox(conn, %{"username" => username} = params) do
     with true <- Regex.match?(@username_re, username),
-         user when not is_nil(user) <- Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
+         user when not is_nil(user) <-
+           Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
       conn
       |> put_resp_content_type(@activity_json)
       |> json(Federation.user_outbox(user, params))
@@ -156,6 +160,54 @@ defmodule BaudrateWeb.ActivityPubController do
       end
     else
       redirect(conn, to: ~p"/articles/#{slug}")
+    end
+  end
+
+  # --- Inbox ---
+
+  def shared_inbox(conn, _params) do
+    handle_inbox(conn, :shared)
+  end
+
+  def user_inbox(conn, %{"username" => username}) do
+    with true <- Regex.match?(@username_re, username),
+         user when not is_nil(user) <-
+           Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
+      handle_inbox(conn, {:user, user})
+    else
+      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+    end
+  end
+
+  def board_inbox(conn, %{"slug" => slug}) do
+    with true <- Regex.match?(@slug_re, slug),
+         board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug) do
+      handle_inbox(conn, {:board, board})
+    else
+      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+    end
+  end
+
+  defp handle_inbox(conn, target) do
+    raw_body = conn.assigns[:raw_body] || ""
+    remote_actor = conn.assigns[:remote_actor]
+
+    case Jason.decode(raw_body) do
+      {:ok, activity} ->
+        case Baudrate.Federation.InboxHandler.handle(activity, remote_actor, target) do
+          :ok ->
+            conn |> put_status(202) |> json(%{status: "accepted"})
+
+          {:error, :not_found} ->
+            conn |> put_status(404) |> json(%{error: "Not Found"})
+
+          {:error, reason} ->
+            Logger.warning("federation.inbox_error: reason=#{inspect(reason)}")
+            conn |> put_status(422) |> json(%{error: "Unprocessable"})
+        end
+
+      {:error, _} ->
+        conn |> put_status(400) |> json(%{error: "Invalid JSON"})
     end
   end
 

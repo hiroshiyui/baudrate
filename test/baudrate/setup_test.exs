@@ -135,7 +135,9 @@ defmodule Baudrate.SetupTest do
     end
 
     test "returns valid changeset for valid attrs" do
-      changeset = Setup.change_settings(%{"site_name" => "New Name", "registration_mode" => "open"})
+      changeset =
+        Setup.change_settings(%{"site_name" => "New Name", "registration_mode" => "open"})
+
       assert changeset.valid?
     end
 
@@ -145,13 +147,18 @@ defmodule Baudrate.SetupTest do
     end
 
     test "returns invalid changeset when registration_mode is invalid" do
-      changeset = Setup.change_settings(%{"site_name" => "Test", "registration_mode" => "invalid"})
+      changeset =
+        Setup.change_settings(%{"site_name" => "Test", "registration_mode" => "invalid"})
+
       refute changeset.valid?
     end
 
     test "validates site_name max length" do
       long_name = String.duplicate("a", 256)
-      changeset = Setup.change_settings(%{"site_name" => long_name, "registration_mode" => "open"})
+
+      changeset =
+        Setup.change_settings(%{"site_name" => long_name, "registration_mode" => "open"})
+
       refute changeset.valid?
     end
   end

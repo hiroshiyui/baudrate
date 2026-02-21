@@ -71,7 +71,10 @@ defmodule BaudrateWeb.Plugs.RefreshSessionTest do
       assert is_binary(new_refresh_token)
     end
 
-    test "drops session when refresh token is invalid", %{conn: conn, session_token: session_token} do
+    test "drops session when refresh token is invalid", %{
+      conn: conn,
+      session_token: session_token
+    } do
       stale =
         DateTime.utc_now()
         |> DateTime.add(-2 * 86_400, :second)

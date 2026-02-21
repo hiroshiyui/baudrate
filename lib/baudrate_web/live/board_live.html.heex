@@ -26,9 +26,10 @@
         {article.title}
       </.link>
       <div class="text-sm text-base-content/70">
-        {gettext("by %{author}", author: article.user.username)}
-        &middot;
-        {Calendar.strftime(article.inserted_at, "%Y-%m-%d %H:%M")}
+        {gettext("by %{author}", author: article.user.username)} &middot; {Calendar.strftime(
+          article.inserted_at,
+          "%Y-%m-%d %H:%M"
+        )}
       </div>
     </div>
   </div>

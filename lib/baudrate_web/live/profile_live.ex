@@ -227,8 +227,7 @@ defmodule BaudrateWeb.ProfileLive do
         {:noreply, socket}
 
       {:error, _changeset} ->
-        {:noreply,
-         put_flash(socket, :error, gettext("Failed to update language preferences."))}
+        {:noreply, put_flash(socket, :error, gettext("Failed to update language preferences."))}
     end
   end
 

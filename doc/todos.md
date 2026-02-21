@@ -80,62 +80,87 @@ Expose actors and content as read-only ActivityPub/JSON-LD. No inbox, no signatu
   - [x] No private/draft content exposed via AP endpoints
   - [x] Validate all path parameters (username, slug) against expected formats
 
-### Phase 2 — HTTP Signatures & Inbox (Receiving Activities)
+### Phase 2a — HTTP Signatures & Inbox (Minimum Viable Federation) ✓
 
-Accept and verify incoming activities. Follow/unfollow, receiving remote posts.
+Accept and verify incoming Follow activities. Bidirectional federation proof.
 
-- [ ] **HTTP Signature verification** (`Federation.HTTPSignature`)
-  - [ ] Parse `Signature` header (keyId, algorithm, headers, signature)
-  - [ ] Fetch remote actor's `publicKey` by dereferencing `keyId` URL
-  - [ ] Verify signature using `:public_key.verify/4`
-  - [ ] Cache fetched public keys with TTL (invalidate on `Update(Person)`)
-  - [ ] Reject expired signatures (enforce `Date` header within ±30s window)
-  - [ ] Require `(request-target)`, `host`, `date`, `digest` in signed headers
-- [ ] **Inbox endpoints**
-  - [ ] `/ap/users/:username/inbox` — POST, signature-verified
-  - [ ] `/ap/boards/:slug/inbox` — POST, signature-verified
-  - [ ] `/ap/inbox` — shared inbox for efficient delivery
-- [ ] **Activity handlers** (`Federation.InboxHandler`)
-  - [ ] `Follow` → record follower, send `Accept(Follow)` response
-  - [ ] `Undo(Follow)` → remove follower
-  - [ ] `Create(Note)` → store as remote comment (if `inReplyTo` matches local article)
-  - [ ] `Create(Article)` → store as remote article in target board (if `audience` matches)
-  - [ ] `Announce` → record boost/share
-  - [ ] `Like` → record like/favorite
-  - [ ] `Delete` → soft-delete matching remote content
-  - [ ] `Update` → update matching remote content
-- [ ] **Remote actor resolution** (`Federation.ActorResolver`)
-  - [ ] Fetch and cache remote actor profiles
-  - [ ] Store display name, avatar URL, instance domain
-  - [ ] `RemoteActor` schema — `ap_id`, `username`, `domain`, `display_name`, `avatar_url`, `public_key`, `inbox`, `shared_inbox`
-  - [ ] Periodic refresh of cached actor data
-- [ ] **Schema — federation fields**
-  - [ ] Migration: `remote_actors` table
-  - [ ] Migration: `followers` table (`actor_uri`, `follower_uri`, `accepted_at`)
-  - [ ] Migration: add `ap_id` (nullable) to articles for remote content
-  - [ ] Migration: add `remote_actor_id` (nullable FK) to articles/comments
-- [ ] **Security — Phase 2**
-  - [ ] **HTML sanitization module** (`Federation.Sanitizer`)
-    - [ ] Allowlist-based HTML sanitizer for all incoming federated content
-    - [ ] Strip `<script>`, `<style>`, `<iframe>`, `<object>`, `<embed>`, event handlers
-    - [ ] Allow safe subset: `<p>`, `<br>`, `<a>`, `<strong>`, `<em>`, `<code>`, `<pre>`, `<blockquote>`, `<ul>`, `<ol>`, `<li>`, `<h1>`–`<h6>`
-    - [ ] Sanitize `<a href>` — only allow `http:`/`https:` schemes, add `rel="nofollow noopener"`
-    - [ ] Applied **before database storage**, not at render time
-  - [ ] **Input validation**
-    - [ ] All AP IDs validated as HTTPS URLs with valid hostnames
-    - [ ] JSON payloads validated against expected ActivityStreams schemas
-    - [ ] Size limits: reject payloads > 256 KB, content fields > 64 KB
-    - [ ] Reject activities from blocked domains (domain blocklist)
-  - [ ] **Anti-abuse**
-    - [ ] Per-domain rate limiting on inbox
-    - [ ] Reject self-referencing actor URIs (actor claiming to be local)
-    - [ ] Validate `attributedTo` matches activity `actor`
-    - [ ] Log all rejected activities with reason for audit
-  - [ ] **Fetch safety**
-    - [ ] Remote HTTP fetches: HTTPS only, follow max 3 redirects (same-host only)
-    - [ ] DNS rebinding protection — reject private/loopback IPs (SSRF prevention)
-    - [ ] Timeout all remote fetches (10s connect, 30s total)
-    - [ ] User-Agent header identifying the instance
+- [x] **HTTP Signature verification** (`Federation.HTTPSignature`)
+  - [x] Parse `Signature` header (keyId, algorithm, headers, signature)
+  - [x] Fetch remote actor's `publicKey` by dereferencing `keyId` URL
+  - [x] Verify signature using `:public_key.verify/4`
+  - [x] Cache fetched public keys with TTL (invalidate on `Update(Person)`)
+  - [x] Reject expired signatures (enforce `Date` header within ±30s window)
+  - [x] Require `(request-target)`, `host`, `date`, `digest` in signed headers
+- [x] **HTTP Signature signing** (minimal, for `Accept(Follow)`)
+  - [x] Sign outgoing requests with actor's RSA private key
+  - [x] Include `(request-target)`, `host`, `date`, `digest` in signature
+- [x] **Inbox endpoints**
+  - [x] `/ap/users/:username/inbox` — POST, signature-verified
+  - [x] `/ap/boards/:slug/inbox` — POST, signature-verified
+  - [x] `/ap/inbox` — shared inbox for efficient delivery
+- [x] **Activity handlers** (`Federation.InboxHandler`)
+  - [x] `Follow` → record follower, auto-accept, send `Accept(Follow)` response
+  - [x] `Undo(Follow)` → remove follower
+  - [x] `Update(Person)` → refresh cached RemoteActor
+  - [x] `Delete(actor)` → remove all their follower records
+  - [x] `Create(Note/Article)`, `Like`, `Announce` → accept gracefully (202), log, discard (deferred to Phase 2b)
+- [x] **Remote actor resolution** (`Federation.ActorResolver`)
+  - [x] Fetch and cache remote actor profiles with 24h TTL
+  - [x] Store display name, avatar URL, instance domain
+  - [x] `RemoteActor` schema — `ap_id`, `username`, `domain`, `display_name`, `avatar_url`, `public_key_pem`, `inbox`, `shared_inbox`
+  - [x] Force-refresh on `Update(Person)` activities
+- [x] **Schema — federation fields**
+  - [x] Migration: `remote_actors` table with indexes
+  - [x] Migration: `followers` table (`actor_uri`, `follower_uri`, `accepted_at`, `activity_id`)
+  - [x] Migration: add `ap_id` (nullable, unique where not null) to articles
+  - [x] Migration: add `remote_actor_id` (nullable FK) to articles
+- [x] **Safe HTTP client** (`Federation.HTTPClient`)
+  - [x] SSRF protection: reject private/loopback IPs
+  - [x] HTTPS only, configurable timeouts, redirect limits
+  - [x] Response body size cap (256 KB)
+  - [x] Instance-identifying User-Agent header
+- [x] **Minimal delivery** (`Federation.Delivery`)
+  - [x] Send `Accept(Follow)` via signed HTTP POST
+  - [x] Async delivery via `Task.Supervisor`
+- [x] **Follower context** (`Federation` module)
+  - [x] `create_follower/3`, `delete_follower/2`, `follower_exists?/2`
+  - [x] `list_followers/1`, `count_followers/1`
+  - [x] `delete_followers_by_remote/1` (for actor deletion)
+- [x] **Actor JSON-LD updates**
+  - [x] Added `endpoints.sharedInbox` to user and board actors
+- [x] **Security — Phase 2a**
+  - [x] **HTML sanitization module** (`Federation.Sanitizer`)
+    - [x] Allowlist-based HTML sanitizer for all incoming federated content
+    - [x] Strip `<script>`, `<style>`, `<iframe>`, `<object>`, `<embed>`, `<form>`, `<input>`, `<textarea>`, event handlers
+    - [x] Allow safe subset: `<p>`, `<br>`, `<a>`, `<strong>`, `<em>`, `<code>`, `<pre>`, `<blockquote>`, `<ul>`, `<ol>`, `<li>`, `<h1>`–`<h6>`, `<hr>`, `<del>`
+    - [x] Sanitize `<a href>` — only allow `http:`/`https:` schemes, add `rel="nofollow noopener noreferrer"`
+    - [x] Applied **before database storage**, not at render time
+  - [x] **Input validation** (`Federation.Validator`)
+    - [x] All AP IDs validated as HTTPS URLs with valid hostnames
+    - [x] Activity validation: required fields (`type`, `actor`, `object`)
+    - [x] Size limits: reject payloads > 256 KB, content fields > 64 KB
+    - [x] Reject activities from blocked domains (domain blocklist via settings)
+  - [x] **Anti-abuse**
+    - [x] Per-domain rate limiting on inbox (60 req/min per domain)
+    - [x] Reject self-referencing actor URIs (actor claiming to be local)
+    - [x] Validate `attributedTo` matches activity `actor`
+    - [x] Log all rejected activities with reason for audit
+  - [x] **Fetch safety**
+    - [x] Remote HTTP fetches: HTTPS only, follow max 3 redirects
+    - [x] DNS rebinding protection — reject private/loopback IPs (SSRF prevention)
+    - [x] Timeout all remote fetches (10s connect, 30s total)
+    - [x] User-Agent header identifying the instance
+
+### Phase 2b — Content Activities (Deferred)
+
+Handle `Create(Note/Article)`, `Like`, `Announce` — requires comment system and likes tables.
+
+- [ ] `Create(Note)` → store as remote comment (if `inReplyTo` matches local article)
+- [ ] `Create(Article)` → store as remote article in target board (if `audience` matches)
+- [ ] `Announce` → record boost/share
+- [ ] `Like` → record like/favorite
+- [ ] `Delete` → soft-delete matching remote content
+- [ ] `Update` → update matching remote content
 
 ### Phase 3 — Delivery (Sending Activities)
 

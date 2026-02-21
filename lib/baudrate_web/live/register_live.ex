@@ -68,7 +68,11 @@ defmodule BaudrateWeb.RegisterLive do
         Logger.warning("rate_limit.denied: action=register ip=#{ip}")
 
         {:noreply,
-         put_flash(socket, :error, gettext("Too many registration attempts. Please try again later."))}
+         put_flash(
+           socket,
+           :error,
+           gettext("Too many registration attempts. Please try again later.")
+         )}
 
       _ ->
         do_register(socket, params)

@@ -1,9 +1,12 @@
 defmodule Baudrate.Federation do
   @moduledoc """
-  The Federation context provides ActivityPub read-only endpoints.
+  The Federation context provides ActivityPub endpoints and follower management.
 
   Phase 1 exposes actors, outbox collections, and article objects as
   JSON-LD, along with WebFinger and NodeInfo discovery endpoints.
+
+  Phase 2a adds inbox endpoints, HTTP Signature verification, remote actor
+  resolution, and Follow/Undo(Follow) handling with auto-accept.
 
   ## Actor Mapping
 
@@ -18,6 +21,9 @@ defmodule Baudrate.Federation do
     * `/ap/boards/:slug` — board actor
     * `/ap/site` — site actor
     * `/ap/articles/:slug` — article object
+    * `/ap/inbox` — shared inbox (POST)
+    * `/ap/users/:username/inbox` — user inbox (POST)
+    * `/ap/boards/:slug/inbox` — board inbox (POST)
   """
 
   import Ecto.Query
@@ -26,7 +32,7 @@ defmodule Baudrate.Federation do
   alias Baudrate.Setup
   alias Baudrate.Content
   alias Baudrate.Content.Markdown
-  alias Baudrate.Federation.KeyStore
+  alias Baudrate.Federation.{Follower, KeyStore}
 
   @as_context "https://www.w3.org/ns/activitystreams"
   @security_context "https://w3id.org/security/v1"
@@ -186,6 +192,7 @@ defmodule Baudrate.Federation do
       "outbox" => "#{uri}/outbox",
       "followers" => "#{uri}/followers",
       "url" => "#{base_url()}/@#{user.username}",
+      "endpoints" => %{"sharedInbox" => "#{base_url()}/ap/inbox"},
       "publicKey" => %{
         "id" => "#{uri}#main-key",
         "owner" => uri,
@@ -211,6 +218,7 @@ defmodule Baudrate.Federation do
       "outbox" => "#{uri}/outbox",
       "followers" => "#{uri}/followers",
       "url" => "#{base_url()}/boards/#{board.slug}",
+      "endpoints" => %{"sharedInbox" => "#{base_url()}/ap/inbox"},
       "publicKey" => %{
         "id" => "#{uri}#main-key",
         "owner" => uri,
@@ -316,6 +324,74 @@ defmodule Baudrate.Federation do
       "totalItems" => length(items),
       "orderedItems" => items
     }
+  end
+
+  # --- Article Object ---
+
+  # --- Followers ---
+
+  @doc """
+  Creates a follower record for a remote actor following a local actor.
+  """
+  def create_follower(actor_uri, remote_actor, activity_id) do
+    %Follower{}
+    |> Follower.changeset(%{
+      actor_uri: actor_uri,
+      follower_uri: remote_actor.ap_id,
+      remote_actor_id: remote_actor.id,
+      activity_id: activity_id,
+      accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.insert()
+  end
+
+  @doc """
+  Deletes a follower record matching the given actor and follower URIs.
+  """
+  def delete_follower(actor_uri, follower_uri) do
+    from(f in Follower,
+      where: f.actor_uri == ^actor_uri and f.follower_uri == ^follower_uri
+    )
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Deletes all follower records where the remote actor matches the given AP ID.
+  Used when a remote actor is deleted.
+  """
+  def delete_followers_by_remote(remote_actor_ap_id) do
+    from(f in Follower, where: f.follower_uri == ^remote_actor_ap_id)
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Returns true if the given follower relationship exists.
+  """
+  def follower_exists?(actor_uri, follower_uri) do
+    Repo.exists?(
+      from(f in Follower,
+        where: f.actor_uri == ^actor_uri and f.follower_uri == ^follower_uri
+      )
+    )
+  end
+
+  @doc """
+  Lists all followers of the given local actor URI.
+  """
+  def list_followers(actor_uri) do
+    from(f in Follower,
+      where: f.actor_uri == ^actor_uri,
+      preload: [:remote_actor],
+      order_by: [desc: f.inserted_at]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the count of followers for the given local actor URI.
+  """
+  def count_followers(actor_uri) do
+    Repo.one(from(f in Follower, where: f.actor_uri == ^actor_uri, select: count(f.id))) || 0
   end
 
   # --- Article Object ---

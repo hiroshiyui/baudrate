@@ -10,6 +10,7 @@ defmodule Baudrate.Content.Article do
   import Ecto.Changeset
 
   alias Baudrate.Content.{Board, BoardArticle}
+  alias Baudrate.Federation.RemoteActor
 
   schema "articles" do
     field :title, :string
@@ -17,8 +18,10 @@ defmodule Baudrate.Content.Article do
     field :slug, :string
     field :pinned, :boolean, default: false
     field :locked, :boolean, default: false
+    field :ap_id, :string
 
     belongs_to :user, Baudrate.Setup.User
+    belongs_to :remote_actor, RemoteActor
     has_many :board_articles, BoardArticle
     many_to_many :boards, Board, join_through: "board_articles"
 

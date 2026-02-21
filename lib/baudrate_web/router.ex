@@ -58,6 +58,13 @@ defmodule BaudrateWeb.Router do
     plug BaudrateWeb.Plugs.RateLimit, action: :activity_pub
   end
 
+  pipeline :activity_pub_inbox do
+    plug BaudrateWeb.Plugs.RateLimit, action: :activity_pub
+    plug BaudrateWeb.Plugs.CacheBody
+    plug BaudrateWeb.Plugs.VerifyHTTPSignature
+    plug BaudrateWeb.Plugs.RateLimitDomain
+  end
+
   pipeline :rate_limit_login do
     plug BaudrateWeb.Plugs.RateLimit, action: :login
   end
@@ -89,6 +96,14 @@ defmodule BaudrateWeb.Router do
     get "/boards/:slug/outbox", ActivityPubController, :board_outbox
     get "/site", ActivityPubController, :site_actor
     get "/articles/:slug", ActivityPubController, :article
+  end
+
+  scope "/ap", BaudrateWeb do
+    pipe_through :activity_pub_inbox
+
+    post "/inbox", ActivityPubController, :shared_inbox
+    post "/users/:username/inbox", ActivityPubController, :user_inbox
+    post "/boards/:slug/inbox", ActivityPubController, :board_inbox
   end
 
   # Public (redirect if already authenticated)

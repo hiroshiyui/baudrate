@@ -27,7 +27,11 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       user = setup_user("user")
       host = URI.parse(BaudrateWeb.Endpoint.url()).host
 
-      conn = conn |> json_conn() |> get("/.well-known/webfinger?resource=acct:#{user.username}@#{host}")
+      conn =
+        conn
+        |> json_conn()
+        |> get("/.well-known/webfinger?resource=acct:#{user.username}@#{host}")
+
       body = json_response(conn, 200)
 
       assert body["subject"] =~ user.username
@@ -38,7 +42,9 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       board = setup_board()
       host = URI.parse(BaudrateWeb.Endpoint.url()).host
 
-      conn = conn |> json_conn() |> get("/.well-known/webfinger?resource=acct:!#{board.slug}@#{host}")
+      conn =
+        conn |> json_conn() |> get("/.well-known/webfinger?resource=acct:!#{board.slug}@#{host}")
+
       body = json_response(conn, 200)
 
       assert body["subject"] =~ board.slug
@@ -46,7 +52,10 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
     test "returns 404 for non-existent user", %{conn: conn} do
       host = URI.parse(BaudrateWeb.Endpoint.url()).host
-      conn = conn |> json_conn() |> get("/.well-known/webfinger?resource=acct:nonexistent@#{host}")
+
+      conn =
+        conn |> json_conn() |> get("/.well-known/webfinger?resource=acct:nonexistent@#{host}")
+
       assert json_response(conn, 404)["error"] == "Not Found"
     end
 

@@ -64,6 +64,16 @@ config :hammer,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Federation
+config :baudrate, Baudrate.Federation,
+  signature_max_age: 30,
+  actor_cache_ttl: 86_400,
+  max_payload_size: 262_144,
+  max_content_size: 65_536,
+  http_connect_timeout: 10_000,
+  http_receive_timeout: 30_000,
+  max_redirects: 3
+
 config :gettext, default_locale: "en"
 config :baudrate, BaudrateWeb.Gettext, default_locale: "en", locales: ~w(en zh_TW)
 

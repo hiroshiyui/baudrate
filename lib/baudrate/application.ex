@@ -13,6 +13,7 @@ defmodule Baudrate.Application do
       {DNSCluster, query: Application.get_env(:baudrate, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Baudrate.PubSub},
       Baudrate.Auth.SessionCleaner,
+      {Task.Supervisor, name: Baudrate.Federation.TaskSupervisor},
       # Start to serve requests, typically the last entry
       BaudrateWeb.Endpoint
     ]

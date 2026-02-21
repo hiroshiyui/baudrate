@@ -40,11 +40,13 @@ defmodule BaudrateWeb.RegisterLiveTest do
     {:ok, lv, _html} = live(conn, "/register")
 
     lv
-    |> form("form", user: %{
-      username: "newuser",
-      password: "SecurePass1!!",
-      password_confirmation: "SecurePass1!!"
-    })
+    |> form("form",
+      user: %{
+        username: "newuser",
+        password: "SecurePass1!!",
+        password_confirmation: "SecurePass1!!"
+      }
+    )
     |> render_submit()
 
     assert_redirect(lv, "/login")
@@ -54,11 +56,13 @@ defmodule BaudrateWeb.RegisterLiveTest do
     {:ok, lv, _html} = live(conn, "/register")
 
     lv
-    |> form("form", user: %{
-      username: "pendinguser",
-      password: "SecurePass1!!",
-      password_confirmation: "SecurePass1!!"
-    })
+    |> form("form",
+      user: %{
+        username: "pendinguser",
+        password: "SecurePass1!!",
+        password_confirmation: "SecurePass1!!"
+      }
+    )
     |> render_submit()
 
     assert_redirect(lv, "/login")
@@ -72,11 +76,13 @@ defmodule BaudrateWeb.RegisterLiveTest do
 
     html =
       lv
-      |> form("form", user: %{
-        username: "",
-        password: "short",
-        password_confirmation: "mismatch"
-      })
+      |> form("form",
+        user: %{
+          username: "",
+          password: "short",
+          password_confirmation: "mismatch"
+        }
+      )
       |> render_submit()
 
     assert html =~ "can&#39;t be blank" || html =~ "can't be blank"
