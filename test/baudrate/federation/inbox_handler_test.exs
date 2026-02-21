@@ -774,6 +774,226 @@ defmodule Baudrate.Federation.InboxHandlerTest do
     end
   end
 
+  describe "Create(Page) — Lemmy interop" do
+    test "creates a remote article from a Page object" do
+      _user = setup_user_with_role("user")
+      board = create_board()
+      remote_actor = create_remote_actor()
+
+      board_uri = Federation.actor_uri(:board, board.slug)
+
+      activity = %{
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/post/#{System.unique_integer([:positive])}",
+          "type" => "Page",
+          "name" => "Lemmy Page Title",
+          "content" => "<p>Lemmy page body</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "audience" => [board_uri],
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      articles = Content.list_articles_for_board(board)
+      remote_articles = Enum.filter(articles, &(&1.remote_actor_id == remote_actor.id))
+      assert length(remote_articles) == 1
+      assert hd(remote_articles).title == "Lemmy Page Title"
+    end
+  end
+
+  describe "Update(Page) — Lemmy interop" do
+    test "updates a remote article created from a Page" do
+      _user = setup_user_with_role("user")
+      board = create_board()
+      remote_actor = create_remote_actor()
+      board_uri = Federation.actor_uri(:board, board.slug)
+
+      ap_id = "https://remote.example/post/page-update-#{System.unique_integer([:positive])}"
+
+      # Create as Page first
+      create_activity = %{
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => ap_id,
+          "type" => "Page",
+          "name" => "Original Page",
+          "content" => "Original content",
+          "attributedTo" => remote_actor.ap_id,
+          "audience" => [board_uri]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(create_activity, remote_actor, :shared)
+
+      # Update as Page
+      update_activity = %{
+        "type" => "Update",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => ap_id,
+          "type" => "Page",
+          "name" => "Updated Page Title",
+          "content" => "Updated page content",
+          "attributedTo" => remote_actor.ap_id
+        }
+      }
+
+      assert :ok = InboxHandler.handle(update_activity, remote_actor, :shared)
+
+      article = Content.get_article_by_ap_id(ap_id)
+      assert article.title == "Updated Page Title"
+      assert article.body == "Updated page content"
+    end
+  end
+
+  describe "Announce with embedded object (Lemmy interop)" do
+    test "records announce from embedded object map" do
+      remote_actor = create_remote_actor()
+      object_id = "https://remote.example/post/#{System.unique_integer([:positive])}"
+
+      activity = %{
+        "id" => "https://remote.example/activities/announce-#{System.unique_integer([:positive])}",
+        "type" => "Announce",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => object_id,
+          "type" => "Page",
+          "name" => "Lemmy Post",
+          "content" => "Body"
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Federation.count_announces(object_id) == 1
+    end
+  end
+
+  describe "attributedTo as array (Mastodon interop)" do
+    test "validates correctly when first URI matches" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      article_uri = Federation.actor_uri(:article, article.slug)
+
+      activity = %{
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/notes/#{System.unique_integer([:positive])}",
+          "type" => "Note",
+          "content" => "Comment with array attribution",
+          "attributedTo" => [
+            remote_actor.ap_id,
+            %{"type" => "Organization", "name" => "Some Org"}
+          ],
+          "inReplyTo" => article_uri
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      comments = Content.list_comments_for_article(article)
+      assert length(comments) == 1
+    end
+
+    test "rejects when array URI mismatches" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      article_uri = Federation.actor_uri(:article, article.slug)
+
+      activity = %{
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/notes/#{System.unique_integer([:positive])}",
+          "type" => "Note",
+          "content" => "Impersonated via array",
+          "attributedTo" => [
+            "https://evil.example/users/impersonator",
+            %{"type" => "Organization"}
+          ],
+          "inReplyTo" => article_uri
+        }
+      }
+
+      assert {:error, :attribution_mismatch} =
+               InboxHandler.handle(activity, remote_actor, :shared)
+    end
+  end
+
+  describe "sensitive + summary (content warning)" do
+    test "prepends CW to body when sensitive is true" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      article_uri = Federation.actor_uri(:article, article.slug)
+
+      activity = %{
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/notes/#{System.unique_integer([:positive])}",
+          "type" => "Note",
+          "content" => "<p>Sensitive content here</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "inReplyTo" => article_uri,
+          "sensitive" => true,
+          "summary" => "Content Warning"
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      comments = Content.list_comments_for_article(article)
+      assert length(comments) == 1
+
+      comment = hd(comments)
+      assert comment.body =~ "[CW: Content Warning]"
+      assert comment.body =~ "Sensitive content here"
+    end
+
+    test "does not prepend CW when sensitive is false" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      article_uri = Federation.actor_uri(:article, article.slug)
+
+      activity = %{
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/notes/#{System.unique_integer([:positive])}",
+          "type" => "Note",
+          "content" => "<p>Normal content</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "inReplyTo" => article_uri,
+          "sensitive" => false,
+          "summary" => "Not a CW"
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      comments = Content.list_comments_for_article(article)
+      comment = hd(comments)
+      refute comment.body =~ "[CW:"
+    end
+  end
+
   describe "domain blocking" do
     test "rejects activities from blocked domains" do
       Baudrate.Setup.set_setting("ap_domain_blocklist", "blocked-domain.example")

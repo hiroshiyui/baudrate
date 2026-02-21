@@ -215,13 +215,17 @@ Cross-platform compatibility, moderation tools, and admin controls.
 
 - [ ] **Mastodon compatibility**
   - [ ] Article → Note fallback: send `Note` summary + link for Mastodon followers
-  - [ ] Handle Mastodon-specific extensions (`sensitive`, `attachment`, `tag`)
+  - [x] Handle Mastodon-specific extensions (`sensitive`, `summary` content warnings)
+  - [x] Handle `attributedTo` as array (extract first URI)
+  - [x] Add `to`/`cc` addressing on outbound Note and Article objects
+  - [x] Allow `<span>` tags with safe classes (`h-card`, `hashtag`, `mention`, `invisible`) in sanitizer
   - [ ] Support `Hashtag` objects in `tag` array
   - [ ] Render incoming `Note` objects as comments
 - [ ] **Lemmy compatibility**
   - [ ] Board → Group actor: `Announce` wrapping for community-style federation
-  - [ ] Handle Lemmy's `Page` object type (treat as Article)
-  - [ ] Support `!board@host` WebFinger addressing
+  - [x] Handle Lemmy's `Page` object type (treat as Article) for Create and Update
+  - [x] Handle `Announce` with embedded object maps (extract inner `id`)
+  - [x] Support `!board@host` WebFinger addressing
   - [ ] Cross-post detection and deduplication
 - [ ] **Moderation tools**
   - [ ] Domain blocklist management (admin UI)

@@ -6,6 +6,9 @@ defmodule Baudrate.Federation.Publisher do
   Each `build_*` function returns a `{activity_map, actor_uri}` tuple.
   The `publish_*` convenience functions build the activity and call
   `Delivery.enqueue_for_article/2` to fan out to follower inboxes.
+
+  Outbound Note objects include `to`/`cc` addressing for Mastodon
+  compatibility — Mastodon requires these fields to determine visibility.
   """
 
   alias Baudrate.Federation
@@ -134,7 +137,9 @@ defmodule Baudrate.Federation.Publisher do
         "content" => comment.body_html || comment.body,
         "attributedTo" => actor_uri,
         "inReplyTo" => article_uri,
-        "published" => DateTime.to_iso8601(comment.inserted_at)
+        "published" => DateTime.to_iso8601(comment.inserted_at),
+        "to" => [@as_public],
+        "cc" => ["#{actor_uri}/followers"]
       }
     }
 

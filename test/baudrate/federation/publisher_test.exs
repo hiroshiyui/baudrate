@@ -145,5 +145,44 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["object"]["inReplyTo"] =~ article.slug
       assert actor_uri =~ user.username
     end
+
+    test "Note object includes to/cc addressing for Mastodon compatibility" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "Addressed note",
+          body_html: "<p>Addressed note</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      {activity, actor_uri} = Publisher.build_create_comment(comment, article)
+
+      note = activity["object"]
+      assert "https://www.w3.org/ns/activitystreams#Public" in note["to"]
+      assert "#{actor_uri}/followers" in note["cc"]
+    end
+  end
+
+  describe "article_object/1" do
+    test "Article object includes cc field with board URIs" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {activity, _actor_uri} = Publisher.build_create_article(article)
+
+      object = activity["object"]
+      assert is_list(object["cc"])
+      assert length(object["cc"]) > 0
+
+      board_uri = Baudrate.Federation.actor_uri(:board, board.slug)
+      assert board_uri in object["cc"]
+    end
   end
 end

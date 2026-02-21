@@ -6,6 +6,10 @@ defmodule Baudrate.Federation.Sanitizer do
   remote ActivityPub instances. Uses an allowlist-based approach to strip
   unsafe elements while preserving safe formatting.
 
+  Mastodon wraps mentions in `<span class="h-card">` and hashtags in
+  `<span class="hashtag">`. These classes (plus `mention` and `invisible`)
+  are preserved; all other class values are stripped.
+
   Applied **before database storage**, not at render time.
   """
 
@@ -15,7 +19,10 @@ defmodule Baudrate.Federation.Sanitizer do
     em strong del
     a code pre blockquote
     ul ol li
+    span
   ])
+
+  @safe_span_classes MapSet.new(~w[h-card hashtag mention invisible])
 
   @doc """
   Sanitizes incoming HTML from remote instances.
@@ -79,6 +86,21 @@ defmodule Baudrate.Federation.Sanitizer do
         else
           ""
         end
+
+      _ ->
+        ""
+    end
+  end
+
+  defp sanitize_attrs("span", attrs) do
+    case Regex.run(~r/class="([^"]*)"/, attrs) do
+      [_, classes] ->
+        safe =
+          classes
+          |> String.split()
+          |> Enum.filter(&MapSet.member?(@safe_span_classes, &1))
+
+        if safe == [], do: "", else: ~s( class="#{Enum.join(safe, " ")}")
 
       _ ->
         ""

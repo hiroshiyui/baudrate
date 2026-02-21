@@ -459,6 +459,7 @@ defmodule Baudrate.Federation do
       "published" => DateTime.to_iso8601(article.inserted_at),
       "updated" => DateTime.to_iso8601(article.updated_at),
       "to" => [@as_public],
+      "cc" => board_uris,
       "audience" => board_uris,
       "url" => "#{base_url()}/articles/#{article.slug}"
     }

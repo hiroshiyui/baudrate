@@ -135,12 +135,57 @@ defmodule Baudrate.Federation.SanitizerTest do
     end
 
     test "strips unknown/unsafe tags while preserving text" do
-      html = "<div>content in div</div><span>span text</span>"
+      html = "<div>content in div</div>"
       result = Sanitizer.sanitize(html)
       refute result =~ "<div>"
-      refute result =~ "<span>"
       assert result =~ "content in div"
-      assert result =~ "span text"
+    end
+
+    test "preserves span with h-card class (Mastodon mentions)" do
+      html = ~s(<span class="h-card"><a href="https://example.com/@alice">@alice</a></span>)
+      result = Sanitizer.sanitize(html)
+      assert result =~ ~s(<span class="h-card">)
+      assert result =~ "<a "
+    end
+
+    test "preserves span with hashtag class (Mastodon hashtags)" do
+      html = ~s(<span class="hashtag">#elixir</span>)
+      result = Sanitizer.sanitize(html)
+      assert result =~ ~s(<span class="hashtag">)
+    end
+
+    test "preserves span with mention class" do
+      html = ~s(<span class="mention">@bob</span>)
+      result = Sanitizer.sanitize(html)
+      assert result =~ ~s(<span class="mention">)
+    end
+
+    test "preserves span with invisible class" do
+      html = ~s(<span class="invisible">hidden</span>)
+      result = Sanitizer.sanitize(html)
+      assert result =~ ~s(<span class="invisible">)
+    end
+
+    test "strips unsafe class from span" do
+      html = ~s(<span class="malicious-class">text</span>)
+      result = Sanitizer.sanitize(html)
+      assert result =~ "<span>"
+      refute result =~ "malicious-class"
+    end
+
+    test "span without class has attributes stripped" do
+      html = ~s(<span style="color:red">text</span>)
+      result = Sanitizer.sanitize(html)
+      assert result =~ "<span>"
+      refute result =~ "style"
+    end
+
+    test "span with mixed safe and unsafe classes keeps only safe" do
+      html = ~s(<span class="h-card evil-class mention">text</span>)
+      result = Sanitizer.sanitize(html)
+      assert result =~ "h-card"
+      assert result =~ "mention"
+      refute result =~ "evil-class"
     end
   end
 end

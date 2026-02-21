@@ -9,12 +9,20 @@ defmodule Baudrate.Federation.InboxHandler do
     * `Undo(Announce)` — remove announce record
     * `Create(Note)` — store as remote comment (if `inReplyTo` matches local article)
     * `Create(Article)` — store as remote article in target board
+    * `Create(Page)` — treat as `Create(Article)` (Lemmy interop)
     * `Like` — create article like for target article
-    * `Announce` — record boost/share
-    * `Update(Article/Note)` — update remote content with authorship check
+    * `Announce` — record boost/share (bare URI or embedded object map)
+    * `Update(Article/Note/Page)` — update remote content with authorship check
     * `Update(Person/Group)` — refresh cached RemoteActor
     * `Delete(actor)` — remove all their follower records
     * `Delete(content)` — soft-delete matching remote content with authorship check
+
+  ## Mastodon/Lemmy Compatibility
+
+    * `attributedTo` may be an array — the first binary URI is used
+    * `sensitive` + `summary` are handled as content warnings
+    * Lemmy `Page` objects are treated identically to `Article`
+    * Lemmy `Announce` with embedded object maps extracts the inner `id`
   """
 
   require Logger
@@ -135,13 +143,15 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
-  # --- Create(Article) — remote article posted to a local board ---
+  # --- Create(Article/Page) — remote article posted to a local board ---
+  # Lemmy sends `Page` instead of `Article`; both are handled identically.
 
   defp dispatch(
-         %{"type" => "Create", "object" => %{"type" => "Article"} = object},
+         %{"type" => "Create", "object" => %{"type" => type} = object},
          remote_actor,
          _target
-       ) do
+       )
+       when type in ["Article", "Page"] do
     with :ok <- validate_attribution_match(object, remote_actor),
          {:ok, body, _body_html} <- sanitize_content(object),
          {:ok, board} <- resolve_target_board(object) do
@@ -165,7 +175,7 @@ defmodule Baudrate.Federation.InboxHandler do
                [board.id]
              ) do
           {:ok, _multi} ->
-            Logger.info("federation.activity: type=Create(Article) ap_id=#{ap_id}")
+            Logger.info("federation.activity: type=Create(#{type}) ap_id=#{ap_id}")
             :ok
 
           {:error, :article, %Ecto.Changeset{} = changeset, _} ->
@@ -226,18 +236,44 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
-  # --- Update(Note/Article) — content update ---
+  # --- Announce with embedded object map (Lemmy interop) ---
+  # Lemmy sends the full object as a map instead of a bare URI string.
+
+  defp dispatch(
+         %{"type" => "Announce", "object" => %{"id" => object_id}} = activity,
+         remote_actor,
+         _target
+       )
+       when is_binary(object_id) do
+    ap_id = activity["id"]
+
+    case Federation.create_announce(%{
+           ap_id: ap_id,
+           target_ap_id: object_id,
+           activity_id: ap_id,
+           remote_actor_id: remote_actor.id
+         }) do
+      {:ok, _announce} ->
+        Logger.info("federation.activity: type=Announce(embedded) ap_id=#{ap_id}")
+        :ok
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        if has_unique_error?(changeset), do: :ok, else: {:error, :announce_failed}
+    end
+  end
+
+  # --- Update(Note/Article/Page) — content update ---
 
   defp dispatch(
          %{"type" => "Update", "object" => %{"type" => type} = object},
          remote_actor,
          _target
        )
-       when type in ["Note", "Article"] do
+       when type in ["Note", "Article", "Page"] do
     with :ok <- validate_attribution_match(object, remote_actor) do
       case type do
         "Note" -> handle_update_note(object, remote_actor)
-        "Article" -> handle_update_article(object, remote_actor)
+        t when t in ["Article", "Page"] -> handle_update_article(object, remote_actor)
       end
     end
   end
@@ -372,6 +408,17 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
+  # Mastodon sometimes sends attributedTo as an array
+  # (e.g., ["https://example.com/users/alice", %{"type" => "Organization", ...}]).
+  # Extract the first binary URI and compare.
+  defp validate_attribution_match(%{"attributedTo" => attributed_list}, remote_actor)
+       when is_list(attributed_list) do
+    case Enum.find(attributed_list, &is_binary/1) do
+      nil -> :ok
+      uri -> validate_attribution_match(%{"attributedTo" => uri}, remote_actor)
+    end
+  end
+
   defp validate_attribution_match(_object, _remote_actor), do: :ok
 
   defp sanitize_content(object) do
@@ -389,17 +436,29 @@ defmodule Baudrate.Federation.InboxHandler do
   end
 
   defp extract_body(object) do
-    case object do
-      %{"content" => content} when is_binary(content) and content != "" ->
-        content
+    raw =
+      case object do
+        %{"content" => content} when is_binary(content) and content != "" ->
+          content
 
-      %{"source" => %{"content" => source}} when is_binary(source) and source != "" ->
-        source
+        %{"source" => %{"content" => source}} when is_binary(source) and source != "" ->
+          source
 
-      _ ->
-        ""
-    end
+        _ ->
+          ""
+      end
+
+    prepend_content_warning(raw, object)
   end
+
+  # When Mastodon marks a post as sensitive with a summary (content warning),
+  # prepend it so the warning is visible in the stored content.
+  defp prepend_content_warning(body, %{"sensitive" => true, "summary" => summary})
+       when is_binary(summary) and summary != "" do
+    "[CW: #{summary}]\n\n#{body}"
+  end
+
+  defp prepend_content_warning(body, _object), do: body
 
   defp strip_html(html) when is_binary(html) do
     html
