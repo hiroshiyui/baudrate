@@ -23,6 +23,9 @@ defmodule Baudrate.Federation.InboxHandler do
     * `sensitive` + `summary` are handled as content warnings
     * Lemmy `Page` objects are treated identically to `Article`
     * Lemmy `Announce` with embedded object maps extracts the inner `id`
+    * Cross-post deduplication: when a remote article with the same `ap_id`
+      arrives via a second board inbox, it is linked to the additional board
+      instead of being silently ignored
   """
 
   require Logger
@@ -156,9 +159,11 @@ defmodule Baudrate.Federation.InboxHandler do
          {:ok, body, _body_html} <- sanitize_content(object),
          {:ok, board} <- resolve_target_board(object) do
       ap_id = object["id"]
+      existing = is_binary(ap_id) && Content.get_article_by_ap_id(ap_id)
 
-      # Idempotency
-      if is_binary(ap_id) && Content.get_article_by_ap_id(ap_id) do
+      if existing do
+        # Cross-post: link to additional board if not already linked
+        Content.add_article_to_board(existing, board.id)
         :ok
       else
         title = object["name"] || "Untitled"

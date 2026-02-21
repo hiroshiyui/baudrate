@@ -22,6 +22,12 @@ defmodule Baudrate.Federation do
   are preserved, `<span>` tags with safe classes are allowed through the
   sanitizer, and outbound Note/Article objects include `to`/`cc` addressing.
 
+  Phase 4b completes Mastodon/Lemmy interop: outbound Article objects include
+  a plain-text `summary` (≤ 500 chars) for Mastodon preview display and a
+  `tag` array with `Hashtag` objects extracted from the article body (code
+  blocks excluded). Cross-post deduplication links a remote article to
+  additional boards when the same `ap_id` arrives via multiple board inboxes.
+
   Private boards are excluded from all federation endpoints — WebFinger,
   actor profiles, outbox, inbox, followers, and audience resolution all
   return 404 or skip private boards. Articles exclusively in private
@@ -450,11 +456,14 @@ defmodule Baudrate.Federation do
         actor_uri(:board, board.slug)
       end)
 
-    %{
+    tags = extract_hashtags(article.body)
+
+    map = %{
       "@context" => @as_context,
       "id" => actor_uri(:article, article.slug),
       "type" => "Article",
       "name" => article.title,
+      "summary" => build_article_summary(article.body),
       "content" => Markdown.to_html(article.body),
       "mediaType" => "text/html",
       "source" => %{
@@ -469,6 +478,69 @@ defmodule Baudrate.Federation do
       "audience" => board_uris,
       "url" => "#{base_url()}/articles/#{article.slug}"
     }
+
+    if tags == [], do: map, else: Map.put(map, "tag", tags)
+  end
+
+  # --- Article summary/tag helpers ---
+
+  defp build_article_summary(nil), do: ""
+
+  defp build_article_summary(body) do
+    body
+    |> strip_markdown()
+    |> truncate_text(500)
+  end
+
+  defp strip_markdown(text) do
+    text
+    |> String.replace(~r/```[\s\S]*?```/u, "")
+    |> String.replace(~r/`[^`]+`/, "")
+    |> String.replace(~r/!\[[^\]]*\]\([^)]*\)/, "")
+    |> String.replace(~r/\[[^\]]*\]\([^)]*\)/, fn m ->
+      case Regex.run(~r/\[([^\]]*)\]/, m) do
+        [_, text] -> text
+        _ -> m
+      end
+    end)
+    |> String.replace(~r/^\#{1,6}\s+/m, "")
+    |> String.replace(~r/[*_~]{1,3}/, "")
+    |> String.replace(~r/^>\s?/m, "")
+    |> String.replace(~r/^[-*+]\s/m, "")
+    |> String.replace(~r/^\d+\.\s/m, "")
+    |> String.replace(~r/\n{3,}/, "\n\n")
+    |> String.trim()
+  end
+
+  defp truncate_text(text, max_length) do
+    if String.length(text) <= max_length do
+      text
+    else
+      text
+      |> String.slice(0, max_length)
+      |> String.replace(~r/\s\S*$/, "")
+      |> Kernel.<>("…")
+    end
+  end
+
+  defp extract_hashtags(nil), do: []
+
+  defp extract_hashtags(body) do
+    cleaned =
+      body
+      |> String.replace(~r/```[\s\S]*?```/u, "")
+      |> String.replace(~r/`[^`]+`/, "")
+
+    Regex.scan(~r/(?:^|[^&\w])#([a-zA-Z]\w{0,63})/u, cleaned, capture: :all_but_first)
+    |> List.flatten()
+    |> Enum.uniq_by(&String.downcase/1)
+    |> Enum.map(fn tag ->
+      %{
+        "type" => "Hashtag",
+        "name" => "##{tag}",
+        "href" => "#{base_url()}/tags/#{String.downcase(tag)}"
+      }
+    end)
   end
 
   # --- Announces ---

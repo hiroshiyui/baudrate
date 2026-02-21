@@ -994,6 +994,93 @@ defmodule Baudrate.Federation.InboxHandlerTest do
     end
   end
 
+  describe "cross-post deduplication" do
+    test "same ap_id arriving for a second board links article to both boards" do
+      _user = setup_user_with_role("user")
+      board1 = create_board()
+      board2 = create_board()
+      remote_actor = create_remote_actor()
+
+      board1_uri = Federation.actor_uri(:board, board1.slug)
+      board2_uri = Federation.actor_uri(:board, board2.slug)
+      ap_id = "https://remote.example/articles/crosspost-#{System.unique_integer([:positive])}"
+
+      # First delivery to board1
+      activity1 = %{
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => ap_id,
+          "type" => "Article",
+          "name" => "Cross-posted Article",
+          "content" => "<p>Body</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "audience" => [board1_uri]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity1, remote_actor, :shared)
+
+      # Verify article is in board1
+      articles1 = Content.list_articles_for_board(board1)
+      assert length(Enum.filter(articles1, &(&1.ap_id == ap_id))) == 1
+
+      # Second delivery to board2 (same ap_id)
+      activity2 = %{
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => ap_id,
+          "type" => "Article",
+          "name" => "Cross-posted Article",
+          "content" => "<p>Body</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "audience" => [board2_uri]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity2, remote_actor, :shared)
+
+      # Article should now appear in both boards
+      articles2 = Content.list_articles_for_board(board2)
+      assert length(Enum.filter(articles2, &(&1.ap_id == ap_id))) == 1
+
+      # Still only one article record
+      article = Content.get_article_by_ap_id(ap_id)
+      article = Repo.preload(article, :boards)
+      board_ids = Enum.map(article.boards, & &1.id) |> Enum.sort()
+      assert board_ids == Enum.sort([board1.id, board2.id])
+    end
+
+    test "cross-post to same board is idempotent" do
+      _user = setup_user_with_role("user")
+      board = create_board()
+      remote_actor = create_remote_actor()
+
+      board_uri = Federation.actor_uri(:board, board.slug)
+      ap_id = "https://remote.example/articles/idem-#{System.unique_integer([:positive])}"
+
+      activity = %{
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => ap_id,
+          "type" => "Article",
+          "name" => "Same Board Twice",
+          "content" => "<p>Body</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "audience" => [board_uri]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      articles = Content.list_articles_for_board(board)
+      assert length(Enum.filter(articles, &(&1.ap_id == ap_id))) == 1
+    end
+  end
+
   describe "domain blocking" do
     test "rejects activities from blocked domains" do
       Baudrate.Setup.set_setting("ap_domain_blocklist", "blocked-domain.example")

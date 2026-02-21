@@ -184,5 +184,108 @@ defmodule Baudrate.Federation.PublisherTest do
       board_uri = Baudrate.Federation.actor_uri(:board, board.slug)
       assert board_uri in object["cc"]
     end
+
+    test "Article object includes summary field" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {activity, _actor_uri} = Publisher.build_create_article(article)
+
+      object = activity["object"]
+      assert is_binary(object["summary"])
+      assert object["summary"] == "Body text"
+    end
+
+    test "long article body produces truncated summary ending with ellipsis" do
+      user = create_user()
+      board = create_board()
+
+      slug = "art-long-#{System.unique_integer([:positive])}"
+      long_body = String.duplicate("word ", 200)
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Long Article", body: long_body, slug: slug, user_id: user.id},
+          [board.id]
+        )
+
+      Process.sleep(50)
+      article = Repo.preload(article, [:boards, :user])
+
+      object = Baudrate.Federation.article_object(article)
+      assert String.length(object["summary"]) <= 501
+      assert String.ends_with?(object["summary"], "…")
+    end
+
+    test "Article with hashtags includes tag array with Hashtag objects" do
+      user = create_user()
+      board = create_board()
+
+      slug = "art-tags-#{System.unique_integer([:positive])}"
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Tagged Article",
+            body: "Check out #elixir and #phoenix!",
+            slug: slug,
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      Process.sleep(50)
+      article = Repo.preload(article, [:boards, :user])
+
+      object = Baudrate.Federation.article_object(article)
+      assert is_list(object["tag"])
+      assert length(object["tag"]) == 2
+
+      names = Enum.map(object["tag"], & &1["name"])
+      assert "#elixir" in names
+      assert "#phoenix" in names
+
+      tag = Enum.find(object["tag"], &(&1["name"] == "#elixir"))
+      assert tag["type"] == "Hashtag"
+      assert tag["href"] =~ "/tags/elixir"
+    end
+
+    test "Article without hashtags has no tag key" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      object = Baudrate.Federation.article_object(article)
+      refute Map.has_key?(object, "tag")
+    end
+
+    test "hashtags in code blocks are excluded" do
+      user = create_user()
+      board = create_board()
+
+      slug = "art-codeblock-#{System.unique_integer([:positive])}"
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Code Article",
+            body: "Real #visible tag\n```\n#hidden_in_code\n```\nand `#inline_hidden`",
+            slug: slug,
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      Process.sleep(50)
+      article = Repo.preload(article, [:boards, :user])
+
+      object = Baudrate.Federation.article_object(article)
+      assert is_list(object["tag"])
+      names = Enum.map(object["tag"], & &1["name"])
+      assert "#visible" in names
+      refute "#hidden_in_code" in names
+      refute "#inline_hidden" in names
+    end
   end
 end

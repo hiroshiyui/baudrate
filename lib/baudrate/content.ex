@@ -149,6 +149,19 @@ defmodule Baudrate.Content do
     end
   end
 
+  # --- Cross-post ---
+
+  @doc """
+  Links an existing article to an additional board.
+  Used for cross-post deduplication when the same remote article
+  arrives via multiple board inboxes.
+  """
+  def add_article_to_board(%Article{id: article_id}, board_id) do
+    %BoardArticle{}
+    |> BoardArticle.changeset(%{board_id: board_id, article_id: article_id})
+    |> Repo.insert(on_conflict: :nothing)
+  end
+
   # --- Remote Articles ---
 
   @doc """

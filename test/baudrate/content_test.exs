@@ -240,6 +240,44 @@ defmodule Baudrate.ContentTest do
     end
   end
 
+  # --- Cross-post ---
+
+  describe "add_article_to_board/2" do
+    test "links article to a new board" do
+      user = create_user("user")
+      board1 = create_board(%{name: "Board 1", slug: "xp-board-1"})
+      board2 = create_board(%{name: "Board 2", slug: "xp-board-2"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Cross-post", body: "body", slug: "xpost", user_id: user.id},
+          [board1.id]
+        )
+
+      assert {:ok, _} = Content.add_article_to_board(article, board2.id)
+
+      articles = Content.list_articles_for_board(board2)
+      assert length(articles) == 1
+      assert hd(articles).id == article.id
+    end
+
+    test "is idempotent for same board" do
+      user = create_user("user")
+      board = create_board(%{name: "Idem Board", slug: "idem-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Idem Post", body: "body", slug: "idem-post", user_id: user.id},
+          [board.id]
+        )
+
+      assert {:ok, _} = Content.add_article_to_board(article, board.id)
+
+      articles = Content.list_articles_for_board(board)
+      assert length(articles) == 1
+    end
+  end
+
   # --- Remote Articles ---
 
   defp create_remote_actor do

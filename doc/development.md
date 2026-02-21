@@ -283,6 +283,9 @@ The `Baudrate.Federation` context handles all federation logic.
 - `<span>` tags with safe classes (`h-card`, `hashtag`, `mention`, `invisible`) preserved by sanitizer
 - Outbound Note objects include `to`/`cc` addressing (required by Mastodon for visibility)
 - Outbound Article objects include `cc` with board actor URIs (improves discoverability)
+- Outbound Article objects include plain-text `summary` (≤ 500 chars) for Mastodon preview display
+- Outbound Article objects include `tag` array with `Hashtag` objects (extracted from body, code blocks excluded)
+- Cross-post deduplication: same remote article arriving via multiple board inboxes links to all boards
 
 **Security:**
 - HTTP Signature verification on all inbox requests

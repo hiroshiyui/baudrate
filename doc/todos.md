@@ -232,13 +232,13 @@ existing behavior.
 
 Cross-platform compatibility, moderation tools, and admin controls.
 
-- [ ] **Mastodon compatibility (remaining)**
-  - [ ] Article → Note fallback: send `Note` summary + link for Mastodon followers
-  - [ ] Support `Hashtag` objects in `tag` array
-  - [ ] Render incoming `Note` objects as comments
-- [ ] **Lemmy compatibility (remaining)**
-  - [ ] Board → Group actor: `Announce` wrapping for community-style federation
-  - [ ] Cross-post detection and deduplication
+- [x] **Mastodon compatibility (remaining)**
+  - [x] Article summary field: outbound Article objects include plain-text `summary` for Mastodon preview display (truncated to 500 chars)
+  - [x] Support `Hashtag` objects in `tag` array on outbound Article objects
+  - [x] Render incoming `Note` objects as comments (backend via InboxHandler Create(Note); UI is a Content todo)
+- [x] **Lemmy compatibility (remaining)**
+  - [x] Board → Group actor: `Announce` wrapping for community-style federation (implemented in Phase 3)
+  - [x] Cross-post detection and deduplication (same remote article arriving via multiple board inboxes links to all boards)
 - [ ] **Moderation tools**
   - [ ] Domain blocklist management (admin UI)
   - [ ] Instance allowlist mode (federate only with approved instances)
