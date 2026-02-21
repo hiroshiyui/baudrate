@@ -98,7 +98,10 @@ lib/
 │   │   ├── set_locale.ex        # Accept-Language + user preference locale detection
 │   │   └── verify_http_signature.ex  # HTTP Signature verification for AP inboxes
 │   ├── endpoint.ex              # HTTP entry point, session config
-│   └── router.ex                # Route scopes and pipelines
+│   ├── gettext.ex               # Gettext i18n configuration
+│   ├── locale.ex                # Locale resolution (Accept-Language + user prefs)
+│   ├── router.ex                # Route scopes and pipelines
+│   └── telemetry.ex             # Telemetry metrics configuration
 ```
 
 ### Authentication Flow
@@ -262,6 +265,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - SSRF-safe remote fetches (reject private/loopback IPs, HTTPS only)
 - Per-domain rate limiting (60 req/min per remote domain)
 - Private keys encrypted at rest with AES-256-GCM
+- Private boards hidden from all AP endpoints (actor, outbox, inbox, WebFinger, audience resolution)
 
 ### Layout System
 
