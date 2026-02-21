@@ -13,7 +13,13 @@ defmodule BaudrateWeb.HomeLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    boards = Content.list_top_boards()
+    boards =
+      if socket.assigns.current_user do
+        Content.list_top_boards()
+      else
+        Content.list_public_top_boards()
+      end
+
     {:ok, assign(socket, :boards, boards)}
   end
 end

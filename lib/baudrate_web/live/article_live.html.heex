@@ -13,8 +13,8 @@
     <h1 class="text-2xl font-bold">{@article.title}</h1>
 
     <div class="flex items-center gap-2 text-sm text-base-content/70">
-      <span>{gettext("by %{author}", author: @article.user.username)}</span>
-      <span>&middot;</span>
+      <span :if={@article.user}>{gettext("by %{author}", author: @article.user.username)}</span>
+      <span :if={@article.user}>&middot;</span>
       <span>{Calendar.strftime(@article.inserted_at, "%Y-%m-%d %H:%M")}</span>
     </div>
 

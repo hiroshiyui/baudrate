@@ -153,28 +153,16 @@ defmodule BaudrateWeb.Router do
     post "/ack-recovery-codes", SessionController, :ack_recovery_codes
   end
 
-  # Public browsable routes (accessible to guests and authenticated users)
-  scope "/", BaudrateWeb do
-    pipe_through :browser
-
-    live_session :public_browsable,
-      layout: {BaudrateWeb.Layouts, :app},
-      on_mount: [{BaudrateWeb.AuthHooks, :optional_auth}] do
-      live "/", HomeLive
-    end
-  end
-
-  # Authenticated routes
+  # Authenticated routes (defined before public_browsable to ensure literal
+  # paths like /articles/new match before wildcard /articles/:slug)
   scope "/", BaudrateWeb do
     pipe_through :browser
 
     live_session :authenticated,
       layout: {BaudrateWeb.Layouts, :app},
       on_mount: [{BaudrateWeb.AuthHooks, :require_auth}] do
-      live "/boards/:slug", BoardLive
       live "/boards/:slug/articles/new", ArticleNewLive
       live "/articles/new", ArticleNewLive
-      live "/articles/:slug", ArticleLive
       live "/profile", ProfileLive
       live "/profile/totp-reset", TotpResetLive
       live "/profile/recovery-codes", RecoveryCodesLive
@@ -183,6 +171,19 @@ defmodule BaudrateWeb.Router do
     end
 
     delete "/logout", SessionController, :delete
+  end
+
+  # Public browsable routes (accessible to guests and authenticated users)
+  scope "/", BaudrateWeb do
+    pipe_through :browser
+
+    live_session :public_browsable,
+      layout: {BaudrateWeb.Layouts, :app},
+      on_mount: [{BaudrateWeb.AuthHooks, :optional_auth}] do
+      live "/", HomeLive
+      live "/boards/:slug", BoardLive
+      live "/articles/:slug", ArticleLive
+    end
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

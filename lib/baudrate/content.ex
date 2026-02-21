@@ -23,6 +23,17 @@ defmodule Baudrate.Content do
   end
 
   @doc """
+  Returns top-level public boards (no parent, visibility "public"), ordered by position.
+  """
+  def list_public_top_boards do
+    from(b in Board,
+      where: is_nil(b.parent_id) and b.visibility == "public",
+      order_by: b.position
+    )
+    |> Repo.all()
+  end
+
+  @doc """
   Returns child boards of the given board, ordered by position.
   """
   def list_sub_boards(%Board{id: board_id}) do
