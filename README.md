@@ -21,6 +21,8 @@ Baudrate is a BBS built with [Elixir](https://elixir-lang.org/) and [Phoenix](ht
   - Shared inbox deduplication for efficient delivery
   - HTTP Signature verification and signing, HTML sanitization, SSRF-safe fetches
   - Domain blocklist for instance-level moderation
+  - Mastodon compatibility: `attributedTo` arrays, `sensitive`/`summary` content warnings, `to`/`cc` addressing, `<span>` tag preservation
+  - Lemmy compatibility: `Page` object type, `Announce` with embedded objects, `!board@host` WebFinger
 - **Avatar system** -- upload, crop, WebP conversion with server-side security
 - **Admin dashboard** -- site settings, registration mode, pending user approval
 - **Rate limiting** on login, TOTP, registration, avatar uploads, and federation endpoints

@@ -253,10 +253,11 @@ The `Baudrate.Federation` context handles all federation logic.
 **Incoming activities handled** (via `InboxHandler`):
 - `Follow` / `Undo(Follow)` — follower management with auto-accept
 - `Create(Note)` — stored as threaded comments on local articles
-- `Create(Article)` — stored as remote articles in target boards
+- `Create(Article)` / `Create(Page)` — stored as remote articles in target boards (Page for Lemmy interop)
 - `Like` / `Undo(Like)` — article favorites
-- `Announce` / `Undo(Announce)` — boosts/shares
-- `Update` — content and actor profile updates (with authorship check)
+- `Announce` / `Undo(Announce)` — boosts/shares (bare URI or embedded object map)
+- `Update(Note/Article/Page)` — content updates with authorship check
+- `Update(Person/Group)` — actor profile refresh
 - `Delete` — soft-delete with authorship verification
 
 **Outbound delivery** (via `Publisher` + `Delivery` + `DeliveryWorker`):
@@ -273,6 +274,15 @@ The `Baudrate.Federation` context handles all federation logic.
 **Followers collection endpoints:**
 - `/ap/users/:username/followers` — `OrderedCollection` of follower URIs
 - `/ap/boards/:slug/followers` — `OrderedCollection` (public boards only, 404 for private)
+
+**Mastodon/Lemmy compatibility:**
+- `attributedTo` arrays — extracts first binary URI for validation
+- `sensitive` + `summary` — content warnings prepended as `[CW: summary]`
+- Lemmy `Page` objects treated identically to `Article` (Create and Update)
+- Lemmy `Announce` with embedded object maps — extracts inner `id`
+- `<span>` tags with safe classes (`h-card`, `hashtag`, `mention`, `invisible`) preserved by sanitizer
+- Outbound Note objects include `to`/`cc` addressing (required by Mastodon for visibility)
+- Outbound Article objects include `cc` with board actor URIs (improves discoverability)
 
 **Security:**
 - HTTP Signature verification on all inbox requests

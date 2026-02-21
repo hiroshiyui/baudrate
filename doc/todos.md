@@ -209,23 +209,35 @@ Push local activities to followers' inboxes. Full bidirectional federation.
   - [x] Outgoing content sanitized (no internal metadata leaks)
   - [x] Delivery failures don't expose internal error details to remote servers
 
-### Phase 4 — Advanced Features & Compatibility
+### Phase 4a — Mastodon & Lemmy Compatibility ✓
+
+Handle real-world interop quirks from Mastodon and Lemmy without breaking
+existing behavior.
+
+- [x] **Sanitizer: `<span>` allowlist**
+  - [x] Add `span` to safe tags
+  - [x] Preserve safe class values: `h-card`, `hashtag`, `mention`, `invisible`
+  - [x] Strip unsafe class values from `<span>` tags
+- [x] **Mastodon compatibility**
+  - [x] Handle `attributedTo` as array (extract first binary URI)
+  - [x] Handle `sensitive` + `summary` as content warnings (prepend `[CW: summary]`)
+  - [x] Add `to`/`cc` addressing on outbound Note objects (required by Mastodon for visibility)
+  - [x] Add `cc` with board actor URIs on outbound Article objects (improves discoverability)
+- [x] **Lemmy compatibility**
+  - [x] Handle `Page` object type as `Article` for `Create` and `Update`
+  - [x] Handle `Announce` with embedded object maps (extract inner `id`)
+  - [x] `!board@host` WebFinger addressing (implemented in Phase 1)
+
+### Phase 4b — Advanced Features & Remaining Compatibility
 
 Cross-platform compatibility, moderation tools, and admin controls.
 
-- [ ] **Mastodon compatibility**
+- [ ] **Mastodon compatibility (remaining)**
   - [ ] Article → Note fallback: send `Note` summary + link for Mastodon followers
-  - [x] Handle Mastodon-specific extensions (`sensitive`, `summary` content warnings)
-  - [x] Handle `attributedTo` as array (extract first URI)
-  - [x] Add `to`/`cc` addressing on outbound Note and Article objects
-  - [x] Allow `<span>` tags with safe classes (`h-card`, `hashtag`, `mention`, `invisible`) in sanitizer
   - [ ] Support `Hashtag` objects in `tag` array
   - [ ] Render incoming `Note` objects as comments
-- [ ] **Lemmy compatibility**
+- [ ] **Lemmy compatibility (remaining)**
   - [ ] Board → Group actor: `Announce` wrapping for community-style federation
-  - [x] Handle Lemmy's `Page` object type (treat as Article) for Create and Update
-  - [x] Handle `Announce` with embedded object maps (extract inner `id`)
-  - [x] Support `!board@host` WebFinger addressing
   - [ ] Cross-post detection and deduplication
 - [ ] **Moderation tools**
   - [ ] Domain blocklist management (admin UI)
