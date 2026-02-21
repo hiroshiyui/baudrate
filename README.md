@@ -7,10 +7,20 @@ Baudrate is a BBS built with [Elixir](https://elixir-lang.org/) and [Phoenix](ht
 ### Features
 
 - **Real-time UI** with Phoenix LiveView
+- **Hierarchical boards** -- nested board structure with moderators
+- **Cross-posted articles** -- articles can span multiple boards
+- **Threaded comments** -- with support for remote replies via ActivityPub
 - **Role-based access control** -- admin, moderator, user, and guest roles
-- **TOTP two-factor authentication** -- required for admin/moderator, optional for users
-- **Rate limiting** on login and TOTP endpoints
-- **Security hardened** -- HSTS, CSP, signed + encrypted cookies, database SSL in production
+- **TOTP two-factor authentication** -- required for admin/moderator, optional for users, with recovery codes
+- **ActivityPub federation** -- federate with Mastodon, Lemmy, and the Fediverse
+  - WebFinger and NodeInfo discovery
+  - Incoming follows, comments, likes, boosts, updates, and deletes
+  - HTTP Signature verification, HTML sanitization, SSRF-safe fetches
+  - Domain blocklist for instance-level moderation
+- **Avatar system** -- upload, crop, WebP conversion with server-side security
+- **Admin dashboard** -- site settings, registration mode, pending user approval
+- **Rate limiting** on login, TOTP, registration, avatar uploads, and federation endpoints
+- **Security hardened** -- HSTS, CSP, signed + encrypted cookies, TOTP/key encryption at rest
 - **Internationalization** -- Gettext with zh-TW locale and Accept-Language auto-detection
 
 ## Setup
@@ -52,6 +62,9 @@ For production, you will need to configure:
 - `TOTP_VAULT_KEY` -- 32-byte Base64-encoded AES key for TOTP secret encryption
 - `PHX_HOST` -- your production hostname
 
+Note: Federation private keys are encrypted using a key derived from
+`SECRET_KEY_BASE`, so no additional environment variable is needed.
+
 ## Documentation
 
 See [doc/development.md](doc/development.md) for architecture details, project structure, and development notes.
@@ -70,3 +83,5 @@ Built with these excellent open-source projects:
 - [Tailwind CSS](https://tailwindcss.com/) + [DaisyUI](https://daisyui.com/)
 - [NimbleTOTP](https://hexdocs.pm/nimble_totp/)
 - [Hammer](https://hexdocs.pm/hammer/)
+- [Earmark](https://hexdocs.pm/earmark/) (Markdown rendering)
+- [Req](https://hexdocs.pm/req/) (HTTP client for federation)

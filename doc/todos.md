@@ -2,14 +2,17 @@
 
 ## Content
 - [ ] Article editing and deletion (by author and moderators)
-- [ ] Comment system on articles
+- [x] Comment schema and federation support (threaded, local + remote)
+- [ ] Comment UI on article pages (local posting, display)
 - [x] Markdown rendering for article body
 - [ ] Article search
 - [ ] Article pagination
 - [ ] File attachments on articles
 
 ## Moderation
-- [ ] Admin dashboard with user management
+- [x] Admin settings UI (site name, registration mode)
+- [x] Admin pending-users approval page
+- [ ] Admin dashboard with user management (full)
 - [ ] User banning / suspension
 - [ ] Content reporting system
 - [ ] Moderation log
@@ -27,7 +30,6 @@
 
 ## System
 - [ ] Closed registration mode (invite-only)
-- [x] Admin settings UI (registration mode, site name, etc.)
 - [ ] API endpoints (JSON)
 - [ ] Real-time updates via PubSub (new articles, comments)
 - [ ] Search indexing
@@ -151,16 +153,28 @@ Accept and verify incoming Follow activities. Bidirectional federation proof.
     - [x] Timeout all remote fetches (10s connect, 30s total)
     - [x] User-Agent header identifying the instance
 
-### Phase 2b — Content Activities (Deferred)
+### Phase 2b — Content Activities ✓
 
-Handle `Create(Note/Article)`, `Like`, `Announce` — requires comment system and likes tables.
+Handle incoming content activities via `InboxHandler`. Includes comment system,
+likes, announces, soft-delete, and Undo variants.
 
-- [ ] `Create(Note)` → store as remote comment (if `inReplyTo` matches local article)
-- [ ] `Create(Article)` → store as remote article in target board (if `audience` matches)
-- [ ] `Announce` → record boost/share
-- [ ] `Like` → record like/favorite
-- [ ] `Delete` → soft-delete matching remote content
-- [ ] `Update` → update matching remote content
+- [x] `Create(Note)` → store as remote comment (if `inReplyTo` matches local article)
+  - [x] Threading support: replies to comments set `parent_id`
+  - [x] Attribution validation prevents impersonation
+  - [x] HTML sanitized via `Federation.Sanitizer` before storage
+- [x] `Create(Article)` → store as remote article in target board (if `audience`/`to`/`cc` matches)
+  - [x] Board resolved from audience URIs via `resolve_board_from_audience/1`
+  - [x] Auto-generated slug from title
+- [x] `Announce` → record boost/share in `announces` table
+- [x] `Like` → record like/favorite in `article_likes` table
+  - [x] Gracefully ignores likes for non-local articles
+- [x] `Delete` → soft-delete matching remote article or comment
+  - [x] Authorship check via `remote_actor_id` prevents unauthorized deletion
+- [x] `Update` → update matching remote article or comment content
+  - [x] Authorship check via `remote_actor_id` prevents unauthorized modification
+- [x] `Undo(Like)` → remove article like by inner activity's `ap_id`
+- [x] `Undo(Announce)` → remove announce by inner activity's `ap_id`
+- [x] Idempotency: duplicate `ap_id` on any Create/Like/Announce returns `:ok`
 
 ### Phase 3 — Delivery (Sending Activities)
 
