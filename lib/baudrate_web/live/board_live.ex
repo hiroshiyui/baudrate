@@ -23,7 +23,14 @@ defmodule BaudrateWeb.BoardLive do
       can_create =
         if current_user, do: Auth.can_create_content?(current_user), else: false
 
-      {:ok, assign(socket, board: board, can_create: can_create)}
+      ancestors = Content.board_ancestors(board)
+
+      sub_boards =
+        if current_user,
+          do: Content.list_sub_boards(board),
+          else: Content.list_public_sub_boards(board)
+
+      {:ok, assign(socket, board: board, can_create: can_create, ancestors: ancestors, sub_boards: sub_boards)}
     end
   end
 

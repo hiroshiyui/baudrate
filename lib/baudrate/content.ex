@@ -47,6 +47,37 @@ defmodule Baudrate.Content do
   end
 
   @doc """
+  Returns child boards of the given board with `visibility == "public"`, ordered by position.
+  """
+  def list_public_sub_boards(%Board{id: board_id}) do
+    from(b in Board,
+      where: b.parent_id == ^board_id and b.visibility == "public",
+      order_by: b.position
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the ancestor chain for a board, from root to the board itself.
+
+  Walks the `parent_id` chain upward (max 10 levels to prevent infinite loops).
+  """
+  def board_ancestors(%Board{} = board) do
+    do_board_ancestors(board, [], 10)
+  end
+
+  defp do_board_ancestors(%Board{parent_id: nil} = board, acc, _remaining) do
+    [board | acc]
+  end
+
+  defp do_board_ancestors(_board, acc, 0), do: acc
+
+  defp do_board_ancestors(%Board{parent_id: parent_id} = board, acc, remaining) do
+    parent = Repo.get!(Board, parent_id)
+    do_board_ancestors(parent, [board | acc], remaining - 1)
+  end
+
+  @doc """
   Fetches a board by ID or raises `Ecto.NoResultsError`.
   """
   def get_board!(id) do

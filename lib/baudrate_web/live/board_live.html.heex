@@ -1,7 +1,16 @@
 <div class="mb-4 flex items-center justify-between">
-  <.link navigate="/" class="text-sm text-base-content/70 hover:text-base-content">
-    &larr; {gettext("Boards")}
-  </.link>
+  <div class="breadcrumbs text-sm">
+    <ul>
+      <li><.link navigate="/">{gettext("Home")}</.link></li>
+      <%= for ancestor <- @ancestors do %>
+        <%= if ancestor.id == @board.id do %>
+          <li>{ancestor.name}</li>
+        <% else %>
+          <li><.link navigate={~p"/boards/#{ancestor.slug}"}>{ancestor.name}</.link></li>
+        <% end %>
+      <% end %>
+    </ul>
+  </div>
   <.link
     :if={@can_create}
     navigate={~p"/boards/#{@board.slug}/articles/new"}
@@ -13,6 +22,22 @@
 
 <h1 class="text-2xl font-bold mb-2">{@board.name}</h1>
 <p :if={@board.description} class="text-base-content/70 mb-6">{@board.description}</p>
+
+<div :if={@sub_boards != []} class="mb-6">
+  <h2 class="text-lg font-semibold mb-3">{gettext("Sub-boards")}</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <.link
+      :for={sub <- @sub_boards}
+      navigate={~p"/boards/#{sub.slug}"}
+      class="card bg-base-200 shadow-sm hover:shadow-md transition-shadow"
+    >
+      <div class="card-body p-4">
+        <h3 class="card-title text-base">{sub.name}</h3>
+        <p :if={sub.description} class="text-sm text-base-content/70">{sub.description}</p>
+      </div>
+    </.link>
+  </div>
+</div>
 
 <div :if={@articles == []} class="text-base-content/50 text-center py-8">
   {gettext("No articles yet.")}
