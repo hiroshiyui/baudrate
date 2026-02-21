@@ -90,7 +90,10 @@ defmodule Baudrate.Federation do
 
         :board ->
           board = Repo.get_by(Baudrate.Content.Board, slug: identifier)
-          if board, do: {:ok, webfinger_jrd(:board, identifier)}, else: {:error, :not_found}
+
+          if board && board.visibility == "public",
+            do: {:ok, webfinger_jrd(:board, identifier)},
+            else: {:error, :not_found}
       end
     end
   end
@@ -267,11 +270,14 @@ defmodule Baudrate.Federation do
   def user_outbox(user, page_params \\ %{}) do
     articles =
       from(a in Baudrate.Content.Article,
-        where: a.user_id == ^user.id,
+        where: a.user_id == ^user.id and is_nil(a.deleted_at),
         order_by: [desc: a.inserted_at],
         preload: [:boards, :user]
       )
       |> Repo.all()
+      |> Enum.filter(fn article ->
+        Enum.any?(article.boards, &(&1.visibility == "public"))
+      end)
 
     outbox_uri = "#{actor_uri(:user, user.username)}/outbox"
     build_outbox(outbox_uri, articles, page_params, :create)
@@ -476,7 +482,8 @@ defmodule Baudrate.Federation do
       case uri do
         <<^board_prefix::binary, slug::binary>> ->
           if Regex.match?(~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/, slug) do
-            Repo.get_by(Baudrate.Content.Board, slug: slug)
+            board = Repo.get_by(Baudrate.Content.Board, slug: slug)
+            if board && board.visibility == "public", do: board
           end
 
         _ ->

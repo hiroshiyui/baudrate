@@ -93,6 +93,7 @@ defmodule BaudrateWeb.ActivityPubController do
       with true <- Regex.match?(@slug_re, slug),
            board when not is_nil(board) <-
              Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
+           true <- board.visibility == "public",
            {:ok, board} <- KeyStore.ensure_board_keypair(board) do
         conn
         |> put_resp_content_type(@activity_json)
@@ -131,7 +132,8 @@ defmodule BaudrateWeb.ActivityPubController do
 
   def board_outbox(conn, %{"slug" => slug} = params) do
     with true <- Regex.match?(@slug_re, slug),
-         board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug) do
+         board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
+         true <- board.visibility == "public" do
       conn
       |> put_resp_content_type(@activity_json)
       |> json(Federation.board_outbox(board, params))
@@ -148,9 +150,13 @@ defmodule BaudrateWeb.ActivityPubController do
         try do
           article = Baudrate.Content.get_article_by_slug!(slug)
 
-          conn
-          |> put_resp_content_type(@activity_json)
-          |> json(Federation.article_object(article))
+          if Enum.any?(article.boards, &(&1.visibility == "public")) do
+            conn
+            |> put_resp_content_type(@activity_json)
+            |> json(Federation.article_object(article))
+          else
+            conn |> put_status(404) |> json(%{error: "Not Found"})
+          end
         rescue
           Ecto.NoResultsError ->
             conn |> put_status(404) |> json(%{error: "Not Found"})
@@ -181,7 +187,8 @@ defmodule BaudrateWeb.ActivityPubController do
 
   def board_inbox(conn, %{"slug" => slug}) do
     with true <- Regex.match?(@slug_re, slug),
-         board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug) do
+         board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
+         true <- board.visibility == "public" do
       handle_inbox(conn, {:board, board})
     else
       _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
