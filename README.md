@@ -15,19 +15,21 @@ Baudrate is a BBS built with [Elixir](https://elixir-lang.org/) and [Phoenix](ht
 - **TOTP two-factor authentication** -- required for admin/moderator, optional for users, with recovery codes
 - **ActivityPub federation** -- federate with Mastodon, Lemmy, and the Fediverse
   - WebFinger and NodeInfo discovery
-  - Incoming follows, comments, likes, boosts, updates, and deletes
-  - Outbound delivery of articles, deletes, and announces to remote followers
+  - Incoming follows, comments, likes, boosts, updates, deletes, and Flag reports
+  - Outbound delivery of articles, deletes, announces, and Flag reports to remote instances
   - DB-backed delivery queue with exponential backoff retry
   - Shared inbox deduplication for efficient delivery
   - HTTP Signature verification and signing, HTML sanitization, SSRF-safe fetches
-  - Domain blocklist for instance-level moderation
-  - Mastodon compatibility: `attributedTo` arrays, `sensitive`/`summary` content warnings, `to`/`cc` addressing, `<span>` tag preservation
+  - Domain blocklist and allowlist modes for instance-level federation control
+  - Federation kill switch and per-board federation toggle
+  - Cross-post deduplication for articles arriving via multiple board inboxes
+  - Mastodon compatibility: `attributedTo` arrays, `sensitive`/`summary` content warnings, `to`/`cc` addressing, `<span>` tag preservation, article summary and hashtag tags
   - Lemmy compatibility: `Page` object type, `Announce` with embedded objects, `!board@host` WebFinger
 - **Avatar system** -- upload, crop, WebP conversion with server-side security
-- **Admin dashboard** -- site settings, registration mode, pending user approval
+- **Admin dashboard** -- site settings, registration mode, pending user approval, federation dashboard, moderation queue
 - **Rate limiting** on login, TOTP, registration, avatar uploads, and federation endpoints
 - **Security hardened** -- HSTS, CSP, signed + encrypted cookies, TOTP/key encryption at rest
-- **Internationalization** -- Gettext with zh-TW locale and Accept-Language auto-detection
+- **Internationalization** -- Gettext with supported locales and Accept-Language auto-detection
 
 ## Setup
 
