@@ -17,11 +17,15 @@ defmodule BaudrateWeb.Router do
        mutations. Split into two scopes with separate rate-limit pipelines
        (`:rate_limit_login` for `/auth/session`, `:rate_limit_totp` for TOTP).
 
-    4. **Public browsable** (`/`) — `live_session :public_browsable` with
-       `:optional_auth` hook. Accessible to both guests and authenticated users.
+    4. **Authenticated** (`/articles/new`, `/profile`, `/admin/*`) —
+       `live_session :authenticated` with `:require_auth` hook. All pages
+       requiring full authentication. Defined before public_browsable to
+       ensure literal paths match before wildcard `:slug` patterns.
 
-    5. **Authenticated** (`/boards/*`, `/articles/*`, etc.) — `live_session :authenticated`
-       with `:require_auth` hook. All pages requiring full authentication.
+    5. **Public browsable** (`/`, `/boards/:slug`, `/articles/:slug`) —
+       `live_session :public_browsable` with `:optional_auth` hook. Accessible
+       to both guests and authenticated users. Private boards redirect guests
+       to `/login`.
 
   ## Browser Pipeline
 

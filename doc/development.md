@@ -35,7 +35,7 @@ lib/
 │   ├── content/
 │   │   ├── article.ex           # Article schema (posts, local + remote, soft-delete)
 │   │   ├── article_like.ex      # ArticleLike schema (local + remote likes)
-│   │   ├── board.ex             # Board schema (hierarchical via parent_id)
+│   │   ├── board.ex             # Board schema (hierarchical via parent_id, visibility)
 │   │   ├── board_article.ex     # Join table: board ↔ article
 │   │   ├── board_moderator.ex   # Join table: board ↔ moderator
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
@@ -77,9 +77,9 @@ lib/
 │   │   │   └── settings_live.ex       # Admin site settings (name, registration mode)
 │   │   ├── article_live.ex      # Single article view
 │   │   ├── article_new_live.ex  # Article creation form
-│   │   ├── auth_hooks.ex        # on_mount hooks: require_auth, etc.
+│   │   ├── auth_hooks.ex        # on_mount hooks: require_auth, optional_auth, etc.
 │   │   ├── board_live.ex        # Board view with article listing
-│   │   ├── home_live.ex         # Authenticated home page (board listing)
+│   │   ├── home_live.ex         # Home page (board listing, public for guests)
 │   │   ├── login_live.ex        # Login form (phx-trigger-action pattern)
 │   │   ├── profile_live.ex      # User profile with avatar upload/crop, locale prefs
 │   │   ├── recovery_code_verify_live.ex  # Recovery code login
@@ -198,9 +198,12 @@ suffix to avoid collisions. Articles can be cross-posted to multiple boards.
 
 ### Content Model
 
-Boards are organized hierarchically via `parent_id`. Articles can be
-cross-posted to multiple boards through the `board_articles` join table.
-Board moderators are tracked via the `board_moderators` join table.
+Boards are organized hierarchically via `parent_id` and have a `visibility`
+field (`"public"` or `"private"`, default `"public"`). Public boards and their
+articles are accessible to unauthenticated visitors; private boards require
+login. Articles can be cross-posted to multiple boards through the
+`board_articles` join table. Board moderators are tracked via the
+`board_moderators` join table.
 
 Comments are threaded via `parent_id` (self-referential) and belong to an
 article. Both articles and comments can originate locally (via `user_id`) or
@@ -271,8 +274,19 @@ live_session :authenticated,
 ```
 
 The layout receives `@inner_content` (not `@inner_block`) and has access to
-socket assigns like `@current_user`. The setup wizard uses a separate
-`:setup` layout (minimal, no navigation).
+socket assigns like `@current_user`. When `@current_user` is `nil` (guest
+visitors on public pages), the layout shows Sign In / Register links instead
+of the user menu. The setup wizard uses a separate `:setup` layout (minimal,
+no navigation).
+
+**Auth hooks:**
+
+| Hook | Behavior |
+|------|----------|
+| `:require_auth` | Requires valid session; redirects to `/login` if unauthenticated |
+| `:optional_auth` | Loads user if session exists; assigns `nil` for guests (no redirect) |
+| `:require_password_auth` | Requires password-level auth (for TOTP flow) |
+| `:redirect_if_authenticated` | Redirects authenticated users to `/` (for login/register pages) |
 
 ### Request Pipeline
 

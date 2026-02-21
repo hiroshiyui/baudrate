@@ -25,7 +25,8 @@
 
 ## Board Management
 - [ ] Admin UI for creating / editing boards
-- [ ] Board-level permissions
+- [x] Board visibility (public/private) with guest access control
+- [ ] Board-level permissions (beyond visibility)
 - [ ] Sub-board navigation
 
 ## System
