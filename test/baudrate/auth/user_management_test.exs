@@ -95,10 +95,14 @@ defmodule Baudrate.Auth.UserManagementTest do
       assert sessions == []
     end
 
-    test "raises on self-ban", %{admin: admin} do
-      assert_raise FunctionClauseError, fn ->
-        Auth.ban_user(admin, admin.id, "self")
-      end
+    test "returns error on self-ban", %{admin: admin} do
+      assert {:error, :self_action} = Auth.ban_user(admin, admin.id, "self")
+    end
+
+    test "rejects ban reason over 500 characters", %{admin: admin, user: user} do
+      long_reason = String.duplicate("x", 501)
+      {:error, changeset} = Auth.ban_user(user, admin.id, long_reason)
+      assert changeset.errors[:ban_reason]
     end
   end
 
@@ -131,13 +135,11 @@ defmodule Baudrate.Auth.UserManagementTest do
       assert updated.role.name == "moderator"
     end
 
-    test "raises on self-role-change", %{admin: admin} do
+    test "returns error on self-role-change", %{admin: admin} do
       import Ecto.Query
       user_role = Repo.one!(from(r in Baudrate.Setup.Role, where: r.name == "user"))
 
-      assert_raise FunctionClauseError, fn ->
-        Auth.update_user_role(admin, user_role.id, admin.id)
-      end
+      assert {:error, :self_action} = Auth.update_user_role(admin, user_role.id, admin.id)
     end
   end
 

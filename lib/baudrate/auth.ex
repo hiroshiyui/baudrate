@@ -414,10 +414,15 @@ defmodule Baudrate.Auth do
   Sets status to `"banned"`, records `banned_at` and optional `ban_reason`,
   then invalidates all existing sessions for the user.
   """
-  def ban_user(%User{id: user_id}, admin_id, reason \\ nil)
-      when is_integer(user_id) and is_integer(admin_id) and user_id != admin_id do
+  def ban_user(user, admin_id, reason \\ nil)
+
+  def ban_user(%User{id: id}, admin_id, _reason) when id == admin_id do
+    {:error, :self_action}
+  end
+
+  def ban_user(%User{} = user, admin_id, reason)
+      when is_integer(admin_id) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
-    user = get_user(user_id)
 
     result =
       user
@@ -435,19 +440,21 @@ defmodule Baudrate.Auth do
   """
   def unban_user(%User{} = user) do
     user
-    |> User.unban_changeset(%{})
+    |> User.unban_changeset()
     |> Repo.update()
   end
 
   @doc """
-  Updates a user's role. Guards against self-role-change.
+  Updates a user's role. Returns `{:error, :self_action}` on self-role-change.
   """
-  def update_user_role(%User{id: user_id}, role_id, admin_id)
-      when is_integer(user_id) and is_integer(admin_id) and user_id != admin_id do
-    user = get_user(user_id)
+  def update_user_role(%User{id: id}, _role_id, admin_id) when id == admin_id do
+    {:error, :self_action}
+  end
 
+  def update_user_role(%User{} = user, role_id, admin_id)
+      when is_integer(admin_id) do
     user
-    |> Ecto.Changeset.change(%{role_id: role_id})
+    |> User.role_changeset(%{role_id: role_id})
     |> Repo.update()
     |> case do
       {:ok, user} -> {:ok, Repo.preload(user, :role, force: true)}

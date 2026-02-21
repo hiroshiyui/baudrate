@@ -116,11 +116,29 @@ defmodule BaudrateWeb.AuthHooks do
 
     if session_token do
       case Auth.get_user_by_session_token(session_token) do
-        {:ok, _user} -> {:halt, redirect(socket, to: "/")}
-        {:error, _} -> {:cont, socket}
+        {:ok, user} ->
+          if user.status == "banned" do
+            {:cont, socket}
+          else
+            {:halt, redirect(socket, to: "/")}
+          end
+
+        {:error, _} ->
+          {:cont, socket}
       end
     else
       {:cont, socket}
+    end
+  end
+
+  def on_mount(:require_admin, _params, _session, socket) do
+    if socket.assigns[:current_user] && socket.assigns.current_user.role.name == "admin" do
+      {:cont, socket}
+    else
+      {:halt,
+       socket
+       |> put_flash(:error, gettext("Access denied."))
+       |> redirect(to: "/")}
     end
   end
 

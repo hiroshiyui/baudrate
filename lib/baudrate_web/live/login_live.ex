@@ -81,18 +81,9 @@ defmodule BaudrateWeb.LoginLive do
 
         {:noreply, socket}
 
-      {:error, :banned} ->
-        Logger.warning("auth.banned_login: username=#{username} ip=#{socket.assigns.peer_ip}")
-
-        socket =
-          socket
-          |> put_flash(:error, gettext("Invalid username or password."))
-          |> assign(:form, to_form(%{"username" => username, "password" => ""}, as: :login))
-
-        {:noreply, socket}
-
-      {:error, :invalid_credentials} ->
-        Logger.warning("auth.login_failure: username=#{username} ip=#{socket.assigns.peer_ip}")
+      {:error, reason} when reason in [:banned, :invalid_credentials] ->
+        log_tag = if reason == :banned, do: "auth.banned_login", else: "auth.login_failure"
+        Logger.warning("#{log_tag}: username=#{username} ip=#{socket.assigns.peer_ip}")
 
         socket =
           socket

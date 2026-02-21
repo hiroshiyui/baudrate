@@ -2,12 +2,15 @@ defmodule BaudrateWeb.Admin.BoardsLive do
   @moduledoc """
   LiveView for admin board management.
 
-  Only accessible to users with the `"admin"` role. Provides CRUD
-  operations for boards including name, slug, description, visibility,
-  position, parent, and federation toggle.
+  Only accessible to users with the `"admin"` role (enforced by the
+  `:require_admin` on_mount hook). Provides CRUD operations for boards
+  including name, slug, description, visibility, position, parent, and
+  federation toggle.
   """
 
   use BaudrateWeb, :live_view
+
+  on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
   alias Baudrate.Content
   alias Baudrate.Content.Board
@@ -15,23 +18,16 @@ defmodule BaudrateWeb.Admin.BoardsLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    if socket.assigns.current_user.role.name != "admin" do
-      {:ok,
-       socket
-       |> put_flash(:error, gettext("Access denied."))
-       |> redirect(to: ~p"/")}
-    else
-      boards = Content.list_all_boards()
+    boards = Content.list_all_boards()
 
-      {:ok,
-       assign(socket,
-         boards: boards,
-         all_boards: boards,
-         editing_board: nil,
-         form: nil,
-         show_form: false
-       )}
-    end
+    {:ok,
+     assign(socket,
+       boards: boards,
+       editing_board: nil,
+       form: nil,
+       show_form: false,
+       wide_layout: true
+     )}
   end
 
   @impl true
@@ -84,13 +80,16 @@ defmodule BaudrateWeb.Admin.BoardsLive do
         {:noreply,
          put_flash(socket, :error, gettext("Cannot delete board that has articles."))}
 
+      {:error, :has_children} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Cannot delete board that has sub-boards."))}
+
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to delete board."))}
     end
   end
 
   defp save_new(socket, params) do
-    # Normalize empty parent_id to nil
     params = normalize_parent_id(params)
 
     case Content.create_board(params) do
@@ -110,8 +109,9 @@ defmodule BaudrateWeb.Admin.BoardsLive do
 
   defp save_edit(socket, params) do
     params = normalize_parent_id(params)
+    board = Content.get_board!(socket.assigns.editing_board.id)
 
-    case Content.update_board(socket.assigns.editing_board, params) do
+    case Content.update_board(board, params) do
       {:ok, _board} ->
         {:noreply,
          socket
@@ -128,7 +128,6 @@ defmodule BaudrateWeb.Admin.BoardsLive do
   defp normalize_parent_id(params), do: params
 
   defp reload_boards(socket) do
-    boards = Content.list_all_boards()
-    assign(socket, boards: boards, all_boards: boards)
+    assign(socket, :boards, Content.list_all_boards())
   end
 end

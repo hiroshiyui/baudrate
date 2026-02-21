@@ -352,9 +352,10 @@ no navigation).
 | Hook | Behavior |
 |------|----------|
 | `:require_auth` | Requires valid session; redirects to `/login` if unauthenticated or banned |
+| `:require_admin` | Requires admin role; redirects non-admins to `/` with access denied flash. Must be used after `:require_auth` (needs `@current_user`) |
 | `:optional_auth` | Loads user if session exists; assigns `nil` for guests or banned users (no redirect) |
 | `:require_password_auth` | Requires password-level auth (for TOTP flow); redirects banned users to `/login` |
-| `:redirect_if_authenticated` | Redirects authenticated users to `/` (for login/register pages) |
+| `:redirect_if_authenticated` | Redirects authenticated users to `/` (for login/register pages); allows banned users through |
 
 ### Request Pipeline
 

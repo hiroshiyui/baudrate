@@ -1,8 +1,8 @@
 <div class="space-y-6">
-  <h1 class="text-2xl font-bold">{gettext("User Management")}</h1>
+  <h1 id="users-heading" class="text-2xl font-bold">{gettext("User Management")}</h1>
 
   <%!-- Stats bar --%>
-  <div class="stats stats-horizontal shadow w-full">
+  <div class="stats stats-vertical sm:stats-horizontal shadow w-full">
     <div class="stat">
       <div class="stat-title">{gettext("Total")}</div>
       <div class="stat-value text-lg">
@@ -89,7 +89,7 @@
   </div>
 
   <div :if={@users != []} class="overflow-x-auto">
-    <table class="table">
+    <table class="table" aria-labelledby="users-heading">
       <thead>
         <tr>
           <th>{gettext("Username")}</th>
@@ -104,16 +104,20 @@
           <td class="font-medium">{user.username}</td>
           <td>
             <%= if user.id == @current_user.id do %>
-              <span class="badge badge-ghost">{user.role.name}</span>
+              <span class="badge badge-ghost">{translate_role(user.role.name)}</span>
             <% else %>
               <form phx-change="change_role" phx-value-id={user.id}>
-                <select name="role_id" class="select select-bordered select-xs">
+                <select
+                  name="role_id"
+                  class="select select-bordered select-xs"
+                  aria-label={gettext("Change role for %{username}", username: user.username)}
+                >
                   <option
                     :for={role <- @roles}
                     value={role.id}
                     selected={role.id == user.role_id}
                   >
-                    {role.name}
+                    {translate_role(role.name)}
                   </option>
                 </select>
               </form>
@@ -126,7 +130,7 @@
               user.status == "pending" && "badge-warning",
               user.status == "banned" && "badge-error"
             ]}>
-              {user.status}
+              {translate_status(user.status)}
             </span>
           </td>
           <td>{Calendar.strftime(user.inserted_at, "%Y-%m-%d %H:%M")}</td>
@@ -169,6 +173,8 @@
   role="dialog"
   aria-modal="true"
   aria-labelledby="ban-modal-title"
+  phx-window-keydown="cancel_ban"
+  phx-key="Escape"
 >
   <div class="modal-box">
     <h3 id="ban-modal-title" class="font-bold text-lg">

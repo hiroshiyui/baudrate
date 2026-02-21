@@ -1,6 +1,6 @@
 <div class="space-y-6">
   <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold">{gettext("Board Management")}</h1>
+    <h1 id="boards-heading" class="text-2xl font-bold">{gettext("Board Management")}</h1>
     <button :if={!@show_form} phx-click="new" class="btn btn-primary btn-sm">
       {gettext("New Board")}
     </button>
@@ -51,7 +51,7 @@
             label={gettext("Parent Board")}
             prompt={gettext("None")}
             options={
-              for board <- @all_boards,
+              for board <- @boards,
                   !@editing_board || board.id != @editing_board.id,
                   do: {board.name, board.id}
             }
@@ -79,7 +79,7 @@
   </div>
 
   <div :if={@boards != []} class="overflow-x-auto">
-    <table class="table">
+    <table class="table" aria-labelledby="boards-heading">
       <thead>
         <tr>
           <th>{gettext("Name")}</th>
@@ -95,14 +95,14 @@
         <tr :for={board <- @boards}>
           <td class="font-medium">{board.name}</td>
           <td class="font-mono text-sm">{board.slug}</td>
-          <td>{if board.parent, do: board.parent.name, else: "-"}</td>
+          <td>{if board.parent, do: board.parent.name, else: gettext("None")}</td>
           <td>
             <span class={[
               "badge badge-sm",
               board.visibility == "public" && "badge-success",
               board.visibility == "private" && "badge-warning"
             ]}>
-              {board.visibility}
+              {if board.visibility == "public", do: gettext("Public"), else: gettext("Private")}
             </span>
           </td>
           <td>{board.position}</td>

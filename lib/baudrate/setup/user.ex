@@ -117,15 +117,23 @@ defmodule Baudrate.Setup.User do
     |> cast(attrs, [:status, :banned_at, :ban_reason])
     |> validate_required([:status, :banned_at])
     |> validate_inclusion(:status, ["banned"])
+    |> validate_length(:ban_reason, max: 500)
   end
 
-  def unban_changeset(user, _attrs) do
+  def unban_changeset(user) do
     user
     |> cast(%{status: "active"}, [:status])
     |> validate_required([:status])
     |> validate_inclusion(:status, ["active"])
     |> put_change(:banned_at, nil)
     |> put_change(:ban_reason, nil)
+  end
+
+  def role_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:role_id])
+    |> validate_required([:role_id])
+    |> assoc_constraint(:role)
   end
 
   def ap_key_changeset(user, attrs) do

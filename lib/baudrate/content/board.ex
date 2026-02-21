@@ -46,6 +46,8 @@ defmodule Baudrate.Content.Board do
     board
     |> cast(attrs, [:name, :description, :slug, :position, :parent_id, :visibility, :ap_enabled])
     |> validate_required([:name, :slug])
+    |> validate_length(:name, max: 100)
+    |> validate_length(:description, max: 1000)
     |> validate_inclusion(:visibility, ["public", "private"])
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
       message: "must be lowercase alphanumeric with hyphens"
@@ -61,16 +63,36 @@ defmodule Baudrate.Content.Board do
     board
     |> cast(attrs, [:name, :description, :position, :parent_id, :visibility, :ap_enabled])
     |> validate_required([:name])
+    |> validate_length(:name, max: 100)
+    |> validate_length(:description, max: 1000)
     |> validate_inclusion(:visibility, ["public", "private"])
-    |> validate_not_self_parent(board)
+    |> validate_no_parent_cycle(board)
     |> assoc_constraint(:parent)
   end
 
-  defp validate_not_self_parent(changeset, board) do
+  defp validate_no_parent_cycle(changeset, board) do
     case get_change(changeset, :parent_id) do
-      nil -> changeset
-      parent_id when parent_id == board.id -> add_error(changeset, :parent_id, "cannot be the board itself")
-      _ -> changeset
+      nil ->
+        changeset
+
+      parent_id ->
+        if creates_cycle?(board.id, parent_id) do
+          add_error(changeset, :parent_id, "would create a circular reference")
+        else
+          changeset
+        end
+    end
+  end
+
+  defp creates_cycle?(board_id, parent_id, max_depth \\ 10)
+  defp creates_cycle?(_board_id, _parent_id, 0), do: true
+  defp creates_cycle?(board_id, parent_id, _max_depth) when parent_id == board_id, do: true
+
+  defp creates_cycle?(board_id, parent_id, max_depth) do
+    case Baudrate.Repo.get(__MODULE__, parent_id) do
+      nil -> false
+      %{parent_id: nil} -> false
+      %{parent_id: next_parent} -> creates_cycle?(board_id, next_parent, max_depth - 1)
     end
   end
 end

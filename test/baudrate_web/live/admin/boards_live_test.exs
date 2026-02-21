@@ -115,6 +115,19 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
     assert html =~ "Cannot delete board that has articles"
   end
 
+  test "admin cannot delete board with children", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_user(conn, admin)
+
+    {:ok, parent} = Content.create_board(%{name: "Parent Board", slug: "parent-#{System.unique_integer([:positive])}"})
+    {:ok, _child} = Content.create_board(%{name: "Child Board", slug: "child-#{System.unique_integer([:positive])}", parent_id: parent.id})
+
+    {:ok, lv, _html} = live(conn, "/admin/boards")
+
+    html = lv |> element("button[phx-click=\"delete\"][phx-value-id=\"#{parent.id}\"]") |> render_click()
+    assert html =~ "Cannot delete board that has sub-boards"
+  end
+
   test "admin can cancel form", %{conn: conn} do
     admin = setup_user("admin")
     conn = log_in_user(conn, admin)

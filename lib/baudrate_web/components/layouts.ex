@@ -28,7 +28,7 @@ defmodule BaudrateWeb.Layouts do
       <%!-- Mobile hamburger (shown < lg) --%>
       <div :if={@current_user} class="flex-none lg:hidden">
         <div class="dropdown">
-          <div tabindex="0" role="button" class="btn btn-ghost">
+          <div tabindex="0" role="button" aria-label={gettext("Open navigation menu")} class="btn btn-ghost">
             <.icon name="hero-bars-3" class="size-5" />
           </div>
           <ul
@@ -69,7 +69,7 @@ defmodule BaudrateWeb.Layouts do
             <li class="divider my-1"></li>
             <li class="menu-title flex flex-row items-center gap-2">
               <.avatar user={@current_user} size={36} />
-              {@current_user.username} ({@current_user.role.name})
+              {@current_user.username} ({translate_role(@current_user.role.name)})
             </li>
             <li>
               <.link navigate="/profile">{gettext("Profile")}</.link>
@@ -114,7 +114,7 @@ defmodule BaudrateWeb.Layouts do
 
         <%!-- Desktop user dropdown (shown >= lg) --%>
         <div :if={@current_user} class="hidden lg:block dropdown dropdown-end">
-          <div tabindex="0" role="button" class="btn btn-ghost gap-2">
+          <div tabindex="0" role="button" aria-haspopup="true" class="btn btn-ghost gap-2">
             <.avatar user={@current_user} size={36} />
             {@current_user.username}
             <.icon name="hero-chevron-down-micro" class="size-4" />
@@ -157,7 +157,7 @@ defmodule BaudrateWeb.Layouts do
     </header>
 
     <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
+      <div class={["mx-auto space-y-4", if(assigns[:wide_layout], do: "max-w-5xl", else: "max-w-2xl")]}>
         {@inner_content}
       </div>
     </main>
@@ -224,6 +224,12 @@ defmodule BaudrateWeb.Layouts do
     """
   end
 
+  defp translate_role("admin"), do: gettext("admin")
+  defp translate_role("moderator"), do: gettext("moderator")
+  defp translate_role("user"), do: gettext("user")
+  defp translate_role("guest"), do: gettext("guest")
+  defp translate_role(other), do: other
+
   @doc """
   Provides dark vs light theme toggle based on themes defined in app.css.
 
@@ -238,6 +244,7 @@ defmodule BaudrateWeb.Layouts do
         class="flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="system"
+        aria-label={gettext("System theme")}
       >
         <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>
@@ -246,6 +253,7 @@ defmodule BaudrateWeb.Layouts do
         class="flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="light"
+        aria-label={gettext("Light theme")}
       >
         <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>
@@ -254,6 +262,7 @@ defmodule BaudrateWeb.Layouts do
         class="flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="dark"
+        aria-label={gettext("Dark theme")}
       >
         <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>

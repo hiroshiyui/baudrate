@@ -92,12 +92,16 @@ defmodule Baudrate.Content do
   Returns `{:error, :has_articles}` if the board has articles.
   """
   def delete_board(%Board{} = board) do
-    count = Repo.one(from(ba in BoardArticle, where: ba.board_id == ^board.id, select: count()))
+    article_count =
+      Repo.one(from(ba in BoardArticle, where: ba.board_id == ^board.id, select: count()))
 
-    if count > 0 do
-      {:error, :has_articles}
-    else
-      Repo.delete(board)
+    child_count =
+      Repo.one(from(b in Board, where: b.parent_id == ^board.id, select: count()))
+
+    cond do
+      article_count > 0 -> {:error, :has_articles}
+      child_count > 0 -> {:error, :has_children}
+      true -> Repo.delete(board)
     end
   end
 

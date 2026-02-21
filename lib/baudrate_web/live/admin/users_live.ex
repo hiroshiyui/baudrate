@@ -2,44 +2,49 @@ defmodule BaudrateWeb.Admin.UsersLive do
   @moduledoc """
   LiveView for admin user management.
 
-  Only accessible to users with the `"admin"` role. Provides filtering,
-  searching, banning/unbanning, role changes, and user approval.
+  Only accessible to users with the `"admin"` role (enforced by the
+  `:require_admin` on_mount hook). Provides filtering, searching,
+  banning/unbanning, role changes, and user approval.
   """
 
   use BaudrateWeb, :live_view
 
+  on_mount {BaudrateWeb.AuthHooks, :require_admin}
+
   alias Baudrate.Auth
   alias Baudrate.Setup
 
+  @valid_statuses ~w(active pending banned)
+
   @impl true
   def mount(_params, _session, socket) do
-    if socket.assigns.current_user.role.name != "admin" do
-      {:ok,
-       socket
-       |> put_flash(:error, gettext("Access denied."))
-       |> redirect(to: ~p"/")}
-    else
-      roles = Setup.all_roles()
-      status_counts = Auth.count_users_by_status()
-      users = Auth.list_users()
+    roles = Setup.all_roles()
+    status_counts = Auth.count_users_by_status()
+    users = Auth.list_users()
 
-      {:ok,
-       assign(socket,
-         users: users,
-         status_counts: status_counts,
-         status_filter: nil,
-         search: "",
-         roles: roles,
-         ban_target: nil,
-         ban_target_username: nil,
-         ban_reason: ""
-       )}
-    end
+    {:ok,
+     assign(socket,
+       users: users,
+       status_counts: status_counts,
+       status_filter: nil,
+       search: "",
+       roles: roles,
+       ban_target: nil,
+       ban_target_username: nil,
+       ban_reason: "",
+       wide_layout: true
+     )}
   end
 
   @impl true
   def handle_event("filter", %{"status" => status}, socket) do
-    status_filter = if status == "", do: nil, else: status
+    status_filter =
+      cond do
+        status == "" -> nil
+        status in @valid_statuses -> status
+        true -> nil
+      end
+
     {:noreply, socket |> assign(:status_filter, status_filter) |> reload_users()}
   end
 
@@ -48,18 +53,22 @@ defmodule BaudrateWeb.Admin.UsersLive do
   end
 
   def handle_event("approve", %{"id" => id}, socket) do
-    user = Auth.get_user(String.to_integer(id))
+    case Auth.get_user(String.to_integer(id)) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("User not found."))}
 
-    case Auth.approve_user(user) do
-      {:ok, _user} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, gettext("User approved successfully."))
-         |> reload_users()
-         |> reload_counts()}
+      user ->
+        case Auth.approve_user(user) do
+          {:ok, _user} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, gettext("User approved successfully."))
+             |> reload_users()
+             |> reload_counts()}
 
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to approve user."))}
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to approve user."))}
+        end
     end
   end
 
@@ -69,14 +78,18 @@ defmodule BaudrateWeb.Admin.UsersLive do
     if user_id == socket.assigns.current_user.id do
       {:noreply, put_flash(socket, :error, gettext("You cannot ban yourself."))}
     else
-      user = Auth.get_user(user_id)
+      case Auth.get_user(user_id) do
+        nil ->
+          {:noreply, put_flash(socket, :error, gettext("User not found."))}
 
-      {:noreply,
-       assign(socket,
-         ban_target: user_id,
-         ban_target_username: user && user.username,
-         ban_reason: ""
-       )}
+        user ->
+          {:noreply,
+           assign(socket,
+             ban_target: user_id,
+             ban_target_username: user.username,
+             ban_reason: ""
+           )}
+      end
     end
   end
 
@@ -89,60 +102,77 @@ defmodule BaudrateWeb.Admin.UsersLive do
   end
 
   def handle_event("confirm_ban", _params, socket) do
-    admin_id = socket.assigns.current_user.id
-    user = Auth.get_user(socket.assigns.ban_target)
-    reason = socket.assigns.ban_reason
-    reason = if reason == "", do: nil, else: reason
-
-    case Auth.ban_user(user, admin_id, reason) do
-      {:ok, _user} ->
+    case Auth.get_user(socket.assigns.ban_target) do
+      nil ->
         {:noreply,
          socket
          |> assign(ban_target: nil, ban_target_username: nil, ban_reason: "")
-         |> put_flash(:info, gettext("User banned successfully."))
-         |> reload_users()
-         |> reload_counts()}
+         |> put_flash(:error, gettext("User not found."))}
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to ban user."))}
+      user ->
+        admin_id = socket.assigns.current_user.id
+        reason = socket.assigns.ban_reason
+        reason = if reason == "", do: nil, else: reason
+
+        case Auth.ban_user(user, admin_id, reason) do
+          {:ok, _user} ->
+            {:noreply,
+             socket
+             |> assign(ban_target: nil, ban_target_username: nil, ban_reason: "")
+             |> put_flash(:info, gettext("User banned successfully."))
+             |> reload_users()
+             |> reload_counts()}
+
+          {:error, :self_action} ->
+            {:noreply, put_flash(socket, :error, gettext("You cannot ban yourself."))}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to ban user."))}
+        end
     end
   end
 
   def handle_event("unban", %{"id" => id}, socket) do
-    user = Auth.get_user(String.to_integer(id))
+    case Auth.get_user(String.to_integer(id)) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("User not found."))}
 
-    case Auth.unban_user(user) do
-      {:ok, _user} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, gettext("User unbanned successfully."))
-         |> reload_users()
-         |> reload_counts()}
+      user ->
+        case Auth.unban_user(user) do
+          {:ok, _user} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, gettext("User unbanned successfully."))
+             |> reload_users()
+             |> reload_counts()}
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to unban user."))}
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to unban user."))}
+        end
     end
   end
 
   def handle_event("change_role", %{"id" => id, "role_id" => role_id}, socket) do
-    admin_id = socket.assigns.current_user.id
-    user_id = String.to_integer(id)
+    case Auth.get_user(String.to_integer(id)) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("User not found."))}
 
-    if user_id == admin_id do
-      {:noreply, put_flash(socket, :error, gettext("You cannot change your own role."))}
-    else
-      user = Auth.get_user(user_id)
+      user ->
+        admin_id = socket.assigns.current_user.id
 
-      case Auth.update_user_role(user, String.to_integer(role_id), admin_id) do
-        {:ok, _user} ->
-          {:noreply,
-           socket
-           |> put_flash(:info, gettext("User role updated successfully."))
-           |> reload_users()}
+        case Auth.update_user_role(user, String.to_integer(role_id), admin_id) do
+          {:ok, _user} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, gettext("User role updated successfully."))
+             |> reload_users()}
 
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to update user role."))}
-      end
+          {:error, :self_action} ->
+            {:noreply, put_flash(socket, :error, gettext("You cannot change your own role."))}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to update user role."))}
+        end
     end
   end
 
@@ -168,4 +198,15 @@ defmodule BaudrateWeb.Admin.UsersLive do
   defp reload_counts(socket) do
     assign(socket, :status_counts, Auth.count_users_by_status())
   end
+
+  defp translate_status("active"), do: gettext("active")
+  defp translate_status("pending"), do: gettext("pending")
+  defp translate_status("banned"), do: gettext("banned")
+  defp translate_status(other), do: other
+
+  defp translate_role("admin"), do: gettext("admin")
+  defp translate_role("moderator"), do: gettext("moderator")
+  defp translate_role("user"), do: gettext("user")
+  defp translate_role("guest"), do: gettext("guest")
+  defp translate_role(other), do: other
 end

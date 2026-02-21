@@ -118,11 +118,51 @@ defmodule Baudrate.Content.BoardManagementTest do
     end
   end
 
+  describe "delete_board/1 with child boards" do
+    test "returns error when board has children" do
+      {:ok, parent} = Content.create_board(%{name: "Parent", slug: "parent-#{System.unique_integer([:positive])}"})
+      {:ok, _child} = Content.create_board(%{name: "Child", slug: "child-#{System.unique_integer([:positive])}", parent_id: parent.id})
+
+      assert {:error, :has_children} = Content.delete_board(parent)
+    end
+  end
+
   describe "update_board/2 circular parent" do
     test "rejects self as parent" do
       {:ok, board} = Content.create_board(%{name: "Self", slug: "self-ref-#{System.unique_integer([:positive])}"})
       {:error, changeset} = Content.update_board(board, %{parent_id: board.id})
       assert changeset.errors[:parent_id]
+    end
+
+    test "rejects indirect cycle (A → B → A)" do
+      {:ok, a} = Content.create_board(%{name: "A", slug: "cycle-a-#{System.unique_integer([:positive])}"})
+      {:ok, b} = Content.create_board(%{name: "B", slug: "cycle-b-#{System.unique_integer([:positive])}", parent_id: a.id})
+
+      {:error, changeset} = Content.update_board(a, %{parent_id: b.id})
+      assert changeset.errors[:parent_id]
+    end
+
+    test "rejects deeper cycle (A → B → C → A)" do
+      {:ok, a} = Content.create_board(%{name: "A", slug: "deep-a-#{System.unique_integer([:positive])}"})
+      {:ok, b} = Content.create_board(%{name: "B", slug: "deep-b-#{System.unique_integer([:positive])}", parent_id: a.id})
+      {:ok, c} = Content.create_board(%{name: "C", slug: "deep-c-#{System.unique_integer([:positive])}", parent_id: b.id})
+
+      {:error, changeset} = Content.update_board(a, %{parent_id: c.id})
+      assert changeset.errors[:parent_id]
+    end
+  end
+
+  describe "board field length validation" do
+    test "rejects name over 100 characters" do
+      long_name = String.duplicate("a", 101)
+      {:error, changeset} = Content.create_board(%{name: long_name, slug: "long-#{System.unique_integer([:positive])}"})
+      assert changeset.errors[:name]
+    end
+
+    test "rejects description over 1000 characters" do
+      long_desc = String.duplicate("a", 1001)
+      {:error, changeset} = Content.create_board(%{name: "OK", slug: "desc-#{System.unique_integer([:positive])}", description: long_desc})
+      assert changeset.errors[:description]
     end
   end
 

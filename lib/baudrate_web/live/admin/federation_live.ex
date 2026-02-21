@@ -8,20 +8,15 @@ defmodule BaudrateWeb.Admin.FederationLive do
 
   use BaudrateWeb, :live_view
 
+  on_mount {BaudrateWeb.AuthHooks, :require_admin}
+
   alias Baudrate.Content
   alias Baudrate.Setup
   alias Baudrate.Federation.{DeliveryStats, InstanceStats}
 
   @impl true
   def mount(_params, _session, socket) do
-    if socket.assigns.current_user.role.name != "admin" do
-      {:ok,
-       socket
-       |> put_flash(:error, gettext("Access denied."))
-       |> redirect(to: ~p"/")}
-    else
-      {:ok, load_dashboard(socket)}
-    end
+    {:ok, load_dashboard(socket)}
   end
 
   @impl true

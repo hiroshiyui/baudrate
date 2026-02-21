@@ -52,7 +52,7 @@ defmodule BaudrateWeb.SessionController do
       {:ok, user_id} ->
         user = Auth.get_user(user_id)
 
-        if user do
+        if user && user.status != "banned" do
           Logger.info(
             "auth.login_success: user_id=#{user.id} username=#{user.username} ip=#{remote_ip(conn)}"
           )
