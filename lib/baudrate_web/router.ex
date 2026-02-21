@@ -54,12 +54,42 @@ defmodule BaudrateWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :activity_pub do
+    plug :accepts, ["json"]
+    plug BaudrateWeb.Plugs.RateLimit, action: :activity_pub
+  end
+
   pipeline :rate_limit_login do
     plug BaudrateWeb.Plugs.RateLimit, action: :login
   end
 
   pipeline :rate_limit_totp do
     plug BaudrateWeb.Plugs.RateLimit, action: :totp
+  end
+
+  # ActivityPub / Federation (JSON-only, no session)
+  scope "/.well-known", BaudrateWeb do
+    pipe_through :activity_pub
+
+    get "/webfinger", ActivityPubController, :webfinger
+    get "/nodeinfo", ActivityPubController, :nodeinfo_redirect
+  end
+
+  scope "/nodeinfo", BaudrateWeb do
+    pipe_through :activity_pub
+
+    get "/2.1", ActivityPubController, :nodeinfo
+  end
+
+  scope "/ap", BaudrateWeb do
+    pipe_through :activity_pub
+
+    get "/users/:username", ActivityPubController, :user_actor
+    get "/users/:username/outbox", ActivityPubController, :user_outbox
+    get "/boards/:slug", ActivityPubController, :board_actor
+    get "/boards/:slug/outbox", ActivityPubController, :board_outbox
+    get "/site", ActivityPubController, :site_actor
+    get "/articles/:slug", ActivityPubController, :article
   end
 
   # Public (redirect if already authenticated)

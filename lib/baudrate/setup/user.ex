@@ -17,6 +17,11 @@ defmodule Baudrate.Setup.User do
       if TOTP has not been enabled. Never stores the raw secret.
     * `totp_enabled` — boolean flag; when `true`, login requires TOTP verification
 
+  ## ActivityPub Fields
+
+    * `ap_public_key` — PEM-encoded RSA public key for ActivityPub federation
+    * `ap_private_key_encrypted` — AES-256-GCM encrypted PEM-encoded RSA private key
+
   ## Status
 
     * `"active"` — fully functional account (default)
@@ -41,6 +46,8 @@ defmodule Baudrate.Setup.User do
     field :avatar_id, :string
     field :status, :string, default: "active"
     field :preferred_locales, {:array, :string}, default: []
+    field :ap_public_key, :string
+    field :ap_private_key_encrypted, :binary
 
     belongs_to :role, Baudrate.Setup.Role
 
@@ -95,6 +102,11 @@ defmodule Baudrate.Setup.User do
     |> cast(attrs, [:status])
     |> validate_required([:status])
     |> validate_inclusion(:status, ["active", "pending"])
+  end
+
+  def ap_key_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:ap_public_key, :ap_private_key_encrypted])
   end
 
   def locale_changeset(user, attrs) do

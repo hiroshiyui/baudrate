@@ -45,40 +45,40 @@ Built from scratch using Erlang's `:public_key`/`:crypto` and existing deps (Jas
 
 Expose actors and content as read-only ActivityPub/JSON-LD. No inbox, no signatures yet.
 
-- [ ] **WebFinger endpoint** (`/.well-known/webfinger`)
-  - [ ] Resolve `acct:username@host` → User actor URI
-  - [ ] Resolve `acct:!slug@host` → Board actor URI (Lemmy-compatible)
-  - [ ] Validate `resource` param as well-formed `acct:` URI; reject malformed input
-- [ ] **NodeInfo endpoints**
-  - [ ] `/.well-known/nodeinfo` — link to NodeInfo 2.1 document
-  - [ ] `/nodeinfo/2.1` — expose software name/version, protocols, usage stats
-- [ ] **Actor endpoints** (JSON-LD with `application/activity+json`)
-  - [ ] `/ap/users/:username` — Person actor with `publicKey`, `inbox`, `outbox`, `followers`
-  - [ ] `/ap/boards/:slug` — Group actor with `publicKey`, `inbox`, `outbox`, `followers`
-  - [ ] `/ap/site` — Organization actor for the instance
+- [x] **WebFinger endpoint** (`/.well-known/webfinger`)
+  - [x] Resolve `acct:username@host` → User actor URI
+  - [x] Resolve `acct:!slug@host` → Board actor URI (Lemmy-compatible)
+  - [x] Validate `resource` param as well-formed `acct:` URI; reject malformed input
+- [x] **NodeInfo endpoints**
+  - [x] `/.well-known/nodeinfo` — link to NodeInfo 2.1 document
+  - [x] `/nodeinfo/2.1` — expose software name/version, protocols, usage stats
+- [x] **Actor endpoints** (JSON-LD with `application/activity+json`)
+  - [x] `/ap/users/:username` — Person actor with `publicKey`, `inbox`, `outbox`, `followers`
+  - [x] `/ap/boards/:slug` — Group actor with `publicKey`, `inbox`, `outbox`, `followers`
+  - [x] `/ap/site` — Organization actor for the instance
   - [ ] Content-negotiation: serve JSON-LD for `Accept: application/activity+json`, redirect to HTML otherwise
-- [ ] **Outbox endpoints** (read-only, paginated `OrderedCollection`)
-  - [ ] `/ap/users/:username/outbox` — user's published articles as `Create(Article)` activities
-  - [ ] `/ap/boards/:slug/outbox` — board's articles as `Announce(Article)` activities
-- [ ] **Object endpoints**
-  - [ ] `/ap/articles/:slug` — Article object with `content`, `attributedTo`, `audience`, `context`
+- [x] **Outbox endpoints** (read-only, paginated `OrderedCollection`)
+  - [x] `/ap/users/:username/outbox` — user's published articles as `Create(Article)` activities
+  - [x] `/ap/boards/:slug/outbox` — board's articles as `Announce(Article)` activities
+- [x] **Object endpoints**
+  - [x] `/ap/articles/:slug` — Article object with `content`, `attributedTo`, `audience`, `context`
   - [ ] Article `content` rendered as sanitized HTML from Markdown source
-- [ ] **Router pipeline** (`:activity_pub`)
-  - [ ] Accept `application/activity+json` and `application/ld+json`
-  - [ ] JSON parsing (Jason), no CSRF token, no session
-  - [ ] Rate limiting on all AP endpoints
-  - [ ] Scopes: `/.well-known/*`, `/ap/*`, `/nodeinfo/*`
-- [ ] **Schema — key pairs**
-  - [ ] Migration: add `ap_public_key` / `ap_private_key_encrypted` to users table
-  - [ ] Migration: add `ap_public_key` / `ap_private_key_encrypted` to boards table
-  - [ ] Migration: add site-level keypair to settings
-  - [ ] `Federation.KeyStore` — generate RSA-2048 keypairs on actor creation
-  - [ ] Private key encryption at rest with AES-256-GCM (follow `TotpVault` pattern)
-- [ ] **Security — Phase 1**
-  - [ ] All actor URIs use HTTPS only
-  - [ ] Rate limit WebFinger and actor lookups
-  - [ ] No private/draft content exposed via AP endpoints
-  - [ ] Validate all path parameters (username, slug) against expected formats
+- [x] **Router pipeline** (`:activity_pub`)
+  - [x] Accept `application/activity+json` and `application/ld+json`
+  - [x] JSON parsing (Jason), no CSRF token, no session
+  - [x] Rate limiting on all AP endpoints
+  - [x] Scopes: `/.well-known/*`, `/ap/*`, `/nodeinfo/*`
+- [x] **Schema — key pairs**
+  - [x] Migration: add `ap_public_key` / `ap_private_key_encrypted` to users table
+  - [x] Migration: add `ap_public_key` / `ap_private_key_encrypted` to boards table
+  - [x] Migration: add site-level keypair to settings
+  - [x] `Federation.KeyStore` — generate RSA-2048 keypairs on actor creation
+  - [x] Private key encryption at rest with AES-256-GCM (follow `TotpVault` pattern)
+- [x] **Security — Phase 1**
+  - [x] All actor URIs use HTTPS only
+  - [x] Rate limit WebFinger and actor lookups
+  - [x] No private/draft content exposed via AP endpoints
+  - [x] Validate all path parameters (username, slug) against expected formats
 
 ### Phase 2 — HTTP Signatures & Inbox (Receiving Activities)
 
