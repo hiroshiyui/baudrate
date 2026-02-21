@@ -16,24 +16,24 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:130
-#: lib/baudrate_web/components/layouts.ex:142
+#: lib/baudrate_web/components/layouts.ex:136
+#: lib/baudrate_web/components/layouts.ex:148
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:137
+#: lib/baudrate_web/components/layouts.ex:143
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:125
+#: lib/baudrate_web/components/layouts.ex:131
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr ""
 
 #: lib/baudrate_web/components/core_components.ex:74
-#: lib/baudrate_web/live/profile_live.html.heex:59
+#: lib/baudrate_web/live/profile_live.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "close"
 msgstr ""
@@ -49,6 +49,7 @@ msgstr ""
 msgid "Admin Account"
 msgstr ""
 
+#: lib/baudrate_web/live/register_live.html.heex:47
 #: lib/baudrate_web/live/setup_live.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "At least 12 characters"
@@ -75,6 +76,7 @@ msgstr ""
 msgid "Configure your application before first use."
 msgstr ""
 
+#: lib/baudrate_web/live/register_live.html.heex:26
 #: lib/baudrate_web/live/setup_live.html.heex:126
 #, elixir-autogen, elixir-format
 msgid "Confirm Password"
@@ -85,21 +87,25 @@ msgstr ""
 msgid "Connected"
 msgstr ""
 
+#: lib/baudrate_web/live/register_live.html.heex:89
 #: lib/baudrate_web/live/setup_live.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Contains a digit"
 msgstr ""
 
+#: lib/baudrate_web/live/register_live.html.heex:61
 #: lib/baudrate_web/live/setup_live.html.heex:161
 #, elixir-autogen, elixir-format
 msgid "Contains a lowercase letter"
 msgstr ""
 
+#: lib/baudrate_web/live/register_live.html.heex:103
 #: lib/baudrate_web/live/setup_live.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "Contains a special character"
 msgstr ""
 
+#: lib/baudrate_web/live/register_live.html.heex:75
 #: lib/baudrate_web/live/setup_live.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "Contains an uppercase letter"
@@ -147,12 +153,14 @@ msgid "Next"
 msgstr ""
 
 #: lib/baudrate_web/live/login_live.html.heex:25
+#: lib/baudrate_web/live/register_live.html.heex:18
 #: lib/baudrate_web/live/setup_live.html.heex:119
 #: lib/baudrate_web/live/totp_reset_live.html.heex:20
 #, elixir-autogen, elixir-format
 msgid "Password"
 msgstr ""
 
+#: lib/baudrate_web/live/register_live.html.heex:33
 #: lib/baudrate_web/live/setup_live.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "Password requirements:"
@@ -185,8 +193,10 @@ msgstr ""
 msgid "Site Name"
 msgstr ""
 
+#: lib/baudrate_web/live/admin/pending_users_live.html.heex:12
 #: lib/baudrate_web/live/login_live.html.heex:10
-#: lib/baudrate_web/live/profile_live.html.heex:65
+#: lib/baudrate_web/live/profile_live.html.heex:76
+#: lib/baudrate_web/live/register_live.html.heex:10
 #: lib/baudrate_web/live/setup_live.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Username"
@@ -202,12 +212,12 @@ msgstr ""
 msgid "Enter your credentials to continue."
 msgstr ""
 
-#: lib/baudrate_web/live/login_live.ex:85
+#: lib/baudrate_web/live/login_live.ex:89
 #, elixir-autogen, elixir-format
 msgid "Invalid username or password."
 msgstr ""
 
-#: lib/baudrate_web/live/totp_setup_live.html.heex:18
+#: lib/baudrate_web/live/totp_setup_live.html.heex:25
 #, elixir-autogen, elixir-format
 msgid "Or enter this key manually:"
 msgstr ""
@@ -218,35 +228,36 @@ msgstr ""
 msgid "Please enter a 6-digit code."
 msgstr ""
 
-#: lib/baudrate_web/live/totp_setup_live.html.heex:7
+#: lib/baudrate_web/live/totp_setup_live.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Scan the QR code below with your authenticator app to enable two-factor authentication."
 msgstr ""
 
-#: lib/baudrate_web/live/totp_setup_live.html.heex:2
+#: lib/baudrate_web/live/totp_setup_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Set Up Two-Factor Authentication"
 msgstr ""
 
 #: lib/baudrate_web/live/login_live.html.heex:2
 #: lib/baudrate_web/live/login_live.html.heex:39
+#: lib/baudrate_web/live/register_live.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "Sign In"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:50
-#: lib/baudrate_web/components/layouts.ex:89
+#: lib/baudrate_web/components/layouts.ex:53
+#: lib/baudrate_web/components/layouts.ex:95
 #, elixir-autogen, elixir-format
 msgid "Sign Out"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:76
+#: lib/baudrate_web/live/profile_live.html.heex:87
 #: lib/baudrate_web/live/totp_verify_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Two-Factor Authentication"
 msgstr ""
 
-#: lib/baudrate_web/live/totp_setup_live.html.heex:27
+#: lib/baudrate_web/live/totp_setup_live.html.heex:35
 #: lib/baudrate_web/live/totp_verify_live.html.heex:10
 #, elixir-autogen, elixir-format
 msgid "Verification Code"
@@ -258,27 +269,27 @@ msgstr ""
 msgid "Verify"
 msgstr ""
 
-#: lib/baudrate_web/live/totp_setup_live.html.heex:45
+#: lib/baudrate_web/live/totp_setup_live.html.heex:53
 #, elixir-autogen, elixir-format
 msgid "Verify and Enable"
 msgstr ""
 
-#: lib/baudrate_web/live/home_live.html.heex:2
+#: lib/baudrate_web/live/home_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Welcome, %{username}!"
 msgstr ""
 
-#: lib/baudrate_web/live/home_live.html.heex:4
+#: lib/baudrate_web/live/home_live.html.heex:6
 #, elixir-autogen, elixir-format
 msgid "You are signed in as %{role}."
 msgstr ""
 
-#: lib/baudrate_web/live/totp_setup_live.html.heex:5
+#: lib/baudrate_web/live/totp_setup_live.html.heex:7
 #, elixir-autogen, elixir-format
 msgid "Your role requires two-factor authentication. Scan the QR code below with your authenticator app."
 msgstr ""
 
-#: lib/baudrate_web/live/login_live.ex:58
+#: lib/baudrate_web/live/login_live.ex:62
 #, elixir-autogen, elixir-format
 msgid "Too many login attempts. Please try again later."
 msgstr ""
@@ -288,26 +299,27 @@ msgstr ""
 msgid "Unable to connect to database. Check your configuration."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:39
-#: lib/baudrate_web/components/layouts.ex:68
+#: lib/baudrate_web/components/layouts.ex:42
+#: lib/baudrate_web/components/layouts.ex:71
+#: lib/baudrate_web/live/article_new_live.html.heex:15
 #: lib/baudrate_web/live/board_live.html.heex:3
-#: lib/baudrate_web/live/home_live.html.heex:9
+#: lib/baudrate_web/live/home_live.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Boards"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:36
-#: lib/baudrate_web/components/layouts.ex:65
+#: lib/baudrate_web/components/layouts.ex:39
+#: lib/baudrate_web/components/layouts.ex:68
 #, elixir-autogen, elixir-format
 msgid "Home"
 msgstr ""
 
-#: lib/baudrate_web/live/totp_reset_live.html.heex:70
+#: lib/baudrate_web/live/totp_reset_live.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Back to Profile"
 msgstr ""
 
-#: lib/baudrate_web/live/recovery_code_verify_live.html.heex:38
+#: lib/baudrate_web/live/recovery_code_verify_live.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "Back to TOTP verification"
 msgstr ""
@@ -322,12 +334,12 @@ msgstr ""
 msgid "Current TOTP Code"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:84
+#: lib/baudrate_web/live/profile_live.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Disabled"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:87
+#: lib/baudrate_web/live/profile_live.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "Enable TOTP"
 msgstr ""
@@ -337,7 +349,7 @@ msgstr ""
 msgid "Enable Two-Factor Authentication"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:79
+#: lib/baudrate_web/live/profile_live.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "Enabled"
 msgstr ""
@@ -357,7 +369,7 @@ msgstr ""
 msgid "Enter your password to begin setting up two-factor authentication."
 msgstr ""
 
-#: lib/baudrate_web/live/recovery_codes_live.html.heex:25
+#: lib/baudrate_web/live/recovery_codes_live.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "I've saved my recovery codes"
 msgstr ""
@@ -367,17 +379,17 @@ msgstr ""
 msgid "Invalid credentials. Please try again."
 msgstr ""
 
-#: lib/baudrate_web/live/totp_verify_live.html.heex:39
+#: lib/baudrate_web/live/totp_verify_live.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "Lost your device? Use a recovery code"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:95
+#: lib/baudrate_web/live/profile_live.html.heex:106
 #, elixir-autogen, elixir-format
 msgid "Member Since"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:11
+#: lib/baudrate_web/live/board_live.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "No articles yet."
 msgstr ""
@@ -387,8 +399,8 @@ msgstr ""
 msgid "Please enter a valid recovery code (e.g. a1b2-c3d4)."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:47
-#: lib/baudrate_web/components/layouts.ex:86
+#: lib/baudrate_web/components/layouts.ex:50
+#: lib/baudrate_web/components/layouts.ex:92
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Profile"
@@ -405,14 +417,14 @@ msgstr ""
 msgid "Recovery Codes"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:81
+#: lib/baudrate_web/live/profile_live.html.heex:92
 #: lib/baudrate_web/live/totp_reset_live.html.heex:4
 #: lib/baudrate_web/live/totp_reset_live.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Reset Authenticator"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:70
+#: lib/baudrate_web/live/profile_live.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "Role"
 msgstr ""
@@ -422,7 +434,7 @@ msgstr ""
 msgid "Save these recovery codes in a safe place. Each code can only be used once. If you lose your authenticator device, you can use one of these codes to log in."
 msgstr ""
 
-#: lib/baudrate_web/live/totp_setup_live.html.heex:13
+#: lib/baudrate_web/live/totp_setup_live.html.heex:19
 #, elixir-autogen, elixir-format
 msgid "TOTP QR Code"
 msgstr ""
@@ -432,79 +444,225 @@ msgstr ""
 msgid "Too many failed attempts. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/recovery_codes_live.html.heex:11
+#: lib/baudrate_web/live/recovery_codes_live.html.heex:23
 #, elixir-autogen, elixir-format
 msgid "You will not be able to see these codes again!"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:18
+#: lib/baudrate_web/live/profile_live.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to remove your avatar?"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:81
+#: lib/baudrate_web/live/profile_live.ex:83
 #, elixir-autogen, elixir-format
 msgid "Avatar removed."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:111
+#: lib/baudrate_web/live/profile_live.ex:114
 #, elixir-autogen, elixir-format
 msgid "Avatar updated successfully."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:50
+#: lib/baudrate_web/live/profile_live.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:11
+#: lib/baudrate_web/live/profile_live.html.heex:15
 #, elixir-autogen, elixir-format
 msgid "Change Avatar"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:43
+#: lib/baudrate_web/live/profile_live.html.heex:50
 #, elixir-autogen, elixir-format
 msgid "Crop Avatar"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:129
+#: lib/baudrate_web/live/profile_live.ex:132
 #, elixir-autogen, elixir-format
 msgid "Failed to process avatar image."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:144
+#: lib/baudrate_web/live/profile_live.ex:147
 #, elixir-autogen, elixir-format
 msgid "Image file is too large."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:120
-#: lib/baudrate_web/live/profile_live.ex:145
+#: lib/baudrate_web/live/profile_live.ex:123
+#: lib/baudrate_web/live/profile_live.ex:148
 #, elixir-autogen, elixir-format
 msgid "Invalid image file."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:20
+#: lib/baudrate_web/live/profile_live.html.heex:24
 #, elixir-autogen, elixir-format
 msgid "Remove Avatar"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:53
+#: lib/baudrate_web/live/profile_live.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Save"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:62
-#: lib/baudrate_web/live/profile_live.ex:86
+#: lib/baudrate_web/live/profile_live.ex:64
+#: lib/baudrate_web/live/profile_live.ex:89
 #, elixir-autogen, elixir-format
 msgid "Too many avatar changes. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:146
+#: lib/baudrate_web/live/profile_live.ex:149
 #, elixir-autogen, elixir-format
 msgid "Too many files."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:147
+#: lib/baudrate_web/live/profile_live.ex:150
 #, elixir-autogen, elixir-format
 msgid "Upload error."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/pending_users_live.ex:18
+#, elixir-autogen, elixir-format
+msgid "Access denied."
+msgstr ""
+
+#: lib/baudrate_web/live/register_live.html.heex:133
+#, elixir-autogen, elixir-format
+msgid "Already have an account?"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/pending_users_live.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Approve"
+msgstr ""
+
+#: lib/baudrate_web/live/article_new_live.ex:87
+#, elixir-autogen, elixir-format
+msgid "Article created successfully."
+msgstr ""
+
+#: lib/baudrate_web/live/article_live.html.heex:8
+#: lib/baudrate_web/live/article_new_live.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "Back to board"
+msgstr ""
+
+#: lib/baudrate_web/live/article_new_live.html.heex:36
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Board"
+msgstr ""
+
+#: lib/baudrate_web/live/article_new_live.html.heex:31
+#, elixir-autogen, elixir-format
+msgid "Body"
+msgstr ""
+
+#: lib/baudrate_web/live/article_new_live.html.heex:19
+#: lib/baudrate_web/live/article_new_live.html.heex:52
+#, elixir-autogen, elixir-format
+msgid "Create Article"
+msgstr ""
+
+#: lib/baudrate_web/live/register_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Create an account"
+msgstr ""
+
+#: lib/baudrate_web/live/login_live.html.heex:54
+#, elixir-autogen, elixir-format
+msgid "Don't have an account?"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/pending_users_live.ex:37
+#, elixir-autogen, elixir-format
+msgid "Failed to approve user."
+msgstr ""
+
+#: lib/baudrate_web/live/article_new_live.ex:94
+#, elixir-autogen, elixir-format
+msgid "Failed to create article."
+msgstr ""
+
+#: lib/baudrate_web/live/board_live.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "New Article"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/pending_users_live.html.heex:5
+#, elixir-autogen, elixir-format
+msgid "No pending users."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/pending_users_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Pending Users"
+msgstr ""
+
+#: lib/baudrate_web/live/board_live.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "Pinned"
+msgstr ""
+
+#: lib/baudrate_web/live/article_new_live.ex:72
+#, elixir-autogen, elixir-format
+msgid "Please select at least one board."
+msgstr ""
+
+#: lib/baudrate_web/live/article_live.html.heex:22
+#, elixir-autogen, elixir-format
+msgid "Posted in"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/pending_users_live.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "Registered"
+msgstr ""
+
+#: lib/baudrate_web/live/register_live.ex:83
+#, elixir-autogen, elixir-format
+msgid "Registration successful! You can now sign in."
+msgstr ""
+
+#: lib/baudrate_web/live/login_live.html.heex:55
+#: lib/baudrate_web/live/register_live.html.heex:2
+#: lib/baudrate_web/live/register_live.html.heex:128
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Sign Up"
+msgstr ""
+
+#: lib/baudrate_web/live/article_new_live.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "Title"
+msgstr ""
+
+#: lib/baudrate_web/live/register_live.ex:71
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Too many registration attempts. Please try again later."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/pending_users_live.ex:33
+#, elixir-autogen, elixir-format
+msgid "User approved successfully."
+msgstr ""
+
+#: lib/baudrate_web/live/register_live.ex:85
+#, elixir-autogen, elixir-format
+msgid "Your account has been created and is pending admin approval. You can sign in, but posting and avatar upload are restricted until approved."
+msgstr ""
+
+#: lib/baudrate_web/live/register_live.html.heex:124
+#, elixir-autogen, elixir-format
+msgid "Your account is pending admin approval."
+msgstr ""
+
+#: lib/baudrate_web/live/article_new_live.ex:24
+#: lib/baudrate_web/live/profile_live.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Your account is pending approval."
+msgstr ""
+
+#: lib/baudrate_web/live/article_live.html.heex:16
+#: lib/baudrate_web/live/board_live.html.heex:29
+#, elixir-autogen, elixir-format
+msgid "by %{author}"
 msgstr ""

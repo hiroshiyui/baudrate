@@ -214,6 +214,31 @@ defmodule Baudrate.ContentTest do
     end
   end
 
+  describe "generate_slug/1" do
+    test "generates slug from title" do
+      slug = Content.generate_slug("Hello World")
+      assert String.starts_with?(slug, "hello-world-")
+      assert Regex.match?(~r/\A[a-z0-9]+(-[a-z0-9]+)*\z/, slug)
+    end
+
+    test "handles special characters" do
+      slug = Content.generate_slug("What's New? (2026)")
+      assert Regex.match?(~r/\A[a-z0-9]+(-[a-z0-9]+)*\z/, slug)
+    end
+
+    test "handles empty title" do
+      slug = Content.generate_slug("")
+      # Should still produce a valid slug (just the random suffix)
+      assert Regex.match?(~r/\A[a-z0-9]+\z/, slug)
+    end
+
+    test "produces unique slugs for same title" do
+      slug1 = Content.generate_slug("Same Title")
+      slug2 = Content.generate_slug("Same Title")
+      assert slug1 != slug2
+    end
+  end
+
   # --- SysOp Board ---
 
   describe "seed_sysop_board/1" do

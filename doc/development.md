@@ -20,7 +20,7 @@
 ```
 lib/
 ├── baudrate/                    # Business logic (contexts)
-│   ├── auth.ex                  # Auth context: login, TOTP, sessions, avatars
+│   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars
 │   ├── auth/
 │   │   ├── recovery_code.ex     # Ecto schema for one-time recovery codes
 │   │   ├── session_cleaner.ex   # GenServer: hourly expired session purge
@@ -33,13 +33,13 @@ lib/
 │   │   ├── board.ex             # Board schema (hierarchical via parent_id)
 │   │   ├── board_article.ex     # Join table: board ↔ article
 │   │   └── board_moderator.ex   # Join table: board ↔ moderator
-│   ├── setup.ex                 # Setup context: first-run wizard, RBAC seeding
+│   ├── setup.ex                 # Setup context: first-run wizard, RBAC seeding, settings
 │   └── setup/
 │       ├── permission.ex        # Permission schema (scope.action naming)
 │       ├── role.ex              # Role schema (admin/moderator/user/guest)
 │       ├── role_permission.ex   # Join table: role ↔ permission
-│       ├── setting.ex           # Key-value settings (site_name, setup_completed)
-│       └── user.ex              # User schema with password, TOTP, avatar fields
+│       ├── setting.ex           # Key-value settings (site_name, setup_completed, registration_mode)
+│       └── user.ex              # User schema with password, TOTP, avatar, status fields
 ├── baudrate_web/                # Web layer
 │   ├── components/
 │   │   ├── core_components.ex   # Shared UI components (avatar, flash, input, etc.)
@@ -47,6 +47,10 @@ lib/
 │   ├── controllers/
 │   │   └── session_controller.ex  # POST endpoints for session mutations
 │   ├── live/
+│   │   ├── admin/
+│   │   │   └── pending_users_live.ex  # Admin approval of pending registrations
+│   │   ├── article_live.ex      # Single article view
+│   │   ├── article_new_live.ex  # Article creation form
 │   │   ├── auth_hooks.ex        # on_mount hooks: require_auth, etc.
 │   │   ├── board_live.ex        # Board view with article listing
 │   │   ├── home_live.ex         # Authenticated home page
@@ -54,6 +58,7 @@ lib/
 │   │   ├── profile_live.ex      # User profile with avatar upload/crop
 │   │   ├── recovery_code_verify_live.ex  # Recovery code login
 │   │   ├── recovery_codes_live.ex        # Recovery codes display
+│   │   ├── register_live.ex     # Public user registration
 │   │   ├── setup_live.ex        # First-run setup wizard
 │   │   ├── totp_reset_live.ex   # Self-service TOTP reset/enable
 │   │   ├── totp_setup_live.ex   # TOTP enrollment with QR code
@@ -135,6 +140,32 @@ User avatars are processed server-side for security:
 4. Files stored at `priv/static/uploads/avatars/{avatar_id}/{size}.webp`
    with server-generated 64-char hex IDs (no user input in paths)
 5. Rate limited to 5 avatar changes per hour per user
+
+### User Registration
+
+Public user registration is available at `/register`. The system supports two
+modes controlled by the `registration_mode` setting:
+
+| Mode | Default | Behavior |
+|------|---------|----------|
+| `"approval_required"` | Yes | New users get `status: "pending"` — can log in and browse, but cannot create articles or upload avatars until approved by an admin |
+| `"open"` | No | New users get `status: "active"` immediately |
+
+Registration is rate-limited to 5 attempts per hour per IP. The same password
+policy as the setup wizard applies (12+ chars, complexity requirements).
+
+Admin approval is available at `/admin/pending-users` (admin role only).
+
+### Article Creation
+
+Authenticated users with active status and `user.create_content` permission
+can create articles. Two entry points:
+
+- `/boards/:slug/articles/new` — pre-selects the board
+- `/articles/new` — user picks board(s) from a multi-select
+
+Articles are assigned a URL-safe slug generated from the title with a random
+suffix to avoid collisions. Articles can be cross-posted to multiple boards.
 
 ### Content Model
 

@@ -290,6 +290,124 @@ defmodule Baudrate.AuthTest do
     end
   end
 
+  describe "register_user/1" do
+    test "creates user with active status in open mode" do
+      Repo.insert!(%Baudrate.Setup.Setting{key: "registration_mode", value: "open"})
+
+      assert {:ok, user} =
+               Auth.register_user(%{
+                 "username" => "openuser",
+                 "password" => "SecurePass1!!",
+                 "password_confirmation" => "SecurePass1!!"
+               })
+
+      assert user.status == "active"
+      assert user.role_id != nil
+
+      role = Repo.preload(user, :role).role
+      assert role.name == "user"
+    end
+
+    test "creates user with pending status in approval mode" do
+      assert {:ok, user} =
+               Auth.register_user(%{
+                 "username" => "pendinguser",
+                 "password" => "SecurePass1!!",
+                 "password_confirmation" => "SecurePass1!!"
+               })
+
+      assert user.status == "pending"
+    end
+
+    test "returns error for invalid data" do
+      assert {:error, _changeset} =
+               Auth.register_user(%{
+                 "username" => "",
+                 "password" => "short",
+                 "password_confirmation" => "short"
+               })
+    end
+  end
+
+  describe "approve_user/1" do
+    test "sets pending user to active" do
+      {:ok, user} =
+        Auth.register_user(%{
+          "username" => "toapprove",
+          "password" => "SecurePass1!!",
+          "password_confirmation" => "SecurePass1!!"
+        })
+
+      assert user.status == "pending"
+
+      {:ok, approved} = Auth.approve_user(user)
+      assert approved.status == "active"
+    end
+  end
+
+  describe "list_pending_users/0" do
+    test "returns only pending users" do
+      {:ok, _pending} =
+        Auth.register_user(%{
+          "username" => "pending1",
+          "password" => "SecurePass1!!",
+          "password_confirmation" => "SecurePass1!!"
+        })
+
+      _active = create_user("user")
+
+      pending = Auth.list_pending_users()
+      assert length(pending) == 1
+      assert hd(pending).username == "pending1"
+    end
+
+    test "returns empty list when no pending users" do
+      assert Auth.list_pending_users() == []
+    end
+  end
+
+  describe "user_active?/1" do
+    test "returns true for active user" do
+      user = create_user("user")
+      assert Auth.user_active?(user)
+    end
+
+    test "returns false for pending user" do
+      {:ok, user} =
+        Auth.register_user(%{
+          "username" => "pendcheck",
+          "password" => "SecurePass1!!",
+          "password_confirmation" => "SecurePass1!!"
+        })
+
+      refute Auth.user_active?(user)
+    end
+  end
+
+  describe "can_create_content?/1" do
+    test "returns true for active user with create_content permission" do
+      user = create_user("user")
+      assert Auth.can_create_content?(user)
+    end
+
+    test "returns false for pending user" do
+      {:ok, user} =
+        Auth.register_user(%{
+          "username" => "pendcreate",
+          "password" => "SecurePass1!!",
+          "password_confirmation" => "SecurePass1!!"
+        })
+
+      user = Repo.preload(user, :role)
+      refute Auth.can_create_content?(user)
+    end
+
+    test "returns false for guest role" do
+      user = create_user("guest")
+      refute Auth.can_create_content?(user)
+    end
+  end
+
   describe "get_user/1" do
     test "returns user with role preloaded" do
       user = create_user("admin")
