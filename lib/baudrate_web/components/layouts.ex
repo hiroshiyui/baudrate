@@ -83,9 +83,15 @@ defmodule BaudrateWeb.Layouts do
         </ul>
       </div>
 
-      <%!-- Right side: theme toggle + user dropdown --%>
+      <%!-- Right side: theme toggle + auth links / user dropdown --%>
       <div class="flex-none flex items-center gap-2">
         <.theme_toggle />
+
+        <%!-- Guest auth links (shown when not logged in) --%>
+        <div :if={!@current_user} class="flex items-center gap-2">
+          <.link navigate="/login" class="btn btn-ghost btn-sm">{gettext("Sign In")}</.link>
+          <.link navigate="/register" class="btn btn-primary btn-sm">{gettext("Register")}</.link>
+        </div>
 
         <%!-- Desktop user dropdown (shown >= lg) --%>
         <div :if={@current_user} class="hidden lg:block dropdown dropdown-end">

@@ -6,11 +6,10 @@ defmodule BaudrateWeb.PageControllerTest do
     assert redirected_to(conn) == "/setup"
   end
 
-  test "GET / redirects to /login when setup is completed but not authenticated", %{conn: conn} do
+  test "GET / renders home page when setup is completed but not authenticated", %{conn: conn} do
     Baudrate.Repo.insert!(%Baudrate.Setup.Setting{key: "setup_completed", value: "true"})
     conn = get(conn, ~p"/")
-    # The LiveView will redirect unauthenticated users to /login
-    assert redirected_to(conn) == "/login"
+    assert html_response(conn, 200) =~ "Welcome to Baudrate"
   end
 
   test "GET / renders home page when setup is completed and authenticated", %{conn: conn} do

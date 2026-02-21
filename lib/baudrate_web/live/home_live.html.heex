@@ -1,9 +1,20 @@
-<div class="text-center">
+<div :if={@current_user} class="text-center">
   <h1 class="text-2xl font-bold mb-4">
     {gettext("Welcome, %{username}!", username: @current_user.username)}
   </h1>
   <p class="text-base-content/70 mb-8">
     {gettext("You are signed in as %{role}.", role: @current_user.role.name)}
+  </p>
+</div>
+
+<div :if={!@current_user} class="text-center">
+  <h1 class="text-2xl font-bold mb-4">{gettext("Welcome to Baudrate")}</h1>
+  <p class="text-base-content/70 mb-8">
+    {gettext("Browse the boards below, or")}
+    <.link navigate="/login" class="link link-primary">{gettext("sign in")}</.link>
+    /
+    <.link navigate="/register" class="link link-primary">{gettext("register")}</.link>
+    {gettext("to participate.")}
   </p>
 </div>
 

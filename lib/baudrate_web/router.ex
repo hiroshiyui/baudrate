@@ -4,7 +4,7 @@ defmodule BaudrateWeb.Router do
 
   ## Route Structure
 
-  Four main scopes, each with different auth requirements:
+  Five main scopes, each with different auth requirements:
 
     1. **Public** (`/login`, `/setup`) — `live_session :public` with
        `:redirect_if_authenticated` hook. `/setup` is outside any live_session
@@ -17,8 +17,11 @@ defmodule BaudrateWeb.Router do
        mutations. Split into two scopes with separate rate-limit pipelines
        (`:rate_limit_login` for `/auth/session`, `:rate_limit_totp` for TOTP).
 
-    4. **Authenticated** (`/`) — `live_session :authenticated` with
-       `:require_auth` hook. All pages requiring full authentication.
+    4. **Public browsable** (`/`) — `live_session :public_browsable` with
+       `:optional_auth` hook. Accessible to both guests and authenticated users.
+
+    5. **Authenticated** (`/boards/*`, `/articles/*`, etc.) — `live_session :authenticated`
+       with `:require_auth` hook. All pages requiring full authentication.
 
   ## Browser Pipeline
 
@@ -150,6 +153,17 @@ defmodule BaudrateWeb.Router do
     post "/ack-recovery-codes", SessionController, :ack_recovery_codes
   end
 
+  # Public browsable routes (accessible to guests and authenticated users)
+  scope "/", BaudrateWeb do
+    pipe_through :browser
+
+    live_session :public_browsable,
+      layout: {BaudrateWeb.Layouts, :app},
+      on_mount: [{BaudrateWeb.AuthHooks, :optional_auth}] do
+      live "/", HomeLive
+    end
+  end
+
   # Authenticated routes
   scope "/", BaudrateWeb do
     pipe_through :browser
@@ -157,7 +171,6 @@ defmodule BaudrateWeb.Router do
     live_session :authenticated,
       layout: {BaudrateWeb.Layouts, :app},
       on_mount: [{BaudrateWeb.AuthHooks, :require_auth}] do
-      live "/", HomeLive
       live "/boards/:slug", BoardLive
       live "/boards/:slug/articles/new", ArticleNewLive
       live "/articles/new", ArticleNewLive

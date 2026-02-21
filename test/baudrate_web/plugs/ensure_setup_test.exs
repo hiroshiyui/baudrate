@@ -21,9 +21,9 @@ defmodule BaudrateWeb.Plugs.EnsureSetupTest do
       %{conn: conn}
     end
 
-    test "redirects unauthenticated user to /login", %{conn: conn} do
+    test "allows unauthenticated user to view home page", %{conn: conn} do
       conn = get(conn, ~p"/")
-      assert redirected_to(conn) == "/login"
+      assert html_response(conn, 200) =~ "Welcome to Baudrate"
     end
 
     test "redirects /setup to /", %{conn: conn} do

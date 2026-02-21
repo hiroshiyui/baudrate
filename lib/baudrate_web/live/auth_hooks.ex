@@ -2,13 +2,18 @@ defmodule BaudrateWeb.AuthHooks do
   @moduledoc """
   LiveView `on_mount` hooks for authentication enforcement.
 
-  Three hooks are provided, each attached to `live_session` scopes in the router:
+  Four hooks are provided, each attached to `live_session` scopes in the router:
 
     * `:require_auth` — requires a fully authenticated session (`session_token`
       present and valid). Used for the `:authenticated` live_session. Assigns
       `@current_user` on success, redirects to `/login` on failure.
       Also resolves the user's preferred locale from `user.preferred_locales`
       and sets Gettext locale + `@locale` assign.
+
+    * `:optional_auth` — loads the user if a valid session exists, but does not
+      redirect if unauthenticated. Assigns `@current_user` (may be `nil`).
+      Used for pages that are accessible to both guests and authenticated users.
+      Also resolves locale when a user is present.
 
     * `:require_password_auth` — requires password-level auth only (`user_id`
       in session). Used for the `:totp` live_session where the user has passed
@@ -45,6 +50,29 @@ defmodule BaudrateWeb.AuthHooks do
       end
     else
       {:halt, redirect(socket, to: "/login")}
+    end
+  end
+
+  def on_mount(:optional_auth, _params, session, socket) do
+    session_token = session["session_token"]
+
+    if session_token do
+      case Auth.get_user_by_session_token(session_token) do
+        {:ok, user} ->
+          locale = resolve_user_locale(user)
+
+          socket =
+            socket
+            |> assign(:current_user, user)
+            |> assign(:locale, locale)
+
+          {:cont, socket}
+
+        {:error, _reason} ->
+          {:cont, assign(socket, :current_user, nil)}
+      end
+    else
+      {:cont, assign(socket, :current_user, nil)}
     end
   end
 
