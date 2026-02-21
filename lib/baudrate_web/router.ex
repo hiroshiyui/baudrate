@@ -179,6 +179,8 @@ defmodule BaudrateWeb.Router do
       live "/admin/moderation", Admin.ModerationLive
       live "/admin/boards", Admin.BoardsLive
       live "/admin/users", Admin.UsersLive
+      live "/admin/moderation-log", Admin.ModerationLogLive
+      live "/admin/invites", Admin.InvitesLive
     end
 
     delete "/logout", SessionController, :delete
@@ -193,6 +195,7 @@ defmodule BaudrateWeb.Router do
       on_mount: [{BaudrateWeb.AuthHooks, :optional_auth}] do
       live "/", HomeLive
       live "/search", SearchLive
+      live "/users/:username", UserProfileLive
       live "/boards/:slug", BoardLive
       live "/articles/:slug", ArticleLive
     end
