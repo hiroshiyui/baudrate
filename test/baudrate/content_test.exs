@@ -2,8 +2,9 @@ defmodule Baudrate.ContentTest do
   use Baudrate.DataCase
 
   alias Baudrate.Content
-  alias Baudrate.Content.{Board, Article}
+  alias Baudrate.Content.{Article, Board}
   alias Baudrate.Setup
+  alias Baudrate.Federation.{KeyStore, RemoteActor}
 
   setup do
     Setup.seed_roles_and_permissions()
@@ -236,6 +237,262 @@ defmodule Baudrate.ContentTest do
       slug1 = Content.generate_slug("Same Title")
       slug2 = Content.generate_slug("Same Title")
       assert slug1 != slug2
+    end
+  end
+
+  # --- Remote Articles ---
+
+  defp create_remote_actor do
+    uid = System.unique_integer([:positive])
+    {public_pem, _} = KeyStore.generate_keypair()
+
+    {:ok, actor} =
+      %RemoteActor{}
+      |> RemoteActor.changeset(%{
+        ap_id: "https://remote.example/users/actor-#{uid}",
+        username: "actor_#{uid}",
+        domain: "remote.example",
+        public_key_pem: public_pem,
+        inbox: "https://remote.example/users/actor-#{uid}/inbox",
+        actor_type: "Person",
+        fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+      |> Repo.insert()
+
+    actor
+  end
+
+  describe "create_remote_article/2" do
+    test "creates a remote article linked to a board" do
+      board = create_board(%{name: "Remote Board", slug: "remote-board"})
+      remote_actor = create_remote_actor()
+
+      attrs = %{
+        title: "Remote Post",
+        body: "Body from remote",
+        slug: "remote-post-#{System.unique_integer([:positive])}",
+        ap_id: "https://remote.example/articles/#{System.unique_integer([:positive])}",
+        remote_actor_id: remote_actor.id
+      }
+
+      assert {:ok, %{article: article}} = Content.create_remote_article(attrs, [board.id])
+      assert article.remote_actor_id == remote_actor.id
+      assert article.ap_id != nil
+    end
+  end
+
+  describe "get_article_by_ap_id/1" do
+    test "returns article by ap_id" do
+      board = create_board(%{name: "AP Board", slug: "ap-board"})
+      remote_actor = create_remote_actor()
+      ap_id = "https://remote.example/articles/#{System.unique_integer([:positive])}"
+
+      {:ok, %{article: _}} =
+        Content.create_remote_article(
+          %{
+            title: "AP Article",
+            body: "Body",
+            slug: "ap-art-#{System.unique_integer([:positive])}",
+            ap_id: ap_id,
+            remote_actor_id: remote_actor.id
+          },
+          [board.id]
+        )
+
+      assert %Article{} = Content.get_article_by_ap_id(ap_id)
+    end
+
+    test "returns nil for unknown ap_id" do
+      assert Content.get_article_by_ap_id("https://unknown.example/articles/999") == nil
+    end
+  end
+
+  describe "soft_delete_article/1" do
+    test "sets deleted_at on article" do
+      user = create_user("user")
+      board = create_board(%{name: "Del Board", slug: "del-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "To Delete", body: "body", slug: "to-delete", user_id: user.id},
+          [board.id]
+        )
+
+      assert {:ok, deleted} = Content.soft_delete_article(article)
+      assert deleted.deleted_at != nil
+    end
+
+    test "soft-deleted articles excluded from list_articles_for_board" do
+      user = create_user("user")
+      board = create_board(%{name: "SD Board", slug: "sd-board"})
+
+      {:ok, %{article: _article}} =
+        Content.create_article(
+          %{title: "Visible", body: "body", slug: "visible", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, %{article: to_delete}} =
+        Content.create_article(
+          %{title: "Hidden", body: "body", slug: "hidden", user_id: user.id},
+          [board.id]
+        )
+
+      Content.soft_delete_article(to_delete)
+
+      articles = Content.list_articles_for_board(board)
+      titles = Enum.map(articles, & &1.title)
+      assert "Visible" in titles
+      refute "Hidden" in titles
+    end
+  end
+
+  # --- Comments ---
+
+  describe "create_remote_comment/1" do
+    test "creates a remote comment" do
+      user = create_user("user")
+      board = create_board(%{name: "Cmt Board", slug: "cmt-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Article", body: "body", slug: "cmt-art", user_id: user.id},
+          [board.id]
+        )
+
+      remote_actor = create_remote_actor()
+
+      assert {:ok, comment} =
+               Content.create_remote_comment(%{
+                 body: "Nice post!",
+                 body_html: "<p>Nice post!</p>",
+                 ap_id: "https://remote.example/notes/#{System.unique_integer([:positive])}",
+                 article_id: article.id,
+                 remote_actor_id: remote_actor.id
+               })
+
+      assert comment.remote_actor_id == remote_actor.id
+    end
+  end
+
+  describe "list_comments_for_article/1" do
+    test "excludes soft-deleted comments" do
+      user = create_user("user")
+      board = create_board(%{name: "List Cmt Board", slug: "list-cmt-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Article", body: "body", slug: "list-cmt-art", user_id: user.id},
+          [board.id]
+        )
+
+      remote_actor = create_remote_actor()
+
+      {:ok, c1} =
+        Content.create_remote_comment(%{
+          body: "Visible comment",
+          ap_id: "https://remote.example/notes/visible-#{System.unique_integer([:positive])}",
+          article_id: article.id,
+          remote_actor_id: remote_actor.id
+        })
+
+      {:ok, c2} =
+        Content.create_remote_comment(%{
+          body: "Deleted comment",
+          ap_id: "https://remote.example/notes/deleted-#{System.unique_integer([:positive])}",
+          article_id: article.id,
+          remote_actor_id: remote_actor.id
+        })
+
+      Content.soft_delete_comment(c2)
+
+      comments = Content.list_comments_for_article(article)
+      assert length(comments) == 1
+      assert hd(comments).id == c1.id
+    end
+  end
+
+  # --- Article Likes ---
+
+  describe "create_remote_article_like/1" do
+    test "creates a remote like" do
+      user = create_user("user")
+      board = create_board(%{name: "Like Board", slug: "like-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Likeable", body: "body", slug: "likeable", user_id: user.id},
+          [board.id]
+        )
+
+      remote_actor = create_remote_actor()
+
+      assert {:ok, like} =
+               Content.create_remote_article_like(%{
+                 ap_id: "https://remote.example/likes/#{System.unique_integer([:positive])}",
+                 article_id: article.id,
+                 remote_actor_id: remote_actor.id
+               })
+
+      assert like.article_id == article.id
+    end
+  end
+
+  describe "count_article_likes/1" do
+    test "counts likes for an article" do
+      user = create_user("user")
+      board = create_board(%{name: "Count Board", slug: "count-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Popular", body: "body", slug: "popular", user_id: user.id},
+          [board.id]
+        )
+
+      assert Content.count_article_likes(article) == 0
+
+      actor1 = create_remote_actor()
+      actor2 = create_remote_actor()
+
+      Content.create_remote_article_like(%{
+        ap_id: "https://remote.example/likes/#{System.unique_integer([:positive])}",
+        article_id: article.id,
+        remote_actor_id: actor1.id
+      })
+
+      Content.create_remote_article_like(%{
+        ap_id: "https://remote.example/likes/#{System.unique_integer([:positive])}",
+        article_id: article.id,
+        remote_actor_id: actor2.id
+      })
+
+      assert Content.count_article_likes(article) == 2
+    end
+  end
+
+  describe "delete_article_like_by_ap_id/1" do
+    test "deletes a like by ap_id" do
+      user = create_user("user")
+      board = create_board(%{name: "Undo Board", slug: "undo-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Undoable", body: "body", slug: "undoable", user_id: user.id},
+          [board.id]
+        )
+
+      remote_actor = create_remote_actor()
+      ap_id = "https://remote.example/likes/#{System.unique_integer([:positive])}"
+
+      Content.create_remote_article_like(%{
+        ap_id: ap_id,
+        article_id: article.id,
+        remote_actor_id: remote_actor.id
+      })
+
+      assert Content.count_article_likes(article) == 1
+      Content.delete_article_like_by_ap_id(ap_id)
+      assert Content.count_article_likes(article) == 0
     end
   end
 
