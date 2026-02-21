@@ -3,7 +3,7 @@
 ## Content
 - [ ] Article editing and deletion (by author and moderators)
 - [ ] Comment system on articles
-- [ ] Markdown rendering for article body
+- [x] Markdown rendering for article body
 - [ ] Article search
 - [ ] Article pagination
 - [ ] File attachments on articles
@@ -56,13 +56,13 @@ Expose actors and content as read-only ActivityPub/JSON-LD. No inbox, no signatu
   - [x] `/ap/users/:username` — Person actor with `publicKey`, `inbox`, `outbox`, `followers`
   - [x] `/ap/boards/:slug` — Group actor with `publicKey`, `inbox`, `outbox`, `followers`
   - [x] `/ap/site` — Organization actor for the instance
-  - [ ] Content-negotiation: serve JSON-LD for `Accept: application/activity+json`, redirect to HTML otherwise
+  - [x] Content-negotiation: serve JSON-LD for `Accept: application/activity+json`, redirect to HTML otherwise
 - [x] **Outbox endpoints** (read-only, paginated `OrderedCollection`)
   - [x] `/ap/users/:username/outbox` — user's published articles as `Create(Article)` activities
   - [x] `/ap/boards/:slug/outbox` — board's articles as `Announce(Article)` activities
 - [x] **Object endpoints**
   - [x] `/ap/articles/:slug` — Article object with `content`, `attributedTo`, `audience`, `context`
-  - [ ] Article `content` rendered as sanitized HTML from Markdown source
+  - [x] Article `content` rendered as sanitized HTML from Markdown source
 - [x] **Router pipeline** (`:activity_pub`)
   - [x] Accept `application/activity+json` and `application/ld+json`
   - [x] JSON parsing (Jason), no CSRF token, no session

@@ -31,6 +31,6 @@
 
     <div class="divider"></div>
 
-    <div class="prose max-w-none whitespace-pre-wrap">{@article.body}</div>
+    <div class="prose max-w-none">{raw(Baudrate.Content.Markdown.to_html(@article.body))}</div>
   </article>
 </div>

@@ -2,21 +2,24 @@ defmodule BaudrateWeb.ActivityPubController do
   @moduledoc """
   Controller for ActivityPub and discovery endpoints.
 
-  All actions return JSON (either `application/activity+json` or
-  `application/jrd+json`). Routes are defined in the `:activity_pub`
-  pipeline which enforces rate limiting and JSON-only accepts.
+  Actor and article endpoints perform content negotiation: requests with
+  `Accept: application/activity+json` or `application/ld+json` receive
+  JSON-LD; all other requests are redirected to the corresponding HTML page.
+
+  Machine-only endpoints (WebFinger, NodeInfo, outbox) always return JSON
+  regardless of Accept header.
 
   ## Endpoints
 
     * `GET /.well-known/webfinger` — WebFinger resource resolution
     * `GET /.well-known/nodeinfo` — NodeInfo discovery links
     * `GET /nodeinfo/2.1` — NodeInfo 2.1 document
-    * `GET /ap/users/:username` — Person actor
+    * `GET /ap/users/:username` — Person actor (content-negotiated)
     * `GET /ap/users/:username/outbox` — user outbox (OrderedCollection)
-    * `GET /ap/boards/:slug` — Group actor
+    * `GET /ap/boards/:slug` — Group actor (content-negotiated)
     * `GET /ap/boards/:slug/outbox` — board outbox (OrderedCollection)
-    * `GET /ap/site` — Organization actor
-    * `GET /ap/articles/:slug` — Article object
+    * `GET /ap/site` — Organization actor (content-negotiated)
+    * `GET /ap/articles/:slug` — Article object (content-negotiated)
   """
 
   use BaudrateWeb, :controller
@@ -68,33 +71,45 @@ defmodule BaudrateWeb.ActivityPubController do
   # --- Actors ---
 
   def user_actor(conn, %{"username" => username}) do
-    with true <- Regex.match?(@username_re, username),
-         user when not is_nil(user) <- Baudrate.Repo.get_by(Baudrate.Setup.User, username: username),
-         {:ok, user} <- KeyStore.ensure_user_keypair(user) do
-      conn
-      |> put_resp_content_type(@activity_json)
-      |> json(Federation.user_actor(user))
+    if wants_json?(conn) do
+      with true <- Regex.match?(@username_re, username),
+           user when not is_nil(user) <- Baudrate.Repo.get_by(Baudrate.Setup.User, username: username),
+           {:ok, user} <- KeyStore.ensure_user_keypair(user) do
+        conn
+        |> put_resp_content_type(@activity_json)
+        |> json(Federation.user_actor(user))
+      else
+        _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+      end
     else
-      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+      redirect(conn, to: ~p"/")
     end
   end
 
   def board_actor(conn, %{"slug" => slug}) do
-    with true <- Regex.match?(@slug_re, slug),
-         board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
-         {:ok, board} <- KeyStore.ensure_board_keypair(board) do
-      conn
-      |> put_resp_content_type(@activity_json)
-      |> json(Federation.board_actor(board))
+    if wants_json?(conn) do
+      with true <- Regex.match?(@slug_re, slug),
+           board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
+           {:ok, board} <- KeyStore.ensure_board_keypair(board) do
+        conn
+        |> put_resp_content_type(@activity_json)
+        |> json(Federation.board_actor(board))
+      else
+        _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+      end
     else
-      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+      redirect(conn, to: ~p"/boards/#{slug}")
     end
   end
 
   def site_actor(conn, _params) do
-    conn
-    |> put_resp_content_type(@activity_json)
-    |> json(Federation.site_actor())
+    if wants_json?(conn) do
+      conn
+      |> put_resp_content_type(@activity_json)
+      |> json(Federation.site_actor())
+    else
+      redirect(conn, to: ~p"/")
+    end
   end
 
   # --- Outbox ---
@@ -124,19 +139,32 @@ defmodule BaudrateWeb.ActivityPubController do
   # --- Article ---
 
   def article(conn, %{"slug" => slug}) do
-    with true <- Regex.match?(@slug_re, slug) do
-      try do
-        article = Baudrate.Content.get_article_by_slug!(slug)
+    if wants_json?(conn) do
+      with true <- Regex.match?(@slug_re, slug) do
+        try do
+          article = Baudrate.Content.get_article_by_slug!(slug)
 
-        conn
-        |> put_resp_content_type(@activity_json)
-        |> json(Federation.article_object(article))
-      rescue
-        Ecto.NoResultsError ->
-          conn |> put_status(404) |> json(%{error: "Not Found"})
+          conn
+          |> put_resp_content_type(@activity_json)
+          |> json(Federation.article_object(article))
+        rescue
+          Ecto.NoResultsError ->
+            conn |> put_status(404) |> json(%{error: "Not Found"})
+        end
+      else
+        _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
       end
     else
-      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+      redirect(conn, to: ~p"/articles/#{slug}")
     end
+  end
+
+  # --- Helpers ---
+
+  defp wants_json?(conn) do
+    accept = get_req_header(conn, "accept") |> List.first("")
+
+    String.contains?(accept, "application/activity+json") or
+      String.contains?(accept, "application/ld+json")
   end
 end

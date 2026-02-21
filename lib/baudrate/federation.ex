@@ -25,6 +25,7 @@ defmodule Baudrate.Federation do
   alias Baudrate.Repo
   alias Baudrate.Setup
   alias Baudrate.Content
+  alias Baudrate.Content.Markdown
   alias Baudrate.Federation.KeyStore
 
   @as_context "https://www.w3.org/ns/activitystreams"
@@ -335,7 +336,12 @@ defmodule Baudrate.Federation do
       "id" => actor_uri(:article, article.slug),
       "type" => "Article",
       "name" => article.title,
-      "content" => article.body,
+      "content" => Markdown.to_html(article.body),
+      "mediaType" => "text/html",
+      "source" => %{
+        "content" => article.body || "",
+        "mediaType" => "text/markdown"
+      },
       "attributedTo" => actor_uri(:user, article.user.username),
       "published" => DateTime.to_iso8601(article.inserted_at),
       "updated" => DateTime.to_iso8601(article.updated_at),

@@ -55,7 +55,6 @@ defmodule BaudrateWeb.Router do
   end
 
   pipeline :activity_pub do
-    plug :accepts, ["json"]
     plug BaudrateWeb.Plugs.RateLimit, action: :activity_pub
   end
 
@@ -67,7 +66,7 @@ defmodule BaudrateWeb.Router do
     plug BaudrateWeb.Plugs.RateLimit, action: :totp
   end
 
-  # ActivityPub / Federation (JSON-only, no session)
+  # ActivityPub / Federation (content-negotiated, no session)
   scope "/.well-known", BaudrateWeb do
     pipe_through :activity_pub
 

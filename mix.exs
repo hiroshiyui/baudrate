@@ -70,7 +70,8 @@ defmodule Baudrate.MixProject do
       {:nimble_totp, "~> 1.0"},
       {:eqrcode, "~> 0.2.1"},
       {:hammer, "~> 6.2"},
-      {:image, "~> 0.54"}
+      {:image, "~> 0.54"},
+      {:earmark, "~> 1.4"}
     ]
   end
 

@@ -9,8 +9,15 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
     Repo.insert!(%Setting{key: "site_name", value: "Test Forum"})
     Hammer.delete_buckets("activity_pub:127.0.0.1")
 
-    conn = put_req_header(conn, "accept", "application/json")
     {:ok, conn: conn}
+  end
+
+  defp ap_conn(conn) do
+    put_req_header(conn, "accept", "application/activity+json")
+  end
+
+  defp json_conn(conn) do
+    put_req_header(conn, "accept", "application/json")
   end
 
   # --- WebFinger ---
@@ -20,7 +27,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       user = setup_user("user")
       host = URI.parse(BaudrateWeb.Endpoint.url()).host
 
-      conn = get(conn, "/.well-known/webfinger?resource=acct:#{user.username}@#{host}")
+      conn = conn |> json_conn() |> get("/.well-known/webfinger?resource=acct:#{user.username}@#{host}")
       body = json_response(conn, 200)
 
       assert body["subject"] =~ user.username
@@ -31,7 +38,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       board = setup_board()
       host = URI.parse(BaudrateWeb.Endpoint.url()).host
 
-      conn = get(conn, "/.well-known/webfinger?resource=acct:!#{board.slug}@#{host}")
+      conn = conn |> json_conn() |> get("/.well-known/webfinger?resource=acct:!#{board.slug}@#{host}")
       body = json_response(conn, 200)
 
       assert body["subject"] =~ board.slug
@@ -39,17 +46,17 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
     test "returns 404 for non-existent user", %{conn: conn} do
       host = URI.parse(BaudrateWeb.Endpoint.url()).host
-      conn = get(conn, "/.well-known/webfinger?resource=acct:nonexistent@#{host}")
+      conn = conn |> json_conn() |> get("/.well-known/webfinger?resource=acct:nonexistent@#{host}")
       assert json_response(conn, 404)["error"] == "Not Found"
     end
 
     test "returns 400 for invalid resource", %{conn: conn} do
-      conn = get(conn, "/.well-known/webfinger?resource=invalid")
+      conn = conn |> json_conn() |> get("/.well-known/webfinger?resource=invalid")
       assert json_response(conn, 400)["error"] == "Invalid resource"
     end
 
     test "returns 400 for missing resource param", %{conn: conn} do
-      conn = get(conn, "/.well-known/webfinger")
+      conn = conn |> json_conn() |> get("/.well-known/webfinger")
       assert json_response(conn, 400)["error"] == "Missing resource parameter"
     end
   end
@@ -58,7 +65,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
   describe "GET /.well-known/nodeinfo" do
     test "returns links to nodeinfo 2.1", %{conn: conn} do
-      conn = get(conn, "/.well-known/nodeinfo")
+      conn = conn |> json_conn() |> get("/.well-known/nodeinfo")
       body = json_response(conn, 200)
 
       assert [%{"rel" => rel, "href" => href}] = body["links"]
@@ -69,7 +76,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
   describe "GET /nodeinfo/2.1" do
     test "returns NodeInfo 2.1 document", %{conn: conn} do
-      conn = get(conn, "/nodeinfo/2.1")
+      conn = conn |> json_conn() |> get("/nodeinfo/2.1")
       body = json_response(conn, 200)
 
       assert body["version"] == "2.1"
@@ -83,10 +90,10 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
   # --- Actor Endpoints ---
 
   describe "GET /ap/users/:username" do
-    test "returns Person JSON-LD for existing user", %{conn: conn} do
+    test "returns Person JSON-LD for AP accept header", %{conn: conn} do
       user = setup_user("user")
 
-      conn = get(conn, "/ap/users/#{user.username}")
+      conn = conn |> ap_conn() |> get("/ap/users/#{user.username}")
       body = json_response(conn, 200)
 
       assert body["type"] == "Person"
@@ -94,22 +101,45 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       assert body["publicKey"]["publicKeyPem"] =~ "BEGIN PUBLIC KEY"
     end
 
+    test "returns Person JSON-LD for ld+json accept header", %{conn: conn} do
+      user = setup_user("user")
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/ld+json")
+        |> get("/ap/users/#{user.username}")
+
+      body = json_response(conn, 200)
+      assert body["type"] == "Person"
+    end
+
+    test "redirects to HTML for browser accept header", %{conn: conn} do
+      user = setup_user("user")
+
+      conn =
+        conn
+        |> put_req_header("accept", "text/html")
+        |> get("/ap/users/#{user.username}")
+
+      assert redirected_to(conn, 302) == "/"
+    end
+
     test "returns 404 for non-existent user", %{conn: conn} do
-      conn = get(conn, "/ap/users/nonexistent")
+      conn = conn |> ap_conn() |> get("/ap/users/nonexistent")
       assert json_response(conn, 404)["error"] == "Not Found"
     end
 
     test "returns 404 for invalid username format", %{conn: conn} do
-      conn = get(conn, "/ap/users/invalid user")
+      conn = conn |> ap_conn() |> get("/ap/users/invalid user")
       assert json_response(conn, 404)["error"] == "Not Found"
     end
   end
 
   describe "GET /ap/boards/:slug" do
-    test "returns Group JSON-LD for existing board", %{conn: conn} do
+    test "returns Group JSON-LD for AP accept header", %{conn: conn} do
       board = setup_board()
 
-      conn = get(conn, "/ap/boards/#{board.slug}")
+      conn = conn |> ap_conn() |> get("/ap/boards/#{board.slug}")
       body = json_response(conn, 200)
 
       assert body["type"] == "Group"
@@ -118,20 +148,40 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       assert body["publicKey"]["publicKeyPem"] =~ "BEGIN PUBLIC KEY"
     end
 
+    test "redirects to board HTML page for browser accept header", %{conn: conn} do
+      board = setup_board()
+
+      conn =
+        conn
+        |> put_req_header("accept", "text/html")
+        |> get("/ap/boards/#{board.slug}")
+
+      assert redirected_to(conn, 302) == "/boards/#{board.slug}"
+    end
+
     test "returns 404 for non-existent board", %{conn: conn} do
-      conn = get(conn, "/ap/boards/nonexistent")
+      conn = conn |> ap_conn() |> get("/ap/boards/nonexistent")
       assert json_response(conn, 404)["error"] == "Not Found"
     end
   end
 
   describe "GET /ap/site" do
-    test "returns Organization JSON-LD", %{conn: conn} do
-      conn = get(conn, "/ap/site")
+    test "returns Organization JSON-LD for AP accept header", %{conn: conn} do
+      conn = conn |> ap_conn() |> get("/ap/site")
       body = json_response(conn, 200)
 
       assert body["type"] == "Organization"
       assert body["name"] == "Test Forum"
       assert body["publicKey"]["publicKeyPem"] =~ "BEGIN PUBLIC KEY"
+    end
+
+    test "redirects to home for browser accept header", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("accept", "text/html")
+        |> get("/ap/site")
+
+      assert redirected_to(conn, 302) == "/"
     end
   end
 
@@ -141,7 +191,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
     test "returns OrderedCollection", %{conn: conn} do
       user = setup_user("user")
 
-      conn = get(conn, "/ap/users/#{user.username}/outbox")
+      conn = conn |> json_conn() |> get("/ap/users/#{user.username}/outbox")
       body = json_response(conn, 200)
 
       assert body["type"] == "OrderedCollection"
@@ -154,7 +204,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       board = setup_board()
       _article = setup_article(user, board)
 
-      conn = get(conn, "/ap/users/#{user.username}/outbox")
+      conn = conn |> json_conn() |> get("/ap/users/#{user.username}/outbox")
       body = json_response(conn, 200)
 
       assert body["totalItems"] == 1
@@ -164,7 +214,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
     end
 
     test "returns 404 for non-existent user", %{conn: conn} do
-      conn = get(conn, "/ap/users/nonexistent/outbox")
+      conn = conn |> json_conn() |> get("/ap/users/nonexistent/outbox")
       assert json_response(conn, 404)["error"] == "Not Found"
     end
   end
@@ -175,7 +225,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       board = setup_board()
       _article = setup_article(user, board)
 
-      conn = get(conn, "/ap/boards/#{board.slug}/outbox")
+      conn = conn |> json_conn() |> get("/ap/boards/#{board.slug}/outbox")
       body = json_response(conn, 200)
 
       assert body["type"] == "OrderedCollection"
@@ -185,7 +235,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
     end
 
     test "returns 404 for non-existent board", %{conn: conn} do
-      conn = get(conn, "/ap/boards/nonexistent/outbox")
+      conn = conn |> json_conn() |> get("/ap/boards/nonexistent/outbox")
       assert json_response(conn, 404)["error"] == "Not Found"
     end
   end
@@ -193,27 +243,42 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
   # --- Article Endpoint ---
 
   describe "GET /ap/articles/:slug" do
-    test "returns Article JSON-LD", %{conn: conn} do
+    test "returns Article JSON-LD with HTML content", %{conn: conn} do
       user = setup_user("user")
       board = setup_board()
       article = setup_article(user, board)
 
-      conn = get(conn, "/ap/articles/#{article.slug}")
+      conn = conn |> ap_conn() |> get("/ap/articles/#{article.slug}")
       body = json_response(conn, 200)
 
       assert body["type"] == "Article"
       assert body["name"] == article.title
-      assert body["content"] == article.body
+      assert body["mediaType"] == "text/html"
+      assert body["content"] =~ "<p>"
+      assert body["source"]["mediaType"] == "text/markdown"
       assert body["attributedTo"] =~ user.username
     end
 
+    test "redirects to article HTML page for browser accept header", %{conn: conn} do
+      user = setup_user("user")
+      board = setup_board()
+      article = setup_article(user, board)
+
+      conn =
+        conn
+        |> put_req_header("accept", "text/html")
+        |> get("/ap/articles/#{article.slug}")
+
+      assert redirected_to(conn, 302) == "/articles/#{article.slug}"
+    end
+
     test "returns 404 for non-existent article", %{conn: conn} do
-      conn = get(conn, "/ap/articles/nonexistent-slug")
+      conn = conn |> ap_conn() |> get("/ap/articles/nonexistent-slug")
       assert json_response(conn, 404)["error"] == "Not Found"
     end
 
     test "returns 404 for invalid slug format", %{conn: conn} do
-      conn = get(conn, "/ap/articles/INVALID SLUG")
+      conn = conn |> ap_conn() |> get("/ap/articles/INVALID SLUG")
       assert json_response(conn, 404)["error"] == "Not Found"
     end
   end
@@ -242,7 +307,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       Baudrate.Content.create_article(
         %{
           title: "Test Article",
-          body: "Test article body for AP.",
+          body: "Test article body for **AP**.",
           slug: slug,
           user_id: user.id
         },

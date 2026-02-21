@@ -147,7 +147,10 @@ defmodule Baudrate.FederationTest do
 
       assert obj["type"] == "Article"
       assert obj["name"] == article.title
-      assert obj["content"] == article.body
+      assert obj["content"] =~ "<p>"
+      assert obj["mediaType"] == "text/html"
+      assert obj["source"]["content"] == article.body
+      assert obj["source"]["mediaType"] == "text/markdown"
       assert obj["attributedTo"] =~ "/ap/users/#{user.username}"
       assert obj["url"] =~ "/articles/#{article.slug}"
       assert length(obj["audience"]) == 1
