@@ -1,0 +1,93 @@
+## "msgid"s in this file come from POT (.pot) files.
+###
+### Do not add, change, or remove "msgid"s manually here as
+### they're tied to the ones in the corresponding POT file
+### (with the same domain).
+###
+### Use "mix gettext.extract --merge" or "mix gettext.merge"
+### to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: ja_JP\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "can't be blank"
+msgstr "を入力してください"
+
+msgid "has already been taken"
+msgstr "はすでに使用されています"
+
+msgid "is invalid"
+msgstr "は無効です"
+
+msgid "must be accepted"
+msgstr "を承認してください"
+
+msgid "has invalid format"
+msgstr "のフォーマットが無効です"
+
+msgid "has an invalid entry"
+msgstr "に無効な項目があります"
+
+msgid "is reserved"
+msgstr "は予約されています"
+
+msgid "does not match confirmation"
+msgstr "が確認用と一致しません"
+
+msgid "is still associated with this entry"
+msgstr "はまだこの項目に関連付けられています"
+
+msgid "are still associated with this entry"
+msgstr "はまだこの項目に関連付けられています"
+
+msgid "should have %{count} item(s)"
+msgid_plural "should have %{count} item(s)"
+msgstr[0] "%{count} 個の項目が必要です"
+
+msgid "should be %{count} character(s)"
+msgid_plural "should be %{count} character(s)"
+msgstr[0] "%{count} 文字である必要があります"
+
+msgid "should be %{count} byte(s)"
+msgid_plural "should be %{count} byte(s)"
+msgstr[0] "%{count} バイトである必要があります"
+
+msgid "should have at least %{count} item(s)"
+msgid_plural "should have at least %{count} item(s)"
+msgstr[0] "%{count} 個以上の項目が必要です"
+
+msgid "should be at least %{count} character(s)"
+msgid_plural "should be at least %{count} character(s)"
+msgstr[0] "%{count} 文字以上である必要があります"
+
+msgid "should be at least %{count} byte(s)"
+msgid_plural "should be at least %{count} byte(s)"
+msgstr[0] "%{count} バイト以上である必要があります"
+
+msgid "should have at most %{count} item(s)"
+msgid_plural "should have at most %{count} item(s)"
+msgstr[0] "%{count} 個以下の項目が必要です"
+
+msgid "should be at most %{count} character(s)"
+msgid_plural "should be at most %{count} character(s)"
+msgstr[0] "%{count} 文字以下である必要があります"
+
+msgid "should be at most %{count} byte(s)"
+msgid_plural "should be at most %{count} byte(s)"
+msgstr[0] "%{count} バイト以下である必要があります"
+
+msgid "must be less than %{number}"
+msgstr "%{number} より小さい必要があります"
+
+msgid "must be greater than %{number}"
+msgstr "%{number} より大きい必要があります"
+
+msgid "must be less than or equal to %{number}"
+msgstr "%{number} 以下である必要があります"
+
+msgid "must be greater than or equal to %{number}"
+msgstr "%{number} 以上である必要があります"
+
+msgid "must be equal to %{number}"
+msgstr "%{number} と等しい必要があります"

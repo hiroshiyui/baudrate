@@ -18,6 +18,7 @@ defmodule BaudrateWeb.Locale do
 
   @display_names %{
     "en" => "English",
+    "ja_JP" => "日本語",
     "zh_TW" => "正體中文"
   }
 

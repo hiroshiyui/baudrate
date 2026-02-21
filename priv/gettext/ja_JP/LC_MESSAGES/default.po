@@ -1,0 +1,693 @@
+## "msgid"s in this file come from POT (.pot) files.
+###
+### Do not add, change, or remove "msgid"s manually here as
+### they're tied to the ones in the corresponding POT file
+### (with the same domain).
+###
+### Use "mix gettext.extract --merge" or "mix gettext.merge"
+### to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: ja_JP\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: lib/baudrate_web/components/core_components.ex:368
+#, elixir-autogen, elixir-format
+msgid "Actions"
+msgstr "操作"
+
+#: lib/baudrate_web/components/layouts.ex:136
+#: lib/baudrate_web/components/layouts.ex:148
+#, elixir-autogen, elixir-format
+msgid "Attempting to reconnect"
+msgstr "再接続を試みています"
+
+#: lib/baudrate_web/components/layouts.ex:143
+#, elixir-autogen, elixir-format
+msgid "Something went wrong!"
+msgstr "エラーが発生しました！"
+
+#: lib/baudrate_web/components/layouts.ex:131
+#, elixir-autogen, elixir-format
+msgid "We can't find the internet"
+msgstr "インターネットに接続できません"
+
+#: lib/baudrate_web/components/core_components.ex:74
+#: lib/baudrate_web/live/profile_live.html.heex:70
+#, elixir-autogen, elixir-format
+msgid "close"
+msgstr "閉じる"
+
+#: lib/baudrate_web/live/setup_live.html.heex:52
+#, elixir-autogen, elixir-format
+msgid "%{count} migration(s) applied"
+msgstr "%{count} 件のマイグレーションを適用しました"
+
+#: lib/baudrate_web/live/setup_live.html.heex:16
+#: lib/baudrate_web/live/setup_live.html.heex:107
+#, elixir-autogen, elixir-format
+msgid "Admin Account"
+msgstr "管理者アカウント"
+
+#: lib/baudrate_web/live/register_live.html.heex:47
+#: lib/baudrate_web/live/setup_live.html.heex:147
+#, elixir-autogen, elixir-format
+msgid "At least 12 characters"
+msgstr "12文字以上"
+
+#: lib/baudrate_web/live/setup_live.html.heex:91
+#: lib/baudrate_web/live/setup_live.html.heex:227
+#, elixir-autogen, elixir-format
+msgid "Back"
+msgstr "戻る"
+
+#: lib/baudrate_web/live/setup_live.html.heex:84
+#, elixir-autogen, elixir-format
+msgid "Choose a name for your application."
+msgstr "アプリケーションの名前を選択してください。"
+
+#: lib/baudrate_web/live/setup_live.html.heex:231
+#, elixir-autogen, elixir-format
+msgid "Complete Setup"
+msgstr "セットアップを完了"
+
+#: lib/baudrate_web/live/setup_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Configure your application before first use."
+msgstr "初回使用前にアプリケーションを設定してください。"
+
+#: lib/baudrate_web/live/register_live.html.heex:26
+#: lib/baudrate_web/live/setup_live.html.heex:126
+#, elixir-autogen, elixir-format
+msgid "Confirm Password"
+msgstr "パスワード確認"
+
+#: lib/baudrate_web/live/setup_live.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Connected"
+msgstr "接続済み"
+
+#: lib/baudrate_web/live/register_live.html.heex:89
+#: lib/baudrate_web/live/setup_live.html.heex:189
+#, elixir-autogen, elixir-format
+msgid "Contains a digit"
+msgstr "数字を含む"
+
+#: lib/baudrate_web/live/register_live.html.heex:61
+#: lib/baudrate_web/live/setup_live.html.heex:161
+#, elixir-autogen, elixir-format
+msgid "Contains a lowercase letter"
+msgstr "小文字を含む"
+
+#: lib/baudrate_web/live/register_live.html.heex:103
+#: lib/baudrate_web/live/setup_live.html.heex:203
+#, elixir-autogen, elixir-format
+msgid "Contains a special character"
+msgstr "特殊文字を含む"
+
+#: lib/baudrate_web/live/register_live.html.heex:75
+#: lib/baudrate_web/live/setup_live.html.heex:175
+#, elixir-autogen, elixir-format
+msgid "Contains an uppercase letter"
+msgstr "大文字を含む"
+
+#: lib/baudrate_web/live/setup_live.html.heex:108
+#, elixir-autogen, elixir-format
+msgid "Create the administrator account."
+msgstr "管理者アカウントを作成してください。"
+
+#: lib/baudrate_web/live/setup_live.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Database"
+msgstr "データベース"
+
+#: lib/baudrate_web/live/setup_live.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "Database Connection"
+msgstr "データベース接続"
+
+#: lib/baudrate_web/live/setup_live.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "Database: %{name}"
+msgstr "データベース: %{name}"
+
+#: lib/baudrate_web/live/setup_live.html.heex:32
+#, elixir-autogen, elixir-format
+msgid "Disconnected"
+msgstr "未接続"
+
+#: lib/baudrate_web/live/setup_live.html.heex:3
+#, elixir-autogen, elixir-format
+msgid "Initial Setup"
+msgstr "初期セットアップ"
+
+#: lib/baudrate_web/live/setup_live.html.heex:47
+#, elixir-autogen, elixir-format
+msgid "Migrations"
+msgstr "マイグレーション"
+
+#: lib/baudrate_web/live/setup_live.html.heex:72
+#: lib/baudrate_web/live/setup_live.html.heex:94
+#, elixir-autogen, elixir-format
+msgid "Next"
+msgstr "次へ"
+
+#: lib/baudrate_web/live/login_live.html.heex:25
+#: lib/baudrate_web/live/register_live.html.heex:18
+#: lib/baudrate_web/live/setup_live.html.heex:119
+#: lib/baudrate_web/live/totp_reset_live.html.heex:20
+#, elixir-autogen, elixir-format
+msgid "Password"
+msgstr "パスワード"
+
+#: lib/baudrate_web/live/register_live.html.heex:33
+#: lib/baudrate_web/live/setup_live.html.heex:133
+#, elixir-autogen, elixir-format
+msgid "Password requirements:"
+msgstr "パスワード要件："
+
+#: lib/baudrate_web/live/setup_live.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Pending migrations"
+msgstr "未実行のマイグレーション"
+
+#: lib/baudrate_web/live/setup_live.html.heex:65
+#, elixir-autogen, elixir-format
+msgid "Retry"
+msgstr "再試行"
+
+#: lib/baudrate_web/live/setup_live.ex:93
+#, elixir-autogen, elixir-format
+msgid "Setup completed successfully!"
+msgstr "セットアップが完了しました！"
+
+#: lib/baudrate_web/live/setup_live.ex:102
+#, elixir-autogen, elixir-format
+msgid "Setup failed. Please try again."
+msgstr "セットアップに失敗しました。もう一度お試しください。"
+
+#: lib/baudrate_web/live/setup_live.html.heex:13
+#: lib/baudrate_web/live/setup_live.html.heex:82
+#: lib/baudrate_web/live/setup_live.html.heex:87
+#, elixir-autogen, elixir-format
+msgid "Site Name"
+msgstr "サイト名"
+
+#: lib/baudrate_web/live/admin/pending_users_live.html.heex:12
+#: lib/baudrate_web/live/login_live.html.heex:10
+#: lib/baudrate_web/live/profile_live.html.heex:76
+#: lib/baudrate_web/live/register_live.html.heex:10
+#: lib/baudrate_web/live/setup_live.html.heex:112
+#, elixir-autogen, elixir-format
+msgid "Username"
+msgstr "ユーザー名"
+
+#: lib/baudrate_web/live/totp_verify_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Enter the 6-digit code from your authenticator app."
+msgstr "認証アプリの6桁のコードを入力してください。"
+
+#: lib/baudrate_web/live/login_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Enter your credentials to continue."
+msgstr "認証情報を入力して続行してください。"
+
+#: lib/baudrate_web/live/login_live.ex:89
+#, elixir-autogen, elixir-format
+msgid "Invalid username or password."
+msgstr "ユーザー名またはパスワードが無効です。"
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "Or enter this key manually:"
+msgstr "または手動でこのキーを入力："
+
+#: lib/baudrate_web/live/totp_setup_live.ex:64
+#: lib/baudrate_web/live/totp_verify_live.ex:42
+#, elixir-autogen, elixir-format
+msgid "Please enter a 6-digit code."
+msgstr "6桁のコードを入力してください。"
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "Scan the QR code below with your authenticator app to enable two-factor authentication."
+msgstr "認証アプリで下のQRコードをスキャンして二要素認証を有効にしてください。"
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:3
+#, elixir-autogen, elixir-format
+msgid "Set Up Two-Factor Authentication"
+msgstr "二要素認証のセットアップ"
+
+#: lib/baudrate_web/live/login_live.html.heex:2
+#: lib/baudrate_web/live/login_live.html.heex:39
+#: lib/baudrate_web/live/register_live.html.heex:134
+#, elixir-autogen, elixir-format
+msgid "Sign In"
+msgstr "ログイン"
+
+#: lib/baudrate_web/components/layouts.ex:53
+#: lib/baudrate_web/components/layouts.ex:95
+#, elixir-autogen, elixir-format
+msgid "Sign Out"
+msgstr "ログアウト"
+
+#: lib/baudrate_web/live/profile_live.html.heex:87
+#: lib/baudrate_web/live/totp_verify_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Two-Factor Authentication"
+msgstr "二要素認証"
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:35
+#: lib/baudrate_web/live/totp_verify_live.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Verification Code"
+msgstr "確認コード"
+
+#: lib/baudrate_web/live/recovery_code_verify_live.html.heex:27
+#: lib/baudrate_web/live/totp_verify_live.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Verify"
+msgstr "確認"
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:53
+#, elixir-autogen, elixir-format
+msgid "Verify and Enable"
+msgstr "確認して有効化"
+
+#: lib/baudrate_web/live/home_live.html.heex:3
+#, elixir-autogen, elixir-format
+msgid "Welcome, %{username}!"
+msgstr "ようこそ、%{username} さん！"
+
+#: lib/baudrate_web/live/home_live.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "You are signed in as %{role}."
+msgstr "%{role} としてログイン中です。"
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:7
+#, elixir-autogen, elixir-format
+msgid "Your role requires two-factor authentication. Scan the QR code below with your authenticator app."
+msgstr "お使いのロールには二要素認証が必要です。認証アプリで下のQRコードをスキャンしてください。"
+
+#: lib/baudrate_web/live/login_live.ex:62
+#, elixir-autogen, elixir-format
+msgid "Too many login attempts. Please try again later."
+msgstr "ログイン試行回数が多すぎます。しばらくしてからもう一度お試しください。"
+
+#: lib/baudrate_web/live/setup_live.html.heex:40
+#, elixir-autogen, elixir-format
+msgid "Unable to connect to database. Check your configuration."
+msgstr "データベースに接続できません。設定を確認してください。"
+
+#: lib/baudrate_web/components/layouts.ex:42
+#: lib/baudrate_web/components/layouts.ex:71
+#: lib/baudrate_web/live/article_new_live.html.heex:15
+#: lib/baudrate_web/live/board_live.html.heex:3
+#: lib/baudrate_web/live/home_live.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "Boards"
+msgstr "掲示板"
+
+#: lib/baudrate_web/components/layouts.ex:39
+#: lib/baudrate_web/components/layouts.ex:68
+#, elixir-autogen, elixir-format
+msgid "Home"
+msgstr "ホーム"
+
+#: lib/baudrate_web/live/totp_reset_live.html.heex:75
+#, elixir-autogen, elixir-format
+msgid "Back to Profile"
+msgstr "プロフィールに戻る"
+
+#: lib/baudrate_web/live/recovery_code_verify_live.html.heex:43
+#, elixir-autogen, elixir-format
+msgid "Back to TOTP verification"
+msgstr "TOTP確認に戻る"
+
+#: lib/baudrate_web/live/totp_reset_live.html.heex:58
+#, elixir-autogen, elixir-format
+msgid "Continue"
+msgstr "続行"
+
+#: lib/baudrate_web/live/totp_reset_live.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "Current TOTP Code"
+msgstr "現在のTOTPコード"
+
+#: lib/baudrate_web/live/profile_live.html.heex:95
+#, elixir-autogen, elixir-format
+msgid "Disabled"
+msgstr "無効"
+
+#: lib/baudrate_web/live/profile_live.html.heex:98
+#, elixir-autogen, elixir-format
+msgid "Enable TOTP"
+msgstr "TOTPを有効化"
+
+#: lib/baudrate_web/live/totp_reset_live.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Enable Two-Factor Authentication"
+msgstr "二要素認証を有効化"
+
+#: lib/baudrate_web/live/profile_live.html.heex:90
+#, elixir-autogen, elixir-format
+msgid "Enabled"
+msgstr "有効"
+
+#: lib/baudrate_web/live/recovery_code_verify_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Enter one of your recovery codes to log in."
+msgstr "リカバリーコードを入力してログインしてください。"
+
+#: lib/baudrate_web/live/totp_reset_live.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "Enter your password and current TOTP code to reset your authenticator."
+msgstr "パスワードと現在のTOTPコードを入力して認証器をリセットしてください。"
+
+#: lib/baudrate_web/live/totp_reset_live.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "Enter your password to begin setting up two-factor authentication."
+msgstr "パスワードを入力して二要素認証のセットアップを開始してください。"
+
+#: lib/baudrate_web/live/recovery_codes_live.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "I've saved my recovery codes"
+msgstr "リカバリーコードを保存しました"
+
+#: lib/baudrate_web/live/totp_reset_live.ex:85
+#, elixir-autogen, elixir-format
+msgid "Invalid credentials. Please try again."
+msgstr "認証情報が無効です。もう一度お試しください。"
+
+#: lib/baudrate_web/live/totp_verify_live.html.heex:44
+#, elixir-autogen, elixir-format
+msgid "Lost your device? Use a recovery code"
+msgstr "デバイスを紛失しましたか？リカバリーコードを使用"
+
+#: lib/baudrate_web/live/profile_live.html.heex:106
+#, elixir-autogen, elixir-format
+msgid "Member Since"
+msgstr "登録日"
+
+#: lib/baudrate_web/live/board_live.html.heex:18
+#, elixir-autogen, elixir-format
+msgid "No articles yet."
+msgstr "まだ記事がありません。"
+
+#: lib/baudrate_web/live/recovery_code_verify_live.ex:44
+#, elixir-autogen, elixir-format
+msgid "Please enter a valid recovery code (e.g. a1b2-c3d4)."
+msgstr "有効なリカバリーコードを入力してください（例: a1b2-c3d4）。"
+
+#: lib/baudrate_web/components/layouts.ex:50
+#: lib/baudrate_web/components/layouts.ex:92
+#: lib/baudrate_web/live/profile_live.html.heex:3
+#, elixir-autogen, elixir-format
+msgid "Profile"
+msgstr "プロフィール"
+
+#: lib/baudrate_web/live/recovery_code_verify_live.html.heex:2
+#: lib/baudrate_web/live/recovery_code_verify_live.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Recovery Code"
+msgstr "リカバリーコード"
+
+#: lib/baudrate_web/live/recovery_codes_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Recovery Codes"
+msgstr "リカバリーコード"
+
+#: lib/baudrate_web/live/profile_live.html.heex:92
+#: lib/baudrate_web/live/totp_reset_live.html.heex:4
+#: lib/baudrate_web/live/totp_reset_live.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Reset Authenticator"
+msgstr "認証器をリセット"
+
+#: lib/baudrate_web/live/profile_live.html.heex:81
+#, elixir-autogen, elixir-format
+msgid "Role"
+msgstr "ロール"
+
+#: lib/baudrate_web/live/recovery_codes_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Save these recovery codes in a safe place. Each code can only be used once. If you lose your authenticator device, you can use one of these codes to log in."
+msgstr "リカバリーコードを安全な場所に保管してください。各コードは一度だけ使用できます。認証デバイスを紛失した場合、これらのコードでログインできます。"
+
+#: lib/baudrate_web/live/totp_setup_live.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "TOTP QR Code"
+msgstr "TOTP QRコード"
+
+#: lib/baudrate_web/live/totp_reset_live.ex:47
+#, elixir-autogen, elixir-format
+msgid "Too many failed attempts. Please try again later."
+msgstr "失敗回数が多すぎます。しばらくしてからもう一度お試しください。"
+
+#: lib/baudrate_web/live/recovery_codes_live.html.heex:23
+#, elixir-autogen, elixir-format
+msgid "You will not be able to see these codes again!"
+msgstr "これらのコードは再表示できません！"
+
+#: lib/baudrate_web/live/profile_live.html.heex:22
+#, elixir-autogen, elixir-format
+msgid "Are you sure you want to remove your avatar?"
+msgstr "アバターを削除してもよろしいですか？"
+
+#: lib/baudrate_web/live/profile_live.ex:131
+#, elixir-autogen, elixir-format
+msgid "Avatar removed."
+msgstr "アバターを削除しました。"
+
+#: lib/baudrate_web/live/profile_live.ex:162
+#, elixir-autogen, elixir-format
+msgid "Avatar updated successfully."
+msgstr "アバターを更新しました。"
+
+#: lib/baudrate_web/live/profile_live.html.heex:57
+#, elixir-autogen, elixir-format
+msgid "Cancel"
+msgstr "キャンセル"
+
+#: lib/baudrate_web/live/profile_live.html.heex:15
+#, elixir-autogen, elixir-format
+msgid "Change Avatar"
+msgstr "アバターを変更"
+
+#: lib/baudrate_web/live/profile_live.html.heex:50
+#, elixir-autogen, elixir-format
+msgid "Crop Avatar"
+msgstr "アバターを切り抜き"
+
+#: lib/baudrate_web/live/profile_live.ex:180
+#, elixir-autogen, elixir-format
+msgid "Failed to process avatar image."
+msgstr "アバター画像の処理に失敗しました。"
+
+#: lib/baudrate_web/live/profile_live.ex:195
+#, elixir-autogen, elixir-format
+msgid "Image file is too large."
+msgstr "画像ファイルが大きすぎます。"
+
+#: lib/baudrate_web/live/profile_live.ex:171
+#: lib/baudrate_web/live/profile_live.ex:196
+#, elixir-autogen, elixir-format
+msgid "Invalid image file."
+msgstr "無効な画像ファイルです。"
+
+#: lib/baudrate_web/live/profile_live.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "Remove Avatar"
+msgstr "アバターを削除"
+
+#: lib/baudrate_web/live/profile_live.html.heex:64
+#, elixir-autogen, elixir-format
+msgid "Save"
+msgstr "保存"
+
+#: lib/baudrate_web/live/profile_live.ex:73
+#: lib/baudrate_web/live/profile_live.ex:137
+#, elixir-autogen, elixir-format
+msgid "Too many avatar changes. Please try again later."
+msgstr "アバターの変更回数が多すぎます。しばらくしてからもう一度お試しください。"
+
+#: lib/baudrate_web/live/profile_live.ex:197
+#, elixir-autogen, elixir-format
+msgid "Too many files."
+msgstr "ファイル数が多すぎます。"
+
+#: lib/baudrate_web/live/profile_live.ex:198
+#, elixir-autogen, elixir-format
+msgid "Upload error."
+msgstr "アップロードエラー。"
+
+#: lib/baudrate_web/live/admin/pending_users_live.ex:18
+#, elixir-autogen, elixir-format
+msgid "Access denied."
+msgstr "アクセスが拒否されました。"
+
+#: lib/baudrate_web/live/register_live.html.heex:133
+#, elixir-autogen, elixir-format
+msgid "Already have an account?"
+msgstr "すでにアカウントをお持ちですか？"
+
+#: lib/baudrate_web/live/admin/pending_users_live.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Approve"
+msgstr "承認"
+
+#: lib/baudrate_web/live/article_new_live.ex:87
+#, elixir-autogen, elixir-format
+msgid "Article created successfully."
+msgstr "記事を作成しました。"
+
+#: lib/baudrate_web/live/article_live.html.heex:8
+#: lib/baudrate_web/live/article_new_live.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "Back to board"
+msgstr "掲示板に戻る"
+
+#: lib/baudrate_web/live/article_new_live.html.heex:36
+#, elixir-autogen, elixir-format
+msgid "Board"
+msgstr "掲示板"
+
+#: lib/baudrate_web/live/article_new_live.html.heex:31
+#, elixir-autogen, elixir-format
+msgid "Body"
+msgstr "本文"
+
+#: lib/baudrate_web/live/article_new_live.html.heex:19
+#: lib/baudrate_web/live/article_new_live.html.heex:52
+#, elixir-autogen, elixir-format
+msgid "Create Article"
+msgstr "記事を作成"
+
+#: lib/baudrate_web/live/register_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Create an account"
+msgstr "アカウントを作成"
+
+#: lib/baudrate_web/live/login_live.html.heex:54
+#, elixir-autogen, elixir-format
+msgid "Don't have an account?"
+msgstr "アカウントをお持ちでないですか？"
+
+#: lib/baudrate_web/live/admin/pending_users_live.ex:37
+#, elixir-autogen, elixir-format
+msgid "Failed to approve user."
+msgstr "ユーザーの承認に失敗しました。"
+
+#: lib/baudrate_web/live/article_new_live.ex:94
+#, elixir-autogen, elixir-format
+msgid "Failed to create article."
+msgstr "記事の作成に失敗しました。"
+
+#: lib/baudrate_web/live/board_live.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "New Article"
+msgstr "新規記事"
+
+#: lib/baudrate_web/live/admin/pending_users_live.html.heex:5
+#, elixir-autogen, elixir-format
+msgid "No pending users."
+msgstr "承認待ちのユーザーはいません。"
+
+#: lib/baudrate_web/live/admin/pending_users_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Pending Users"
+msgstr "承認待ちユーザー"
+
+#: lib/baudrate_web/live/board_live.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "Pinned"
+msgstr "固定"
+
+#: lib/baudrate_web/live/article_new_live.ex:72
+#, elixir-autogen, elixir-format
+msgid "Please select at least one board."
+msgstr "掲示板を少なくとも1つ選択してください。"
+
+#: lib/baudrate_web/live/article_live.html.heex:22
+#, elixir-autogen, elixir-format
+msgid "Posted in"
+msgstr "投稿先"
+
+#: lib/baudrate_web/live/admin/pending_users_live.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "Registered"
+msgstr "登録日時"
+
+#: lib/baudrate_web/live/register_live.ex:83
+#, elixir-autogen, elixir-format
+msgid "Registration successful! You can now sign in."
+msgstr "登録が完了しました！ログインできます。"
+
+#: lib/baudrate_web/live/login_live.html.heex:55
+#: lib/baudrate_web/live/register_live.html.heex:2
+#: lib/baudrate_web/live/register_live.html.heex:128
+#, elixir-autogen, elixir-format
+msgid "Sign Up"
+msgstr "新規登録"
+
+#: lib/baudrate_web/live/article_new_live.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "Title"
+msgstr "タイトル"
+
+#: lib/baudrate_web/live/register_live.ex:71
+#, elixir-autogen, elixir-format
+msgid "Too many registration attempts. Please try again later."
+msgstr "登録試行回数が多すぎます。しばらくしてからもう一度お試しください。"
+
+#: lib/baudrate_web/live/admin/pending_users_live.ex:33
+#, elixir-autogen, elixir-format
+msgid "User approved successfully."
+msgstr "ユーザーを承認しました。"
+
+#: lib/baudrate_web/live/register_live.ex:85
+#, elixir-autogen, elixir-format
+msgid "Your account has been created and is pending admin approval. You can sign in, but posting and avatar upload are restricted until approved."
+msgstr "アカウントが作成され、管理者の承認待ちです。ログインは可能ですが、承認されるまで投稿とアバターのアップロードは制限されます。"
+
+#: lib/baudrate_web/live/register_live.html.heex:124
+#, elixir-autogen, elixir-format
+msgid "Your account is pending admin approval."
+msgstr "アカウントは管理者の承認待ちです。"
+
+#: lib/baudrate_web/live/article_new_live.ex:24
+#: lib/baudrate_web/live/profile_live.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Your account is pending approval."
+msgstr "アカウントは承認待ちです。"
+
+#: lib/baudrate_web/live/article_live.html.heex:16
+#: lib/baudrate_web/live/board_live.html.heex:29
+#, elixir-autogen, elixir-format
+msgid "by %{author}"
+msgstr "%{author} による投稿"
+
+#: lib/baudrate_web/live/profile_live.html.heex:166
+#, elixir-autogen, elixir-format
+msgid "Add Language"
+msgstr "言語を追加"
+
+#: lib/baudrate_web/live/profile_live.ex:231
+#, elixir-autogen, elixir-format
+msgid "Failed to update language preferences."
+msgstr "言語設定の更新に失敗しました。"
+
+#: lib/baudrate_web/live/profile_live.ex:225
+#, elixir-autogen, elixir-format
+msgid "Language preferences updated."
+msgstr "言語設定を更新しました。"
+
+#: lib/baudrate_web/live/profile_live.html.heex:114
+#, elixir-autogen, elixir-format
+msgid "Preferred Languages"
+msgstr "優先言語"
+
+#: lib/baudrate_web/live/profile_live.html.heex:117
+#, elixir-autogen, elixir-format
+msgid "Using browser language settings."
+msgstr "ブラウザの言語設定を使用中。"
