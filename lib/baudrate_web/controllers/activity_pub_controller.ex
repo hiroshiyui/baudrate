@@ -9,6 +9,10 @@ defmodule BaudrateWeb.ActivityPubController do
   Machine-only endpoints (WebFinger, NodeInfo, outbox) always return JSON
   regardless of Accept header.
 
+  Private boards are hidden from all AP endpoints — board actor, outbox,
+  inbox, and WebFinger all return 404 for private boards. Articles
+  exclusively in private boards also return 404.
+
   ## Endpoints
 
     * `GET /.well-known/webfinger` — WebFinger resource resolution
@@ -16,10 +20,13 @@ defmodule BaudrateWeb.ActivityPubController do
     * `GET /nodeinfo/2.1` — NodeInfo 2.1 document
     * `GET /ap/users/:username` — Person actor (content-negotiated)
     * `GET /ap/users/:username/outbox` — user outbox (OrderedCollection)
-    * `GET /ap/boards/:slug` — Group actor (content-negotiated)
-    * `GET /ap/boards/:slug/outbox` — board outbox (OrderedCollection)
+    * `GET /ap/boards/:slug` — Group actor (content-negotiated, public only)
+    * `GET /ap/boards/:slug/outbox` — board outbox (OrderedCollection, public only)
     * `GET /ap/site` — Organization actor (content-negotiated)
-    * `GET /ap/articles/:slug` — Article object (content-negotiated)
+    * `GET /ap/articles/:slug` — Article object (content-negotiated, requires public board)
+    * `POST /ap/inbox` — shared inbox (HTTP Signature verified)
+    * `POST /ap/users/:username/inbox` — user inbox (HTTP Signature verified)
+    * `POST /ap/boards/:slug/inbox` — board inbox (HTTP Signature verified, public only)
   """
 
   use BaudrateWeb, :controller

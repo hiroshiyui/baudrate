@@ -12,6 +12,11 @@ defmodule Baudrate.Federation do
   Phase 2b adds content activity handling: Create(Note/Article), Like,
   Announce, Delete, Update, and their Undo variants.
 
+  Private boards are excluded from all federation endpoints — WebFinger,
+  actor profiles, outbox, inbox, and audience resolution all return 404
+  or skip private boards. Articles exclusively in private boards are also
+  hidden from user outbox and article endpoints.
+
   ## Actor Mapping
 
     * `User` → `Person`
