@@ -1,0 +1,136 @@
+<div class="mx-auto max-w-sm mt-10">
+  <h1 class="text-2xl font-bold text-center mb-2">{gettext("Sign Up")}</h1>
+  <p class="text-center text-base-content/70 mb-8">
+    {gettext("Create an account")}
+  </p>
+
+  <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
+    <.input
+      field={@form[:username]}
+      label={gettext("Username")}
+      required
+      autocomplete="username"
+    />
+
+    <.input
+      field={@form[:password]}
+      type="password"
+      label={gettext("Password")}
+      required
+      autocomplete="new-password"
+    />
+
+    <.input
+      field={@form[:password_confirmation]}
+      type="password"
+      label={gettext("Confirm Password")}
+      required
+      autocomplete="new-password"
+    />
+
+    <%!-- Password strength checklist --%>
+    <div class="space-y-1">
+      <p class="text-sm font-medium">{gettext("Password requirements:")}</p>
+      <ul class="text-sm space-y-0.5">
+        <li class="flex items-center gap-1.5">
+          <.icon
+            name={
+              if @password_strength.length,
+                do: "hero-check-circle-mini",
+                else: "hero-x-circle-mini"
+            }
+            class={[
+              "size-4",
+              if(@password_strength.length, do: "text-success", else: "text-error")
+            ]}
+          />
+          {gettext("At least 12 characters")}
+        </li>
+        <li class="flex items-center gap-1.5">
+          <.icon
+            name={
+              if @password_strength.lowercase,
+                do: "hero-check-circle-mini",
+                else: "hero-x-circle-mini"
+            }
+            class={[
+              "size-4",
+              if(@password_strength.lowercase, do: "text-success", else: "text-error")
+            ]}
+          />
+          {gettext("Contains a lowercase letter")}
+        </li>
+        <li class="flex items-center gap-1.5">
+          <.icon
+            name={
+              if @password_strength.uppercase,
+                do: "hero-check-circle-mini",
+                else: "hero-x-circle-mini"
+            }
+            class={[
+              "size-4",
+              if(@password_strength.uppercase, do: "text-success", else: "text-error")
+            ]}
+          />
+          {gettext("Contains an uppercase letter")}
+        </li>
+        <li class="flex items-center gap-1.5">
+          <.icon
+            name={
+              if @password_strength.digit,
+                do: "hero-check-circle-mini",
+                else: "hero-x-circle-mini"
+            }
+            class={[
+              "size-4",
+              if(@password_strength.digit, do: "text-success", else: "text-error")
+            ]}
+          />
+          {gettext("Contains a digit")}
+        </li>
+        <li class="flex items-center gap-1.5">
+          <.icon
+            name={
+              if @password_strength.special,
+                do: "hero-check-circle-mini",
+                else: "hero-x-circle-mini"
+            }
+            class={[
+              "size-4",
+              if(@password_strength.special, do: "text-success", else: "text-error")
+            ]}
+          />
+          {gettext("Contains a special character")}
+        </li>
+      </ul>
+
+      <% met = Enum.count(Map.values(@password_strength), & &1) %>
+      <progress
+        class={[
+          "progress w-full",
+          cond do
+            met <= 1 -> "progress-error"
+            met <= 3 -> "progress-warning"
+            true -> "progress-success"
+          end
+        ]}
+        value={met}
+        max="5"
+      >
+      </progress>
+    </div>
+
+    <p :if={@registration_mode == "approval_required"} class="text-sm text-base-content/70">
+      {gettext("Your account is pending admin approval.")}
+    </p>
+
+    <button type="submit" class="btn btn-primary w-full">
+      {gettext("Sign Up")}
+    </button>
+  </.form>
+
+  <p class="text-center text-sm mt-4">
+    {gettext("Already have an account?")}
+    <.link navigate="/login" class="link link-primary">{gettext("Sign In")}</.link>
+  </p>
+</div>

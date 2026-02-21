@@ -49,4 +49,9 @@
     <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
     <input type="hidden" name="token" value={@token} />
   </form>
+
+  <p class="text-center text-sm mt-4">
+    {gettext("Don't have an account?")}
+    <.link navigate="/register" class="link link-primary">{gettext("Sign Up")}</.link>
+  </p>
 </div>
