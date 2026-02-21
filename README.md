@@ -7,7 +7,7 @@ Baudrate is a BBS built with [Elixir](https://elixir-lang.org/) and [Phoenix](ht
 ### Features
 
 - **Real-time UI** with Phoenix LiveView
-- **Hierarchical boards** -- nested board structure with moderators, public/private visibility
+- **Hierarchical boards** -- nested board structure with breadcrumb navigation, sub-board display, moderators, public/private visibility
 - **Guest browsing** -- public boards and articles are accessible without login
 - **Cross-posted articles** -- articles can span multiple boards
 - **Threaded comments** -- with support for remote replies via ActivityPub
@@ -25,8 +25,10 @@ Baudrate is a BBS built with [Elixir](https://elixir-lang.org/) and [Phoenix](ht
   - Cross-post deduplication for articles arriving via multiple board inboxes
   - Mastodon compatibility: `attributedTo` arrays, `sensitive`/`summary` content warnings, `to`/`cc` addressing, `<span>` tag preservation, article summary and hashtag tags
   - Lemmy compatibility: `Page` object type, `Announce` with embedded objects, `!board@host` WebFinger
+- **User public profiles** -- public profile pages with stats, recent articles, and clickable author names
 - **Avatar system** -- upload, crop, WebP conversion with server-side security
-- **Admin dashboard** -- site settings, registration mode, pending user approval, federation dashboard, moderation queue
+- **Flexible registration** -- open, approval-required, or invite-only modes with admin-managed invite codes
+- **Admin dashboard** -- site settings, registration mode, pending user approval, federation dashboard, moderation queue, moderation log, invite code management
 - **Rate limiting** on login, TOTP, registration, avatar uploads, and federation endpoints
 - **Security hardened** -- HSTS, CSP, signed + encrypted cookies, TOTP/key encryption at rest
 - **Internationalization** -- Gettext with supported locales and Accept-Language auto-detection

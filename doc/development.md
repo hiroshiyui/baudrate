@@ -24,7 +24,7 @@ lib/
 │   ├── application.ex           # Supervision tree
 │   ├── repo.ex                  # Ecto repository
 │   ├── mailer.ex                # Email sending (Swoosh)
-│   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars
+│   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars, invite codes
 │   ├── auth/
 │   │   ├── invite_code.ex       # InviteCode schema (invite-only registration)
 │   │   ├── recovery_code.ex     # Ecto schema for one-time recovery codes
@@ -32,7 +32,7 @@ lib/
 │   │   ├── totp_vault.ex        # AES-256-GCM encryption for TOTP secrets
 │   │   └── user_session.ex      # Ecto schema for server-side sessions
 │   ├── avatar.ex                # Avatar image processing (crop, resize, WebP)
-│   ├── content.ex               # Content context: boards, articles, comments, likes
+│   ├── content.ex               # Content context: boards, articles, comments, likes, user stats
 │   ├── attachment_storage.ex     # File attachment processing (magic bytes, image re-encoding)
 │   ├── content/
 │   │   ├── article.ex           # Article schema (posts, local + remote, soft-delete)
@@ -227,7 +227,9 @@ suffix to avoid collisions. Articles can be cross-posted to multiple boards.
 Boards are organized hierarchically via `parent_id` and have a `visibility`
 field (`"public"` or `"private"`, default `"public"`). Public boards and their
 articles are accessible to unauthenticated visitors; private boards require
-login. Articles can be cross-posted to multiple boards through the
+login. Board pages display breadcrumb navigation (ancestor chain from root to
+current board) and list sub-boards above articles. Guest visitors see only
+public sub-boards. Articles can be cross-posted to multiple boards through the
 `board_articles` join table. Board moderators are tracked via the
 `board_moderators` join table.
 
@@ -238,6 +240,23 @@ implemented via `deleted_at` timestamps on both articles and comments.
 
 Article likes track favorites from local users and remote actors, with
 partial unique indexes enforcing one-like-per-actor-per-article.
+
+### User Public Profiles
+
+Public profile pages are available at `/users/:username` for any active user.
+Profiles display the user's avatar, role badge, member-since date, article and
+comment counts, and a list of recent articles. Author names in board listings
+and article views are clickable links to the author's profile. Banned or
+nonexistent users are redirected away.
+
+### Moderation
+
+The moderation system includes a content reporting queue (`/admin/moderation`)
+and an audit log (`/admin/moderation-log`). All moderation actions — banning,
+unbanning, role changes, report resolution, board CRUD, and content deletion —
+are automatically recorded in the moderation log with actor, action type,
+target, and contextual details. The log is filterable by action type and
+paginated.
 
 ### ActivityPub Federation
 
