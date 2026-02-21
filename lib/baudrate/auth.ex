@@ -391,7 +391,9 @@ defmodule Baudrate.Auth do
       case Keyword.get(opts, :search) do
         nil -> query
         "" -> query
-        term -> from(u in query, where: ilike(u.username, ^"%#{term}%"))
+        term ->
+          sanitized = term |> String.replace("\\", "\\\\") |> String.replace("%", "\\%") |> String.replace("_", "\\_")
+          from(u in query, where: ilike(u.username, ^"%#{sanitized}%"))
       end
 
     Repo.all(query)
@@ -412,7 +414,8 @@ defmodule Baudrate.Auth do
   Sets status to `"banned"`, records `banned_at` and optional `ban_reason`,
   then invalidates all existing sessions for the user.
   """
-  def ban_user(%User{id: user_id}, admin_id, reason \\ nil) when user_id != admin_id do
+  def ban_user(%User{id: user_id}, admin_id, reason \\ nil)
+      when is_integer(user_id) and is_integer(admin_id) and user_id != admin_id do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
     user = get_user(user_id)
 
@@ -432,14 +435,15 @@ defmodule Baudrate.Auth do
   """
   def unban_user(%User{} = user) do
     user
-    |> User.unban_changeset(%{status: "active", banned_at: nil, ban_reason: nil})
+    |> User.unban_changeset(%{})
     |> Repo.update()
   end
 
   @doc """
   Updates a user's role. Guards against self-role-change.
   """
-  def update_user_role(%User{id: user_id}, role_id, admin_id) when user_id != admin_id do
+  def update_user_role(%User{id: user_id}, role_id, admin_id)
+      when is_integer(user_id) and is_integer(admin_id) and user_id != admin_id do
     user = get_user(user_id)
 
     user

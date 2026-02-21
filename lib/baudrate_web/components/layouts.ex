@@ -61,10 +61,10 @@ defmodule BaudrateWeb.Layouts do
               <.link navigate="/admin/moderation">{gettext("Moderation")}</.link>
             </li>
             <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/boards">{gettext("Boards")}</.link>
+              <.link navigate="/admin/boards">{gettext("Manage Boards")}</.link>
             </li>
             <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/users">{gettext("Users")}</.link>
+              <.link navigate="/admin/users">{gettext("Manage Users")}</.link>
             </li>
             <li class="divider my-1"></li>
             <li class="menu-title flex flex-row items-center gap-2">
@@ -139,10 +139,10 @@ defmodule BaudrateWeb.Layouts do
               <.link navigate="/admin/moderation">{gettext("Moderation")}</.link>
             </li>
             <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/boards">{gettext("Boards")}</.link>
+              <.link navigate="/admin/boards">{gettext("Manage Boards")}</.link>
             </li>
             <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/users">{gettext("Users")}</.link>
+              <.link navigate="/admin/users">{gettext("Manage Users")}</.link>
             </li>
             <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
             <li>

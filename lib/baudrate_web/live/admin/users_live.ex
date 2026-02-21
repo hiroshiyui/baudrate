@@ -31,6 +31,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
          search: "",
          roles: roles,
          ban_target: nil,
+         ban_target_username: nil,
          ban_reason: ""
        )}
     end
@@ -63,11 +64,24 @@ defmodule BaudrateWeb.Admin.UsersLive do
   end
 
   def handle_event("show_ban_modal", %{"id" => id}, socket) do
-    {:noreply, assign(socket, ban_target: String.to_integer(id), ban_reason: "")}
+    user_id = String.to_integer(id)
+
+    if user_id == socket.assigns.current_user.id do
+      {:noreply, put_flash(socket, :error, gettext("You cannot ban yourself."))}
+    else
+      user = Auth.get_user(user_id)
+
+      {:noreply,
+       assign(socket,
+         ban_target: user_id,
+         ban_target_username: user && user.username,
+         ban_reason: ""
+       )}
+    end
   end
 
   def handle_event("cancel_ban", _params, socket) do
-    {:noreply, assign(socket, ban_target: nil, ban_reason: "")}
+    {:noreply, assign(socket, ban_target: nil, ban_target_username: nil, ban_reason: "")}
   end
 
   def handle_event("update_ban_reason", %{"reason" => reason}, socket) do
@@ -84,7 +98,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
       {:ok, _user} ->
         {:noreply,
          socket
-         |> assign(ban_target: nil, ban_reason: "")
+         |> assign(ban_target: nil, ban_target_username: nil, ban_reason: "")
          |> put_flash(:info, gettext("User banned successfully."))
          |> reload_users()
          |> reload_counts()}

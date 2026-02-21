@@ -86,7 +86,7 @@ defmodule BaudrateWeb.LoginLive do
 
         socket =
           socket
-          |> put_flash(:error, gettext("Your account has been banned."))
+          |> put_flash(:error, gettext("Invalid username or password."))
           |> assign(:form, to_form(%{"username" => username, "password" => ""}, as: :login))
 
         {:noreply, socket}

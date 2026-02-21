@@ -16,7 +16,7 @@ msgstr ""
 #: lib/baudrate_web/live/admin/federation_live.html.heex:38
 #: lib/baudrate_web/live/admin/federation_live.html.heex:94
 #: lib/baudrate_web/live/admin/federation_live.html.heex:139
-#: lib/baudrate_web/live/admin/users_live.html.heex:94
+#: lib/baudrate_web/live/admin/users_live.html.heex:99
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr ""
@@ -201,7 +201,7 @@ msgid "Site Name"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:12
-#: lib/baudrate_web/live/admin/users_live.html.heex:90
+#: lib/baudrate_web/live/admin/users_live.html.heex:95
 #: lib/baudrate_web/live/login_live.html.heex:10
 #: lib/baudrate_web/live/profile_live.html.heex:76
 #: lib/baudrate_web/live/register_live.html.heex:10
@@ -220,6 +220,7 @@ msgstr ""
 msgid "Enter your credentials to continue."
 msgstr ""
 
+#: lib/baudrate_web/live/login_live.ex:89
 #: lib/baudrate_web/live/login_live.ex:99
 #, elixir-autogen, elixir-format
 msgid "Invalid username or password."
@@ -309,9 +310,7 @@ msgid "Unable to connect to database. Check your configuration."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:42
-#: lib/baudrate_web/components/layouts.ex:64
 #: lib/baudrate_web/components/layouts.ex:96
-#: lib/baudrate_web/components/layouts.ex:142
 #: lib/baudrate_web/live/article_new_live.html.heex:15
 #: lib/baudrate_web/live/board_live.html.heex:3
 #: lib/baudrate_web/live/home_live.html.heex:22
@@ -441,7 +440,7 @@ msgstr ""
 msgid "Reset Authenticator"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:91
+#: lib/baudrate_web/live/admin/users_live.html.heex:96
 #: lib/baudrate_web/live/profile_live.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "Role"
@@ -483,7 +482,7 @@ msgid "Avatar updated successfully."
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:69
-#: lib/baudrate_web/live/admin/users_live.html.heex:178
+#: lib/baudrate_web/live/admin/users_live.html.heex:192
 #: lib/baudrate_web/live/article_live.ex:257
 #: lib/baudrate_web/live/profile_live.html.heex:57
 #, elixir-autogen, elixir-format
@@ -560,7 +559,7 @@ msgid "Already have an account?"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:27
-#: lib/baudrate_web/live/admin/users_live.html.heex:135
+#: lib/baudrate_web/live/admin/users_live.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Approve"
 msgstr ""
@@ -606,7 +605,7 @@ msgid "Don't have an account?"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/pending_users_live.ex:37
-#: lib/baudrate_web/live/admin/users_live.ex:61
+#: lib/baudrate_web/live/admin/users_live.ex:62
 #, elixir-autogen, elixir-format
 msgid "Failed to approve user."
 msgstr ""
@@ -649,7 +648,7 @@ msgid "Posted in"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:13
-#: lib/baudrate_web/live/admin/users_live.html.heex:93
+#: lib/baudrate_web/live/admin/users_live.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "Registered"
 msgstr ""
@@ -678,7 +677,7 @@ msgid "Too many registration attempts. Please try again later."
 msgstr ""
 
 #: lib/baudrate_web/live/admin/pending_users_live.ex:33
-#: lib/baudrate_web/live/admin/users_live.ex:56
+#: lib/baudrate_web/live/admin/users_live.ex:57
 #, elixir-autogen, elixir-format
 msgid "User approved successfully."
 msgstr ""
@@ -1060,7 +1059,7 @@ msgstr ""
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:11
 #: lib/baudrate_web/live/admin/users_live.html.heex:19
-#: lib/baudrate_web/live/admin/users_live.html.heex:57
+#: lib/baudrate_web/live/admin/users_live.html.heex:60
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Pending"
 msgstr ""
@@ -1131,7 +1130,7 @@ msgid "Send a Flag report to %{domain}?"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:35
-#: lib/baudrate_web/live/admin/users_live.html.heex:92
+#: lib/baudrate_web/live/admin/users_live.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Status"
 msgstr ""
@@ -1332,12 +1331,12 @@ msgid "You are not authorized to edit this article."
 msgstr ""
 
 #: lib/baudrate_web/live/admin/users_live.html.heex:13
-#: lib/baudrate_web/live/admin/users_live.html.heex:49
+#: lib/baudrate_web/live/admin/users_live.html.heex:51
 #, elixir-autogen, elixir-format
 msgid "Active"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:41
+#: lib/baudrate_web/live/admin/users_live.html.heex:42
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr ""
@@ -1347,18 +1346,13 @@ msgstr ""
 msgid "Are you sure you want to delete this board?"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:143
+#: lib/baudrate_web/live/admin/users_live.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "Ban"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:163
-#, elixir-autogen, elixir-format
-msgid "Ban User"
-msgstr ""
-
 #: lib/baudrate_web/live/admin/users_live.html.heex:25
-#: lib/baudrate_web/live/admin/users_live.html.heex:65
+#: lib/baudrate_web/live/admin/users_live.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "Banned"
 msgstr ""
@@ -1388,7 +1382,7 @@ msgstr ""
 msgid "Cannot delete board that has articles."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:179
+#: lib/baudrate_web/live/admin/users_live.html.heex:194
 #, elixir-autogen, elixir-format
 msgid "Confirm Ban"
 msgstr ""
@@ -1403,7 +1397,7 @@ msgstr ""
 msgid "Edit Board"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.ex:93
+#: lib/baudrate_web/live/admin/users_live.ex:107
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Failed to ban user."
 msgstr ""
@@ -1413,12 +1407,12 @@ msgstr ""
 msgid "Failed to delete board."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.ex:109
+#: lib/baudrate_web/live/admin/users_live.ex:123
 #, elixir-autogen, elixir-format
 msgid "Failed to unban user."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.ex:130
+#: lib/baudrate_web/live/admin/users_live.ex:144
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Failed to update user role."
 msgstr ""
@@ -1440,7 +1434,7 @@ msgstr ""
 msgid "No boards yet."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:83
+#: lib/baudrate_web/live/admin/users_live.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "No users found."
 msgstr ""
@@ -1486,12 +1480,12 @@ msgstr ""
 msgid "Public"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:166
+#: lib/baudrate_web/live/admin/users_live.html.heex:180
 #, elixir-autogen, elixir-format
 msgid "Reason (optional)"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:74
+#: lib/baudrate_web/live/admin/users_live.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "Search username..."
 msgstr ""
@@ -1513,7 +1507,7 @@ msgstr ""
 msgid "Total"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:151
+#: lib/baudrate_web/live/admin/users_live.html.heex:156
 #, elixir-autogen, elixir-format
 msgid "Unban"
 msgstr ""
@@ -1523,34 +1517,64 @@ msgstr ""
 msgid "User Management"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.ex:88
+#: lib/baudrate_web/live/admin/users_live.ex:102
 #, elixir-autogen, elixir-format, fuzzy
 msgid "User banned successfully."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.ex:126
+#: lib/baudrate_web/live/admin/users_live.ex:140
 #, elixir-autogen, elixir-format, fuzzy
 msgid "User role updated successfully."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.ex:104
+#: lib/baudrate_web/live/admin/users_live.ex:118
 #, elixir-autogen, elixir-format
 msgid "User unbanned successfully."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:67
-#: lib/baudrate_web/components/layouts.ex:145
-#, elixir-autogen, elixir-format
-msgid "Users"
-msgstr ""
-
-#: lib/baudrate_web/live/admin/users_live.ex:118
+#: lib/baudrate_web/live/admin/users_live.ex:132
 #, elixir-autogen, elixir-format
 msgid "You cannot change your own role."
 msgstr ""
 
 #: lib/baudrate_web/live/auth_hooks.ex:43
-#: lib/baudrate_web/live/login_live.ex:89
 #, elixir-autogen, elixir-format
 msgid "Your account has been banned."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/users_live.html.heex:175
+#, elixir-autogen, elixir-format
+msgid "Ban User: %{username}"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/users_live.html.heex:193
+#, elixir-autogen, elixir-format
+msgid "Banning..."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/users_live.html.heex:34
+#, elixir-autogen, elixir-format
+msgid "Filter by status"
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex:64
+#: lib/baudrate_web/components/layouts.ex:142
+#, elixir-autogen, elixir-format
+msgid "Manage Boards"
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex:67
+#: lib/baudrate_web/components/layouts.ex:145
+#, elixir-autogen, elixir-format
+msgid "Manage Users"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/users_live.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "Search users by username"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/users_live.ex:70
+#, elixir-autogen, elixir-format
+msgid "You cannot ban yourself."
 msgstr ""

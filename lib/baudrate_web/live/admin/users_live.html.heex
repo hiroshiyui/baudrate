@@ -31,9 +31,10 @@
 
   <%!-- Filter tabs + search --%>
   <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-    <div role="tablist" class="tabs tabs-boxed">
+    <div role="tablist" aria-label={gettext("Filter by status")} class="tabs tabs-boxed">
       <button
         role="tab"
+        aria-selected={to_string(!@status_filter)}
         class={["tab", !@status_filter && "tab-active"]}
         phx-click="filter"
         phx-value-status=""
@@ -42,6 +43,7 @@
       </button>
       <button
         role="tab"
+        aria-selected={to_string(@status_filter == "active")}
         class={["tab", @status_filter == "active" && "tab-active"]}
         phx-click="filter"
         phx-value-status="active"
@@ -50,6 +52,7 @@
       </button>
       <button
         role="tab"
+        aria-selected={to_string(@status_filter == "pending")}
         class={["tab", @status_filter == "pending" && "tab-active"]}
         phx-click="filter"
         phx-value-status="pending"
@@ -58,6 +61,7 @@
       </button>
       <button
         role="tab"
+        aria-selected={to_string(@status_filter == "banned")}
         class={["tab", @status_filter == "banned" && "tab-active"]}
         phx-click="filter"
         phx-value-status="banned"
@@ -72,6 +76,7 @@
         name="search"
         value={@search}
         placeholder={gettext("Search username...")}
+        aria-label={gettext("Search users by username")}
         class="input input-bordered input-sm w-48"
         phx-debounce="300"
       />
@@ -158,25 +163,36 @@
 </div>
 
 <%!-- Ban modal --%>
-<div :if={@ban_target} class="modal modal-open">
+<div
+  :if={@ban_target}
+  class="modal modal-open"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="ban-modal-title"
+>
   <div class="modal-box">
-    <h3 class="font-bold text-lg">{gettext("Ban User")}</h3>
+    <h3 id="ban-modal-title" class="font-bold text-lg">
+      {gettext("Ban User: %{username}", username: @ban_target_username)}
+    </h3>
     <div class="py-4">
-      <label class="label">
-        <span class="label-text">{gettext("Reason (optional)")}</span>
-      </label>
-      <textarea
-        class="textarea textarea-bordered w-full"
-        rows="3"
-        phx-keyup="update_ban_reason"
-        phx-value-reason=""
-        name="reason"
-        value={@ban_reason}
-      ><%= @ban_reason %></textarea>
+      <form phx-change="update_ban_reason">
+        <label for="ban-reason" class="label">
+          <span class="label-text">{gettext("Reason (optional)")}</span>
+        </label>
+        <textarea
+          id="ban-reason"
+          class="textarea textarea-bordered w-full"
+          rows="3"
+          name="reason"
+          phx-debounce="300"
+        >{@ban_reason}</textarea>
+      </form>
     </div>
     <div class="modal-action">
       <button phx-click="cancel_ban" class="btn">{gettext("Cancel")}</button>
-      <button phx-click="confirm_ban" class="btn btn-error">{gettext("Confirm Ban")}</button>
+      <button phx-click="confirm_ban" class="btn btn-error" phx-disable-with={gettext("Banning...")}>
+        {gettext("Confirm Ban")}
+      </button>
     </div>
   </div>
   <div class="modal-backdrop" phx-click="cancel_ban"></div>

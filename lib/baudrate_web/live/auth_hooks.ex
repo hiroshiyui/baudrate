@@ -67,14 +67,18 @@ defmodule BaudrateWeb.AuthHooks do
     if session_token do
       case Auth.get_user_by_session_token(session_token) do
         {:ok, user} ->
-          locale = resolve_user_locale(user)
+          if user.status == "banned" do
+            {:cont, assign(socket, :current_user, nil)}
+          else
+            locale = resolve_user_locale(user)
 
-          socket =
-            socket
-            |> assign(:current_user, user)
-            |> assign(:locale, locale)
+            socket =
+              socket
+              |> assign(:current_user, user)
+              |> assign(:locale, locale)
 
-          {:cont, socket}
+            {:cont, socket}
+          end
 
         {:error, _reason} ->
           {:cont, assign(socket, :current_user, nil)}
@@ -90,7 +94,7 @@ defmodule BaudrateWeb.AuthHooks do
     if user_id do
       user = Auth.get_user(user_id)
 
-      if user do
+      if user && user.status != "banned" do
         locale = resolve_user_locale(user)
 
         socket =

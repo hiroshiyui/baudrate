@@ -103,12 +103,22 @@ defmodule Baudrate.Auth.UserManagementTest do
   end
 
   describe "unban_user/1" do
-    test "unbans a user", %{admin: admin, user: user} do
+    test "unbans a user and clears ban fields", %{admin: admin, user: user} do
       {:ok, banned} = Auth.ban_user(user, admin.id, "test")
+      assert banned.status == "banned"
+      assert banned.banned_at != nil
+      assert banned.ban_reason == "test"
+
       {:ok, unbanned} = Auth.unban_user(banned)
       assert unbanned.status == "active"
       assert unbanned.banned_at == nil
       assert unbanned.ban_reason == nil
+    end
+
+    test "unbanning an already active user is a no-op", %{user: user} do
+      {:ok, same} = Auth.unban_user(user)
+      assert same.status == "active"
+      assert same.banned_at == nil
     end
   end
 
@@ -138,6 +148,17 @@ defmodule Baudrate.Auth.UserManagementTest do
 
       assert {:error, :banned} =
                Auth.authenticate_by_password(user.username, "Password123!x")
+    end
+  end
+
+  describe "list_users/1 search sanitization" do
+    test "LIKE wildcards are escaped in search", %{user: _user} do
+      # Should not crash or match everything
+      results = Auth.list_users(search: "%")
+      assert is_list(results)
+
+      results = Auth.list_users(search: "_")
+      assert is_list(results)
     end
   end
 end

@@ -62,6 +62,15 @@ defmodule Baudrate.Content.Board do
     |> cast(attrs, [:name, :description, :position, :parent_id, :visibility, :ap_enabled])
     |> validate_required([:name])
     |> validate_inclusion(:visibility, ["public", "private"])
+    |> validate_not_self_parent(board)
     |> assoc_constraint(:parent)
+  end
+
+  defp validate_not_self_parent(changeset, board) do
+    case get_change(changeset, :parent_id) do
+      nil -> changeset
+      parent_id when parent_id == board.id -> add_error(changeset, :parent_id, "cannot be the board itself")
+      _ -> changeset
+    end
   end
 end

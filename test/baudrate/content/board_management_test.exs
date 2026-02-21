@@ -118,6 +118,14 @@ defmodule Baudrate.Content.BoardManagementTest do
     end
   end
 
+  describe "update_board/2 circular parent" do
+    test "rejects self as parent" do
+      {:ok, board} = Content.create_board(%{name: "Self", slug: "self-ref-#{System.unique_integer([:positive])}"})
+      {:error, changeset} = Content.update_board(board, %{parent_id: board.id})
+      assert changeset.errors[:parent_id]
+    end
+  end
+
   describe "change_board/2" do
     test "returns a changeset" do
       changeset = Content.change_board()

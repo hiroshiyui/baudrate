@@ -97,6 +97,7 @@ lib/
 │   │   │   ├── pending_users_live.ex  # Admin approval of pending registrations
 │   │   │   ├── settings_live.ex       # Admin site settings (name, registration, federation)
 │   │   │   └── users_live.ex          # Admin user management (list, ban, unban, role change)
+│   │   ├── article_edit_live.ex  # Article editing form
 │   │   ├── article_live.ex      # Single article view
 │   │   ├── article_new_live.ex  # Article creation form
 │   │   ├── auth_hooks.ex        # on_mount hooks: require_auth, optional_auth, etc.
@@ -107,6 +108,7 @@ lib/
 │   │   ├── recovery_code_verify_live.ex  # Recovery code login
 │   │   ├── recovery_codes_live.ex        # Recovery codes display
 │   │   ├── register_live.ex     # Public user registration
+│   │   ├── search_live.ex       # Full-text article search
 │   │   ├── setup_live.ex        # First-run setup wizard
 │   │   ├── totp_reset_live.ex   # Self-service TOTP reset/enable
 │   │   ├── totp_setup_live.ex   # TOTP enrollment with QR code
@@ -284,7 +286,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - `Create(Article)` — automatically enqueued when a local user publishes an article
 - `Delete` with `Tombstone` — enqueued when an article is soft-deleted
 - `Announce` — board actor announces articles to board followers
-- `Update(Article)` — for article edits (builder available, not yet hooked)
+- `Update(Article)` — enqueued when a local article is edited
 - Delivery targets: followers of the article's author + followers of all public boards
 - Shared inbox deduplication: multiple followers at the same instance → one delivery
 - DB-backed queue (`delivery_jobs` table) with `DeliveryWorker` GenServer polling
@@ -349,9 +351,9 @@ no navigation).
 
 | Hook | Behavior |
 |------|----------|
-| `:require_auth` | Requires valid session; redirects to `/login` if unauthenticated |
-| `:optional_auth` | Loads user if session exists; assigns `nil` for guests (no redirect) |
-| `:require_password_auth` | Requires password-level auth (for TOTP flow) |
+| `:require_auth` | Requires valid session; redirects to `/login` if unauthenticated or banned |
+| `:optional_auth` | Loads user if session exists; assigns `nil` for guests or banned users (no redirect) |
+| `:require_password_auth` | Requires password-level auth (for TOTP flow); redirects banned users to `/login` |
 | `:redirect_if_authenticated` | Redirects authenticated users to `/` (for login/register pages) |
 
 ### Request Pipeline
