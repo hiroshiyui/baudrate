@@ -1,13 +1,5 @@
 # Development Guide
 
-## Development Guidelines
-
-* Align with design: Ensure implementation matches specs and industry standards.
-* Manage code health: Refactor regularly and resolve technical debt.
-* Ensure reliability: Audit vulnerabilities, maintain test coverage, and handle errors.
-* Synchronize i18n/l10n: Keep localization and documentation consistent.
-* Optimize UX/UI: Improve responsiveness and accessibility.
-
 ## Tech Stack
 
 | Layer | Technology |
@@ -34,6 +26,7 @@ lib/
 │   ├── mailer.ex                # Email sending (Swoosh)
 │   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars
 │   ├── auth/
+│   │   ├── invite_code.ex       # InviteCode schema (invite-only registration)
 │   │   ├── recovery_code.ex     # Ecto schema for one-time recovery codes
 │   │   ├── session_cleaner.ex   # GenServer: hourly expired session purge
 │   │   ├── totp_vault.ex        # AES-256-GCM encryption for TOTP secrets
@@ -69,8 +62,9 @@ lib/
 │   │   ├── delivery_stats.ex    # Delivery queue stats and admin management
 │   │   ├── instance_stats.ex    # Per-domain instance statistics
 │   │   └── validator.ex         # AP input validation (URLs, sizes, attribution, allowlist/blocklist)
-│   ├── moderation.ex            # Moderation context: content reports, resolve/dismiss
+│   ├── moderation.ex            # Moderation context: reports, resolve/dismiss, audit log
 │   ├── moderation/
+│   │   ├── log.ex               # ModerationLog schema (audit trail of moderation actions)
 │   │   └── report.ex            # Report schema (article, comment, remote actor targets)
 │   ├── setup.ex                 # Setup context: first-run wizard, RBAC seeding, settings
 │   └── setup/
@@ -93,7 +87,9 @@ lib/
 │   │   ├── admin/
 │   │   │   ├── boards_live.ex          # Admin board CRUD (create, edit, delete)
 │   │   │   ├── federation_live.ex      # Admin federation dashboard
+│   │   │   ├── invites_live.ex         # Admin invite code management (generate, revoke)
 │   │   │   ├── moderation_live.ex     # Moderation queue (reports)
+│   │   │   ├── moderation_log_live.ex # Moderation audit log (filterable, paginated)
 │   │   │   ├── pending_users_live.ex  # Admin approval of pending registrations
 │   │   │   ├── settings_live.ex       # Admin site settings (name, registration, federation)
 │   │   │   └── users_live.ex          # Admin user management (list, ban, unban, role change)
@@ -107,8 +103,9 @@ lib/
 │   │   ├── profile_live.ex      # User profile with avatar upload/crop, locale prefs
 │   │   ├── recovery_code_verify_live.ex  # Recovery code login
 │   │   ├── recovery_codes_live.ex        # Recovery codes display
-│   │   ├── register_live.ex     # Public user registration
+│   │   ├── register_live.ex     # Public user registration (supports invite-only mode)
 │   │   ├── search_live.ex       # Full-text article search
+│   │   ├── user_profile_live.ex # Public user profile pages (stats, recent articles)
 │   │   ├── setup_live.ex        # First-run setup wizard
 │   │   ├── totp_reset_live.ex   # Self-service TOTP reset/enable
 │   │   ├── totp_setup_live.ex   # TOTP enrollment with QR code
@@ -199,18 +196,20 @@ User avatars are processed server-side for security:
 
 ### User Registration
 
-Public user registration is available at `/register`. The system supports two
+Public user registration is available at `/register`. The system supports three
 modes controlled by the `registration_mode` setting:
 
 | Mode | Default | Behavior |
 |------|---------|----------|
 | `"approval_required"` | Yes | New users get `status: "pending"` — can log in and browse, but cannot create articles or upload avatars until approved by an admin |
 | `"open"` | No | New users get `status: "active"` immediately |
+| `"invite_only"` | No | Registration requires a valid invite code; invited users get `status: "active"` immediately |
 
 Registration is rate-limited to 5 attempts per hour per IP. The same password
 policy as the setup wizard applies (12+ chars, complexity requirements).
 
 Admin approval is available at `/admin/pending-users` (admin role only).
+Admin invite code management is available at `/admin/invites` (admin role only).
 
 ### Article Creation
 

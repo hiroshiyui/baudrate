@@ -1,20 +1,14 @@
 # Planned Features
 
-## Moderation
-- [ ] Moderation log
-
 ## User Features
 - [ ] Password reset / recovery
 - [ ] Email integration (notifications, verification)
-- [ ] User public profile pages
 - [ ] User signatures
 
 ## Board Management
 - [ ] Board-level permissions (beyond visibility)
-- [ ] Sub-board navigation
 
 ## System
-- [ ] Closed registration mode (invite-only)
 - [ ] ActivityPub based API endpoints
 - [ ] Real-time updates via PubSub (new articles, comments)
 - [ ] Search indexing
@@ -48,7 +42,7 @@
 </details>
 
 <details>
-<summary>Moderation (partial)</summary>
+<summary>Moderation (all done)</summary>
 
 - [x] Admin settings UI (site name, registration mode)
 - [x] Admin pending-users approval page
@@ -57,6 +51,22 @@
 - [x] Admin dashboard with user management (list, filter, search, role change)
 - [x] User banning / suspension (ban with reason, unban, session invalidation, login rejection)
 - [x] Admin UI for creating / editing / deleting boards
+- [x] Moderation log (admin-visible audit trail of all moderation actions)
+
+</details>
+
+<details>
+<summary>Navigation & Profiles</summary>
+
+- [x] Sub-board navigation (breadcrumbs, sub-board listing on board pages)
+- [x] User public profile pages (stats, recent articles, clickable author names)
+
+</details>
+
+<details>
+<summary>Registration</summary>
+
+- [x] Closed registration mode (invite-only with admin-managed invite codes)
 
 </details>
 
