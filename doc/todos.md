@@ -1,7 +1,7 @@
 # Planned Features
 
 ## Content
-- [ ] Article editing and deletion (by author and moderators)
+- [ ] Article editing and deletion UI (backend soft-delete exists, needs UI buttons and edit function)
 - [x] Comment schema and federation support (threaded, local + remote)
 - [ ] Comment UI on article pages (local posting, display)
 - [x] Markdown rendering for article body
@@ -44,7 +44,7 @@ Built from scratch using Erlang's `:public_key`/`:crypto` and existing deps (Jas
 **URI scheme:** `/ap/users/:username`, `/ap/boards/:slug`, `/ap/site`, `/ap/articles/:slug`
 **Context module:** `Baudrate.Federation` with sub-modules under `lib/baudrate/federation/`
 
-### Phase 1 — Read-Only Endpoints (Discovery & Actor Profiles)
+### Phase 1 — Read-Only Endpoints (Discovery & Actor Profiles) ✓
 
 Expose actors and content as read-only ActivityPub/JSON-LD. No inbox, no signatures yet.
 
@@ -257,9 +257,9 @@ Cross-platform compatibility, moderation tools, and admin controls.
   - [ ] Consider migrating delivery to Oban for persistent job queues
   - [ ] Shared inbox aggregation to reduce delivery volume
   - [ ] Background worker for stale actor cache cleanup
-  - [ ] Database indexes on `ap_id`, `remote_actor_id`, `domain` columns
+  - [x] Database indexes on `ap_id`, `remote_actor_id`, `domain` columns
 - [ ] **Security — Phase 4**
-  - [ ] Admin-only federation settings (not moderator-accessible)
+  - [x] Admin-only federation settings (federation dashboard and settings are admin-only)
   - [ ] Authorized fetch mode (require signatures on GET requests, optional)
   - [ ] Key rotation mechanism for actor keypairs
   - [ ] Regular audit of domain blocklist against known-bad-actor lists
