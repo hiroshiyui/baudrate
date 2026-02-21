@@ -1,6 +1,6 @@
 # Baudrate
 
-Public BBS / Web Forum built with Elixir/Phoenix + LiveView.
+Public BBS / Web Forum built with Elixir/Phoenix + LiveView, federating via **ActivityPub**.
 **Information security is the top priority** — this is a public-facing system.
 
 ## Quick Reference
