@@ -1,0 +1,36 @@
+<div class="mx-auto max-w-2xl">
+  <div class="mb-4 flex flex-wrap gap-2">
+    <.link
+      :for={board <- @article.boards}
+      navigate={~p"/boards/#{board.slug}"}
+      class="text-sm text-base-content/70 hover:text-base-content"
+    >
+      &larr; {gettext("Back to board")} ({board.name})
+    </.link>
+  </div>
+
+  <article class="space-y-4">
+    <h1 class="text-2xl font-bold">{@article.title}</h1>
+
+    <div class="flex items-center gap-2 text-sm text-base-content/70">
+      <span>{gettext("by %{author}", author: @article.user.username)}</span>
+      <span>&middot;</span>
+      <span>{Calendar.strftime(@article.inserted_at, "%Y-%m-%d %H:%M")}</span>
+    </div>
+
+    <div :if={@article.boards != []} class="flex items-center gap-2 text-sm">
+      <span class="text-base-content/70">{gettext("Posted in")}</span>
+      <.link
+        :for={board <- @article.boards}
+        navigate={~p"/boards/#{board.slug}"}
+        class="badge badge-outline"
+      >
+        {board.name}
+      </.link>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="prose max-w-none whitespace-pre-wrap">{@article.body}</div>
+  </article>
+</div>

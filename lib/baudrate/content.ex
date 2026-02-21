@@ -45,7 +45,8 @@ defmodule Baudrate.Content do
       join: ba in BoardArticle,
       on: ba.article_id == a.id,
       where: ba.board_id == ^board_id,
-      order_by: [desc: a.pinned, desc: a.inserted_at]
+      order_by: [desc: a.pinned, desc: a.inserted_at],
+      preload: :user
     )
     |> Repo.all()
   end
@@ -95,6 +96,29 @@ defmodule Baudrate.Content do
   """
   def change_article(article \\ %Article{}, attrs \\ %{}) do
     Article.changeset(article, attrs)
+  end
+
+  @doc """
+  Generates a URL-safe slug from a title string.
+
+  Converts to lowercase, replaces non-alphanumeric characters with hyphens,
+  trims leading/trailing hyphens, collapses consecutive hyphens, and appends
+  a short random suffix to avoid collisions.
+  """
+  def generate_slug(title) when is_binary(title) do
+    suffix = :crypto.strong_rand_bytes(4) |> Base.encode16(case: :lower)
+
+    base =
+      title
+      |> String.downcase()
+      |> String.replace(~r/[^a-z0-9]+/, "-")
+      |> String.replace(~r/^-|-$/, "")
+      |> String.replace(~r/-{2,}/, "-")
+
+    case base do
+      "" -> suffix
+      base -> "#{base}-#{suffix}"
+    end
   end
 
   # --- SysOp Board ---

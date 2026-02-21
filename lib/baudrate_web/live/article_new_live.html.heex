@@ -1,0 +1,55 @@
+<div class="mx-auto max-w-2xl">
+  <div class="mb-4">
+    <.link
+      :if={@board_slug}
+      navigate={~p"/boards/#{@board_slug}"}
+      class="text-sm text-base-content/70 hover:text-base-content"
+    >
+      &larr; {gettext("Back to board")}
+    </.link>
+    <.link
+      :if={!@board_slug}
+      navigate={~p"/"}
+      class="text-sm text-base-content/70 hover:text-base-content"
+    >
+      &larr; {gettext("Boards")}
+    </.link>
+  </div>
+
+  <h1 class="text-2xl font-bold mb-6">{gettext("Create Article")}</h1>
+
+  <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
+    <.input
+      field={@form[:title]}
+      label={gettext("Title")}
+      required
+    />
+
+    <.input
+      field={@form[:body]}
+      type="textarea"
+      label={gettext("Body")}
+      required
+    />
+
+    <div class="fieldset mb-2">
+      <span class="label mb-1">{gettext("Board")}</span>
+      <div class="space-y-2">
+        <label :for={board <- @boards} class="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            name="board_ids[]"
+            value={board.id}
+            checked={board.id in @selected_board_ids}
+            class="checkbox checkbox-sm"
+          />
+          <span>{board.name}</span>
+        </label>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+      {gettext("Create Article")}
+    </button>
+  </.form>
+</div>

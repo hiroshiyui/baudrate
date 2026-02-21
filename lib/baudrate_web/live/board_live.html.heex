@@ -1,6 +1,13 @@
-<div class="mb-4">
+<div class="mb-4 flex items-center justify-between">
   <.link navigate="/" class="text-sm text-base-content/70 hover:text-base-content">
     &larr; {gettext("Boards")}
+  </.link>
+  <.link
+    :if={@can_create}
+    navigate={~p"/boards/#{@board.slug}/articles/new"}
+    class="btn btn-sm btn-primary"
+  >
+    {gettext("New Article")}
   </.link>
 </div>
 
@@ -14,7 +21,15 @@
 <div :if={@articles != []} class="space-y-2">
   <div :for={article <- @articles} class="card bg-base-200 shadow-sm">
     <div class="card-body p-4">
-      <h3 class="card-title text-base">{article.title}</h3>
+      <.link navigate={~p"/articles/#{article.slug}"} class="card-title text-base link link-hover">
+        <span :if={article.pinned} class="badge badge-sm badge-accent">{gettext("Pinned")}</span>
+        {article.title}
+      </.link>
+      <div class="text-sm text-base-content/70">
+        {gettext("by %{author}", author: article.user.username)}
+        &middot;
+        {Calendar.strftime(article.inserted_at, "%Y-%m-%d %H:%M")}
+      </div>
     </div>
   </div>
 </div>

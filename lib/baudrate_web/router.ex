@@ -70,6 +70,7 @@ defmodule BaudrateWeb.Router do
       layout: {BaudrateWeb.Layouts, :app},
       on_mount: [{BaudrateWeb.AuthHooks, :redirect_if_authenticated}] do
       live "/login", LoginLive
+      live "/register", RegisterLive
     end
 
     live "/setup", SetupLive
@@ -114,9 +115,13 @@ defmodule BaudrateWeb.Router do
       on_mount: [{BaudrateWeb.AuthHooks, :require_auth}] do
       live "/", HomeLive
       live "/boards/:slug", BoardLive
+      live "/boards/:slug/articles/new", ArticleNewLive
+      live "/articles/new", ArticleNewLive
+      live "/articles/:slug", ArticleLive
       live "/profile", ProfileLive
       live "/profile/totp-reset", TotpResetLive
       live "/profile/recovery-codes", RecoveryCodesLive
+      live "/admin/pending-users", Admin.PendingUsersLive
     end
 
     delete "/logout", SessionController, :delete

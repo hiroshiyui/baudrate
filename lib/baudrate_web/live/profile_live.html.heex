@@ -6,7 +6,7 @@
       <%!-- Avatar section --%>
       <div class="flex items-center gap-4">
         <.avatar user={@current_user} size={48} />
-        <div class="flex gap-2">
+        <div :if={@is_active} class="flex gap-2">
           <button
             type="button"
             class="btn btn-sm btn-primary"
@@ -24,10 +24,13 @@
             {gettext("Remove Avatar")}
           </button>
         </div>
+        <span :if={!@is_active} class="text-sm text-base-content/50">
+          {gettext("Your account is pending approval.")}
+        </span>
       </div>
 
       <%!-- Hidden file input for avatar upload --%>
-      <form id="avatar-upload-form" phx-change="validate_avatar" class="hidden">
+      <form :if={@is_active} id="avatar-upload-form" phx-change="validate_avatar" class="hidden">
         <.live_file_input upload={@uploads.avatar} id="avatar-file-input" />
       </form>
 

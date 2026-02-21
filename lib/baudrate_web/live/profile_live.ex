@@ -17,10 +17,12 @@ defmodule BaudrateWeb.ProfileLive do
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
     policy = Auth.totp_policy(user.role.name)
+    is_active = Auth.user_active?(user)
 
     socket =
       socket
       |> assign(:totp_policy, policy)
+      |> assign(:is_active, is_active)
       |> assign(:show_crop_modal, false)
       |> allow_upload(:avatar,
         accept: ~w(.jpg .jpeg .png .webp),
