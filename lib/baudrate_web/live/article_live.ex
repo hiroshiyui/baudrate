@@ -212,9 +212,9 @@ defmodule BaudrateWeb.ArticleLive do
     <div class={["border-l-2 border-base-300 pl-4", @depth > 0 && "ml-4"]}>
       <div class="py-2">
         <div class="flex items-center gap-2 text-sm text-base-content/70 mb-1">
-          <span :if={@comment.user} class="font-semibold text-base-content">
+          <.link :if={@comment.user} navigate={~p"/users/#{@comment.user.username}"} class="font-semibold text-base-content link link-hover">
             {@comment.user.username}
-          </span>
+          </.link>
           <span :if={@comment.remote_actor} class="font-semibold text-base-content">
             {@comment.remote_actor.username}@{@comment.remote_actor.domain}
           </span>

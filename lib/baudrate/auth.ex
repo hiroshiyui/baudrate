@@ -193,6 +193,13 @@ defmodule Baudrate.Auth do
   end
 
   @doc """
+  Gets a user by username with role preloaded, or nil if not found.
+  """
+  def get_user_by_username(username) when is_binary(username) do
+    Repo.one(from u in User, where: u.username == ^username, preload: :role)
+  end
+
+  @doc """
   Verifies a user's password. Returns `true` if the password matches,
   `false` otherwise. Uses constant-time comparison via bcrypt.
   """

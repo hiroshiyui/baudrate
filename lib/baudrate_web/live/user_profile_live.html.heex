@@ -1,0 +1,49 @@
+<div class="space-y-6">
+  <div class="flex items-center gap-4">
+    <.avatar user={@profile_user} size={48} />
+    <div>
+      <h1 class="text-2xl font-bold">{@profile_user.username}</h1>
+      <span class="badge badge-outline">{translate_role(@profile_user.role.name)}</span>
+      <p class="text-sm text-base-content/70 mt-1">
+        {gettext("Member since %{date}", date: Calendar.strftime(@profile_user.inserted_at, "%Y-%m-%d"))}
+      </p>
+    </div>
+  </div>
+
+  <div class="stats stats-horizontal shadow">
+    <div class="stat">
+      <div class="stat-title">{gettext("Articles")}</div>
+      <div class="stat-value text-lg">{@article_count}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-title">{gettext("Comments")}</div>
+      <div class="stat-value text-lg">{@comment_count}</div>
+    </div>
+  </div>
+
+  <div :if={@recent_articles != []}>
+    <h2 class="text-lg font-semibold mb-3">{gettext("Recent Articles")}</h2>
+    <div class="space-y-2">
+      <div :for={article <- @recent_articles} class="card bg-base-200 shadow-sm">
+        <div class="card-body p-4">
+          <.link navigate={~p"/articles/#{article.slug}"} class="card-title text-base link link-hover">
+            {article.title}
+          </.link>
+          <div class="text-sm text-base-content/70">
+            {Calendar.strftime(article.inserted_at, "%Y-%m-%d %H:%M")}
+            <span :if={article.boards != []}>
+              &middot;
+              <span :for={board <- article.boards}>
+                <.link navigate={~p"/boards/#{board.slug}"} class="link link-hover">{board.name}</.link>
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div :if={@recent_articles == []} class="text-base-content/50 text-center py-4">
+    {gettext("No articles yet.")}
+  </div>
+</div>

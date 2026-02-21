@@ -52,7 +52,9 @@
       </.link>
       <div class="text-sm text-base-content/70">
         <span :if={article.user}>
-          {gettext("by %{author}", author: article.user.username)} &middot;
+          {gettext("by")}
+          <.link navigate={~p"/users/#{article.user.username}"} class="link link-hover font-semibold">{article.user.username}</.link>
+          &middot;
         </span>
         {Calendar.strftime(article.inserted_at, "%Y-%m-%d %H:%M")}
       </div>

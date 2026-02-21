@@ -30,7 +30,10 @@
     </div>
 
     <div class="flex items-center gap-2 text-sm text-base-content/70">
-      <span :if={@article.user}>{gettext("by %{author}", author: @article.user.username)}</span>
+      <span :if={@article.user}>
+        {gettext("by")}
+        <.link navigate={~p"/users/#{@article.user.username}"} class="link link-hover font-semibold">{@article.user.username}</.link>
+      </span>
       <span :if={@article.user}>&middot;</span>
       <span>{Calendar.strftime(@article.inserted_at, "%Y-%m-%d %H:%M")}</span>
     </div>

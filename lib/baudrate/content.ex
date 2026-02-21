@@ -609,6 +609,45 @@ defmodule Baudrate.Content do
   """
   def get_attachment!(id), do: Repo.get!(Attachment, id)
 
+  # --- User Content Queries ---
+
+  @doc """
+  Returns recent non-deleted articles by a user, newest first, with boards preloaded.
+  """
+  def list_recent_articles_by_user(user_id, limit \\ 10) do
+    from(a in Article,
+      where: a.user_id == ^user_id and is_nil(a.deleted_at),
+      order_by: [desc: a.inserted_at],
+      limit: ^limit,
+      preload: :boards
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the count of non-deleted articles by a user.
+  """
+  def count_articles_by_user(user_id) do
+    Repo.one(
+      from(a in Article,
+        where: a.user_id == ^user_id and is_nil(a.deleted_at),
+        select: count(a.id)
+      )
+    ) || 0
+  end
+
+  @doc """
+  Returns the count of non-deleted comments by a user.
+  """
+  def count_comments_by_user(user_id) do
+    Repo.one(
+      from(c in Comment,
+        where: c.user_id == ^user_id and is_nil(c.deleted_at),
+        select: count(c.id)
+      )
+    ) || 0
+  end
+
   # --- Federation Hooks ---
 
   defp schedule_federation_task(fun) do
