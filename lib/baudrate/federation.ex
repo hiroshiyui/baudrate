@@ -1,12 +1,16 @@
 defmodule Baudrate.Federation do
   @moduledoc """
-  The Federation context provides ActivityPub endpoints and follower management.
+  The Federation context provides ActivityPub endpoints, follower management,
+  and announce (boost) tracking.
 
   Phase 1 exposes actors, outbox collections, and article objects as
   JSON-LD, along with WebFinger and NodeInfo discovery endpoints.
 
   Phase 2a adds inbox endpoints, HTTP Signature verification, remote actor
   resolution, and Follow/Undo(Follow) handling with auto-accept.
+
+  Phase 2b adds content activity handling: Create(Note/Article), Like,
+  Announce, Delete, Update, and their Undo variants.
 
   ## Actor Mapping
 
@@ -32,7 +36,7 @@ defmodule Baudrate.Federation do
   alias Baudrate.Setup
   alias Baudrate.Content
   alias Baudrate.Content.Markdown
-  alias Baudrate.Federation.{Follower, KeyStore}
+  alias Baudrate.Federation.{Announce, Follower, KeyStore}
 
   @as_context "https://www.w3.org/ns/activitystreams"
   @security_context "https://w3id.org/security/v1"
@@ -426,4 +430,60 @@ defmodule Baudrate.Federation do
       "url" => "#{base_url()}/articles/#{article.slug}"
     }
   end
+
+  # --- Announces ---
+
+  @doc """
+  Creates an announce (boost) record for a remote actor.
+  """
+  def create_announce(attrs) do
+    %Announce{}
+    |> Announce.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Deletes an announce record by its ActivityPub ID.
+  """
+  def delete_announce_by_ap_id(ap_id) when is_binary(ap_id) do
+    from(a in Announce, where: a.ap_id == ^ap_id)
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Returns the count of announces for the given target AP ID.
+  """
+  def count_announces(target_ap_id) when is_binary(target_ap_id) do
+    Repo.one(
+      from(a in Announce, where: a.target_ap_id == ^target_ap_id, select: count(a.id))
+    ) || 0
+  end
+
+  # --- Board Resolution ---
+
+  @doc """
+  Resolves a local board from audience/to/cc fields in an ActivityPub object.
+
+  Scans the list of URIs for one matching the local board actor pattern
+  `/ap/boards/:slug` and returns the board if found.
+  """
+  def resolve_board_from_audience(uris) when is_list(uris) do
+    board_prefix = "#{base_url()}/ap/boards/"
+
+    uris
+    |> List.flatten()
+    |> Enum.find_value(fn uri ->
+      case uri do
+        <<^board_prefix::binary, slug::binary>> ->
+          if Regex.match?(~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/, slug) do
+            Repo.get_by(Baudrate.Content.Board, slug: slug)
+          end
+
+        _ ->
+          nil
+      end
+    end)
+  end
+
+  def resolve_board_from_audience(_), do: nil
 end

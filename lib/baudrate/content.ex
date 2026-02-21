@@ -1,14 +1,16 @@
 defmodule Baudrate.Content do
   @moduledoc """
-  The Content context manages boards and articles.
+  The Content context manages boards, articles, comments, and likes.
 
   Boards are organized hierarchically via `parent_id`. Articles can be
   cross-posted to multiple boards through the `board_articles` join table.
+  Comments support threading via `parent_id`. Likes track article favorites
+  from both local users and remote actors.
   """
 
   import Ecto.Query
   alias Baudrate.Repo
-  alias Baudrate.Content.{Article, Board, BoardArticle, BoardModerator}
+  alias Baudrate.Content.{Article, ArticleLike, Board, BoardArticle, BoardModerator, Comment}
 
   # --- Boards ---
 
@@ -44,7 +46,7 @@ defmodule Baudrate.Content do
     from(a in Article,
       join: ba in BoardArticle,
       on: ba.article_id == a.id,
-      where: ba.board_id == ^board_id,
+      where: ba.board_id == ^board_id and is_nil(a.deleted_at),
       order_by: [desc: a.pinned, desc: a.inserted_at],
       preload: :user
     )
@@ -119,6 +121,134 @@ defmodule Baudrate.Content do
       "" -> suffix
       base -> "#{base}-#{suffix}"
     end
+  end
+
+  # --- Remote Articles ---
+
+  @doc """
+  Creates a remote article and links it to the given board IDs in a transaction.
+  """
+  def create_remote_article(attrs, board_ids) when is_list(board_ids) do
+    Ecto.Multi.new()
+    |> Ecto.Multi.insert(:article, Article.remote_changeset(%Article{}, attrs))
+    |> Ecto.Multi.run(:board_articles, fn repo, %{article: article} ->
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      entries =
+        Enum.map(board_ids, fn board_id ->
+          %{board_id: board_id, article_id: article.id, inserted_at: now, updated_at: now}
+        end)
+
+      {count, _} = repo.insert_all(BoardArticle, entries)
+
+      if count == length(board_ids) do
+        {:ok, count}
+      else
+        {:error, :board_articles_insert_mismatch}
+      end
+    end)
+    |> Repo.transaction()
+  end
+
+  @doc """
+  Fetches an article by its ActivityPub ID.
+  """
+  def get_article_by_ap_id(ap_id) when is_binary(ap_id) do
+    Repo.get_by(Article, ap_id: ap_id)
+  end
+
+  @doc """
+  Soft-deletes an article by setting `deleted_at`.
+  """
+  def soft_delete_article(%Article{} = article) do
+    article
+    |> Article.soft_delete_changeset()
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates a remote article's content.
+  """
+  def update_remote_article(%Article{} = article, attrs) do
+    article
+    |> Article.update_remote_changeset(attrs)
+    |> Repo.update()
+  end
+
+  # --- Comments ---
+
+  @doc """
+  Creates a remote comment received via ActivityPub.
+  """
+  def create_remote_comment(attrs) do
+    %Comment{}
+    |> Comment.remote_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Fetches a comment by its ActivityPub ID.
+  """
+  def get_comment_by_ap_id(ap_id) when is_binary(ap_id) do
+    Repo.get_by(Comment, ap_id: ap_id)
+  end
+
+  @doc """
+  Lists non-deleted comments for an article, threaded by parent.
+  """
+  def list_comments_for_article(%Article{id: article_id}) do
+    from(c in Comment,
+      where: c.article_id == ^article_id and is_nil(c.deleted_at),
+      order_by: [asc: c.inserted_at],
+      preload: [:user, :remote_actor]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Soft-deletes a comment by setting `deleted_at` and clearing body.
+  """
+  def soft_delete_comment(%Comment{} = comment) do
+    comment
+    |> Comment.soft_delete_changeset()
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates a remote comment's content.
+  """
+  def update_remote_comment(%Comment{} = comment, attrs) do
+    comment
+    |> Ecto.Changeset.cast(attrs, [:body, :body_html])
+    |> Ecto.Changeset.validate_required([:body])
+    |> Repo.update()
+  end
+
+  # --- Article Likes ---
+
+  @doc """
+  Creates a remote article like received via ActivityPub.
+  """
+  def create_remote_article_like(attrs) do
+    %ArticleLike{}
+    |> ArticleLike.remote_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Deletes an article like by its ActivityPub ID.
+  """
+  def delete_article_like_by_ap_id(ap_id) when is_binary(ap_id) do
+    from(l in ArticleLike, where: l.ap_id == ^ap_id)
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Returns the count of likes for an article.
+  """
+  def count_article_likes(%Article{id: article_id}) do
+    Repo.one(from(l in ArticleLike, where: l.article_id == ^article_id, select: count(l.id))) ||
+      0
   end
 
   # --- SysOp Board ---
