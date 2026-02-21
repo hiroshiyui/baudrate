@@ -12,31 +12,31 @@
 @plugin "../vendor/heroicons";
 
 @font-face {
-  font-family: "Libre Baskerville";
+  font-family: "Playfair Display";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/libre-baskerville-regular.woff2") format("woff2");
+  src: url("/fonts/playfair-display-regular.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: "Libre Baskerville";
+  font-family: "Playfair Display";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/libre-baskerville-bold.woff2") format("woff2");
+  src: url("/fonts/playfair-display-bold.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: "Libre Baskerville";
+  font-family: "Playfair Display";
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/libre-baskerville-italic.woff2") format("woff2");
+  src: url("/fonts/playfair-display-italic.woff2") format("woff2");
 }
 
 @theme {
-  --font-sans: "Libre Baskerville", Georgia, "Times New Roman", serif;
+  --font-sans: "Playfair Display", Georgia, "Times New Roman", serif;
 }
 
 /* daisyUI Tailwind Plugin. You can update this file by fetching the latest version with:
