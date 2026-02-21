@@ -28,6 +28,14 @@
       autocomplete="new-password"
     />
 
+    <.input
+      :if={@registration_mode == "invite_only"}
+      field={@form[:invite_code]}
+      label={gettext("Invite Code")}
+      required
+      autocomplete="off"
+    />
+
     <%!-- Password strength checklist --%>
     <div class="space-y-1">
       <p class="text-sm font-medium">{gettext("Password requirements:")}</p>
@@ -122,6 +130,10 @@
 
     <p :if={@registration_mode == "approval_required"} class="text-sm text-base-content/70">
       {gettext("Your account is pending admin approval.")}
+    </p>
+
+    <p :if={@registration_mode == "invite_only"} class="text-sm text-base-content/70">
+      {gettext("Registration requires an invite code.")}
     </p>
 
     <button type="submit" class="btn btn-primary w-full">

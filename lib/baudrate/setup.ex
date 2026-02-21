@@ -186,7 +186,7 @@ defmodule Baudrate.Setup do
     end
   end
 
-  @valid_registration_modes ~w(open approval_required)
+  @valid_registration_modes ~w(open approval_required invite_only)
   @valid_federation_modes ~w(blocklist allowlist)
 
   @doc """

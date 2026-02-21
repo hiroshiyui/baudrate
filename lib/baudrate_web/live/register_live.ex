@@ -83,18 +83,39 @@ defmodule BaudrateWeb.RegisterLive do
     case Auth.register_user(params) do
       {:ok, _user} ->
         flash_msg =
-          if socket.assigns.registration_mode == "open" do
-            gettext("Registration successful! You can now sign in.")
-          else
-            gettext(
-              "Your account has been created and is pending admin approval. You can sign in, but posting and avatar upload are restricted until approved."
-            )
+          case socket.assigns.registration_mode do
+            "open" ->
+              gettext("Registration successful! You can now sign in.")
+
+            "invite_only" ->
+              gettext("Registration successful! You can now sign in.")
+
+            _ ->
+              gettext(
+                "Your account has been created and is pending admin approval. You can sign in, but posting and avatar upload are restricted until approved."
+              )
           end
 
         {:noreply,
          socket
          |> put_flash(:info, flash_msg)
          |> redirect(to: ~p"/login")}
+
+      {:error, :invite_required} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("An invite code is required to register."))}
+
+      {:error, {:invalid_invite, :not_found}} ->
+        {:noreply, put_flash(socket, :error, gettext("Invalid invite code."))}
+
+      {:error, {:invalid_invite, :revoked}} ->
+        {:noreply, put_flash(socket, :error, gettext("This invite code has been revoked."))}
+
+      {:error, {:invalid_invite, :expired}} ->
+        {:noreply, put_flash(socket, :error, gettext("This invite code has expired."))}
+
+      {:error, {:invalid_invite, :fully_used}} ->
+        {:noreply, put_flash(socket, :error, gettext("This invite code has already been used."))}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset, as: :user))}

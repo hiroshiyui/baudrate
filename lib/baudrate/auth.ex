@@ -49,7 +49,7 @@ defmodule Baudrate.Auth do
   """
 
   import Ecto.Query
-  alias Baudrate.Auth.{RecoveryCode, TotpVault, UserSession}
+  alias Baudrate.Auth.{InviteCode, RecoveryCode, TotpVault, UserSession}
   alias Baudrate.Repo
   alias Baudrate.Setup
   alias Baudrate.Setup.{Role, User}
@@ -312,10 +312,19 @@ defmodule Baudrate.Auth do
     * `"approval_required"` → status `"pending"` (can log in but restricted)
   """
   def register_user(attrs) do
+    mode = Setup.registration_mode()
+
+    case mode do
+      "invite_only" -> register_with_invite(attrs)
+      _ -> register_standard(attrs, mode)
+    end
+  end
+
+  defp register_standard(attrs, mode) do
     role = Repo.one!(from r in Role, where: r.name == "user")
 
     status =
-      case Setup.registration_mode() do
+      case mode do
         "open" -> "active"
         _ -> "pending"
       end
@@ -329,6 +338,38 @@ defmodule Baudrate.Auth do
     |> User.registration_changeset(Map.delete(attrs, "status"))
     |> Ecto.Changeset.put_change(:status, status)
     |> Repo.insert()
+  end
+
+  defp register_with_invite(attrs) do
+    invite_code = attrs["invite_code"] || attrs[:invite_code]
+
+    if is_nil(invite_code) || invite_code == "" do
+      {:error, :invite_required}
+    else
+      case validate_invite_code(invite_code) do
+        {:ok, invite} ->
+          role = Repo.one!(from r in Role, where: r.name == "user")
+
+          attrs =
+            attrs
+            |> Map.put("role_id", role.id)
+            |> Map.put("status", "active")
+
+          result =
+            %User{}
+            |> User.registration_changeset(Map.delete(attrs, "status") |> Map.delete("invite_code"))
+            |> Ecto.Changeset.put_change(:status, "active")
+            |> Repo.insert()
+
+          with {:ok, user} <- result do
+            use_invite_code(invite, user.id)
+            {:ok, user}
+          end
+
+        {:error, reason} ->
+          {:error, {:invalid_invite, reason}}
+      end
+    end
   end
 
   @doc """
@@ -500,6 +541,105 @@ defmodule Baudrate.Auth do
   def remove_avatar(user) do
     user
     |> User.avatar_changeset(%{avatar_id: nil})
+    |> Repo.update()
+  end
+
+  # --- Invite Codes ---
+
+  @doc """
+  Generates an invite code created by the given user.
+
+  ## Options
+
+    * `:max_uses` — max number of times the code can be used (default 1)
+    * `:expires_in_days` — number of days until expiration (default nil = no expiry)
+  """
+  def generate_invite_code(user_id, opts \\ []) do
+    code = :crypto.strong_rand_bytes(4) |> Base.encode16(case: :lower)
+    max_uses = Keyword.get(opts, :max_uses, 1)
+
+    expires_at =
+      case Keyword.get(opts, :expires_in_days) do
+        nil -> nil
+        days -> DateTime.utc_now() |> DateTime.add(days * 86_400, :second) |> DateTime.truncate(:second)
+      end
+
+    %InviteCode{}
+    |> InviteCode.changeset(%{
+      code: code,
+      created_by_id: user_id,
+      max_uses: max_uses,
+      expires_at: expires_at
+    })
+    |> Repo.insert()
+  end
+
+  @doc """
+  Validates an invite code string.
+
+  Returns `{:ok, invite}` if valid, or `{:error, reason}` if invalid.
+  """
+  def validate_invite_code(code) when is_binary(code) do
+    case Repo.one(from(i in InviteCode, where: i.code == ^code, preload: [:created_by])) do
+      nil ->
+        {:error, :not_found}
+
+      %InviteCode{revoked: true} ->
+        {:error, :revoked}
+
+      %InviteCode{expires_at: expires_at} = invite when not is_nil(expires_at) ->
+        if DateTime.compare(expires_at, DateTime.utc_now()) == :lt do
+          {:error, :expired}
+        else
+          check_uses(invite)
+        end
+
+      invite ->
+        check_uses(invite)
+    end
+  end
+
+  def validate_invite_code(_), do: {:error, :not_found}
+
+  defp check_uses(%InviteCode{use_count: use_count, max_uses: max_uses})
+       when use_count >= max_uses do
+    {:error, :fully_used}
+  end
+
+  defp check_uses(invite), do: {:ok, invite}
+
+  @doc """
+  Records the use of an invite code by a new user.
+  """
+  def use_invite_code(%InviteCode{} = invite, user_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    invite
+    |> InviteCode.use_changeset(%{
+      used_by_id: user_id,
+      used_at: now,
+      use_count: invite.use_count + 1
+    })
+    |> Repo.update()
+  end
+
+  @doc """
+  Lists all invite codes with preloads, newest first.
+  """
+  def list_all_invite_codes do
+    from(i in InviteCode,
+      order_by: [desc: i.inserted_at],
+      preload: [:created_by, :used_by]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Revokes an invite code.
+  """
+  def revoke_invite_code(%InviteCode{} = invite) do
+    invite
+    |> InviteCode.revoke_changeset()
     |> Repo.update()
   end
 
