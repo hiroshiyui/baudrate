@@ -51,6 +51,12 @@ defmodule BaudrateWeb.Layouts do
             <li :if={@current_user.role.name == "admin"}>
               <.link navigate="/admin/pending-users">{gettext("Pending Users")}</.link>
             </li>
+            <li :if={@current_user.role.name == "admin"}>
+              <.link navigate="/admin/federation">{gettext("Federation")}</.link>
+            </li>
+            <li :if={@current_user.role.name in ["admin", "moderator"]}>
+              <.link navigate="/admin/moderation">{gettext("Moderation")}</.link>
+            </li>
             <li class="divider my-1"></li>
             <li class="menu-title flex flex-row items-center gap-2">
               <.avatar user={@current_user} size={36} />
@@ -112,6 +118,12 @@ defmodule BaudrateWeb.Layouts do
             </li>
             <li :if={@current_user.role.name == "admin"}>
               <.link navigate="/admin/pending-users">{gettext("Pending Users")}</.link>
+            </li>
+            <li :if={@current_user.role.name == "admin"}>
+              <.link navigate="/admin/federation">{gettext("Federation")}</.link>
+            </li>
+            <li :if={@current_user.role.name in ["admin", "moderator"]}>
+              <.link navigate="/admin/moderation">{gettext("Moderation")}</.link>
             </li>
             <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
             <li>

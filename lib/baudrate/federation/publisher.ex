@@ -146,6 +146,24 @@ defmodule Baudrate.Federation.Publisher do
     {activity, actor_uri}
   end
 
+  @doc """
+  Builds a `Flag` activity for reporting remote content to an instance admin.
+
+  Returns `flag_map`.
+  """
+  def build_flag(remote_actor, content_ap_ids, reason) do
+    site_uri = Federation.actor_uri(:site, nil)
+
+    %{
+      "@context" => @as_context,
+      "id" => "#{site_uri}#flag-#{System.unique_integer([:positive])}",
+      "type" => "Flag",
+      "actor" => site_uri,
+      "object" => [remote_actor.ap_id | content_ap_ids],
+      "content" => reason
+    }
+  end
+
   # --- Publish Convenience Functions ---
 
   @doc """

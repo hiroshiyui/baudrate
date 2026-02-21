@@ -14,7 +14,7 @@
 - [x] Admin pending-users approval page
 - [ ] Admin dashboard with user management (full)
 - [ ] User banning / suspension
-- [ ] Content reporting system
+- [x] Content reporting system (remote + local, moderation queue with resolve/dismiss)
 - [ ] Moderation log
 
 ## User Features
@@ -239,18 +239,19 @@ Cross-platform compatibility, moderation tools, and admin controls.
 - [x] **Lemmy compatibility (remaining)**
   - [x] Board → Group actor: `Announce` wrapping for community-style federation (implemented in Phase 3)
   - [x] Cross-post detection and deduplication (same remote article arriving via multiple board inboxes links to all boards)
-- [ ] **Moderation tools**
+- [x] **Moderation tools**
   - [x] Domain blocklist management (admin UI)
-  - [ ] Instance allowlist mode (federate only with approved instances)
-  - [ ] Remote content reporting → local moderation queue
-  - [ ] `Flag` activity: send reports to remote instance admins
+  - [x] Instance allowlist mode (federate only with approved instances)
+  - [x] Remote content reporting → local moderation queue
+  - [x] `Flag` activity: send reports to remote instance admins
+  - [x] `Flag` activity: receive reports from remote instances
   - [ ] `Block` activity: communicate user-level blocks to remote instances
-  - [ ] Bulk actions: block/silence entire instances
-- [ ] **Admin federation dashboard**
-  - [ ] Known instances list with stats (followers, content, last seen)
-  - [ ] Delivery queue status and retry management
-  - [ ] Federation health monitoring (failed deliveries, error rates)
-  - [ ] Toggle federation on/off per board
+  - [x] Bulk actions: block entire instances from federation dashboard
+- [x] **Admin federation dashboard**
+  - [x] Known instances list with stats (followers, content, last seen)
+  - [x] Delivery queue status and retry management (retry/abandon individual jobs)
+  - [x] Federation health monitoring (error rate over 24h, status counts)
+  - [x] Toggle federation on/off per board
   - [x] Instance-level federation kill switch
 - [ ] **Performance & scalability**
   - [ ] Consider migrating delivery to Oban for persistent job queues

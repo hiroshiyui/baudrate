@@ -12,22 +12,25 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: lib/baudrate_web/components/core_components.ex:368
+#: lib/baudrate_web/live/admin/federation_live.html.heex:38
+#: lib/baudrate_web/live/admin/federation_live.html.heex:94
+#: lib/baudrate_web/live/admin/federation_live.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:156
-#: lib/baudrate_web/components/layouts.ex:168
+#: lib/baudrate_web/components/layouts.ex:174
+#: lib/baudrate_web/components/layouts.ex:186
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:163
+#: lib/baudrate_web/components/layouts.ex:181
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:151
+#: lib/baudrate_web/components/layouts.ex:169
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr ""
@@ -171,6 +174,7 @@ msgstr ""
 msgid "Pending migrations"
 msgstr ""
 
+#: lib/baudrate_web/live/admin/federation_live.html.heex:58
 #: lib/baudrate_web/live/setup_live.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Retry"
@@ -239,6 +243,7 @@ msgstr ""
 msgid "Set Up Two-Factor Authentication"
 msgstr ""
 
+#: lib/baudrate_web/components/layouts.ex:98
 #: lib/baudrate_web/live/login_live.html.heex:2
 #: lib/baudrate_web/live/login_live.html.heex:39
 #: lib/baudrate_web/live/register_live.html.heex:134
@@ -246,8 +251,8 @@ msgstr ""
 msgid "Sign In"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:63
-#: lib/baudrate_web/components/layouts.ex:115
+#: lib/baudrate_web/components/layouts.ex:69
+#: lib/baudrate_web/components/layouts.ex:133
 #, elixir-autogen, elixir-format
 msgid "Sign Out"
 msgstr ""
@@ -301,16 +306,16 @@ msgid "Unable to connect to database. Check your configuration."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:42
-#: lib/baudrate_web/components/layouts.ex:81
+#: lib/baudrate_web/components/layouts.ex:87
 #: lib/baudrate_web/live/article_new_live.html.heex:15
 #: lib/baudrate_web/live/board_live.html.heex:3
-#: lib/baudrate_web/live/home_live.html.heex:11
+#: lib/baudrate_web/live/home_live.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "Boards"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:39
-#: lib/baudrate_web/components/layouts.ex:78
+#: lib/baudrate_web/components/layouts.ex:84
 #, elixir-autogen, elixir-format
 msgid "Home"
 msgstr ""
@@ -335,6 +340,8 @@ msgstr ""
 msgid "Current TOTP Code"
 msgstr ""
 
+#: lib/baudrate_web/live/admin/federation_live.html.heex:152
+#: lib/baudrate_web/live/admin/settings_live.html.heex:23
 #: lib/baudrate_web/live/profile_live.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Disabled"
@@ -350,6 +357,8 @@ msgstr ""
 msgid "Enable Two-Factor Authentication"
 msgstr ""
 
+#: lib/baudrate_web/live/admin/federation_live.html.heex:152
+#: lib/baudrate_web/live/admin/settings_live.html.heex:22
 #: lib/baudrate_web/live/profile_live.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "Enabled"
@@ -400,8 +409,8 @@ msgstr ""
 msgid "Please enter a valid recovery code (e.g. a1b2-c3d4)."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:60
-#: lib/baudrate_web/components/layouts.ex:112
+#: lib/baudrate_web/components/layouts.ex:66
+#: lib/baudrate_web/components/layouts.ex:130
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Profile"
@@ -501,7 +510,7 @@ msgstr ""
 msgid "Remove Avatar"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:19
+#: lib/baudrate_web/live/admin/settings_live.html.heex:51
 #: lib/baudrate_web/live/profile_live.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Save"
@@ -523,6 +532,8 @@ msgstr ""
 msgid "Upload error."
 msgstr ""
 
+#: lib/baudrate_web/live/admin/federation_live.ex:20
+#: lib/baudrate_web/live/admin/moderation_live.ex:19
 #: lib/baudrate_web/live/admin/pending_users_live.ex:18
 #: lib/baudrate_web/live/admin/settings_live.ex:19
 #, elixir-autogen, elixir-format
@@ -550,6 +561,7 @@ msgstr ""
 msgid "Back to board"
 msgstr ""
 
+#: lib/baudrate_web/live/admin/federation_live.html.heex:136
 #: lib/baudrate_web/live/article_new_live.html.heex:36
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Board"
@@ -597,7 +609,7 @@ msgid "No pending users."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:52
-#: lib/baudrate_web/components/layouts.ex:108
+#: lib/baudrate_web/components/layouts.ex:120
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Pending Users"
@@ -623,7 +635,7 @@ msgstr ""
 msgid "Registered"
 msgstr ""
 
-#: lib/baudrate_web/live/register_live.ex:83
+#: lib/baudrate_web/live/register_live.ex:87
 #, elixir-autogen, elixir-format
 msgid "Registration successful! You can now sign in."
 msgstr ""
@@ -640,7 +652,7 @@ msgstr ""
 msgid "Title"
 msgstr ""
 
-#: lib/baudrate_web/live/register_live.ex:71
+#: lib/baudrate_web/live/register_live.ex:74
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Too many registration attempts. Please try again later."
 msgstr ""
@@ -650,7 +662,7 @@ msgstr ""
 msgid "User approved successfully."
 msgstr ""
 
-#: lib/baudrate_web/live/register_live.ex:85
+#: lib/baudrate_web/live/register_live.ex:89
 #, elixir-autogen, elixir-format
 msgid "Your account has been created and is pending admin approval. You can sign in, but posting and avatar upload are restricted until approved."
 msgstr ""
@@ -667,7 +679,7 @@ msgid "Your account is pending approval."
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:16
-#: lib/baudrate_web/live/board_live.html.heex:29
+#: lib/baudrate_web/live/board_live.html.heex:30
 #, elixir-autogen, elixir-format
 msgid "by %{author}"
 msgstr ""
@@ -677,7 +689,7 @@ msgstr ""
 msgid "Add Language"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:231
+#: lib/baudrate_web/live/profile_live.ex:230
 #, elixir-autogen, elixir-format
 msgid "Failed to update language preferences."
 msgstr ""
@@ -698,7 +710,7 @@ msgid "Using browser language settings."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:46
-#: lib/baudrate_web/components/layouts.ex:102
+#: lib/baudrate_web/components/layouts.ex:114
 #, elixir-autogen, elixir-format
 msgid "Admin"
 msgstr ""
@@ -713,6 +725,7 @@ msgstr ""
 msgid "Approval Required"
 msgstr ""
 
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:11
 #: lib/baudrate_web/live/admin/settings_live.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Open"
@@ -723,13 +736,13 @@ msgstr ""
 msgid "Registration Mode"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:18
+#: lib/baudrate_web/live/admin/settings_live.html.heex:50
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:49
-#: lib/baudrate_web/components/layouts.ex:105
+#: lib/baudrate_web/components/layouts.ex:117
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr ""
@@ -737,4 +750,394 @@ msgstr ""
 #: lib/baudrate_web/live/admin/settings_live.ex:43
 #, elixir-autogen, elixir-format
 msgid "Settings saved successfully."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:65
+#, elixir-autogen, elixir-format
+msgid "Abandon"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:29
+#, elixir-autogen, elixir-format
+msgid "Actionable Jobs"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:90
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Actors"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "Allowed Domains (federation)"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:32
+#, elixir-autogen, elixir-format
+msgid "Allowlist (allow only specific domains)"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.ex:74
+#, elixir-autogen, elixir-format
+msgid "Article deleted."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:36
+#, elixir-autogen, elixir-format
+msgid "Attempts"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:113
+#, elixir-autogen, elixir-format
+msgid "Block"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:110
+#, elixir-autogen, elixir-format
+msgid "Block all federation with %{domain}?"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:38
+#, elixir-autogen, elixir-format
+msgid "Blocked Domains (federation)"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:31
+#, elixir-autogen, elixir-format
+msgid "Blocklist (block specific domains)"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:126
+#, elixir-autogen, elixir-format
+msgid "Board Federation"
+msgstr ""
+
+#: lib/baudrate_web/live/home_live.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "Browse the boards below, or"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:48
+#, elixir-autogen, elixir-format
+msgid "Comma-separated list of domains to allow. Only used in allowlist mode. When empty, all domains are blocked."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:41
+#, elixir-autogen, elixir-format
+msgid "Comma-separated list of domains to block from federation."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.ex:89
+#, elixir-autogen, elixir-format
+msgid "Comment deleted."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:92
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Content"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:72
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Delete Article"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:87
+#, elixir-autogen, elixir-format
+msgid "Delete Comment"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:69
+#, elixir-autogen, elixir-format
+msgid "Delete this article?"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:84
+#, elixir-autogen, elixir-format
+msgid "Delete this comment?"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:15
+#, elixir-autogen, elixir-format
+msgid "Delivered"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:7
+#, elixir-autogen, elixir-format
+msgid "Delivery Queue"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:161
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Disable"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:134
+#, elixir-autogen, elixir-format
+msgid "Dismiss"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "Dismissed"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:89
+#, elixir-autogen, elixir-format
+msgid "Domain"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.ex:63
+#, elixir-autogen, elixir-format
+msgid "Domain %{domain} has been blocked."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:161
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Enable"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "Error"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:23
+#, elixir-autogen, elixir-format
+msgid "Error Rate (24h)"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "Failed"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.ex:78
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Failed to delete article."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.ex:93
+#, elixir-autogen, elixir-format
+msgid "Failed to delete comment."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.ex:63
+#, elixir-autogen, elixir-format
+msgid "Failed to dismiss report."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.ex:48
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Failed to resolve report."
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex:55
+#: lib/baudrate_web/components/layouts.ex:123
+#: lib/baudrate_web/live/admin/federation_live.html.heex:138
+#: lib/baudrate_web/live/admin/settings_live.html.heex:20
+#, elixir-autogen, elixir-format
+msgid "Federation"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.ex:77
+#, elixir-autogen, elixir-format
+msgid "Federation %{action} for %{board}."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Federation Dashboard"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:29
+#, elixir-autogen, elixir-format
+msgid "Federation Mode"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.ex:113
+#, elixir-autogen, elixir-format
+msgid "Flag sent to %{domain}."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:91
+#, elixir-autogen, elixir-format
+msgid "Followers"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:101
+#, elixir-autogen, elixir-format
+msgid "Handled by"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:34
+#, elixir-autogen, elixir-format
+msgid "Inbox"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.ex:37
+#, elixir-autogen, elixir-format
+msgid "Job abandoned."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.ex:31
+#: lib/baudrate_web/live/admin/federation_live.ex:38
+#, elixir-autogen, elixir-format
+msgid "Job not found."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.ex:30
+#, elixir-autogen, elixir-format
+msgid "Job queued for retry."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "Known Instances"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:93
+#, elixir-autogen, elixir-format
+msgid "Last Seen"
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex:58
+#: lib/baudrate_web/components/layouts.ex:126
+#, elixir-autogen, elixir-format
+msgid "Moderation"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Moderation Queue"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:129
+#, elixir-autogen, elixir-format
+msgid "No boards configured."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.ex:115
+#, elixir-autogen, elixir-format
+msgid "No remote actor to send flag to."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:82
+#, elixir-autogen, elixir-format
+msgid "No remote instances discovered yet."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:31
+#, elixir-autogen, elixir-format
+msgid "No reports with status \"%{status}\"."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:11
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Pending"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Reason:"
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex:99
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Register"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.ex:59
+#, elixir-autogen, elixir-format
+msgid "Report dismissed."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.ex:44
+#, elixir-autogen, elixir-format
+msgid "Report resolved."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:92
+#, elixir-autogen, elixir-format
+msgid "Reported Actor:"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:62
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Reported Article:"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:77
+#, elixir-autogen, elixir-format
+msgid "Reported Comment:"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:51
+#, elixir-autogen, elixir-format
+msgid "Reported by"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:124
+#, elixir-autogen, elixir-format
+msgid "Resolution note (optional)"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:127
+#, elixir-autogen, elixir-format
+msgid "Resolve"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:18
+#, elixir-autogen, elixir-format
+msgid "Resolved"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:113
+#, elixir-autogen, elixir-format
+msgid "Send Flag to %{domain}"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:110
+#, elixir-autogen, elixir-format
+msgid "Send a Flag report to %{domain}?"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:35
+#, elixir-autogen, elixir-format
+msgid "Status"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:137
+#, elixir-autogen, elixir-format
+msgid "Visibility"
+msgstr ""
+
+#: lib/baudrate_web/live/home_live.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "Welcome to Baudrate"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.ex:78
+#, elixir-autogen, elixir-format, fuzzy
+msgid "disabled"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.ex:78
+#, elixir-autogen, elixir-format, fuzzy
+msgid "enabled"
+msgstr ""
+
+#: lib/baudrate_web/live/home_live.html.heex:16
+#, elixir-autogen, elixir-format, fuzzy
+msgid "register"
+msgstr ""
+
+#: lib/baudrate_web/live/home_live.html.heex:14
+#, elixir-autogen, elixir-format, fuzzy
+msgid "sign in"
+msgstr ""
+
+#: lib/baudrate_web/live/home_live.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "to participate."
 msgstr ""

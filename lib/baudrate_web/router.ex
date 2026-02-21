@@ -174,6 +174,8 @@ defmodule BaudrateWeb.Router do
       live "/profile/recovery-codes", RecoveryCodesLive
       live "/admin/settings", Admin.SettingsLive
       live "/admin/pending-users", Admin.PendingUsersLive
+      live "/admin/federation", Admin.FederationLive
+      live "/admin/moderation", Admin.ModerationLive
     end
 
     delete "/logout", SessionController, :delete

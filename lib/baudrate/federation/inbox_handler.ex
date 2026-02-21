@@ -315,6 +315,23 @@ defmodule Baudrate.Federation.InboxHandler do
     handle_delete_content(object_uri, remote_actor)
   end
 
+  # --- Flag (incoming report from remote instance) ---
+
+  defp dispatch(%{"type" => "Flag", "content" => reason} = activity, remote_actor, _target)
+       when is_binary(reason) do
+    objects = List.wrap(activity["object"]) |> Enum.filter(&is_binary/1)
+    report_attrs = build_flag_report_attrs(objects, remote_actor, reason)
+
+    case Baudrate.Moderation.create_report(report_attrs) do
+      {:ok, _report} ->
+        Logger.info("federation.activity: type=Flag from=#{remote_actor.ap_id}")
+        :ok
+
+      {:error, _} ->
+        {:error, :flag_failed}
+    end
+  end
+
   # --- Catch-all ---
 
   defp dispatch(%{"type" => type} = _activity, _remote_actor, _target) do
@@ -590,5 +607,54 @@ defmodule Baudrate.Federation.InboxHandler do
     Enum.any?(errors, fn {_field, {_msg, opts}} ->
       Keyword.get(opts, :constraint) == :unique
     end)
+  end
+
+  # --- Flag helpers ---
+
+  defp build_flag_report_attrs(object_uris, remote_actor, reason) do
+    base = Federation.base_url()
+    article_prefix = "#{base}/ap/articles/"
+
+    # Try to match object URIs to local articles or comments
+    {article_id, comment_id} =
+      Enum.reduce(object_uris, {nil, nil}, fn uri, {art_id, com_id} ->
+        cond do
+          # Skip the actor URI itself (Flag objects include both actor and content)
+          uri == remote_actor.ap_id ->
+            {art_id, com_id}
+
+          # Check if it matches a local article URI
+          art_id == nil && String.starts_with?(uri, article_prefix) ->
+            slug = String.replace_prefix(uri, article_prefix, "")
+
+            case Baudrate.Repo.get_by(Content.Article, slug: slug) do
+              %{id: id} -> {id, com_id}
+              nil -> {art_id, com_id}
+            end
+
+          # Check by ap_id for articles
+          art_id == nil ->
+            case Content.get_article_by_ap_id(uri) do
+              %{id: id} -> {id, com_id}
+              nil ->
+                # Check for comments
+                if com_id == nil do
+                  case Content.get_comment_by_ap_id(uri) do
+                    %{id: id} -> {art_id, id}
+                    nil -> {art_id, com_id}
+                  end
+                else
+                  {art_id, com_id}
+                end
+            end
+        end
+      end)
+
+    %{
+      reason: reason,
+      remote_actor_id: remote_actor.id,
+      article_id: article_id,
+      comment_id: comment_id
+    }
   end
 end

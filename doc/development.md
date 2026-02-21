@@ -56,7 +56,12 @@ lib/
 │   │   ├── remote_actor.ex      # RemoteActor schema (cached remote profiles)
 │   │   ├── publisher.ex         # ActivityStreams JSON builders for outgoing activities
 │   │   ├── sanitizer.ex         # Allowlist-based HTML sanitizer for federated content
-│   │   └── validator.ex         # AP input validation (URLs, sizes, attribution)
+│   │   ├── delivery_stats.ex    # Delivery queue stats and admin management
+│   │   ├── instance_stats.ex    # Per-domain instance statistics
+│   │   └── validator.ex         # AP input validation (URLs, sizes, attribution, allowlist/blocklist)
+│   ├── moderation.ex            # Moderation context: content reports, resolve/dismiss
+│   ├── moderation/
+│   │   └── report.ex            # Report schema (article, comment, remote actor targets)
 │   ├── setup.ex                 # Setup context: first-run wizard, RBAC seeding, settings
 │   └── setup/
 │       ├── permission.ex        # Permission schema (scope.action naming)
@@ -76,8 +81,10 @@ lib/
 │   │   └── session_controller.ex  # POST endpoints for session mutations
 │   ├── live/
 │   │   ├── admin/
+│   │   │   ├── federation_live.ex      # Admin federation dashboard
+│   │   │   ├── moderation_live.ex     # Moderation queue (reports)
 │   │   │   ├── pending_users_live.ex  # Admin approval of pending registrations
-│   │   │   └── settings_live.ex       # Admin site settings (name, registration mode)
+│   │   │   └── settings_live.ex       # Admin site settings (name, registration, federation)
 │   │   ├── article_live.ex      # Single article view
 │   │   ├── article_new_live.ex  # Article creation form
 │   │   ├── auth_hooks.ex        # on_mount hooks: require_auth, optional_auth, etc.
@@ -259,6 +266,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - `Update(Note/Article/Page)` — content updates with authorship check
 - `Update(Person/Group)` — actor profile refresh
 - `Delete` — soft-delete with authorship verification
+- `Flag` — incoming reports stored in local moderation queue
 
 **Outbound delivery** (via `Publisher` + `Delivery` + `DeliveryWorker`):
 - `Create(Article)` — automatically enqueued when a local user publishes an article
@@ -289,7 +297,12 @@ The `Baudrate.Federation` context handles all federation logic.
 
 **Admin controls:**
 - Federation kill switch — instance-level toggle (`ap_federation_enabled` setting); when disabled, all AP endpoints return 404, delivery worker skips, WebFinger/NodeInfo remain available for discovery
+- Federation mode — `blocklist` (default: block specific domains) or `allowlist` (only allow specific domains)
 - Domain blocklist — admin UI textarea for comma-separated blocked domains (`ap_domain_blocklist` setting); blocked domains are rejected at inbox and skipped during delivery
+- Domain allowlist — admin UI textarea for comma-separated allowed domains (`ap_domain_allowlist` setting); when in allowlist mode and empty, all domains are blocked
+- Per-board federation toggle — `ap_enabled` field on boards; when disabled, board AP endpoints return 404, delivery skips the board's followers, WebFinger/actor resolution excludes the board
+- Federation dashboard (`/admin/federation`) — known instances with stats, delivery queue management (retry/abandon), per-board federation toggles, one-click domain blocking
+- Moderation queue (`/admin/moderation`) — view/resolve/dismiss reports, delete reported content, send Flag reports to remote instances
 
 **Security:**
 - HTTP Signature verification on all inbox requests

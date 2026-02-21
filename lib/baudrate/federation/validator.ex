@@ -68,25 +68,33 @@ defmodule Baudrate.Federation.Validator do
   def validate_activity(_), do: {:error, :invalid_activity}
 
   @doc """
-  Returns true if the domain is in the blocklist.
-  The blocklist is stored as a comma-separated string in the settings table
-  under the key `"ap_domain_blocklist"`.
+  Returns true if the domain is blocked based on the current federation mode.
+
+  In `"blocklist"` mode (default), the domain is blocked if it appears in
+  the `ap_domain_blocklist` setting. In `"allowlist"` mode, the domain is
+  blocked unless it appears in the `ap_domain_allowlist` setting. When the
+  allowlist is empty in allowlist mode, all domains are blocked (safe default).
   """
   def domain_blocked?(domain) when is_binary(domain) do
-    case Setup.get_setting("ap_domain_blocklist") do
-      nil ->
-        false
+    mode = Setup.get_setting("ap_federation_mode") || "blocklist"
 
-      blocklist_str ->
-        blocked_domains =
-          blocklist_str
-          |> String.split(",", trim: true)
-          |> Enum.map(&String.trim/1)
-          |> Enum.map(&String.downcase/1)
-          |> MapSet.new()
+    case mode do
+      "allowlist" ->
+        allowed = parse_domain_list(Setup.get_setting("ap_domain_allowlist") || "")
+        allowed == MapSet.new() or not MapSet.member?(allowed, String.downcase(domain))
 
-        MapSet.member?(blocked_domains, String.downcase(domain))
+      _ ->
+        blocked = parse_domain_list(Setup.get_setting("ap_domain_blocklist") || "")
+        MapSet.member?(blocked, String.downcase(domain))
     end
+  end
+
+  defp parse_domain_list(str) do
+    str
+    |> String.split(",", trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.map(&String.downcase/1)
+    |> MapSet.new()
   end
 
   @doc """

@@ -181,7 +181,7 @@ defmodule Baudrate.Federation.Delivery do
     # Collect inboxes from board followers (public boards only)
     board_inboxes =
       article.boards
-      |> Enum.filter(&(&1.visibility == "public"))
+      |> Enum.filter(&(&1.visibility == "public" and &1.ap_enabled))
       |> Enum.flat_map(fn board ->
         board_uri = Federation.actor_uri(:board, board.slug)
         resolve_follower_inboxes(board_uri)
@@ -194,6 +194,19 @@ defmodule Baudrate.Federation.Delivery do
     else
       {:ok, 0}
     end
+  end
+
+  # --- Flag Delivery ---
+
+  @doc """
+  Delivers a Flag activity to a remote actor's inbox.
+
+  Uses the site actor as the sender.
+  """
+  def deliver_flag(flag_json, remote_actor) do
+    site_uri = Federation.actor_uri(:site, nil)
+    inbox = remote_actor.shared_inbox || remote_actor.inbox
+    enqueue(flag_json, site_uri, [inbox])
   end
 
   # --- Shared Helpers ---

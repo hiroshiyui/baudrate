@@ -589,7 +589,7 @@ defmodule Baudrate.Federation do
         <<^board_prefix::binary, slug::binary>> ->
           if Regex.match?(~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/, slug) do
             board = Repo.get_by(Baudrate.Content.Board, slug: slug)
-            if board && board.visibility == "public", do: board
+            if board && board.visibility == "public" && board.ap_enabled, do: board
           end
 
         _ ->

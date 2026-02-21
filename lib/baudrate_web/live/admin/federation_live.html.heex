@@ -1,0 +1,170 @@
+<div class="space-y-6">
+  <h1 class="text-2xl font-bold">{gettext("Federation Dashboard")}</h1>
+
+  <%!-- Delivery Queue Stats --%>
+  <div class="card bg-base-200 shadow-sm">
+    <div class="card-body">
+      <h2 class="card-title">{gettext("Delivery Queue")}</h2>
+
+      <div class="stats stats-vertical sm:stats-horizontal shadow w-full">
+        <div class="stat">
+          <div class="stat-title">{gettext("Pending")}</div>
+          <div class="stat-value text-warning">{Map.get(@delivery_counts, "pending", 0)}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-title">{gettext("Delivered")}</div>
+          <div class="stat-value text-success">{Map.get(@delivery_counts, "delivered", 0)}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-title">{gettext("Failed")}</div>
+          <div class="stat-value text-error">{Map.get(@delivery_counts, "failed", 0)}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-title">{gettext("Error Rate (24h)")}</div>
+          <div class="stat-value text-sm">{Float.round(@error_rate * 100, 1)}%</div>
+        </div>
+      </div>
+
+      <div :if={@failed_jobs != []} class="mt-4">
+        <h3 class="font-semibold mb-2">{gettext("Actionable Jobs")}</h3>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra table-sm">
+            <thead>
+              <tr>
+                <th>{gettext("Inbox")}</th>
+                <th>{gettext("Status")}</th>
+                <th>{gettext("Attempts")}</th>
+                <th>{gettext("Error")}</th>
+                <th>{gettext("Actions")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr :for={job <- @failed_jobs}>
+                <td class="font-mono text-xs max-w-xs truncate">{job.inbox_url}</td>
+                <td>
+                  <span class={["badge badge-sm", job.status == "failed" && "badge-error", job.status == "pending" && "badge-warning"]}>
+                    {job.status}
+                  </span>
+                </td>
+                <td>{job.attempts}</td>
+                <td class="text-xs max-w-xs truncate opacity-70">{job.last_error || "—"}</td>
+                <td class="flex gap-1">
+                  <button
+                    :if={job.status == "failed"}
+                    phx-click="retry_job"
+                    phx-value-id={job.id}
+                    class="btn btn-ghost btn-xs"
+                  >
+                    {gettext("Retry")}
+                  </button>
+                  <button
+                    phx-click="abandon_job"
+                    phx-value-id={job.id}
+                    class="btn btn-ghost btn-xs text-error"
+                  >
+                    {gettext("Abandon")}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%!-- Known Instances --%>
+  <div class="card bg-base-200 shadow-sm">
+    <div class="card-body">
+      <h2 class="card-title">{gettext("Known Instances")}</h2>
+
+      <div :if={@instances == []} class="text-center py-8 opacity-60">
+        {gettext("No remote instances discovered yet.")}
+      </div>
+
+      <div :if={@instances != []} class="overflow-x-auto">
+        <table class="table table-zebra">
+          <thead>
+            <tr>
+              <th>{gettext("Domain")}</th>
+              <th>{gettext("Actors")}</th>
+              <th>{gettext("Followers")}</th>
+              <th>{gettext("Content")}</th>
+              <th>{gettext("Last Seen")}</th>
+              <th>{gettext("Actions")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr :for={instance <- @instances}>
+              <td class="font-mono text-sm">{instance.domain}</td>
+              <td>{instance.actor_count}</td>
+              <td>{instance.follower_count}</td>
+              <td>{instance.article_count + instance.comment_count}</td>
+              <td class="text-sm opacity-70">
+                {if instance.last_seen, do: Calendar.strftime(instance.last_seen, "%Y-%m-%d %H:%M"), else: "—"}
+              </td>
+              <td>
+                <button
+                  phx-click="block_domain"
+                  phx-value-domain={instance.domain}
+                  data-confirm={gettext("Block all federation with %{domain}?", domain: instance.domain)}
+                  class="btn btn-error btn-xs"
+                >
+                  {gettext("Block")}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <%!-- Board Federation --%>
+  <div class="card bg-base-200 shadow-sm">
+    <div class="card-body">
+      <h2 class="card-title">{gettext("Board Federation")}</h2>
+
+      <div :if={@boards == []} class="text-center py-8 opacity-60">
+        {gettext("No boards configured.")}
+      </div>
+
+      <div :if={@boards != []} class="overflow-x-auto">
+        <table class="table table-zebra">
+          <thead>
+            <tr>
+              <th>{gettext("Board")}</th>
+              <th>{gettext("Visibility")}</th>
+              <th>{gettext("Federation")}</th>
+              <th>{gettext("Actions")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr :for={board <- @boards}>
+              <td>{board.name}</td>
+              <td>
+                <span class={["badge badge-sm", board.visibility == "public" && "badge-success", board.visibility == "private" && "badge-ghost"]}>
+                  {board.visibility}
+                </span>
+              </td>
+              <td>
+                <span class={["badge badge-sm", board.ap_enabled && "badge-success", !board.ap_enabled && "badge-ghost"]}>
+                  {if board.ap_enabled, do: gettext("Enabled"), else: gettext("Disabled")}
+                </span>
+              </td>
+              <td>
+                <button
+                  phx-click="toggle_board_federation"
+                  phx-value-id={board.id}
+                  class={["btn btn-xs", if(board.ap_enabled, do: "btn-ghost", else: "btn-primary")]}
+                >
+                  {if board.ap_enabled, do: gettext("Disable"), else: gettext("Enable")}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

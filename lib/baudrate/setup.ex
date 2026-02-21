@@ -187,6 +187,7 @@ defmodule Baudrate.Setup do
   end
 
   @valid_registration_modes ~w(open approval_required)
+  @valid_federation_modes ~w(blocklist allowlist)
 
   @doc """
   Returns a virtual changeset for admin settings (site_name, registration_mode).
@@ -198,14 +199,18 @@ defmodule Baudrate.Setup do
       site_name: :string,
       registration_mode: :string,
       ap_domain_blocklist: :string,
-      ap_federation_enabled: :string
+      ap_federation_enabled: :string,
+      ap_federation_mode: :string,
+      ap_domain_allowlist: :string
     }
 
     defaults = %{
       site_name: get_setting("site_name") || "",
       registration_mode: registration_mode(),
       ap_domain_blocklist: get_setting("ap_domain_blocklist") || "",
-      ap_federation_enabled: get_setting("ap_federation_enabled") || "true"
+      ap_federation_enabled: get_setting("ap_federation_enabled") || "true",
+      ap_federation_mode: get_setting("ap_federation_mode") || "blocklist",
+      ap_domain_allowlist: get_setting("ap_domain_allowlist") || ""
     }
 
     {defaults, types}
@@ -214,6 +219,7 @@ defmodule Baudrate.Setup do
     |> Ecto.Changeset.validate_length(:site_name, min: 1, max: 255)
     |> Ecto.Changeset.validate_inclusion(:registration_mode, @valid_registration_modes)
     |> Ecto.Changeset.validate_inclusion(:ap_federation_enabled, ["true", "false"])
+    |> Ecto.Changeset.validate_inclusion(:ap_federation_mode, @valid_federation_modes)
   end
 
   @doc """
@@ -230,6 +236,8 @@ defmodule Baudrate.Setup do
       set_setting("registration_mode", changes.registration_mode)
       set_setting("ap_domain_blocklist", changes.ap_domain_blocklist || "")
       set_setting("ap_federation_enabled", changes.ap_federation_enabled || "true")
+      set_setting("ap_federation_mode", changes.ap_federation_mode || "blocklist")
+      set_setting("ap_domain_allowlist", changes.ap_domain_allowlist || "")
       {:ok, changes}
     else
       {:error, Map.put(changeset, :action, :validate)}

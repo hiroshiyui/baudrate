@@ -1,0 +1,139 @@
+<div class="space-y-6">
+  <h1 class="text-2xl font-bold">{gettext("Moderation Queue")}</h1>
+
+  <%!-- Status Filter Tabs --%>
+  <div class="tabs tabs-boxed">
+    <button
+      phx-click="filter"
+      phx-value-status="open"
+      class={["tab", @status_filter == "open" && "tab-active"]}
+    >
+      {gettext("Open")}
+    </button>
+    <button
+      phx-click="filter"
+      phx-value-status="resolved"
+      class={["tab", @status_filter == "resolved" && "tab-active"]}
+    >
+      {gettext("Resolved")}
+    </button>
+    <button
+      phx-click="filter"
+      phx-value-status="dismissed"
+      class={["tab", @status_filter == "dismissed" && "tab-active"]}
+    >
+      {gettext("Dismissed")}
+    </button>
+  </div>
+
+  <%!-- Reports --%>
+  <div :if={@reports == []} class="text-center py-8 opacity-60">
+    {gettext("No reports with status \"%{status}\".", status: @status_filter)}
+  </div>
+
+  <div :for={report <- @reports} class="card bg-base-200 shadow-sm">
+    <div class="card-body">
+      <div class="flex justify-between items-start">
+        <div>
+          <span class={[
+            "badge badge-sm",
+            report.status == "open" && "badge-warning",
+            report.status == "resolved" && "badge-success",
+            report.status == "dismissed" && "badge-ghost"
+          ]}>
+            {report.status}
+          </span>
+          <span class="text-sm opacity-70 ml-2">
+            {Calendar.strftime(report.inserted_at, "%Y-%m-%d %H:%M")}
+          </span>
+        </div>
+        <div :if={report.reporter} class="text-sm opacity-70">
+          {gettext("Reported by")} {report.reporter.username}
+        </div>
+      </div>
+
+      <div class="mt-2">
+        <p class="font-semibold">{gettext("Reason:")}</p>
+        <p class="whitespace-pre-wrap">{report.reason}</p>
+      </div>
+
+      <%!-- Reported Content --%>
+      <div :if={report.article} class="mt-2 p-3 bg-base-300 rounded-lg">
+        <p class="text-sm font-semibold">{gettext("Reported Article:")}</p>
+        <p>{report.article.title}</p>
+        <button
+          :if={report.status == "open" and is_nil(report.article.deleted_at)}
+          phx-click="delete_content"
+          phx-value-type="article"
+          phx-value-id={report.article.id}
+          data-confirm={gettext("Delete this article?")}
+          class="btn btn-error btn-xs mt-1"
+        >
+          {gettext("Delete Article")}
+        </button>
+      </div>
+
+      <div :if={report.comment} class="mt-2 p-3 bg-base-300 rounded-lg">
+        <p class="text-sm font-semibold">{gettext("Reported Comment:")}</p>
+        <p class="text-sm">{String.slice(report.comment.body || "", 0..200)}</p>
+        <button
+          :if={report.status == "open" and is_nil(report.comment.deleted_at)}
+          phx-click="delete_content"
+          phx-value-type="comment"
+          phx-value-id={report.comment.id}
+          data-confirm={gettext("Delete this comment?")}
+          class="btn btn-error btn-xs mt-1"
+        >
+          {gettext("Delete Comment")}
+        </button>
+      </div>
+
+      <div :if={report.remote_actor} class="mt-2 p-3 bg-base-300 rounded-lg">
+        <p class="text-sm font-semibold">{gettext("Reported Actor:")}</p>
+        <p class="font-mono text-sm">{report.remote_actor.ap_id}</p>
+        <p class="text-sm opacity-70">
+          {report.remote_actor.display_name || report.remote_actor.username}@{report.remote_actor.domain}
+        </p>
+      </div>
+
+      <%!-- Resolution Info --%>
+      <div :if={report.status in ["resolved", "dismissed"] and report.resolved_by} class="mt-2 text-sm opacity-70">
+        {gettext("Handled by")} {report.resolved_by.username}
+        {if report.resolution_note, do: " — #{report.resolution_note}", else: ""}
+      </div>
+
+      <%!-- Send Flag to Remote --%>
+      <div :if={report.status == "open" and report.remote_actor} class="mt-2">
+        <button
+          phx-click="send_flag"
+          phx-value-id={report.id}
+          data-confirm={gettext("Send a Flag report to %{domain}?", domain: report.remote_actor.domain)}
+          class="btn btn-warning btn-xs"
+        >
+          {gettext("Send Flag to %{domain}", domain: report.remote_actor.domain)}
+        </button>
+      </div>
+
+      <%!-- Actions --%>
+      <div :if={report.status == "open"} class="card-actions justify-end mt-4">
+        <form phx-submit="resolve" class="flex gap-2 items-end">
+          <input type="hidden" name="report_id" value={report.id} />
+          <input
+            type="text"
+            name="note"
+            placeholder={gettext("Resolution note (optional)")}
+            class="input input-bordered input-sm w-64"
+          />
+          <button type="submit" class="btn btn-success btn-sm">{gettext("Resolve")}</button>
+        </form>
+        <button
+          phx-click="dismiss"
+          phx-value-id={report.id}
+          class="btn btn-ghost btn-sm"
+        >
+          {gettext("Dismiss")}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -105,6 +105,7 @@ defmodule BaudrateWeb.ActivityPubController do
            board when not is_nil(board) <-
              Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
            true <- board.visibility == "public",
+           true <- board.ap_enabled,
            {:ok, board} <- KeyStore.ensure_board_keypair(board) do
         conn
         |> put_resp_content_type(@activity_json)
@@ -144,7 +145,8 @@ defmodule BaudrateWeb.ActivityPubController do
   def board_outbox(conn, %{"slug" => slug} = params) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
-         true <- board.visibility == "public" do
+         true <- board.visibility == "public",
+         true <- board.ap_enabled do
       conn
       |> put_resp_content_type(@activity_json)
       |> json(Federation.board_outbox(board, params))
@@ -172,7 +174,8 @@ defmodule BaudrateWeb.ActivityPubController do
   def board_followers(conn, %{"slug" => slug}) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
-         true <- board.visibility == "public" do
+         true <- board.visibility == "public",
+         true <- board.ap_enabled do
       actor_uri = Federation.actor_uri(:board, board.slug)
 
       conn
@@ -229,7 +232,8 @@ defmodule BaudrateWeb.ActivityPubController do
   def board_inbox(conn, %{"slug" => slug}) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
-         true <- board.visibility == "public" do
+         true <- board.visibility == "public",
+         true <- board.ap_enabled do
       handle_inbox(conn, {:board, board})
     else
       _ -> conn |> put_status(404) |> json(%{error: "Not Found"})

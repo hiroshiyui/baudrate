@@ -23,6 +23,7 @@ defmodule Baudrate.Content.Board do
     field :slug, :string
     field :position, :integer, default: 0
     field :visibility, :string, default: "public"
+    field :ap_enabled, :boolean, default: true
     field :ap_public_key, :string
     field :ap_private_key_encrypted, :binary
 
@@ -43,7 +44,7 @@ defmodule Baudrate.Content.Board do
 
   def changeset(board, attrs) do
     board
-    |> cast(attrs, [:name, :description, :slug, :position, :parent_id, :visibility])
+    |> cast(attrs, [:name, :description, :slug, :position, :parent_id, :visibility, :ap_enabled])
     |> validate_required([:name, :slug])
     |> validate_inclusion(:visibility, ["public", "private"])
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,

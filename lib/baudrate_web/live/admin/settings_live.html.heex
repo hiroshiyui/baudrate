@@ -24,12 +24,28 @@
           ]}
         />
         <.input
+          field={@form[:ap_federation_mode]}
+          type="select"
+          label={gettext("Federation Mode")}
+          options={[
+            {gettext("Blocklist (block specific domains)"), "blocklist"},
+            {gettext("Allowlist (allow only specific domains)"), "allowlist"}
+          ]}
+        />
+        <.input
           field={@form[:ap_domain_blocklist]}
           type="textarea"
           label={gettext("Blocked Domains (federation)")}
           placeholder="spam.example, bad-actor.example"
         />
         <p class="text-sm opacity-60">{gettext("Comma-separated list of domains to block from federation.")}</p>
+        <.input
+          field={@form[:ap_domain_allowlist]}
+          type="textarea"
+          label={gettext("Allowed Domains (federation)")}
+          placeholder="trusted.example, friend.example"
+        />
+        <p class="text-sm opacity-60">{gettext("Comma-separated list of domains to allow. Only used in allowlist mode. When empty, all domains are blocked.")}</p>
         <div class="mt-4">
           <.button variant="primary" type="submit" phx-disable-with={gettext("Saving...")}>
             {gettext("Save")}
