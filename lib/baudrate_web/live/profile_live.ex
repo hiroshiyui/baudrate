@@ -2,14 +2,21 @@ defmodule BaudrateWeb.ProfileLive do
   @moduledoc """
   LiveView for the user profile page (`/profile`).
 
-  Displays read-only account details and avatar management for the current user.
-  `@current_user` is available via the `:require_auth` hook.
+  Displays read-only account details, avatar management, and locale preferences
+  for the current user. `@current_user` is available via the `:require_auth` hook.
+
+  ## Locale Preferences
+
+  Users can add, remove, and reorder preferred locales. Changes are persisted
+  to the database and take effect immediately via `Gettext.put_locale/1`.
+  The locale is also stored in the cookie session on next login.
   """
 
   use BaudrateWeb, :live_view
 
   alias Baudrate.Auth
   alias Baudrate.Avatar
+  alias BaudrateWeb.Locale
 
   @max_avatar_changes_per_hour 5
 
@@ -24,6 +31,8 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:totp_policy, policy)
       |> assign(:is_active, is_active)
       |> assign(:show_crop_modal, false)
+      |> assign(:preferred_locales, user.preferred_locales || [])
+      |> assign(:available_locales, Locale.available_locales())
       |> allow_upload(:avatar,
         accept: ~w(.jpg .jpeg .png .webp),
         max_entries: 1,
@@ -66,6 +75,45 @@ defmodule BaudrateWeb.ProfileLive do
           |> push_event("avatar_crop_reset", %{})
 
         {:noreply, cancel_all_uploads(socket, :avatar)}
+    end
+  end
+
+  def handle_event("add_locale", %{"locale" => locale}, socket) do
+    current = socket.assigns.preferred_locales
+
+    if locale in current do
+      {:noreply, socket}
+    else
+      save_locales(socket, current ++ [locale])
+    end
+  end
+
+  def handle_event("remove_locale", %{"locale" => locale}, socket) do
+    new_locales = Enum.reject(socket.assigns.preferred_locales, &(&1 == locale))
+    save_locales(socket, new_locales)
+  end
+
+  def handle_event("move_locale_up", %{"locale" => locale}, socket) do
+    locales = socket.assigns.preferred_locales
+    idx = Enum.find_index(locales, &(&1 == locale))
+
+    if idx && idx > 0 do
+      new_locales = swap(locales, idx, idx - 1)
+      save_locales(socket, new_locales)
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("move_locale_down", %{"locale" => locale}, socket) do
+    locales = socket.assigns.preferred_locales
+    idx = Enum.find_index(locales, &(&1 == locale))
+
+    if idx && idx < length(locales) - 1 do
+      new_locales = swap(locales, idx, idx + 1)
+      save_locales(socket, new_locales)
+    else
+      {:noreply, socket}
     end
   end
 
@@ -154,5 +202,39 @@ defmodule BaudrateWeb.ProfileLive do
       {:allow, _count} -> :ok
       {:deny, _limit} -> {:error, :rate_limited}
     end
+  end
+
+  defp save_locales(socket, new_locales) do
+    user = socket.assigns.current_user
+
+    case Auth.update_preferred_locales(user, new_locales) do
+      {:ok, updated_user} ->
+        locale =
+          case Locale.resolve_from_preferences(new_locales) do
+            nil -> Gettext.get_locale()
+            l -> l
+          end
+
+        Gettext.put_locale(locale)
+
+        socket =
+          socket
+          |> assign(:current_user, updated_user)
+          |> assign(:preferred_locales, updated_user.preferred_locales)
+          |> assign(:locale, locale)
+          |> put_flash(:info, gettext("Language preferences updated."))
+
+        {:noreply, socket}
+
+      {:error, _changeset} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to update language preferences."))}
+    end
+  end
+
+  defp swap(list, i, j) do
+    list
+    |> List.replace_at(i, Enum.at(list, j))
+    |> List.replace_at(j, Enum.at(list, i))
   end
 end

@@ -454,12 +454,12 @@ msgstr "您將無法再次查看這些救援碼！"
 msgid "Are you sure you want to remove your avatar?"
 msgstr "確定要移除頭像嗎？"
 
-#: lib/baudrate_web/live/profile_live.ex:83
+#: lib/baudrate_web/live/profile_live.ex:131
 #, elixir-autogen, elixir-format
 msgid "Avatar removed."
 msgstr "頭像已移除。"
 
-#: lib/baudrate_web/live/profile_live.ex:114
+#: lib/baudrate_web/live/profile_live.ex:162
 #, elixir-autogen, elixir-format
 msgid "Avatar updated successfully."
 msgstr "頭像已成功更新。"
@@ -479,18 +479,18 @@ msgstr "變更頭像"
 msgid "Crop Avatar"
 msgstr "裁剪頭像"
 
-#: lib/baudrate_web/live/profile_live.ex:132
+#: lib/baudrate_web/live/profile_live.ex:180
 #, elixir-autogen, elixir-format
 msgid "Failed to process avatar image."
 msgstr "處理頭像圖片失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:147
+#: lib/baudrate_web/live/profile_live.ex:195
 #, elixir-autogen, elixir-format
 msgid "Image file is too large."
 msgstr "圖片檔案過大。"
 
-#: lib/baudrate_web/live/profile_live.ex:123
-#: lib/baudrate_web/live/profile_live.ex:148
+#: lib/baudrate_web/live/profile_live.ex:171
+#: lib/baudrate_web/live/profile_live.ex:196
 #, elixir-autogen, elixir-format
 msgid "Invalid image file."
 msgstr "無效的圖片檔案。"
@@ -505,18 +505,18 @@ msgstr "移除頭像"
 msgid "Save"
 msgstr "儲存"
 
-#: lib/baudrate_web/live/profile_live.ex:64
-#: lib/baudrate_web/live/profile_live.ex:89
+#: lib/baudrate_web/live/profile_live.ex:73
+#: lib/baudrate_web/live/profile_live.ex:137
 #, elixir-autogen, elixir-format
 msgid "Too many avatar changes. Please try again later."
 msgstr "頭像變更次數過多，請稍後再試。"
 
-#: lib/baudrate_web/live/profile_live.ex:149
+#: lib/baudrate_web/live/profile_live.ex:197
 #, elixir-autogen, elixir-format
 msgid "Too many files."
 msgstr "檔案數量過多。"
 
-#: lib/baudrate_web/live/profile_live.ex:150
+#: lib/baudrate_web/live/profile_live.ex:198
 #, elixir-autogen, elixir-format
 msgid "Upload error."
 msgstr "上傳錯誤。"
@@ -666,3 +666,28 @@ msgstr "您的帳號尚待審核。"
 #, elixir-autogen, elixir-format
 msgid "by %{author}"
 msgstr "由 %{author} 發表"
+
+#: lib/baudrate_web/live/profile_live.html.heex:166
+#, elixir-autogen, elixir-format
+msgid "Add Language"
+msgstr "新增語言"
+
+#: lib/baudrate_web/live/profile_live.ex:231
+#, elixir-autogen, elixir-format
+msgid "Failed to update language preferences."
+msgstr "更新語言偏好失敗。"
+
+#: lib/baudrate_web/live/profile_live.ex:225
+#, elixir-autogen, elixir-format
+msgid "Language preferences updated."
+msgstr "語言偏好已更新。"
+
+#: lib/baudrate_web/live/profile_live.html.heex:114
+#, elixir-autogen, elixir-format
+msgid "Preferred Languages"
+msgstr "偏好語言"
+
+#: lib/baudrate_web/live/profile_live.html.heex:117
+#, elixir-autogen, elixir-format
+msgid "Using browser language settings."
+msgstr "使用瀏覽器語言設定。"

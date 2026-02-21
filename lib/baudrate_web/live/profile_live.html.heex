@@ -108,6 +108,79 @@
           {Calendar.strftime(@current_user.inserted_at, "%Y-%m-%d")}
         </div>
       </div>
+
+      <%!-- Preferred Languages section --%>
+      <div>
+        <div class="text-sm text-base-content/70 mb-2">{gettext("Preferred Languages")}</div>
+        <%= if @preferred_locales == [] do %>
+          <div class="text-sm text-base-content/50 italic">
+            {gettext("Using browser language settings.")}
+          </div>
+        <% else %>
+          <div class="space-y-1">
+            <%= for {locale, idx} <- Enum.with_index(@preferred_locales) do %>
+              <div class="flex items-center gap-2">
+                <span class="badge badge-sm badge-neutral">{idx + 1}</span>
+                <span class="font-semibold">
+                  {BaudrateWeb.Locale.locale_display_name(locale)}
+                </span>
+                <span class="text-xs text-base-content/50">{locale}</span>
+                <div class="ml-auto flex gap-1">
+                  <button
+                    :if={idx > 0}
+                    type="button"
+                    class="btn btn-xs btn-ghost"
+                    phx-click="move_locale_up"
+                    phx-value-locale={locale}
+                  >
+                    &uarr;
+                  </button>
+                  <button
+                    :if={idx < length(@preferred_locales) - 1}
+                    type="button"
+                    class="btn btn-xs btn-ghost"
+                    phx-click="move_locale_down"
+                    phx-value-locale={locale}
+                  >
+                    &darr;
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-xs btn-ghost btn-error"
+                    phx-click="remove_locale"
+                    phx-value-locale={locale}
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <% unselected =
+          Enum.reject(@available_locales, fn {code, _} -> code in @preferred_locales end) %>
+        <%= if unselected != [] do %>
+          <div class="dropdown mt-2">
+            <div tabindex="0" role="button" class="btn btn-sm btn-outline">
+              {gettext("Add Language")}
+            </div>
+            <ul
+              tabindex="0"
+              class="dropdown-content menu bg-base-200 rounded-box z-10 w-52 p-2 shadow-sm"
+            >
+              <%= for {code, name} <- unselected do %>
+                <li>
+                  <button type="button" phx-click="add_locale" phx-value-locale={code}>
+                    {name}
+                    <span class="text-xs text-base-content/50">{code}</span>
+                  </button>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+      </div>
     </div>
   </div>
 </div>
