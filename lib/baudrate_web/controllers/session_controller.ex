@@ -312,6 +312,7 @@ defmodule BaudrateWeb.SessionController do
     |> put_session(:session_token, session_token)
     |> put_session(:refresh_token, refresh_token)
     |> put_session(:refreshed_at, DateTime.utc_now() |> DateTime.to_iso8601())
+    |> put_session(:preferred_locales, user.preferred_locales || [])
     |> redirect(to: redirect_to)
   end
 

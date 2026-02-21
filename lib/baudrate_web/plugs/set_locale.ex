@@ -1,16 +1,14 @@
 defmodule BaudrateWeb.Plugs.SetLocale do
   @moduledoc """
-  Plug that detects the user's preferred locale from the `Accept-Language`
-  header and sets it for Gettext.
+  Plug that detects the user's preferred locale and sets it for Gettext.
 
-  ## Locale Matching Algorithm
+  ## Locale Resolution Priority
 
-    1. Parse the `Accept-Language` header into `{tag, quality}` pairs
-    2. Sort by quality value descending (highest preference first)
-    3. Normalize tags: replace hyphens with underscores (`zh-TW` → `zh_TW`)
-    4. For each preferred locale, attempt an exact match against known Gettext locales
-    5. If no exact match, try a prefix match (e.g., `zh` matches `zh_TW`)
-    6. If no match at all, fall back to the default Gettext locale
+    1. User's `preferred_locales` from the cookie session (stored at login).
+       Resolved via `BaudrateWeb.Locale.resolve_from_preferences/1`.
+    2. `Accept-Language` header — parsed, sorted by quality, matched against
+       known Gettext locales (exact match first, then prefix fallback).
+    3. Default Gettext locale (`"en"`).
 
   The detected locale is assigned to `conn.assigns.locale` for use in templates.
   """
@@ -32,6 +30,24 @@ defmodule BaudrateWeb.Plugs.SetLocale do
   end
 
   defp detect_locale(conn) do
+    # 1. Check user's preferred_locales from session
+    case conn |> Plug.Conn.get_session(:preferred_locales) |> resolve_session_locales() do
+      nil ->
+        # 2. Fall back to Accept-Language header
+        detect_from_accept_language(conn)
+
+      locale ->
+        locale
+    end
+  end
+
+  defp resolve_session_locales(locales) when is_list(locales) and locales != [] do
+    BaudrateWeb.Locale.resolve_from_preferences(locales)
+  end
+
+  defp resolve_session_locales(_), do: nil
+
+  defp detect_from_accept_language(conn) do
     default = Gettext.get_locale()
     known = Gettext.known_locales(BaudrateWeb.Gettext)
 

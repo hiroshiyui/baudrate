@@ -7,10 +7,13 @@ defmodule BaudrateWeb.AuthHooks do
     * `:require_auth` — requires a fully authenticated session (`session_token`
       present and valid). Used for the `:authenticated` live_session. Assigns
       `@current_user` on success, redirects to `/login` on failure.
+      Also resolves the user's preferred locale from `user.preferred_locales`
+      and sets Gettext locale + `@locale` assign.
 
     * `:require_password_auth` — requires password-level auth only (`user_id`
       in session). Used for the `:totp` live_session where the user has passed
       password auth but hasn't completed TOTP yet. Assigns `@current_user`.
+      Also resolves the user's preferred locale.
 
     * `:redirect_if_authenticated` — if the user already has a valid
       `session_token`, redirects to `/`. Used for the `:public` live_session
@@ -28,7 +31,14 @@ defmodule BaudrateWeb.AuthHooks do
     if session_token do
       case Auth.get_user_by_session_token(session_token) do
         {:ok, user} ->
-          {:cont, assign(socket, :current_user, user)}
+          locale = resolve_user_locale(user)
+
+          socket =
+            socket
+            |> assign(:current_user, user)
+            |> assign(:locale, locale)
+
+          {:cont, socket}
 
         {:error, _reason} ->
           {:halt, redirect(socket, to: "/login")}
@@ -45,7 +55,14 @@ defmodule BaudrateWeb.AuthHooks do
       user = Auth.get_user(user_id)
 
       if user do
-        {:cont, assign(socket, :current_user, user)}
+        locale = resolve_user_locale(user)
+
+        socket =
+          socket
+          |> assign(:current_user, user)
+          |> assign(:locale, locale)
+
+        {:cont, socket}
       else
         {:halt, redirect(socket, to: "/login")}
       end
@@ -64,6 +81,17 @@ defmodule BaudrateWeb.AuthHooks do
       end
     else
       {:cont, socket}
+    end
+  end
+
+  defp resolve_user_locale(user) do
+    case BaudrateWeb.Locale.resolve_from_preferences(user.preferred_locales) do
+      nil ->
+        Gettext.get_locale()
+
+      locale ->
+        Gettext.put_locale(locale)
+        locale
     end
   end
 end
