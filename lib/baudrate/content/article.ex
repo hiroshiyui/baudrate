@@ -3,13 +3,15 @@ defmodule Baudrate.Content.Article do
   Schema for forum articles (posts).
 
   An article belongs to an author (user) and can be cross-posted to
-  multiple boards via the `board_articles` join table.
+  multiple boards via the `board_articles` join table. Remote articles
+  received via ActivityPub are tracked by `ap_id` and `remote_actor_id`.
+  Soft-delete is handled via `deleted_at`.
   """
 
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Baudrate.Content.{Board, BoardArticle}
+  alias Baudrate.Content.{ArticleLike, Board, BoardArticle, Comment}
   alias Baudrate.Federation.RemoteActor
 
   schema "articles" do
@@ -19,10 +21,13 @@ defmodule Baudrate.Content.Article do
     field :pinned, :boolean, default: false
     field :locked, :boolean, default: false
     field :ap_id, :string
+    field :deleted_at, :utc_datetime
 
     belongs_to :user, Baudrate.Setup.User
     belongs_to :remote_actor, RemoteActor
     has_many :board_articles, BoardArticle
+    has_many :comments, Comment
+    has_many :likes, ArticleLike
     many_to_many :boards, Board, join_through: "board_articles"
 
     timestamps(type: :utc_datetime)
@@ -37,5 +42,33 @@ defmodule Baudrate.Content.Article do
     )
     |> assoc_constraint(:user)
     |> unique_constraint(:slug)
+  end
+
+  @doc "Changeset for remote articles received via ActivityPub."
+  def remote_changeset(article, attrs) do
+    article
+    |> cast(attrs, [:title, :body, :slug, :ap_id, :remote_actor_id])
+    |> validate_required([:title, :body, :slug, :ap_id, :remote_actor_id])
+    |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
+      message: "must be lowercase alphanumeric with hyphens"
+    )
+    |> foreign_key_constraint(:remote_actor_id)
+    |> unique_constraint(:slug)
+    |> unique_constraint(:ap_id)
+  end
+
+  @doc "Changeset for updating remote article content."
+  def update_remote_changeset(article, attrs) do
+    article
+    |> cast(attrs, [:title, :body])
+    |> validate_required([:title, :body])
+  end
+
+  @doc "Changeset for soft-deleting an article."
+  def soft_delete_changeset(article) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    article
+    |> change(deleted_at: now)
   end
 end
