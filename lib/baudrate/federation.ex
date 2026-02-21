@@ -16,6 +16,12 @@ defmodule Baudrate.Federation do
   delete articles, activities are pushed to remote followers' inboxes
   via a DB-backed delivery queue with exponential backoff retry.
 
+  Phase 4a adds Mastodon/Lemmy compatibility: Lemmy `Page` objects are
+  treated as `Article`, `Announce` with embedded object maps is supported,
+  `attributedTo` arrays are handled, `sensitive`/`summary` content warnings
+  are preserved, `<span>` tags with safe classes are allowed through the
+  sanitizer, and outbound Note/Article objects include `to`/`cc` addressing.
+
   Private boards are excluded from all federation endpoints — WebFinger,
   actor profiles, outbox, inbox, followers, and audience resolution all
   return 404 or skip private boards. Articles exclusively in private
