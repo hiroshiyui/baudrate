@@ -1,5 +1,5 @@
 <div class="mx-auto max-w-2xl">
-  <h1 class="text-2xl font-bold mb-6">{gettext("Search Articles")}</h1>
+  <h1 class="text-2xl font-bold mb-6">{gettext("Search")}</h1>
 
   <form phx-submit="search" class="mb-6">
     <div class="join w-full">
@@ -17,15 +17,36 @@
     </div>
   </form>
 
-  <div :if={@query != "" && @articles == []} class="text-base-content/50 text-center py-8">
+  <div :if={@query != ""} role="tablist" class="tabs tabs-bordered mb-4">
+    <.link
+      patch={~p"/search?#{%{q: @query, tab: "articles"}}"}
+      role="tab"
+      class={"tab #{if @tab == "articles", do: "tab-active"}"}
+    >
+      {gettext("Articles")}
+    </.link>
+    <.link
+      patch={~p"/search?#{%{q: @query, tab: "comments"}}"}
+      role="tab"
+      class={"tab #{if @tab == "comments", do: "tab-active"}"}
+    >
+      {gettext("Comments")}
+    </.link>
+  </div>
+
+  <div :if={@query != "" && @tab == "articles" && @articles == []} class="text-base-content/50 text-center py-8">
     {gettext("No articles found for \"%{query}\".", query: @query)}
+  </div>
+
+  <div :if={@query != "" && @tab == "comments" && @comments == []} class="text-base-content/50 text-center py-8">
+    {gettext("No comments found for \"%{query}\".", query: @query)}
   </div>
 
   <div :if={@query != "" && @total > 0} class="text-sm text-base-content/70 mb-4">
     {ngettext("1 result", "%{count} results", @total)}
   </div>
 
-  <div :if={@articles != []} class="space-y-2">
+  <div :if={@tab == "articles" && @articles != []} class="space-y-2">
     <div :for={article <- @articles} class="card bg-base-200 shadow-sm">
       <div class="card-body p-4">
         <.link navigate={~p"/articles/#{article.slug}"} class="card-title text-base link link-hover">
@@ -45,11 +66,31 @@
     </div>
   </div>
 
+  <div :if={@tab == "comments" && @comments != []} class="space-y-2">
+    <div :for={comment <- @comments} class="card bg-base-200 shadow-sm">
+      <div class="card-body p-4">
+        <.link navigate={~p"/articles/#{comment.article.slug}"} class="card-title text-base link link-hover">
+          {comment.article.title}
+        </.link>
+        <p class="text-sm line-clamp-2">{String.slice(comment.body, 0..200)}</p>
+        <div class="text-sm text-base-content/70">
+          <span :if={comment.user}>
+            {gettext("by %{author}", author: comment.user.username)} &middot;
+          </span>
+          <span :if={comment.remote_actor}>
+            {comment.remote_actor.display_name || comment.remote_actor.preferred_username} &middot;
+          </span>
+          <span>{Calendar.strftime(comment.inserted_at, "%Y-%m-%d %H:%M")}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <.pagination
-    :if={@articles != [] && @total_pages > 1}
+    :if={@total_pages > 1}
     page={@page}
     total_pages={@total_pages}
     path={~p"/search"}
-    params={%{"q" => @query}}
+    params={%{"q" => @query, "tab" => @tab}}
   />
 </div>

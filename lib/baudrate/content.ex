@@ -412,7 +412,10 @@ defmodule Baudrate.Content do
   @doc """
   Full-text search across articles by title and body.
 
-  Uses PostgreSQL `websearch_to_tsquery` for natural search syntax.
+  Uses a dual strategy: PostgreSQL `websearch_to_tsquery` for English text,
+  and trigram `ILIKE` for CJK (Chinese, Japanese, Korean) queries. The strategy
+  is auto-detected based on whether the query contains CJK characters.
+
   Only searches non-deleted articles in boards the user can view.
 
   ## Options
@@ -430,16 +433,16 @@ defmodule Baudrate.Content do
     user = Keyword.get(opts, :user)
     allowed_roles = allowed_view_roles(user)
 
+    {where_clause, order_clause} = article_search_clauses(query_string)
+
     base_query =
       from(a in Article,
         join: ba in BoardArticle,
         on: ba.article_id == a.id,
         join: b in Board,
         on: b.id == ba.board_id,
-        where:
-          is_nil(a.deleted_at) and
-            b.min_role_to_view in ^allowed_roles and
-            fragment("?.search_vector @@ websearch_to_tsquery('english', ?)", a, ^query_string),
+        where: is_nil(a.deleted_at) and b.min_role_to_view in ^allowed_roles,
+        where: ^where_clause,
         distinct: a.id
       )
 
@@ -451,15 +454,10 @@ defmodule Baudrate.Content do
         on: ba.article_id == a.id,
         join: b in Board,
         on: b.id == ba.board_id,
-        where:
-          is_nil(a.deleted_at) and
-            b.min_role_to_view in ^allowed_roles and
-            fragment("?.search_vector @@ websearch_to_tsquery('english', ?)", a, ^query_string),
+        where: is_nil(a.deleted_at) and b.min_role_to_view in ^allowed_roles,
+        where: ^where_clause,
         distinct: a.id,
-        order_by: [
-          desc: fragment("ts_rank(?.search_vector, websearch_to_tsquery('english', ?))", a, ^query_string),
-          desc: a.inserted_at
-        ],
+        order_by: ^order_clause,
         offset: ^offset,
         limit: ^per_page,
         preload: [:user, :boards]
@@ -475,6 +473,126 @@ defmodule Baudrate.Content do
       per_page: per_page,
       total_pages: total_pages
     }
+  end
+
+  defp article_search_clauses(query_string) do
+    if contains_cjk?(query_string) do
+      pattern = "%#{sanitize_like(query_string)}%"
+
+      where =
+        dynamic([a], ilike(a.title, ^pattern) or ilike(a.body, ^pattern))
+
+      order = [desc: dynamic([a], a.inserted_at)]
+      {where, order}
+    else
+      where =
+        dynamic(
+          [a],
+          fragment(
+            "?.search_vector @@ websearch_to_tsquery('english', ?)",
+            a,
+            ^query_string
+          )
+        )
+
+      order = [
+        desc:
+          dynamic(
+            [a],
+            fragment(
+              "ts_rank(?.search_vector, websearch_to_tsquery('english', ?))",
+              a,
+              ^query_string
+            )
+          ),
+        desc: dynamic([a], a.inserted_at)
+      ]
+
+      {where, order}
+    end
+  end
+
+  @doc """
+  Full-text search across comments by body.
+
+  Uses trigram `ILIKE` for both CJK and English queries (comments have no
+  tsvector column). Only searches non-deleted comments on non-deleted articles
+  in boards the user can view.
+
+  ## Options
+
+    * `:page` — page number (default 1)
+    * `:per_page` — comments per page (default #{@per_page})
+    * `:user` — current user (nil for guests)
+
+  Returns `%{comments, total, page, per_page, total_pages}`.
+  """
+  def search_comments(query_string, opts \\ []) do
+    page = max(Keyword.get(opts, :page, 1), 1)
+    per_page = Keyword.get(opts, :per_page, @per_page)
+    offset = (page - 1) * per_page
+    user = Keyword.get(opts, :user)
+    allowed_roles = allowed_view_roles(user)
+
+    pattern = "%#{sanitize_like(query_string)}%"
+
+    base_query =
+      from(c in Comment,
+        join: a in Article,
+        on: a.id == c.article_id,
+        join: ba in BoardArticle,
+        on: ba.article_id == a.id,
+        join: b in Board,
+        on: b.id == ba.board_id,
+        where:
+          is_nil(c.deleted_at) and is_nil(a.deleted_at) and
+            b.min_role_to_view in ^allowed_roles,
+        where: ilike(c.body, ^pattern),
+        distinct: c.id
+      )
+
+    total = Repo.one(from(q in subquery(base_query), select: count()))
+
+    comments =
+      from(c in Comment,
+        join: a in Article,
+        on: a.id == c.article_id,
+        join: ba in BoardArticle,
+        on: ba.article_id == a.id,
+        join: b in Board,
+        on: b.id == ba.board_id,
+        where:
+          is_nil(c.deleted_at) and is_nil(a.deleted_at) and
+            b.min_role_to_view in ^allowed_roles,
+        where: ilike(c.body, ^pattern),
+        distinct: c.id,
+        order_by: [desc: c.inserted_at],
+        offset: ^offset,
+        limit: ^per_page,
+        preload: [:user, :remote_actor, article: :boards]
+      )
+      |> Repo.all()
+
+    total_pages = max(ceil(total / per_page), 1)
+
+    %{
+      comments: comments,
+      total: total,
+      page: page,
+      per_page: per_page,
+      total_pages: total_pages
+    }
+  end
+
+  defp contains_cjk?(str) do
+    String.match?(str, ~r/[\p{Han}\p{Hiragana}\p{Katakana}\p{Hangul}]/u)
+  end
+
+  defp sanitize_like(str) do
+    str
+    |> String.replace("\\", "\\\\")
+    |> String.replace("%", "\\%")
+    |> String.replace("_", "\\_")
   end
 
   defp allowed_view_roles(nil), do: ["guest"]

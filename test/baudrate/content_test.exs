@@ -588,6 +588,218 @@ defmodule Baudrate.ContentTest do
     end
   end
 
+  # --- Search ---
+
+  describe "search_articles/2" do
+    test "English query returns matching articles" do
+      user = create_user("user")
+      board = create_board(%{name: "Search Board", slug: "search-board", min_role_to_view: "guest"})
+
+      {:ok, %{article: _}} =
+        Content.create_article(
+          %{title: "Elixir Tutorial", body: "Learn Elixir programming", slug: "elixir-tut", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, %{article: _}} =
+        Content.create_article(
+          %{title: "Phoenix Guide", body: "Building web apps", slug: "phoenix-guide", user_id: user.id},
+          [board.id]
+        )
+
+      result = Content.search_articles("Elixir", user: user)
+      assert result.total >= 1
+      assert Enum.any?(result.articles, &(&1.title == "Elixir Tutorial"))
+    end
+
+    test "CJK query returns matching articles" do
+      user = create_user("user")
+      board = create_board(%{name: "CJK Board", slug: "cjk-board", min_role_to_view: "guest"})
+
+      {:ok, %{article: _}} =
+        Content.create_article(
+          %{title: "Elixir入門ガイド", body: "Elixirの基本", slug: "elixir-cjk", user_id: user.id},
+          [board.id]
+        )
+
+      result = Content.search_articles("入門", user: user)
+      assert result.total >= 1
+      assert Enum.any?(result.articles, &(&1.title == "Elixir入門ガイド"))
+    end
+
+    test "respects board visibility for guests" do
+      user = create_user("user")
+      public_board = create_board(%{name: "Public", slug: "pub-search", min_role_to_view: "guest"})
+      private_board = create_board(%{name: "Private", slug: "priv-search", min_role_to_view: "user"})
+
+      {:ok, %{article: _}} =
+        Content.create_article(
+          %{title: "Public Article", body: "visible content", slug: "pub-art", user_id: user.id},
+          [public_board.id]
+        )
+
+      {:ok, %{article: _}} =
+        Content.create_article(
+          %{title: "Private Article", body: "hidden content", slug: "priv-art", user_id: user.id},
+          [private_board.id]
+        )
+
+      # Guest search — should only see public board articles
+      result = Content.search_articles("Article", user: nil)
+      titles = Enum.map(result.articles, & &1.title)
+      assert "Public Article" in titles
+      refute "Private Article" in titles
+    end
+
+    test "returns empty for non-matching query" do
+      user = create_user("user")
+      board = create_board(%{name: "Empty Search", slug: "empty-search", min_role_to_view: "guest"})
+
+      {:ok, _} =
+        Content.create_article(
+          %{title: "Some Title", body: "Some body", slug: "some-art", user_id: user.id},
+          [board.id]
+        )
+
+      result = Content.search_articles("zzzznonexistent", user: user)
+      assert result.total == 0
+      assert result.articles == []
+    end
+
+    test "pagination works" do
+      user = create_user("user")
+      board = create_board(%{name: "Paginated", slug: "paginated-search", min_role_to_view: "guest"})
+
+      for i <- 1..5 do
+        {:ok, _} =
+          Content.create_article(
+            %{title: "Batch Article #{i}", body: "batch content", slug: "batch-#{i}", user_id: user.id},
+            [board.id]
+          )
+      end
+
+      result = Content.search_articles("batch", user: user, per_page: 2, page: 1)
+      assert length(result.articles) == 2
+      assert result.total == 5
+      assert result.total_pages == 3
+
+      result2 = Content.search_articles("batch", user: user, per_page: 2, page: 3)
+      assert length(result2.articles) == 1
+    end
+  end
+
+  describe "search_comments/2" do
+    test "English query matches comment body" do
+      user = create_user("user")
+      board = create_board(%{name: "Cmt Search", slug: "cmt-search", min_role_to_view: "guest"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Article With Comments", body: "body", slug: "cmt-search-art", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, _} =
+        Content.create_comment(%{
+          "body" => "This is a great discussion about testing",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      result = Content.search_comments("discussion", user: user)
+      assert result.total >= 1
+      assert Enum.any?(result.comments, &String.contains?(&1.body, "discussion"))
+    end
+
+    test "CJK query matches comment body" do
+      user = create_user("user")
+      board = create_board(%{name: "CJK Cmt", slug: "cjk-cmt", min_role_to_view: "guest"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "CJK Article", body: "body", slug: "cjk-cmt-art", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, _} =
+        Content.create_comment(%{
+          "body" => "これは素晴らしい記事です",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      result = Content.search_comments("素晴らしい", user: user)
+      assert result.total >= 1
+      assert Enum.any?(result.comments, &String.contains?(&1.body, "素晴らしい"))
+    end
+
+    test "respects board visibility" do
+      user = create_user("user")
+      public_board = create_board(%{name: "Pub Cmt", slug: "pub-cmt-search", min_role_to_view: "guest"})
+      private_board = create_board(%{name: "Priv Cmt", slug: "priv-cmt-search", min_role_to_view: "user"})
+
+      {:ok, %{article: pub_article}} =
+        Content.create_article(
+          %{title: "Pub Art", body: "body", slug: "pub-cmt-art", user_id: user.id},
+          [public_board.id]
+        )
+
+      {:ok, %{article: priv_article}} =
+        Content.create_article(
+          %{title: "Priv Art", body: "body", slug: "priv-cmt-art", user_id: user.id},
+          [private_board.id]
+        )
+
+      {:ok, _} =
+        Content.create_comment(%{
+          "body" => "Public board comment searchable",
+          "article_id" => pub_article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, _} =
+        Content.create_comment(%{
+          "body" => "Private board comment searchable",
+          "article_id" => priv_article.id,
+          "user_id" => user.id
+        })
+
+      # Guest search — should only see comments in public boards
+      result = Content.search_comments("searchable", user: nil)
+      assert result.total == 1
+      assert hd(result.comments).body =~ "Public"
+    end
+
+    test "excludes soft-deleted comments" do
+      user = create_user("user")
+      board = create_board(%{name: "Del Cmt Search", slug: "del-cmt-search", min_role_to_view: "guest"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Art Del Cmt", body: "body", slug: "del-cmt-art", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "This comment will be deleted searchterm",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      Content.soft_delete_comment(comment)
+
+      result = Content.search_comments("searchterm", user: user)
+      assert result.total == 0
+    end
+
+    test "returns empty for non-matching query" do
+      result = Content.search_comments("zzzznonexistent", user: nil)
+      assert result.total == 0
+      assert result.comments == []
+    end
+  end
+
   # --- SysOp Board ---
 
   describe "seed_sysop_board/1" do

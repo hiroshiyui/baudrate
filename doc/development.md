@@ -310,6 +310,34 @@ implemented via `deleted_at` timestamps on both articles and comments.
 Article likes track favorites from local users and remote actors, with
 partial unique indexes enforcing one-like-per-actor-per-article.
 
+### Search
+
+Full-text search is available at `/search` for both articles and comments,
+with a tabbed UI. Search uses a dual strategy to support both English and CJK
+(Chinese, Japanese, Korean) text:
+
+| Strategy | Used for | Mechanism |
+|----------|----------|-----------|
+| tsvector | English article queries | `websearch_to_tsquery('english', ...)` on a `GENERATED ALWAYS AS STORED` tsvector column |
+| Trigram ILIKE | CJK article queries, all comment queries | `pg_trgm` GIN indexes on `title`, `body` (articles) and `body` (comments) |
+
+The strategy is auto-detected per query: if the search string contains CJK
+Unicode characters (`\p{Han}`, `\p{Hiragana}`, `\p{Katakana}`, `\p{Hangul}`),
+the trigram ILIKE path is used; otherwise, the tsvector path is used.
+
+Comments always use trigram ILIKE (no tsvector column) since comment bodies are
+short and a trigram GIN index is efficient for both CJK and English.
+
+Key functions in `Content`:
+
+- `search_articles/2` — dual-path article search with pagination and board visibility
+- `search_comments/2` — trigram ILIKE comment search with pagination and board visibility
+- `contains_cjk?/1` — detects CJK characters in search query (private)
+- `sanitize_like/1` — escapes `%`, `_`, `\` for safe ILIKE queries (private)
+
+User input is escaped via `sanitize_like/1` before interpolation into ILIKE
+patterns to prevent SQL wildcard injection.
+
 ### User Public Profiles
 
 Public profile pages are available at `/users/:username` for any active user.

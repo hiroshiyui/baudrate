@@ -703,7 +703,8 @@ msgstr "アカウントは管理者の承認待ちです。"
 msgid "Your account is pending approval."
 msgstr "アカウントは承認待ちです。"
 
-#: lib/baudrate_web/live/search_live.html.heex:36
+#: lib/baudrate_web/live/search_live.html.heex:57
+#: lib/baudrate_web/live/search_live.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "by %{author}"
 msgstr "%{author} による投稿"
@@ -1181,7 +1182,7 @@ msgstr "ログイン"
 msgid "to participate."
 msgstr "して参加しましょう。"
 
-#: lib/baudrate_web/live/search_live.html.heex:25
+#: lib/baudrate_web/live/search_live.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "1 result"
 msgid_plural "%{count} results"
@@ -1213,6 +1214,7 @@ msgid "Comment posted."
 msgstr "コメントを投稿しました。"
 
 #: lib/baudrate_web/live/article_live.html.heex:146
+#: lib/baudrate_web/live/search_live.html.heex:33
 #: lib/baudrate_web/live/user_profile_live.html.heex:19
 #, elixir-autogen, elixir-format
 msgid "Comments"
@@ -1255,7 +1257,7 @@ msgstr "ファイルが大きすぎます（上限 10 MB）"
 msgid "File type not accepted"
 msgstr "対応していないファイル形式です"
 
-#: lib/baudrate_web/live/search_live.html.heex:21
+#: lib/baudrate_web/live/search_live.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "No articles found for \"%{query}\"."
 msgstr "「%{query}」に一致する記事が見つかりません。"
@@ -1293,14 +1295,10 @@ msgstr "変更を保存"
 #: lib/baudrate_web/components/layouts.ex:45
 #: lib/baudrate_web/components/layouts.ex:105
 #: lib/baudrate_web/components/layouts.ex:116
+#: lib/baudrate_web/live/search_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Search"
 msgstr "検索"
-
-#: lib/baudrate_web/live/search_live.html.heex:2
-#, elixir-autogen, elixir-format
-msgid "Search Articles"
-msgstr "記事を検索"
 
 #: lib/baudrate_web/live/search_live.html.heex:10
 #, elixir-autogen, elixir-format
@@ -1689,6 +1687,7 @@ msgstr "登録には招待コードが必要です。"
 msgid "Approve User"
 msgstr "ユーザーを承認"
 
+#: lib/baudrate_web/live/search_live.html.heex:26
 #: lib/baudrate_web/live/user_profile_live.html.heex:15
 #, elixir-autogen, elixir-format
 msgid "Articles"
@@ -2179,3 +2178,8 @@ msgstr "ユーザー"
 #, elixir-autogen, elixir-format
 msgid "View / Post"
 msgstr "閲覧 / 投稿"
+
+#: lib/baudrate_web/live/search_live.html.heex:42
+#, elixir-autogen, elixir-format
+msgid "No comments found for \"%{query}\"."
+msgstr "「%{query}」に一致するコメントが見つかりません。"

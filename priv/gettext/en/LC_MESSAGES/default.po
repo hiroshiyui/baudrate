@@ -703,7 +703,8 @@ msgstr ""
 msgid "Your account is pending approval."
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:36
+#: lib/baudrate_web/live/search_live.html.heex:57
+#: lib/baudrate_web/live/search_live.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "by %{author}"
 msgstr ""
@@ -1181,7 +1182,7 @@ msgstr ""
 msgid "to participate."
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:25
+#: lib/baudrate_web/live/search_live.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "1 result"
 msgid_plural "%{count} results"
@@ -1214,6 +1215,7 @@ msgid "Comment posted."
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:146
+#: lib/baudrate_web/live/search_live.html.heex:33
 #: lib/baudrate_web/live/user_profile_live.html.heex:19
 #, elixir-autogen, elixir-format
 msgid "Comments"
@@ -1256,7 +1258,7 @@ msgstr ""
 msgid "File type not accepted"
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:21
+#: lib/baudrate_web/live/search_live.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "No articles found for \"%{query}\"."
 msgstr ""
@@ -1294,13 +1296,9 @@ msgstr ""
 #: lib/baudrate_web/components/layouts.ex:45
 #: lib/baudrate_web/components/layouts.ex:105
 #: lib/baudrate_web/components/layouts.ex:116
-#, elixir-autogen, elixir-format
-msgid "Search"
-msgstr ""
-
 #: lib/baudrate_web/live/search_live.html.heex:2
 #, elixir-autogen, elixir-format
-msgid "Search Articles"
+msgid "Search"
 msgstr ""
 
 #: lib/baudrate_web/live/search_live.html.heex:10
@@ -1690,6 +1688,7 @@ msgstr ""
 msgid "Approve User"
 msgstr ""
 
+#: lib/baudrate_web/live/search_live.html.heex:26
 #: lib/baudrate_web/live/user_profile_live.html.heex:15
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Articles"
@@ -2179,4 +2178,9 @@ msgstr ""
 #: lib/baudrate_web/live/admin/boards_live.html.heex:157
 #, elixir-autogen, elixir-format
 msgid "View / Post"
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:42
+#, elixir-autogen, elixir-format, fuzzy
+msgid "No comments found for \"%{query}\"."
 msgstr ""

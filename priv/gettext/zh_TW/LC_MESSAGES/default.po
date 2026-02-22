@@ -703,7 +703,8 @@ msgstr "您的帳號正在等待管理員審核。"
 msgid "Your account is pending approval."
 msgstr "您的帳號尚待審核。"
 
-#: lib/baudrate_web/live/search_live.html.heex:36
+#: lib/baudrate_web/live/search_live.html.heex:57
+#: lib/baudrate_web/live/search_live.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "by %{author}"
 msgstr "由 %{author} 發表"
@@ -1181,7 +1182,7 @@ msgstr "登入"
 msgid "to participate."
 msgstr "來參與。"
 
-#: lib/baudrate_web/live/search_live.html.heex:25
+#: lib/baudrate_web/live/search_live.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "1 result"
 msgid_plural "%{count} results"
@@ -1213,6 +1214,7 @@ msgid "Comment posted."
 msgstr "留言已發表。"
 
 #: lib/baudrate_web/live/article_live.html.heex:146
+#: lib/baudrate_web/live/search_live.html.heex:33
 #: lib/baudrate_web/live/user_profile_live.html.heex:19
 #, elixir-autogen, elixir-format
 msgid "Comments"
@@ -1255,7 +1257,7 @@ msgstr "檔案過大（上限 10 MB）"
 msgid "File type not accepted"
 msgstr "不支援的檔案類型"
 
-#: lib/baudrate_web/live/search_live.html.heex:21
+#: lib/baudrate_web/live/search_live.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "No articles found for \"%{query}\"."
 msgstr "找不到「%{query}」的相關文章。"
@@ -1293,14 +1295,10 @@ msgstr "儲存變更"
 #: lib/baudrate_web/components/layouts.ex:45
 #: lib/baudrate_web/components/layouts.ex:105
 #: lib/baudrate_web/components/layouts.ex:116
+#: lib/baudrate_web/live/search_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Search"
 msgstr "搜尋"
-
-#: lib/baudrate_web/live/search_live.html.heex:2
-#, elixir-autogen, elixir-format
-msgid "Search Articles"
-msgstr "搜尋文章"
 
 #: lib/baudrate_web/live/search_live.html.heex:10
 #, elixir-autogen, elixir-format
@@ -1689,6 +1687,7 @@ msgstr "註冊需要邀請碼。"
 msgid "Approve User"
 msgstr "核准使用者"
 
+#: lib/baudrate_web/live/search_live.html.heex:26
 #: lib/baudrate_web/live/user_profile_live.html.heex:15
 #, elixir-autogen, elixir-format
 msgid "Articles"
@@ -2179,3 +2178,8 @@ msgstr "使用者"
 #, elixir-autogen, elixir-format
 msgid "View / Post"
 msgstr "檢視 / 發文"
+
+#: lib/baudrate_web/live/search_live.html.heex:42
+#, elixir-autogen, elixir-format
+msgid "No comments found for \"%{query}\"."
+msgstr "找不到「%{query}」的相關評論。"
