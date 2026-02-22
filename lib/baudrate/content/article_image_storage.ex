@@ -8,6 +8,7 @@ defmodule Baudrate.Content.ArticleImageStorage do
     * Images are decoded to raw pixels and re-encoded as WebP,
       destroying polyglot files and embedded exploits
     * All EXIF/metadata is stripped (`strip_metadata: true`)
+    * Images smaller than 16x16px are rejected
     * Images are downscaled to max 1024px on the longest side
     * File paths use server-generated random hex IDs; no user input in paths
     * Uses `image` library (libvips NIF) — no CLI shelling, no command injection surface
@@ -15,6 +16,7 @@ defmodule Baudrate.Content.ArticleImageStorage do
 
   @upload_dir Path.join([:code.priv_dir(:baudrate), "static", "uploads", "article_images"])
   @max_dimension 1024
+  @min_dimension 16
 
   @magic_bytes [
     {<<0xFF, 0xD8, 0xFF>>, :jpeg},
@@ -34,7 +36,8 @@ defmodule Baudrate.Content.ArticleImageStorage do
   def process_upload(upload_path) do
     with :ok <- validate_magic_bytes(upload_path),
          {:ok, image} <- Image.open(upload_path, access: :random),
-         {:ok, {image, _meta}} <- Image.autorotate(image) do
+         {:ok, {image, _meta}} <- Image.autorotate(image),
+         :ok <- validate_min_dimensions(image) do
       {w, h, _bands} = Image.shape(image)
 
       image =
@@ -121,6 +124,16 @@ defmodule Baudrate.Content.ArticleImageStorage do
         type
       end
     end)
+  end
+
+  defp validate_min_dimensions(image) do
+    {w, h, _} = Image.shape(image)
+
+    if w >= @min_dimension and h >= @min_dimension do
+      :ok
+    else
+      {:error, :image_too_small}
+    end
   end
 
   defp generate_filename do

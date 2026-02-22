@@ -37,7 +37,7 @@
         <div :for={img <- @article_images} class="relative group aspect-square">
           <img
             src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
-            class="w-full h-full object-cover rounded-lg"
+            class="w-full h-full object-cover rounded-lg border border-base-300"
             loading="lazy"
           />
           <button

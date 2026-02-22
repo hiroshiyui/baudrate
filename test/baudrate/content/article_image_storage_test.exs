@@ -21,6 +21,10 @@ defmodule Baudrate.Content.ArticleImageStorageTest do
     webp_path = Path.join(tmp_dir, "test.webp")
     Image.write!(webp_img, webp_path)
 
+    {:ok, tiny_img} = Image.new(8, 8, color: [255, 0, 0])
+    tiny_img_path = Path.join(tmp_dir, "tiny_img.png")
+    Image.write!(tiny_img, tiny_img_path)
+
     fake_path = Path.join(tmp_dir, "fake.jpg")
     File.write!(fake_path, "<html><body>not an image</body></html>")
 
@@ -34,6 +38,7 @@ defmodule Baudrate.Content.ArticleImageStorageTest do
       png_path: png_path,
       large_path: large_path,
       webp_path: webp_path,
+      tiny_img_path: tiny_img_path,
       fake_path: fake_path,
       tiny_path: tiny_path
     }
@@ -109,6 +114,10 @@ defmodule Baudrate.Content.ArticleImageStorageTest do
 
     test "rejects file too small for magic bytes", %{tiny_path: tiny_path} do
       assert {:error, :invalid_image} = ArticleImageStorage.process_upload(tiny_path)
+    end
+
+    test "rejects image smaller than 16x16", %{tiny_img_path: tiny_img_path} do
+      assert {:error, :image_too_small} = ArticleImageStorage.process_upload(tiny_img_path)
     end
 
     test "rejects nonexistent file" do
