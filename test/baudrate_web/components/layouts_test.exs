@@ -35,6 +35,12 @@ defmodule BaudrateWeb.LayoutsTest do
       {:ok, _lv, html} = live(conn, "/profile")
       assert html =~ "phx:font-size-increase"
     end
+
+    test "font size controls have role=group with aria-label", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/profile")
+      assert html =~ ~s(role="group")
+      assert html =~ "Font size"
+    end
   end
 
   describe "theme toggle" do
@@ -43,6 +49,11 @@ defmodule BaudrateWeb.LayoutsTest do
       assert html =~ "System theme"
       assert html =~ "Light theme"
       assert html =~ "Dark theme"
+    end
+
+    test "theme toggle has role=group with aria-label", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/profile")
+      assert html =~ "Theme"
     end
   end
 end

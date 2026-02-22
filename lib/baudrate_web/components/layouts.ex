@@ -251,7 +251,11 @@ defmodule BaudrateWeb.Layouts do
   """
   def font_size_controls(assigns) do
     ~H"""
-    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
+    <div
+      role="group"
+      aria-label={gettext("Font size")}
+      class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full"
+    >
       <button
         class="flex p-2 cursor-pointer"
         phx-click={JS.dispatch("phx:font-size-decrease")}
@@ -278,7 +282,11 @@ defmodule BaudrateWeb.Layouts do
   """
   def theme_toggle(assigns) do
     ~H"""
-    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
+    <div
+      role="group"
+      aria-label={gettext("Theme")}
+      class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full"
+    >
       <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 transition-[left]" />
 
       <button
