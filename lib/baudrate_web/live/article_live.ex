@@ -390,7 +390,7 @@ defmodule BaudrateWeb.ArticleLive do
             phx-click="delete_comment"
             phx-value-id={@comment.id}
             data-confirm={gettext("Are you sure you want to delete this comment?")}
-            class="btn btn-xs btn-ghost text-error ml-auto"
+            class="btn btn-sm btn-ghost text-error ml-auto"
           >
             <.icon name="hero-trash" class="size-3" />
           </button>
@@ -404,8 +404,8 @@ defmodule BaudrateWeb.ArticleLive do
         </div>
 
         <div :if={@comment.user && @comment.user.signature && @comment.user.signature != ""} class="mt-1">
-          <div class="divider text-xs text-base-content/50 my-1"></div>
-          <div class="prose prose-xs max-w-none text-base-content/50">
+          <div class="divider text-sm text-base-content/50 my-1"></div>
+          <div class="prose prose-sm max-w-none text-base-content/50">
             {raw(Baudrate.Content.Markdown.to_html(@comment.user.signature))}
           </div>
         </div>
@@ -415,7 +415,7 @@ defmodule BaudrateWeb.ArticleLive do
             :if={@replying_to != @comment.id}
             phx-click="reply_to"
             phx-value-id={@comment.id}
-            class="text-xs text-base-content/50 hover:text-base-content cursor-pointer"
+            class="text-sm text-base-content/50 hover:text-base-content cursor-pointer"
           >
             {gettext("Reply")}
           </button>
@@ -432,10 +432,10 @@ defmodule BaudrateWeb.ArticleLive do
               rows="2"
             />
             <div class="flex gap-2">
-              <button type="submit" class="btn btn-xs btn-primary">
+              <button type="submit" class="btn btn-sm btn-primary">
                 {gettext("Reply")}
               </button>
-              <button type="button" phx-click="cancel_reply" class="btn btn-xs btn-ghost">
+              <button type="button" phx-click="cancel_reply" class="btn btn-sm btn-ghost">
                 {gettext("Cancel")}
               </button>
             </div>

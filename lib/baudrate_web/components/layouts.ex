@@ -33,7 +33,7 @@ defmodule BaudrateWeb.Layouts do
           </div>
           <ul
             tabindex="0"
-            class="menu menu-sm dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
+            class="menu dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
           >
             <li>
               <.link navigate="/">{gettext("Home")}</.link>
@@ -128,7 +128,7 @@ defmodule BaudrateWeb.Layouts do
           </div>
           <ul
             tabindex="0"
-            class="menu menu-sm dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
+            class="menu dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
           >
             <li :if={@current_user.role.name == "admin"} class="menu-title">
               {gettext("Admin")}

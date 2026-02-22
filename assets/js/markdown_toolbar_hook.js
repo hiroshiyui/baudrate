@@ -199,7 +199,7 @@ const MarkdownToolbarHook = {
 
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "btn btn-ghost btn-xs";
+      button.className = "btn btn-ghost btn-sm";
       button.title = btn.title;
       button.setAttribute("aria-label", btn.title);
       button.innerHTML = btn.icon;

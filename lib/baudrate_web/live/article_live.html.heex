@@ -102,7 +102,7 @@
     </div>
 
     <div :if={@article.user && @article.user.signature && @article.user.signature != ""} class="mt-4">
-      <div class="divider text-xs text-base-content/50">{gettext("Signature")}</div>
+      <div class="divider text-sm text-base-content/50">{gettext("Signature")}</div>
       <div class="prose prose-sm max-w-none text-base-content/70">
         {raw(Baudrate.Content.Markdown.to_html(@article.user.signature))}
       </div>
@@ -129,7 +129,7 @@
           >
             {attachment.original_filename}
           </a>
-          <span class="text-xs text-base-content/50">
+          <span class="text-sm text-base-content/50">
             ({format_file_size(attachment.size)})
           </span>
         </div>
@@ -138,7 +138,7 @@
           phx-click="delete_attachment"
           phx-value-id={attachment.id}
           data-confirm={gettext("Delete this attachment?")}
-          class="btn btn-xs btn-ghost text-error"
+          class="btn btn-sm btn-ghost text-error"
         >
           <.icon name="hero-x-mark" class="size-3" />
         </button>
@@ -153,7 +153,7 @@
         <div :for={entry <- @uploads.attachments.entries} class="flex items-center gap-2 text-sm">
           <span>{entry.client_name}</span>
           <progress value={entry.progress} max="100" class="progress progress-primary w-24">{entry.progress}%</progress>
-          <button type="button" phx-click="cancel-upload" phx-value-ref={entry.ref} class="btn btn-xs btn-ghost text-error">&times;</button>
+          <button type="button" phx-click="cancel-upload" phx-value-ref={entry.ref} class="btn btn-sm btn-ghost text-error">&times;</button>
         </div>
 
         <div :for={err <- upload_errors(@uploads.attachments)} class="text-sm text-error">

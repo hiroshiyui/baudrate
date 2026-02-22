@@ -139,7 +139,7 @@
               :if={user.status == "pending"}
               phx-click="approve"
               phx-value-id={user.id}
-              class="btn btn-xs btn-primary"
+              class="btn btn-sm btn-primary"
             >
               {gettext("Approve")}
             </button>
@@ -147,7 +147,7 @@
               :if={user.status != "banned" && user.id != @current_user.id}
               phx-click="show_ban_modal"
               phx-value-id={user.id}
-              class="btn btn-xs btn-error btn-outline"
+              class="btn btn-sm btn-error btn-outline"
             >
               {gettext("Ban")}
             </button>
@@ -155,7 +155,7 @@
               :if={user.status == "banned"}
               phx-click="unban"
               phx-value-id={user.id}
-              class="btn btn-xs btn-success btn-outline"
+              class="btn btn-sm btn-success btn-outline"
             >
               {gettext("Unban")}
             </button>

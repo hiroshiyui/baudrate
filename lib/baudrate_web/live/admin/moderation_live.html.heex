@@ -73,7 +73,7 @@
           phx-value-type="article"
           phx-value-id={report.article.id}
           data-confirm={gettext("Delete this article?")}
-          class="btn btn-error btn-xs mt-1"
+          class="btn btn-error btn-sm mt-1"
         >
           {gettext("Delete Article")}
         </button>
@@ -88,7 +88,7 @@
           phx-value-type="comment"
           phx-value-id={report.comment.id}
           data-confirm={gettext("Delete this comment?")}
-          class="btn btn-error btn-xs mt-1"
+          class="btn btn-error btn-sm mt-1"
         >
           {gettext("Delete Comment")}
         </button>
@@ -114,7 +114,7 @@
           phx-click="send_flag"
           phx-value-id={report.id}
           data-confirm={gettext("Send a Flag report to %{domain}?", domain: report.remote_actor.domain)}
-          class="btn btn-warning btn-xs"
+          class="btn btn-warning btn-sm"
         >
           {gettext("Send Flag to %{domain}", domain: report.remote_actor.domain)}
         </button>

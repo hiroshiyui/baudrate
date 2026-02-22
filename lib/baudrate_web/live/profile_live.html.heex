@@ -129,12 +129,12 @@
                 <span class="font-semibold">
                   {BaudrateWeb.Locale.locale_display_name(locale)}
                 </span>
-                <span class="text-xs text-base-content/50">{locale}</span>
+                <span class="text-sm text-base-content/50">{locale}</span>
                 <div class="ml-auto flex gap-1">
                   <button
                     :if={idx > 0}
                     type="button"
-                    class="btn btn-xs btn-ghost"
+                    class="btn btn-sm btn-ghost"
                     phx-click="move_locale_up"
                     phx-value-locale={locale}
                   >
@@ -143,7 +143,7 @@
                   <button
                     :if={idx < length(@preferred_locales) - 1}
                     type="button"
-                    class="btn btn-xs btn-ghost"
+                    class="btn btn-sm btn-ghost"
                     phx-click="move_locale_down"
                     phx-value-locale={locale}
                   >
@@ -151,7 +151,7 @@
                   </button>
                   <button
                     type="button"
-                    class="btn btn-xs btn-ghost btn-error"
+                    class="btn btn-sm btn-ghost btn-error"
                     phx-click="remove_locale"
                     phx-value-locale={locale}
                   >
@@ -178,7 +178,7 @@
                 <li>
                   <button type="button" phx-click="add_locale" phx-value-locale={code}>
                     {name}
-                    <span class="text-xs text-base-content/50">{code}</span>
+                    <span class="text-sm text-base-content/50">{code}</span>
                   </button>
                 </li>
               <% end %>
@@ -200,7 +200,7 @@
             placeholder={gettext("Your signature (Markdown supported, max 500 characters)")}
           />
           <div :if={@signature_preview != ""} class="space-y-1">
-            <p class="text-xs text-base-content/50">{gettext("Preview:")}</p>
+            <p class="text-sm text-base-content/50">{gettext("Preview:")}</p>
             <div class="prose prose-sm max-w-none bg-base-200 rounded-lg p-3 text-base-content/70">
               {raw(@signature_preview)}
             </div>

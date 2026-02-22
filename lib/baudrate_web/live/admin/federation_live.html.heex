@@ -40,27 +40,27 @@
             </thead>
             <tbody>
               <tr :for={job <- @failed_jobs}>
-                <td class="font-mono text-xs max-w-xs truncate">{job.inbox_url}</td>
+                <td class="font-mono text-sm max-w-xs truncate">{job.inbox_url}</td>
                 <td>
                   <span class={["badge badge-sm", job.status == "failed" && "badge-error", job.status == "pending" && "badge-warning"]}>
                     {job.status}
                   </span>
                 </td>
                 <td>{job.attempts}</td>
-                <td class="text-xs max-w-xs truncate opacity-70">{job.last_error || "—"}</td>
+                <td class="text-sm max-w-xs truncate opacity-70">{job.last_error || "—"}</td>
                 <td class="flex gap-1">
                   <button
                     :if={job.status == "failed"}
                     phx-click="retry_job"
                     phx-value-id={job.id}
-                    class="btn btn-ghost btn-xs"
+                    class="btn btn-ghost btn-sm"
                   >
                     {gettext("Retry")}
                   </button>
                   <button
                     phx-click="abandon_job"
                     phx-value-id={job.id}
-                    class="btn btn-ghost btn-xs text-error"
+                    class="btn btn-ghost btn-sm text-error"
                   >
                     {gettext("Abandon")}
                   </button>
@@ -108,7 +108,7 @@
                   phx-click="block_domain"
                   phx-value-domain={instance.domain}
                   data-confirm={gettext("Block all federation with %{domain}?", domain: instance.domain)}
-                  class="btn btn-error btn-xs"
+                  class="btn btn-error btn-sm"
                 >
                   {gettext("Block")}
                 </button>
@@ -161,7 +161,7 @@
                     phx-value-type="board"
                     phx-value-id={board.id}
                     data-confirm={gettext("Rotate keypair for %{board}?", board: board.name)}
-                    class="btn btn-warning btn-xs"
+                    class="btn btn-warning btn-sm"
                   >
                     {gettext("Rotate Keys")}
                   </button>
@@ -210,7 +210,7 @@
                 <button
                   phx-click="toggle_board_federation"
                   phx-value-id={board.id}
-                  class={["btn btn-xs", if(board.ap_enabled, do: "btn-ghost", else: "btn-primary")]}
+                  class={["btn btn-sm", if(board.ap_enabled, do: "btn-ghost", else: "btn-primary")]}
                 >
                   {if board.ap_enabled, do: gettext("Disable"), else: gettext("Enable")}
                 </button>
@@ -280,7 +280,7 @@
                     <button
                       phx-click="add_missing_domain"
                       phx-value-domain={domain}
-                      class="btn btn-warning btn-xs"
+                      class="btn btn-warning btn-sm"
                     >
                       {gettext("Add")}
                     </button>
