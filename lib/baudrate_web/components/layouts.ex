@@ -24,7 +24,7 @@ defmodule BaudrateWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="navbar bg-base-100 px-4 sm:px-6 lg:px-8">
+    <header class="navbar bg-base-200 border-b border-base-300 px-4 sm:px-6 lg:px-8">
       <%!-- Mobile hamburger (shown < lg) --%>
       <div :if={@current_user} class="flex-none lg:hidden">
         <div class="dropdown">
