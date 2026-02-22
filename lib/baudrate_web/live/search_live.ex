@@ -27,7 +27,7 @@ defmodule BaudrateWeb.SearchLive do
     page = parse_page(params["page"])
 
     if query != "" do
-      result = Content.search_articles(query, page: page)
+      result = Content.search_articles(query, page: page, user: socket.assigns.current_user)
 
       {:noreply,
        socket

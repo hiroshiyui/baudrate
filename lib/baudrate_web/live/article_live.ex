@@ -3,31 +3,52 @@ defmodule BaudrateWeb.ArticleLive do
   LiveView for displaying a single article with comments.
 
   Accessible to both guests and authenticated users via `:optional_auth`.
-  Guests can only view articles that belong to at least one public board;
-  articles exclusively in private boards redirect to `/login`.
+  Guests can only view articles that belong to at least one board they can view;
+  articles exclusively in restricted boards redirect appropriately.
   """
 
   use BaudrateWeb, :live_view
 
-  alias Baudrate.Auth
   alias Baudrate.Content
+  alias Baudrate.Moderation
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
     article = Content.get_article_by_slug!(slug)
     current_user = socket.assigns.current_user
 
-    if is_nil(current_user) and not has_public_board?(article) do
-      {:ok, redirect(socket, to: "/login")}
+    if not user_can_view_article?(article, current_user) do
+      redirect_to = if current_user, do: ~p"/", else: ~p"/login"
+      {:ok, redirect(socket, to: redirect_to)}
     else
-      can_manage =
-        if current_user, do: Content.can_manage_article?(current_user, article), else: false
+      can_edit =
+        if current_user, do: Content.can_edit_article?(current_user, article), else: false
+
+      can_delete =
+        if current_user, do: Content.can_delete_article?(current_user, article), else: false
+
+      can_pin =
+        if current_user, do: Content.can_pin_article?(current_user, article), else: false
+
+      can_lock =
+        if current_user, do: Content.can_lock_article?(current_user, article), else: false
+
+      is_board_mod =
+        if current_user do
+          Enum.any?(article.boards, &Content.board_moderator?(&1, current_user))
+        else
+          false
+        end
 
       comments = Content.list_comments_for_article(article)
       {roots, children_map} = build_comment_tree(comments)
 
       can_comment =
-        if current_user, do: Auth.can_create_content?(current_user), else: false
+        if current_user && not article.locked do
+          Enum.any?(article.boards, &Content.can_post_in_board?(&1, current_user))
+        else
+          false
+        end
 
       comment_changeset = Content.change_comment()
       attachments = Content.list_attachments_for_article(article)
@@ -35,7 +56,11 @@ defmodule BaudrateWeb.ArticleLive do
       socket =
         socket
         |> assign(:article, article)
-        |> assign(:can_manage, can_manage)
+        |> assign(:can_edit, can_edit)
+        |> assign(:can_delete, can_delete)
+        |> assign(:can_pin, can_pin)
+        |> assign(:can_lock, can_lock)
+        |> assign(:is_board_mod, is_board_mod)
         |> assign(:comment_roots, roots)
         |> assign(:children_map, children_map)
         |> assign(:can_comment, can_comment)
@@ -44,7 +69,7 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:attachments, attachments)
 
       socket =
-        if can_manage do
+        if can_edit do
           allow_upload(socket, :attachments,
             accept: ~w(.jpg .jpeg .png .webp .gif .pdf .txt .md .zip),
             max_entries: 5,
@@ -62,9 +87,19 @@ defmodule BaudrateWeb.ArticleLive do
   def handle_event("delete_article", _params, socket) do
     article = socket.assigns.article
 
-    if socket.assigns.can_manage do
+    if socket.assigns.can_delete do
       case Content.soft_delete_article(article) do
         {:ok, _} ->
+          user = socket.assigns.current_user
+
+          if user.id != article.user_id do
+            Moderation.log_action(user.id, "delete_article",
+              target_type: "article",
+              target_id: article.id,
+              details: %{"title" => article.title}
+            )
+          end
+
           board = List.first(article.boards)
           redirect_path = if board, do: ~p"/boards/#{board.slug}", else: ~p"/"
 
@@ -75,6 +110,99 @@ defmodule BaudrateWeb.ArticleLive do
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to delete article."))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_pin", _params, socket) do
+    article = socket.assigns.article
+
+    if socket.assigns.can_pin do
+      case Content.toggle_pin_article(article) do
+        {:ok, updated} ->
+          Moderation.log_action(socket.assigns.current_user.id,
+            if(updated.pinned, do: "pin_article", else: "unpin_article"),
+            target_type: "article",
+            target_id: article.id,
+            details: %{"title" => article.title}
+          )
+
+          {:noreply, assign(socket, :article, updated)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to update article."))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_lock", _params, socket) do
+    article = socket.assigns.article
+
+    if socket.assigns.can_lock do
+      case Content.toggle_lock_article(article) do
+        {:ok, updated} ->
+          Moderation.log_action(socket.assigns.current_user.id,
+            if(updated.locked, do: "lock_article", else: "unlock_article"),
+            target_type: "article",
+            target_id: article.id,
+            details: %{"title" => article.title}
+          )
+
+          can_comment =
+            if socket.assigns.current_user && not updated.locked do
+              boards = if Ecto.assoc_loaded?(updated.boards), do: updated.boards, else: article.boards
+              Enum.any?(boards, &Content.can_post_in_board?(&1, socket.assigns.current_user))
+            else
+              false
+            end
+
+          {:noreply,
+           socket
+           |> assign(:article, updated)
+           |> assign(:can_comment, can_comment)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to update article."))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
+    end
+  end
+
+  @impl true
+  def handle_event("delete_comment", %{"id" => id}, socket) do
+    article = socket.assigns.article
+    user = socket.assigns.current_user
+    comment = Baudrate.Repo.get!(Baudrate.Content.Comment, String.to_integer(id))
+
+    if Content.can_delete_comment?(user, comment, article) do
+      case Content.soft_delete_comment(comment) do
+        {:ok, _} ->
+          if user.id != comment.user_id do
+            Moderation.log_action(user.id, "delete_comment",
+              target_type: "comment",
+              target_id: comment.id,
+              details: %{"article_title" => article.title}
+            )
+          end
+
+          comments = Content.list_comments_for_article(article)
+          {roots, children_map} = build_comment_tree(comments)
+
+          {:noreply,
+           socket
+           |> assign(:comment_roots, roots)
+           |> assign(:children_map, children_map)
+           |> put_flash(:info, gettext("Comment deleted."))}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to delete comment."))}
       end
     else
       {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
@@ -176,7 +304,7 @@ defmodule BaudrateWeb.ArticleLive do
 
   @impl true
   def handle_event("delete_attachment", %{"id" => id}, socket) do
-    if socket.assigns.can_manage do
+    if socket.assigns.can_edit do
       attachment = Content.get_attachment!(id)
 
       case Content.delete_attachment(attachment) do
@@ -202,6 +330,7 @@ defmodule BaudrateWeb.ArticleLive do
   attr :children_map, :map, required: true
   attr :depth, :integer, required: true
   attr :can_comment, :boolean, required: true
+  attr :can_delete, :boolean, required: true
   attr :replying_to, :any, required: true
   attr :comment_form, :any, required: true
 
@@ -220,6 +349,16 @@ defmodule BaudrateWeb.ArticleLive do
           </span>
           <span>&middot;</span>
           <span>{Calendar.strftime(@comment.inserted_at, "%Y-%m-%d %H:%M")}</span>
+
+          <button
+            :if={@can_delete}
+            phx-click="delete_comment"
+            phx-value-id={@comment.id}
+            data-confirm={gettext("Are you sure you want to delete this comment?")}
+            class="btn btn-xs btn-ghost text-error ml-auto"
+          >
+            <.icon name="hero-trash" class="size-3" />
+          </button>
         </div>
 
         <div :if={@comment.body_html} class="prose prose-sm max-w-none">
@@ -275,6 +414,7 @@ defmodule BaudrateWeb.ArticleLive do
           children_map={@children_map}
           depth={@depth + 1}
           can_comment={@can_comment}
+          can_delete={@can_delete}
           replying_to={@replying_to}
           comment_form={@comment_form}
         />
@@ -283,8 +423,8 @@ defmodule BaudrateWeb.ArticleLive do
     """
   end
 
-  defp has_public_board?(article) do
-    Enum.any?(article.boards, &(&1.visibility == "public"))
+  defp user_can_view_article?(article, user) do
+    Enum.any?(article.boards, &Content.can_view_board?(&1, user))
   end
 
   defp format_file_size(bytes) when bytes < 1024, do: "#{bytes} B"

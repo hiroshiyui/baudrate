@@ -4,7 +4,7 @@ defmodule BaudrateWeb.HomeLive do
 
   Accessible to both guests and authenticated users via the `:optional_auth`
   hook. `@current_user` may be `nil` for unauthenticated visitors.
-  Displays the board listing for all visitors.
+  Board listing is filtered by `min_role_to_view` based on the user's role.
   """
 
   use BaudrateWeb, :live_view
@@ -13,13 +13,7 @@ defmodule BaudrateWeb.HomeLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    boards =
-      if socket.assigns.current_user do
-        Content.list_top_boards()
-      else
-        Content.list_public_top_boards()
-      end
-
+    boards = Content.list_visible_top_boards(socket.assigns.current_user)
     {:ok, assign(socket, :boards, boards)}
   end
 end

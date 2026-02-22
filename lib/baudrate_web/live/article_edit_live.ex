@@ -14,7 +14,7 @@ defmodule BaudrateWeb.ArticleEditLive do
     article = Content.get_article_by_slug!(slug)
     user = socket.assigns.current_user
 
-    if Content.can_manage_article?(user, article) do
+    if Content.can_edit_article?(user, article) do
       changeset = Content.change_article_for_edit(article)
 
       {:ok,

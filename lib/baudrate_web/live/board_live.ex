@@ -3,13 +3,13 @@ defmodule BaudrateWeb.BoardLive do
   LiveView for displaying a single board and its articles.
 
   Accessible to both guests and authenticated users via `:optional_auth`.
-  Guests can only view public boards; private boards redirect to `/login`.
+  Access is controlled by `min_role_to_view` — users with insufficient role
+  are redirected to `/` (authenticated) or `/login` (guest).
   Articles are paginated via `?page=N` query parameter.
   """
 
   use BaudrateWeb, :live_view
 
-  alias Baudrate.Auth
   alias Baudrate.Content
 
   @impl true
@@ -17,18 +17,13 @@ defmodule BaudrateWeb.BoardLive do
     board = Content.get_board_by_slug!(slug)
     current_user = socket.assigns.current_user
 
-    if board.visibility == "private" and is_nil(current_user) do
-      {:ok, redirect(socket, to: "/login")}
+    if not Content.can_view_board?(board, current_user) do
+      redirect_to = if current_user, do: ~p"/", else: ~p"/login"
+      {:ok, redirect(socket, to: redirect_to)}
     else
-      can_create =
-        if current_user, do: Auth.can_create_content?(current_user), else: false
-
+      can_create = Content.can_post_in_board?(board, current_user)
       ancestors = Content.board_ancestors(board)
-
-      sub_boards =
-        if current_user,
-          do: Content.list_sub_boards(board),
-          else: Content.list_public_sub_boards(board)
+      sub_boards = Content.list_visible_sub_boards(board, current_user)
 
       {:ok, assign(socket, board: board, can_create: can_create, ancestors: ancestors, sub_boards: sub_boards)}
     end

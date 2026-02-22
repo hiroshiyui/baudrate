@@ -24,7 +24,7 @@ defmodule BaudrateWeb.ArticleNewLive do
        |> put_flash(:error, gettext("Your account is pending approval."))
        |> redirect(to: ~p"/")}
     else
-      boards = Content.list_top_boards()
+      boards = Content.list_top_boards() |> Enum.filter(&Content.can_post_in_board?(&1, user))
 
       selected_board_ids =
         case params do
