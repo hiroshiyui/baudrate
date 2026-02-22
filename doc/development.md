@@ -115,13 +115,16 @@ lib/
 │   │   ├── totp_setup_live.ex   # TOTP enrollment with QR code
 │   │   └── totp_verify_live.ex  # TOTP code verification
 │   ├── plugs/
+│   │   ├── attachment_headers.ex # Content-Disposition for non-image attachments
 │   │   ├── authorized_fetch.ex  # Optional HTTP Signature verification on AP GET requests
 │   │   ├── cache_body.ex        # Cache raw request body (for HTTP signature verification)
 │   │   ├── cors.ex              # CORS headers for AP GET endpoints (Allow-Origin: *)
 │   │   ├── ensure_setup.ex      # Redirect to /setup until setup is done
 │   │   ├── rate_limit.ex        # IP-based rate limiting (Hammer)
 │   │   ├── rate_limit_domain.ex # Per-domain rate limiting for AP inboxes
+│   │   ├── real_ip.ex           # Real client IP extraction from proxy headers
 │   │   ├── refresh_session.ex   # Token rotation every 24h
+│   │   ├── require_ap_content_type.ex  # AP content-type validation (415 on non-AP types)
 │   │   ├── set_locale.ex        # Accept-Language + user preference locale detection
 │   │   └── verify_http_signature.ex  # HTTP Signature verification for AP inboxes
 │   ├── endpoint.ex              # HTTP entry point, session config
@@ -506,17 +509,22 @@ re-processing within a single cleanup run.
 
 **Security:**
 - HTTP Signature verification on all inbox requests
+- Inbox content-type validation — rejects non-AP content types with 415 (via `RequireAPContentType` plug)
 - HTML sanitization (allowlist-based) before database storage
 - Remote actor display name sanitization — strips HTML tags, control characters, truncates to 100 chars
 - Attribution validation prevents impersonation
-- Content size limits (256 KB payload, 64 KB content)
+- Content size limits (256 KB AP payload, 64 KB article body enforced in all changesets)
 - Domain blocklist (configurable via admin settings)
-- SSRF-safe remote fetches (reject private/loopback IPs, HTTPS only)
+- SSRF-safe remote fetches — DNS-pinned connections prevent DNS rebinding; manual redirect following with IP validation at each hop; reject private/loopback IPs including IPv6 `::` and `::1`; HTTPS only
 - Per-domain rate limiting (60 req/min per remote domain)
+- Real client IP extraction — `RealIp` plug reads from configurable proxy header (e.g., `x-forwarded-for`) for accurate per-IP rate limiting behind reverse proxies
 - Private keys encrypted at rest with AES-256-GCM
+- Recovery codes verified atomically via `Repo.update_all` to prevent TOCTOU race conditions
 - Non-guest boards (`min_role_to_view != "guest"`) hidden from all AP endpoints (actor, outbox, inbox, WebFinger, audience resolution)
 - Optional authorized fetch mode — require HTTP signatures on GET requests to AP endpoints (exempt: WebFinger, NodeInfo)
 - Signed outbound GET requests — actor resolution falls back to signed GET when remote instances require authorized fetch
+- Non-image attachments forced to download (`Content-Disposition: attachment`) via `AttachmentHeaders` plug to prevent inline PDF/JS execution
+- Session cookie `secure` flag handled by `force_ssl` / `Plug.SSL` in production
 - CSP `img-src` allows `https:` for remote avatars; all other directives remain restrictive
 
 **Public API:**
@@ -579,8 +587,9 @@ ActivityPubController (content-negotiated response)
 ActivityPub inbox (POST) requests use a separate pipeline:
 
 ```
-:accepts (activity+json) → CacheBody (256 KB max) →
-RateLimitDomain (60/min per domain) → VerifyHttpSignature →
+RateLimit (120/min per IP) → RequireAPContentType (415 on non-AP types) →
+CacheBody (256 KB max) → VerifyHttpSignature →
+RateLimitDomain (60/min per domain) →
 ActivityPubController (dispatch to InboxHandler)
 ```
 

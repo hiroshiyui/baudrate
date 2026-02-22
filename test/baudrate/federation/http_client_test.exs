@@ -86,6 +86,10 @@ defmodule Baudrate.Federation.HTTPClientTest do
       refute HTTPClient.private_ip?({1, 1, 1, 1})
     end
 
+    test "IPv6 unspecified address :: is private" do
+      assert HTTPClient.private_ip?({0, 0, 0, 0, 0, 0, 0, 0})
+    end
+
     test "public IPv6 addresses return false" do
       refute HTTPClient.private_ip?({0x2001, 0x0DB8, 0, 0, 0, 0, 0, 1})
       refute HTTPClient.private_ip?({0x2606, 0x4700, 0, 0, 0, 0, 0, 1})

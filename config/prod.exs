@@ -19,6 +19,11 @@ config :baudrate, BaudrateWeb.Endpoint,
     expires: 63_072_000
   ]
 
+# Extract real client IP from X-Forwarded-For header set by the reverse proxy.
+# Your reverse proxy MUST set (not append to) this header for security.
+# Without this, all requests share the proxy's IP for rate limiting.
+config :baudrate, BaudrateWeb.Plugs.RealIp, header: "x-forwarded-for"
+
 # Do not print debug messages in production
 config :logger, level: :info
 

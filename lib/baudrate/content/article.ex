@@ -34,10 +34,13 @@ defmodule Baudrate.Content.Article do
     timestamps(type: :utc_datetime)
   end
 
+  @max_body_length 65_536
+
   def changeset(article, attrs) do
     article
     |> cast(attrs, [:title, :body, :slug, :pinned, :locked, :user_id])
     |> validate_required([:title, :body, :slug])
+    |> validate_length(:body, max: @max_body_length)
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
       message: "must be lowercase alphanumeric with hyphens"
     )
@@ -50,6 +53,7 @@ defmodule Baudrate.Content.Article do
     article
     |> cast(attrs, [:title, :body])
     |> validate_required([:title, :body])
+    |> validate_length(:body, max: @max_body_length)
   end
 
   @doc "Changeset for remote articles received via ActivityPub."
@@ -57,6 +61,7 @@ defmodule Baudrate.Content.Article do
     article
     |> cast(attrs, [:title, :body, :slug, :ap_id, :remote_actor_id])
     |> validate_required([:title, :body, :slug, :ap_id, :remote_actor_id])
+    |> validate_length(:body, max: @max_body_length)
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
       message: "must be lowercase alphanumeric with hyphens"
     )
@@ -70,6 +75,7 @@ defmodule Baudrate.Content.Article do
     article
     |> cast(attrs, [:title, :body])
     |> validate_required([:title, :body])
+    |> validate_length(:body, max: @max_body_length)
   end
 
   @doc "Changeset for soft-deleting an article."

@@ -12,6 +12,11 @@ defmodule BaudrateWeb.Endpoint do
     * `max_age: 14 days` — cookie expiry matching the server-side session TTL
     * Signing and encryption salts are configured separately for defense in depth
 
+  The `secure` flag is not set here because `force_ssl` in `config/prod.exs`
+  configures `Plug.SSL` which sets `secure: true` on all cookies in production.
+  In dev/test, cookies must work over plain HTTP (localhost), so omitting
+  `secure` globally is correct.
+
   The LiveView socket also receives session data via `connect_info`, enabling
   `on_mount` hooks to access session tokens.
   """
@@ -31,6 +36,15 @@ defmodule BaudrateWeb.Endpoint do
   socket "/live", Phoenix.LiveView.Socket,
     websocket: [connect_info: [:peer_data, session: @session_options]],
     longpoll: [connect_info: [:peer_data, session: @session_options]]
+
+  # Extract real client IP from proxy header (configured in prod.exs only).
+  # Must run before any rate-limiting plug so buckets use the real client IP.
+  plug BaudrateWeb.Plugs.RealIp
+
+  # Set Content-Disposition: attachment for non-image uploads to prevent
+  # inline rendering of PDFs/ZIPs that could execute JS in site origin.
+  # Must run before Plug.Static so headers are registered via before_send.
+  plug BaudrateWeb.Plugs.AttachmentHeaders
 
   # Serve at "/" the static files from "priv/static" directory.
   #

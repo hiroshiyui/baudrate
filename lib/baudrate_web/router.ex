@@ -69,6 +69,7 @@ defmodule BaudrateWeb.Router do
 
   pipeline :activity_pub_inbox do
     plug BaudrateWeb.Plugs.RateLimit, action: :activity_pub
+    plug BaudrateWeb.Plugs.RequireAPContentType
     plug BaudrateWeb.Plugs.CacheBody
     plug BaudrateWeb.Plugs.VerifyHTTPSignature
     plug BaudrateWeb.Plugs.RateLimitDomain

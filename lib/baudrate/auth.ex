@@ -289,30 +289,23 @@ defmodule Baudrate.Auth do
   @doc """
   Verifies a recovery code for a user.
 
-  Finds an unused code matching the SHA-256 hash, marks it as used with
-  a `used_at` timestamp, and returns `:ok`. Returns `:error` if no
-  matching unused code is found.
+  Atomically marks the matching unused code as used via `Repo.update_all`,
+  preventing TOCTOU race conditions where concurrent requests could consume
+  the same recovery code. Returns `:ok` if exactly one code was consumed,
+  `:error` otherwise.
   """
   def verify_recovery_code(user, code) when is_binary(code) do
     code_hash = :crypto.hash(:sha256, normalize_recovery_code(code))
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     query =
       from(rc in RecoveryCode,
         where: rc.user_id == ^user.id and rc.code_hash == ^code_hash and is_nil(rc.used_at)
       )
 
-    case Repo.one(query) do
-      nil ->
-        :error
-
-      recovery_code ->
-        now = DateTime.utc_now() |> DateTime.truncate(:second)
-
-        recovery_code
-        |> RecoveryCode.changeset(%{used_at: now})
-        |> Repo.update()
-
-        :ok
+    case Repo.update_all(query, set: [used_at: now]) do
+      {1, _} -> :ok
+      {0, _} -> :error
     end
   end
 
