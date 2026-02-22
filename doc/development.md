@@ -663,6 +663,32 @@ end
 - Messages carry only IDs — no user content in PubSub messages (security by design)
 - Double-refresh accepted — when a user creates content, both `handle_event` and `handle_info` refresh; the cost is one extra DB query
 
+## LiveView JS Hooks
+
+### `AvatarCropHook`
+
+Handles client-side image cropping for avatar uploads. Attached to the crop
+container on the profile page.
+
+### `MarkdownToolbarHook`
+
+Attaches a Markdown formatting toolbar above any `<textarea>` that carries
+`phx-hook="MarkdownToolbarHook"`. Enable it on `<.input type="textarea">` by
+adding the `toolbar` attribute:
+
+```heex
+<.input field={@form[:body]} type="textarea" toolbar />
+```
+
+The toolbar is purely client-side — it reads `selectionStart`/`selectionEnd`,
+wraps or prefixes with Markdown syntax, and dispatches an `input` event so
+LiveView picks up the change. No server round-trips are needed.
+
+Toolbar buttons: **Bold**, *Italic*, ~~Strikethrough~~, Heading, Link, Image,
+Inline Code, Code Block, Blockquote, Bullet List, Numbered List, Horizontal Rule.
+
+Source: `assets/js/markdown_toolbar_hook.js`
+
 ## Running Tests
 
 ```bash

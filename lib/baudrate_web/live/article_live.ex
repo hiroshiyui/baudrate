@@ -425,6 +425,7 @@ defmodule BaudrateWeb.ArticleLive do
               field={@comment_form[:body]}
               type="textarea"
               placeholder={gettext("Write a reply...")}
+              toolbar
               rows="2"
             />
             <div class="flex gap-2">

@@ -177,6 +177,10 @@ defmodule BaudrateWeb.CoreComponents do
   attr :class, :any, default: nil, doc: "the input class to use over defaults"
   attr :error_class, :any, default: nil, doc: "the input error class to use over defaults"
 
+  attr :toolbar, :boolean,
+    default: false,
+    doc: "when true, attaches a Markdown formatting toolbar above the textarea"
+
   attr :rest, :global,
     include: ~w(accept autocomplete capture cols disabled form list max maxlength min minlength
                 multiple pattern placeholder readonly required rows size step)
@@ -257,9 +261,11 @@ defmodule BaudrateWeb.CoreComponents do
     <div class="fieldset mb-2">
       <label>
         <span :if={@label} class="label mb-1">{@label}</span>
+        <div :if={@toolbar} id={"#{@id}-md-toolbar"} phx-update="ignore"></div>
         <textarea
           id={@id}
           name={@name}
+          phx-hook={@toolbar && "MarkdownToolbarHook"}
           class={[
             @class || "w-full textarea",
             @errors != [] && (@error_class || "textarea-error")
