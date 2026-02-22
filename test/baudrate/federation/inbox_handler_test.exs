@@ -1150,4 +1150,84 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
     end
   end
+
+  describe "Flag" do
+    test "creates a report when article URI is included" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      article_uri = Federation.actor_uri(:article, article.slug)
+
+      activity = %{
+        "type" => "Flag",
+        "actor" => remote_actor.ap_id,
+        "content" => "This content violates our rules",
+        "object" => [remote_actor.ap_id, article_uri]
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      reports = Baudrate.Moderation.list_reports(status: "open")
+      assert length(reports) >= 1
+
+      report = Enum.find(reports, &(&1.remote_actor_id == remote_actor.id))
+      assert report
+      assert report.reason == "This content violates our rules"
+      assert report.article_id == article.id
+    end
+
+    test "creates a report even with no matching content URIs" do
+      remote_actor = create_remote_actor()
+
+      activity = %{
+        "type" => "Flag",
+        "actor" => remote_actor.ap_id,
+        "content" => "Spam actor",
+        "object" => [remote_actor.ap_id, "https://remote.example/notes/nonexistent"]
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      reports = Baudrate.Moderation.list_reports(status: "open")
+      report = Enum.find(reports, &(&1.remote_actor_id == remote_actor.id))
+      assert report
+      assert report.reason == "Spam actor"
+      assert is_nil(report.article_id)
+      assert is_nil(report.comment_id)
+    end
+  end
+
+  describe "Delete(actor)" do
+    test "removes all follower records for the deleted actor" do
+      user = setup_user_with_role("user")
+      {:ok, user} = KeyStore.ensure_user_keypair(user)
+      remote_actor = create_remote_actor()
+
+      actor_uri = Federation.actor_uri(:user, user.username)
+
+      # Create a follower record first
+      follow_activity = %{
+        "id" => "https://remote.example/activities/follow-#{System.unique_integer([:positive])}",
+        "type" => "Follow",
+        "actor" => remote_actor.ap_id,
+        "object" => actor_uri
+      }
+
+      assert :ok = InboxHandler.handle(follow_activity, remote_actor, {:user, user})
+      Process.sleep(50)
+      assert Federation.follower_exists?(actor_uri, remote_actor.ap_id)
+
+      # Delete the actor (object == actor_uri)
+      delete_activity = %{
+        "type" => "Delete",
+        "actor" => remote_actor.ap_id,
+        "object" => remote_actor.ap_id
+      }
+
+      assert :ok = InboxHandler.handle(delete_activity, remote_actor, :shared)
+      refute Federation.follower_exists?(actor_uri, remote_actor.ap_id)
+    end
+  end
 end
