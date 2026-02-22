@@ -11,6 +11,7 @@ defmodule BaudrateWeb.BoardLive do
   use BaudrateWeb, :live_view
 
   alias Baudrate.Content
+  alias Baudrate.Content.PubSub, as: ContentPubSub
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -21,6 +22,8 @@ defmodule BaudrateWeb.BoardLive do
       redirect_to = if current_user, do: ~p"/", else: ~p"/login"
       {:ok, redirect(socket, to: redirect_to)}
     else
+      if connected?(socket), do: ContentPubSub.subscribe_board(board.id)
+
       can_create = Content.can_post_in_board?(board, current_user)
       ancestors = Content.board_ancestors(board)
       sub_boards = Content.list_visible_sub_boards(board, current_user)
@@ -35,6 +38,23 @@ defmodule BaudrateWeb.BoardLive do
 
     %{articles: articles, page: page, total_pages: total_pages} =
       Content.paginate_articles_for_board(socket.assigns.board, page: page)
+
+    {:noreply, assign(socket, articles: articles, page: page, total_pages: total_pages)}
+  end
+
+  @impl true
+  def handle_info({event, _payload}, socket)
+      when event in [
+             :article_created,
+             :article_deleted,
+             :article_updated,
+             :article_pinned,
+             :article_unpinned,
+             :article_locked,
+             :article_unlocked
+           ] do
+    %{articles: articles, page: page, total_pages: total_pages} =
+      Content.paginate_articles_for_board(socket.assigns.board, page: socket.assigns.page)
 
     {:noreply, assign(socket, articles: articles, page: page, total_pages: total_pages)}
   end

@@ -800,6 +800,165 @@ defmodule Baudrate.ContentTest do
     end
   end
 
+  # --- PubSub Broadcasts ---
+
+  describe "PubSub broadcasts" do
+    alias Baudrate.Content.PubSub, as: ContentPubSub
+
+    test "create_article/2 broadcasts :article_created to board topic" do
+      user = create_user("user")
+      board = create_board(%{name: "PubSub Board", slug: "pubsub-board"})
+      ContentPubSub.subscribe_board(board.id)
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "PubSub Article", body: "body", slug: "pubsub-art", user_id: user.id},
+          [board.id]
+        )
+
+      article_id = article.id
+      assert_receive {:article_created, %{article_id: ^article_id}}
+    end
+
+    test "soft_delete_article/1 broadcasts :article_deleted to board and article topics" do
+      user = create_user("user")
+      board = create_board(%{name: "Del PubSub", slug: "del-pubsub"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "To Delete", body: "body", slug: "del-pubsub-art", user_id: user.id},
+          [board.id]
+        )
+
+      article_id = article.id
+      ContentPubSub.subscribe_board(board.id)
+      ContentPubSub.subscribe_article(article.id)
+
+      {:ok, _} = Content.soft_delete_article(article)
+
+      assert_receive {:article_deleted, %{article_id: ^article_id}}
+      assert_receive {:article_deleted, %{article_id: ^article_id}}
+    end
+
+    test "create_comment/1 broadcasts :comment_created to article topic" do
+      user = create_user("user")
+      board = create_board(%{name: "Cmt PubSub", slug: "cmt-pubsub"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Comment Article", body: "body", slug: "cmt-pubsub-art", user_id: user.id},
+          [board.id]
+        )
+
+      ContentPubSub.subscribe_article(article.id)
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Hello!",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      comment_id = comment.id
+      assert_receive {:comment_created, %{comment_id: ^comment_id}}
+    end
+
+    test "create_remote_comment/1 broadcasts :comment_created to article topic" do
+      user = create_user("user")
+      board = create_board(%{name: "Remote Cmt PS", slug: "remote-cmt-ps"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Remote Cmt Art", body: "body", slug: "remote-cmt-ps-art", user_id: user.id},
+          [board.id]
+        )
+
+      remote_actor = create_remote_actor()
+      ContentPubSub.subscribe_article(article.id)
+
+      {:ok, comment} =
+        Content.create_remote_comment(%{
+          body: "Remote comment!",
+          body_html: "<p>Remote comment!</p>",
+          ap_id: "https://remote.example/notes/ps-#{System.unique_integer([:positive])}",
+          article_id: article.id,
+          remote_actor_id: remote_actor.id
+        })
+
+      comment_id = comment.id
+      assert_receive {:comment_created, %{comment_id: ^comment_id}}
+    end
+
+    test "soft_delete_comment/1 broadcasts :comment_deleted to article topic" do
+      user = create_user("user")
+      board = create_board(%{name: "Del Cmt PS", slug: "del-cmt-ps"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Del Cmt Art", body: "body", slug: "del-cmt-ps-art", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "To delete",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      comment_id = comment.id
+      ContentPubSub.subscribe_article(article.id)
+
+      {:ok, _} = Content.soft_delete_comment(comment)
+
+      assert_receive {:comment_deleted, %{comment_id: ^comment_id}}
+    end
+
+    test "toggle_pin_article/1 broadcasts :article_pinned/:article_unpinned to board topic" do
+      user = create_user("user")
+      board = create_board(%{name: "Pin PubSub", slug: "pin-pubsub"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Pin Article", body: "body", slug: "pin-pubsub-art", user_id: user.id},
+          [board.id]
+        )
+
+      article_id = article.id
+      ContentPubSub.subscribe_board(board.id)
+
+      {:ok, _} = Content.toggle_pin_article(article)
+      assert_receive {:article_pinned, %{article_id: ^article_id}}
+
+      # Toggle again — should be unpinned
+      pinned_article = %{article | pinned: true}
+      {:ok, _} = Content.toggle_pin_article(pinned_article)
+      assert_receive {:article_unpinned, %{article_id: ^article_id}}
+    end
+
+    test "toggle_lock_article/1 broadcasts :article_locked/:article_unlocked to board topic" do
+      user = create_user("user")
+      board = create_board(%{name: "Lock PubSub", slug: "lock-pubsub"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Lock Article", body: "body", slug: "lock-pubsub-art", user_id: user.id},
+          [board.id]
+        )
+
+      article_id = article.id
+      ContentPubSub.subscribe_board(board.id)
+
+      {:ok, _} = Content.toggle_lock_article(article)
+      assert_receive {:article_locked, %{article_id: ^article_id}}
+
+      # Toggle again — should be unlocked
+      locked_article = %{article | locked: true}
+      {:ok, _} = Content.toggle_lock_article(locked_article)
+      assert_receive {:article_unlocked, %{article_id: ^article_id}}
+    end
+  end
+
   # --- SysOp Board ---
 
   describe "seed_sysop_board/1" do

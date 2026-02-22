@@ -16,6 +16,7 @@ defmodule Baudrate.Content do
   import Ecto.Query
   alias Baudrate.{Auth, Repo, Setup}
   alias Baudrate.Content.{Article, Attachment, ArticleLike, Board, BoardArticle, BoardModerator, Comment}
+  alias Baudrate.Content.PubSub, as: ContentPubSub
 
   # --- Boards ---
 
@@ -247,6 +248,10 @@ defmodule Baudrate.Content do
       |> Repo.transaction()
 
     with {:ok, %{article: article}} <- result do
+      for board_id <- board_ids do
+        ContentPubSub.broadcast_to_board(board_id, :article_created, %{article_id: article.id})
+      end
+
       schedule_federation_task(fn ->
         article = Repo.preload(article, [:boards, :user])
         Baudrate.Federation.Publisher.publish_article_created(article)
@@ -282,9 +287,17 @@ defmodule Baudrate.Content do
       |> Repo.update()
 
     with {:ok, updated_article} <- result do
+      updated_article = Repo.preload(updated_article, :boards)
+
+      for board <- updated_article.boards do
+        ContentPubSub.broadcast_to_board(board.id, :article_updated, %{article_id: updated_article.id})
+      end
+
+      ContentPubSub.broadcast_to_article(updated_article.id, :article_updated, %{article_id: updated_article.id})
+
       if updated_article.user_id do
         schedule_federation_task(fn ->
-          updated_article = Repo.preload(updated_article, [:boards, :user])
+          updated_article = Repo.preload(updated_article, [:user])
           Baudrate.Federation.Publisher.publish_article_updated(updated_article)
         end)
       end
@@ -624,25 +637,34 @@ defmodule Baudrate.Content do
   Creates a remote article and links it to the given board IDs in a transaction.
   """
   def create_remote_article(attrs, board_ids) when is_list(board_ids) do
-    Ecto.Multi.new()
-    |> Ecto.Multi.insert(:article, Article.remote_changeset(%Article{}, attrs))
-    |> Ecto.Multi.run(:board_articles, fn repo, %{article: article} ->
-      now = DateTime.utc_now() |> DateTime.truncate(:second)
+    result =
+      Ecto.Multi.new()
+      |> Ecto.Multi.insert(:article, Article.remote_changeset(%Article{}, attrs))
+      |> Ecto.Multi.run(:board_articles, fn repo, %{article: article} ->
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-      entries =
-        Enum.map(board_ids, fn board_id ->
-          %{board_id: board_id, article_id: article.id, inserted_at: now, updated_at: now}
-        end)
+        entries =
+          Enum.map(board_ids, fn board_id ->
+            %{board_id: board_id, article_id: article.id, inserted_at: now, updated_at: now}
+          end)
 
-      {count, _} = repo.insert_all(BoardArticle, entries)
+        {count, _} = repo.insert_all(BoardArticle, entries)
 
-      if count == length(board_ids) do
-        {:ok, count}
-      else
-        {:error, :board_articles_insert_mismatch}
+        if count == length(board_ids) do
+          {:ok, count}
+        else
+          {:error, :board_articles_insert_mismatch}
+        end
+      end)
+      |> Repo.transaction()
+
+    with {:ok, %{article: article}} <- result do
+      for board_id <- board_ids do
+        ContentPubSub.broadcast_to_board(board_id, :article_created, %{article_id: article.id})
       end
-    end)
-    |> Repo.transaction()
+
+      result
+    end
   end
 
   @doc """
@@ -662,10 +684,18 @@ defmodule Baudrate.Content do
       |> Repo.update()
 
     with {:ok, deleted_article} <- result do
+      deleted_article = Repo.preload(deleted_article, :boards)
+
+      for board <- deleted_article.boards do
+        ContentPubSub.broadcast_to_board(board.id, :article_deleted, %{article_id: deleted_article.id})
+      end
+
+      ContentPubSub.broadcast_to_article(deleted_article.id, :article_deleted, %{article_id: deleted_article.id})
+
       # Only publish deletion for local articles (those with a user_id)
       if deleted_article.user_id do
         schedule_federation_task(fn ->
-          deleted_article = Repo.preload(deleted_article, [:boards, :user])
+          deleted_article = Repo.preload(deleted_article, [:user])
           Baudrate.Federation.Publisher.publish_article_deleted(deleted_article)
         end)
       end
@@ -700,6 +730,8 @@ defmodule Baudrate.Content do
       |> Repo.insert()
 
     with {:ok, comment} <- result do
+      ContentPubSub.broadcast_to_article(comment.article_id, :comment_created, %{comment_id: comment.id})
+
       if comment.user_id do
         schedule_federation_task(fn ->
           comment = Repo.preload(comment, [:user])
@@ -723,9 +755,15 @@ defmodule Baudrate.Content do
   Creates a remote comment received via ActivityPub.
   """
   def create_remote_comment(attrs) do
-    %Comment{}
-    |> Comment.remote_changeset(attrs)
-    |> Repo.insert()
+    result =
+      %Comment{}
+      |> Comment.remote_changeset(attrs)
+      |> Repo.insert()
+
+    with {:ok, comment} <- result do
+      ContentPubSub.broadcast_to_article(comment.article_id, :comment_created, %{comment_id: comment.id})
+      result
+    end
   end
 
   @doc """
@@ -751,9 +789,15 @@ defmodule Baudrate.Content do
   Soft-deletes a comment by setting `deleted_at` and clearing body.
   """
   def soft_delete_comment(%Comment{} = comment) do
-    comment
-    |> Comment.soft_delete_changeset()
-    |> Repo.update()
+    result =
+      comment
+      |> Comment.soft_delete_changeset()
+      |> Repo.update()
+
+    with {:ok, deleted} <- result do
+      ContentPubSub.broadcast_to_article(deleted.article_id, :comment_deleted, %{comment_id: deleted.id})
+      result
+    end
   end
 
   @doc """
@@ -885,18 +929,42 @@ defmodule Baudrate.Content do
   Toggles the pinned status of an article.
   """
   def toggle_pin_article(%Article{} = article) do
-    article
-    |> Ecto.Changeset.change(pinned: !article.pinned)
-    |> Repo.update()
+    result =
+      article
+      |> Ecto.Changeset.change(pinned: !article.pinned)
+      |> Repo.update()
+
+    with {:ok, updated} <- result do
+      updated = Repo.preload(updated, :boards)
+      event = if updated.pinned, do: :article_pinned, else: :article_unpinned
+
+      for board <- updated.boards do
+        ContentPubSub.broadcast_to_board(board.id, event, %{article_id: updated.id})
+      end
+
+      result
+    end
   end
 
   @doc """
   Toggles the locked status of an article.
   """
   def toggle_lock_article(%Article{} = article) do
-    article
-    |> Ecto.Changeset.change(locked: !article.locked)
-    |> Repo.update()
+    result =
+      article
+      |> Ecto.Changeset.change(locked: !article.locked)
+      |> Repo.update()
+
+    with {:ok, updated} <- result do
+      updated = Repo.preload(updated, :boards)
+      event = if updated.locked, do: :article_locked, else: :article_unlocked
+
+      for board <- updated.boards do
+        ContentPubSub.broadcast_to_board(board.id, event, %{article_id: updated.id})
+      end
+
+      result
+    end
   end
 
   # --- Board Moderators ---

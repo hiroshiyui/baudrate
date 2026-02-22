@@ -41,7 +41,8 @@ lib/
 │   │   ├── board_article.ex     # Join table: board ↔ article
 │   │   ├── board_moderator.ex   # Join table: board ↔ moderator
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
-│   │   └── markdown.ex          # Markdown → HTML rendering (Earmark)
+│   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark)
+│   │   └── pubsub.ex            # PubSub helpers for real-time content updates
 │   ├── federation.ex            # Federation context: actors, outbox, followers, announces
 │   ├── federation/
 │   │   ├── actor_resolver.ex    # Remote actor fetching and caching (24h TTL)
@@ -532,6 +533,48 @@ Baudrate.Supervisor (one_for_one)
 ├── Baudrate.Federation.DeliveryWorker # Polls delivery queue every 60s
 └── BaudrateWeb.Endpoint               # HTTP server
 ```
+
+### Real-time Updates
+
+LiveViews subscribe to PubSub topics to receive real-time content updates
+without page refresh. The centralized helper module `Baudrate.Content.PubSub`
+encapsulates topic naming and broadcast logic.
+
+**Topics:**
+
+| Topic | Format | Events |
+|-------|--------|--------|
+| Board | `"board:<board_id>"` | `:article_created`, `:article_deleted`, `:article_updated`, `:article_pinned`, `:article_unpinned`, `:article_locked`, `:article_unlocked` |
+| Article | `"article:<article_id>"` | `:comment_created`, `:comment_deleted`, `:article_deleted`, `:article_updated` |
+
+**Message format:** `{event_atom, %{id_key: id}}` — only IDs are broadcast,
+no user content. Subscribers re-fetch data from the database to respect
+access controls.
+
+**Subscription pattern:**
+
+```elixir
+# In LiveView mount (only when connected):
+if connected?(socket), do: ContentPubSub.subscribe_board(board.id)
+
+# In handle_info — re-fetch from DB:
+def handle_info({event, _payload}, socket) when event in [...] do
+  articles = Content.paginate_articles_for_board(socket.assigns.board, ...)
+  {:noreply, assign(socket, ...)}
+end
+```
+
+**Subscribing LiveViews:**
+
+| LiveView | Topic | Behavior |
+|----------|-------|----------|
+| `BoardLive` | `board:<id>` | Re-fetches article list on article mutations |
+| `ArticleLive` | `article:<id>` | Re-fetches comment tree on comment mutations; redirects on article deletion; re-fetches article on update |
+
+**Design decisions:**
+- Re-fetch on broadcast (not incremental patching) — simpler, always correct, respects access controls
+- Messages carry only IDs — no user content in PubSub messages (security by design)
+- Double-refresh accepted — when a user creates content, both `handle_event` and `handle_info` refresh; the cost is one extra DB query
 
 ## Running Tests
 

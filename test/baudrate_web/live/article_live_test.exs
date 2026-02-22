@@ -72,6 +72,39 @@ defmodule BaudrateWeb.ArticleLiveTest do
     assert html =~ "Great article!"
   end
 
+  test "updates comment list when new comment is posted via PubSub", %{conn: conn, user: user, article: article} do
+    {:ok, lv, html} = live(conn, "/articles/#{article.slug}")
+    refute html =~ "PubSub comment here"
+
+    # Create a comment from another process (simulates another user)
+    Content.create_comment(%{
+      "body" => "PubSub comment here",
+      "article_id" => article.id,
+      "user_id" => user.id
+    })
+
+    # The LiveView should re-render with the new comment
+    assert render(lv) =~ "PubSub comment here"
+  end
+
+  test "updates comment list when comment is deleted via PubSub", %{conn: conn, user: user, article: article} do
+    {:ok, comment} =
+      Content.create_comment(%{
+        "body" => "Will be deleted remotely",
+        "article_id" => article.id,
+        "user_id" => user.id
+      })
+
+    {:ok, lv, html} = live(conn, "/articles/#{article.slug}")
+    assert html =~ "Will be deleted remotely"
+
+    # Delete the comment from another process
+    Content.soft_delete_comment(comment)
+
+    # The LiveView should re-render without the deleted comment
+    refute render(lv) =~ "Will be deleted remotely"
+  end
+
   test "displays author signature after article body", %{conn: conn, user: user, article: article} do
     {:ok, _updated_user} = Baudrate.Auth.update_signature(user, "My **awesome** signature")
 

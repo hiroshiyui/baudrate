@@ -8,7 +8,7 @@
 
 ## System
 - [x] Public API via existing ActivityPub endpoints (no separate REST API; AP endpoints serve as the public API)
-- [ ] Real-time updates via PubSub (new articles, comments)
+- [x] Real-time updates via PubSub (new articles, comments)
 - [x] Search indexing (CJK/multi-language support via pg_trgm + comment search with tab UI)
 
 ## ActivityPub Federation (remaining)

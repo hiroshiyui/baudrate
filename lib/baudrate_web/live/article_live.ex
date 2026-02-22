@@ -10,6 +10,7 @@ defmodule BaudrateWeb.ArticleLive do
   use BaudrateWeb, :live_view
 
   alias Baudrate.Content
+  alias Baudrate.Content.PubSub, as: ContentPubSub
   alias Baudrate.Moderation
 
   @impl true
@@ -67,6 +68,8 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:comment_form, to_form(comment_changeset, as: :comment))
         |> assign(:replying_to, nil)
         |> assign(:attachments, attachments)
+
+      if connected?(socket), do: ContentPubSub.subscribe_article(article.id)
 
       socket =
         if can_edit do
@@ -323,6 +326,35 @@ defmodule BaudrateWeb.ArticleLive do
   @impl true
   def handle_event("cancel-upload", %{"ref" => ref}, socket) do
     {:noreply, cancel_upload(socket, :attachments, ref)}
+  end
+
+  @impl true
+  def handle_info({event, _payload}, socket)
+      when event in [:comment_created, :comment_deleted] do
+    comments = Content.list_comments_for_article(socket.assigns.article)
+    {roots, children_map} = build_comment_tree(comments)
+
+    {:noreply,
+     socket
+     |> assign(:comment_roots, roots)
+     |> assign(:children_map, children_map)}
+  end
+
+  @impl true
+  def handle_info({:article_deleted, _payload}, socket) do
+    board = List.first(socket.assigns.article.boards)
+    redirect_path = if board, do: ~p"/boards/#{board.slug}", else: ~p"/"
+
+    {:noreply,
+     socket
+     |> put_flash(:info, gettext("This article has been deleted."))
+     |> redirect(to: redirect_path)}
+  end
+
+  @impl true
+  def handle_info({:article_updated, _payload}, socket) do
+    article = Content.get_article_by_slug!(socket.assigns.article.slug)
+    {:noreply, assign(socket, :article, article)}
   end
 
   @doc false

@@ -490,7 +490,7 @@ msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:85
 #: lib/baudrate_web/live/admin/users_live.html.heex:198
-#: lib/baudrate_web/live/article_live.ex:403
+#: lib/baudrate_web/live/article_live.ex:435
 #: lib/baudrate_web/live/profile_live.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Cancel"
@@ -806,7 +806,7 @@ msgid "Allowlist (allow only specific domains)"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:91
-#: lib/baudrate_web/live/article_live.ex:108
+#: lib/baudrate_web/live/article_live.ex:111
 #, elixir-autogen, elixir-format
 msgid "Article deleted."
 msgstr ""
@@ -857,7 +857,7 @@ msgid "Comma-separated list of domains to block from federation."
 msgstr ""
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:111
-#: lib/baudrate_web/live/article_live.ex:202
+#: lib/baudrate_web/live/article_live.ex:205
 #, elixir-autogen, elixir-format
 msgid "Comment deleted."
 msgstr ""
@@ -945,13 +945,13 @@ msgid "Failed"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:95
-#: lib/baudrate_web/live/article_live.ex:112
+#: lib/baudrate_web/live/article_live.ex:115
 #, elixir-autogen, elixir-format
 msgid "Failed to delete article."
 msgstr ""
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:115
-#: lib/baudrate_web/live/article_live.ex:205
+#: lib/baudrate_web/live/article_live.ex:208
 #, elixir-autogen, elixir-format
 msgid "Failed to delete comment."
 msgstr ""
@@ -1209,7 +1209,7 @@ msgstr ""
 msgid "Back to article"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:249
+#: lib/baudrate_web/live/article_live.ex:252
 #, elixir-autogen, elixir-format
 msgid "Comment posted."
 msgstr ""
@@ -1243,17 +1243,17 @@ msgstr ""
 msgid "Edit Article"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:316
+#: lib/baudrate_web/live/article_live.ex:319
 #, elixir-autogen, elixir-format
 msgid "Failed to delete attachment."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:434
+#: lib/baudrate_web/live/article_live.ex:466
 #, elixir-autogen, elixir-format
 msgid "File too large (max 10 MB)"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:436
+#: lib/baudrate_web/live/article_live.ex:468
 #, elixir-autogen, elixir-format
 msgid "File type not accepted"
 msgstr ""
@@ -1268,11 +1268,11 @@ msgstr ""
 msgid "No comments yet."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:115
-#: lib/baudrate_web/live/article_live.ex:139
-#: lib/baudrate_web/live/article_live.ex:174
-#: lib/baudrate_web/live/article_live.ex:208
-#: lib/baudrate_web/live/article_live.ex:319
+#: lib/baudrate_web/live/article_live.ex:118
+#: lib/baudrate_web/live/article_live.ex:142
+#: lib/baudrate_web/live/article_live.ex:177
+#: lib/baudrate_web/live/article_live.ex:211
+#: lib/baudrate_web/live/article_live.ex:322
 #, elixir-autogen, elixir-format
 msgid "Not authorized."
 msgstr ""
@@ -1282,8 +1282,8 @@ msgstr ""
 msgid "Post Comment"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:385
-#: lib/baudrate_web/live/article_live.ex:400
+#: lib/baudrate_web/live/article_live.ex:417
+#: lib/baudrate_web/live/article_live.ex:432
 #, elixir-autogen, elixir-format
 msgid "Reply"
 msgstr ""
@@ -1306,12 +1306,12 @@ msgstr ""
 msgid "Search..."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:298
+#: lib/baudrate_web/live/article_live.ex:301
 #, elixir-autogen, elixir-format
 msgid "Some files failed to upload."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:435
+#: lib/baudrate_web/live/article_live.ex:467
 #, elixir-autogen, elixir-format
 msgid "Too many files (max 5)"
 msgstr ""
@@ -1321,7 +1321,7 @@ msgstr ""
 msgid "Upload"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:437
+#: lib/baudrate_web/live/article_live.ex:469
 #, elixir-autogen, elixir-format
 msgid "Upload error"
 msgstr ""
@@ -1331,7 +1331,7 @@ msgstr ""
 msgid "Write a comment..."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:395
+#: lib/baudrate_web/live/article_live.ex:427
 #, elixir-autogen, elixir-format
 msgid "Write a reply..."
 msgstr ""
@@ -2072,7 +2072,7 @@ msgstr ""
 msgid "Add Moderator"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:357
+#: lib/baudrate_web/live/article_live.ex:389
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this comment?"
 msgstr ""
@@ -2087,8 +2087,8 @@ msgstr ""
 msgid "Failed to add moderator."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:136
-#: lib/baudrate_web/live/article_live.ex:171
+#: lib/baudrate_web/live/article_live.ex:139
+#: lib/baudrate_web/live/article_live.ex:174
 #, elixir-autogen, elixir-format
 msgid "Failed to update article."
 msgstr ""
@@ -2183,4 +2183,9 @@ msgstr ""
 #: lib/baudrate_web/live/search_live.html.heex:42
 #, elixir-autogen, elixir-format
 msgid "No comments found for \"%{query}\"."
+msgstr ""
+
+#: lib/baudrate_web/live/article_live.ex:350
+#, elixir-autogen, elixir-format
+msgid "This article has been deleted."
 msgstr ""
