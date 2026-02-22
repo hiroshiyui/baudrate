@@ -68,8 +68,8 @@ config :baudrate, Baudrate.Federation,
   delivery_poll_interval: 60_000,
   delivery_batch_size: 50,
   delivery_backoff_schedule: [60, 300, 1800, 7200, 43200, 86400],
-  stale_actor_cleanup_interval: 86_400_000,
-  stale_actor_max_age: 2_592_000
+  stale_actor_cleanup_interval: 86_400_000, # 24 hours in ms (Process.send_after)
+  stale_actor_max_age: 2_592_000 # 30 days in seconds (matches actor_cache_ttl convention)
 
 config :gettext, default_locale: "en"
 config :baudrate, BaudrateWeb.Gettext, default_locale: "en", locales: ~w(en zh_TW)

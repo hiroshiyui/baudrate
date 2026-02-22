@@ -489,6 +489,21 @@ the local domain blocklist against an external known-bad-actor list:
 - Admin UI shows: external/local counts, overlap, missing domains (with "Add" / "Add All" buttons), extra domains (informational)
 - All bulk-add operations are recorded in the moderation log
 
+**Stale actor cleanup:**
+
+The `StaleActorCleaner` GenServer runs daily (configurable via
+`stale_actor_cleanup_interval`, default 24h) to clean up remote actors whose
+`fetched_at` exceeds the configured max age (`stale_actor_max_age`, default
+30 days). For each stale actor:
+
+- If referenced (followers, articles, comments, likes, announces, or reports)
+  → refreshed via `ActorResolver.refresh/1`
+- If unreferenced → deleted from the database
+
+Processing is batched (50 actors per cycle) and skips when federation is
+disabled. Failed refresh attempts are tracked to prevent infinite
+re-processing within a single cleanup run.
+
 **Security:**
 - HTTP Signature verification on all inbox requests
 - HTML sanitization (allowlist-based) before database storage

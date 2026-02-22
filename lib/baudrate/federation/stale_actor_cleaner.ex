@@ -6,7 +6,7 @@ defmodule Baudrate.Federation.StaleActorCleaner do
   Actors that haven't been refreshed within the configured max age are either:
 
   - **Refreshed** — if they are still referenced by followers, articles,
-    comments, likes, or announces
+    comments, likes, announces, or reports
   - **Deleted** — if they have no remaining references in the database
 
   Runs every 24 hours (configurable via `stale_actor_cleanup_interval`).
@@ -26,6 +26,7 @@ defmodule Baudrate.Federation.StaleActorCleaner do
   alias Baudrate.Repo
   alias Baudrate.Federation.{ActorResolver, Announce, Follower, RemoteActor}
   alias Baudrate.Content.{Article, ArticleLike, Comment}
+  alias Baudrate.Moderation.Report
 
   @batch_size 50
 
@@ -74,7 +75,7 @@ defmodule Baudrate.Federation.StaleActorCleaner do
   Checks whether a remote actor has any references in the database.
 
   Returns `true` if the actor is referenced by any of:
-  followers, articles, comments, article likes, or announces.
+  followers, articles, comments, article likes, announces, or reports.
   Short-circuits on the first match found.
   """
   @spec has_references?(non_neg_integer()) :: boolean()
@@ -83,7 +84,8 @@ defmodule Baudrate.Federation.StaleActorCleaner do
       Repo.exists?(from a in Article, where: a.remote_actor_id == ^remote_actor_id) or
       Repo.exists?(from c in Comment, where: c.remote_actor_id == ^remote_actor_id) or
       Repo.exists?(from l in ArticleLike, where: l.remote_actor_id == ^remote_actor_id) or
-      Repo.exists?(from n in Announce, where: n.remote_actor_id == ^remote_actor_id)
+      Repo.exists?(from n in Announce, where: n.remote_actor_id == ^remote_actor_id) or
+      Repo.exists?(from r in Report, where: r.remote_actor_id == ^remote_actor_id)
   end
 
   defp process_stale_batch(cutoff, skip_ids, {refreshed, deleted, errors}) do

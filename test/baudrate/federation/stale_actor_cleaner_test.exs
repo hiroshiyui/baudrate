@@ -3,6 +3,7 @@ defmodule Baudrate.Federation.StaleActorCleanerTest do
 
   alias Baudrate.Federation.{Announce, Follower, RemoteActor, StaleActorCleaner}
   alias Baudrate.Content.{Article, ArticleLike, Comment}
+  alias Baudrate.Moderation.Report
 
   @valid_actor_attrs %{
     ap_id: "https://remote.example/users/alice",
@@ -218,6 +219,19 @@ defmodule Baudrate.Federation.StaleActorCleanerTest do
         ap_id: "https://remote.example/announces/1",
         target_ap_id: "https://local.example/ap/articles/test",
         activity_id: "https://remote.example/activities/announce-1",
+        remote_actor_id: actor.id
+      })
+      |> Repo.insert!()
+
+      assert StaleActorCleaner.has_references?(actor.id)
+    end
+
+    test "returns true when actor has reports" do
+      actor = create_remote_actor()
+
+      %Report{}
+      |> Ecto.Changeset.change(%{
+        reason: "spam",
         remote_actor_id: actor.id
       })
       |> Repo.insert!()
