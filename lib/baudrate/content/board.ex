@@ -23,6 +23,8 @@ defmodule Baudrate.Content.Board do
     field :slug, :string
     field :position, :integer, default: 0
     field :visibility, :string, default: "public"
+    field :min_role_to_view, :string, default: "guest"
+    field :min_role_to_post, :string, default: "user"
     field :ap_enabled, :boolean, default: true
     field :ap_public_key, :string
     field :ap_private_key_encrypted, :binary
@@ -44,16 +46,18 @@ defmodule Baudrate.Content.Board do
 
   def changeset(board, attrs) do
     board
-    |> cast(attrs, [:name, :description, :slug, :position, :parent_id, :visibility, :ap_enabled])
+    |> cast(attrs, [:name, :description, :slug, :position, :parent_id, :min_role_to_view, :min_role_to_post, :ap_enabled])
     |> validate_required([:name, :slug])
     |> validate_length(:name, max: 100)
     |> validate_length(:description, max: 1000)
-    |> validate_inclusion(:visibility, ["public", "private"])
+    |> validate_inclusion(:min_role_to_view, ~w(guest user moderator admin))
+    |> validate_inclusion(:min_role_to_post, ~w(user moderator admin))
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
       message: "must be lowercase alphanumeric with hyphens"
     )
     |> assoc_constraint(:parent)
     |> unique_constraint(:slug)
+    |> sync_visibility()
   end
 
   @doc """
@@ -61,13 +65,24 @@ defmodule Baudrate.Content.Board do
   """
   def update_changeset(board, attrs) do
     board
-    |> cast(attrs, [:name, :description, :position, :parent_id, :visibility, :ap_enabled])
+    |> cast(attrs, [:name, :description, :position, :parent_id, :min_role_to_view, :min_role_to_post, :ap_enabled])
     |> validate_required([:name])
     |> validate_length(:name, max: 100)
     |> validate_length(:description, max: 1000)
-    |> validate_inclusion(:visibility, ["public", "private"])
+    |> validate_inclusion(:min_role_to_view, ~w(guest user moderator admin))
+    |> validate_inclusion(:min_role_to_post, ~w(user moderator admin))
     |> validate_no_parent_cycle(board)
     |> assoc_constraint(:parent)
+    |> sync_visibility()
+  end
+
+  # Keep legacy visibility column in sync with min_role_to_view
+  defp sync_visibility(changeset) do
+    case get_change(changeset, :min_role_to_view) do
+      nil -> changeset
+      "guest" -> put_change(changeset, :visibility, "public")
+      _ -> put_change(changeset, :visibility, "private")
+    end
   end
 
   defp validate_no_parent_cycle(changeset, board) do

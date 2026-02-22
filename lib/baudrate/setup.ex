@@ -108,6 +108,21 @@ defmodule Baudrate.Setup do
     "guest.view_content" => "View published content"
   }
 
+  @role_levels %{"guest" => 0, "user" => 1, "moderator" => 2, "admin" => 3}
+
+  @doc """
+  Returns the numeric level for a role name (guest=0, user=1, moderator=2, admin=3).
+  Unknown roles default to 0.
+  """
+  def role_level(role_name), do: Map.get(@role_levels, role_name, 0)
+
+  @doc """
+  Returns true if the user's role meets or exceeds the minimum required role.
+  """
+  def role_meets_minimum?(user_role_name, min_role_name) do
+    role_level(user_role_name) >= role_level(min_role_name)
+  end
+
   @doc """
   Returns the value of a setting by key, or nil if not found.
   """

@@ -14,7 +14,7 @@ defmodule Baudrate.Content do
   """
 
   import Ecto.Query
-  alias Baudrate.Repo
+  alias Baudrate.{Auth, Repo, Setup}
   alias Baudrate.Content.{Article, Attachment, ArticleLike, Board, BoardArticle, BoardModerator, Comment}
 
   # --- Boards ---
@@ -28,14 +28,15 @@ defmodule Baudrate.Content do
   end
 
   @doc """
-  Returns top-level public boards (no parent, visibility "public"), ordered by position.
+  Returns top-level boards visible to the given user, ordered by position.
+  Guests (nil user) only see boards with `min_role_to_view == "guest"`.
   """
-  def list_public_top_boards do
-    from(b in Board,
-      where: is_nil(b.parent_id) and b.visibility == "public",
-      order_by: b.position
-    )
+  def list_visible_top_boards(user) do
+    level = if user, do: Setup.role_level(user.role.name), else: 0
+
+    from(b in Board, where: is_nil(b.parent_id), order_by: b.position)
     |> Repo.all()
+    |> Enum.filter(&(Setup.role_level(&1.min_role_to_view) <= level))
   end
 
   @doc """
@@ -47,14 +48,14 @@ defmodule Baudrate.Content do
   end
 
   @doc """
-  Returns child boards of the given board with `visibility == "public"`, ordered by position.
+  Returns child boards visible to the given user, ordered by position.
   """
-  def list_public_sub_boards(%Board{id: board_id}) do
-    from(b in Board,
-      where: b.parent_id == ^board_id and b.visibility == "public",
-      order_by: b.position
-    )
+  def list_visible_sub_boards(%Board{} = board, user) do
+    level = if user, do: Setup.role_level(user.role.name), else: 0
+
+    from(b in Board, where: b.parent_id == ^board.id, order_by: b.position)
     |> Repo.all()
+    |> Enum.filter(&(Setup.role_level(&1.min_role_to_view) <= level))
   end
 
   @doc """
@@ -292,14 +293,96 @@ defmodule Baudrate.Content do
     end
   end
 
-  @doc """
-  Returns `true` if the user can manage (edit/delete) the article.
+  # --- Board Access Checks ---
 
-  A user can manage an article if they are the author or an admin.
+  @doc """
+  Returns true if the user can view the given board.
+  Guests can only see boards with `min_role_to_view == "guest"`.
   """
-  def can_manage_article?(%{role: %{name: "admin"}}, %Article{}), do: true
-  def can_manage_article?(%{id: user_id}, %Article{user_id: article_user_id}), do: user_id == article_user_id
-  def can_manage_article?(_, _), do: false
+  def can_view_board?(board, nil), do: board.min_role_to_view == "guest"
+
+  def can_view_board?(board, user) do
+    Setup.role_meets_minimum?(user.role.name, board.min_role_to_view)
+  end
+
+  @doc """
+  Returns true if the user can post in the given board.
+  Requires active account, content creation permission, and sufficient role.
+  """
+  def can_post_in_board?(_board, nil), do: false
+
+  def can_post_in_board?(board, user) do
+    Auth.can_create_content?(user) and
+      Setup.role_meets_minimum?(user.role.name, board.min_role_to_post)
+  end
+
+  @doc """
+  Returns true if the user is a board moderator (assigned, global moderator, or admin).
+  """
+  def board_moderator?(_board, nil), do: false
+
+  def board_moderator?(board, %{id: user_id, role: %{name: role_name}}) do
+    role_name in ["admin", "moderator"] or
+      Repo.exists?(
+        from(bm in BoardModerator,
+          where: bm.board_id == ^board.id and bm.user_id == ^user_id
+        )
+      )
+  end
+
+  def board_moderator?(_board, _user), do: false
+
+  # --- Granular Article/Comment Permission Checks ---
+
+  @doc """
+  Returns true if the user can edit the article (author or admin only).
+  Board moderators cannot edit others' articles.
+  """
+  def can_edit_article?(%{role: %{name: "admin"}}, _article), do: true
+  def can_edit_article?(%{id: uid}, %{user_id: uid}), do: true
+  def can_edit_article?(_, _), do: false
+
+  @doc """
+  Returns true if the user can delete the article (author, admin, or board moderator).
+  """
+  def can_delete_article?(%{role: %{name: "admin"}}, _article), do: true
+  def can_delete_article?(%{id: uid}, %{user_id: uid}), do: true
+
+  def can_delete_article?(user, article) do
+    article = Repo.preload(article, :boards)
+    Enum.any?(article.boards, &board_moderator?(&1, user))
+  end
+
+  @doc """
+  Returns true if the user can pin the article (admin or board moderator).
+  """
+  def can_pin_article?(%{role: %{name: "admin"}}, _article), do: true
+
+  def can_pin_article?(user, article) do
+    article = Repo.preload(article, :boards)
+    Enum.any?(article.boards, &board_moderator?(&1, user))
+  end
+
+  @doc """
+  Returns true if the user can lock the article (admin or board moderator).
+  """
+  def can_lock_article?(user, article), do: can_pin_article?(user, article)
+
+  @doc """
+  Returns true if the user can delete the comment (author, admin, or board moderator).
+  """
+  def can_delete_comment?(%{role: %{name: "admin"}}, _comment, _article), do: true
+  def can_delete_comment?(%{id: uid}, %{user_id: uid}, _article), do: true
+
+  def can_delete_comment?(user, _comment, article) do
+    article = Repo.preload(article, :boards)
+    Enum.any?(article.boards, &board_moderator?(&1, user))
+  end
+
+  @doc """
+  Backward-compatible alias for `can_edit_article?/2`.
+  """
+  def can_manage_article?(user, article), do: can_edit_article?(user, article)
 
   @doc """
   Generates a URL-safe slug from a title string.
@@ -330,7 +413,13 @@ defmodule Baudrate.Content do
   Full-text search across articles by title and body.
 
   Uses PostgreSQL `websearch_to_tsquery` for natural search syntax.
-  Only searches non-deleted articles in public boards.
+  Only searches non-deleted articles in boards the user can view.
+
+  ## Options
+
+    * `:page` — page number (default 1)
+    * `:per_page` — articles per page (default #{@per_page})
+    * `:user` — current user (nil for guests)
 
   Returns `%{articles, total, page, per_page, total_pages}`.
   """
@@ -338,6 +427,8 @@ defmodule Baudrate.Content do
     page = max(Keyword.get(opts, :page, 1), 1)
     per_page = Keyword.get(opts, :per_page, @per_page)
     offset = (page - 1) * per_page
+    user = Keyword.get(opts, :user)
+    allowed_roles = allowed_view_roles(user)
 
     base_query =
       from(a in Article,
@@ -347,7 +438,7 @@ defmodule Baudrate.Content do
         on: b.id == ba.board_id,
         where:
           is_nil(a.deleted_at) and
-            b.visibility == "public" and
+            b.min_role_to_view in ^allowed_roles and
             fragment("?.search_vector @@ websearch_to_tsquery('english', ?)", a, ^query_string),
         distinct: a.id
       )
@@ -362,7 +453,7 @@ defmodule Baudrate.Content do
         on: b.id == ba.board_id,
         where:
           is_nil(a.deleted_at) and
-            b.visibility == "public" and
+            b.min_role_to_view in ^allowed_roles and
             fragment("?.search_vector @@ websearch_to_tsquery('english', ?)", a, ^query_string),
         distinct: a.id,
         order_by: [
@@ -384,6 +475,16 @@ defmodule Baudrate.Content do
       per_page: per_page,
       total_pages: total_pages
     }
+  end
+
+  defp allowed_view_roles(nil), do: ["guest"]
+
+  defp allowed_view_roles(%{role: %{name: role_name}}) do
+    level = Setup.role_level(role_name)
+
+    for {name, lvl} <- [{"guest", 0}, {"user", 1}, {"moderator", 2}, {"admin", 3}],
+        lvl <= level,
+        do: name
   end
 
   # --- Cross-post ---
@@ -646,6 +747,58 @@ defmodule Baudrate.Content do
         select: count(c.id)
       )
     ) || 0
+  end
+
+  # --- Pin / Lock ---
+
+  @doc """
+  Toggles the pinned status of an article.
+  """
+  def toggle_pin_article(%Article{} = article) do
+    article
+    |> Ecto.Changeset.change(pinned: !article.pinned)
+    |> Repo.update()
+  end
+
+  @doc """
+  Toggles the locked status of an article.
+  """
+  def toggle_lock_article(%Article{} = article) do
+    article
+    |> Ecto.Changeset.change(locked: !article.locked)
+    |> Repo.update()
+  end
+
+  # --- Board Moderators ---
+
+  @doc """
+  Lists moderators for a board with user and role preloaded.
+  """
+  def list_board_moderators(%Board{id: board_id}) do
+    from(bm in BoardModerator,
+      where: bm.board_id == ^board_id,
+      preload: [user: :role]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Assigns a user as board moderator.
+  """
+  def add_board_moderator(board_id, user_id) do
+    %BoardModerator{}
+    |> BoardModerator.changeset(%{board_id: board_id, user_id: user_id})
+    |> Repo.insert()
+  end
+
+  @doc """
+  Removes a user from board moderators.
+  """
+  def remove_board_moderator(board_id, user_id) do
+    from(bm in BoardModerator,
+      where: bm.board_id == ^board_id and bm.user_id == ^user_id
+    )
+    |> Repo.delete_all()
   end
 
   # --- Federation Hooks ---
