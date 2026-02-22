@@ -182,7 +182,7 @@ defmodule Baudrate.Federation.Publisher do
     Delivery.enqueue_for_article(activity, actor_uri, article)
 
     # Announce from each public board → board's followers
-    for board <- article.boards, board.visibility == "public" do
+    for board <- article.boards, board.min_role_to_view == "guest" do
       {announce, board_uri} = build_announce_article(article, board)
       Delivery.enqueue_for_followers(announce, board_uri)
     end

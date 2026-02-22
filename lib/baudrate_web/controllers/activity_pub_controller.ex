@@ -104,7 +104,7 @@ defmodule BaudrateWeb.ActivityPubController do
       with true <- Regex.match?(@slug_re, slug),
            board when not is_nil(board) <-
              Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
-           true <- board.visibility == "public",
+           true <- board.min_role_to_view == "guest",
            true <- board.ap_enabled,
            {:ok, board} <- KeyStore.ensure_board_keypair(board) do
         conn
@@ -145,7 +145,7 @@ defmodule BaudrateWeb.ActivityPubController do
   def board_outbox(conn, %{"slug" => slug} = params) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
-         true <- board.visibility == "public",
+         true <- board.min_role_to_view == "guest",
          true <- board.ap_enabled do
       conn
       |> put_resp_content_type(@activity_json)
@@ -174,7 +174,7 @@ defmodule BaudrateWeb.ActivityPubController do
   def board_followers(conn, %{"slug" => slug}) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
-         true <- board.visibility == "public",
+         true <- board.min_role_to_view == "guest",
          true <- board.ap_enabled do
       actor_uri = Federation.actor_uri(:board, board.slug)
 
@@ -194,7 +194,7 @@ defmodule BaudrateWeb.ActivityPubController do
         try do
           article = Baudrate.Content.get_article_by_slug!(slug)
 
-          if Enum.any?(article.boards, &(&1.visibility == "public")) do
+          if Enum.any?(article.boards, &(&1.min_role_to_view == "guest")) do
             conn
             |> put_resp_content_type(@activity_json)
             |> json(Federation.article_object(article))
@@ -232,7 +232,7 @@ defmodule BaudrateWeb.ActivityPubController do
   def board_inbox(conn, %{"slug" => slug}) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
-         true <- board.visibility == "public",
+         true <- board.min_role_to_view == "guest",
          true <- board.ap_enabled do
       handle_inbox(conn, {:board, board})
     else

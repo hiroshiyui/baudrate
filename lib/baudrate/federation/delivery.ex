@@ -181,7 +181,7 @@ defmodule Baudrate.Federation.Delivery do
     # Collect inboxes from board followers (public boards only)
     board_inboxes =
       article.boards
-      |> Enum.filter(&(&1.visibility == "public" and &1.ap_enabled))
+      |> Enum.filter(&(&1.min_role_to_view == "guest" and &1.ap_enabled))
       |> Enum.flat_map(fn board ->
         board_uri = Federation.actor_uri(:board, board.slug)
         resolve_follower_inboxes(board_uri)

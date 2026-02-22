@@ -114,7 +114,7 @@ defmodule Baudrate.Federation do
         :board ->
           board = Repo.get_by(Baudrate.Content.Board, slug: identifier)
 
-          if board && board.visibility == "public",
+          if board && board.min_role_to_view == "guest",
             do: {:ok, webfinger_jrd(:board, identifier)},
             else: {:error, :not_found}
       end
@@ -299,7 +299,7 @@ defmodule Baudrate.Federation do
       )
       |> Repo.all()
       |> Enum.filter(fn article ->
-        Enum.any?(article.boards, &(&1.visibility == "public"))
+        Enum.any?(article.boards, &(&1.min_role_to_view == "guest"))
       end)
 
     outbox_uri = "#{actor_uri(:user, user.username)}/outbox"
@@ -589,7 +589,7 @@ defmodule Baudrate.Federation do
         <<^board_prefix::binary, slug::binary>> ->
           if Regex.match?(~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/, slug) do
             board = Repo.get_by(Baudrate.Content.Board, slug: slug)
-            if board && board.visibility == "public" && board.ap_enabled, do: board
+            if board && board.min_role_to_view == "guest" && board.ap_enabled, do: board
           end
 
         _ ->

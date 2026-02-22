@@ -143,8 +143,8 @@
             <tr :for={board <- @boards}>
               <td>{board.name}</td>
               <td>
-                <span class={["badge badge-sm", board.visibility == "public" && "badge-success", board.visibility == "private" && "badge-ghost"]}>
-                  {board.visibility}
+                <span class={["badge badge-sm", board.min_role_to_view == "guest" && "badge-success", board.min_role_to_view != "guest" && "badge-ghost"]}>
+                  {board.min_role_to_view}
                 </span>
               </td>
               <td>
