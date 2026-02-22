@@ -7,11 +7,12 @@ Baudrate is a BBS built with [Elixir](https://elixir-lang.org/) and [Phoenix](ht
 ### Features
 
 - **Real-time UI** with Phoenix LiveView
-- **Hierarchical boards** -- nested board structure with breadcrumb navigation, sub-board display, moderators, public/private visibility
-- **Guest browsing** -- public boards and articles are accessible without login
+- **Hierarchical boards** -- nested board structure with breadcrumb navigation, sub-board display, per-board role-based access (`min_role_to_view`, `min_role_to_post`), and board moderator management
+- **Guest browsing** -- guest-visible boards and articles are accessible without login
 - **Cross-posted articles** -- articles can span multiple boards
 - **Threaded comments** -- with support for remote replies via ActivityPub
-- **Role-based access control** -- admin, moderator, user, and guest roles
+- **Role-based access control** -- admin, moderator, user, and guest roles with per-board permission levels
+- **Board moderation** -- board moderators can pin/lock threads and delete articles/comments
 - **TOTP two-factor authentication** -- required for admin/moderator, optional for users, with recovery codes
 - **ActivityPub federation** -- federate with Mastodon, Lemmy, and the Fediverse
   - WebFinger and NodeInfo discovery

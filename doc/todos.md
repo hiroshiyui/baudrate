@@ -4,7 +4,7 @@
 (none pending)
 
 ## Board Management
-- [ ] Board-level permissions (beyond visibility)
+(none pending)
 
 ## System
 - [ ] Public API via existing ActivityPub endpoints (no separate REST API; AP endpoints serve as the public API)
@@ -46,6 +46,7 @@
 - [x] Admin pending-users approval page
 - [x] Content reporting system (remote + local, moderation queue with resolve/dismiss)
 - [x] Board visibility (public/private) with guest access control
+- [x] Board-level permissions (`min_role_to_view`, `min_role_to_post`, board moderators, pin/lock/delete)
 - [x] Admin dashboard with user management (list, filter, search, role change)
 - [x] User banning / suspension (ban with reason, unban, session invalidation, login rejection)
 - [x] Admin UI for creating / editing / deleting boards

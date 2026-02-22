@@ -37,7 +37,7 @@ lib/
 │   │   ├── article.ex           # Article schema (posts, local + remote, soft-delete)
 │   │   ├── article_like.ex      # ArticleLike schema (local + remote likes)
 │   │   ├── attachment.ex         # Attachment schema (files on articles, type/size validation)
-│   │   ├── board.ex             # Board schema (hierarchical via parent_id, visibility)
+│   │   ├── board.ex             # Board schema (hierarchical via parent_id, role-based permissions)
 │   │   ├── board_article.ex     # Join table: board ↔ article
 │   │   ├── board_moderator.ex   # Join table: board ↔ moderator
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
@@ -84,7 +84,7 @@ lib/
 │   │   └── session_controller.ex  # POST endpoints for session mutations
 │   ├── live/
 │   │   ├── admin/
-│   │   │   ├── boards_live.ex          # Admin board CRUD (create, edit, delete)
+│   │   │   ├── boards_live.ex          # Admin board CRUD + moderator management
 │   │   │   ├── federation_live.ex      # Admin federation dashboard
 │   │   │   ├── invites_live.ex         # Admin invite code management (generate, revoke)
 │   │   │   ├── moderation_live.ex     # Moderation queue (reports)
@@ -182,6 +182,56 @@ all permissions of lower roles:
 Permission names follow a `scope.action` convention (e.g., `admin.manage_users`,
 `user.create_content`).
 
+#### Role Level Comparison
+
+`Setup.role_level/1` maps role names to numeric levels for comparison:
+
+| Role | Level |
+|------|-------|
+| guest | 0 |
+| user | 1 |
+| moderator | 2 |
+| admin | 3 |
+
+`Setup.role_meets_minimum?/2` checks if a user's role meets a minimum
+requirement (e.g., `role_meets_minimum?("moderator", "user")` → `true`).
+
+### Board Permissions
+
+Boards have two role-based permission fields:
+
+| Field | Values | Default | Purpose |
+|-------|--------|---------|---------|
+| `min_role_to_view` | guest, user, moderator, admin | guest | Minimum role required to see the board and its articles |
+| `min_role_to_post` | user, moderator, admin | user | Minimum role required to create articles in the board |
+
+Key functions in `Content`:
+
+- `can_view_board?(board, user)` — checks `min_role_to_view` against user's role
+- `can_post_in_board?(board, user)` — checks `min_role_to_post` + active status + `user.create_content` permission
+- `list_visible_top_boards(user)` / `list_visible_sub_boards(board, user)` — role-filtered board listings
+
+Only boards with `min_role_to_view == "guest"` are federated (same semantics as the
+former `visibility == "public"`). The legacy `visibility` column is kept in sync
+automatically via `Board.sync_visibility/1`.
+
+### Board Moderators
+
+Users can be assigned as moderators of specific boards via the admin UI
+(`/admin/boards` → "Moderators" button). Board moderators can:
+
+- **Delete** articles and comments in their boards (soft-delete)
+- **Pin/Unpin** articles in their boards
+- **Lock/Unlock** threads in their boards
+
+Board moderators **cannot** edit others' articles (only author and admin can edit).
+
+`Content.board_moderator?(board, user)` returns `true` for:
+- Users with admin or moderator role (global)
+- Users explicitly assigned via the `board_moderators` join table
+
+All board moderator actions are logged in the moderation log.
+
 ### Avatar System
 
 User avatars are processed server-side for security:
@@ -243,14 +293,13 @@ suffix to avoid collisions. Articles can be cross-posted to multiple boards.
 
 ### Content Model
 
-Boards are organized hierarchically via `parent_id` and have a `visibility`
-field (`"public"` or `"private"`, default `"public"`). Public boards and their
-articles are accessible to unauthenticated visitors; private boards require
-login. Board pages display breadcrumb navigation (ancestor chain from root to
-current board) and list sub-boards above articles. Guest visitors see only
-public sub-boards. Articles can be cross-posted to multiple boards through the
-`board_articles` join table. Board moderators are tracked via the
-`board_moderators` join table.
+Boards are organized hierarchically via `parent_id` and have role-based access
+control via `min_role_to_view` and `min_role_to_post` fields (see
+[Board Permissions](#board-permissions) above). Board pages display breadcrumb
+navigation (ancestor chain from root to current board) and list sub-boards
+above articles. Sub-boards and board listings are filtered by the user's role.
+Articles can be cross-posted to multiple boards through the `board_articles`
+join table. Board moderators are tracked via the `board_moderators` join table.
 
 Comments are threaded via `parent_id` (self-referential) and belong to an
 article. Both articles and comments can originate locally (via `user_id`) or
@@ -365,7 +414,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - SSRF-safe remote fetches (reject private/loopback IPs, HTTPS only)
 - Per-domain rate limiting (60 req/min per remote domain)
 - Private keys encrypted at rest with AES-256-GCM
-- Private boards hidden from all AP endpoints (actor, outbox, inbox, WebFinger, audience resolution)
+- Non-guest boards (`min_role_to_view != "guest"`) hidden from all AP endpoints (actor, outbox, inbox, WebFinger, audience resolution)
 - CSP `img-src` allows `https:` for remote avatars; all other directives remain restrictive
 
 ### Layout System

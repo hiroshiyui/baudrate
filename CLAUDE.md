@@ -40,11 +40,15 @@ Key gotchas to keep in mind:
 
 ## Project Conventions
 
+### Principle Maintenance
+
+- Ensure this document is updated to reflect any changes in the workflow and maintain consistency.
+
 ### While Planning
 
 - When a feature requirement is unclear, ambiguous, please seek clarification on definition and scope rather than guessing.
 - Each implementation should matches specs and industry standards and common practices.
-- Alway consider to improve responsiveness and accessibility for UX/UI.
+- Always consider to improve responsiveness and accessibility for UX/UI, follows WAI-ARIA specification.
 
 ### After Every Change
 
