@@ -32,11 +32,24 @@ mix precommit          # Pre-commit checks: compile --warnings-as-errors, unlock
 See [`doc/development.md`](doc/development.md) for full architecture documentation
 (contexts, auth flow, sessions, RBAC, layout system, federation, etc.).
 
-Key gotchas to keep in mind:
+### Contexts
+
+- **Auth** (`lib/baudrate/auth.ex`) — login, registration, TOTP, sessions, avatars, invite codes, password reset
+- **Content** (`lib/baudrate/content.ex`) — boards, articles, comments, likes, permissions, board moderators, search
+- **Federation** (`lib/baudrate/federation.ex`) — AP actors, outbox, followers, announces, delivery
+- **Setup** (`lib/baudrate/setup.ex`) — first-run wizard, RBAC seeding, settings, role level utilities
+- **Moderation** (`lib/baudrate/moderation.ex`) — reports, resolve/dismiss, audit log
+
+### Key Gotchas
 
 - Layout receives `@inner_content` (NOT `@inner_block`) — use `{@inner_content}`
 - Do NOT wrap templates with `<Layouts.app>` — causes duplicate flash IDs
 - LiveView uses `phx-trigger-action` for session writes (POST to `SessionController`)
+- Board changeset calls `sync_visibility/1` to keep the legacy `visibility` column in sync — always use `min_role_to_view`/`min_role_to_post` in new code
+- Soft-delete uses `deleted_at` timestamps (not hard delete) for articles and comments
+- Federation delivery runs in async `Task` — use `Ecto.Adapters.SQL.Sandbox.allow/3` in tests that trigger it
+- `can_manage_article?/2` is a backward-compat alias for `can_edit_article?/2` — prefer the granular functions (`can_edit_article?`, `can_delete_article?`, `can_pin_article?`, `can_lock_article?`)
+- Only boards with `min_role_to_view == "guest"` and `ap_enabled == true` are federated
 
 ## Project Conventions
 
@@ -46,9 +59,9 @@ Key gotchas to keep in mind:
 
 ### While Planning
 
-- When a feature requirement is unclear, ambiguous, please seek clarification on definition and scope rather than guessing.
-- Each implementation should matches specs and industry standards and common practices.
-- Always consider to improve responsiveness and accessibility for UX/UI, follows WAI-ARIA specification.
+- When a feature requirement is unclear or ambiguous, seek clarification on definition and scope rather than guessing.
+- Each implementation should match specs, industry standards, and common practices.
+- Always consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification.
 
 ### After Every Change
 
@@ -71,10 +84,29 @@ Key gotchas to keep in mind:
 - All federation content is HTML-sanitized before storage
 - SSRF-safe remote fetches (reject private/loopback IPs, HTTPS only)
 - Rate limit all public endpoints
+- File uploads: validate magic bytes; avatars are re-encoded as WebP (EXIF stripped)
+- Federation private keys encrypted at rest (AES-256-GCM via `KeyVault`)
+- Content size limits: 256 KB AP payload, 64 KB content body
+- Remote actor display names sanitized (strip HTML, control chars, truncate)
+
+## Testing
+
+- `use BaudrateWeb.ConnCase` for LiveView/controller tests; `use Baudrate.DataCase` for context tests
+- `setup_user("role_name")` — creates a test user with the given role (seeds roles if needed)
+- `log_in_user(conn, user)` — authenticates a connection with session tokens
+- `errors_on(changeset)` — extracts validation errors as `%{field: [messages]}`
+- Tests mirror `lib/` structure under `test/`
 
 ## Key Entry Points
 
 | File | Purpose |
 |------|---------|
 | `lib/baudrate_web/router.ex` | Routes with auth live_sessions |
+| `lib/baudrate/auth.ex` | Auth context: login, registration, TOTP, sessions |
+| `lib/baudrate/content.ex` | Content context: boards, articles, comments, permissions |
+| `lib/baudrate/federation.ex` | Federation context: actors, outbox, followers |
+| `lib/baudrate/setup.ex` | Setup context: roles, settings, role level utilities |
+| `lib/baudrate/moderation.ex` | Moderation context: reports, audit log |
+| `lib/baudrate_web/live/auth_hooks.ex` | LiveView auth on_mount hooks |
+| `lib/baudrate_web/components/core_components.ex` | Shared UI components |
 | `doc/development.md` | Full architecture & project structure |
