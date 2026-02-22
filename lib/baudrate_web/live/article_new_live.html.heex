@@ -33,6 +33,55 @@
       required
     />
 
+    <%!-- Image Upload Section --%>
+    <div class="fieldset">
+      <span class="label mb-1">{gettext("Images")}</span>
+      <p class="text-xs text-base-content/50 mb-2">
+        {gettext("Max %{count} images, %{size} MB each. Images displayed at the end of article.", count: 4, size: 5)}
+      </p>
+
+      <%!-- Uploaded image thumbnails --%>
+      <div :if={@uploaded_images != []} class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+        <div :for={img <- @uploaded_images} class="relative group aspect-square">
+          <img
+            src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+            class="w-full h-full object-cover rounded-lg"
+            loading="lazy"
+          />
+          <button
+            type="button"
+            phx-click="remove_image"
+            phx-value-id={img.id}
+            class="absolute top-1 right-1 btn btn-xs btn-circle btn-error opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-label={gettext("Remove image")}
+          >
+            <.icon name="hero-x-mark" class="size-3" />
+          </button>
+        </div>
+      </div>
+
+      <%!-- Upload input --%>
+      <div :if={length(@uploaded_images) < 4}>
+        <form phx-change="validate_images" phx-submit="upload_images" class="space-y-2">
+          <.live_file_input upload={@uploads.article_images} class="file-input file-input-bordered file-input-sm w-full" />
+
+          <div :for={entry <- @uploads.article_images.entries} class="flex items-center gap-2 text-sm">
+            <span class="truncate max-w-48">{entry.client_name}</span>
+            <progress value={entry.progress} max="100" class="progress progress-primary w-24">{entry.progress}%</progress>
+            <button type="button" phx-click="cancel_image_upload" phx-value-ref={entry.ref} class="btn btn-xs btn-ghost text-error">&times;</button>
+          </div>
+
+          <div :for={err <- upload_errors(@uploads.article_images)} class="text-sm text-error">
+            {upload_error_to_string(err)}
+          </div>
+
+          <button :if={@uploads.article_images.entries != []} type="submit" class="btn btn-sm btn-outline">
+            {gettext("Upload Images")}
+          </button>
+        </form>
+      </div>
+    </div>
+
     <div class="fieldset mb-2">
       <span class="label mb-1">{gettext("Board")}</span>
       <div class="space-y-2">

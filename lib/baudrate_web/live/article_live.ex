@@ -53,6 +53,7 @@ defmodule BaudrateWeb.ArticleLive do
 
       comment_changeset = Content.change_comment()
       attachments = Content.list_attachments_for_article(article)
+      article_images = Content.list_article_images(article.id)
 
       socket =
         socket
@@ -68,6 +69,7 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:comment_form, to_form(comment_changeset, as: :comment))
         |> assign(:replying_to, nil)
         |> assign(:attachments, attachments)
+        |> assign(:article_images, article_images)
 
       if connected?(socket), do: ContentPubSub.subscribe_article(article.id)
 

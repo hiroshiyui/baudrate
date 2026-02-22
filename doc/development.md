@@ -36,6 +36,8 @@ lib/
 │   ├── attachment_storage.ex     # File attachment processing (magic bytes, image re-encoding)
 │   ├── content/
 │   │   ├── article.ex           # Article schema (posts, local + remote, soft-delete)
+│   │   ├── article_image.ex     # ArticleImage schema (gallery images on articles)
+│   │   ├── article_image_storage.ex # Image processing (resize, WebP, strip EXIF)
 │   │   ├── article_like.ex      # ArticleLike schema (local + remote likes)
 │   │   ├── attachment.ex         # Attachment schema (files on articles, type/size validation)
 │   │   ├── board.ex             # Board schema (hierarchical via parent_id, role-based permissions)
@@ -300,6 +302,32 @@ can create articles. Two entry points:
 
 Articles are assigned a URL-safe slug generated from the title with a random
 suffix to avoid collisions. Articles can be cross-posted to multiple boards.
+
+### Article Images
+
+Articles support up to 4 image attachments displayed as a responsive media
+gallery at the end of the article body (before the signature). Images are
+processed server-side for security, following the same patterns as the avatar
+system:
+
+1. Client selects up to 4 images (max 5 MB each, JPEG/PNG/WebP/GIF)
+2. Server validates magic bytes, auto-rotates, downscales to max 1024px
+   on the longest side (aspect-preserving), re-encodes as WebP with all
+   EXIF/metadata stripped
+3. Files stored at `priv/static/uploads/article_images/{filename}.webp`
+   with server-generated 64-char hex filenames (no user input in paths)
+4. Images are uploaded as orphans (`article_id = NULL`) during article
+   composition and associated with the article on save
+5. Orphan images older than 24 hours are cleaned up by `SessionCleaner`
+
+Gallery layout adapts by image count: 1 = full width, 2 = side-by-side,
+3-4 = 2×2 grid. Clicking opens the full-size image in a new tab.
+
+Key modules:
+- `Content.ArticleImage` — schema (`article_images` table)
+- `Content.ArticleImageStorage` — image processing and storage
+- `Content` — CRUD functions (`create_article_image/1`, `list_article_images/1`,
+  `associate_article_images/3`, `delete_article_image/1`, `delete_orphan_article_images/1`)
 
 ### Content Model
 

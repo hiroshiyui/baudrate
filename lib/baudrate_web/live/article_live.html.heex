@@ -74,6 +74,33 @@
 
     <div class="prose max-w-none">{raw(Baudrate.Content.Markdown.to_html(@article.body))}</div>
 
+    <%!-- Article Images Gallery --%>
+    <div :if={@article_images != []} class="mt-6">
+      <div class={[
+        "grid gap-2",
+        length(@article_images) == 1 && "grid-cols-1",
+        length(@article_images) == 2 && "grid-cols-2",
+        length(@article_images) >= 3 && "grid-cols-2"
+      ]}>
+        <a
+          :for={img <- @article_images}
+          href={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+          target="_blank"
+          rel="noopener"
+          class="block overflow-hidden rounded-lg"
+        >
+          <img
+            src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+            width={img.width}
+            height={img.height}
+            loading="lazy"
+            class="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+            alt=""
+          />
+        </a>
+      </div>
+    </div>
+
     <div :if={@article.user && @article.user.signature && @article.user.signature != ""} class="mt-4">
       <div class="divider text-xs text-base-content/50">{gettext("Signature")}</div>
       <div class="prose prose-sm max-w-none text-base-content/70">
