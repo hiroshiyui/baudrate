@@ -4,14 +4,15 @@ defmodule BaudrateWeb.Admin.BoardsLive do
 
   Only accessible to users with the `"admin"` role (enforced by the
   `:require_admin` on_mount hook). Provides CRUD operations for boards
-  including name, slug, description, visibility, position, parent, and
-  federation toggle.
+  including name, slug, description, permission levels, position, parent,
+  federation toggle, and board moderator management.
   """
 
   use BaudrateWeb, :live_view
 
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
+  alias Baudrate.Auth
   alias Baudrate.Content
   alias Baudrate.Content.Board
   alias Baudrate.Federation.KeyStore
@@ -27,7 +28,10 @@ defmodule BaudrateWeb.Admin.BoardsLive do
        editing_board: nil,
        form: nil,
        show_form: false,
-       wide_layout: true
+       wide_layout: true,
+       managing_moderators_board: nil,
+       board_moderators: [],
+       active_users: []
      )}
   end
 
@@ -94,6 +98,64 @@ defmodule BaudrateWeb.Admin.BoardsLive do
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to delete board."))}
     end
+  end
+
+  def handle_event("manage_moderators", %{"id" => id}, socket) do
+    board = Content.get_board!(String.to_integer(id))
+    moderators = Content.list_board_moderators(board)
+    active_users = Auth.list_users(status: "active")
+
+    {:noreply,
+     assign(socket,
+       managing_moderators_board: board,
+       board_moderators: moderators,
+       active_users: active_users
+     )}
+  end
+
+  def handle_event("close_moderators", _params, socket) do
+    {:noreply,
+     assign(socket,
+       managing_moderators_board: nil,
+       board_moderators: [],
+       active_users: []
+     )}
+  end
+
+  def handle_event("add_moderator", %{"user_id" => user_id}, socket) do
+    board = socket.assigns.managing_moderators_board
+    user_id = String.to_integer(user_id)
+
+    case Content.add_board_moderator(board.id, user_id) do
+      {:ok, _} ->
+        Moderation.log_action(socket.assigns.current_user.id, "add_board_moderator",
+          target_type: "board",
+          target_id: board.id,
+          details: %{"board_name" => board.name, "user_id" => user_id}
+        )
+
+        moderators = Content.list_board_moderators(board)
+        {:noreply, assign(socket, board_moderators: moderators)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to add moderator."))}
+    end
+  end
+
+  def handle_event("remove_moderator", %{"user-id" => user_id}, socket) do
+    board = socket.assigns.managing_moderators_board
+    user_id = String.to_integer(user_id)
+
+    Content.remove_board_moderator(board.id, user_id)
+
+    Moderation.log_action(socket.assigns.current_user.id, "remove_board_moderator",
+      target_type: "board",
+      target_id: board.id,
+      details: %{"board_name" => board.name, "user_id" => user_id}
+    )
+
+    moderators = Content.list_board_moderators(board)
+    {:noreply, assign(socket, board_moderators: moderators)}
   end
 
   defp save_new(socket, params) do

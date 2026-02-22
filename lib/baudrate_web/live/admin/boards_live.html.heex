@@ -35,12 +35,28 @@
 
         <.input field={@form[:description]} type="textarea" label={gettext("Description")} rows="3" />
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <.input
-            field={@form[:visibility]}
+            field={@form[:min_role_to_view]}
             type="select"
-            label={gettext("Visibility")}
-            options={[{gettext("Public"), "public"}, {gettext("Private"), "private"}]}
+            label={gettext("Minimum role to view")}
+            options={[
+              {gettext("Guest (public)"), "guest"},
+              {gettext("User"), "user"},
+              {gettext("Moderator"), "moderator"},
+              {gettext("Admin"), "admin"}
+            ]}
+          />
+
+          <.input
+            field={@form[:min_role_to_post]}
+            type="select"
+            label={gettext("Minimum role to post")}
+            options={[
+              {gettext("User"), "user"},
+              {gettext("Moderator"), "moderator"},
+              {gettext("Admin"), "admin"}
+            ]}
           />
 
           <.input field={@form[:position]} type="number" label={gettext("Position")} />
@@ -73,6 +89,59 @@
     </div>
   </div>
 
+  <%!-- Board moderator management panel --%>
+  <div :if={@managing_moderators_board} class="card bg-base-200 shadow-md">
+    <div class="card-body">
+      <div class="flex items-center justify-between">
+        <h2 class="card-title">
+          {gettext("Board Moderators")} &mdash; {@managing_moderators_board.name}
+        </h2>
+        <button phx-click="close_moderators" class="btn btn-sm btn-ghost">
+          <.icon name="hero-x-mark" class="size-4" />
+        </button>
+      </div>
+
+      <%!-- Current moderators --%>
+      <div :if={@board_moderators == []} class="text-base-content/50 py-2">
+        {gettext("No moderators assigned.")}
+      </div>
+
+      <div :if={@board_moderators != []} class="space-y-2">
+        <div :for={bm <- @board_moderators} class="flex items-center justify-between bg-base-100 rounded-lg p-3">
+          <div class="flex items-center gap-2">
+            <span class="font-medium">{bm.user.username}</span>
+            <span class="badge badge-sm badge-ghost">{bm.user.role.name}</span>
+          </div>
+          <button
+            phx-click="remove_moderator"
+            phx-value-user-id={bm.user.id}
+            data-confirm={gettext("Remove this moderator?")}
+            class="btn btn-xs btn-error btn-outline"
+          >
+            {gettext("Remove")}
+          </button>
+        </div>
+      </div>
+
+      <%!-- Add moderator --%>
+      <div class="mt-4">
+        <h3 class="text-sm font-semibold mb-2">{gettext("Add Moderator")}</h3>
+        <form phx-submit="add_moderator" class="flex gap-2">
+          <select name="user_id" class="select select-bordered select-sm flex-1" required>
+            <option value="">{gettext("Select a user...")}</option>
+            <%= for user <- @active_users,
+                    not Enum.any?(@board_moderators, &(&1.user.id == user.id)) do %>
+              <option value={user.id}>{user.username} ({user.role.name})</option>
+            <% end %>
+          </select>
+          <button type="submit" class="btn btn-sm btn-primary">
+            {gettext("Add")}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <%!-- Boards table --%>
   <div :if={@boards == []} class="text-base-content/50 text-center py-8">
     {gettext("No boards yet.")}
@@ -85,7 +154,7 @@
           <th>{gettext("Name")}</th>
           <th>{gettext("Slug")}</th>
           <th>{gettext("Parent")}</th>
-          <th>{gettext("Visibility")}</th>
+          <th>{gettext("View / Post")}</th>
           <th>{gettext("Position")}</th>
           <th>{gettext("Federation")}</th>
           <th>{gettext("Actions")}</th>
@@ -99,10 +168,14 @@
           <td>
             <span class={[
               "badge badge-sm",
-              board.visibility == "public" && "badge-success",
-              board.visibility == "private" && "badge-warning"
+              board.min_role_to_view == "guest" && "badge-success",
+              board.min_role_to_view != "guest" && "badge-warning"
             ]}>
-              {if board.visibility == "public", do: gettext("Public"), else: gettext("Private")}
+              {board.min_role_to_view}
+            </span>
+            <span class="text-base-content/50 mx-1">/</span>
+            <span class="badge badge-sm badge-info">
+              {board.min_role_to_post}
             </span>
           </td>
           <td>{board.position}</td>
@@ -118,6 +191,9 @@
           <td class="flex gap-1">
             <button phx-click="edit" phx-value-id={board.id} class="btn btn-xs btn-ghost">
               {gettext("Edit")}
+            </button>
+            <button phx-click="manage_moderators" phx-value-id={board.id} class="btn btn-xs btn-ghost">
+              {gettext("Moderators")}
             </button>
             <button
               phx-click="delete"
