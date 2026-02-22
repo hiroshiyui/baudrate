@@ -45,6 +45,17 @@ defmodule BaudrateWeb.ProfileLiveAvatarTest do
     assert html =~ "Crop Avatar"
   end
 
+  test "crop modal dialog has aria-labelledby linking to heading", %{conn: conn} do
+    {:ok, _lv, html} = live(conn, "/profile")
+    assert html =~ ~s(aria-labelledby="crop-modal-title")
+    assert html =~ ~s(id="crop-modal-title")
+  end
+
+  test "avatar preview image has alt text", %{conn: conn} do
+    {:ok, _lv, html} = live(conn, "/profile")
+    assert html =~ "Avatar preview"
+  end
+
   test "cancel_crop event closes the crop modal", %{conn: conn} do
     {:ok, lv, _html} = live(conn, "/profile")
     render_hook(lv, "show_crop_modal", %{})

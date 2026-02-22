@@ -45,12 +45,17 @@
 
       <%!-- Crop modal --%>
       <div id="avatar-crop-hook" phx-hook="AvatarCropHook">
-        <dialog id="crop-modal" class="modal" {if @show_crop_modal, do: [open: true], else: []}>
+        <dialog
+          id="crop-modal"
+          class="modal"
+          aria-labelledby="crop-modal-title"
+          {if @show_crop_modal, do: [open: true], else: []}
+        >
           <div class="modal-box max-w-lg">
-            <h3 class="text-lg font-bold mb-4">{gettext("Crop Avatar")}</h3>
+            <h3 id="crop-modal-title" class="text-lg font-bold mb-4">{gettext("Crop Avatar")}</h3>
             <div data-avatar-crop-container>
               <div class="max-h-96 overflow-hidden">
-                <img data-avatar-preview src="" class="max-w-full" />
+                <img data-avatar-preview src="" alt={gettext("Avatar preview")} class="max-w-full" />
               </div>
               <div class="modal-action">
                 <button type="button" class="btn btn-ghost" phx-click="cancel_crop">
