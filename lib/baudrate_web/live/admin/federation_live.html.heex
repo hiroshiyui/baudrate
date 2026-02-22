@@ -120,6 +120,60 @@
     </div>
   </div>
 
+  <%!-- Key Rotation --%>
+  <div class="card bg-base-200 shadow-sm">
+    <div class="card-body">
+      <h2 class="card-title">{gettext("Key Rotation")}</h2>
+      <p class="text-sm opacity-70 mb-4">{gettext("Rotate RSA keypairs for federation actors. The new public key will be distributed to followers via an Update activity.")}</p>
+
+      <div class="flex flex-wrap gap-2">
+        <button
+          phx-click="rotate_keys"
+          phx-value-type="site"
+          phx-value-id="site"
+          data-confirm={gettext("Rotate site keypair? This will invalidate existing signatures.")}
+          class="btn btn-warning btn-sm"
+        >
+          {gettext("Rotate Site Keys")}
+        </button>
+      </div>
+
+      <div :if={@boards != []} class="mt-4">
+        <h3 class="font-semibold mb-2">{gettext("Board Keys")}</h3>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra table-sm">
+            <thead>
+              <tr>
+                <th>{gettext("Board")}</th>
+                <th>{gettext("Federation")}</th>
+                <th>{gettext("Actions")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr :for={board <- @boards} :if={board.ap_enabled}>
+                <td>{board.name}</td>
+                <td>
+                  <span class="badge badge-sm badge-success">{gettext("Enabled")}</span>
+                </td>
+                <td>
+                  <button
+                    phx-click="rotate_keys"
+                    phx-value-type="board"
+                    phx-value-id={board.id}
+                    data-confirm={gettext("Rotate keypair for %{board}?", board: board.name)}
+                    class="btn btn-warning btn-xs"
+                  >
+                    {gettext("Rotate Keys")}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <%!-- Board Federation --%>
   <div class="card bg-base-200 shadow-sm">
     <div class="card-body">
@@ -164,6 +218,101 @@
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <%!-- Blocklist Audit --%>
+  <div class="card bg-base-200 shadow-sm">
+    <div class="card-body">
+      <h2 class="card-title">{gettext("Blocklist Audit")}</h2>
+      <p class="text-sm opacity-70 mb-4">{gettext("Compare your local domain blocklist against an external known-bad-actor list. Configure the audit URL in Admin Settings.")}</p>
+
+      <div class="flex gap-2">
+        <button phx-click="audit_blocklist" class="btn btn-primary btn-sm">
+          {gettext("Run Audit")}
+        </button>
+      </div>
+
+      <div :if={@audit_result} class="mt-4 space-y-4">
+        <div class="stats stats-vertical sm:stats-horizontal shadow w-full">
+          <div class="stat">
+            <div class="stat-title">{gettext("External List")}</div>
+            <div class="stat-value text-sm">{@audit_result.external_count}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-title">{gettext("Local Blocklist")}</div>
+            <div class="stat-value text-sm">{@audit_result.local_count}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-title">{gettext("Overlap")}</div>
+            <div class="stat-value text-sm text-success">{@audit_result.overlap}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-title">{gettext("Missing")}</div>
+            <div class="stat-value text-sm text-warning">{length(@audit_result.missing)}</div>
+          </div>
+        </div>
+
+        <div :if={@audit_result.missing != []} class="space-y-2">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold">{gettext("Missing from Local Blocklist")}</h3>
+            <button
+              phx-click="add_all_missing"
+              data-confirm={gettext("Add all %{count} missing domains to blocklist?", count: length(@audit_result.missing))}
+              class="btn btn-warning btn-sm"
+            >
+              {gettext("Add All")}
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="table table-zebra table-sm">
+              <thead>
+                <tr>
+                  <th>{gettext("Domain")}</th>
+                  <th>{gettext("Actions")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr :for={domain <- @audit_result.missing}>
+                  <td class="font-mono text-sm">{domain}</td>
+                  <td>
+                    <button
+                      phx-click="add_missing_domain"
+                      phx-value-domain={domain}
+                      class="btn btn-warning btn-xs"
+                    >
+                      {gettext("Add")}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div :if={@audit_result.extra != []} class="space-y-2">
+          <h3 class="font-semibold">{gettext("Extra in Local Blocklist")}</h3>
+          <p class="text-sm opacity-70">{gettext("Domains you block that are not in the external list (informational only).")}</p>
+          <div class="overflow-x-auto">
+            <table class="table table-zebra table-sm">
+              <thead>
+                <tr>
+                  <th>{gettext("Domain")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr :for={domain <- @audit_result.extra}>
+                  <td class="font-mono text-sm">{domain}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div :if={@audit_result.missing == [] && @audit_result.extra == []} class="alert alert-success">
+          <span>{gettext("Your local blocklist matches the external list perfectly.")}</span>
+        </div>
       </div>
     </div>
   </div>

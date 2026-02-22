@@ -164,6 +164,90 @@ defmodule Baudrate.Federation.Publisher do
     }
   end
 
+  @doc """
+  Builds a `Block` activity from a local user to a remote actor.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_block(user, target_ap_id) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+
+    activity = %{
+      "@context" => @as_context,
+      "id" => "#{actor_uri}#block-#{System.unique_integer([:positive])}",
+      "type" => "Block",
+      "actor" => actor_uri,
+      "object" => target_ap_id
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Builds an `Undo(Block)` activity.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_undo_block(user, target_ap_id) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+
+    activity = %{
+      "@context" => @as_context,
+      "id" => "#{actor_uri}#undo-block-#{System.unique_integer([:positive])}",
+      "type" => "Undo",
+      "actor" => actor_uri,
+      "object" => %{
+        "type" => "Block",
+        "actor" => actor_uri,
+        "object" => target_ap_id
+      }
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Builds an `Update` activity for an actor (used for key rotation distribution).
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_update_actor(actor_type, entity) do
+    {actor_uri, actor_json} =
+      case actor_type do
+        :user ->
+          uri = Federation.actor_uri(:user, entity.username)
+          {uri, Federation.user_actor(entity)}
+
+        :board ->
+          uri = Federation.actor_uri(:board, entity.slug)
+          {uri, Federation.board_actor(entity)}
+
+        :site ->
+          uri = Federation.actor_uri(:site, nil)
+          {uri, Federation.site_actor()}
+      end
+
+    activity = %{
+      "@context" => @as_context,
+      "id" => "#{actor_uri}#update-actor-#{System.unique_integer([:positive])}",
+      "type" => "Update",
+      "actor" => actor_uri,
+      "to" => [@as_public],
+      "object" => actor_json
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Publishes an `Update` activity for an actor to all followers.
+  Used after key rotation to distribute the new public key.
+  """
+  def publish_key_rotation(actor_type, entity) do
+    {activity, actor_uri} = build_update_actor(actor_type, entity)
+    Delivery.enqueue_for_followers(activity, actor_uri)
+  end
+
   # --- Publish Convenience Functions ---
 
   @doc """

@@ -15,7 +15,9 @@ msgstr ""
 #: lib/baudrate_web/live/admin/boards_live.html.heex:160
 #: lib/baudrate_web/live/admin/federation_live.html.heex:38
 #: lib/baudrate_web/live/admin/federation_live.html.heex:94
-#: lib/baudrate_web/live/admin/federation_live.html.heex:139
+#: lib/baudrate_web/live/admin/federation_live.html.heex:149
+#: lib/baudrate_web/live/admin/federation_live.html.heex:193
+#: lib/baudrate_web/live/admin/federation_live.html.heex:273
 #: lib/baudrate_web/live/admin/invites_live.html.heex:23
 #: lib/baudrate_web/live/admin/users_live.html.heex:99
 #, elixir-autogen, elixir-format
@@ -352,7 +354,7 @@ msgid "Current TOTP Code"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:81
-#: lib/baudrate_web/live/admin/federation_live.html.heex:152
+#: lib/baudrate_web/live/admin/federation_live.html.heex:206
 #: lib/baudrate_web/live/admin/settings_live.html.heex:24
 #: lib/baudrate_web/live/profile_live.html.heex:95
 #, elixir-autogen, elixir-format
@@ -370,7 +372,8 @@ msgid "Enable Two-Factor Authentication"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:81
-#: lib/baudrate_web/live/admin/federation_live.html.heex:152
+#: lib/baudrate_web/live/admin/federation_live.html.heex:156
+#: lib/baudrate_web/live/admin/federation_live.html.heex:206
 #: lib/baudrate_web/live/admin/settings_live.html.heex:23
 #: lib/baudrate_web/live/profile_live.html.heex:90
 #, elixir-autogen, elixir-format
@@ -528,7 +531,7 @@ msgid "Remove Avatar"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:86
-#: lib/baudrate_web/live/admin/settings_live.html.heex:52
+#: lib/baudrate_web/live/admin/settings_live.html.heex:69
 #: lib/baudrate_web/live/profile_live.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Save"
@@ -578,7 +581,8 @@ msgstr ""
 msgid "Back to board"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:136
+#: lib/baudrate_web/live/admin/federation_live.html.heex:147
+#: lib/baudrate_web/live/admin/federation_live.html.heex:190
 #: lib/baudrate_web/live/article_edit_live.html.heex:28
 #: lib/baudrate_web/live/article_new_live.html.heex:36
 #, elixir-autogen, elixir-format
@@ -763,8 +767,8 @@ msgstr ""
 msgid "Registration Mode"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:51
-#: lib/baudrate_web/live/admin/settings_live.html.heex:74
+#: lib/baudrate_web/live/admin/settings_live.html.heex:68
+#: lib/baudrate_web/live/admin/settings_live.html.heex:91
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr ""
@@ -836,7 +840,7 @@ msgstr ""
 msgid "Blocklist (block specific domains)"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:126
+#: lib/baudrate_web/live/admin/federation_live.html.heex:180
 #, elixir-autogen, elixir-format
 msgid "Board Federation"
 msgstr ""
@@ -899,7 +903,7 @@ msgstr ""
 msgid "Delivery Queue"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:161
+#: lib/baudrate_web/live/admin/federation_live.html.heex:215
 #, elixir-autogen, elixir-format
 msgid "Disable"
 msgstr ""
@@ -915,6 +919,8 @@ msgid "Dismissed"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:89
+#: lib/baudrate_web/live/admin/federation_live.html.heex:272
+#: lib/baudrate_web/live/admin/federation_live.html.heex:301
 #, elixir-autogen, elixir-format
 msgid "Domain"
 msgstr ""
@@ -924,7 +930,7 @@ msgstr ""
 msgid "Domain %{domain} has been blocked."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:161
+#: lib/baudrate_web/live/admin/federation_live.html.heex:215
 #, elixir-autogen, elixir-format
 msgid "Enable"
 msgstr ""
@@ -970,13 +976,14 @@ msgstr ""
 #: lib/baudrate_web/components/layouts.ex:142
 #: lib/baudrate_web/live/admin/boards_live.html.heex:80
 #: lib/baudrate_web/live/admin/boards_live.html.heex:159
-#: lib/baudrate_web/live/admin/federation_live.html.heex:138
+#: lib/baudrate_web/live/admin/federation_live.html.heex:148
+#: lib/baudrate_web/live/admin/federation_live.html.heex:192
 #: lib/baudrate_web/live/admin/settings_live.html.heex:21
 #, elixir-autogen, elixir-format
 msgid "Federation"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.ex:72
+#: lib/baudrate_web/live/admin/federation_live.ex:91
 #, elixir-autogen, elixir-format
 msgid "Federation %{action} for %{board}."
 msgstr ""
@@ -1048,7 +1055,7 @@ msgstr ""
 msgid "Moderation Queue"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:129
+#: lib/baudrate_web/live/admin/federation_live.html.heex:183
 #, elixir-autogen, elixir-format
 msgid "No boards configured."
 msgstr ""
@@ -1147,7 +1154,7 @@ msgstr ""
 msgid "Status"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:137
+#: lib/baudrate_web/live/admin/federation_live.html.heex:191
 #, elixir-autogen, elixir-format
 msgid "Visibility"
 msgstr ""
@@ -1157,12 +1164,12 @@ msgstr ""
 msgid "Welcome to Baudrate"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.ex:73
+#: lib/baudrate_web/live/admin/federation_live.ex:92
 #, elixir-autogen, elixir-format
 msgid "disabled"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.ex:73
+#: lib/baudrate_web/live/admin/federation_live.ex:92
 #, elixir-autogen, elixir-format
 msgid "enabled"
 msgstr ""
@@ -1925,13 +1932,13 @@ msgstr ""
 msgid "Confirm New Password"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:61
+#: lib/baudrate_web/live/admin/settings_live.html.heex:78
 #: lib/baudrate_web/live/register_live.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "End User Agreement"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:69
+#: lib/baudrate_web/live/admin/settings_live.html.heex:86
 #, elixir-autogen, elixir-format
 msgid "End User Agreement (Markdown)"
 msgstr ""
@@ -1941,7 +1948,7 @@ msgstr ""
 msgid "End User Agreement saved."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:71
+#: lib/baudrate_web/live/admin/settings_live.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "Enter your site-specific terms here..."
 msgstr ""
@@ -1987,7 +1994,7 @@ msgstr ""
 msgid "New Password"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:63
+#: lib/baudrate_web/live/admin/settings_live.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "Optional site-specific terms shown during registration. Supports Markdown formatting."
 msgstr ""
@@ -2018,7 +2025,7 @@ msgstr ""
 msgid "Reset Password"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:75
+#: lib/baudrate_web/live/admin/settings_live.html.heex:92
 #, elixir-autogen, elixir-format
 msgid "Save Agreement"
 msgstr ""
@@ -2063,6 +2070,7 @@ msgid "Your signature (Markdown supported, max 500 characters)"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:138
+#: lib/baudrate_web/live/admin/federation_live.html.heex:285
 #, elixir-autogen, elixir-format
 msgid "Add"
 msgstr ""
@@ -2188,4 +2196,171 @@ msgstr ""
 #: lib/baudrate_web/live/article_live.ex:350
 #, elixir-autogen, elixir-format
 msgid "This article has been deleted."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:265
+#, elixir-autogen, elixir-format
+msgid "Add All"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:262
+#, elixir-autogen, elixir-format
+msgid "Add all %{count} missing domains to blocklist?"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.ex:150
+#: lib/baudrate_web/live/admin/federation_live.ex:156
+#, elixir-autogen, elixir-format
+msgid "Added %{count} domains to blocklist."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:53
+#, elixir-autogen, elixir-format
+msgid "Authorized Fetch (Secure Mode)"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:228
+#, elixir-autogen, elixir-format
+msgid "Blocklist Audit"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:63
+#, elixir-autogen, elixir-format
+msgid "Blocklist Audit URL"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.ex:110
+#, elixir-autogen, elixir-format
+msgid "Blocklist audit failed."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:142
+#, elixir-autogen, elixir-format
+msgid "Board Keys"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:229
+#, elixir-autogen, elixir-format
+msgid "Compare your local domain blocklist against an external known-bad-actor list. Configure the audit URL in Admin Settings."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:55
+#, elixir-autogen, elixir-format
+msgid "Disabled (public GETs allowed)"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.ex:126
+#: lib/baudrate_web/live/admin/federation_live.ex:132
+#, elixir-autogen, elixir-format
+msgid "Domain %{domain} added to blocklist."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:296
+#, elixir-autogen, elixir-format
+msgid "Domains you block that are not in the external list (informational only)."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Enabled (require HTTP signatures on GETs)"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:240
+#, elixir-autogen, elixir-format
+msgid "External List"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:295
+#, elixir-autogen, elixir-format
+msgid "Extra in Local Blocklist"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.ex:107
+#, elixir-autogen, elixir-format
+msgid "Failed to fetch external blocklist."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:126
+#, elixir-autogen, elixir-format
+msgid "Key Rotation"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.ex:77
+#, elixir-autogen, elixir-format
+msgid "Key rotation failed."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.ex:73
+#, elixir-autogen, elixir-format
+msgid "Keys rotated successfully."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:244
+#, elixir-autogen, elixir-format
+msgid "Local Blocklist"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:252
+#, elixir-autogen, elixir-format
+msgid "Missing"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:259
+#, elixir-autogen, elixir-format
+msgid "Missing from Local Blocklist"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.ex:104
+#, elixir-autogen, elixir-format
+msgid "No blocklist audit URL configured. Set it in Admin Settings."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:248
+#, elixir-autogen, elixir-format
+msgid "Overlap"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:166
+#, elixir-autogen, elixir-format
+msgid "Rotate Keys"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:127
+#, elixir-autogen, elixir-format
+msgid "Rotate RSA keypairs for federation actors. The new public key will be distributed to followers via an Update activity."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:137
+#, elixir-autogen, elixir-format
+msgid "Rotate Site Keys"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:163
+#, elixir-autogen, elixir-format
+msgid "Rotate keypair for %{board}?"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:134
+#, elixir-autogen, elixir-format
+msgid "Rotate site keypair? This will invalidate existing signatures."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:233
+#, elixir-autogen, elixir-format
+msgid "Run Audit"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "URL to an external domain blocklist (CSV or JSON). Used by the federation dashboard audit feature."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:59
+#, elixir-autogen, elixir-format
+msgid "When enabled, unsigned GET requests to ActivityPub endpoints return 401. WebFinger and NodeInfo remain public."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:314
+#, elixir-autogen, elixir-format
+msgid "Your local blocklist matches the external list perfectly."
 msgstr ""

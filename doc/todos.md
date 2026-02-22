@@ -2,14 +2,10 @@
 
 ## ActivityPub Federation
 
-- [ ] `Block` activity — communicate user-level blocks to remote instances
-- [ ] Authorized fetch mode — require HTTP signatures on GET requests (optional)
-- [ ] Key rotation mechanism for actor keypairs
-- [ ] Audit domain blocklist against known-bad-actor lists
+(no remaining items)
 
 ## Performance & Scalability
 
-- [ ] Migrate delivery to Oban for persistent job queues
 - [ ] Shared inbox aggregation to reduce delivery volume
 - [ ] Background worker for stale actor cache cleanup
 
@@ -82,5 +78,6 @@
 - [x] Phase 3: Delivery (publisher, delivery queue, exponential backoff, followers collection)
 - [x] Phase 4a: Mastodon & Lemmy compatibility (span allowlist, content warnings, Page type, addressing)
 - [x] Phase 4b: Article summary, hashtag tags, cross-post dedup, moderation tools, federation dashboard, blocklist/allowlist, Flag activities, kill switch, CSP, display name sanitization
+- [x] Phase 5: Block activity (user-level blocks, Block/Undo(Block) federation), authorized fetch mode (optional HTTP signature requirement on GETs), key rotation (RSA keypair rotation with Update activity distribution), domain blocklist audit (compare local blocklist against external known-bad-actor lists)
 
 </details>

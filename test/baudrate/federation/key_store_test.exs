@@ -113,6 +113,47 @@ defmodule Baudrate.Federation.KeyStoreTest do
     end
   end
 
+  describe "rotate_user_keypair/1" do
+    test "replaces user keypair with new keys" do
+      user = setup_user_with_role("user")
+      {:ok, user} = KeyStore.ensure_user_keypair(user)
+      old_public = user.ap_public_key
+
+      {:ok, rotated} = KeyStore.rotate_user_keypair(user)
+      assert rotated.ap_public_key =~ "BEGIN PUBLIC KEY"
+      refute rotated.ap_public_key == old_public
+      assert is_binary(rotated.ap_private_key_encrypted)
+
+      {:ok, pem} = KeyStore.decrypt_private_key(rotated)
+      assert pem =~ "BEGIN RSA PRIVATE KEY"
+    end
+  end
+
+  describe "rotate_board_keypair/1" do
+    test "replaces board keypair with new keys" do
+      board = setup_board()
+      {:ok, board} = KeyStore.ensure_board_keypair(board)
+      old_public = board.ap_public_key
+
+      {:ok, rotated} = KeyStore.rotate_board_keypair(board)
+      assert rotated.ap_public_key =~ "BEGIN PUBLIC KEY"
+      refute rotated.ap_public_key == old_public
+    end
+  end
+
+  describe "rotate_site_keypair/0" do
+    test "replaces site keypair with new keys" do
+      {:ok, %{public_pem: old_pem}} = KeyStore.ensure_site_keypair()
+      {:ok, %{public_pem: new_pem}} = KeyStore.rotate_site_keypair()
+
+      assert new_pem =~ "BEGIN PUBLIC KEY"
+      refute new_pem == old_pem
+
+      {:ok, private_pem} = KeyStore.decrypt_site_private_key()
+      assert private_pem =~ "BEGIN RSA PRIVATE KEY"
+    end
+  end
+
   # --- Test Helpers ---
 
   defp setup_user_with_role(role_name) do

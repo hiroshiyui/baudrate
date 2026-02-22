@@ -23,12 +23,13 @@ lib/
 ├── baudrate/                    # Business logic (contexts)
 │   ├── application.ex           # Supervision tree
 │   ├── repo.ex                  # Ecto repository
-│   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars, invite codes, password reset
+│   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars, invite codes, password reset, user blocks
 │   ├── auth/
 │   │   ├── invite_code.ex       # InviteCode schema (invite-only registration)
 │   │   ├── recovery_code.ex     # Ecto schema for one-time recovery codes
 │   │   ├── session_cleaner.ex   # GenServer: hourly expired session purge
 │   │   ├── totp_vault.ex        # AES-256-GCM encryption for TOTP secrets
+│   │   ├── user_block.ex        # UserBlock schema (local + remote actor blocks)
 │   │   └── user_session.ex      # Ecto schema for server-side sessions
 │   ├── avatar.ex                # Avatar image processing (crop, resize, WebP)
 │   ├── content.ex               # Content context: boards, articles, comments, likes, user stats
@@ -43,18 +44,19 @@ lib/
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
 │   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark)
 │   │   └── pubsub.ex            # PubSub helpers for real-time content updates
-│   ├── federation.ex            # Federation context: actors, outbox, followers, announces
+│   ├── federation.ex            # Federation context: actors, outbox, followers, announces, key rotation
 │   ├── federation/
-│   │   ├── actor_resolver.ex    # Remote actor fetching and caching (24h TTL)
+│   │   ├── actor_resolver.ex    # Remote actor fetching and caching (24h TTL, signed fetch fallback)
 │   │   ├── announce.ex          # Announce (boost) schema
-│   │   ├── delivery.ex          # Outgoing activity delivery (Accept, queue, retry)
+│   │   ├── blocklist_audit.ex   # Audit local blocklist against external known-bad-actor lists
+│   │   ├── delivery.ex          # Outgoing activity delivery (Accept, queue, retry, block delivery)
 │   │   ├── delivery_job.ex      # DeliveryJob schema (delivery queue records)
 │   │   ├── delivery_worker.ex   # GenServer: polls delivery queue, retries failed jobs
 │   │   ├── follower.ex          # Follower schema (remote → local follows)
-│   │   ├── http_client.ex       # SSRF-safe HTTP client for remote fetches
-│   │   ├── http_signature.ex    # HTTP Signature signing and verification
-│   │   ├── inbox_handler.ex     # Incoming activity dispatch (Follow, Create, Like, etc.)
-│   │   ├── key_store.ex         # RSA-2048 keypair management for actors
+│   │   ├── http_client.ex       # SSRF-safe HTTP client for remote fetches (unsigned + signed GET)
+│   │   ├── http_signature.ex    # HTTP Signature signing and verification (POST + GET)
+│   │   ├── inbox_handler.ex     # Incoming activity dispatch (Follow, Create, Like, Block, etc.)
+│   │   ├── key_store.ex         # RSA-2048 keypair management for actors (generate, ensure, rotate)
 │   │   ├── key_vault.ex         # AES-256-GCM encryption for private keys at rest
 │   │   ├── remote_actor.ex      # RemoteActor schema (cached remote profiles)
 │   │   ├── publisher.ex         # ActivityStreams JSON builders for outgoing activities
@@ -112,6 +114,7 @@ lib/
 │   │   ├── totp_setup_live.ex   # TOTP enrollment with QR code
 │   │   └── totp_verify_live.ex  # TOTP code verification
 │   ├── plugs/
+│   │   ├── authorized_fetch.ex  # Optional HTTP Signature verification on AP GET requests
 │   │   ├── cache_body.ex        # Cache raw request body (for HTTP signature verification)
 │   │   ├── cors.ex              # CORS headers for AP GET endpoints (Allow-Origin: *)
 │   │   ├── ensure_setup.ex      # Redirect to /setup until setup is done
@@ -400,12 +403,15 @@ The `Baudrate.Federation` context handles all federation logic.
 - `Update(Person/Group)` — actor profile refresh
 - `Delete` — soft-delete with authorship verification
 - `Flag` — incoming reports stored in local moderation queue
+- `Block` / `Undo(Block)` — remote actor blocks (logged for informational purposes)
 
 **Outbound delivery** (via `Publisher` + `Delivery` + `DeliveryWorker`):
 - `Create(Article)` — automatically enqueued when a local user publishes an article
 - `Delete` with `Tombstone` — enqueued when an article is soft-deleted
 - `Announce` — board actor announces articles to board followers
 - `Update(Article)` — enqueued when a local article is edited
+- `Block` / `Undo(Block)` — delivered to the blocked actor's inbox when a user blocks/unblocks a remote actor
+- `Update(Person/Group/Organization)` — distributed to followers on key rotation or profile changes
 - Delivery targets: followers of the article's author + followers of all public boards
 - Shared inbox deduplication: multiple followers at the same instance → one delivery
 - DB-backed queue (`delivery_jobs` table) with `DeliveryWorker` GenServer polling
@@ -434,8 +440,53 @@ The `Baudrate.Federation` context handles all federation logic.
 - Domain blocklist — admin UI textarea for comma-separated blocked domains (`ap_domain_blocklist` setting); blocked domains are rejected at inbox and skipped during delivery
 - Domain allowlist — admin UI textarea for comma-separated allowed domains (`ap_domain_allowlist` setting); when in allowlist mode and empty, all domains are blocked
 - Per-board federation toggle — `ap_enabled` field on boards; when disabled, board AP endpoints return 404, delivery skips the board's followers, WebFinger/actor resolution excludes the board
-- Federation dashboard (`/admin/federation`) — known instances with stats, delivery queue management (retry/abandon), per-board federation toggles, one-click domain blocking
+- Federation dashboard (`/admin/federation`) — known instances with stats, delivery queue management (retry/abandon), per-board federation toggles, one-click domain blocking, key rotation controls, blocklist audit
 - Moderation queue (`/admin/moderation`) — view/resolve/dismiss reports, delete reported content, send Flag reports to remote instances
+
+**User blocks:**
+
+Users can block local users and remote actors. Blocks prevent interaction
+and are communicated to remote instances via `Block` / `Undo(Block)` activities:
+
+- `Auth.block_user/2` / `Auth.unblock_user/2` — local user blocks
+- `Auth.block_remote_actor/2` / `Auth.unblock_remote_actor/2` — remote actor blocks
+- `Auth.blocked?/2` — check if blocked (works with local users and AP IDs)
+- `Content.list_comments_for_article/2` — optionally filters out comments from blocked users/actors when `current_user` is provided
+- Database: `user_blocks` table with partial unique indexes for local and remote blocks
+
+**Authorized fetch mode:**
+
+Optional "secure mode" requiring HTTP signatures on GET requests to AP endpoints
+(also known as "secure mode" or "authorized fetch"). Controlled via the
+`ap_authorized_fetch` admin setting:
+
+- When enabled, unsigned GET requests to AP endpoints return 401 Unauthorized
+- WebFinger (`/.well-known/webfinger`) and NodeInfo (`/.well-known/nodeinfo`, `/nodeinfo/*`) remain publicly accessible without signatures (spec requirement)
+- Implemented as `BaudrateWeb.Plugs.AuthorizedFetch` in the `:activity_pub` pipeline
+- Outbound actor resolution automatically falls back to signed GET on 401 responses from remote instances that require authorized fetch
+- `HTTPSignature.sign_get/3` and `HTTPClient.signed_get/4` provide signed GET support
+
+**Key rotation:**
+
+Actor RSA keypairs can be rotated via the admin federation dashboard.
+New public keys are distributed to followers via `Update` activities:
+
+- `Federation.rotate_keys/2` — rotate keypair for user, board, or site actor
+- `KeyStore.rotate_user_keypair/1`, `rotate_board_keypair/1`, `rotate_site_keypair/0` — low-level rotation functions
+- `Publisher.build_update_actor/2` — builds `Update(Person/Group/Organization)` activity
+- Admin UI: "Rotate Site Keys" button + per-board "Rotate Keys" in federation dashboard
+- All key rotations are recorded in the moderation log
+
+**Domain blocklist audit:**
+
+The admin federation dashboard includes a blocklist audit feature that compares
+the local domain blocklist against an external known-bad-actor list:
+
+- `BlocklistAudit.audit/0` — fetches external list, compares to local blocklist, returns diff
+- Supports multiple formats: JSON array, newline-separated, CSV (Mastodon export format with `domain,severity,reason`)
+- External list URL configured via `ap_blocklist_audit_url` admin setting
+- Admin UI shows: external/local counts, overlap, missing domains (with "Add" / "Add All" buttons), extra domains (informational)
+- All bulk-add operations are recorded in the moderation log
 
 **Security:**
 - HTTP Signature verification on all inbox requests
@@ -448,6 +499,8 @@ The `Baudrate.Federation` context handles all federation logic.
 - Per-domain rate limiting (60 req/min per remote domain)
 - Private keys encrypted at rest with AES-256-GCM
 - Non-guest boards (`min_role_to_view != "guest"`) hidden from all AP endpoints (actor, outbox, inbox, WebFinger, audience resolution)
+- Optional authorized fetch mode — require HTTP signatures on GET requests to AP endpoints (exempt: WebFinger, NodeInfo)
+- Signed outbound GET requests — actor resolution falls back to signed GET when remote instances require authorized fetch
 - CSP `img-src` allows `https:` for remote avatars; all other directives remain restrictive
 
 **Public API:**
@@ -500,7 +553,14 @@ SetLocale (Accept-Language) → EnsureSetup (redirect to /setup) →
 RefreshSession (token rotation)
 ```
 
-ActivityPub inbox requests use a separate pipeline:
+ActivityPub GET requests use the `:activity_pub` pipeline:
+
+```
+RateLimit (120/min per IP) → CORS → AuthorizedFetch (optional sig verify) →
+ActivityPubController (content-negotiated response)
+```
+
+ActivityPub inbox (POST) requests use a separate pipeline:
 
 ```
 :accepts (activity+json) → CacheBody (256 KB max) →

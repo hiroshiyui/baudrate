@@ -169,6 +169,73 @@ defmodule Baudrate.Federation.PublisherTest do
     end
   end
 
+  describe "build_block/2" do
+    test "builds a Block activity" do
+      user = create_user()
+      target_ap_id = "https://remote.example/users/target"
+
+      {activity, actor_uri} = Publisher.build_block(user, target_ap_id)
+
+      assert activity["type"] == "Block"
+      assert activity["actor"] == actor_uri
+      assert activity["object"] == target_ap_id
+      assert activity["@context"] == "https://www.w3.org/ns/activitystreams"
+      assert activity["id"] =~ "#block-"
+    end
+  end
+
+  describe "build_undo_block/2" do
+    test "builds an Undo(Block) activity" do
+      user = create_user()
+      target_ap_id = "https://remote.example/users/target"
+
+      {activity, actor_uri} = Publisher.build_undo_block(user, target_ap_id)
+
+      assert activity["type"] == "Undo"
+      assert activity["actor"] == actor_uri
+      assert activity["object"]["type"] == "Block"
+      assert activity["object"]["actor"] == actor_uri
+      assert activity["object"]["object"] == target_ap_id
+      assert activity["id"] =~ "#undo-block-"
+    end
+  end
+
+  describe "build_update_actor/2" do
+    test "builds Update(Person) for user actor" do
+      user = create_user()
+
+      {activity, actor_uri} = Publisher.build_update_actor(:user, user)
+
+      assert activity["type"] == "Update"
+      assert activity["actor"] == actor_uri
+      assert activity["object"]["type"] == "Person"
+      assert activity["object"]["preferredUsername"] == user.username
+      assert activity["id"] =~ "#update-actor-"
+      assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
+    end
+
+    test "builds Update(Group) for board actor" do
+      board = create_board()
+
+      {activity, actor_uri} = Publisher.build_update_actor(:board, board)
+
+      assert activity["type"] == "Update"
+      assert activity["actor"] == actor_uri
+      assert activity["object"]["type"] == "Group"
+      assert activity["object"]["preferredUsername"] == board.slug
+    end
+
+    test "builds Update(Organization) for site actor" do
+      Baudrate.Federation.KeyStore.ensure_site_keypair()
+
+      {activity, actor_uri} = Publisher.build_update_actor(:site, nil)
+
+      assert activity["type"] == "Update"
+      assert activity["actor"] == actor_uri
+      assert activity["object"]["type"] == "Organization"
+    end
+  end
+
   describe "article_object/1" do
     test "Article object includes cc field with board URIs" do
       user = create_user()

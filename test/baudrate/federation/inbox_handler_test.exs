@@ -1110,4 +1110,44 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       refute Baudrate.Federation.Validator.local_actor?("https://remote.example/users/alice")
     end
   end
+
+  describe "Block" do
+    test "accepts Block activity" do
+      user = setup_user_with_role("user")
+      {:ok, user} = KeyStore.ensure_user_keypair(user)
+      remote_actor = create_remote_actor()
+      actor_uri = Federation.actor_uri(:user, user.username)
+
+      activity = %{
+        "type" => "Block",
+        "id" => "#{remote_actor.ap_id}#block-1",
+        "actor" => remote_actor.ap_id,
+        "object" => actor_uri
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+    end
+  end
+
+  describe "Undo(Block)" do
+    test "accepts Undo(Block) activity" do
+      user = setup_user_with_role("user")
+      {:ok, user} = KeyStore.ensure_user_keypair(user)
+      remote_actor = create_remote_actor()
+      actor_uri = Federation.actor_uri(:user, user.username)
+
+      activity = %{
+        "type" => "Undo",
+        "id" => "#{remote_actor.ap_id}#undo-block-1",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "type" => "Block",
+          "actor" => remote_actor.ap_id,
+          "object" => actor_uri
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+    end
+  end
 end

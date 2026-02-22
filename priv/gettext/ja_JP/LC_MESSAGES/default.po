@@ -15,7 +15,9 @@ msgstr ""
 #: lib/baudrate_web/live/admin/boards_live.html.heex:160
 #: lib/baudrate_web/live/admin/federation_live.html.heex:38
 #: lib/baudrate_web/live/admin/federation_live.html.heex:94
-#: lib/baudrate_web/live/admin/federation_live.html.heex:139
+#: lib/baudrate_web/live/admin/federation_live.html.heex:149
+#: lib/baudrate_web/live/admin/federation_live.html.heex:193
+#: lib/baudrate_web/live/admin/federation_live.html.heex:273
 #: lib/baudrate_web/live/admin/invites_live.html.heex:23
 #: lib/baudrate_web/live/admin/users_live.html.heex:99
 #, elixir-autogen, elixir-format
@@ -352,7 +354,7 @@ msgid "Current TOTP Code"
 msgstr "現在のTOTPコード"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:81
-#: lib/baudrate_web/live/admin/federation_live.html.heex:152
+#: lib/baudrate_web/live/admin/federation_live.html.heex:206
 #: lib/baudrate_web/live/admin/settings_live.html.heex:24
 #: lib/baudrate_web/live/profile_live.html.heex:95
 #, elixir-autogen, elixir-format
@@ -370,7 +372,8 @@ msgid "Enable Two-Factor Authentication"
 msgstr "二要素認証を有効化"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:81
-#: lib/baudrate_web/live/admin/federation_live.html.heex:152
+#: lib/baudrate_web/live/admin/federation_live.html.heex:156
+#: lib/baudrate_web/live/admin/federation_live.html.heex:206
 #: lib/baudrate_web/live/admin/settings_live.html.heex:23
 #: lib/baudrate_web/live/profile_live.html.heex:90
 #, elixir-autogen, elixir-format
@@ -528,7 +531,7 @@ msgid "Remove Avatar"
 msgstr "アバターを削除"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:86
-#: lib/baudrate_web/live/admin/settings_live.html.heex:52
+#: lib/baudrate_web/live/admin/settings_live.html.heex:69
 #: lib/baudrate_web/live/profile_live.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Save"
@@ -578,7 +581,8 @@ msgstr "記事を作成しました。"
 msgid "Back to board"
 msgstr "掲示板に戻る"
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:136
+#: lib/baudrate_web/live/admin/federation_live.html.heex:147
+#: lib/baudrate_web/live/admin/federation_live.html.heex:190
 #: lib/baudrate_web/live/article_edit_live.html.heex:28
 #: lib/baudrate_web/live/article_new_live.html.heex:36
 #, elixir-autogen, elixir-format
@@ -763,8 +767,8 @@ msgstr "オープン"
 msgid "Registration Mode"
 msgstr "登録モード"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:51
-#: lib/baudrate_web/live/admin/settings_live.html.heex:74
+#: lib/baudrate_web/live/admin/settings_live.html.heex:68
+#: lib/baudrate_web/live/admin/settings_live.html.heex:91
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr "保存中..."
@@ -836,7 +840,7 @@ msgstr "ブロックドメイン（連合）"
 msgid "Blocklist (block specific domains)"
 msgstr "ブロックリスト（指定ドメインをブロック）"
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:126
+#: lib/baudrate_web/live/admin/federation_live.html.heex:180
 #, elixir-autogen, elixir-format
 msgid "Board Federation"
 msgstr "掲示板連合設定"
@@ -899,7 +903,7 @@ msgstr "配信済み"
 msgid "Delivery Queue"
 msgstr "配信キュー"
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:161
+#: lib/baudrate_web/live/admin/federation_live.html.heex:215
 #, elixir-autogen, elixir-format
 msgid "Disable"
 msgstr "無効化"
@@ -915,6 +919,8 @@ msgid "Dismissed"
 msgstr "却下済み"
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:89
+#: lib/baudrate_web/live/admin/federation_live.html.heex:272
+#: lib/baudrate_web/live/admin/federation_live.html.heex:301
 #, elixir-autogen, elixir-format
 msgid "Domain"
 msgstr "ドメイン"
@@ -924,7 +930,7 @@ msgstr "ドメイン"
 msgid "Domain %{domain} has been blocked."
 msgstr "ドメイン %{domain} をブロックしました。"
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:161
+#: lib/baudrate_web/live/admin/federation_live.html.heex:215
 #, elixir-autogen, elixir-format
 msgid "Enable"
 msgstr "有効化"
@@ -970,13 +976,14 @@ msgstr "通報の対処に失敗しました。"
 #: lib/baudrate_web/components/layouts.ex:142
 #: lib/baudrate_web/live/admin/boards_live.html.heex:80
 #: lib/baudrate_web/live/admin/boards_live.html.heex:159
-#: lib/baudrate_web/live/admin/federation_live.html.heex:138
+#: lib/baudrate_web/live/admin/federation_live.html.heex:148
+#: lib/baudrate_web/live/admin/federation_live.html.heex:192
 #: lib/baudrate_web/live/admin/settings_live.html.heex:21
 #, elixir-autogen, elixir-format
 msgid "Federation"
 msgstr "連合"
 
-#: lib/baudrate_web/live/admin/federation_live.ex:72
+#: lib/baudrate_web/live/admin/federation_live.ex:91
 #, elixir-autogen, elixir-format
 msgid "Federation %{action} for %{board}."
 msgstr "掲示板 %{board} の連合を%{action}しました。"
@@ -1048,7 +1055,7 @@ msgstr "モデレーション"
 msgid "Moderation Queue"
 msgstr "モデレーションキュー"
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:129
+#: lib/baudrate_web/live/admin/federation_live.html.heex:183
 #, elixir-autogen, elixir-format
 msgid "No boards configured."
 msgstr "掲示板が設定されていません。"
@@ -1147,7 +1154,7 @@ msgstr "%{domain} に通報レポートを送信しますか？"
 msgid "Status"
 msgstr "ステータス"
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:137
+#: lib/baudrate_web/live/admin/federation_live.html.heex:191
 #, elixir-autogen, elixir-format
 msgid "Visibility"
 msgstr "公開範囲"
@@ -1157,12 +1164,12 @@ msgstr "公開範囲"
 msgid "Welcome to Baudrate"
 msgstr "Baudrate へようこそ"
 
-#: lib/baudrate_web/live/admin/federation_live.ex:73
+#: lib/baudrate_web/live/admin/federation_live.ex:92
 #, elixir-autogen, elixir-format
 msgid "disabled"
 msgstr "無効化"
 
-#: lib/baudrate_web/live/admin/federation_live.ex:73
+#: lib/baudrate_web/live/admin/federation_live.ex:92
 #, elixir-autogen, elixir-format
 msgid "enabled"
 msgstr "有効化"
@@ -1924,13 +1931,13 @@ msgstr "ログインに戻る"
 msgid "Confirm New Password"
 msgstr "新しいパスワード（確認）"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:61
+#: lib/baudrate_web/live/admin/settings_live.html.heex:78
 #: lib/baudrate_web/live/register_live.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "End User Agreement"
 msgstr "利用規約"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:69
+#: lib/baudrate_web/live/admin/settings_live.html.heex:86
 #, elixir-autogen, elixir-format
 msgid "End User Agreement (Markdown)"
 msgstr "利用規約（Markdown）"
@@ -1940,7 +1947,7 @@ msgstr "利用規約（Markdown）"
 msgid "End User Agreement saved."
 msgstr "利用規約を保存しました。"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:71
+#: lib/baudrate_web/live/admin/settings_live.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "Enter your site-specific terms here..."
 msgstr "サイト固有の利用規約をここに入力してください..."
@@ -1986,7 +1993,7 @@ msgstr "ユーザー名またはリカバリーコードが無効です。"
 msgid "New Password"
 msgstr "新しいパスワード"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:63
+#: lib/baudrate_web/live/admin/settings_live.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "Optional site-specific terms shown during registration. Supports Markdown formatting."
 msgstr "登録時に表示されるサイト固有の利用規約（任意）。Markdown形式に対応しています。"
@@ -2017,7 +2024,7 @@ msgstr "プレビュー："
 msgid "Reset Password"
 msgstr "パスワードリセット"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:75
+#: lib/baudrate_web/live/admin/settings_live.html.heex:92
 #, elixir-autogen, elixir-format
 msgid "Save Agreement"
 msgstr "規約を保存"
@@ -2062,6 +2069,7 @@ msgid "Your signature (Markdown supported, max 500 characters)"
 msgstr "署名（Markdown対応、最大500文字）"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:138
+#: lib/baudrate_web/live/admin/federation_live.html.heex:285
 #, elixir-autogen, elixir-format
 msgid "Add"
 msgstr "追加"
@@ -2188,3 +2196,170 @@ msgstr "「%{query}」に一致するコメントが見つかりません。"
 #, elixir-autogen, elixir-format
 msgid "This article has been deleted."
 msgstr "この記事は削除されました。"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:265
+#, elixir-autogen, elixir-format
+msgid "Add All"
+msgstr "すべて追加"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:262
+#, elixir-autogen, elixir-format
+msgid "Add all %{count} missing domains to blocklist?"
+msgstr "不足している %{count} 件のドメインをすべてブロックリストに追加しますか？"
+
+#: lib/baudrate_web/live/admin/federation_live.ex:150
+#: lib/baudrate_web/live/admin/federation_live.ex:156
+#, elixir-autogen, elixir-format
+msgid "Added %{count} domains to blocklist."
+msgstr "%{count} 件のドメインをブロックリストに追加しました。"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:53
+#, elixir-autogen, elixir-format
+msgid "Authorized Fetch (Secure Mode)"
+msgstr "認証済みフェッチ（セキュアモード）"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:228
+#, elixir-autogen, elixir-format
+msgid "Blocklist Audit"
+msgstr "ブロックリスト監査"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:63
+#, elixir-autogen, elixir-format
+msgid "Blocklist Audit URL"
+msgstr "ブロックリスト監査URL"
+
+#: lib/baudrate_web/live/admin/federation_live.ex:110
+#, elixir-autogen, elixir-format
+msgid "Blocklist audit failed."
+msgstr "ブロックリスト監査に失敗しました。"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:142
+#, elixir-autogen, elixir-format
+msgid "Board Keys"
+msgstr "掲示板キー"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:229
+#, elixir-autogen, elixir-format
+msgid "Compare your local domain blocklist against an external known-bad-actor list. Configure the audit URL in Admin Settings."
+msgstr "ローカルドメインブロックリストを外部の悪質アクターリストと比較します。管理設定で監査URLを設定してください。"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:55
+#, elixir-autogen, elixir-format
+msgid "Disabled (public GETs allowed)"
+msgstr "無効（公開GETを許可）"
+
+#: lib/baudrate_web/live/admin/federation_live.ex:126
+#: lib/baudrate_web/live/admin/federation_live.ex:132
+#, elixir-autogen, elixir-format
+msgid "Domain %{domain} added to blocklist."
+msgstr "ドメイン %{domain} をブロックリストに追加しました。"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:296
+#, elixir-autogen, elixir-format
+msgid "Domains you block that are not in the external list (informational only)."
+msgstr "外部リストに含まれていないブロック中のドメイン（参考情報）。"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Enabled (require HTTP signatures on GETs)"
+msgstr "有効（GETリクエストにHTTP署名を要求）"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:240
+#, elixir-autogen, elixir-format
+msgid "External List"
+msgstr "外部リスト"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:295
+#, elixir-autogen, elixir-format
+msgid "Extra in Local Blocklist"
+msgstr "ローカルブロックリストの追加項目"
+
+#: lib/baudrate_web/live/admin/federation_live.ex:107
+#, elixir-autogen, elixir-format
+msgid "Failed to fetch external blocklist."
+msgstr "外部ブロックリストの取得に失敗しました。"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:126
+#, elixir-autogen, elixir-format
+msgid "Key Rotation"
+msgstr "キーローテーション"
+
+#: lib/baudrate_web/live/admin/federation_live.ex:77
+#, elixir-autogen, elixir-format
+msgid "Key rotation failed."
+msgstr "キーローテーションに失敗しました。"
+
+#: lib/baudrate_web/live/admin/federation_live.ex:73
+#, elixir-autogen, elixir-format
+msgid "Keys rotated successfully."
+msgstr "キーを正常にローテーションしました。"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:244
+#, elixir-autogen, elixir-format
+msgid "Local Blocklist"
+msgstr "ローカルブロックリスト"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:252
+#, elixir-autogen, elixir-format
+msgid "Missing"
+msgstr "不足"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:259
+#, elixir-autogen, elixir-format
+msgid "Missing from Local Blocklist"
+msgstr "ローカルブロックリストに不足"
+
+#: lib/baudrate_web/live/admin/federation_live.ex:104
+#, elixir-autogen, elixir-format
+msgid "No blocklist audit URL configured. Set it in Admin Settings."
+msgstr "ブロックリスト監査URLが設定されていません。管理設定で設定してください。"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:248
+#, elixir-autogen, elixir-format
+msgid "Overlap"
+msgstr "重複"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:166
+#, elixir-autogen, elixir-format
+msgid "Rotate Keys"
+msgstr "キーをローテーション"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:127
+#, elixir-autogen, elixir-format
+msgid "Rotate RSA keypairs for federation actors. The new public key will be distributed to followers via an Update activity."
+msgstr "連合アクターのRSAキーペアをローテーションします。新しい公開鍵はUpdateアクティビティを通じてフォロワーに配信されます。"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:137
+#, elixir-autogen, elixir-format
+msgid "Rotate Site Keys"
+msgstr "サイトキーをローテーション"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:163
+#, elixir-autogen, elixir-format
+msgid "Rotate keypair for %{board}?"
+msgstr "%{board} のキーペアをローテーションしますか？"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:134
+#, elixir-autogen, elixir-format
+msgid "Rotate site keypair? This will invalidate existing signatures."
+msgstr "サイトキーペアをローテーションしますか？既存の署名が無効になります。"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:233
+#, elixir-autogen, elixir-format
+msgid "Run Audit"
+msgstr "監査を実行"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "URL to an external domain blocklist (CSV or JSON). Used by the federation dashboard audit feature."
+msgstr "外部ドメインブロックリストのURL（CSVまたはJSON）。連合ダッシュボードの監査機能で使用されます。"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:59
+#, elixir-autogen, elixir-format
+msgid "When enabled, unsigned GET requests to ActivityPub endpoints return 401. WebFinger and NodeInfo remain public."
+msgstr "有効にすると、未署名のGETリクエストはActivityPubエンドポイントで401を返します。WebFingerとNodeInfoは公開のままです。"
+
+#: lib/baudrate_web/live/admin/federation_live.html.heex:314
+#, elixir-autogen, elixir-format
+msgid "Your local blocklist matches the external list perfectly."
+msgstr "ローカルブロックリストは外部リストと完全に一致しています。"

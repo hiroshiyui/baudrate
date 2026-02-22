@@ -437,4 +437,84 @@ defmodule Baudrate.AuthTest do
       assert Auth.get_user(-1) == nil
     end
   end
+
+  describe "block_user/2 and unblock_user/2" do
+    test "blocks and unblocks a local user" do
+      user = create_user("user")
+      target = create_user("user")
+
+      assert {:ok, block} = Auth.block_user(user, target)
+      assert block.user_id == user.id
+      assert block.blocked_user_id == target.id
+
+      assert Auth.blocked?(user, target)
+      refute Auth.blocked?(target, user)
+
+      {1, nil} = Auth.unblock_user(user, target)
+      refute Auth.blocked?(user, target)
+    end
+
+    test "prevents duplicate blocks" do
+      user = create_user("user")
+      target = create_user("user")
+
+      assert {:ok, _} = Auth.block_user(user, target)
+      assert {:error, _} = Auth.block_user(user, target)
+    end
+  end
+
+  describe "block_remote_actor/2 and unblock_remote_actor/2" do
+    test "blocks and unblocks a remote actor" do
+      user = create_user("user")
+      ap_id = "https://remote.example/users/someone"
+
+      assert {:ok, block} = Auth.block_remote_actor(user, ap_id)
+      assert block.blocked_actor_ap_id == ap_id
+
+      assert Auth.blocked?(user, ap_id)
+
+      {1, nil} = Auth.unblock_remote_actor(user, ap_id)
+      refute Auth.blocked?(user, ap_id)
+    end
+  end
+
+  describe "list_blocks/1" do
+    test "lists all blocks for a user" do
+      user = create_user("user")
+      target = create_user("user")
+      ap_id = "https://remote.example/users/actor"
+
+      {:ok, _} = Auth.block_user(user, target)
+      {:ok, _} = Auth.block_remote_actor(user, ap_id)
+
+      blocks = Auth.list_blocks(user)
+      assert length(blocks) == 2
+    end
+  end
+
+  describe "user_blocked_by?/2" do
+    test "checks reverse block relationship" do
+      user = create_user("user")
+      target = create_user("user")
+
+      {:ok, _} = Auth.block_user(user, target)
+
+      assert Auth.user_blocked_by?(target.id, user.id)
+      refute Auth.user_blocked_by?(user.id, target.id)
+    end
+  end
+
+  describe "blocked_user_ids/1 and blocked_actor_ap_ids/1" do
+    test "returns lists of blocked IDs" do
+      user = create_user("user")
+      target = create_user("user")
+      ap_id = "https://remote.example/users/actor"
+
+      {:ok, _} = Auth.block_user(user, target)
+      {:ok, _} = Auth.block_remote_actor(user, ap_id)
+
+      assert target.id in Auth.blocked_user_ids(user)
+      assert ap_id in Auth.blocked_actor_ap_ids(user)
+    end
+  end
 end

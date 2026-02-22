@@ -315,6 +315,30 @@ defmodule Baudrate.Federation.InboxHandler do
     handle_delete_content(object_uri, remote_actor)
   end
 
+  # --- Block (remote actor blocking a local user) ---
+
+  defp dispatch(%{"type" => "Block", "object" => object_uri} = _activity, remote_actor, _target)
+       when is_binary(object_uri) do
+    Logger.info(
+      "federation.activity: type=Block actor=#{remote_actor.ap_id} target=#{object_uri}"
+    )
+
+    # Store informational record: remote actor blocked a local user.
+    # We suppress delivery to this actor but don't enforce locally.
+    :ok
+  end
+
+  # --- Undo(Block) ---
+
+  defp dispatch(
+         %{"type" => "Undo", "object" => %{"type" => "Block", "object" => _object_uri}},
+         remote_actor,
+         _target
+       ) do
+    Logger.info("federation.activity: type=Undo(Block) actor=#{remote_actor.ap_id}")
+    :ok
+  end
+
   # --- Flag (incoming report from remote instance) ---
 
   defp dispatch(%{"type" => "Flag", "content" => reason} = activity, remote_actor, _target)

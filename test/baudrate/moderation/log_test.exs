@@ -44,7 +44,7 @@ defmodule Baudrate.Moderation.LogTest do
       actions = Log.valid_actions()
       assert "ban_user" in actions
       assert "create_board" in actions
-      assert length(actions) == 11
+      assert length(actions) == 16
     end
   end
 end

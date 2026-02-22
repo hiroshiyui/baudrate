@@ -111,6 +111,38 @@ defmodule Baudrate.Federation.HTTPSignature do
     end
   end
 
+  # --- GET Verification (Authorized Fetch) ---
+
+  @required_signed_headers_get ["(request-target)", "host", "date"]
+
+  @doc """
+  Verifies the HTTP Signature on an incoming GET request.
+
+  GET requests don't have a body, so `digest` is not required.
+  Returns `{:ok, %RemoteActor{}}` on success or `{:error, reason}` on failure.
+  """
+  def verify_get(conn) do
+    with {:ok, sig_params} <- parse_signature_header(conn),
+         :ok <- validate_required_headers_get(sig_params),
+         :ok <- validate_algorithm(sig_params),
+         :ok <- validate_date(conn),
+         {:ok, remote_actor} <- ActorResolver.resolve_by_key_id(sig_params["keyId"]),
+         :ok <- verify_signature(conn, sig_params, remote_actor.public_key_pem) do
+      {:ok, remote_actor}
+    end
+  end
+
+  defp validate_required_headers_get(%{"headers" => headers_str}) do
+    signed = String.split(headers_str, " ")
+    missing = @required_signed_headers_get -- signed
+
+    if missing == [] do
+      :ok
+    else
+      {:error, {:missing_signed_headers, missing}}
+    end
+  end
+
   # --- Signing ---
 
   @doc """
@@ -147,6 +179,42 @@ defmodule Baudrate.Federation.HTTPSignature do
       "signature" => sig_header,
       "date" => now,
       "digest" => digest,
+      "host" => host
+    }
+  end
+
+  @doc """
+  Signs an outgoing HTTP GET request and returns a map of headers to include.
+
+  Returns a map with `"signature"`, `"date"`, and `"host"` keys.
+  GET requests don't have a body, so no `digest` is included.
+  """
+  def sign_get(url, private_key_pem, key_id) do
+    uri = URI.parse(url)
+    now = format_http_date(DateTime.utc_now())
+    host = uri.host
+
+    path = uri.path || "/"
+    query = if uri.query, do: "?#{uri.query}", else: ""
+    target = "get #{path}#{query}"
+
+    signing_string =
+      [
+        "(request-target): #{target}",
+        "host: #{host}",
+        "date: #{now}"
+      ]
+      |> Enum.join("\n")
+
+    {:ok, private_key} = decode_private_key(private_key_pem)
+    signature = :public_key.sign(signing_string, :sha256, private_key) |> Base.encode64()
+
+    sig_header =
+      ~s[keyId="#{key_id}",algorithm="rsa-sha256",headers="(request-target) host date",signature="#{signature}"]
+
+    %{
+      "signature" => sig_header,
+      "date" => now,
       "host" => host
     }
   end

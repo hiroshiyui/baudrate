@@ -52,6 +52,51 @@ defmodule Baudrate.Federation.HTTPSignatureTest do
     end
   end
 
+  describe "sign_get/3" do
+    test "produces valid signature headers for GET requests" do
+      {_public_pem, private_pem} = KeyStore.generate_keypair()
+      key_id = "https://local.example/ap/site#main-key"
+
+      headers = HTTPSignature.sign_get("https://remote.example/ap/users/alice", private_pem, key_id)
+
+      assert is_binary(headers["signature"])
+      assert is_binary(headers["date"])
+      assert headers["host"] == "remote.example"
+      refute Map.has_key?(headers, "digest")
+
+      # Verify signature header format
+      assert headers["signature"] =~ ~s[keyId="#{key_id}"]
+      assert headers["signature"] =~ ~s[headers="(request-target) host date"]
+    end
+
+    test "sign_get round-trip can be verified" do
+      {public_pem, private_pem} = KeyStore.generate_keypair()
+      key_id = "https://local.example/ap/site#main-key"
+      url = "https://remote.example/ap/users/alice"
+
+      headers = HTTPSignature.sign_get(url, private_pem, key_id)
+
+      # Build a mock conn with the signed headers
+      conn =
+        Plug.Test.conn(:get, "/ap/users/alice")
+        |> Map.put(:req_headers, [
+          {"host", "remote.example"},
+          {"date", headers["date"]},
+          {"signature", headers["signature"]}
+        ])
+
+      {:ok, sig_params} = HTTPSignature.parse_signature_header(conn)
+      headers_list = String.split(sig_params["headers"], " ")
+      signing_string = HTTPSignature.build_signing_string(conn, headers_list)
+
+      {:ok, signature_bytes} = Base.decode64(sig_params["signature"])
+      [entry] = :public_key.pem_decode(public_pem)
+      public_key = :public_key.pem_entry_decode(entry)
+
+      assert :public_key.verify(signing_string, :sha256, signature_bytes, public_key)
+    end
+  end
+
   describe "sign and verify round-trip" do
     test "signed request can be verified" do
       {public_pem, private_pem} = KeyStore.generate_keypair()

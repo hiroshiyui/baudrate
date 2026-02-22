@@ -775,14 +775,50 @@ defmodule Baudrate.Content do
 
   @doc """
   Lists non-deleted comments for an article, threaded by parent.
+
+  When `current_user` is provided, comments from blocked users and remote
+  actors are filtered out.
   """
-  def list_comments_for_article(%Article{id: article_id}) do
+  def list_comments_for_article(article, current_user \\ nil)
+
+  def list_comments_for_article(%Article{id: article_id}, nil) do
     from(c in Comment,
       where: c.article_id == ^article_id and is_nil(c.deleted_at),
       order_by: [asc: c.inserted_at],
       preload: [:user, :remote_actor]
     )
     |> Repo.all()
+  end
+
+  def list_comments_for_article(%Article{id: article_id}, current_user) do
+    blocked_uids = Auth.blocked_user_ids(current_user)
+    blocked_ap_ids = Auth.blocked_actor_ap_ids(current_user)
+
+    query =
+      from(c in Comment,
+        where: c.article_id == ^article_id and is_nil(c.deleted_at),
+        order_by: [asc: c.inserted_at],
+        preload: [:user, :remote_actor]
+      )
+
+    query =
+      if blocked_uids != [] do
+        from(c in query, where: is_nil(c.user_id) or c.user_id not in ^blocked_uids)
+      else
+        query
+      end
+
+    query =
+      if blocked_ap_ids != [] do
+        from(c in query,
+          left_join: ra in assoc(c, :remote_actor),
+          where: is_nil(c.remote_actor_id) or ra.ap_id not in ^blocked_ap_ids
+        )
+      else
+        query
+      end
+
+    Repo.all(query)
   end
 
   @doc """

@@ -75,7 +75,7 @@ defmodule Baudrate.Federation do
   alias Baudrate.Setup
   alias Baudrate.Content
   alias Baudrate.Content.Markdown
-  alias Baudrate.Federation.{Announce, Follower, KeyStore}
+  alias Baudrate.Federation.{Announce, Follower, KeyStore, Publisher}
 
   @as_context "https://www.w3.org/ns/activitystreams"
   @security_context "https://w3id.org/security/v1"
@@ -848,4 +848,28 @@ defmodule Baudrate.Federation do
   end
 
   def resolve_board_from_audience(_), do: nil
+
+  # --- Key Rotation ---
+
+  @doc """
+  Rotates the keypair for an actor and distributes the new public key
+  to followers via an `Update` activity.
+
+  ## Parameters
+
+    * `actor_type` — `:user`, `:board`, or `:site`
+    * `entity` — the user/board struct (ignored for `:site`)
+
+  Returns `{:ok, updated_entity}` or `{:error, reason}`.
+  """
+  def rotate_keys(actor_type, entity) do
+    with {:ok, updated} <- do_rotate(actor_type, entity) do
+      Publisher.publish_key_rotation(actor_type, updated)
+      {:ok, updated}
+    end
+  end
+
+  defp do_rotate(:user, user), do: KeyStore.rotate_user_keypair(user)
+  defp do_rotate(:board, board), do: KeyStore.rotate_board_keypair(board)
+  defp do_rotate(:site, _), do: KeyStore.rotate_site_keypair()
 end

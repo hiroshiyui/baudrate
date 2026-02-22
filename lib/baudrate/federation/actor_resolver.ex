@@ -12,7 +12,8 @@ defmodule Baudrate.Federation.ActorResolver do
   import Ecto.Query
 
   alias Baudrate.Repo
-  alias Baudrate.Federation.{HTTPClient, RemoteActor, Sanitizer, Validator}
+  alias Baudrate.Federation
+  alias Baudrate.Federation.{HTTPClient, KeyStore, RemoteActor, Sanitizer, Validator}
 
   @doc """
   Resolves a remote actor by their AP ID.
@@ -59,9 +60,27 @@ defmodule Baudrate.Federation.ActorResolver do
   end
 
   defp fetch_and_upsert(actor_ap_id) do
-    with :ok <- validate_fetchable(actor_ap_id),
-         {:ok, %{body: body}} <- HTTPClient.get(actor_ap_id, headers: []),
-         {:ok, json} <- Jason.decode(body),
+    with :ok <- validate_fetchable(actor_ap_id) do
+      case HTTPClient.get(actor_ap_id, headers: []) do
+        {:ok, %{body: body}} ->
+          parse_and_upsert(body, actor_ap_id)
+
+        {:error, {:http_error, 401}} ->
+          # Remote requires authorized fetch — retry with signed request
+          signed_fetch(actor_ap_id)
+
+        {:error, reason} = err ->
+          Logger.warning(
+            "federation.actor_resolve_failed: url=#{actor_ap_id} reason=#{inspect(reason)}"
+          )
+
+          err
+      end
+    end
+  end
+
+  defp parse_and_upsert(body, actor_ap_id) do
+    with {:ok, json} <- Jason.decode(body),
          {:ok, attrs} <- extract_actor_attrs(json) do
       upsert_actor(attrs)
     else
@@ -71,6 +90,30 @@ defmodule Baudrate.Federation.ActorResolver do
         )
 
         err
+    end
+  end
+
+  defp signed_fetch(actor_ap_id) do
+    with {:ok, _} <- KeyStore.ensure_site_keypair(),
+         {:ok, private_key} <- KeyStore.decrypt_site_private_key() do
+      site_uri = Federation.actor_uri(:site, nil)
+      key_id = "#{site_uri}#main-key"
+
+      case HTTPClient.signed_get(actor_ap_id, private_key, key_id) do
+        {:ok, %{body: body}} ->
+          parse_and_upsert(body, actor_ap_id)
+
+        {:error, reason} = err ->
+          Logger.warning(
+            "federation.actor_resolve_failed: url=#{actor_ap_id} reason=#{inspect(reason)} (signed fetch)"
+          )
+
+          err
+      end
+    else
+      _ ->
+        Logger.warning("federation.actor_resolve_failed: url=#{actor_ap_id} reason=no_site_key")
+        {:error, :no_site_key}
     end
   end
 

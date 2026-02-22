@@ -49,7 +49,7 @@ defmodule Baudrate.Auth do
   """
 
   import Ecto.Query
-  alias Baudrate.Auth.{InviteCode, RecoveryCode, TotpVault, UserSession}
+  alias Baudrate.Auth.{InviteCode, RecoveryCode, TotpVault, UserBlock, UserSession}
   alias Baudrate.Repo
   alias Baudrate.Setup
   alias Baudrate.Setup.{Role, User}
@@ -887,5 +887,111 @@ defmodule Baudrate.Auth do
   def purge_expired_sessions do
     now = DateTime.utc_now()
     from(s in UserSession, where: s.expires_at < ^now) |> Repo.delete_all()
+  end
+
+  # --- User Blocks ---
+
+  @doc """
+  Blocks a local user. Returns `{:ok, block}` or `{:error, changeset}`.
+  """
+  def block_user(%User{id: user_id}, %User{id: blocked_id}) do
+    %UserBlock{}
+    |> UserBlock.local_changeset(%{user_id: user_id, blocked_user_id: blocked_id})
+    |> Repo.insert()
+  end
+
+  @doc """
+  Blocks a remote actor by AP ID. Returns `{:ok, block}` or `{:error, changeset}`.
+  """
+  def block_remote_actor(%User{id: user_id}, ap_id) when is_binary(ap_id) do
+    %UserBlock{}
+    |> UserBlock.remote_changeset(%{user_id: user_id, blocked_actor_ap_id: ap_id})
+    |> Repo.insert()
+  end
+
+  @doc """
+  Unblocks a local user. Returns `{count, nil}`.
+  """
+  def unblock_user(%User{id: user_id}, %User{id: blocked_id}) do
+    from(b in UserBlock,
+      where: b.user_id == ^user_id and b.blocked_user_id == ^blocked_id
+    )
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Unblocks a remote actor by AP ID. Returns `{count, nil}`.
+  """
+  def unblock_remote_actor(%User{id: user_id}, ap_id) when is_binary(ap_id) do
+    from(b in UserBlock,
+      where: b.user_id == ^user_id and b.blocked_actor_ap_id == ^ap_id
+    )
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Returns `true` if the user has blocked the given target (local user or AP ID).
+  """
+  def blocked?(%User{id: user_id}, %User{id: target_id}) do
+    Repo.exists?(
+      from(b in UserBlock,
+        where: b.user_id == ^user_id and b.blocked_user_id == ^target_id
+      )
+    )
+  end
+
+  def blocked?(%User{id: user_id}, ap_id) when is_binary(ap_id) do
+    Repo.exists?(
+      from(b in UserBlock,
+        where: b.user_id == ^user_id and b.blocked_actor_ap_id == ^ap_id
+      )
+    )
+  end
+
+  def blocked?(_, _), do: false
+
+  @doc """
+  Returns `true` if `blocker_id` has blocked `user_id`. Reverse check for filtering.
+  """
+  def user_blocked_by?(user_id, blocker_id) when is_integer(user_id) and is_integer(blocker_id) do
+    Repo.exists?(
+      from(b in UserBlock,
+        where: b.user_id == ^blocker_id and b.blocked_user_id == ^user_id
+      )
+    )
+  end
+
+  @doc """
+  Lists all blocks for a user, with blocked_user preloaded where applicable.
+  """
+  def list_blocks(%User{id: user_id}) do
+    from(b in UserBlock,
+      where: b.user_id == ^user_id,
+      order_by: [desc: b.inserted_at],
+      preload: [:blocked_user]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns a list of blocked user IDs for the given user.
+  """
+  def blocked_user_ids(%User{id: user_id}) do
+    from(b in UserBlock,
+      where: b.user_id == ^user_id and not is_nil(b.blocked_user_id),
+      select: b.blocked_user_id
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns a list of blocked remote actor AP IDs for the given user.
+  """
+  def blocked_actor_ap_ids(%User{id: user_id}) do
+    from(b in UserBlock,
+      where: b.user_id == ^user_id and not is_nil(b.blocked_actor_ap_id),
+      select: b.blocked_actor_ap_id
+    )
+    |> Repo.all()
   end
 end

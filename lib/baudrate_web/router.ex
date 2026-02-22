@@ -64,6 +64,7 @@ defmodule BaudrateWeb.Router do
   pipeline :activity_pub do
     plug BaudrateWeb.Plugs.RateLimit, action: :activity_pub
     plug BaudrateWeb.Plugs.CORS
+    plug BaudrateWeb.Plugs.AuthorizedFetch
   end
 
   pipeline :activity_pub_inbox do

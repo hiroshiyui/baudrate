@@ -209,6 +209,18 @@ defmodule Baudrate.Federation.Delivery do
     enqueue(flag_json, site_uri, [inbox])
   end
 
+  # --- Block Delivery ---
+
+  @doc """
+  Delivers a Block or Undo(Block) activity to a remote actor's inbox.
+
+  Uses the blocking user's actor as the sender.
+  """
+  def deliver_block(block_json, remote_actor, actor_uri) do
+    inbox = remote_actor.shared_inbox || remote_actor.inbox
+    enqueue(block_json, actor_uri, [inbox])
+  end
+
   # --- Shared Helpers ---
 
   @doc """

@@ -86,6 +86,20 @@ defmodule Baudrate.Federation.HTTPClient do
   end
 
   @doc """
+  Performs a signed GET request with HTTP Signature headers.
+
+  Uses the given private key and key ID to sign the request.
+  """
+  def signed_get(url, private_key_pem, key_id, opts \\ []) do
+    alias Baudrate.Federation.HTTPSignature
+
+    sig_headers = HTTPSignature.sign_get(url, private_key_pem, key_id)
+    extra_headers = Enum.map(sig_headers, fn {k, v} -> {k, v} end)
+    existing_headers = Keyword.get(opts, :headers, [])
+    get(url, headers: extra_headers ++ existing_headers)
+  end
+
+  @doc """
   Validates a URL for safe federation use.
 
   Rejects:

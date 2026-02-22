@@ -12,7 +12,7 @@ defmodule Baudrate.Moderation.Log do
 
   alias Baudrate.Setup.User
 
-  @valid_actions ~w(ban_user unban_user update_role approve_user resolve_report dismiss_report delete_article delete_comment create_board update_board delete_board)
+  @valid_actions ~w(ban_user unban_user update_role approve_user resolve_report dismiss_report delete_article delete_comment create_board update_board delete_board block_user unblock_user block_domain unblock_domain rotate_keys)
 
   schema "moderation_logs" do
     field :action, :string

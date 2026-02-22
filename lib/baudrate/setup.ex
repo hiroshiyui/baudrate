@@ -230,7 +230,9 @@ defmodule Baudrate.Setup do
       ap_domain_blocklist: :string,
       ap_federation_enabled: :string,
       ap_federation_mode: :string,
-      ap_domain_allowlist: :string
+      ap_domain_allowlist: :string,
+      ap_authorized_fetch: :string,
+      ap_blocklist_audit_url: :string
     }
 
     defaults = %{
@@ -239,7 +241,9 @@ defmodule Baudrate.Setup do
       ap_domain_blocklist: get_setting("ap_domain_blocklist") || "",
       ap_federation_enabled: get_setting("ap_federation_enabled") || "true",
       ap_federation_mode: get_setting("ap_federation_mode") || "blocklist",
-      ap_domain_allowlist: get_setting("ap_domain_allowlist") || ""
+      ap_domain_allowlist: get_setting("ap_domain_allowlist") || "",
+      ap_authorized_fetch: get_setting("ap_authorized_fetch") || "false",
+      ap_blocklist_audit_url: get_setting("ap_blocklist_audit_url") || ""
     }
 
     {defaults, types}
@@ -249,6 +253,7 @@ defmodule Baudrate.Setup do
     |> Ecto.Changeset.validate_inclusion(:registration_mode, @valid_registration_modes)
     |> Ecto.Changeset.validate_inclusion(:ap_federation_enabled, ["true", "false"])
     |> Ecto.Changeset.validate_inclusion(:ap_federation_mode, @valid_federation_modes)
+    |> Ecto.Changeset.validate_inclusion(:ap_authorized_fetch, ["true", "false"])
   end
 
   @doc """
@@ -267,6 +272,8 @@ defmodule Baudrate.Setup do
       set_setting("ap_federation_enabled", changes.ap_federation_enabled || "true")
       set_setting("ap_federation_mode", changes.ap_federation_mode || "blocklist")
       set_setting("ap_domain_allowlist", changes.ap_domain_allowlist || "")
+      set_setting("ap_authorized_fetch", changes.ap_authorized_fetch || "false")
+      set_setting("ap_blocklist_audit_url", changes.ap_blocklist_audit_url || "")
       {:ok, changes}
     else
       {:error, Map.put(changeset, :action, :validate)}

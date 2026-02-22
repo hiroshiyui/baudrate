@@ -263,4 +263,36 @@ defmodule Baudrate.FederationTest do
 
     Repo.preload(article, [:boards, :user])
   end
+
+  describe "rotate_keys/2" do
+    test "rotates user keypair and returns updated user" do
+      user = setup_user_with_role("user")
+      {:ok, user} = KeyStore.ensure_user_keypair(user)
+      old_key = user.ap_public_key
+
+      {:ok, updated} = Federation.rotate_keys(:user, user)
+
+      assert is_binary(updated.ap_public_key)
+      refute updated.ap_public_key == old_key
+    end
+
+    test "rotates board keypair and returns updated board" do
+      board = setup_board("rotate-#{System.unique_integer([:positive])}")
+      {:ok, board} = KeyStore.ensure_board_keypair(board)
+      old_key = board.ap_public_key
+
+      {:ok, updated} = Federation.rotate_keys(:board, board)
+
+      assert is_binary(updated.ap_public_key)
+      refute updated.ap_public_key == old_key
+    end
+
+    test "rotates site keypair" do
+      {:ok, %{public_pem: old_key}} = KeyStore.ensure_site_keypair()
+      {:ok, %{public_pem: new_key}} = Federation.rotate_keys(:site, nil)
+
+      assert is_binary(new_key)
+      refute new_key == old_key
+    end
+  end
 end

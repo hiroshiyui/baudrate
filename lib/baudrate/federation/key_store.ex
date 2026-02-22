@@ -94,6 +94,60 @@ defmodule Baudrate.Federation.KeyStore do
     end
   end
 
+  # --- Key Rotation ---
+
+  @doc """
+  Rotates the RSA keypair for a user actor.
+
+  Generates a new keypair, encrypts the private key, and stores both.
+  Returns `{:ok, user}` with the updated user.
+  """
+  def rotate_user_keypair(user) do
+    {public_pem, private_pem} = generate_keypair()
+    encrypted = KeyVault.encrypt(private_pem)
+
+    user
+    |> Baudrate.Setup.User.ap_key_changeset(%{
+      ap_public_key: public_pem,
+      ap_private_key_encrypted: encrypted
+    })
+    |> Repo.update()
+  end
+
+  @doc """
+  Rotates the RSA keypair for a board actor.
+
+  Generates a new keypair, encrypts the private key, and stores both.
+  Returns `{:ok, board}` with the updated board.
+  """
+  def rotate_board_keypair(board) do
+    {public_pem, private_pem} = generate_keypair()
+    encrypted = KeyVault.encrypt(private_pem)
+
+    board
+    |> Baudrate.Content.Board.ap_key_changeset(%{
+      ap_public_key: public_pem,
+      ap_private_key_encrypted: encrypted
+    })
+    |> Repo.update()
+  end
+
+  @doc """
+  Rotates the RSA keypair for the site actor.
+
+  Generates a new keypair and stores it in the settings table.
+  Returns `{:ok, %{public_pem: public_pem}}`.
+  """
+  def rotate_site_keypair do
+    {public_pem, private_pem} = generate_keypair()
+    encrypted = KeyVault.encrypt(private_pem)
+    encoded = Base.encode64(encrypted)
+
+    {:ok, _} = Setup.set_setting("ap_site_public_key", public_pem)
+    {:ok, _} = Setup.set_setting("ap_site_private_key_encrypted", encoded)
+    {:ok, %{public_pem: public_pem}}
+  end
+
   @doc """
   Returns the PEM-encoded public key for a user or board.
   """
