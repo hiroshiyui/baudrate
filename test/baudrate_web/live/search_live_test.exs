@@ -15,7 +15,7 @@ defmodule BaudrateWeb.SearchLiveTest do
 
     board =
       %Board{}
-      |> Board.changeset(%{name: "Public", slug: "public-search", visibility: "public"})
+      |> Board.changeset(%{name: "Public", slug: "public-search", min_role_to_view: "guest"})
       |> Repo.insert!()
 
     {:ok, conn: conn, user: user, board: board}
@@ -41,10 +41,9 @@ defmodule BaudrateWeb.SearchLiveTest do
 
     {:ok, lv, _html} = live(conn, "/search")
 
-    html =
-      lv
-      |> form("form", q: "Elixir")
-      |> render_submit()
+    lv
+    |> form("form", q: "Elixir")
+    |> render_submit()
 
     # After submit, LiveView patches to new URL
     assert_patch(lv)

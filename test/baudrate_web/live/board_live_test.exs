@@ -30,7 +30,7 @@ defmodule BaudrateWeb.BoardLiveTest do
       )
     end
 
-    {:ok, lv, html} = live(conn, "/boards/general")
+    {:ok, _lv, html} = live(conn, "/boards/general")
 
     # Should show pagination
     assert html =~ "General"

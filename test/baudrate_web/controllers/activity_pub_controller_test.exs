@@ -286,7 +286,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
         |> Baudrate.Content.Board.changeset(%{
           name: "Private",
           slug: "private-#{System.unique_integer([:positive])}",
-          visibility: "private"
+          min_role_to_view: "user"
         })
         |> Repo.insert()
 

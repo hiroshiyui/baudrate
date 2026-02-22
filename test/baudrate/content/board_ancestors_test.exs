@@ -56,8 +56,8 @@ defmodule Baudrate.Content.BoardAncestorsTest do
     end
   end
 
-  describe "list_public_sub_boards/1" do
-    test "returns only public sub-boards" do
+  describe "list_visible_sub_boards/2" do
+    test "returns only sub-boards visible to the given user" do
       {:ok, parent} =
         Content.create_board(%{name: "Parent", slug: "parent-#{System.unique_integer([:positive])}"})
 
@@ -66,20 +66,21 @@ defmodule Baudrate.Content.BoardAncestorsTest do
           name: "Public Child",
           slug: "pub-#{System.unique_integer([:positive])}",
           parent_id: parent.id,
-          visibility: "public"
+          min_role_to_view: "guest"
         })
 
       {:ok, _priv} =
         Content.create_board(%{
-          name: "Private Child",
+          name: "Users Only Child",
           slug: "priv-#{System.unique_integer([:positive])}",
           parent_id: parent.id,
-          visibility: "private"
+          min_role_to_view: "user"
         })
 
-      public_subs = Content.list_public_sub_boards(parent)
-      assert length(public_subs) == 1
-      assert hd(public_subs).name == "Public Child"
+      # Guest (nil user) sees only public child
+      visible_subs = Content.list_visible_sub_boards(parent, nil)
+      assert length(visible_subs) == 1
+      assert hd(visible_subs).name == "Public Child"
     end
   end
 end

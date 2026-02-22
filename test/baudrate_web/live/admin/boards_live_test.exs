@@ -48,7 +48,7 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
 
     html =
       lv
-      |> form("form", board: %{name: "Test Board", slug: slug, visibility: "public", position: 1})
+      |> form("form", board: %{name: "Test Board", slug: slug, min_role_to_view: "guest", min_role_to_post: "user", position: 1})
       |> render_submit()
 
     assert html =~ "Board created successfully"

@@ -257,7 +257,7 @@ defmodule Baudrate.Federation.DeliveryTest do
         |> Baudrate.Content.Board.changeset(%{
           name: "Private Board",
           slug: board_uri_unused,
-          visibility: "private"
+          min_role_to_view: "user"
         })
         |> Repo.insert!()
 

@@ -59,7 +59,8 @@ defmodule Baudrate.Content.BoardManagementTest do
       attrs = %{name: "New Board", slug: "new-board-#{System.unique_integer([:positive])}", description: "A test board"}
       {:ok, board} = Content.create_board(attrs)
       assert board.name == "New Board"
-      assert board.visibility == "public"
+      assert board.min_role_to_view == "guest"
+      assert board.min_role_to_post == "user"
     end
 
     test "fails without required fields" do
