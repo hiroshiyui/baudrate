@@ -269,8 +269,9 @@ policy as the setup wizard applies (12+ chars, complexity requirements).
 
 Registration requires accepting terms: a system activity-logging notice (always
 shown) and an optional site-specific End User Agreement (admin-configurable via
-`/admin/settings`, stored as markdown). Recovery codes (16 word-based codes) are
-issued at registration and displayed once for the user to save.
+`/admin/settings`, stored as markdown). Recovery codes (10 high-entropy base32
+codes in `xxxx-xxxx` format, ~41 bits each, HMAC-SHA256 hashed) are issued at
+registration and displayed once for the user to save.
 
 Admin approval is available at `/admin/pending-users` (admin role only).
 Admin invite code management is available at `/admin/invites` (admin role only).

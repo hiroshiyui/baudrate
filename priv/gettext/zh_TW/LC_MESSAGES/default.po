@@ -2008,11 +2008,6 @@ msgstr "密碼重設失敗。"
 msgid "Password reset successful! You can now sign in."
 msgstr "密碼重設成功！您現在可以登入。"
 
-#: lib/baudrate_web/live/recovery_code_verify_live.ex:44
-#, elixir-autogen, elixir-format
-msgid "Please enter a valid recovery code (a single word)."
-msgstr "請輸入有效的救援碼（一個英文單字）。"
-
 #: lib/baudrate_web/live/profile_live.html.heex:197
 #, elixir-autogen, elixir-format
 msgid "Preview:"
@@ -2363,3 +2358,8 @@ msgstr "啟用後，未簽名的 GET 請求在 ActivityPub 端點將返回 401�
 #, elixir-autogen, elixir-format
 msgid "Your local blocklist matches the external list perfectly."
 msgstr "您的本地封鎖名單與外部名單完全一致。"
+
+#: lib/baudrate_web/live/recovery_code_verify_live.ex:44
+#, elixir-autogen, elixir-format
+msgid "Please enter a valid recovery code (format: xxxx-xxxx)."
+msgstr "請輸入有效的救援碼（格式：xxxx-xxxx）。"

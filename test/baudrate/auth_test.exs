@@ -191,18 +191,18 @@ defmodule Baudrate.AuthTest do
   end
 
   describe "generate_recovery_codes/1" do
-    test "generates 16 recovery codes" do
+    test "generates 10 recovery codes" do
       user = create_user("user")
       codes = Auth.generate_recovery_codes(user)
-      assert length(codes) == 16
+      assert length(codes) == 10
     end
 
-    test "codes are single lowercase English words" do
+    test "codes are in xxxx-xxxx base32 format" do
       user = create_user("user")
       codes = Auth.generate_recovery_codes(user)
 
       for code <- codes do
-        assert String.match?(code, ~r/^[a-z]+$/)
+        assert String.match?(code, ~r/^[a-z2-7]{4}-[a-z2-7]{4}$/)
       end
     end
 
@@ -216,13 +216,9 @@ defmodule Baudrate.AuthTest do
       user = create_user("user")
       old_codes = Auth.generate_recovery_codes(user)
       new_codes = Auth.generate_recovery_codes(user)
-      new_code_set = MapSet.new(new_codes)
 
-      # Old codes that don't appear in new set should no longer work
-      old_only = Enum.reject(old_codes, &MapSet.member?(new_code_set, &1))
-      assert length(old_only) > 0, "expected some old codes to not appear in new set"
-
-      for code <- old_only do
+      # Old codes should no longer work
+      for code <- old_codes do
         assert Auth.verify_recovery_code(user, code) == :error
       end
 
@@ -261,6 +257,12 @@ defmodule Baudrate.AuthTest do
       user = create_user("user")
       [code | _] = Auth.generate_recovery_codes(user)
       assert Auth.verify_recovery_code(user, String.upcase(code)) == :ok
+    end
+
+    test "accepts code without dash" do
+      user = create_user("user")
+      [code | _] = Auth.generate_recovery_codes(user)
+      assert Auth.verify_recovery_code(user, String.replace(code, "-", "")) == :ok
     end
   end
 
@@ -314,7 +316,7 @@ defmodule Baudrate.AuthTest do
 
       assert user.status == "active"
       assert user.role_id != nil
-      assert length(codes) == 16
+      assert length(codes) == 10
 
       role = Repo.preload(user, :role).role
       assert role.name == "user"

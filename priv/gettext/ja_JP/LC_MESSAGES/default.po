@@ -2008,11 +2008,6 @@ msgstr "パスワードのリセットに失敗しました。"
 msgid "Password reset successful! You can now sign in."
 msgstr "パスワードのリセットが完了しました！ログインしてください。"
 
-#: lib/baudrate_web/live/recovery_code_verify_live.ex:44
-#, elixir-autogen, elixir-format
-msgid "Please enter a valid recovery code (a single word)."
-msgstr "有効なリカバリーコードを入力してください（英単語1つ）。"
-
 #: lib/baudrate_web/live/profile_live.html.heex:197
 #, elixir-autogen, elixir-format
 msgid "Preview:"
@@ -2363,3 +2358,8 @@ msgstr "有効にすると、未署名のGETリクエストはActivityPubエン�
 #, elixir-autogen, elixir-format
 msgid "Your local blocklist matches the external list perfectly."
 msgstr "ローカルブロックリストは外部リストと完全に一致しています。"
+
+#: lib/baudrate_web/live/recovery_code_verify_live.ex:44
+#, elixir-autogen, elixir-format
+msgid "Please enter a valid recovery code (format: xxxx-xxxx)."
+msgstr "有効なリカバリーコードを入力してください（形式：xxxx-xxxx）。"

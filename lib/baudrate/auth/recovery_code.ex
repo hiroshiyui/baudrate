@@ -2,9 +2,10 @@ defmodule Baudrate.Auth.RecoveryCode do
   @moduledoc """
   Schema for one-time recovery codes stored in the `recovery_codes` table.
 
-  Each code is stored as a SHA-256 hash (one-way, like passwords). Codes are
-  generated in batches of 10 when TOTP is enabled, and each code can only be
-  used once (`used_at` is set on use).
+  Each code is a cryptographically random 8-character base32 string (~41 bits
+  of entropy), stored as an HMAC-SHA256 hash keyed with a server-side secret
+  derived from `secret_key_base`. Codes are generated in batches of 10 and
+  each can only be used once (`used_at` is set on use).
 
   Old codes are deleted whenever new ones are generated (e.g., on TOTP reset).
   """

@@ -2009,11 +2009,6 @@ msgstr ""
 msgid "Password reset successful! You can now sign in."
 msgstr ""
 
-#: lib/baudrate_web/live/recovery_code_verify_live.ex:44
-#, elixir-autogen, elixir-format
-msgid "Please enter a valid recovery code (a single word)."
-msgstr ""
-
 #: lib/baudrate_web/live/profile_live.html.heex:197
 #, elixir-autogen, elixir-format
 msgid "Preview:"
@@ -2363,4 +2358,9 @@ msgstr ""
 #: lib/baudrate_web/live/admin/federation_live.html.heex:314
 #, elixir-autogen, elixir-format
 msgid "Your local blocklist matches the external list perfectly."
+msgstr ""
+
+#: lib/baudrate_web/live/recovery_code_verify_live.ex:44
+#, elixir-autogen, elixir-format
+msgid "Please enter a valid recovery code (format: xxxx-xxxx)."
 msgstr ""

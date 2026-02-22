@@ -54,29 +54,7 @@ defmodule Baudrate.Auth do
   alias Baudrate.Setup
   alias Baudrate.Setup.{Role, User}
 
-  @recovery_code_count 16
-
-  # Curated wordlist of 256 common, unambiguous English words for recovery codes.
-  # Each code is a single word randomly selected (no duplicates within a set).
-  @recovery_wordlist ~w(
-    anchor apple arrow badge barrel beacon berry blade bloom bridge
-    bronze brush cabin candle canyon castle cedar chain cherry circus
-    cliff clock cloud coast cobalt coffee comet coral cotton crane
-    creek crown crystal curtain dagger dancer dawn desert diamond dragon
-    drift eagle ember falcon feather field flame flint flower forest
-    fossil garden glacier globe golden gravel harbor harvest hawk hazel
-    hollow honey horizon hunter iron island ivory jacket jasper jungle
-    kettle lantern latch lemon library linden lion lunar marble meadow
-    mirror mosaic mountain nectar noble north oasis ocean olive onyx
-    orbit orchid otter palace panther pearl pepper phoenix pillar planet
-    plume pocket polar prism puppet quartz rabbit radiant raven ribbon
-    rider ripple river rocket rose ruby salmon satin scarlet scroll
-    shadow shell shield silver sketch slate smoke socket solar spark
-    spider spring square stable star steel stone stream summit sunrise
-    sunset swift sword temple tender thistle thunder tiger timber torch
-    tower trail travel tropic tunnel turtle valley velvet venom vessel
-    violet walnut wander water willow window winter wisdom wolf zenith
-  )
+  @recovery_code_count 10
 
   @session_ttl_seconds 14 * 86_400
   @max_sessions_per_user 3
@@ -256,46 +234,47 @@ defmodule Baudrate.Auth do
   @doc """
   Generates #{@recovery_code_count} one-time recovery codes for a user.
 
-  Deletes any existing recovery codes, generates new random codes as single
-  lowercase English words from a curated wordlist, stores their SHA-256
-  hashes, and returns the raw codes for one-time display to the user.
+  Deletes any existing recovery codes, generates new cryptographically random
+  codes (5 bytes → 8 base32 chars, ~41 bits of entropy each), stores their
+  HMAC-SHA256 hashes, and returns the formatted codes (`xxxx-xxxx`) for
+  one-time display to the user.
   """
   def generate_recovery_codes(user) do
-    # Delete existing codes
     from(rc in RecoveryCode, where: rc.user_id == ^user.id)
     |> Repo.delete_all()
 
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     raw_codes =
-      @recovery_wordlist
-      |> Enum.shuffle()
-      |> Enum.take(@recovery_code_count)
+      Enum.map(1..@recovery_code_count, fn _ ->
+        :crypto.strong_rand_bytes(5)
+        |> Base.encode32(case: :lower, padding: false)
+      end)
 
     entries =
       Enum.map(raw_codes, fn code ->
         %{
           user_id: user.id,
-          code_hash: :crypto.hash(:sha256, code),
+          code_hash: hmac_recovery_code(code),
           inserted_at: now
         }
       end)
 
     Repo.insert_all(RecoveryCode, entries)
 
-    raw_codes
+    Enum.map(raw_codes, &format_recovery_code/1)
   end
 
   @doc """
   Verifies a recovery code for a user.
 
-  Atomically marks the matching unused code as used via `Repo.update_all`,
-  preventing TOCTOU race conditions where concurrent requests could consume
-  the same recovery code. Returns `:ok` if exactly one code was consumed,
-  `:error` otherwise.
+  Normalizes the input (strip whitespace, dashes, downcase), computes the
+  HMAC-SHA256 hash, and atomically marks the matching unused code as used
+  via `Repo.update_all` to prevent TOCTOU race conditions. Returns `:ok`
+  if exactly one code was consumed, `:error` otherwise.
   """
   def verify_recovery_code(user, code) when is_binary(code) do
-    code_hash = :crypto.hash(:sha256, normalize_recovery_code(code))
+    code_hash = hmac_recovery_code(normalize_recovery_code(code))
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     query =
@@ -312,7 +291,22 @@ defmodule Baudrate.Auth do
   def verify_recovery_code(_, _), do: :error
 
   defp normalize_recovery_code(code) do
-    code |> String.trim() |> String.downcase()
+    code |> String.trim() |> String.downcase() |> String.replace("-", "")
+  end
+
+  defp format_recovery_code(code) do
+    String.slice(code, 0, 4) <> "-" <> String.slice(code, 4, 4)
+  end
+
+  defp hmac_recovery_code(code) do
+    :crypto.mac(:hmac, :sha256, recovery_code_hmac_key(), code)
+  end
+
+  defp recovery_code_hmac_key do
+    secret_key_base =
+      Application.get_env(:baudrate, BaudrateWeb.Endpoint)[:secret_key_base]
+
+    Plug.Crypto.KeyGenerator.generate(secret_key_base, "recovery_code_hmac_key", length: 32)
   end
 
   # --- Registration & Approval ---

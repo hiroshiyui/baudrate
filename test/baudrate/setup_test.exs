@@ -116,7 +116,7 @@ defmodule Baudrate.SetupTest do
     test "returns recovery codes for admin user" do
       assert {:ok, result} = Setup.complete_setup("My Site", @valid_user_attrs)
       assert is_list(result.recovery_codes)
-      assert length(result.recovery_codes) == 16
+      assert length(result.recovery_codes) == 10
     end
 
     test "marks setup as completed" do
