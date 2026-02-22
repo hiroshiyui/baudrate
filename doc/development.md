@@ -23,8 +23,7 @@ lib/
 ├── baudrate/                    # Business logic (contexts)
 │   ├── application.ex           # Supervision tree
 │   ├── repo.ex                  # Ecto repository
-│   ├── mailer.ex                # Email sending (Swoosh)
-│   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars, invite codes
+│   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars, invite codes, password reset
 │   ├── auth/
 │   │   ├── invite_code.ex       # InviteCode schema (invite-only registration)
 │   │   ├── recovery_code.ex     # Ecto schema for one-time recovery codes
@@ -72,7 +71,7 @@ lib/
 │       ├── role.ex              # Role schema (admin/moderator/user/guest)
 │       ├── role_permission.ex   # Join table: role ↔ permission
 │       ├── setting.ex           # Key-value settings (site_name, setup_completed, etc.)
-│       └── user.ex              # User schema with password, TOTP, avatar, status fields
+│       └── user.ex              # User schema with password, TOTP, avatar, status, signature fields
 ├── baudrate_web/                # Web layer
 │   ├── components/
 │   │   ├── core_components.ex   # Shared UI components (avatar, flash, input, etc.)
@@ -100,10 +99,11 @@ lib/
 │   │   ├── board_live.ex        # Board view with article listing
 │   │   ├── home_live.ex         # Home page (board listing, public for guests)
 │   │   ├── login_live.ex        # Login form (phx-trigger-action pattern)
-│   │   ├── profile_live.ex      # User profile with avatar upload/crop, locale prefs
+│   │   ├── password_reset_live.ex  # Password reset via recovery codes
+│   │   ├── profile_live.ex      # User profile with avatar upload/crop, locale prefs, signature
 │   │   ├── recovery_code_verify_live.ex  # Recovery code login
 │   │   ├── recovery_codes_live.ex        # Recovery codes display
-│   │   ├── register_live.ex     # Public user registration (supports invite-only mode)
+│   │   ├── register_live.ex     # Public user registration (supports invite-only mode, terms notice, recovery codes)
 │   │   ├── search_live.ex       # Full-text article search
 │   │   ├── user_profile_live.ex # Public user profile pages (stats, recent articles)
 │   │   ├── setup_live.ex        # First-run setup wizard
@@ -208,8 +208,27 @@ modes controlled by the `registration_mode` setting:
 Registration is rate-limited to 5 attempts per hour per IP. The same password
 policy as the setup wizard applies (12+ chars, complexity requirements).
 
+Registration requires accepting terms: a system activity-logging notice (always
+shown) and an optional site-specific End User Agreement (admin-configurable via
+`/admin/settings`, stored as markdown). Recovery codes (16 word-based codes) are
+issued at registration and displayed once for the user to save.
+
 Admin approval is available at `/admin/pending-users` (admin role only).
 Admin invite code management is available at `/admin/invites` (admin role only).
+
+### Password Reset
+
+Password reset is available at `/password-reset`. Users enter their username,
+a recovery code, and a new password. Each recovery code can only be used once.
+Recovery codes are the sole password recovery mechanism — there is no email in
+the system. Rate limited to 5 attempts per hour per IP.
+
+### User Signatures
+
+Users can set a signature (max 500 characters, max 8 lines, markdown format) in
+their profile at `/profile`. Signatures are rendered via `Content.Markdown.to_html/1`
+and displayed below articles and comments authored by the user, as well as on
+their public profile page at `/users/:username`.
 
 ### Article Creation
 
@@ -401,6 +420,7 @@ ActivityPubController (dispatch to InboxHandler)
 | Login | 10 / 5 min | per IP |
 | TOTP | 15 / 5 min | per IP |
 | Registration | 5 / hour | per IP |
+| Password reset | 5 / hour | per IP |
 | Avatar upload | 5 / hour | per user |
 | AP endpoints | 120 / min | per IP |
 | AP inbox | 60 / min | per remote domain |

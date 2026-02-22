@@ -56,11 +56,12 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
   end
 
   test "redirects pending user away from article creation", %{conn: _conn} do
-    {:ok, pending_user} =
+    {:ok, pending_user, _codes} =
       Baudrate.Auth.register_user(%{
         "username" => "pendingwriter",
         "password" => "SecurePass1!!",
-        "password_confirmation" => "SecurePass1!!"
+        "password_confirmation" => "SecurePass1!!",
+        "terms_accepted" => "true"
       })
 
     conn =

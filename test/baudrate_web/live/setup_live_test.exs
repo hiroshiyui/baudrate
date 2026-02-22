@@ -94,7 +94,7 @@ defmodule BaudrateWeb.SetupLiveTest do
       assert html =~ "can&#39;t be blank"
     end
 
-    test "completes setup and redirects to /", %{conn: conn} do
+    test "completes setup and shows recovery codes", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/setup")
 
       # Step 1 -> Step 2
@@ -103,17 +103,23 @@ defmodule BaudrateWeb.SetupLiveTest do
       # Step 2 -> Step 3
       view |> form("form", site: %{site_name: "My App"}) |> render_submit()
 
-      # Complete setup
-      view
-      |> form("form",
-        admin: %{
-          username: "admin_user",
-          password: "SecurePass1!xyz",
-          password_confirmation: "SecurePass1!xyz"
-        }
-      )
-      |> render_submit()
+      # Complete setup -> shows recovery codes
+      html =
+        view
+        |> form("form",
+          admin: %{
+            username: "admin_user",
+            password: "SecurePass1!xyz",
+            password_confirmation: "SecurePass1!xyz"
+          }
+        )
+        |> render_submit()
 
+      assert html =~ "Recovery Codes"
+      assert html =~ "Save these recovery codes"
+
+      # Acknowledge codes -> redirect to /
+      view |> render_click("ack_codes")
       flash = assert_redirect(view, "/")
       assert flash["info"] =~ "Setup completed successfully"
     end

@@ -1,15 +1,13 @@
 # Planned Features
 
 ## User Features
-- [ ] Password reset / recovery
-- [ ] Email integration (notifications, verification)
-- [ ] User signatures
+(none pending)
 
 ## Board Management
 - [ ] Board-level permissions (beyond visibility)
 
 ## System
-- [ ] ActivityPub based API endpoints
+- [ ] Public API via existing ActivityPub endpoints (no separate REST API; AP endpoints serve as the public API)
 - [ ] Real-time updates via PubSub (new articles, comments)
 - [ ] Search indexing
 
@@ -67,6 +65,16 @@
 <summary>Registration</summary>
 
 - [x] Closed registration mode (invite-only with admin-managed invite codes)
+
+</details>
+
+<details>
+<summary>User Features (all done)</summary>
+
+- [x] Remove email from system (Swoosh/mailer removed; recovery codes are the sole recovery mechanism)
+- [x] Password recovery via recovery codes (word-based codes issued at registration and setup; password reset page at /password-reset)
+- [x] Registration terms notice (system activity logging notice + admin-configurable End User Agreement; checkbox required)
+- [x] User signatures (markdown, max 500 chars / 8 lines; displayed on articles, comments, and public profiles)
 
 </details>
 

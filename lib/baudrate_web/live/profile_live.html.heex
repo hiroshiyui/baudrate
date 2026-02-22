@@ -181,6 +181,29 @@
           </div>
         <% end %>
       </div>
+
+      <%!-- Signature section --%>
+      <div>
+        <div class="text-sm text-base-content/70 mb-2">{gettext("Signature")}</div>
+        <.form for={@signature_form} phx-change="validate_signature" phx-submit="save_signature" class="space-y-3">
+          <.input
+            field={@signature_form[:signature]}
+            type="textarea"
+            rows="4"
+            maxlength="500"
+            placeholder={gettext("Your signature (Markdown supported, max 500 characters)")}
+          />
+          <div :if={@signature_preview != ""} class="space-y-1">
+            <p class="text-xs text-base-content/50">{gettext("Preview:")}</p>
+            <div class="prose prose-sm max-w-none bg-base-200 rounded-lg p-3 text-base-content/70">
+              {raw(@signature_preview)}
+            </div>
+          </div>
+          <button type="submit" class="btn btn-sm btn-primary">
+            {gettext("Save Signature")}
+          </button>
+        </.form>
+      </div>
     </div>
   </div>
 </div>

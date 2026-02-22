@@ -52,6 +52,13 @@
     <div class="divider"></div>
 
     <div class="prose max-w-none">{raw(Baudrate.Content.Markdown.to_html(@article.body))}</div>
+
+    <div :if={@article.user && @article.user.signature && @article.user.signature != ""} class="mt-4">
+      <div class="divider text-xs text-base-content/50">{gettext("Signature")}</div>
+      <div class="prose prose-sm max-w-none text-base-content/70">
+        {raw(Baudrate.Content.Markdown.to_html(@article.user.signature))}
+      </div>
+    </div>
   </article>
 
   <%!-- Attachments Section --%>

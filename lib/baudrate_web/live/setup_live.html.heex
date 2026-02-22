@@ -6,14 +6,17 @@
 
   <%!-- Steps indicator --%>
   <ul class="steps steps-horizontal w-full">
-    <li class={["step", @step in [:database, :site_name, :admin_account] && "step-primary"]}>
+    <li class={["step", @step in [:database, :site_name, :admin_account, :recovery_codes] && "step-primary"]}>
       {gettext("Database")}
     </li>
-    <li class={["step", @step in [:site_name, :admin_account] && "step-primary"]}>
+    <li class={["step", @step in [:site_name, :admin_account, :recovery_codes] && "step-primary"]}>
       {gettext("Site Name")}
     </li>
-    <li class={["step", @step == :admin_account && "step-primary"]}>
+    <li class={["step", @step in [:admin_account, :recovery_codes] && "step-primary"]}>
       {gettext("Admin Account")}
+    </li>
+    <li class={["step", @step == :recovery_codes && "step-primary"]}>
+      {gettext("Recovery Codes")}
     </li>
   </ul>
 
@@ -232,6 +235,35 @@
             </.button>
           </div>
         </.form>
+      </div>
+    </div>
+  </div>
+
+  <%!-- Step 4: Recovery Codes --%>
+  <div :if={@step == :recovery_codes} class="space-y-6">
+    <div class="card bg-base-200">
+      <div class="card-body space-y-4">
+        <h2 class="card-title">{gettext("Recovery Codes")}</h2>
+
+        <div class="alert alert-warning">
+          <.icon name="hero-exclamation-triangle" class="size-5" />
+          <div>
+            <p class="font-semibold">{gettext("Save these recovery codes now!")}</p>
+            <p class="text-sm">
+              {gettext("These codes are the only way to recover your account if you lose your password. Each code can only be used once. Store them in a safe place.")}
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 font-mono text-sm">
+          <div :for={code <- @recovery_codes} class="bg-base-300 rounded px-3 py-1.5 text-center">
+            {code}
+          </div>
+        </div>
+
+        <button phx-click="ack_codes" class="btn btn-primary w-full">
+          {gettext("I have saved my recovery codes")}
+        </button>
       </div>
     </div>
   </div>

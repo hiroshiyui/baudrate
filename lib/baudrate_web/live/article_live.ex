@@ -229,6 +229,13 @@ defmodule BaudrateWeb.ArticleLive do
           {raw(Baudrate.Content.Markdown.to_html(@comment.body))}
         </div>
 
+        <div :if={@comment.user && @comment.user.signature && @comment.user.signature != ""} class="mt-1">
+          <div class="divider text-xs text-base-content/50 my-1"></div>
+          <div class="prose prose-xs max-w-none text-base-content/50">
+            {raw(Baudrate.Content.Markdown.to_html(@comment.user.signature))}
+          </div>
+        </div>
+
         <div :if={@can_comment && @depth < 5} class="mt-1">
           <button
             :if={@replying_to != @comment.id}

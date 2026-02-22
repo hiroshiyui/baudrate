@@ -23,6 +23,19 @@ defmodule BaudrateWeb.RegisterLiveTest do
     assert html =~ "Confirm Password"
   end
 
+  test "renders terms notice", %{conn: conn} do
+    {:ok, _lv, html} = live(conn, "/register")
+    assert html =~ "I acknowledge"
+    assert html =~ "I accept the above terms"
+  end
+
+  test "renders EUA when configured", %{conn: conn} do
+    Repo.insert!(%Setting{key: "eua", value: "**Custom terms**"})
+    {:ok, _lv, html} = live(conn, "/register")
+    assert html =~ "End User Agreement"
+    assert html =~ "Custom terms"
+  end
+
   test "validates form on change", %{conn: conn} do
     {:ok, lv, _html} = live(conn, "/register")
 
@@ -34,7 +47,48 @@ defmodule BaudrateWeb.RegisterLiveTest do
     assert html =~ "should be at least 3"
   end
 
-  test "registers user successfully in open mode", %{conn: conn} do
+  test "requires terms acceptance", %{conn: conn} do
+    Repo.insert!(%Setting{key: "registration_mode", value: "open"})
+
+    {:ok, lv, _html} = live(conn, "/register")
+
+    html =
+      lv
+      |> form("form",
+        user: %{
+          username: "newuser",
+          password: "SecurePass1!!",
+          password_confirmation: "SecurePass1!!",
+          terms_accepted: "false"
+        }
+      )
+      |> render_submit()
+
+    assert html =~ "must be accepted"
+  end
+
+  test "registers user and shows recovery codes in open mode", %{conn: conn} do
+    Repo.insert!(%Setting{key: "registration_mode", value: "open"})
+
+    {:ok, lv, _html} = live(conn, "/register")
+
+    html =
+      lv
+      |> form("form",
+        user: %{
+          username: "newuser",
+          password: "SecurePass1!!",
+          password_confirmation: "SecurePass1!!",
+          terms_accepted: "true"
+        }
+      )
+      |> render_submit()
+
+    assert html =~ "Recovery Codes"
+    assert html =~ "Save these recovery codes"
+  end
+
+  test "ack_codes redirects to login", %{conn: conn} do
     Repo.insert!(%Setting{key: "registration_mode", value: "open"})
 
     {:ok, lv, _html} = live(conn, "/register")
@@ -42,13 +96,15 @@ defmodule BaudrateWeb.RegisterLiveTest do
     lv
     |> form("form",
       user: %{
-        username: "newuser",
+        username: "newuser2",
         password: "SecurePass1!!",
-        password_confirmation: "SecurePass1!!"
+        password_confirmation: "SecurePass1!!",
+        terms_accepted: "true"
       }
     )
     |> render_submit()
 
+    lv |> render_click("ack_codes")
     assert_redirect(lv, "/login")
   end
 
@@ -60,12 +116,11 @@ defmodule BaudrateWeb.RegisterLiveTest do
       user: %{
         username: "pendinguser",
         password: "SecurePass1!!",
-        password_confirmation: "SecurePass1!!"
+        password_confirmation: "SecurePass1!!",
+        terms_accepted: "true"
       }
     )
     |> render_submit()
-
-    assert_redirect(lv, "/login")
 
     user = Repo.one!(from u in Baudrate.Setup.User, where: u.username == "pendinguser")
     assert user.status == "pending"
@@ -80,12 +135,13 @@ defmodule BaudrateWeb.RegisterLiveTest do
         user: %{
           username: "",
           password: "short",
-          password_confirmation: "mismatch"
+          password_confirmation: "mismatch",
+          terms_accepted: "true"
         }
       )
       |> render_submit()
 
-    assert html =~ "can&#39;t be blank" || html =~ "can't be blank"
+    assert html =~ "can&#39;t be blank" or html =~ "can't be blank"
   end
 
   test "redirects authenticated users away from /register", %{conn: conn} do

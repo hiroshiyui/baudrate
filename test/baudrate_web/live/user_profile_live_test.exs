@@ -40,4 +40,13 @@ defmodule BaudrateWeb.UserProfileLiveTest do
     {:ok, _lv, html} = live(conn, "/users/#{user.username}")
     assert html =~ "0"
   end
+
+  test "displays signature on user profile page", %{conn: conn} do
+    user = setup_user("user")
+    {:ok, _updated} = Auth.update_signature(user, "My **profile** signature")
+
+    {:ok, _lv, html} = live(conn, "/users/#{user.username}")
+    assert html =~ "Signature"
+    assert html =~ "profile"
+  end
 end

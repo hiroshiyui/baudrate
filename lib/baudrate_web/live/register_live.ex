@@ -6,6 +6,9 @@ defmodule BaudrateWeb.RegisterLive do
   needed since there are no session writes). Rate limiting is enforced
   via Hammer at 5 registrations per hour per IP.
 
+  After successful registration, recovery codes are displayed to the user.
+  The user must acknowledge saving them before being redirected to `/login`.
+
   The registration mode (`Setup.registration_mode/0`) determines:
     * `"open"` — account is immediately active
     * `"approval_required"` — account is pending admin approval
@@ -23,6 +26,7 @@ defmodule BaudrateWeb.RegisterLive do
   def mount(_params, _session, socket) do
     changeset = User.registration_changeset(%User{}, %{})
     registration_mode = Setup.registration_mode()
+    eua = Setup.get_eua()
 
     peer_ip =
       if connected?(socket) do
@@ -40,6 +44,8 @@ defmodule BaudrateWeb.RegisterLive do
       |> assign(:registration_mode, registration_mode)
       |> assign(:password_strength, password_strength(""))
       |> assign(:peer_ip, peer_ip)
+      |> assign(:recovery_codes, nil)
+      |> assign(:eua, eua)
 
     {:ok, socket}
   end
@@ -79,9 +85,14 @@ defmodule BaudrateWeb.RegisterLive do
     end
   end
 
+  @impl true
+  def handle_event("ack_codes", _params, socket) do
+    {:noreply, redirect(socket, to: ~p"/login")}
+  end
+
   defp do_register(socket, params) do
     case Auth.register_user(params) do
-      {:ok, _user} ->
+      {:ok, _user, codes} ->
         flash_msg =
           case socket.assigns.registration_mode do
             "open" ->
@@ -99,7 +110,7 @@ defmodule BaudrateWeb.RegisterLive do
         {:noreply,
          socket
          |> put_flash(:info, flash_msg)
-         |> redirect(to: ~p"/login")}
+         |> assign(:recovery_codes, codes)}
 
       {:error, :invite_required} ->
         {:noreply,

@@ -25,11 +25,12 @@ defmodule BaudrateWeb.Admin.PendingUsersLiveTest do
     admin = setup_user("admin")
     conn = log_in_user(conn, admin)
 
-    {:ok, _pending_user} =
+    {:ok, _pending_user, _codes} =
       Auth.register_user(%{
         "username" => "waitinguser",
         "password" => "SecurePass1!!",
-        "password_confirmation" => "SecurePass1!!"
+        "password_confirmation" => "SecurePass1!!",
+        "terms_accepted" => "true"
       })
 
     {:ok, _lv, html} = live(conn, "/admin/pending-users")
@@ -41,11 +42,12 @@ defmodule BaudrateWeb.Admin.PendingUsersLiveTest do
     admin = setup_user("admin")
     conn = log_in_user(conn, admin)
 
-    {:ok, pending_user} =
+    {:ok, pending_user, _codes} =
       Auth.register_user(%{
         "username" => "approvaluser",
         "password" => "SecurePass1!!",
-        "password_confirmation" => "SecurePass1!!"
+        "password_confirmation" => "SecurePass1!!",
+        "terms_accepted" => "true"
       })
 
     {:ok, lv, _html} = live(conn, "/admin/pending-users")

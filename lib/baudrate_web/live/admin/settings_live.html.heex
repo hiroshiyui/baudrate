@@ -55,4 +55,27 @@
       </.form>
     </div>
   </div>
+
+  <div class="card bg-base-200 shadow-sm">
+    <div class="card-body">
+      <h2 class="card-title">{gettext("End User Agreement")}</h2>
+      <p class="text-sm text-base-content/70">
+        {gettext("Optional site-specific terms shown during registration. Supports Markdown formatting.")}
+      </p>
+      <.form for={@eua_form} id="eua-form" phx-change="validate_eua" phx-submit="save_eua">
+        <.input
+          field={@eua_form[:eua]}
+          type="textarea"
+          label={gettext("End User Agreement (Markdown)")}
+          rows="8"
+          placeholder={gettext("Enter your site-specific terms here...")}
+        />
+        <div class="mt-4">
+          <.button variant="primary" type="submit" phx-disable-with={gettext("Saving...")}>
+            {gettext("Save Agreement")}
+          </.button>
+        </div>
+      </.form>
+    </div>
+  </div>
 </div>

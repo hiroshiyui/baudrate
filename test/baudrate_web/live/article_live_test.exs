@@ -71,4 +71,12 @@ defmodule BaudrateWeb.ArticleLiveTest do
 
     assert html =~ "Great article!"
   end
+
+  test "displays author signature after article body", %{conn: conn, user: user, article: article} do
+    {:ok, _updated_user} = Baudrate.Auth.update_signature(user, "My **awesome** signature")
+
+    {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+    assert html =~ "Signature"
+    assert html =~ "awesome"
+  end
 end

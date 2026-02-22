@@ -2,11 +2,12 @@ defmodule BaudrateWeb.SetupLive do
   @moduledoc """
   LiveView for the first-time setup wizard.
 
-  Guides the user through a 3-step process using `@step` assigns:
+  Guides the user through a 4-step process using `@step` assigns:
 
     1. `:database` — verifies PostgreSQL connection and migration status
     2. `:site_name` — collects the forum name (stored as a `Setting`)
     3. `:admin_account` — creates the initial admin user with password validation
+    4. `:recovery_codes` — displays recovery codes for the admin to save
 
   On completion, `Setup.complete_setup/2` runs all steps in a single transaction.
   Uses `layout: :setup` (minimal layout without navigation bar).
@@ -32,6 +33,7 @@ defmodule BaudrateWeb.SetupLive do
       |> assign(:site_name_form, to_form(site_name_changeset, as: :site))
       |> assign(:admin_form, to_form(admin_changeset, as: :admin))
       |> assign(:password_strength, password_strength(""))
+      |> assign(:recovery_codes, nil)
 
     {:ok, socket, layout: {BaudrateWeb.Layouts, :setup}}
   end
@@ -87,11 +89,11 @@ defmodule BaudrateWeb.SetupLive do
 
   def handle_event("complete_setup", %{"admin" => params}, socket) do
     case Setup.complete_setup(socket.assigns.site_name, params) do
-      {:ok, _result} ->
+      {:ok, result} ->
         {:noreply,
          socket
-         |> put_flash(:info, gettext("Setup completed successfully!"))
-         |> redirect(to: "/")}
+         |> assign(:recovery_codes, result.recovery_codes)
+         |> assign(:step, :recovery_codes)}
 
       {:error, :admin_user, changeset, _changes} ->
         {:noreply, assign(socket, :admin_form, to_form(changeset, as: :admin))}
@@ -101,6 +103,13 @@ defmodule BaudrateWeb.SetupLive do
          socket
          |> put_flash(:error, gettext("Setup failed. Please try again."))}
     end
+  end
+
+  def handle_event("ack_codes", _params, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:info, gettext("Setup completed successfully!"))
+     |> redirect(to: "/")}
   end
 
   def handle_event("back_to_database", _params, socket) do

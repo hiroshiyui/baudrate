@@ -151,6 +151,20 @@ defmodule Baudrate.Setup do
   end
 
   @doc """
+  Returns the End User Agreement text (markdown), or `nil` if not set.
+  """
+  def get_eua do
+    get_setting("eua")
+  end
+
+  @doc """
+  Saves or updates the End User Agreement text (markdown).
+  """
+  def update_eua(text) when is_binary(text) do
+    set_setting("eua", text)
+  end
+
+  @doc """
   Returns true if the setup wizard has been completed.
   """
   def setup_completed? do
@@ -287,6 +301,10 @@ defmodule Baudrate.Setup do
       admin_role = Map.fetch!(roles, "admin")
       attrs = Map.put(user_attrs, "role_id", admin_role.id)
       %User{} |> User.registration_changeset(attrs) |> Repo.insert()
+    end)
+    |> Ecto.Multi.run(:recovery_codes, fn _repo, %{admin_user: admin_user} ->
+      codes = Baudrate.Auth.generate_recovery_codes(admin_user)
+      {:ok, codes}
     end)
     |> Ecto.Multi.run(:sysop_board, fn _repo, %{admin_user: admin_user} ->
       Content.seed_sysop_board(admin_user)

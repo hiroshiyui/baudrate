@@ -76,4 +76,46 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
     # Original value unchanged
     assert Setup.get_setting("site_name") == "Test Site"
   end
+
+  describe "EUA management" do
+    test "EUA textarea renders on settings page", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+
+      {:ok, _lv, html} = live(conn, "/admin/settings")
+      assert html =~ "End User Agreement"
+      assert html =~ "eua-form"
+    end
+
+    test "admin can save EUA text", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/settings")
+
+      html =
+        lv
+        |> form("#eua-form", eua_settings: %{eua: "**Custom Terms of Service**"})
+        |> render_submit()
+
+      assert html =~ "End User Agreement saved"
+      assert Setup.get_eua() == "**Custom Terms of Service**"
+    end
+
+    test "admin can update existing EUA", %{conn: conn} do
+      Repo.insert!(%Setting{key: "eua", value: "Old EUA text"})
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/settings")
+
+      html =
+        lv
+        |> form("#eua-form", eua_settings: %{eua: "Updated EUA text"})
+        |> render_submit()
+
+      assert html =~ "End User Agreement saved"
+      assert Setup.get_eua() == "Updated EUA text"
+    end
+  end
 end

@@ -3,8 +3,8 @@ defmodule BaudrateWeb.Admin.SettingsLive do
   LiveView for managing site-wide admin settings.
 
   Only accessible to users with the `"admin"` role. Provides a form
-  to edit the site name and registration mode, backed by the
-  `Baudrate.Setup` context's virtual changeset.
+  to edit the site name, registration mode, federation settings, and
+  End User Agreement, backed by the `Baudrate.Setup` context.
   """
 
   use BaudrateWeb, :live_view
@@ -16,7 +16,15 @@ defmodule BaudrateWeb.Admin.SettingsLive do
   @impl true
   def mount(_params, _session, socket) do
     changeset = Setup.change_settings()
-    {:ok, assign(socket, form: to_form(changeset, as: :settings))}
+    eua = Setup.get_eua() || ""
+
+    socket =
+      socket
+      |> assign(form: to_form(changeset, as: :settings))
+      |> assign(eua: eua)
+      |> assign(eua_form: to_form(%{"eua" => eua}, as: :eua_settings))
+
+    {:ok, socket}
   end
 
   @impl true
@@ -40,6 +48,23 @@ defmodule BaudrateWeb.Admin.SettingsLive do
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset, as: :settings))}
+    end
+  end
+
+  def handle_event("validate_eua", %{"eua_settings" => params}, socket) do
+    {:noreply, assign(socket, eua_form: to_form(params, as: :eua_settings))}
+  end
+
+  def handle_event("save_eua", %{"eua_settings" => %{"eua" => eua_text}}, socket) do
+    case Setup.update_eua(eua_text) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(eua: eua_text)
+         |> put_flash(:info, gettext("End User Agreement saved."))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to save End User Agreement."))}
     end
   end
 end

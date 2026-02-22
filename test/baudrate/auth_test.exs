@@ -191,28 +191,38 @@ defmodule Baudrate.AuthTest do
   end
 
   describe "generate_recovery_codes/1" do
-    test "generates 10 recovery codes" do
+    test "generates 16 recovery codes" do
       user = create_user("user")
       codes = Auth.generate_recovery_codes(user)
-      assert length(codes) == 10
+      assert length(codes) == 16
     end
 
-    test "codes match format a1b2-c3d4" do
+    test "codes are single lowercase English words" do
       user = create_user("user")
       codes = Auth.generate_recovery_codes(user)
 
       for code <- codes do
-        assert String.match?(code, ~r/^[a-f0-9]{4}-[a-f0-9]{4}$/)
+        assert String.match?(code, ~r/^[a-z]+$/)
       end
+    end
+
+    test "codes have no duplicates" do
+      user = create_user("user")
+      codes = Auth.generate_recovery_codes(user)
+      assert length(Enum.uniq(codes)) == length(codes)
     end
 
     test "replaces old codes when regenerated" do
       user = create_user("user")
       old_codes = Auth.generate_recovery_codes(user)
       new_codes = Auth.generate_recovery_codes(user)
+      new_code_set = MapSet.new(new_codes)
 
-      # Old codes should no longer work
-      for code <- old_codes do
+      # Old codes that don't appear in new set should no longer work
+      old_only = Enum.reject(old_codes, &MapSet.member?(new_code_set, &1))
+      assert length(old_only) > 0, "expected some old codes to not appear in new set"
+
+      for code <- old_only do
         assert Auth.verify_recovery_code(user, code) == :error
       end
 
@@ -294,26 +304,29 @@ defmodule Baudrate.AuthTest do
     test "creates user with active status in open mode" do
       Repo.insert!(%Baudrate.Setup.Setting{key: "registration_mode", value: "open"})
 
-      assert {:ok, user} =
+      assert {:ok, user, codes} =
                Auth.register_user(%{
                  "username" => "openuser",
                  "password" => "SecurePass1!!",
-                 "password_confirmation" => "SecurePass1!!"
+                 "password_confirmation" => "SecurePass1!!",
+                 "terms_accepted" => "true"
                })
 
       assert user.status == "active"
       assert user.role_id != nil
+      assert length(codes) == 16
 
       role = Repo.preload(user, :role).role
       assert role.name == "user"
     end
 
     test "creates user with pending status in approval mode" do
-      assert {:ok, user} =
+      assert {:ok, user, _codes} =
                Auth.register_user(%{
                  "username" => "pendinguser",
                  "password" => "SecurePass1!!",
-                 "password_confirmation" => "SecurePass1!!"
+                 "password_confirmation" => "SecurePass1!!",
+                 "terms_accepted" => "true"
                })
 
       assert user.status == "pending"
@@ -331,11 +344,12 @@ defmodule Baudrate.AuthTest do
 
   describe "approve_user/1" do
     test "sets pending user to active" do
-      {:ok, user} =
+      {:ok, user, _codes} =
         Auth.register_user(%{
           "username" => "toapprove",
           "password" => "SecurePass1!!",
-          "password_confirmation" => "SecurePass1!!"
+          "password_confirmation" => "SecurePass1!!",
+          "terms_accepted" => "true"
         })
 
       assert user.status == "pending"
@@ -347,11 +361,12 @@ defmodule Baudrate.AuthTest do
 
   describe "list_pending_users/0" do
     test "returns only pending users" do
-      {:ok, _pending} =
+      {:ok, _pending, _codes} =
         Auth.register_user(%{
           "username" => "pending1",
           "password" => "SecurePass1!!",
-          "password_confirmation" => "SecurePass1!!"
+          "password_confirmation" => "SecurePass1!!",
+          "terms_accepted" => "true"
         })
 
       _active = create_user("user")
@@ -373,11 +388,12 @@ defmodule Baudrate.AuthTest do
     end
 
     test "returns false for pending user" do
-      {:ok, user} =
+      {:ok, user, _codes} =
         Auth.register_user(%{
           "username" => "pendcheck",
           "password" => "SecurePass1!!",
-          "password_confirmation" => "SecurePass1!!"
+          "password_confirmation" => "SecurePass1!!",
+          "terms_accepted" => "true"
         })
 
       refute Auth.user_active?(user)
@@ -391,11 +407,12 @@ defmodule Baudrate.AuthTest do
     end
 
     test "returns false for pending user" do
-      {:ok, user} =
+      {:ok, user, _codes} =
         Auth.register_user(%{
           "username" => "pendcreate",
           "password" => "SecurePass1!!",
-          "password_confirmation" => "SecurePass1!!"
+          "password_confirmation" => "SecurePass1!!",
+          "terms_accepted" => "true"
         })
 
       user = Repo.preload(user, :role)

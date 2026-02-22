@@ -26,6 +26,8 @@ defmodule BaudrateWeb.ProfileLive do
     policy = Auth.totp_policy(user.role.name)
     is_active = Auth.user_active?(user)
 
+    signature_changeset = Baudrate.Setup.User.signature_changeset(user, %{})
+
     socket =
       socket
       |> assign(:totp_policy, policy)
@@ -33,6 +35,8 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:show_crop_modal, false)
       |> assign(:preferred_locales, user.preferred_locales || [])
       |> assign(:available_locales, Locale.available_locales())
+      |> assign(:signature_form, to_form(signature_changeset, as: :signature))
+      |> assign(:signature_preview, Baudrate.Content.Markdown.to_html(user.signature))
       |> allow_upload(:avatar,
         accept: ~w(.jpg .jpeg .png .webp),
         max_entries: 1,
@@ -114,6 +118,37 @@ defmodule BaudrateWeb.ProfileLive do
       save_locales(socket, new_locales)
     else
       {:noreply, socket}
+    end
+  end
+
+  def handle_event("validate_signature", %{"signature" => params}, socket) do
+    user = socket.assigns.current_user
+
+    changeset =
+      Baudrate.Setup.User.signature_changeset(user, params)
+      |> Map.put(:action, :validate)
+
+    preview = Baudrate.Content.Markdown.to_html(params["signature"] || "")
+
+    {:noreply,
+     socket
+     |> assign(:signature_form, to_form(changeset, as: :signature))
+     |> assign(:signature_preview, preview)}
+  end
+
+  def handle_event("save_signature", %{"signature" => %{"signature" => signature}}, socket) do
+    user = socket.assigns.current_user
+
+    case Auth.update_signature(user, signature) do
+      {:ok, updated_user} ->
+        {:noreply,
+         socket
+         |> assign(:current_user, updated_user)
+         |> assign(:signature_preview, Baudrate.Content.Markdown.to_html(updated_user.signature))
+         |> put_flash(:info, gettext("Signature updated."))}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :signature_form, to_form(changeset, as: :signature))}
     end
   end
 

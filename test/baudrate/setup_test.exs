@@ -113,6 +113,12 @@ defmodule Baudrate.SetupTest do
       assert Repo.all(Role) == []
     end
 
+    test "returns recovery codes for admin user" do
+      assert {:ok, result} = Setup.complete_setup("My Site", @valid_user_attrs)
+      assert is_list(result.recovery_codes)
+      assert length(result.recovery_codes) == 16
+    end
+
     test "marks setup as completed" do
       refute Setup.setup_completed?()
       assert {:ok, _} = Setup.complete_setup("My Site", @valid_user_attrs)

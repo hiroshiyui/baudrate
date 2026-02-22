@@ -56,22 +56,31 @@ defmodule Baudrate.Setup.User do
     field :ban_reason, :string
     field :ap_public_key, :string
     field :ap_private_key_encrypted, :binary
+    field :signature, :string
 
     belongs_to :role, Baudrate.Setup.Role
 
     field :password, :string, virtual: true, redact: true
     field :password_confirmation, :string, virtual: true, redact: true
+    field :terms_accepted, :boolean, virtual: true, default: false
 
     timestamps(type: :utc_datetime)
   end
 
   def registration_changeset(user, attrs) do
     user
-    |> cast(attrs, [:username, :password, :password_confirmation, :role_id])
+    |> cast(attrs, [:username, :password, :password_confirmation, :role_id, :terms_accepted])
     |> validate_username()
     |> validate_password()
     |> assoc_constraint(:role)
     |> hash_password()
+  end
+
+  @doc """
+  Validates that terms have been accepted. Used for public registration only.
+  """
+  def validate_terms(changeset) do
+    validate_acceptance(changeset, :terms_accepted)
   end
 
   defp validate_username(changeset) do
@@ -93,6 +102,13 @@ defmodule Baudrate.Setup.User do
     |> validate_format(:password, ~r/[0-9]/, message: "must contain a digit")
     |> validate_format(:password, ~r/[^a-zA-Z0-9]/, message: "must contain a special character")
     |> validate_confirmation(:password, message: "does not match password")
+  end
+
+  def password_reset_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:password, :password_confirmation])
+    |> validate_password()
+    |> hash_password()
   end
 
   def avatar_changeset(user, attrs) do
@@ -139,6 +155,23 @@ defmodule Baudrate.Setup.User do
   def ap_key_changeset(user, attrs) do
     user
     |> cast(attrs, [:ap_public_key, :ap_private_key_encrypted])
+  end
+
+  @max_signature_lines 8
+
+  def signature_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:signature])
+    |> validate_length(:signature, max: 500)
+    |> validate_change(:signature, fn :signature, signature ->
+      newline_count = signature |> String.graphemes() |> Enum.count(&(&1 == "\n"))
+
+      if newline_count > @max_signature_lines - 1 do
+        [signature: "must not exceed #{@max_signature_lines} lines"]
+      else
+        []
+      end
+    end)
   end
 
   def locale_changeset(user, attrs) do

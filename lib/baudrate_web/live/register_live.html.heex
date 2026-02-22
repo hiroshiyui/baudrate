@@ -1,148 +1,202 @@
 <div class="mx-auto max-w-sm mt-10">
-  <h1 class="text-2xl font-bold text-center mb-2">{gettext("Sign Up")}</h1>
-  <p class="text-center text-base-content/70 mb-8">
-    {gettext("Create an account")}
-  </p>
+  <%!-- Recovery codes display (after successful registration) --%>
+  <div :if={@recovery_codes} class="space-y-4">
+    <h1 class="text-2xl font-bold text-center mb-2">{gettext("Recovery Codes")}</h1>
 
-  <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
-    <.input
-      field={@form[:username]}
-      label={gettext("Username")}
-      required
-      autocomplete="username"
-    />
-
-    <.input
-      field={@form[:password]}
-      type="password"
-      label={gettext("Password")}
-      required
-      autocomplete="new-password"
-    />
-
-    <.input
-      field={@form[:password_confirmation]}
-      type="password"
-      label={gettext("Confirm Password")}
-      required
-      autocomplete="new-password"
-    />
-
-    <.input
-      :if={@registration_mode == "invite_only"}
-      field={@form[:invite_code]}
-      label={gettext("Invite Code")}
-      required
-      autocomplete="off"
-    />
-
-    <%!-- Password strength checklist --%>
-    <div class="space-y-1">
-      <p class="text-sm font-medium">{gettext("Password requirements:")}</p>
-      <ul class="text-sm space-y-0.5">
-        <li class="flex items-center gap-1.5">
-          <.icon
-            name={
-              if @password_strength.length,
-                do: "hero-check-circle-mini",
-                else: "hero-x-circle-mini"
-            }
-            class={[
-              "size-4",
-              if(@password_strength.length, do: "text-success", else: "text-error")
-            ]}
-          />
-          {gettext("At least 12 characters")}
-        </li>
-        <li class="flex items-center gap-1.5">
-          <.icon
-            name={
-              if @password_strength.lowercase,
-                do: "hero-check-circle-mini",
-                else: "hero-x-circle-mini"
-            }
-            class={[
-              "size-4",
-              if(@password_strength.lowercase, do: "text-success", else: "text-error")
-            ]}
-          />
-          {gettext("Contains a lowercase letter")}
-        </li>
-        <li class="flex items-center gap-1.5">
-          <.icon
-            name={
-              if @password_strength.uppercase,
-                do: "hero-check-circle-mini",
-                else: "hero-x-circle-mini"
-            }
-            class={[
-              "size-4",
-              if(@password_strength.uppercase, do: "text-success", else: "text-error")
-            ]}
-          />
-          {gettext("Contains an uppercase letter")}
-        </li>
-        <li class="flex items-center gap-1.5">
-          <.icon
-            name={
-              if @password_strength.digit,
-                do: "hero-check-circle-mini",
-                else: "hero-x-circle-mini"
-            }
-            class={[
-              "size-4",
-              if(@password_strength.digit, do: "text-success", else: "text-error")
-            ]}
-          />
-          {gettext("Contains a digit")}
-        </li>
-        <li class="flex items-center gap-1.5">
-          <.icon
-            name={
-              if @password_strength.special,
-                do: "hero-check-circle-mini",
-                else: "hero-x-circle-mini"
-            }
-            class={[
-              "size-4",
-              if(@password_strength.special, do: "text-success", else: "text-error")
-            ]}
-          />
-          {gettext("Contains a special character")}
-        </li>
-      </ul>
-
-      <% met = Enum.count(Map.values(@password_strength), & &1) %>
-      <progress
-        class={[
-          "progress w-full",
-          cond do
-            met <= 1 -> "progress-error"
-            met <= 3 -> "progress-warning"
-            true -> "progress-success"
-          end
-        ]}
-        value={met}
-        max="5"
-      >
-      </progress>
+    <div class="alert alert-warning">
+      <.icon name="hero-exclamation-triangle" class="size-5" />
+      <div>
+        <p class="font-semibold">{gettext("Save these recovery codes now!")}</p>
+        <p class="text-sm">
+          {gettext("These codes are the only way to recover your account if you lose your password. Each code can only be used once. Store them in a safe place.")}
+        </p>
+      </div>
     </div>
 
-    <p :if={@registration_mode == "approval_required"} class="text-sm text-base-content/70">
-      {gettext("Your account is pending admin approval.")}
-    </p>
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <div class="grid grid-cols-2 gap-2 font-mono text-sm">
+          <div :for={code <- @recovery_codes} class="bg-base-300 rounded px-3 py-1.5 text-center">
+            {code}
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <p :if={@registration_mode == "invite_only"} class="text-sm text-base-content/70">
-      {gettext("Registration requires an invite code.")}
-    </p>
-
-    <button type="submit" class="btn btn-primary w-full">
-      {gettext("Sign Up")}
+    <button phx-click="ack_codes" class="btn btn-primary w-full">
+      {gettext("I have saved my recovery codes")}
     </button>
-  </.form>
+  </div>
 
-  <p class="text-center text-sm mt-4">
-    {gettext("Already have an account?")}
-    <.link navigate="/login" class="link link-primary">{gettext("Sign In")}</.link>
-  </p>
+  <%!-- Registration form --%>
+  <div :if={!@recovery_codes}>
+    <h1 class="text-2xl font-bold text-center mb-2">{gettext("Sign Up")}</h1>
+    <p class="text-center text-base-content/70 mb-8">
+      {gettext("Create an account")}
+    </p>
+
+    <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
+      <.input
+        field={@form[:username]}
+        label={gettext("Username")}
+        required
+        autocomplete="username"
+      />
+
+      <.input
+        field={@form[:password]}
+        type="password"
+        label={gettext("Password")}
+        required
+        autocomplete="new-password"
+      />
+
+      <.input
+        field={@form[:password_confirmation]}
+        type="password"
+        label={gettext("Confirm Password")}
+        required
+        autocomplete="new-password"
+      />
+
+      <.input
+        :if={@registration_mode == "invite_only"}
+        field={@form[:invite_code]}
+        label={gettext("Invite Code")}
+        required
+        autocomplete="off"
+      />
+
+      <%!-- Password strength checklist --%>
+      <div class="space-y-1">
+        <p class="text-sm font-medium">{gettext("Password requirements:")}</p>
+        <ul class="text-sm space-y-0.5">
+          <li class="flex items-center gap-1.5">
+            <.icon
+              name={
+                if @password_strength.length,
+                  do: "hero-check-circle-mini",
+                  else: "hero-x-circle-mini"
+              }
+              class={[
+                "size-4",
+                if(@password_strength.length, do: "text-success", else: "text-error")
+              ]}
+            />
+            {gettext("At least 12 characters")}
+          </li>
+          <li class="flex items-center gap-1.5">
+            <.icon
+              name={
+                if @password_strength.lowercase,
+                  do: "hero-check-circle-mini",
+                  else: "hero-x-circle-mini"
+              }
+              class={[
+                "size-4",
+                if(@password_strength.lowercase, do: "text-success", else: "text-error")
+              ]}
+            />
+            {gettext("Contains a lowercase letter")}
+          </li>
+          <li class="flex items-center gap-1.5">
+            <.icon
+              name={
+                if @password_strength.uppercase,
+                  do: "hero-check-circle-mini",
+                  else: "hero-x-circle-mini"
+              }
+              class={[
+                "size-4",
+                if(@password_strength.uppercase, do: "text-success", else: "text-error")
+              ]}
+            />
+            {gettext("Contains an uppercase letter")}
+          </li>
+          <li class="flex items-center gap-1.5">
+            <.icon
+              name={
+                if @password_strength.digit,
+                  do: "hero-check-circle-mini",
+                  else: "hero-x-circle-mini"
+              }
+              class={[
+                "size-4",
+                if(@password_strength.digit, do: "text-success", else: "text-error")
+              ]}
+            />
+            {gettext("Contains a digit")}
+          </li>
+          <li class="flex items-center gap-1.5">
+            <.icon
+              name={
+                if @password_strength.special,
+                  do: "hero-check-circle-mini",
+                  else: "hero-x-circle-mini"
+              }
+              class={[
+                "size-4",
+                if(@password_strength.special, do: "text-success", else: "text-error")
+              ]}
+            />
+            {gettext("Contains a special character")}
+          </li>
+        </ul>
+
+        <% met = Enum.count(Map.values(@password_strength), & &1) %>
+        <progress
+          class={[
+            "progress w-full",
+            cond do
+              met <= 1 -> "progress-error"
+              met <= 3 -> "progress-warning"
+              true -> "progress-success"
+            end
+          ]}
+          value={met}
+          max="5"
+        >
+        </progress>
+      </div>
+
+      <p :if={@registration_mode == "approval_required"} class="text-sm text-base-content/70">
+        {gettext("Your account is pending admin approval.")}
+      </p>
+
+      <p :if={@registration_mode == "invite_only"} class="text-sm text-base-content/70">
+        {gettext("Registration requires an invite code.")}
+      </p>
+
+      <%!-- Terms notice --%>
+      <div class="space-y-3">
+        <div class="text-sm text-base-content/70 bg-base-200 rounded-lg p-3">
+          {gettext(
+            "I acknowledge that my activities (including IP address, user-agent, and operation history) will be logged for at least 1 year, and I agree to comply with the laws of the country/region where this instance operates."
+          )}
+        </div>
+
+        <div :if={@eua} class="space-y-2">
+          <p class="text-sm font-medium">{gettext("End User Agreement")}</p>
+          <div class="bg-base-200 rounded-lg p-3 max-h-48 overflow-y-auto prose prose-sm max-w-none">
+            {raw(Baudrate.Content.Markdown.to_html(@eua))}
+          </div>
+        </div>
+
+        <.input
+          field={@form[:terms_accepted]}
+          type="checkbox"
+          label={gettext("I accept the above terms")}
+        />
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full">
+        {gettext("Sign Up")}
+      </button>
+    </.form>
+
+    <p class="text-center text-sm mt-4">
+      {gettext("Already have an account?")}
+      <.link navigate="/login" class="link link-primary">{gettext("Sign In")}</.link>
+    </p>
+  </div>
 </div>

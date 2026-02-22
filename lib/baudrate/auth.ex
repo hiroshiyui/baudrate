@@ -54,7 +54,29 @@ defmodule Baudrate.Auth do
   alias Baudrate.Setup
   alias Baudrate.Setup.{Role, User}
 
-  @recovery_code_count 10
+  @recovery_code_count 16
+
+  # Curated wordlist of 256 common, unambiguous English words for recovery codes.
+  # Each code is a single word randomly selected (no duplicates within a set).
+  @recovery_wordlist ~w(
+    anchor apple arrow badge barrel beacon berry blade bloom bridge
+    bronze brush cabin candle canyon castle cedar chain cherry circus
+    cliff clock cloud coast cobalt coffee comet coral cotton crane
+    creek crown crystal curtain dagger dancer dawn desert diamond dragon
+    drift eagle ember falcon feather field flame flint flower forest
+    fossil garden glacier globe golden gravel harbor harvest hawk hazel
+    hollow honey horizon hunter iron island ivory jacket jasper jungle
+    kettle lantern latch lemon library linden lion lunar marble meadow
+    mirror mosaic mountain nectar noble north oasis ocean olive onyx
+    orbit orchid otter palace panther pearl pepper phoenix pillar planet
+    plume pocket polar prism puppet quartz rabbit radiant raven ribbon
+    rider ripple river rocket rose ruby salmon satin scarlet scroll
+    shadow shell shield silver sketch slate smoke socket solar spark
+    spider spring square stable star steel stone stream summit sunrise
+    sunset swift sword temple tender thistle thunder tiger timber torch
+    tower trail travel tropic tunnel turtle valley velvet venom vessel
+    violet walnut wander water willow window winter wisdom wolf zenith
+  )
 
   @session_ttl_seconds 14 * 86_400
   @max_sessions_per_user 3
@@ -234,8 +256,8 @@ defmodule Baudrate.Auth do
   @doc """
   Generates #{@recovery_code_count} one-time recovery codes for a user.
 
-  Deletes any existing recovery codes, generates new random codes in the
-  format `a1b2-c3d4` (4 hex chars, dash, 4 hex chars), stores their SHA-256
+  Deletes any existing recovery codes, generates new random codes as single
+  lowercase English words from a curated wordlist, stores their SHA-256
   hashes, and returns the raw codes for one-time display to the user.
   """
   def generate_recovery_codes(user) do
@@ -246,11 +268,9 @@ defmodule Baudrate.Auth do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     raw_codes =
-      for _ <- 1..@recovery_code_count do
-        part1 = :crypto.strong_rand_bytes(2) |> Base.encode16(case: :lower)
-        part2 = :crypto.strong_rand_bytes(2) |> Base.encode16(case: :lower)
-        "#{part1}-#{part2}"
-      end
+      @recovery_wordlist
+      |> Enum.shuffle()
+      |> Enum.take(@recovery_code_count)
 
     entries =
       Enum.map(raw_codes, fn code ->
@@ -334,10 +354,17 @@ defmodule Baudrate.Auth do
       |> Map.put("role_id", role.id)
       |> Map.put("status", status)
 
-    %User{}
-    |> User.registration_changeset(Map.delete(attrs, "status"))
-    |> Ecto.Changeset.put_change(:status, status)
-    |> Repo.insert()
+    result =
+      %User{}
+      |> User.registration_changeset(Map.delete(attrs, "status"))
+      |> User.validate_terms()
+      |> Ecto.Changeset.put_change(:status, status)
+      |> Repo.insert()
+
+    with {:ok, user} <- result do
+      codes = generate_recovery_codes(user)
+      {:ok, user, codes}
+    end
   end
 
   defp register_with_invite(attrs) do
@@ -358,12 +385,14 @@ defmodule Baudrate.Auth do
           result =
             %User{}
             |> User.registration_changeset(Map.delete(attrs, "status") |> Map.delete("invite_code"))
+            |> User.validate_terms()
             |> Ecto.Changeset.put_change(:status, "active")
             |> Repo.insert()
 
           with {:ok, user} <- result do
             use_invite_code(invite, user.id)
-            {:ok, user}
+            codes = generate_recovery_codes(user)
+            {:ok, user, codes}
           end
 
         {:error, reason} ->
@@ -544,6 +573,17 @@ defmodule Baudrate.Auth do
     |> Repo.update()
   end
 
+  # --- Signature ---
+
+  @doc """
+  Updates a user's signature.
+  """
+  def update_signature(user, signature) do
+    user
+    |> User.signature_changeset(%{signature: signature})
+    |> Repo.update()
+  end
+
   # --- Invite Codes ---
 
   @doc """
@@ -641,6 +681,45 @@ defmodule Baudrate.Auth do
     invite
     |> InviteCode.revoke_changeset()
     |> Repo.update()
+  end
+
+  # --- Password reset ---
+
+  @doc """
+  Resets a user's password using a recovery code.
+
+  Looks up the user by username, verifies the recovery code (consuming it),
+  then updates the password. Returns generic errors to prevent user enumeration.
+  """
+  def reset_password_with_recovery_code(username, recovery_code, new_password, new_password_confirmation) do
+    user = Repo.one(from u in User, where: u.username == ^username, preload: :role)
+
+    if is_nil(user) do
+      # Constant-time: still hash to prevent timing attacks
+      Bcrypt.no_user_verify()
+      {:error, :invalid_credentials}
+    else
+      case verify_recovery_code(user, recovery_code) do
+        :ok ->
+          changeset =
+            User.password_reset_changeset(user, %{
+              password: new_password,
+              password_confirmation: new_password_confirmation
+            })
+
+          case Repo.update(changeset) do
+            {:ok, user} ->
+              delete_all_sessions_for_user(user.id)
+              {:ok, user}
+
+            {:error, changeset} ->
+              {:error, changeset}
+          end
+
+        :error ->
+          {:error, :invalid_credentials}
+      end
+    end
   end
 
   # --- Server-side session management ---

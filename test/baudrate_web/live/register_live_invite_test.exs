@@ -57,21 +57,26 @@ defmodule BaudrateWeb.RegisterLiveInviteTest do
     assert html =~ "Invalid invite code"
   end
 
-  test "registration succeeds with valid invite code", %{conn: conn} do
+  test "registration succeeds with valid invite code and shows recovery codes", %{conn: conn} do
     admin = setup_admin()
     {:ok, invite} = Auth.generate_invite_code(admin.id)
 
     {:ok, lv, _html} = live(conn, "/register")
 
-    lv
-    |> form("form", user: %{
-      username: "invited_#{System.unique_integer([:positive])}",
-      password: "Password123!x",
-      password_confirmation: "Password123!x",
-      invite_code: invite.code
-    })
-    |> render_submit()
+    html =
+      lv
+      |> form("form", user: %{
+        username: "invited_#{System.unique_integer([:positive])}",
+        password: "Password123!x",
+        password_confirmation: "Password123!x",
+        invite_code: invite.code,
+        terms_accepted: "true"
+      })
+      |> render_submit()
 
+    assert html =~ "Recovery Codes"
+
+    lv |> render_click("ack_codes")
     assert_redirect(lv, "/login")
   end
 

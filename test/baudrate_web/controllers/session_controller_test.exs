@@ -118,7 +118,7 @@ defmodule BaudrateWeb.SessionControllerTest do
       assert is_nil(get_session(conn, :user_id))
       assert is_nil(get_session(conn, :totp_setup_secret))
       assert is_list(get_session(conn, :recovery_codes))
-      assert length(get_session(conn, :recovery_codes)) == 10
+      assert length(get_session(conn, :recovery_codes)) == 16
 
       updated_user = Auth.get_user(user.id)
       assert updated_user.totp_enabled == true

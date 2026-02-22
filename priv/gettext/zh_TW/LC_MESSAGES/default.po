@@ -44,35 +44,36 @@ msgstr "找不到網路連線"
 msgid "close"
 msgstr "關閉"
 
-#: lib/baudrate_web/live/setup_live.html.heex:52
+#: lib/baudrate_web/live/setup_live.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "%{count} migration(s) applied"
 msgstr "已套用 %{count} 個遷移"
 
 #: lib/baudrate_web/live/setup_live.html.heex:16
-#: lib/baudrate_web/live/setup_live.html.heex:107
+#: lib/baudrate_web/live/setup_live.html.heex:110
 #, elixir-autogen, elixir-format
 msgid "Admin Account"
 msgstr "管理員帳號"
 
-#: lib/baudrate_web/live/register_live.html.heex:55
-#: lib/baudrate_web/live/setup_live.html.heex:147
+#: lib/baudrate_web/live/password_reset_live.html.heex:76
+#: lib/baudrate_web/live/register_live.html.heex:86
+#: lib/baudrate_web/live/setup_live.html.heex:150
 #, elixir-autogen, elixir-format
 msgid "At least 12 characters"
 msgstr "至少 12 個字元"
 
-#: lib/baudrate_web/live/setup_live.html.heex:91
-#: lib/baudrate_web/live/setup_live.html.heex:227
+#: lib/baudrate_web/live/setup_live.html.heex:94
+#: lib/baudrate_web/live/setup_live.html.heex:230
 #, elixir-autogen, elixir-format
 msgid "Back"
 msgstr "返回"
 
-#: lib/baudrate_web/live/setup_live.html.heex:84
+#: lib/baudrate_web/live/setup_live.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Choose a name for your application."
 msgstr "為您的應用程式選擇一個名稱。"
 
-#: lib/baudrate_web/live/setup_live.html.heex:231
+#: lib/baudrate_web/live/setup_live.html.heex:234
 #, elixir-autogen, elixir-format
 msgid "Complete Setup"
 msgstr "完成設定"
@@ -82,42 +83,46 @@ msgstr "完成設定"
 msgid "Configure your application before first use."
 msgstr "在首次使用前設定您的應用程式。"
 
-#: lib/baudrate_web/live/register_live.html.heex:26
-#: lib/baudrate_web/live/setup_live.html.heex:126
+#: lib/baudrate_web/live/register_live.html.heex:57
+#: lib/baudrate_web/live/setup_live.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Confirm Password"
 msgstr "確認密碼"
 
-#: lib/baudrate_web/live/setup_live.html.heex:28
+#: lib/baudrate_web/live/setup_live.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "Connected"
 msgstr "已連線"
 
-#: lib/baudrate_web/live/register_live.html.heex:97
-#: lib/baudrate_web/live/setup_live.html.heex:189
+#: lib/baudrate_web/live/password_reset_live.html.heex:97
+#: lib/baudrate_web/live/register_live.html.heex:128
+#: lib/baudrate_web/live/setup_live.html.heex:192
 #, elixir-autogen, elixir-format
 msgid "Contains a digit"
 msgstr "包含數字"
 
-#: lib/baudrate_web/live/register_live.html.heex:69
-#: lib/baudrate_web/live/setup_live.html.heex:161
+#: lib/baudrate_web/live/password_reset_live.html.heex:83
+#: lib/baudrate_web/live/register_live.html.heex:100
+#: lib/baudrate_web/live/setup_live.html.heex:164
 #, elixir-autogen, elixir-format
 msgid "Contains a lowercase letter"
 msgstr "包含小寫字母"
 
-#: lib/baudrate_web/live/register_live.html.heex:111
-#: lib/baudrate_web/live/setup_live.html.heex:203
+#: lib/baudrate_web/live/password_reset_live.html.heex:104
+#: lib/baudrate_web/live/register_live.html.heex:142
+#: lib/baudrate_web/live/setup_live.html.heex:206
 #, elixir-autogen, elixir-format
 msgid "Contains a special character"
 msgstr "包含特殊字元"
 
-#: lib/baudrate_web/live/register_live.html.heex:83
-#: lib/baudrate_web/live/setup_live.html.heex:175
+#: lib/baudrate_web/live/password_reset_live.html.heex:90
+#: lib/baudrate_web/live/register_live.html.heex:114
+#: lib/baudrate_web/live/setup_live.html.heex:178
 #, elixir-autogen, elixir-format
 msgid "Contains an uppercase letter"
 msgstr "包含大寫字母"
 
-#: lib/baudrate_web/live/setup_live.html.heex:108
+#: lib/baudrate_web/live/setup_live.html.heex:111
 #, elixir-autogen, elixir-format
 msgid "Create the administrator account."
 msgstr "建立管理員帳號。"
@@ -127,17 +132,17 @@ msgstr "建立管理員帳號。"
 msgid "Database"
 msgstr "資料庫"
 
-#: lib/baudrate_web/live/setup_live.html.heex:24
+#: lib/baudrate_web/live/setup_live.html.heex:27
 #, elixir-autogen, elixir-format
 msgid "Database Connection"
 msgstr "資料庫連線"
 
-#: lib/baudrate_web/live/setup_live.html.heex:37
+#: lib/baudrate_web/live/setup_live.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "Database: %{name}"
 msgstr "資料庫：%{name}"
 
-#: lib/baudrate_web/live/setup_live.html.heex:32
+#: lib/baudrate_web/live/setup_live.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "Disconnected"
 msgstr "未連線"
@@ -147,56 +152,57 @@ msgstr "未連線"
 msgid "Initial Setup"
 msgstr "初始設定"
 
-#: lib/baudrate_web/live/setup_live.html.heex:47
+#: lib/baudrate_web/live/setup_live.html.heex:50
 #, elixir-autogen, elixir-format
 msgid "Migrations"
 msgstr "資料庫遷移"
 
-#: lib/baudrate_web/live/setup_live.html.heex:72
-#: lib/baudrate_web/live/setup_live.html.heex:94
+#: lib/baudrate_web/live/setup_live.html.heex:75
+#: lib/baudrate_web/live/setup_live.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Next"
 msgstr "下一步"
 
 #: lib/baudrate_web/live/login_live.html.heex:25
-#: lib/baudrate_web/live/register_live.html.heex:18
-#: lib/baudrate_web/live/setup_live.html.heex:119
+#: lib/baudrate_web/live/register_live.html.heex:49
+#: lib/baudrate_web/live/setup_live.html.heex:122
 #: lib/baudrate_web/live/totp_reset_live.html.heex:20
 #, elixir-autogen, elixir-format
 msgid "Password"
 msgstr "密碼"
 
-#: lib/baudrate_web/live/register_live.html.heex:41
-#: lib/baudrate_web/live/setup_live.html.heex:133
+#: lib/baudrate_web/live/password_reset_live.html.heex:69
+#: lib/baudrate_web/live/register_live.html.heex:72
+#: lib/baudrate_web/live/setup_live.html.heex:136
 #, elixir-autogen, elixir-format
 msgid "Password requirements:"
 msgstr "密碼要求："
 
-#: lib/baudrate_web/live/setup_live.html.heex:56
+#: lib/baudrate_web/live/setup_live.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "Pending migrations"
 msgstr "待執行的遷移"
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:58
-#: lib/baudrate_web/live/setup_live.html.heex:65
+#: lib/baudrate_web/live/setup_live.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "Retry"
 msgstr "重試"
 
-#: lib/baudrate_web/live/setup_live.ex:93
+#: lib/baudrate_web/live/setup_live.ex:111
 #, elixir-autogen, elixir-format
 msgid "Setup completed successfully!"
 msgstr "設定已成功完成！"
 
-#: lib/baudrate_web/live/setup_live.ex:102
+#: lib/baudrate_web/live/setup_live.ex:104
 #, elixir-autogen, elixir-format
 msgid "Setup failed. Please try again."
 msgstr "設定失敗，請重試。"
 
 #: lib/baudrate_web/live/admin/settings_live.html.heex:7
 #: lib/baudrate_web/live/setup_live.html.heex:13
-#: lib/baudrate_web/live/setup_live.html.heex:82
-#: lib/baudrate_web/live/setup_live.html.heex:87
+#: lib/baudrate_web/live/setup_live.html.heex:85
+#: lib/baudrate_web/live/setup_live.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "Site Name"
 msgstr "網站名稱"
@@ -204,9 +210,10 @@ msgstr "網站名稱"
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:12
 #: lib/baudrate_web/live/admin/users_live.html.heex:95
 #: lib/baudrate_web/live/login_live.html.heex:10
+#: lib/baudrate_web/live/password_reset_live.html.heex:10
 #: lib/baudrate_web/live/profile_live.html.heex:76
-#: lib/baudrate_web/live/register_live.html.heex:10
-#: lib/baudrate_web/live/setup_live.html.heex:112
+#: lib/baudrate_web/live/register_live.html.heex:41
+#: lib/baudrate_web/live/setup_live.html.heex:115
 #, elixir-autogen, elixir-format
 msgid "Username"
 msgstr "使用者名稱"
@@ -250,7 +257,7 @@ msgstr "設定雙因素驗證"
 #: lib/baudrate_web/components/layouts.ex:117
 #: lib/baudrate_web/live/login_live.html.heex:2
 #: lib/baudrate_web/live/login_live.html.heex:39
-#: lib/baudrate_web/live/register_live.html.heex:146
+#: lib/baudrate_web/live/register_live.html.heex:199
 #, elixir-autogen, elixir-format
 msgid "Sign In"
 msgstr "登入"
@@ -304,7 +311,7 @@ msgstr "您的角色需要雙因素驗證。請使用驗證器應用程式掃描
 msgid "Too many login attempts. Please try again later."
 msgstr "登入嘗試次數過多，請稍後再試。"
 
-#: lib/baudrate_web/live/setup_live.html.heex:40
+#: lib/baudrate_web/live/setup_live.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "Unable to connect to database. Check your configuration."
 msgstr "無法連線至資料庫，請檢查您的設定。"
@@ -406,15 +413,10 @@ msgid "Member Since"
 msgstr "加入日期"
 
 #: lib/baudrate_web/live/board_live.html.heex:43
-#: lib/baudrate_web/live/user_profile_live.html.heex:47
+#: lib/baudrate_web/live/user_profile_live.html.heex:54
 #, elixir-autogen, elixir-format
 msgid "No articles yet."
 msgstr "目前沒有文章。"
-
-#: lib/baudrate_web/live/recovery_code_verify_live.ex:44
-#, elixir-autogen, elixir-format
-msgid "Please enter a valid recovery code (e.g. a1b2-c3d4)."
-msgstr "請輸入有效的救援碼（例如 a1b2-c3d4）。"
 
 #: lib/baudrate_web/components/layouts.ex:81
 #: lib/baudrate_web/components/layouts.ex:161
@@ -423,6 +425,7 @@ msgstr "請輸入有效的救援碼（例如 a1b2-c3d4）。"
 msgid "Profile"
 msgstr "個人檔案"
 
+#: lib/baudrate_web/live/password_reset_live.html.heex:25
 #: lib/baudrate_web/live/recovery_code_verify_live.html.heex:2
 #: lib/baudrate_web/live/recovery_code_verify_live.html.heex:10
 #, elixir-autogen, elixir-format
@@ -430,6 +433,9 @@ msgid "Recovery Code"
 msgstr "救援碼"
 
 #: lib/baudrate_web/live/recovery_codes_live.html.heex:2
+#: lib/baudrate_web/live/register_live.html.heex:4
+#: lib/baudrate_web/live/setup_live.html.heex:19
+#: lib/baudrate_web/live/setup_live.html.heex:246
 #, elixir-autogen, elixir-format
 msgid "Recovery Codes"
 msgstr "救援碼"
@@ -472,19 +478,19 @@ msgstr "您將無法再次查看這些救援碼！"
 msgid "Are you sure you want to remove your avatar?"
 msgstr "確定要移除頭像嗎？"
 
-#: lib/baudrate_web/live/profile_live.ex:131
+#: lib/baudrate_web/live/profile_live.ex:166
 #, elixir-autogen, elixir-format
 msgid "Avatar removed."
 msgstr "頭像已移除。"
 
-#: lib/baudrate_web/live/profile_live.ex:162
+#: lib/baudrate_web/live/profile_live.ex:197
 #, elixir-autogen, elixir-format
 msgid "Avatar updated successfully."
 msgstr "頭像已成功更新。"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:69
 #: lib/baudrate_web/live/admin/users_live.html.heex:198
-#: lib/baudrate_web/live/article_live.ex:257
+#: lib/baudrate_web/live/article_live.ex:264
 #: lib/baudrate_web/live/profile_live.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Cancel"
@@ -500,18 +506,18 @@ msgstr "變更頭像"
 msgid "Crop Avatar"
 msgstr "裁剪頭像"
 
-#: lib/baudrate_web/live/profile_live.ex:180
+#: lib/baudrate_web/live/profile_live.ex:215
 #, elixir-autogen, elixir-format
 msgid "Failed to process avatar image."
 msgstr "處理頭像圖片失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:195
+#: lib/baudrate_web/live/profile_live.ex:230
 #, elixir-autogen, elixir-format
 msgid "Image file is too large."
 msgstr "圖片檔案過大。"
 
-#: lib/baudrate_web/live/profile_live.ex:171
-#: lib/baudrate_web/live/profile_live.ex:196
+#: lib/baudrate_web/live/profile_live.ex:206
+#: lib/baudrate_web/live/profile_live.ex:231
 #, elixir-autogen, elixir-format
 msgid "Invalid image file."
 msgstr "無效的圖片檔案。"
@@ -528,18 +534,18 @@ msgstr "移除頭像"
 msgid "Save"
 msgstr "儲存"
 
-#: lib/baudrate_web/live/profile_live.ex:73
-#: lib/baudrate_web/live/profile_live.ex:137
+#: lib/baudrate_web/live/profile_live.ex:77
+#: lib/baudrate_web/live/profile_live.ex:172
 #, elixir-autogen, elixir-format
 msgid "Too many avatar changes. Please try again later."
 msgstr "頭像變更次數過多，請稍後再試。"
 
-#: lib/baudrate_web/live/profile_live.ex:197
+#: lib/baudrate_web/live/profile_live.ex:232
 #, elixir-autogen, elixir-format
 msgid "Too many files."
 msgstr "檔案數量過多。"
 
-#: lib/baudrate_web/live/profile_live.ex:198
+#: lib/baudrate_web/live/profile_live.ex:233
 #, elixir-autogen, elixir-format
 msgid "Upload error."
 msgstr "上傳錯誤。"
@@ -550,7 +556,7 @@ msgstr "上傳錯誤。"
 msgid "Access denied."
 msgstr "存取被拒絕。"
 
-#: lib/baudrate_web/live/register_live.html.heex:145
+#: lib/baudrate_web/live/register_live.html.heex:198
 #, elixir-autogen, elixir-format
 msgid "Already have an account?"
 msgstr "已有帳號？"
@@ -591,12 +597,12 @@ msgstr "內文"
 msgid "Create Article"
 msgstr "建立文章"
 
-#: lib/baudrate_web/live/register_live.html.heex:4
+#: lib/baudrate_web/live/register_live.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "Create an account"
 msgstr "建立帳號"
 
-#: lib/baudrate_web/live/login_live.html.heex:54
+#: lib/baudrate_web/live/login_live.html.heex:60
 #, elixir-autogen, elixir-format
 msgid "Don't have an account?"
 msgstr "還沒有帳號？"
@@ -650,15 +656,15 @@ msgstr "發表於"
 msgid "Registered"
 msgstr "註冊時間"
 
-#: lib/baudrate_web/live/register_live.ex:88
-#: lib/baudrate_web/live/register_live.ex:91
+#: lib/baudrate_web/live/register_live.ex:99
+#: lib/baudrate_web/live/register_live.ex:102
 #, elixir-autogen, elixir-format
 msgid "Registration successful! You can now sign in."
 msgstr "註冊成功！您現在可以登入。"
 
-#: lib/baudrate_web/live/login_live.html.heex:55
-#: lib/baudrate_web/live/register_live.html.heex:2
-#: lib/baudrate_web/live/register_live.html.heex:140
+#: lib/baudrate_web/live/login_live.html.heex:61
+#: lib/baudrate_web/live/register_live.html.heex:33
+#: lib/baudrate_web/live/register_live.html.heex:193
 #, elixir-autogen, elixir-format
 msgid "Sign Up"
 msgstr "註冊"
@@ -669,7 +675,7 @@ msgstr "註冊"
 msgid "Title"
 msgstr "標題"
 
-#: lib/baudrate_web/live/register_live.ex:74
+#: lib/baudrate_web/live/register_live.ex:80
 #, elixir-autogen, elixir-format
 msgid "Too many registration attempts. Please try again later."
 msgstr "註冊嘗試次數過多，請稍後再試。"
@@ -680,12 +686,12 @@ msgstr "註冊嘗試次數過多，請稍後再試。"
 msgid "User approved successfully."
 msgstr "用戶已成功核准。"
 
-#: lib/baudrate_web/live/register_live.ex:94
+#: lib/baudrate_web/live/register_live.ex:105
 #, elixir-autogen, elixir-format
 msgid "Your account has been created and is pending admin approval. You can sign in, but posting and avatar upload are restricted until approved."
 msgstr "您的帳號已建立，正在等待管理員審核。您可以登入，但在核准前無法發表文章或上傳頭像。"
 
-#: lib/baudrate_web/live/register_live.html.heex:132
+#: lib/baudrate_web/live/register_live.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "Your account is pending admin approval."
 msgstr "您的帳號正在等待管理員審核。"
@@ -706,12 +712,12 @@ msgstr "由 %{author} 發表"
 msgid "Add Language"
 msgstr "新增語言"
 
-#: lib/baudrate_web/live/profile_live.ex:230
+#: lib/baudrate_web/live/profile_live.ex:265
 #, elixir-autogen, elixir-format
 msgid "Failed to update language preferences."
 msgstr "更新語言偏好失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:225
+#: lib/baudrate_web/live/profile_live.ex:260
 #, elixir-autogen, elixir-format
 msgid "Language preferences updated."
 msgstr "語言偏好已更新。"
@@ -754,6 +760,7 @@ msgid "Registration Mode"
 msgstr "註冊模式"
 
 #: lib/baudrate_web/live/admin/settings_live.html.heex:51
+#: lib/baudrate_web/live/admin/settings_live.html.heex:74
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr "儲存中..."
@@ -764,7 +771,7 @@ msgstr "儲存中..."
 msgid "Settings"
 msgstr "設定"
 
-#: lib/baudrate_web/live/admin/settings_live.ex:38
+#: lib/baudrate_web/live/admin/settings_live.ex:46
 #, elixir-autogen, elixir-format
 msgid "Settings saved successfully."
 msgstr "設定已儲存。"
@@ -1187,7 +1194,7 @@ msgstr "確定要刪除這篇文章嗎？"
 msgid "Article updated successfully."
 msgstr "文章已成功更新。"
 
-#: lib/baudrate_web/live/article_live.html.heex:60
+#: lib/baudrate_web/live/article_live.html.heex:67
 #, elixir-autogen, elixir-format
 msgid "Attachments"
 msgstr "附件"
@@ -1202,7 +1209,7 @@ msgstr "返回文章"
 msgid "Comment posted."
 msgstr "留言已發表。"
 
-#: lib/baudrate_web/live/article_live.html.heex:118
+#: lib/baudrate_web/live/article_live.html.heex:125
 #: lib/baudrate_web/live/user_profile_live.html.heex:19
 #, elixir-autogen, elixir-format
 msgid "Comments"
@@ -1214,7 +1221,7 @@ msgstr "留言"
 msgid "Delete"
 msgstr "刪除"
 
-#: lib/baudrate_web/live/article_live.html.heex:85
+#: lib/baudrate_web/live/article_live.html.heex:92
 #, elixir-autogen, elixir-format
 msgid "Delete this attachment?"
 msgstr "確定要刪除此附件？"
@@ -1235,12 +1242,12 @@ msgstr "編輯文章"
 msgid "Failed to delete attachment."
 msgstr "刪除附件失敗。"
 
-#: lib/baudrate_web/live/article_live.ex:287
+#: lib/baudrate_web/live/article_live.ex:294
 #, elixir-autogen, elixir-format
 msgid "File too large (max 10 MB)"
 msgstr "檔案過大（上限 10 MB）"
 
-#: lib/baudrate_web/live/article_live.ex:289
+#: lib/baudrate_web/live/article_live.ex:296
 #, elixir-autogen, elixir-format
 msgid "File type not accepted"
 msgstr "不支援的檔案類型"
@@ -1250,7 +1257,7 @@ msgstr "不支援的檔案類型"
 msgid "No articles found for \"%{query}\"."
 msgstr "找不到「%{query}」的相關文章。"
 
-#: lib/baudrate_web/live/article_live.html.heex:140
+#: lib/baudrate_web/live/article_live.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "No comments yet."
 msgstr "目前沒有留言。"
@@ -1261,13 +1268,13 @@ msgstr "目前沒有留言。"
 msgid "Not authorized."
 msgstr "未經授權。"
 
-#: lib/baudrate_web/live/article_live.html.heex:134
+#: lib/baudrate_web/live/article_live.html.heex:141
 #, elixir-autogen, elixir-format
 msgid "Post Comment"
 msgstr "發表留言"
 
-#: lib/baudrate_web/live/article_live.ex:239
-#: lib/baudrate_web/live/article_live.ex:254
+#: lib/baudrate_web/live/article_live.ex:246
+#: lib/baudrate_web/live/article_live.ex:261
 #, elixir-autogen, elixir-format
 msgid "Reply"
 msgstr "回覆"
@@ -1299,27 +1306,27 @@ msgstr "搜尋..."
 msgid "Some files failed to upload."
 msgstr "部分檔案上傳失敗。"
 
-#: lib/baudrate_web/live/article_live.ex:288
+#: lib/baudrate_web/live/article_live.ex:295
 #, elixir-autogen, elixir-format
 msgid "Too many files (max 5)"
 msgstr "檔案數量過多（上限 5 個）"
 
-#: lib/baudrate_web/live/article_live.html.heex:109
+#: lib/baudrate_web/live/article_live.html.heex:116
 #, elixir-autogen, elixir-format
 msgid "Upload"
 msgstr "上傳"
 
-#: lib/baudrate_web/live/article_live.ex:290
+#: lib/baudrate_web/live/article_live.ex:297
 #, elixir-autogen, elixir-format
 msgid "Upload error"
 msgstr "上傳錯誤"
 
-#: lib/baudrate_web/live/article_live.html.heex:130
+#: lib/baudrate_web/live/article_live.html.heex:137
 #, elixir-autogen, elixir-format
 msgid "Write a comment..."
 msgstr "撰寫留言..."
 
-#: lib/baudrate_web/live/article_live.ex:249
+#: lib/baudrate_web/live/article_live.ex:256
 #, elixir-autogen, elixir-format
 msgid "Write a reply..."
 msgstr "撰寫回覆..."
@@ -1678,7 +1685,7 @@ msgstr "操作"
 msgid "Actor"
 msgstr "執行者"
 
-#: lib/baudrate_web/live/register_live.ex:106
+#: lib/baudrate_web/live/register_live.ex:117
 #, elixir-autogen, elixir-format
 msgid "An invite code is required to register."
 msgstr "註冊需要邀請碼。"
@@ -1769,12 +1776,12 @@ msgstr "無法撤銷邀請碼。"
 msgid "Generate Code"
 msgstr "產生邀請碼"
 
-#: lib/baudrate_web/live/register_live.ex:109
+#: lib/baudrate_web/live/register_live.ex:120
 #, elixir-autogen, elixir-format
 msgid "Invalid invite code."
 msgstr "無效的邀請碼。"
 
-#: lib/baudrate_web/live/register_live.html.heex:34
+#: lib/baudrate_web/live/register_live.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Invite Code"
 msgstr "邀請碼"
@@ -1828,12 +1835,12 @@ msgstr "尚無邀請碼。"
 msgid "No moderation actions recorded."
 msgstr "尚無管理操作記錄。"
 
-#: lib/baudrate_web/live/user_profile_live.html.heex:25
+#: lib/baudrate_web/live/user_profile_live.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Recent Articles"
 msgstr "最近文章"
 
-#: lib/baudrate_web/live/register_live.html.heex:136
+#: lib/baudrate_web/live/register_live.html.heex:167
 #, elixir-autogen, elixir-format
 msgid "Registration requires an invite code."
 msgstr "註冊需要邀請碼。"
@@ -1868,17 +1875,17 @@ msgstr "子板塊"
 msgid "Target"
 msgstr "目標"
 
-#: lib/baudrate_web/live/register_live.ex:118
+#: lib/baudrate_web/live/register_live.ex:129
 #, elixir-autogen, elixir-format
 msgid "This invite code has already been used."
 msgstr "此邀請碼已被使用。"
 
-#: lib/baudrate_web/live/register_live.ex:112
+#: lib/baudrate_web/live/register_live.ex:123
 #, elixir-autogen, elixir-format
 msgid "This invite code has been revoked."
 msgstr "此邀請碼已被撤銷。"
 
-#: lib/baudrate_web/live/register_live.ex:115
+#: lib/baudrate_web/live/register_live.ex:126
 #, elixir-autogen, elixir-format
 msgid "This invite code has expired."
 msgstr "此邀請碼已過期。"
@@ -1913,3 +1920,150 @@ msgstr "使用次數"
 #, elixir-autogen, elixir-format
 msgid "by"
 msgstr "由"
+
+#: lib/baudrate_web/live/password_reset_live.html.heex:130
+#, elixir-autogen, elixir-format
+msgid "Back to Sign In"
+msgstr "返回登入"
+
+#: lib/baudrate_web/live/password_reset_live.html.heex:55
+#, elixir-autogen, elixir-format
+msgid "Confirm New Password"
+msgstr "確認新密碼"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:61
+#: lib/baudrate_web/live/register_live.html.heex:179
+#, elixir-autogen, elixir-format
+msgid "End User Agreement"
+msgstr "使用者條款"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:69
+#, elixir-autogen, elixir-format
+msgid "End User Agreement (Markdown)"
+msgstr "使用者條款（Markdown）"
+
+#: lib/baudrate_web/live/admin/settings_live.ex:64
+#, elixir-autogen, elixir-format
+msgid "End User Agreement saved."
+msgstr "使用者條款已儲存。"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:71
+#, elixir-autogen, elixir-format
+msgid "Enter your site-specific terms here..."
+msgstr "在此輸入網站專屬條款..."
+
+#: lib/baudrate_web/live/password_reset_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Enter your username and a recovery code to reset your password."
+msgstr "輸入您的使用者名稱和救援碼以重設密碼。"
+
+#: lib/baudrate_web/live/admin/settings_live.ex:67
+#, elixir-autogen, elixir-format
+msgid "Failed to save End User Agreement."
+msgstr "使用者條款儲存失敗。"
+
+#: lib/baudrate_web/live/login_live.html.heex:55
+#, elixir-autogen, elixir-format
+msgid "Forgot your password?"
+msgstr "忘記密碼？"
+
+#: lib/baudrate_web/live/register_live.html.heex:188
+#, elixir-autogen, elixir-format
+msgid "I accept the above terms"
+msgstr "我接受以上條款"
+
+#: lib/baudrate_web/live/register_live.html.heex:173
+#, elixir-autogen, elixir-format
+msgid "I acknowledge that my activities (including IP address, user-agent, and operation history) will be logged for at least 1 year, and I agree to comply with the laws of the country/region where this instance operates."
+msgstr "我確認我的活動（包括 IP 位址、使用者代理及操作記錄）將被記錄至少 1 年，並同意遵守本站所在國家／地區的法律。"
+
+#: lib/baudrate_web/live/register_live.html.heex:27
+#: lib/baudrate_web/live/setup_live.html.heex:265
+#, elixir-autogen, elixir-format
+msgid "I have saved my recovery codes"
+msgstr "我已儲存救援碼"
+
+#: lib/baudrate_web/live/password_reset_live.ex:79
+#, elixir-autogen, elixir-format
+msgid "Invalid username or recovery code."
+msgstr "使用者名稱或救援碼無效。"
+
+#: lib/baudrate_web/live/password_reset_live.html.heex:41
+#, elixir-autogen, elixir-format
+msgid "New Password"
+msgstr "新密碼"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:63
+#, elixir-autogen, elixir-format
+msgid "Optional site-specific terms shown during registration. Supports Markdown formatting."
+msgstr "在註冊時顯示的網站專屬條款（選填），支援 Markdown 格式。"
+
+#: lib/baudrate_web/live/password_reset_live.ex:96
+#, elixir-autogen, elixir-format
+msgid "Password reset failed."
+msgstr "密碼重設失敗。"
+
+#: lib/baudrate_web/live/password_reset_live.ex:74
+#, elixir-autogen, elixir-format
+msgid "Password reset successful! You can now sign in."
+msgstr "密碼重設成功！您現在可以登入。"
+
+#: lib/baudrate_web/live/recovery_code_verify_live.ex:44
+#, elixir-autogen, elixir-format
+msgid "Please enter a valid recovery code (a single word)."
+msgstr "請輸入有效的救援碼（一個英文單字）。"
+
+#: lib/baudrate_web/live/profile_live.html.heex:197
+#, elixir-autogen, elixir-format
+msgid "Preview:"
+msgstr "預覽："
+
+#: lib/baudrate_web/live/password_reset_live.html.heex:2
+#: lib/baudrate_web/live/password_reset_live.html.heex:125
+#, elixir-autogen, elixir-format
+msgid "Reset Password"
+msgstr "重設密碼"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:75
+#, elixir-autogen, elixir-format
+msgid "Save Agreement"
+msgstr "儲存條款"
+
+#: lib/baudrate_web/live/profile_live.html.heex:203
+#, elixir-autogen, elixir-format
+msgid "Save Signature"
+msgstr "儲存簽名檔"
+
+#: lib/baudrate_web/live/register_live.html.heex:9
+#: lib/baudrate_web/live/setup_live.html.heex:251
+#, elixir-autogen, elixir-format
+msgid "Save these recovery codes now!"
+msgstr "請立即儲存這些救援碼！"
+
+#: lib/baudrate_web/live/article_live.html.heex:57
+#: lib/baudrate_web/live/profile_live.html.heex:187
+#: lib/baudrate_web/live/user_profile_live.html.heex:25
+#, elixir-autogen, elixir-format
+msgid "Signature"
+msgstr "簽名檔"
+
+#: lib/baudrate_web/live/profile_live.ex:148
+#, elixir-autogen, elixir-format
+msgid "Signature updated."
+msgstr "簽名檔已更新。"
+
+#: lib/baudrate_web/live/register_live.html.heex:11
+#: lib/baudrate_web/live/setup_live.html.heex:253
+#, elixir-autogen, elixir-format
+msgid "These codes are the only way to recover your account if you lose your password. Each code can only be used once. Store them in a safe place."
+msgstr "這些救援碼是您忘記密碼時恢復帳號的唯一方式。每個救援碼只能使用一次，請妥善保管。"
+
+#: lib/baudrate_web/live/password_reset_live.ex:52
+#, elixir-autogen, elixir-format
+msgid "Too many attempts. Please try again later."
+msgstr "嘗試次數過多，請稍後再試。"
+
+#: lib/baudrate_web/live/profile_live.html.heex:194
+#, elixir-autogen, elixir-format
+msgid "Your signature (Markdown supported, max 500 characters)"
+msgstr "您的簽名檔（支援 Markdown，最多 500 字元）"

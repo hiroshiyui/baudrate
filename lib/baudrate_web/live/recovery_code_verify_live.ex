@@ -31,7 +31,7 @@ defmodule BaudrateWeb.RecoveryCodeVerifyLive do
   def handle_event("submit", %{"recovery" => %{"code" => code}}, socket) do
     code = String.trim(code)
 
-    if String.match?(code, ~r/^[a-fA-F0-9]{4}-[a-fA-F0-9]{4}$/) do
+    if String.match?(code, ~r/^[a-zA-Z]{3,20}$/) do
       socket =
         socket
         |> assign(:code, code)
@@ -41,7 +41,7 @@ defmodule BaudrateWeb.RecoveryCodeVerifyLive do
     else
       socket =
         socket
-        |> put_flash(:error, gettext("Please enter a valid recovery code (e.g. a1b2-c3d4)."))
+        |> put_flash(:error, gettext("Please enter a valid recovery code (a single word)."))
         |> assign(:form, to_form(%{"code" => ""}, as: :recovery))
 
       {:noreply, socket}
