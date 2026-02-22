@@ -6,8 +6,7 @@
 
 ## Performance & Scalability
 
-- [ ] Shared inbox aggregation to reduce delivery volume
-- [ ] Background worker for stale actor cache cleanup
+(no remaining items)
 
 ---
 
@@ -79,5 +78,13 @@
 - [x] Phase 4a: Mastodon & Lemmy compatibility (span allowlist, content warnings, Page type, addressing)
 - [x] Phase 4b: Article summary, hashtag tags, cross-post dedup, moderation tools, federation dashboard, blocklist/allowlist, Flag activities, kill switch, CSP, display name sanitization
 - [x] Phase 5: Block activity (user-level blocks, Block/Undo(Block) federation), authorized fetch mode (optional HTTP signature requirement on GETs), key rotation (RSA keypair rotation with Update activity distribution), domain blocklist audit (compare local blocklist against external known-bad-actor lists)
+
+</details>
+
+<details>
+<summary>Performance & Scalability</summary>
+
+- [x] Shared inbox aggregation to reduce delivery volume (deduplication in `Delivery.resolve_follower_inboxes/1` and `enqueue_for_article/3`)
+- [x] Background worker for stale actor cache cleanup (`StaleActorCleaner` GenServer — daily cleanup of remote actors older than 30 days, with reference-aware refresh/delete logic)
 
 </details>

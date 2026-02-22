@@ -15,6 +15,7 @@ defmodule Baudrate.Application do
       Baudrate.Auth.SessionCleaner,
       {Task.Supervisor, name: Baudrate.Federation.TaskSupervisor},
       Baudrate.Federation.DeliveryWorker,
+      Baudrate.Federation.StaleActorCleaner,
       # Start to serve requests, typically the last entry
       BaudrateWeb.Endpoint
     ]

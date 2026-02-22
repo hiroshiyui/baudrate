@@ -52,6 +52,7 @@ lib/
 │   │   ├── delivery.ex          # Outgoing activity delivery (Accept, queue, retry, block delivery)
 │   │   ├── delivery_job.ex      # DeliveryJob schema (delivery queue records)
 │   │   ├── delivery_worker.ex   # GenServer: polls delivery queue, retries failed jobs
+│   │   ├── stale_actor_cleaner.ex # GenServer: daily stale remote actor cleanup
 │   │   ├── follower.ex          # Follower schema (remote → local follows)
 │   │   ├── http_client.ex       # SSRF-safe HTTP client for remote fetches (unsigned + signed GET)
 │   │   ├── http_signature.ex    # HTTP Signature signing and verification (POST + GET)
@@ -590,8 +591,9 @@ Baudrate.Supervisor (one_for_one)
 ├── Phoenix.PubSub                     # PubSub for LiveView
 ├── Baudrate.Auth.SessionCleaner       # Hourly expired session purge
 ├── Baudrate.Federation.TaskSupervisor # Async federation delivery tasks
-├── Baudrate.Federation.DeliveryWorker # Polls delivery queue every 60s
-└── BaudrateWeb.Endpoint               # HTTP server
+├── Baudrate.Federation.DeliveryWorker     # Polls delivery queue every 60s
+├── Baudrate.Federation.StaleActorCleaner # Daily stale remote actor cleanup
+└── BaudrateWeb.Endpoint                  # HTTP server
 ```
 
 ### Real-time Updates
