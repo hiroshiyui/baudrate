@@ -323,7 +323,9 @@ defmodule Baudrate.Federation do
       "name" => site_name,
       "inbox" => "#{uri}/inbox",
       "outbox" => "#{uri}/outbox",
+      "followers" => "#{uri}/followers",
       "url" => base_url(),
+      "endpoints" => %{"sharedInbox" => "#{base_url()}/ap/inbox"},
       "publicKey" => %{
         "id" => "#{uri}#main-key",
         "owner" => uri,

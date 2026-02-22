@@ -41,7 +41,7 @@ msgid "We can't find the internet"
 msgstr "インターネットに接続できません"
 
 #: lib/baudrate_web/components/core_components.ex:74
-#: lib/baudrate_web/live/profile_live.html.heex:70
+#: lib/baudrate_web/live/profile_live.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "close"
 msgstr "閉じる"
@@ -213,7 +213,7 @@ msgstr "サイト名"
 #: lib/baudrate_web/live/admin/users_live.html.heex:95
 #: lib/baudrate_web/live/login_live.html.heex:10
 #: lib/baudrate_web/live/password_reset_live.html.heex:10
-#: lib/baudrate_web/live/profile_live.html.heex:76
+#: lib/baudrate_web/live/profile_live.html.heex:81
 #: lib/baudrate_web/live/register_live.html.heex:41
 #: lib/baudrate_web/live/setup_live.html.heex:115
 #, elixir-autogen, elixir-format
@@ -271,7 +271,7 @@ msgstr "ログイン"
 msgid "Sign Out"
 msgstr "ログアウト"
 
-#: lib/baudrate_web/live/profile_live.html.heex:87
+#: lib/baudrate_web/live/profile_live.html.heex:92
 #: lib/baudrate_web/live/totp_verify_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Two-Factor Authentication"
@@ -358,12 +358,12 @@ msgstr "現在のTOTPコード"
 #: lib/baudrate_web/live/admin/boards_live.html.heex:81
 #: lib/baudrate_web/live/admin/federation_live.html.heex:206
 #: lib/baudrate_web/live/admin/settings_live.html.heex:24
-#: lib/baudrate_web/live/profile_live.html.heex:95
+#: lib/baudrate_web/live/profile_live.html.heex:100
 #, elixir-autogen, elixir-format
 msgid "Disabled"
 msgstr "無効"
 
-#: lib/baudrate_web/live/profile_live.html.heex:98
+#: lib/baudrate_web/live/profile_live.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Enable TOTP"
 msgstr "TOTPを有効化"
@@ -377,7 +377,7 @@ msgstr "二要素認証を有効化"
 #: lib/baudrate_web/live/admin/federation_live.html.heex:156
 #: lib/baudrate_web/live/admin/federation_live.html.heex:206
 #: lib/baudrate_web/live/admin/settings_live.html.heex:23
-#: lib/baudrate_web/live/profile_live.html.heex:90
+#: lib/baudrate_web/live/profile_live.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Enabled"
 msgstr "有効"
@@ -412,7 +412,7 @@ msgstr "認証情報が無効です。もう一度お試しください。"
 msgid "Lost your device? Use a recovery code"
 msgstr "デバイスを紛失しましたか？リカバリーコードを使用"
 
-#: lib/baudrate_web/live/profile_live.html.heex:106
+#: lib/baudrate_web/live/profile_live.html.heex:111
 #, elixir-autogen, elixir-format
 msgid "Member Since"
 msgstr "登録日"
@@ -448,7 +448,7 @@ msgstr "リカバリーコード"
 msgid "Recovery Codes"
 msgstr "リカバリーコード"
 
-#: lib/baudrate_web/live/profile_live.html.heex:92
+#: lib/baudrate_web/live/profile_live.html.heex:97
 #: lib/baudrate_web/live/totp_reset_live.html.heex:4
 #: lib/baudrate_web/live/totp_reset_live.html.heex:56
 #, elixir-autogen, elixir-format
@@ -456,7 +456,7 @@ msgid "Reset Authenticator"
 msgstr "認証器をリセット"
 
 #: lib/baudrate_web/live/admin/users_live.html.heex:96
-#: lib/baudrate_web/live/profile_live.html.heex:81
+#: lib/baudrate_web/live/profile_live.html.heex:86
 #, elixir-autogen, elixir-format
 msgid "Role"
 msgstr "ロール"
@@ -486,12 +486,12 @@ msgstr "これらのコードは再表示できません！"
 msgid "Are you sure you want to remove your avatar?"
 msgstr "アバターを削除してもよろしいですか？"
 
-#: lib/baudrate_web/live/profile_live.ex:167
+#: lib/baudrate_web/live/profile_live.ex:168
 #, elixir-autogen, elixir-format
 msgid "Avatar removed."
 msgstr "アバターを削除しました。"
 
-#: lib/baudrate_web/live/profile_live.ex:198
+#: lib/baudrate_web/live/profile_live.ex:199
 #, elixir-autogen, elixir-format
 msgid "Avatar updated successfully."
 msgstr "アバターを更新しました。"
@@ -499,7 +499,7 @@ msgstr "アバターを更新しました。"
 #: lib/baudrate_web/live/admin/boards_live.html.heex:85
 #: lib/baudrate_web/live/admin/users_live.html.heex:198
 #: lib/baudrate_web/live/article_live.ex:439
-#: lib/baudrate_web/live/profile_live.html.heex:57
+#: lib/baudrate_web/live/profile_live.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr "キャンセル"
@@ -509,23 +509,23 @@ msgstr "キャンセル"
 msgid "Change Avatar"
 msgstr "アバターを変更"
 
-#: lib/baudrate_web/live/profile_live.html.heex:50
+#: lib/baudrate_web/live/profile_live.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "Crop Avatar"
 msgstr "アバターを切り抜き"
 
-#: lib/baudrate_web/live/profile_live.ex:216
+#: lib/baudrate_web/live/profile_live.ex:217
 #, elixir-autogen, elixir-format
 msgid "Failed to process avatar image."
 msgstr "アバター画像の処理に失敗しました。"
 
-#: lib/baudrate_web/live/profile_live.ex:231
+#: lib/baudrate_web/live/profile_live.ex:232
 #, elixir-autogen, elixir-format
 msgid "Image file is too large."
 msgstr "画像ファイルが大きすぎます。"
 
-#: lib/baudrate_web/live/profile_live.ex:207
-#: lib/baudrate_web/live/profile_live.ex:232
+#: lib/baudrate_web/live/profile_live.ex:208
+#: lib/baudrate_web/live/profile_live.ex:233
 #, elixir-autogen, elixir-format
 msgid "Invalid image file."
 msgstr "無効な画像ファイルです。"
@@ -537,23 +537,23 @@ msgstr "アバターを削除"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:86
 #: lib/baudrate_web/live/admin/settings_live.html.heex:69
-#: lib/baudrate_web/live/profile_live.html.heex:64
+#: lib/baudrate_web/live/profile_live.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "Save"
 msgstr "保存"
 
-#: lib/baudrate_web/live/profile_live.ex:78
-#: lib/baudrate_web/live/profile_live.ex:173
+#: lib/baudrate_web/live/profile_live.ex:79
+#: lib/baudrate_web/live/profile_live.ex:174
 #, elixir-autogen, elixir-format
 msgid "Too many avatar changes. Please try again later."
 msgstr "アバターの変更回数が多すぎます。しばらくしてからもう一度お試しください。"
 
-#: lib/baudrate_web/live/profile_live.ex:233
+#: lib/baudrate_web/live/profile_live.ex:234
 #, elixir-autogen, elixir-format
 msgid "Too many files."
 msgstr "ファイル数が多すぎます。"
 
-#: lib/baudrate_web/live/profile_live.ex:234
+#: lib/baudrate_web/live/profile_live.ex:235
 #, elixir-autogen, elixir-format
 msgid "Upload error."
 msgstr "アップロードエラー。"
@@ -588,8 +588,8 @@ msgstr "掲示板に戻る"
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:147
 #: lib/baudrate_web/live/admin/federation_live.html.heex:190
-#: lib/baudrate_web/live/article_edit_live.html.heex:78
-#: lib/baudrate_web/live/article_new_live.html.heex:86
+#: lib/baudrate_web/live/article_edit_live.html.heex:79
+#: lib/baudrate_web/live/article_new_live.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Board"
 msgstr "掲示板"
@@ -602,7 +602,7 @@ msgstr "本文"
 
 #: lib/baudrate_web/live/article_new_live.ex:53
 #: lib/baudrate_web/live/article_new_live.html.heex:19
-#: lib/baudrate_web/live/article_new_live.html.heex:102
+#: lib/baudrate_web/live/article_new_live.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Create Article"
 msgstr "記事を作成"
@@ -713,33 +713,33 @@ msgstr "アカウントは管理者の承認待ちです。"
 msgid "Your account is pending approval."
 msgstr "アカウントは承認待ちです。"
 
-#: lib/baudrate_web/live/search_live.html.heex:57
-#: lib/baudrate_web/live/search_live.html.heex:78
+#: lib/baudrate_web/live/search_live.html.heex:59
+#: lib/baudrate_web/live/search_live.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "by %{author}"
 msgstr "%{author} による投稿"
 
-#: lib/baudrate_web/live/profile_live.html.heex:166
+#: lib/baudrate_web/live/profile_live.html.heex:171
 #, elixir-autogen, elixir-format
 msgid "Add Language"
 msgstr "言語を追加"
 
-#: lib/baudrate_web/live/profile_live.ex:266
+#: lib/baudrate_web/live/profile_live.ex:267
 #, elixir-autogen, elixir-format
 msgid "Failed to update language preferences."
 msgstr "言語設定の更新に失敗しました。"
 
-#: lib/baudrate_web/live/profile_live.ex:261
+#: lib/baudrate_web/live/profile_live.ex:262
 #, elixir-autogen, elixir-format
 msgid "Language preferences updated."
 msgstr "言語設定を更新しました。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:114
+#: lib/baudrate_web/live/profile_live.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Preferred Languages"
 msgstr "優先言語"
 
-#: lib/baudrate_web/live/profile_live.html.heex:117
+#: lib/baudrate_web/live/profile_live.html.heex:122
 #, elixir-autogen, elixir-format
 msgid "Using browser language settings."
 msgstr "ブラウザの言語設定を使用中。"
@@ -763,7 +763,7 @@ msgstr "管理設定"
 msgid "Approval Required"
 msgstr "承認制"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:11
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:13
 #: lib/baudrate_web/live/admin/settings_live.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Open"
@@ -878,24 +878,24 @@ msgstr "コメントを削除しました。"
 msgid "Content"
 msgstr "コンテンツ"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:72
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:78
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:73
 #, elixir-autogen, elixir-format
 msgid "Delete Article"
 msgstr "記事を削除"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:87
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:93
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:74
 #, elixir-autogen, elixir-format
 msgid "Delete Comment"
 msgstr "コメントを削除"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:69
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Delete this article?"
 msgstr "この記事を削除しますか？"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:84
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "Delete this comment?"
 msgstr "このコメントを削除しますか？"
@@ -915,12 +915,12 @@ msgstr "配信キュー"
 msgid "Disable"
 msgstr "無効化"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:134
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "却下"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:25
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "Dismissed"
 msgstr "却下済み"
@@ -1015,7 +1015,7 @@ msgstr "%{domain} に通報を送信しました。"
 msgid "Followers"
 msgstr "フォロワー"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:101
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:107
 #, elixir-autogen, elixir-format
 msgid "Handled by"
 msgstr "対応者"
@@ -1077,7 +1077,7 @@ msgstr "通報先のリモートアクターがありません。"
 msgid "No remote instances discovered yet."
 msgstr "リモートインスタンスはまだ発見されていません。"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:31
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "No reports with status \"%{status}\"."
 msgstr "ステータス「%{status}」の通報はありません。"
@@ -1089,7 +1089,7 @@ msgstr "ステータス「%{status}」の通報はありません。"
 msgid "Pending"
 msgstr "保留中"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:56
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Reason:"
 msgstr "理由："
@@ -1110,47 +1110,47 @@ msgstr "通報を却下しました。"
 msgid "Report resolved."
 msgstr "通報を対処しました。"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:92
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "Reported Actor:"
 msgstr "通報されたアクター："
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:62
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "Reported Article:"
 msgstr "通報された記事："
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:77
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:83
 #, elixir-autogen, elixir-format
 msgid "Reported Comment:"
 msgstr "通報されたコメント："
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:51
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Reported by"
 msgstr "通報者"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:124
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:130
 #, elixir-autogen, elixir-format
 msgid "Resolution note (optional)"
 msgstr "対処メモ（任意）"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:127
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "Resolve"
 msgstr "対処"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:18
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "Resolved"
 msgstr "対処済み"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:113
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Send Flag to %{domain}"
 msgstr "%{domain} に通報を送信"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:110
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:116
 #, elixir-autogen, elixir-format
 msgid "Send a Flag report to %{domain}?"
 msgstr "%{domain} に通報レポートを送信しますか？"
@@ -1197,7 +1197,7 @@ msgstr "ログイン"
 msgid "to participate."
 msgstr "して参加しましょう。"
 
-#: lib/baudrate_web/live/search_live.html.heex:46
+#: lib/baudrate_web/live/search_live.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "1 result"
 msgid_plural "%{count} results"
@@ -1229,7 +1229,7 @@ msgid "Comment posted."
 msgstr "コメントを投稿しました。"
 
 #: lib/baudrate_web/live/article_live.html.heex:173
-#: lib/baudrate_web/live/search_live.html.heex:33
+#: lib/baudrate_web/live/search_live.html.heex:35
 #: lib/baudrate_web/live/user_profile_live.html.heex:19
 #, elixir-autogen, elixir-format
 msgid "Comments"
@@ -1275,7 +1275,7 @@ msgstr "ファイルが大きすぎます（上限 10 MB）"
 msgid "File type not accepted"
 msgstr "対応していないファイル形式です"
 
-#: lib/baudrate_web/live/search_live.html.heex:38
+#: lib/baudrate_web/live/search_live.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "No articles found for \"%{query}\"."
 msgstr "「%{query}」に一致する記事が見つかりません。"
@@ -1305,7 +1305,7 @@ msgstr "コメントを投稿"
 msgid "Reply"
 msgstr "返信"
 
-#: lib/baudrate_web/live/article_edit_live.html.heex:87
+#: lib/baudrate_web/live/article_edit_live.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "Save Changes"
 msgstr "変更を保存"
@@ -1368,7 +1368,7 @@ msgstr "この記事を編集する権限がありません。"
 msgid "Active"
 msgstr "有効"
 
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:10
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:11
 #: lib/baudrate_web/live/admin/users_live.html.heex:42
 #, elixir-autogen, elixir-format
 msgid "All"
@@ -1614,12 +1614,12 @@ msgstr "サブ掲示板がある掲示板は削除できません。"
 msgid "Change role for %{username}"
 msgstr "%{username} の役割を変更"
 
-#: lib/baudrate_web/components/layouts.ex:306
+#: lib/baudrate_web/components/layouts.ex:314
 #, elixir-autogen, elixir-format
 msgid "Dark theme"
 msgstr "ダークテーマ"
 
-#: lib/baudrate_web/components/layouts.ex:297
+#: lib/baudrate_web/components/layouts.ex:305
 #, elixir-autogen, elixir-format
 msgid "Light theme"
 msgstr "ライトテーマ"
@@ -1629,7 +1629,7 @@ msgstr "ライトテーマ"
 msgid "Open navigation menu"
 msgstr "ナビゲーションメニューを開く"
 
-#: lib/baudrate_web/components/layouts.ex:288
+#: lib/baudrate_web/components/layouts.ex:296
 #, elixir-autogen, elixir-format
 msgid "System theme"
 msgstr "システムテーマ"
@@ -1688,12 +1688,12 @@ msgstr "保留中"
 msgid "user"
 msgstr "ユーザー"
 
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:32
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "Action"
 msgstr "操作"
 
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:31
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:33
 #, elixir-autogen, elixir-format
 msgid "Actor"
 msgstr "実行者"
@@ -1708,7 +1708,7 @@ msgstr "登録には招待コードが必要です。"
 msgid "Approve User"
 msgstr "ユーザーを承認"
 
-#: lib/baudrate_web/live/search_live.html.heex:26
+#: lib/baudrate_web/live/search_live.html.heex:27
 #: lib/baudrate_web/live/user_profile_live.html.heex:15
 #, elixir-autogen, elixir-format
 msgid "Articles"
@@ -1739,7 +1739,7 @@ msgstr "作成日時"
 msgid "Created By"
 msgstr "作成者"
 
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:30
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Date"
 msgstr "日付"
@@ -1750,12 +1750,12 @@ msgid "Delete Board"
 msgstr "掲示板を削除"
 
 #: lib/baudrate_web/live/admin/invites_live.html.heex:31
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:44
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "Deleted user"
 msgstr "削除済みユーザー"
 
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:34
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:36
 #, elixir-autogen, elixir-format
 msgid "Details"
 msgstr "詳細"
@@ -1844,7 +1844,7 @@ msgstr "無期限"
 msgid "No invite codes yet."
 msgstr "招待コードはまだありません。"
 
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:23
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:25
 #, elixir-autogen, elixir-format
 msgid "No moderation actions recorded."
 msgstr "モデレーション操作の記録はありません。"
@@ -1884,7 +1884,7 @@ msgstr "無効化済み"
 msgid "Sub-boards"
 msgstr "サブ掲示板"
 
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:33
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "Target"
 msgstr "対象"
@@ -2022,7 +2022,7 @@ msgstr "パスワードのリセットに失敗しました。"
 msgid "Password reset successful! You can now sign in."
 msgstr "パスワードのリセットが完了しました！ログインしてください。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:198
+#: lib/baudrate_web/live/profile_live.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "Preview:"
 msgstr "プレビュー："
@@ -2038,7 +2038,7 @@ msgstr "パスワードリセット"
 msgid "Save Agreement"
 msgstr "規約を保存"
 
-#: lib/baudrate_web/live/profile_live.html.heex:204
+#: lib/baudrate_web/live/profile_live.html.heex:209
 #, elixir-autogen, elixir-format
 msgid "Save Signature"
 msgstr "署名を保存"
@@ -2050,13 +2050,13 @@ msgid "Save these recovery codes now!"
 msgstr "リカバリーコードを今すぐ保存してください！"
 
 #: lib/baudrate_web/live/article_live.html.heex:105
-#: lib/baudrate_web/live/profile_live.html.heex:187
+#: lib/baudrate_web/live/profile_live.html.heex:192
 #: lib/baudrate_web/live/user_profile_live.html.heex:25
 #, elixir-autogen, elixir-format
 msgid "Signature"
 msgstr "署名"
 
-#: lib/baudrate_web/live/profile_live.ex:149
+#: lib/baudrate_web/live/profile_live.ex:150
 #, elixir-autogen, elixir-format
 msgid "Signature updated."
 msgstr "署名を更新しました。"
@@ -2072,7 +2072,7 @@ msgstr "これらのコードは、パスワードを忘れた場合にアカウ
 msgid "Too many attempts. Please try again later."
 msgstr "試行回数が多すぎます。しばらくしてからもう一度お試しください。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:195
+#: lib/baudrate_web/live/profile_live.html.heex:200
 #, elixir-autogen, elixir-format
 msgid "Your signature (Markdown supported, max 500 characters)"
 msgstr "署名（Markdown対応、最大500文字）"
@@ -2196,7 +2196,7 @@ msgstr "ユーザー"
 msgid "View / Post"
 msgstr "閲覧 / 投稿"
 
-#: lib/baudrate_web/live/search_live.html.heex:42
+#: lib/baudrate_web/live/search_live.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "No comments found for \"%{query}\"."
 msgstr "「%{query}」に一致するコメントが見つかりません。"
@@ -2396,8 +2396,8 @@ msgstr "画像"
 msgid "Max %{count} images, %{size} MB each. Images displayed at the end of article."
 msgstr "最大 %{count} 枚、各 %{size} MB まで。画像は記事の末尾に表示されます。"
 
-#: lib/baudrate_web/live/article_edit_live.html.heex:48
-#: lib/baudrate_web/live/article_new_live.html.heex:56
+#: lib/baudrate_web/live/article_edit_live.html.heex:49
+#: lib/baudrate_web/live/article_new_live.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Remove image"
 msgstr "画像を削除"
@@ -2414,8 +2414,8 @@ msgstr "一部の画像のアップロードに失敗しました。"
 msgid "Too many files (max 4)"
 msgstr "ファイル数が多すぎます（上限 4 枚）"
 
-#: lib/baudrate_web/live/article_edit_live.html.heex:71
-#: lib/baudrate_web/live/article_new_live.html.heex:79
+#: lib/baudrate_web/live/article_edit_live.html.heex:72
+#: lib/baudrate_web/live/article_new_live.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "Upload Images"
 msgstr "画像をアップロード"
@@ -2480,12 +2480,54 @@ msgstr "TOTP設定"
 msgid "TOTP Verification"
 msgstr "TOTP認証"
 
-#: lib/baudrate_web/components/layouts.ex:258
+#: lib/baudrate_web/components/layouts.ex:262
 #, elixir-autogen, elixir-format
 msgid "Decrease font size"
 msgstr "文字を小さく"
 
-#: lib/baudrate_web/components/layouts.ex:266
+#: lib/baudrate_web/components/layouts.ex:270
 #, elixir-autogen, elixir-format
 msgid "Increase font size"
 msgstr "文字を大きく"
+
+#: lib/baudrate_web/live/profile_live.html.heex:58
+#, elixir-autogen, elixir-format
+msgid "Avatar preview"
+msgstr "アバタープレビュー"
+
+#: lib/baudrate_web/components/layouts.ex:256
+#, elixir-autogen, elixir-format
+msgid "Font size"
+msgstr "文字サイズ"
+
+#: lib/baudrate_web/components/layouts.ex:287
+#, elixir-autogen, elixir-format
+msgid "Theme"
+msgstr "テーマ"
+
+#: lib/baudrate_web/live/admin/boards_live.html.heex:99
+#, elixir-autogen, elixir-format
+msgid "Close"
+msgstr "閉じる"
+
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Filter by action"
+msgstr "操作で絞り込み"
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:5
+#, elixir-autogen, elixir-format
+msgid "Report status"
+msgstr "通報ステータス"
+
+#: lib/baudrate_web/live/search_live.html.heex:20
+#, elixir-autogen, elixir-format
+msgid "Search results"
+msgstr "検索結果"
+
+#: lib/baudrate_web/live/article_edit_live.html.heex:42
+#: lib/baudrate_web/live/article_live.html.heex:98
+#: lib/baudrate_web/live/article_new_live.html.heex:50
+#, elixir-autogen, elixir-format
+msgid "Uploaded image"
+msgstr "アップロード画像"

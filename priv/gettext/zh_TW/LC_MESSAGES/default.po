@@ -41,7 +41,7 @@ msgid "We can't find the internet"
 msgstr "找不到網路連線"
 
 #: lib/baudrate_web/components/core_components.ex:74
-#: lib/baudrate_web/live/profile_live.html.heex:70
+#: lib/baudrate_web/live/profile_live.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "close"
 msgstr "關閉"
@@ -213,7 +213,7 @@ msgstr "網站名稱"
 #: lib/baudrate_web/live/admin/users_live.html.heex:95
 #: lib/baudrate_web/live/login_live.html.heex:10
 #: lib/baudrate_web/live/password_reset_live.html.heex:10
-#: lib/baudrate_web/live/profile_live.html.heex:76
+#: lib/baudrate_web/live/profile_live.html.heex:81
 #: lib/baudrate_web/live/register_live.html.heex:41
 #: lib/baudrate_web/live/setup_live.html.heex:115
 #, elixir-autogen, elixir-format
@@ -271,7 +271,7 @@ msgstr "登入"
 msgid "Sign Out"
 msgstr "登出"
 
-#: lib/baudrate_web/live/profile_live.html.heex:87
+#: lib/baudrate_web/live/profile_live.html.heex:92
 #: lib/baudrate_web/live/totp_verify_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Two-Factor Authentication"
@@ -358,12 +358,12 @@ msgstr "目前的 TOTP 驗證碼"
 #: lib/baudrate_web/live/admin/boards_live.html.heex:81
 #: lib/baudrate_web/live/admin/federation_live.html.heex:206
 #: lib/baudrate_web/live/admin/settings_live.html.heex:24
-#: lib/baudrate_web/live/profile_live.html.heex:95
+#: lib/baudrate_web/live/profile_live.html.heex:100
 #, elixir-autogen, elixir-format
 msgid "Disabled"
 msgstr "已停用"
 
-#: lib/baudrate_web/live/profile_live.html.heex:98
+#: lib/baudrate_web/live/profile_live.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Enable TOTP"
 msgstr "啟用 TOTP"
@@ -377,7 +377,7 @@ msgstr "啟用雙因素驗證"
 #: lib/baudrate_web/live/admin/federation_live.html.heex:156
 #: lib/baudrate_web/live/admin/federation_live.html.heex:206
 #: lib/baudrate_web/live/admin/settings_live.html.heex:23
-#: lib/baudrate_web/live/profile_live.html.heex:90
+#: lib/baudrate_web/live/profile_live.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Enabled"
 msgstr "已啟用"
@@ -412,7 +412,7 @@ msgstr "憑證無效，請重試。"
 msgid "Lost your device? Use a recovery code"
 msgstr "遺失裝置？使用救援碼"
 
-#: lib/baudrate_web/live/profile_live.html.heex:106
+#: lib/baudrate_web/live/profile_live.html.heex:111
 #, elixir-autogen, elixir-format
 msgid "Member Since"
 msgstr "加入日期"
@@ -448,7 +448,7 @@ msgstr "救援碼"
 msgid "Recovery Codes"
 msgstr "救援碼"
 
-#: lib/baudrate_web/live/profile_live.html.heex:92
+#: lib/baudrate_web/live/profile_live.html.heex:97
 #: lib/baudrate_web/live/totp_reset_live.html.heex:4
 #: lib/baudrate_web/live/totp_reset_live.html.heex:56
 #, elixir-autogen, elixir-format
@@ -456,7 +456,7 @@ msgid "Reset Authenticator"
 msgstr "重設驗證器"
 
 #: lib/baudrate_web/live/admin/users_live.html.heex:96
-#: lib/baudrate_web/live/profile_live.html.heex:81
+#: lib/baudrate_web/live/profile_live.html.heex:86
 #, elixir-autogen, elixir-format
 msgid "Role"
 msgstr "角色"
@@ -486,12 +486,12 @@ msgstr "您將無法再次查看這些救援碼！"
 msgid "Are you sure you want to remove your avatar?"
 msgstr "確定要移除頭像嗎？"
 
-#: lib/baudrate_web/live/profile_live.ex:167
+#: lib/baudrate_web/live/profile_live.ex:168
 #, elixir-autogen, elixir-format
 msgid "Avatar removed."
 msgstr "頭像已移除。"
 
-#: lib/baudrate_web/live/profile_live.ex:198
+#: lib/baudrate_web/live/profile_live.ex:199
 #, elixir-autogen, elixir-format
 msgid "Avatar updated successfully."
 msgstr "頭像已成功更新。"
@@ -499,7 +499,7 @@ msgstr "頭像已成功更新。"
 #: lib/baudrate_web/live/admin/boards_live.html.heex:85
 #: lib/baudrate_web/live/admin/users_live.html.heex:198
 #: lib/baudrate_web/live/article_live.ex:439
-#: lib/baudrate_web/live/profile_live.html.heex:57
+#: lib/baudrate_web/live/profile_live.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr "取消"
@@ -509,23 +509,23 @@ msgstr "取消"
 msgid "Change Avatar"
 msgstr "變更頭像"
 
-#: lib/baudrate_web/live/profile_live.html.heex:50
+#: lib/baudrate_web/live/profile_live.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "Crop Avatar"
 msgstr "裁剪頭像"
 
-#: lib/baudrate_web/live/profile_live.ex:216
+#: lib/baudrate_web/live/profile_live.ex:217
 #, elixir-autogen, elixir-format
 msgid "Failed to process avatar image."
 msgstr "處理頭像圖片失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:231
+#: lib/baudrate_web/live/profile_live.ex:232
 #, elixir-autogen, elixir-format
 msgid "Image file is too large."
 msgstr "圖片檔案過大。"
 
-#: lib/baudrate_web/live/profile_live.ex:207
-#: lib/baudrate_web/live/profile_live.ex:232
+#: lib/baudrate_web/live/profile_live.ex:208
+#: lib/baudrate_web/live/profile_live.ex:233
 #, elixir-autogen, elixir-format
 msgid "Invalid image file."
 msgstr "無效的圖片檔案。"
@@ -537,23 +537,23 @@ msgstr "移除頭像"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:86
 #: lib/baudrate_web/live/admin/settings_live.html.heex:69
-#: lib/baudrate_web/live/profile_live.html.heex:64
+#: lib/baudrate_web/live/profile_live.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "Save"
 msgstr "儲存"
 
-#: lib/baudrate_web/live/profile_live.ex:78
-#: lib/baudrate_web/live/profile_live.ex:173
+#: lib/baudrate_web/live/profile_live.ex:79
+#: lib/baudrate_web/live/profile_live.ex:174
 #, elixir-autogen, elixir-format
 msgid "Too many avatar changes. Please try again later."
 msgstr "頭像變更次數過多，請稍後再試。"
 
-#: lib/baudrate_web/live/profile_live.ex:233
+#: lib/baudrate_web/live/profile_live.ex:234
 #, elixir-autogen, elixir-format
 msgid "Too many files."
 msgstr "檔案數量過多。"
 
-#: lib/baudrate_web/live/profile_live.ex:234
+#: lib/baudrate_web/live/profile_live.ex:235
 #, elixir-autogen, elixir-format
 msgid "Upload error."
 msgstr "上傳錯誤。"
@@ -588,8 +588,8 @@ msgstr "返回版面"
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:147
 #: lib/baudrate_web/live/admin/federation_live.html.heex:190
-#: lib/baudrate_web/live/article_edit_live.html.heex:78
-#: lib/baudrate_web/live/article_new_live.html.heex:86
+#: lib/baudrate_web/live/article_edit_live.html.heex:79
+#: lib/baudrate_web/live/article_new_live.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Board"
 msgstr "版面"
@@ -602,7 +602,7 @@ msgstr "內文"
 
 #: lib/baudrate_web/live/article_new_live.ex:53
 #: lib/baudrate_web/live/article_new_live.html.heex:19
-#: lib/baudrate_web/live/article_new_live.html.heex:102
+#: lib/baudrate_web/live/article_new_live.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Create Article"
 msgstr "建立文章"
@@ -713,33 +713,33 @@ msgstr "您的帳號正在等待管理員審核。"
 msgid "Your account is pending approval."
 msgstr "您的帳號尚待審核。"
 
-#: lib/baudrate_web/live/search_live.html.heex:57
-#: lib/baudrate_web/live/search_live.html.heex:78
+#: lib/baudrate_web/live/search_live.html.heex:59
+#: lib/baudrate_web/live/search_live.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "by %{author}"
 msgstr "由 %{author} 發表"
 
-#: lib/baudrate_web/live/profile_live.html.heex:166
+#: lib/baudrate_web/live/profile_live.html.heex:171
 #, elixir-autogen, elixir-format
 msgid "Add Language"
 msgstr "新增語言"
 
-#: lib/baudrate_web/live/profile_live.ex:266
+#: lib/baudrate_web/live/profile_live.ex:267
 #, elixir-autogen, elixir-format
 msgid "Failed to update language preferences."
 msgstr "更新語言偏好失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:261
+#: lib/baudrate_web/live/profile_live.ex:262
 #, elixir-autogen, elixir-format
 msgid "Language preferences updated."
 msgstr "語言偏好已更新。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:114
+#: lib/baudrate_web/live/profile_live.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Preferred Languages"
 msgstr "偏好語言"
 
-#: lib/baudrate_web/live/profile_live.html.heex:117
+#: lib/baudrate_web/live/profile_live.html.heex:122
 #, elixir-autogen, elixir-format
 msgid "Using browser language settings."
 msgstr "使用瀏覽器語言設定。"
@@ -763,7 +763,7 @@ msgstr "管理設定"
 msgid "Approval Required"
 msgstr "需要審核"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:11
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:13
 #: lib/baudrate_web/live/admin/settings_live.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Open"
@@ -878,24 +878,24 @@ msgstr "留言已刪除。"
 msgid "Content"
 msgstr "內容"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:72
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:78
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:73
 #, elixir-autogen, elixir-format
 msgid "Delete Article"
 msgstr "刪除文章"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:87
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:93
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:74
 #, elixir-autogen, elixir-format
 msgid "Delete Comment"
 msgstr "刪除留言"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:69
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Delete this article?"
 msgstr "確定要刪除此文章？"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:84
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "Delete this comment?"
 msgstr "確定要刪除此留言？"
@@ -915,12 +915,12 @@ msgstr "遞送佇列"
 msgid "Disable"
 msgstr "停用"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:134
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "駁回"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:25
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "Dismissed"
 msgstr "已駁回"
@@ -1015,7 +1015,7 @@ msgstr "已向 %{domain} 發送檢舉。"
 msgid "Followers"
 msgstr "追蹤者"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:101
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:107
 #, elixir-autogen, elixir-format
 msgid "Handled by"
 msgstr "由以下人員處理"
@@ -1077,7 +1077,7 @@ msgstr "沒有可發送檢舉的遠端參與者。"
 msgid "No remote instances discovered yet."
 msgstr "尚未發現任何遠端實例。"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:31
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "No reports with status \"%{status}\"."
 msgstr "沒有狀態為「%{status}」的檢舉。"
@@ -1089,7 +1089,7 @@ msgstr "沒有狀態為「%{status}」的檢舉。"
 msgid "Pending"
 msgstr "待處理"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:56
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Reason:"
 msgstr "原因："
@@ -1110,47 +1110,47 @@ msgstr "檢舉已駁回。"
 msgid "Report resolved."
 msgstr "檢舉已處理。"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:92
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "Reported Actor:"
 msgstr "被檢舉的參與者："
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:62
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "Reported Article:"
 msgstr "被檢舉的文章："
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:77
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:83
 #, elixir-autogen, elixir-format
 msgid "Reported Comment:"
 msgstr "被檢舉的留言："
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:51
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Reported by"
 msgstr "檢舉人"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:124
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:130
 #, elixir-autogen, elixir-format
 msgid "Resolution note (optional)"
 msgstr "處理備註（選填）"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:127
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "Resolve"
 msgstr "處理"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:18
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "Resolved"
 msgstr "已處理"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:113
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Send Flag to %{domain}"
 msgstr "向 %{domain} 發送檢舉"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:110
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:116
 #, elixir-autogen, elixir-format
 msgid "Send a Flag report to %{domain}?"
 msgstr "向 %{domain} 發送檢舉報告？"
@@ -1197,7 +1197,7 @@ msgstr "登入"
 msgid "to participate."
 msgstr "來參與。"
 
-#: lib/baudrate_web/live/search_live.html.heex:46
+#: lib/baudrate_web/live/search_live.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "1 result"
 msgid_plural "%{count} results"
@@ -1229,7 +1229,7 @@ msgid "Comment posted."
 msgstr "留言已發表。"
 
 #: lib/baudrate_web/live/article_live.html.heex:173
-#: lib/baudrate_web/live/search_live.html.heex:33
+#: lib/baudrate_web/live/search_live.html.heex:35
 #: lib/baudrate_web/live/user_profile_live.html.heex:19
 #, elixir-autogen, elixir-format
 msgid "Comments"
@@ -1275,7 +1275,7 @@ msgstr "檔案過大（上限 10 MB）"
 msgid "File type not accepted"
 msgstr "不支援的檔案類型"
 
-#: lib/baudrate_web/live/search_live.html.heex:38
+#: lib/baudrate_web/live/search_live.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "No articles found for \"%{query}\"."
 msgstr "找不到「%{query}」的相關文章。"
@@ -1305,7 +1305,7 @@ msgstr "發表留言"
 msgid "Reply"
 msgstr "回覆"
 
-#: lib/baudrate_web/live/article_edit_live.html.heex:87
+#: lib/baudrate_web/live/article_edit_live.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "Save Changes"
 msgstr "儲存變更"
@@ -1368,7 +1368,7 @@ msgstr "您沒有權限編輯此文章。"
 msgid "Active"
 msgstr "啟用中"
 
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:10
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:11
 #: lib/baudrate_web/live/admin/users_live.html.heex:42
 #, elixir-autogen, elixir-format
 msgid "All"
@@ -1614,12 +1614,12 @@ msgstr "無法刪除含有子版面的版面。"
 msgid "Change role for %{username}"
 msgstr "更改 %{username} 的角色"
 
-#: lib/baudrate_web/components/layouts.ex:306
+#: lib/baudrate_web/components/layouts.ex:314
 #, elixir-autogen, elixir-format
 msgid "Dark theme"
 msgstr "深色主題"
 
-#: lib/baudrate_web/components/layouts.ex:297
+#: lib/baudrate_web/components/layouts.ex:305
 #, elixir-autogen, elixir-format
 msgid "Light theme"
 msgstr "淺色主題"
@@ -1629,7 +1629,7 @@ msgstr "淺色主題"
 msgid "Open navigation menu"
 msgstr "開啟導覽選單"
 
-#: lib/baudrate_web/components/layouts.ex:288
+#: lib/baudrate_web/components/layouts.ex:296
 #, elixir-autogen, elixir-format
 msgid "System theme"
 msgstr "系統主題"
@@ -1688,12 +1688,12 @@ msgstr "待處理"
 msgid "user"
 msgstr "使用者"
 
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:32
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "Action"
 msgstr "操作"
 
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:31
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:33
 #, elixir-autogen, elixir-format
 msgid "Actor"
 msgstr "執行者"
@@ -1708,7 +1708,7 @@ msgstr "註冊需要邀請碼。"
 msgid "Approve User"
 msgstr "核准使用者"
 
-#: lib/baudrate_web/live/search_live.html.heex:26
+#: lib/baudrate_web/live/search_live.html.heex:27
 #: lib/baudrate_web/live/user_profile_live.html.heex:15
 #, elixir-autogen, elixir-format
 msgid "Articles"
@@ -1739,7 +1739,7 @@ msgstr "建立時間"
 msgid "Created By"
 msgstr "建立者"
 
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:30
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Date"
 msgstr "日期"
@@ -1750,12 +1750,12 @@ msgid "Delete Board"
 msgstr "刪除板塊"
 
 #: lib/baudrate_web/live/admin/invites_live.html.heex:31
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:44
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "Deleted user"
 msgstr "已刪除的使用者"
 
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:34
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:36
 #, elixir-autogen, elixir-format
 msgid "Details"
 msgstr "詳細資訊"
@@ -1844,7 +1844,7 @@ msgstr "永不"
 msgid "No invite codes yet."
 msgstr "尚無邀請碼。"
 
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:23
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:25
 #, elixir-autogen, elixir-format
 msgid "No moderation actions recorded."
 msgstr "尚無管理操作記錄。"
@@ -1884,7 +1884,7 @@ msgstr "已撤銷"
 msgid "Sub-boards"
 msgstr "子板塊"
 
-#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:33
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "Target"
 msgstr "目標"
@@ -2022,7 +2022,7 @@ msgstr "密碼重設失敗。"
 msgid "Password reset successful! You can now sign in."
 msgstr "密碼重設成功！您現在可以登入。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:198
+#: lib/baudrate_web/live/profile_live.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "Preview:"
 msgstr "預覽："
@@ -2038,7 +2038,7 @@ msgstr "重設密碼"
 msgid "Save Agreement"
 msgstr "儲存條款"
 
-#: lib/baudrate_web/live/profile_live.html.heex:204
+#: lib/baudrate_web/live/profile_live.html.heex:209
 #, elixir-autogen, elixir-format
 msgid "Save Signature"
 msgstr "儲存簽名檔"
@@ -2050,13 +2050,13 @@ msgid "Save these recovery codes now!"
 msgstr "請立即儲存這些救援碼！"
 
 #: lib/baudrate_web/live/article_live.html.heex:105
-#: lib/baudrate_web/live/profile_live.html.heex:187
+#: lib/baudrate_web/live/profile_live.html.heex:192
 #: lib/baudrate_web/live/user_profile_live.html.heex:25
 #, elixir-autogen, elixir-format
 msgid "Signature"
 msgstr "簽名檔"
 
-#: lib/baudrate_web/live/profile_live.ex:149
+#: lib/baudrate_web/live/profile_live.ex:150
 #, elixir-autogen, elixir-format
 msgid "Signature updated."
 msgstr "簽名檔已更新。"
@@ -2072,7 +2072,7 @@ msgstr "這些救援碼是您忘記密碼時恢復帳號的唯一方式。每個
 msgid "Too many attempts. Please try again later."
 msgstr "嘗試次數過多，請稍後再試。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:195
+#: lib/baudrate_web/live/profile_live.html.heex:200
 #, elixir-autogen, elixir-format
 msgid "Your signature (Markdown supported, max 500 characters)"
 msgstr "您的簽名檔（支援 Markdown，最多 500 字元）"
@@ -2196,7 +2196,7 @@ msgstr "使用者"
 msgid "View / Post"
 msgstr "檢視 / 發文"
 
-#: lib/baudrate_web/live/search_live.html.heex:42
+#: lib/baudrate_web/live/search_live.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "No comments found for \"%{query}\"."
 msgstr "找不到「%{query}」的相關評論。"
@@ -2396,8 +2396,8 @@ msgstr "圖片"
 msgid "Max %{count} images, %{size} MB each. Images displayed at the end of article."
 msgstr "最多 %{count} 張圖片，每張上限 %{size} MB。圖片將顯示在文章末尾。"
 
-#: lib/baudrate_web/live/article_edit_live.html.heex:48
-#: lib/baudrate_web/live/article_new_live.html.heex:56
+#: lib/baudrate_web/live/article_edit_live.html.heex:49
+#: lib/baudrate_web/live/article_new_live.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Remove image"
 msgstr "移除圖片"
@@ -2414,8 +2414,8 @@ msgstr "部分圖片上傳失敗。"
 msgid "Too many files (max 4)"
 msgstr "檔案數量過多（上限 4 張）"
 
-#: lib/baudrate_web/live/article_edit_live.html.heex:71
-#: lib/baudrate_web/live/article_new_live.html.heex:79
+#: lib/baudrate_web/live/article_edit_live.html.heex:72
+#: lib/baudrate_web/live/article_new_live.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "Upload Images"
 msgstr "上傳圖片"
@@ -2480,12 +2480,54 @@ msgstr "TOTP 設定"
 msgid "TOTP Verification"
 msgstr "TOTP 驗證"
 
-#: lib/baudrate_web/components/layouts.ex:258
+#: lib/baudrate_web/components/layouts.ex:262
 #, elixir-autogen, elixir-format
 msgid "Decrease font size"
 msgstr "縮小字體"
 
-#: lib/baudrate_web/components/layouts.ex:266
+#: lib/baudrate_web/components/layouts.ex:270
 #, elixir-autogen, elixir-format
 msgid "Increase font size"
 msgstr "放大字體"
+
+#: lib/baudrate_web/live/profile_live.html.heex:58
+#, elixir-autogen, elixir-format
+msgid "Avatar preview"
+msgstr "頭像預覽"
+
+#: lib/baudrate_web/components/layouts.ex:256
+#, elixir-autogen, elixir-format
+msgid "Font size"
+msgstr "字體大小"
+
+#: lib/baudrate_web/components/layouts.ex:287
+#, elixir-autogen, elixir-format
+msgid "Theme"
+msgstr "佈景主題"
+
+#: lib/baudrate_web/live/admin/boards_live.html.heex:99
+#, elixir-autogen, elixir-format
+msgid "Close"
+msgstr "關閉"
+
+#: lib/baudrate_web/live/admin/moderation_log_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Filter by action"
+msgstr "依操作篩選"
+
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:5
+#, elixir-autogen, elixir-format
+msgid "Report status"
+msgstr "檢舉狀態"
+
+#: lib/baudrate_web/live/search_live.html.heex:20
+#, elixir-autogen, elixir-format
+msgid "Search results"
+msgstr "搜尋結果"
+
+#: lib/baudrate_web/live/article_edit_live.html.heex:42
+#: lib/baudrate_web/live/article_live.html.heex:98
+#: lib/baudrate_web/live/article_new_live.html.heex:50
+#, elixir-autogen, elixir-format
+msgid "Uploaded image"
+msgstr "已上傳的圖片"

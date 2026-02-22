@@ -96,7 +96,7 @@
         <h2 class="card-title">
           {gettext("Board Moderators")} &mdash; {@managing_moderators_board.name}
         </h2>
-        <button phx-click="close_moderators" class="btn btn-sm btn-ghost">
+        <button phx-click="close_moderators" class="btn btn-sm btn-ghost" aria-label={gettext("Close")}>
           <.icon name="hero-x-mark" class="size-4" />
         </button>
       </div>

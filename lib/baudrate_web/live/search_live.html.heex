@@ -17,10 +17,11 @@
     </div>
   </form>
 
-  <div :if={@query != ""} role="tablist" class="tabs tabs-bordered mb-4">
+  <div :if={@query != ""} role="tablist" aria-label={gettext("Search results")} class="tabs tabs-bordered mb-4">
     <.link
       patch={~p"/search?#{%{q: @query, tab: "articles"}}"}
       role="tab"
+      aria-selected={to_string(@tab == "articles")}
       class={"tab #{if @tab == "articles", do: "tab-active"}"}
     >
       {gettext("Articles")}
@@ -28,6 +29,7 @@
     <.link
       patch={~p"/search?#{%{q: @query, tab: "comments"}}"}
       role="tab"
+      aria-selected={to_string(@tab == "comments")}
       class={"tab #{if @tab == "comments", do: "tab-active"}"}
     >
       {gettext("Comments")}

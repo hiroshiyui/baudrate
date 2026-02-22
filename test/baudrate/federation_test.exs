@@ -134,6 +134,8 @@ defmodule Baudrate.FederationTest do
       assert actor["name"] == "Test Forum"
       assert actor["id"] =~ "/ap/site"
       assert actor["publicKey"]["publicKeyPem"] =~ "BEGIN PUBLIC KEY"
+      assert actor["followers"] =~ "/ap/site/followers"
+      assert actor["endpoints"]["sharedInbox"] =~ "/ap/inbox"
     end
   end
 

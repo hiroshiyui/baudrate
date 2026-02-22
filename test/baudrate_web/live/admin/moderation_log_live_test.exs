@@ -19,6 +19,9 @@ defmodule BaudrateWeb.Admin.ModerationLogLiveTest do
 
     {:ok, _lv, html} = live(conn, "/admin/moderation-log")
     assert html =~ "Moderation Log"
+    assert html =~ ~s(role="toolbar")
+    assert html =~ ~s(aria-label="Filter by action")
+    assert html =~ ~s(aria-pressed="true")
   end
 
   test "non-admin is redirected away", %{conn: conn} do

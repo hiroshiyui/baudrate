@@ -59,6 +59,9 @@ defmodule BaudrateWeb.SearchLiveTest do
     {:ok, _lv, html} = live(conn, "/search?q=test")
     assert html =~ "tab-active"
     assert html =~ "Articles"
+    assert html =~ ~s(role="tablist")
+    assert html =~ ~s(aria-label="Search results")
+    assert html =~ ~s(aria-selected="true")
   end
 
   test "switching to comments tab", %{conn: conn} do
