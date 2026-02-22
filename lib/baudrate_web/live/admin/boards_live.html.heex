@@ -192,7 +192,7 @@
             <button phx-click="edit" phx-value-id={board.id} class="btn btn-sm btn-ghost">
               {gettext("Edit")}
             </button>
-            <button phx-click="manage_moderators" phx-value-id={board.id} class="btn btn-sm btn-ghost">
+            <button phx-click="manage_moderators" phx-value-id={board.id} class="btn btn-sm btn-ghost" aria-expanded={to_string(@managing_moderators_board && @managing_moderators_board.id == board.id)}>
               {gettext("Moderators")}
             </button>
             <button

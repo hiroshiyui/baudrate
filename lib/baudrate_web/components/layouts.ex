@@ -28,7 +28,7 @@ defmodule BaudrateWeb.Layouts do
       <%!-- Mobile hamburger (shown < lg) --%>
       <div :if={@current_user} class="flex-none lg:hidden">
         <div class="dropdown">
-          <div tabindex="0" role="button" aria-label={gettext("Open navigation menu")} class="btn btn-ghost">
+          <div tabindex="0" role="button" aria-label={gettext("Open navigation menu")} aria-haspopup="true" class="btn btn-ghost">
             <.icon name="hero-bars-3" class="size-5" />
           </div>
           <ul
@@ -169,7 +169,7 @@ defmodule BaudrateWeb.Layouts do
       </div>
     </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
+    <main id="main-content" class="px-4 py-20 sm:px-6 lg:px-8">
       <div class={["mx-auto space-y-4", if(assigns[:wide_layout], do: "max-w-5xl", else: "max-w-2xl")]}>
         {@inner_content}
       </div>

@@ -69,7 +69,7 @@
           <div :for={entry <- @uploads.article_images.entries} class="flex items-center gap-2 text-sm">
             <span class="truncate max-w-48">{entry.client_name}</span>
             <progress value={entry.progress} max="100" class="progress progress-primary w-24">{entry.progress}%</progress>
-            <button type="button" phx-click="cancel_image_upload" phx-value-ref={entry.ref} class="btn btn-sm btn-ghost text-error">&times;</button>
+            <button type="button" phx-click="cancel_image_upload" phx-value-ref={entry.ref} class="btn btn-sm btn-ghost text-error" aria-label={gettext("Cancel upload")}>&times;</button>
           </div>
 
           <div :for={err <- upload_errors(@uploads.article_images)} class="text-sm text-error">

@@ -391,6 +391,7 @@ defmodule BaudrateWeb.ArticleLive do
             phx-value-id={@comment.id}
             data-confirm={gettext("Are you sure you want to delete this comment?")}
             class="btn btn-sm btn-ghost text-error ml-auto"
+            aria-label={gettext("Delete comment")}
           >
             <.icon name="hero-trash" class="size-3" />
           </button>
@@ -416,6 +417,7 @@ defmodule BaudrateWeb.ArticleLive do
             phx-click="reply_to"
             phx-value-id={@comment.id}
             class="text-sm text-base-content/50 hover:text-base-content cursor-pointer"
+            aria-expanded="false"
           >
             {gettext("Reply")}
           </button>

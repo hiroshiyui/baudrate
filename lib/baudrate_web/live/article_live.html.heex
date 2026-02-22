@@ -139,6 +139,7 @@
           phx-value-id={attachment.id}
           data-confirm={gettext("Delete this attachment?")}
           class="btn btn-sm btn-ghost text-error"
+          aria-label={gettext("Delete attachment")}
         >
           <.icon name="hero-x-mark" class="size-3" />
         </button>
@@ -153,7 +154,7 @@
         <div :for={entry <- @uploads.attachments.entries} class="flex items-center gap-2 text-sm">
           <span>{entry.client_name}</span>
           <progress value={entry.progress} max="100" class="progress progress-primary w-24">{entry.progress}%</progress>
-          <button type="button" phx-click="cancel-upload" phx-value-ref={entry.ref} class="btn btn-sm btn-ghost text-error">&times;</button>
+          <button type="button" phx-click="cancel-upload" phx-value-ref={entry.ref} class="btn btn-sm btn-ghost text-error" aria-label={gettext("Cancel upload")}>&times;</button>
         </div>
 
         <div :for={err <- upload_errors(@uploads.attachments)} class="text-sm text-error">
@@ -203,7 +204,7 @@
     </div>
 
     <%!-- Comment tree --%>
-    <div class="space-y-4">
+    <div class="space-y-4" aria-live="polite" aria-relevant="additions removals">
       <%= for comment <- @comment_roots do %>
         <.comment_node
           comment={comment}

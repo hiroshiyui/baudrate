@@ -11,7 +11,7 @@ msgstr ""
 "Language: zh_TW\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: lib/baudrate_web/components/core_components.ex:374
+#: lib/baudrate_web/components/core_components.ex:390
 #: lib/baudrate_web/live/admin/boards_live.html.heex:160
 #: lib/baudrate_web/live/admin/federation_live.html.heex:38
 #: lib/baudrate_web/live/admin/federation_live.html.heex:94
@@ -498,7 +498,7 @@ msgstr "頭像已成功更新。"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:85
 #: lib/baudrate_web/live/admin/users_live.html.heex:198
-#: lib/baudrate_web/live/article_live.ex:439
+#: lib/baudrate_web/live/article_live.ex:441
 #: lib/baudrate_web/live/profile_live.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Cancel"
@@ -1228,7 +1228,7 @@ msgstr "返回文章"
 msgid "Comment posted."
 msgstr "留言已發表。"
 
-#: lib/baudrate_web/live/article_live.html.heex:173
+#: lib/baudrate_web/live/article_live.html.heex:174
 #: lib/baudrate_web/live/search_live.html.heex:35
 #: lib/baudrate_web/live/user_profile_live.html.heex:19
 #, elixir-autogen, elixir-format
@@ -1263,13 +1263,13 @@ msgstr "編輯文章"
 msgid "Failed to delete attachment."
 msgstr "刪除附件失敗。"
 
-#: lib/baudrate_web/live/article_live.ex:470
+#: lib/baudrate_web/live/article_live.ex:472
 #, elixir-autogen, elixir-format
 msgid "File too large (max 10 MB)"
 msgstr "檔案過大（上限 10 MB）"
 
 #: lib/baudrate_web/live/article_edit_live.ex:145
-#: lib/baudrate_web/live/article_live.ex:472
+#: lib/baudrate_web/live/article_live.ex:474
 #: lib/baudrate_web/live/article_new_live.ex:175
 #, elixir-autogen, elixir-format
 msgid "File type not accepted"
@@ -1280,7 +1280,7 @@ msgstr "不支援的檔案類型"
 msgid "No articles found for \"%{query}\"."
 msgstr "找不到「%{query}」的相關文章。"
 
-#: lib/baudrate_web/live/article_live.html.heex:202
+#: lib/baudrate_web/live/article_live.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "No comments yet."
 msgstr "目前沒有留言。"
@@ -1294,13 +1294,13 @@ msgstr "目前沒有留言。"
 msgid "Not authorized."
 msgstr "未經授權。"
 
-#: lib/baudrate_web/live/article_live.html.heex:196
+#: lib/baudrate_web/live/article_live.html.heex:197
 #, elixir-autogen, elixir-format
 msgid "Post Comment"
 msgstr "發表留言"
 
-#: lib/baudrate_web/live/article_live.ex:420
-#: lib/baudrate_web/live/article_live.ex:436
+#: lib/baudrate_web/live/article_live.ex:422
+#: lib/baudrate_web/live/article_live.ex:438
 #, elixir-autogen, elixir-format
 msgid "Reply"
 msgstr "回覆"
@@ -1329,29 +1329,29 @@ msgstr "搜尋..."
 msgid "Some files failed to upload."
 msgstr "部分檔案上傳失敗。"
 
-#: lib/baudrate_web/live/article_live.ex:471
+#: lib/baudrate_web/live/article_live.ex:473
 #, elixir-autogen, elixir-format
 msgid "Too many files (max 5)"
 msgstr "檔案數量過多（上限 5 個）"
 
-#: lib/baudrate_web/live/article_live.html.heex:164
+#: lib/baudrate_web/live/article_live.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "Upload"
 msgstr "上傳"
 
 #: lib/baudrate_web/live/article_edit_live.ex:146
-#: lib/baudrate_web/live/article_live.ex:473
+#: lib/baudrate_web/live/article_live.ex:475
 #: lib/baudrate_web/live/article_new_live.ex:176
 #, elixir-autogen, elixir-format
 msgid "Upload error"
 msgstr "上傳錯誤"
 
-#: lib/baudrate_web/live/article_live.html.heex:191
+#: lib/baudrate_web/live/article_live.html.heex:192
 #, elixir-autogen, elixir-format
 msgid "Write a comment..."
 msgstr "撰寫留言..."
 
-#: lib/baudrate_web/live/article_live.ex:430
+#: lib/baudrate_web/live/article_live.ex:432
 #, elixir-autogen, elixir-format
 msgid "Write a reply..."
 msgstr "撰寫回覆..."
@@ -2170,7 +2170,7 @@ msgstr "確定要移除此版主？"
 msgid "Select a user..."
 msgstr "選擇使用者..."
 
-#: lib/baudrate_web/live/article_live.html.heex:182
+#: lib/baudrate_web/live/article_live.html.heex:183
 #, elixir-autogen, elixir-format
 msgid "This thread is locked. No new comments can be posted."
 msgstr "此討論串已鎖定，無法發表新回覆。"
@@ -2531,3 +2531,25 @@ msgstr "搜尋結果"
 #, elixir-autogen, elixir-format
 msgid "Uploaded image"
 msgstr "已上傳的圖片"
+
+#: lib/baudrate_web/live/article_edit_live.html.heex:64
+#: lib/baudrate_web/live/article_live.html.heex:157
+#: lib/baudrate_web/live/article_new_live.html.heex:72
+#, elixir-autogen, elixir-format
+msgid "Cancel upload"
+msgstr ""
+
+#: lib/baudrate_web/live/article_live.html.heex:142
+#, elixir-autogen, elixir-format
+msgid "Delete attachment"
+msgstr ""
+
+#: lib/baudrate_web/live/article_live.ex:394
+#, elixir-autogen, elixir-format
+msgid "Delete comment"
+msgstr ""
+
+#: lib/baudrate_web/components/layouts/root.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "Skip to main content"
+msgstr ""

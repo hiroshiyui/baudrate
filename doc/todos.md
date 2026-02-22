@@ -36,11 +36,11 @@ Audit date: 2026-02-23
 
 ## Medium: Accessibility (WAI-ARIA)
 
-- [ ] **Add skip-to-content link** in app layout for keyboard navigation
-- [ ] **Add `aria-live` regions** for dynamic LiveView updates (flash messages, real-time comment additions)
-- [ ] **Add `aria-describedby` on form error inputs** — link error messages to their fields
-- [ ] **Add `aria-expanded` on collapsible sections** (comment reply forms, admin panels)
-- [ ] **Audit all icon-only buttons for `aria-label`** — some `phx-click` buttons lack accessible names
+- [x] **Add skip-to-content link** in app layout for keyboard navigation
+- [x] **Add `aria-live` regions** for dynamic LiveView updates (flash messages, real-time comment additions)
+- [x] **Add `aria-describedby` on form error inputs** — link error messages to their fields
+- [x] **Add `aria-expanded` on collapsible sections** (comment reply forms, admin panels)
+- [x] **Audit all icon-only buttons for `aria-label`** — some `phx-click` buttons lack accessible names
 
 ## Low: Deployment & Infrastructure
 

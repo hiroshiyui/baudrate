@@ -11,7 +11,7 @@ msgstr ""
 "Language: en\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: lib/baudrate_web/components/core_components.ex:374
+#: lib/baudrate_web/components/core_components.ex:390
 #: lib/baudrate_web/live/admin/boards_live.html.heex:160
 #: lib/baudrate_web/live/admin/federation_live.html.heex:38
 #: lib/baudrate_web/live/admin/federation_live.html.heex:94
@@ -498,7 +498,7 @@ msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:85
 #: lib/baudrate_web/live/admin/users_live.html.heex:198
-#: lib/baudrate_web/live/article_live.ex:439
+#: lib/baudrate_web/live/article_live.ex:441
 #: lib/baudrate_web/live/profile_live.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Cancel"
@@ -1229,7 +1229,7 @@ msgstr ""
 msgid "Comment posted."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:173
+#: lib/baudrate_web/live/article_live.html.heex:174
 #: lib/baudrate_web/live/search_live.html.heex:35
 #: lib/baudrate_web/live/user_profile_live.html.heex:19
 #, elixir-autogen, elixir-format
@@ -1264,13 +1264,13 @@ msgstr ""
 msgid "Failed to delete attachment."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:470
+#: lib/baudrate_web/live/article_live.ex:472
 #, elixir-autogen, elixir-format
 msgid "File too large (max 10 MB)"
 msgstr ""
 
 #: lib/baudrate_web/live/article_edit_live.ex:145
-#: lib/baudrate_web/live/article_live.ex:472
+#: lib/baudrate_web/live/article_live.ex:474
 #: lib/baudrate_web/live/article_new_live.ex:175
 #, elixir-autogen, elixir-format
 msgid "File type not accepted"
@@ -1281,7 +1281,7 @@ msgstr ""
 msgid "No articles found for \"%{query}\"."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:202
+#: lib/baudrate_web/live/article_live.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "No comments yet."
 msgstr ""
@@ -1295,13 +1295,13 @@ msgstr ""
 msgid "Not authorized."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:196
+#: lib/baudrate_web/live/article_live.html.heex:197
 #, elixir-autogen, elixir-format
 msgid "Post Comment"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:420
-#: lib/baudrate_web/live/article_live.ex:436
+#: lib/baudrate_web/live/article_live.ex:422
+#: lib/baudrate_web/live/article_live.ex:438
 #, elixir-autogen, elixir-format
 msgid "Reply"
 msgstr ""
@@ -1330,29 +1330,29 @@ msgstr ""
 msgid "Some files failed to upload."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:471
+#: lib/baudrate_web/live/article_live.ex:473
 #, elixir-autogen, elixir-format
 msgid "Too many files (max 5)"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:164
+#: lib/baudrate_web/live/article_live.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "Upload"
 msgstr ""
 
 #: lib/baudrate_web/live/article_edit_live.ex:146
-#: lib/baudrate_web/live/article_live.ex:473
+#: lib/baudrate_web/live/article_live.ex:475
 #: lib/baudrate_web/live/article_new_live.ex:176
 #, elixir-autogen, elixir-format
 msgid "Upload error"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:191
+#: lib/baudrate_web/live/article_live.html.heex:192
 #, elixir-autogen, elixir-format
 msgid "Write a comment..."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:430
+#: lib/baudrate_web/live/article_live.ex:432
 #, elixir-autogen, elixir-format
 msgid "Write a reply..."
 msgstr ""
@@ -2171,7 +2171,7 @@ msgstr ""
 msgid "Select a user..."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:182
+#: lib/baudrate_web/live/article_live.html.heex:183
 #, elixir-autogen, elixir-format
 msgid "This thread is locked. No new comments can be posted."
 msgstr ""
@@ -2531,4 +2531,26 @@ msgstr ""
 #: lib/baudrate_web/live/article_new_live.html.heex:50
 #, elixir-autogen, elixir-format
 msgid "Uploaded image"
+msgstr ""
+
+#: lib/baudrate_web/live/article_edit_live.html.heex:64
+#: lib/baudrate_web/live/article_live.html.heex:157
+#: lib/baudrate_web/live/article_new_live.html.heex:72
+#, elixir-autogen, elixir-format
+msgid "Cancel upload"
+msgstr ""
+
+#: lib/baudrate_web/live/article_live.html.heex:142
+#, elixir-autogen, elixir-format
+msgid "Delete attachment"
+msgstr ""
+
+#: lib/baudrate_web/live/article_live.ex:394
+#, elixir-autogen, elixir-format
+msgid "Delete comment"
+msgstr ""
+
+#: lib/baudrate_web/components/layouts/root.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "Skip to main content"
 msgstr ""
