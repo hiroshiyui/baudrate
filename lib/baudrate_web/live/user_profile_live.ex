@@ -36,7 +36,8 @@ defmodule BaudrateWeb.UserProfileLive do
            profile_user: user,
            recent_articles: recent_articles,
            article_count: article_count,
-           comment_count: comment_count
+           comment_count: comment_count,
+           page_title: user.username
          )}
     end
   end

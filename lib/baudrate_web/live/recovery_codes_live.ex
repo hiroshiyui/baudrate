@@ -17,7 +17,7 @@ defmodule BaudrateWeb.RecoveryCodesLive do
     if is_nil(codes) || codes == [] do
       {:ok, redirect(socket, to: "/")}
     else
-      {:ok, assign(socket, :codes, codes)}
+      {:ok, assign(socket, codes: codes, page_title: gettext("Recovery Codes"))}
     end
   end
 end

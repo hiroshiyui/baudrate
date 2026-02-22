@@ -70,6 +70,7 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:replying_to, nil)
         |> assign(:attachments, attachments)
         |> assign(:article_images, article_images)
+        |> assign(:page_title, article.title)
 
       if connected?(socket), do: ContentPubSub.subscribe_article(article.id)
 

@@ -30,6 +30,7 @@ defmodule BaudrateWeb.TotpResetLive do
       |> assign(:attempts, 0)
       |> assign(:form, to_form(%{"password" => "", "code" => ""}, as: :totp_reset))
       |> assign(:trigger_action, false)
+      |> assign(:page_title, gettext("TOTP Reset"))
 
     {:ok, socket}
   end

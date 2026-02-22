@@ -50,6 +50,7 @@ defmodule BaudrateWeb.ArticleNewLive do
        |> assign(:selected_board_ids, selected_board_ids)
        |> assign(:board_slug, params["slug"])
        |> assign(:uploaded_images, [])
+       |> assign(:page_title, gettext("Create Article"))
        |> allow_upload(:article_images,
          accept: ~w(.jpg .jpeg .png .webp .gif),
          max_entries: 4,

@@ -23,7 +23,8 @@ defmodule BaudrateWeb.SearchLive do
      |> assign(:comments, [])
      |> assign(:total, 0)
      |> assign(:page, 1)
-     |> assign(:total_pages, 1)}
+     |> assign(:total_pages, 1)
+     |> assign(:page_title, gettext("Search"))}
   end
 
   @impl true

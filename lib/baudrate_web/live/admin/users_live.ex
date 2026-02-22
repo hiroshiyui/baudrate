@@ -33,7 +33,8 @@ defmodule BaudrateWeb.Admin.UsersLive do
        ban_target: nil,
        ban_target_username: nil,
        ban_reason: "",
-       wide_layout: true
+       wide_layout: true,
+       page_title: gettext("Admin Users")
      )}
   end
 

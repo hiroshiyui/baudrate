@@ -19,7 +19,8 @@ defmodule BaudrateWeb.Admin.InvitesLive do
     {:ok,
      assign(socket,
        codes: codes,
-       wide_layout: true
+       wide_layout: true,
+       page_title: gettext("Admin Invites")
      )}
   end
 

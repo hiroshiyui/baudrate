@@ -23,6 +23,7 @@ defmodule BaudrateWeb.Admin.SettingsLive do
       |> assign(form: to_form(changeset, as: :settings))
       |> assign(eua: eua)
       |> assign(eua_form: to_form(%{"eua" => eua}, as: :eua_settings))
+      |> assign(page_title: gettext("Admin Settings"))
 
     {:ok, socket}
   end

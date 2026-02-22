@@ -26,6 +26,7 @@ defmodule BaudrateWeb.ArticleEditLive do
        |> assign(:article, article)
        |> assign(:form, to_form(changeset, as: :article))
        |> assign(:article_images, existing_images)
+       |> assign(:page_title, gettext("Edit Article"))
        |> allow_upload(:article_images,
          accept: ~w(.jpg .jpeg .png .webp .gif),
          max_entries: max(max_new, 0),

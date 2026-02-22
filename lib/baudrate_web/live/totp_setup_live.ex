@@ -37,6 +37,7 @@ defmodule BaudrateWeb.TotpSetupLive do
         |> assign(:policy, policy)
         |> assign(:form, to_form(%{"code" => ""}, as: :totp))
         |> assign(:trigger_action, false)
+        |> assign(:page_title, gettext("TOTP Setup"))
 
       {:ok, socket}
     end

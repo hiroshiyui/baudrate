@@ -22,6 +22,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
       {:ok,
        socket
        |> assign(status_filter: "open")
+       |> assign(page_title: gettext("Admin Moderation"))
        |> load_reports()}
     end
   end

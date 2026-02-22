@@ -16,6 +16,7 @@ defmodule BaudrateWeb.TotpVerifyLive do
       socket
       |> assign(:form, to_form(%{"code" => ""}, as: :totp))
       |> assign(:trigger_action, false)
+      |> assign(:page_title, gettext("TOTP Verification"))
 
     {:ok, socket}
   end

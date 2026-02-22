@@ -37,6 +37,7 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:available_locales, Locale.available_locales())
       |> assign(:signature_form, to_form(signature_changeset, as: :signature))
       |> assign(:signature_preview, Baudrate.Content.Markdown.to_html(user.signature))
+      |> assign(:page_title, gettext("Profile"))
       |> allow_upload(:avatar,
         accept: ~w(.jpg .jpeg .png .webp),
         max_entries: 1,

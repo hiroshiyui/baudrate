@@ -18,6 +18,7 @@ defmodule BaudrateWeb.RecoveryCodeVerifyLive do
       socket
       |> assign(:form, to_form(%{"code" => ""}, as: :recovery))
       |> assign(:trigger_action, false)
+      |> assign(:page_title, gettext("Recovery Code"))
 
     {:ok, socket}
   end

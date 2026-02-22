@@ -31,7 +31,8 @@ defmodule BaudrateWeb.Admin.BoardsLive do
        wide_layout: true,
        managing_moderators_board: nil,
        board_moderators: [],
-       active_users: []
+       active_users: [],
+       page_title: gettext("Admin Boards")
      )}
   end
 

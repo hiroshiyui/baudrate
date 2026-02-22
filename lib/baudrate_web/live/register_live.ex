@@ -46,6 +46,7 @@ defmodule BaudrateWeb.RegisterLive do
       |> assign(:peer_ip, peer_ip)
       |> assign(:recovery_codes, nil)
       |> assign(:eua, eua)
+      |> assign(:page_title, gettext("Register"))
 
     {:ok, socket}
   end

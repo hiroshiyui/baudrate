@@ -16,7 +16,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, load_dashboard(socket)}
+    {:ok, assign(load_dashboard(socket), :page_title, gettext("Admin Federation"))}
   end
 
   @impl true

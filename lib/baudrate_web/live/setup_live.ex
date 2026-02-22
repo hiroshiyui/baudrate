@@ -34,6 +34,7 @@ defmodule BaudrateWeb.SetupLive do
       |> assign(:admin_form, to_form(admin_changeset, as: :admin))
       |> assign(:password_strength, password_strength(""))
       |> assign(:recovery_codes, nil)
+      |> assign(:page_title, gettext("Setup"))
 
     {:ok, socket, layout: {BaudrateWeb.Layouts, :setup}}
   end

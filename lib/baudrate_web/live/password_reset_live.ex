@@ -30,6 +30,7 @@ defmodule BaudrateWeb.PasswordResetLive do
       |> assign(:form, to_form(%{}, as: :reset))
       |> assign(:password_strength, password_strength(""))
       |> assign(:peer_ip, peer_ip)
+      |> assign(:page_title, gettext("Password Reset"))
 
     {:ok, socket}
   end

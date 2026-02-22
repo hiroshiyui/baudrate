@@ -36,6 +36,7 @@ defmodule BaudrateWeb.LoginLive do
       |> assign(:trigger_action, false)
       |> assign(:token, nil)
       |> assign(:peer_ip, peer_ip)
+      |> assign(:page_title, gettext("Sign In"))
 
     {:ok, socket}
   end

@@ -19,7 +19,8 @@ defmodule BaudrateWeb.Admin.ModerationLogLive do
      assign(socket,
        wide_layout: true,
        action_filter: nil,
-       valid_actions: Log.valid_actions()
+       valid_actions: Log.valid_actions(),
+       page_title: gettext("Admin Moderation Log")
      )}
   end
 

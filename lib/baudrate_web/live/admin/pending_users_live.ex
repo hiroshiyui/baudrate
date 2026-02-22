@@ -14,7 +14,7 @@ defmodule BaudrateWeb.Admin.PendingUsersLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, :pending_users, Auth.list_pending_users())}
+    {:ok, assign(socket, pending_users: Auth.list_pending_users(), page_title: gettext("Admin Pending Users"))}
   end
 
   @impl true
