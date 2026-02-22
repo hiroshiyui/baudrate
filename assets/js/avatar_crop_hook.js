@@ -10,7 +10,7 @@ const AvatarCropHook = {
 
     // Watch for file input additions to initialize crop preview
     const observer = new MutationObserver(() => {
-      const fileInput = document.getElementById("avatar-file-input")
+      const fileInput = document.querySelector("input[data-phx-hook='Phoenix.LiveFileUpload']")
       if (fileInput && !fileInput._avatarBound) {
         fileInput._avatarBound = true
         fileInput.addEventListener("change", (e) => {
@@ -28,7 +28,7 @@ const AvatarCropHook = {
     this._observer = observer
 
     // Also check if input already exists
-    const fileInput = document.getElementById("avatar-file-input")
+    const fileInput = document.querySelector("input[data-phx-hook='Phoenix.LiveFileUpload']")
     if (fileInput && !fileInput._avatarBound) {
       fileInput._avatarBound = true
       fileInput.addEventListener("change", (e) => {
@@ -40,6 +40,12 @@ const AvatarCropHook = {
         }
       })
     }
+
+    // Listen for open-picker custom event to trigger native file input click
+    this.el.addEventListener("avatar:open-picker", () => {
+      const input = document.querySelector("input[data-phx-hook='Phoenix.LiveFileUpload']")
+      if (input) input.click()
+    })
 
     // Listen for save-crop custom event from phx-click JS.dispatch
     this.el.addEventListener("avatar:save-crop", () => this.saveCrop())

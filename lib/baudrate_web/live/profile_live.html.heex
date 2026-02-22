@@ -10,7 +10,7 @@
           <button
             type="button"
             class="btn btn-sm btn-primary"
-            phx-click={JS.dispatch("click", to: "#avatar-file-input")}
+            phx-click={JS.dispatch("avatar:open-picker", to: "#avatar-crop-hook")}
           >
             {gettext("Change Avatar")}
           </button>
@@ -31,7 +31,7 @@
 
       <%!-- Hidden file input for avatar upload --%>
       <form :if={@is_active} id="avatar-upload-form" phx-change="validate_avatar" class="hidden">
-        <.live_file_input upload={@uploads.avatar} id="avatar-file-input" />
+        <.live_file_input upload={@uploads.avatar} />
       </form>
 
       <%!-- Upload errors --%>

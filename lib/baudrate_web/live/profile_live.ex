@@ -41,7 +41,8 @@ defmodule BaudrateWeb.ProfileLive do
       |> allow_upload(:avatar,
         accept: ~w(.jpg .jpeg .png .webp),
         max_entries: 1,
-        max_file_size: 5_000_000
+        max_file_size: 5_000_000,
+        auto_upload: true
       )
 
     {:ok, socket}
