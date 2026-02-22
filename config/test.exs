@@ -33,3 +33,7 @@ config :phoenix_live_view,
 # Sort query params output of verified routes for robust url comparisons
 config :phoenix,
   sort_verified_routes_query_params: true
+
+# Run federation delivery synchronously in tests to avoid sandbox ownership
+# errors from fire-and-forget Tasks that outlive the test process.
+config :baudrate, federation_async: false

@@ -1144,7 +1144,12 @@ defmodule Baudrate.Content do
   # --- Federation Hooks ---
 
   defp schedule_federation_task(fun) do
-    Task.Supervisor.start_child(Baudrate.Federation.TaskSupervisor, fun)
+    if Application.get_env(:baudrate, :federation_async, true) do
+      Task.Supervisor.start_child(Baudrate.Federation.TaskSupervisor, fun)
+    else
+      fun.()
+      :ok
+    end
   end
 
   # --- SysOp Board ---
