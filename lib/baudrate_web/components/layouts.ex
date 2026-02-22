@@ -109,6 +109,7 @@ defmodule BaudrateWeb.Layouts do
 
       <%!-- Right side: theme toggle + auth links / user dropdown --%>
       <div class="flex-none flex items-center gap-2">
+        <.font_size_controls />
         <.theme_toggle />
 
         <%!-- Guest auth links (shown when not logged in) --%>
@@ -241,6 +242,34 @@ defmodule BaudrateWeb.Layouts do
   defp translate_role("user"), do: gettext("user")
   defp translate_role("guest"), do: gettext("guest")
   defp translate_role(other), do: other
+
+  @doc """
+  Renders font size zoom in/out controls.
+
+  Dispatches `phx:font-size-decrease` and `phx:font-size-increase` events
+  handled by JS in `app.js`, which persists the zoom level in localStorage.
+  """
+  def font_size_controls(assigns) do
+    ~H"""
+    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
+      <button
+        class="flex p-2 cursor-pointer"
+        phx-click={JS.dispatch("phx:font-size-decrease")}
+        aria-label={gettext("Decrease font size")}
+      >
+        <.icon name="hero-minus-micro" class="size-4 opacity-75 hover:opacity-100" />
+      </button>
+
+      <button
+        class="flex p-2 cursor-pointer"
+        phx-click={JS.dispatch("phx:font-size-increase")}
+        aria-label={gettext("Increase font size")}
+      >
+        <.icon name="hero-plus-micro" class="size-4 opacity-75 hover:opacity-100" />
+      </button>
+    </div>
+    """
+  end
 
   @doc """
   Provides dark vs light theme toggle based on themes defined in app.css.

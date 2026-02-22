@@ -48,6 +48,28 @@ setTheme(localStorage.getItem("phx:theme") || "system")
 window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme))
 window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"))
 
+// Font size zoom: store zoom percentage in localStorage, apply to <html>
+const FONT_SIZE_MIN = 75
+const FONT_SIZE_MAX = 150
+const FONT_SIZE_STEP = 25
+const FONT_SIZE_KEY = "phx:font-size"
+
+const setFontSize = (size) => {
+  size = Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, Number(size) || 100))
+  localStorage.setItem(FONT_SIZE_KEY, String(size))
+  document.documentElement.style.fontSize = size + "%"
+}
+setFontSize(localStorage.getItem(FONT_SIZE_KEY) || 100)
+window.addEventListener("phx:font-size-increase", () => {
+  setFontSize((Number(localStorage.getItem(FONT_SIZE_KEY)) || 100) + FONT_SIZE_STEP)
+})
+window.addEventListener("phx:font-size-decrease", () => {
+  setFontSize((Number(localStorage.getItem(FONT_SIZE_KEY)) || 100) - FONT_SIZE_STEP)
+})
+window.addEventListener("storage", (e) => {
+  if (e.key === FONT_SIZE_KEY) setFontSize(e.newValue || 100)
+})
+
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))

@@ -24,18 +24,18 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:205
-#: lib/baudrate_web/components/layouts.ex:217
+#: lib/baudrate_web/components/layouts.ex:206
+#: lib/baudrate_web/components/layouts.ex:218
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:212
+#: lib/baudrate_web/components/layouts.ex:213
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:200
+#: lib/baudrate_web/components/layouts.ex:201
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr ""
@@ -256,7 +256,7 @@ msgstr ""
 msgid "Set Up Two-Factor Authentication"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:117
+#: lib/baudrate_web/components/layouts.ex:118
 #: lib/baudrate_web/live/login_live.ex:39
 #: lib/baudrate_web/live/login_live.html.heex:2
 #: lib/baudrate_web/live/login_live.html.heex:39
@@ -266,7 +266,7 @@ msgid "Sign In"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:84
-#: lib/baudrate_web/components/layouts.ex:164
+#: lib/baudrate_web/components/layouts.ex:165
 #, elixir-autogen, elixir-format
 msgid "Sign Out"
 msgstr ""
@@ -424,7 +424,7 @@ msgid "No articles yet."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:81
-#: lib/baudrate_web/components/layouts.ex:161
+#: lib/baudrate_web/components/layouts.ex:162
 #: lib/baudrate_web/live/profile_live.ex:40
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -639,7 +639,7 @@ msgid "No pending users."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:55
-#: lib/baudrate_web/components/layouts.ex:139
+#: lib/baudrate_web/components/layouts.ex:140
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Pending Users"
@@ -745,7 +745,7 @@ msgid "Using browser language settings."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:49
-#: lib/baudrate_web/components/layouts.ex:133
+#: lib/baudrate_web/components/layouts.ex:134
 #: lib/baudrate_web/live/admin/boards_live.html.heex:47
 #: lib/baudrate_web/live/admin/boards_live.html.heex:58
 #, elixir-autogen, elixir-format
@@ -781,7 +781,7 @@ msgid "Saving..."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:52
-#: lib/baudrate_web/components/layouts.ex:136
+#: lib/baudrate_web/components/layouts.ex:137
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr ""
@@ -980,7 +980,7 @@ msgid "Failed to resolve report."
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:58
-#: lib/baudrate_web/components/layouts.ex:142
+#: lib/baudrate_web/components/layouts.ex:143
 #: lib/baudrate_web/live/admin/boards_live.html.heex:80
 #: lib/baudrate_web/live/admin/boards_live.html.heex:159
 #: lib/baudrate_web/live/admin/federation_live.html.heex:148
@@ -1052,7 +1052,7 @@ msgid "Last Seen"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:61
-#: lib/baudrate_web/components/layouts.ex:145
+#: lib/baudrate_web/components/layouts.ex:146
 #, elixir-autogen, elixir-format
 msgid "Moderation"
 msgstr ""
@@ -1094,7 +1094,7 @@ msgstr ""
 msgid "Reason:"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:118
+#: lib/baudrate_web/components/layouts.ex:119
 #: lib/baudrate_web/live/register_live.ex:49
 #, elixir-autogen, elixir-format
 msgid "Register"
@@ -1313,7 +1313,7 @@ msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:45
 #: lib/baudrate_web/components/layouts.ex:105
-#: lib/baudrate_web/components/layouts.ex:116
+#: lib/baudrate_web/components/layouts.ex:117
 #: lib/baudrate_web/live/search_live.ex:27
 #: lib/baudrate_web/live/search_live.html.heex:2
 #, elixir-autogen, elixir-format
@@ -1583,13 +1583,13 @@ msgid "Filter by status"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:64
-#: lib/baudrate_web/components/layouts.ex:148
+#: lib/baudrate_web/components/layouts.ex:149
 #, elixir-autogen, elixir-format
 msgid "Manage Boards"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:67
-#: lib/baudrate_web/components/layouts.ex:151
+#: lib/baudrate_web/components/layouts.ex:152
 #, elixir-autogen, elixir-format
 msgid "Manage Users"
 msgstr ""
@@ -1615,12 +1615,12 @@ msgstr ""
 msgid "Change role for %{username}"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:277
+#: lib/baudrate_web/components/layouts.ex:306
 #, elixir-autogen, elixir-format
 msgid "Dark theme"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:268
+#: lib/baudrate_web/components/layouts.ex:297
 #, elixir-autogen, elixir-format
 msgid "Light theme"
 msgstr ""
@@ -1630,7 +1630,7 @@ msgstr ""
 msgid "Open navigation menu"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:259
+#: lib/baudrate_web/components/layouts.ex:288
 #, elixir-autogen, elixir-format
 msgid "System theme"
 msgstr ""
@@ -1651,7 +1651,7 @@ msgstr ""
 msgid "active"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:239
+#: lib/baudrate_web/components/layouts.ex:240
 #: lib/baudrate_web/live/admin/users_live.ex:234
 #: lib/baudrate_web/live/user_profile_live.ex:45
 #, elixir-autogen, elixir-format
@@ -1663,14 +1663,14 @@ msgstr ""
 msgid "banned"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:242
+#: lib/baudrate_web/components/layouts.ex:243
 #: lib/baudrate_web/live/admin/users_live.ex:237
 #: lib/baudrate_web/live/user_profile_live.ex:48
 #, elixir-autogen, elixir-format
 msgid "guest"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:240
+#: lib/baudrate_web/components/layouts.ex:241
 #: lib/baudrate_web/live/admin/users_live.ex:235
 #: lib/baudrate_web/live/user_profile_live.ex:46
 #, elixir-autogen, elixir-format
@@ -1682,7 +1682,7 @@ msgstr ""
 msgid "pending"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:241
+#: lib/baudrate_web/components/layouts.ex:242
 #: lib/baudrate_web/live/admin/users_live.ex:236
 #: lib/baudrate_web/live/user_profile_live.ex:47
 #, elixir-autogen, elixir-format
@@ -1802,7 +1802,7 @@ msgid "Invite Code"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:73
-#: lib/baudrate_web/components/layouts.ex:157
+#: lib/baudrate_web/components/layouts.ex:158
 #: lib/baudrate_web/live/admin/invites_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Invite Codes"
@@ -1829,7 +1829,7 @@ msgid "Member since %{date}"
 msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:70
-#: lib/baudrate_web/components/layouts.ex:154
+#: lib/baudrate_web/components/layouts.ex:155
 #: lib/baudrate_web/live/admin/moderation_log_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Moderation Log"
@@ -2479,4 +2479,14 @@ msgstr ""
 #: lib/baudrate_web/live/totp_verify_live.ex:19
 #, elixir-autogen, elixir-format
 msgid "TOTP Verification"
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex:258
+#, elixir-autogen, elixir-format
+msgid "Decrease font size"
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex:266
+#, elixir-autogen, elixir-format
+msgid "Increase font size"
 msgstr ""
