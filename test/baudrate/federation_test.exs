@@ -158,7 +158,7 @@ defmodule Baudrate.FederationTest do
   end
 
   describe "user_outbox/1" do
-    test "returns OrderedCollection with Create activities" do
+    test "returns root OrderedCollection without page param" do
       user = setup_user_with_role("user")
       board = setup_board("uo-test")
       _article = setup_article(user, board)
@@ -167,30 +167,41 @@ defmodule Baudrate.FederationTest do
 
       assert outbox["type"] == "OrderedCollection"
       assert outbox["totalItems"] == 1
+      assert outbox["first"] =~ "page=1"
+      refute outbox["orderedItems"]
+    end
+
+    test "returns OrderedCollectionPage with Create activities" do
+      user = setup_user_with_role("user")
+      board = setup_board("uo-test2")
+      _article = setup_article(user, board)
+
+      outbox = Federation.user_outbox(user, %{"page" => "1"})
+
+      assert outbox["type"] == "OrderedCollectionPage"
       [item] = outbox["orderedItems"]
       assert item["type"] == "Create"
       assert item["object"]["type"] == "Article"
     end
 
-    test "returns empty collection for user with no articles" do
+    test "returns empty root collection for user with no articles" do
       user = setup_user_with_role("user")
       outbox = Federation.user_outbox(user)
 
       assert outbox["totalItems"] == 0
-      assert outbox["orderedItems"] == []
+      assert outbox["first"] =~ "page=1"
     end
   end
 
   describe "board_outbox/1" do
-    test "returns OrderedCollection with Announce activities" do
+    test "returns OrderedCollectionPage with Announce activities" do
       user = setup_user_with_role("user")
       board = setup_board("bo-test")
       _article = setup_article(user, board)
 
-      outbox = Federation.board_outbox(board)
+      outbox = Federation.board_outbox(board, %{"page" => "1"})
 
-      assert outbox["type"] == "OrderedCollection"
-      assert outbox["totalItems"] == 1
+      assert outbox["type"] == "OrderedCollectionPage"
       [item] = outbox["orderedItems"]
       assert item["type"] == "Announce"
     end

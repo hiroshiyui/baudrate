@@ -96,6 +96,95 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
     end
   end
 
+  # --- Content Negotiation ---
+
+  describe "content negotiation" do
+    test "application/json Accept returns JSON on user actor endpoint", %{conn: conn} do
+      user = setup_user("user")
+
+      conn = conn |> json_conn() |> get("/ap/users/#{user.username}")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "Person"
+      assert body["preferredUsername"] == user.username
+    end
+
+    test "application/json Accept returns JSON on board actor endpoint", %{conn: conn} do
+      board = setup_board()
+
+      conn = conn |> json_conn() |> get("/ap/boards/#{board.slug}")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "Group"
+    end
+
+    test "application/json Accept returns JSON on site actor endpoint", %{conn: conn} do
+      conn = conn |> json_conn() |> get("/ap/site")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "Organization"
+    end
+
+    test "application/json Accept returns JSON on article endpoint", %{conn: conn} do
+      user = setup_user("user")
+      board = setup_board()
+      article = setup_article(user, board)
+
+      conn = conn |> json_conn() |> get("/ap/articles/#{article.slug}")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "Article"
+    end
+  end
+
+  # --- CORS ---
+
+  describe "CORS headers" do
+    test "GET responses include CORS headers", %{conn: conn} do
+      conn = conn |> json_conn() |> get("/ap/site")
+
+      assert get_resp_header(conn, "access-control-allow-origin") == ["*"]
+      assert get_resp_header(conn, "access-control-allow-methods") == ["GET, HEAD, OPTIONS"]
+    end
+
+    test "OPTIONS preflight returns 204", %{conn: conn} do
+      conn = conn |> options("/ap/site")
+
+      assert conn.status == 204
+      assert get_resp_header(conn, "access-control-allow-origin") == ["*"]
+    end
+  end
+
+  # --- Vary Header ---
+
+  describe "Vary: Accept header" do
+    test "content-negotiated endpoints include Vary: Accept", %{conn: conn} do
+      user = setup_user("user")
+
+      conn = conn |> ap_conn() |> get("/ap/users/#{user.username}")
+
+      assert "Accept" in get_resp_header(conn, "vary")
+    end
+
+    test "board actor includes Vary: Accept", %{conn: conn} do
+      board = setup_board()
+
+      conn = conn |> ap_conn() |> get("/ap/boards/#{board.slug}")
+
+      assert "Accept" in get_resp_header(conn, "vary")
+    end
+
+    test "article includes Vary: Accept", %{conn: conn} do
+      user = setup_user("user")
+      board = setup_board()
+      article = setup_article(user, board)
+
+      conn = conn |> ap_conn() |> get("/ap/articles/#{article.slug}")
+
+      assert "Accept" in get_resp_header(conn, "vary")
+    end
+  end
+
   # --- Actor Endpoints ---
 
   describe "GET /ap/users/:username" do
@@ -108,6 +197,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       assert body["type"] == "Person"
       assert body["preferredUsername"] == user.username
       assert body["publicKey"]["publicKeyPem"] =~ "BEGIN PUBLIC KEY"
+      assert body["published"]
     end
 
     test "returns Person JSON-LD for ld+json accept header", %{conn: conn} do
@@ -194,10 +284,50 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
     end
   end
 
-  # --- Outbox Endpoints ---
+  # --- Boards Index ---
+
+  describe "GET /ap/boards" do
+    test "returns OrderedCollection of public boards", %{conn: conn} do
+      board = setup_board()
+
+      conn = conn |> json_conn() |> get("/ap/boards")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "OrderedCollection"
+      assert body["totalItems"] >= 1
+      assert is_list(body["orderedItems"])
+
+      items = body["orderedItems"]
+      board_item = Enum.find(items, &(&1["name"] == board.name))
+      assert board_item
+      assert board_item["type"] == "Group"
+      assert board_item["summary"] == board.description
+    end
+
+    test "excludes private boards", %{conn: conn} do
+      _public_board = setup_board()
+
+      {:ok, _private_board} =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Private Board",
+          slug: "private-#{System.unique_integer([:positive])}",
+          min_role_to_view: "user"
+        })
+        |> Repo.insert()
+
+      conn = conn |> json_conn() |> get("/ap/boards")
+      body = json_response(conn, 200)
+
+      names = Enum.map(body["orderedItems"], & &1["name"])
+      refute "Private Board" in names
+    end
+  end
+
+  # --- Outbox Endpoints (Paginated) ---
 
   describe "GET /ap/users/:username/outbox" do
-    test "returns OrderedCollection", %{conn: conn} do
+    test "returns root OrderedCollection with totalItems and first link", %{conn: conn} do
       user = setup_user("user")
 
       conn = conn |> json_conn() |> get("/ap/users/#{user.username}/outbox")
@@ -205,18 +335,23 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       assert body["type"] == "OrderedCollection"
       assert is_integer(body["totalItems"])
-      assert is_list(body["orderedItems"])
+      assert body["first"] =~ "page=1"
+      refute body["orderedItems"]
     end
 
-    test "includes articles as Create activities", %{conn: conn} do
+    test "returns OrderedCollectionPage with items when page param given", %{conn: conn} do
       user = setup_user("user")
       board = setup_board()
       _article = setup_article(user, board)
 
-      conn = conn |> json_conn() |> get("/ap/users/#{user.username}/outbox")
+      conn = conn |> json_conn() |> get("/ap/users/#{user.username}/outbox?page=1")
       body = json_response(conn, 200)
 
-      assert body["totalItems"] == 1
+      assert body["type"] == "OrderedCollectionPage"
+      assert body["partOf"] =~ "/outbox"
+      assert is_list(body["orderedItems"])
+      assert length(body["orderedItems"]) == 1
+
       [item] = body["orderedItems"]
       assert item["type"] == "Create"
       assert item["object"]["type"] == "Article"
@@ -229,7 +364,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
   end
 
   describe "GET /ap/boards/:slug/outbox" do
-    test "returns OrderedCollection with Announce activities", %{conn: conn} do
+    test "returns root OrderedCollection without page param", %{conn: conn} do
       user = setup_user("user")
       board = setup_board()
       _article = setup_article(user, board)
@@ -239,6 +374,19 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       assert body["type"] == "OrderedCollection"
       assert body["totalItems"] == 1
+      assert body["first"] =~ "page=1"
+    end
+
+    test "returns OrderedCollectionPage with Announce activities", %{conn: conn} do
+      user = setup_user("user")
+      board = setup_board()
+      _article = setup_article(user, board)
+
+      conn = conn |> json_conn() |> get("/ap/boards/#{board.slug}/outbox?page=1")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "OrderedCollectionPage"
+      assert length(body["orderedItems"]) == 1
       [item] = body["orderedItems"]
       assert item["type"] == "Announce"
     end
@@ -249,10 +397,10 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
     end
   end
 
-  # --- Followers Collection Endpoints ---
+  # --- Followers Collection Endpoints (Paginated) ---
 
   describe "GET /ap/users/:username/followers" do
-    test "returns OrderedCollection", %{conn: conn} do
+    test "returns root OrderedCollection with totalItems", %{conn: conn} do
       user = setup_user("user")
 
       conn = conn |> json_conn() |> get("/ap/users/#{user.username}/followers")
@@ -260,7 +408,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       assert body["type"] == "OrderedCollection"
       assert body["totalItems"] == 0
-      assert body["orderedItems"] == []
+      assert body["first"] =~ "page=1"
     end
 
     test "returns 404 for non-existent user", %{conn: conn} do
@@ -270,7 +418,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
   end
 
   describe "GET /ap/boards/:slug/followers" do
-    test "returns OrderedCollection for public board", %{conn: conn} do
+    test "returns root OrderedCollection for public board", %{conn: conn} do
       board = setup_board()
 
       conn = conn |> json_conn() |> get("/ap/boards/#{board.slug}/followers")
@@ -303,7 +451,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
   # --- Article Endpoint ---
 
   describe "GET /ap/articles/:slug" do
-    test "returns Article JSON-LD with HTML content", %{conn: conn} do
+    test "returns Article JSON-LD with HTML content and enriched fields", %{conn: conn} do
       user = setup_user("user")
       board = setup_board()
       article = setup_article(user, board)
@@ -317,6 +465,11 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       assert body["content"] =~ "<p>"
       assert body["source"]["mediaType"] == "text/markdown"
       assert body["attributedTo"] =~ user.username
+      assert body["replies"] =~ "/replies"
+      assert is_boolean(body["baudrate:pinned"])
+      assert is_boolean(body["baudrate:locked"])
+      assert is_integer(body["baudrate:commentCount"])
+      assert is_integer(body["baudrate:likeCount"])
     end
 
     test "redirects to article HTML page for browser accept header", %{conn: conn} do
@@ -340,6 +493,89 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
     test "returns 404 for invalid slug format", %{conn: conn} do
       conn = conn |> ap_conn() |> get("/ap/articles/INVALID SLUG")
       assert json_response(conn, 404)["error"] == "Not Found"
+    end
+  end
+
+  # --- Article Replies ---
+
+  describe "GET /ap/articles/:slug/replies" do
+    test "returns OrderedCollection of Note objects", %{conn: conn} do
+      user = setup_user("user")
+      board = setup_board()
+      article = setup_article(user, board)
+
+      # Create a comment on the article
+      {:ok, _comment} =
+        Baudrate.Content.create_comment(%{
+          "body" => "A test comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      conn = conn |> json_conn() |> get("/ap/articles/#{article.slug}/replies")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "OrderedCollection"
+      assert body["totalItems"] == 1
+      [reply] = body["orderedItems"]
+      assert reply["type"] == "Note"
+      assert reply["content"] =~ "test comment"
+      assert reply["attributedTo"] =~ user.username
+      assert reply["inReplyTo"] =~ article.slug
+    end
+
+    test "returns empty collection when no comments", %{conn: conn} do
+      user = setup_user("user")
+      board = setup_board()
+      article = setup_article(user, board)
+
+      conn = conn |> json_conn() |> get("/ap/articles/#{article.slug}/replies")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "OrderedCollection"
+      assert body["totalItems"] == 0
+      assert body["orderedItems"] == []
+    end
+
+    test "returns 404 for non-existent article", %{conn: conn} do
+      conn = conn |> json_conn() |> get("/ap/articles/nonexistent-slug/replies")
+      assert json_response(conn, 404)["error"] == "Not Found"
+    end
+  end
+
+  # --- Search ---
+
+  describe "GET /ap/search" do
+    test "returns results for matching query", %{conn: conn} do
+      user = setup_user("user")
+      board = setup_board()
+      _article = setup_article(user, board)
+
+      conn = conn |> json_conn() |> get("/ap/search?q=Test+Article&page=1")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "OrderedCollectionPage"
+      assert is_integer(body["totalItems"])
+      assert is_list(body["orderedItems"])
+    end
+
+    test "returns root collection without page param", %{conn: conn} do
+      conn = conn |> json_conn() |> get("/ap/search?q=test")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "OrderedCollection"
+      assert is_integer(body["totalItems"])
+      assert body["first"] =~ "page=1"
+    end
+
+    test "returns 400 when q parameter is missing", %{conn: conn} do
+      conn = conn |> json_conn() |> get("/ap/search")
+      assert json_response(conn, 400)["error"] == "Missing q parameter"
+    end
+
+    test "returns 400 when q parameter is empty", %{conn: conn} do
+      conn = conn |> json_conn() |> get("/ap/search?q=")
+      assert json_response(conn, 400)["error"] == "Missing q parameter"
     end
   end
 
@@ -374,6 +610,20 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       Repo.insert!(%Setting{key: "ap_federation_enabled", value: "false"})
 
       conn = conn |> json_conn() |> get("/ap/users/#{user.username}/outbox")
+      assert conn.status == 404
+    end
+
+    test "AP boards index returns 404 when federation is disabled", %{conn: conn} do
+      Repo.insert!(%Setting{key: "ap_federation_enabled", value: "false"})
+
+      conn = conn |> json_conn() |> get("/ap/boards")
+      assert conn.status == 404
+    end
+
+    test "AP search returns 404 when federation is disabled", %{conn: conn} do
+      Repo.insert!(%Setting{key: "ap_federation_enabled", value: "false"})
+
+      conn = conn |> json_conn() |> get("/ap/search?q=test")
       assert conn.status == 404
     end
 

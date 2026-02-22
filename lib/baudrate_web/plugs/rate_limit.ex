@@ -53,10 +53,17 @@ defmodule BaudrateWeb.Plugs.RateLimit do
       {:deny, _limit} ->
         Logger.warning("rate_limit.denied: action=#{action} ip=#{ip}")
 
-        conn
-        |> put_resp_content_type("text/html")
-        |> send_resp(429, "Too many requests. Please try again later.")
-        |> halt()
+        if action == :activity_pub do
+          conn
+          |> put_resp_content_type("application/json")
+          |> send_resp(429, Jason.encode!(%{error: "Too Many Requests"}))
+          |> halt()
+        else
+          conn
+          |> put_resp_content_type("text/html")
+          |> send_resp(429, "Too many requests. Please try again later.")
+          |> halt()
+        end
 
       {:error, reason} ->
         Logger.error("rate_limit.error: action=#{action} reason=#{inspect(reason)}")

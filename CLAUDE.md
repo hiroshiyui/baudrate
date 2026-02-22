@@ -57,11 +57,13 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 
 - Ensure this document is updated to reflect any changes in the workflow and maintain consistency.
 
-### While Planning
+### While Planning & Doing Code Review
 
 - When a feature requirement is unclear or ambiguous, seek clarification on definition and scope rather than guessing.
-- Each implementation should match specs, industry standards, and common practices.
-- Always consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification.
+- Each implementation should match specs, open standards, industry standards, and common practices.
+    - Always consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification.
+    - Follow ActivityPub specification.
+    - Follow OWASP Top 10 to audit common security vulnerabilities.
 
 ### After Every Change
 

@@ -28,6 +28,17 @@ defmodule Baudrate.Federation do
   blocks excluded). Cross-post deduplication links a remote article to
   additional boards when the same `ap_id` arrives via multiple board inboxes.
 
+  Phase 5 — Public API: the AP endpoints serve as the public API. Accepts
+  `application/json` in addition to AP media types, CORS enabled on all GET
+  endpoints, `Vary: Accept` on content-negotiated endpoints. Outbox and
+  followers collections are paginated via `?page=N` (20 items/page,
+  `OrderedCollectionPage`). New endpoints: boards index (`/ap/boards`),
+  article replies (`/ap/articles/:slug/replies`), search (`/ap/search?q=`).
+  Article objects enriched with `replies`, `baudrate:pinned`, `baudrate:locked`,
+  `baudrate:commentCount`, `baudrate:likeCount`. User actors include
+  `published`, `summary` (signature), and `icon` (avatar). Board actors
+  include `baudrate:parentBoard` and `baudrate:subBoards`.
+
   Private boards are excluded from all federation endpoints — WebFinger,
   actor profiles, outbox, inbox, followers, and audience resolution all
   return 404 or skip private boards. Articles exclusively in private
@@ -44,13 +55,18 @@ defmodule Baudrate.Federation do
 
     * `/ap/users/:username` — user actor
     * `/ap/boards/:slug` — board actor
+    * `/ap/boards` — boards index
     * `/ap/site` — site actor
     * `/ap/articles/:slug` — article object
+    * `/ap/articles/:slug/replies` — article replies
+    * `/ap/search?q=...` — search
     * `/ap/inbox` — shared inbox (POST)
     * `/ap/users/:username/inbox` — user inbox (POST)
     * `/ap/boards/:slug/inbox` — board inbox (POST)
-    * `/ap/users/:username/followers` — user followers (GET)
-    * `/ap/boards/:slug/followers` — board followers (GET)
+    * `/ap/users/:username/outbox` — user outbox (GET, paginated)
+    * `/ap/boards/:slug/outbox` — board outbox (GET, paginated)
+    * `/ap/users/:username/followers` — user followers (GET, paginated)
+    * `/ap/boards/:slug/followers` — board followers (GET, paginated)
   """
 
   import Ecto.Query
@@ -222,6 +238,7 @@ defmodule Baudrate.Federation do
       "outbox" => "#{uri}/outbox",
       "followers" => "#{uri}/followers",
       "url" => "#{base_url()}/@#{user.username}",
+      "published" => DateTime.to_iso8601(user.inserted_at),
       "endpoints" => %{"sharedInbox" => "#{base_url()}/ap/inbox"},
       "publicKey" => %{
         "id" => "#{uri}#main-key",
@@ -229,13 +246,43 @@ defmodule Baudrate.Federation do
         "publicKeyPem" => KeyStore.get_public_key_pem(user)
       }
     }
+    |> put_if("summary", user.signature)
+    |> put_if("icon", user_avatar_icon(user))
   end
+
+  defp user_avatar_icon(%{avatar_id: nil}), do: nil
+
+  defp user_avatar_icon(%{avatar_id: avatar_id}) do
+    %{
+      "type" => "Image",
+      "mediaType" => "image/webp",
+      "url" => "#{base_url()}#{Baudrate.Avatar.avatar_url(avatar_id, "medium")}"
+    }
+  end
+
+  defp put_if(map, _key, nil), do: map
+  defp put_if(map, _key, ""), do: map
+  defp put_if(map, key, value), do: Map.put(map, key, value)
 
   @doc """
   Returns a Group JSON-LD map for the given board.
   """
   def board_actor(board) do
     uri = actor_uri(:board, board.slug)
+    board = Repo.preload(board, [])
+
+    sub_boards =
+      Content.list_sub_boards(board)
+      |> Enum.filter(&(&1.min_role_to_view == "guest" and &1.ap_enabled))
+      |> Enum.map(&actor_uri(:board, &1.slug))
+
+    parent_uri =
+      if board.parent_id do
+        parent = Repo.get(Baudrate.Content.Board, board.parent_id)
+
+        if parent && parent.min_role_to_view == "guest" && parent.ap_enabled,
+          do: actor_uri(:board, parent.slug)
+      end
 
     %{
       "@context" => [@as_context, @security_context],
@@ -255,6 +302,8 @@ defmodule Baudrate.Federation do
         "publicKeyPem" => KeyStore.get_public_key_pem(board)
       }
     }
+    |> put_if("baudrate:parentBoard", parent_uri)
+    |> put_if("baudrate:subBoards", if(sub_boards != [], do: sub_boards))
   end
 
   @doc """
@@ -283,27 +332,33 @@ defmodule Baudrate.Federation do
     }
   end
 
+  @items_per_page 20
+
   # --- Outbox ---
 
   @doc """
   Returns a paginated OrderedCollection for a user's outbox.
 
-  The outbox contains `Create(Article)` activities for the user's published articles.
+  Without `?page`, returns the root collection with `totalItems` and `first` link.
+  With `?page=N`, returns an `OrderedCollectionPage` with items.
+
+  The outbox contains `Create(Article)` activities for the user's published articles
+  in public boards.
   """
   def user_outbox(user, page_params \\ %{}) do
-    articles =
-      from(a in Baudrate.Content.Article,
-        where: a.user_id == ^user.id and is_nil(a.deleted_at),
-        order_by: [desc: a.inserted_at],
-        preload: [:boards, :user]
-      )
-      |> Repo.all()
-      |> Enum.filter(fn article ->
-        Enum.any?(article.boards, &(&1.min_role_to_view == "guest"))
-      end)
-
     outbox_uri = "#{actor_uri(:user, user.username)}/outbox"
-    build_outbox(outbox_uri, articles, page_params, :create)
+
+    case parse_page(page_params) do
+      nil ->
+        total = count_public_user_articles(user.id)
+        build_collection_root(outbox_uri, total)
+
+      page ->
+        articles = paginate_public_user_articles(user.id, page)
+        items = Enum.map(articles, &wrap_create_activity/1)
+        has_next = length(items) == @items_per_page
+        build_collection_page(outbox_uri, items, page, has_next)
+    end
   end
 
   @doc """
@@ -312,69 +367,258 @@ defmodule Baudrate.Federation do
   The outbox contains `Announce(Article)` activities for articles posted to the board.
   """
   def board_outbox(board, page_params \\ %{}) do
-    articles =
-      Content.list_articles_for_board(board)
-      |> Repo.preload([:boards])
-
     outbox_uri = "#{actor_uri(:board, board.slug)}/outbox"
-    build_outbox(outbox_uri, articles, page_params, {:announce, board})
+
+    case parse_page(page_params) do
+      nil ->
+        result = Content.paginate_articles_for_board(board, page: 1, per_page: 1)
+        build_collection_root(outbox_uri, result.total)
+
+      page ->
+        result = Content.paginate_articles_for_board(board, page: page, per_page: @items_per_page)
+        articles = Repo.preload(result.articles, [:boards, :user])
+        items = Enum.map(articles, &wrap_announce_activity(&1, board))
+        has_next = page < result.total_pages
+        build_collection_page(outbox_uri, items, page, has_next)
+    end
   end
 
-  defp build_outbox(uri, articles, _page_params, wrap_type) do
+  defp wrap_create_activity(article) do
+    object = article_object(article)
+
+    %{
+      "@context" => @as_context,
+      "id" => "#{actor_uri(:article, article.slug)}#create",
+      "type" => "Create",
+      "actor" => actor_uri(:user, article.user.username),
+      "published" => DateTime.to_iso8601(article.inserted_at),
+      "to" => [@as_public],
+      "object" => object
+    }
+  end
+
+  defp wrap_announce_activity(article, board) do
+    %{
+      "@context" => @as_context,
+      "id" => "#{actor_uri(:article, article.slug)}#announce",
+      "type" => "Announce",
+      "actor" => actor_uri(:board, board.slug),
+      "published" => DateTime.to_iso8601(article.inserted_at),
+      "to" => [@as_public],
+      "object" => actor_uri(:article, article.slug)
+    }
+  end
+
+  defp count_public_user_articles(user_id) do
+    from(a in Baudrate.Content.Article,
+      join: ba in Baudrate.Content.BoardArticle,
+      on: ba.article_id == a.id,
+      join: b in Baudrate.Content.Board,
+      on: b.id == ba.board_id,
+      where: a.user_id == ^user_id and is_nil(a.deleted_at) and b.min_role_to_view == "guest",
+      select: count(a.id, :distinct)
+    )
+    |> Repo.one() || 0
+  end
+
+  defp paginate_public_user_articles(user_id, page) do
+    offset = (page - 1) * @items_per_page
+
+    from(a in Baudrate.Content.Article,
+      join: ba in Baudrate.Content.BoardArticle,
+      on: ba.article_id == a.id,
+      join: b in Baudrate.Content.Board,
+      on: b.id == ba.board_id,
+      where: a.user_id == ^user_id and is_nil(a.deleted_at) and b.min_role_to_view == "guest",
+      distinct: a.id,
+      order_by: [desc: a.inserted_at],
+      offset: ^offset,
+      limit: ^@items_per_page,
+      preload: [:boards, :user]
+    )
+    |> Repo.all()
+  end
+
+  # --- Followers Collection ---
+
+  @doc """
+  Returns a paginated `OrderedCollection` for the given actor's followers.
+
+  Without `?page`, returns the root collection with `totalItems` and `first` link.
+  With `?page=N`, returns an `OrderedCollectionPage` with follower URIs.
+  """
+  def followers_collection(actor_uri, page_params \\ %{}) do
+    followers_uri = "#{actor_uri}/followers"
+
+    case parse_page(page_params) do
+      nil ->
+        total = count_followers(actor_uri)
+        build_collection_root(followers_uri, total)
+
+      page ->
+        offset = (page - 1) * @items_per_page
+
+        follower_uris =
+          from(f in Follower,
+            where: f.actor_uri == ^actor_uri,
+            order_by: [desc: f.inserted_at],
+            offset: ^offset,
+            limit: ^@items_per_page,
+            select: f.follower_uri
+          )
+          |> Repo.all()
+
+        has_next = length(follower_uris) == @items_per_page
+        build_collection_page(followers_uri, follower_uris, page, has_next)
+    end
+  end
+
+  # --- Pagination Helpers ---
+
+  defp build_collection_root(uri, total) do
+    %{
+      "@context" => @as_context,
+      "id" => uri,
+      "type" => "OrderedCollection",
+      "totalItems" => total,
+      "first" => "#{uri}?page=1"
+    }
+  end
+
+  defp build_collection_page(collection_uri, items, page, has_next) do
+    %{
+      "@context" => @as_context,
+      "id" => "#{collection_uri}?page=#{page}",
+      "type" => "OrderedCollectionPage",
+      "partOf" => collection_uri,
+      "orderedItems" => items
+    }
+    |> maybe_put("prev", page > 1, "#{collection_uri}?page=#{page - 1}")
+    |> maybe_put("next", has_next, "#{collection_uri}?page=#{page + 1}")
+  end
+
+  defp maybe_put(map, _key, false, _value), do: map
+  defp maybe_put(map, key, true, value), do: Map.put(map, key, value)
+
+  defp parse_page(%{"page" => page}) when is_binary(page) do
+    case Integer.parse(page) do
+      {n, ""} when n >= 1 -> n
+      _ -> nil
+    end
+  end
+
+  defp parse_page(_), do: nil
+
+  # --- Boards Collection ---
+
+  @doc """
+  Returns an `OrderedCollection` of public, AP-enabled boards.
+  """
+  def boards_collection do
+    boards =
+      from(b in Baudrate.Content.Board,
+        where: b.min_role_to_view == "guest" and b.ap_enabled == true,
+        order_by: [asc: b.position, asc: b.name]
+      )
+      |> Repo.all()
+
     items =
-      Enum.map(articles, fn article ->
-        case wrap_type do
-          :create ->
-            object = article_object(article)
+      Enum.map(boards, fn board ->
+        uri = actor_uri(:board, board.slug)
 
-            %{
-              "@context" => @as_context,
-              "id" => "#{actor_uri(:article, article.slug)}#create",
-              "type" => "Create",
-              "actor" => actor_uri(:user, article.user.username),
-              "published" => DateTime.to_iso8601(article.inserted_at),
-              "to" => [@as_public],
-              "object" => object
-            }
-
-          {:announce, board} ->
-            %{
-              "@context" => @as_context,
-              "id" => "#{actor_uri(:article, article.slug)}#announce",
-              "type" => "Announce",
-              "actor" => actor_uri(:board, board.slug),
-              "published" => DateTime.to_iso8601(article.inserted_at),
-              "to" => [@as_public],
-              "object" => actor_uri(:article, article.slug)
-            }
-        end
+        %{
+          "id" => uri,
+          "type" => "Group",
+          "name" => board.name,
+          "summary" => board.description,
+          "url" => "#{base_url()}/boards/#{board.slug}"
+        }
       end)
 
     %{
       "@context" => @as_context,
-      "id" => uri,
+      "id" => "#{base_url()}/ap/boards",
       "type" => "OrderedCollection",
       "totalItems" => length(items),
       "orderedItems" => items
     }
   end
 
-  # --- Followers Collection ---
+  # --- Article Replies Collection ---
 
   @doc """
-  Returns an `OrderedCollection` JSON-LD map for the given actor's followers.
+  Returns an `OrderedCollection` of comments (as `Note` objects) for an article.
   """
-  def followers_collection(actor_uri) do
-    followers = list_followers(actor_uri)
-    follower_uris = Enum.map(followers, & &1.follower_uri)
+  def article_replies(article) do
+    article = Repo.preload(article, [:user])
+    comments = Content.list_comments_for_article(article)
+    replies_uri = "#{actor_uri(:article, article.slug)}/replies"
+
+    items =
+      Enum.map(comments, fn comment ->
+        attributed_to =
+          cond do
+            comment.user -> actor_uri(:user, comment.user.username)
+            comment.remote_actor -> comment.remote_actor.ap_id
+            true -> nil
+          end
+
+        %{
+          "type" => "Note",
+          "id" => comment.ap_id || "#{replies_uri}#comment-#{comment.id}",
+          "content" => comment.body_html || "",
+          "attributedTo" => attributed_to,
+          "inReplyTo" => actor_uri(:article, article.slug),
+          "published" => DateTime.to_iso8601(comment.inserted_at)
+        }
+      end)
 
     %{
       "@context" => @as_context,
-      "id" => "#{actor_uri}/followers",
+      "id" => replies_uri,
       "type" => "OrderedCollection",
-      "totalItems" => length(follower_uris),
-      "orderedItems" => follower_uris
+      "totalItems" => length(items),
+      "orderedItems" => items
     }
+  end
+
+  # --- Search Collection ---
+
+  @doc """
+  Returns a paginated `OrderedCollection` of search results as Article objects.
+  """
+  def search_collection(query, page_params) do
+    page = parse_page(page_params) || 1
+    search_uri = "#{base_url()}/ap/search"
+
+    result = Content.search_articles(query, page: page, per_page: @items_per_page, user: nil)
+
+    items = Enum.map(result.articles, &article_object/1)
+    has_next = page < result.total_pages
+
+    if page == 1 and parse_page(page_params) == nil do
+      # Root collection with first page inline
+      %{
+        "@context" => @as_context,
+        "id" => "#{search_uri}?q=#{URI.encode_www_form(query)}",
+        "type" => "OrderedCollection",
+        "totalItems" => result.total,
+        "first" => "#{search_uri}?q=#{URI.encode_www_form(query)}&page=1"
+      }
+    else
+      collection_uri = "#{search_uri}?q=#{URI.encode_www_form(query)}"
+
+      %{
+        "@context" => @as_context,
+        "id" => "#{collection_uri}&page=#{page}",
+        "type" => "OrderedCollectionPage",
+        "partOf" => collection_uri,
+        "totalItems" => result.total,
+        "orderedItems" => items
+      }
+      |> maybe_put("prev", page > 1, "#{collection_uri}&page=#{page - 1}")
+      |> maybe_put("next", has_next, "#{collection_uri}&page=#{page + 1}")
+    end
   end
 
   # --- Followers ---
@@ -476,7 +720,12 @@ defmodule Baudrate.Federation do
       "to" => [@as_public],
       "cc" => board_uris,
       "audience" => board_uris,
-      "url" => "#{base_url()}/articles/#{article.slug}"
+      "url" => "#{base_url()}/articles/#{article.slug}",
+      "replies" => "#{actor_uri(:article, article.slug)}/replies",
+      "baudrate:pinned" => article.pinned,
+      "baudrate:locked" => article.locked,
+      "baudrate:commentCount" => Content.count_comments_for_article(article),
+      "baudrate:likeCount" => Content.count_article_likes(article)
     }
 
     if tags == [], do: map, else: Map.put(map, "tag", tags)

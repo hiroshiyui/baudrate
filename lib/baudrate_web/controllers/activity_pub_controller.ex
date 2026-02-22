@@ -2,12 +2,14 @@ defmodule BaudrateWeb.ActivityPubController do
   @moduledoc """
   Controller for ActivityPub and discovery endpoints.
 
-  Actor and article endpoints perform content negotiation: requests with
-  `Accept: application/activity+json` or `application/ld+json` receive
-  JSON-LD; all other requests are redirected to the corresponding HTML page.
+  These endpoints also serve as the **public API** — external clients can
+  request any GET endpoint with `Accept: application/json` (in addition to
+  `application/activity+json` or `application/ld+json`) to receive JSON-LD
+  responses. All GET endpoints include CORS headers (`Access-Control-Allow-Origin: *`)
+  and content-negotiated endpoints include `Vary: Accept`.
 
-  Machine-only endpoints (WebFinger, NodeInfo, outbox) always return JSON
-  regardless of Accept header.
+  Machine-only endpoints (WebFinger, NodeInfo, outbox, boards index, search)
+  always return JSON regardless of Accept header.
 
   Private boards are hidden from all AP endpoints — board actor, outbox,
   inbox, and WebFinger all return 404 for private boards. Articles
@@ -15,20 +17,32 @@ defmodule BaudrateWeb.ActivityPubController do
 
   ## Endpoints
 
+  ### Discovery
     * `GET /.well-known/webfinger` — WebFinger resource resolution
     * `GET /.well-known/nodeinfo` — NodeInfo discovery links
     * `GET /nodeinfo/2.1` — NodeInfo 2.1 document
-    * `GET /ap/users/:username` — Person actor (content-negotiated)
-    * `GET /ap/users/:username/outbox` — user outbox (OrderedCollection)
-    * `GET /ap/users/:username/followers` — user followers (OrderedCollection)
-    * `GET /ap/boards/:slug` — Group actor (content-negotiated, public only)
-    * `GET /ap/boards/:slug/outbox` — board outbox (OrderedCollection, public only)
-    * `GET /ap/boards/:slug/followers` — board followers (OrderedCollection, public only)
-    * `GET /ap/site` — Organization actor (content-negotiated)
-    * `GET /ap/articles/:slug` — Article object (content-negotiated, requires public board)
-    * `POST /ap/inbox` — shared inbox (HTTP Signature verified)
-    * `POST /ap/users/:username/inbox` — user inbox (HTTP Signature verified)
-    * `POST /ap/boards/:slug/inbox` — board inbox (HTTP Signature verified, public only)
+
+  ### Actors (content-negotiated)
+    * `GET /ap/users/:username` — Person actor
+    * `GET /ap/boards/:slug` — Group actor (public only)
+    * `GET /ap/site` — Organization actor
+
+  ### Collections (paginated with `?page=N`, 20 items/page)
+    * `GET /ap/users/:username/outbox` — user outbox (Create activities)
+    * `GET /ap/users/:username/followers` — user followers
+    * `GET /ap/boards/:slug/outbox` — board outbox (Announce activities, public only)
+    * `GET /ap/boards/:slug/followers` — board followers (public only)
+    * `GET /ap/boards` — index of public AP-enabled boards
+    * `GET /ap/articles/:slug/replies` — article comments as Note objects
+    * `GET /ap/search?q=...` — full-text article search
+
+  ### Objects (content-negotiated)
+    * `GET /ap/articles/:slug` — Article object (requires public board)
+
+  ### Inboxes (HTTP Signature verified)
+    * `POST /ap/inbox` — shared inbox
+    * `POST /ap/users/:username/inbox` — user inbox
+    * `POST /ap/boards/:slug/inbox` — board inbox (public only)
   """
 
   use BaudrateWeb, :controller
@@ -37,13 +51,18 @@ defmodule BaudrateWeb.ActivityPubController do
   alias Baudrate.Federation
   alias Baudrate.Federation.KeyStore
 
-  plug :require_federation when action not in [:webfinger, :nodeinfo_redirect, :nodeinfo]
+  plug :require_federation
+       when action not in [:webfinger, :nodeinfo_redirect, :nodeinfo, :options_preflight]
 
   @activity_json "application/activity+json"
   @jrd_json "application/jrd+json"
 
   @username_re ~r/\A[a-zA-Z0-9_]+\z/
   @slug_re ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/
+
+  # --- OPTIONS Preflight ---
+  # CORS plug handles OPTIONS with 204 before this action is reached.
+  def options_preflight(conn, _params), do: send_resp(conn, 204, "")
 
   # --- WebFinger ---
 
@@ -83,6 +102,8 @@ defmodule BaudrateWeb.ActivityPubController do
   # --- Actors ---
 
   def user_actor(conn, %{"username" => username}) do
+    conn = put_resp_header(conn, "vary", "Accept")
+
     if wants_json?(conn) do
       with true <- Regex.match?(@username_re, username),
            user when not is_nil(user) <-
@@ -100,6 +121,8 @@ defmodule BaudrateWeb.ActivityPubController do
   end
 
   def board_actor(conn, %{"slug" => slug}) do
+    conn = put_resp_header(conn, "vary", "Accept")
+
     if wants_json?(conn) do
       with true <- Regex.match?(@slug_re, slug),
            board when not is_nil(board) <-
@@ -119,6 +142,8 @@ defmodule BaudrateWeb.ActivityPubController do
   end
 
   def site_actor(conn, _params) do
+    conn = put_resp_header(conn, "vary", "Accept")
+
     if wants_json?(conn) do
       conn
       |> put_resp_content_type(@activity_json)
@@ -157,7 +182,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
   # --- Followers Collection ---
 
-  def user_followers(conn, %{"username" => username}) do
+  def user_followers(conn, %{"username" => username} = params) do
     with true <- Regex.match?(@username_re, username),
          user when not is_nil(user) <-
            Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
@@ -165,13 +190,13 @@ defmodule BaudrateWeb.ActivityPubController do
 
       conn
       |> put_resp_content_type(@activity_json)
-      |> json(Federation.followers_collection(actor_uri))
+      |> json(Federation.followers_collection(actor_uri, params))
     else
       _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
     end
   end
 
-  def board_followers(conn, %{"slug" => slug}) do
+  def board_followers(conn, %{"slug" => slug} = params) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
          true <- board.min_role_to_view == "guest",
@@ -180,7 +205,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
       conn
       |> put_resp_content_type(@activity_json)
-      |> json(Federation.followers_collection(actor_uri))
+      |> json(Federation.followers_collection(actor_uri, params))
     else
       _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
     end
@@ -189,6 +214,8 @@ defmodule BaudrateWeb.ActivityPubController do
   # --- Article ---
 
   def article(conn, %{"slug" => slug}) do
+    conn = put_resp_header(conn, "vary", "Accept")
+
     if wants_json?(conn) do
       with true <- Regex.match?(@slug_re, slug) do
         try do
@@ -211,6 +238,49 @@ defmodule BaudrateWeb.ActivityPubController do
     else
       redirect(conn, to: ~p"/articles/#{slug}")
     end
+  end
+
+  # --- Boards Index ---
+
+  def boards_index(conn, _params) do
+    conn
+    |> put_resp_content_type(@activity_json)
+    |> json(Federation.boards_collection())
+  end
+
+  # --- Article Replies ---
+
+  def article_replies(conn, %{"slug" => slug}) do
+    with true <- Regex.match?(@slug_re, slug) do
+      try do
+        article = Baudrate.Content.get_article_by_slug!(slug)
+
+        if Enum.any?(article.boards, &(&1.min_role_to_view == "guest")) do
+          conn
+          |> put_resp_content_type(@activity_json)
+          |> json(Federation.article_replies(article))
+        else
+          conn |> put_status(404) |> json(%{error: "Not Found"})
+        end
+      rescue
+        Ecto.NoResultsError ->
+          conn |> put_status(404) |> json(%{error: "Not Found"})
+      end
+    else
+      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+    end
+  end
+
+  # --- Search ---
+
+  def search(conn, %{"q" => q} = params) when byte_size(q) > 0 do
+    conn
+    |> put_resp_content_type(@activity_json)
+    |> json(Federation.search_collection(q, params))
+  end
+
+  def search(conn, _params) do
+    conn |> put_status(400) |> json(%{error: "Missing q parameter"})
   end
 
   # --- Inbox ---
@@ -277,6 +347,7 @@ defmodule BaudrateWeb.ActivityPubController do
     accept = get_req_header(conn, "accept") |> List.first("")
 
     String.contains?(accept, "application/activity+json") or
-      String.contains?(accept, "application/ld+json")
+      String.contains?(accept, "application/ld+json") or
+      String.contains?(accept, "application/json")
   end
 end

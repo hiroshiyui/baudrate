@@ -668,6 +668,18 @@ defmodule Baudrate.Content do
   end
 
   @doc """
+  Returns the count of non-deleted comments for an article.
+  """
+  def count_comments_for_article(%Article{id: article_id}) do
+    Repo.one(
+      from(c in Comment,
+        where: c.article_id == ^article_id and is_nil(c.deleted_at),
+        select: count(c.id)
+      )
+    ) || 0
+  end
+
+  @doc """
   Returns the count of likes for an article.
   """
   def count_article_likes(%Article{id: article_id}) do

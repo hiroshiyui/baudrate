@@ -112,6 +112,7 @@ lib/
 │   │   └── totp_verify_live.ex  # TOTP code verification
 │   ├── plugs/
 │   │   ├── cache_body.ex        # Cache raw request body (for HTTP signature verification)
+│   │   ├── cors.ex              # CORS headers for AP GET endpoints (Allow-Origin: *)
 │   │   ├── ensure_setup.ex      # Redirect to /setup until setup is done
 │   │   ├── rate_limit.ex        # IP-based rate limiting (Hammer)
 │   │   ├── rate_limit_domain.ex # Per-domain rate limiting for AP inboxes
@@ -344,13 +345,16 @@ The `Baudrate.Federation` context handles all federation logic.
 - `/.well-known/webfinger` — resolve `acct:user@host` or `acct:!board@host`
 - `/.well-known/nodeinfo` → `/nodeinfo/2.1` — instance metadata
 
-**Outbound endpoints** (content-negotiated: JSON-LD for AP clients, HTML redirect otherwise):
-- `/ap/users/:username` — Person actor with publicKey, inbox, outbox
-- `/ap/boards/:slug` — Group actor
+**Outbound endpoints** (content-negotiated: JSON-LD for AP/JSON clients, HTML redirect otherwise):
+- `/ap/users/:username` — Person actor with publicKey, inbox, outbox, published, icon
+- `/ap/boards/:slug` — Group actor with sub-board/parent-board links
 - `/ap/site` — Organization actor
-- `/ap/articles/:slug` — Article object
-- `/ap/users/:username/outbox` — `OrderedCollection` of `Create(Article)`
-- `/ap/boards/:slug/outbox` — `OrderedCollection` of `Announce(Article)`
+- `/ap/articles/:slug` — Article object with replies link and `baudrate:*` extensions
+- `/ap/users/:username/outbox` — paginated `OrderedCollection` of `Create(Article)`
+- `/ap/boards/:slug/outbox` — paginated `OrderedCollection` of `Announce(Article)`
+- `/ap/boards` — `OrderedCollection` of all public AP-enabled boards
+- `/ap/articles/:slug/replies` — `OrderedCollection` of comments as Note objects
+- `/ap/search?q=...` — paginated full-text article search
 
 **Inbox endpoints** (HTTP Signature verified, per-domain rate-limited):
 - `/ap/inbox` — shared inbox
@@ -379,9 +383,9 @@ The `Baudrate.Federation` context handles all federation logic.
 - Exponential backoff: 1m → 5m → 30m → 2h → 12h → 24h, then abandoned after 6 attempts
 - Domain blocklist respected: deliveries to blocked domains are skipped
 
-**Followers collection endpoints:**
-- `/ap/users/:username/followers` — `OrderedCollection` of follower URIs
-- `/ap/boards/:slug/followers` — `OrderedCollection` (public boards only, 404 for private)
+**Followers collection endpoints** (paginated with `?page=N`):
+- `/ap/users/:username/followers` — paginated `OrderedCollection` of follower URIs
+- `/ap/boards/:slug/followers` — paginated `OrderedCollection` (public boards only, 404 for private)
 
 **Mastodon/Lemmy compatibility:**
 - `attributedTo` arrays — extracts first binary URI for validation
@@ -416,6 +420,19 @@ The `Baudrate.Federation` context handles all federation logic.
 - Private keys encrypted at rest with AES-256-GCM
 - Non-guest boards (`min_role_to_view != "guest"`) hidden from all AP endpoints (actor, outbox, inbox, WebFinger, audience resolution)
 - CSP `img-src` allows `https:` for remote avatars; all other directives remain restrictive
+
+**Public API:**
+
+The AP endpoints double as the public API — no separate REST API is needed.
+External clients can use `Accept: application/json` to retrieve data.
+
+- **Content negotiation** — `application/json`, `application/activity+json`, and `application/ld+json` all return JSON-LD. Content-negotiated endpoints (actors, articles) redirect `text/html` to the web UI.
+- **CORS** — all GET `/ap/*` endpoints return `Access-Control-Allow-Origin: *`. OPTIONS preflight returns 204.
+- **Vary** — content-negotiated endpoints include `Vary: Accept` for proper caching.
+- **Pagination** — outbox, followers, and search collections use AP-spec `OrderedCollectionPage` pagination with `?page=N` (20 items/page). Without `?page`, the root `OrderedCollection` contains `totalItems` and a `first` link.
+- **Rate limiting** — 120 requests/min per IP; 429 responses are JSON (`{"error": "Too Many Requests"}`).
+- **`baudrate:*` extensions** — Article objects include `baudrate:pinned`, `baudrate:locked`, `baudrate:commentCount`, `baudrate:likeCount`. Board actors include `baudrate:parentBoard` and `baudrate:subBoards`.
+- **Enriched actors** — User actors include `published`, `summary` (user signature), and `icon` (avatar as WebP). Board actors include parent/sub-board links.
 
 ### Layout System
 

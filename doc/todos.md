@@ -7,7 +7,7 @@
 (none pending)
 
 ## System
-- [ ] Public API via existing ActivityPub endpoints (no separate REST API; AP endpoints serve as the public API)
+- [x] Public API via existing ActivityPub endpoints (no separate REST API; AP endpoints serve as the public API)
 - [ ] Real-time updates via PubSub (new articles, comments)
 - [ ] Search indexing
 

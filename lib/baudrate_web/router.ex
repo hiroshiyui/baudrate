@@ -63,6 +63,7 @@ defmodule BaudrateWeb.Router do
 
   pipeline :activity_pub do
     plug BaudrateWeb.Plugs.RateLimit, action: :activity_pub
+    plug BaudrateWeb.Plugs.CORS
   end
 
   pipeline :activity_pub_inbox do
@@ -97,14 +98,18 @@ defmodule BaudrateWeb.Router do
   scope "/ap", BaudrateWeb do
     pipe_through :activity_pub
 
+    match :options, "/*path", ActivityPubController, :options_preflight
     get "/users/:username", ActivityPubController, :user_actor
     get "/users/:username/outbox", ActivityPubController, :user_outbox
     get "/users/:username/followers", ActivityPubController, :user_followers
+    get "/boards", ActivityPubController, :boards_index
     get "/boards/:slug", ActivityPubController, :board_actor
     get "/boards/:slug/outbox", ActivityPubController, :board_outbox
     get "/boards/:slug/followers", ActivityPubController, :board_followers
     get "/site", ActivityPubController, :site_actor
     get "/articles/:slug", ActivityPubController, :article
+    get "/articles/:slug/replies", ActivityPubController, :article_replies
+    get "/search", ActivityPubController, :search
   end
 
   scope "/ap", BaudrateWeb do
