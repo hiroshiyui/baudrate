@@ -131,4 +131,32 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
     html = lv |> element("button[phx-click=\"approve\"][phx-value-id=\"#{pending_user.id}\"]") |> render_click()
     assert html =~ "User approved successfully"
   end
+
+  test "pagination controls appear when users exceed per_page", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_user(conn, admin)
+
+    # Create enough users to exceed 1 page (per_page defaults to 20)
+    for _i <- 1..21, do: setup_user("user")
+
+    {:ok, _lv, html} = live(conn, "/admin/users")
+    # Pagination should render with page buttons
+    assert html =~ "join-item btn btn-sm btn-active"
+    assert html =~ "»"
+  end
+
+  test "filter and pagination work together", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_user(conn, admin)
+
+    # With only admin + 1 user, filtering to "active" should not show pagination
+    _user = setup_user("user")
+
+    {:ok, lv, _html} = live(conn, "/admin/users?status=active")
+
+    html = render(lv)
+    assert html =~ admin.username
+    # Only 2 active users, should be on 1 page, no pagination
+    refute html =~ "»"
+  end
 end

@@ -905,6 +905,118 @@ defmodule Baudrate.Content do
     Repo.all(query)
   end
 
+  @comments_per_page 20
+
+  @doc """
+  Returns a paginated list of comments for an article, preserving thread integrity.
+
+  Paginates by **root comments** (those with `parent_id IS NULL`), then loads
+  all descendant replies for each page of roots via iterative widening (max 5
+  levels, matching the thread depth limit).
+
+  ## Options
+
+    * `:page` — page number (default 1)
+    * `:per_page` — root comments per page (default #{@comments_per_page})
+
+  Returns `%{comments: [...], total_roots: N, page: N, per_page: N, total_pages: N}`.
+  """
+  def paginate_comments_for_article(article, current_user \\ nil, opts \\ [])
+
+  def paginate_comments_for_article(%Article{id: article_id}, current_user, opts) do
+    page = max(Keyword.get(opts, :page, 1), 1)
+    per_page = Keyword.get(opts, :per_page, @comments_per_page)
+    offset = (page - 1) * per_page
+
+    {blocked_uids, blocked_ap_ids} = block_filters(current_user)
+
+    # Count root comments
+    root_count_query =
+      from(c in Comment,
+        where: c.article_id == ^article_id and is_nil(c.deleted_at) and is_nil(c.parent_id)
+      )
+      |> apply_block_filters(blocked_uids, blocked_ap_ids)
+
+    total_roots = Repo.one(from(q in root_count_query, select: count(q.id)))
+
+    # Fetch a page of root comments
+    root_query =
+      from(c in Comment,
+        where: c.article_id == ^article_id and is_nil(c.deleted_at) and is_nil(c.parent_id),
+        order_by: [asc: c.inserted_at],
+        offset: ^offset,
+        limit: ^per_page,
+        preload: [:user, :remote_actor]
+      )
+      |> apply_block_filters(blocked_uids, blocked_ap_ids)
+
+    roots = Repo.all(root_query)
+
+    # Iteratively fetch all descendants (max 5 levels)
+    descendants = fetch_descendants(article_id, roots, blocked_uids, blocked_ap_ids, 5)
+
+    total_pages = max(ceil(total_roots / per_page), 1)
+
+    %{
+      comments: roots ++ descendants,
+      total_roots: total_roots,
+      page: page,
+      per_page: per_page,
+      total_pages: total_pages
+    }
+  end
+
+  defp block_filters(nil), do: {[], []}
+
+  defp block_filters(current_user) do
+    {Auth.blocked_user_ids(current_user), Auth.blocked_actor_ap_ids(current_user)}
+  end
+
+  defp apply_block_filters(query, [], []), do: query
+
+  defp apply_block_filters(query, blocked_uids, blocked_ap_ids) do
+    query =
+      if blocked_uids != [] do
+        from(c in query, where: is_nil(c.user_id) or c.user_id not in ^blocked_uids)
+      else
+        query
+      end
+
+    if blocked_ap_ids != [] do
+      from(c in query,
+        left_join: ra in assoc(c, :remote_actor),
+        where: is_nil(c.remote_actor_id) or ra.ap_id not in ^blocked_ap_ids
+      )
+    else
+      query
+    end
+  end
+
+  defp fetch_descendants(_article_id, [], _blocked_uids, _blocked_ap_ids, _remaining), do: []
+  defp fetch_descendants(_article_id, _parents, _blocked_uids, _blocked_ap_ids, 0), do: []
+
+  defp fetch_descendants(article_id, parents, blocked_uids, blocked_ap_ids, remaining) do
+    parent_ids = Enum.map(parents, & &1.id)
+
+    child_query =
+      from(c in Comment,
+        where:
+          c.article_id == ^article_id and is_nil(c.deleted_at) and
+            c.parent_id in ^parent_ids,
+        order_by: [asc: c.inserted_at],
+        preload: [:user, :remote_actor]
+      )
+      |> apply_block_filters(blocked_uids, blocked_ap_ids)
+
+    children = Repo.all(child_query)
+
+    if children == [] do
+      []
+    else
+      children ++ fetch_descendants(article_id, children, blocked_uids, blocked_ap_ids, remaining - 1)
+    end
+  end
+
   @doc """
   Soft-deletes a comment by setting `deleted_at` and clearing body.
   """

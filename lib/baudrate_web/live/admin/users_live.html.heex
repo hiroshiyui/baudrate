@@ -164,6 +164,17 @@
       </tbody>
     </table>
   </div>
+
+  <.pagination
+    page={@page}
+    total_pages={@total_pages}
+    path={~p"/admin/users"}
+    params={
+      %{}
+      |> then(fn p -> if @status_filter, do: Map.put(p, "status", @status_filter), else: p end)
+      |> then(fn p -> if @search != "", do: Map.put(p, "search", @search), else: p end)
+    }
+  />
 </div>
 
 <%!-- Ban modal --%>

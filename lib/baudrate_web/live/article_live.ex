@@ -41,9 +41,6 @@ defmodule BaudrateWeb.ArticleLive do
           false
         end
 
-      comments = Content.list_comments_for_article(article)
-      {roots, children_map} = build_comment_tree(comments)
-
       can_comment =
         if current_user && not article.locked do
           Enum.any?(article.boards, &Content.can_post_in_board?(&1, current_user))
@@ -64,8 +61,10 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:can_pin, can_pin)
         |> assign(:can_lock, can_lock)
         |> assign(:is_board_mod, is_board_mod)
-        |> assign(:comment_roots, roots)
-        |> assign(:children_map, children_map)
+        |> assign(:comment_roots, [])
+        |> assign(:children_map, %{})
+        |> assign(:comment_page, 1)
+        |> assign(:comment_total_pages, 1)
         |> assign(:can_comment, can_comment)
         |> assign(:comment_form, to_form(comment_changeset, as: :comment))
         |> assign(:replying_to, nil)
@@ -89,6 +88,13 @@ defmodule BaudrateWeb.ArticleLive do
 
       {:ok, socket}
     end
+  end
+
+  @impl true
+  def handle_params(params, _uri, socket) do
+    comment_page = parse_page(params["page"])
+
+    {:noreply, load_comments(socket, comment_page)}
   end
 
   @impl true
@@ -200,13 +206,9 @@ defmodule BaudrateWeb.ArticleLive do
             )
           end
 
-          comments = Content.list_comments_for_article(article)
-          {roots, children_map} = build_comment_tree(comments)
-
           {:noreply,
            socket
-           |> assign(:comment_roots, roots)
-           |> assign(:children_map, children_map)
+           |> load_comments(socket.assigns.comment_page)
            |> put_flash(:info, gettext("Comment deleted."))}
 
         {:error, _} ->
@@ -245,13 +247,9 @@ defmodule BaudrateWeb.ArticleLive do
 
     case Content.create_comment(attrs) do
       {:ok, _comment} ->
-        comments = Content.list_comments_for_article(article)
-        {roots, children_map} = build_comment_tree(comments)
-
         {:noreply,
          socket
-         |> assign(:comment_roots, roots)
-         |> assign(:children_map, children_map)
+         |> load_comments(socket.assigns.comment_page)
          |> assign(:comment_form, to_form(Content.change_comment(), as: :comment))
          |> assign(:replying_to, nil)
          |> put_flash(:info, gettext("Comment posted."))}
@@ -336,13 +334,7 @@ defmodule BaudrateWeb.ArticleLive do
   @impl true
   def handle_info({event, _payload}, socket)
       when event in [:comment_created, :comment_deleted] do
-    comments = Content.list_comments_for_article(socket.assigns.article)
-    {roots, children_map} = build_comment_tree(comments)
-
-    {:noreply,
-     socket
-     |> assign(:comment_roots, roots)
-     |> assign(:children_map, children_map)}
+    {:noreply, load_comments(socket, socket.assigns.comment_page)}
   end
 
   @impl true
@@ -461,6 +453,32 @@ defmodule BaudrateWeb.ArticleLive do
       <% end %>
     </div>
     """
+  end
+
+  defp load_comments(socket, page) do
+    article = socket.assigns.article
+    current_user = socket.assigns.current_user
+
+    %{comments: comments, page: comment_page, total_pages: comment_total_pages} =
+      Content.paginate_comments_for_article(article, current_user, page: page)
+
+    {roots, children_map} = build_comment_tree(comments)
+
+    assign(socket,
+      comment_roots: roots,
+      children_map: children_map,
+      comment_page: comment_page,
+      comment_total_pages: comment_total_pages
+    )
+  end
+
+  defp parse_page(nil), do: 1
+
+  defp parse_page(str) when is_binary(str) do
+    case Integer.parse(str) do
+      {n, ""} when n > 0 -> n
+      _ -> 1
+    end
   end
 
   defp user_can_view_article?(article, user) do

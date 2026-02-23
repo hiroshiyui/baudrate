@@ -427,6 +427,8 @@ defmodule Baudrate.Auth do
 
   # --- User Management ---
 
+  @users_per_page 20
+
   @doc """
   Lists users with optional filters.
 
@@ -437,7 +439,52 @@ defmodule Baudrate.Auth do
     * `:search` — ILIKE search on username
   """
   def list_users(opts \\ []) do
-    query = from(u in User, order_by: [desc: u.inserted_at], preload: :role)
+    Repo.all(users_base_query(opts))
+  end
+
+  @doc """
+  Returns a paginated list of users with optional filters.
+
+  ## Options
+
+    * `:status` — filter by status (e.g. `"active"`, `"pending"`, `"banned"`)
+    * `:role` — filter by role name
+    * `:search` — ILIKE search on username
+    * `:page` — page number (default 1)
+    * `:per_page` — users per page (default #{@users_per_page})
+
+  Returns `%{users: [...], total: N, page: N, per_page: N, total_pages: N}`.
+  """
+  def paginate_users(opts \\ []) do
+    page = max(Keyword.get(opts, :page, 1), 1)
+    per_page = Keyword.get(opts, :per_page, @users_per_page)
+    offset = (page - 1) * per_page
+
+    count_base = users_filter_query(opts)
+    total = Repo.one(from(u in count_base, select: count(u.id)))
+
+    users =
+      users_base_query(opts)
+      |> then(fn q -> from(u in q, offset: ^offset, limit: ^per_page) end)
+      |> Repo.all()
+
+    total_pages = max(ceil(total / per_page), 1)
+
+    %{
+      users: users,
+      total: total,
+      page: page,
+      per_page: per_page,
+      total_pages: total_pages
+    }
+  end
+
+  defp users_base_query(opts) do
+    from(u in users_filter_query(opts), order_by: [desc: u.inserted_at], preload: :role)
+  end
+
+  defp users_filter_query(opts) do
+    query = from(u in User)
 
     query =
       case Keyword.get(opts, :status) do
@@ -451,16 +498,13 @@ defmodule Baudrate.Auth do
         role_name -> from(u in query, join: r in assoc(u, :role), where: r.name == ^role_name)
       end
 
-    query =
-      case Keyword.get(opts, :search) do
-        nil -> query
-        "" -> query
-        term ->
-          sanitized = term |> String.replace("\\", "\\\\") |> String.replace("%", "\\%") |> String.replace("_", "\\_")
-          from(u in query, where: ilike(u.username, ^"%#{sanitized}%"))
-      end
-
-    Repo.all(query)
+    case Keyword.get(opts, :search) do
+      nil -> query
+      "" -> query
+      term ->
+        sanitized = term |> String.replace("\\", "\\\\") |> String.replace("%", "\\%") |> String.replace("_", "\\_")
+        from(u in query, where: ilike(u.username, ^"%#{sanitized}%"))
+    end
   end
 
   @doc """

@@ -21,11 +21,12 @@ defmodule BaudrateWeb.Admin.UsersLive do
   def mount(_params, _session, socket) do
     roles = Setup.all_roles()
     status_counts = Auth.count_users_by_status()
-    users = Auth.list_users()
 
     {:ok,
      assign(socket,
-       users: users,
+       users: [],
+       page: 1,
+       total_pages: 1,
        status_counts: status_counts,
        status_filter: nil,
        search: "",
@@ -39,6 +40,24 @@ defmodule BaudrateWeb.Admin.UsersLive do
   end
 
   @impl true
+  def handle_params(params, _uri, socket) do
+    page = parse_page(params["page"])
+
+    status_filter =
+      case params["status"] do
+        s when s in @valid_statuses -> s
+        _ -> nil
+      end
+
+    search = params["search"] || ""
+
+    {:noreply,
+     socket
+     |> assign(page: page, status_filter: status_filter, search: search)
+     |> reload_users()}
+  end
+
+  @impl true
   def handle_event("filter", %{"status" => status}, socket) do
     status_filter =
       cond do
@@ -47,11 +66,17 @@ defmodule BaudrateWeb.Admin.UsersLive do
         true -> nil
       end
 
-    {:noreply, socket |> assign(:status_filter, status_filter) |> reload_users()}
+    {:noreply,
+     socket
+     |> assign(:status_filter, status_filter)
+     |> push_patch(to: users_path(socket.assigns, status_filter, socket.assigns.search, 1))}
   end
 
   def handle_event("search", %{"search" => term}, socket) do
-    {:noreply, socket |> assign(:search, term) |> reload_users()}
+    {:noreply,
+     socket
+     |> assign(:search, term)
+     |> push_patch(to: users_path(socket.assigns, socket.assigns.status_filter, term, 1))}
   end
 
   def handle_event("approve", %{"id" => id}, socket) do
@@ -205,7 +230,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
 
   defp reload_users(socket) do
     opts =
-      []
+      [page: socket.assigns.page]
       |> then(fn opts ->
         case socket.assigns.status_filter do
           nil -> opts
@@ -219,7 +244,30 @@ defmodule BaudrateWeb.Admin.UsersLive do
         end
       end)
 
-    assign(socket, :users, Auth.list_users(opts))
+    %{users: users, page: page, total_pages: total_pages} = Auth.paginate_users(opts)
+
+    assign(socket, users: users, page: page, total_pages: total_pages)
+  end
+
+  defp users_path(_assigns, status_filter, search, page) do
+    params =
+      %{}
+      |> then(fn p -> if status_filter, do: Map.put(p, "status", status_filter), else: p end)
+      |> then(fn p -> if search != "", do: Map.put(p, "search", search), else: p end)
+      |> then(fn p -> if page > 1, do: Map.put(p, "page", page), else: p end)
+
+    if params == %{},
+      do: ~p"/admin/users",
+      else: ~p"/admin/users" <> "?" <> URI.encode_query(params)
+  end
+
+  defp parse_page(nil), do: 1
+
+  defp parse_page(str) when is_binary(str) do
+    case Integer.parse(str) do
+      {n, ""} when n > 0 -> n
+      _ -> 1
+    end
   end
 
   defp reload_counts(socket) do

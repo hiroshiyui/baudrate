@@ -6,8 +6,8 @@ Audit date: 2026-02-23
 
 ## High: Security & Performance
 
-- [ ] **Paginate admin user list** — `Auth.list_users()` in `UsersLive` loads all users unbounded; will degrade with scale
-- [ ] **Paginate article comments** — `ArticleLive` loads entire comment tree; no pagination for threads with many replies
+- [x] **Paginate admin user list** — `Auth.paginate_users/1` with URL-driven `?page=N` in `UsersLive`; filters preserved in pagination links
+- [x] **Paginate article comments** — `Content.paginate_comments_for_article/3` paginates by root comments with iterative descendant loading; `?page=N` in `ArticleLive`
 - [x] **Add database index on `articles.deleted_at`** — partial index (`WHERE deleted_at IS NULL`) added in migration `20260223035638`
 - [x] **Add database index on `comments.deleted_at`** — same migration as above
 - [ ] **Per-account brute-force protection** — add progressive per-account delay (exponential backoff after N failed login attempts, e.g. 5s after 5 failures, 30s after 10, 2min after 15) combined with per-account attempt tracking visible in admin panel; hard lockout is avoided because it creates a DoS vector (attacker can lock out any user by submitting wrong passwords); existing defenses: IP-based rate limiting + mandatory TOTP for admin/moderator roles

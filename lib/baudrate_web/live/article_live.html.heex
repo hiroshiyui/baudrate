@@ -222,5 +222,11 @@
         />
       <% end %>
     </div>
+
+    <.pagination
+      page={@comment_page}
+      total_pages={@comment_total_pages}
+      path={~p"/articles/#{@article.slug}"}
+    />
   </div>
 </div>

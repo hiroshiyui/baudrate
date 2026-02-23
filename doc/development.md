@@ -104,10 +104,10 @@ lib/
 │   │   │   ├── moderation_log_live.ex # Moderation audit log (filterable, paginated)
 │   │   │   ├── pending_users_live.ex  # Admin approval of pending registrations
 │   │   │   ├── settings_live.ex       # Admin site settings (name, registration, federation)
-│   │   │   └── users_live.ex          # Admin user management (list, ban, unban, role change)
+│   │   │   └── users_live.ex          # Admin user management (paginated, filterable, ban, unban, role change)
 │   │   ├── article_edit_live.ex  # Article editing form
 │   │   ├── article_history_live.ex # Article edit history with inline diffs
-│   │   ├── article_live.ex      # Single article view
+│   │   ├── article_live.ex      # Single article view with paginated comments
 │   │   ├── article_new_live.ex  # Article creation form
 │   │   ├── auth_hooks.ex        # on_mount hooks: require_auth, optional_auth, etc.
 │   │   ├── board_live.ex        # Board view with article listing

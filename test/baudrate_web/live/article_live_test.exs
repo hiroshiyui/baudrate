@@ -112,4 +112,51 @@ defmodule BaudrateWeb.ArticleLiveTest do
     assert html =~ "Signature"
     assert html =~ "awesome"
   end
+
+  test "comment pagination controls appear when root comments exceed per_page", %{conn: conn, user: user, article: article} do
+    # Create 21 root comments (exceeds default per_page of 20)
+    for i <- 1..21 do
+      Content.create_comment(%{
+        "body" => "Root comment #{i}",
+        "article_id" => article.id,
+        "user_id" => user.id
+      })
+    end
+
+    {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+    # Pagination should render with next-page button
+    assert html =~ "join-item btn btn-sm btn-active"
+    assert html =~ "»"
+  end
+
+  test "threaded replies stay with their root when paginated", %{conn: conn, user: user, article: article} do
+    # Create 21 root comments so we have 2 pages
+    root_comments =
+      for i <- 1..21 do
+        {:ok, c} =
+          Content.create_comment(%{
+            "body" => "Root #{i}",
+            "article_id" => article.id,
+            "user_id" => user.id
+          })
+
+        c
+      end
+
+    # Add a reply to the first root comment
+    first_root = List.first(root_comments)
+
+    {:ok, _reply} =
+      Content.create_comment(%{
+        "body" => "Reply to first root",
+        "article_id" => article.id,
+        "user_id" => user.id,
+        "parent_id" => first_root.id
+      })
+
+    # Page 1 should show the first root and its reply
+    {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+    assert html =~ "Root 1"
+    assert html =~ "Reply to first root"
+  end
 end
