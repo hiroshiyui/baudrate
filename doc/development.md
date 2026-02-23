@@ -232,9 +232,7 @@ Key functions in `Content`:
 - `can_post_in_board?(board, user)` — checks `min_role_to_post` + active status + `user.create_content` permission
 - `list_visible_top_boards(user)` / `list_visible_sub_boards(board, user)` — role-filtered board listings
 
-Only boards with `min_role_to_view == "guest"` are federated (same semantics as the
-former `visibility == "public"`). The legacy `visibility` column is kept in sync
-automatically via `Board.sync_visibility/1`.
+Only boards with `min_role_to_view == "guest"` are federated.
 
 ### Board Moderators
 

@@ -22,7 +22,6 @@ defmodule Baudrate.Content.Board do
     field :description, :string
     field :slug, :string
     field :position, :integer, default: 0
-    field :visibility, :string, default: "public"
     field :min_role_to_view, :string, default: "guest"
     field :min_role_to_post, :string, default: "user"
     field :ap_enabled, :boolean, default: true
@@ -57,7 +56,6 @@ defmodule Baudrate.Content.Board do
     )
     |> assoc_constraint(:parent)
     |> unique_constraint(:slug)
-    |> sync_visibility()
   end
 
   @doc """
@@ -73,16 +71,6 @@ defmodule Baudrate.Content.Board do
     |> validate_inclusion(:min_role_to_post, ~w(user moderator admin))
     |> validate_no_parent_cycle(board)
     |> assoc_constraint(:parent)
-    |> sync_visibility()
-  end
-
-  # Keep legacy visibility column in sync with min_role_to_view
-  defp sync_visibility(changeset) do
-    case get_change(changeset, :min_role_to_view) do
-      nil -> changeset
-      "guest" -> put_change(changeset, :visibility, "public")
-      _ -> put_change(changeset, :visibility, "private")
-    end
   end
 
   defp validate_no_parent_cycle(changeset, board) do

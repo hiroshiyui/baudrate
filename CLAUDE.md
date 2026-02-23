@@ -46,7 +46,6 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - Layout receives `@inner_content` (NOT `@inner_block`) — use `{@inner_content}`
 - Do NOT wrap templates with `<Layouts.app>` — causes duplicate flash IDs
 - LiveView uses `phx-trigger-action` for session writes (POST to `SessionController`)
-- Board changeset calls `sync_visibility/1` to keep the legacy `visibility` column in sync — always use `min_role_to_view`/`min_role_to_post` in new code
 - Soft-delete uses `deleted_at` timestamps (not hard delete) for articles and comments
 - Federation delivery runs in async `Task` in production but synchronously in tests (`federation_async: false` in `config/test.exs`) to avoid sandbox ownership errors
 - `can_manage_article?/2` is a backward-compat alias for `can_edit_article?/2` — prefer the granular functions (`can_edit_article?`, `can_delete_article?`, `can_pin_article?`, `can_lock_article?`)

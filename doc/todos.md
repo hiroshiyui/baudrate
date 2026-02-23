@@ -54,7 +54,7 @@ Audit date: 2026-02-23
 
 - [ ] **Write AP endpoint API guide** — endpoints are well-structured but no external-facing documentation
 - [ ] **Write troubleshooting guide** — common issues and solutions
-- [ ] **Remove legacy `visibility` column** — kept in sync via `Board.sync_visibility/1` but no longer the source of truth; clean up in a future migration
+- [x] **Remove legacy `visibility` column** — dropped in migration `20260223032514_remove_visibility_from_boards`; `Board.sync_visibility/1` removed
 
 ## Planned Features
 
@@ -117,7 +117,6 @@ incompatible with LiveView's DOM patching model).
 ## Someday / Maybe
 
 - [x] **Private messaging / DMs** — 1-on-1 direct messages (local + federated via AP `Create(Note)` with restricted addressing); per-user DM access setting (anyone/followers/nobody); real-time PubSub; rate-limited (20/min)
-- [ ] Email notification system (currently no email field in User schema — by design)
 - [ ] Two-way visibility blocking (blocked users can still see public content)
 - [ ] Per-user rate limits on authenticated endpoints (currently IP-only)
 - [ ] Authorized fetch mode test coverage (signed GET fallback)
