@@ -6,9 +6,9 @@ Audit date: 2026-02-23
 
 ## High: Security
 
-- [ ] **Actor-signer mismatch validation** — inbox handler doesn't validate that HTTP Signature actor matches `activity["actor"]`; a compromised server could forge activities for other actors (`activity_pub_controller.ex:313`, `inbox_handler.ex`)
-- [ ] **Undo(Like/Announce) actor ownership check** — any authenticated remote actor could undo another's Like/Announce if they know the AP ID (`inbox_handler.ex:95-115`)
-- [ ] **Nil guard on mute events** — `UserProfileLive` mute/unmute `handle_event` can crash when `current_user` is nil in the `:public_browsable` live_session (`user_profile_live.ex:55-81`)
+- [x] **Actor-signer mismatch validation** — inbox handler now validates that HTTP Signature actor matches `activity["actor"]` via `validate_actor_match/2`
+- [x] **Undo(Like/Announce) actor ownership check** — Undo handlers now scope deletes by `remote_actor_id` via ownership-aware `delete_article_like_by_ap_id/2` and `delete_announce_by_ap_id/2`
+- [x] **Nil guard on mute events** — `UserProfileLive` mute/unmute handlers now guard against nil `current_user` (silent no-op for guests)
 
 ## Medium: Security
 

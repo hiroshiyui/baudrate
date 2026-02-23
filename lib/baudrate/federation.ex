@@ -814,6 +814,17 @@ defmodule Baudrate.Federation do
   end
 
   @doc """
+  Deletes an announce record by its ActivityPub ID, scoped to the given remote actor.
+  Returns `{count, nil}` — only deletes if both ap_id and remote_actor_id match.
+  """
+  def delete_announce_by_ap_id(ap_id, remote_actor_id) when is_binary(ap_id) do
+    from(a in Announce,
+      where: a.ap_id == ^ap_id and a.remote_actor_id == ^remote_actor_id
+    )
+    |> Repo.delete_all()
+  end
+
+  @doc """
   Returns the count of announces for the given target AP ID.
   """
   def count_announces(target_ap_id) when is_binary(target_ap_id) do

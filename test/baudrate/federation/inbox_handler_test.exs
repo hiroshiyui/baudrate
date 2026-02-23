@@ -1199,6 +1199,104 @@ defmodule Baudrate.Federation.InboxHandlerTest do
     end
   end
 
+  describe "actor-signer mismatch validation" do
+    test "rejects activity when actor does not match signer" do
+      remote_actor = create_remote_actor()
+
+      activity = %{
+        "type" => "Follow",
+        "actor" => "https://evil.example/users/impersonator",
+        "object" => "https://local.example/ap/users/bob"
+      }
+
+      assert {:error, :actor_mismatch} =
+               InboxHandler.handle(activity, remote_actor, :shared)
+    end
+
+    test "rejects activity with missing actor field" do
+      remote_actor = create_remote_actor()
+
+      activity = %{
+        "type" => "Follow",
+        "object" => "https://local.example/ap/users/bob"
+      }
+
+      # Validator rejects missing actor before actor_match check
+      assert {:error, :invalid_activity} =
+               InboxHandler.handle(activity, remote_actor, :shared)
+    end
+  end
+
+  describe "Undo(Like) ownership" do
+    test "does not delete another actor's like" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      original_actor = create_remote_actor()
+      other_actor = create_remote_actor()
+
+      article_uri = Federation.actor_uri(:article, article.slug)
+      like_ap_id = "https://remote.example/likes/#{System.unique_integer([:positive])}"
+
+      # Create the like as original_actor
+      like_activity = %{
+        "id" => like_ap_id,
+        "type" => "Like",
+        "actor" => original_actor.ap_id,
+        "object" => article_uri
+      }
+
+      assert :ok = InboxHandler.handle(like_activity, original_actor, :shared)
+      assert Content.count_article_likes(article) == 1
+
+      # Try to undo as other_actor — should NOT delete
+      undo_activity = %{
+        "type" => "Undo",
+        "actor" => other_actor.ap_id,
+        "object" => %{
+          "type" => "Like",
+          "id" => like_ap_id
+        }
+      }
+
+      assert :ok = InboxHandler.handle(undo_activity, other_actor, :shared)
+      assert Content.count_article_likes(article) == 1
+    end
+  end
+
+  describe "Undo(Announce) ownership" do
+    test "does not delete another actor's announce" do
+      original_actor = create_remote_actor()
+      other_actor = create_remote_actor()
+      target_uri = "https://local.example/ap/articles/some-post"
+      announce_ap_id = "https://remote.example/activities/announce-#{System.unique_integer([:positive])}"
+
+      # Create the announce as original_actor
+      announce_activity = %{
+        "id" => announce_ap_id,
+        "type" => "Announce",
+        "actor" => original_actor.ap_id,
+        "object" => target_uri
+      }
+
+      assert :ok = InboxHandler.handle(announce_activity, original_actor, :shared)
+      assert Federation.count_announces(target_uri) == 1
+
+      # Try to undo as other_actor — should NOT delete
+      undo_activity = %{
+        "type" => "Undo",
+        "actor" => other_actor.ap_id,
+        "object" => %{
+          "type" => "Announce",
+          "id" => announce_ap_id
+        }
+      }
+
+      assert :ok = InboxHandler.handle(undo_activity, other_actor, :shared)
+      assert Federation.count_announces(target_uri) == 1
+    end
+  end
+
   describe "Delete(actor)" do
     test "removes all follower records for the deleted actor" do
       user = setup_user_with_role("user")

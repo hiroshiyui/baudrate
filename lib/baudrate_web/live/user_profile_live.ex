@@ -54,30 +54,41 @@ defmodule BaudrateWeb.UserProfileLive do
   @impl true
   def handle_event("mute_user", _params, socket) do
     current_user = socket.assigns.current_user
-    profile_user = socket.assigns.profile_user
 
-    case Auth.mute_user(current_user, profile_user) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign(:is_muted, true)
-         |> put_flash(:info, gettext("User muted."))}
+    if current_user do
+      profile_user = socket.assigns.profile_user
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to mute user."))}
+      case Auth.mute_user(current_user, profile_user) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> assign(:is_muted, true)
+           |> put_flash(:info, gettext("User muted."))}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to mute user."))}
+      end
+    else
+      {:noreply, socket}
     end
   end
 
+  @impl true
   def handle_event("unmute_user", _params, socket) do
     current_user = socket.assigns.current_user
-    profile_user = socket.assigns.profile_user
 
-    Auth.unmute_user(current_user, profile_user)
+    if current_user do
+      profile_user = socket.assigns.profile_user
 
-    {:noreply,
-     socket
-     |> assign(:is_muted, false)
-     |> put_flash(:info, gettext("User unmuted."))}
+      Auth.unmute_user(current_user, profile_user)
+
+      {:noreply,
+       socket
+       |> assign(:is_muted, false)
+       |> put_flash(:info, gettext("User unmuted."))}
+    else
+      {:noreply, socket}
+    end
   end
 
   defp translate_role("admin"), do: gettext("admin")

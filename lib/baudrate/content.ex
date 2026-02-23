@@ -1133,6 +1133,17 @@ defmodule Baudrate.Content do
   end
 
   @doc """
+  Deletes an article like by its ActivityPub ID, scoped to the given remote actor.
+  Returns `{count, nil}` — only deletes if both ap_id and remote_actor_id match.
+  """
+  def delete_article_like_by_ap_id(ap_id, remote_actor_id) when is_binary(ap_id) do
+    from(l in ArticleLike,
+      where: l.ap_id == ^ap_id and l.remote_actor_id == ^remote_actor_id
+    )
+    |> Repo.delete_all()
+  end
+
+  @doc """
   Returns the count of non-deleted comments for an article.
   """
   def count_comments_for_article(%Article{id: article_id}) do

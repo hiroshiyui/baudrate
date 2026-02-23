@@ -41,6 +41,16 @@ defmodule BaudrateWeb.UserProfileLiveTest do
     assert html =~ "0"
   end
 
+  test "mute event as guest is a no-op", %{conn: conn} do
+    user = setup_user("user")
+
+    {:ok, lv, _html} = live(conn, "/users/#{user.username}")
+
+    # Simulate crafted websocket message — guest has no current_user
+    assert render_hook(lv, :mute_user, %{})
+    assert render_hook(lv, :unmute_user, %{})
+  end
+
   test "displays signature on user profile page", %{conn: conn} do
     user = setup_user("user")
     {:ok, _updated} = Auth.update_signature(user, "My **profile** signature")

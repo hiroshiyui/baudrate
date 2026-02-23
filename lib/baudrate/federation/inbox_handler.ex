@@ -44,7 +44,8 @@ defmodule Baudrate.Federation.InboxHandler do
   def handle(activity, remote_actor, target) do
     with {:ok, activity} <- Validator.validate_activity(activity),
          :ok <- validate_domain(remote_actor),
-         :ok <- validate_not_local(activity) do
+         :ok <- validate_not_local(activity),
+         :ok <- validate_actor_match(activity, remote_actor) do
       dispatch(activity, remote_actor, target)
     end
   end
@@ -94,11 +95,11 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp dispatch(
          %{"type" => "Undo", "object" => %{"type" => "Like", "id" => like_ap_id}},
-         _remote_actor,
+         remote_actor,
          _target
        )
        when is_binary(like_ap_id) do
-    Content.delete_article_like_by_ap_id(like_ap_id)
+    Content.delete_article_like_by_ap_id(like_ap_id, remote_actor.id)
     :ok
   end
 
@@ -106,11 +107,11 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp dispatch(
          %{"type" => "Undo", "object" => %{"type" => "Announce", "id" => announce_ap_id}},
-         _remote_actor,
+         remote_actor,
          _target
        )
        when is_binary(announce_ap_id) do
-    Federation.delete_announce_by_ap_id(announce_ap_id)
+    Federation.delete_announce_by_ap_id(announce_ap_id, remote_actor.id)
     :ok
   end
 
@@ -728,6 +729,17 @@ defmodule Baudrate.Federation.InboxHandler do
   end
 
   # --- Validation helpers ---
+
+  defp validate_actor_match(%{"actor" => actor_uri}, %{ap_id: signer_ap_id})
+       when is_binary(actor_uri) do
+    if actor_uri == signer_ap_id do
+      :ok
+    else
+      {:error, :actor_mismatch}
+    end
+  end
+
+  defp validate_actor_match(_, _), do: {:error, :actor_mismatch}
 
   defp validate_domain(remote_actor) do
     if Validator.domain_blocked?(remote_actor.domain) do
