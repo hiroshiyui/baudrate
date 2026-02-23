@@ -122,6 +122,22 @@ defmodule BaudrateWeb.Router do
     post "/boards/:slug/inbox", ActivityPubController, :board_inbox
   end
 
+  # Syndication feeds (RSS 2.0 / Atom 1.0)
+  pipeline :feeds do
+    plug BaudrateWeb.Plugs.RateLimit, action: :feeds
+  end
+
+  scope "/feeds", BaudrateWeb do
+    pipe_through :feeds
+
+    get "/rss", FeedController, :site_rss
+    get "/atom", FeedController, :site_atom
+    get "/boards/:slug/rss", FeedController, :board_rss
+    get "/boards/:slug/atom", FeedController, :board_atom
+    get "/users/:username/rss", FeedController, :user_rss
+    get "/users/:username/atom", FeedController, :user_atom
+  end
+
   # Public (redirect if already authenticated)
   scope "/", BaudrateWeb do
     pipe_through :browser

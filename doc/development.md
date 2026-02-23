@@ -94,6 +94,11 @@ lib/
 │   │   ├── activity_pub_controller.ex  # ActivityPub endpoints (content-negotiated)
 │   │   ├── error_html.ex        # HTML error pages
 │   │   ├── error_json.ex        # JSON error responses
+│   │   ├── feed_controller.ex   # RSS 2.0 / Atom 1.0 syndication feeds
+│   │   ├── feed_xml.ex          # Feed XML rendering (EEx templates, helpers)
+│   │   ├── feed_xml/            # EEx templates for RSS and Atom XML
+│   │   │   ├── rss.xml.eex     # RSS 2.0 channel + items template
+│   │   │   └── atom.xml.eex    # Atom 1.0 feed + entries template
 │   │   ├── page_controller.ex   # Static page controller
 │   │   └── session_controller.ex  # POST endpoints for session mutations
 │   ├── live/
@@ -739,6 +744,12 @@ RateLimitDomain (60/min per domain) →
 ActivityPubController (dispatch to InboxHandler)
 ```
 
+Feed requests use a lightweight pipeline (no session, no CSRF):
+
+```
+RateLimit (30/min per IP) → FeedController (XML response)
+```
+
 ### Rate Limiting
 
 | Endpoint | Limit | Scope |
@@ -752,6 +763,7 @@ ActivityPubController (dispatch to InboxHandler)
 | Avatar upload | 5 / hour | per user |
 | AP endpoints | 120 / min | per IP |
 | AP inbox | 60 / min | per remote domain |
+| Feeds (RSS/Atom) | 30 / min | per IP |
 | Direct messages | 20 / min | per user |
 
 ### Supervision Tree
@@ -863,6 +875,37 @@ In preview mode, the textarea is hidden and a preview `<div>` (rendered with
 disabled while in preview mode.
 
 Source: `assets/js/markdown_toolbar_hook.js`, `lib/baudrate_web/live/markdown_preview_hook.ex`
+
+### Syndication Feeds (RSS / Atom)
+
+RSS 2.0 and Atom 1.0 feeds are available at three scopes:
+
+| Endpoint | Format | Scope |
+|----------|--------|-------|
+| `/feeds/rss` | RSS 2.0 | Site-wide (all public boards) |
+| `/feeds/atom` | Atom 1.0 | Site-wide (all public boards) |
+| `/feeds/boards/:slug/rss` | RSS 2.0 | Single public board |
+| `/feeds/boards/:slug/atom` | Atom 1.0 | Single public board |
+| `/feeds/users/:username/rss` | RSS 2.0 | User's articles in public boards |
+| `/feeds/users/:username/atom` | Atom 1.0 | User's articles in public boards |
+
+**Design decisions:**
+
+- **Local articles only** — remote/federated articles are excluded to respect
+  intellectual property rights (obtaining authorization from every Fediverse
+  author is infeasible)
+- **20 items per feed** — matches AP pagination
+- **EEx templates** — RSS/Atom are fixed XML formats; no library dependency needed
+- **CDATA** wraps HTML content in both formats to avoid double-escaping
+- **Caching** — `Cache-Control: public, max-age=300` with `Last-Modified` /
+  `If-Modified-Since` → 304 support for efficient polling by feed readers
+- **Rate limited** — 30 requests/min per IP (via `:feeds` rate limit action)
+- **Board feeds** return 404 for private or nonexistent boards
+- **User feeds** return 404 for nonexistent or banned users
+
+**Autodiscovery:** `<link rel="alternate">` tags are injected into `<head>` on
+the home page (site-wide feeds) and public board pages (board-specific feeds)
+via optional socket assigns (`feed_site`, `feed_board_slug`).
 
 ## Further Reading
 

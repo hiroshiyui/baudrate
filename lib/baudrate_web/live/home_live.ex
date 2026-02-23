@@ -14,6 +14,6 @@ defmodule BaudrateWeb.HomeLive do
   @impl true
   def mount(_params, _session, socket) do
     boards = Content.list_visible_top_boards(socket.assigns.current_user)
-    {:ok, assign(socket, boards: boards, page_title: gettext("Boards"))}
+    {:ok, assign(socket, boards: boards, page_title: gettext("Boards"), feed_site: true)}
   end
 end

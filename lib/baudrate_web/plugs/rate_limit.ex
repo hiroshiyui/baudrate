@@ -14,6 +14,7 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     * `:totp` — 15 attempts per 5 minutes per IP
     * `:register` — 5 attempts per hour per IP
     * `:activity_pub` — 120 requests per minute per IP
+    * `:feeds` — 30 requests per minute per IP
 
   ## Bucket Naming
 
@@ -33,7 +34,8 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     login: {300_000, 10},
     totp: {300_000, 15},
     register: {3_600_000, 5},
-    activity_pub: {60_000, 120}
+    activity_pub: {60_000, 120},
+    feeds: {60_000, 30}
   }
 
   @impl true

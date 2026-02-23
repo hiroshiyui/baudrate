@@ -6,7 +6,7 @@ Audit date: 2026-02-23
 
 ## Medium: Feature Gaps
 
-- [ ] **RSS/Atom feeds** — no feed endpoints; common expectation for forums (`/boards/:slug/feed.xml`, `/articles/feed.xml`)
+- [x] **RSS/Atom feeds** — `/feeds/rss`, `/feeds/atom`, `/feeds/boards/:slug/rss|atom`, `/feeds/users/:username/rss|atom`
 - [ ] **Bulk moderation actions** — one-at-a-time only; no bulk delete/ban in admin
 - [ ] **User muting** — blocking exists (AP Block activity) but no local-only soft-mute/ignore
 

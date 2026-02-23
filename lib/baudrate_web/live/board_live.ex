@@ -28,7 +28,9 @@ defmodule BaudrateWeb.BoardLive do
       ancestors = Content.board_ancestors(board)
       sub_boards = Content.list_visible_sub_boards(board, current_user)
 
-      {:ok, assign(socket, board: board, can_create: can_create, ancestors: ancestors, sub_boards: sub_boards, page_title: board.name)}
+      feed_slug = if board.min_role_to_view == "guest", do: board.slug
+
+      {:ok, assign(socket, board: board, can_create: can_create, ancestors: ancestors, sub_boards: sub_boards, page_title: board.name, feed_board_slug: feed_slug)}
     end
   end
 

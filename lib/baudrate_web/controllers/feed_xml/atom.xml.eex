@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title><%= xml_escape(@title) %></title>
+  <link href="<%= xml_escape(@link) %>" rel="alternate" type="text/html" />
+  <link href="<%= xml_escape(@self_url) %>" rel="self" type="application/atom+xml" />
+  <id><%= xml_escape(@self_url) %></id>
+  <%= if @updated do %><updated><%= rfc3339(@updated) %></updated><% end %>
+  <%= for article <- @articles do %>
+  <entry>
+    <title><%= xml_escape(article.title) %></title>
+    <link href="<%= xml_escape(article_url(article)) %>" rel="alternate" type="text/html" />
+    <id><%= xml_escape(article_url(article)) %></id>
+    <published><%= rfc3339(article.inserted_at) %></published>
+    <updated><%= rfc3339(article.updated_at) %></updated>
+    <author>
+      <name><%= xml_escape(author_name(article)) %></name>
+    </author>
+    <content type="html"><![CDATA[<%= article_html(article) %>]]></content>
+  </entry>
+  <% end %>
+</feed>

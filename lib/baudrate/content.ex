@@ -1212,6 +1212,85 @@ defmodule Baudrate.Content do
     paths
   end
 
+  # --- Feed Queries ---
+
+  @doc """
+  Returns recent local articles across all public boards (guest-visible).
+
+  Only includes local articles (those with a `user_id`), excludes soft-deleted
+  articles, and deduplicates cross-posted articles. Results are ordered newest
+  first with user and boards preloaded.
+  """
+  def list_recent_public_articles(limit \\ 20) do
+    from(a in Article,
+      join: ba in BoardArticle,
+      on: ba.article_id == a.id,
+      join: b in Board,
+      on: b.id == ba.board_id,
+      where:
+        is_nil(a.deleted_at) and
+          not is_nil(a.user_id) and
+          b.min_role_to_view == "guest",
+      distinct: a.id,
+      order_by: [desc: a.inserted_at],
+      limit: ^limit,
+      preload: [:user, :boards]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns recent local articles for a public board.
+
+  Returns `{:ok, articles}` if the board is public (`min_role_to_view == "guest"`),
+  or `{:error, :not_public}` otherwise. Only includes local articles.
+  """
+  def list_recent_articles_for_public_board(%Board{} = board, limit \\ 20) do
+    if board.min_role_to_view != "guest" do
+      {:error, :not_public}
+    else
+      articles =
+        from(a in Article,
+          join: ba in BoardArticle,
+          on: ba.article_id == a.id,
+          where:
+            ba.board_id == ^board.id and
+              is_nil(a.deleted_at) and
+              not is_nil(a.user_id),
+          order_by: [desc: a.inserted_at],
+          limit: ^limit,
+          preload: [:user, :boards]
+        )
+        |> Repo.all()
+
+      {:ok, articles}
+    end
+  end
+
+  @doc """
+  Returns recent articles by a user that appear in at least one public board.
+
+  Inherently local-only since it filters by `user_id`. Results are deduplicated
+  and ordered newest first with user and boards preloaded.
+  """
+  def list_recent_public_articles_by_user(user_id, limit \\ 20) do
+    from(a in Article,
+      join: ba in BoardArticle,
+      on: ba.article_id == a.id,
+      join: b in Board,
+      on: b.id == ba.board_id,
+      where:
+        a.user_id == ^user_id and
+          is_nil(a.deleted_at) and
+          b.min_role_to_view == "guest",
+      distinct: a.id,
+      order_by: [desc: a.inserted_at],
+      limit: ^limit,
+      preload: [:user, :boards]
+    )
+    |> Repo.all()
+  end
+
   # --- User Content Queries ---
 
   @doc """
