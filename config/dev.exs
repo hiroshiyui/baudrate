@@ -24,8 +24,8 @@ config :baudrate, BaudrateWeb.Endpoint,
     ip: {127, 0, 0, 1},
     port: 4001,
     cipher_suite: :strong,
-    certfile: "priv/cert/selfsigned.pem",
-    keyfile: "priv/cert/selfsigned_key.pem"
+    certfile: "priv/cert/localhost.pem",
+    keyfile: "priv/cert/localhost-key.pem"
   ],
   check_origin: false,
   code_reloader: true,
@@ -94,4 +94,3 @@ config :phoenix_live_view,
   debug_attributes: true,
   # Enable helpful, but potentially expensive runtime checks
   enable_expensive_runtime_checks: true
-
