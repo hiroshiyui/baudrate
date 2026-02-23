@@ -4,14 +4,6 @@ Audit date: 2026-02-23
 
 ---
 
-## High: Security & Performance
-
-- [x] **Paginate admin user list** — `Auth.paginate_users/1` with URL-driven `?page=N` in `UsersLive`; filters preserved in pagination links
-- [x] **Paginate article comments** — `Content.paginate_comments_for_article/3` paginates by root comments with iterative descendant loading; `?page=N` in `ArticleLive`
-- [x] **Add database index on `articles.deleted_at`** — partial index (`WHERE deleted_at IS NULL`) added in migration `20260223035638`
-- [x] **Add database index on `comments.deleted_at`** — same migration as above
-- [x] **Per-account brute-force protection** — progressive per-account delay (5s after 5 failures, 30s after 10, 2min after 15) via `login_attempts` table; admin visibility at `/admin/login-attempts`; no hard lockout (avoids DoS vector); existing defenses retained: IP-based rate limiting + mandatory TOTP for admin/moderator roles
-
 ## Medium: Feature Gaps
 
 - [ ] **RSS/Atom feeds** — no feed endpoints; common expectation for forums (`/boards/:slug/feed.xml`, `/articles/feed.xml`)
