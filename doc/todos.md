@@ -12,16 +12,11 @@ Audit date: 2026-02-23
 
 ## Low: Deployment & Infrastructure
 
-- [ ] **Create Dockerfile** — no containerization support
-- [ ] **Create docker-compose.yml** — no local dev environment template
+- [ ] **Create Containerfile** — no containerization support (Podman)
+- [ ] **Create podman-compose.yml** — no local dev environment template
 - [ ] **Add `rel/` release config** — `mix release` not configured for production
 - [ ] **Write deployment guide** — no deployment documentation exists
 - [ ] **Add `.env.example`** — no environment config template
-
-## Low: Documentation
-
-- [x] **Write AP endpoint API guide** — see [`doc/api.md`](api.md)
-- [x] **Write troubleshooting guide** — see [`doc/troubleshooting.md`](troubleshooting.md)
 
 ## Planned Features
 
