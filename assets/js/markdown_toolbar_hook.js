@@ -2,8 +2,12 @@
  * MarkdownToolbarHook — LiveView JS hook that adds a Markdown formatting
  * toolbar above any textarea it is attached to via `phx-hook="MarkdownToolbarHook"`.
  *
- * All operations are client-side only (selection manipulation + syntax insertion).
- * After each edit an `input` event is dispatched so LiveView picks up the change.
+ * All formatting operations are client-side only (selection manipulation + syntax
+ * insertion). After each edit an `input` event is dispatched so LiveView picks
+ * up the change.
+ *
+ * A Write/Preview toggle sends the textarea content to the server for rendering
+ * via `pushEvent("markdown_preview", ...)` with a reply callback.
  */
 
 const BUTTONS = [
@@ -100,6 +104,12 @@ const BUTTONS = [
   },
 ];
 
+const PREVIEW_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" /><path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 0 1 0-1.113ZM17.25 12a5.25 5.25 0 1 1-10.5 0 5.25 5.25 0 0 1 10.5 0Z" clip-rule="evenodd" /></svg>`;
+
+const WRITE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4"><path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" /><path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" /></svg>`;
+
+const SPINNER_HTML = `<span class="loading loading-spinner loading-sm"></span>`;
+
 function getLineRange(text, start, end) {
   const lineStart = text.lastIndexOf("\n", start - 1) + 1;
   let lineEnd = text.indexOf("\n", end);
@@ -183,6 +193,10 @@ const MarkdownToolbarHook = {
     // The server renders a <div id="<textarea-id>-md-toolbar" phx-update="ignore">
     // next to the textarea. We populate it once; LiveView will never patch it.
     this.toolbar = document.getElementById(this.el.id + "-md-toolbar");
+    this.previewDiv = document.getElementById(this.el.id + "-md-preview");
+    this.isPreview = false;
+    this.formatButtons = [];
+
     if (!this.toolbar) return;
 
     this.toolbar.className = "flex flex-wrap items-center gap-0.5 mb-1";
@@ -203,6 +217,7 @@ const MarkdownToolbarHook = {
       button.title = btn.title;
       button.setAttribute("aria-label", btn.title);
       button.innerHTML = btn.icon;
+      this.formatButtons.push(button);
 
       button.addEventListener("click", (e) => {
         e.preventDefault();
@@ -234,12 +249,102 @@ const MarkdownToolbarHook = {
 
       this.toolbar.appendChild(button);
     }
+
+    // Preview toggle button — pushed to the right with ml-auto
+    if (this.previewDiv) {
+      const spacer = document.createElement("div");
+      spacer.className = "ml-auto";
+      this.toolbar.appendChild(spacer);
+
+      this.previewBtn = document.createElement("button");
+      this.previewBtn.type = "button";
+      this.previewBtn.className = "btn btn-ghost btn-sm";
+      this.previewBtn.title = "Preview";
+      this.previewBtn.setAttribute("aria-label", "Preview");
+      this.previewBtn.setAttribute("aria-pressed", "false");
+      this.previewBtn.innerHTML = PREVIEW_ICON;
+
+      this.previewBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.togglePreview();
+      });
+
+      this.toolbar.appendChild(this.previewBtn);
+
+      // Listen for server-pushed preview results
+      this.handleEvent("markdown_preview_result", (payload) => {
+        if (!this.isPreview) return;
+
+        if (payload.error) {
+          this.previewDiv.innerHTML =
+            '<p class="text-error text-sm">Content too large to preview.</p>';
+        } else if (payload.html) {
+          this.previewDiv.innerHTML = payload.html;
+        } else {
+          this.previewDiv.innerHTML =
+            '<p class="text-base-content/50 text-sm italic">Nothing to preview.</p>';
+        }
+      });
+    }
+  },
+
+  togglePreview() {
+    if (this.isPreview) {
+      // Switch to Write mode
+      this.isPreview = false;
+      this.el.classList.remove("hidden");
+      this.previewDiv.classList.add("hidden");
+      this.previewBtn.innerHTML = PREVIEW_ICON;
+      this.previewBtn.title = "Preview";
+      this.previewBtn.setAttribute("aria-label", "Preview");
+      this.previewBtn.setAttribute("aria-pressed", "false");
+      this.setFormatButtonsDisabled(false);
+      this.el.focus();
+    } else {
+      // Switch to Preview mode
+      this.isPreview = true;
+      this.el.classList.add("hidden");
+      this.previewDiv.classList.remove("hidden");
+      this.previewDiv.innerHTML = SPINNER_HTML;
+      this.previewBtn.innerHTML = WRITE_ICON;
+      this.previewBtn.title = "Write";
+      this.previewBtn.setAttribute("aria-label", "Write");
+      this.previewBtn.setAttribute("aria-pressed", "true");
+      this.setFormatButtonsDisabled(true);
+
+      this.pushEvent("markdown_preview", { body: this.el.value });
+    }
+  },
+
+  setFormatButtonsDisabled(disabled) {
+    for (const btn of this.formatButtons) {
+      btn.disabled = disabled;
+      if (disabled) {
+        btn.classList.add("btn-disabled");
+      } else {
+        btn.classList.remove("btn-disabled");
+      }
+    }
+  },
+
+  updated() {
+    // Re-apply hidden state if LiveView re-patches while in preview mode
+    if (this.isPreview) {
+      this.el.classList.add("hidden");
+      if (this.previewDiv) {
+        this.previewDiv.classList.remove("hidden");
+      }
+    }
   },
 
   destroyed() {
     if (this.toolbar) {
       this.toolbar.replaceChildren();
     }
+    this.isPreview = false;
+    this.formatButtons = [];
+    this.previewBtn = null;
+    this.previewDiv = null;
   },
 };
 

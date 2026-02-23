@@ -282,6 +282,15 @@ defmodule BaudrateWeb.CoreComponents do
           aria-describedby={@errors != [] && "#{@id}-error"}
           {@rest}
         >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
+        <div
+          :if={@toolbar}
+          id={"#{@id}-md-preview"}
+          class="hidden w-full prose prose-sm max-w-none border border-base-300 rounded-lg p-3 min-h-[6rem] bg-base-100"
+          phx-update="ignore"
+          role="region"
+          aria-label={gettext("Markdown preview")}
+        >
+        </div>
       </label>
       <div :if={@errors != []} id={"#{@id}-error"} role="alert">
         <.error :for={msg <- @errors}>{msg}</.error>

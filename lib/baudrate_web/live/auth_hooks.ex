@@ -30,6 +30,7 @@ defmodule BaudrateWeb.AuthHooks do
   use Gettext, backend: BaudrateWeb.Gettext
 
   alias Baudrate.Auth
+  alias BaudrateWeb.MarkdownPreviewHook
 
   def on_mount(:require_auth, _params, session, socket) do
     session_token = session["session_token"]
@@ -49,6 +50,7 @@ defmodule BaudrateWeb.AuthHooks do
               socket
               |> assign(:current_user, user)
               |> assign(:locale, locale)
+              |> MarkdownPreviewHook.attach()
 
             {:cont, socket}
           end
@@ -76,15 +78,16 @@ defmodule BaudrateWeb.AuthHooks do
               socket
               |> assign(:current_user, user)
               |> assign(:locale, locale)
+              |> MarkdownPreviewHook.attach()
 
             {:cont, socket}
           end
 
         {:error, _reason} ->
-          {:cont, assign(socket, :current_user, nil)}
+          {:cont, socket |> assign(:current_user, nil) |> MarkdownPreviewHook.attach()}
       end
     else
-      {:cont, assign(socket, :current_user, nil)}
+      {:cont, socket |> assign(:current_user, nil) |> MarkdownPreviewHook.attach()}
     end
   end
 
