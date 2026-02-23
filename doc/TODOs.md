@@ -32,6 +32,7 @@ Audit date: 2026-02-23
 
 ### Untested Security-Critical Modules (0% coverage)
 
+- [ ] **`Sanitizer.Native`** — `sanitize_markdown/1` and `strip_tags/1` NIFs untested; only `sanitize_federation/1` is covered indirectly via `Federation.SanitizerTest`
 - [ ] **`VerifyHTTPSignature` plug** — sole authentication gate for all inbound federation
 - [ ] **`AttachmentStorage`** — file upload security (magic bytes, re-encoding)
 - [ ] **`CacheBody` plug** — body caching for digest verification
