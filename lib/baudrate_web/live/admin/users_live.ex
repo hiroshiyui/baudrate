@@ -14,6 +14,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
   alias Baudrate.Auth
   alias Baudrate.Moderation
   alias Baudrate.Setup
+  import BaudrateWeb.Helpers, only: [parse_id: 1]
 
   @valid_statuses ~w(active pending banned)
 
@@ -80,49 +81,59 @@ defmodule BaudrateWeb.Admin.UsersLive do
   end
 
   def handle_event("approve", %{"id" => id}, socket) do
-    case Auth.get_user(String.to_integer(id)) do
-      nil ->
-        {:noreply, put_flash(socket, :error, gettext("User not found."))}
+    case parse_id(id) do
+      :error ->
+        {:noreply, socket}
 
-      user ->
-        case Auth.approve_user(user) do
-          {:ok, _user} ->
-            Moderation.log_action(socket.assigns.current_user.id, "approve_user",
-              target_type: "user",
-              target_id: user.id,
-              details: %{"username" => user.username}
-            )
+      {:ok, user_id} ->
+        case Auth.get_user(user_id) do
+          nil ->
+            {:noreply, put_flash(socket, :error, gettext("User not found."))}
 
-            {:noreply,
-             socket
-             |> put_flash(:info, gettext("User approved successfully."))
-             |> reload_users()
-             |> reload_counts()}
+          user ->
+            case Auth.approve_user(user) do
+              {:ok, _user} ->
+                Moderation.log_action(socket.assigns.current_user.id, "approve_user",
+                  target_type: "user",
+                  target_id: user.id,
+                  details: %{"username" => user.username}
+                )
 
-          {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to approve user."))}
+                {:noreply,
+                 socket
+                 |> put_flash(:info, gettext("User approved successfully."))
+                 |> reload_users()
+                 |> reload_counts()}
+
+              {:error, _changeset} ->
+                {:noreply, put_flash(socket, :error, gettext("Failed to approve user."))}
+            end
         end
     end
   end
 
   def handle_event("show_ban_modal", %{"id" => id}, socket) do
-    user_id = String.to_integer(id)
+    case parse_id(id) do
+      :error ->
+        {:noreply, socket}
 
-    if user_id == socket.assigns.current_user.id do
-      {:noreply, put_flash(socket, :error, gettext("You cannot ban yourself."))}
-    else
-      case Auth.get_user(user_id) do
-        nil ->
-          {:noreply, put_flash(socket, :error, gettext("User not found."))}
+      {:ok, user_id} ->
+        if user_id == socket.assigns.current_user.id do
+          {:noreply, put_flash(socket, :error, gettext("You cannot ban yourself."))}
+        else
+          case Auth.get_user(user_id) do
+            nil ->
+              {:noreply, put_flash(socket, :error, gettext("User not found."))}
 
-        user ->
-          {:noreply,
-           assign(socket,
-             ban_target: user_id,
-             ban_target_username: user.username,
-             ban_reason: ""
-           )}
-      end
+            user ->
+              {:noreply,
+               assign(socket,
+                 ban_target: user_id,
+                 ban_target_username: user.username,
+                 ban_reason: ""
+               )}
+          end
+        end
     end
   end
 
@@ -172,7 +183,50 @@ defmodule BaudrateWeb.Admin.UsersLive do
   end
 
   def handle_event("unban", %{"id" => id}, socket) do
-    case Auth.get_user(String.to_integer(id)) do
+    case parse_id(id) do
+      :error -> {:noreply, socket}
+      {:ok, user_id} -> do_unban(socket, user_id)
+    end
+  end
+
+  def handle_event("change_role", %{"id" => id, "role_id" => role_id}, socket) do
+    with {:ok, user_id} <- parse_id(id),
+         {:ok, parsed_role_id} <- parse_id(role_id) do
+      case Auth.get_user(user_id) do
+        nil ->
+          {:noreply, put_flash(socket, :error, gettext("User not found."))}
+
+        user ->
+          admin_id = socket.assigns.current_user.id
+          old_role = user.role.name
+
+          case Auth.update_user_role(user, parsed_role_id, admin_id) do
+          {:ok, updated_user} ->
+            Moderation.log_action(admin_id, "update_role",
+              target_type: "user",
+              target_id: user.id,
+              details: %{"username" => user.username, "old_role" => old_role, "new_role" => updated_user.role.name}
+            )
+
+            {:noreply,
+             socket
+             |> put_flash(:info, gettext("User role updated successfully."))
+             |> reload_users()}
+
+          {:error, :self_action} ->
+            {:noreply, put_flash(socket, :error, gettext("You cannot change your own role."))}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to update user role."))}
+        end
+      end
+    else
+      :error -> {:noreply, socket}
+    end
+  end
+
+  defp do_unban(socket, user_id) do
+    case Auth.get_user(user_id) do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("User not found."))}
 
@@ -193,37 +247,6 @@ defmodule BaudrateWeb.Admin.UsersLive do
 
           {:error, _} ->
             {:noreply, put_flash(socket, :error, gettext("Failed to unban user."))}
-        end
-    end
-  end
-
-  def handle_event("change_role", %{"id" => id, "role_id" => role_id}, socket) do
-    case Auth.get_user(String.to_integer(id)) do
-      nil ->
-        {:noreply, put_flash(socket, :error, gettext("User not found."))}
-
-      user ->
-        admin_id = socket.assigns.current_user.id
-        old_role = user.role.name
-
-        case Auth.update_user_role(user, String.to_integer(role_id), admin_id) do
-          {:ok, updated_user} ->
-            Moderation.log_action(admin_id, "update_role",
-              target_type: "user",
-              target_id: user.id,
-              details: %{"username" => user.username, "old_role" => old_role, "new_role" => updated_user.role.name}
-            )
-
-            {:noreply,
-             socket
-             |> put_flash(:info, gettext("User role updated successfully."))
-             |> reload_users()}
-
-          {:error, :self_action} ->
-            {:noreply, put_flash(socket, :error, gettext("You cannot change your own role."))}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to update user role."))}
         end
     end
   end

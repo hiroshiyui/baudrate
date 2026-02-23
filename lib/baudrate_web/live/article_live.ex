@@ -12,6 +12,7 @@ defmodule BaudrateWeb.ArticleLive do
   alias Baudrate.Content
   alias Baudrate.Content.PubSub, as: ContentPubSub
   alias Baudrate.Moderation
+  import BaudrateWeb.Helpers, only: [parse_id: 1]
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -191,31 +192,37 @@ defmodule BaudrateWeb.ArticleLive do
 
   @impl true
   def handle_event("delete_comment", %{"id" => id}, socket) do
-    article = socket.assigns.article
-    user = socket.assigns.current_user
-    comment = Baudrate.Repo.get!(Baudrate.Content.Comment, String.to_integer(id))
+    case parse_id(id) do
+      :error ->
+        {:noreply, socket}
 
-    if Content.can_delete_comment?(user, comment, article) do
-      case Content.soft_delete_comment(comment) do
-        {:ok, _} ->
-          if user.id != comment.user_id do
-            Moderation.log_action(user.id, "delete_comment",
-              target_type: "comment",
-              target_id: comment.id,
-              details: %{"article_title" => article.title}
-            )
+      {:ok, comment_id} ->
+        article = socket.assigns.article
+        user = socket.assigns.current_user
+        comment = Baudrate.Repo.get!(Baudrate.Content.Comment, comment_id)
+
+        if Content.can_delete_comment?(user, comment, article) do
+          case Content.soft_delete_comment(comment) do
+            {:ok, _} ->
+              if user.id != comment.user_id do
+                Moderation.log_action(user.id, "delete_comment",
+                  target_type: "comment",
+                  target_id: comment.id,
+                  details: %{"article_title" => article.title}
+                )
+              end
+
+              {:noreply,
+               socket
+               |> load_comments(socket.assigns.comment_page)
+               |> put_flash(:info, gettext("Comment deleted."))}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, gettext("Failed to delete comment."))}
           end
-
-          {:noreply,
-           socket
-           |> load_comments(socket.assigns.comment_page)
-           |> put_flash(:info, gettext("Comment deleted."))}
-
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to delete comment."))}
-      end
-    else
-      {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
+        else
+          {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
+        end
     end
   end
 
@@ -261,7 +268,10 @@ defmodule BaudrateWeb.ArticleLive do
 
   @impl true
   def handle_event("reply_to", %{"id" => comment_id}, socket) do
-    {:noreply, assign(socket, :replying_to, String.to_integer(comment_id))}
+    case parse_id(comment_id) do
+      {:ok, id} -> {:noreply, assign(socket, :replying_to, id)}
+      :error -> {:noreply, socket}
+    end
   end
 
   @impl true

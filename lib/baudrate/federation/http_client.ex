@@ -258,6 +258,12 @@ defmodule Baudrate.Federation.HTTPClient do
   def private_ip?({a, _, _, _, _, _, _, _}) when a >= 0xFC00 and a <= 0xFDFF, do: true
   # IPv6 fe80::/10
   def private_ip?({a, _, _, _, _, _, _, _}) when a >= 0xFE80 and a <= 0xFEBF, do: true
+  # IPv4-mapped IPv6 (::ffff:x.y.z.w) — extract embedded IPv4 and re-check
+  def private_ip?({0, 0, 0, 0, 0, 0xFFFF, hi, lo}) do
+    import Bitwise
+    private_ip?({hi >>> 8, hi &&& 0xFF, lo >>> 8, lo &&& 0xFF})
+  end
+
   def private_ip?(_), do: false
 
   defp user_agent do

@@ -17,6 +17,7 @@ defmodule BaudrateWeb.Admin.BoardsLive do
   alias Baudrate.Content.Board
   alias Baudrate.Federation.KeyStore
   alias Baudrate.Moderation
+  import BaudrateWeb.Helpers, only: [parse_id: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -43,9 +44,15 @@ defmodule BaudrateWeb.Admin.BoardsLive do
   end
 
   def handle_event("edit", %{"id" => id}, socket) do
-    board = Content.get_board!(String.to_integer(id))
-    changeset = Board.update_changeset(board, %{})
-    {:noreply, assign(socket, show_form: true, editing_board: board, form: to_form(changeset))}
+    case parse_id(id) do
+      {:ok, board_id} ->
+        board = Content.get_board!(board_id)
+        changeset = Board.update_changeset(board, %{})
+        {:noreply, assign(socket, show_form: true, editing_board: board, form: to_form(changeset))}
+
+      :error ->
+        {:noreply, socket}
+    end
   end
 
   def handle_event("cancel", _params, socket) do
@@ -73,7 +80,76 @@ defmodule BaudrateWeb.Admin.BoardsLive do
   end
 
   def handle_event("delete", %{"id" => id}, socket) do
-    board = Content.get_board!(String.to_integer(id))
+    case parse_id(id) do
+      :error -> {:noreply, socket}
+      {:ok, board_id} -> do_delete_board(socket, board_id)
+    end
+  end
+
+  def handle_event("manage_moderators", %{"id" => id}, socket) do
+    case parse_id(id) do
+      :error -> {:noreply, socket}
+      {:ok, board_id} -> do_manage_moderators(socket, board_id)
+    end
+  end
+
+  def handle_event("close_moderators", _params, socket) do
+    {:noreply,
+     assign(socket,
+       managing_moderators_board: nil,
+       board_moderators: [],
+       active_users: []
+     )}
+  end
+
+  def handle_event("add_moderator", %{"user_id" => user_id}, socket) do
+    case parse_id(user_id) do
+      :error ->
+        {:noreply, socket}
+
+      {:ok, uid} ->
+        board = socket.assigns.managing_moderators_board
+
+        case Content.add_board_moderator(board.id, uid) do
+          {:ok, _} ->
+            Moderation.log_action(socket.assigns.current_user.id, "add_board_moderator",
+              target_type: "board",
+              target_id: board.id,
+              details: %{"board_name" => board.name, "user_id" => uid}
+            )
+
+            moderators = Content.list_board_moderators(board)
+            {:noreply, assign(socket, board_moderators: moderators)}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to add moderator."))}
+        end
+    end
+  end
+
+  def handle_event("remove_moderator", %{"user-id" => user_id}, socket) do
+    case parse_id(user_id) do
+      :error ->
+        {:noreply, socket}
+
+      {:ok, uid} ->
+        board = socket.assigns.managing_moderators_board
+
+        Content.remove_board_moderator(board.id, uid)
+
+        Moderation.log_action(socket.assigns.current_user.id, "remove_board_moderator",
+          target_type: "board",
+          target_id: board.id,
+          details: %{"board_name" => board.name, "user_id" => uid}
+        )
+
+        moderators = Content.list_board_moderators(board)
+        {:noreply, assign(socket, board_moderators: moderators)}
+    end
+  end
+
+  defp do_delete_board(socket, board_id) do
+    board = Content.get_board!(board_id)
 
     case Content.delete_board(board) do
       {:ok, _board} ->
@@ -105,8 +181,8 @@ defmodule BaudrateWeb.Admin.BoardsLive do
     end
   end
 
-  def handle_event("manage_moderators", %{"id" => id}, socket) do
-    board = Content.get_board!(String.to_integer(id))
+  defp do_manage_moderators(socket, board_id) do
+    board = Content.get_board!(board_id)
     moderators = Content.list_board_moderators(board)
     active_users = Auth.list_users(status: "active")
 
@@ -116,51 +192,6 @@ defmodule BaudrateWeb.Admin.BoardsLive do
        board_moderators: moderators,
        active_users: active_users
      )}
-  end
-
-  def handle_event("close_moderators", _params, socket) do
-    {:noreply,
-     assign(socket,
-       managing_moderators_board: nil,
-       board_moderators: [],
-       active_users: []
-     )}
-  end
-
-  def handle_event("add_moderator", %{"user_id" => user_id}, socket) do
-    board = socket.assigns.managing_moderators_board
-    user_id = String.to_integer(user_id)
-
-    case Content.add_board_moderator(board.id, user_id) do
-      {:ok, _} ->
-        Moderation.log_action(socket.assigns.current_user.id, "add_board_moderator",
-          target_type: "board",
-          target_id: board.id,
-          details: %{"board_name" => board.name, "user_id" => user_id}
-        )
-
-        moderators = Content.list_board_moderators(board)
-        {:noreply, assign(socket, board_moderators: moderators)}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to add moderator."))}
-    end
-  end
-
-  def handle_event("remove_moderator", %{"user-id" => user_id}, socket) do
-    board = socket.assigns.managing_moderators_board
-    user_id = String.to_integer(user_id)
-
-    Content.remove_board_moderator(board.id, user_id)
-
-    Moderation.log_action(socket.assigns.current_user.id, "remove_board_moderator",
-      target_type: "board",
-      target_id: board.id,
-      details: %{"board_name" => board.name, "user_id" => user_id}
-    )
-
-    moderators = Content.list_board_moderators(board)
-    {:noreply, assign(socket, board_moderators: moderators)}
   end
 
   defp save_new(socket, params) do

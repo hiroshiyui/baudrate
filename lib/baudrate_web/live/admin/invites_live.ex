@@ -11,6 +11,7 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
   alias Baudrate.Auth
+  import BaudrateWeb.Helpers, only: [parse_id: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -39,7 +40,14 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   end
 
   def handle_event("revoke", %{"id" => id}, socket) do
-    invite = Baudrate.Repo.get!(Auth.InviteCode, String.to_integer(id))
+    case parse_id(id) do
+      :error -> {:noreply, socket}
+      {:ok, invite_id} -> do_revoke(socket, invite_id)
+    end
+  end
+
+  defp do_revoke(socket, invite_id) do
+    invite = Baudrate.Repo.get!(Auth.InviteCode, invite_id)
 
     case Auth.revoke_invite_code(invite) do
       {:ok, _} ->

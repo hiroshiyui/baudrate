@@ -36,8 +36,10 @@ defmodule BaudrateWeb.ArticleHistoryLive do
 
   @impl true
   def handle_event("select_revision", %{"index" => index_str}, socket) do
-    index = String.to_integer(index_str)
-    {:noreply, assign(socket, :selected_index, index)}
+    case Integer.parse(index_str) do
+      {index, ""} -> {:noreply, assign(socket, :selected_index, index)}
+      _ -> {:noreply, socket}
+    end
   end
 
   @doc """

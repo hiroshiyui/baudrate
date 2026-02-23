@@ -13,6 +13,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
   alias Baudrate.{Content, Moderation, Setup}
   alias Baudrate.Federation
   alias Baudrate.Federation.{BlocklistAudit, DeliveryStats, InstanceStats}
+  import BaudrateWeb.Helpers, only: [parse_id: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -21,16 +22,24 @@ defmodule BaudrateWeb.Admin.FederationLive do
 
   @impl true
   def handle_event("retry_job", %{"id" => id}, socket) do
-    case DeliveryStats.retry_job(String.to_integer(id)) do
-      {:ok, _} -> {:noreply, socket |> put_flash(:info, gettext("Job queued for retry.")) |> load_dashboard()}
-      {:error, _} -> {:noreply, put_flash(socket, :error, gettext("Job not found."))}
+    case parse_id(id) do
+      :error -> {:noreply, socket}
+      {:ok, job_id} ->
+        case DeliveryStats.retry_job(job_id) do
+          {:ok, _} -> {:noreply, socket |> put_flash(:info, gettext("Job queued for retry.")) |> load_dashboard()}
+          {:error, _} -> {:noreply, put_flash(socket, :error, gettext("Job not found."))}
+        end
     end
   end
 
   def handle_event("abandon_job", %{"id" => id}, socket) do
-    case DeliveryStats.abandon_job(String.to_integer(id)) do
-      {:ok, _} -> {:noreply, socket |> put_flash(:info, gettext("Job abandoned.")) |> load_dashboard()}
-      {:error, _} -> {:noreply, put_flash(socket, :error, gettext("Job not found."))}
+    case parse_id(id) do
+      :error -> {:noreply, socket}
+      {:ok, job_id} ->
+        case DeliveryStats.abandon_job(job_id) do
+          {:ok, _} -> {:noreply, socket |> put_flash(:info, gettext("Job abandoned.")) |> load_dashboard()}
+          {:error, _} -> {:noreply, put_flash(socket, :error, gettext("Job not found."))}
+        end
     end
   end
 
@@ -79,20 +88,10 @@ defmodule BaudrateWeb.Admin.FederationLive do
   end
 
   def handle_event("toggle_board_federation", %{"id" => id}, socket) do
-    board = Baudrate.Repo.get!(Content.Board, String.to_integer(id))
-    new_value = !board.ap_enabled
-
-    board
-    |> Ecto.Changeset.change(ap_enabled: new_value)
-    |> Baudrate.Repo.update!()
-
-    {:noreply,
-     socket
-     |> put_flash(:info, gettext("Federation %{action} for %{board}.",
-       action: if(new_value, do: gettext("enabled"), else: gettext("disabled")),
-       board: board.name
-     ))
-     |> load_dashboard()}
+    case parse_id(id) do
+      :error -> {:noreply, socket}
+      {:ok, board_id} -> do_toggle_federation(socket, board_id)
+    end
   end
 
   def handle_event("audit_blocklist", _params, socket) do
@@ -162,6 +161,23 @@ defmodule BaudrateWeb.Admin.FederationLive do
     end
   end
 
+  defp do_toggle_federation(socket, board_id) do
+    board = Baudrate.Repo.get!(Content.Board, board_id)
+    new_value = !board.ap_enabled
+
+    board
+    |> Ecto.Changeset.change(ap_enabled: new_value)
+    |> Baudrate.Repo.update!()
+
+    {:noreply,
+     socket
+     |> put_flash(:info, gettext("Federation %{action} for %{board}.",
+       action: if(new_value, do: gettext("enabled"), else: gettext("disabled")),
+       board: board.name
+     ))
+     |> load_dashboard()}
+  end
+
   defp add_domain_to_blocklist(domain) do
     current = Setup.get_setting("ap_domain_blocklist") || ""
 
@@ -185,19 +201,37 @@ defmodule BaudrateWeb.Admin.FederationLive do
   defp rotate_by_type("site", _id), do: Federation.rotate_keys(:site, nil)
 
   defp rotate_by_type("board", id) do
-    board = Baudrate.Repo.get!(Content.Board, String.to_integer(id))
-    Federation.rotate_keys(:board, board)
+    case parse_id(id) do
+      {:ok, board_id} ->
+        board = Baudrate.Repo.get!(Content.Board, board_id)
+        Federation.rotate_keys(:board, board)
+
+      :error ->
+        {:error, :invalid_id}
+    end
   end
 
   defp rotate_by_type("user", id) do
-    user = Baudrate.Repo.get!(Baudrate.Setup.User, String.to_integer(id))
-    Federation.rotate_keys(:user, user)
+    case parse_id(id) do
+      {:ok, user_id} ->
+        user = Baudrate.Repo.get!(Baudrate.Setup.User, user_id)
+        Federation.rotate_keys(:user, user)
+
+      :error ->
+        {:error, :invalid_id}
+    end
   end
 
   defp rotate_by_type(_, _), do: {:error, :invalid_type}
 
   defp parse_target_id("site"), do: nil
-  defp parse_target_id(id), do: String.to_integer(id)
+
+  defp parse_target_id(id) do
+    case parse_id(id) do
+      {:ok, n} -> n
+      :error -> nil
+    end
+  end
 
   defp load_dashboard(socket) do
     instances = InstanceStats.list_instances()

@@ -10,7 +10,7 @@ defmodule Baudrate.Federation.SanitizerTest do
       assert result =~ "<p>"
       assert result =~ "<strong>"
       assert result =~ "<em>"
-      assert result =~ "<br>"
+      assert result =~ "<br"
     end
 
     test "preserves safe tags: a, code, pre, blockquote" do
@@ -186,6 +186,28 @@ defmodule Baudrate.Federation.SanitizerTest do
       assert result =~ "h-card"
       assert result =~ "mention"
       refute result =~ "evil-class"
+    end
+
+    test "strips nested/malformed script tags completely" do
+      html = "<script>a<script>b</script>c</script>"
+      result = Sanitizer.sanitize(html)
+      refute result =~ "script"
+      refute result =~ "alert"
+    end
+
+    test "strips unclosed script tags" do
+      html = "<p>Hello</p><script>payload"
+      result = Sanitizer.sanitize(html)
+      refute result =~ "script"
+      refute result =~ "payload"
+    end
+
+    test "strips onclick from allowed tags via parser" do
+      html = "<a href=\"https://ok.example\" onclick=\"evil()\">link</a>"
+      result = Sanitizer.sanitize(html)
+      refute result =~ "onclick"
+      refute result =~ "evil"
+      assert result =~ "ok.example"
     end
   end
 

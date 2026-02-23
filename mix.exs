@@ -71,7 +71,8 @@ defmodule Baudrate.MixProject do
       {:eqrcode, "~> 0.2.1"},
       {:hammer, "~> 6.2"},
       {:image, "~> 0.54"},
-      {:earmark, "~> 1.4"}
+      {:earmark, "~> 1.4"},
+      {:html_sanitize_ex, "~> 1.4"}
     ]
   end
 

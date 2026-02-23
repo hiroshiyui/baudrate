@@ -12,6 +12,7 @@ defmodule BaudrateWeb.ConversationLive do
   alias Baudrate.Auth
   alias Baudrate.Messaging
   alias Baudrate.Messaging.PubSub, as: MessagingPubSub
+  import BaudrateWeb.Helpers, only: [parse_id: 1]
 
   @impl true
   def mount(params, _session, socket) do
@@ -107,9 +108,16 @@ defmodule BaudrateWeb.ConversationLive do
   end
 
   def handle_event("delete_message", %{"id" => id}, socket) do
+    case parse_id(id) do
+      :error -> {:noreply, socket}
+      {:ok, msg_id} -> do_delete_message(socket, msg_id)
+    end
+  end
+
+  defp do_delete_message(socket, msg_id) do
     user = socket.assigns.current_user
 
-    case Messaging.get_message(String.to_integer(id)) do
+    case Messaging.get_message(msg_id) do
       nil ->
         {:noreply, socket}
 

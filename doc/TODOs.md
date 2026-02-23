@@ -12,9 +12,9 @@ Audit date: 2026-02-23
 
 ## Medium: Security
 
-- [ ] **Parser-based HTML sanitizer** — both federation `Sanitizer` and `Markdown.to_html` use regex-based HTML sanitization, which is fragile against crafted/malformed HTML; consider Floki or HtmlSanitizeEx (`federation/sanitizer.ex:70`, `content/markdown.ex`)
-- [ ] **`String.to_integer/1` on user params** — crashes LiveView process on non-numeric input; use `Integer.parse/1` instead (multiple LiveViews, e.g., `users_live.ex:83`)
-- [ ] **IPv4-mapped IPv6 SSRF bypass** — `::ffff:127.0.0.1` not covered by `private_ip?/1` (`http_client.ex:247-261`)
+- [x] **Parser-based HTML sanitizer** — replaced regex-based sanitization with `HtmlSanitizeEx` custom scrubbers in both `Sanitizer` and `Markdown` modules
+- [x] **`String.to_integer/1` on user params** — replaced with `BaudrateWeb.Helpers.parse_id/1` across all LiveView event handlers
+- [x] **IPv4-mapped IPv6 SSRF bypass** — `private_ip?/1` now extracts embedded IPv4 from `::ffff:` mapped addresses
 
 ## Medium: Federation (AP Spec Compliance)
 

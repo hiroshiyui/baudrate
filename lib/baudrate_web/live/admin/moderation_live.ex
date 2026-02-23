@@ -10,6 +10,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
 
   alias Baudrate.Content
   alias Baudrate.Moderation
+  import BaudrateWeb.Helpers, only: [parse_id: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -36,7 +37,42 @@ defmodule BaudrateWeb.Admin.ModerationLive do
   end
 
   def handle_event("resolve", %{"report_id" => id, "note" => note}, socket) do
-    report = Moderation.get_report!(String.to_integer(id))
+    case parse_id(id) do
+      :error -> {:noreply, socket}
+      {:ok, report_id} -> do_resolve(socket, report_id, note)
+    end
+  end
+
+  def handle_event("dismiss", %{"id" => id}, socket) do
+    case parse_id(id) do
+      :error -> {:noreply, socket}
+      {:ok, report_id} -> do_dismiss(socket, report_id)
+    end
+  end
+
+  def handle_event("delete_content", %{"type" => "article", "id" => id}, socket) do
+    case parse_id(id) do
+      :error -> {:noreply, socket}
+      {:ok, article_id} -> do_delete_article(socket, article_id)
+    end
+  end
+
+  def handle_event("delete_content", %{"type" => "comment", "id" => id}, socket) do
+    case parse_id(id) do
+      :error -> {:noreply, socket}
+      {:ok, comment_id} -> do_delete_comment(socket, comment_id)
+    end
+  end
+
+  def handle_event("send_flag", %{"id" => id}, socket) do
+    case parse_id(id) do
+      :error -> {:noreply, socket}
+      {:ok, report_id} -> do_send_flag(socket, report_id)
+    end
+  end
+
+  defp do_resolve(socket, report_id, note) do
+    report = Moderation.get_report!(report_id)
 
     case Moderation.resolve_report(report, socket.assigns.current_user.id, note) do
       {:ok, _} ->
@@ -56,8 +92,8 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     end
   end
 
-  def handle_event("dismiss", %{"id" => id}, socket) do
-    report = Moderation.get_report!(String.to_integer(id))
+  defp do_dismiss(socket, report_id) do
+    report = Moderation.get_report!(report_id)
 
     case Moderation.dismiss_report(report, socket.assigns.current_user.id) do
       {:ok, _} ->
@@ -76,8 +112,8 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     end
   end
 
-  def handle_event("delete_content", %{"type" => "article", "id" => id}, socket) do
-    article = Baudrate.Repo.get!(Content.Article, String.to_integer(id))
+  defp do_delete_article(socket, article_id) do
+    article = Baudrate.Repo.get!(Content.Article, article_id)
 
     case Content.soft_delete_article(article) do
       {:ok, _} ->
@@ -97,8 +133,8 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     end
   end
 
-  def handle_event("delete_content", %{"type" => "comment", "id" => id}, socket) do
-    comment = Baudrate.Repo.get!(Content.Comment, String.to_integer(id))
+  defp do_delete_comment(socket, comment_id) do
+    comment = Baudrate.Repo.get!(Content.Comment, comment_id)
 
     case Content.soft_delete_comment(comment) do
       {:ok, _} ->
@@ -117,8 +153,8 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     end
   end
 
-  def handle_event("send_flag", %{"id" => id}, socket) do
-    report = Moderation.get_report!(String.to_integer(id))
+  defp do_send_flag(socket, report_id) do
+    report = Moderation.get_report!(report_id)
 
     if report.remote_actor do
       content_ap_ids =

@@ -31,10 +31,10 @@ defmodule Baudrate.Content.MarkdownTest do
       assert Markdown.to_html("") == ""
     end
 
-    test "escapes script tags to prevent XSS" do
+    test "strips script tags and content to prevent XSS" do
       html = Markdown.to_html("<script>alert('xss')</script>")
       refute html =~ "<script>"
-      assert html =~ "&lt;script"
+      refute html =~ "alert"
     end
 
     test "escapes img onerror injection" do
@@ -43,15 +43,32 @@ defmodule Baudrate.Content.MarkdownTest do
       refute html =~ "onerror"
     end
 
-    test "escapes iframe injection" do
+    test "strips iframe injection" do
       html = Markdown.to_html(~S[<iframe src="https://evil.com"></iframe>])
       refute html =~ "<iframe"
-      assert html =~ "&lt;iframe"
+      refute html =~ "iframe"
     end
 
     test "strips javascript: URIs from links" do
       html = Markdown.to_html(~S'[click](javascript:alert(1))')
       refute html =~ "javascript:"
+    end
+
+    test "strips nested/malformed script tags completely" do
+      html = Markdown.to_html("<script>a<script>b</script>c</script>")
+      refute html =~ "script"
+    end
+
+    test "strips unclosed script tags" do
+      html = Markdown.to_html("<script>payload")
+      refute html =~ "script"
+      refute html =~ "payload"
+    end
+
+    test "strips onclick from allowed tags via parser" do
+      html = Markdown.to_html("<a href=\"https://ok.example\" onclick=\"evil()\">link</a>")
+      refute html =~ "onclick"
+      refute html =~ "evil"
     end
   end
 end

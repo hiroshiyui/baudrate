@@ -18,6 +18,7 @@ defmodule BaudrateWeb.ArticleNewLive do
   alias Baudrate.Auth
   alias Baudrate.Content
   alias Baudrate.Content.ArticleImageStorage
+  import BaudrateWeb.Helpers, only: [parse_id: 1]
 
   @impl true
   def mount(params, _session, socket) do
@@ -139,8 +140,23 @@ defmodule BaudrateWeb.ArticleNewLive do
   end
 
   defp do_create(socket, params, board_ids) do
-    board_ids = Enum.map(List.wrap(board_ids), &String.to_integer/1)
+    parsed_ids =
+      board_ids
+      |> List.wrap()
+      |> Enum.reduce_while([], fn id, acc ->
+        case parse_id(id) do
+          {:ok, n} -> {:cont, [n | acc]}
+          :error -> {:halt, :error}
+        end
+      end)
 
+    case parsed_ids do
+      :error -> {:noreply, socket}
+      ids -> do_create_with_boards(socket, params, Enum.reverse(ids))
+    end
+  end
+
+  defp do_create_with_boards(socket, params, board_ids) do
     if board_ids == [] do
       {:noreply, put_flash(socket, :error, gettext("Please select at least one board."))}
     else

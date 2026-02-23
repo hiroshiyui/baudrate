@@ -94,5 +94,21 @@ defmodule Baudrate.Federation.HTTPClientTest do
       refute HTTPClient.private_ip?({0x2001, 0x0DB8, 0, 0, 0, 0, 0, 1})
       refute HTTPClient.private_ip?({0x2606, 0x4700, 0, 0, 0, 0, 0, 1})
     end
+
+    test "IPv4-mapped IPv6 ::ffff:127.0.0.1 is private" do
+      assert HTTPClient.private_ip?({0, 0, 0, 0, 0, 0xFFFF, 0x7F00, 0x0001})
+    end
+
+    test "IPv4-mapped IPv6 ::ffff:10.0.0.1 is private" do
+      assert HTTPClient.private_ip?({0, 0, 0, 0, 0, 0xFFFF, 0x0A00, 0x0001})
+    end
+
+    test "IPv4-mapped IPv6 ::ffff:192.168.1.1 is private" do
+      assert HTTPClient.private_ip?({0, 0, 0, 0, 0, 0xFFFF, 0xC0A8, 0x0101})
+    end
+
+    test "IPv4-mapped IPv6 ::ffff:8.8.8.8 is public" do
+      refute HTTPClient.private_ip?({0, 0, 0, 0, 0, 0xFFFF, 0x0808, 0x0808})
+    end
   end
 end

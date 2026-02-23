@@ -11,6 +11,7 @@ defmodule BaudrateWeb.Admin.PendingUsersLive do
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
   alias Baudrate.Auth
+  import BaudrateWeb.Helpers, only: [parse_id: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -19,17 +20,23 @@ defmodule BaudrateWeb.Admin.PendingUsersLive do
 
   @impl true
   def handle_event("approve", %{"id" => id}, socket) do
-    user = Auth.get_user(String.to_integer(id))
+    case parse_id(id) do
+      :error ->
+        {:noreply, socket}
 
-    case Auth.approve_user(user) do
-      {:ok, _user} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, gettext("User approved successfully."))
-         |> assign(:pending_users, Auth.list_pending_users())}
+      {:ok, user_id} ->
+        user = Auth.get_user(user_id)
 
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to approve user."))}
+        case Auth.approve_user(user) do
+          {:ok, _user} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, gettext("User approved successfully."))
+             |> assign(:pending_users, Auth.list_pending_users())}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to approve user."))}
+        end
     end
   end
 end
