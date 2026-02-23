@@ -62,7 +62,29 @@ defmodule BaudrateWeb.PasswordResetLive do
     recovery_code = params["recovery_code"] || ""
     new_password = params["new_password"] || ""
     new_password_confirmation = params["new_password_confirmation"] || ""
+    ip = socket.assigns.peer_ip
 
+    case Auth.check_login_throttle(username) do
+      {:delay, seconds} ->
+        Logger.warning(
+          "login_throttle.denied: action=password_reset username=#{username} ip=#{ip} delay=#{seconds}s"
+        )
+
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("Account temporarily locked. Try again in %{seconds} seconds.",
+             seconds: seconds
+           )
+         )}
+
+      :ok ->
+        do_reset_attempt(socket, username, recovery_code, new_password, new_password_confirmation, ip)
+    end
+  end
+
+  defp do_reset_attempt(socket, username, recovery_code, new_password, new_password_confirmation, ip) do
     case Auth.reset_password_with_recovery_code(
            username,
            recovery_code,
@@ -70,12 +92,16 @@ defmodule BaudrateWeb.PasswordResetLive do
            new_password_confirmation
          ) do
       {:ok, _user} ->
+        Auth.record_login_attempt(username, ip, true)
+
         {:noreply,
          socket
          |> put_flash(:info, gettext("Password reset successful! You can now sign in."))
          |> redirect(to: ~p"/login")}
 
       {:error, :invalid_credentials} ->
+        Auth.record_login_attempt(username, ip, false)
+
         {:noreply,
          put_flash(socket, :error, gettext("Invalid username or recovery code."))}
 

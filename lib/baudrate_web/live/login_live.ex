@@ -71,27 +71,49 @@ defmodule BaudrateWeb.LoginLive do
   end
 
   defp do_login(socket, username, password) do
-    case Auth.authenticate_by_password(username, password) do
-      {:ok, user} ->
-        token = Phoenix.Token.sign(socket.endpoint, "user_auth", user.id)
+    ip = socket.assigns.peer_ip
+
+    case Auth.check_login_throttle(username) do
+      {:delay, seconds} ->
+        Logger.warning("login_throttle.denied: username=#{username} ip=#{ip} delay=#{seconds}s")
 
         socket =
           socket
-          |> assign(:token, token)
-          |> assign(:trigger_action, true)
-
-        {:noreply, socket}
-
-      {:error, reason} when reason in [:banned, :invalid_credentials] ->
-        log_tag = if reason == :banned, do: "auth.banned_login", else: "auth.login_failure"
-        Logger.warning("#{log_tag}: username=#{username} ip=#{socket.assigns.peer_ip}")
-
-        socket =
-          socket
-          |> put_flash(:error, gettext("Invalid username or password."))
+          |> put_flash(
+            :error,
+            gettext("Account temporarily locked. Try again in %{seconds} seconds.",
+              seconds: seconds
+            )
+          )
           |> assign(:form, to_form(%{"username" => username, "password" => ""}, as: :login))
 
         {:noreply, socket}
+
+      :ok ->
+        case Auth.authenticate_by_password(username, password) do
+          {:ok, user} ->
+            Auth.record_login_attempt(username, ip, true)
+            token = Phoenix.Token.sign(socket.endpoint, "user_auth", user.id)
+
+            socket =
+              socket
+              |> assign(:token, token)
+              |> assign(:trigger_action, true)
+
+            {:noreply, socket}
+
+          {:error, reason} when reason in [:banned, :invalid_credentials] ->
+            Auth.record_login_attempt(username, ip, false)
+            log_tag = if reason == :banned, do: "auth.banned_login", else: "auth.login_failure"
+            Logger.warning("#{log_tag}: username=#{username} ip=#{ip}")
+
+            socket =
+              socket
+              |> put_flash(:error, gettext("Invalid username or password."))
+              |> assign(:form, to_form(%{"username" => username, "password" => ""}, as: :login))
+
+            {:noreply, socket}
+        end
     end
   end
 end

@@ -1,12 +1,14 @@
 defmodule Baudrate.Auth.SessionCleaner do
   @moduledoc """
-  GenServer that periodically purges expired sessions and orphan article images.
+  GenServer that periodically purges expired sessions, old login attempts,
+  and orphan article images.
 
   Runs every hour (see `@interval`). Started as part of the application
   supervision tree (`Baudrate.Application`).
 
   Cleanup tasks:
     * `Auth.purge_expired_sessions/0` — removes expired user sessions
+    * `Auth.purge_old_login_attempts/0` — removes login attempts older than 7 days
     * Orphan article images — deletes images uploaded during article composition
       but never associated with an article (older than 24 hours)
 
@@ -33,6 +35,7 @@ defmodule Baudrate.Auth.SessionCleaner do
   @impl true
   def handle_info(:cleanup, state) do
     Baudrate.Auth.purge_expired_sessions()
+    Baudrate.Auth.purge_old_login_attempts()
     cleanup_orphan_article_images()
     schedule_cleanup()
     {:noreply, state}

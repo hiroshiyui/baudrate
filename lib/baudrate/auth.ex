@@ -49,7 +49,7 @@ defmodule Baudrate.Auth do
   """
 
   import Ecto.Query
-  alias Baudrate.Auth.{InviteCode, RecoveryCode, TotpVault, UserBlock, UserSession}
+  alias Baudrate.Auth.{InviteCode, LoginAttempt, RecoveryCode, TotpVault, UserBlock, UserSession}
   alias Baudrate.Repo
   alias Baudrate.Setup
   alias Baudrate.Setup.{Role, User}
@@ -751,6 +751,161 @@ defmodule Baudrate.Auth do
           {:error, :invalid_credentials}
       end
     end
+  end
+
+  # --- Per-account brute-force protection ---
+
+  @login_throttle_window_seconds 3600
+  @login_throttle_schedule [
+    {5, 5},
+    {10, 30},
+    {15, 120}
+  ]
+  @login_attempts_per_page 20
+  @login_attempts_retention_days 7
+
+  @doc """
+  Records a login attempt for the given username.
+
+  The username is lowercased for case-insensitive matching.
+  Both successful and failed attempts are recorded for audit purposes.
+  """
+  def record_login_attempt(username, ip_address, success) when is_binary(username) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    %LoginAttempt{}
+    |> LoginAttempt.changeset(%{
+      username: String.downcase(username),
+      ip_address: ip_address,
+      success: success,
+      inserted_at: now
+    })
+    |> Repo.insert()
+  end
+
+  @doc """
+  Checks whether a login attempt for the given username should be throttled.
+
+  Returns `:ok` if the attempt can proceed, or `{:delay, seconds_remaining}`
+  if the account is currently throttled due to too many recent failures.
+
+  ## Throttle Schedule
+
+  Failures are counted in a 1-hour sliding window:
+
+    * 0–4 failures: no delay
+    * 5–9 failures: 5 seconds after last failure
+    * 10–14 failures: 30 seconds after last failure
+    * 15+ failures: 120 seconds after last failure
+  """
+  def check_login_throttle(username) when is_binary(username) do
+    lower = String.downcase(username)
+    cutoff = DateTime.utc_now() |> DateTime.add(-@login_throttle_window_seconds, :second)
+
+    query =
+      from(a in LoginAttempt,
+        where: a.username == ^lower and a.success == false and a.inserted_at > ^cutoff,
+        select: %{count: count(a.id), last_at: max(a.inserted_at)}
+      )
+
+    case Repo.one(query) do
+      %{count: count, last_at: last_at} when count > 0 and not is_nil(last_at) ->
+        delay = delay_for_failures(count)
+
+        if delay > 0 do
+          unlocked_at = DateTime.add(last_at, delay, :second)
+          remaining = DateTime.diff(unlocked_at, DateTime.utc_now(), :second)
+
+          if remaining > 0 do
+            {:delay, remaining}
+          else
+            :ok
+          end
+        else
+          :ok
+        end
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp delay_for_failures(count) do
+    @login_throttle_schedule
+    |> Enum.reverse()
+    |> Enum.find_value(0, fn {threshold, delay} ->
+      if count >= threshold, do: delay
+    end)
+  end
+
+  @doc """
+  Returns a paginated list of login attempts for the admin panel.
+
+  ## Options
+
+    * `:username` — filter by username (case-insensitive ILIKE search)
+    * `:page` — page number (default 1)
+    * `:per_page` — items per page (default #{@login_attempts_per_page})
+
+  Returns `%{attempts: [...], total: N, page: N, per_page: N, total_pages: N}`.
+  """
+  def paginate_login_attempts(opts \\ []) do
+    page = max(Keyword.get(opts, :page, 1), 1)
+    per_page = Keyword.get(opts, :per_page, @login_attempts_per_page)
+    offset = (page - 1) * per_page
+
+    base = login_attempts_filter_query(opts)
+    total = Repo.one(from(a in base, select: count(a.id)))
+
+    attempts =
+      from(a in base, order_by: [desc: a.inserted_at], offset: ^offset, limit: ^per_page)
+      |> Repo.all()
+
+    total_pages = max(ceil(total / per_page), 1)
+
+    %{
+      attempts: attempts,
+      total: total,
+      page: page,
+      per_page: per_page,
+      total_pages: total_pages
+    }
+  end
+
+  defp login_attempts_filter_query(opts) do
+    query = from(a in LoginAttempt)
+
+    case Keyword.get(opts, :username) do
+      nil ->
+        query
+
+      "" ->
+        query
+
+      term ->
+        sanitized =
+          term
+          |> String.replace("\\", "\\\\")
+          |> String.replace("%", "\\%")
+          |> String.replace("_", "\\_")
+
+        from(a in query, where: ilike(a.username, ^"%#{sanitized}%"))
+    end
+  end
+
+  @doc """
+  Purges login attempt records older than #{@login_attempts_retention_days} days.
+
+  Called periodically by `SessionCleaner`.
+  Returns `{count, nil}` with the number of deleted rows.
+  """
+  def purge_old_login_attempts do
+    cutoff =
+      DateTime.utc_now()
+      |> DateTime.add(-@login_attempts_retention_days * 86_400, :second)
+
+    from(a in LoginAttempt, where: a.inserted_at < ^cutoff)
+    |> Repo.delete_all()
   end
 
   # --- Server-side session management ---

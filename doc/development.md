@@ -26,8 +26,9 @@ lib/
 │   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars, invite codes, password reset, user blocks
 │   ├── auth/
 │   │   ├── invite_code.ex       # InviteCode schema (invite-only registration)
+│   │   ├── login_attempt.ex     # LoginAttempt schema (per-account brute-force tracking)
 │   │   ├── recovery_code.ex     # Ecto schema for one-time recovery codes
-│   │   ├── session_cleaner.ex   # GenServer: hourly expired session purge
+│   │   ├── session_cleaner.ex   # GenServer: hourly cleanup (sessions, login attempts, orphan images)
 │   │   ├── totp_vault.ex        # AES-256-GCM encryption for TOTP secrets
 │   │   ├── user_block.ex        # UserBlock schema (local + remote actor blocks)
 │   │   └── user_session.ex      # Ecto schema for server-side sessions
@@ -100,6 +101,7 @@ lib/
 │   │   │   ├── boards_live.ex          # Admin board CRUD + moderator management
 │   │   │   ├── federation_live.ex      # Admin federation dashboard
 │   │   │   ├── invites_live.ex         # Admin invite code management (generate, revoke)
+│   │   │   ├── login_attempts_live.ex # Admin login attempts viewer (paginated, filterable)
 │   │   │   ├── moderation_live.ex     # Moderation queue (reports)
 │   │   │   ├── moderation_log_live.ex # Moderation audit log (filterable, paginated)
 │   │   │   ├── pending_users_live.ex  # Admin approval of pending registrations
@@ -176,6 +178,36 @@ lib/
 The login flow uses the **phx-trigger-action** pattern: LiveView handles
 credential validation, then triggers a hidden form POST to the
 `SessionController` which writes session tokens into the cookie.
+
+### Brute-Force Protection
+
+Login attempts are rate-limited at two levels:
+
+1. **Per-IP** — Hammer ETS (10 attempts / 5 min)
+2. **Per-account** — progressive delay based on failed attempts in the last hour:
+
+| Failures (1h window) | Delay after last failure |
+|----------------------|------------------------|
+| 0–4 | None |
+| 5–9 | 5 seconds |
+| 10–14 | 30 seconds |
+| 15+ | 120 seconds |
+
+This uses **progressive delay** (not hard lockout) to avoid a DoS vector where
+an attacker could lock out any account by submitting wrong passwords. The delay
+is checked before `authenticate_by_password/2` to avoid incurring bcrypt cost
+on throttled attempts.
+
+All login attempts (success and failure) are recorded in the `login_attempts`
+table for audit purposes. Admins can view attempts at `/admin/login-attempts`
+(paginated, filterable by username). Records older than 7 days are purged
+hourly by `SessionCleaner`.
+
+Key functions in `Auth`:
+- `record_login_attempt/3` — records an attempt (username lowercased)
+- `check_login_throttle/1` — returns `:ok` or `{:delay, seconds}`
+- `paginate_login_attempts/1` — paginated admin query
+- `purge_old_login_attempts/0` — cleanup (called by `SessionCleaner`)
 
 ### Session Management
 
@@ -711,9 +743,11 @@ ActivityPubController (dispatch to InboxHandler)
 | Endpoint | Limit | Scope |
 |----------|-------|-------|
 | Login | 10 / 5 min | per IP |
+| Login | progressive delay (5s/30s/120s) | per account |
 | TOTP | 15 / 5 min | per IP |
 | Registration | 5 / hour | per IP |
 | Password reset | 5 / hour | per IP |
+| Password reset | progressive delay (5s/30s/120s) | per account |
 | Avatar upload | 5 / hour | per user |
 | AP endpoints | 120 / min | per IP |
 | AP inbox | 60 / min | per remote domain |
@@ -727,7 +761,7 @@ Baudrate.Supervisor (one_for_one)
 ├── Baudrate.Repo                      # Ecto database connection pool
 ├── DNSCluster                         # DNS-based cluster discovery
 ├── Phoenix.PubSub                     # PubSub for LiveView
-├── Baudrate.Auth.SessionCleaner       # Hourly expired session purge
+├── Baudrate.Auth.SessionCleaner       # Hourly cleanup (sessions, login attempts, orphan images)
 ├── Baudrate.Federation.TaskSupervisor # Async federation delivery tasks
 ├── Baudrate.Federation.DeliveryWorker     # Polls delivery queue every 60s
 ├── Baudrate.Federation.StaleActorCleaner # Daily stale remote actor cleanup

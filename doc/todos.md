@@ -10,7 +10,7 @@ Audit date: 2026-02-23
 - [x] **Paginate article comments** — `Content.paginate_comments_for_article/3` paginates by root comments with iterative descendant loading; `?page=N` in `ArticleLive`
 - [x] **Add database index on `articles.deleted_at`** — partial index (`WHERE deleted_at IS NULL`) added in migration `20260223035638`
 - [x] **Add database index on `comments.deleted_at`** — same migration as above
-- [ ] **Per-account brute-force protection** — add progressive per-account delay (exponential backoff after N failed login attempts, e.g. 5s after 5 failures, 30s after 10, 2min after 15) combined with per-account attempt tracking visible in admin panel; hard lockout is avoided because it creates a DoS vector (attacker can lock out any user by submitting wrong passwords); existing defenses: IP-based rate limiting + mandatory TOTP for admin/moderator roles
+- [x] **Per-account brute-force protection** — progressive per-account delay (5s after 5 failures, 30s after 10, 2min after 15) via `login_attempts` table; admin visibility at `/admin/login-attempts`; no hard lockout (avoids DoS vector); existing defenses retained: IP-based rate limiting + mandatory TOTP for admin/moderator roles
 
 ## Medium: Feature Gaps
 

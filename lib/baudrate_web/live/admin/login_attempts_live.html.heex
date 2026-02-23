@@ -1,0 +1,64 @@
+<div class="space-y-6">
+  <h1 class="text-2xl font-bold">{gettext("Login Attempts")}</h1>
+
+  <form phx-submit="search" class="flex gap-2">
+    <input
+      type="text"
+      name="username"
+      value={@username_filter}
+      placeholder={gettext("Filter by username...")}
+      class="input input-bordered input-sm w-64"
+      aria-label={gettext("Filter by username")}
+    />
+    <button type="submit" class="btn btn-sm btn-primary">{gettext("Search")}</button>
+    <.link
+      :if={@username_filter != ""}
+      patch={~p"/admin/login-attempts"}
+      class="btn btn-sm btn-ghost"
+    >
+      {gettext("Clear")}
+    </.link>
+  </form>
+
+  <div :if={@attempts == []} class="text-base-content/50 text-center py-8">
+    {gettext("No login attempts recorded.")}
+  </div>
+
+  <div :if={@attempts != []} class="overflow-x-auto">
+    <table class="table table-zebra w-full">
+      <thead>
+        <tr>
+          <th>{gettext("Date")}</th>
+          <th>{gettext("Username")}</th>
+          <th>{gettext("IP Address")}</th>
+          <th>{gettext("Result")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr :for={attempt <- @attempts}>
+          <td class="whitespace-nowrap text-sm">
+            {Calendar.strftime(attempt.inserted_at, "%Y-%m-%d %H:%M:%S")}
+          </td>
+          <td>{attempt.username}</td>
+          <td class="text-sm font-mono">{attempt.ip_address || "—"}</td>
+          <td>
+            <span :if={attempt.success} class="badge badge-success badge-sm">
+              {gettext("Success")}
+            </span>
+            <span :if={!attempt.success} class="badge badge-error badge-sm">
+              {gettext("Failed")}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <.pagination
+    :if={@attempts != []}
+    page={@page}
+    total_pages={@total_pages}
+    path={~p"/admin/login-attempts"}
+    params={if @username_filter != "", do: %{"username" => @username_filter}, else: %{}}
+  />
+</div>
