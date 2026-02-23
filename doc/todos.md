@@ -20,8 +20,8 @@ Audit date: 2026-02-23
 
 ## Low: Documentation
 
-- [ ] **Write AP endpoint API guide** — endpoints are well-structured but no external-facing documentation
-- [ ] **Write troubleshooting guide** — common issues and solutions
+- [x] **Write AP endpoint API guide** — see [`doc/api.md`](api.md)
+- [x] **Write troubleshooting guide** — see [`doc/troubleshooting.md`](troubleshooting.md)
 
 ## Planned Features
 

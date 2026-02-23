@@ -665,6 +665,7 @@ re-processing within a single cleanup run.
 
 The AP endpoints double as the public API — no separate REST API is needed.
 External clients can use `Accept: application/json` to retrieve data.
+See [`doc/api.md`](api.md) for the full AP endpoint reference.
 
 - **Content negotiation** — `application/json`, `application/activity+json`, and `application/ld+json` all return JSON-LD. Content-negotiated endpoints (actors, articles) redirect `text/html` to the web UI.
 - **CORS** — all GET `/ap/*` endpoints return `Access-Control-Allow-Origin: *`. OPTIONS preflight returns 204.
@@ -862,6 +863,11 @@ In preview mode, the textarea is hidden and a preview `<div>` (rendered with
 disabled while in preview mode.
 
 Source: `assets/js/markdown_toolbar_hook.js`, `lib/baudrate_web/live/markdown_preview_hook.ex`
+
+## Further Reading
+
+- [AP Endpoint API Reference](api.md) — external-facing documentation for all ActivityPub and public API endpoints
+- [Troubleshooting Guide](troubleshooting.md) — common issues and solutions for operators and developers
 
 ## Running Tests
 
