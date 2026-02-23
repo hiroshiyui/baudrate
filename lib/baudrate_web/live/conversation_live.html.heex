@@ -1,74 +1,122 @@
 <div class="space-y-4">
   <div class="flex items-center gap-3">
-    <.link navigate="/messages" class="btn btn-ghost btn-sm">
+    <.link navigate="/messages" class="btn btn-ghost btn-sm" aria-label={gettext("Back to messages")}>
       <.icon name="hero-arrow-left" class="size-4" />
     </.link>
-    <h1 class="text-xl font-bold">{participant_name(@other_participant)}</h1>
+    <h1 :if={@mode == :select_recipient} class="text-xl font-bold">{gettext("New Message")}</h1>
+    <h1 :if={@mode != :select_recipient} class="text-xl font-bold">{participant_name(@other_participant)}</h1>
   </div>
 
-  <div role="alert" class="alert alert-warning text-sm">
-    <.icon name="hero-shield-exclamation" class="size-4" />
-    <span>{gettext("Direct messages are not end-to-end encrypted. Do not share sensitive information.")}</span>
-  </div>
+  <%= if @mode == :select_recipient do %>
+    <div class="card bg-base-200 shadow-sm">
+      <div class="card-body p-4 space-y-4">
+        <.form
+          for={%{}}
+          as={:search}
+          phx-change="search_recipient"
+          phx-submit="search_recipient"
+        >
+          <input
+            type="text"
+            name="search[query]"
+            value={@search_query}
+            placeholder={gettext("Search by username...")}
+            class="input input-bordered w-full"
+            autocomplete="off"
+            phx-debounce="300"
+            autofocus
+            aria-label={gettext("Search users")}
+          />
+        </.form>
 
-  <div class="card bg-base-200 shadow-sm">
-    <div class="card-body p-4 space-y-3 max-h-[60vh] overflow-y-auto" id="message-list" phx-hook="ScrollBottom">
-      <div :if={@messages == []} class="text-center py-8 text-base-content/50">
-        {gettext("No messages yet. Send the first one!")}
-      </div>
-
-      <div :for={msg <- @messages} class={[
-        "chat",
-        if(msg.sender_user_id == @current_user.id, do: "chat-end", else: "chat-start")
-      ]}>
-        <div class="chat-header text-xs text-base-content/50 mb-1">
-          <%= if msg.sender_user_id == @current_user.id do %>
-            {gettext("You")}
-          <% else %>
-            {participant_name(@other_participant)}
-          <% end %>
-          <time class="ml-1">{Calendar.strftime(msg.inserted_at, "%H:%M")}</time>
-        </div>
-        <div class={[
-          "chat-bubble",
-          if(msg.sender_user_id == @current_user.id, do: "chat-bubble-primary", else: "")
-        ]}>
-          <%= if msg.body_html do %>
-            <div class="prose prose-sm max-w-none">{raw(msg.body_html)}</div>
-          <% else %>
-            {msg.body}
-          <% end %>
-        </div>
-        <div :if={msg.sender_user_id == @current_user.id} class="chat-footer">
+        <div :if={@search_results != []} class="space-y-1" role="listbox" aria-label={gettext("Search results")}>
           <button
+            :for={user <- @search_results}
             type="button"
-            class="btn btn-ghost btn-xs text-error"
-            phx-click="delete_message"
-            phx-value-id={msg.id}
-            data-confirm={gettext("Delete this message?")}
+            class="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-base-300 transition-colors cursor-pointer"
+            phx-click="select_recipient"
+            phx-value-username={user.username}
+            role="option"
           >
-            {gettext("Delete")}
+            <.avatar user={user} size={36} />
+            <span class="font-medium">{user.username}</span>
           </button>
         </div>
+
+        <div :if={@search_results == [] && String.length(@search_query) >= 2} class="text-center py-4 text-base-content/50">
+          {gettext("No users found.")}
+        </div>
+
+        <div :if={@search_query == ""} class="text-center py-4 text-base-content/50">
+          {gettext("Type a username to search.")}
+        </div>
       </div>
     </div>
-
-    <div class="border-t border-base-300 p-4">
-      <.form for={@message_form} phx-submit="send_message" class="flex gap-2">
-        <input
-          type="text"
-          name="message[body]"
-          value={@message_form[:body].value}
-          placeholder={gettext("Type a message...")}
-          class="input input-bordered flex-1"
-          autocomplete="off"
-          maxlength="65536"
-          aria-label={gettext("Message")}
-        />
-        <button type="submit" class="btn btn-primary" aria-label={gettext("Send")}>
-          <.icon name="hero-paper-airplane" class="size-5" />
-        </button>
-      </.form>
+  <% else %>
+    <div role="alert" class="alert alert-warning text-sm">
+      <.icon name="hero-shield-exclamation" class="size-4" />
+      <span>{gettext("Direct messages are not end-to-end encrypted. Do not share sensitive information.")}</span>
     </div>
-  </div>
+
+    <div class="card bg-base-200 shadow-sm">
+      <div class="card-body p-4 space-y-3 max-h-[60vh] overflow-y-auto" id="message-list" phx-hook="ScrollBottom">
+        <div :if={@messages == []} class="text-center py-8 text-base-content/50">
+          {gettext("No messages yet. Send the first one!")}
+        </div>
+
+        <div :for={msg <- @messages} class={[
+          "chat",
+          if(msg.sender_user_id == @current_user.id, do: "chat-end", else: "chat-start")
+        ]}>
+          <div class="chat-header text-xs text-base-content/50 mb-1">
+            <%= if msg.sender_user_id == @current_user.id do %>
+              {gettext("You")}
+            <% else %>
+              {participant_name(@other_participant)}
+            <% end %>
+            <time class="ml-1">{Calendar.strftime(msg.inserted_at, "%H:%M")}</time>
+          </div>
+          <div class={[
+            "chat-bubble",
+            if(msg.sender_user_id == @current_user.id, do: "chat-bubble-primary", else: "")
+          ]}>
+            <%= if msg.body_html do %>
+              <div class="prose prose-sm max-w-none">{raw(msg.body_html)}</div>
+            <% else %>
+              {msg.body}
+            <% end %>
+          </div>
+          <div :if={msg.sender_user_id == @current_user.id} class="chat-footer">
+            <button
+              type="button"
+              class="btn btn-ghost btn-xs text-error"
+              phx-click="delete_message"
+              phx-value-id={msg.id}
+              data-confirm={gettext("Delete this message?")}
+            >
+              {gettext("Delete")}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="border-t border-base-300 p-4">
+        <.form for={@message_form} phx-submit="send_message" class="flex gap-2">
+          <input
+            type="text"
+            name="message[body]"
+            value={@message_form[:body].value}
+            placeholder={gettext("Type a message...")}
+            class="input input-bordered flex-1"
+            autocomplete="off"
+            maxlength="65536"
+            aria-label={gettext("Message")}
+          />
+          <button type="submit" class="btn btn-primary" aria-label={gettext("Send")}>
+            <.icon name="hero-paper-airplane" class="size-5" />
+          </button>
+        </.form>
+      </div>
+    </div>
+  <% end %>
 </div>

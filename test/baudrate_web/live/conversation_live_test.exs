@@ -72,6 +72,65 @@ defmodule BaudrateWeb.ConversationLiveTest do
     end
   end
 
+  describe "recipient selection" do
+    test "/messages/new without params renders recipient search UI", %{
+      conn: conn,
+      user: user
+    } do
+      conn = log_in_user(conn, user)
+      {:ok, view, html} = live(conn, "/messages/new")
+      assert html =~ "Search by username"
+      assert has_element?(view, "input[name='search[query]']")
+    end
+
+    test "typing a username shows matching results", %{conn: conn, user: user, other: other} do
+      conn = log_in_user(conn, user)
+      {:ok, view, _html} = live(conn, "/messages/new")
+
+      html =
+        view
+        |> form("form", search: %{query: String.slice(other.username, 0, 5)})
+        |> render_change()
+
+      assert html =~ other.username
+    end
+
+    test "clicking a result navigates to /messages/new?to=username", %{
+      conn: conn,
+      user: user,
+      other: other
+    } do
+      conn = log_in_user(conn, user)
+      {:ok, view, _html} = live(conn, "/messages/new")
+
+      view
+      |> form("form", search: %{query: other.username})
+      |> render_change()
+
+      {:ok, _view, html} =
+        view
+        |> element("button[phx-value-username='#{other.username}']")
+        |> render_click()
+        |> follow_redirect(conn)
+
+      # Should now be on the new conversation page with the recipient
+      assert html =~ other.username
+      assert html =~ "not end-to-end encrypted"
+    end
+
+    test "current user is excluded from search results", %{conn: conn, user: user} do
+      conn = log_in_user(conn, user)
+      {:ok, view, _html} = live(conn, "/messages/new")
+
+      html =
+        view
+        |> form("form", search: %{query: user.username})
+        |> render_change()
+
+      refute html =~ "phx-value-username=\"#{user.username}\""
+    end
+  end
+
   describe "deleting messages" do
     test "can delete own message", %{conn: conn, user: user, other: other} do
       {:ok, conv} = Messaging.find_or_create_conversation(user, other)

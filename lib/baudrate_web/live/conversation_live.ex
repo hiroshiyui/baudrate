@@ -5,6 +5,10 @@ defmodule BaudrateWeb.ConversationLive do
   Displays messages as bubbles with sender alignment, supports sending new
   messages, deleting own messages, and auto-marks messages as read.
   Subscribes to conversation-level PubSub for real-time updates.
+
+  When navigated to `/messages/new` without a `?to=` param, renders a
+  recipient selection UI with live-search. Selecting a user navigates
+  to `/messages/new?to=<username>` to start the conversation.
   """
 
   use BaudrateWeb, :live_view
@@ -25,6 +29,9 @@ defmodule BaudrateWeb.ConversationLive do
       {:new, recipient} ->
         mount_new_conversation(socket, user, recipient)
 
+      :select_recipient ->
+        mount_recipient_selection(socket)
+
       {:error, reason} ->
         {:ok,
          socket
@@ -43,6 +50,7 @@ defmodule BaudrateWeb.ConversationLive do
 
     socket =
       socket
+      |> assign(:mode, :conversation)
       |> assign(:conversation, conversation)
       |> assign(:messages, messages)
       |> assign(:other_participant, other)
@@ -57,6 +65,7 @@ defmodule BaudrateWeb.ConversationLive do
     if Messaging.can_send_dm?(user, recipient) do
       socket =
         socket
+        |> assign(:mode, :new_conversation)
         |> assign(:conversation, nil)
         |> assign(:messages, [])
         |> assign(:other_participant, recipient)
@@ -71,6 +80,17 @@ defmodule BaudrateWeb.ConversationLive do
        |> put_flash(:error, gettext("You cannot send messages to this user."))
        |> redirect(to: ~p"/messages")}
     end
+  end
+
+  defp mount_recipient_selection(socket) do
+    socket =
+      socket
+      |> assign(:mode, :select_recipient)
+      |> assign(:search_query, "")
+      |> assign(:search_results, [])
+      |> assign(:page_title, gettext("New Message"))
+
+    {:ok, socket}
   end
 
   @impl true
@@ -105,6 +125,22 @@ defmodule BaudrateWeb.ConversationLive do
            put_flash(socket, :error, gettext("Too many messages. Please slow down."))}
       end
     end
+  end
+
+  def handle_event("search_recipient", %{"search" => %{"query" => query}}, socket) do
+    query = String.trim(query)
+
+    if String.length(query) < 2 do
+      {:noreply, socket |> assign(:search_query, query) |> assign(:search_results, [])}
+    else
+      user = socket.assigns.current_user
+      results = Auth.search_users(query, exclude_id: user.id)
+      {:noreply, socket |> assign(:search_query, query) |> assign(:search_results, results)}
+    end
+  end
+
+  def handle_event("select_recipient", %{"username" => username}, socket) do
+    {:noreply, push_navigate(socket, to: ~p"/messages/new?to=#{username}")}
   end
 
   def handle_event("delete_message", %{"id" => id}, socket) do
@@ -178,7 +214,7 @@ defmodule BaudrateWeb.ConversationLive do
     end
   end
 
-  defp resolve_conversation(_params, _user), do: {:error, :invalid_params}
+  defp resolve_conversation(_params, _user), do: :select_recipient
 
   defp ensure_conversation(socket, user) do
     if socket.assigns.new_conversation do
@@ -206,7 +242,6 @@ defmodule BaudrateWeb.ConversationLive do
 
   defp error_message(:not_found), do: gettext("Conversation not found.")
   defp error_message(:recipient_not_found), do: gettext("User not found.")
-  defp error_message(:invalid_params), do: gettext("Invalid request.")
   defp error_message(_), do: gettext("Something went wrong.")
 
   defp participant_name(%Baudrate.Setup.User{} = user), do: user.username

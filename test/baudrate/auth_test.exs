@@ -440,6 +440,69 @@ defmodule Baudrate.AuthTest do
     end
   end
 
+  describe "search_users/2" do
+    test "finds users by partial username match" do
+      create_user("user", username: "alice")
+      create_user("user", username: "alicia")
+      create_user("user", username: "bob")
+
+      results = Auth.search_users("ali")
+      usernames = Enum.map(results, & &1.username)
+      assert "alice" in usernames
+      assert "alicia" in usernames
+      refute "bob" in usernames
+    end
+
+    test "only returns active users" do
+      create_user("user", username: "activeuser")
+
+      {:ok, pending, _codes} =
+        Auth.register_user(%{
+          "username" => "pendinguser",
+          "password" => "SecurePass1!!",
+          "password_confirmation" => "SecurePass1!!",
+          "terms_accepted" => "true"
+        })
+
+      # pendinguser has status "pending" (default approval_required mode)
+      assert pending.status == "pending"
+
+      results = Auth.search_users("user")
+      usernames = Enum.map(results, & &1.username)
+      assert "activeuser" in usernames
+      refute "pendinguser" in usernames
+    end
+
+    test "respects :exclude_id option" do
+      user = create_user("user", username: "myself")
+      create_user("user", username: "myself2")
+
+      results = Auth.search_users("myself", exclude_id: user.id)
+      usernames = Enum.map(results, & &1.username)
+      refute "myself" in usernames
+      assert "myself2" in usernames
+    end
+
+    test "respects :limit option" do
+      for i <- 1..5, do: create_user("user", username: "search_user_#{i}")
+
+      results = Auth.search_users("search_user", limit: 3)
+      assert length(results) == 3
+    end
+
+    test "returns empty list for short or non-matching query" do
+      create_user("user", username: "testuser")
+      assert Auth.search_users("zzzznotfound") == []
+    end
+
+    test "sanitizes SQL wildcards in search term" do
+      create_user("user", username: "normal_user")
+      # Searching for literal "%" should not match everything
+      results = Auth.search_users("%")
+      refute Enum.any?(results, &(&1.username == "normal_user"))
+    end
+  end
+
   describe "block_user/2 and unblock_user/2" do
     test "blocks and unblocks a local user" do
       user = create_user("user")

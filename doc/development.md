@@ -497,7 +497,8 @@ the `dm_access` setting.
 | Route | LiveView | Purpose |
 |-------|----------|---------|
 | `/messages` | `ConversationsLive` | Conversation list with unread badges |
-| `/messages/new?to=username` | `ConversationLive` | New conversation |
+| `/messages/new` | `ConversationLive` | Recipient selection (live-search, excludes self) |
+| `/messages/new?to=username` | `ConversationLive` | New conversation with specified recipient |
 | `/messages/:id` | `ConversationLive` | Existing conversation thread |
 
 ### Moderation

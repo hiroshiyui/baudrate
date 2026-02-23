@@ -425,6 +425,39 @@ defmodule Baudrate.Auth do
     user_active?(user) && Setup.has_permission?(user.role.name, "user.create_content")
   end
 
+  @doc """
+  Searches active users by partial username match.
+
+  Used for recipient selection in DMs and other user pickers.
+  Sanitizes the search term to prevent SQL wildcard injection.
+
+  ## Options
+
+    * `:limit` — max results to return (default 10)
+    * `:exclude_id` — exclude a specific user ID from results (e.g. current user)
+  """
+  def search_users(term, opts \\ []) when is_binary(term) do
+    limit = Keyword.get(opts, :limit, 10)
+    exclude_id = Keyword.get(opts, :exclude_id)
+
+    sanitized =
+      term
+      |> String.replace("\\", "\\\\")
+      |> String.replace("%", "\\%")
+      |> String.replace("_", "\\_")
+
+    query =
+      from(u in User,
+        where: u.status == "active" and ilike(u.username, ^"%#{sanitized}%"),
+        order_by: u.username,
+        limit: ^limit,
+        preload: :role
+      )
+
+    query = if exclude_id, do: from(u in query, where: u.id != ^exclude_id), else: query
+    Repo.all(query)
+  end
+
   # --- User Management ---
 
   @users_per_page 20
