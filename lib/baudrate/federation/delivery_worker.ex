@@ -6,6 +6,7 @@ defmodule Baudrate.Federation.DeliveryWorker do
   Follows the same pattern as `SessionCleaner`:
   - Polls every 60 seconds (configurable via `delivery_poll_interval`)
   - Processes up to 50 jobs per cycle (configurable via `delivery_batch_size`)
+  - Delivers concurrently via `Task.async_stream` (configurable via `delivery_max_concurrency`, default 10)
   - Skips jobs targeting blocked domains
   """
 
@@ -63,8 +64,18 @@ defmodule Baudrate.Federation.DeliveryWorker do
       Logger.info("federation.delivery_worker: processing #{length(jobs)} jobs")
     end
 
-    Enum.each(jobs, fn job ->
-      Delivery.deliver_one(job)
-    end)
+    max_concurrency = config[:delivery_max_concurrency] || 10
+    http_receive_timeout = config[:http_receive_timeout] || 30_000
+    task_timeout = http_receive_timeout + 15_000
+
+    jobs
+    |> Task.async_stream(
+      fn job -> Delivery.deliver_one(job) end,
+      max_concurrency: max_concurrency,
+      timeout: task_timeout,
+      on_timeout: :kill_task,
+      ordered: false
+    )
+    |> Stream.run()
   end
 end

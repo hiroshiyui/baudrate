@@ -70,6 +70,7 @@ defmodule Baudrate.Federation.PublisherTest do
       assert actor_uri =~ user.username
       assert activity["@context"] == "https://www.w3.org/ns/activitystreams"
       assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
+      assert "#{actor_uri}/followers" in activity["cc"]
       assert activity["id"] =~ "#create-"
     end
   end
@@ -86,6 +87,7 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["actor"] == actor_uri
       assert activity["object"]["type"] == "Tombstone"
       assert activity["object"]["id"] =~ article.slug
+      assert "#{actor_uri}/followers" in activity["cc"]
       assert activity["id"] =~ "#delete-"
     end
   end
@@ -102,6 +104,7 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["actor"] == board_uri
       assert activity["object"] =~ article.slug
       assert board_uri =~ board.slug
+      assert "#{board_uri}/followers" in activity["cc"]
       assert activity["id"] =~ "#announce-"
     end
   end
@@ -118,6 +121,7 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["actor"] == actor_uri
       assert activity["object"]["type"] == "Article"
       assert activity["object"]["name"] == "Test Article"
+      assert "#{actor_uri}/followers" in activity["cc"]
       assert activity["id"] =~ "#update-"
     end
   end
@@ -144,6 +148,7 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["object"]["type"] == "Note"
       assert activity["object"]["inReplyTo"] =~ article.slug
       assert actor_uri =~ user.username
+      assert "#{actor_uri}/followers" in activity["cc"]
     end
 
     test "Note object includes to/cc addressing for Mastodon compatibility" do
@@ -212,6 +217,7 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["object"]["preferredUsername"] == user.username
       assert activity["id"] =~ "#update-actor-"
       assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
+      assert "#{actor_uri}/followers" in activity["cc"]
     end
 
     test "builds Update(Group) for board actor" do

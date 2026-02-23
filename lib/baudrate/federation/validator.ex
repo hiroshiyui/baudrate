@@ -54,6 +54,9 @@ defmodule Baudrate.Federation.Validator do
   def validate_activity(%{"type" => type, "actor" => actor} = activity)
       when is_binary(type) and is_binary(actor) do
     cond do
+      not is_binary(activity["id"]) or not valid_https_url?(activity["id"]) ->
+        {:error, :missing_activity_id}
+
       not valid_https_url?(actor) ->
         {:error, :invalid_actor_url}
 

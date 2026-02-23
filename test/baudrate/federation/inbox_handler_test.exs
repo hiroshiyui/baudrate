@@ -147,6 +147,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Now undo the follow
       undo_activity = %{
+        "id" => "https://remote.example/activities/undo-follow-#{System.unique_integer([:positive])}",
         "type" => "Undo",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -171,6 +172,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       article_uri = Federation.actor_uri(:article, article.slug)
 
       activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -200,6 +202,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # First comment
       activity1 = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -215,6 +218,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Reply to first comment
       activity2 = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -245,6 +249,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       article_uri = Federation.actor_uri(:article, article.slug)
 
       activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -270,6 +275,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       ap_id = "https://remote.example/notes/idem-#{System.unique_integer([:positive])}"
 
       activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -292,6 +298,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       remote_actor = create_remote_actor()
 
       activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -316,6 +323,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       board_uri = Federation.actor_uri(:board, board.slug)
 
       activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -341,6 +349,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       remote_actor = create_remote_actor()
 
       activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -478,6 +487,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Undo the like
       undo_activity = %{
+        "id" => "https://remote.example/activities/undo-like-#{System.unique_integer([:positive])}",
         "type" => "Undo",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -510,6 +520,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Undo the announce
       undo_activity = %{
+        "id" => "https://remote.example/activities/undo-announce-#{System.unique_integer([:positive])}",
         "type" => "Undo",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -534,6 +545,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Create remote article first
       create_activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -551,6 +563,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Delete it
       delete_activity = %{
+        "id" => "https://remote.example/activities/delete-#{System.unique_integer([:positive])}",
         "type" => "Delete",
         "actor" => remote_actor.ap_id,
         "object" => ap_id
@@ -573,6 +586,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Create remote comment first
       create_activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -588,6 +602,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Delete it
       delete_activity = %{
+        "id" => "https://remote.example/activities/delete-#{System.unique_integer([:positive])}",
         "type" => "Delete",
         "actor" => remote_actor.ap_id,
         "object" => comment_ap_id
@@ -611,6 +626,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Create article by remote_actor
       create_activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -627,6 +643,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Try to delete as other_actor
       delete_activity = %{
+        "id" => "https://remote.example/activities/delete-#{System.unique_integer([:positive])}",
         "type" => "Delete",
         "actor" => other_actor.ap_id,
         "object" => ap_id
@@ -652,6 +669,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Create remote article
       create_activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -668,6 +686,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Update it
       update_activity = %{
+        "id" => "https://remote.example/activities/update-#{System.unique_integer([:positive])}",
         "type" => "Update",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -697,6 +716,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Create remote comment
       create_activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -712,6 +732,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Update it
       update_activity = %{
+        "id" => "https://remote.example/activities/update-#{System.unique_integer([:positive])}",
         "type" => "Update",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -739,6 +760,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Create article by remote_actor
       create_activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -755,6 +777,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Try to update as other_actor
       update_activity = %{
+        "id" => "https://remote.example/activities/update-#{System.unique_integer([:positive])}",
         "type" => "Update",
         "actor" => other_actor.ap_id,
         "object" => %{
@@ -783,6 +806,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       board_uri = Federation.actor_uri(:board, board.slug)
 
       activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -816,6 +840,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Create as Page first
       create_activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -832,6 +857,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Update as Page
       update_activity = %{
+        "id" => "https://remote.example/activities/update-#{System.unique_integer([:positive])}",
         "type" => "Update",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -883,6 +909,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       article_uri = Federation.actor_uri(:article, article.slug)
 
       activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -912,6 +939,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       article_uri = Federation.actor_uri(:article, article.slug)
 
       activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -941,6 +969,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       article_uri = Federation.actor_uri(:article, article.slug)
 
       activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -973,6 +1002,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       article_uri = Federation.actor_uri(:article, article.slug)
 
       activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -1007,6 +1037,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # First delivery to board1
       activity1 = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -1027,6 +1058,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Second delivery to board2 (same ap_id)
       activity2 = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -1061,6 +1093,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       ap_id = "https://remote.example/articles/idem-#{System.unique_integer([:positive])}"
 
       activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -1094,6 +1127,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
         })
 
       activity = %{
+        "id" => "https://blocked-domain.example/activities/follow-1",
         "type" => "Follow",
         "actor" => remote_actor.ap_id,
         "object" => "https://local.example/ap/users/bob"
@@ -1161,6 +1195,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       article_uri = Federation.actor_uri(:article, article.slug)
 
       activity = %{
+        "id" => "https://remote.example/activities/flag-#{System.unique_integer([:positive])}",
         "type" => "Flag",
         "actor" => remote_actor.ap_id,
         "content" => "This content violates our rules",
@@ -1182,6 +1217,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       remote_actor = create_remote_actor()
 
       activity = %{
+        "id" => "https://remote.example/activities/flag-#{System.unique_integer([:positive])}",
         "type" => "Flag",
         "actor" => remote_actor.ap_id,
         "content" => "Spam actor",
@@ -1204,6 +1240,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       remote_actor = create_remote_actor()
 
       activity = %{
+        "id" => "https://evil.example/activities/follow-1",
         "type" => "Follow",
         "actor" => "https://evil.example/users/impersonator",
         "object" => "https://local.example/ap/users/bob"
@@ -1217,6 +1254,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       remote_actor = create_remote_actor()
 
       activity = %{
+        "id" => "https://remote.example/activities/follow-#{System.unique_integer([:positive])}",
         "type" => "Follow",
         "object" => "https://local.example/ap/users/bob"
       }
@@ -1251,6 +1289,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Try to undo as other_actor — should NOT delete
       undo_activity = %{
+        "id" => "https://remote.example/activities/undo-like-#{System.unique_integer([:positive])}",
         "type" => "Undo",
         "actor" => other_actor.ap_id,
         "object" => %{
@@ -1284,6 +1323,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Try to undo as other_actor — should NOT delete
       undo_activity = %{
+        "id" => "https://remote.example/activities/undo-announce-#{System.unique_integer([:positive])}",
         "type" => "Undo",
         "actor" => other_actor.ap_id,
         "object" => %{
@@ -1319,6 +1359,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       # Delete the actor (object == actor_uri)
       delete_activity = %{
+        "id" => "https://remote.example/activities/delete-#{System.unique_integer([:positive])}",
         "type" => "Delete",
         "actor" => remote_actor.ap_id,
         "object" => remote_actor.ap_id

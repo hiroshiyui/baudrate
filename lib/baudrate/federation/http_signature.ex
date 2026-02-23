@@ -7,7 +7,7 @@ defmodule Baudrate.Federation.HTTPSignature do
   **Verification** (incoming inbox requests):
     1. Parse `Signature` header
     2. Require `(request-target)`, `host`, `date`, `digest` in signed headers
-    3. Validate `Date` within ±30s
+    3. Validate `Date` within ±300s
     4. Validate `Digest` matches body SHA-256
     5. Resolve remote actor and verify signature with public key
 
@@ -21,7 +21,7 @@ defmodule Baudrate.Federation.HTTPSignature do
   alias Baudrate.Federation.ActorResolver
 
   @required_signed_headers ["(request-target)", "host", "date", "digest"]
-  @signature_max_age_default 30
+  @signature_max_age_default 300
 
   # --- Verification ---
 

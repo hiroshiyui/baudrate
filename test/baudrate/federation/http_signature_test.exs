@@ -146,7 +146,7 @@ defmodule Baudrate.Federation.HTTPSignatureTest do
       headers =
         HTTPSignature.sign(:post, "https://local.example/ap/inbox", body, private_pem, key_id)
 
-      # Use an old date (well beyond the 30s max age)
+      # Use an old date (well beyond the 300s max age)
       old_date = HTTPSignature.format_http_date(~U[2020-01-01 00:00:00Z])
 
       conn =

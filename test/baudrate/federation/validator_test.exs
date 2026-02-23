@@ -70,6 +70,7 @@ defmodule Baudrate.Federation.ValidatorTest do
   describe "validate_activity/1" do
     test "valid activity with all required fields" do
       activity = %{
+        "id" => "https://remote.example/activities/1",
         "type" => "Follow",
         "actor" => "https://remote.example/users/alice",
         "object" => "https://local.example/ap/users/bob"
@@ -98,6 +99,7 @@ defmodule Baudrate.Federation.ValidatorTest do
 
     test "missing object returns error (non-Delete)" do
       activity = %{
+        "id" => "https://remote.example/activities/3",
         "type" => "Follow",
         "actor" => "https://remote.example/users/alice"
       }
@@ -107,6 +109,7 @@ defmodule Baudrate.Federation.ValidatorTest do
 
     test "Delete without object is allowed" do
       activity = %{
+        "id" => "https://remote.example/activities/4",
         "type" => "Delete",
         "actor" => "https://remote.example/users/alice"
       }
@@ -116,12 +119,45 @@ defmodule Baudrate.Federation.ValidatorTest do
 
     test "invalid actor URL returns error" do
       activity = %{
+        "id" => "https://remote.example/activities/5",
         "type" => "Follow",
         "actor" => "http://remote.example/users/alice",
         "object" => "https://local.example/ap/users/bob"
       }
 
       assert {:error, :invalid_actor_url} = Validator.validate_activity(activity)
+    end
+
+    test "missing id returns error" do
+      activity = %{
+        "type" => "Follow",
+        "actor" => "https://remote.example/users/alice",
+        "object" => "https://local.example/ap/users/bob"
+      }
+
+      assert {:error, :missing_activity_id} = Validator.validate_activity(activity)
+    end
+
+    test "non-HTTPS id returns error" do
+      activity = %{
+        "id" => "http://remote.example/activities/1",
+        "type" => "Follow",
+        "actor" => "https://remote.example/users/alice",
+        "object" => "https://local.example/ap/users/bob"
+      }
+
+      assert {:error, :missing_activity_id} = Validator.validate_activity(activity)
+    end
+
+    test "non-string id returns error" do
+      activity = %{
+        "id" => 12345,
+        "type" => "Follow",
+        "actor" => "https://remote.example/users/alice",
+        "object" => "https://local.example/ap/users/bob"
+      }
+
+      assert {:error, :missing_activity_id} = Validator.validate_activity(activity)
     end
 
     test "completely invalid input returns error" do

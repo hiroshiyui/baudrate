@@ -67,6 +67,7 @@ defmodule Baudrate.Federation.InboxHandlerDmTest do
 
       activity = %{
         "type" => "Create",
+        "id" => "https://remote.example/activities/create-dm-#{System.unique_integer([:positive])}",
         "actor" => remote_actor.ap_id,
         "object" => %{
           "id" => "https://remote.example/notes/dm1",
@@ -91,6 +92,7 @@ defmodule Baudrate.Federation.InboxHandlerDmTest do
 
       activity = %{
         "type" => "Create",
+        "id" => "https://remote.example/activities/create-dm-#{System.unique_integer([:positive])}",
         "actor" => remote_actor.ap_id,
         "object" => %{
           "id" => "https://remote.example/notes/dm2",
@@ -111,6 +113,7 @@ defmodule Baudrate.Federation.InboxHandlerDmTest do
 
       activity = %{
         "type" => "Create",
+        "id" => "https://remote.example/activities/create-dm-#{System.unique_integer([:positive])}",
         "actor" => remote_actor.ap_id,
         "object" => %{
           "id" => "https://remote.example/notes/dm3",
@@ -132,6 +135,7 @@ defmodule Baudrate.Federation.InboxHandlerDmTest do
 
       activity = %{
         "type" => "Create",
+        "id" => "https://remote.example/activities/create-dm-#{System.unique_integer([:positive])}",
         "actor" => remote_actor.ap_id,
         "object" => %{
           "id" => "https://remote.example/notes/dm4",
@@ -153,6 +157,7 @@ defmodule Baudrate.Federation.InboxHandlerDmTest do
 
       activity = %{
         "type" => "Create",
+        "id" => "https://remote.example/activities/create-dm-#{System.unique_integer([:positive])}",
         "actor" => remote_actor.ap_id,
         "object" => %{
           "id" => "https://remote.example/notes/public1",
@@ -176,6 +181,7 @@ defmodule Baudrate.Federation.InboxHandlerDmTest do
 
       activity = %{
         "type" => "Create",
+        "id" => "https://remote.example/activities/create-dm-#{System.unique_integer([:positive])}",
         "actor" => remote_actor.ap_id,
         "object" => %{
           "id" => "https://remote.example/notes/followers1",

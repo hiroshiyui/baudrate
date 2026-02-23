@@ -57,7 +57,7 @@ config :phoenix, :json_library, Jason
 
 # Federation
 config :baudrate, Baudrate.Federation,
-  signature_max_age: 30,
+  signature_max_age: 300,
   actor_cache_ttl: 86_400,
   max_payload_size: 262_144,
   max_content_size: 65_536,
@@ -67,6 +67,7 @@ config :baudrate, Baudrate.Federation,
   delivery_max_attempts: 6,
   delivery_poll_interval: 60_000,
   delivery_batch_size: 50,
+  delivery_max_concurrency: 10,
   delivery_backoff_schedule: [60, 300, 1800, 7200, 43200, 86400],
   stale_actor_cleanup_interval: 86_400_000, # 24 hours in ms (Process.send_after)
   stale_actor_max_age: 2_592_000 # 30 days in seconds (matches actor_cache_ttl convention)

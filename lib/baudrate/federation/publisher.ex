@@ -41,6 +41,7 @@ defmodule Baudrate.Federation.Publisher do
       "actor" => actor_uri,
       "published" => DateTime.to_iso8601(article.inserted_at),
       "to" => [@as_public],
+      "cc" => ["#{actor_uri}/followers"],
       "object" => object
     }
 
@@ -63,6 +64,7 @@ defmodule Baudrate.Federation.Publisher do
       "type" => "Delete",
       "actor" => actor_uri,
       "to" => [@as_public],
+      "cc" => ["#{actor_uri}/followers"],
       "object" => %{
         "id" => article_uri,
         "type" => "Tombstone"
@@ -88,6 +90,7 @@ defmodule Baudrate.Federation.Publisher do
       "actor" => board_uri,
       "published" => DateTime.to_iso8601(article.inserted_at),
       "to" => [@as_public],
+      "cc" => ["#{board_uri}/followers"],
       "object" => article_uri
     }
 
@@ -111,6 +114,7 @@ defmodule Baudrate.Federation.Publisher do
       "actor" => actor_uri,
       "published" => DateTime.to_iso8601(article.updated_at),
       "to" => [@as_public],
+      "cc" => ["#{actor_uri}/followers"],
       "object" => object
     }
 
@@ -135,6 +139,7 @@ defmodule Baudrate.Federation.Publisher do
       "actor" => actor_uri,
       "published" => DateTime.to_iso8601(comment.inserted_at),
       "to" => [@as_public],
+      "cc" => ["#{actor_uri}/followers"],
       "object" => %{
         "id" => "#{actor_uri}#note-#{comment.id}",
         "type" => "Note",
@@ -237,6 +242,7 @@ defmodule Baudrate.Federation.Publisher do
       "type" => "Update",
       "actor" => actor_uri,
       "to" => [@as_public],
+      "cc" => ["#{actor_uri}/followers"],
       "object" => actor_json
     }
 
