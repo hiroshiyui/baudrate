@@ -61,18 +61,19 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 
 - When a feature requirement is unclear or ambiguous, seek clarification on definition and scope rather than guessing.
 - Each implementation should match specs, open standards, industry standards, and common practices.
-- Always consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification.
 - Follow ActivityPub specification.
-- Follow OWASP Top 10 to audit common security vulnerabilities.
+
+### While Coding
+
+- Always consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification.
+- Keep i18n strings in sync across locales; Rather than using fuzzy matching for uncertain translations, let the messages fallback to English to avoid inaccuracies.
 
 ### After Every Change
 
 1. Update all relevant documentation (`doc/`, README, moduledocs)
 2. Add essential but missing tests to improve test coverage and ensure code quality
-3. Keep i18n strings in sync across locales. Rather than using fuzzy matching for uncertain translations, let the messages fallback to English to avoid inaccuracies.
-4. Always consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification.
-5. Follow ActivityPub specification.
-6. Follow OWASP Top 10 to audit common security vulnerabilities.
+4. Always consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification
+5. Follow ActivityPub specification
 
 ### Code Organization
 
@@ -93,6 +94,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - Federation private keys encrypted at rest (AES-256-GCM via `KeyVault`)
 - Content size limits: 256 KB AP payload, 64 KB content body
 - Remote actor display names sanitized (strip HTML, control chars, truncate)
+- Follow OWASP Top 10 to audit common security vulnerabilities
 
 ## Testing
 
