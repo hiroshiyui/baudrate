@@ -721,14 +721,30 @@ adding the `toolbar` attribute:
 <.input field={@form[:body]} type="textarea" toolbar />
 ```
 
-The toolbar is purely client-side — it reads `selectionStart`/`selectionEnd`,
-wraps or prefixes with Markdown syntax, and dispatches an `input` event so
+Formatting buttons are purely client-side — they read `selectionStart`/`selectionEnd`,
+wrap or prefix with Markdown syntax, and dispatch an `input` event so
 LiveView picks up the change. No server round-trips are needed.
 
 Toolbar buttons: **Bold**, *Italic*, ~~Strikethrough~~, Heading, Link, Image,
 Inline Code, Code Block, Blockquote, Bullet List, Numbered List, Horizontal Rule.
 
-Source: `assets/js/markdown_toolbar_hook.js`
+#### Live Preview
+
+A **Write/Preview** toggle button (right-aligned, eye/pencil icons) lets users
+preview their markdown before posting. Preview rendering is done **server-side**
+via `Content.Markdown.to_html/1` to guarantee consistent sanitization.
+
+The JS hook sends the textarea content via `pushEvent("markdown_preview", ...)`
+and listens for a `"markdown_preview_result"` event pushed back from the server.
+On the server side, `BaudrateWeb.MarkdownPreviewHook` intercepts the event via
+`attach_hook/4` (attached in `AuthHooks` for `:require_auth` and `:optional_auth`
+scopes). A 64 KB body size limit is enforced to prevent abuse.
+
+In preview mode, the textarea is hidden and a preview `<div>` (rendered with
+`phx-update="ignore"`) displays the rendered HTML. Formatting buttons are
+disabled while in preview mode.
+
+Source: `assets/js/markdown_toolbar_hook.js`, `lib/baudrate_web/live/markdown_preview_hook.ex`
 
 ## Running Tests
 

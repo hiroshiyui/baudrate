@@ -11,7 +11,7 @@ msgstr ""
 "Language: zh_TW\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: lib/baudrate_web/components/core_components.ex:390
+#: lib/baudrate_web/components/core_components.ex:399
 #: lib/baudrate_web/live/admin/boards_live.html.heex:160
 #: lib/baudrate_web/live/admin/federation_live.html.heex:38
 #: lib/baudrate_web/live/admin/federation_live.html.heex:94
@@ -559,7 +559,7 @@ msgid "Upload error."
 msgstr "上傳錯誤。"
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:19
-#: lib/baudrate_web/live/auth_hooks.ex:140
+#: lib/baudrate_web/live/auth_hooks.ex:143
 #, elixir-autogen, elixir-format
 msgid "Access denied."
 msgstr "存取被拒絕。"
@@ -1564,7 +1564,7 @@ msgstr "用戶已成功解除停權。"
 msgid "You cannot change your own role."
 msgstr "您無法變更自己的角色。"
 
-#: lib/baudrate_web/live/auth_hooks.ex:43
+#: lib/baudrate_web/live/auth_hooks.ex:44
 #, elixir-autogen, elixir-format
 msgid "Your account has been banned."
 msgstr "您的帳號已被停權。"
@@ -2612,3 +2612,8 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "by %{editor}"
 msgstr "由 %{author} 發表"
+
+#: lib/baudrate_web/components/core_components.ex:291
+#, elixir-autogen, elixir-format
+msgid "Markdown preview"
+msgstr ""

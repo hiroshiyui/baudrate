@@ -11,7 +11,7 @@
 msgid ""
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:390
+#: lib/baudrate_web/components/core_components.ex:399
 #: lib/baudrate_web/live/admin/boards_live.html.heex:160
 #: lib/baudrate_web/live/admin/federation_live.html.heex:38
 #: lib/baudrate_web/live/admin/federation_live.html.heex:94
@@ -559,7 +559,7 @@ msgid "Upload error."
 msgstr ""
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:19
-#: lib/baudrate_web/live/auth_hooks.ex:140
+#: lib/baudrate_web/live/auth_hooks.ex:143
 #, elixir-autogen, elixir-format
 msgid "Access denied."
 msgstr ""
@@ -1565,7 +1565,7 @@ msgstr ""
 msgid "You cannot change your own role."
 msgstr ""
 
-#: lib/baudrate_web/live/auth_hooks.ex:43
+#: lib/baudrate_web/live/auth_hooks.ex:44
 #, elixir-autogen, elixir-format
 msgid "Your account has been banned."
 msgstr ""
@@ -2612,4 +2612,9 @@ msgstr ""
 #: lib/baudrate_web/live/article_history_live.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "by %{editor}"
+msgstr ""
+
+#: lib/baudrate_web/components/core_components.ex:291
+#, elixir-autogen, elixir-format
+msgid "Markdown preview"
 msgstr ""
