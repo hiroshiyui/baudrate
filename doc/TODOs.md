@@ -4,18 +4,6 @@ Audit date: 2026-02-23
 
 ---
 
-## High: Security
-
-- [x] **Actor-signer mismatch validation** — inbox handler now validates that HTTP Signature actor matches `activity["actor"]` via `validate_actor_match/2`
-- [x] **Undo(Like/Announce) actor ownership check** — Undo handlers now scope deletes by `remote_actor_id` via ownership-aware `delete_article_like_by_ap_id/2` and `delete_announce_by_ap_id/2`
-- [x] **Nil guard on mute events** — `UserProfileLive` mute/unmute handlers now guard against nil `current_user` (silent no-op for guests)
-
-## Medium: Security
-
-- [x] **Parser-based HTML sanitizer** — replaced regex-based sanitization with `HtmlSanitizeEx` custom scrubbers in both `Sanitizer` and `Markdown` modules
-- [x] **`String.to_integer/1` on user params** — replaced with `BaudrateWeb.Helpers.parse_id/1` across all LiveView event handlers
-- [x] **IPv4-mapped IPv6 SSRF bypass** — `private_ip?/1` now extracts embedded IPv4 from `::ffff:` mapped addresses
-
 ## Medium: Federation (AP Spec Compliance)
 
 - [ ] **Missing `cc` on outgoing activity wrappers** — Create, Announce, Update, Delete activities lack `cc` with followers collection, causing improper Mastodon delivery routing (`publisher.ex:37-151`)
@@ -73,9 +61,7 @@ Audit date: 2026-02-23
 
 ## Medium: Feature Gaps
 
-- [x] **RSS/Atom feeds** — `/feeds/rss`, `/feeds/atom`, `/feeds/boards/:slug/rss|atom`, `/feeds/users/:username/rss|atom`
 - [ ] **Bulk moderation actions** — one-at-a-time only; no bulk delete/ban in admin
-- [x] **User muting** — local-only soft-mute/ignore with SysOp board exemption, combined block+mute filtering
 
 ## Low: Deployment & Infrastructure
 
