@@ -34,7 +34,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 
 ### Contexts
 
-- **Auth** (`lib/baudrate/auth.ex`) — login, registration, TOTP, sessions, avatars, invite codes, password reset, user blocks, user mutes
+- **Auth** (`lib/baudrate/auth.ex`) — authentication (login, registration, TOTP, sessions, password reset), user management (avatars, invite codes, blocks, mutes)
 - **Content** (`lib/baudrate/content.ex`) — boards, articles, comments, likes, permissions, board moderators, search
 - **Federation** (`lib/baudrate/federation.ex`) — AP actors, outbox, followers, announces, delivery
 - **Messaging** (`lib/baudrate/messaging.ex`) — 1-on-1 direct messages, conversations, DM access control, federation
@@ -61,19 +61,18 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 
 - When a feature requirement is unclear or ambiguous, seek clarification on definition and scope rather than guessing.
 - Each implementation should match specs, open standards, industry standards, and common practices.
-- Follow ActivityPub specification.
 
 ### While Coding
 
 - Always consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification.
-- Keep i18n strings in sync across locales; Rather than using fuzzy matching for uncertain translations, let the messages fallback to English to avoid inaccuracies.
+- Keep i18n strings in sync across locales; rather than using fuzzy matching for uncertain translations, let the messages fallback to English to avoid inaccuracies.
 
 ### After Every Change
 
 1. Update all relevant documentation (`doc/`, README, moduledocs)
 2. Add essential but missing tests to improve test coverage and ensure code quality
-4. Always consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification
-5. Follow ActivityPub specification
+3. Always consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification
+4. Follow ActivityPub specification
 
 ### Code Organization
 
@@ -102,14 +101,13 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - `setup_user("role_name")` — creates a test user with the given role (seeds roles if needed)
 - `log_in_user(conn, user)` — authenticates a connection with session tokens
 - `errors_on(changeset)` — extracts validation errors as `%{field: [messages]}`
-- Tests mirror `lib/` structure under `test/`
 
 ## Key Entry Points
 
 | File | Purpose |
 |------|---------|
 | `lib/baudrate_web/router.ex` | Routes with auth live_sessions |
-| `lib/baudrate/auth.ex` | Auth context: login, registration, TOTP, sessions |
+| `lib/baudrate/auth.ex` | Auth context: authentication, user management (blocks, mutes, invites) |
 | `lib/baudrate/content.ex` | Content context: boards, articles, comments, permissions |
 | `lib/baudrate/federation.ex` | Federation context: actors, outbox, followers |
 | `lib/baudrate/messaging.ex` | Messaging context: DMs, conversations, read cursors |
