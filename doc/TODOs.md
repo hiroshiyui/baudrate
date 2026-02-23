@@ -16,11 +16,6 @@ Audit date: 2026-02-23
 - [ ] **`PendingUsersLive` approve crashes on nil user** — `Auth.get_user/1` return not checked (`pending_users_live.ex:22-24`)
 - [ ] **Missing unique index on `settings.key`** — no index for frequently queried field
 
-## High: Accessibility (WAI-ARIA)
-
-- [ ] **Icon-only buttons missing `aria-label`** — locale up/down/remove buttons (`profile_live.html.heex:135-158`)
-- [ ] **Navigation menus not wrapped in `<nav>` landmarks** — desktop/mobile nav `<ul>` menus, breadcrumbs missing `<nav aria-label>` (`layouts.ex:27,103`, `board_live.html.heex:2`)
-
 ## Medium: Accessibility (WAI-ARIA)
 
 - [ ] **Pagination component** — missing `<nav>` wrapper, `aria-current="page"`, and `aria-label` on prev/next buttons (`core_components.ex:541-578`)

@@ -137,6 +137,7 @@
                     class="btn btn-sm btn-ghost"
                     phx-click="move_locale_up"
                     phx-value-locale={locale}
+                    aria-label={gettext("Move up")}
                   >
                     &uarr;
                   </button>
@@ -146,6 +147,7 @@
                     class="btn btn-sm btn-ghost"
                     phx-click="move_locale_down"
                     phx-value-locale={locale}
+                    aria-label={gettext("Move down")}
                   >
                     &darr;
                   </button>
@@ -154,6 +156,7 @@
                     class="btn btn-sm btn-ghost btn-error"
                     phx-click="remove_locale"
                     phx-value-locale={locale}
+                    aria-label={gettext("Remove")}
                   >
                     &times;
                   </button>

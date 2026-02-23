@@ -31,65 +31,67 @@ defmodule BaudrateWeb.Layouts do
           <div tabindex="0" role="button" aria-label={gettext("Open navigation menu")} aria-haspopup="true" class="btn btn-ghost">
             <.icon name="hero-bars-3" class="size-5" />
           </div>
-          <ul
-            tabindex="0"
-            class="menu dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
-          >
-            <li>
-              <.link navigate="/">{gettext("Home")}</.link>
-            </li>
-            <li>
-              <.link navigate="/">{gettext("Boards")}</.link>
-            </li>
-            <li>
-              <.link navigate="/search">{gettext("Search")}</.link>
-            </li>
-            <li>
-              <.link navigate="/messages">{gettext("Messages")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
-            <li :if={@current_user.role.name == "admin"} class="menu-title">
-              {gettext("Admin")}
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/settings">{gettext("Settings")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/pending-users">{gettext("Pending Users")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/federation">{gettext("Federation")}</.link>
-            </li>
-            <li :if={@current_user.role.name in ["admin", "moderator"]}>
-              <.link navigate="/admin/moderation">{gettext("Moderation")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/boards">{gettext("Manage Boards")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/users">{gettext("Manage Users")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/moderation-log">{gettext("Moderation Log")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/invites">{gettext("Invite Codes")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/login-attempts">{gettext("Login Attempts")}</.link>
-            </li>
-            <li class="divider my-1"></li>
-            <li class="menu-title flex flex-row items-center gap-2">
-              <.avatar user={@current_user} size={36} />
-              {@current_user.username} ({translate_role(@current_user.role.name)})
-            </li>
-            <li>
-              <.link navigate="/profile">{gettext("Profile")}</.link>
-            </li>
-            <li>
-              <.link href="/logout" method="delete">{gettext("Sign Out")}</.link>
-            </li>
-          </ul>
+          <nav aria-label={gettext("Main menu")}>
+            <ul
+              tabindex="0"
+              class="menu dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
+            >
+              <li>
+                <.link navigate="/">{gettext("Home")}</.link>
+              </li>
+              <li>
+                <.link navigate="/">{gettext("Boards")}</.link>
+              </li>
+              <li>
+                <.link navigate="/search">{gettext("Search")}</.link>
+              </li>
+              <li>
+                <.link navigate="/messages">{gettext("Messages")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
+              <li :if={@current_user.role.name == "admin"} class="menu-title">
+                {gettext("Admin")}
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/settings">{gettext("Settings")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/pending-users">{gettext("Pending Users")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/federation">{gettext("Federation")}</.link>
+              </li>
+              <li :if={@current_user.role.name in ["admin", "moderator"]}>
+                <.link navigate="/admin/moderation">{gettext("Moderation")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/boards">{gettext("Manage Boards")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/users">{gettext("Manage Users")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/moderation-log">{gettext("Moderation Log")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/invites">{gettext("Invite Codes")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/login-attempts">{gettext("Login Attempts")}</.link>
+              </li>
+              <li class="divider my-1"></li>
+              <li class="menu-title flex flex-row items-center gap-2">
+                <.avatar user={@current_user} size={36} />
+                {@current_user.username} ({translate_role(@current_user.role.name)})
+              </li>
+              <li>
+                <.link navigate="/profile">{gettext("Profile")}</.link>
+              </li>
+              <li>
+                <.link href="/logout" method="delete">{gettext("Sign Out")}</.link>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
 
@@ -100,20 +102,22 @@ defmodule BaudrateWeb.Layouts do
 
       <%!-- Desktop nav links (shown >= lg) --%>
       <div :if={@current_user} class="hidden lg:flex flex-none">
-        <ul class="menu menu-horizontal px-1 items-center">
-          <li>
-            <.link navigate="/" class="btn btn-ghost">{gettext("Home")}</.link>
-          </li>
-          <li>
-            <.link navigate="/" class="btn btn-ghost">{gettext("Boards")}</.link>
-          </li>
-          <li>
-            <.link navigate="/search" class="btn btn-ghost">{gettext("Search")}</.link>
-          </li>
-          <li>
-            <.link navigate="/messages" class="btn btn-ghost">{gettext("Messages")}</.link>
-          </li>
-        </ul>
+        <nav aria-label={gettext("Main menu")}>
+          <ul class="menu menu-horizontal px-1 items-center">
+            <li>
+              <.link navigate="/" class="btn btn-ghost">{gettext("Home")}</.link>
+            </li>
+            <li>
+              <.link navigate="/" class="btn btn-ghost">{gettext("Boards")}</.link>
+            </li>
+            <li>
+              <.link navigate="/search" class="btn btn-ghost">{gettext("Search")}</.link>
+            </li>
+            <li>
+              <.link navigate="/messages" class="btn btn-ghost">{gettext("Messages")}</.link>
+            </li>
+          </ul>
+        </nav>
       </div>
 
       <%!-- Right side: theme toggle + auth links / user dropdown --%>
@@ -135,48 +139,50 @@ defmodule BaudrateWeb.Layouts do
             {@current_user.username}
             <.icon name="hero-chevron-down-micro" class="size-4" />
           </div>
-          <ul
-            tabindex="0"
-            class="menu dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
-          >
-            <li :if={@current_user.role.name == "admin"} class="menu-title">
-              {gettext("Admin")}
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/settings">{gettext("Settings")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/pending-users">{gettext("Pending Users")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/federation">{gettext("Federation")}</.link>
-            </li>
-            <li :if={@current_user.role.name in ["admin", "moderator"]}>
-              <.link navigate="/admin/moderation">{gettext("Moderation")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/boards">{gettext("Manage Boards")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/users">{gettext("Manage Users")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/moderation-log">{gettext("Moderation Log")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/invites">{gettext("Invite Codes")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"}>
-              <.link navigate="/admin/login-attempts">{gettext("Login Attempts")}</.link>
-            </li>
-            <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
-            <li>
-              <.link navigate="/profile">{gettext("Profile")}</.link>
-            </li>
-            <li>
-              <.link href="/logout" method="delete">{gettext("Sign Out")}</.link>
-            </li>
-          </ul>
+          <nav aria-label={gettext("User menu")}>
+            <ul
+              tabindex="0"
+              class="menu dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
+            >
+              <li :if={@current_user.role.name == "admin"} class="menu-title">
+                {gettext("Admin")}
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/settings">{gettext("Settings")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/pending-users">{gettext("Pending Users")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/federation">{gettext("Federation")}</.link>
+              </li>
+              <li :if={@current_user.role.name in ["admin", "moderator"]}>
+                <.link navigate="/admin/moderation">{gettext("Moderation")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/boards">{gettext("Manage Boards")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/users">{gettext("Manage Users")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/moderation-log">{gettext("Moderation Log")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/invites">{gettext("Invite Codes")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"}>
+                <.link navigate="/admin/login-attempts">{gettext("Login Attempts")}</.link>
+              </li>
+              <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
+              <li>
+                <.link navigate="/profile">{gettext("Profile")}</.link>
+              </li>
+              <li>
+                <.link href="/logout" method="delete">{gettext("Sign Out")}</.link>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
     </header>

@@ -24,18 +24,18 @@ msgstr ""
 msgid "Actions"
 msgstr "操作"
 
-#: lib/baudrate_web/components/layouts.ex:218
-#: lib/baudrate_web/components/layouts.ex:230
+#: lib/baudrate_web/components/layouts.ex:224
+#: lib/baudrate_web/components/layouts.ex:236
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "再接続を試みています"
 
-#: lib/baudrate_web/components/layouts.ex:225
+#: lib/baudrate_web/components/layouts.ex:231
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "エラーが発生しました！"
 
-#: lib/baudrate_web/components/layouts.ex:213
+#: lib/baudrate_web/components/layouts.ex:219
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "インターネットに接続できません"
@@ -257,7 +257,7 @@ msgstr "認証アプリで下のQRコードをスキャンして二要素認証�
 msgid "Set Up Two-Factor Authentication"
 msgstr "二要素認証のセットアップ"
 
-#: lib/baudrate_web/components/layouts.ex:127
+#: lib/baudrate_web/components/layouts.ex:131
 #: lib/baudrate_web/live/login_live.ex:39
 #: lib/baudrate_web/live/login_live.html.heex:2
 #: lib/baudrate_web/live/login_live.html.heex:39
@@ -266,8 +266,8 @@ msgstr "二要素認証のセットアップ"
 msgid "Sign In"
 msgstr "ログイン"
 
-#: lib/baudrate_web/components/layouts.ex:90
-#: lib/baudrate_web/components/layouts.ex:177
+#: lib/baudrate_web/components/layouts.ex:91
+#: lib/baudrate_web/components/layouts.ex:182
 #, elixir-autogen, elixir-format
 msgid "Sign Out"
 msgstr "ログアウト"
@@ -320,8 +320,8 @@ msgstr "ログイン試行回数が多すぎます。しばらくしてからも
 msgid "Unable to connect to database. Check your configuration."
 msgstr "データベースに接続できません。設定を確認してください。"
 
-#: lib/baudrate_web/components/layouts.ex:42
-#: lib/baudrate_web/components/layouts.ex:108
+#: lib/baudrate_web/components/layouts.ex:43
+#: lib/baudrate_web/components/layouts.ex:111
 #: lib/baudrate_web/live/article_new_live.html.heex:15
 #: lib/baudrate_web/live/home_live.ex:17
 #: lib/baudrate_web/live/home_live.html.heex:22
@@ -329,8 +329,8 @@ msgstr "データベースに接続できません。設定を確認してくだ
 msgid "Boards"
 msgstr "掲示板"
 
-#: lib/baudrate_web/components/layouts.ex:39
-#: lib/baudrate_web/components/layouts.ex:105
+#: lib/baudrate_web/components/layouts.ex:40
+#: lib/baudrate_web/components/layouts.ex:108
 #: lib/baudrate_web/live/board_live.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "Home"
@@ -424,8 +424,8 @@ msgstr "登録日"
 msgid "No articles yet."
 msgstr "まだ記事がありません。"
 
-#: lib/baudrate_web/components/layouts.ex:87
-#: lib/baudrate_web/components/layouts.ex:174
+#: lib/baudrate_web/components/layouts.ex:88
+#: lib/baudrate_web/components/layouts.ex:179
 #: lib/baudrate_web/live/profile_live.ex:42
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -640,8 +640,8 @@ msgstr "新規記事"
 msgid "No pending users."
 msgstr "承認待ちのユーザーはいません。"
 
-#: lib/baudrate_web/components/layouts.ex:58
-#: lib/baudrate_web/components/layouts.ex:149
+#: lib/baudrate_web/components/layouts.ex:59
+#: lib/baudrate_web/components/layouts.ex:154
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Pending Users"
@@ -722,7 +722,7 @@ msgstr "アカウントは承認待ちです。"
 msgid "by %{author}"
 msgstr "%{author} による投稿"
 
-#: lib/baudrate_web/live/profile_live.html.heex:171
+#: lib/baudrate_web/live/profile_live.html.heex:174
 #, elixir-autogen, elixir-format
 msgid "Add Language"
 msgstr "言語を追加"
@@ -747,8 +747,8 @@ msgstr "優先言語"
 msgid "Using browser language settings."
 msgstr "ブラウザの言語設定を使用中。"
 
-#: lib/baudrate_web/components/layouts.ex:52
-#: lib/baudrate_web/components/layouts.ex:143
+#: lib/baudrate_web/components/layouts.ex:53
+#: lib/baudrate_web/components/layouts.ex:148
 #: lib/baudrate_web/live/admin/boards_live.html.heex:47
 #: lib/baudrate_web/live/admin/boards_live.html.heex:58
 #, elixir-autogen, elixir-format
@@ -783,8 +783,8 @@ msgstr "登録モード"
 msgid "Saving..."
 msgstr "保存中..."
 
-#: lib/baudrate_web/components/layouts.ex:55
-#: lib/baudrate_web/components/layouts.ex:146
+#: lib/baudrate_web/components/layouts.ex:56
+#: lib/baudrate_web/components/layouts.ex:151
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr "設定"
@@ -983,8 +983,8 @@ msgstr "通報の却下に失敗しました。"
 msgid "Failed to resolve report."
 msgstr "通報の対処に失敗しました。"
 
-#: lib/baudrate_web/components/layouts.ex:61
-#: lib/baudrate_web/components/layouts.ex:152
+#: lib/baudrate_web/components/layouts.ex:62
+#: lib/baudrate_web/components/layouts.ex:157
 #: lib/baudrate_web/live/admin/boards_live.html.heex:80
 #: lib/baudrate_web/live/admin/boards_live.html.heex:159
 #: lib/baudrate_web/live/admin/federation_live.html.heex:148
@@ -1055,8 +1055,8 @@ msgstr "既知のインスタンス"
 msgid "Last Seen"
 msgstr "最終確認"
 
-#: lib/baudrate_web/components/layouts.ex:64
-#: lib/baudrate_web/components/layouts.ex:155
+#: lib/baudrate_web/components/layouts.ex:65
+#: lib/baudrate_web/components/layouts.ex:160
 #, elixir-autogen, elixir-format
 msgid "Moderation"
 msgstr "モデレーション"
@@ -1098,7 +1098,7 @@ msgstr "保留中"
 msgid "Reason:"
 msgstr "理由："
 
-#: lib/baudrate_web/components/layouts.ex:128
+#: lib/baudrate_web/components/layouts.ex:132
 #: lib/baudrate_web/live/register_live.ex:49
 #, elixir-autogen, elixir-format
 msgid "Register"
@@ -1316,9 +1316,9 @@ msgstr "返信"
 msgid "Save Changes"
 msgstr "変更を保存"
 
-#: lib/baudrate_web/components/layouts.ex:45
-#: lib/baudrate_web/components/layouts.ex:111
-#: lib/baudrate_web/components/layouts.ex:126
+#: lib/baudrate_web/components/layouts.ex:46
+#: lib/baudrate_web/components/layouts.ex:114
+#: lib/baudrate_web/components/layouts.ex:130
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:13
 #: lib/baudrate_web/live/search_live.ex:27
 #: lib/baudrate_web/live/search_live.html.heex:2
@@ -1589,14 +1589,14 @@ msgstr "BAN処理中…"
 msgid "Filter by status"
 msgstr "ステータスで絞り込み"
 
-#: lib/baudrate_web/components/layouts.ex:67
-#: lib/baudrate_web/components/layouts.ex:158
+#: lib/baudrate_web/components/layouts.ex:68
+#: lib/baudrate_web/components/layouts.ex:163
 #, elixir-autogen, elixir-format
 msgid "Manage Boards"
 msgstr "ボード管理"
 
-#: lib/baudrate_web/components/layouts.ex:70
-#: lib/baudrate_web/components/layouts.ex:161
+#: lib/baudrate_web/components/layouts.ex:71
+#: lib/baudrate_web/components/layouts.ex:166
 #, elixir-autogen, elixir-format
 msgid "Manage Users"
 msgstr "ユーザー管理"
@@ -1622,12 +1622,12 @@ msgstr "サブ掲示板がある掲示板は削除できません。"
 msgid "Change role for %{username}"
 msgstr "%{username} の役割を変更"
 
-#: lib/baudrate_web/components/layouts.ex:326
+#: lib/baudrate_web/components/layouts.ex:332
 #, elixir-autogen, elixir-format
 msgid "Dark theme"
 msgstr "ダークテーマ"
 
-#: lib/baudrate_web/components/layouts.ex:317
+#: lib/baudrate_web/components/layouts.ex:323
 #, elixir-autogen, elixir-format
 msgid "Light theme"
 msgstr "ライトテーマ"
@@ -1637,7 +1637,7 @@ msgstr "ライトテーマ"
 msgid "Open navigation menu"
 msgstr "ナビゲーションメニューを開く"
 
-#: lib/baudrate_web/components/layouts.ex:308
+#: lib/baudrate_web/components/layouts.ex:314
 #, elixir-autogen, elixir-format
 msgid "System theme"
 msgstr "システムテーマ"
@@ -1659,7 +1659,7 @@ msgstr "ユーザーが見つかりません。"
 msgid "active"
 msgstr "有効"
 
-#: lib/baudrate_web/components/layouts.ex:252
+#: lib/baudrate_web/components/layouts.ex:258
 #: lib/baudrate_web/live/admin/users_live.ex:305
 #: lib/baudrate_web/live/user_profile_live.ex:94
 #, elixir-autogen, elixir-format
@@ -1671,14 +1671,14 @@ msgstr "管理者"
 msgid "banned"
 msgstr "BAN済み"
 
-#: lib/baudrate_web/components/layouts.ex:255
+#: lib/baudrate_web/components/layouts.ex:261
 #: lib/baudrate_web/live/admin/users_live.ex:308
 #: lib/baudrate_web/live/user_profile_live.ex:97
 #, elixir-autogen, elixir-format
 msgid "guest"
 msgstr "ゲスト"
 
-#: lib/baudrate_web/components/layouts.ex:253
+#: lib/baudrate_web/components/layouts.ex:259
 #: lib/baudrate_web/live/admin/users_live.ex:306
 #: lib/baudrate_web/live/user_profile_live.ex:95
 #, elixir-autogen, elixir-format
@@ -1690,7 +1690,7 @@ msgstr "モデレーター"
 msgid "pending"
 msgstr "保留中"
 
-#: lib/baudrate_web/components/layouts.ex:254
+#: lib/baudrate_web/components/layouts.ex:260
 #: lib/baudrate_web/live/admin/users_live.ex:307
 #: lib/baudrate_web/live/user_profile_live.ex:96
 #, elixir-autogen, elixir-format
@@ -1811,8 +1811,8 @@ msgstr "無効な招待コードです。"
 msgid "Invite Code"
 msgstr "招待コード"
 
-#: lib/baudrate_web/components/layouts.ex:76
-#: lib/baudrate_web/components/layouts.ex:167
+#: lib/baudrate_web/components/layouts.ex:77
+#: lib/baudrate_web/components/layouts.ex:172
 #: lib/baudrate_web/live/admin/invites_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Invite Codes"
@@ -1838,8 +1838,8 @@ msgstr "招待コードを無効化しました。"
 msgid "Member since %{date}"
 msgstr "%{date}から利用"
 
-#: lib/baudrate_web/components/layouts.ex:73
-#: lib/baudrate_web/components/layouts.ex:164
+#: lib/baudrate_web/components/layouts.ex:74
+#: lib/baudrate_web/components/layouts.ex:169
 #: lib/baudrate_web/live/admin/moderation_log_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Moderation Log"
@@ -2033,7 +2033,7 @@ msgstr "パスワードのリセットに失敗しました。"
 msgid "Password reset successful! You can now sign in."
 msgstr "パスワードのリセットが完了しました！ログインしてください。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:227
+#: lib/baudrate_web/live/profile_live.html.heex:230
 #, elixir-autogen, elixir-format
 msgid "Preview:"
 msgstr "プレビュー："
@@ -2049,7 +2049,7 @@ msgstr "パスワードリセット"
 msgid "Save Agreement"
 msgstr "規約を保存"
 
-#: lib/baudrate_web/live/profile_live.html.heex:233
+#: lib/baudrate_web/live/profile_live.html.heex:236
 #, elixir-autogen, elixir-format
 msgid "Save Signature"
 msgstr "署名を保存"
@@ -2061,7 +2061,7 @@ msgid "Save these recovery codes now!"
 msgstr "リカバリーコードを今すぐ保存してください！"
 
 #: lib/baudrate_web/live/article_live.html.heex:110
-#: lib/baudrate_web/live/profile_live.html.heex:216
+#: lib/baudrate_web/live/profile_live.html.heex:219
 #: lib/baudrate_web/live/user_profile_live.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "Signature"
@@ -2083,7 +2083,7 @@ msgstr "これらのコードは、パスワードを忘れた場合にアカウ
 msgid "Too many attempts. Please try again later."
 msgstr "試行回数が多すぎます。しばらくしてからもう一度お試しください。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:224
+#: lib/baudrate_web/live/profile_live.html.heex:227
 #, elixir-autogen, elixir-format
 msgid "Your signature (Markdown supported, max 500 characters)"
 msgstr "署名（Markdown対応、最大500文字）"
@@ -2167,6 +2167,7 @@ msgid "Pin"
 msgstr "ピン留め"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:121
+#: lib/baudrate_web/live/profile_live.html.heex:159
 #, elixir-autogen, elixir-format
 msgid "Remove"
 msgstr "削除"
@@ -2491,12 +2492,12 @@ msgstr "TOTP設定"
 msgid "TOTP Verification"
 msgstr "TOTP認証"
 
-#: lib/baudrate_web/components/layouts.ex:274
+#: lib/baudrate_web/components/layouts.ex:280
 #, elixir-autogen, elixir-format
 msgid "Decrease font size"
 msgstr "文字を小さく"
 
-#: lib/baudrate_web/components/layouts.ex:282
+#: lib/baudrate_web/components/layouts.ex:288
 #, elixir-autogen, elixir-format
 msgid "Increase font size"
 msgstr "文字を大きく"
@@ -2506,12 +2507,12 @@ msgstr "文字を大きく"
 msgid "Avatar preview"
 msgstr "アバタープレビュー"
 
-#: lib/baudrate_web/components/layouts.ex:268
+#: lib/baudrate_web/components/layouts.ex:274
 #, elixir-autogen, elixir-format
 msgid "Font size"
 msgstr "文字サイズ"
 
-#: lib/baudrate_web/components/layouts.ex:299
+#: lib/baudrate_web/components/layouts.ex:305
 #, elixir-autogen, elixir-format
 msgid "Theme"
 msgstr "テーマ"
@@ -2641,12 +2642,12 @@ msgstr "%{count}時間前"
 msgid "%{count}m ago"
 msgstr "%{count}分前"
 
-#: lib/baudrate_web/live/profile_live.html.heex:200
+#: lib/baudrate_web/live/profile_live.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "Anyone"
 msgstr "全員"
 
-#: lib/baudrate_web/live/profile_live.html.heex:210
+#: lib/baudrate_web/live/profile_live.html.heex:213
 #, elixir-autogen, elixir-format
 msgid "Controls who can send you direct messages."
 msgstr "ダイレクトメッセージの送信を許可する対象を設定します。"
@@ -2666,7 +2667,7 @@ msgstr "DM アクセス設定を更新しました。"
 msgid "Delete this message?"
 msgstr "このメッセージを削除しますか？"
 
-#: lib/baudrate_web/live/profile_live.html.heex:192
+#: lib/baudrate_web/live/profile_live.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Direct Messages"
 msgstr "ダイレクトメッセージ"
@@ -2691,7 +2692,7 @@ msgstr "メッセージの送信に失敗しました。"
 msgid "Failed to update DM access setting."
 msgstr "DM アクセス設定の更新に失敗しました。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:203
+#: lib/baudrate_web/live/profile_live.html.heex:206
 #, elixir-autogen, elixir-format
 msgid "Followers only"
 msgstr "フォロワーのみ"
@@ -2702,8 +2703,8 @@ msgstr "フォロワーのみ"
 msgid "Message"
 msgstr "メッセージ"
 
-#: lib/baudrate_web/components/layouts.ex:48
-#: lib/baudrate_web/components/layouts.ex:114
+#: lib/baudrate_web/components/layouts.ex:49
+#: lib/baudrate_web/components/layouts.ex:117
 #: lib/baudrate_web/live/conversations_live.ex:33
 #: lib/baudrate_web/live/conversations_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -2728,7 +2729,7 @@ msgstr "メッセージはまだありません。"
 msgid "No messages yet. Send the first one!"
 msgstr "メッセージはまだありません。最初のメッセージを送りましょう！"
 
-#: lib/baudrate_web/live/profile_live.html.heex:206
+#: lib/baudrate_web/live/profile_live.html.heex:209
 #, elixir-autogen, elixir-format
 msgid "Nobody"
 msgstr "誰にも許可しない"
@@ -2758,7 +2759,7 @@ msgstr "メッセージの送信が多すぎます。しばらくお待ちくだ
 msgid "Type a message..."
 msgstr "メッセージを入力…"
 
-#: lib/baudrate_web/live/profile_live.html.heex:197
+#: lib/baudrate_web/live/profile_live.html.heex:200
 #, elixir-autogen, elixir-format
 msgid "Who can send you direct messages"
 msgstr "ダイレクトメッセージの送信を許可する対象"
@@ -2814,8 +2815,8 @@ msgstr "ユーザー名で絞り込み…"
 msgid "IP Address"
 msgstr "IP アドレス"
 
-#: lib/baudrate_web/components/layouts.ex:79
-#: lib/baudrate_web/components/layouts.ex:170
+#: lib/baudrate_web/components/layouts.ex:80
+#: lib/baudrate_web/components/layouts.ex:175
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Login Attempts"
@@ -2861,18 +2862,18 @@ msgstr "%{username} をミュート"
 msgid "Mute this user? Their content will be hidden from your view."
 msgstr "このユーザーをミュートしますか？投稿内容が非表示になります。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:240
+#: lib/baudrate_web/live/profile_live.html.heex:243
 #, elixir-autogen, elixir-format
 msgid "Muted Users"
 msgstr "ミュート中のユーザー"
 
-#: lib/baudrate_web/live/profile_live.html.heex:242
+#: lib/baudrate_web/live/profile_live.html.heex:245
 #, elixir-autogen, elixir-format
 msgid "No muted users."
 msgstr "ミュート中のユーザーはいません。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:262
-#: lib/baudrate_web/live/profile_live.html.heex:264
+#: lib/baudrate_web/live/profile_live.html.heex:265
+#: lib/baudrate_web/live/profile_live.html.heex:267
 #: lib/baudrate_web/live/user_profile_live.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "Unmute"
@@ -2913,3 +2914,29 @@ msgstr "ユーザーを検索"
 #, elixir-autogen, elixir-format
 msgid "Type a username to search."
 msgstr "ユーザー名を入力して検索してください。"
+
+#: lib/baudrate_web/live/board_live.html.heex:2
+#, elixir-autogen, elixir-format
+msgid "Breadcrumb"
+msgstr "パンくずリスト"
+
+#: lib/baudrate_web/components/layouts.ex:34
+#: lib/baudrate_web/components/layouts.ex:105
+#, elixir-autogen, elixir-format
+msgid "Main menu"
+msgstr "メインメニュー"
+
+#: lib/baudrate_web/live/profile_live.html.heex:150
+#, elixir-autogen, elixir-format
+msgid "Move down"
+msgstr "下に移動"
+
+#: lib/baudrate_web/live/profile_live.html.heex:140
+#, elixir-autogen, elixir-format
+msgid "Move up"
+msgstr "上に移動"
+
+#: lib/baudrate_web/components/layouts.ex:142
+#, elixir-autogen, elixir-format
+msgid "User menu"
+msgstr "ユーザーメニュー"

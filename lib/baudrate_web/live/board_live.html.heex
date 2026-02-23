@@ -1,5 +1,5 @@
 <div class="mb-4 flex items-center justify-between">
-  <div class="breadcrumbs text-sm">
+  <nav class="breadcrumbs text-sm" aria-label={gettext("Breadcrumb")}>
     <ul>
       <li><.link navigate="/">{gettext("Home")}</.link></li>
       <%= for ancestor <- @ancestors do %>
@@ -10,7 +10,7 @@
         <% end %>
       <% end %>
     </ul>
-  </div>
+  </nav>
   <.link
     :if={@can_create}
     navigate={~p"/boards/#{@board.slug}/articles/new"}
