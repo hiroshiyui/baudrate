@@ -2547,163 +2547,163 @@ msgstr "アップロード画像"
 #: lib/baudrate_web/live/article_new_live.html.heex:72
 #, elixir-autogen, elixir-format
 msgid "Cancel upload"
-msgstr ""
+msgstr "アップロードを取り消す"
 
 #: lib/baudrate_web/live/article_live.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "Delete attachment"
-msgstr ""
+msgstr "添付ファイルを削除"
 
 #: lib/baudrate_web/live/article_live.ex:388
 #, elixir-autogen, elixir-format
 msgid "Delete comment"
-msgstr ""
+msgstr "コメントを削除"
 
 #: lib/baudrate_web/components/layouts/root.html.heex:25
 #, elixir-autogen, elixir-format
 msgid "Skip to main content"
-msgstr ""
+msgstr "メインコンテンツへスキップ"
 
 #: lib/baudrate_web/live/article_history_live.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Edit History"
-msgstr ""
+msgstr "編集履歴"
 
 #: lib/baudrate_web/live/article_history_live.ex:33
 #, elixir-autogen, elixir-format
 msgid "Edit History — %{title}"
-msgstr ""
+msgstr "編集履歴 — %{title}"
 
 #: lib/baudrate_web/live/article_history_live.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "Editor"
-msgstr "編集"
+msgstr "編集者"
 
 #: lib/baudrate_web/live/article_live.html.heex:52
 #, elixir-autogen, elixir-format
 msgid "History"
-msgstr ""
+msgstr "履歴"
 
 #: lib/baudrate_web/live/article_history_live.html.heex:12
 #, elixir-autogen, elixir-format
 msgid "No edit history available."
-msgstr ""
+msgstr "編集履歴がありません。"
 
 #: lib/baudrate_web/live/article_history_live.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "Revision list"
-msgstr ""
+msgstr "リビジョン一覧"
 
 #: lib/baudrate_web/live/article_history_live.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "Unknown"
-msgstr ""
+msgstr "不明"
 
 #: lib/baudrate_web/live/article_history_live.html.heex:21
 #, elixir-autogen, elixir-format
 msgid "Version"
-msgstr ""
+msgstr "バージョン"
 
 #: lib/baudrate_web/live/article_history_live.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Version #%{number}"
-msgstr ""
+msgstr "バージョン #%{number}"
 
 #: lib/baudrate_web/live/article_history_live.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "View"
-msgstr ""
+msgstr "表示"
 
 #: lib/baudrate_web/live/article_history_live.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "by %{editor}"
-msgstr "%{author} による投稿"
+msgstr "%{editor} による編集"
 
 #: lib/baudrate_web/components/core_components.ex:291
 #, elixir-autogen, elixir-format
 msgid "Markdown preview"
-msgstr ""
+msgstr "Markdown プレビュー"
 
 #: lib/baudrate_web/live/conversations_live.ex:97
 #, elixir-autogen, elixir-format
 msgid "%{count}d ago"
-msgstr ""
+msgstr "%{count}日前"
 
 #: lib/baudrate_web/live/conversations_live.ex:96
 #, elixir-autogen, elixir-format
 msgid "%{count}h ago"
-msgstr ""
+msgstr "%{count}時間前"
 
 #: lib/baudrate_web/live/conversations_live.ex:95
 #, elixir-autogen, elixir-format
 msgid "%{count}m ago"
-msgstr ""
+msgstr "%{count}分前"
 
 #: lib/baudrate_web/live/profile_live.html.heex:200
 #, elixir-autogen, elixir-format
 msgid "Anyone"
-msgstr ""
+msgstr "全員"
 
 #: lib/baudrate_web/live/profile_live.html.heex:210
 #, elixir-autogen, elixir-format
 msgid "Controls who can send you direct messages."
-msgstr ""
+msgstr "ダイレクトメッセージの送信を許可する対象を設定します。"
 
 #: lib/baudrate_web/live/conversation_live.ex:199
 #, elixir-autogen, elixir-format
 msgid "Conversation not found."
-msgstr ""
+msgstr "会話が見つかりません。"
 
 #: lib/baudrate_web/live/profile_live.ex:190
 #, elixir-autogen, elixir-format
 msgid "DM access setting updated."
-msgstr ""
+msgstr "DM アクセス設定を更新しました。"
 
 #: lib/baudrate_web/live/conversation_live.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "Delete this message?"
-msgstr ""
+msgstr "このメッセージを削除しますか？"
 
 #: lib/baudrate_web/live/profile_live.html.heex:192
 #, elixir-autogen, elixir-format
 msgid "Direct Messages"
-msgstr ""
+msgstr "ダイレクトメッセージ"
 
 #: lib/baudrate_web/live/conversation_live.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Direct messages are not end-to-end encrypted. Do not share sensitive information."
-msgstr ""
+msgstr "ダイレクトメッセージはエンドツーエンド暗号化されていません。機密情報を共有しないでください。"
 
 #: lib/baudrate_web/live/conversation_live.ex:126
 #, elixir-autogen, elixir-format
 msgid "Failed to delete message."
-msgstr ""
+msgstr "メッセージの削除に失敗しました。"
 
 #: lib/baudrate_web/live/conversation_live.ex:99
 #, elixir-autogen, elixir-format
 msgid "Failed to send message."
-msgstr ""
+msgstr "メッセージの送信に失敗しました。"
 
 #: lib/baudrate_web/live/profile_live.ex:193
 #, elixir-autogen, elixir-format
 msgid "Failed to update DM access setting."
-msgstr ""
+msgstr "DM アクセス設定の更新に失敗しました。"
 
 #: lib/baudrate_web/live/profile_live.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "Followers only"
-msgstr ""
+msgstr "フォロワーのみ"
 
 #: lib/baudrate_web/live/conversation_live.ex:201
 #, elixir-autogen, elixir-format
 msgid "Invalid request."
-msgstr ""
+msgstr "無効なリクエストです。"
 
 #: lib/baudrate_web/live/conversation_live.html.heex:66
 #: lib/baudrate_web/live/user_profile_live.html.heex:16
 #, elixir-autogen, elixir-format
 msgid "Message"
-msgstr ""
+msgstr "メッセージ"
 
 #: lib/baudrate_web/components/layouts.ex:48
 #: lib/baudrate_web/components/layouts.ex:114
@@ -2711,33 +2711,33 @@ msgstr ""
 #: lib/baudrate_web/live/conversations_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Messages"
-msgstr ""
+msgstr "メッセージ"
 
 #: lib/baudrate_web/live/conversation_live.ex:63
 #: lib/baudrate_web/live/conversations_live.html.heex:6
 #, elixir-autogen, elixir-format
 msgid "New Message"
-msgstr ""
+msgstr "新規メッセージ"
 
 #: lib/baudrate_web/live/conversations_live.html.heex:12
 #, elixir-autogen, elixir-format
 msgid "No messages yet."
-msgstr ""
+msgstr "メッセージはまだありません。"
 
 #: lib/baudrate_web/live/conversation_live.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "No messages yet. Send the first one!"
-msgstr ""
+msgstr "メッセージはまだありません。最初のメッセージを送りましょう！"
 
 #: lib/baudrate_web/live/profile_live.html.heex:206
 #, elixir-autogen, elixir-format
 msgid "Nobody"
-msgstr ""
+msgstr "誰にも許可しない"
 
 #: lib/baudrate_web/live/conversation_live.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "Send"
-msgstr ""
+msgstr "送信"
 
 #: lib/baudrate_web/live/conversation_live.ex:202
 #, elixir-autogen, elixir-format
@@ -2747,150 +2747,150 @@ msgstr "エラーが発生しました。"
 #: lib/baudrate_web/live/conversations_live.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Start a conversation from a user's profile page."
-msgstr ""
+msgstr "ユーザーのプロフィールページから会話を始めましょう。"
 
 #: lib/baudrate_web/live/conversation_live.ex:104
 #, elixir-autogen, elixir-format
 msgid "Too many messages. Please slow down."
-msgstr ""
+msgstr "メッセージの送信が多すぎます。しばらくお待ちください。"
 
 #: lib/baudrate_web/live/conversation_live.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Type a message..."
-msgstr ""
+msgstr "メッセージを入力…"
 
 #: lib/baudrate_web/live/profile_live.html.heex:197
 #, elixir-autogen, elixir-format
 msgid "Who can send you direct messages"
-msgstr ""
+msgstr "ダイレクトメッセージの送信を許可する対象"
 
 #: lib/baudrate_web/live/conversation_live.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "You"
-msgstr ""
+msgstr "あなた"
 
 #: lib/baudrate_web/live/conversation_live.ex:123
 #, elixir-autogen, elixir-format
 msgid "You can only delete your own messages."
-msgstr ""
+msgstr "自分のメッセージのみ削除できます。"
 
 #: lib/baudrate_web/live/conversation_live.ex:70
 #, elixir-autogen, elixir-format
 msgid "You cannot send messages to this user."
-msgstr ""
+msgstr "このユーザーにメッセージを送信できません。"
 
 #: lib/baudrate_web/live/conversations_live.ex:94
 #, elixir-autogen, elixir-format
 msgid "just now"
-msgstr ""
+msgstr "たった今"
 
 #: lib/baudrate_web/live/login_live.ex:84
 #: lib/baudrate_web/live/password_reset_live.ex:77
 #, elixir-autogen, elixir-format
 msgid "Account temporarily locked. Try again in %{seconds} seconds."
-msgstr ""
+msgstr "アカウントが一時的にロックされています。%{seconds} 秒後に再試行してください。"
 
 #: lib/baudrate_web/live/admin/login_attempts_live.ex:21
 #, elixir-autogen, elixir-format
 msgid "Admin Login Attempts"
-msgstr ""
+msgstr "管理 ログイン試行"
 
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:19
 #, elixir-autogen, elixir-format
 msgid "Clear"
-msgstr ""
+msgstr "クリア"
 
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Filter by username"
-msgstr ""
+msgstr "ユーザー名で絞り込み"
 
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:9
 #, elixir-autogen, elixir-format
 msgid "Filter by username..."
-msgstr ""
+msgstr "ユーザー名で絞り込み…"
 
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:33
 #, elixir-autogen, elixir-format
 msgid "IP Address"
-msgstr ""
+msgstr "IP アドレス"
 
 #: lib/baudrate_web/components/layouts.ex:79
 #: lib/baudrate_web/components/layouts.ex:170
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Login Attempts"
-msgstr ""
+msgstr "ログイン試行"
 
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:24
 #, elixir-autogen, elixir-format
 msgid "No login attempts recorded."
-msgstr ""
+msgstr "ログイン試行の記録はありません。"
 
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "Result"
-msgstr ""
+msgstr "結果"
 
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "Success"
-msgstr ""
+msgstr "成功"
 
 #: lib/baudrate_web/live/admin/boards_live.ex:93
 #, elixir-autogen, elixir-format
 msgid "Cannot delete a protected system board."
-msgstr ""
+msgstr "保護されたシステム掲示板は削除できません。"
 
 #: lib/baudrate_web/live/user_profile_live.ex:67
 #, elixir-autogen, elixir-format
 msgid "Failed to mute user."
-msgstr ""
+msgstr "ユーザーのミュートに失敗しました。"
 
 #: lib/baudrate_web/live/user_profile_live.html.heex:27
 #, elixir-autogen, elixir-format
 msgid "Mute"
-msgstr ""
+msgstr "ミュート"
 
 #: lib/baudrate_web/live/user_profile_live.html.heex:24
 #, elixir-autogen, elixir-format
 msgid "Mute %{username}"
-msgstr ""
+msgstr "%{username} をミュート"
 
 #: lib/baudrate_web/live/user_profile_live.html.heex:23
 #, elixir-autogen, elixir-format
 msgid "Mute this user? Their content will be hidden from your view."
-msgstr ""
+msgstr "このユーザーをミュートしますか？投稿内容が非表示になります。"
 
 #: lib/baudrate_web/live/profile_live.html.heex:240
 #, elixir-autogen, elixir-format
 msgid "Muted Users"
-msgstr ""
+msgstr "ミュート中のユーザー"
 
 #: lib/baudrate_web/live/profile_live.html.heex:242
 #, elixir-autogen, elixir-format
 msgid "No muted users."
-msgstr ""
+msgstr "ミュート中のユーザーはいません。"
 
 #: lib/baudrate_web/live/profile_live.html.heex:262
 #: lib/baudrate_web/live/profile_live.html.heex:264
 #: lib/baudrate_web/live/user_profile_live.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "Unmute"
-msgstr ""
+msgstr "ミュート解除"
 
 #: lib/baudrate_web/live/user_profile_live.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "Unmute %{username}"
-msgstr ""
+msgstr "%{username} のミュートを解除"
 
 #: lib/baudrate_web/live/user_profile_live.ex:64
 #, elixir-autogen, elixir-format
 msgid "User muted."
-msgstr ""
+msgstr "ユーザーをミュートしました。"
 
 #: lib/baudrate_web/live/profile_live.ex:176
 #: lib/baudrate_web/live/user_profile_live.ex:80
 #, elixir-autogen, elixir-format
 msgid "User unmuted."
-msgstr ""
+msgstr "ユーザーのミュートを解除しました。"
