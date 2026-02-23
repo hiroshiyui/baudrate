@@ -83,6 +83,37 @@ their content into the board. Requires anti-loop and deduplication safeguards.
 - Need UI in board moderator panel to manage follows
 - Need to handle `Undo(Follow)` on unfollow
 
+## Someday / Maybe: Frontend Architecture
+
+Decouple the frontend from Phoenix LiveView to allow free choice of UI framework
+and component libraries. LiveView's tight coupling between server and UI limits
+frontend technology options (e.g., Web Component libraries like Fluent UI are
+incompatible with LiveView's DOM patching model).
+
+### Approaches
+
+- [ ] **JSON API backend** — convert Phoenix to a pure API server (`Phoenix.Controller` + `Phoenix.Router`), serve a standalone SSR frontend (Next.js, Nuxt, SvelteKit, Astro, etc.)
+- [ ] **Incremental migration** — add new pages in the SPA framework while keeping existing LiveView pages, route via reverse proxy; migrate page-by-page over time
+- [ ] **Hybrid approach** — keep LiveView for admin/internal pages, use a standalone frontend for public-facing pages only
+
+### Trade-offs
+
+| Gain | Loss |
+|------|------|
+| Free choice of UI framework/component library | LiveView's real-time WebSocket updates |
+| Better frontend tooling ecosystem | Server-driven forms (no client state bugs) |
+| Easier to hire frontend developers | Zero-API-layer simplicity |
+| SSR framework flexibility (React, Vue, Svelte) | Must build and maintain a REST/GraphQL API |
+| Independent frontend deployment | API versioning and compatibility burden |
+
+### Preferred Frontend Framework
+
+- **SvelteKit** — top candidate; compiled approach (no virtual DOM overhead), built-in SSR/SSG, form actions, file-based routing, small bundle size
+
+### Prior Evaluation
+
+- **Fluent UI Web Components v3** (2026-02-23): evaluated and rejected for use with LiveView due to Shadow DOM / DOM patching incompatibility, form binding friction, pre-release stability risk, and 5-7x bundle size increase over DaisyUI
+
 ## Someday / Maybe
 
 - [ ] Private messaging / DMs (user-to-user, possibly via AP)
