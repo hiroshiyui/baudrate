@@ -266,7 +266,8 @@ defmodule Baudrate.Federation.SanitizerTest do
 
     test "strips HTML tags from display names" do
       assert Sanitizer.sanitize_display_name("<b>Alice</b>") == "Alice"
-      assert Sanitizer.sanitize_display_name("<script>alert('xss')</script>Bob") == "alert('xss')Bob"
+      # Ammonia strips script tag AND content (safer than preserving script text)
+      assert Sanitizer.sanitize_display_name("<script>alert('xss')</script>Bob") == "Bob"
       assert Sanitizer.sanitize_display_name("A<img src=x onerror=alert(1)>B") == "AB"
     end
 

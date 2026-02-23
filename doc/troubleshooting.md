@@ -9,7 +9,7 @@ Common issues and solutions for operators deploying and running Baudrate.
 - [Setup & First Run](#setup--first-run)
 - [Environment Variables](#environment-variables)
 - [Database](#database)
-- [Assets & Static Files](#assets--static-files)
+- [Assets, Static Files & Build Dependencies](#assets-static-files--build-dependencies)
 - [Reverse Proxy](#reverse-proxy)
 - [Federation](#federation)
 - [Authentication & Sessions](#authentication--sessions)
@@ -162,7 +162,7 @@ mix ecto.reset  # drop + create + migrate
 
 ---
 
-## Assets & Static Files
+## Assets, Static Files & Build Dependencies
 
 ### Production asset build
 
@@ -177,6 +177,27 @@ generate fingerprinted files and `priv/static/cache_manifest.json`.
 
 **Symptom of missing asset build:** Pages load without CSS styling, or
 JavaScript doesn't execute.
+
+### Rust toolchain requirement
+
+HTML sanitization uses a Rust NIF (Ammonia via Rustler). A stable Rust
+toolchain must be installed before `mix compile` can succeed:
+
+```bash
+# Install via rustup (https://rustup.rs)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Verify
+rustc --version
+cargo --version
+```
+
+The NIF is compiled automatically by `mix compile`. First compilation
+downloads Rust crate dependencies (~30s); subsequent builds are incremental.
+
+**Symptom of missing Rust:** Compilation fails with
+`Compiling crate baudrate_sanitizer ... error: no such command: 'rustc'`
+or similar cargo/rustc not found errors.
 
 ### libvips requirement
 

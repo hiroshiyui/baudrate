@@ -1,0 +1,13 @@
+[package]
+name = "baudrate_sanitizer"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "baudrate_sanitizer"
+crate-type = ["cdylib"]
+
+[dependencies]
+ammonia = "4"
+rustler = "0.37"
+regex = "1"

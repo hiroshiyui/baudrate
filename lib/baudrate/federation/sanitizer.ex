@@ -3,17 +3,17 @@ defmodule Baudrate.Federation.Sanitizer do
   HTML sanitizer for incoming federated content.
 
   Distinct from `Content.Markdown` — this handles raw HTML received from
-  remote ActivityPub instances. Uses `HtmlSanitizeEx` with a custom scrubber
-  for parser-based sanitization that properly handles nested, unclosed, and
-  malformed HTML.
+  remote ActivityPub instances. Uses a Rust NIF backed by Ammonia (html5ever
+  parser) for robust, parser-based sanitization that properly handles nested,
+  unclosed, and malformed HTML.
 
   Mastodon wraps mentions in `<span class="h-card">` and hashtags in
   `<span class="hashtag">`. These classes (plus `mention` and `invisible`)
   are preserved; all other class values are stripped.
 
-  `sanitize_display_name/1` uses `HtmlSanitizeEx.strip_tags/1` to strip
-  HTML tags and a regex pass for control characters from remote actor
-  display names to prevent XSS and homograph attacks.
+  `sanitize_display_name/1` uses `Baudrate.Sanitizer.Native.strip_tags/1`
+  to strip HTML tags and a regex pass for control characters from remote
+  actor display names to prevent XSS and homograph attacks.
 
   Applied **before database storage**, not at render time.
   """
@@ -29,7 +29,7 @@ defmodule Baudrate.Federation.Sanitizer do
   def sanitize(""), do: ""
 
   def sanitize(html) when is_binary(html) do
-    HtmlSanitizeEx.Scrubber.scrub(html, Baudrate.Federation.Sanitizer.Scrubber)
+    Baudrate.Sanitizer.Native.sanitize_federation(html)
   end
 
   @doc """
@@ -42,7 +42,7 @@ defmodule Baudrate.Federation.Sanitizer do
 
   def sanitize_display_name(name) when is_binary(name) do
     name
-    |> HtmlSanitizeEx.strip_tags()
+    |> Baudrate.Sanitizer.Native.strip_tags()
     |> String.replace(~r/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/, "")
     |> String.trim()
     |> truncate_display_name(100)

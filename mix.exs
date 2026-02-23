@@ -72,7 +72,7 @@ defmodule Baudrate.MixProject do
       {:hammer, "~> 6.2"},
       {:image, "~> 0.54"},
       {:earmark, "~> 1.4"},
-      {:html_sanitize_ex, "~> 1.4"}
+      {:rustler, "~> 0.36", runtime: false}
     ]
   end
 

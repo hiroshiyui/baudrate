@@ -6,6 +6,7 @@ Public BBS / Web Forum built with Elixir/Phoenix + LiveView, federating via **Ac
 ## Quick Reference
 
 ```bash
+# Requires: Elixir 1.15+, PostgreSQL, libvips, Rust toolchain (for Ammonia NIF)
 mix setup              # Install deps, create DB, build assets
 mix phx.server         # Start dev server (https://localhost:4001)
 mix test               # Run all tests
@@ -24,6 +25,7 @@ mix precommit          # Pre-commit checks: compile --warnings-as-errors, unlock
 | CSS | Tailwind CSS + DaisyUI |
 | HTTP client | Req (never use HTTPoison, Tesla, or httpc) |
 | 2FA | NimbleTOTP + EQRCode |
+| HTML sanitization | Ammonia (Rust NIF via Rustler) — requires Rust toolchain |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
 | i18n | Gettext — zh_TW and ja_JP locales |
 

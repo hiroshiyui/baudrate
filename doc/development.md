@@ -11,6 +11,7 @@
 | JS bundler | esbuild |
 | Image processing | image (libvips NIF) |
 | 2FA | NimbleTOTP + EQRCode |
+| HTML sanitization | Ammonia (Rust NIF via Rustler) |
 | Rate limiting | Hammer |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
 
@@ -19,6 +20,11 @@
 ### Project Structure
 
 ```
+native/
+└── baudrate_sanitizer/          # Rust NIF crate (Ammonia HTML sanitizer)
+    ├── Cargo.toml               # Crate manifest (ammonia, rustler, regex)
+    └── src/
+        └── lib.rs               # NIF functions: sanitize_federation, sanitize_markdown, strip_tags
 lib/
 ├── baudrate/                    # Business logic (contexts)
 │   ├── application.ex           # Supervision tree
@@ -47,8 +53,10 @@ lib/
 │   │   ├── board_article.ex     # Join table: board ↔ article
 │   │   ├── board_moderator.ex   # Join table: board ↔ moderator
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
-│   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark)
+│   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark + Ammonia NIF)
 │   │   └── pubsub.ex            # PubSub helpers for real-time content updates
+│   ├── sanitizer/
+│   │   └── native.ex            # Rustler NIF bindings to Ammonia HTML sanitizer
 │   ├── messaging.ex             # Messaging context: 1-on-1 DMs, conversations, DM access control
 │   ├── messaging/
 │   │   ├── conversation.ex      # Conversation schema (local-local and local-remote)
@@ -72,7 +80,7 @@ lib/
 │   │   ├── key_vault.ex         # AES-256-GCM encryption for private keys at rest
 │   │   ├── remote_actor.ex      # RemoteActor schema (cached remote profiles)
 │   │   ├── publisher.ex         # ActivityStreams JSON builders for outgoing activities
-│   │   ├── sanitizer.ex         # Allowlist-based HTML sanitizer for federated content
+│   │   ├── sanitizer.ex         # HTML sanitizer for federated content (Ammonia NIF)
 │   │   ├── delivery_stats.ex    # Delivery queue stats and admin management
 │   │   ├── instance_stats.ex    # Per-domain instance statistics
 │   │   └── validator.ex         # AP input validation (URLs, sizes, attribution, allowlist/blocklist)
@@ -665,8 +673,8 @@ re-processing within a single cleanup run.
 **Security:**
 - HTTP Signature verification on all inbox requests
 - Inbox content-type validation — rejects non-AP content types with 415 (via `RequireAPContentType` plug)
-- HTML sanitization (allowlist-based) before database storage
-- Remote actor display name sanitization — strips HTML tags, control characters, truncates to 100 chars
+- HTML sanitization via Ammonia (Rust NIF, html5ever parser) — allowlist-based, applied before database storage
+- Remote actor display name sanitization — strips all HTML (including script content), control characters, truncates to 100 chars
 - Attribution validation prevents impersonation
 - Content size limits (256 KB AP payload, 64 KB article body enforced in all changesets)
 - Domain blocklist (configurable via admin settings)

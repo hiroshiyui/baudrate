@@ -40,6 +40,10 @@ baudrate-*.tar
 # TLS certificates
 /priv/cert/
 
+# Rust NIF build artifacts
+/native/*/target/
+/priv/native/
+
 # In case you use Node.js/npm, you want to ignore these.
 npm-debug.log
 /assets/node_modules/

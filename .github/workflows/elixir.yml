@@ -46,6 +46,17 @@ jobs:
         asdf plugin add erlang
         asdf plugin add elixir
         asdf install
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+    - name: Restore Cargo cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          native/baudrate_sanitizer/target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('native/baudrate_sanitizer/Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo-
     - name: Restore dependencies cache
       uses: actions/cache@v3
       with:

@@ -3,8 +3,8 @@ defmodule Baudrate.Content.Markdown do
   Converts Markdown text to sanitized HTML using Earmark.
 
   After Earmark renders Markdown to HTML, a post-processing step uses
-  `HtmlSanitizeEx` with a custom scrubber to strip any HTML tags not in
-  a known-safe set. This prevents injection of `<script>`, `<iframe>`,
+  a Rust NIF backed by Ammonia (html5ever parser) to strip any HTML tags
+  not in a known-safe set. This prevents injection of `<script>`, `<iframe>`,
   or other unsafe elements that users could include as raw HTML in their
   Markdown source.
   """
@@ -33,6 +33,6 @@ defmodule Baudrate.Content.Markdown do
   end
 
   defp sanitize_html(html) do
-    HtmlSanitizeEx.Scrubber.scrub(html, Baudrate.Content.Markdown.Scrubber)
+    Baudrate.Sanitizer.Native.sanitize_markdown(html)
   end
 end
