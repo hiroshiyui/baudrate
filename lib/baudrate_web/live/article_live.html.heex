@@ -47,6 +47,11 @@
           <.icon name={if @article.locked, do: "hero-lock-open", else: "hero-lock-closed"} class="size-4" />
           {if @article.locked, do: gettext("Unlock"), else: gettext("Lock")}
         </button>
+        <.link :if={@revision_count > 0} navigate={~p"/articles/#{@article.slug}/history"} class="btn btn-sm btn-ghost">
+          <.icon name="hero-clock" class="size-4" />
+          {gettext("History")}
+          <span class="badge badge-sm">{@revision_count}</span>
+        </.link>
       </div>
     </div>
 

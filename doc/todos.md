@@ -30,7 +30,7 @@ Audit date: 2026-02-23
 
 - [ ] **RSS/Atom feeds** — no feed endpoints; common expectation for forums (`/boards/:slug/feed.xml`, `/articles/feed.xml`)
 - [ ] **Markdown live preview** — toolbar exists (`MarkdownToolbarHook`) but no side-by-side preview toggle
-- [ ] **Article edit history** — no version tracking; edits are silent with no audit trail
+- [x] **Article edit history** — `ArticleRevision` schema stores full snapshots on each edit; `/articles/:slug/history` shows revision list with inline diffs via `String.myers_difference/2`
 - [ ] **Bulk moderation actions** — one-at-a-time only; no bulk delete/ban in admin
 - [ ] **User muting** — blocking exists (AP Block activity) but no local-only soft-mute/ignore
 

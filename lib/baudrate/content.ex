@@ -15,7 +15,7 @@ defmodule Baudrate.Content do
 
   import Ecto.Query
   alias Baudrate.{Auth, Repo, Setup}
-  alias Baudrate.Content.{Article, ArticleImage, Attachment, ArticleLike, Board, BoardArticle, BoardModerator, Comment}
+  alias Baudrate.Content.{Article, ArticleImage, ArticleRevision, Attachment, ArticleLike, Board, BoardArticle, BoardModerator, Comment}
   alias Baudrate.Content.PubSub, as: ContentPubSub
 
   # --- Boards ---
@@ -288,15 +288,24 @@ defmodule Baudrate.Content do
   @doc """
   Updates a local article's title and body.
 
+  Creates a revision snapshot of the pre-edit state when an `editor` is
+  provided (3-arity form). The 2-arity form is kept for backward
+  compatibility (federation updates with no local editor).
+
   Publishes an `Update(Article)` activity to federation after success.
   """
   def update_article(%Article{} = article, attrs) do
-    result =
-      article
-      |> Article.update_changeset(attrs)
-      |> Repo.update()
+    update_article(article, attrs, nil)
+  end
 
-    with {:ok, updated_article} <- result do
+  def update_article(%Article{} = article, attrs, editor) do
+    result =
+      Ecto.Multi.new()
+      |> maybe_snapshot_revision(article, editor)
+      |> Ecto.Multi.update(:article, Article.update_changeset(article, attrs))
+      |> Repo.transaction()
+
+    with {:ok, %{article: updated_article}} <- result do
       updated_article = Repo.preload(updated_article, :boards)
 
       for board <- updated_article.boards do
@@ -312,8 +321,24 @@ defmodule Baudrate.Content do
         end)
       end
 
-      result
+      {:ok, updated_article}
+    else
+      {:error, :article, changeset, _} -> {:error, changeset}
+      other -> other
     end
+  end
+
+  defp maybe_snapshot_revision(multi, _article, nil), do: multi
+
+  defp maybe_snapshot_revision(multi, article, editor) do
+    Ecto.Multi.insert(multi, :revision, fn _changes ->
+      ArticleRevision.changeset(%ArticleRevision{}, %{
+        title: article.title,
+        body: article.body,
+        article_id: article.id,
+        editor_id: editor.id
+      })
+    end)
   end
 
   # --- Board Access Checks ---
@@ -721,6 +746,55 @@ defmodule Baudrate.Content do
     article
     |> Article.update_remote_changeset(attrs)
     |> Repo.update()
+  end
+
+  # --- Article Revisions ---
+
+  @doc """
+  Creates a revision snapshot of the article's current title and body.
+  """
+  def create_article_revision(%Article{} = article, editor) do
+    %ArticleRevision{}
+    |> ArticleRevision.changeset(%{
+      title: article.title,
+      body: article.body,
+      article_id: article.id,
+      editor_id: if(editor, do: editor.id)
+    })
+    |> Repo.insert()
+  end
+
+  @doc """
+  Lists all revisions for an article, newest first, with editor preloaded.
+  """
+  def list_article_revisions(article_id) do
+    from(r in ArticleRevision,
+      where: r.article_id == ^article_id,
+      order_by: [desc: r.inserted_at, desc: r.id],
+      preload: :editor
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Fetches a single revision by ID with editor preloaded, or raises.
+  """
+  def get_article_revision!(id) do
+    ArticleRevision
+    |> Repo.get!(id)
+    |> Repo.preload(:editor)
+  end
+
+  @doc """
+  Returns the count of revisions for an article.
+  """
+  def count_article_revisions(article_id) do
+    Repo.one(
+      from(r in ArticleRevision,
+        where: r.article_id == ^article_id,
+        select: count(r.id)
+      )
+    ) || 0
   end
 
   # --- Comments ---

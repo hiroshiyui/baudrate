@@ -128,7 +128,7 @@ defmodule BaudrateWeb.ArticleEditLive do
 
   @impl true
   def handle_event("submit", %{"article" => params}, socket) do
-    case Content.update_article(socket.assigns.article, params) do
+    case Content.update_article(socket.assigns.article, params, socket.assigns.current_user) do
       {:ok, updated_article} ->
         {:noreply,
          socket

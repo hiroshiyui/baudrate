@@ -206,6 +206,7 @@ defmodule BaudrateWeb.Router do
       live "/users/:username", UserProfileLive
       live "/boards/:slug", BoardLive
       live "/articles/:slug", ArticleLive
+      live "/articles/:slug/history", ArticleHistoryLive
     end
   end
 

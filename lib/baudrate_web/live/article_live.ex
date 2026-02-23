@@ -54,6 +54,7 @@ defmodule BaudrateWeb.ArticleLive do
       comment_changeset = Content.change_comment()
       attachments = Content.list_attachments_for_article(article)
       article_images = Content.list_article_images(article.id)
+      revision_count = Content.count_article_revisions(article.id)
 
       socket =
         socket
@@ -70,6 +71,7 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:replying_to, nil)
         |> assign(:attachments, attachments)
         |> assign(:article_images, article_images)
+        |> assign(:revision_count, revision_count)
         |> assign(:page_title, article.title)
 
       if connected?(socket), do: ContentPubSub.subscribe_article(article.id)

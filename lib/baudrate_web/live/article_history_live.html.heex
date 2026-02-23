@@ -1,0 +1,102 @@
+<div class="mx-auto max-w-2xl">
+  <div class="mb-4">
+    <.link navigate={~p"/articles/#{@article.slug}"} class="text-sm text-base-content/70 hover:text-base-content">
+      &larr; {gettext("Back to article")}
+    </.link>
+  </div>
+
+  <h1 class="text-2xl font-bold mb-1">{gettext("Edit History")}</h1>
+  <p class="text-sm text-base-content/70 mb-6">{@article.title}</p>
+
+  <div :if={@revisions == []} class="text-base-content/50 text-center py-8">
+    {gettext("No edit history available.")}
+  </div>
+
+  <div :if={@revisions != []} class="space-y-6">
+    <%!-- Revision list --%>
+    <div class="overflow-x-auto">
+      <table class="table table-sm" role="grid" aria-label={gettext("Revision list")}>
+        <thead>
+          <tr>
+            <th>{gettext("Version")}</th>
+            <th>{gettext("Editor")}</th>
+            <th>{gettext("Date")}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <%= for {revision, index} <- Enum.with_index(@revisions) do %>
+            <tr class={[@selected_index == index && "bg-base-200"]}>
+              <td>{"##{length(@revisions) - index}"}</td>
+              <td>
+                <span :if={revision.editor}>
+                  <.link navigate={~p"/users/#{revision.editor.username}"} class="link link-hover">
+                    {revision.editor.username}
+                  </.link>
+                </span>
+                <span :if={!revision.editor} class="text-base-content/50">
+                  {gettext("Unknown")}
+                </span>
+              </td>
+              <td>{Calendar.strftime(revision.inserted_at, "%Y-%m-%d %H:%M")}</td>
+              <td>
+                <button
+                  phx-click="select_revision"
+                  phx-value-index={index}
+                  class={["btn btn-xs", if(@selected_index == index, do: "btn-primary", else: "btn-ghost")]}
+                >
+                  {gettext("View")}
+                </button>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <%!-- Diff display --%>
+    <div :if={@selected_index != nil} class="space-y-4">
+      <% selected = Enum.at(@revisions, @selected_index) %>
+      <% previous = get_previous_revision(@revisions, @selected_index) %>
+
+      <h2 class="text-lg font-semibold">
+        {gettext("Version #%{number}", number: length(@revisions) - @selected_index)}
+        <span :if={selected.editor} class="font-normal text-sm text-base-content/70">
+          {gettext("by %{editor}", editor: selected.editor.username)}
+        </span>
+      </h2>
+
+      <%!-- Title diff --%>
+      <div>
+        <h3 class="text-sm font-semibold mb-1">{gettext("Title")}</h3>
+        <div class="bg-base-200 rounded-lg p-3 font-mono text-sm overflow-x-auto">
+          <%= if previous do %>
+            <%= for {tag, text} <- compute_diff(previous.title, selected.title) do %>
+              <span :if={tag == :eq}>{text}</span>
+              <span :if={tag == :ins} class="bg-success/30 text-success-content">{text}</span>
+              <span :if={tag == :del} class="bg-error/30 text-error-content line-through">{text}</span>
+            <% end %>
+          <% else %>
+            {selected.title}
+          <% end %>
+        </div>
+      </div>
+
+      <%!-- Body diff --%>
+      <div>
+        <h3 class="text-sm font-semibold mb-1">{gettext("Body")}</h3>
+        <div class="bg-base-200 rounded-lg p-3 font-mono text-sm overflow-x-auto whitespace-pre-wrap break-words max-h-96 overflow-y-auto">
+          <%= if previous do %>
+            <%= for {tag, text} <- compute_diff(previous.body, selected.body) do %>
+              <span :if={tag == :eq}>{text}</span>
+              <span :if={tag == :ins} class="bg-success/30 text-success-content">{text}</span>
+              <span :if={tag == :del} class="bg-error/30 text-error-content line-through">{text}</span>
+            <% end %>
+          <% else %>
+            {selected.body}
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

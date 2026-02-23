@@ -32,11 +32,12 @@ lib/
 │   │   ├── user_block.ex        # UserBlock schema (local + remote actor blocks)
 │   │   └── user_session.ex      # Ecto schema for server-side sessions
 │   ├── avatar.ex                # Avatar image processing (crop, resize, WebP)
-│   ├── content.ex               # Content context: boards, articles, comments, likes, user stats
+│   ├── content.ex               # Content context: boards, articles, comments, likes, user stats, revision tracking
 │   ├── attachment_storage.ex     # File attachment processing (magic bytes, image re-encoding)
 │   ├── content/
 │   │   ├── article.ex           # Article schema (posts, local + remote, soft-delete)
 │   │   ├── article_image.ex     # ArticleImage schema (gallery images on articles)
+│   │   ├── article_revision.ex  # ArticleRevision schema (edit history snapshots)
 │   │   ├── article_image_storage.ex # Image processing (resize, WebP, strip EXIF)
 │   │   ├── article_like.ex      # ArticleLike schema (local + remote likes)
 │   │   ├── attachment.ex         # Attachment schema (files on articles, type/size validation)
@@ -99,6 +100,7 @@ lib/
 │   │   │   ├── settings_live.ex       # Admin site settings (name, registration, federation)
 │   │   │   └── users_live.ex          # Admin user management (list, ban, unban, role change)
 │   │   ├── article_edit_live.ex  # Article editing form
+│   │   ├── article_history_live.ex # Article edit history with inline diffs
 │   │   ├── article_live.ex      # Single article view
 │   │   ├── article_new_live.ex  # Article creation form
 │   │   ├── auth_hooks.ex        # on_mount hooks: require_auth, optional_auth, etc.
