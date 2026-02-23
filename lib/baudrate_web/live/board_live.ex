@@ -39,7 +39,10 @@ defmodule BaudrateWeb.BoardLive do
     page = parse_page(params["page"])
 
     %{articles: articles, page: page, total_pages: total_pages} =
-      Content.paginate_articles_for_board(socket.assigns.board, page: page)
+      Content.paginate_articles_for_board(socket.assigns.board,
+        page: page,
+        user: socket.assigns.current_user
+      )
 
     {:noreply, assign(socket, articles: articles, page: page, total_pages: total_pages)}
   end
@@ -56,7 +59,10 @@ defmodule BaudrateWeb.BoardLive do
              :article_unlocked
            ] do
     %{articles: articles, page: page, total_pages: total_pages} =
-      Content.paginate_articles_for_board(socket.assigns.board, page: socket.assigns.page)
+      Content.paginate_articles_for_board(socket.assigns.board,
+        page: socket.assigns.page,
+        user: socket.assigns.current_user
+      )
 
     {:noreply, assign(socket, articles: articles, page: page, total_pages: total_pages)}
   end

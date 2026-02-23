@@ -88,6 +88,10 @@ defmodule BaudrateWeb.Admin.BoardsLive do
          |> put_flash(:info, gettext("Board deleted successfully."))
          |> reload_boards()}
 
+      {:error, :protected} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Cannot delete a protected system board."))}
+
       {:error, :has_articles} ->
         {:noreply,
          put_flash(socket, :error, gettext("Cannot delete board that has articles."))}

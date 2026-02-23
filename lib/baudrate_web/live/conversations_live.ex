@@ -9,6 +9,7 @@ defmodule BaudrateWeb.ConversationsLive do
 
   use BaudrateWeb, :live_view
 
+  alias Baudrate.Auth
   alias Baudrate.Messaging
   alias Baudrate.Messaging.PubSub, as: MessagingPubSub
 
@@ -22,11 +23,13 @@ defmodule BaudrateWeb.ConversationsLive do
 
     conversations = Messaging.list_conversations(user)
     unread_counts = load_unread_counts(conversations, user)
+    muted_convs = load_muted_conversations(conversations, user)
 
     socket =
       socket
       |> assign(:conversations, conversations)
       |> assign(:unread_counts, unread_counts)
+      |> assign(:muted_conversations, muted_convs)
       |> assign(:page_title, gettext("Messages"))
 
     {:ok, socket}
@@ -37,11 +40,13 @@ defmodule BaudrateWeb.ConversationsLive do
     user = socket.assigns.current_user
     conversations = Messaging.list_conversations(user)
     unread_counts = load_unread_counts(conversations, user)
+    muted_convs = load_muted_conversations(conversations, user)
 
     {:noreply,
      socket
      |> assign(:conversations, conversations)
-     |> assign(:unread_counts, unread_counts)}
+     |> assign(:unread_counts, unread_counts)
+     |> assign(:muted_conversations, muted_convs)}
   end
 
   def handle_info(_msg, socket), do: {:noreply, socket}
@@ -49,6 +54,24 @@ defmodule BaudrateWeb.ConversationsLive do
   defp load_unread_counts(conversations, user) do
     Map.new(conversations, fn conv ->
       {conv.id, Messaging.unread_count_for_conversation(conv.id, user)}
+    end)
+  end
+
+  defp load_muted_conversations(conversations, user) do
+    muted_uids = MapSet.new(Auth.muted_user_ids(user))
+    muted_ap_ids = MapSet.new(Auth.muted_actor_ap_ids(user))
+
+    Map.new(conversations, fn conv ->
+      other = Messaging.other_participant(conv, user)
+
+      muted =
+        case other do
+          %Baudrate.Setup.User{id: id} -> MapSet.member?(muted_uids, id)
+          %Baudrate.Federation.RemoteActor{ap_id: ap_id} -> MapSet.member?(muted_ap_ids, ap_id)
+          _ -> false
+        end
+
+      {conv.id, muted}
     end)
   end
 

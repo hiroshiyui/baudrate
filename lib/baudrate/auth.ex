@@ -49,7 +49,7 @@ defmodule Baudrate.Auth do
   """
 
   import Ecto.Query
-  alias Baudrate.Auth.{InviteCode, LoginAttempt, RecoveryCode, TotpVault, UserBlock, UserSession}
+  alias Baudrate.Auth.{InviteCode, LoginAttempt, RecoveryCode, TotpVault, UserBlock, UserMute, UserSession}
   alias Baudrate.Repo
   alias Baudrate.Setup
   alias Baudrate.Setup.{Role, User}
@@ -1190,6 +1190,101 @@ defmodule Baudrate.Auth do
     from(b in UserBlock,
       where: b.user_id == ^user_id and not is_nil(b.blocked_actor_ap_id),
       select: b.blocked_actor_ap_id
+    )
+    |> Repo.all()
+  end
+
+  # --- User Mutes ---
+
+  @doc """
+  Mutes a local user. Returns `{:ok, mute}` or `{:error, changeset}`.
+  """
+  def mute_user(%User{id: user_id}, %User{id: muted_id}) do
+    %UserMute{}
+    |> UserMute.local_changeset(%{user_id: user_id, muted_user_id: muted_id})
+    |> Repo.insert()
+  end
+
+  @doc """
+  Mutes a remote actor by AP ID. Returns `{:ok, mute}` or `{:error, changeset}`.
+  """
+  def mute_remote_actor(%User{id: user_id}, ap_id) when is_binary(ap_id) do
+    %UserMute{}
+    |> UserMute.remote_changeset(%{user_id: user_id, muted_actor_ap_id: ap_id})
+    |> Repo.insert()
+  end
+
+  @doc """
+  Unmutes a local user. Returns `{count, nil}`.
+  """
+  def unmute_user(%User{id: user_id}, %User{id: muted_id}) do
+    from(m in UserMute,
+      where: m.user_id == ^user_id and m.muted_user_id == ^muted_id
+    )
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Unmutes a remote actor by AP ID. Returns `{count, nil}`.
+  """
+  def unmute_remote_actor(%User{id: user_id}, ap_id) when is_binary(ap_id) do
+    from(m in UserMute,
+      where: m.user_id == ^user_id and m.muted_actor_ap_id == ^ap_id
+    )
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Returns `true` if the user has muted the given target (local user or AP ID).
+  """
+  def muted?(%User{id: user_id}, %User{id: target_id}) do
+    Repo.exists?(
+      from(m in UserMute,
+        where: m.user_id == ^user_id and m.muted_user_id == ^target_id
+      )
+    )
+  end
+
+  def muted?(%User{id: user_id}, ap_id) when is_binary(ap_id) do
+    Repo.exists?(
+      from(m in UserMute,
+        where: m.user_id == ^user_id and m.muted_actor_ap_id == ^ap_id
+      )
+    )
+  end
+
+  def muted?(_, _), do: false
+
+  @doc """
+  Lists all mutes for a user, with muted_user preloaded where applicable.
+  """
+  def list_mutes(%User{id: user_id}) do
+    from(m in UserMute,
+      where: m.user_id == ^user_id,
+      order_by: [desc: m.inserted_at],
+      preload: [:muted_user]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns a list of muted user IDs for the given user.
+  """
+  def muted_user_ids(%User{id: user_id}) do
+    from(m in UserMute,
+      where: m.user_id == ^user_id and not is_nil(m.muted_user_id),
+      select: m.muted_user_id
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns a list of muted remote actor AP IDs for the given user.
+  """
+  def muted_actor_ap_ids(%User{id: user_id}) do
+    from(m in UserMute,
+      where: m.user_id == ^user_id and not is_nil(m.muted_actor_ap_id),
+      select: m.muted_actor_ap_id
     )
     |> Repo.all()
   end

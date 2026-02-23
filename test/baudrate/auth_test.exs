@@ -519,4 +519,80 @@ defmodule Baudrate.AuthTest do
       assert ap_id in Auth.blocked_actor_ap_ids(user)
     end
   end
+
+  # --- User Mutes ---
+
+  describe "mute_user/2 and unmute_user/2" do
+    test "mutes and unmutes a local user" do
+      user = create_user("user")
+      target = create_user("user")
+
+      assert {:ok, mute} = Auth.mute_user(user, target)
+      assert mute.user_id == user.id
+      assert mute.muted_user_id == target.id
+
+      assert Auth.muted?(user, target)
+      refute Auth.muted?(target, user)
+
+      {1, nil} = Auth.unmute_user(user, target)
+      refute Auth.muted?(user, target)
+    end
+
+    test "prevents duplicate mutes" do
+      user = create_user("user")
+      target = create_user("user")
+
+      assert {:ok, _} = Auth.mute_user(user, target)
+      assert {:error, _} = Auth.mute_user(user, target)
+    end
+
+    test "prevents self-mute" do
+      user = create_user("user")
+      assert {:error, changeset} = Auth.mute_user(user, user)
+      assert %{muted_user_id: ["cannot mute yourself"]} = errors_on(changeset)
+    end
+  end
+
+  describe "mute_remote_actor/2 and unmute_remote_actor/2" do
+    test "mutes and unmutes a remote actor" do
+      user = create_user("user")
+      ap_id = "https://remote.example/users/someone"
+
+      assert {:ok, mute} = Auth.mute_remote_actor(user, ap_id)
+      assert mute.muted_actor_ap_id == ap_id
+
+      assert Auth.muted?(user, ap_id)
+
+      {1, nil} = Auth.unmute_remote_actor(user, ap_id)
+      refute Auth.muted?(user, ap_id)
+    end
+  end
+
+  describe "list_mutes/1" do
+    test "lists all mutes for a user" do
+      user = create_user("user")
+      target = create_user("user")
+      ap_id = "https://remote.example/users/muted-actor"
+
+      {:ok, _} = Auth.mute_user(user, target)
+      {:ok, _} = Auth.mute_remote_actor(user, ap_id)
+
+      mutes = Auth.list_mutes(user)
+      assert length(mutes) == 2
+    end
+  end
+
+  describe "muted_user_ids/1 and muted_actor_ap_ids/1" do
+    test "returns lists of muted IDs" do
+      user = create_user("user")
+      target = create_user("user")
+      ap_id = "https://remote.example/users/muted-actor"
+
+      {:ok, _} = Auth.mute_user(user, target)
+      {:ok, _} = Auth.mute_remote_actor(user, ap_id)
+
+      assert target.id in Auth.muted_user_ids(user)
+      assert ap_id in Auth.muted_actor_ap_ids(user)
+    end
+  end
 end

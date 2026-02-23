@@ -8,7 +8,7 @@ Audit date: 2026-02-23
 
 - [x] **RSS/Atom feeds** — `/feeds/rss`, `/feeds/atom`, `/feeds/boards/:slug/rss|atom`, `/feeds/users/:username/rss|atom`
 - [ ] **Bulk moderation actions** — one-at-a-time only; no bulk delete/ban in admin
-- [ ] **User muting** — blocking exists (AP Block activity) but no local-only soft-mute/ignore
+- [x] **User muting** — local-only soft-mute/ignore with SysOp board exemption, combined block+mute filtering
 
 ## Low: Deployment & Infrastructure
 

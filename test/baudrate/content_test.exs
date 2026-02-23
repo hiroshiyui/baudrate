@@ -961,6 +961,14 @@ defmodule Baudrate.ContentTest do
 
   # --- SysOp Board ---
 
+  describe "delete_board/1 SysOp protection" do
+    test "returns {:error, :protected} for SysOp board" do
+      user = create_user("admin")
+      {:ok, sysop_board} = Content.seed_sysop_board(user)
+      assert {:error, :protected} = Content.delete_board(sysop_board)
+    end
+  end
+
   describe "seed_sysop_board/1" do
     test "creates sysop board and assigns moderator" do
       user = create_user("admin")

@@ -234,6 +234,38 @@
           </button>
         </.form>
       </div>
+
+      <%!-- Muted Users section --%>
+      <div>
+        <div class="text-sm text-base-content/70 mb-2">{gettext("Muted Users")}</div>
+        <div :if={@mutes == []} class="text-sm text-base-content/50 italic">
+          {gettext("No muted users.")}
+        </div>
+        <div :if={@mutes != []} class="space-y-2">
+          <div :for={mute <- @mutes} class="flex items-center gap-3">
+            <%= if mute.muted_user do %>
+              <.avatar user={mute.muted_user} size={36} />
+              <span class="font-semibold">{mute.muted_user.username}</span>
+            <% else %>
+              <div class="avatar avatar-placeholder">
+                <div class="bg-neutral text-neutral-content rounded-full" style="width: 36px; height: 36px">
+                  <span class="text-xs">@</span>
+                </div>
+              </div>
+              <span class="text-sm text-base-content/70">{mute.muted_actor_ap_id}</span>
+            <% end %>
+            <button
+              type="button"
+              class="btn btn-sm btn-ghost btn-error ml-auto"
+              phx-click="unmute"
+              phx-value-id={mute.id}
+              aria-label={gettext("Unmute")}
+            >
+              {gettext("Unmute")}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

@@ -27,6 +27,7 @@ defmodule BaudrateWeb.ProfileLive do
     is_active = Auth.user_active?(user)
 
     signature_changeset = Baudrate.Setup.User.signature_changeset(user, %{})
+    mutes = Auth.list_mutes(user)
 
     socket =
       socket
@@ -37,6 +38,7 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:available_locales, Locale.available_locales())
       |> assign(:signature_form, to_form(signature_changeset, as: :signature))
       |> assign(:signature_preview, Baudrate.Content.Markdown.to_html(user.signature))
+      |> assign(:mutes, mutes)
       |> assign(:page_title, gettext("Profile"))
       |> allow_upload(:avatar,
         accept: ~w(.jpg .jpeg .png .webp),
@@ -151,6 +153,29 @@ defmodule BaudrateWeb.ProfileLive do
 
       {:error, changeset} ->
         {:noreply, assign(socket, :signature_form, to_form(changeset, as: :signature))}
+    end
+  end
+
+  def handle_event("unmute", %{"id" => id}, socket) do
+    user = socket.assigns.current_user
+    mute = Enum.find(socket.assigns.mutes, &(to_string(&1.id) == id))
+
+    if mute do
+      if mute.muted_user_id do
+        muted_user = Auth.get_user(mute.muted_user_id)
+        if muted_user, do: Auth.unmute_user(user, muted_user)
+      else
+        Auth.unmute_remote_actor(user, mute.muted_actor_ap_id)
+      end
+
+      mutes = Auth.list_mutes(user)
+
+      {:noreply,
+       socket
+       |> assign(:mutes, mutes)
+       |> put_flash(:info, gettext("User unmuted."))}
+    else
+      {:noreply, socket}
     end
   end
 

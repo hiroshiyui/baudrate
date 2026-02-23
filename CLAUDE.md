@@ -34,7 +34,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 
 ### Contexts
 
-- **Auth** (`lib/baudrate/auth.ex`) — login, registration, TOTP, sessions, avatars, invite codes, password reset
+- **Auth** (`lib/baudrate/auth.ex`) — login, registration, TOTP, sessions, avatars, invite codes, password reset, user blocks, user mutes
 - **Content** (`lib/baudrate/content.ex`) — boards, articles, comments, likes, permissions, board moderators, search
 - **Federation** (`lib/baudrate/federation.ex`) — AP actors, outbox, followers, announces, delivery
 - **Messaging** (`lib/baudrate/messaging.ex`) — 1-on-1 direct messages, conversations, DM access control, federation

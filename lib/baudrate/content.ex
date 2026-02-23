@@ -122,8 +122,11 @@ defmodule Baudrate.Content do
   @doc """
   Deletes a board if it has no linked articles.
 
+  Returns `{:error, :protected}` if the board is the SysOp board.
   Returns `{:error, :has_articles}` if the board has articles.
   """
+  def delete_board(%Board{slug: "sysop"}), do: {:error, :protected}
+
   def delete_board(%Board{} = board) do
     article_count =
       Repo.one(from(ba in BoardArticle, where: ba.board_id == ^board.id, select: count()))
@@ -170,13 +173,15 @@ defmodule Baudrate.Content do
 
     * `:page` — page number (default 1)
     * `:per_page` — articles per page (default #{@per_page})
+    * `:user` — current user for block/mute filtering (nil for guests)
 
   Returns `%{articles: [...], total: N, page: N, per_page: N, total_pages: N}`.
   """
-  def paginate_articles_for_board(%Board{id: board_id}, opts \\ []) do
+  def paginate_articles_for_board(%Board{id: board_id} = board, opts \\ []) do
     page = max(Keyword.get(opts, :page, 1), 1)
     per_page = Keyword.get(opts, :per_page, @per_page)
     offset = (page - 1) * per_page
+    current_user = Keyword.get(opts, :user)
 
     base_query =
       from(a in Article,
@@ -184,6 +189,7 @@ defmodule Baudrate.Content do
         on: ba.article_id == a.id,
         where: ba.board_id == ^board_id and is_nil(a.deleted_at)
       )
+      |> apply_article_hidden_filters(current_user, board)
 
     total = Repo.one(from(q in base_query, select: count(q.id)))
 
@@ -480,6 +486,7 @@ defmodule Baudrate.Content do
     offset = (page - 1) * per_page
     user = Keyword.get(opts, :user)
     allowed_roles = allowed_view_roles(user)
+    {hidden_uids, hidden_ap_ids} = hidden_filters(user)
 
     {where_clause, order_clause} = article_search_clauses(query_string)
 
@@ -493,6 +500,7 @@ defmodule Baudrate.Content do
         where: ^where_clause,
         distinct: a.id
       )
+      |> apply_search_hidden_filters(hidden_uids, hidden_ap_ids)
 
     total = Repo.one(from(q in subquery(base_query), select: count()))
 
@@ -510,6 +518,7 @@ defmodule Baudrate.Content do
         limit: ^per_page,
         preload: [:user, :boards]
       )
+      |> apply_search_hidden_filters(hidden_uids, hidden_ap_ids)
       |> Repo.all()
 
     total_pages = max(ceil(total / per_page), 1)
@@ -581,6 +590,7 @@ defmodule Baudrate.Content do
     offset = (page - 1) * per_page
     user = Keyword.get(opts, :user)
     allowed_roles = allowed_view_roles(user)
+    {hidden_uids, hidden_ap_ids} = hidden_filters(user)
 
     pattern = "%#{sanitize_like(query_string)}%"
 
@@ -598,6 +608,7 @@ defmodule Baudrate.Content do
         where: ilike(c.body, ^pattern),
         distinct: c.id
       )
+      |> apply_hidden_filters(hidden_uids, hidden_ap_ids)
 
     total = Repo.one(from(q in subquery(base_query), select: count()))
 
@@ -619,6 +630,7 @@ defmodule Baudrate.Content do
         limit: ^per_page,
         preload: [:user, :remote_actor, article: :boards]
       )
+      |> apply_hidden_filters(hidden_uids, hidden_ap_ids)
       |> Repo.all()
 
     total_pages = max(ceil(total / per_page), 1)
@@ -875,34 +887,15 @@ defmodule Baudrate.Content do
   end
 
   def list_comments_for_article(%Article{id: article_id}, current_user) do
-    blocked_uids = Auth.blocked_user_ids(current_user)
-    blocked_ap_ids = Auth.blocked_actor_ap_ids(current_user)
+    {hidden_uids, hidden_ap_ids} = hidden_filters(current_user)
 
-    query =
-      from(c in Comment,
-        where: c.article_id == ^article_id and is_nil(c.deleted_at),
-        order_by: [asc: c.inserted_at],
-        preload: [:user, :remote_actor]
-      )
-
-    query =
-      if blocked_uids != [] do
-        from(c in query, where: is_nil(c.user_id) or c.user_id not in ^blocked_uids)
-      else
-        query
-      end
-
-    query =
-      if blocked_ap_ids != [] do
-        from(c in query,
-          left_join: ra in assoc(c, :remote_actor),
-          where: is_nil(c.remote_actor_id) or ra.ap_id not in ^blocked_ap_ids
-        )
-      else
-        query
-      end
-
-    Repo.all(query)
+    from(c in Comment,
+      where: c.article_id == ^article_id and is_nil(c.deleted_at),
+      order_by: [asc: c.inserted_at],
+      preload: [:user, :remote_actor]
+    )
+    |> apply_hidden_filters(hidden_uids, hidden_ap_ids)
+    |> Repo.all()
   end
 
   @comments_per_page 20
@@ -928,14 +921,14 @@ defmodule Baudrate.Content do
     per_page = Keyword.get(opts, :per_page, @comments_per_page)
     offset = (page - 1) * per_page
 
-    {blocked_uids, blocked_ap_ids} = block_filters(current_user)
+    {blocked_uids, blocked_ap_ids} = hidden_filters(current_user)
 
     # Count root comments
     root_count_query =
       from(c in Comment,
         where: c.article_id == ^article_id and is_nil(c.deleted_at) and is_nil(c.parent_id)
       )
-      |> apply_block_filters(blocked_uids, blocked_ap_ids)
+      |> apply_hidden_filters(blocked_uids, blocked_ap_ids)
 
     total_roots = Repo.one(from(q in root_count_query, select: count(q.id)))
 
@@ -948,7 +941,7 @@ defmodule Baudrate.Content do
         limit: ^per_page,
         preload: [:user, :remote_actor]
       )
-      |> apply_block_filters(blocked_uids, blocked_ap_ids)
+      |> apply_hidden_filters(blocked_uids, blocked_ap_ids)
 
     roots = Repo.all(root_query)
 
@@ -966,15 +959,20 @@ defmodule Baudrate.Content do
     }
   end
 
-  defp block_filters(nil), do: {[], []}
+  defp hidden_filters(nil), do: {[], []}
 
-  defp block_filters(current_user) do
-    {Auth.blocked_user_ids(current_user), Auth.blocked_actor_ap_ids(current_user)}
+  defp hidden_filters(current_user) do
+    blocked_uids = Auth.blocked_user_ids(current_user)
+    muted_uids = Auth.muted_user_ids(current_user)
+    blocked_ap_ids = Auth.blocked_actor_ap_ids(current_user)
+    muted_ap_ids = Auth.muted_actor_ap_ids(current_user)
+
+    {Enum.uniq(blocked_uids ++ muted_uids), Enum.uniq(blocked_ap_ids ++ muted_ap_ids)}
   end
 
-  defp apply_block_filters(query, [], []), do: query
+  defp apply_hidden_filters(query, [], []), do: query
 
-  defp apply_block_filters(query, blocked_uids, blocked_ap_ids) do
+  defp apply_hidden_filters(query, blocked_uids, blocked_ap_ids) do
     query =
       if blocked_uids != [] do
         from(c in query, where: is_nil(c.user_id) or c.user_id not in ^blocked_uids)
@@ -986,6 +984,79 @@ defmodule Baudrate.Content do
       from(c in query,
         left_join: ra in assoc(c, :remote_actor),
         where: is_nil(c.remote_actor_id) or ra.ap_id not in ^blocked_ap_ids
+      )
+    else
+      query
+    end
+  end
+
+  # Applies hidden filters to article search queries (no SysOp exemption in search).
+  defp apply_search_hidden_filters(query, [], []), do: query
+
+  defp apply_search_hidden_filters(query, hidden_uids, hidden_ap_ids) do
+    query =
+      if hidden_uids != [] do
+        from(a in query, where: is_nil(a.user_id) or a.user_id not in ^hidden_uids)
+      else
+        query
+      end
+
+    if hidden_ap_ids != [] do
+      from(a in query,
+        left_join: ra in assoc(a, :remote_actor),
+        where: is_nil(a.remote_actor_id) or ra.ap_id not in ^hidden_ap_ids
+      )
+    else
+      query
+    end
+  end
+
+  # Applies hidden filters (blocks + mutes) to article queries.
+  # Articles use `a.user_id` / `a.remote_actor_id` directly.
+  # SysOp board exemption: admin articles in the SysOp board are never filtered.
+  defp apply_article_hidden_filters(query, nil, _board), do: query
+
+  defp apply_article_hidden_filters(query, current_user, board) do
+    {hidden_uids, hidden_ap_ids} = hidden_filters(current_user)
+
+    if hidden_uids == [] and hidden_ap_ids == [] do
+      query
+    else
+      is_sysop = board.slug == "sysop"
+      apply_article_user_filters(query, hidden_uids, hidden_ap_ids, is_sysop)
+    end
+  end
+
+  defp apply_article_user_filters(query, hidden_uids, hidden_ap_ids, is_sysop) do
+    alias Baudrate.Setup.User, as: SetupUser
+    alias Baudrate.Setup.Role
+
+    query =
+      if hidden_uids != [] do
+        if is_sysop do
+          # In SysOp board: exempt admin-role users from hiding
+          from(a in query,
+            left_join: u in SetupUser,
+            on: u.id == a.user_id,
+            left_join: r in Role,
+            on: r.id == u.role_id,
+            where:
+              is_nil(a.user_id) or
+                a.user_id not in ^hidden_uids or
+                r.name == "admin"
+          )
+        else
+          from(a in query, where: is_nil(a.user_id) or a.user_id not in ^hidden_uids)
+        end
+      else
+        query
+      end
+
+    if hidden_ap_ids != [] do
+      from(a in query,
+        left_join: ra in assoc(a, :remote_actor),
+        as: :article_ra,
+        where: is_nil(a.remote_actor_id) or ra.ap_id not in ^hidden_ap_ids
       )
     else
       query
@@ -1006,7 +1077,7 @@ defmodule Baudrate.Content do
         order_by: [asc: c.inserted_at],
         preload: [:user, :remote_actor]
       )
-      |> apply_block_filters(blocked_uids, blocked_ap_ids)
+      |> apply_hidden_filters(blocked_uids, blocked_ap_ids)
 
     children = Repo.all(child_query)
 

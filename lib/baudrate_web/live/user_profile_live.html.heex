@@ -7,14 +7,36 @@
       <p class="text-sm text-base-content/70 mt-1">
         {gettext("Member since %{date}", date: Calendar.strftime(@profile_user.inserted_at, "%Y-%m-%d"))}
       </p>
-      <.link
-        :if={@current_user && @current_user.id != @profile_user.id}
-        navigate={~p"/messages/new?to=#{@profile_user.username}"}
-        class="btn btn-sm btn-outline mt-2"
-      >
-        <.icon name="hero-chat-bubble-left-right" class="size-4" />
-        {gettext("Message")}
-      </.link>
+      <div :if={@current_user && @current_user.id != @profile_user.id} class="flex gap-2 mt-2">
+        <.link
+          navigate={~p"/messages/new?to=#{@profile_user.username}"}
+          class="btn btn-sm btn-outline"
+        >
+          <.icon name="hero-chat-bubble-left-right" class="size-4" />
+          {gettext("Message")}
+        </.link>
+        <button
+          :if={!@is_muted}
+          type="button"
+          class="btn btn-sm btn-outline"
+          phx-click="mute_user"
+          data-confirm={gettext("Mute this user? Their content will be hidden from your view.")}
+          aria-label={gettext("Mute %{username}", username: @profile_user.username)}
+        >
+          <.icon name="hero-speaker-x-mark" class="size-4" />
+          {gettext("Mute")}
+        </button>
+        <button
+          :if={@is_muted}
+          type="button"
+          class="btn btn-sm btn-outline btn-warning"
+          phx-click="unmute_user"
+          aria-label={gettext("Unmute %{username}", username: @profile_user.username)}
+        >
+          <.icon name="hero-speaker-wave" class="size-4" />
+          {gettext("Unmute")}
+        </button>
+      </div>
     </div>
   </div>
 

@@ -23,7 +23,7 @@ lib/
 ├── baudrate/                    # Business logic (contexts)
 │   ├── application.ex           # Supervision tree
 │   ├── repo.ex                  # Ecto repository
-│   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars, invite codes, password reset, user blocks
+│   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars, invite codes, password reset, user blocks, user mutes
 │   ├── auth/
 │   │   ├── invite_code.ex       # InviteCode schema (invite-only registration)
 │   │   ├── login_attempt.ex     # LoginAttempt schema (per-account brute-force tracking)
@@ -31,6 +31,7 @@ lib/
 │   │   ├── session_cleaner.ex   # GenServer: hourly cleanup (sessions, login attempts, orphan images)
 │   │   ├── totp_vault.ex        # AES-256-GCM encryption for TOTP secrets
 │   │   ├── user_block.ex        # UserBlock schema (local + remote actor blocks)
+│   │   ├── user_mute.ex         # UserMute schema (local-only soft-mute/ignore)
 │   │   └── user_session.ex      # Ecto schema for server-side sessions
 │   ├── avatar.ex                # Avatar image processing (crop, resize, WebP)
 │   ├── content.ex               # Content context: boards, articles, comments, likes, user stats, revision tracking
@@ -594,8 +595,23 @@ and are communicated to remote instances via `Block` / `Undo(Block)` activities:
 - `Auth.block_user/2` / `Auth.unblock_user/2` — local user blocks
 - `Auth.block_remote_actor/2` / `Auth.unblock_remote_actor/2` — remote actor blocks
 - `Auth.blocked?/2` — check if blocked (works with local users and AP IDs)
-- `Content.list_comments_for_article/2` — optionally filters out comments from blocked users/actors when `current_user` is provided
+- Content filtering: blocked users' content is hidden from article listings, comments, and search results
 - Database: `user_blocks` table with partial unique indexes for local and remote blocks
+
+**User mutes:**
+
+Users can mute local users and remote actors. Muting is a lighter action than
+blocking — it hides content from the muter's view without preventing interaction
+or sending any federation activity. Mutes are purely local:
+
+- `Auth.mute_user/2` / `Auth.unmute_user/2` — local user mutes
+- `Auth.mute_remote_actor/2` / `Auth.unmute_remote_actor/2` — remote actor mutes
+- `Auth.muted?/2` — check if muted (works with local users and AP IDs)
+- Content filtering: muted users' content is combined with blocked users' content via `hidden_filters/1` and filtered from article listings, comments, and search results
+- SysOp board exemption: admin articles in the SysOp board (slug `"sysop"`) are never hidden, even if the admin is muted — this ensures system announcements are always visible
+- DM conversations with muted users are visually de-emphasized (reduced opacity, no unread badge) rather than hidden
+- Mute management: toggle on user profiles, manage list on `/profile` settings page
+- Database: `user_mutes` table with partial unique indexes for local and remote mutes
 
 **Authorized fetch mode:**
 

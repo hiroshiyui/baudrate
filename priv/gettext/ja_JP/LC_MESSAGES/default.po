@@ -419,14 +419,14 @@ msgid "Member Since"
 msgstr "登録日"
 
 #: lib/baudrate_web/live/board_live.html.heex:43
-#: lib/baudrate_web/live/user_profile_live.html.heex:62
+#: lib/baudrate_web/live/user_profile_live.html.heex:84
 #, elixir-autogen, elixir-format
 msgid "No articles yet."
 msgstr "まだ記事がありません。"
 
 #: lib/baudrate_web/components/layouts.ex:87
 #: lib/baudrate_web/components/layouts.ex:174
-#: lib/baudrate_web/live/profile_live.ex:40
+#: lib/baudrate_web/live/profile_live.ex:42
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Profile"
@@ -487,12 +487,12 @@ msgstr "これらのコードは再表示できません！"
 msgid "Are you sure you want to remove your avatar?"
 msgstr "アバターを削除してもよろしいですか？"
 
-#: lib/baudrate_web/live/profile_live.ex:183
+#: lib/baudrate_web/live/profile_live.ex:208
 #, elixir-autogen, elixir-format
 msgid "Avatar removed."
 msgstr "アバターを削除しました。"
 
-#: lib/baudrate_web/live/profile_live.ex:214
+#: lib/baudrate_web/live/profile_live.ex:239
 #, elixir-autogen, elixir-format
 msgid "Avatar updated successfully."
 msgstr "アバターを更新しました。"
@@ -515,18 +515,18 @@ msgstr "アバターを変更"
 msgid "Crop Avatar"
 msgstr "アバターを切り抜き"
 
-#: lib/baudrate_web/live/profile_live.ex:232
+#: lib/baudrate_web/live/profile_live.ex:257
 #, elixir-autogen, elixir-format
 msgid "Failed to process avatar image."
 msgstr "アバター画像の処理に失敗しました。"
 
-#: lib/baudrate_web/live/profile_live.ex:247
+#: lib/baudrate_web/live/profile_live.ex:272
 #, elixir-autogen, elixir-format
 msgid "Image file is too large."
 msgstr "画像ファイルが大きすぎます。"
 
-#: lib/baudrate_web/live/profile_live.ex:223
 #: lib/baudrate_web/live/profile_live.ex:248
+#: lib/baudrate_web/live/profile_live.ex:273
 #, elixir-autogen, elixir-format
 msgid "Invalid image file."
 msgstr "無効な画像ファイルです。"
@@ -543,18 +543,18 @@ msgstr "アバターを削除"
 msgid "Save"
 msgstr "保存"
 
-#: lib/baudrate_web/live/profile_live.ex:79
-#: lib/baudrate_web/live/profile_live.ex:189
+#: lib/baudrate_web/live/profile_live.ex:81
+#: lib/baudrate_web/live/profile_live.ex:214
 #, elixir-autogen, elixir-format
 msgid "Too many avatar changes. Please try again later."
 msgstr "アバターの変更回数が多すぎます。しばらくしてからもう一度お試しください。"
 
-#: lib/baudrate_web/live/profile_live.ex:249
+#: lib/baudrate_web/live/profile_live.ex:274
 #, elixir-autogen, elixir-format
 msgid "Too many files."
 msgstr "ファイル数が多すぎます。"
 
-#: lib/baudrate_web/live/profile_live.ex:250
+#: lib/baudrate_web/live/profile_live.ex:275
 #, elixir-autogen, elixir-format
 msgid "Upload error."
 msgstr "アップロードエラー。"
@@ -727,12 +727,12 @@ msgstr "%{author} による投稿"
 msgid "Add Language"
 msgstr "言語を追加"
 
-#: lib/baudrate_web/live/profile_live.ex:282
+#: lib/baudrate_web/live/profile_live.ex:307
 #, elixir-autogen, elixir-format
 msgid "Failed to update language preferences."
 msgstr "言語設定の更新に失敗しました。"
 
-#: lib/baudrate_web/live/profile_live.ex:277
+#: lib/baudrate_web/live/profile_live.ex:302
 #, elixir-autogen, elixir-format
 msgid "Language preferences updated."
 msgstr "言語設定を更新しました。"
@@ -1235,7 +1235,7 @@ msgstr "コメントを投稿しました。"
 
 #: lib/baudrate_web/live/article_live.html.heex:179
 #: lib/baudrate_web/live/search_live.html.heex:35
-#: lib/baudrate_web/live/user_profile_live.html.heex:27
+#: lib/baudrate_web/live/user_profile_live.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr "コメント"
@@ -1402,7 +1402,7 @@ msgstr "BAN済み"
 msgid "Board Management"
 msgstr "掲示板管理"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:178
+#: lib/baudrate_web/live/admin/boards_live.ex:182
 #, elixir-autogen, elixir-format
 msgid "Board created successfully."
 msgstr "掲示板を作成しました。"
@@ -1412,12 +1412,12 @@ msgstr "掲示板を作成しました。"
 msgid "Board deleted successfully."
 msgstr "掲示板を削除しました。"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:201
+#: lib/baudrate_web/live/admin/boards_live.ex:205
 #, elixir-autogen, elixir-format
 msgid "Board updated successfully."
 msgstr "掲示板を更新しました。"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:93
+#: lib/baudrate_web/live/admin/boards_live.ex:97
 #, elixir-autogen, elixir-format
 msgid "Cannot delete board that has articles."
 msgstr "記事がある掲示板は削除できません。"
@@ -1442,7 +1442,7 @@ msgstr "掲示板を編集"
 msgid "Failed to ban user."
 msgstr "ユーザーのBANに失敗しました。"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:100
+#: lib/baudrate_web/live/admin/boards_live.ex:104
 #, elixir-autogen, elixir-format
 msgid "Failed to delete board."
 msgstr "掲示板の削除に失敗しました。"
@@ -1611,7 +1611,7 @@ msgstr "ユーザー名で検索"
 msgid "You cannot ban yourself."
 msgstr "自分自身をBANすることはできません。"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:97
+#: lib/baudrate_web/live/admin/boards_live.ex:101
 #, elixir-autogen, elixir-format
 msgid "Cannot delete board that has sub-boards."
 msgstr "サブ掲示板がある掲示板は削除できません。"
@@ -1660,7 +1660,7 @@ msgstr "有効"
 
 #: lib/baudrate_web/components/layouts.ex:252
 #: lib/baudrate_web/live/admin/users_live.ex:282
-#: lib/baudrate_web/live/user_profile_live.ex:45
+#: lib/baudrate_web/live/user_profile_live.ex:83
 #, elixir-autogen, elixir-format
 msgid "admin"
 msgstr "管理者"
@@ -1672,14 +1672,14 @@ msgstr "BAN済み"
 
 #: lib/baudrate_web/components/layouts.ex:255
 #: lib/baudrate_web/live/admin/users_live.ex:285
-#: lib/baudrate_web/live/user_profile_live.ex:48
+#: lib/baudrate_web/live/user_profile_live.ex:86
 #, elixir-autogen, elixir-format
 msgid "guest"
 msgstr "ゲスト"
 
 #: lib/baudrate_web/components/layouts.ex:253
 #: lib/baudrate_web/live/admin/users_live.ex:283
-#: lib/baudrate_web/live/user_profile_live.ex:46
+#: lib/baudrate_web/live/user_profile_live.ex:84
 #, elixir-autogen, elixir-format
 msgid "moderator"
 msgstr "モデレーター"
@@ -1691,7 +1691,7 @@ msgstr "保留中"
 
 #: lib/baudrate_web/components/layouts.ex:254
 #: lib/baudrate_web/live/admin/users_live.ex:284
-#: lib/baudrate_web/live/user_profile_live.ex:47
+#: lib/baudrate_web/live/user_profile_live.ex:85
 #, elixir-autogen, elixir-format
 msgid "user"
 msgstr "ユーザー"
@@ -1717,7 +1717,7 @@ msgid "Approve User"
 msgstr "ユーザーを承認"
 
 #: lib/baudrate_web/live/search_live.html.heex:27
-#: lib/baudrate_web/live/user_profile_live.html.heex:23
+#: lib/baudrate_web/live/user_profile_live.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "Articles"
 msgstr "記事"
@@ -1859,7 +1859,7 @@ msgstr "招待コードはまだありません。"
 msgid "No moderation actions recorded."
 msgstr "モデレーション操作の記録はありません。"
 
-#: lib/baudrate_web/live/user_profile_live.html.heex:40
+#: lib/baudrate_web/live/user_profile_live.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Recent Articles"
 msgstr "最近の記事"
@@ -2061,12 +2061,12 @@ msgstr "リカバリーコードを今すぐ保存してください！"
 
 #: lib/baudrate_web/live/article_live.html.heex:110
 #: lib/baudrate_web/live/profile_live.html.heex:216
-#: lib/baudrate_web/live/user_profile_live.html.heex:33
+#: lib/baudrate_web/live/user_profile_live.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "Signature"
 msgstr "署名"
 
-#: lib/baudrate_web/live/profile_live.ex:150
+#: lib/baudrate_web/live/profile_live.ex:152
 #, elixir-autogen, elixir-format
 msgid "Signature updated."
 msgstr "署名を更新しました。"
@@ -2108,7 +2108,7 @@ msgstr "このコメントを削除してもよろしいですか？"
 msgid "Board Moderators"
 msgstr "掲示板モデレーター"
 
-#: lib/baudrate_web/live/admin/boards_live.ex:142
+#: lib/baudrate_web/live/admin/boards_live.ex:146
 #, elixir-autogen, elixir-format
 msgid "Failed to add moderator."
 msgstr "モデレーターの追加に失敗しました。"
@@ -2559,7 +2559,7 @@ msgstr ""
 msgid "Delete comment"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts/root.html.heex:17
+#: lib/baudrate_web/components/layouts/root.html.heex:25
 #, elixir-autogen, elixir-format
 msgid "Skip to main content"
 msgstr ""
@@ -2624,17 +2624,17 @@ msgstr "%{author} による投稿"
 msgid "Markdown preview"
 msgstr ""
 
-#: lib/baudrate_web/live/conversations_live.ex:74
+#: lib/baudrate_web/live/conversations_live.ex:97
 #, elixir-autogen, elixir-format
 msgid "%{count}d ago"
 msgstr ""
 
-#: lib/baudrate_web/live/conversations_live.ex:73
+#: lib/baudrate_web/live/conversations_live.ex:96
 #, elixir-autogen, elixir-format
 msgid "%{count}h ago"
 msgstr ""
 
-#: lib/baudrate_web/live/conversations_live.ex:72
+#: lib/baudrate_web/live/conversations_live.ex:95
 #, elixir-autogen, elixir-format
 msgid "%{count}m ago"
 msgstr ""
@@ -2654,7 +2654,7 @@ msgstr ""
 msgid "Conversation not found."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:165
+#: lib/baudrate_web/live/profile_live.ex:190
 #, elixir-autogen, elixir-format
 msgid "DM access setting updated."
 msgstr ""
@@ -2684,7 +2684,7 @@ msgstr ""
 msgid "Failed to send message."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:168
+#: lib/baudrate_web/live/profile_live.ex:193
 #, elixir-autogen, elixir-format
 msgid "Failed to update DM access setting."
 msgstr ""
@@ -2707,7 +2707,7 @@ msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:48
 #: lib/baudrate_web/components/layouts.ex:114
-#: lib/baudrate_web/live/conversations_live.ex:30
+#: lib/baudrate_web/live/conversations_live.ex:33
 #: lib/baudrate_web/live/conversations_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Messages"
@@ -2779,7 +2779,7 @@ msgstr ""
 msgid "You cannot send messages to this user."
 msgstr ""
 
-#: lib/baudrate_web/live/conversations_live.ex:71
+#: lib/baudrate_web/live/conversations_live.ex:94
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr ""
@@ -2835,4 +2835,62 @@ msgstr ""
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "Success"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/boards_live.ex:93
+#, elixir-autogen, elixir-format
+msgid "Cannot delete a protected system board."
+msgstr ""
+
+#: lib/baudrate_web/live/user_profile_live.ex:67
+#, elixir-autogen, elixir-format
+msgid "Failed to mute user."
+msgstr ""
+
+#: lib/baudrate_web/live/user_profile_live.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Mute"
+msgstr ""
+
+#: lib/baudrate_web/live/user_profile_live.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "Mute %{username}"
+msgstr ""
+
+#: lib/baudrate_web/live/user_profile_live.html.heex:23
+#, elixir-autogen, elixir-format
+msgid "Mute this user? Their content will be hidden from your view."
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex:240
+#, elixir-autogen, elixir-format
+msgid "Muted Users"
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex:242
+#, elixir-autogen, elixir-format
+msgid "No muted users."
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex:262
+#: lib/baudrate_web/live/profile_live.html.heex:264
+#: lib/baudrate_web/live/user_profile_live.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "Unmute"
+msgstr ""
+
+#: lib/baudrate_web/live/user_profile_live.html.heex:34
+#, elixir-autogen, elixir-format
+msgid "Unmute %{username}"
+msgstr ""
+
+#: lib/baudrate_web/live/user_profile_live.ex:64
+#, elixir-autogen, elixir-format
+msgid "User muted."
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.ex:176
+#: lib/baudrate_web/live/user_profile_live.ex:80
+#, elixir-autogen, elixir-format
+msgid "User unmuted."
 msgstr ""
