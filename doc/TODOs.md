@@ -4,13 +4,6 @@ Audit date: 2026-02-23
 
 ---
 
-## Medium: Federation (AP Spec Compliance)
-
-- [x] **Missing `cc` on outgoing activity wrappers** — Create, Announce, Update, Delete activities lack `cc` with followers collection, causing improper Mastodon delivery routing (`publisher.ex:37-151`)
-- [x] **30-second signature max age too strict** — Mastodon uses 12 hours; 30s rejects legitimate requests from servers with slight clock drift (`config.exs:60`)
-- [x] **Missing `id` validation on incoming activities** — `validate_activity` doesn't check for required `id` field (`validator.ex:54-66`)
-- [x] **Sequential delivery processing** — `DeliveryWorker` processes jobs one at a time; a batch of 50 slow targets could take 25 minutes; use `Task.async_stream` (`delivery_worker.ex:66-68`)
-
 ## Medium: Code Quality
 
 - [ ] **Extract duplicated helpers** — `parse_page/1` (6x), `password_strength/1` (3x), `upload_error_to_string/1` (4x), `translate_role/1` (3x), `participant_name/1` (2x), `schedule_federation_task/1` (2x); extract to shared modules
@@ -25,7 +18,7 @@ Audit date: 2026-02-23
 
 ## High: Accessibility (WAI-ARIA)
 
-- [ ] **Icon-only buttons missing `aria-label`** — locale up/down/remove buttons, conversation back link (`profile_live.html.heex:135-158`, `conversation_live.html.heex:3`)
+- [ ] **Icon-only buttons missing `aria-label`** — locale up/down/remove buttons (`profile_live.html.heex:135-158`)
 - [ ] **Navigation menus not wrapped in `<nav>` landmarks** — desktop/mobile nav `<ul>` menus, breadcrumbs missing `<nav aria-label>` (`layouts.ex:27,103`, `board_live.html.heex:2`)
 
 ## Medium: Accessibility (WAI-ARIA)
