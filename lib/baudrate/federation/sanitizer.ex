@@ -11,8 +11,9 @@ defmodule Baudrate.Federation.Sanitizer do
   `<span class="hashtag">`. These classes (plus `mention` and `invisible`)
   are preserved; all other class values are stripped.
 
-  `sanitize_display_name/1` strips HTML tags and control characters from
-  remote actor display names to prevent XSS and homograph attacks.
+  `sanitize_display_name/1` uses `HtmlSanitizeEx.strip_tags/1` to strip
+  HTML tags and a regex pass for control characters from remote actor
+  display names to prevent XSS and homograph attacks.
 
   Applied **before database storage**, not at render time.
   """
@@ -41,7 +42,7 @@ defmodule Baudrate.Federation.Sanitizer do
 
   def sanitize_display_name(name) when is_binary(name) do
     name
-    |> String.replace(~r/<[^>]*>/, "")
+    |> HtmlSanitizeEx.strip_tags()
     |> String.replace(~r/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/, "")
     |> String.trim()
     |> truncate_display_name(100)

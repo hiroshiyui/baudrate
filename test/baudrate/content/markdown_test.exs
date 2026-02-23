@@ -70,5 +70,30 @@ defmodule Baudrate.Content.MarkdownTest do
       refute html =~ "onclick"
       refute html =~ "evil"
     end
+
+    test "strips svg with onload event handler" do
+      html = Markdown.to_html(~s[<svg onload="alert(1)">content</svg>])
+      refute html =~ "svg"
+      refute html =~ "onload"
+      refute html =~ "alert"
+    end
+
+    test "strips svg with embedded script" do
+      html = Markdown.to_html("<svg><script>alert(1)</script></svg>")
+      refute html =~ "svg"
+      refute html =~ "script"
+      refute html =~ "alert"
+    end
+
+    test "strips math tags" do
+      html = Markdown.to_html(~s[<math><mi>x</mi></math>])
+      refute html =~ "math"
+    end
+
+    test "rejects data: URI scheme on links" do
+      scheme = "data"
+      html = Markdown.to_html(~s[<a href="#{scheme}:text/html,payload">click</a>])
+      refute html =~ scheme <> ":"
+    end
   end
 end

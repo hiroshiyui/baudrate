@@ -6,7 +6,7 @@ defmodule Baudrate.Federation.Sanitizer.Scrubber do
   `pre`, `blockquote`, `ul`, `ol`, `li`, `span`.
 
   Special rules:
-    * `<a>` — only `href` with http/https/relative schemes; forced
+    * `<a>` — only `href` with http/https schemes (no relative URLs); forced
       `rel="nofollow noopener noreferrer"`
     * `<span>` — only `class` with values in `h-card`, `hashtag`, `mention`,
       `invisible` (Mastodon microformat classes)
@@ -27,7 +27,7 @@ defmodule Baudrate.Federation.Sanitizer.Scrubber do
       {"href", href} ->
         uri = URI.parse(href)
 
-        if uri.scheme in [nil, "http", "https"] do
+        if uri.scheme in ["http", "https"] do
           {"a", [{"href", href}, {"rel", "nofollow noopener noreferrer"}], children}
         else
           children
@@ -86,6 +86,8 @@ defmodule Baudrate.Federation.Sanitizer.Scrubber do
   def scrub({"form", _attributes, _children}), do: ""
   def scrub({"input", _attributes, _children}), do: ""
   def scrub({"textarea", _attributes, _children}), do: ""
+  def scrub({"svg", _attributes, _children}), do: ""
+  def scrub({"math", _attributes, _children}), do: ""
 
   Meta.strip_everything_not_covered()
 end

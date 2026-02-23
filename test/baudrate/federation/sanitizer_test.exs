@@ -209,6 +209,49 @@ defmodule Baudrate.Federation.SanitizerTest do
       refute result =~ "evil"
       assert result =~ "ok.example"
     end
+
+    test "strips svg with onload event handler" do
+      html = ~s[<svg onload="alert(1)">content</svg>]
+      result = Sanitizer.sanitize(html)
+      refute result =~ "svg"
+      refute result =~ "onload"
+      refute result =~ "alert"
+    end
+
+    test "strips svg with embedded script" do
+      html = "<svg><script>alert(1)</script></svg>"
+      result = Sanitizer.sanitize(html)
+      refute result =~ "svg"
+      refute result =~ "script"
+      refute result =~ "alert"
+    end
+
+    test "strips math tags" do
+      html = ~s[<math><mi>x</mi></math>]
+      result = Sanitizer.sanitize(html)
+      refute result =~ "math"
+    end
+
+    test "rejects data: URI scheme on links" do
+      scheme = "data"
+      html = ~s[<a href="#{scheme}:text/html,payload">click</a>]
+      result = Sanitizer.sanitize(html)
+      refute result =~ scheme <> ":"
+    end
+
+    test "rejects relative URLs in federation content" do
+      html = ~s[<a href="/admin/settings">settings</a>]
+      result = Sanitizer.sanitize(html)
+      refute result =~ "href"
+      assert result =~ "settings"
+    end
+
+    test "rejects encoded javascript: URI via HTML entities" do
+      html = ~s[<a href="&#106;avascript:alert(1)">click</a>]
+      result = Sanitizer.sanitize(html)
+      refute result =~ "javascript"
+      refute result =~ "alert"
+    end
   end
 
   describe "sanitize_display_name/1" do

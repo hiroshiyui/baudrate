@@ -106,6 +106,8 @@ defmodule Baudrate.Content.Markdown.Scrubber do
   def scrub({"form", _attributes, _children}), do: ""
   def scrub({"input", _attributes, _children}), do: ""
   def scrub({"textarea", _attributes, _children}), do: ""
+  def scrub({"svg", _attributes, _children}), do: ""
+  def scrub({"math", _attributes, _children}), do: ""
 
   Meta.strip_everything_not_covered()
 end
