@@ -876,6 +876,19 @@ defmodule Baudrate.Auth do
     from(s in UserSession, where: s.expires_at < ^now) |> Repo.delete_all()
   end
 
+  # --- DM Access ---
+
+  @doc """
+  Updates a user's DM access preference.
+
+  Valid values: `"anyone"`, `"followers"`, `"nobody"`.
+  """
+  def update_dm_access(user, value) when is_binary(value) do
+    user
+    |> User.dm_access_changeset(%{dm_access: value})
+    |> Repo.update()
+  end
+
   # --- User Blocks ---
 
   @doc """

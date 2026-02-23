@@ -44,6 +44,9 @@ defmodule BaudrateWeb.Layouts do
             <li>
               <.link navigate="/search">{gettext("Search")}</.link>
             </li>
+            <li>
+              <.link navigate="/messages">{gettext("Messages")}</.link>
+            </li>
             <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
             <li :if={@current_user.role.name == "admin"} class="menu-title">
               {gettext("Admin")}
@@ -103,6 +106,9 @@ defmodule BaudrateWeb.Layouts do
           </li>
           <li>
             <.link navigate="/search" class="btn btn-ghost">{gettext("Search")}</.link>
+          </li>
+          <li>
+            <.link navigate="/messages" class="btn btn-ghost">{gettext("Messages")}</.link>
           </li>
         </ul>
       </div>

@@ -39,6 +39,11 @@ defmodule Baudrate.Setup.User do
     * `preferred_locales` — ordered list of locale codes (e.g. `["zh_TW", "en"]`).
       When non-empty, the first matching known Gettext locale is used instead of
       the browser's `Accept-Language` header. Validated by `locale_changeset/2`.
+
+  ## Direct Message Access
+
+    * `dm_access` — controls who can send DMs to this user:
+      `"anyone"` (default), `"followers"` (AP followers only), or `"nobody"`.
   """
 
   use Ecto.Schema
@@ -57,6 +62,7 @@ defmodule Baudrate.Setup.User do
     field :ap_public_key, :string
     field :ap_private_key_encrypted, :binary
     field :signature, :string
+    field :dm_access, :string, default: "anyone"
 
     belongs_to :role, Baudrate.Setup.Role
 
@@ -188,6 +194,13 @@ defmodule Baudrate.Setup.User do
         [preferred_locales: "contains unknown locales: #{Enum.join(invalid, ", ")}"]
       end
     end)
+  end
+
+  def dm_access_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:dm_access])
+    |> validate_required([:dm_access])
+    |> validate_inclusion(:dm_access, ["anyone", "followers", "nobody"])
   end
 
   defp hash_password(changeset) do

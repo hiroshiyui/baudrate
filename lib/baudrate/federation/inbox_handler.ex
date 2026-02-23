@@ -7,7 +7,9 @@ defmodule Baudrate.Federation.InboxHandler do
     * `Undo(Follow)` — remove follower record
     * `Undo(Like)` — remove article like
     * `Undo(Announce)` — remove announce record
-    * `Create(Note)` — store as remote comment (if `inReplyTo` matches local article)
+    * `Create(Note)` — store as remote comment (if `inReplyTo` matches local article),
+      or as a direct message (if privately addressed to a local user)
+    * `Create(Note) as DM` — private note addressed only to a local user (no public/followers)
     * `Create(Article)` — store as remote article in target board
     * `Create(Page)` — treat as `Create(Article)` (Lemmy interop)
     * `Like` — create article like for target article
@@ -33,6 +35,7 @@ defmodule Baudrate.Federation.InboxHandler do
   alias Baudrate.Content
   alias Baudrate.Federation
   alias Baudrate.Federation.{ActorResolver, Delivery, Sanitizer, Validator}
+  alias Baudrate.Messaging
 
   @doc """
   Handles an incoming activity from a verified remote actor.
@@ -111,38 +114,17 @@ defmodule Baudrate.Federation.InboxHandler do
     :ok
   end
 
-  # --- Create(Note) — comment on a local article ---
+  # --- Create(Note) — DM or comment on a local article ---
 
   defp dispatch(
          %{"type" => "Create", "object" => %{"type" => "Note"} = object},
          remote_actor,
          _target
        ) do
-    with :ok <- validate_attribution_match(object, remote_actor),
-         {:ok, body, body_html} <- sanitize_content(object),
-         {:ok, article, parent_id} <- resolve_reply_target(object) do
-      ap_id = object["id"]
-
-      # Idempotency: if comment with this ap_id already exists, return :ok
-      if is_binary(ap_id) && Content.get_comment_by_ap_id(ap_id) do
-        :ok
-      else
-        case Content.create_remote_comment(%{
-               body: body,
-               body_html: body_html,
-               ap_id: ap_id,
-               article_id: article.id,
-               parent_id: parent_id,
-               remote_actor_id: remote_actor.id
-             }) do
-          {:ok, _comment} ->
-            Logger.info("federation.activity: type=Create(Note) ap_id=#{ap_id}")
-            :ok
-
-          {:error, %Ecto.Changeset{} = changeset} ->
-            if has_unique_error?(changeset), do: :ok, else: {:error, :create_comment_failed}
-        end
-      end
+    if direct_message?(object) do
+      handle_incoming_dm(object, remote_actor)
+    else
+      handle_create_note_comment(object, remote_actor)
     end
   end
 
@@ -315,6 +297,17 @@ defmodule Baudrate.Federation.InboxHandler do
     handle_delete_content(object_uri, remote_actor)
   end
 
+  # --- Delete (content deletion: object is a Tombstone map) ---
+
+  defp dispatch(
+         %{"type" => "Delete", "actor" => _actor_uri, "object" => %{"id" => object_uri}},
+         remote_actor,
+         _target
+       )
+       when is_binary(object_uri) do
+    handle_delete_content(object_uri, remote_actor)
+  end
+
   # --- Block (remote actor blocking a local user) ---
 
   defp dispatch(%{"type" => "Block", "object" => object_uri} = _activity, remote_actor, _target)
@@ -417,7 +410,7 @@ defmodule Baudrate.Federation.InboxHandler do
   # --- Delete helpers ---
 
   defp handle_delete_content(object_uri, remote_actor) do
-    # Try article first, then comment
+    # Try article first, then comment, then direct message
     cond do
       article = Content.get_article_by_ap_id(object_uri) ->
         if article.remote_actor_id == remote_actor.id do
@@ -437,9 +430,134 @@ defmodule Baudrate.Federation.InboxHandler do
           {:error, :unauthorized}
         end
 
+      dm = Messaging.get_message_by_ap_id(object_uri) ->
+        if dm.sender_remote_actor_id == remote_actor.id do
+          dm
+          |> Baudrate.Messaging.DirectMessage.soft_delete_changeset()
+          |> Baudrate.Repo.update()
+
+          Logger.info("federation.activity: type=Delete(DM) ap_id=#{object_uri}")
+          :ok
+        else
+          {:error, :unauthorized}
+        end
+
       true ->
         # Content not found — might have been deleted already
         :ok
+    end
+  end
+
+  # --- Create(Note) comment helper ---
+
+  defp handle_create_note_comment(object, remote_actor) do
+    with :ok <- validate_attribution_match(object, remote_actor),
+         {:ok, body, body_html} <- sanitize_content(object),
+         {:ok, article, parent_id} <- resolve_reply_target(object) do
+      ap_id = object["id"]
+
+      # Idempotency: if comment with this ap_id already exists, return :ok
+      if is_binary(ap_id) && Content.get_comment_by_ap_id(ap_id) do
+        :ok
+      else
+        case Content.create_remote_comment(%{
+               body: body,
+               body_html: body_html,
+               ap_id: ap_id,
+               article_id: article.id,
+               parent_id: parent_id,
+               remote_actor_id: remote_actor.id
+             }) do
+          {:ok, _comment} ->
+            Logger.info("federation.activity: type=Create(Note) ap_id=#{ap_id}")
+            :ok
+
+          {:error, %Ecto.Changeset{} = changeset} ->
+            if has_unique_error?(changeset), do: :ok, else: {:error, :create_comment_failed}
+        end
+      end
+    end
+  end
+
+  # --- Direct Message helpers ---
+
+  # A Note is considered a DM when it has no public or followers-collection
+  # addresses and is directed to at least one local user actor URI.
+  defp direct_message?(object) do
+    to = List.wrap(object["to"])
+    cc = List.wrap(object["cc"])
+    all_addrs = to ++ cc
+
+    no_public = "https://www.w3.org/ns/activitystreams#Public" not in all_addrs
+    no_followers = Enum.all?(all_addrs, fn uri -> !String.ends_with?(uri, "/followers") end)
+    has_local_recipient = Enum.any?(to, &local_user_uri?/1)
+
+    no_public && no_followers && has_local_recipient
+  end
+
+  defp local_user_uri?(uri) when is_binary(uri) do
+    base = Federation.base_url()
+    String.starts_with?(uri, "#{base}/ap/users/")
+  end
+
+  defp local_user_uri?(_), do: false
+
+  defp handle_incoming_dm(object, remote_actor) do
+    with :ok <- validate_attribution_match(object, remote_actor),
+         {:ok, body, body_html} <- sanitize_content(object),
+         {:ok, local_user} <- resolve_dm_recipient(object),
+         :ok <- check_dm_permission(local_user, remote_actor) do
+      ap_id = object["id"]
+
+      # Idempotency check
+      if is_binary(ap_id) && Messaging.get_message_by_ap_id(ap_id) do
+        :ok
+      else
+        case Messaging.receive_remote_dm(local_user, remote_actor, %{
+               body: body,
+               body_html: body_html,
+               ap_id: ap_id,
+               ap_in_reply_to: object["inReplyTo"]
+             }) do
+          {:ok, _message} ->
+            Logger.info("federation.activity: type=Create(Note/DM) ap_id=#{ap_id}")
+            :ok
+
+          {:error, %Ecto.Changeset{} = changeset} ->
+            if has_unique_error?(changeset), do: :ok, else: {:error, :create_dm_failed}
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+      end
+    end
+  end
+
+  defp resolve_dm_recipient(object) do
+    base = Federation.base_url()
+    prefix = "#{base}/ap/users/"
+
+    to_list = List.wrap(object["to"])
+
+    local_uri = Enum.find(to_list, fn uri -> is_binary(uri) && String.starts_with?(uri, prefix) end)
+
+    if local_uri do
+      username = String.replace_prefix(local_uri, prefix, "")
+
+      case Baudrate.Auth.get_user_by_username(username) do
+        %{status: "active"} = user -> {:ok, user}
+        _ -> {:error, :recipient_not_found}
+      end
+    else
+      {:error, :recipient_not_found}
+    end
+  end
+
+  defp check_dm_permission(local_user, remote_actor) do
+    if Messaging.can_receive_remote_dm?(local_user, remote_actor) do
+      :ok
+    else
+      {:error, :dm_rejected}
     end
   end
 

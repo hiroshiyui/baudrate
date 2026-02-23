@@ -154,6 +154,21 @@ defmodule BaudrateWeb.ProfileLive do
     end
   end
 
+  def handle_event("update_dm_access", %{"dm_access" => value}, socket) do
+    user = socket.assigns.current_user
+
+    case Auth.update_dm_access(user, value) do
+      {:ok, updated_user} ->
+        {:noreply,
+         socket
+         |> assign(:current_user, updated_user)
+         |> put_flash(:info, gettext("DM access setting updated."))}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update DM access setting."))}
+    end
+  end
+
   def handle_event("remove_avatar", _params, socket) do
     user = socket.assigns.current_user
 

@@ -187,6 +187,30 @@
         <% end %>
       </div>
 
+      <%!-- DM access setting --%>
+      <div>
+        <div class="text-sm text-base-content/70 mb-2">{gettext("Direct Messages")}</div>
+        <select
+          name="dm_access"
+          class="select select-bordered w-full max-w-xs"
+          phx-change="update_dm_access"
+          aria-label={gettext("Who can send you direct messages")}
+        >
+          <option value="anyone" selected={@current_user.dm_access == "anyone"}>
+            {gettext("Anyone")}
+          </option>
+          <option value="followers" selected={@current_user.dm_access == "followers"}>
+            {gettext("Followers only")}
+          </option>
+          <option value="nobody" selected={@current_user.dm_access == "nobody"}>
+            {gettext("Nobody")}
+          </option>
+        </select>
+        <p class="text-sm text-base-content/50 mt-1">
+          {gettext("Controls who can send you direct messages.")}
+        </p>
+      </div>
+
       <%!-- Signature section --%>
       <div>
         <div class="text-sm text-base-content/70 mb-2">{gettext("Signature")}</div>

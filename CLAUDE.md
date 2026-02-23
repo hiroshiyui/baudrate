@@ -37,6 +37,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - **Auth** (`lib/baudrate/auth.ex`) — login, registration, TOTP, sessions, avatars, invite codes, password reset
 - **Content** (`lib/baudrate/content.ex`) — boards, articles, comments, likes, permissions, board moderators, search
 - **Federation** (`lib/baudrate/federation.ex`) — AP actors, outbox, followers, announces, delivery
+- **Messaging** (`lib/baudrate/messaging.ex`) — 1-on-1 direct messages, conversations, DM access control, federation
 - **Setup** (`lib/baudrate/setup.ex`) — first-run wizard, RBAC seeding, settings, role level utilities
 - **Moderation** (`lib/baudrate/moderation.ex`) — reports, resolve/dismiss, audit log
 
@@ -110,6 +111,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 | `lib/baudrate/auth.ex` | Auth context: login, registration, TOTP, sessions |
 | `lib/baudrate/content.ex` | Content context: boards, articles, comments, permissions |
 | `lib/baudrate/federation.ex` | Federation context: actors, outbox, followers |
+| `lib/baudrate/messaging.ex` | Messaging context: DMs, conversations, read cursors |
 | `lib/baudrate/setup.ex` | Setup context: roles, settings, role level utilities |
 | `lib/baudrate/moderation.ex` | Moderation context: reports, audit log |
 | `lib/baudrate_web/live/auth_hooks.ex` | LiveView auth on_mount hooks |

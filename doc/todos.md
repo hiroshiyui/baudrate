@@ -116,7 +116,7 @@ incompatible with LiveView's DOM patching model).
 
 ## Someday / Maybe
 
-- [ ] Private messaging / DMs (user-to-user, possibly via AP)
+- [x] **Private messaging / DMs** — 1-on-1 direct messages (local + federated via AP `Create(Note)` with restricted addressing); per-user DM access setting (anyone/followers/nobody); real-time PubSub; rate-limited (20/min)
 - [ ] Email notification system (currently no email field in User schema — by design)
 - [ ] Two-way visibility blocking (blocked users can still see public content)
 - [ ] Per-user rate limits on authenticated endpoints (currently IP-only)

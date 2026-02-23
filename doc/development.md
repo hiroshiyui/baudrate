@@ -47,6 +47,12 @@ lib/
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
 │   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark)
 │   │   └── pubsub.ex            # PubSub helpers for real-time content updates
+│   ├── messaging.ex             # Messaging context: 1-on-1 DMs, conversations, DM access control
+│   ├── messaging/
+│   │   ├── conversation.ex      # Conversation schema (local-local and local-remote)
+│   │   ├── conversation_read_cursor.ex # Per-user read position tracking
+│   │   ├── direct_message.ex    # DirectMessage schema (local + remote, soft-delete)
+│   │   └── pubsub.ex            # PubSub helpers for real-time DM updates
 │   ├── federation.ex            # Federation context: actors, outbox, followers, announces, key rotation
 │   ├── federation/
 │   │   ├── actor_resolver.ex    # Remote actor fetching and caching (24h TTL, signed fetch fallback)
@@ -105,6 +111,8 @@ lib/
 │   │   ├── article_new_live.ex  # Article creation form
 │   │   ├── auth_hooks.ex        # on_mount hooks: require_auth, optional_auth, etc.
 │   │   ├── board_live.ex        # Board view with article listing
+│   │   ├── conversation_live.ex # Single DM conversation thread view
+│   │   ├── conversations_live.ex # DM conversation list
 │   │   ├── home_live.ex         # Home page (board listing, public for guests)
 │   │   ├── login_live.ex        # Login form (phx-trigger-action pattern)
 │   │   ├── password_reset_live.ex  # Password reset via recovery codes
@@ -385,6 +393,69 @@ comment counts, and a list of recent articles. Author names in board listings
 and article views are clickable links to the author's profile. Banned or
 nonexistent users are redirected away.
 
+### Direct Messages
+
+1-on-1 direct messaging between users, federated via ActivityPub. DMs are
+standard AP `Create(Note)` activities with restricted addressing (only the
+recipient in `to`, no `as:Public`, no followers collection).
+
+**Database tables:**
+
+| Table | Purpose |
+|-------|---------|
+| `conversations` | 1-on-1 conversations with canonical participant ordering |
+| `direct_messages` | Message bodies (local + remote), soft-delete via `deleted_at` |
+| `conversation_read_cursors` | Per-user read position tracking |
+
+**DM access control:**
+
+Users set `dm_access` on their profile (`/profile`):
+
+| Setting | Effect |
+|---------|--------|
+| `anyone` (default) | Any authenticated user or remote actor can DM |
+| `followers` | Only AP followers can DM |
+| `nobody` | DMs are disabled entirely |
+
+Bidirectional blocks (via `Auth.blocked?/2`) are always enforced regardless of
+the `dm_access` setting.
+
+**Key functions in `Messaging`:**
+
+- `can_send_dm?/2` — checks dm_access, blocks, status
+- `find_or_create_conversation/2` — canonical ordering prevents duplicates
+- `create_message/3` — creates message, broadcasts PubSub, schedules federation
+- `receive_remote_dm/3` — handles incoming federated DMs
+- `list_conversations/1` — ordered by `last_message_at` desc
+- `unread_count/1` — counts unread across all conversations
+- `soft_delete_message/2` — sender-only deletion, schedules AP Delete
+- `mark_conversation_read/3` — upserts read cursor
+
+**Real-time updates via PubSub:**
+
+| Topic | Format | Events |
+|-------|--------|--------|
+| User | `"dm:user:<user_id>"` | `:dm_received`, `:dm_message_created` |
+| Conversation | `"dm:conversation:<conversation_id>"` | `:dm_message_created`, `:dm_message_deleted` |
+
+**Federation:**
+
+- Outgoing DMs: `Publisher.build_create_dm/3` → `Delivery.enqueue/3` to
+  recipient's personal inbox (not shared inbox, for privacy)
+- Incoming DMs: `InboxHandler` detects DMs via restricted addressing
+  (`direct_message?/1`) and routes to `Messaging.receive_remote_dm/3`
+- DM deletion: `Publisher.build_delete_dm/3` sends `Delete(Tombstone)`
+
+**Rate limiting:** 20 messages per minute per user (via Hammer in LiveView).
+
+**UI routes:**
+
+| Route | LiveView | Purpose |
+|-------|----------|---------|
+| `/messages` | `ConversationsLive` | Conversation list with unread badges |
+| `/messages/new?to=username` | `ConversationLive` | New conversation |
+| `/messages/:id` | `ConversationLive` | Existing conversation thread |
+
 ### Moderation
 
 The moderation system includes a content reporting queue (`/admin/moderation`)
@@ -430,7 +501,7 @@ The `Baudrate.Federation` context handles all federation logic.
 
 **Incoming activities handled** (via `InboxHandler`):
 - `Follow` / `Undo(Follow)` — follower management with auto-accept
-- `Create(Note)` — stored as threaded comments on local articles
+- `Create(Note)` — stored as threaded comments on local articles, or as DMs if privately addressed (no `as:Public`, no followers collection)
 - `Create(Article)` / `Create(Page)` — stored as remote articles in target boards (Page for Lemmy interop)
 - `Like` / `Undo(Like)` — article favorites
 - `Announce` / `Undo(Announce)` — boosts/shares (bare URI or embedded object map)
@@ -445,6 +516,8 @@ The `Baudrate.Federation` context handles all federation logic.
 - `Delete` with `Tombstone` — enqueued when an article is soft-deleted
 - `Announce` — board actor announces articles to board followers
 - `Update(Article)` — enqueued when a local article is edited
+- `Create(Note)` — DM to remote actor, delivered to personal inbox (not shared inbox) for privacy
+- `Delete(Tombstone)` — DM deletion, delivered to remote recipient's personal inbox
 - `Block` / `Undo(Block)` — delivered to the blocked actor's inbox when a user blocks/unblocks a remote actor
 - `Update(Person/Group/Organization)` — distributed to followers on key rotation or profile changes
 - Delivery targets: followers of the article's author + followers of all public boards
@@ -646,6 +719,7 @@ ActivityPubController (dispatch to InboxHandler)
 | Avatar upload | 5 / hour | per user |
 | AP endpoints | 120 / min | per IP |
 | AP inbox | 60 / min | per remote domain |
+| Direct messages | 20 / min | per user |
 
 ### Supervision Tree
 
@@ -674,6 +748,8 @@ encapsulates topic naming and broadcast logic.
 |-------|--------|--------|
 | Board | `"board:<board_id>"` | `:article_created`, `:article_deleted`, `:article_updated`, `:article_pinned`, `:article_unpinned`, `:article_locked`, `:article_unlocked` |
 | Article | `"article:<article_id>"` | `:comment_created`, `:comment_deleted`, `:article_deleted`, `:article_updated` |
+| DM User | `"dm:user:<user_id>"` | `:dm_received`, `:dm_message_created` |
+| DM Conversation | `"dm:conversation:<conversation_id>"` | `:dm_message_created`, `:dm_message_deleted` |
 
 **Message format:** `{event_atom, %{id_key: id}}` — only IDs are broadcast,
 no user content. Subscribers re-fetch data from the database to respect
@@ -698,6 +774,8 @@ end
 |----------|-------|----------|
 | `BoardLive` | `board:<id>` | Re-fetches article list on article mutations |
 | `ArticleLive` | `article:<id>` | Re-fetches comment tree on comment mutations; redirects on article deletion; re-fetches article on update |
+| `ConversationsLive` | `dm:user:<id>` | Re-fetches conversation list on DM events |
+| `ConversationLive` | `dm:conversation:<id>` | Appends new messages, removes deleted messages |
 
 **Design decisions:**
 - Re-fetch on broadcast (not incremental patching) — simpler, always correct, respects access controls
@@ -710,6 +788,13 @@ end
 
 Handles client-side image cropping for avatar uploads. Attached to the crop
 container on the profile page.
+
+### `ScrollBottomHook`
+
+Auto-scrolls the DM message list to the bottom on mount and when new messages
+are added. Attached to the message container in `ConversationLive`.
+
+Source: `assets/js/scroll_bottom_hook.js`
 
 ### `MarkdownToolbarHook`
 

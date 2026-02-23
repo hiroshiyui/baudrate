@@ -7,6 +7,14 @@
       <p class="text-sm text-base-content/70 mt-1">
         {gettext("Member since %{date}", date: Calendar.strftime(@profile_user.inserted_at, "%Y-%m-%d"))}
       </p>
+      <.link
+        :if={@current_user && @current_user.id != @profile_user.id}
+        navigate={~p"/messages/new?to=#{@profile_user.username}"}
+        class="btn btn-sm btn-outline mt-2"
+      >
+        <.icon name="hero-chat-bubble-left-right" class="size-4" />
+        {gettext("Message")}
+      </.link>
     </div>
   </div>
 
