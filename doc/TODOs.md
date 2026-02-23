@@ -18,14 +18,6 @@ Audit date: 2026-02-23
 
 ## Test Coverage (77% → 90% target)
 
-### Untested Security-Critical Modules (0% coverage)
-
-- [ ] **`Sanitizer.Native`** — `sanitize_markdown/1` and `strip_tags/1` NIFs untested; only `sanitize_federation/1` is covered indirectly via `Federation.SanitizerTest`
-- [ ] **`VerifyHTTPSignature` plug** — sole authentication gate for all inbound federation
-- [ ] **`AttachmentStorage`** — file upload security (magic bytes, re-encoding)
-- [ ] **`CacheBody` plug** — body caching for digest verification
-- [ ] **`RateLimitDomain` plug** — domain-level federation abuse protection
-
 ### Modules Below 50% Coverage
 
 - [ ] **`ProfileLive`** (23%) — locale management, unmute, DM access, remove_avatar
