@@ -16,13 +16,6 @@ Audit date: 2026-02-23
 - [ ] **`PendingUsersLive` approve crashes on nil user** — `Auth.get_user/1` return not checked (`pending_users_live.ex:22-24`)
 - [ ] **Missing unique index on `settings.key`** — no index for frequently queried field
 
-## Medium: Accessibility (WAI-ARIA)
-
-- [ ] **Pagination component** — missing `<nav>` wrapper, `aria-current="page"`, and `aria-label` on prev/next buttons (`core_components.ex:541-578`)
-- [ ] **Password strength indicators** — `<progress>` missing `aria-label`/`aria-valuetext`; requirement icons use color-only differentiation (`register_live.html.heex:146`, `setup_live.html.heex:211`)
-- [ ] **Dropdown menus missing `aria-expanded`** — have `aria-haspopup` but no expanded state (`layouts.ex:31`, `profile_live.html.heex:170`)
-- [ ] **Form inputs missing labels** — resolution note input and moderator select lack `aria-label` or `<label>` (`moderation_live.html.heex:127`, `boards_live.html.heex:130`)
-
 ## Test Coverage (77% → 90% target)
 
 ### Untested Security-Critical Modules (0% coverage)

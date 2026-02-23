@@ -170,7 +170,7 @@
           Enum.reject(@available_locales, fn {code, _} -> code in @preferred_locales end) %>
         <%= if unselected != [] do %>
           <div class="dropdown mt-2">
-            <div tabindex="0" role="button" aria-haspopup="true" class="btn btn-sm btn-outline">
+            <div tabindex="0" role="button" aria-haspopup="true" aria-expanded="false" class="btn btn-sm btn-outline">
               {gettext("Add Language")}
             </div>
             <ul

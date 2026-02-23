@@ -127,7 +127,7 @@
       <div class="mt-4">
         <h3 class="text-sm font-semibold mb-2">{gettext("Add Moderator")}</h3>
         <form phx-submit="add_moderator" class="flex gap-2">
-          <select name="user_id" class="select select-bordered select-sm flex-1" required>
+          <select name="user_id" class="select select-bordered select-sm flex-1" required aria-label={gettext("Select moderator")}>
             <option value="">{gettext("Select a user...")}</option>
             <%= for user <- @active_users,
                     not Enum.any?(@board_moderators, &(&1.user.id == user.id)) do %>

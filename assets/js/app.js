@@ -71,6 +71,26 @@ window.addEventListener("storage", (e) => {
   if (e.key === FONT_SIZE_KEY) setFontSize(e.newValue || 100)
 })
 
+// Sync aria-expanded with DaisyUI dropdown focus state
+document.addEventListener("focusin", (e) => {
+  const dropdown = e.target.closest(".dropdown")
+  if (dropdown) {
+    const trigger = dropdown.querySelector("[aria-haspopup]")
+    if (trigger) trigger.setAttribute("aria-expanded", "true")
+  }
+})
+document.addEventListener("focusout", (e) => {
+  const dropdown = e.target.closest(".dropdown")
+  if (dropdown) {
+    setTimeout(() => {
+      if (!dropdown.contains(document.activeElement)) {
+        const trigger = dropdown.querySelector("[aria-haspopup]")
+        if (trigger) trigger.setAttribute("aria-expanded", "false")
+      }
+    }, 0)
+  }
+})
+
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))

@@ -469,10 +469,11 @@ defmodule BaudrateWeb.CoreComponents do
   """
   attr :name, :string, required: true
   attr :class, :any, default: "size-4"
+  attr :rest, :global
 
   def icon(%{name: "hero-" <> _} = assigns) do
     ~H"""
-    <span class={[@name, @class]} />
+    <span class={[@name, @class]} {@rest} />
     """
   end
 
@@ -542,38 +543,41 @@ defmodule BaudrateWeb.CoreComponents do
     assigns = assign(assigns, :page_range, pagination_range(assigns.page, assigns.total_pages))
 
     ~H"""
-    <div :if={@total_pages > 1} class="flex justify-center mt-6">
+    <nav :if={@total_pages > 1} aria-label={gettext("Pagination")} class="flex justify-center mt-6">
       <div class="join">
         <.link
           :if={@page > 1}
           patch={"#{@path}?#{URI.encode_query(Map.put(@params, "page", @page - 1))}"}
           class="join-item btn btn-sm"
+          aria-label={gettext("Previous page")}
         >
           &laquo;
         </.link>
-        <span :if={@page <= 1} class="join-item btn btn-sm btn-disabled">&laquo;</span>
+        <span :if={@page <= 1} class="join-item btn btn-sm btn-disabled" aria-label={gettext("Previous page")}>&laquo;</span>
 
         <%= for p <- @page_range do %>
           <.link
             :if={p != @page}
             patch={"#{@path}?#{URI.encode_query(Map.put(@params, "page", p))}"}
             class="join-item btn btn-sm"
+            aria-label={gettext("Page %{number}", number: p)}
           >
             {p}
           </.link>
-          <span :if={p == @page} class="join-item btn btn-sm btn-active">{p}</span>
+          <span :if={p == @page} class="join-item btn btn-sm btn-active" aria-current="page" aria-label={gettext("Page %{number}", number: p)}>{p}</span>
         <% end %>
 
         <.link
           :if={@page < @total_pages}
           patch={"#{@path}?#{URI.encode_query(Map.put(@params, "page", @page + 1))}"}
           class="join-item btn btn-sm"
+          aria-label={gettext("Next page")}
         >
           &raquo;
         </.link>
-        <span :if={@page >= @total_pages} class="join-item btn btn-sm btn-disabled">&raquo;</span>
+        <span :if={@page >= @total_pages} class="join-item btn btn-sm btn-disabled" aria-label={gettext("Next page")}>&raquo;</span>
       </div>
-    </div>
+    </nav>
     """
   end
 

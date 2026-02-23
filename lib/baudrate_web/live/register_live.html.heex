@@ -82,7 +82,9 @@
                 "size-4",
                 if(@password_strength.length, do: "text-success", else: "text-error")
               ]}
+              aria-hidden="true"
             />
+            <span class="sr-only">{if @password_strength.length, do: gettext("Met:"), else: gettext("Not met:")}</span>
             {gettext("At least 12 characters")}
           </li>
           <li class="flex items-center gap-1.5">
@@ -96,7 +98,9 @@
                 "size-4",
                 if(@password_strength.lowercase, do: "text-success", else: "text-error")
               ]}
+              aria-hidden="true"
             />
+            <span class="sr-only">{if @password_strength.lowercase, do: gettext("Met:"), else: gettext("Not met:")}</span>
             {gettext("Contains a lowercase letter")}
           </li>
           <li class="flex items-center gap-1.5">
@@ -110,7 +114,9 @@
                 "size-4",
                 if(@password_strength.uppercase, do: "text-success", else: "text-error")
               ]}
+              aria-hidden="true"
             />
+            <span class="sr-only">{if @password_strength.uppercase, do: gettext("Met:"), else: gettext("Not met:")}</span>
             {gettext("Contains an uppercase letter")}
           </li>
           <li class="flex items-center gap-1.5">
@@ -124,7 +130,9 @@
                 "size-4",
                 if(@password_strength.digit, do: "text-success", else: "text-error")
               ]}
+              aria-hidden="true"
             />
+            <span class="sr-only">{if @password_strength.digit, do: gettext("Met:"), else: gettext("Not met:")}</span>
             {gettext("Contains a digit")}
           </li>
           <li class="flex items-center gap-1.5">
@@ -138,7 +146,9 @@
                 "size-4",
                 if(@password_strength.special, do: "text-success", else: "text-error")
               ]}
+              aria-hidden="true"
             />
+            <span class="sr-only">{if @password_strength.special, do: gettext("Met:"), else: gettext("Not met:")}</span>
             {gettext("Contains a special character")}
           </li>
         </ul>
@@ -155,6 +165,14 @@
           ]}
           value={met}
           max="5"
+          aria-label={gettext("Password strength")}
+          aria-valuetext={
+            cond do
+              met <= 1 -> gettext("Weak")
+              met <= 3 -> gettext("Fair")
+              true -> gettext("Strong")
+            end
+          }
         >
         </progress>
       </div>

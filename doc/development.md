@@ -725,12 +725,14 @@ no navigation).
 
 - Skip-to-content link (`<a href="#main-content">`) at top of `<body>` in `root.html.heex`
 - `id="main-content"` on `<main>` in the app layout for skip-link target
-- `aria-haspopup="true"` on all dropdown trigger buttons (mobile hamburger, desktop user menu, language picker)
+- `aria-haspopup="true"` and `aria-expanded` on all dropdown trigger buttons (mobile hamburger, desktop user menu, language picker); `aria-expanded` is synced dynamically via JS event delegation on `focusin`/`focusout` in `app.js`
 - `aria-live="polite"` on the comment tree container and flash group for screen reader announcements
 - `aria-invalid="true"` and `aria-describedby="<id>-error"` on form inputs with validation errors
 - Error messages wrapped in `<div id="<id>-error" role="alert">` for programmatic association
 - `aria-expanded` on reply buttons and moderator management toggle
 - `aria-label` on all icon-only buttons (delete attachment, cancel upload, delete comment)
+- Pagination wrapped in `<nav aria-label>` with `aria-current="page"` on the active page and `aria-label` on prev/next/page links
+- Password strength `<progress>` has `aria-label` and dynamic `aria-valuetext` ("Weak"/"Fair"/"Strong"); requirement icons are `aria-hidden` with sr-only met/unmet state text
 
 **Auth hooks:**
 
