@@ -73,8 +73,11 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 
 ### After Every Change
 
-1. Update all relevant documentation (`doc/`, README, moduledocs)
+1. Update all relevant documentation (`doc/`, README, `@moduledoc` and `@doc`)
 2. Add essential but missing tests to improve test coverage and ensure code quality
+3. check if there is any missing or incomplete test
+4. check if there is any missing or incomplete locale translations
+5. Remove the finishied tasks from TODOs
 
 ### Code Organization
 
