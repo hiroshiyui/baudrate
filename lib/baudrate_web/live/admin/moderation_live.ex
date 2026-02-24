@@ -36,6 +36,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
      |> load_reports()}
   end
 
+  @impl true
   def handle_event("resolve", %{"report_id" => id, "note" => note}, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}
@@ -43,6 +44,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     end
   end
 
+  @impl true
   def handle_event("dismiss", %{"id" => id}, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}
@@ -50,6 +52,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     end
   end
 
+  @impl true
   def handle_event("delete_content", %{"type" => "article", "id" => id}, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}
@@ -57,6 +60,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     end
   end
 
+  @impl true
   def handle_event("delete_content", %{"type" => "comment", "id" => id}, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}
@@ -64,6 +68,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     end
   end
 
+  @impl true
   def handle_event("send_flag", %{"id" => id}, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}

@@ -12,6 +12,7 @@ defmodule BaudrateWeb.BoardLive do
 
   alias Baudrate.Content
   alias Baudrate.Content.PubSub, as: ContentPubSub
+  import BaudrateWeb.Helpers, only: [parse_page: 1]
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -67,12 +68,4 @@ defmodule BaudrateWeb.BoardLive do
     {:noreply, assign(socket, articles: articles, page: page, total_pages: total_pages)}
   end
 
-  defp parse_page(nil), do: 1
-
-  defp parse_page(str) when is_binary(str) do
-    case Integer.parse(str) do
-      {n, ""} when n > 0 -> n
-      _ -> 1
-    end
-  end
 end

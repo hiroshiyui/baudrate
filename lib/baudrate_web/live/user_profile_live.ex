@@ -10,6 +10,7 @@ defmodule BaudrateWeb.UserProfileLive do
 
   alias Baudrate.Auth
   alias Baudrate.Content
+  import BaudrateWeb.Helpers, only: [translate_role: 1]
 
   @impl true
   def mount(%{"username" => username}, _session, socket) do
@@ -91,9 +92,4 @@ defmodule BaudrateWeb.UserProfileLive do
     end
   end
 
-  defp translate_role("admin"), do: gettext("admin")
-  defp translate_role("moderator"), do: gettext("moderator")
-  defp translate_role("user"), do: gettext("user")
-  defp translate_role("guest"), do: gettext("guest")
-  defp translate_role(other), do: other
 end

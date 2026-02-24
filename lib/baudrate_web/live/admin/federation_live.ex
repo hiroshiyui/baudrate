@@ -32,6 +32,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
     end
   end
 
+  @impl true
   def handle_event("abandon_job", %{"id" => id}, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}
@@ -43,6 +44,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
     end
   end
 
+  @impl true
   def handle_event("block_domain", %{"domain" => domain}, socket) do
     current = Setup.get_setting("ap_domain_blocklist") || ""
 
@@ -68,6 +70,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
      |> load_dashboard()}
   end
 
+  @impl true
   def handle_event("rotate_keys", %{"type" => type, "id" => id}, socket) do
     case rotate_by_type(type, id) do
       {:ok, _} ->
@@ -87,6 +90,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
     end
   end
 
+  @impl true
   def handle_event("toggle_board_federation", %{"id" => id}, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}
@@ -94,6 +98,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
     end
   end
 
+  @impl true
   def handle_event("audit_blocklist", _params, socket) do
     case BlocklistAudit.audit() do
       {:ok, result} ->
@@ -110,6 +115,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
     end
   end
 
+  @impl true
   def handle_event("add_missing_domain", %{"domain" => domain}, socket) do
     add_domain_to_blocklist(domain)
 
@@ -133,6 +139,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
     end
   end
 
+  @impl true
   def handle_event("add_all_missing", _params, socket) do
     case socket.assigns[:audit_result] do
       %{missing: missing} when missing != [] ->

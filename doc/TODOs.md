@@ -4,18 +4,6 @@ Audit date: 2026-02-23
 
 ---
 
-## Medium: Code Quality
-
-- [ ] **Extract duplicated helpers** — `parse_page/1` (6x), `password_strength/1` (3x), `upload_error_to_string/1` (4x), `translate_role/1` (3x), `participant_name/1` (2x), `schedule_federation_task/1` (2x); extract to shared modules
-- [ ] **N+1 queries** — `hidden_filters/1` fires 4 DB queries per call; `board_ancestors/1` fires N for N levels; `load_unread_counts/2` fires N for N conversations; `can_delete_article?` preloads+checks per board (`content.ex:962`, `content.ex:67`, `conversations_live.ex:54`)
-- [ ] **Add `@impl true`** consistently to all `handle_event`/`handle_info`/`handle_params` callbacks (~15 LiveView modules)
-- [ ] **Non-atomic `save_settings/1`** — 8 separate `set_setting` calls without a transaction wrapper; partial updates possible on failure (`setup.ex:264-281`)
-- [ ] **Non-atomic `register_with_invite`** — user creation and invite code consumption in separate operations (`auth.ex:376-383`)
-- [ ] **Unbounded message list in `ConversationLive`** — PubSub appends messages to in-memory list indefinitely (`conversation_live.ex:90,137`)
-- [ ] **Boards admin loads ALL active users** for moderator dropdown — no pagination/search (`boards_live.ex:111`)
-- [ ] **`PendingUsersLive` approve crashes on nil user** — `Auth.get_user/1` return not checked (`pending_users_live.ex:22-24`)
-- [ ] **Missing unique index on `settings.key`** — no index for frequently queried field
-
 ## Test Coverage (77% → 90% target)
 
 ### Modules Below 50% Coverage

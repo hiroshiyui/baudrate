@@ -12,6 +12,7 @@ defmodule BaudrateWeb.ConversationsLive do
   alias Baudrate.Auth
   alias Baudrate.Messaging
   alias Baudrate.Messaging.PubSub, as: MessagingPubSub
+  import BaudrateWeb.Helpers, only: [participant_name: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -49,12 +50,12 @@ defmodule BaudrateWeb.ConversationsLive do
      |> assign(:muted_conversations, muted_convs)}
   end
 
+  @impl true
   def handle_info(_msg, socket), do: {:noreply, socket}
 
   defp load_unread_counts(conversations, user) do
-    Map.new(conversations, fn conv ->
-      {conv.id, Messaging.unread_count_for_conversation(conv.id, user)}
-    end)
+    conversation_ids = Enum.map(conversations, & &1.id)
+    Messaging.unread_counts_for_conversations(conversation_ids, user)
   end
 
   defp load_muted_conversations(conversations, user) do
@@ -78,13 +79,6 @@ defmodule BaudrateWeb.ConversationsLive do
   defp other_participant(conv, current_user) do
     Messaging.other_participant(conv, current_user)
   end
-
-  defp participant_name(%Baudrate.Setup.User{} = user), do: user.username
-
-  defp participant_name(%Baudrate.Federation.RemoteActor{} = actor),
-    do: "#{actor.username}@#{actor.domain}"
-
-  defp participant_name(_), do: "?"
 
   defp format_relative_time(datetime) do
     now = DateTime.utc_now()

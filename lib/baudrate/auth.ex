@@ -369,17 +369,26 @@ defmodule Baudrate.Auth do
             |> Map.put("role_id", role.id)
             |> Map.put("status", "active")
 
-          result =
+          changeset =
             %User{}
             |> User.registration_changeset(Map.delete(attrs, "status") |> Map.delete("invite_code"))
             |> User.validate_terms()
             |> Ecto.Changeset.put_change(:status, "active")
-            |> Repo.insert()
 
-          with {:ok, user} <- result do
-            use_invite_code(invite, user.id)
-            codes = generate_recovery_codes(user)
-            {:ok, user, codes}
+          Repo.transaction(fn ->
+            case Repo.insert(changeset) do
+              {:ok, user} ->
+                use_invite_code(invite, user.id)
+                codes = generate_recovery_codes(user)
+                {user, codes}
+
+              {:error, changeset} ->
+                Repo.rollback(changeset)
+            end
+          end)
+          |> case do
+            {:ok, {user, codes}} -> {:ok, user, codes}
+            {:error, changeset} -> {:error, changeset}
           end
 
         {:error, reason} ->
@@ -1320,5 +1329,32 @@ defmodule Baudrate.Auth do
       select: m.muted_actor_ap_id
     )
     |> Repo.all()
+  end
+
+  @doc """
+  Returns combined hidden user IDs and AP IDs from both blocks and mutes
+  in only 2 queries (instead of 4).
+
+  Returns `{user_ids, ap_ids}` where both are deduplicated lists.
+  """
+  def hidden_ids(%User{id: user_id}) do
+    blocked =
+      from(b in UserBlock,
+        where: b.user_id == ^user_id,
+        select: %{user_id: b.blocked_user_id, ap_id: b.blocked_actor_ap_id}
+      )
+      |> Repo.all()
+
+    muted =
+      from(m in UserMute,
+        where: m.user_id == ^user_id,
+        select: %{user_id: m.muted_user_id, ap_id: m.muted_actor_ap_id}
+      )
+      |> Repo.all()
+
+    all = blocked ++ muted
+    user_ids = for(r <- all, r.user_id, do: r.user_id) |> Enum.uniq()
+    ap_ids = for(r <- all, r.ap_id, do: r.ap_id) |> Enum.uniq()
+    {user_ids, ap_ids}
   end
 end

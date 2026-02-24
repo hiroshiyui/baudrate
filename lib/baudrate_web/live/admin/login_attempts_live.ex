@@ -11,6 +11,7 @@ defmodule BaudrateWeb.Admin.LoginAttemptsLive do
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
   alias Baudrate.Auth
+  import BaudrateWeb.Helpers, only: [parse_page: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -53,12 +54,4 @@ defmodule BaudrateWeb.Admin.LoginAttemptsLive do
     {:noreply, push_patch(socket, to: ~p"/admin/login-attempts?#{params}")}
   end
 
-  defp parse_page(nil), do: 1
-
-  defp parse_page(str) when is_binary(str) do
-    case Integer.parse(str) do
-      {n, ""} when n > 0 -> n
-      _ -> 1
-    end
-  end
 end

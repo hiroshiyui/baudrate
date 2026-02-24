@@ -55,10 +55,12 @@ defmodule BaudrateWeb.ProfileLive do
     {:noreply, socket}
   end
 
+  @impl true
   def handle_event("show_crop_modal", _params, socket) do
     {:noreply, assign(socket, :show_crop_modal, true)}
   end
 
+  @impl true
   def handle_event("cancel_crop", _params, socket) do
     socket =
       socket
@@ -68,6 +70,7 @@ defmodule BaudrateWeb.ProfileLive do
     {:noreply, cancel_all_uploads(socket, :avatar)}
   end
 
+  @impl true
   def handle_event("save_crop", crop_params, socket) do
     user = socket.assigns.current_user
 
@@ -86,6 +89,7 @@ defmodule BaudrateWeb.ProfileLive do
     end
   end
 
+  @impl true
   def handle_event("add_locale", %{"locale" => locale}, socket) do
     current = socket.assigns.preferred_locales
 
@@ -96,11 +100,13 @@ defmodule BaudrateWeb.ProfileLive do
     end
   end
 
+  @impl true
   def handle_event("remove_locale", %{"locale" => locale}, socket) do
     new_locales = Enum.reject(socket.assigns.preferred_locales, &(&1 == locale))
     save_locales(socket, new_locales)
   end
 
+  @impl true
   def handle_event("move_locale_up", %{"locale" => locale}, socket) do
     locales = socket.assigns.preferred_locales
     idx = Enum.find_index(locales, &(&1 == locale))
@@ -113,6 +119,7 @@ defmodule BaudrateWeb.ProfileLive do
     end
   end
 
+  @impl true
   def handle_event("move_locale_down", %{"locale" => locale}, socket) do
     locales = socket.assigns.preferred_locales
     idx = Enum.find_index(locales, &(&1 == locale))
@@ -125,6 +132,7 @@ defmodule BaudrateWeb.ProfileLive do
     end
   end
 
+  @impl true
   def handle_event("validate_signature", %{"signature" => params}, socket) do
     user = socket.assigns.current_user
 
@@ -140,6 +148,7 @@ defmodule BaudrateWeb.ProfileLive do
      |> assign(:signature_preview, preview)}
   end
 
+  @impl true
   def handle_event("save_signature", %{"signature" => %{"signature" => signature}}, socket) do
     user = socket.assigns.current_user
 
@@ -156,6 +165,7 @@ defmodule BaudrateWeb.ProfileLive do
     end
   end
 
+  @impl true
   def handle_event("unmute", %{"id" => id}, socket) do
     user = socket.assigns.current_user
     mute = Enum.find(socket.assigns.mutes, &(to_string(&1.id) == id))
@@ -179,6 +189,7 @@ defmodule BaudrateWeb.ProfileLive do
     end
   end
 
+  @impl true
   def handle_event("update_dm_access", %{"dm_access" => value}, socket) do
     user = socket.assigns.current_user
 
@@ -194,6 +205,7 @@ defmodule BaudrateWeb.ProfileLive do
     end
   end
 
+  @impl true
   def handle_event("remove_avatar", _params, socket) do
     user = socket.assigns.current_user
 
@@ -269,10 +281,7 @@ defmodule BaudrateWeb.ProfileLive do
     end)
   end
 
-  defp upload_error_to_string(:too_large), do: gettext("Image file is too large.")
-  defp upload_error_to_string(:not_accepted), do: gettext("Invalid image file.")
-  defp upload_error_to_string(:too_many_files), do: gettext("Too many files.")
-  defp upload_error_to_string(_), do: gettext("Upload error.")
+  defp upload_error_to_string(err), do: BaudrateWeb.Helpers.upload_error_to_string(err)
 
   defp check_rate_limit(user_id) do
     case Hammer.check_rate("avatar_change:#{user_id}", 3_600_000, @max_avatar_changes_per_hour) do

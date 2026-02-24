@@ -33,6 +33,7 @@ defmodule BaudrateWeb.Admin.BoardsLive do
        managing_moderators_board: nil,
        board_moderators: [],
        active_users: [],
+       mod_search_query: "",
        page_title: gettext("Admin Boards")
      )}
   end
@@ -43,6 +44,7 @@ defmodule BaudrateWeb.Admin.BoardsLive do
     {:noreply, assign(socket, show_form: true, editing_board: nil, form: to_form(changeset))}
   end
 
+  @impl true
   def handle_event("edit", %{"id" => id}, socket) do
     case parse_id(id) do
       {:ok, board_id} ->
@@ -55,10 +57,12 @@ defmodule BaudrateWeb.Admin.BoardsLive do
     end
   end
 
+  @impl true
   def handle_event("cancel", _params, socket) do
     {:noreply, assign(socket, show_form: false, editing_board: nil, form: nil)}
   end
 
+  @impl true
   def handle_event("validate", %{"board" => params}, socket) do
     changeset =
       if socket.assigns.editing_board do
@@ -71,6 +75,7 @@ defmodule BaudrateWeb.Admin.BoardsLive do
     {:noreply, assign(socket, form: to_form(changeset))}
   end
 
+  @impl true
   def handle_event("save", %{"board" => params}, socket) do
     if socket.assigns.editing_board do
       save_edit(socket, params)
@@ -79,6 +84,7 @@ defmodule BaudrateWeb.Admin.BoardsLive do
     end
   end
 
+  @impl true
   def handle_event("delete", %{"id" => id}, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}
@@ -86,6 +92,7 @@ defmodule BaudrateWeb.Admin.BoardsLive do
     end
   end
 
+  @impl true
   def handle_event("manage_moderators", %{"id" => id}, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}
@@ -93,15 +100,30 @@ defmodule BaudrateWeb.Admin.BoardsLive do
     end
   end
 
+  @impl true
   def handle_event("close_moderators", _params, socket) do
     {:noreply,
      assign(socket,
        managing_moderators_board: nil,
        board_moderators: [],
-       active_users: []
+       active_users: [],
+       mod_search_query: ""
      )}
   end
 
+  @impl true
+  def handle_event("search_mod_users", %{"search" => %{"query" => query}}, socket) do
+    query = String.trim(query)
+
+    if String.length(query) < 2 do
+      {:noreply, assign(socket, active_users: [], mod_search_query: query)}
+    else
+      users = Auth.search_users(query, limit: 20)
+      {:noreply, assign(socket, active_users: users, mod_search_query: query)}
+    end
+  end
+
+  @impl true
   def handle_event("add_moderator", %{"user_id" => user_id}, socket) do
     case parse_id(user_id) do
       :error ->
@@ -127,6 +149,7 @@ defmodule BaudrateWeb.Admin.BoardsLive do
     end
   end
 
+  @impl true
   def handle_event("remove_moderator", %{"user-id" => user_id}, socket) do
     case parse_id(user_id) do
       :error ->
@@ -184,13 +207,13 @@ defmodule BaudrateWeb.Admin.BoardsLive do
   defp do_manage_moderators(socket, board_id) do
     board = Content.get_board!(board_id)
     moderators = Content.list_board_moderators(board)
-    active_users = Auth.list_users(status: "active")
 
     {:noreply,
      assign(socket,
        managing_moderators_board: board,
        board_moderators: moderators,
-       active_users: active_users
+       active_users: [],
+       mod_search_query: ""
      )}
   end
 

@@ -211,6 +211,30 @@ defmodule Baudrate.Messaging do
     |> Repo.one()
   end
 
+  @doc """
+  Returns a map of `%{conversation_id => unread_count}` for a batch of
+  conversation IDs in a single query (instead of N individual queries).
+  """
+  def unread_counts_for_conversations(conversation_ids, %User{id: user_id})
+      when is_list(conversation_ids) do
+    if conversation_ids == [] do
+      %{}
+    else
+      from(dm in DirectMessage,
+        where: dm.conversation_id in ^conversation_ids,
+        where: dm.sender_user_id != ^user_id or not is_nil(dm.sender_remote_actor_id),
+        where: is_nil(dm.deleted_at),
+        left_join: cursor in ConversationReadCursor,
+          on: cursor.conversation_id == dm.conversation_id and cursor.user_id == ^user_id,
+        where: is_nil(cursor.id) or dm.id > cursor.last_read_message_id,
+        group_by: dm.conversation_id,
+        select: {dm.conversation_id, count(dm.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+    end
+  end
+
   # --- Messages ---
 
   @doc """
@@ -493,11 +517,5 @@ defmodule Baudrate.Messaging do
     end
   end
 
-  defp schedule_federation_task(fun) do
-    if Application.get_env(:baudrate, :federation_async, true) do
-      Task.Supervisor.start_child(Baudrate.Federation.TaskSupervisor, fun)
-    else
-      fun.()
-    end
-  end
+  defdelegate schedule_federation_task(fun), to: Baudrate.Federation
 end

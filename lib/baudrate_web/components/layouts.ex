@@ -4,6 +4,7 @@ defmodule BaudrateWeb.Layouts do
   used by your application.
   """
   use BaudrateWeb, :html
+  import BaudrateWeb.Helpers, only: [translate_role: 1]
 
   # Embed all files in layouts/* within this module.
   # The default root.html.heex file contains the HTML
@@ -254,12 +255,6 @@ defmodule BaudrateWeb.Layouts do
     <.flash_group flash={@flash} />
     """
   end
-
-  defp translate_role("admin"), do: gettext("admin")
-  defp translate_role("moderator"), do: gettext("moderator")
-  defp translate_role("user"), do: gettext("user")
-  defp translate_role("guest"), do: gettext("guest")
-  defp translate_role(other), do: other
 
   @doc """
   Renders font size zoom in/out controls.

@@ -12,6 +12,7 @@ defmodule BaudrateWeb.SearchLive do
   use BaudrateWeb, :live_view
 
   alias Baudrate.Content
+  import BaudrateWeb.Helpers, only: [parse_page: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -85,12 +86,4 @@ defmodule BaudrateWeb.SearchLive do
     |> assign(:total_pages, result.total_pages)
   end
 
-  defp parse_page(nil), do: 1
-
-  defp parse_page(str) when is_binary(str) do
-    case Integer.parse(str) do
-      {n, ""} when n > 0 -> n
-      _ -> 1
-    end
-  end
 end

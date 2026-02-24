@@ -16,7 +16,9 @@ defmodule BaudrateWeb.ConversationLive do
   alias Baudrate.Auth
   alias Baudrate.Messaging
   alias Baudrate.Messaging.PubSub, as: MessagingPubSub
-  import BaudrateWeb.Helpers, only: [parse_id: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, participant_name: 1]
+
+  @max_messages 100
 
   @impl true
   def mount(params, _session, socket) do
@@ -108,7 +110,10 @@ defmodule BaudrateWeb.ConversationLive do
         :ok ->
           case Messaging.create_message(conversation, user, %{body: body}) do
             {:ok, message} ->
-              messages = socket.assigns.messages ++ [Messaging.get_message(message.id)]
+              messages =
+                (socket.assigns.messages ++ [Messaging.get_message(message.id)])
+                |> Enum.take(-@max_messages)
+
               mark_read(conversation, user, messages)
 
               {:noreply,
@@ -127,6 +132,7 @@ defmodule BaudrateWeb.ConversationLive do
     end
   end
 
+  @impl true
   def handle_event("search_recipient", %{"search" => %{"query" => query}}, socket) do
     query = String.trim(query)
 
@@ -139,10 +145,12 @@ defmodule BaudrateWeb.ConversationLive do
     end
   end
 
+  @impl true
   def handle_event("select_recipient", %{"username" => username}, socket) do
     {:noreply, push_navigate(socket, to: ~p"/messages/new?to=#{username}")}
   end
 
+  @impl true
   def handle_event("delete_message", %{"id" => id}, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}
@@ -178,7 +186,7 @@ defmodule BaudrateWeb.ConversationLive do
     message = Messaging.get_message(message_id)
 
     if message && message.sender_user_id != user.id do
-      messages = socket.assigns.messages ++ [message]
+      messages = (socket.assigns.messages ++ [message]) |> Enum.take(-@max_messages)
       mark_read(socket.assigns.conversation, user, messages)
       {:noreply, assign(socket, :messages, messages)}
     else
@@ -186,11 +194,13 @@ defmodule BaudrateWeb.ConversationLive do
     end
   end
 
+  @impl true
   def handle_info({:dm_message_deleted, _payload}, socket) do
     messages = Messaging.list_messages(socket.assigns.conversation)
     {:noreply, assign(socket, :messages, messages)}
   end
 
+  @impl true
   def handle_info(_msg, socket), do: {:noreply, socket}
 
   # --- Private helpers ---
@@ -243,13 +253,6 @@ defmodule BaudrateWeb.ConversationLive do
   defp error_message(:not_found), do: gettext("Conversation not found.")
   defp error_message(:recipient_not_found), do: gettext("User not found.")
   defp error_message(_), do: gettext("Something went wrong.")
-
-  defp participant_name(%Baudrate.Setup.User{} = user), do: user.username
-
-  defp participant_name(%Baudrate.Federation.RemoteActor{} = actor),
-    do: "#{actor.username}@#{actor.domain}"
-
-  defp participant_name(_), do: "?"
 
   defp check_rate_limit(user_id) do
     case Hammer.check_rate("dm:user:#{user_id}", 60_000, 20) do

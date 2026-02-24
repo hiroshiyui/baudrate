@@ -12,6 +12,7 @@ defmodule BaudrateWeb.Admin.ModerationLogLive do
 
   alias Baudrate.Moderation
   alias Baudrate.Moderation.Log
+  import BaudrateWeb.Helpers, only: [parse_page: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -53,15 +54,6 @@ defmodule BaudrateWeb.Admin.ModerationLogLive do
   def handle_event("filter", %{"action" => action}, socket) do
     params = if action == "", do: %{}, else: %{"action" => action}
     {:noreply, push_patch(socket, to: ~p"/admin/moderation-log?#{params}")}
-  end
-
-  defp parse_page(nil), do: 1
-
-  defp parse_page(str) when is_binary(str) do
-    case Integer.parse(str) do
-      {n, ""} when n > 0 -> n
-      _ -> 1
-    end
   end
 
   defp translate_action("ban_user"), do: gettext("Ban User")

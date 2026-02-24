@@ -37,6 +37,7 @@ defmodule BaudrateWeb.Admin.SettingsLive do
     {:noreply, assign(socket, form: to_form(changeset, as: :settings))}
   end
 
+  @impl true
   def handle_event("save", %{"settings" => params}, socket) do
     case Setup.save_settings(params) do
       {:ok, _changes} ->
@@ -52,10 +53,12 @@ defmodule BaudrateWeb.Admin.SettingsLive do
     end
   end
 
+  @impl true
   def handle_event("validate_eua", %{"eua_settings" => params}, socket) do
     {:noreply, assign(socket, eua_form: to_form(params, as: :eua_settings))}
   end
 
+  @impl true
   def handle_event("save_eua", %{"eua_settings" => %{"eua" => eua_text}}, socket) do
     case Setup.update_eua(eua_text) do
       {:ok, _} ->

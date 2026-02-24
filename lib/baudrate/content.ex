@@ -65,18 +65,21 @@ defmodule Baudrate.Content do
   Walks the `parent_id` chain upward (max 10 levels to prevent infinite loops).
   """
   def board_ancestors(%Board{} = board) do
-    do_board_ancestors(board, [], 10)
+    boards_by_id = from(b in Board) |> Repo.all() |> Map.new(&{&1.id, &1})
+    do_board_ancestors(board, boards_by_id, [], 10)
   end
 
-  defp do_board_ancestors(%Board{parent_id: nil} = board, acc, _remaining) do
+  defp do_board_ancestors(%Board{parent_id: nil} = board, _map, acc, _remaining) do
     [board | acc]
   end
 
-  defp do_board_ancestors(_board, acc, 0), do: acc
+  defp do_board_ancestors(_board, _map, acc, 0), do: acc
 
-  defp do_board_ancestors(%Board{parent_id: parent_id} = board, acc, remaining) do
-    parent = Repo.get!(Board, parent_id)
-    do_board_ancestors(parent, [board | acc], remaining - 1)
+  defp do_board_ancestors(%Board{parent_id: parent_id} = board, map, acc, remaining) do
+    case Map.get(map, parent_id) do
+      nil -> [board | acc]
+      parent -> do_board_ancestors(parent, map, [board | acc], remaining - 1)
+    end
   end
 
   @doc """
@@ -386,6 +389,23 @@ defmodule Baudrate.Content do
 
   def board_moderator?(_board, _user), do: false
 
+  defp board_moderator_for_any?(boards, %{id: user_id, role: %{name: role_name}})
+       when is_list(boards) do
+    if role_name in ["admin", "moderator"] do
+      true
+    else
+      board_ids = Enum.map(boards, & &1.id)
+
+      Repo.exists?(
+        from(bm in BoardModerator,
+          where: bm.board_id in ^board_ids and bm.user_id == ^user_id
+        )
+      )
+    end
+  end
+
+  defp board_moderator_for_any?(_boards, _user), do: false
+
   # --- Granular Article/Comment Permission Checks ---
 
   @doc """
@@ -404,7 +424,7 @@ defmodule Baudrate.Content do
 
   def can_delete_article?(user, article) do
     article = Repo.preload(article, :boards)
-    Enum.any?(article.boards, &board_moderator?(&1, user))
+    board_moderator_for_any?(article.boards, user)
   end
 
   @doc """
@@ -414,7 +434,7 @@ defmodule Baudrate.Content do
 
   def can_pin_article?(user, article) do
     article = Repo.preload(article, :boards)
-    Enum.any?(article.boards, &board_moderator?(&1, user))
+    board_moderator_for_any?(article.boards, user)
   end
 
   @doc """
@@ -430,7 +450,7 @@ defmodule Baudrate.Content do
 
   def can_delete_comment?(user, _comment, article) do
     article = Repo.preload(article, :boards)
-    Enum.any?(article.boards, &board_moderator?(&1, user))
+    board_moderator_for_any?(article.boards, user)
   end
 
   @doc """
@@ -960,15 +980,7 @@ defmodule Baudrate.Content do
   end
 
   defp hidden_filters(nil), do: {[], []}
-
-  defp hidden_filters(current_user) do
-    blocked_uids = Auth.blocked_user_ids(current_user)
-    muted_uids = Auth.muted_user_ids(current_user)
-    blocked_ap_ids = Auth.blocked_actor_ap_ids(current_user)
-    muted_ap_ids = Auth.muted_actor_ap_ids(current_user)
-
-    {Enum.uniq(blocked_uids ++ muted_uids), Enum.uniq(blocked_ap_ids ++ muted_ap_ids)}
-  end
+  defp hidden_filters(current_user), do: Auth.hidden_ids(current_user)
 
   defp apply_hidden_filters(query, [], []), do: query
 
@@ -1490,14 +1502,7 @@ defmodule Baudrate.Content do
 
   # --- Federation Hooks ---
 
-  defp schedule_federation_task(fun) do
-    if Application.get_env(:baudrate, :federation_async, true) do
-      Task.Supervisor.start_child(Baudrate.Federation.TaskSupervisor, fun)
-    else
-      fun.()
-      :ok
-    end
-  end
+  defdelegate schedule_federation_task(fun), to: Baudrate.Federation
 
   # --- SysOp Board ---
 

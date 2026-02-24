@@ -25,17 +25,21 @@ defmodule BaudrateWeb.Admin.PendingUsersLive do
         {:noreply, socket}
 
       {:ok, user_id} ->
-        user = Auth.get_user(user_id)
+        case Auth.get_user(user_id) do
+          nil ->
+            {:noreply, put_flash(socket, :error, gettext("User not found."))}
 
-        case Auth.approve_user(user) do
-          {:ok, _user} ->
-            {:noreply,
-             socket
-             |> put_flash(:info, gettext("User approved successfully."))
-             |> assign(:pending_users, Auth.list_pending_users())}
+          user ->
+            case Auth.approve_user(user) do
+              {:ok, _user} ->
+                {:noreply,
+                 socket
+                 |> put_flash(:info, gettext("User approved successfully."))
+                 |> assign(:pending_users, Auth.list_pending_users())}
 
-          {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to approve user."))}
+              {:error, _changeset} ->
+                {:noreply, put_flash(socket, :error, gettext("Failed to approve user."))}
+            end
         end
     end
   end

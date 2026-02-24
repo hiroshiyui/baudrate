@@ -12,7 +12,8 @@ defmodule BaudrateWeb.ArticleLive do
   alias Baudrate.Content
   alias Baudrate.Content.PubSub, as: ContentPubSub
   alias Baudrate.Moderation
-  import BaudrateWeb.Helpers, only: [parse_id: 1]
+  alias BaudrateWeb.Helpers
+  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1]
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -482,15 +483,6 @@ defmodule BaudrateWeb.ArticleLive do
     )
   end
 
-  defp parse_page(nil), do: 1
-
-  defp parse_page(str) when is_binary(str) do
-    case Integer.parse(str) do
-      {n, ""} when n > 0 -> n
-      _ -> 1
-    end
-  end
-
   defp user_can_view_article?(article, user) do
     Enum.any?(article.boards, &Content.can_view_board?(&1, user))
   end
@@ -499,10 +491,7 @@ defmodule BaudrateWeb.ArticleLive do
   defp format_file_size(bytes) when bytes < 1_048_576, do: "#{Float.round(bytes / 1024, 1)} KB"
   defp format_file_size(bytes), do: "#{Float.round(bytes / 1_048_576, 1)} MB"
 
-  defp upload_error_to_string(:too_large), do: gettext("File too large (max 10 MB)")
-  defp upload_error_to_string(:too_many_files), do: gettext("Too many files (max 5)")
-  defp upload_error_to_string(:not_accepted), do: gettext("File type not accepted")
-  defp upload_error_to_string(_), do: gettext("Upload error")
+  defp upload_error_to_string(err), do: Helpers.upload_error_to_string(err, max_size: "10 MB", max_files: 5)
 
   defp build_comment_tree(comments) do
     roots = Enum.filter(comments, &is_nil(&1.parent_id))

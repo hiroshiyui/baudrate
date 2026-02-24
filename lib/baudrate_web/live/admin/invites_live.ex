@@ -39,6 +39,7 @@ defmodule BaudrateWeb.Admin.InvitesLive do
     end
   end
 
+  @impl true
   def handle_event("revoke", %{"id" => id}, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}

@@ -14,7 +14,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
   alias Baudrate.Auth
   alias Baudrate.Moderation
   alias Baudrate.Setup
-  import BaudrateWeb.Helpers, only: [parse_id: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1, translate_role: 1]
 
   @valid_statuses ~w(active pending banned)
 
@@ -73,6 +73,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
      |> push_patch(to: users_path(socket.assigns, status_filter, socket.assigns.search, 1))}
   end
 
+  @impl true
   def handle_event("search", %{"search" => term}, socket) do
     {:noreply,
      socket
@@ -80,6 +81,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
      |> push_patch(to: users_path(socket.assigns, socket.assigns.status_filter, term, 1))}
   end
 
+  @impl true
   def handle_event("approve", %{"id" => id}, socket) do
     case parse_id(id) do
       :error ->
@@ -112,6 +114,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
     end
   end
 
+  @impl true
   def handle_event("show_ban_modal", %{"id" => id}, socket) do
     case parse_id(id) do
       :error ->
@@ -137,14 +140,17 @@ defmodule BaudrateWeb.Admin.UsersLive do
     end
   end
 
+  @impl true
   def handle_event("cancel_ban", _params, socket) do
     {:noreply, assign(socket, ban_target: nil, ban_target_username: nil, ban_reason: "")}
   end
 
+  @impl true
   def handle_event("update_ban_reason", %{"reason" => reason}, socket) do
     {:noreply, assign(socket, :ban_reason, reason)}
   end
 
+  @impl true
   def handle_event("confirm_ban", _params, socket) do
     case Auth.get_user(socket.assigns.ban_target) do
       nil ->
@@ -182,6 +188,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
     end
   end
 
+  @impl true
   def handle_event("unban", %{"id" => id}, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}
@@ -189,6 +196,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
     end
   end
 
+  @impl true
   def handle_event("change_role", %{"id" => id, "role_id" => role_id}, socket) do
     with {:ok, user_id} <- parse_id(id),
          {:ok, parsed_role_id} <- parse_id(role_id) do
@@ -284,15 +292,6 @@ defmodule BaudrateWeb.Admin.UsersLive do
       else: ~p"/admin/users" <> "?" <> URI.encode_query(params)
   end
 
-  defp parse_page(nil), do: 1
-
-  defp parse_page(str) when is_binary(str) do
-    case Integer.parse(str) do
-      {n, ""} when n > 0 -> n
-      _ -> 1
-    end
-  end
-
   defp reload_counts(socket) do
     assign(socket, :status_counts, Auth.count_users_by_status())
   end
@@ -302,9 +301,4 @@ defmodule BaudrateWeb.Admin.UsersLive do
   defp translate_status("banned"), do: gettext("banned")
   defp translate_status(other), do: other
 
-  defp translate_role("admin"), do: gettext("admin")
-  defp translate_role("moderator"), do: gettext("moderator")
-  defp translate_role("user"), do: gettext("user")
-  defp translate_role("guest"), do: gettext("guest")
-  defp translate_role(other), do: other
 end

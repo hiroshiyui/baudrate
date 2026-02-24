@@ -885,4 +885,20 @@ defmodule Baudrate.Federation do
   defp do_rotate(:user, user), do: KeyStore.rotate_user_keypair(user)
   defp do_rotate(:board, board), do: KeyStore.rotate_board_keypair(board)
   defp do_rotate(:site, _), do: KeyStore.rotate_site_keypair()
+
+  @doc """
+  Schedules a federation task for async delivery.
+
+  In production, starts the task under `Baudrate.Federation.TaskSupervisor`.
+  In test (when `federation_async: false`), runs synchronously to avoid
+  sandbox ownership errors.
+  """
+  def schedule_federation_task(fun) do
+    if Application.get_env(:baudrate, :federation_async, true) do
+      Task.Supervisor.start_child(Baudrate.Federation.TaskSupervisor, fun)
+    else
+      fun.()
+      :ok
+    end
+  end
 end

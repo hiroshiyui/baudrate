@@ -266,15 +266,18 @@ defmodule Baudrate.Setup do
 
     if changeset.valid? do
       changes = Ecto.Changeset.apply_changes(changeset)
-      set_setting("site_name", changes.site_name)
-      set_setting("registration_mode", changes.registration_mode)
-      set_setting("ap_domain_blocklist", changes.ap_domain_blocklist || "")
-      set_setting("ap_federation_enabled", changes.ap_federation_enabled || "true")
-      set_setting("ap_federation_mode", changes.ap_federation_mode || "blocklist")
-      set_setting("ap_domain_allowlist", changes.ap_domain_allowlist || "")
-      set_setting("ap_authorized_fetch", changes.ap_authorized_fetch || "false")
-      set_setting("ap_blocklist_audit_url", changes.ap_blocklist_audit_url || "")
-      {:ok, changes}
+
+      Repo.transaction(fn ->
+        set_setting("site_name", changes.site_name)
+        set_setting("registration_mode", changes.registration_mode)
+        set_setting("ap_domain_blocklist", changes.ap_domain_blocklist || "")
+        set_setting("ap_federation_enabled", changes.ap_federation_enabled || "true")
+        set_setting("ap_federation_mode", changes.ap_federation_mode || "blocklist")
+        set_setting("ap_domain_allowlist", changes.ap_domain_allowlist || "")
+        set_setting("ap_authorized_fetch", changes.ap_authorized_fetch || "false")
+        set_setting("ap_blocklist_audit_url", changes.ap_blocklist_audit_url || "")
+        changes
+      end)
     else
       {:error, Map.put(changeset, :action, :validate)}
     end

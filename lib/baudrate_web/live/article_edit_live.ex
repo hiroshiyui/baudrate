@@ -140,8 +140,5 @@ defmodule BaudrateWeb.ArticleEditLive do
     end
   end
 
-  defp upload_error_to_string(:too_large), do: gettext("File too large (max 5 MB)")
-  defp upload_error_to_string(:too_many_files), do: gettext("Too many files (max 4)")
-  defp upload_error_to_string(:not_accepted), do: gettext("File type not accepted")
-  defp upload_error_to_string(_), do: gettext("Upload error")
+  defp upload_error_to_string(err), do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "5 MB", max_files: 4)
 end

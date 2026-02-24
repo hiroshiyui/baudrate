@@ -12,6 +12,7 @@ defmodule BaudrateWeb.PasswordResetLive do
   require Logger
 
   alias Baudrate.Auth
+  import BaudrateWeb.Helpers, only: [password_strength: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -125,13 +126,4 @@ defmodule BaudrateWeb.PasswordResetLive do
     end
   end
 
-  defp password_strength(password) do
-    %{
-      length: String.length(password) >= 12,
-      lowercase: Regex.match?(~r/[a-z]/, password),
-      uppercase: Regex.match?(~r/[A-Z]/, password),
-      digit: Regex.match?(~r/[0-9]/, password),
-      special: Regex.match?(~r/[^a-zA-Z0-9]/, password)
-    }
-  end
 end
