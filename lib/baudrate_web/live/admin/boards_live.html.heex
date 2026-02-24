@@ -183,11 +183,11 @@
               board.min_role_to_view == "guest" && "badge-success",
               board.min_role_to_view != "guest" && "badge-warning"
             ]}>
-              {board.min_role_to_view}
+              {translate_role(board.min_role_to_view)}
             </span>
             <span class="text-base-content/50 mx-1">/</span>
             <span class="badge badge-sm badge-info">
-              {board.min_role_to_post}
+              {translate_role(board.min_role_to_post)}
             </span>
           </td>
           <td>{board.position}</td>

@@ -13,7 +13,7 @@ defmodule BaudrateWeb.ArticleLive do
   alias Baudrate.Content.PubSub, as: ContentPubSub
   alias Baudrate.Moderation
   alias BaudrateWeb.Helpers
-  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1, format_file_size: 1]
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -486,10 +486,6 @@ defmodule BaudrateWeb.ArticleLive do
   defp user_can_view_article?(article, user) do
     Enum.any?(article.boards, &Content.can_view_board?(&1, user))
   end
-
-  defp format_file_size(bytes) when bytes < 1024, do: "#{bytes} B"
-  defp format_file_size(bytes) when bytes < 1_048_576, do: "#{Float.round(bytes / 1024, 1)} KB"
-  defp format_file_size(bytes), do: "#{Float.round(bytes / 1_048_576, 1)} MB"
 
   defp upload_error_to_string(err), do: Helpers.upload_error_to_string(err, max_size: "10 MB", max_files: 5)
 

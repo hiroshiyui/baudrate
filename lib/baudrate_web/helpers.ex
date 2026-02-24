@@ -127,4 +127,48 @@ defmodule BaudrateWeb.Helpers do
     do: "#{actor.username}@#{actor.domain}"
 
   def participant_name(_), do: "?"
+
+  @doc """
+  Translates a user status to a localized display string.
+  """
+  def translate_status("active"), do: gettext("active")
+  def translate_status("pending"), do: gettext("pending")
+  def translate_status("banned"), do: gettext("banned")
+  def translate_status(other), do: other
+
+  @doc """
+  Translates a report status to a localized display string.
+  """
+  def translate_report_status("open"), do: gettext("open")
+  def translate_report_status("resolved"), do: gettext("resolved")
+  def translate_report_status("dismissed"), do: gettext("dismissed")
+  def translate_report_status(other), do: other
+
+  @doc """
+  Translates a delivery job status to a localized display string.
+  """
+  def translate_delivery_status("pending"), do: gettext("pending")
+  def translate_delivery_status("delivered"), do: gettext("delivered")
+  def translate_delivery_status("failed"), do: gettext("failed")
+  def translate_delivery_status(other), do: other
+
+  @doc """
+  Formats a file size in bytes to a human-readable string with localized units.
+
+  ## Examples
+
+      iex> BaudrateWeb.Helpers.format_file_size(500)
+      "500 B"
+
+      iex> BaudrateWeb.Helpers.format_file_size(2048)
+      "2.0 KB"
+  """
+  def format_file_size(bytes) when bytes < 1024,
+    do: gettext("%{n} B", n: bytes)
+
+  def format_file_size(bytes) when bytes < 1_048_576,
+    do: gettext("%{n} KB", n: Float.round(bytes / 1024, 1))
+
+  def format_file_size(bytes),
+    do: gettext("%{n} MB", n: Float.round(bytes / 1_048_576, 1))
 end

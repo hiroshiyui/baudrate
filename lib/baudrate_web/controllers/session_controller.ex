@@ -81,7 +81,7 @@ defmodule BaudrateWeb.SessionController do
           end
         else
           conn
-          |> put_flash(:error, "Invalid session.")
+          |> put_flash(:error, gettext("Invalid session."))
           |> redirect(to: "/login")
         end
 
@@ -89,7 +89,7 @@ defmodule BaudrateWeb.SessionController do
         Logger.warning("auth.invalid_token: ip=#{remote_ip(conn)}")
 
         conn
-        |> put_flash(:error, "Invalid or expired token.")
+        |> put_flash(:error, gettext("Invalid or expired token."))
         |> redirect(to: "/login")
     end
   end
@@ -103,14 +103,14 @@ defmodule BaudrateWeb.SessionController do
     cond do
       is_nil(user) ->
         conn
-        |> put_flash(:error, "Session expired. Please log in again.")
+        |> put_flash(:error, gettext("Session expired. Please log in again."))
         |> redirect(to: "/login")
 
       is_nil(secret) ->
         Logger.error("auth.totp_decrypt_error: user_id=#{user.id} ip=#{remote_ip(conn)}")
 
         conn
-        |> put_flash(:error, "TOTP configuration error. Please contact an administrator.")
+        |> put_flash(:error, gettext("TOTP configuration error. Please contact an administrator."))
         |> configure_session(drop: true)
         |> redirect(to: "/login")
 
@@ -119,7 +119,7 @@ defmodule BaudrateWeb.SessionController do
 
         conn
         |> configure_session(drop: true)
-        |> put_flash(:error, "Too many failed attempts. Please log in again.")
+        |> put_flash(:error, gettext("Too many failed attempts. Please log in again."))
         |> redirect(to: "/login")
 
       Auth.valid_totp?(secret, code, since: get_session(conn, :totp_verified_at)) ->
@@ -136,7 +136,7 @@ defmodule BaudrateWeb.SessionController do
 
         conn
         |> put_session(:totp_attempts, attempts + 1)
-        |> put_flash(:error, "Invalid verification code. Please try again.")
+        |> put_flash(:error, gettext("Invalid verification code. Please try again."))
         |> redirect(to: "/totp/verify")
     end
   end
@@ -150,7 +150,7 @@ defmodule BaudrateWeb.SessionController do
     cond do
       is_nil(user) || is_nil(secret) ->
         conn
-        |> put_flash(:error, "Session expired. Please log in again.")
+        |> put_flash(:error, gettext("Session expired. Please log in again."))
         |> redirect(to: "/login")
 
       attempts >= @max_totp_attempts ->
@@ -158,7 +158,7 @@ defmodule BaudrateWeb.SessionController do
 
         conn
         |> configure_session(drop: true)
-        |> put_flash(:error, "Too many failed attempts. Please log in again.")
+        |> put_flash(:error, gettext("Too many failed attempts. Please log in again."))
         |> redirect(to: "/login")
 
       Auth.valid_totp?(secret, code) ->
@@ -177,7 +177,7 @@ defmodule BaudrateWeb.SessionController do
             Logger.error("auth.totp_enable_failed: user_id=#{user.id} ip=#{remote_ip(conn)}")
 
             conn
-            |> put_flash(:error, "Failed to enable TOTP. Please try again.")
+            |> put_flash(:error, gettext("Failed to enable TOTP. Please try again."))
             |> redirect(to: "/totp/setup")
         end
 
@@ -188,7 +188,7 @@ defmodule BaudrateWeb.SessionController do
 
         conn
         |> put_session(:totp_attempts, attempts + 1)
-        |> put_flash(:error, "Invalid verification code. Please try again.")
+        |> put_flash(:error, gettext("Invalid verification code. Please try again."))
         |> redirect(to: "/totp/setup")
     end
   end
@@ -222,7 +222,7 @@ defmodule BaudrateWeb.SessionController do
           |> redirect(to: "/totp/setup")
         else
           conn
-          |> put_flash(:error, "Invalid session.")
+          |> put_flash(:error, gettext("Invalid session."))
           |> redirect(to: "/login")
         end
 
@@ -230,7 +230,7 @@ defmodule BaudrateWeb.SessionController do
         Logger.warning("auth.totp_reset_invalid_token: ip=#{remote_ip(conn)}")
 
         conn
-        |> put_flash(:error, "Invalid or expired token.")
+        |> put_flash(:error, gettext("Invalid or expired token."))
         |> redirect(to: "/profile")
     end
   end
@@ -243,7 +243,7 @@ defmodule BaudrateWeb.SessionController do
     cond do
       is_nil(user) ->
         conn
-        |> put_flash(:error, "Session expired. Please log in again.")
+        |> put_flash(:error, gettext("Session expired. Please log in again."))
         |> redirect(to: "/login")
 
       attempts >= @max_totp_attempts ->
@@ -251,7 +251,7 @@ defmodule BaudrateWeb.SessionController do
 
         conn
         |> configure_session(drop: true)
-        |> put_flash(:error, "Too many failed attempts. Please log in again.")
+        |> put_flash(:error, gettext("Too many failed attempts. Please log in again."))
         |> redirect(to: "/login")
 
       Auth.verify_recovery_code(user, code) == :ok ->
@@ -268,7 +268,7 @@ defmodule BaudrateWeb.SessionController do
 
         conn
         |> put_session(:totp_attempts, attempts + 1)
-        |> put_flash(:error, "Invalid recovery code. Please try again.")
+        |> put_flash(:error, gettext("Invalid recovery code. Please try again."))
         |> redirect(to: "/totp/recovery")
     end
   end

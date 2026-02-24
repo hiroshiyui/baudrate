@@ -10,7 +10,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
 
   alias Baudrate.Content
   alias Baudrate.Moderation
-  import BaudrateWeb.Helpers, only: [parse_id: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, translate_report_status: 1]
 
   @impl true
   def mount(_params, _session, socket) do

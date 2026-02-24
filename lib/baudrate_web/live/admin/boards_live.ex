@@ -17,7 +17,7 @@ defmodule BaudrateWeb.Admin.BoardsLive do
   alias Baudrate.Content.Board
   alias Baudrate.Federation.KeyStore
   alias Baudrate.Moderation
-  import BaudrateWeb.Helpers, only: [parse_id: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, translate_role: 1]
 
   @impl true
   def mount(_params, _session, socket) do

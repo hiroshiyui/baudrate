@@ -43,7 +43,7 @@
                 <td class="font-mono text-sm max-w-xs truncate">{job.inbox_url}</td>
                 <td>
                   <span class={["badge badge-sm", job.status == "failed" && "badge-error", job.status == "pending" && "badge-warning"]}>
-                    {job.status}
+                    {translate_delivery_status(job.status)}
                   </span>
                 </td>
                 <td>{job.attempts}</td>
@@ -198,7 +198,7 @@
               <td>{board.name}</td>
               <td>
                 <span class={["badge badge-sm", board.min_role_to_view == "guest" && "badge-success", board.min_role_to_view != "guest" && "badge-ghost"]}>
-                  {board.min_role_to_view}
+                  {translate_role(board.min_role_to_view)}
                 </span>
               </td>
               <td>

@@ -7,6 +7,8 @@ defmodule BaudrateWeb.FeedXML do
   and article URL/content generation.
   """
 
+  use Gettext, backend: BaudrateWeb.Gettext
+
   require EEx
 
   @template_dir Path.join(__DIR__, "feed_xml")
@@ -38,7 +40,7 @@ defmodule BaudrateWeb.FeedXML do
   Returns the display name for an article's author.
   """
   def author_name(%{user: %{username: username}}) when is_binary(username), do: username
-  def author_name(_), do: "Unknown"
+  def author_name(_), do: gettext("Unknown")
 
   @doc """
   Returns the full URL for an article.

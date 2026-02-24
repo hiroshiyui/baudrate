@@ -13,7 +13,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
   alias Baudrate.{Content, Moderation, Setup}
   alias Baudrate.Federation
   alias Baudrate.Federation.{BlocklistAudit, DeliveryStats, InstanceStats}
-  import BaudrateWeb.Helpers, only: [parse_id: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, translate_role: 1, translate_delivery_status: 1]
 
   @impl true
   def mount(_params, _session, socket) do

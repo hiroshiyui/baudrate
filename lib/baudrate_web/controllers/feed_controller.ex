@@ -31,7 +31,7 @@ defmodule BaudrateWeb.FeedController do
     render_feed(conn, :rss, articles, %{
       title: site_name,
       link: base <> "/",
-      description: "Recent articles on #{site_name}",
+      description: gettext("Recent articles on %{site_name}", site_name: site_name),
       self_url: base <> "/feeds/rss"
     })
   end
@@ -59,7 +59,7 @@ defmodule BaudrateWeb.FeedController do
       render_feed(conn, :rss, articles, %{
         title: board.name,
         link: base <> "/boards/#{board.slug}",
-        description: board.description || "Articles in #{board.name}",
+        description: board.description || gettext("Articles in %{board_name}", board_name: board.name),
         self_url: base <> "/feeds/boards/#{board.slug}/rss"
       })
     else
@@ -93,9 +93,9 @@ defmodule BaudrateWeb.FeedController do
       base = BaudrateWeb.Endpoint.url()
 
       render_feed(conn, :rss, articles, %{
-        title: "#{user.username}'s articles",
+        title: gettext("%{username}'s articles", username: user.username),
         link: base <> "/users/#{user.username}",
-        description: "Recent articles by #{user.username}",
+        description: gettext("Recent articles by %{username}", username: user.username),
         self_url: base <> "/feeds/users/#{user.username}/rss"
       })
     else
@@ -111,7 +111,7 @@ defmodule BaudrateWeb.FeedController do
       base = BaudrateWeb.Endpoint.url()
 
       render_feed(conn, :atom, articles, %{
-        title: "#{user.username}'s articles",
+        title: gettext("%{username}'s articles", username: user.username),
         link: base <> "/users/#{user.username}",
         self_url: base <> "/feeds/users/#{user.username}/atom"
       })
@@ -144,7 +144,7 @@ defmodule BaudrateWeb.FeedController do
       assigns =
         Map.merge(meta, %{
           articles: articles,
-          language: "en",
+          language: Gettext.get_locale(BaudrateWeb.Gettext),
           last_build_date: last_modified,
           updated: last_modified
         })

@@ -1626,7 +1626,7 @@ msgstr ""
 msgid "User not found."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.ex:299
+#: lib/baudrate_web/helpers.ex:134
 #, elixir-autogen, elixir-format
 msgid "active"
 msgstr ""
@@ -1636,7 +1636,7 @@ msgstr ""
 msgid "admin"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.ex:301
+#: lib/baudrate_web/helpers.ex:136
 #, elixir-autogen, elixir-format
 msgid "banned"
 msgstr ""
@@ -1651,7 +1651,8 @@ msgstr ""
 msgid "moderator"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/users_live.ex:300
+#: lib/baudrate_web/helpers.ex:135
+#: lib/baudrate_web/helpers.ex:150
 #, elixir-autogen, elixir-format
 msgid "pending"
 msgstr ""
@@ -2550,6 +2551,7 @@ msgstr ""
 msgid "Revision list"
 msgstr ""
 
+#: lib/baudrate_web/controllers/feed_xml.ex:43
 #: lib/baudrate_web/live/article_history_live.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "Unknown"
@@ -3037,4 +3039,132 @@ msgstr ""
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:71
 #, elixir-autogen, elixir-format
 msgid "Unblock User"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:167
+#, elixir-autogen, elixir-format
+msgid "%{n} B"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:170
+#, elixir-autogen, elixir-format
+msgid "%{n} KB"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:173
+#, elixir-autogen, elixir-format
+msgid "%{n} MB"
+msgstr ""
+
+#: lib/baudrate_web/controllers/feed_controller.ex:96
+#: lib/baudrate_web/controllers/feed_controller.ex:114
+#, elixir-autogen, elixir-format
+msgid "%{username}'s articles"
+msgstr ""
+
+#: lib/baudrate_web/controllers/feed_controller.ex:62
+#, elixir-autogen, elixir-format
+msgid "Articles in %{board_name}"
+msgstr ""
+
+#: lib/baudrate_web/components/layouts/root.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "Atom Feed"
+msgstr ""
+
+#: lib/baudrate_web/components/layouts/root.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "Board Atom Feed"
+msgstr ""
+
+#: lib/baudrate_web/components/layouts/root.html.heex:16
+#, elixir-autogen, elixir-format
+msgid "Board RSS Feed"
+msgstr ""
+
+#: lib/baudrate_web/controllers/session_controller.ex:180
+#, elixir-autogen, elixir-format
+msgid "Failed to enable TOTP. Please try again."
+msgstr ""
+
+#: lib/baudrate_web/controllers/session_controller.ex:92
+#: lib/baudrate_web/controllers/session_controller.ex:233
+#, elixir-autogen, elixir-format
+msgid "Invalid or expired token."
+msgstr ""
+
+#: lib/baudrate_web/controllers/session_controller.ex:271
+#, elixir-autogen, elixir-format
+msgid "Invalid recovery code. Please try again."
+msgstr ""
+
+#: lib/baudrate_web/controllers/session_controller.ex:84
+#: lib/baudrate_web/controllers/session_controller.ex:225
+#, elixir-autogen, elixir-format
+msgid "Invalid session."
+msgstr ""
+
+#: lib/baudrate_web/controllers/session_controller.ex:139
+#: lib/baudrate_web/controllers/session_controller.ex:191
+#, elixir-autogen, elixir-format
+msgid "Invalid verification code. Please try again."
+msgstr ""
+
+#: lib/baudrate_web/components/layouts/root.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "RSS Feed"
+msgstr ""
+
+#: lib/baudrate_web/controllers/feed_controller.ex:98
+#, elixir-autogen, elixir-format
+msgid "Recent articles by %{username}"
+msgstr ""
+
+#: lib/baudrate_web/controllers/feed_controller.ex:34
+#, elixir-autogen, elixir-format
+msgid "Recent articles on %{site_name}"
+msgstr ""
+
+#: lib/baudrate_web/controllers/session_controller.ex:106
+#: lib/baudrate_web/controllers/session_controller.ex:153
+#: lib/baudrate_web/controllers/session_controller.ex:246
+#, elixir-autogen, elixir-format
+msgid "Session expired. Please log in again."
+msgstr ""
+
+#: lib/baudrate_web/controllers/session_controller.ex:113
+#, elixir-autogen, elixir-format
+msgid "TOTP configuration error. Please contact an administrator."
+msgstr ""
+
+#: lib/baudrate_web/controllers/session_controller.ex:122
+#: lib/baudrate_web/controllers/session_controller.ex:161
+#: lib/baudrate_web/controllers/session_controller.ex:254
+#, elixir-autogen, elixir-format
+msgid "Too many failed attempts. Please log in again."
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:151
+#, elixir-autogen, elixir-format
+msgid "delivered"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:144
+#, elixir-autogen, elixir-format
+msgid "dismissed"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:152
+#, elixir-autogen, elixir-format
+msgid "failed"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:142
+#, elixir-autogen, elixir-format
+msgid "open"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:143
+#, elixir-autogen, elixir-format
+msgid "resolved"
 msgstr ""

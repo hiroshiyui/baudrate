@@ -47,7 +47,7 @@
             report.status == "resolved" && "badge-success",
             report.status == "dismissed" && "badge-ghost"
           ]}>
-            {report.status}
+            {translate_report_status(report.status)}
           </span>
           <span class="text-sm opacity-70 ml-2">
             {Calendar.strftime(report.inserted_at, "%Y-%m-%d %H:%M")}

@@ -14,7 +14,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
   alias Baudrate.Auth
   alias Baudrate.Moderation
   alias Baudrate.Setup
-  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1, translate_role: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1, translate_role: 1, translate_status: 1]
 
   @valid_statuses ~w(active pending banned)
 
@@ -295,10 +295,5 @@ defmodule BaudrateWeb.Admin.UsersLive do
   defp reload_counts(socket) do
     assign(socket, :status_counts, Auth.count_users_by_status())
   end
-
-  defp translate_status("active"), do: gettext("active")
-  defp translate_status("pending"), do: gettext("pending")
-  defp translate_status("banned"), do: gettext("banned")
-  defp translate_status(other), do: other
 
 end
