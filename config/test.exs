@@ -37,3 +37,7 @@ config :phoenix,
 # Run federation delivery synchronously in tests to avoid sandbox ownership
 # errors from fire-and-forget Tasks that outlive the test process.
 config :baudrate, federation_async: false
+
+# Bypass SSRF checks in tests so Req.Test stubs can intercept HTTP calls
+config :baudrate, :bypass_ssrf_check, true
+config :baudrate, :req_test_options, plug: {Req.Test, Baudrate.Federation.HTTPClient}

@@ -28,6 +28,8 @@ defmodule Baudrate.Federation.HTTPClient do
   require Logger
 
   @max_redirects 5
+  @req_test_options Application.compile_env(:baudrate, :req_test_options, [])
+  @bypass_ssrf Application.compile_env(:baudrate, :bypass_ssrf_check, false)
 
   @doc """
   Performs a GET request with SSRF protection and federation constraints.
@@ -151,7 +153,7 @@ defmodule Baudrate.Federation.HTTPClient do
 
     with :ok <- validate_scheme(uri),
          :ok <- validate_host(uri),
-         {:ok, ip} <- resolve_and_check_ip(uri.host) do
+         {:ok, ip} <- safe_resolve_ip(uri.host) do
       {:ok, %{ip: ip, host: uri.host, uri: uri}}
     end
   end
@@ -185,7 +187,7 @@ defmodule Baudrate.Federation.HTTPClient do
       decode_body: false
     ]
 
-    base_opts
+    Keyword.merge(base_opts, @req_test_options)
   end
 
   # Extracts and resolves the Location header from a redirect response.
@@ -220,26 +222,30 @@ defmodule Baudrate.Federation.HTTPClient do
   defp validate_host(%URI{host: ""}), do: {:error, :invalid_host}
   defp validate_host(_), do: :ok
 
-  defp resolve_and_check_ip(host) do
-    case resolve_ip(host) do
-      {:ok, ip} ->
-        if private_ip?(ip) do
-          {:error, :private_ip}
-        else
-          {:ok, ip}
-        end
+  if @bypass_ssrf do
+    defp safe_resolve_ip(_host), do: {:ok, {127, 0, 0, 1}}
+  else
+    defp safe_resolve_ip(host) do
+      case resolve_ip(host) do
+        {:ok, ip} ->
+          if private_ip?(ip) do
+            {:error, :private_ip}
+          else
+            {:ok, ip}
+          end
 
-      {:error, _} ->
-        {:error, :dns_resolution_failed}
+        {:error, _} ->
+          {:error, :dns_resolution_failed}
+      end
     end
-  end
 
-  defp resolve_ip(host) do
-    host_charlist = String.to_charlist(host)
+    defp resolve_ip(host) do
+      host_charlist = String.to_charlist(host)
 
-    case :inet.getaddr(host_charlist, :inet) do
-      {:ok, ip} -> {:ok, ip}
-      {:error, _} -> :inet.getaddr(host_charlist, :inet6)
+      case :inet.getaddr(host_charlist, :inet) do
+        {:ok, ip} -> {:ok, ip}
+        {:error, _} -> :inet.getaddr(host_charlist, :inet6)
+      end
     end
   end
 

@@ -1,7 +1,7 @@
 defmodule Baudrate.Federation.StaleActorCleanerTest do
   use Baudrate.DataCase, async: false
 
-  alias Baudrate.Federation.{Announce, Follower, RemoteActor, StaleActorCleaner}
+  alias Baudrate.Federation.{Announce, Follower, HTTPClient, RemoteActor, StaleActorCleaner}
   alias Baudrate.Content.{Article, ArticleLike, Comment}
   alias Baudrate.Moderation.Report
 
@@ -73,6 +73,11 @@ defmodule Baudrate.Federation.StaleActorCleanerTest do
       })
       |> Repo.insert!()
 
+      # Stub HTTP to simulate refresh failure
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 500, "")
+      end)
+
       {_refreshed, deleted, _errors} = StaleActorCleaner.run_cleanup()
 
       # Actor should NOT be deleted (refresh attempted, errors expected in test env)
@@ -93,6 +98,11 @@ defmodule Baudrate.Federation.StaleActorCleanerTest do
         remote_actor_id: actor.id
       })
       |> Repo.insert!()
+
+      # Stub HTTP to simulate refresh failure
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 500, "")
+      end)
 
       {_refreshed, deleted, _errors} = StaleActorCleaner.run_cleanup()
 

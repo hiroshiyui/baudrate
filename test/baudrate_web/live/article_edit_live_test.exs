@@ -62,4 +62,42 @@ defmodule BaudrateWeb.ArticleEditLiveTest do
     assert to =~ "/articles/#{article.slug}"
     assert flash["error"] =~ "not authorized"
   end
+
+  test "validate updates form without persisting", %{conn: conn, article: article} do
+    {:ok, lv, _html} = live(conn, "/articles/#{article.slug}/edit")
+
+    html =
+      lv
+      |> form("form", article: %{title: "New Title", body: "New body"})
+      |> render_change()
+
+    assert html =~ "New Title"
+    # DB unchanged
+    db_article = Content.get_article_by_slug!(article.slug)
+    assert db_article.title == "My Article"
+    assert db_article.body == "Original body"
+  end
+
+  test "validate shows errors for blank title", %{conn: conn, article: article} do
+    {:ok, lv, _html} = live(conn, "/articles/#{article.slug}/edit")
+
+    html =
+      lv
+      |> form("form", article: %{title: "", body: "Some body"})
+      |> render_change()
+
+    assert html =~ "t be blank" or html =~ "required"
+  end
+
+  test "admin can edit another user's article", %{conn: _conn, article: article} do
+    admin = setup_user("admin")
+
+    conn =
+      Phoenix.ConnTest.build_conn()
+      |> log_in_user(admin)
+
+    {:ok, _lv, html} = live(conn, "/articles/#{article.slug}/edit")
+    assert html =~ "Edit Article"
+    assert html =~ "My Article"
+  end
 end

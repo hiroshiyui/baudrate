@@ -10,6 +10,7 @@ defmodule BaudrateWeb.LoginLiveTest do
 
   setup %{conn: conn} do
     Repo.insert!(%Setting{key: "setup_completed", value: "true"})
+    Hammer.delete_buckets("login:unknown")
     {:ok, conn: conn}
   end
 
@@ -69,5 +70,32 @@ defmodule BaudrateWeb.LoginLiveTest do
     attempts = Repo.all(from a in LoginAttempt, where: a.username == "attempt_user")
     assert length(attempts) == 1
     assert hd(attempts).success == false
+  end
+
+  test "successful login triggers phx-trigger-action", %{conn: conn} do
+    user = setup_user("user")
+
+    {:ok, lv, _html} = live(conn, "/login")
+
+    html =
+      lv
+      |> form("form[phx-submit]", login: %{username: user.username, password: "Password123!x"})
+      |> render_submit()
+
+    assert html =~ ~s(phx-trigger-action)
+  end
+
+  test "successful login records attempt as success", %{conn: conn} do
+    user = setup_user("user")
+
+    {:ok, lv, _html} = live(conn, "/login")
+
+    lv
+    |> form("form[phx-submit]", login: %{username: user.username, password: "Password123!x"})
+    |> render_submit()
+
+    attempts = Repo.all(from a in LoginAttempt, where: a.username == ^user.username)
+    assert length(attempts) == 1
+    assert hd(attempts).success == true
   end
 end

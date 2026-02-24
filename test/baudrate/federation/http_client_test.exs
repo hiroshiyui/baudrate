@@ -30,6 +30,69 @@ defmodule Baudrate.Federation.HTTPClientTest do
     end
   end
 
+  describe "get/2" do
+    test "returns body on 200" do
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 200, ~s({"type":"Person"}))
+      end)
+
+      assert {:ok, %{status: 200, body: body}} =
+               HTTPClient.get("https://remote.example/users/alice")
+
+      assert body =~ "Person"
+    end
+
+    test "returns http_error on 404" do
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 404, "Not Found")
+      end)
+
+      assert {:error, {:http_error, 404}} =
+               HTTPClient.get("https://remote.example/users/missing")
+    end
+
+    test "returns http_error on 500" do
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 500, "Internal Server Error")
+      end)
+
+      assert {:error, {:http_error, 500}} =
+               HTTPClient.get("https://remote.example/users/error")
+    end
+
+    test "rejects oversized response" do
+      # Default max_payload_size from federation config; generate a body larger than 256KB
+      big_body = String.duplicate("x", 256 * 1024 + 1)
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 200, big_body)
+      end)
+
+      assert {:error, :response_too_large} =
+               HTTPClient.get("https://remote.example/users/big")
+    end
+  end
+
+  describe "post/3" do
+    test "returns body on 202" do
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 202, "")
+      end)
+
+      assert {:ok, %{status: 202}} =
+               HTTPClient.post("https://remote.example/inbox", "{}")
+    end
+
+    test "returns http_error on 401" do
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 401, "Unauthorized")
+      end)
+
+      assert {:error, {:http_error, 401}} =
+               HTTPClient.post("https://remote.example/inbox", "{}")
+    end
+  end
+
   describe "private_ip?/1" do
     test "127.x.x.x is private" do
       assert HTTPClient.private_ip?({127, 0, 0, 1})

@@ -1,7 +1,7 @@
 defmodule Baudrate.Federation.HTTPSignatureTest do
-  use ExUnit.Case, async: true
+  use Baudrate.DataCase, async: true
 
-  alias Baudrate.Federation.{HTTPSignature, KeyStore}
+  alias Baudrate.Federation.{HTTPSignature, KeyStore, RemoteActor}
 
   describe "parse_signature_string/1" do
     test "parses a valid Signature header" do
@@ -223,6 +223,168 @@ defmodule Baudrate.Federation.HTTPSignatureTest do
         |> Plug.Conn.assign(:raw_body, "{}")
 
       assert {:error, :missing_digest} = HTTPSignature.verify_digest(conn)
+    end
+  end
+
+  describe "verify/1" do
+    setup do
+      {public_pem, private_pem} = KeyStore.generate_keypair()
+      ap_id = "https://remote.example/users/verify-test"
+
+      {:ok, actor} =
+        %RemoteActor{}
+        |> RemoteActor.changeset(%{
+          ap_id: ap_id,
+          username: "verify-test",
+          domain: "remote.example",
+          public_key_pem: public_pem,
+          inbox: "#{ap_id}/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert()
+
+      {:ok, actor: actor, public_pem: public_pem, private_pem: private_pem, ap_id: ap_id}
+    end
+
+    test "succeeds with valid signed POST", %{private_pem: private_pem, ap_id: ap_id, actor: actor} do
+      key_id = "#{ap_id}#main-key"
+      body = Jason.encode!(%{"type" => "Follow", "actor" => ap_id})
+
+      headers =
+        HTTPSignature.sign(:post, "https://local.example/ap/inbox", body, private_pem, key_id)
+
+      conn =
+        Plug.Test.conn(:post, "/ap/inbox", body)
+        |> Map.put(:req_headers, [
+          {"host", "local.example"},
+          {"date", headers["date"]},
+          {"digest", headers["digest"]},
+          {"signature", headers["signature"]},
+          {"content-type", "application/activity+json"}
+        ])
+        |> Plug.Conn.assign(:raw_body, body)
+
+      assert {:ok, verified_actor} = HTTPSignature.verify(conn)
+      assert verified_actor.id == actor.id
+      assert verified_actor.ap_id == ap_id
+    end
+
+    test "rejects tampered body", %{private_pem: private_pem, ap_id: ap_id} do
+      key_id = "#{ap_id}#main-key"
+      body = Jason.encode!(%{"type" => "Follow"})
+      tampered = Jason.encode!(%{"type" => "Delete"})
+
+      headers =
+        HTTPSignature.sign(:post, "https://local.example/ap/inbox", body, private_pem, key_id)
+
+      conn =
+        Plug.Test.conn(:post, "/ap/inbox", tampered)
+        |> Map.put(:req_headers, [
+          {"host", "local.example"},
+          {"date", headers["date"]},
+          {"digest", headers["digest"]},
+          {"signature", headers["signature"]},
+          {"content-type", "application/activity+json"}
+        ])
+        |> Plug.Conn.assign(:raw_body, tampered)
+
+      assert {:error, :digest_mismatch} = HTTPSignature.verify(conn)
+    end
+
+    test "rejects missing signature header" do
+      conn =
+        Plug.Test.conn(:post, "/ap/inbox", "{}")
+        |> Map.put(:req_headers, [
+          {"host", "local.example"},
+          {"date", HTTPSignature.format_http_date(DateTime.utc_now())},
+          {"content-type", "application/activity+json"}
+        ])
+        |> Plug.Conn.assign(:raw_body, "{}")
+
+      assert {:error, :missing_signature_header} = HTTPSignature.verify(conn)
+    end
+
+    test "rejects wrong signing key", %{ap_id: ap_id} do
+      # Sign with a different key than what the actor has
+      {_other_pub, other_priv} = KeyStore.generate_keypair()
+      key_id = "#{ap_id}#main-key"
+      body = Jason.encode!(%{"type" => "Follow"})
+
+      headers =
+        HTTPSignature.sign(:post, "https://local.example/ap/inbox", body, other_priv, key_id)
+
+      conn =
+        Plug.Test.conn(:post, "/ap/inbox", body)
+        |> Map.put(:req_headers, [
+          {"host", "local.example"},
+          {"date", headers["date"]},
+          {"digest", headers["digest"]},
+          {"signature", headers["signature"]},
+          {"content-type", "application/activity+json"}
+        ])
+        |> Plug.Conn.assign(:raw_body, body)
+
+      assert {:error, :signature_invalid} = HTTPSignature.verify(conn)
+    end
+  end
+
+  describe "verify_get/1" do
+    setup do
+      {public_pem, private_pem} = KeyStore.generate_keypair()
+      ap_id = "https://remote.example/users/get-verify"
+
+      {:ok, actor} =
+        %RemoteActor{}
+        |> RemoteActor.changeset(%{
+          ap_id: ap_id,
+          username: "get-verify",
+          domain: "remote.example",
+          public_key_pem: public_pem,
+          inbox: "#{ap_id}/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert()
+
+      {:ok, actor: actor, public_pem: public_pem, private_pem: private_pem, ap_id: ap_id}
+    end
+
+    test "succeeds with valid signed GET", %{private_pem: private_pem, ap_id: ap_id, actor: actor} do
+      key_id = "#{ap_id}#main-key"
+      url = "https://local.example/ap/users/someone"
+
+      headers = HTTPSignature.sign_get(url, private_pem, key_id)
+
+      conn =
+        Plug.Test.conn(:get, "/ap/users/someone")
+        |> Map.put(:req_headers, [
+          {"host", "local.example"},
+          {"date", headers["date"]},
+          {"signature", headers["signature"]}
+        ])
+
+      assert {:ok, verified_actor} = HTTPSignature.verify_get(conn)
+      assert verified_actor.id == actor.id
+      assert verified_actor.ap_id == ap_id
+    end
+
+    test "rejects invalid GET signature", %{ap_id: ap_id} do
+      {_other_pub, other_priv} = KeyStore.generate_keypair()
+      key_id = "#{ap_id}#main-key"
+      url = "https://local.example/ap/users/someone"
+
+      headers = HTTPSignature.sign_get(url, other_priv, key_id)
+
+      conn =
+        Plug.Test.conn(:get, "/ap/users/someone")
+        |> Map.put(:req_headers, [
+          {"host", "local.example"},
+          {"date", headers["date"]},
+          {"signature", headers["signature"]}
+        ])
+
+      assert {:error, :signature_invalid} = HTTPSignature.verify_get(conn)
     end
   end
 end

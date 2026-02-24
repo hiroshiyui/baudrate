@@ -8,13 +8,13 @@ Audit date: 2026-02-24
 
 ### Modules Below 50% Coverage
 
-- [ ] **`ProfileLive`** (23%) — locale management, unmute, DM access, remove_avatar
-- [ ] **`ArticleEditLive`** (25%) — edit submission, permissions, preview
-- [ ] **`ActorResolver`** (32%) — remote fetch, resolve_by_key_id, refresh
-- [ ] **`TotpVerifyLive`** (33%) — code submission, lockout
-- [ ] **`LoginLive`** (43%) — form submission, error paths
-- [ ] **`HTTPClient`** (47%) — get/2, post/4, signed_get/4
-- [ ] **`HTTPSignature`** (52%) — verify/1, verify_digest/1, verify_get/1
+- [x] **`ProfileLive`** (23%) — locale management, unmute, DM access, remove_avatar (2026-02-24)
+- [x] **`ArticleEditLive`** (25%) — edit submission, permissions, preview (2026-02-24)
+- [x] **`ActorResolver`** (32%) — remote fetch, resolve_by_key_id, refresh (2026-02-24)
+- [x] **`TotpVerifyLive`** (33%) — code submission, lockout (2026-02-24)
+- [x] **`LoginLive`** (43%) — form submission, error paths (2026-02-24)
+- [x] **`HTTPClient`** (47%) — get/2, post/4, signed_get/4 (2026-02-24)
+- [x] **`HTTPSignature`** (52%) — verify/1, verify_digest/1, verify_get/1 (2026-02-24)
 
 ### Missing Controller/Context Tests
 
