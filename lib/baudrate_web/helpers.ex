@@ -145,6 +145,18 @@ defmodule BaudrateWeb.Helpers do
   def translate_report_status(other), do: other
 
   @doc """
+  Builds a full invite link URL for the given invite code string.
+
+  ## Examples
+
+      iex> BaudrateWeb.Helpers.invite_url("abc12345")
+      BaudrateWeb.Endpoint.url() <> "/register?invite=abc12345"
+  """
+  def invite_url(code) when is_binary(code) do
+    BaudrateWeb.Endpoint.url() <> "/register?invite=" <> code
+  end
+
+  @doc """
   Translates a delivery job status to a localized display string.
   """
   def translate_delivery_status("pending"), do: gettext("pending")

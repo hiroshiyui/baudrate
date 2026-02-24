@@ -207,6 +207,14 @@ defmodule BaudrateWeb.HelpersTest do
     end
   end
 
+  describe "invite_url/1" do
+    test "builds a full invite link URL" do
+      url = Helpers.invite_url("abc12345")
+      assert url =~ "/register?invite=abc12345"
+      assert String.starts_with?(url, "http")
+    end
+  end
+
   describe "participant_name/1" do
     test "User struct returns username" do
       user = %Baudrate.Setup.User{username: "alice"}
