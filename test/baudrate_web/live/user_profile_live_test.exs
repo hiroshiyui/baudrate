@@ -29,7 +29,7 @@ defmodule BaudrateWeb.UserProfileLiveTest do
   test "redirects for banned user", %{conn: conn} do
     admin = setup_user("admin")
     user = setup_user("user")
-    {:ok, _} = Auth.ban_user(user, admin.id, "test")
+    {:ok, _, _} = Auth.ban_user(user, admin.id, "test")
 
     assert {:error, {:redirect, %{to: "/"}}} = live(conn, "/users/#{user.username}")
   end

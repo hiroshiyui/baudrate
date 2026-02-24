@@ -151,7 +151,7 @@ defmodule BaudrateWeb.AuthHooksTest do
   describe "banned user handling" do
     setup %{user: user} do
       admin = setup_user("admin")
-      {:ok, banned_user} = Baudrate.Auth.ban_user(user, admin.id, "test ban")
+      {:ok, banned_user, _revoked} = Baudrate.Auth.ban_user(user, admin.id, "test ban")
       banned_user = Baudrate.Auth.get_user(banned_user.id)
       # Create a new session after banning (ban_user deletes all sessions)
       {:ok, session_token, _} = Baudrate.Auth.create_user_session(banned_user.id)

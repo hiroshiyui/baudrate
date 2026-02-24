@@ -35,7 +35,9 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
 
     {:ok, lv, _html} = live(conn, "/admin/users")
 
-    html = lv |> element("button[phx-click=\"filter\"][phx-value-status=\"active\"]") |> render_click()
+    html =
+      lv |> element("button[phx-click=\"filter\"][phx-value-status=\"active\"]") |> render_click()
+
     assert html =~ admin.username
   end
 
@@ -58,7 +60,9 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
     {:ok, lv, _html} = live(conn, "/admin/users")
 
     # Open ban modal
-    lv |> element("button[phx-click=\"show_ban_modal\"][phx-value-id=\"#{user.id}\"]") |> render_click()
+    lv
+    |> element("button[phx-click=\"show_ban_modal\"][phx-value-id=\"#{user.id}\"]")
+    |> render_click()
 
     # Confirm ban
     html = lv |> element("button[phx-click=\"confirm_ban\"]") |> render_click()
@@ -72,7 +76,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
   test "admin can unban a user", %{conn: conn} do
     admin = setup_user("admin")
     user = setup_user("user")
-    {:ok, _} = Auth.ban_user(user, admin.id, "test")
+    {:ok, _, _} = Auth.ban_user(user, admin.id, "test")
     conn = log_in_user(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/users")
@@ -80,7 +84,9 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
     # Filter to banned
     lv |> element("button[phx-click=\"filter\"][phx-value-status=\"banned\"]") |> render_click()
 
-    html = lv |> element("button[phx-click=\"unban\"][phx-value-id=\"#{user.id}\"]") |> render_click()
+    html =
+      lv |> element("button[phx-click=\"unban\"][phx-value-id=\"#{user.id}\"]") |> render_click()
+
     assert html =~ "User unbanned successfully"
   end
 
@@ -129,7 +135,11 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
     # Filter to pending
     lv |> element("button[phx-click=\"filter\"][phx-value-status=\"pending\"]") |> render_click()
 
-    html = lv |> element("button[phx-click=\"approve\"][phx-value-id=\"#{pending_user.id}\"]") |> render_click()
+    html =
+      lv
+      |> element("button[phx-click=\"approve\"][phx-value-id=\"#{pending_user.id}\"]")
+      |> render_click()
+
     assert html =~ "User approved successfully"
   end
 
@@ -191,11 +201,19 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
       {:ok, lv, _html} = live(conn, "/admin/users")
 
       # Select user
-      html = lv |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user.id}\"]") |> render_click()
+      html =
+        lv
+        |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user.id}\"]")
+        |> render_click()
+
       assert html =~ "1 user selected"
 
       # Deselect user
-      html = lv |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user.id}\"]") |> render_click()
+      html =
+        lv
+        |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user.id}\"]")
+        |> render_click()
+
       refute html =~ "user selected"
     end
 
@@ -224,10 +242,16 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
       {:ok, lv, _html} = live(conn, "/admin/users")
 
       # Select a user
-      lv |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user.id}\"]") |> render_click()
+      lv
+      |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user.id}\"]")
+      |> render_click()
 
       # Change filter
-      html = lv |> element("button[phx-click=\"filter\"][phx-value-status=\"active\"]") |> render_click()
+      html =
+        lv
+        |> element("button[phx-click=\"filter\"][phx-value-status=\"active\"]")
+        |> render_click()
+
       refute html =~ "user selected"
     end
 
@@ -239,7 +263,9 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
       {:ok, lv, _html} = live(conn, "/admin/users")
 
       # Select a user
-      lv |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user.id}\"]") |> render_click()
+      lv
+      |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user.id}\"]")
+      |> render_click()
 
       # Search
       html = lv |> form("form[phx-change=\"search\"]", search: "xyz") |> render_change()
@@ -258,8 +284,13 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
       {:ok, lv, _html} = live(conn, "/admin/users?status=pending")
 
       # Select both
-      lv |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{pending1.id}\"]") |> render_click()
-      lv |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{pending2.id}\"]") |> render_click()
+      lv
+      |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{pending1.id}\"]")
+      |> render_click()
+
+      lv
+      |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{pending2.id}\"]")
+      |> render_click()
 
       # Bulk approve
       html = lv |> element("button[phx-click=\"bulk_approve\"]") |> render_click()
@@ -271,7 +302,12 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
 
       # Verify moderation logs with bulk flag
       import Ecto.Query
-      logs = Repo.all(from(l in Moderation.Log, where: l.action == "approve_user" and l.actor_id == ^admin.id))
+
+      logs =
+        Repo.all(
+          from(l in Moderation.Log, where: l.action == "approve_user" and l.actor_id == ^admin.id)
+        )
+
       assert length(logs) == 2
       assert Enum.all?(logs, fn log -> log.details["bulk"] == true end)
     end
@@ -284,7 +320,11 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
       {:ok, lv, _html} = live(conn, "/admin/users")
 
       # Select a user on "all" filter
-      html = lv |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user.id}\"]") |> render_click()
+      html =
+        lv
+        |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user.id}\"]")
+        |> render_click()
+
       assert html =~ "Ban Selected"
       refute html =~ "Approve Selected"
     end
@@ -300,14 +340,21 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
       {:ok, lv, _html} = live(conn, "/admin/users")
 
       # Select both
-      lv |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user1.id}\"]") |> render_click()
-      lv |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user2.id}\"]") |> render_click()
+      lv
+      |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user1.id}\"]")
+      |> render_click()
+
+      lv
+      |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user2.id}\"]")
+      |> render_click()
 
       # Open bulk ban modal
       lv |> element("button[phx-click=\"show_bulk_ban_modal\"]") |> render_click()
 
       # Set reason
-      lv |> form("form[phx-change=\"update_bulk_ban_reason\"]", reason: "Spam accounts") |> render_change()
+      lv
+      |> form("form[phx-change=\"update_bulk_ban_reason\"]", reason: "Spam accounts")
+      |> render_change()
 
       # Confirm
       html = lv |> element("button[phx-click=\"confirm_bulk_ban\"]") |> render_click()
@@ -319,7 +366,12 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
 
       # Verify moderation logs with bulk flag
       import Ecto.Query
-      logs = Repo.all(from(l in Moderation.Log, where: l.action == "ban_user" and l.actor_id == ^admin.id))
+
+      logs =
+        Repo.all(
+          from(l in Moderation.Log, where: l.action == "ban_user" and l.actor_id == ^admin.id)
+        )
+
       assert length(logs) == 2
       assert Enum.all?(logs, fn log -> log.details["bulk"] == true end)
       assert Enum.all?(logs, fn log -> log.details["reason"] == "Spam accounts" end)
@@ -332,7 +384,9 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
       {:ok, lv, _html} = live(conn, "/admin/users")
 
       # Select only self
-      lv |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{admin.id}\"]") |> render_click()
+      lv
+      |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{admin.id}\"]")
+      |> render_click()
 
       # Try to open bulk ban modal
       html = lv |> element("button[phx-click=\"show_bulk_ban_modal\"]") |> render_click()
@@ -347,7 +401,10 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
       {:ok, lv, _html} = live(conn, "/admin/users")
 
       # Select and open modal
-      lv |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user.id}\"]") |> render_click()
+      lv
+      |> element("input[phx-click=\"toggle_select\"][phx-value-id=\"#{user.id}\"]")
+      |> render_click()
+
       lv |> element("button[phx-click=\"show_bulk_ban_modal\"]") |> render_click()
 
       # Cancel

@@ -67,6 +67,22 @@ defmodule BaudrateWeb.ConnCase do
   end
 
   @doc """
+  Backdates a user's `inserted_at` to simulate an older account.
+  Returns the user with the updated timestamp.
+  """
+  def backdate_user(user, days) do
+    import Ecto.Query
+    alias Baudrate.Repo
+    alias Baudrate.Setup.User
+
+    past =
+      DateTime.utc_now() |> DateTime.add(-days * 86_400, :second) |> DateTime.truncate(:second)
+
+    Repo.update_all(from(u in User, where: u.id == ^user.id), set: [inserted_at: past])
+    %{user | inserted_at: past}
+  end
+
+  @doc """
   Creates a DB session and sets session keys for a fully authenticated user.
   """
   def log_in_user(conn, user) do

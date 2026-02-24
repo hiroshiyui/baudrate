@@ -42,11 +42,15 @@ defmodule BaudrateWeb.Admin.InvitesLiveTest do
     admin = setup_user("admin")
     conn = log_in_user(conn, admin)
 
-    {:ok, invite} = Auth.generate_invite_code(admin.id)
+    {:ok, invite} = Auth.generate_invite_code(admin)
 
     {:ok, lv, _html} = live(conn, "/admin/invites")
 
-    html = lv |> element("button[phx-click=\"revoke\"][phx-value-id=\"#{invite.id}\"]") |> render_click()
+    html =
+      lv
+      |> element("button[phx-click=\"revoke\"][phx-value-id=\"#{invite.id}\"]")
+      |> render_click()
+
     assert html =~ "Invite code revoked"
   end
 end

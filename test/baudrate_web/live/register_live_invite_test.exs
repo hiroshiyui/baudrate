@@ -30,12 +30,14 @@ defmodule BaudrateWeb.RegisterLiveInviteTest do
 
     html =
       lv
-      |> form("form", user: %{
-        username: "newuser_#{System.unique_integer([:positive])}",
-        password: "Password123!x",
-        password_confirmation: "Password123!x",
-        invite_code: ""
-      })
+      |> form("form",
+        user: %{
+          username: "newuser_#{System.unique_integer([:positive])}",
+          password: "Password123!x",
+          password_confirmation: "Password123!x",
+          invite_code: ""
+        }
+      )
       |> render_submit()
 
     assert html =~ "invite code is required"
@@ -46,12 +48,14 @@ defmodule BaudrateWeb.RegisterLiveInviteTest do
 
     html =
       lv
-      |> form("form", user: %{
-        username: "newuser_#{System.unique_integer([:positive])}",
-        password: "Password123!x",
-        password_confirmation: "Password123!x",
-        invite_code: "invalid123"
-      })
+      |> form("form",
+        user: %{
+          username: "newuser_#{System.unique_integer([:positive])}",
+          password: "Password123!x",
+          password_confirmation: "Password123!x",
+          invite_code: "invalid123"
+        }
+      )
       |> render_submit()
 
     assert html =~ "Invalid invite code"
@@ -59,19 +63,21 @@ defmodule BaudrateWeb.RegisterLiveInviteTest do
 
   test "registration succeeds with valid invite code and shows recovery codes", %{conn: conn} do
     admin = setup_admin()
-    {:ok, invite} = Auth.generate_invite_code(admin.id)
+    {:ok, invite} = Auth.generate_invite_code(admin)
 
     {:ok, lv, _html} = live(conn, "/register")
 
     html =
       lv
-      |> form("form", user: %{
-        username: "invited_#{System.unique_integer([:positive])}",
-        password: "Password123!x",
-        password_confirmation: "Password123!x",
-        invite_code: invite.code,
-        terms_accepted: "true"
-      })
+      |> form("form",
+        user: %{
+          username: "invited_#{System.unique_integer([:positive])}",
+          password: "Password123!x",
+          password_confirmation: "Password123!x",
+          invite_code: invite.code,
+          terms_accepted: "true"
+        }
+      )
       |> render_submit()
 
     assert html =~ "Recovery Codes"
