@@ -59,30 +59,28 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 
 - Ensure this document is updated to reflect any changes in the workflow and maintain consistency.
 
-### While Planning & Doing Code Review
+### While Planning, Refactoring & Doing Code Review
 
 - When a feature requirement is unclear or ambiguous, seek clarification on definition and scope rather than guessing.
 - Each implementation should match specs, open standards, industry standards, and common practices.
+- Follow ActivityPub specification
 
 ### While Coding
 
-- Always consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification.
+- **Always** consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification.
 - **Never use bare English strings for user-visible text** — always wrap in `gettext()`. This applies to flash messages, template text, feed metadata, HTML attributes like `title`, and any other text shown to users. Use `gettext()` with `%{var}` interpolation (not string interpolation) for dynamic values. Shared translation helpers (e.g. `translate_role/1`, `translate_status/1`) belong in `BaudrateWeb.Helpers`.
-- Keep i18n strings in sync across locales; rather than using fuzzy matching for uncertain translations, let the messages fallback to English to avoid inaccuracies.
+- **Always** keep i18n strings in sync across locale.
 
 ### After Every Change
 
 1. Update all relevant documentation (`doc/`, README, moduledocs)
 2. Add essential but missing tests to improve test coverage and ensure code quality
-3. Always consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification
-4. Follow ActivityPub specification
 
 ### Code Organization
 
 - Tests in `test/` mirror the `lib/` structure
 - Commit by topic — group related files per commit
 - Never nest multiple modules in the same file
-- Refactor regularly and resolve technical debt
 
 ### Security Rules
 
