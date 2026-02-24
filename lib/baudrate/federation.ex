@@ -66,7 +66,9 @@ defmodule Baudrate.Federation do
     * `/ap/users/:username/outbox` — user outbox (GET, paginated)
     * `/ap/boards/:slug/outbox` — board outbox (GET, paginated)
     * `/ap/users/:username/followers` — user followers (GET, paginated)
+    * `/ap/users/:username/following` — user following (GET, always empty)
     * `/ap/boards/:slug/followers` — board followers (GET, paginated)
+    * `/ap/boards/:slug/following` — board following (GET, always empty)
   """
 
   import Ecto.Query
@@ -237,6 +239,7 @@ defmodule Baudrate.Federation do
       "inbox" => "#{uri}/inbox",
       "outbox" => "#{uri}/outbox",
       "followers" => "#{uri}/followers",
+      "following" => "#{uri}/following",
       "url" => "#{base_url()}/@#{user.username}",
       "published" => DateTime.to_iso8601(user.inserted_at),
       "endpoints" => %{"sharedInbox" => "#{base_url()}/ap/inbox"},
@@ -293,6 +296,7 @@ defmodule Baudrate.Federation do
       "inbox" => "#{uri}/inbox",
       "outbox" => "#{uri}/outbox",
       "followers" => "#{uri}/followers",
+      "following" => "#{uri}/following",
       "url" => "#{base_url()}/boards/#{board.slug}",
       "endpoints" => %{"sharedInbox" => "#{base_url()}/ap/inbox"},
       "publicKey" => %{
@@ -472,6 +476,25 @@ defmodule Baudrate.Federation do
         has_next = length(follower_uris) == @items_per_page
         build_collection_page(followers_uri, follower_uris, page, has_next)
     end
+  end
+
+  # --- Following Collection ---
+
+  @doc """
+  Returns an empty `OrderedCollection` for the given actor's following list.
+
+  Baudrate does not yet support outbound follows, so this always returns
+  an empty collection. Some AP clients (e.g. Mastodon) expect this
+  endpoint to exist.
+  """
+  def following_collection(actor_uri) do
+    %{
+      "@context" => @as_context,
+      "id" => "#{actor_uri}/following",
+      "type" => "OrderedCollection",
+      "totalItems" => 0,
+      "orderedItems" => []
+    }
   end
 
   # --- Pagination Helpers ---
@@ -860,6 +883,43 @@ defmodule Baudrate.Federation do
   end
 
   def resolve_board_from_audience(_), do: nil
+
+  # --- Actor Cleanup ---
+
+  @doc """
+  Soft-deletes all content authored by a remote actor when that actor is deleted.
+
+  Marks articles, comments, and direct messages from the actor as deleted
+  by setting their `deleted_at` timestamp.
+  """
+  def cleanup_deleted_actor(remote_actor_ap_id) do
+    alias Baudrate.Federation.RemoteActor
+
+    case Repo.get_by(RemoteActor, ap_id: remote_actor_ap_id) do
+      nil ->
+        :ok
+
+      actor ->
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+        from(a in Baudrate.Content.Article,
+          where: a.remote_actor_id == ^actor.id and is_nil(a.deleted_at)
+        )
+        |> Repo.update_all(set: [deleted_at: now])
+
+        from(c in Baudrate.Content.Comment,
+          where: c.remote_actor_id == ^actor.id and is_nil(c.deleted_at)
+        )
+        |> Repo.update_all(set: [deleted_at: now])
+
+        from(dm in Baudrate.Messaging.DirectMessage,
+          where: dm.sender_remote_actor_id == ^actor.id and is_nil(dm.deleted_at)
+        )
+        |> Repo.update_all(set: [deleted_at: now])
+
+        :ok
+    end
+  end
 
   # --- Key Rotation ---
 

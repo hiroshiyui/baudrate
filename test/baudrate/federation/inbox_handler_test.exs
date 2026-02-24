@@ -1368,5 +1368,139 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert :ok = InboxHandler.handle(delete_activity, remote_actor, :shared)
       refute Federation.follower_exists?(actor_uri, remote_actor.ap_id)
     end
+
+    test "soft-deletes remote content when actor is deleted" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      remote_actor = create_remote_actor()
+
+      board_uri = Federation.actor_uri(:board, board.slug)
+      # Create remote article
+      article_ap_id =
+        "https://remote.example/articles/cleanup-#{System.unique_integer([:positive])}"
+
+      create_article = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => article_ap_id,
+          "type" => "Article",
+          "name" => "Cleanup Article",
+          "content" => "Body",
+          "attributedTo" => remote_actor.ap_id,
+          "audience" => [board_uri]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(create_article, remote_actor, :shared)
+      assert Content.get_article_by_ap_id(article_ap_id) != nil
+
+      # Create remote comment on a local article
+      local_article = create_article_for_board(user, board)
+      local_article_uri = Federation.actor_uri(:article, local_article.slug)
+
+      comment_ap_id =
+        "https://remote.example/notes/cleanup-#{System.unique_integer([:positive])}"
+
+      create_comment = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => comment_ap_id,
+          "type" => "Note",
+          "content" => "Cleanup comment",
+          "attributedTo" => remote_actor.ap_id,
+          "inReplyTo" => local_article_uri
+        }
+      }
+
+      assert :ok = InboxHandler.handle(create_comment, remote_actor, :shared)
+
+      # Receive a DM from remote actor
+      {:ok, dm_message} =
+        Baudrate.Messaging.receive_remote_dm(user, remote_actor, %{
+          body: "Cleanup DM",
+          body_html: "<p>Cleanup DM</p>",
+          ap_id: "https://remote.example/dm/cleanup-#{System.unique_integer([:positive])}"
+        })
+
+      # Delete the actor
+      delete_activity = %{
+        "id" => "https://remote.example/activities/delete-#{System.unique_integer([:positive])}",
+        "type" => "Delete",
+        "actor" => remote_actor.ap_id,
+        "object" => remote_actor.ap_id
+      }
+
+      assert :ok = InboxHandler.handle(delete_activity, remote_actor, :shared)
+
+      # All content should be soft-deleted
+      article = Content.get_article_by_ap_id(article_ap_id)
+      assert article.deleted_at != nil
+
+      comment = Content.get_comment_by_ap_id(comment_ap_id)
+      assert comment.deleted_at != nil
+
+      dm = Baudrate.Repo.get!(Baudrate.Messaging.DirectMessage, dm_message.id)
+      assert dm.deleted_at != nil
+    end
+  end
+
+  describe "Accept(Follow)" do
+    test "returns :ok (stub handler)" do
+      remote_actor = create_remote_actor()
+
+      activity = %{
+        "id" => "#{remote_actor.ap_id}#accept-1",
+        "type" => "Accept",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "type" => "Follow",
+          "id" => "https://local.example/activities/follow-1",
+          "actor" => "https://local.example/ap/users/alice",
+          "object" => remote_actor.ap_id
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+    end
+  end
+
+  describe "Reject(Follow)" do
+    test "returns :ok (stub handler)" do
+      remote_actor = create_remote_actor()
+
+      activity = %{
+        "id" => "#{remote_actor.ap_id}#reject-1",
+        "type" => "Reject",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "type" => "Follow",
+          "id" => "https://local.example/activities/follow-1",
+          "actor" => "https://local.example/ap/users/alice",
+          "object" => remote_actor.ap_id
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+    end
+  end
+
+  describe "Move" do
+    test "returns :ok (stub handler)" do
+      remote_actor = create_remote_actor()
+
+      activity = %{
+        "id" => "#{remote_actor.ap_id}#move-1",
+        "type" => "Move",
+        "actor" => remote_actor.ap_id,
+        "object" => remote_actor.ap_id,
+        "target" => "https://new-instance.example/users/moved"
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+    end
   end
 end

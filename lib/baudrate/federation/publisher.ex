@@ -67,7 +67,8 @@ defmodule Baudrate.Federation.Publisher do
       "cc" => ["#{actor_uri}/followers"],
       "object" => %{
         "id" => article_uri,
-        "type" => "Tombstone"
+        "type" => "Tombstone",
+        "formerType" => "Article"
       }
     }
 
@@ -381,7 +382,8 @@ defmodule Baudrate.Federation.Publisher do
       "to" => [recipient_uri],
       "object" => %{
         "id" => message_uri,
-        "type" => "Tombstone"
+        "type" => "Tombstone",
+        "formerType" => "Note"
       }
     }
 

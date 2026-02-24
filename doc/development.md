@@ -552,13 +552,16 @@ The `Baudrate.Federation` context handles all federation logic.
 - `Announce` / `Undo(Announce)` — boosts/shares (bare URI or embedded object map)
 - `Update(Note/Article/Page)` — content updates with authorship check
 - `Update(Person/Group)` — actor profile refresh
-- `Delete` — soft-delete with authorship verification
+- `Delete(content)` — soft-delete with authorship verification
+- `Delete(actor)` — removes all follower records and soft-deletes all content (articles, comments, DMs) from the deleted actor
 - `Flag` — incoming reports stored in local moderation queue
 - `Block` / `Undo(Block)` — remote actor blocks (logged for informational purposes)
+- `Accept(Follow)` / `Reject(Follow)` — stub handlers (future: outbound follow management)
+- `Move` — stub handler (future: account migration)
 
 **Outbound delivery** (via `Publisher` + `Delivery` + `DeliveryWorker`):
 - `Create(Article)` — automatically enqueued when a local user publishes an article
-- `Delete` with `Tombstone` — enqueued when an article is soft-deleted
+- `Delete` with `Tombstone` (includes `formerType`) — enqueued when an article is soft-deleted
 - `Announce` — board actor announces articles to board followers
 - `Update(Article)` — enqueued when a local article is edited
 - `Create(Note)` — DM to remote actor, delivered to personal inbox (not shared inbox) for privacy
@@ -570,10 +573,15 @@ The `Baudrate.Federation` context handles all federation logic.
 - DB-backed queue (`delivery_jobs` table) with `DeliveryWorker` GenServer polling
 - Exponential backoff: 1m → 5m → 30m → 2h → 12h → 24h, then abandoned after 6 attempts
 - Domain blocklist respected: deliveries to blocked domains are skipped
+- Job deduplication: partial unique index on `(inbox_url, actor_uri)` for pending/failed jobs prevents duplicates on retry/race conditions
 
 **Followers collection endpoints** (paginated with `?page=N`):
 - `/ap/users/:username/followers` — paginated `OrderedCollection` of follower URIs
 - `/ap/boards/:slug/followers` — paginated `OrderedCollection` (public boards only, 404 for private)
+
+**Following collection endpoints** (always empty, for AP client compatibility):
+- `/ap/users/:username/following` — empty `OrderedCollection`
+- `/ap/boards/:slug/following` — empty `OrderedCollection` (public boards only)
 
 **Mastodon/Lemmy compatibility:**
 - `attributedTo` arrays — extracts first binary URI for validation

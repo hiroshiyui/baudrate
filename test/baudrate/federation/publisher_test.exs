@@ -3,7 +3,7 @@ defmodule Baudrate.Federation.PublisherTest do
 
   alias Baudrate.Content
   alias Baudrate.Content.Comment
-  alias Baudrate.Federation.{KeyStore, Publisher}
+  alias Baudrate.Federation.{KeyStore, Publisher, RemoteActor}
 
   setup do
     Baudrate.Setup.seed_roles_and_permissions()
@@ -89,6 +89,16 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["object"]["id"] =~ article.slug
       assert "#{actor_uri}/followers" in activity["cc"]
       assert activity["id"] =~ "#delete-"
+    end
+
+    test "Tombstone includes formerType Article" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {activity, _actor_uri} = Publisher.build_delete_article(article)
+
+      assert activity["object"]["formerType"] == "Article"
     end
   end
 
@@ -359,6 +369,49 @@ defmodule Baudrate.Federation.PublisherTest do
       assert "#visible" in names
       refute "#hidden_in_code" in names
       refute "#inline_hidden" in names
+    end
+  end
+
+  describe "build_delete_dm/3" do
+    test "Tombstone includes formerType Note" do
+      user = create_user()
+      uid = System.unique_integer([:positive])
+
+      {:ok, remote_actor} =
+        %RemoteActor{}
+        |> RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/dm-actor-#{uid}",
+          username: "dm_actor_#{uid}",
+          domain: "remote.example",
+          public_key_pem: elem(KeyStore.generate_keypair(), 0),
+          inbox: "https://remote.example/users/dm-actor-#{uid}/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert()
+
+      {:ok, conversation} =
+        %Baudrate.Messaging.Conversation{}
+        |> Baudrate.Messaging.Conversation.remote_changeset(%{
+          user_a_id: user.id,
+          remote_actor_b_id: remote_actor.id,
+          ap_context: "https://remote.example/contexts/#{uid}"
+        })
+        |> Repo.insert()
+
+      {:ok, message} =
+        %Baudrate.Messaging.DirectMessage{}
+        |> Baudrate.Messaging.DirectMessage.changeset(%{
+          body: "Test DM",
+          conversation_id: conversation.id,
+          sender_user_id: user.id
+        })
+        |> Repo.insert()
+
+      {activity, _actor_uri} = Publisher.build_delete_dm(message, user, conversation)
+
+      assert activity["object"]["type"] == "Tombstone"
+      assert activity["object"]["formerType"] == "Note"
     end
   end
 end

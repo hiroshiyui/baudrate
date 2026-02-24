@@ -448,6 +448,59 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
     end
   end
 
+  # --- Following Collection Endpoints ---
+
+  describe "GET /ap/users/:username/following" do
+    test "returns empty OrderedCollection", %{conn: conn} do
+      user = setup_user("user")
+
+      conn = conn |> json_conn() |> get("/ap/users/#{user.username}/following")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "OrderedCollection"
+      assert body["totalItems"] == 0
+      assert body["orderedItems"] == []
+      assert body["id"] =~ "/following"
+    end
+
+    test "returns 404 for non-existent user", %{conn: conn} do
+      conn = conn |> json_conn() |> get("/ap/users/nonexistent/following")
+      assert json_response(conn, 404)["error"] == "Not Found"
+    end
+  end
+
+  describe "GET /ap/boards/:slug/following" do
+    test "returns empty OrderedCollection for public board", %{conn: conn} do
+      board = setup_board()
+
+      conn = conn |> json_conn() |> get("/ap/boards/#{board.slug}/following")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "OrderedCollection"
+      assert body["totalItems"] == 0
+      assert body["orderedItems"] == []
+    end
+
+    test "returns 404 for private board", %{conn: conn} do
+      {:ok, board} =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Private Following",
+          slug: "priv-following-#{System.unique_integer([:positive])}",
+          min_role_to_view: "user"
+        })
+        |> Repo.insert()
+
+      conn = conn |> json_conn() |> get("/ap/boards/#{board.slug}/following")
+      assert json_response(conn, 404)["error"] == "Not Found"
+    end
+
+    test "returns 404 for non-existent board", %{conn: conn} do
+      conn = conn |> json_conn() |> get("/ap/boards/nonexistent/following")
+      assert json_response(conn, 404)["error"] == "Not Found"
+    end
+  end
+
   # --- Article Endpoint ---
 
   describe "GET /ap/articles/:slug" do

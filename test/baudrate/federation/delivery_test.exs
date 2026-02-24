@@ -97,6 +97,40 @@ defmodule Baudrate.Federation.DeliveryTest do
       job = Repo.one!(DeliveryJob)
       assert Jason.decode!(job.activity_json) == activity
     end
+
+    test "skips duplicate pending job for same inbox+actor" do
+      activity1 = Jason.encode!(%{"type" => "Create", "id" => "1"})
+      activity2 = Jason.encode!(%{"type" => "Create", "id" => "2"})
+      actor = "https://local/ap/users/dedup"
+      inbox = "https://dedup.example/inbox"
+
+      assert {:ok, 1} = Delivery.enqueue(activity1, actor, [inbox])
+      assert {:ok, 1} = Delivery.enqueue(activity2, actor, [inbox])
+
+      jobs = Repo.all(from(j in DeliveryJob, where: j.inbox_url == ^inbox and j.actor_uri == ^actor))
+      assert length(jobs) == 1
+    end
+
+    test "allows new job after previous one is delivered" do
+      activity1 = Jason.encode!(%{"type" => "Create", "id" => "1"})
+      activity2 = Jason.encode!(%{"type" => "Create", "id" => "2"})
+      actor = "https://local/ap/users/dedup2"
+      inbox = "https://dedup2.example/inbox"
+
+      assert {:ok, 1} = Delivery.enqueue(activity1, actor, [inbox])
+
+      # Mark the job as delivered
+      job = Repo.one!(from(j in DeliveryJob, where: j.inbox_url == ^inbox))
+      job |> DeliveryJob.mark_delivered() |> Repo.update!()
+
+      # Now a new job can be inserted
+      assert {:ok, 1} = Delivery.enqueue(activity2, actor, [inbox])
+
+      jobs =
+        Repo.all(from(j in DeliveryJob, where: j.inbox_url == ^inbox and j.actor_uri == ^actor))
+
+      assert length(jobs) == 2
+    end
   end
 
   describe "resolve_follower_inboxes/1" do

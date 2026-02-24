@@ -12,14 +12,6 @@ Audit date: 2026-02-24
 - [ ] **Write deployment guide** — no deployment documentation exists
 - [ ] **Add `.env.example`** — no environment config template
 
-## Low: Federation
-
-- [ ] **No `formerType` on outgoing Tombstones** — AP spec recommends it (`publisher.ex:66-69`)
-- [ ] **Actor self-deletion only removes followers** — remote articles/comments/DMs from deleted actor remain (`inbox_handler.ex:278-287`)
-- [ ] **No `following` collection endpoint** — some AP clients expect it even if empty
-- [ ] **No incoming `Accept`/`Reject`/`Move` activity handling** — needed for future outbound follows and account migration
-- [ ] **No delivery job deduplication** — duplicate jobs possible on retry/race (`delivery.ex:67-87`)
-
 ## Planned Features
 
 ### Board-Level Remote Follows (Moderator-Managed)

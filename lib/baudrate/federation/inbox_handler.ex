@@ -16,8 +16,11 @@ defmodule Baudrate.Federation.InboxHandler do
     * `Announce` — record boost/share (bare URI or embedded object map)
     * `Update(Article/Note/Page)` — update remote content with authorship check
     * `Update(Person/Group)` — refresh cached RemoteActor
-    * `Delete(actor)` — remove all their follower records
+    * `Delete(actor)` — remove all follower records and soft-delete all content
     * `Delete(content)` — soft-delete matching remote content with authorship check
+    * `Accept(Follow)` — stub handler (future: mark outbound follow as accepted)
+    * `Reject(Follow)` — stub handler (future: mark outbound follow as rejected)
+    * `Move` — stub handler (future: migrate followers to new actor)
 
   ## Mastodon/Lemmy Compatibility
 
@@ -284,6 +287,7 @@ defmodule Baudrate.Federation.InboxHandler do
        when object == actor_uri do
     Logger.info("federation.activity: type=Delete(actor) actor=#{actor_uri}")
     Federation.delete_followers_by_remote(actor_uri)
+    Federation.cleanup_deleted_actor(actor_uri)
     :ok
   end
 
@@ -348,6 +352,40 @@ defmodule Baudrate.Federation.InboxHandler do
       {:error, _} ->
         {:error, :flag_failed}
     end
+  end
+
+  # --- Accept(Follow) — future: mark outbound follow as accepted ---
+
+  defp dispatch(
+         %{"type" => "Accept", "object" => %{"type" => "Follow"}},
+         remote_actor,
+         _target
+       ) do
+    Logger.info("federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id}")
+    :ok
+  end
+
+  # --- Reject(Follow) — future: mark outbound follow as rejected ---
+
+  defp dispatch(
+         %{"type" => "Reject", "object" => %{"type" => "Follow"}},
+         remote_actor,
+         _target
+       ) do
+    Logger.info("federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id}")
+    :ok
+  end
+
+  # --- Move — future: migrate followers to new actor ---
+
+  defp dispatch(
+         %{"type" => "Move", "actor" => actor_uri, "target" => target_uri},
+         _remote_actor,
+         _target
+       )
+       when is_binary(target_uri) do
+    Logger.info("federation.activity: type=Move from=#{actor_uri} to=#{target_uri}")
+    :ok
   end
 
   # --- Catch-all ---

@@ -4,10 +4,12 @@ defmodule Baudrate.Federation.DeliveryStatsTest do
   alias Baudrate.Federation.{DeliveryJob, DeliveryStats}
 
   defp create_job(attrs) do
+    uid = System.unique_integer([:positive])
+
     default = %{
-      activity_json: ~s({"type":"Create"}),
-      inbox_url: "https://remote.example/inbox",
-      actor_uri: "https://local.example/ap/users/alice"
+      activity_json: ~s({"type":"Create","id":"#{uid}"}),
+      inbox_url: "https://remote-#{uid}.example/inbox",
+      actor_uri: "https://local.example/ap/users/alice-#{uid}"
     }
 
     {:ok, job} =
@@ -94,8 +96,8 @@ defmodule Baudrate.Federation.DeliveryStatsTest do
 
   describe "retry_all_failed_for_domain/1" do
     test "resets all failed jobs for a domain" do
-      j1 = create_job(%{inbox_url: "https://bad.example/inbox"}) |> set_status("failed")
-      j2 = create_job(%{inbox_url: "https://bad.example/inbox"}) |> set_status("failed")
+      j1 = create_job(%{inbox_url: "https://bad.example/inbox", actor_uri: "https://local.example/ap/users/retry1"}) |> set_status("failed")
+      j2 = create_job(%{inbox_url: "https://bad.example/inbox", actor_uri: "https://local.example/ap/users/retry2"}) |> set_status("failed")
       j3 = create_job(%{inbox_url: "https://other.example/inbox"}) |> set_status("failed")
 
       {count, _} = DeliveryStats.retry_all_failed_for_domain("bad.example")
@@ -109,8 +111,8 @@ defmodule Baudrate.Federation.DeliveryStatsTest do
 
   describe "abandon_all_for_domain/1" do
     test "abandons all pending/failed jobs for a domain" do
-      j1 = create_job(%{inbox_url: "https://spam.example/inbox"})
-      j2 = create_job(%{inbox_url: "https://spam.example/inbox"}) |> set_status("failed")
+      j1 = create_job(%{inbox_url: "https://spam.example/inbox", actor_uri: "https://local.example/ap/users/spam1"})
+      j2 = create_job(%{inbox_url: "https://spam.example/inbox", actor_uri: "https://local.example/ap/users/spam2"}) |> set_status("failed")
       j3 = create_job(%{inbox_url: "https://good.example/inbox"})
 
       {count, _} = DeliveryStats.abandon_all_for_domain("spam.example")

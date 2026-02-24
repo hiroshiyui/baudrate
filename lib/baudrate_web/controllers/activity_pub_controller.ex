@@ -30,8 +30,10 @@ defmodule BaudrateWeb.ActivityPubController do
   ### Collections (paginated with `?page=N`, 20 items/page)
     * `GET /ap/users/:username/outbox` — user outbox (Create activities)
     * `GET /ap/users/:username/followers` — user followers
+    * `GET /ap/users/:username/following` — user following (always empty)
     * `GET /ap/boards/:slug/outbox` — board outbox (Announce activities, public only)
     * `GET /ap/boards/:slug/followers` — board followers (public only)
+    * `GET /ap/boards/:slug/following` — board following (always empty)
     * `GET /ap/boards` — index of public AP-enabled boards
     * `GET /ap/articles/:slug/replies` — article comments as Note objects
     * `GET /ap/search?q=...` — full-text article search
@@ -206,6 +208,37 @@ defmodule BaudrateWeb.ActivityPubController do
       conn
       |> put_resp_content_type(@activity_json)
       |> json(Federation.followers_collection(actor_uri, params))
+    else
+      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+    end
+  end
+
+  # --- Following Collection ---
+
+  def user_following(conn, %{"username" => username}) do
+    with true <- Regex.match?(@username_re, username),
+         user when not is_nil(user) <-
+           Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
+      actor_uri = Federation.actor_uri(:user, user.username)
+
+      conn
+      |> put_resp_content_type(@activity_json)
+      |> json(Federation.following_collection(actor_uri))
+    else
+      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+    end
+  end
+
+  def board_following(conn, %{"slug" => slug}) do
+    with true <- Regex.match?(@slug_re, slug),
+         board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
+         true <- board.min_role_to_view == "guest",
+         true <- board.ap_enabled do
+      actor_uri = Federation.actor_uri(:board, board.slug)
+
+      conn
+      |> put_resp_content_type(@activity_json)
+      |> json(Federation.following_collection(actor_uri))
     else
       _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
     end

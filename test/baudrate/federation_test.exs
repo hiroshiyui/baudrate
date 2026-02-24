@@ -95,6 +95,18 @@ defmodule Baudrate.FederationTest do
     end
   end
 
+  describe "following_collection/1" do
+    test "returns empty OrderedCollection" do
+      uri = Federation.actor_uri(:user, "test-following")
+      collection = Federation.following_collection(uri)
+
+      assert collection["type"] == "OrderedCollection"
+      assert collection["totalItems"] == 0
+      assert collection["orderedItems"] == []
+      assert collection["id"] == "#{uri}/following"
+    end
+  end
+
   describe "user_actor/1" do
     test "returns Person JSON-LD" do
       user = setup_user_with_role("user")
@@ -107,6 +119,7 @@ defmodule Baudrate.FederationTest do
       assert actor["id"] =~ "/ap/users/#{user.username}"
       assert actor["inbox"] =~ "/inbox"
       assert actor["outbox"] =~ "/outbox"
+      assert actor["following"] =~ "/following"
       assert actor["publicKey"]["publicKeyPem"] =~ "BEGIN PUBLIC KEY"
     end
   end
@@ -122,6 +135,7 @@ defmodule Baudrate.FederationTest do
       assert actor["preferredUsername"] == board.slug
       assert actor["name"] == board.name
       assert actor["id"] =~ "/ap/boards/#{board.slug}"
+      assert actor["following"] =~ "/following"
       assert actor["publicKey"]["publicKeyPem"] =~ "BEGIN PUBLIC KEY"
     end
   end

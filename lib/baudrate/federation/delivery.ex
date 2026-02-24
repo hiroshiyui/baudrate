@@ -10,7 +10,9 @@ defmodule Baudrate.Federation.Delivery do
 
   1. Content hook calls `enqueue_for_article/3` or `enqueue_for_followers/2`
   2. Follower inboxes are resolved, deduplicated by shared inbox
-  3. `DeliveryJob` records are created (one per unique inbox)
+  3. `DeliveryJob` records are created (one per unique inbox), with
+     DB-level deduplication via a partial unique index on `(inbox_url,
+     actor_uri)` for pending/failed jobs
   4. `DeliveryWorker` polls and calls `deliver_one/1` for each job
   5. Job is signed with the actor's private key and POSTed to the inbox
   6. On failure, job is rescheduled with exponential backoff
@@ -80,7 +82,12 @@ defmodule Baudrate.Federation.Delivery do
         inbox_url: inbox_url,
         actor_uri: actor_uri
       })
-      |> Repo.insert!()
+      |> Repo.insert(
+        on_conflict: :nothing,
+        conflict_target:
+          {:unsafe_fragment,
+           ~s|("inbox_url", "actor_uri") WHERE status IN ('pending', 'failed')|}
+      )
     end)
 
     {:ok, length(unique_inboxes)}
