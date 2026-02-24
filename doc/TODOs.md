@@ -8,8 +8,6 @@ Audit date: 2026-02-24
 
 - [ ] **Create Containerfile** — no containerization support (Podman)
 - [ ] **Create podman-compose.yml** — no local dev environment template
-- [ ] **Add `rel/` release config** — `mix release` not configured for production
-- [ ] **Write deployment guide** — no deployment documentation exists
 - [ ] **Add `.env.example`** — no environment config template
 
 ## Planned Features
