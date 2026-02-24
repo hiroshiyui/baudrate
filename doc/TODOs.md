@@ -4,11 +4,43 @@ Audit date: 2026-02-24
 
 ---
 
-## Low: Deployment & Infrastructure
+## Deployment & Infrastructure: Containerization
 
-- [ ] **Create Containerfile** — no containerization support (Podman)
-- [ ] **Create podman-compose.yml** — no local dev environment template
-- [ ] **Add `.env.example`** — no environment config template
+Containers: **app** (Phoenix OTP release), **db** (PostgreSQL), **nginx** (reverse proxy), **redis** (future caching)
+
+### Files to Create
+
+- [ ] **`Containerfile`** — Multi-stage build (build: Elixir + Rust + libvips-dev on Debian bookworm; runtime: Debian bookworm-slim with libvips42). Symlink `/app/lib/baudrate-0.1.0/priv/static/uploads` → `/data/uploads` for persistent volume. Entrypoint: `/app/bin/server`. Expose 4000.
+- [ ] **`compose.yml`** — 4 services: `db` (postgres:17-alpine, healthcheck pg_isready), `redis` (redis:7-alpine, healthcheck redis-cli ping), `app` (built from Containerfile, depends_on db+redis healthy, env_file .env, uploads volume at /data/uploads, expose 4000), `nginx` (nginx:1-alpine, ports 80+443, mounts nginx.conf + certs). Named volumes: db_data, redis_data, uploads.
+- [ ] **`container/nginx.conf`** — HTTP→HTTPS redirect; HTTPS proxy to `http://app:4000`; headers: X-Forwarded-For (SET, not append), X-Forwarded-Proto https, X-Real-IP, Host; WebSocket upgrade for `/live` (LiveView); SSL cert/key from `/etc/nginx/certs/` (user-provided); client_max_body_size 20M; gzip on.
+- [ ] **`.env.example`** — DATABASE_URL, SECRET_KEY_BASE, PHX_HOST, PORT, POOL_SIZE, DATABASE_SSL, POSTGRES_USER/PASSWORD/DB.
+- [ ] **`container/certs/.gitkeep`** — Placeholder for user-provided SSL certs (server.crt, server.key).
+
+### Files to Update
+
+- [ ] **`doc/sysop.md`** — Add "Container Deployment" section: build (`podman compose build`), start (`podman compose up -d`), migrations (`podman compose exec app bin/migrate`), self-signed cert generation for dev, logs, notes on real TLS certs.
+- [ ] **`.gitignore`** — Add `.env`, `container/certs/*.crt`, `container/certs/*.key`.
+
+### Design Decisions
+
+- **Nginx proxies everything to Phoenix** (no shared static volume) — simpler, sufficient for most traffic
+- **User-provided SSL certs** — mount into `container/certs/`, document self-signed generation for dev
+- **Redis not wired into app code** — service available for future caching, no app changes needed
+- **No upload path refactor** — symlink in Containerfile bridges priv/static/uploads → /data/uploads
+- **No CI/CD** — separate task
+- **No Certbot/ACME** — users add their own cert management later
+
+### Verification
+
+```bash
+podman compose build app
+podman compose up -d
+podman compose ps                          # all 4 running
+podman compose exec app bin/migrate        # run migrations
+curl -k https://localhost/                 # verify response
+podman compose logs app                    # check logs
+mix test                                   # full suite still passes
+```
 
 ## Planned Features
 
@@ -36,37 +68,6 @@ their content into the board. Requires anti-loop and deduplication safeguards.
 - Need a new `board_follows` table (board_id, remote_actor_id, followed_by_id)
 - Need UI in board moderator panel to manage follows
 - Need to handle `Undo(Follow)` on unfollow
-
-## Someday / Maybe: Frontend Architecture
-
-Decouple the frontend from Phoenix LiveView to allow free choice of UI framework
-and component libraries. LiveView's tight coupling between server and UI limits
-frontend technology options (e.g., Web Component libraries like Fluent UI are
-incompatible with LiveView's DOM patching model).
-
-### Approaches
-
-- [ ] **JSON API backend** — convert Phoenix to a pure API server (`Phoenix.Controller` + `Phoenix.Router`), serve a standalone SSR frontend (Next.js, Nuxt, SvelteKit, Astro, etc.)
-- [ ] **Incremental migration** — add new pages in the SPA framework while keeping existing LiveView pages, route via reverse proxy; migrate page-by-page over time
-- [ ] **Hybrid approach** — keep LiveView for admin/internal pages, use a standalone frontend for public-facing pages only
-
-### Trade-offs
-
-| Gain | Loss |
-|------|------|
-| Free choice of UI framework/component library | LiveView's real-time WebSocket updates |
-| Better frontend tooling ecosystem | Server-driven forms (no client state bugs) |
-| Easier to hire frontend developers | Zero-API-layer simplicity |
-| SSR framework flexibility (React, Vue, Svelte) | Must build and maintain a REST/GraphQL API |
-| Independent frontend deployment | API versioning and compatibility burden |
-
-### Preferred Frontend Framework
-
-- **SvelteKit** — top candidate; compiled approach (no virtual DOM overhead), built-in SSR/SSG, form actions, file-based routing, small bundle size
-
-### Prior Evaluation
-
-- **Fluent UI Web Components v3** (2026-02-23): evaluated and rejected for use with LiveView due to Shadow DOM / DOM patching incompatibility, form binding friction, pre-release stability risk, and 5-7x bundle size increase over DaisyUI
 
 ## Someday / Maybe
 
