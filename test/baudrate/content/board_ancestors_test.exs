@@ -15,7 +15,10 @@ defmodule Baudrate.Content.BoardAncestorsTest do
 
     test "returns parent then child for single-level hierarchy" do
       {:ok, parent} =
-        Content.create_board(%{name: "Parent", slug: "parent-#{System.unique_integer([:positive])}"})
+        Content.create_board(%{
+          name: "Parent",
+          slug: "parent-#{System.unique_integer([:positive])}"
+        })
 
       {:ok, child} =
         Content.create_board(%{
@@ -59,7 +62,10 @@ defmodule Baudrate.Content.BoardAncestorsTest do
   describe "list_visible_sub_boards/2" do
     test "returns only sub-boards visible to the given user" do
       {:ok, parent} =
-        Content.create_board(%{name: "Parent", slug: "parent-#{System.unique_integer([:positive])}"})
+        Content.create_board(%{
+          name: "Parent",
+          slug: "parent-#{System.unique_integer([:positive])}"
+        })
 
       {:ok, _pub} =
         Content.create_board(%{

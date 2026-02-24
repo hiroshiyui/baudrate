@@ -84,9 +84,14 @@
   </div>
 
   <%!-- Bulk action bar --%>
-  <div :if={MapSet.size(@selected_ids) > 0} class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
+  <div
+    :if={MapSet.size(@selected_ids) > 0}
+    class="flex items-center gap-3 p-3 bg-base-200 rounded-lg"
+  >
     <span class="font-medium">
-      {ngettext("%{count} user selected", "%{count} users selected", MapSet.size(@selected_ids), count: MapSet.size(@selected_ids))}
+      {ngettext("%{count} user selected", "%{count} users selected", MapSet.size(@selected_ids),
+        count: MapSet.size(@selected_ids)
+      )}
     </span>
     <button
       :if={@status_filter == "pending"}
@@ -115,7 +120,10 @@
                 type="checkbox"
                 class="checkbox checkbox-sm"
                 phx-click="toggle_select_all"
-                checked={MapSet.size(@selected_ids) > 0 and MapSet.subset?(MapSet.new(@users, & &1.id), @selected_ids)}
+                checked={
+                  MapSet.size(@selected_ids) > 0 and
+                    MapSet.subset?(MapSet.new(@users, & &1.id), @selected_ids)
+                }
                 aria-label={gettext("Select all users")}
               />
             </label>
@@ -173,7 +181,11 @@
               {translate_status(user.status)}
             </span>
           </td>
-          <td><time datetime={Calendar.strftime(user.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(user.inserted_at, "%Y-%m-%d %H:%M")}</time></td>
+          <td>
+            <time datetime={Calendar.strftime(user.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
+              {Calendar.strftime(user.inserted_at, "%Y-%m-%d %H:%M")}
+            </time>
+          </td>
           <td class="flex gap-1">
             <button
               :if={user.status == "pending"}
@@ -247,7 +259,11 @@
     </div>
     <div class="modal-action">
       <button phx-click="cancel_ban" class="btn">{gettext("Cancel")}</button>
-      <button phx-click="confirm_ban" class="btn btn-error" phx-disable-with={gettext("Banning...")}>
+      <button
+        phx-click="confirm_ban"
+        class="btn btn-error"
+        phx-disable-with={gettext("Banning...")}
+      >
         {gettext("Confirm Ban")}
       </button>
     </div>
@@ -267,7 +283,9 @@
 >
   <div class="modal-box">
     <h3 id="bulk-ban-modal-title" class="font-bold text-lg">
-      {ngettext("Ban %{count} User", "Ban %{count} Users", MapSet.size(@selected_ids), count: MapSet.size(@selected_ids))}
+      {ngettext("Ban %{count} User", "Ban %{count} Users", MapSet.size(@selected_ids),
+        count: MapSet.size(@selected_ids)
+      )}
     </h3>
     <div class="py-4">
       <form phx-change="update_bulk_ban_reason">
@@ -285,7 +303,11 @@
     </div>
     <div class="modal-action">
       <button phx-click="cancel_bulk_ban" class="btn">{gettext("Cancel")}</button>
-      <button phx-click="confirm_bulk_ban" class="btn btn-error" phx-disable-with={gettext("Banning...")}>
+      <button
+        phx-click="confirm_bulk_ban"
+        class="btn btn-error"
+        phx-disable-with={gettext("Banning...")}
+      >
         {gettext("Confirm Ban")}
       </button>
     </div>

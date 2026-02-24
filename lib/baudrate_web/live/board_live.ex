@@ -31,7 +31,15 @@ defmodule BaudrateWeb.BoardLive do
 
       feed_slug = if board.min_role_to_view == "guest", do: board.slug
 
-      {:ok, assign(socket, board: board, can_create: can_create, ancestors: ancestors, sub_boards: sub_boards, page_title: board.name, feed_board_slug: feed_slug)}
+      {:ok,
+       assign(socket,
+         board: board,
+         can_create: can_create,
+         ancestors: ancestors,
+         sub_boards: sub_boards,
+         page_title: board.name,
+         feed_board_slug: feed_slug
+       )}
     end
   end
 
@@ -67,5 +75,4 @@ defmodule BaudrateWeb.BoardLive do
 
     {:noreply, assign(socket, articles: articles, page: page, total_pages: total_pages)}
   end
-
 end

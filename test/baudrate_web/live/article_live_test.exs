@@ -20,7 +20,12 @@ defmodule BaudrateWeb.ArticleLiveTest do
 
     {:ok, %{article: article}} =
       Content.create_article(
-        %{title: "Test Article", body: "Article body text", slug: "test-article", user_id: user.id},
+        %{
+          title: "Test Article",
+          body: "Article body text",
+          slug: "test-article",
+          user_id: user.id
+        },
         [board.id]
       )
 
@@ -72,7 +77,11 @@ defmodule BaudrateWeb.ArticleLiveTest do
     assert html =~ "Great article!"
   end
 
-  test "updates comment list when new comment is posted via PubSub", %{conn: conn, user: user, article: article} do
+  test "updates comment list when new comment is posted via PubSub", %{
+    conn: conn,
+    user: user,
+    article: article
+  } do
     {:ok, lv, html} = live(conn, "/articles/#{article.slug}")
     refute html =~ "PubSub comment here"
 
@@ -87,7 +96,11 @@ defmodule BaudrateWeb.ArticleLiveTest do
     assert render(lv) =~ "PubSub comment here"
   end
 
-  test "updates comment list when comment is deleted via PubSub", %{conn: conn, user: user, article: article} do
+  test "updates comment list when comment is deleted via PubSub", %{
+    conn: conn,
+    user: user,
+    article: article
+  } do
     {:ok, comment} =
       Content.create_comment(%{
         "body" => "Will be deleted remotely",
@@ -113,7 +126,11 @@ defmodule BaudrateWeb.ArticleLiveTest do
     assert html =~ "awesome"
   end
 
-  test "comment pagination controls appear when root comments exceed per_page", %{conn: conn, user: user, article: article} do
+  test "comment pagination controls appear when root comments exceed per_page", %{
+    conn: conn,
+    user: user,
+    article: article
+  } do
     # Create 21 root comments (exceeds default per_page of 20)
     for i <- 1..21 do
       Content.create_comment(%{
@@ -194,14 +211,21 @@ defmodule BaudrateWeb.ArticleLiveTest do
       {:ok, lv, html} = live(admin_conn, "/articles/#{article.slug}")
       assert html =~ "Comment to delete"
 
-      lv |> element(~s|button[phx-click="delete_comment"][phx-value-id="#{comment.id}"]|) |> render_click()
+      lv
+      |> element(~s|button[phx-click="delete_comment"][phx-value-id="#{comment.id}"]|)
+      |> render_click()
+
       html = render(lv)
       refute html =~ "Comment to delete"
     end
   end
 
   describe "reply_to and cancel_reply" do
-    test "clicking reply shows reply form and cancel hides it", %{conn: conn, user: user, article: article} do
+    test "clicking reply shows reply form and cancel hides it", %{
+      conn: conn,
+      user: user,
+      article: article
+    } do
       {:ok, comment} =
         Content.create_comment(%{
           "body" => "Parent comment",
@@ -212,7 +236,10 @@ defmodule BaudrateWeb.ArticleLiveTest do
       {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
 
       # Click reply
-      lv |> element(~s|button[phx-click="reply_to"][phx-value-id="#{comment.id}"]|) |> render_click()
+      lv
+      |> element(~s|button[phx-click="reply_to"][phx-value-id="#{comment.id}"]|)
+      |> render_click()
+
       html = render(lv)
       assert html =~ "cancel_reply"
 
@@ -223,7 +250,11 @@ defmodule BaudrateWeb.ArticleLiveTest do
     end
   end
 
-  test "threaded replies stay with their root when paginated", %{conn: conn, user: user, article: article} do
+  test "threaded replies stay with their root when paginated", %{
+    conn: conn,
+    user: user,
+    article: article
+  } do
     # Create 21 root comments so we have 2 pages
     root_comments =
       for i <- 1..21 do

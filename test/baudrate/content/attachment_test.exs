@@ -21,12 +21,20 @@ defmodule Baudrate.Content.AttachmentTest do
 
     board =
       %Content.Board{}
-      |> Content.Board.changeset(%{name: "Attachment Test Board", slug: "attach-board-#{System.unique_integer([:positive])}"})
+      |> Content.Board.changeset(%{
+        name: "Attachment Test Board",
+        slug: "attach-board-#{System.unique_integer([:positive])}"
+      })
       |> Repo.insert!()
 
     {:ok, %{article: article}} =
       Content.create_article(
-        %{title: "Attach Article", body: "Body", slug: "attach-art-#{System.unique_integer([:positive])}", user_id: user.id},
+        %{
+          title: "Attach Article",
+          body: "Body",
+          slug: "attach-art-#{System.unique_integer([:positive])}",
+          user_id: user.id
+        },
         [board.id]
       )
 

@@ -17,7 +17,12 @@
     </div>
   </form>
 
-  <div :if={@query != ""} role="tablist" aria-label={gettext("Search results")} class="tabs tabs-bordered mb-4">
+  <div
+    :if={@query != ""}
+    role="tablist"
+    aria-label={gettext("Search results")}
+    class="tabs tabs-bordered mb-4"
+  >
     <.link
       patch={~p"/search?#{%{q: @query, tab: "articles"}}"}
       role="tab"
@@ -36,11 +41,17 @@
     </.link>
   </div>
 
-  <div :if={@query != "" && @tab == "articles" && @articles == []} class="text-base-content/50 text-center py-8">
+  <div
+    :if={@query != "" && @tab == "articles" && @articles == []}
+    class="text-base-content/50 text-center py-8"
+  >
     {gettext("No articles found for \"%{query}\".", query: @query)}
   </div>
 
-  <div :if={@query != "" && @tab == "comments" && @comments == []} class="text-base-content/50 text-center py-8">
+  <div
+    :if={@query != "" && @tab == "comments" && @comments == []}
+    class="text-base-content/50 text-center py-8"
+  >
     {gettext("No comments found for \"%{query}\".", query: @query)}
   </div>
 
@@ -51,14 +62,19 @@
   <div :if={@tab == "articles" && @articles != []} class="space-y-2" aria-live="polite">
     <div :for={article <- @articles} class="card bg-base-200 shadow-sm">
       <div class="card-body p-4">
-        <.link navigate={~p"/articles/#{article.slug}"} class="card-title text-base link link-hover">
+        <.link
+          navigate={~p"/articles/#{article.slug}"}
+          class="card-title text-base link link-hover"
+        >
           {article.title}
         </.link>
         <div class="text-sm text-base-content/70">
           <span :if={article.user}>
             {gettext("by %{author}", author: article.user.username)} &middot;
           </span>
-          <time datetime={Calendar.strftime(article.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(article.inserted_at, "%Y-%m-%d %H:%M")}</time>
+          <time datetime={Calendar.strftime(article.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
+            {Calendar.strftime(article.inserted_at, "%Y-%m-%d %H:%M")}
+          </time>
           <span :if={article.boards != []}>&middot;</span>
           <span :for={board <- article.boards} class="badge badge-outline badge-sm ml-1">
             {board.name}
@@ -71,7 +87,10 @@
   <div :if={@tab == "comments" && @comments != []} class="space-y-2" aria-live="polite">
     <div :for={comment <- @comments} class="card bg-base-200 shadow-sm">
       <div class="card-body p-4">
-        <.link navigate={~p"/articles/#{comment.article.slug}"} class="card-title text-base link link-hover">
+        <.link
+          navigate={~p"/articles/#{comment.article.slug}"}
+          class="card-title text-base link link-hover"
+        >
           {comment.article.title}
         </.link>
         <p class="text-sm line-clamp-2">{String.slice(comment.body, 0..200)}</p>
@@ -82,7 +101,9 @@
           <span :if={comment.remote_actor}>
             {comment.remote_actor.display_name || comment.remote_actor.preferred_username} &middot;
           </span>
-          <time datetime={Calendar.strftime(comment.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(comment.inserted_at, "%Y-%m-%d %H:%M")}</time>
+          <time datetime={Calendar.strftime(comment.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
+            {Calendar.strftime(comment.inserted_at, "%Y-%m-%d %H:%M")}
+          </time>
         </div>
       </div>
     </div>

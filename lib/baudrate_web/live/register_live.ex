@@ -115,8 +115,7 @@ defmodule BaudrateWeb.RegisterLive do
          |> assign(:recovery_codes, codes)}
 
       {:error, :invite_required} ->
-        {:noreply,
-         put_flash(socket, :error, gettext("An invite code is required to register."))}
+        {:noreply, put_flash(socket, :error, gettext("An invite code is required to register."))}
 
       {:error, {:invalid_invite, :not_found}} ->
         {:noreply, put_flash(socket, :error, gettext("Invalid invite code."))}
@@ -134,5 +133,4 @@ defmodule BaudrateWeb.RegisterLive do
         {:noreply, assign(socket, :form, to_form(changeset, as: :user))}
     end
   end
-
 end

@@ -11,20 +11,20 @@ defmodule Baudrate.Repo.Migrations.CreateUserBlocks do
     end
 
     create unique_index(:user_blocks, [:user_id, :blocked_user_id],
-      where: "blocked_user_id IS NOT NULL",
-      name: :user_blocks_local_unique
-    )
+             where: "blocked_user_id IS NOT NULL",
+             name: :user_blocks_local_unique
+           )
 
     create unique_index(:user_blocks, [:user_id, :blocked_actor_ap_id],
-      where: "blocked_actor_ap_id IS NOT NULL",
-      name: :user_blocks_remote_unique
-    )
+             where: "blocked_actor_ap_id IS NOT NULL",
+             name: :user_blocks_remote_unique
+           )
 
     create index(:user_blocks, [:user_id])
 
     # At least one of blocked_user_id or blocked_actor_ap_id must be set
     create constraint(:user_blocks, :must_block_something,
-      check: "blocked_user_id IS NOT NULL OR blocked_actor_ap_id IS NOT NULL"
-    )
+             check: "blocked_user_id IS NOT NULL OR blocked_actor_ap_id IS NOT NULL"
+           )
   end
 end

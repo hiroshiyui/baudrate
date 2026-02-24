@@ -6,7 +6,10 @@
 
   <%!-- Steps indicator --%>
   <ul class="steps steps-horizontal w-full">
-    <li class={["step", @step in [:database, :site_name, :admin_account, :recovery_codes] && "step-primary"]}>
+    <li class={[
+      "step",
+      @step in [:database, :site_name, :admin_account, :recovery_codes] && "step-primary"
+    ]}>
       {gettext("Database")}
     </li>
     <li class={["step", @step in [:site_name, :admin_account, :recovery_codes] && "step-primary"]}>
@@ -148,7 +151,9 @@
                   ]}
                   aria-hidden="true"
                 />
-                <span class="sr-only">{if @password_strength.length, do: gettext("Met:"), else: gettext("Not met:")}</span>
+                <span class="sr-only">
+                  {if @password_strength.length, do: gettext("Met:"), else: gettext("Not met:")}
+                </span>
                 {gettext("At least 12 characters")}
               </li>
               <li class="flex items-center gap-1.5">
@@ -164,7 +169,9 @@
                   ]}
                   aria-hidden="true"
                 />
-                <span class="sr-only">{if @password_strength.lowercase, do: gettext("Met:"), else: gettext("Not met:")}</span>
+                <span class="sr-only">
+                  {if @password_strength.lowercase, do: gettext("Met:"), else: gettext("Not met:")}
+                </span>
                 {gettext("Contains a lowercase letter")}
               </li>
               <li class="flex items-center gap-1.5">
@@ -180,7 +187,9 @@
                   ]}
                   aria-hidden="true"
                 />
-                <span class="sr-only">{if @password_strength.uppercase, do: gettext("Met:"), else: gettext("Not met:")}</span>
+                <span class="sr-only">
+                  {if @password_strength.uppercase, do: gettext("Met:"), else: gettext("Not met:")}
+                </span>
                 {gettext("Contains an uppercase letter")}
               </li>
               <li class="flex items-center gap-1.5">
@@ -196,7 +205,9 @@
                   ]}
                   aria-hidden="true"
                 />
-                <span class="sr-only">{if @password_strength.digit, do: gettext("Met:"), else: gettext("Not met:")}</span>
+                <span class="sr-only">
+                  {if @password_strength.digit, do: gettext("Met:"), else: gettext("Not met:")}
+                </span>
                 {gettext("Contains a digit")}
               </li>
               <li class="flex items-center gap-1.5">
@@ -212,7 +223,9 @@
                   ]}
                   aria-hidden="true"
                 />
-                <span class="sr-only">{if @password_strength.special, do: gettext("Met:"), else: gettext("Not met:")}</span>
+                <span class="sr-only">
+                  {if @password_strength.special, do: gettext("Met:"), else: gettext("Not met:")}
+                </span>
                 {gettext("Contains a special character")}
               </li>
             </ul>
@@ -268,7 +281,9 @@
           <div>
             <p class="font-semibold">{gettext("Save these recovery codes now!")}</p>
             <p class="text-sm">
-              {gettext("These codes are the only way to recover your account if you lose your password. Each code can only be used once. Store them in a safe place.")}
+              {gettext(
+                "These codes are the only way to recover your account if you lose your password. Each code can only be used once. Store them in a safe place."
+              )}
             </p>
           </div>
         </div>

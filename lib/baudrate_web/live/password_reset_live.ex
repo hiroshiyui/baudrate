@@ -81,11 +81,25 @@ defmodule BaudrateWeb.PasswordResetLive do
          )}
 
       :ok ->
-        do_reset_attempt(socket, username, recovery_code, new_password, new_password_confirmation, ip)
+        do_reset_attempt(
+          socket,
+          username,
+          recovery_code,
+          new_password,
+          new_password_confirmation,
+          ip
+        )
     end
   end
 
-  defp do_reset_attempt(socket, username, recovery_code, new_password, new_password_confirmation, ip) do
+  defp do_reset_attempt(
+         socket,
+         username,
+         recovery_code,
+         new_password,
+         new_password_confirmation,
+         ip
+       ) do
     case Auth.reset_password_with_recovery_code(
            username,
            recovery_code,
@@ -103,8 +117,7 @@ defmodule BaudrateWeb.PasswordResetLive do
       {:error, :invalid_credentials} ->
         Auth.record_login_attempt(username, ip, false)
 
-        {:noreply,
-         put_flash(socket, :error, gettext("Invalid username or recovery code."))}
+        {:noreply, put_flash(socket, :error, gettext("Invalid username or recovery code."))}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         errors =
@@ -125,5 +138,4 @@ defmodule BaudrateWeb.PasswordResetLive do
          )}
     end
   end
-
 end

@@ -9,7 +9,9 @@ defmodule Baudrate.Content.ArticleImageTest do
     Setup.seed_roles_and_permissions()
 
     # Create test image on disk
-    tmp_dir = Path.join(System.tmp_dir!(), "article_img_ctx_#{System.unique_integer([:positive])}")
+    tmp_dir =
+      Path.join(System.tmp_dir!(), "article_img_ctx_#{System.unique_integer([:positive])}")
+
     File.mkdir_p!(tmp_dir)
 
     {:ok, img} = Image.new(200, 200, color: [255, 100, 50])

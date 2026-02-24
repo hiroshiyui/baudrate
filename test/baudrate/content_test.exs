@@ -593,17 +593,29 @@ defmodule Baudrate.ContentTest do
   describe "search_articles/2" do
     test "English query returns matching articles" do
       user = create_user("user")
-      board = create_board(%{name: "Search Board", slug: "search-board", min_role_to_view: "guest"})
+
+      board =
+        create_board(%{name: "Search Board", slug: "search-board", min_role_to_view: "guest"})
 
       {:ok, %{article: _}} =
         Content.create_article(
-          %{title: "Elixir Tutorial", body: "Learn Elixir programming", slug: "elixir-tut", user_id: user.id},
+          %{
+            title: "Elixir Tutorial",
+            body: "Learn Elixir programming",
+            slug: "elixir-tut",
+            user_id: user.id
+          },
           [board.id]
         )
 
       {:ok, %{article: _}} =
         Content.create_article(
-          %{title: "Phoenix Guide", body: "Building web apps", slug: "phoenix-guide", user_id: user.id},
+          %{
+            title: "Phoenix Guide",
+            body: "Building web apps",
+            slug: "phoenix-guide",
+            user_id: user.id
+          },
           [board.id]
         )
 
@@ -629,8 +641,12 @@ defmodule Baudrate.ContentTest do
 
     test "respects board visibility for guests" do
       user = create_user("user")
-      public_board = create_board(%{name: "Public", slug: "pub-search", min_role_to_view: "guest"})
-      private_board = create_board(%{name: "Private", slug: "priv-search", min_role_to_view: "user"})
+
+      public_board =
+        create_board(%{name: "Public", slug: "pub-search", min_role_to_view: "guest"})
+
+      private_board =
+        create_board(%{name: "Private", slug: "priv-search", min_role_to_view: "user"})
 
       {:ok, %{article: _}} =
         Content.create_article(
@@ -653,7 +669,9 @@ defmodule Baudrate.ContentTest do
 
     test "returns empty for non-matching query" do
       user = create_user("user")
-      board = create_board(%{name: "Empty Search", slug: "empty-search", min_role_to_view: "guest"})
+
+      board =
+        create_board(%{name: "Empty Search", slug: "empty-search", min_role_to_view: "guest"})
 
       {:ok, _} =
         Content.create_article(
@@ -668,12 +686,19 @@ defmodule Baudrate.ContentTest do
 
     test "pagination works" do
       user = create_user("user")
-      board = create_board(%{name: "Paginated", slug: "paginated-search", min_role_to_view: "guest"})
+
+      board =
+        create_board(%{name: "Paginated", slug: "paginated-search", min_role_to_view: "guest"})
 
       for i <- 1..5 do
         {:ok, _} =
           Content.create_article(
-            %{title: "Batch Article #{i}", body: "batch content", slug: "batch-#{i}", user_id: user.id},
+            %{
+              title: "Batch Article #{i}",
+              body: "batch content",
+              slug: "batch-#{i}",
+              user_id: user.id
+            },
             [board.id]
           )
       end
@@ -695,7 +720,12 @@ defmodule Baudrate.ContentTest do
 
       {:ok, %{article: article}} =
         Content.create_article(
-          %{title: "Article With Comments", body: "body", slug: "cmt-search-art", user_id: user.id},
+          %{
+            title: "Article With Comments",
+            body: "body",
+            slug: "cmt-search-art",
+            user_id: user.id
+          },
           [board.id]
         )
 
@@ -735,8 +765,12 @@ defmodule Baudrate.ContentTest do
 
     test "respects board visibility" do
       user = create_user("user")
-      public_board = create_board(%{name: "Pub Cmt", slug: "pub-cmt-search", min_role_to_view: "guest"})
-      private_board = create_board(%{name: "Priv Cmt", slug: "priv-cmt-search", min_role_to_view: "user"})
+
+      public_board =
+        create_board(%{name: "Pub Cmt", slug: "pub-cmt-search", min_role_to_view: "guest"})
+
+      private_board =
+        create_board(%{name: "Priv Cmt", slug: "priv-cmt-search", min_role_to_view: "user"})
 
       {:ok, %{article: pub_article}} =
         Content.create_article(
@@ -772,7 +806,9 @@ defmodule Baudrate.ContentTest do
 
     test "excludes soft-deleted comments" do
       user = create_user("user")
-      board = create_board(%{name: "Del Cmt Search", slug: "del-cmt-search", min_role_to_view: "guest"})
+
+      board =
+        create_board(%{name: "Del Cmt Search", slug: "del-cmt-search", min_role_to_view: "guest"})
 
       {:ok, %{article: article}} =
         Content.create_article(

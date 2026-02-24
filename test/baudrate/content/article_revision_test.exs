@@ -84,7 +84,11 @@ defmodule Baudrate.Content.ArticleRevisionTest do
       article = create_article(user, board)
 
       assert {:ok, updated} =
-               Content.update_article(article, %{title: "Updated Title", body: "Updated body"}, user)
+               Content.update_article(
+                 article,
+                 %{title: "Updated Title", body: "Updated body"},
+                 user
+               )
 
       assert updated.title == "Updated Title"
       assert updated.body == "Updated body"

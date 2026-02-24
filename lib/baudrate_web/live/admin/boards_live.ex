@@ -50,7 +50,9 @@ defmodule BaudrateWeb.Admin.BoardsLive do
       {:ok, board_id} ->
         board = Content.get_board!(board_id)
         changeset = Board.update_changeset(board, %{})
-        {:noreply, assign(socket, show_form: true, editing_board: board, form: to_form(changeset))}
+
+        {:noreply,
+         assign(socket, show_form: true, editing_board: board, form: to_form(changeset))}
 
       :error ->
         {:noreply, socket}
@@ -188,16 +190,13 @@ defmodule BaudrateWeb.Admin.BoardsLive do
          |> reload_boards()}
 
       {:error, :protected} ->
-        {:noreply,
-         put_flash(socket, :error, gettext("Cannot delete a protected system board."))}
+        {:noreply, put_flash(socket, :error, gettext("Cannot delete a protected system board."))}
 
       {:error, :has_articles} ->
-        {:noreply,
-         put_flash(socket, :error, gettext("Cannot delete board that has articles."))}
+        {:noreply, put_flash(socket, :error, gettext("Cannot delete board that has articles."))}
 
       {:error, :has_children} ->
-        {:noreply,
-         put_flash(socket, :error, gettext("Cannot delete board that has sub-boards."))}
+        {:noreply, put_flash(socket, :error, gettext("Cannot delete board that has sub-boards."))}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to delete board."))}

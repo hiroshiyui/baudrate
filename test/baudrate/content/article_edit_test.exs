@@ -46,7 +46,9 @@ defmodule Baudrate.Content.ArticleEditTest do
           [board.id]
         )
 
-      assert {:ok, updated} = Content.update_article(article, %{title: "Updated", body: "New body"})
+      assert {:ok, updated} =
+               Content.update_article(article, %{title: "Updated", body: "New body"})
+
       assert updated.title == "Updated"
       assert updated.body == "New body"
       assert updated.slug == "update-test"

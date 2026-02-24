@@ -5,7 +5,10 @@ defmodule Baudrate.Content.UserContentTest do
 
   setup do
     user = setup_user("user")
-    {:ok, board} = Content.create_board(%{name: "Test", slug: "test-#{System.unique_integer([:positive])}"})
+
+    {:ok, board} =
+      Content.create_board(%{name: "Test", slug: "test-#{System.unique_integer([:positive])}"})
+
     {:ok, user: user, board: board}
   end
 
@@ -13,7 +16,12 @@ defmodule Baudrate.Content.UserContentTest do
     test "returns recent articles by user", %{user: user, board: board} do
       {:ok, %{article: _}} =
         Content.create_article(
-          %{"title" => "Article 1", "body" => "Body", "slug" => "a1-#{System.unique_integer([:positive])}", "user_id" => user.id},
+          %{
+            "title" => "Article 1",
+            "body" => "Body",
+            "slug" => "a1-#{System.unique_integer([:positive])}",
+            "user_id" => user.id
+          },
           [board.id]
         )
 
@@ -25,7 +33,12 @@ defmodule Baudrate.Content.UserContentTest do
     test "excludes deleted articles", %{user: user, board: board} do
       {:ok, %{article: article}} =
         Content.create_article(
-          %{"title" => "Deleted", "body" => "Body", "slug" => "del-#{System.unique_integer([:positive])}", "user_id" => user.id},
+          %{
+            "title" => "Deleted",
+            "body" => "Body",
+            "slug" => "del-#{System.unique_integer([:positive])}",
+            "user_id" => user.id
+          },
           [board.id]
         )
 
@@ -39,7 +52,12 @@ defmodule Baudrate.Content.UserContentTest do
     test "counts non-deleted articles", %{user: user, board: board} do
       {:ok, _} =
         Content.create_article(
-          %{"title" => "A1", "body" => "Body", "slug" => "ca1-#{System.unique_integer([:positive])}", "user_id" => user.id},
+          %{
+            "title" => "A1",
+            "body" => "Body",
+            "slug" => "ca1-#{System.unique_integer([:positive])}",
+            "user_id" => user.id
+          },
           [board.id]
         )
 
@@ -51,11 +69,21 @@ defmodule Baudrate.Content.UserContentTest do
     test "counts non-deleted comments", %{user: user, board: board} do
       {:ok, %{article: article}} =
         Content.create_article(
-          %{"title" => "Art", "body" => "Body", "slug" => "cc-#{System.unique_integer([:positive])}", "user_id" => user.id},
+          %{
+            "title" => "Art",
+            "body" => "Body",
+            "slug" => "cc-#{System.unique_integer([:positive])}",
+            "user_id" => user.id
+          },
           [board.id]
         )
 
-      {:ok, _} = Content.create_comment(%{"body" => "Comment", "article_id" => article.id, "user_id" => user.id})
+      {:ok, _} =
+        Content.create_comment(%{
+          "body" => "Comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
 
       assert Content.count_comments_by_user(user.id) == 1
     end

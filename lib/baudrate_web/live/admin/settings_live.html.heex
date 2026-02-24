@@ -39,14 +39,20 @@
           label={gettext("Blocked Domains (federation)")}
           placeholder="spam.example, bad-actor.example"
         />
-        <p class="text-sm opacity-60">{gettext("Comma-separated list of domains to block from federation.")}</p>
+        <p class="text-sm opacity-60">
+          {gettext("Comma-separated list of domains to block from federation.")}
+        </p>
         <.input
           field={@form[:ap_domain_allowlist]}
           type="textarea"
           label={gettext("Allowed Domains (federation)")}
           placeholder="trusted.example, friend.example"
         />
-        <p class="text-sm opacity-60">{gettext("Comma-separated list of domains to allow. Only used in allowlist mode. When empty, all domains are blocked.")}</p>
+        <p class="text-sm opacity-60">
+          {gettext(
+            "Comma-separated list of domains to allow. Only used in allowlist mode. When empty, all domains are blocked."
+          )}
+        </p>
         <.input
           field={@form[:ap_authorized_fetch]}
           type="select"
@@ -56,14 +62,22 @@
             {gettext("Enabled (require HTTP signatures on GETs)"), "true"}
           ]}
         />
-        <p class="text-sm opacity-60">{gettext("When enabled, unsigned GET requests to ActivityPub endpoints return 401. WebFinger and NodeInfo remain public.")}</p>
+        <p class="text-sm opacity-60">
+          {gettext(
+            "When enabled, unsigned GET requests to ActivityPub endpoints return 401. WebFinger and NodeInfo remain public."
+          )}
+        </p>
         <.input
           field={@form[:ap_blocklist_audit_url]}
           type="text"
           label={gettext("Blocklist Audit URL")}
           placeholder="https://example.com/blocklist.csv"
         />
-        <p class="text-sm opacity-60">{gettext("URL to an external domain blocklist (CSV or JSON). Used by the federation dashboard audit feature.")}</p>
+        <p class="text-sm opacity-60">
+          {gettext(
+            "URL to an external domain blocklist (CSV or JSON). Used by the federation dashboard audit feature."
+          )}
+        </p>
         <div class="mt-4">
           <.button variant="primary" type="submit" phx-disable-with={gettext("Saving...")}>
             {gettext("Save")}
@@ -77,7 +91,9 @@
     <div class="card-body">
       <h2 class="card-title">{gettext("End User Agreement")}</h2>
       <p class="text-sm text-base-content/70">
-        {gettext("Optional site-specific terms shown during registration. Supports Markdown formatting.")}
+        {gettext(
+          "Optional site-specific terms shown during registration. Supports Markdown formatting."
+        )}
       </p>
       <.form for={@eua_form} id="eua-form" phx-change="validate_eua" phx-submit="save_eua">
         <.input

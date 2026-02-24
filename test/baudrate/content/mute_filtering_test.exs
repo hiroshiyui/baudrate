@@ -51,7 +51,12 @@ defmodule Baudrate.Content.MuteFilteringTest do
     test "filters articles from muted local users" do
       viewer = create_user("user")
       author = create_user("user")
-      board = create_board(%{name: "Mute Board", slug: "mute-board-#{System.unique_integer([:positive])}"})
+
+      board =
+        create_board(%{
+          name: "Mute Board",
+          slug: "mute-board-#{System.unique_integer([:positive])}"
+        })
 
       create_article(author, board, "Visible Article")
       create_article(viewer, board, "My Article")
@@ -71,7 +76,12 @@ defmodule Baudrate.Content.MuteFilteringTest do
 
     test "guests see all articles (no filtering)" do
       author = create_user("user")
-      board = create_board(%{name: "Guest Board", slug: "guest-board-#{System.unique_integer([:positive])}"})
+
+      board =
+        create_board(%{
+          name: "Guest Board",
+          slug: "guest-board-#{System.unique_integer([:positive])}"
+        })
 
       create_article(author, board, "Visible to Guests")
 
@@ -117,7 +127,9 @@ defmodule Baudrate.Content.MuteFilteringTest do
     test "admin articles in non-SysOp boards are filtered when admin is muted" do
       viewer = create_user("user")
       admin = create_user("admin")
-      regular_board = create_board(%{name: "General", slug: "general-#{System.unique_integer([:positive])}"})
+
+      regular_board =
+        create_board(%{name: "General", slug: "general-#{System.unique_integer([:positive])}"})
 
       create_article(admin, regular_board, "Admin Post")
 
@@ -136,7 +148,13 @@ defmodule Baudrate.Content.MuteFilteringTest do
     test "filters muted users' articles from search results" do
       viewer = create_user("user")
       author = create_user("user")
-      board = create_board(%{name: "Search Mute", slug: "search-mute-#{System.unique_integer([:positive])}", min_role_to_view: "guest"})
+
+      board =
+        create_board(%{
+          name: "Search Mute",
+          slug: "search-mute-#{System.unique_integer([:positive])}",
+          min_role_to_view: "guest"
+        })
 
       create_article(author, board, "Muted Author Post searchmute")
       create_article(viewer, board, "My Own Post searchmute")
@@ -155,7 +173,13 @@ defmodule Baudrate.Content.MuteFilteringTest do
     test "filters muted users' comments from search results" do
       viewer = create_user("user")
       author = create_user("user")
-      board = create_board(%{name: "Cmt Mute", slug: "cmt-mute-#{System.unique_integer([:positive])}", min_role_to_view: "guest"})
+
+      board =
+        create_board(%{
+          name: "Cmt Mute",
+          slug: "cmt-mute-#{System.unique_integer([:positive])}",
+          min_role_to_view: "guest"
+        })
 
       article = create_article(viewer, board, "Article with Comments")
 
@@ -188,7 +212,12 @@ defmodule Baudrate.Content.MuteFilteringTest do
     test "filters comments from muted local users" do
       viewer = create_user("user")
       author = create_user("user")
-      board = create_board(%{name: "Cmt List Mute", slug: "cmt-list-mute-#{System.unique_integer([:positive])}"})
+
+      board =
+        create_board(%{
+          name: "Cmt List Mute",
+          slug: "cmt-list-mute-#{System.unique_integer([:positive])}"
+        })
 
       article = create_article(viewer, board, "Article for Comment Muting")
 

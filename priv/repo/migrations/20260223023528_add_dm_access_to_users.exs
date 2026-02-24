@@ -7,7 +7,7 @@ defmodule Baudrate.Repo.Migrations.AddDmAccessToUsers do
     end
 
     create constraint(:users, :dm_access_valid,
-      check: "dm_access IN ('anyone', 'followers', 'nobody')"
-    )
+             check: "dm_access IN ('anyone', 'followers', 'nobody')"
+           )
   end
 end

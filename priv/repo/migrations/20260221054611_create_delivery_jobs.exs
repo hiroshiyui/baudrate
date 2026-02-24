@@ -16,6 +16,10 @@ defmodule Baudrate.Repo.Migrations.CreateDeliveryJobs do
     end
 
     create index(:delivery_jobs, [:status, :next_retry_at])
-    create index(:delivery_jobs, [:status], where: "status = 'pending'", name: :delivery_jobs_pending_status_index)
+
+    create index(:delivery_jobs, [:status],
+             where: "status = 'pending'",
+             name: :delivery_jobs_pending_status_index
+           )
   end
 end

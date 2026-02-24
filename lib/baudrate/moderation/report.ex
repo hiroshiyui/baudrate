@@ -57,7 +57,11 @@ defmodule Baudrate.Moderation.Report do
     remote_actor_id = get_field(changeset, :remote_actor_id)
 
     if is_nil(article_id) and is_nil(comment_id) and is_nil(remote_actor_id) do
-      add_error(changeset, :base, "must target at least one of: article, comment, or remote actor")
+      add_error(
+        changeset,
+        :base,
+        "must target at least one of: article, comment, or remote actor"
+      )
     else
       changeset
     end

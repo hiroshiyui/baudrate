@@ -20,12 +20,20 @@ defmodule Baudrate.Content.BoardArticleTest do
 
     board =
       %Baudrate.Content.Board{}
-      |> Baudrate.Content.Board.changeset(%{name: "BA Board", slug: "ba-board-#{System.unique_integer([:positive])}"})
+      |> Baudrate.Content.Board.changeset(%{
+        name: "BA Board",
+        slug: "ba-board-#{System.unique_integer([:positive])}"
+      })
       |> Repo.insert!()
 
     {:ok, %{article: article}} =
       Baudrate.Content.create_article(
-        %{title: "BA Article", body: "Body", slug: "ba-art-#{System.unique_integer([:positive])}", user_id: user.id},
+        %{
+          title: "BA Article",
+          body: "Body",
+          slug: "ba-art-#{System.unique_integer([:positive])}",
+          user_id: user.id
+        },
         [board.id]
       )
 
@@ -34,7 +42,9 @@ defmodule Baudrate.Content.BoardArticleTest do
 
   describe "changeset/2" do
     test "valid changeset", %{board: board, article: article} do
-      changeset = BoardArticle.changeset(%BoardArticle{}, %{board_id: board.id, article_id: article.id})
+      changeset =
+        BoardArticle.changeset(%BoardArticle{}, %{board_id: board.id, article_id: article.id})
+
       assert changeset.valid?
     end
 

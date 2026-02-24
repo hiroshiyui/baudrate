@@ -86,7 +86,11 @@ defmodule Baudrate.Federation.AnnounceTest do
 
       {:error, changeset} =
         %Announce{}
-        |> Announce.changeset(%{attrs | ap_id: "https://remote.example/activities/announce-b", activity_id: "https://remote.example/activities/announce-b"})
+        |> Announce.changeset(%{
+          attrs
+          | ap_id: "https://remote.example/activities/announce-b",
+            activity_id: "https://remote.example/activities/announce-b"
+        })
         |> Repo.insert()
 
       assert %{target_ap_id: _} = errors_on(changeset)

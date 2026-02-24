@@ -11,20 +11,20 @@ defmodule Baudrate.Repo.Migrations.CreateUserMutes do
     end
 
     create unique_index(:user_mutes, [:user_id, :muted_user_id],
-      where: "muted_user_id IS NOT NULL",
-      name: :user_mutes_local_unique
-    )
+             where: "muted_user_id IS NOT NULL",
+             name: :user_mutes_local_unique
+           )
 
     create unique_index(:user_mutes, [:user_id, :muted_actor_ap_id],
-      where: "muted_actor_ap_id IS NOT NULL",
-      name: :user_mutes_remote_unique
-    )
+             where: "muted_actor_ap_id IS NOT NULL",
+             name: :user_mutes_remote_unique
+           )
 
     create index(:user_mutes, [:user_id])
 
     # At least one of muted_user_id or muted_actor_ap_id must be set
     create constraint(:user_mutes, :must_mute_something,
-      check: "muted_user_id IS NOT NULL OR muted_actor_ap_id IS NOT NULL"
-    )
+             check: "muted_user_id IS NOT NULL OR muted_actor_ap_id IS NOT NULL"
+           )
   end
 end

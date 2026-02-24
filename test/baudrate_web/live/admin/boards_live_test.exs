@@ -48,7 +48,15 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
 
     html =
       lv
-      |> form("form", board: %{name: "Test Board", slug: slug, min_role_to_view: "guest", min_role_to_post: "user", position: 1})
+      |> form("form",
+        board: %{
+          name: "Test Board",
+          slug: slug,
+          min_role_to_view: "guest",
+          min_role_to_post: "user",
+          position: 1
+        }
+      )
       |> render_submit()
 
     assert html =~ "Board created successfully"
@@ -59,7 +67,11 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
     admin = setup_user("admin")
     conn = log_in_user(conn, admin)
 
-    {:ok, board} = Content.create_board(%{name: "Edit Me", slug: "edit-me-#{System.unique_integer([:positive])}"})
+    {:ok, board} =
+      Content.create_board(%{
+        name: "Edit Me",
+        slug: "edit-me-#{System.unique_integer([:positive])}"
+      })
 
     {:ok, lv, _html} = live(conn, "/admin/boards")
     lv |> element("button[phx-click=\"edit\"][phx-value-id=\"#{board.id}\"]") |> render_click()
@@ -77,11 +89,19 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
     admin = setup_user("admin")
     conn = log_in_user(conn, admin)
 
-    {:ok, board} = Content.create_board(%{name: "Delete Me", slug: "delete-me-#{System.unique_integer([:positive])}"})
+    {:ok, board} =
+      Content.create_board(%{
+        name: "Delete Me",
+        slug: "delete-me-#{System.unique_integer([:positive])}"
+      })
 
     {:ok, lv, _html} = live(conn, "/admin/boards")
 
-    html = lv |> element("button[phx-click=\"delete\"][phx-value-id=\"#{board.id}\"]") |> render_click()
+    html =
+      lv
+      |> element("button[phx-click=\"delete\"][phx-value-id=\"#{board.id}\"]")
+      |> render_click()
+
     assert html =~ "Board deleted successfully"
     refute html =~ "Delete Me"
   end
@@ -90,7 +110,11 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
     admin = setup_user("admin")
     conn = log_in_user(conn, admin)
 
-    {:ok, board} = Content.create_board(%{name: "Busy Board", slug: "busy-#{System.unique_integer([:positive])}"})
+    {:ok, board} =
+      Content.create_board(%{
+        name: "Busy Board",
+        slug: "busy-#{System.unique_integer([:positive])}"
+      })
 
     # Create article linked to this board
     alias Baudrate.Content.{Article, BoardArticle}
@@ -107,11 +131,21 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
       |> Repo.insert()
 
     now = DateTime.utc_now() |> DateTime.truncate(:second)
-    Repo.insert!(%BoardArticle{board_id: board.id, article_id: article.id, inserted_at: now, updated_at: now})
+
+    Repo.insert!(%BoardArticle{
+      board_id: board.id,
+      article_id: article.id,
+      inserted_at: now,
+      updated_at: now
+    })
 
     {:ok, lv, _html} = live(conn, "/admin/boards")
 
-    html = lv |> element("button[phx-click=\"delete\"][phx-value-id=\"#{board.id}\"]") |> render_click()
+    html =
+      lv
+      |> element("button[phx-click=\"delete\"][phx-value-id=\"#{board.id}\"]")
+      |> render_click()
+
     assert html =~ "Cannot delete board that has articles"
   end
 
@@ -119,12 +153,26 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
     admin = setup_user("admin")
     conn = log_in_user(conn, admin)
 
-    {:ok, parent} = Content.create_board(%{name: "Parent Board", slug: "parent-#{System.unique_integer([:positive])}"})
-    {:ok, _child} = Content.create_board(%{name: "Child Board", slug: "child-#{System.unique_integer([:positive])}", parent_id: parent.id})
+    {:ok, parent} =
+      Content.create_board(%{
+        name: "Parent Board",
+        slug: "parent-#{System.unique_integer([:positive])}"
+      })
+
+    {:ok, _child} =
+      Content.create_board(%{
+        name: "Child Board",
+        slug: "child-#{System.unique_integer([:positive])}",
+        parent_id: parent.id
+      })
 
     {:ok, lv, _html} = live(conn, "/admin/boards")
 
-    html = lv |> element("button[phx-click=\"delete\"][phx-value-id=\"#{parent.id}\"]") |> render_click()
+    html =
+      lv
+      |> element("button[phx-click=\"delete\"][phx-value-id=\"#{parent.id}\"]")
+      |> render_click()
+
     assert html =~ "Cannot delete board that has sub-boards"
   end
 

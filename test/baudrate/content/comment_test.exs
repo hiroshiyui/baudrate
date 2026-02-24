@@ -27,7 +27,10 @@ defmodule Baudrate.Content.CommentTest do
 
   defp create_board do
     %Baudrate.Content.Board{}
-    |> Baudrate.Content.Board.changeset(%{name: "Test", slug: "test-#{System.unique_integer([:positive])}"})
+    |> Baudrate.Content.Board.changeset(%{
+      name: "Test",
+      slug: "test-#{System.unique_integer([:positive])}"
+    })
     |> Repo.insert!()
   end
 

@@ -112,7 +112,10 @@ defmodule BaudrateWeb.SessionController do
         Logger.error("auth.totp_decrypt_error: user_id=#{user.id} ip=#{remote_ip(conn)}")
 
         conn
-        |> put_flash(:error, gettext("TOTP configuration error. Please contact an administrator."))
+        |> put_flash(
+          :error,
+          gettext("TOTP configuration error. Please contact an administrator.")
+        )
         |> configure_session(drop: true)
         |> redirect(to: "/login")
 

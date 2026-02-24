@@ -142,7 +142,11 @@ defmodule BaudrateWeb.Admin.ModerationLive do
 
     {:noreply,
      socket
-     |> assign(selected_report_ids: MapSet.new(), show_bulk_resolve_modal: false, bulk_resolve_note: "")
+     |> assign(
+       selected_report_ids: MapSet.new(),
+       show_bulk_resolve_modal: false,
+       bulk_resolve_note: ""
+     )
      |> put_flash(
        :info,
        ngettext(
@@ -296,10 +300,21 @@ defmodule BaudrateWeb.Admin.ModerationLive do
           if report.comment && report.comment.ap_id, do: [report.comment.ap_id | ids], else: ids
         end)
 
-      flag = Baudrate.Federation.Publisher.build_flag(report.remote_actor, content_ap_ids, report.reason)
+      flag =
+        Baudrate.Federation.Publisher.build_flag(
+          report.remote_actor,
+          content_ap_ids,
+          report.reason
+        )
+
       Baudrate.Federation.Delivery.deliver_flag(flag, report.remote_actor)
 
-      {:noreply, put_flash(socket, :info, gettext("Flag sent to %{domain}.", domain: report.remote_actor.domain))}
+      {:noreply,
+       put_flash(
+         socket,
+         :info,
+         gettext("Flag sent to %{domain}.", domain: report.remote_actor.domain)
+       )}
     else
       {:noreply, put_flash(socket, :error, gettext("No remote actor to send flag to."))}
     end

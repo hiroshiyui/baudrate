@@ -135,5 +135,4 @@ defmodule BaudrateWeb.SetupLive do
     migrations_status = Setup.check_migrations()
     {db_status, migrations_status}
   end
-
 end

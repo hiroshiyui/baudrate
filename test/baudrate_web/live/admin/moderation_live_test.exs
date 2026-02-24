@@ -159,7 +159,9 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
     html =
       lv
-      |> element("button[phx-click=\"delete_content\"][phx-value-type=\"article\"][phx-value-id=\"#{article.id}\"]")
+      |> element(
+        "button[phx-click=\"delete_content\"][phx-value-type=\"article\"][phx-value-id=\"#{article.id}\"]"
+      )
       |> render_click()
 
     assert html =~ "Article deleted."
@@ -175,7 +177,9 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
     html =
       lv
-      |> element("button[phx-click=\"delete_content\"][phx-value-type=\"comment\"][phx-value-id=\"#{comment.id}\"]")
+      |> element(
+        "button[phx-click=\"delete_content\"][phx-value-type=\"comment\"][phx-value-id=\"#{comment.id}\"]"
+      )
       |> render_click()
 
     assert html =~ "Comment deleted."
@@ -192,11 +196,19 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
       {:ok, lv, _html} = live(conn, "/admin/moderation")
 
       # Select
-      html = lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report.id}\"]") |> render_click()
+      html =
+        lv
+        |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report.id}\"]")
+        |> render_click()
+
       assert html =~ "1 report selected"
 
       # Deselect
-      html = lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report.id}\"]") |> render_click()
+      html =
+        lv
+        |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report.id}\"]")
+        |> render_click()
+
       refute html =~ "report selected"
     end
 
@@ -225,10 +237,16 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
       {:ok, lv, _html} = live(conn, "/admin/moderation")
 
       # Select
-      lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report.id}\"]") |> render_click()
+      lv
+      |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report.id}\"]")
+      |> render_click()
 
       # Change filter
-      html = lv |> element("button[phx-click=\"filter\"][phx-value-status=\"resolved\"]") |> render_click()
+      html =
+        lv
+        |> element("button[phx-click=\"filter\"][phx-value-status=\"resolved\"]")
+        |> render_click()
+
       refute html =~ "report selected"
     end
 
@@ -239,7 +257,12 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
       Moderation.resolve_report(report, admin.id, "done")
 
       {:ok, lv, _html} = live(conn, "/admin/moderation")
-      html = lv |> element("button[phx-click=\"filter\"][phx-value-status=\"resolved\"]") |> render_click()
+
+      html =
+        lv
+        |> element("button[phx-click=\"filter\"][phx-value-status=\"resolved\"]")
+        |> render_click()
+
       refute html =~ "toggle_select_report"
       refute html =~ "toggle_select_all_reports"
     end
@@ -255,21 +278,34 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
       {:ok, lv, _html} = live(conn, "/admin/moderation")
 
       # Select both
-      lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report1.id}\"]") |> render_click()
-      lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report2.id}\"]") |> render_click()
+      lv
+      |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report1.id}\"]")
+      |> render_click()
+
+      lv
+      |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report2.id}\"]")
+      |> render_click()
 
       # Open modal
       lv |> element("button[phx-click=\"show_bulk_resolve_modal\"]") |> render_click()
 
       # Set note
-      lv |> form("form[phx-change=\"update_bulk_resolve_note\"]", note: "All handled") |> render_change()
+      lv
+      |> form("form[phx-change=\"update_bulk_resolve_note\"]", note: "All handled")
+      |> render_change()
 
       # Confirm
       html = lv |> element("button[phx-click=\"confirm_bulk_resolve\"]") |> render_click()
       assert html =~ "2 reports resolved"
 
       # Verify logs with bulk flag
-      logs = Repo.all(from(l in Moderation.Log, where: l.action == "resolve_report" and l.actor_id == ^admin.id))
+      logs =
+        Repo.all(
+          from(l in Moderation.Log,
+            where: l.action == "resolve_report" and l.actor_id == ^admin.id
+          )
+        )
+
       assert length(logs) == 2
       assert Enum.all?(logs, fn log -> log.details["bulk"] == true end)
       assert Enum.all?(logs, fn log -> log.details["note"] == "All handled" end)
@@ -282,7 +318,10 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
       {:ok, lv, _html} = live(conn, "/admin/moderation")
 
-      lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report.id}\"]") |> render_click()
+      lv
+      |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report.id}\"]")
+      |> render_click()
+
       lv |> element("button[phx-click=\"show_bulk_resolve_modal\"]") |> render_click()
 
       html = lv |> element("button[phx-click=\"cancel_bulk_resolve\"]") |> render_click()
@@ -300,15 +339,26 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
       {:ok, lv, _html} = live(conn, "/admin/moderation")
 
       # Select both
-      lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report1.id}\"]") |> render_click()
-      lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report2.id}\"]") |> render_click()
+      lv
+      |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report1.id}\"]")
+      |> render_click()
+
+      lv
+      |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report2.id}\"]")
+      |> render_click()
 
       # Bulk dismiss
       html = lv |> element("button[phx-click=\"bulk_dismiss\"]") |> render_click()
       assert html =~ "2 reports dismissed"
 
       # Verify logs with bulk flag
-      logs = Repo.all(from(l in Moderation.Log, where: l.action == "dismiss_report" and l.actor_id == ^admin.id))
+      logs =
+        Repo.all(
+          from(l in Moderation.Log,
+            where: l.action == "dismiss_report" and l.actor_id == ^admin.id
+          )
+        )
+
       assert length(logs) == 2
       assert Enum.all?(logs, fn log -> log.details["bulk"] == true end)
     end

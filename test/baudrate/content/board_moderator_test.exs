@@ -31,7 +31,11 @@ defmodule Baudrate.Content.BoardModeratorTest do
     user1 = make_user.()
     user2 = make_user.()
 
-    {:ok, board} = Content.create_board(%{name: "Mod Board", slug: "mod-board-#{System.unique_integer([:positive])}"})
+    {:ok, board} =
+      Content.create_board(%{
+        name: "Mod Board",
+        slug: "mod-board-#{System.unique_integer([:positive])}"
+      })
 
     {:ok, board: board, user1: user1, user2: user2}
   end

@@ -27,13 +27,20 @@
                 disabled
               />
             </label>
-            <p class="text-sm opacity-60 mt-1">{gettext("Slug cannot be changed after creation.")}</p>
+            <p class="text-sm opacity-60 mt-1">
+              {gettext("Slug cannot be changed after creation.")}
+            </p>
           </div>
         <% else %>
           <.input field={@form[:slug]} type="text" label={gettext("Slug")} required />
         <% end %>
 
-        <.input field={@form[:description]} type="textarea" label={gettext("Description")} rows="3" />
+        <.input
+          field={@form[:description]}
+          type="textarea"
+          label={gettext("Description")}
+          rows="3"
+        />
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <.input
@@ -96,7 +103,11 @@
         <h2 class="card-title">
           {gettext("Board Moderators")} &mdash; {@managing_moderators_board.name}
         </h2>
-        <button phx-click="close_moderators" class="btn btn-sm btn-ghost" aria-label={gettext("Close")}>
+        <button
+          phx-click="close_moderators"
+          class="btn btn-sm btn-ghost"
+          aria-label={gettext("Close")}
+        >
           <.icon name="hero-x-mark" class="size-4" />
         </button>
       </div>
@@ -107,7 +118,10 @@
       </div>
 
       <div :if={@board_moderators != []} class="space-y-2">
-        <div :for={bm <- @board_moderators} class="flex items-center justify-between bg-base-100 rounded-lg p-3">
+        <div
+          :for={bm <- @board_moderators}
+          class="flex items-center justify-between bg-base-100 rounded-lg p-3"
+        >
           <div class="flex items-center gap-2">
             <span class="font-medium">{bm.user.username}</span>
             <span class="badge badge-sm badge-ghost">{bm.user.role.name}</span>
@@ -139,7 +153,12 @@
           />
         </form>
         <form :if={@active_users != []} phx-submit="add_moderator" class="flex gap-2">
-          <select name="user_id" class="select select-bordered select-sm flex-1" required aria-label={gettext("Select moderator")}>
+          <select
+            name="user_id"
+            class="select select-bordered select-sm flex-1"
+            required
+            aria-label={gettext("Select moderator")}
+          >
             <option value="">{gettext("Select a user...")}</option>
             <%= for user <- @active_users,
                     not Enum.any?(@board_moderators, &(&1.user.id == user.id)) do %>
@@ -204,7 +223,14 @@
             <button phx-click="edit" phx-value-id={board.id} class="btn btn-sm btn-ghost">
               {gettext("Edit")}
             </button>
-            <button phx-click="manage_moderators" phx-value-id={board.id} class="btn btn-sm btn-ghost" aria-expanded={to_string(@managing_moderators_board && @managing_moderators_board.id == board.id)}>
+            <button
+              phx-click="manage_moderators"
+              phx-value-id={board.id}
+              class="btn btn-sm btn-ghost"
+              aria-expanded={
+                to_string(@managing_moderators_board && @managing_moderators_board.id == board.id)
+              }
+            >
               {gettext("Moderators")}
             </button>
             <button

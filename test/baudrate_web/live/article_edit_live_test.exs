@@ -20,7 +20,12 @@ defmodule BaudrateWeb.ArticleEditLiveTest do
 
     {:ok, %{article: article}} =
       Content.create_article(
-        %{title: "My Article", body: "Original body", slug: "edit-test-article", user_id: user.id},
+        %{
+          title: "My Article",
+          body: "Original body",
+          slug: "edit-test-article",
+          user_id: user.id
+        },
         [board.id]
       )
 

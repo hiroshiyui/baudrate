@@ -23,11 +23,17 @@ defmodule BaudrateWeb.Admin.FederationLive do
   @impl true
   def handle_event("retry_job", %{"id" => id}, socket) do
     case parse_id(id) do
-      :error -> {:noreply, socket}
+      :error ->
+        {:noreply, socket}
+
       {:ok, job_id} ->
         case DeliveryStats.retry_job(job_id) do
-          {:ok, _} -> {:noreply, socket |> put_flash(:info, gettext("Job queued for retry.")) |> load_dashboard()}
-          {:error, _} -> {:noreply, put_flash(socket, :error, gettext("Job not found."))}
+          {:ok, _} ->
+            {:noreply,
+             socket |> put_flash(:info, gettext("Job queued for retry.")) |> load_dashboard()}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Job not found."))}
         end
     end
   end
@@ -35,11 +41,16 @@ defmodule BaudrateWeb.Admin.FederationLive do
   @impl true
   def handle_event("abandon_job", %{"id" => id}, socket) do
     case parse_id(id) do
-      :error -> {:noreply, socket}
+      :error ->
+        {:noreply, socket}
+
       {:ok, job_id} ->
         case DeliveryStats.abandon_job(job_id) do
-          {:ok, _} -> {:noreply, socket |> put_flash(:info, gettext("Job abandoned.")) |> load_dashboard()}
-          {:error, _} -> {:noreply, put_flash(socket, :error, gettext("Job not found."))}
+          {:ok, _} ->
+            {:noreply, socket |> put_flash(:info, gettext("Job abandoned.")) |> load_dashboard()}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Job not found."))}
         end
     end
   end
@@ -105,7 +116,12 @@ defmodule BaudrateWeb.Admin.FederationLive do
         {:noreply, assign(socket, audit_result: result)}
 
       {:error, :no_audit_url} ->
-        {:noreply, put_flash(socket, :error, gettext("No blocklist audit URL configured. Set it in Admin Settings."))}
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("No blocklist audit URL configured. Set it in Admin Settings.")
+         )}
 
       {:error, {:fetch_failed, _}} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to fetch external blocklist."))}
@@ -153,13 +169,19 @@ defmodule BaudrateWeb.Admin.FederationLive do
           {:ok, result} ->
             {:noreply,
              socket
-             |> put_flash(:info, gettext("Added %{count} domains to blocklist.", count: length(missing)))
+             |> put_flash(
+               :info,
+               gettext("Added %{count} domains to blocklist.", count: length(missing))
+             )
              |> assign(audit_result: result)}
 
           _ ->
             {:noreply,
              socket
-             |> put_flash(:info, gettext("Added %{count} domains to blocklist.", count: length(missing)))
+             |> put_flash(
+               :info,
+               gettext("Added %{count} domains to blocklist.", count: length(missing))
+             )
              |> assign(audit_result: nil)}
         end
 
@@ -178,10 +200,13 @@ defmodule BaudrateWeb.Admin.FederationLive do
 
     {:noreply,
      socket
-     |> put_flash(:info, gettext("Federation %{action} for %{board}.",
-       action: if(new_value, do: gettext("enabled"), else: gettext("disabled")),
-       board: board.name
-     ))
+     |> put_flash(
+       :info,
+       gettext("Federation %{action} for %{board}.",
+         action: if(new_value, do: gettext("enabled"), else: gettext("disabled")),
+         board: board.name
+       )
+     )
      |> load_dashboard()}
   end
 

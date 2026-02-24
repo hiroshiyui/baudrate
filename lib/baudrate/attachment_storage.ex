@@ -90,7 +90,7 @@ defmodule Baudrate.AttachmentStorage do
         cond do
           # WebP: RIFF....WEBP
           content_type == "image/webp" and binary_part(data, 0, 4) == "RIFF" and
-              byte_size(data) >= 12 and binary_part(data, 8, 4) == "WEBP" ->
+            byte_size(data) >= 12 and binary_part(data, 8, 4) == "WEBP" ->
             :ok
 
           # Text and markdown don't have magic bytes — allow if content_type matches

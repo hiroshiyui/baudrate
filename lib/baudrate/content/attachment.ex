@@ -35,10 +35,28 @@ defmodule Baudrate.Content.Attachment do
   @doc "Casts and validates fields for creating an attachment record."
   def changeset(attachment, attrs) do
     attachment
-    |> cast(attrs, [:filename, :original_filename, :content_type, :size, :storage_path, :article_id, :user_id])
-    |> validate_required([:filename, :original_filename, :content_type, :size, :storage_path, :article_id])
+    |> cast(attrs, [
+      :filename,
+      :original_filename,
+      :content_type,
+      :size,
+      :storage_path,
+      :article_id,
+      :user_id
+    ])
+    |> validate_required([
+      :filename,
+      :original_filename,
+      :content_type,
+      :size,
+      :storage_path,
+      :article_id
+    ])
     |> validate_inclusion(:content_type, @allowed_content_types, message: "file type not allowed")
-    |> validate_number(:size, less_than_or_equal_to: @max_size, message: "file too large (max 10 MB)")
+    |> validate_number(:size,
+      less_than_or_equal_to: @max_size,
+      message: "file too large (max 10 MB)"
+    )
     |> foreign_key_constraint(:article_id)
     |> foreign_key_constraint(:user_id)
   end

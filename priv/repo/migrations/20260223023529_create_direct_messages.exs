@@ -15,23 +15,23 @@ defmodule Baudrate.Repo.Migrations.CreateDirectMessages do
 
     # Local-local conversations: unique pair
     create unique_index(:conversations, [:user_a_id, :user_b_id],
-      where: "user_a_id IS NOT NULL AND user_b_id IS NOT NULL",
-      name: :conversations_local_pair_index
-    )
+             where: "user_a_id IS NOT NULL AND user_b_id IS NOT NULL",
+             name: :conversations_local_pair_index
+           )
 
     # Local-remote conversations: unique pair (user_a is local, remote_actor_b is remote)
     create unique_index(:conversations, [:user_a_id, :remote_actor_b_id],
-      where: "user_a_id IS NOT NULL AND remote_actor_b_id IS NOT NULL",
-      name: :conversations_local_remote_pair_index
-    )
+             where: "user_a_id IS NOT NULL AND remote_actor_b_id IS NOT NULL",
+             name: :conversations_local_remote_pair_index
+           )
 
     # Ensure at least two participants
     create constraint(:conversations, :conversations_two_participants,
-      check: """
-      (user_a_id IS NOT NULL OR remote_actor_a_id IS NOT NULL) AND
-      (user_b_id IS NOT NULL OR remote_actor_b_id IS NOT NULL)
-      """
-    )
+             check: """
+             (user_a_id IS NOT NULL OR remote_actor_a_id IS NOT NULL) AND
+             (user_b_id IS NOT NULL OR remote_actor_b_id IS NOT NULL)
+             """
+           )
 
     create index(:conversations, [:user_a_id])
     create index(:conversations, [:user_b_id])
@@ -54,11 +54,11 @@ defmodule Baudrate.Repo.Migrations.CreateDirectMessages do
 
     # Exactly one sender
     create constraint(:direct_messages, :direct_messages_one_sender,
-      check: """
-      (sender_user_id IS NOT NULL AND sender_remote_actor_id IS NULL) OR
-      (sender_user_id IS NULL AND sender_remote_actor_id IS NOT NULL)
-      """
-    )
+             check: """
+             (sender_user_id IS NOT NULL AND sender_remote_actor_id IS NULL) OR
+             (sender_user_id IS NULL AND sender_remote_actor_id IS NOT NULL)
+             """
+           )
 
     create unique_index(:direct_messages, [:ap_id], where: "ap_id IS NOT NULL")
     create index(:direct_messages, [:conversation_id, :inserted_at])

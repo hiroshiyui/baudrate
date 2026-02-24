@@ -82,93 +82,169 @@ defmodule Baudrate.Content.BoardPermissionsTest do
 
   describe "can_view_board?/2" do
     test "guest board visible to nil user" do
-      {:ok, board} = Content.create_board(%{name: "Pub", slug: "pub-#{System.unique_integer([:positive])}", min_role_to_view: "guest"})
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Pub",
+          slug: "pub-#{System.unique_integer([:positive])}",
+          min_role_to_view: "guest"
+        })
+
       assert Content.can_view_board?(board, nil)
     end
 
     test "user board not visible to nil user" do
-      {:ok, board} = Content.create_board(%{name: "Users", slug: "usr-#{System.unique_integer([:positive])}", min_role_to_view: "user"})
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Users",
+          slug: "usr-#{System.unique_integer([:positive])}",
+          min_role_to_view: "user"
+        })
+
       refute Content.can_view_board?(board, nil)
     end
 
     test "user board visible to user", %{user: user} do
-      {:ok, board} = Content.create_board(%{name: "Users", slug: "usr-#{System.unique_integer([:positive])}", min_role_to_view: "user"})
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Users",
+          slug: "usr-#{System.unique_integer([:positive])}",
+          min_role_to_view: "user"
+        })
+
       assert Content.can_view_board?(board, user)
     end
 
     test "moderator board not visible to user", %{user: user} do
-      {:ok, board} = Content.create_board(%{name: "Mods", slug: "mod-#{System.unique_integer([:positive])}", min_role_to_view: "moderator"})
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Mods",
+          slug: "mod-#{System.unique_integer([:positive])}",
+          min_role_to_view: "moderator"
+        })
+
       refute Content.can_view_board?(board, user)
     end
 
     test "moderator board visible to moderator", %{moderator: moderator} do
-      {:ok, board} = Content.create_board(%{name: "Mods", slug: "mod-#{System.unique_integer([:positive])}", min_role_to_view: "moderator"})
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Mods",
+          slug: "mod-#{System.unique_integer([:positive])}",
+          min_role_to_view: "moderator"
+        })
+
       assert Content.can_view_board?(board, moderator)
     end
 
     test "admin board visible to admin", %{admin: admin} do
-      {:ok, board} = Content.create_board(%{name: "Admin", slug: "adm-#{System.unique_integer([:positive])}", min_role_to_view: "admin"})
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Admin",
+          slug: "adm-#{System.unique_integer([:positive])}",
+          min_role_to_view: "admin"
+        })
+
       assert Content.can_view_board?(board, admin)
     end
   end
 
   describe "can_post_in_board?/2" do
     test "nil user cannot post" do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "b-#{System.unique_integer([:positive])}", min_role_to_post: "user"})
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Board",
+          slug: "b-#{System.unique_integer([:positive])}",
+          min_role_to_post: "user"
+        })
+
       refute Content.can_post_in_board?(board, nil)
     end
 
     test "active user can post in user-min board", %{user: user} do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "b-#{System.unique_integer([:positive])}", min_role_to_post: "user"})
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Board",
+          slug: "b-#{System.unique_integer([:positive])}",
+          min_role_to_post: "user"
+        })
+
       assert Content.can_post_in_board?(board, user)
     end
 
     test "user cannot post in moderator-min board", %{user: user} do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "b-#{System.unique_integer([:positive])}", min_role_to_post: "moderator"})
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Board",
+          slug: "b-#{System.unique_integer([:positive])}",
+          min_role_to_post: "moderator"
+        })
+
       refute Content.can_post_in_board?(board, user)
     end
 
     test "moderator can post in moderator-min board", %{moderator: moderator} do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "b-#{System.unique_integer([:positive])}", min_role_to_post: "moderator"})
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Board",
+          slug: "b-#{System.unique_integer([:positive])}",
+          min_role_to_post: "moderator"
+        })
+
       assert Content.can_post_in_board?(board, moderator)
     end
   end
 
   describe "board_moderator?/2" do
     test "admin is always board mod", %{admin: admin} do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "bm-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{name: "Board", slug: "bm-#{System.unique_integer([:positive])}"})
+
       assert Content.board_moderator?(board, admin)
     end
 
     test "global moderator is always board mod", %{moderator: moderator} do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "bm-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{name: "Board", slug: "bm-#{System.unique_integer([:positive])}"})
+
       assert Content.board_moderator?(board, moderator)
     end
 
     test "assigned user is board mod", %{user: user} do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "bm-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{name: "Board", slug: "bm-#{System.unique_integer([:positive])}"})
+
       {:ok, _} = Content.add_board_moderator(board.id, user.id)
       assert Content.board_moderator?(board, user)
     end
 
     test "random user is not board mod", %{user: user} do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "bm-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{name: "Board", slug: "bm-#{System.unique_integer([:positive])}"})
+
       refute Content.board_moderator?(board, user)
     end
 
     test "nil user is not board mod" do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "bm-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{name: "Board", slug: "bm-#{System.unique_integer([:positive])}"})
+
       refute Content.board_moderator?(board, nil)
     end
   end
 
   describe "can_edit_article?/2" do
     setup %{user: user} do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "ea-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{name: "Board", slug: "ea-#{System.unique_integer([:positive])}"})
 
       {:ok, %{article: article}} =
         Content.create_article(
-          %{title: "Test", body: "Body", slug: "ea-#{System.unique_integer([:positive])}", user_id: user.id},
+          %{
+            title: "Test",
+            body: "Body",
+            slug: "ea-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
           [board.id]
         )
 
@@ -194,11 +270,17 @@ defmodule Baudrate.Content.BoardPermissionsTest do
 
   describe "can_delete_article?/2" do
     setup %{user: user} do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "da-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{name: "Board", slug: "da-#{System.unique_integer([:positive])}"})
 
       {:ok, %{article: article}} =
         Content.create_article(
-          %{title: "Test", body: "Body", slug: "da-#{System.unique_integer([:positive])}", user_id: user.id},
+          %{
+            title: "Test",
+            body: "Body",
+            slug: "da-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
           [board.id]
         )
 
@@ -239,11 +321,17 @@ defmodule Baudrate.Content.BoardPermissionsTest do
 
   describe "can_pin_article?/2 and can_lock_article?/2" do
     setup %{user: user} do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "pl-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{name: "Board", slug: "pl-#{System.unique_integer([:positive])}"})
 
       {:ok, %{article: article}} =
         Content.create_article(
-          %{title: "Test", body: "Body", slug: "pl-#{System.unique_integer([:positive])}", user_id: user.id},
+          %{
+            title: "Test",
+            body: "Body",
+            slug: "pl-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
           [board.id]
         )
 
@@ -283,15 +371,26 @@ defmodule Baudrate.Content.BoardPermissionsTest do
 
   describe "can_delete_comment?/3" do
     setup %{user: user} do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "dc-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{name: "Board", slug: "dc-#{System.unique_integer([:positive])}"})
 
       {:ok, %{article: article}} =
         Content.create_article(
-          %{title: "Test", body: "Body", slug: "dc-#{System.unique_integer([:positive])}", user_id: user.id},
+          %{
+            title: "Test",
+            body: "Body",
+            slug: "dc-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
           [board.id]
         )
 
-      {:ok, comment} = Content.create_comment(%{"body" => "A comment", "article_id" => article.id, "user_id" => user.id})
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "A comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
 
       {:ok, board: board, article: article, comment: comment}
     end
@@ -326,11 +425,17 @@ defmodule Baudrate.Content.BoardPermissionsTest do
 
   describe "toggle_pin_article/1" do
     test "toggles pinned status", %{user: user} do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "tp-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{name: "Board", slug: "tp-#{System.unique_integer([:positive])}"})
 
       {:ok, %{article: article}} =
         Content.create_article(
-          %{title: "Pin Test", body: "Body", slug: "tp-#{System.unique_integer([:positive])}", user_id: user.id},
+          %{
+            title: "Pin Test",
+            body: "Body",
+            slug: "tp-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
           [board.id]
         )
 
@@ -344,11 +449,17 @@ defmodule Baudrate.Content.BoardPermissionsTest do
 
   describe "toggle_lock_article/1" do
     test "toggles locked status", %{user: user} do
-      {:ok, board} = Content.create_board(%{name: "Board", slug: "tl-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{name: "Board", slug: "tl-#{System.unique_integer([:positive])}"})
 
       {:ok, %{article: article}} =
         Content.create_article(
-          %{title: "Lock Test", body: "Body", slug: "tl-#{System.unique_integer([:positive])}", user_id: user.id},
+          %{
+            title: "Lock Test",
+            body: "Body",
+            slug: "tl-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
           [board.id]
         )
 
@@ -362,8 +473,19 @@ defmodule Baudrate.Content.BoardPermissionsTest do
 
   describe "list_visible_top_boards/1" do
     test "guest sees only guest-visible boards" do
-      {:ok, _pub} = Content.create_board(%{name: "Public", slug: "vt-pub-#{System.unique_integer([:positive])}", min_role_to_view: "guest"})
-      {:ok, _usr} = Content.create_board(%{name: "Users Only", slug: "vt-usr-#{System.unique_integer([:positive])}", min_role_to_view: "user"})
+      {:ok, _pub} =
+        Content.create_board(%{
+          name: "Public",
+          slug: "vt-pub-#{System.unique_integer([:positive])}",
+          min_role_to_view: "guest"
+        })
+
+      {:ok, _usr} =
+        Content.create_board(%{
+          name: "Users Only",
+          slug: "vt-usr-#{System.unique_integer([:positive])}",
+          min_role_to_view: "user"
+        })
 
       boards = Content.list_visible_top_boards(nil)
       names = Enum.map(boards, & &1.name)
@@ -372,9 +494,26 @@ defmodule Baudrate.Content.BoardPermissionsTest do
     end
 
     test "user sees user-visible boards", %{user: user} do
-      {:ok, _pub} = Content.create_board(%{name: "PubV", slug: "vtu-pub-#{System.unique_integer([:positive])}", min_role_to_view: "guest"})
-      {:ok, _usr} = Content.create_board(%{name: "UsrV", slug: "vtu-usr-#{System.unique_integer([:positive])}", min_role_to_view: "user"})
-      {:ok, _mod} = Content.create_board(%{name: "ModV", slug: "vtu-mod-#{System.unique_integer([:positive])}", min_role_to_view: "moderator"})
+      {:ok, _pub} =
+        Content.create_board(%{
+          name: "PubV",
+          slug: "vtu-pub-#{System.unique_integer([:positive])}",
+          min_role_to_view: "guest"
+        })
+
+      {:ok, _usr} =
+        Content.create_board(%{
+          name: "UsrV",
+          slug: "vtu-usr-#{System.unique_integer([:positive])}",
+          min_role_to_view: "user"
+        })
+
+      {:ok, _mod} =
+        Content.create_board(%{
+          name: "ModV",
+          slug: "vtu-mod-#{System.unique_integer([:positive])}",
+          min_role_to_view: "moderator"
+        })
 
       boards = Content.list_visible_top_boards(user)
       names = Enum.map(boards, & &1.name)
@@ -386,9 +525,27 @@ defmodule Baudrate.Content.BoardPermissionsTest do
 
   describe "list_visible_sub_boards/2" do
     test "filters sub-boards by role" do
-      {:ok, parent} = Content.create_board(%{name: "Parent", slug: "vs-p-#{System.unique_integer([:positive])}"})
-      {:ok, _pub} = Content.create_board(%{name: "SubPub", slug: "vs-pub-#{System.unique_integer([:positive])}", parent_id: parent.id, min_role_to_view: "guest"})
-      {:ok, _usr} = Content.create_board(%{name: "SubUsr", slug: "vs-usr-#{System.unique_integer([:positive])}", parent_id: parent.id, min_role_to_view: "user"})
+      {:ok, parent} =
+        Content.create_board(%{
+          name: "Parent",
+          slug: "vs-p-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, _pub} =
+        Content.create_board(%{
+          name: "SubPub",
+          slug: "vs-pub-#{System.unique_integer([:positive])}",
+          parent_id: parent.id,
+          min_role_to_view: "guest"
+        })
+
+      {:ok, _usr} =
+        Content.create_board(%{
+          name: "SubUsr",
+          slug: "vs-usr-#{System.unique_integer([:positive])}",
+          parent_id: parent.id,
+          min_role_to_view: "user"
+        })
 
       subs = Content.list_visible_sub_boards(parent, nil)
       assert length(subs) == 1

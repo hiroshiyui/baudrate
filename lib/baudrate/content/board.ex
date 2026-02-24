@@ -47,7 +47,16 @@ defmodule Baudrate.Content.Board do
   @doc "Changeset for creating a board with name, slug, permissions, and optional parent."
   def changeset(board, attrs) do
     board
-    |> cast(attrs, [:name, :description, :slug, :position, :parent_id, :min_role_to_view, :min_role_to_post, :ap_enabled])
+    |> cast(attrs, [
+      :name,
+      :description,
+      :slug,
+      :position,
+      :parent_id,
+      :min_role_to_view,
+      :min_role_to_post,
+      :ap_enabled
+    ])
     |> validate_required([:name, :slug])
     |> validate_length(:name, max: 100)
     |> validate_length(:description, max: 1000)
@@ -65,7 +74,15 @@ defmodule Baudrate.Content.Board do
   """
   def update_changeset(board, attrs) do
     board
-    |> cast(attrs, [:name, :description, :position, :parent_id, :min_role_to_view, :min_role_to_post, :ap_enabled])
+    |> cast(attrs, [
+      :name,
+      :description,
+      :position,
+      :parent_id,
+      :min_role_to_view,
+      :min_role_to_post,
+      :ap_enabled
+    ])
     |> validate_required([:name])
     |> validate_length(:name, max: 100)
     |> validate_length(:description, max: 1000)

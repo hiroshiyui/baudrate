@@ -27,7 +27,10 @@ defmodule Baudrate.Content.ArticleLikeTest do
 
   defp create_board do
     %Baudrate.Content.Board{}
-    |> Baudrate.Content.Board.changeset(%{name: "Test", slug: "test-#{System.unique_integer([:positive])}"})
+    |> Baudrate.Content.Board.changeset(%{
+      name: "Test",
+      slug: "test-#{System.unique_integer([:positive])}"
+    })
     |> Repo.insert!()
   end
 
@@ -69,7 +72,9 @@ defmodule Baudrate.Content.ArticleLikeTest do
       board = create_board()
       article = create_article(user, board)
 
-      changeset = ArticleLike.changeset(%ArticleLike{}, %{article_id: article.id, user_id: user.id})
+      changeset =
+        ArticleLike.changeset(%ArticleLike{}, %{article_id: article.id, user_id: user.id})
+
       assert changeset.valid?
     end
 
@@ -116,7 +121,10 @@ defmodule Baudrate.Content.ArticleLikeTest do
 
       {:error, changeset} =
         %ArticleLike{}
-        |> ArticleLike.remote_changeset(%{attrs | ap_id: "https://remote.example/likes/#{System.unique_integer([:positive])}"})
+        |> ArticleLike.remote_changeset(%{
+          attrs
+          | ap_id: "https://remote.example/likes/#{System.unique_integer([:positive])}"
+        })
         |> Repo.insert()
 
       assert %{article_id: _} = errors_on(changeset)

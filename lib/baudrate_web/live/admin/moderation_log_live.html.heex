@@ -6,7 +6,10 @@
       phx-click="filter"
       phx-value-action=""
       aria-pressed={to_string(is_nil(@action_filter) || @action_filter == "")}
-      class={["btn btn-sm", if(is_nil(@action_filter) || @action_filter == "", do: "btn-primary", else: "btn-ghost")]}
+      class={[
+        "btn btn-sm",
+        if(is_nil(@action_filter) || @action_filter == "", do: "btn-primary", else: "btn-ghost")
+      ]}
     >
       {gettext("All")}
     </button>
@@ -39,7 +42,9 @@
       <tbody>
         <tr :for={log <- @logs}>
           <td class="whitespace-nowrap text-sm">
-            <time datetime={Calendar.strftime(log.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(log.inserted_at, "%Y-%m-%d %H:%M")}</time>
+            <time datetime={Calendar.strftime(log.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
+              {Calendar.strftime(log.inserted_at, "%Y-%m-%d %H:%M")}
+            </time>
           </td>
           <td>
             <span :if={log.actor}>{log.actor.username}</span>
@@ -67,6 +72,10 @@
     :if={@logs != []}
     page={@page}
     total_pages={@total_pages}
-    path={if @action_filter, do: ~p"/admin/moderation-log?action=#{@action_filter}", else: ~p"/admin/moderation-log"}
+    path={
+      if @action_filter,
+        do: ~p"/admin/moderation-log?action=#{@action_filter}",
+        else: ~p"/admin/moderation-log"
+    }
   />
 </div>

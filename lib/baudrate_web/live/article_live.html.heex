@@ -13,12 +13,20 @@
     <div class="flex items-start justify-between gap-4">
       <div class="flex items-center gap-2 flex-wrap">
         <h1 class="text-2xl font-bold">{@article.title}</h1>
-        <span :if={@article.pinned} class="badge badge-primary badge-sm">{gettext("Pinned")}</span>
-        <span :if={@article.locked} class="badge badge-warning badge-sm">{gettext("Locked")}</span>
+        <span :if={@article.pinned} class="badge badge-primary badge-sm">
+          {gettext("Pinned")}
+        </span>
+        <span :if={@article.locked} class="badge badge-warning badge-sm">
+          {gettext("Locked")}
+        </span>
       </div>
 
       <div class="flex gap-2 flex-none flex-wrap justify-end">
-        <.link :if={@can_edit} navigate={~p"/articles/#{@article.slug}/edit"} class="btn btn-sm btn-ghost">
+        <.link
+          :if={@can_edit}
+          navigate={~p"/articles/#{@article.slug}/edit"}
+          class="btn btn-sm btn-ghost"
+        >
           <.icon name="hero-pencil-square" class="size-4" />
           {gettext("Edit")}
         </.link>
@@ -36,7 +44,10 @@
           phx-click="toggle_pin"
           class="btn btn-sm btn-ghost"
         >
-          <.icon name={if @article.pinned, do: "hero-bookmark-slash", else: "hero-bookmark"} class="size-4" />
+          <.icon
+            name={if @article.pinned, do: "hero-bookmark-slash", else: "hero-bookmark"}
+            class="size-4"
+          />
           {if @article.pinned, do: gettext("Unpin"), else: gettext("Pin")}
         </button>
         <button
@@ -44,10 +55,17 @@
           phx-click="toggle_lock"
           class="btn btn-sm btn-ghost"
         >
-          <.icon name={if @article.locked, do: "hero-lock-open", else: "hero-lock-closed"} class="size-4" />
+          <.icon
+            name={if @article.locked, do: "hero-lock-open", else: "hero-lock-closed"}
+            class="size-4"
+          />
           {if @article.locked, do: gettext("Unlock"), else: gettext("Lock")}
         </button>
-        <.link :if={@revision_count > 0} navigate={~p"/articles/#{@article.slug}/history"} class="btn btn-sm btn-ghost">
+        <.link
+          :if={@revision_count > 0}
+          navigate={~p"/articles/#{@article.slug}/history"}
+          class="btn btn-sm btn-ghost"
+        >
           <.icon name="hero-clock" class="size-4" />
           {gettext("History")}
           <span class="badge badge-sm">{@revision_count}</span>
@@ -58,10 +76,17 @@
     <div class="flex items-center gap-2 text-sm text-base-content/70">
       <span :if={@article.user}>
         {gettext("by")}
-        <.link navigate={~p"/users/#{@article.user.username}"} class="link link-hover font-semibold">{@article.user.username}</.link>
+        <.link
+          navigate={~p"/users/#{@article.user.username}"}
+          class="link link-hover font-semibold"
+        >
+          {@article.user.username}
+        </.link>
       </span>
       <span :if={@article.user}>&middot;</span>
-      <time datetime={Calendar.strftime(@article.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(@article.inserted_at, "%Y-%m-%d %H:%M")}</time>
+      <time datetime={Calendar.strftime(@article.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
+        {Calendar.strftime(@article.inserted_at, "%Y-%m-%d %H:%M")}
+      </time>
     </div>
 
     <div :if={@article.boards != []} class="flex items-center gap-2 text-sm">
@@ -106,7 +131,10 @@
       </div>
     </div>
 
-    <div :if={@article.user && @article.user.signature && @article.user.signature != ""} class="mt-4">
+    <div
+      :if={@article.user && @article.user.signature && @article.user.signature != ""}
+      class="mt-4"
+    >
       <div class="divider text-sm text-base-content/50">{gettext("Signature")}</div>
       <div class="prose prose-sm max-w-none text-base-content/70">
         {raw(Baudrate.Content.Markdown.to_html(@article.user.signature))}
@@ -124,7 +152,10 @@
     </h2>
 
     <div :if={@attachments != []} class="space-y-2 mb-4">
-      <div :for={attachment <- @attachments} class="flex items-center justify-between bg-base-200 rounded-lg p-3">
+      <div
+        :for={attachment <- @attachments}
+        class="flex items-center justify-between bg-base-200 rounded-lg p-3"
+      >
         <div class="flex items-center gap-2">
           <.icon name="hero-paper-clip" class="size-4 text-base-content/50" />
           <a
@@ -154,19 +185,36 @@
     <%!-- Upload form (author/admin only) --%>
     <div :if={@can_edit}>
       <form phx-change="validate_attachments" phx-submit="upload_attachments" class="space-y-3">
-        <.live_file_input upload={@uploads.attachments} class="file-input file-input-bordered file-input-sm w-full" />
+        <.live_file_input
+          upload={@uploads.attachments}
+          class="file-input file-input-bordered file-input-sm w-full"
+        />
 
         <div :for={entry <- @uploads.attachments.entries} class="flex items-center gap-2 text-sm">
           <span>{entry.client_name}</span>
-          <progress value={entry.progress} max="100" class="progress progress-primary w-24">{entry.progress}%</progress>
-          <button type="button" phx-click="cancel-upload" phx-value-ref={entry.ref} class="btn btn-sm btn-ghost text-error" aria-label={gettext("Cancel upload")}>&times;</button>
+          <progress value={entry.progress} max="100" class="progress progress-primary w-24">
+            {entry.progress}%
+          </progress>
+          <button
+            type="button"
+            phx-click="cancel-upload"
+            phx-value-ref={entry.ref}
+            class="btn btn-sm btn-ghost text-error"
+            aria-label={gettext("Cancel upload")}
+          >
+            &times;
+          </button>
         </div>
 
         <div :for={err <- upload_errors(@uploads.attachments)} class="text-sm text-error">
           {upload_error_to_string(err)}
         </div>
 
-        <button :if={@uploads.attachments.entries != []} type="submit" class="btn btn-sm btn-primary">
+        <button
+          :if={@uploads.attachments.entries != []}
+          type="submit"
+          class="btn btn-sm btn-primary"
+        >
           {gettext("Upload")}
         </button>
       </form>
@@ -190,7 +238,12 @@
 
     <%!-- Comment form (top-level) --%>
     <div :if={@can_comment && is_nil(@replying_to)} class="mb-6">
-      <.form for={@comment_form} phx-change="validate_comment" phx-submit="submit_comment" class="space-y-3">
+      <.form
+        for={@comment_form}
+        phx-change="validate_comment"
+        phx-submit="submit_comment"
+        class="space-y-3"
+      >
         <.input
           field={@comment_form[:body]}
           type="textarea"

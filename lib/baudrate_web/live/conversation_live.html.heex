@@ -1,10 +1,16 @@
 <div class="space-y-4">
   <div class="flex items-center gap-3">
-    <.link navigate="/messages" class="btn btn-ghost btn-sm" aria-label={gettext("Back to messages")}>
+    <.link
+      navigate="/messages"
+      class="btn btn-ghost btn-sm"
+      aria-label={gettext("Back to messages")}
+    >
       <.icon name="hero-arrow-left" class="size-4" />
     </.link>
     <h1 :if={@mode == :select_recipient} class="text-xl font-bold">{gettext("New Message")}</h1>
-    <h1 :if={@mode != :select_recipient} class="text-xl font-bold">{participant_name(@other_participant)}</h1>
+    <h1 :if={@mode != :select_recipient} class="text-xl font-bold">
+      {participant_name(@other_participant)}
+    </h1>
   </div>
 
   <%= if @mode == :select_recipient do %>
@@ -29,7 +35,12 @@
           />
         </.form>
 
-        <div :if={@search_results != []} class="space-y-1" role="listbox" aria-label={gettext("Search results")}>
+        <div
+          :if={@search_results != []}
+          class="space-y-1"
+          role="listbox"
+          aria-label={gettext("Search results")}
+        >
           <button
             :for={user <- @search_results}
             type="button"
@@ -43,7 +54,10 @@
           </button>
         </div>
 
-        <div :if={@search_results == [] && String.length(@search_query) >= 2} class="text-center py-4 text-base-content/50">
+        <div
+          :if={@search_results == [] && String.length(@search_query) >= 2}
+          class="text-center py-4 text-base-content/50"
+        >
           {gettext("No users found.")}
         </div>
 
@@ -55,26 +69,39 @@
   <% else %>
     <div role="alert" class="alert alert-warning text-sm">
       <.icon name="hero-shield-exclamation" class="size-4" />
-      <span>{gettext("Direct messages are not end-to-end encrypted. Do not share sensitive information.")}</span>
+      <span>
+        {gettext(
+          "Direct messages are not end-to-end encrypted. Do not share sensitive information."
+        )}
+      </span>
     </div>
 
     <div class="card bg-base-200 shadow-sm">
-      <div class="card-body p-4 space-y-3 max-h-[60vh] overflow-y-auto" id="message-list" phx-hook="ScrollBottom">
+      <div
+        class="card-body p-4 space-y-3 max-h-[60vh] overflow-y-auto"
+        id="message-list"
+        phx-hook="ScrollBottom"
+      >
         <div :if={@messages == []} class="text-center py-8 text-base-content/50">
           {gettext("No messages yet. Send the first one!")}
         </div>
 
-        <div :for={msg <- @messages} class={[
-          "chat",
-          if(msg.sender_user_id == @current_user.id, do: "chat-end", else: "chat-start")
-        ]}>
+        <div
+          :for={msg <- @messages}
+          class={[
+            "chat",
+            if(msg.sender_user_id == @current_user.id, do: "chat-end", else: "chat-start")
+          ]}
+        >
           <div class="chat-header text-xs text-base-content/50 mb-1">
             <%= if msg.sender_user_id == @current_user.id do %>
               {gettext("You")}
             <% else %>
               {participant_name(@other_participant)}
             <% end %>
-            <time datetime={Calendar.strftime(msg.inserted_at, "%Y-%m-%dT%H:%M:%S")} class="ml-1">{Calendar.strftime(msg.inserted_at, "%H:%M")}</time>
+            <time datetime={Calendar.strftime(msg.inserted_at, "%Y-%m-%dT%H:%M:%S")} class="ml-1">
+              {Calendar.strftime(msg.inserted_at, "%H:%M")}
+            </time>
           </div>
           <div class={[
             "chat-bubble",

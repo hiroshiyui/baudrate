@@ -24,7 +24,15 @@ defmodule Baudrate.Federation.Delivery do
 
   alias Baudrate.Repo
   alias Baudrate.Federation
-  alias Baudrate.Federation.{DeliveryJob, Follower, HTTPClient, HTTPSignature, KeyStore, Validator}
+
+  alias Baudrate.Federation.{
+    DeliveryJob,
+    Follower,
+    HTTPClient,
+    HTTPSignature,
+    KeyStore,
+    Validator
+  }
 
   @as_context "https://www.w3.org/ns/activitystreams"
 
@@ -85,8 +93,7 @@ defmodule Baudrate.Federation.Delivery do
       |> Repo.insert(
         on_conflict: :nothing,
         conflict_target:
-          {:unsafe_fragment,
-           ~s|("inbox_url", "actor_uri") WHERE status IN ('pending', 'failed')|}
+          {:unsafe_fragment, ~s|("inbox_url", "actor_uri") WHERE status IN ('pending', 'failed')|}
       )
     end)
 
@@ -132,7 +139,10 @@ defmodule Baudrate.Federation.Delivery do
   defp do_deliver(%DeliveryJob{} = job) do
     with {:ok, private_key_pem} <- get_private_key(job.actor_uri) do
       key_id = "#{job.actor_uri}#main-key"
-      headers = HTTPSignature.sign(:post, job.inbox_url, job.activity_json, private_key_pem, key_id)
+
+      headers =
+        HTTPSignature.sign(:post, job.inbox_url, job.activity_json, private_key_pem, key_id)
+
       header_list = headers_to_list(headers)
       HTTPClient.post(job.inbox_url, job.activity_json, header_list)
     end

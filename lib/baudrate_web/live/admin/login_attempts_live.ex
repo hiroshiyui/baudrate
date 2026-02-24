@@ -53,5 +53,4 @@ defmodule BaudrateWeb.Admin.LoginAttemptsLive do
     params = if term == "", do: %{}, else: %{"username" => term}
     {:noreply, push_patch(socket, to: ~p"/admin/login-attempts?#{params}")}
   end
-
 end

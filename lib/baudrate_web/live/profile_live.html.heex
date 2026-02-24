@@ -55,7 +55,12 @@
             <h3 id="crop-modal-title" class="text-lg font-bold mb-4">{gettext("Crop Avatar")}</h3>
             <div data-avatar-crop-container>
               <div class="max-h-96 overflow-hidden">
-                <img data-avatar-preview src="" alt={gettext("Avatar preview")} class="max-w-full" />
+                <img
+                  data-avatar-preview
+                  src=""
+                  alt={gettext("Avatar preview")}
+                  class="max-w-full"
+                />
               </div>
               <div class="modal-action">
                 <button type="button" class="btn btn-ghost" phx-click="cancel_crop">
@@ -110,7 +115,9 @@
       <div>
         <div class="text-sm text-base-content/70">{gettext("Member Since")}</div>
         <div class="text-lg font-semibold">
-          <time datetime={Calendar.strftime(@current_user.inserted_at, "%Y-%m-%d")}>{Calendar.strftime(@current_user.inserted_at, "%Y-%m-%d")}</time>
+          <time datetime={Calendar.strftime(@current_user.inserted_at, "%Y-%m-%d")}>
+            {Calendar.strftime(@current_user.inserted_at, "%Y-%m-%d")}
+          </time>
         </div>
       </div>
 
@@ -170,7 +177,13 @@
           Enum.reject(@available_locales, fn {code, _} -> code in @preferred_locales end) %>
         <%= if unselected != [] do %>
           <div class="dropdown mt-2">
-            <div tabindex="0" role="button" aria-haspopup="true" aria-expanded="false" class="btn btn-sm btn-outline">
+            <div
+              tabindex="0"
+              role="button"
+              aria-haspopup="true"
+              aria-expanded="false"
+              class="btn btn-sm btn-outline"
+            >
               {gettext("Add Language")}
             </div>
             <ul
@@ -217,7 +230,12 @@
       <%!-- Signature section --%>
       <div>
         <div class="text-sm text-base-content/70 mb-2">{gettext("Signature")}</div>
-        <.form for={@signature_form} phx-change="validate_signature" phx-submit="save_signature" class="space-y-3">
+        <.form
+          for={@signature_form}
+          phx-change="validate_signature"
+          phx-submit="save_signature"
+          class="space-y-3"
+        >
           <.input
             field={@signature_form[:signature]}
             type="textarea"
@@ -251,7 +269,10 @@
               <span class="font-semibold">{mute.muted_user.username}</span>
             <% else %>
               <div class="avatar avatar-placeholder">
-                <div class="bg-neutral text-neutral-content rounded-full" style="width: 36px; height: 36px">
+                <div
+                  class="bg-neutral text-neutral-content rounded-full"
+                  style="width: 36px; height: 36px"
+                >
                   <span class="text-xs">@</span>
                 </div>
               </div>

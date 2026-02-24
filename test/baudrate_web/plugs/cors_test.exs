@@ -16,8 +16,15 @@ defmodule BaudrateWeb.Plugs.CORSTest do
       conn = call_plug(:get)
 
       assert Plug.Conn.get_resp_header(conn, "access-control-allow-origin") == ["*"]
-      assert Plug.Conn.get_resp_header(conn, "access-control-allow-methods") == ["GET, HEAD, OPTIONS"]
-      assert Plug.Conn.get_resp_header(conn, "access-control-allow-headers") == ["accept, content-type"]
+
+      assert Plug.Conn.get_resp_header(conn, "access-control-allow-methods") == [
+               "GET, HEAD, OPTIONS"
+             ]
+
+      assert Plug.Conn.get_resp_header(conn, "access-control-allow-headers") == [
+               "accept, content-type"
+             ]
+
       refute conn.halted
     end
 

@@ -72,7 +72,9 @@ defmodule Baudrate.Federation.DeliveryJob do
     else
       backoff_index = min(new_attempts - 1, length(backoff_schedule) - 1)
       backoff_seconds = Enum.at(backoff_schedule, backoff_index)
-      next_retry = DateTime.utc_now() |> DateTime.add(backoff_seconds, :second) |> DateTime.truncate(:second)
+
+      next_retry =
+        DateTime.utc_now() |> DateTime.add(backoff_seconds, :second) |> DateTime.truncate(:second)
 
       job
       |> change(%{

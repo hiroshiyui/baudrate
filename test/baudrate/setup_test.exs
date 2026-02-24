@@ -144,7 +144,9 @@ defmodule Baudrate.SetupTest do
     test "includes ap_domain_blocklist field" do
       changeset = Setup.change_settings(%{"ap_domain_blocklist" => "spam.example, bad.example"})
       assert changeset.valid?
-      assert Ecto.Changeset.get_field(changeset, :ap_domain_blocklist) == "spam.example, bad.example"
+
+      assert Ecto.Changeset.get_field(changeset, :ap_domain_blocklist) ==
+               "spam.example, bad.example"
     end
 
     test "returns valid changeset for valid attrs" do

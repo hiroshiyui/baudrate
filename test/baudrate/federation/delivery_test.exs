@@ -92,7 +92,10 @@ defmodule Baudrate.Federation.DeliveryTest do
     test "accepts activity as map" do
       activity = %{"type" => "Create", "actor" => "https://local/ap/users/alice"}
 
-      assert {:ok, 1} = Delivery.enqueue(activity, "https://local/ap/users/alice", ["https://a.example/inbox"])
+      assert {:ok, 1} =
+               Delivery.enqueue(activity, "https://local/ap/users/alice", [
+                 "https://a.example/inbox"
+               ])
 
       job = Repo.one!(DeliveryJob)
       assert Jason.decode!(job.activity_json) == activity
@@ -107,7 +110,9 @@ defmodule Baudrate.Federation.DeliveryTest do
       assert {:ok, 1} = Delivery.enqueue(activity1, actor, [inbox])
       assert {:ok, 1} = Delivery.enqueue(activity2, actor, [inbox])
 
-      jobs = Repo.all(from(j in DeliveryJob, where: j.inbox_url == ^inbox and j.actor_uri == ^actor))
+      jobs =
+        Repo.all(from(j in DeliveryJob, where: j.inbox_url == ^inbox and j.actor_uri == ^actor))
+
       assert length(jobs) == 1
     end
 

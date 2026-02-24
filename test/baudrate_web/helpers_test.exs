@@ -74,7 +74,14 @@ defmodule BaudrateWeb.HelpersTest do
 
     test "empty string returns all false" do
       result = Helpers.password_strength("")
-      assert result == %{length: false, lowercase: false, uppercase: false, digit: false, special: false}
+
+      assert result == %{
+               length: false,
+               lowercase: false,
+               uppercase: false,
+               digit: false,
+               special: false
+             }
     end
   end
 

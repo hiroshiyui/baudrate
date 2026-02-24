@@ -15,7 +15,19 @@ defmodule Baudrate.Content do
 
   import Ecto.Query
   alias Baudrate.{Auth, Repo, Setup}
-  alias Baudrate.Content.{Article, ArticleImage, ArticleRevision, Attachment, ArticleLike, Board, BoardArticle, BoardModerator, Comment}
+
+  alias Baudrate.Content.{
+    Article,
+    ArticleImage,
+    ArticleRevision,
+    Attachment,
+    ArticleLike,
+    Board,
+    BoardArticle,
+    BoardModerator,
+    Comment
+  }
+
   alias Baudrate.Content.PubSub, as: ContentPubSub
 
   # --- Boards ---
@@ -318,10 +330,14 @@ defmodule Baudrate.Content do
       updated_article = Repo.preload(updated_article, :boards)
 
       for board <- updated_article.boards do
-        ContentPubSub.broadcast_to_board(board.id, :article_updated, %{article_id: updated_article.id})
+        ContentPubSub.broadcast_to_board(board.id, :article_updated, %{
+          article_id: updated_article.id
+        })
       end
 
-      ContentPubSub.broadcast_to_article(updated_article.id, :article_updated, %{article_id: updated_article.id})
+      ContentPubSub.broadcast_to_article(updated_article.id, :article_updated, %{
+        article_id: updated_article.id
+      })
 
       if updated_article.user_id do
         schedule_federation_task(fn ->
@@ -754,10 +770,14 @@ defmodule Baudrate.Content do
       deleted_article = Repo.preload(deleted_article, :boards)
 
       for board <- deleted_article.boards do
-        ContentPubSub.broadcast_to_board(board.id, :article_deleted, %{article_id: deleted_article.id})
+        ContentPubSub.broadcast_to_board(board.id, :article_deleted, %{
+          article_id: deleted_article.id
+        })
       end
 
-      ContentPubSub.broadcast_to_article(deleted_article.id, :article_deleted, %{article_id: deleted_article.id})
+      ContentPubSub.broadcast_to_article(deleted_article.id, :article_deleted, %{
+        article_id: deleted_article.id
+      })
 
       # Only publish deletion for local articles (those with a user_id)
       if deleted_article.user_id do
@@ -846,7 +866,9 @@ defmodule Baudrate.Content do
       |> Repo.insert()
 
     with {:ok, comment} <- result do
-      ContentPubSub.broadcast_to_article(comment.article_id, :comment_created, %{comment_id: comment.id})
+      ContentPubSub.broadcast_to_article(comment.article_id, :comment_created, %{
+        comment_id: comment.id
+      })
 
       if comment.user_id do
         schedule_federation_task(fn ->
@@ -877,7 +899,10 @@ defmodule Baudrate.Content do
       |> Repo.insert()
 
     with {:ok, comment} <- result do
-      ContentPubSub.broadcast_to_article(comment.article_id, :comment_created, %{comment_id: comment.id})
+      ContentPubSub.broadcast_to_article(comment.article_id, :comment_created, %{
+        comment_id: comment.id
+      })
+
       result
     end
   end
@@ -1096,7 +1121,8 @@ defmodule Baudrate.Content do
     if children == [] do
       []
     else
-      children ++ fetch_descendants(article_id, children, blocked_uids, blocked_ap_ids, remaining - 1)
+      children ++
+        fetch_descendants(article_id, children, blocked_uids, blocked_ap_ids, remaining - 1)
     end
   end
 
@@ -1110,7 +1136,10 @@ defmodule Baudrate.Content do
       |> Repo.update()
 
     with {:ok, deleted} <- result do
-      ContentPubSub.broadcast_to_article(deleted.article_id, :comment_deleted, %{comment_id: deleted.id})
+      ContentPubSub.broadcast_to_article(deleted.article_id, :comment_deleted, %{
+        comment_id: deleted.id
+      })
+
       result
     end
   end

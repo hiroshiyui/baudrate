@@ -126,8 +126,7 @@ defmodule BaudrateWeb.ConversationLive do
           end
 
         {:error, :rate_limited} ->
-          {:noreply,
-           put_flash(socket, :error, gettext("Too many messages. Please slow down."))}
+          {:noreply, put_flash(socket, :error, gettext("Too many messages. Please slow down."))}
       end
     end
   end
@@ -172,7 +171,8 @@ defmodule BaudrateWeb.ConversationLive do
             {:noreply, assign(socket, :messages, messages)}
 
           {:error, :unauthorized} ->
-            {:noreply, put_flash(socket, :error, gettext("You can only delete your own messages."))}
+            {:noreply,
+             put_flash(socket, :error, gettext("You can only delete your own messages."))}
 
           {:error, _} ->
             {:noreply, put_flash(socket, :error, gettext("Failed to delete message."))}

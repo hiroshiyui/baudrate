@@ -139,7 +139,8 @@ defmodule BaudrateWeb.ArticleLive do
     if socket.assigns.can_pin do
       case Content.toggle_pin_article(article) do
         {:ok, updated} ->
-          Moderation.log_action(socket.assigns.current_user.id,
+          Moderation.log_action(
+            socket.assigns.current_user.id,
             if(updated.pinned, do: "pin_article", else: "unpin_article"),
             target_type: "article",
             target_id: article.id,
@@ -163,7 +164,8 @@ defmodule BaudrateWeb.ArticleLive do
     if socket.assigns.can_lock do
       case Content.toggle_lock_article(article) do
         {:ok, updated} ->
-          Moderation.log_action(socket.assigns.current_user.id,
+          Moderation.log_action(
+            socket.assigns.current_user.id,
             if(updated.locked, do: "lock_article", else: "unlock_article"),
             target_type: "article",
             target_id: article.id,
@@ -172,7 +174,9 @@ defmodule BaudrateWeb.ArticleLive do
 
           can_comment =
             if socket.assigns.current_user && not updated.locked do
-              boards = if Ecto.assoc_loaded?(updated.boards), do: updated.boards, else: article.boards
+              boards =
+                if Ecto.assoc_loaded?(updated.boards), do: updated.boards, else: article.boards
+
               Enum.any?(boards, &Content.can_post_in_board?(&1, socket.assigns.current_user))
             else
               false
@@ -381,14 +385,20 @@ defmodule BaudrateWeb.ArticleLive do
     <div class={["border-l-2 border-base-300 pl-4", @depth > 0 && "ml-4"]}>
       <div class="py-2">
         <div class="flex items-center gap-2 text-sm text-base-content/70 mb-1">
-          <.link :if={@comment.user} navigate={~p"/users/#{@comment.user.username}"} class="font-semibold text-base-content link link-hover">
+          <.link
+            :if={@comment.user}
+            navigate={~p"/users/#{@comment.user.username}"}
+            class="font-semibold text-base-content link link-hover"
+          >
             {@comment.user.username}
           </.link>
           <span :if={@comment.remote_actor} class="font-semibold text-base-content">
             {@comment.remote_actor.username}@{@comment.remote_actor.domain}
           </span>
           <span>&middot;</span>
-          <time datetime={Calendar.strftime(@comment.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(@comment.inserted_at, "%Y-%m-%d %H:%M")}</time>
+          <time datetime={Calendar.strftime(@comment.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
+            {Calendar.strftime(@comment.inserted_at, "%Y-%m-%d %H:%M")}
+          </time>
 
           <button
             :if={@can_delete}
@@ -409,7 +419,10 @@ defmodule BaudrateWeb.ArticleLive do
           {raw(Baudrate.Content.Markdown.to_html(@comment.body))}
         </div>
 
-        <div :if={@comment.user && @comment.user.signature && @comment.user.signature != ""} class="mt-1">
+        <div
+          :if={@comment.user && @comment.user.signature && @comment.user.signature != ""}
+          class="mt-1"
+        >
           <div class="divider text-sm text-base-content/50 my-1"></div>
           <div class="prose prose-sm max-w-none text-base-content/50">
             {raw(Baudrate.Content.Markdown.to_html(@comment.user.signature))}
@@ -430,7 +443,12 @@ defmodule BaudrateWeb.ArticleLive do
 
         <%!-- Inline reply form --%>
         <div :if={@replying_to == @comment.id} class="mt-2">
-          <.form for={@comment_form} phx-change="validate_comment" phx-submit="submit_comment" class="space-y-2">
+          <.form
+            for={@comment_form}
+            phx-change="validate_comment"
+            phx-submit="submit_comment"
+            class="space-y-2"
+          >
             <.input
               field={@comment_form[:body]}
               type="textarea"
@@ -487,7 +505,8 @@ defmodule BaudrateWeb.ArticleLive do
     Enum.any?(article.boards, &Content.can_view_board?(&1, user))
   end
 
-  defp upload_error_to_string(err), do: Helpers.upload_error_to_string(err, max_size: "10 MB", max_files: 5)
+  defp upload_error_to_string(err),
+    do: Helpers.upload_error_to_string(err, max_size: "10 MB", max_files: 5)
 
   defp build_comment_tree(comments) do
     roots = Enum.filter(comments, &is_nil(&1.parent_id))

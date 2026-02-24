@@ -30,13 +30,23 @@ defmodule BaudrateWeb.SearchLiveTest do
   test "searches for articles and displays results", %{conn: conn, user: user, board: board} do
     {:ok, _} =
       Content.create_article(
-        %{title: "Elixir Tutorial", body: "Learn about Elixir programming", slug: "elixir-tut", user_id: user.id},
+        %{
+          title: "Elixir Tutorial",
+          body: "Learn about Elixir programming",
+          slug: "elixir-tut",
+          user_id: user.id
+        },
         [board.id]
       )
 
     {:ok, _} =
       Content.create_article(
-        %{title: "Phoenix Guide", body: "Building web apps with Phoenix", slug: "phoenix-guide", user_id: user.id},
+        %{
+          title: "Phoenix Guide",
+          body: "Building web apps with Phoenix",
+          slug: "phoenix-guide",
+          user_id: user.id
+        },
         [board.id]
       )
 
@@ -70,10 +80,19 @@ defmodule BaudrateWeb.SearchLiveTest do
     assert html =~ "No comments found"
   end
 
-  test "comment search shows results with article title link", %{conn: conn, user: user, board: board} do
+  test "comment search shows results with article title link", %{
+    conn: conn,
+    user: user,
+    board: board
+  } do
     {:ok, %{article: article}} =
       Content.create_article(
-        %{title: "Searchable Article Title", body: "body", slug: "searchable-art", user_id: user.id},
+        %{
+          title: "Searchable Article Title",
+          body: "body",
+          slug: "searchable-art",
+          user_id: user.id
+        },
         [board.id]
       )
 

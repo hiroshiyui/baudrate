@@ -578,7 +578,8 @@ defmodule Baudrate.Federation.InboxHandler do
 
     to_list = List.wrap(object["to"])
 
-    local_uri = Enum.find(to_list, fn uri -> is_binary(uri) && String.starts_with?(uri, prefix) end)
+    local_uri =
+      Enum.find(to_list, fn uri -> is_binary(uri) && String.starts_with?(uri, prefix) end)
 
     if local_uri do
       username = String.replace_prefix(local_uri, prefix, "")
@@ -827,7 +828,9 @@ defmodule Baudrate.Federation.InboxHandler do
           # Check by ap_id for articles
           art_id == nil ->
             case Content.get_article_by_ap_id(uri) do
-              %{id: id} -> {id, com_id}
+              %{id: id} ->
+                {id, com_id}
+
               nil ->
                 # Check for comments
                 if com_id == nil do

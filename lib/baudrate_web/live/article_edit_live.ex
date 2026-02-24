@@ -140,5 +140,6 @@ defmodule BaudrateWeb.ArticleEditLive do
     end
   end
 
-  defp upload_error_to_string(err), do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "5 MB", max_files: 4)
+  defp upload_error_to_string(err),
+    do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "5 MB", max_files: 4)
 end

@@ -97,7 +97,11 @@ defmodule BaudrateWeb.ArticleHistoryLiveTest do
              live(guest_conn, "/articles/#{restricted_article.slug}/history")
   end
 
-  test "article page shows history link when revisions exist", %{conn: conn, user: user, article: article} do
+  test "article page shows history link when revisions exist", %{
+    conn: conn,
+    user: user,
+    article: article
+  } do
     {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
     refute html =~ "hero-clock"
 

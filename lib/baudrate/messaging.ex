@@ -180,7 +180,7 @@ defmodule Baudrate.Messaging do
     from(dm in DirectMessage,
       join: c in Conversation,
       on: dm.conversation_id == c.id,
-      where: (c.user_a_id == ^user_id or c.user_b_id == ^user_id),
+      where: c.user_a_id == ^user_id or c.user_b_id == ^user_id,
       where: dm.sender_user_id != ^user_id or not is_nil(dm.sender_remote_actor_id),
       where: is_nil(dm.deleted_at),
       left_join: cursor in ConversationReadCursor,
@@ -225,7 +225,7 @@ defmodule Baudrate.Messaging do
         where: dm.sender_user_id != ^user_id or not is_nil(dm.sender_remote_actor_id),
         where: is_nil(dm.deleted_at),
         left_join: cursor in ConversationReadCursor,
-          on: cursor.conversation_id == dm.conversation_id and cursor.user_id == ^user_id,
+        on: cursor.conversation_id == dm.conversation_id and cursor.user_id == ^user_id,
         where: is_nil(cursor.id) or dm.id > cursor.last_read_message_id,
         group_by: dm.conversation_id,
         select: {dm.conversation_id, count(dm.id)}
@@ -391,7 +391,11 @@ defmodule Baudrate.Messaging do
 
   Upserts the read cursor using ON CONFLICT.
   """
-  def mark_conversation_read(%Conversation{id: conversation_id}, %User{id: user_id}, %DirectMessage{} = message) do
+  def mark_conversation_read(
+        %Conversation{id: conversation_id},
+        %User{id: user_id},
+        %DirectMessage{} = message
+      ) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     %ConversationReadCursor{}

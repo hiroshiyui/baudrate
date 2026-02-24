@@ -33,18 +33,29 @@
   </div>
 
   <%!-- Bulk action bar (open reports only) --%>
-  <div :if={@status_filter == "open" and @reports != []} class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
+  <div
+    :if={@status_filter == "open" and @reports != []}
+    class="flex items-center gap-3 p-3 bg-base-200 rounded-lg"
+  >
     <label>
       <input
         type="checkbox"
         class="checkbox checkbox-sm"
         phx-click="toggle_select_all_reports"
-        checked={MapSet.size(@selected_report_ids) > 0 and MapSet.subset?(MapSet.new(@reports, & &1.id), @selected_report_ids)}
+        checked={
+          MapSet.size(@selected_report_ids) > 0 and
+            MapSet.subset?(MapSet.new(@reports, & &1.id), @selected_report_ids)
+        }
         aria-label={gettext("Select all reports")}
       />
     </label>
     <span :if={MapSet.size(@selected_report_ids) > 0} class="font-medium">
-      {ngettext("%{count} report selected", "%{count} reports selected", MapSet.size(@selected_report_ids), count: MapSet.size(@selected_report_ids))}
+      {ngettext(
+        "%{count} report selected",
+        "%{count} reports selected",
+        MapSet.size(@selected_report_ids),
+        count: MapSet.size(@selected_report_ids)
+      )}
     </span>
     <button
       :if={MapSet.size(@selected_report_ids) > 0}
@@ -69,124 +80,134 @@
       {gettext("No reports with status \"%{status}\".", status: @status_filter)}
     </div>
 
-    <div :for={report <- @reports} class={["card bg-base-200 shadow-sm", @status_filter == "open" && "relative pl-12"]}>
-    <div :if={@status_filter == "open"} class="absolute top-4 left-4">
-      <label>
-        <input
-          type="checkbox"
-          class="checkbox checkbox-sm"
-          phx-click="toggle_select_report"
-          phx-value-id={report.id}
-          checked={MapSet.member?(@selected_report_ids, report.id)}
-          aria-label={gettext("Select report #%{id}", id: report.id)}
-        />
-      </label>
-    </div>
-    <div class="card-body">
-      <div class="flex justify-between items-start">
-        <div>
-          <span class={[
-            "badge badge-sm",
-            report.status == "open" && "badge-warning",
-            report.status == "resolved" && "badge-success",
-            report.status == "dismissed" && "badge-ghost"
-          ]}>
-            {translate_report_status(report.status)}
-          </span>
-          <span class="text-sm opacity-70 ml-2">
-            <time datetime={Calendar.strftime(report.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(report.inserted_at, "%Y-%m-%d %H:%M")}</time>
-          </span>
-        </div>
-        <div :if={report.reporter} class="text-sm opacity-70">
-          {gettext("Reported by")} {report.reporter.username}
-        </div>
-      </div>
-
-      <div class="mt-2">
-        <p class="font-semibold">{gettext("Reason:")}</p>
-        <p class="whitespace-pre-wrap">{report.reason}</p>
-      </div>
-
-      <%!-- Reported Content --%>
-      <div :if={report.article} class="mt-2 p-3 bg-base-300 rounded-lg">
-        <p class="text-sm font-semibold">{gettext("Reported Article:")}</p>
-        <p>{report.article.title}</p>
-        <button
-          :if={report.status == "open" and is_nil(report.article.deleted_at)}
-          phx-click="delete_content"
-          phx-value-type="article"
-          phx-value-id={report.article.id}
-          data-confirm={gettext("Delete this article?")}
-          class="btn btn-error btn-sm mt-1"
-        >
-          {gettext("Delete Article")}
-        </button>
-      </div>
-
-      <div :if={report.comment} class="mt-2 p-3 bg-base-300 rounded-lg">
-        <p class="text-sm font-semibold">{gettext("Reported Comment:")}</p>
-        <p class="text-sm">{String.slice(report.comment.body || "", 0..200)}</p>
-        <button
-          :if={report.status == "open" and is_nil(report.comment.deleted_at)}
-          phx-click="delete_content"
-          phx-value-type="comment"
-          phx-value-id={report.comment.id}
-          data-confirm={gettext("Delete this comment?")}
-          class="btn btn-error btn-sm mt-1"
-        >
-          {gettext("Delete Comment")}
-        </button>
-      </div>
-
-      <div :if={report.remote_actor} class="mt-2 p-3 bg-base-300 rounded-lg">
-        <p class="text-sm font-semibold">{gettext("Reported Actor:")}</p>
-        <p class="font-mono text-sm">{report.remote_actor.ap_id}</p>
-        <p class="text-sm opacity-70">
-          {report.remote_actor.display_name || report.remote_actor.username}@{report.remote_actor.domain}
-        </p>
-      </div>
-
-      <%!-- Resolution Info --%>
-      <div :if={report.status in ["resolved", "dismissed"] and report.resolved_by} class="mt-2 text-sm opacity-70">
-        {gettext("Handled by")} {report.resolved_by.username}
-        {if report.resolution_note, do: " — #{report.resolution_note}", else: ""}
-      </div>
-
-      <%!-- Send Flag to Remote --%>
-      <div :if={report.status == "open" and report.remote_actor} class="mt-2">
-        <button
-          phx-click="send_flag"
-          phx-value-id={report.id}
-          data-confirm={gettext("Send a Flag report to %{domain}?", domain: report.remote_actor.domain)}
-          class="btn btn-warning btn-sm"
-        >
-          {gettext("Send Flag to %{domain}", domain: report.remote_actor.domain)}
-        </button>
-      </div>
-
-      <%!-- Actions --%>
-      <div :if={report.status == "open"} class="card-actions justify-end mt-4">
-        <form phx-submit="resolve" class="flex gap-2 items-end">
-          <input type="hidden" name="report_id" value={report.id} />
+    <div
+      :for={report <- @reports}
+      class={["card bg-base-200 shadow-sm", @status_filter == "open" && "relative pl-12"]}
+    >
+      <div :if={@status_filter == "open"} class="absolute top-4 left-4">
+        <label>
           <input
-            type="text"
-            name="note"
-            placeholder={gettext("Resolution note (optional)")}
-            class="input input-bordered input-sm w-64"
-            aria-label={gettext("Resolution note")}
+            type="checkbox"
+            class="checkbox checkbox-sm"
+            phx-click="toggle_select_report"
+            phx-value-id={report.id}
+            checked={MapSet.member?(@selected_report_ids, report.id)}
+            aria-label={gettext("Select report #%{id}", id: report.id)}
           />
-          <button type="submit" class="btn btn-success btn-sm">{gettext("Resolve")}</button>
-        </form>
-        <button
-          phx-click="dismiss"
-          phx-value-id={report.id}
-          class="btn btn-ghost btn-sm"
+        </label>
+      </div>
+      <div class="card-body">
+        <div class="flex justify-between items-start">
+          <div>
+            <span class={[
+              "badge badge-sm",
+              report.status == "open" && "badge-warning",
+              report.status == "resolved" && "badge-success",
+              report.status == "dismissed" && "badge-ghost"
+            ]}>
+              {translate_report_status(report.status)}
+            </span>
+            <span class="text-sm opacity-70 ml-2">
+              <time datetime={Calendar.strftime(report.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
+                {Calendar.strftime(report.inserted_at, "%Y-%m-%d %H:%M")}
+              </time>
+            </span>
+          </div>
+          <div :if={report.reporter} class="text-sm opacity-70">
+            {gettext("Reported by")} {report.reporter.username}
+          </div>
+        </div>
+
+        <div class="mt-2">
+          <p class="font-semibold">{gettext("Reason:")}</p>
+          <p class="whitespace-pre-wrap">{report.reason}</p>
+        </div>
+
+        <%!-- Reported Content --%>
+        <div :if={report.article} class="mt-2 p-3 bg-base-300 rounded-lg">
+          <p class="text-sm font-semibold">{gettext("Reported Article:")}</p>
+          <p>{report.article.title}</p>
+          <button
+            :if={report.status == "open" and is_nil(report.article.deleted_at)}
+            phx-click="delete_content"
+            phx-value-type="article"
+            phx-value-id={report.article.id}
+            data-confirm={gettext("Delete this article?")}
+            class="btn btn-error btn-sm mt-1"
+          >
+            {gettext("Delete Article")}
+          </button>
+        </div>
+
+        <div :if={report.comment} class="mt-2 p-3 bg-base-300 rounded-lg">
+          <p class="text-sm font-semibold">{gettext("Reported Comment:")}</p>
+          <p class="text-sm">{String.slice(report.comment.body || "", 0..200)}</p>
+          <button
+            :if={report.status == "open" and is_nil(report.comment.deleted_at)}
+            phx-click="delete_content"
+            phx-value-type="comment"
+            phx-value-id={report.comment.id}
+            data-confirm={gettext("Delete this comment?")}
+            class="btn btn-error btn-sm mt-1"
+          >
+            {gettext("Delete Comment")}
+          </button>
+        </div>
+
+        <div :if={report.remote_actor} class="mt-2 p-3 bg-base-300 rounded-lg">
+          <p class="text-sm font-semibold">{gettext("Reported Actor:")}</p>
+          <p class="font-mono text-sm">{report.remote_actor.ap_id}</p>
+          <p class="text-sm opacity-70">
+            {report.remote_actor.display_name || report.remote_actor.username}@{report.remote_actor.domain}
+          </p>
+        </div>
+
+        <%!-- Resolution Info --%>
+        <div
+          :if={report.status in ["resolved", "dismissed"] and report.resolved_by}
+          class="mt-2 text-sm opacity-70"
         >
-          {gettext("Dismiss")}
-        </button>
+          {gettext("Handled by")} {report.resolved_by.username}
+          {if report.resolution_note, do: " — #{report.resolution_note}", else: ""}
+        </div>
+
+        <%!-- Send Flag to Remote --%>
+        <div :if={report.status == "open" and report.remote_actor} class="mt-2">
+          <button
+            phx-click="send_flag"
+            phx-value-id={report.id}
+            data-confirm={
+              gettext("Send a Flag report to %{domain}?", domain: report.remote_actor.domain)
+            }
+            class="btn btn-warning btn-sm"
+          >
+            {gettext("Send Flag to %{domain}", domain: report.remote_actor.domain)}
+          </button>
+        </div>
+
+        <%!-- Actions --%>
+        <div :if={report.status == "open"} class="card-actions justify-end mt-4">
+          <form phx-submit="resolve" class="flex gap-2 items-end">
+            <input type="hidden" name="report_id" value={report.id} />
+            <input
+              type="text"
+              name="note"
+              placeholder={gettext("Resolution note (optional)")}
+              class="input input-bordered input-sm w-64"
+              aria-label={gettext("Resolution note")}
+            />
+            <button type="submit" class="btn btn-success btn-sm">{gettext("Resolve")}</button>
+          </form>
+          <button
+            phx-click="dismiss"
+            phx-value-id={report.id}
+            class="btn btn-ghost btn-sm"
+          >
+            {gettext("Dismiss")}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
   </div>
 </div>
 
@@ -202,7 +223,12 @@
 >
   <div class="modal-box">
     <h3 id="bulk-resolve-modal-title" class="font-bold text-lg">
-      {ngettext("Resolve %{count} Report", "Resolve %{count} Reports", MapSet.size(@selected_report_ids), count: MapSet.size(@selected_report_ids))}
+      {ngettext(
+        "Resolve %{count} Report",
+        "Resolve %{count} Reports",
+        MapSet.size(@selected_report_ids),
+        count: MapSet.size(@selected_report_ids)
+      )}
     </h3>
     <div class="py-4">
       <form phx-change="update_bulk_resolve_note">
@@ -220,7 +246,11 @@
     </div>
     <div class="modal-action">
       <button phx-click="cancel_bulk_resolve" class="btn">{gettext("Cancel")}</button>
-      <button phx-click="confirm_bulk_resolve" class="btn btn-success" phx-disable-with={gettext("Resolving...")}>
+      <button
+        phx-click="confirm_bulk_resolve"
+        class="btn btn-success"
+        phx-disable-with={gettext("Resolving...")}
+      >
         {gettext("Confirm Resolve")}
       </button>
     </div>

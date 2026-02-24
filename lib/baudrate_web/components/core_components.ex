@@ -553,7 +553,13 @@ defmodule BaudrateWeb.CoreComponents do
         >
           &laquo;
         </.link>
-        <span :if={@page <= 1} class="join-item btn btn-sm btn-disabled" aria-label={gettext("Previous page")}>&laquo;</span>
+        <span
+          :if={@page <= 1}
+          class="join-item btn btn-sm btn-disabled"
+          aria-label={gettext("Previous page")}
+        >
+          &laquo;
+        </span>
 
         <%= for p <- @page_range do %>
           <.link
@@ -564,7 +570,14 @@ defmodule BaudrateWeb.CoreComponents do
           >
             {p}
           </.link>
-          <span :if={p == @page} class="join-item btn btn-sm btn-active" aria-current="page" aria-label={gettext("Page %{number}", number: p)}>{p}</span>
+          <span
+            :if={p == @page}
+            class="join-item btn btn-sm btn-active"
+            aria-current="page"
+            aria-label={gettext("Page %{number}", number: p)}
+          >
+            {p}
+          </span>
         <% end %>
 
         <.link
@@ -575,7 +588,13 @@ defmodule BaudrateWeb.CoreComponents do
         >
           &raquo;
         </.link>
-        <span :if={@page >= @total_pages} class="join-item btn btn-sm btn-disabled" aria-label={gettext("Next page")}>&raquo;</span>
+        <span
+          :if={@page >= @total_pages}
+          class="join-item btn btn-sm btn-disabled"
+          aria-label={gettext("Next page")}
+        >
+          &raquo;
+        </span>
       </div>
     </nav>
     """

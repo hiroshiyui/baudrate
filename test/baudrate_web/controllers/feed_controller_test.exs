@@ -22,7 +22,11 @@ defmodule BaudrateWeb.FeedControllerTest do
   # --- Site-wide RSS ---
 
   describe "GET /feeds/rss" do
-    test "returns RSS 2.0 with correct content type", %{conn: conn, user: user, public_board: board} do
+    test "returns RSS 2.0 with correct content type", %{
+      conn: conn,
+      user: user,
+      public_board: board
+    } do
       {:ok, _} = insert_article(user, board, "rss-article")
 
       conn = get(conn, "/feeds/rss")
@@ -62,7 +66,11 @@ defmodule BaudrateWeb.FeedControllerTest do
       assert get_resp_header(conn, "cache-control") == ["public, max-age=300"]
     end
 
-    test "includes Last-Modified header when articles exist", %{conn: conn, user: user, public_board: board} do
+    test "includes Last-Modified header when articles exist", %{
+      conn: conn,
+      user: user,
+      public_board: board
+    } do
       {:ok, _} = insert_article(user, board, "lm-rss")
 
       conn = get(conn, "/feeds/rss")
@@ -89,7 +97,11 @@ defmodule BaudrateWeb.FeedControllerTest do
   # --- Site-wide Atom ---
 
   describe "GET /feeds/atom" do
-    test "returns Atom 1.0 with correct content type", %{conn: conn, user: user, public_board: board} do
+    test "returns Atom 1.0 with correct content type", %{
+      conn: conn,
+      user: user,
+      public_board: board
+    } do
       {:ok, _} = insert_article(user, board, "atom-article")
 
       conn = get(conn, "/feeds/atom")
@@ -186,7 +198,10 @@ defmodule BaudrateWeb.FeedControllerTest do
       {:ok, _} = insert_article(banned, board, "banned-user-rss")
 
       banned
-      |> Ecto.Changeset.change(status: "banned", banned_at: DateTime.utc_now() |> DateTime.truncate(:second))
+      |> Ecto.Changeset.change(
+        status: "banned",
+        banned_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      )
       |> Repo.update!()
 
       conn = get(conn, "/feeds/users/#{banned.username}/rss")

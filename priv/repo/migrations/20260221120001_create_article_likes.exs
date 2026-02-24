@@ -15,7 +15,7 @@ defmodule Baudrate.Repo.Migrations.CreateArticleLikes do
     create unique_index(:article_likes, [:article_id, :user_id], where: "user_id IS NOT NULL")
 
     create unique_index(:article_likes, [:article_id, :remote_actor_id],
-      where: "remote_actor_id IS NOT NULL"
-    )
+             where: "remote_actor_id IS NOT NULL"
+           )
   end
 end

@@ -6,7 +6,9 @@ defmodule Baudrate.Content.ArticleImageStorageTest do
   @upload_dir ArticleImageStorage.upload_dir()
 
   setup do
-    tmp_dir = Path.join(System.tmp_dir!(), "article_img_test_#{System.unique_integer([:positive])}")
+    tmp_dir =
+      Path.join(System.tmp_dir!(), "article_img_test_#{System.unique_integer([:positive])}")
+
     File.mkdir_p!(tmp_dir)
 
     {:ok, png_img} = Image.new(200, 200, color: [255, 100, 50])

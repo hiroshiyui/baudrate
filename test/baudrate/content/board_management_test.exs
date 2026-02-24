@@ -31,7 +31,12 @@ defmodule Baudrate.Content.BoardManagementTest do
 
   describe "get_board!/1" do
     test "returns a board by ID" do
-      {:ok, board} = Content.create_board(%{name: "Test", slug: "test-get-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Test",
+          slug: "test-get-#{System.unique_integer([:positive])}"
+        })
+
       fetched = Content.get_board!(board.id)
       assert fetched.id == board.id
     end
@@ -45,8 +50,19 @@ defmodule Baudrate.Content.BoardManagementTest do
 
   describe "list_all_boards/0" do
     test "returns boards ordered by position" do
-      {:ok, b1} = Content.create_board(%{name: "Board A", slug: "board-a-#{System.unique_integer([:positive])}", position: 2})
-      {:ok, b2} = Content.create_board(%{name: "Board B", slug: "board-b-#{System.unique_integer([:positive])}", position: 1})
+      {:ok, b1} =
+        Content.create_board(%{
+          name: "Board A",
+          slug: "board-a-#{System.unique_integer([:positive])}",
+          position: 2
+        })
+
+      {:ok, b2} =
+        Content.create_board(%{
+          name: "Board B",
+          slug: "board-b-#{System.unique_integer([:positive])}",
+          position: 1
+        })
 
       boards = Content.list_all_boards()
       ids = Enum.map(boards, & &1.id)
@@ -56,7 +72,12 @@ defmodule Baudrate.Content.BoardManagementTest do
 
   describe "create_board/1" do
     test "creates a board with valid attrs" do
-      attrs = %{name: "New Board", slug: "new-board-#{System.unique_integer([:positive])}", description: "A test board"}
+      attrs = %{
+        name: "New Board",
+        slug: "new-board-#{System.unique_integer([:positive])}",
+        description: "A test board"
+      }
+
       {:ok, board} = Content.create_board(attrs)
       assert board.name == "New Board"
       assert board.min_role_to_view == "guest"
@@ -79,7 +100,12 @@ defmodule Baudrate.Content.BoardManagementTest do
 
   describe "update_board/2" do
     test "updates board name" do
-      {:ok, board} = Content.create_board(%{name: "Old", slug: "update-test-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Old",
+          slug: "update-test-#{System.unique_integer([:positive])}"
+        })
+
       {:ok, updated} = Content.update_board(board, %{name: "New Name"})
       assert updated.name == "New Name"
     end
@@ -94,13 +120,19 @@ defmodule Baudrate.Content.BoardManagementTest do
 
   describe "delete_board/1" do
     test "deletes a board without articles" do
-      {:ok, board} = Content.create_board(%{name: "Deletable", slug: "del-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Deletable",
+          slug: "del-#{System.unique_integer([:positive])}"
+        })
+
       {:ok, deleted} = Content.delete_board(board)
       assert deleted.id == board.id
     end
 
     test "returns error when board has articles", %{user: user} do
-      {:ok, board} = Content.create_board(%{name: "Busy", slug: "busy-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{name: "Busy", slug: "busy-#{System.unique_integer([:positive])}"})
 
       {:ok, article} =
         %Article{}
@@ -113,7 +145,13 @@ defmodule Baudrate.Content.BoardManagementTest do
         |> Repo.insert()
 
       now = DateTime.utc_now() |> DateTime.truncate(:second)
-      Repo.insert!(%BoardArticle{board_id: board.id, article_id: article.id, inserted_at: now, updated_at: now})
+
+      Repo.insert!(%BoardArticle{
+        board_id: board.id,
+        article_id: article.id,
+        inserted_at: now,
+        updated_at: now
+      })
 
       assert {:error, :has_articles} = Content.delete_board(board)
     end
@@ -121,8 +159,18 @@ defmodule Baudrate.Content.BoardManagementTest do
 
   describe "delete_board/1 with child boards" do
     test "returns error when board has children" do
-      {:ok, parent} = Content.create_board(%{name: "Parent", slug: "parent-#{System.unique_integer([:positive])}"})
-      {:ok, _child} = Content.create_board(%{name: "Child", slug: "child-#{System.unique_integer([:positive])}", parent_id: parent.id})
+      {:ok, parent} =
+        Content.create_board(%{
+          name: "Parent",
+          slug: "parent-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, _child} =
+        Content.create_board(%{
+          name: "Child",
+          slug: "child-#{System.unique_integer([:positive])}",
+          parent_id: parent.id
+        })
 
       assert {:error, :has_children} = Content.delete_board(parent)
     end
@@ -130,23 +178,48 @@ defmodule Baudrate.Content.BoardManagementTest do
 
   describe "update_board/2 circular parent" do
     test "rejects self as parent" do
-      {:ok, board} = Content.create_board(%{name: "Self", slug: "self-ref-#{System.unique_integer([:positive])}"})
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Self",
+          slug: "self-ref-#{System.unique_integer([:positive])}"
+        })
+
       {:error, changeset} = Content.update_board(board, %{parent_id: board.id})
       assert changeset.errors[:parent_id]
     end
 
     test "rejects indirect cycle (A → B → A)" do
-      {:ok, a} = Content.create_board(%{name: "A", slug: "cycle-a-#{System.unique_integer([:positive])}"})
-      {:ok, b} = Content.create_board(%{name: "B", slug: "cycle-b-#{System.unique_integer([:positive])}", parent_id: a.id})
+      {:ok, a} =
+        Content.create_board(%{name: "A", slug: "cycle-a-#{System.unique_integer([:positive])}"})
+
+      {:ok, b} =
+        Content.create_board(%{
+          name: "B",
+          slug: "cycle-b-#{System.unique_integer([:positive])}",
+          parent_id: a.id
+        })
 
       {:error, changeset} = Content.update_board(a, %{parent_id: b.id})
       assert changeset.errors[:parent_id]
     end
 
     test "rejects deeper cycle (A → B → C → A)" do
-      {:ok, a} = Content.create_board(%{name: "A", slug: "deep-a-#{System.unique_integer([:positive])}"})
-      {:ok, b} = Content.create_board(%{name: "B", slug: "deep-b-#{System.unique_integer([:positive])}", parent_id: a.id})
-      {:ok, c} = Content.create_board(%{name: "C", slug: "deep-c-#{System.unique_integer([:positive])}", parent_id: b.id})
+      {:ok, a} =
+        Content.create_board(%{name: "A", slug: "deep-a-#{System.unique_integer([:positive])}"})
+
+      {:ok, b} =
+        Content.create_board(%{
+          name: "B",
+          slug: "deep-b-#{System.unique_integer([:positive])}",
+          parent_id: a.id
+        })
+
+      {:ok, c} =
+        Content.create_board(%{
+          name: "C",
+          slug: "deep-c-#{System.unique_integer([:positive])}",
+          parent_id: b.id
+        })
 
       {:error, changeset} = Content.update_board(a, %{parent_id: c.id})
       assert changeset.errors[:parent_id]
@@ -156,13 +229,26 @@ defmodule Baudrate.Content.BoardManagementTest do
   describe "board field length validation" do
     test "rejects name over 100 characters" do
       long_name = String.duplicate("a", 101)
-      {:error, changeset} = Content.create_board(%{name: long_name, slug: "long-#{System.unique_integer([:positive])}"})
+
+      {:error, changeset} =
+        Content.create_board(%{
+          name: long_name,
+          slug: "long-#{System.unique_integer([:positive])}"
+        })
+
       assert changeset.errors[:name]
     end
 
     test "rejects description over 1000 characters" do
       long_desc = String.duplicate("a", 1001)
-      {:error, changeset} = Content.create_board(%{name: "OK", slug: "desc-#{System.unique_integer([:positive])}", description: long_desc})
+
+      {:error, changeset} =
+        Content.create_board(%{
+          name: "OK",
+          slug: "desc-#{System.unique_integer([:positive])}",
+          description: long_desc
+        })
+
       assert changeset.errors[:description]
     end
   end

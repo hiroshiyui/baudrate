@@ -25,7 +25,12 @@ defmodule BaudrateWeb.BoardLiveTest do
     # Create 25 articles
     for i <- 1..25 do
       Content.create_article(
-        %{title: "Article #{i}", body: "Body", slug: "pag-art-#{i}-#{System.unique_integer([:positive])}", user_id: user.id},
+        %{
+          title: "Article #{i}",
+          body: "Body",
+          slug: "pag-art-#{i}-#{System.unique_integer([:positive])}",
+          user_id: user.id
+        },
         [board.id]
       )
     end
@@ -38,13 +43,22 @@ defmodule BaudrateWeb.BoardLiveTest do
     assert html =~ "join-item"
   end
 
-  test "updates article list when new article is created via PubSub", %{conn: conn, user: user, board: board} do
+  test "updates article list when new article is created via PubSub", %{
+    conn: conn,
+    user: user,
+    board: board
+  } do
     {:ok, lv, html} = live(conn, "/boards/general")
     refute html =~ "PubSub Article"
 
     # Create an article from another process (simulates another user)
     Content.create_article(
-      %{title: "PubSub Article", body: "body", slug: "pubsub-live-#{System.unique_integer([:positive])}", user_id: user.id},
+      %{
+        title: "PubSub Article",
+        body: "body",
+        slug: "pubsub-live-#{System.unique_integer([:positive])}",
+        user_id: user.id
+      },
       [board.id]
     )
 
@@ -77,7 +91,12 @@ defmodule BaudrateWeb.BoardLiveTest do
   test "navigates between pages", %{conn: conn, user: user, board: board} do
     for i <- 1..25 do
       Content.create_article(
-        %{title: "Article #{i}", body: "Body", slug: "nav-art-#{i}-#{System.unique_integer([:positive])}", user_id: user.id},
+        %{
+          title: "Article #{i}",
+          body: "Body",
+          slug: "nav-art-#{i}-#{System.unique_integer([:positive])}",
+          user_id: user.id
+        },
         [board.id]
       )
     end

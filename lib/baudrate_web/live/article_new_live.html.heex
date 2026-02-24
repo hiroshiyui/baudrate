@@ -37,7 +37,10 @@
     <div class="fieldset">
       <span class="label mb-1">{gettext("Images")}</span>
       <p class="text-sm text-base-content/50 mb-2">
-        {gettext("Max %{count} images, %{size} MB each. Images displayed at the end of article.", count: 4, size: 5)}
+        {gettext("Max %{count} images, %{size} MB each. Images displayed at the end of article.",
+          count: 4,
+          size: 5
+        )}
       </p>
 
       <%!-- Uploaded image thumbnails --%>
@@ -64,19 +67,39 @@
       <%!-- Upload input --%>
       <div :if={length(@uploaded_images) < 4}>
         <form phx-change="validate_images" phx-submit="upload_images" class="space-y-2">
-          <.live_file_input upload={@uploads.article_images} class="file-input file-input-bordered file-input-sm w-full" />
+          <.live_file_input
+            upload={@uploads.article_images}
+            class="file-input file-input-bordered file-input-sm w-full"
+          />
 
-          <div :for={entry <- @uploads.article_images.entries} class="flex items-center gap-2 text-sm">
+          <div
+            :for={entry <- @uploads.article_images.entries}
+            class="flex items-center gap-2 text-sm"
+          >
             <span class="truncate max-w-48">{entry.client_name}</span>
-            <progress value={entry.progress} max="100" class="progress progress-primary w-24">{entry.progress}%</progress>
-            <button type="button" phx-click="cancel_image_upload" phx-value-ref={entry.ref} class="btn btn-sm btn-ghost text-error" aria-label={gettext("Cancel upload")}>&times;</button>
+            <progress value={entry.progress} max="100" class="progress progress-primary w-24">
+              {entry.progress}%
+            </progress>
+            <button
+              type="button"
+              phx-click="cancel_image_upload"
+              phx-value-ref={entry.ref}
+              class="btn btn-sm btn-ghost text-error"
+              aria-label={gettext("Cancel upload")}
+            >
+              &times;
+            </button>
           </div>
 
           <div :for={err <- upload_errors(@uploads.article_images)} class="text-sm text-error">
             {upload_error_to_string(err)}
           </div>
 
-          <button :if={@uploads.article_images.entries != []} type="submit" class="btn btn-sm btn-outline">
+          <button
+            :if={@uploads.article_images.entries != []}
+            type="submit"
+            class="btn btn-sm btn-outline"
+          >
             {gettext("Upload Images")}
           </button>
         </form>

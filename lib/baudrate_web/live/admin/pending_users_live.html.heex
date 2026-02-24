@@ -17,7 +17,11 @@
       <tbody>
         <tr :for={user <- @pending_users}>
           <td>{user.username}</td>
-          <td><time datetime={Calendar.strftime(user.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(user.inserted_at, "%Y-%m-%d %H:%M")}</time></td>
+          <td>
+            <time datetime={Calendar.strftime(user.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
+              {Calendar.strftime(user.inserted_at, "%Y-%m-%d %H:%M")}
+            </time>
+          </td>
           <td>
             <button
               phx-click="approve"

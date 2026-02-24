@@ -57,7 +57,8 @@ defmodule Baudrate.Federation.HTTPSignatureTest do
       {_public_pem, private_pem} = KeyStore.generate_keypair()
       key_id = "https://local.example/ap/site#main-key"
 
-      headers = HTTPSignature.sign_get("https://remote.example/ap/users/alice", private_pem, key_id)
+      headers =
+        HTTPSignature.sign_get("https://remote.example/ap/users/alice", private_pem, key_id)
 
       assert is_binary(headers["signature"])
       assert is_binary(headers["date"])
@@ -247,7 +248,11 @@ defmodule Baudrate.Federation.HTTPSignatureTest do
       {:ok, actor: actor, public_pem: public_pem, private_pem: private_pem, ap_id: ap_id}
     end
 
-    test "succeeds with valid signed POST", %{private_pem: private_pem, ap_id: ap_id, actor: actor} do
+    test "succeeds with valid signed POST", %{
+      private_pem: private_pem,
+      ap_id: ap_id,
+      actor: actor
+    } do
       key_id = "#{ap_id}#main-key"
       body = Jason.encode!(%{"type" => "Follow", "actor" => ap_id})
 

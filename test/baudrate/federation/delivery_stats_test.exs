@@ -21,7 +21,10 @@ defmodule Baudrate.Federation.DeliveryStatsTest do
 
   defp set_status(job, status) do
     job
-    |> Ecto.Changeset.change(%{status: status, updated_at: DateTime.utc_now() |> DateTime.truncate(:second)})
+    |> Ecto.Changeset.change(%{
+      status: status,
+      updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
     |> Repo.update!()
   end
 
@@ -96,8 +99,20 @@ defmodule Baudrate.Federation.DeliveryStatsTest do
 
   describe "retry_all_failed_for_domain/1" do
     test "resets all failed jobs for a domain" do
-      j1 = create_job(%{inbox_url: "https://bad.example/inbox", actor_uri: "https://local.example/ap/users/retry1"}) |> set_status("failed")
-      j2 = create_job(%{inbox_url: "https://bad.example/inbox", actor_uri: "https://local.example/ap/users/retry2"}) |> set_status("failed")
+      j1 =
+        create_job(%{
+          inbox_url: "https://bad.example/inbox",
+          actor_uri: "https://local.example/ap/users/retry1"
+        })
+        |> set_status("failed")
+
+      j2 =
+        create_job(%{
+          inbox_url: "https://bad.example/inbox",
+          actor_uri: "https://local.example/ap/users/retry2"
+        })
+        |> set_status("failed")
+
       j3 = create_job(%{inbox_url: "https://other.example/inbox"}) |> set_status("failed")
 
       {count, _} = DeliveryStats.retry_all_failed_for_domain("bad.example")
@@ -111,8 +126,19 @@ defmodule Baudrate.Federation.DeliveryStatsTest do
 
   describe "abandon_all_for_domain/1" do
     test "abandons all pending/failed jobs for a domain" do
-      j1 = create_job(%{inbox_url: "https://spam.example/inbox", actor_uri: "https://local.example/ap/users/spam1"})
-      j2 = create_job(%{inbox_url: "https://spam.example/inbox", actor_uri: "https://local.example/ap/users/spam2"}) |> set_status("failed")
+      j1 =
+        create_job(%{
+          inbox_url: "https://spam.example/inbox",
+          actor_uri: "https://local.example/ap/users/spam1"
+        })
+
+      j2 =
+        create_job(%{
+          inbox_url: "https://spam.example/inbox",
+          actor_uri: "https://local.example/ap/users/spam2"
+        })
+        |> set_status("failed")
+
       j3 = create_job(%{inbox_url: "https://good.example/inbox"})
 
       {count, _} = DeliveryStats.abandon_all_for_domain("spam.example")

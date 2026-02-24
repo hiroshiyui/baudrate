@@ -850,9 +850,8 @@ defmodule Baudrate.Federation do
   Returns the count of announces for the given target AP ID.
   """
   def count_announces(target_ap_id) when is_binary(target_ap_id) do
-    Repo.one(
-      from(a in Announce, where: a.target_ap_id == ^target_ap_id, select: count(a.id))
-    ) || 0
+    Repo.one(from(a in Announce, where: a.target_ap_id == ^target_ap_id, select: count(a.id))) ||
+      0
   end
 
   # --- Board Resolution ---

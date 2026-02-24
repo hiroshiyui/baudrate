@@ -5,7 +5,10 @@
       <h1 class="text-2xl font-bold">{@profile_user.username}</h1>
       <span class="badge badge-outline">{translate_role(@profile_user.role.name)}</span>
       <p class="text-sm text-base-content/70 mt-1">
-        {gettext("Member since")} <time datetime={Calendar.strftime(@profile_user.inserted_at, "%Y-%m-%d")}>{Calendar.strftime(@profile_user.inserted_at, "%Y-%m-%d")}</time>
+        {gettext("Member since")}
+        <time datetime={Calendar.strftime(@profile_user.inserted_at, "%Y-%m-%d")}>
+          {Calendar.strftime(@profile_user.inserted_at, "%Y-%m-%d")}
+        </time>
       </p>
       <div :if={@current_user && @current_user.id != @profile_user.id} class="flex gap-2 mt-2">
         <.link
@@ -63,15 +66,22 @@
     <div class="space-y-2">
       <div :for={article <- @recent_articles} class="card bg-base-200 shadow-sm">
         <div class="card-body p-4">
-          <.link navigate={~p"/articles/#{article.slug}"} class="card-title text-base link link-hover">
+          <.link
+            navigate={~p"/articles/#{article.slug}"}
+            class="card-title text-base link link-hover"
+          >
             {article.title}
           </.link>
           <div class="text-sm text-base-content/70">
-            <time datetime={Calendar.strftime(article.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(article.inserted_at, "%Y-%m-%d %H:%M")}</time>
+            <time datetime={Calendar.strftime(article.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
+              {Calendar.strftime(article.inserted_at, "%Y-%m-%d %H:%M")}
+            </time>
             <span :if={article.boards != []}>
               &middot;
               <span :for={board <- article.boards}>
-                <.link navigate={~p"/boards/#{board.slug}"} class="link link-hover">{board.name}</.link>
+                <.link navigate={~p"/boards/#{board.slug}"} class="link link-hover">
+                  {board.name}
+                </.link>
               </span>
             </span>
           </div>

@@ -27,7 +27,9 @@ defmodule Baudrate.Content.ArticleTest do
     end
 
     test "update_changeset rejects oversized body" do
-      changeset = Article.update_changeset(%Article{}, %{title: "T", body: String.duplicate("x", 65_537)})
+      changeset =
+        Article.update_changeset(%Article{}, %{title: "T", body: String.duplicate("x", 65_537)})
+
       assert %{body: ["should be at most 65536 character(s)"]} = errors_on(changeset)
     end
 
@@ -45,7 +47,12 @@ defmodule Baudrate.Content.ArticleTest do
     end
 
     test "update_remote_changeset rejects oversized body" do
-      changeset = Article.update_remote_changeset(%Article{}, %{title: "T", body: String.duplicate("x", 65_537)})
+      changeset =
+        Article.update_remote_changeset(%Article{}, %{
+          title: "T",
+          body: String.duplicate("x", 65_537)
+        })
+
       assert %{body: ["should be at most 65536 character(s)"]} = errors_on(changeset)
     end
   end

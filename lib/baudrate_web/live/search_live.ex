@@ -85,5 +85,4 @@ defmodule BaudrateWeb.SearchLive do
     |> assign(:page, result.page)
     |> assign(:total_pages, result.total_pages)
   end
-
 end

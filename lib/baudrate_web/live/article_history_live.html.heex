@@ -1,6 +1,9 @@
 <div class="mx-auto max-w-2xl">
   <div class="mb-4">
-    <.link navigate={~p"/articles/#{@article.slug}"} class="text-sm text-base-content/70 hover:text-base-content">
+    <.link
+      navigate={~p"/articles/#{@article.slug}"}
+      class="text-sm text-base-content/70 hover:text-base-content"
+    >
       &larr; {gettext("Back to article")}
     </.link>
   </div>
@@ -38,12 +41,19 @@
                   {gettext("Unknown")}
                 </span>
               </td>
-              <td><time datetime={Calendar.strftime(revision.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(revision.inserted_at, "%Y-%m-%d %H:%M")}</time></td>
+              <td>
+                <time datetime={Calendar.strftime(revision.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
+                  {Calendar.strftime(revision.inserted_at, "%Y-%m-%d %H:%M")}
+                </time>
+              </td>
               <td>
                 <button
                   phx-click="select_revision"
                   phx-value-index={index}
-                  class={["btn btn-xs", if(@selected_index == index, do: "btn-primary", else: "btn-ghost")]}
+                  class={[
+                    "btn btn-xs",
+                    if(@selected_index == index, do: "btn-primary", else: "btn-ghost")
+                  ]}
                 >
                   {gettext("View")}
                 </button>
@@ -74,7 +84,9 @@
             <%= for {tag, text} <- compute_diff(previous.title, selected.title) do %>
               <span :if={tag == :eq}>{text}</span>
               <span :if={tag == :ins} class="bg-success/30 text-success-content">{text}</span>
-              <span :if={tag == :del} class="bg-error/30 text-error-content line-through">{text}</span>
+              <span :if={tag == :del} class="bg-error/30 text-error-content line-through">
+                {text}
+              </span>
             <% end %>
           <% else %>
             {selected.title}
@@ -90,7 +102,9 @@
             <%= for {tag, text} <- compute_diff(previous.body, selected.body) do %>
               <span :if={tag == :eq}>{text}</span>
               <span :if={tag == :ins} class="bg-success/30 text-success-content">{text}</span>
-              <span :if={tag == :del} class="bg-error/30 text-error-content line-through">{text}</span>
+              <span :if={tag == :del} class="bg-error/30 text-error-content line-through">
+                {text}
+              </span>
             <% end %>
           <% else %>
             {selected.body}

@@ -42,7 +42,11 @@
               <tr :for={job <- @failed_jobs}>
                 <td class="font-mono text-sm max-w-xs truncate">{job.inbox_url}</td>
                 <td>
-                  <span class={["badge badge-sm", job.status == "failed" && "badge-error", job.status == "pending" && "badge-warning"]}>
+                  <span class={[
+                    "badge badge-sm",
+                    job.status == "failed" && "badge-error",
+                    job.status == "pending" && "badge-warning"
+                  ]}>
                     {translate_delivery_status(job.status)}
                   </span>
                 </td>
@@ -102,7 +106,9 @@
               <td>{instance.article_count + instance.comment_count}</td>
               <td class="text-sm opacity-70">
                 <%= if instance.last_seen do %>
-                  <time datetime={Calendar.strftime(instance.last_seen, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(instance.last_seen, "%Y-%m-%d %H:%M")}</time>
+                  <time datetime={Calendar.strftime(instance.last_seen, "%Y-%m-%dT%H:%M:%S")}>
+                    {Calendar.strftime(instance.last_seen, "%Y-%m-%d %H:%M")}
+                  </time>
                 <% else %>
                   —
                 <% end %>
@@ -111,7 +117,9 @@
                 <button
                   phx-click="block_domain"
                   phx-value-domain={instance.domain}
-                  data-confirm={gettext("Block all federation with %{domain}?", domain: instance.domain)}
+                  data-confirm={
+                    gettext("Block all federation with %{domain}?", domain: instance.domain)
+                  }
                   class="btn btn-error btn-sm"
                 >
                   {gettext("Block")}
@@ -128,7 +136,11 @@
   <div class="card bg-base-200 shadow-sm">
     <div class="card-body">
       <h2 class="card-title">{gettext("Key Rotation")}</h2>
-      <p class="text-sm opacity-70 mb-4">{gettext("Rotate RSA keypairs for federation actors. The new public key will be distributed to followers via an Update activity.")}</p>
+      <p class="text-sm opacity-70 mb-4">
+        {gettext(
+          "Rotate RSA keypairs for federation actors. The new public key will be distributed to followers via an Update activity."
+        )}
+      </p>
 
       <div class="flex flex-wrap gap-2">
         <button
@@ -201,12 +213,20 @@
             <tr :for={board <- @boards}>
               <td>{board.name}</td>
               <td>
-                <span class={["badge badge-sm", board.min_role_to_view == "guest" && "badge-success", board.min_role_to_view != "guest" && "badge-ghost"]}>
+                <span class={[
+                  "badge badge-sm",
+                  board.min_role_to_view == "guest" && "badge-success",
+                  board.min_role_to_view != "guest" && "badge-ghost"
+                ]}>
                   {translate_role(board.min_role_to_view)}
                 </span>
               </td>
               <td>
-                <span class={["badge badge-sm", board.ap_enabled && "badge-success", !board.ap_enabled && "badge-ghost"]}>
+                <span class={[
+                  "badge badge-sm",
+                  board.ap_enabled && "badge-success",
+                  !board.ap_enabled && "badge-ghost"
+                ]}>
                   {if board.ap_enabled, do: gettext("Enabled"), else: gettext("Disabled")}
                 </span>
               </td>
@@ -214,7 +234,10 @@
                 <button
                   phx-click="toggle_board_federation"
                   phx-value-id={board.id}
-                  class={["btn btn-sm", if(board.ap_enabled, do: "btn-ghost", else: "btn-primary")]}
+                  class={[
+                    "btn btn-sm",
+                    if(board.ap_enabled, do: "btn-ghost", else: "btn-primary")
+                  ]}
                 >
                   {if board.ap_enabled, do: gettext("Disable"), else: gettext("Enable")}
                 </button>
@@ -230,7 +253,11 @@
   <div class="card bg-base-200 shadow-sm">
     <div class="card-body">
       <h2 class="card-title">{gettext("Blocklist Audit")}</h2>
-      <p class="text-sm opacity-70 mb-4">{gettext("Compare your local domain blocklist against an external known-bad-actor list. Configure the audit URL in Admin Settings.")}</p>
+      <p class="text-sm opacity-70 mb-4">
+        {gettext(
+          "Compare your local domain blocklist against an external known-bad-actor list. Configure the audit URL in Admin Settings."
+        )}
+      </p>
 
       <div class="flex gap-2">
         <button phx-click="audit_blocklist" class="btn btn-primary btn-sm">
@@ -263,7 +290,11 @@
             <h3 class="font-semibold">{gettext("Missing from Local Blocklist")}</h3>
             <button
               phx-click="add_all_missing"
-              data-confirm={gettext("Add all %{count} missing domains to blocklist?", count: length(@audit_result.missing))}
+              data-confirm={
+                gettext("Add all %{count} missing domains to blocklist?",
+                  count: length(@audit_result.missing)
+                )
+              }
               class="btn btn-warning btn-sm"
             >
               {gettext("Add All")}
@@ -297,7 +328,9 @@
 
         <div :if={@audit_result.extra != []} class="space-y-2">
           <h3 class="font-semibold">{gettext("Extra in Local Blocklist")}</h3>
-          <p class="text-sm opacity-70">{gettext("Domains you block that are not in the external list (informational only).")}</p>
+          <p class="text-sm opacity-70">
+            {gettext("Domains you block that are not in the external list (informational only).")}
+          </p>
           <div class="overflow-x-auto">
             <table class="table table-zebra table-sm">
               <thead>
@@ -314,7 +347,10 @@
           </div>
         </div>
 
-        <div :if={@audit_result.missing == [] && @audit_result.extra == []} class="alert alert-success">
+        <div
+          :if={@audit_result.missing == [] && @audit_result.extra == []}
+          class="alert alert-success"
+        >
           <span>{gettext("Your local blocklist matches the external list perfectly.")}</span>
         </div>
       </div>

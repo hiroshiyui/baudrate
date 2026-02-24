@@ -69,7 +69,8 @@ defmodule Baudrate.Federation.PublisherDmTest do
       assert recipient_uri == remote_actor.ap_id
 
       # No public addressing
-      refute "https://www.w3.org/ns/activitystreams#Public" in (object["to"] ++ (object["cc"] || []))
+      refute "https://www.w3.org/ns/activitystreams#Public" in (object["to"] ++
+                                                                  (object["cc"] || []))
 
       # Has Mention tag
       [mention] = object["tag"]

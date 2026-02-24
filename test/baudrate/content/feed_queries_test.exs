@@ -42,7 +42,9 @@ defmodule Baudrate.Content.FeedQueriesTest do
 
     test "deduplicates cross-posted articles", %{user: user, public_board: board} do
       board2 = insert_board("public-feed-2", min_role_to_view: "guest")
-      {:ok, %{article: article}} = insert_article(user, board, "cross-posted", extra_boards: [board2.id])
+
+      {:ok, %{article: article}} =
+        insert_article(user, board, "cross-posted", extra_boards: [board2.id])
 
       articles = Content.list_recent_public_articles()
       assert length(articles) == 1
