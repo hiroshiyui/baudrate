@@ -31,6 +31,3 @@ their content into the board. Requires anti-loop and deduplication safeguards.
 - Need UI in board moderator panel to manage follows
 - Need to handle `Undo(Follow)` on unfollow
 
-## Someday / Maybe
-
-- [ ] Per-user rate limits on authenticated endpoints (currently IP-only)
