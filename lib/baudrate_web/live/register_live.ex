@@ -48,8 +48,14 @@ defmodule BaudrateWeb.RegisterLive do
       |> assign(:recovery_codes, nil)
       |> assign(:eua, eua)
       |> assign(:page_title, gettext("Register"))
+      |> assign(:invite_code_value, nil)
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_params(params, _uri, socket) do
+    {:noreply, assign(socket, :invite_code_value, params["invite"])}
   end
 
   @impl true
@@ -64,7 +70,8 @@ defmodule BaudrateWeb.RegisterLive do
     {:noreply,
      socket
      |> assign(:form, to_form(changeset, as: :user))
-     |> assign(:password_strength, password_strength(password))}
+     |> assign(:password_strength, password_strength(password))
+     |> assign(:invite_code_value, params["invite_code"])}
   end
 
   @impl true

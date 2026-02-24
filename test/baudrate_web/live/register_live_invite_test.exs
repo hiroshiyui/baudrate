@@ -25,6 +25,11 @@ defmodule BaudrateWeb.RegisterLiveInviteTest do
     assert html =~ "Registration requires an invite code"
   end
 
+  test "pre-fills invite code from ?invite= query param", %{conn: conn} do
+    {:ok, _lv, html} = live(conn, "/register?invite=abc12345")
+    assert html =~ ~s(value="abc12345")
+  end
+
   test "registration fails without invite code", %{conn: conn} do
     {:ok, lv, _html} = live(conn, "/register")
 

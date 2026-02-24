@@ -63,7 +63,8 @@
 
       <.input
         :if={@registration_mode == "invite_only"}
-        field={@form[:invite_code]}
+        name="user[invite_code]"
+        value={@invite_code_value}
         label={gettext("Invite Code")}
         required
         autocomplete="off"
