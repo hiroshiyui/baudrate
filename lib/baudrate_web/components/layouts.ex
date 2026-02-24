@@ -96,6 +96,9 @@ defmodule BaudrateWeb.Layouts do
                 <.link navigate="/profile">{gettext("Profile")}</.link>
               </li>
               <li>
+                <.link navigate="/invites">{gettext("My Invites")}</.link>
+              </li>
+              <li>
                 <.link href="/logout" method="delete">{gettext("Sign Out")}</.link>
               </li>
             </ul>
@@ -191,6 +194,9 @@ defmodule BaudrateWeb.Layouts do
               <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
               <li>
                 <.link navigate="/profile">{gettext("Profile")}</.link>
+              </li>
+              <li>
+                <.link navigate="/invites">{gettext("My Invites")}</.link>
               </li>
               <li>
                 <.link href="/logout" method="delete">{gettext("Sign Out")}</.link>
