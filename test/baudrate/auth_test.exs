@@ -658,4 +658,37 @@ defmodule Baudrate.AuthTest do
       assert ap_id in Auth.muted_actor_ap_ids(user)
     end
   end
+
+  describe "get_user_by_username/1" do
+    test "returns user for valid username" do
+      user = create_user("user", username: "findme_#{System.unique_integer([:positive])}")
+      found = Auth.get_user_by_username(user.username)
+      assert found.id == user.id
+      assert found.role
+    end
+
+    test "returns nil for non-existent username" do
+      assert Auth.get_user_by_username("totally_nonexistent") == nil
+    end
+  end
+
+  describe "paginate_users/1" do
+    test "returns paginated result with correct metadata" do
+      for _ <- 1..3, do: create_user("user")
+
+      result = Auth.paginate_users(page: 1, per_page: 2)
+      assert is_list(result.users)
+      assert length(result.users) == 2
+      assert result.total >= 3
+      assert result.page == 1
+      assert result.per_page == 2
+      assert result.total_pages >= 2
+    end
+
+    test "returns page 1 for invalid page number" do
+      create_user("user")
+      result = Auth.paginate_users(page: 0)
+      assert result.page == 1
+    end
+  end
 end

@@ -439,4 +439,47 @@ defmodule Baudrate.MessagingTest do
       assert Messaging.get_message_by_ap_id("https://nonexistent.example/notes/1") == nil
     end
   end
+
+  describe "get_conversation_for_user/2" do
+    test "returns conversation when user is participant" do
+      user_a = create_user("user")
+      user_b = create_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(user_a, user_b)
+
+      found = Messaging.get_conversation_for_user(conv.id, user_a)
+      assert found.id == conv.id
+    end
+
+    test "returns nil when user is not participant" do
+      user_a = create_user("user")
+      user_b = create_user("user")
+      outsider = create_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(user_a, user_b)
+
+      assert Messaging.get_conversation_for_user(conv.id, outsider) == nil
+    end
+  end
+
+  describe "get_message/1" do
+    test "returns message by ID" do
+      user_a = create_user("user")
+      user_b = create_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(user_a, user_b)
+      {:ok, msg} = Messaging.create_message(conv, user_a, %{"body" => "Hello"})
+
+      found = Messaging.get_message(msg.id)
+      assert found.id == msg.id
+    end
+
+    test "returns nil for non-existent ID" do
+      assert Messaging.get_message(0) == nil
+    end
+  end
+
+  describe "change_message/1" do
+    test "returns a changeset" do
+      changeset = Messaging.change_message(%{})
+      assert %Ecto.Changeset{} = changeset
+    end
+  end
 end

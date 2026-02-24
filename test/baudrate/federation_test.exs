@@ -311,4 +311,46 @@ defmodule Baudrate.FederationTest do
       refute new_key == old_key
     end
   end
+
+  describe "followers_collection/2" do
+    test "returns OrderedCollection root without page param" do
+      user = setup_user_with_role("user")
+      {:ok, user} = KeyStore.ensure_user_keypair(user)
+      actor_uri = Federation.actor_uri(:user, user.username)
+
+      result = Federation.followers_collection(actor_uri)
+      assert result["type"] == "OrderedCollection"
+      assert result["totalItems"] == 0
+      assert result["first"] =~ "page=1"
+    end
+  end
+
+  describe "boards_collection/0" do
+    test "returns collection of public AP-enabled boards" do
+      _board = setup_board("boards-col-#{System.unique_integer([:positive])}")
+
+      result = Federation.boards_collection()
+      assert result["type"] == "OrderedCollection"
+      assert is_list(result["orderedItems"])
+      assert result["totalItems"] >= 1
+    end
+  end
+
+  describe "resolve_board_from_audience/1" do
+    test "returns board for valid audience URI" do
+      board = setup_board("resolve-#{System.unique_integer([:positive])}")
+      board_uri = Federation.actor_uri(:board, board.slug)
+
+      found = Federation.resolve_board_from_audience([board_uri])
+      assert found.id == board.id
+    end
+
+    test "returns nil for invalid audience URI" do
+      assert Federation.resolve_board_from_audience(["https://other.example/board"]) == nil
+    end
+
+    test "returns nil for non-list input" do
+      assert Federation.resolve_board_from_audience(nil) == nil
+    end
+  end
 end

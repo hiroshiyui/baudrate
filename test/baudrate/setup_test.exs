@@ -350,4 +350,33 @@ defmodule Baudrate.SetupTest do
       assert "guest" in role_names
     end
   end
+
+  describe "get_eua/0" do
+    test "returns nil when no EUA set" do
+      assert Setup.get_eua() == nil
+    end
+
+    test "returns text when EUA is set" do
+      Setup.update_eua("Please accept our terms.")
+      assert Setup.get_eua() == "Please accept our terms."
+    end
+  end
+
+  describe "update_eua/1" do
+    test "sets and retrieves EUA text" do
+      assert {:ok, _} = Setup.update_eua("# Terms of Service\n\nBe nice.")
+      assert Setup.get_eua() == "# Terms of Service\n\nBe nice."
+    end
+  end
+
+  describe "registration_mode/0" do
+    test "returns default mode when unset" do
+      assert Setup.registration_mode() == "approval_required"
+    end
+
+    test "returns configured mode" do
+      Repo.insert!(%Setting{key: "registration_mode", value: "invite_only"})
+      assert Setup.registration_mode() == "invite_only"
+    end
+  end
 end
