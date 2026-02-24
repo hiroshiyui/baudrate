@@ -163,6 +163,7 @@ lib/
 │   ├── endpoint.ex              # HTTP entry point, session config
 │   ├── gettext.ex               # Gettext i18n configuration
 │   ├── locale.ex                # Locale resolution (Accept-Language + user prefs)
+│   ├── rate_limits.ex           # Per-user rate limit checks (Hammer, fail-open)
 │   ├── router.ex                # Route scopes and pipelines
 │   └── telemetry.ex             # Telemetry metrics configuration
 ```
@@ -795,11 +796,23 @@ RateLimit (30/min per IP) → FeedController (XML response)
 | Registration | 5 / hour | per IP |
 | Password reset | 5 / hour | per IP |
 | Password reset | progressive delay (5s/30s/120s) | per account |
+| Article creation | 10 / 15 min | per user |
+| Article update | 20 / 5 min | per user |
+| Comment creation | 30 / 5 min | per user |
+| Content deletion | 20 / 5 min | per user |
+| User muting | 10 / 5 min | per user |
+| Search (authenticated) | 15 / min | per user |
+| Search (guest) | 10 / min | per IP |
 | Avatar upload | 5 / hour | per user |
 | AP endpoints | 120 / min | per IP |
 | AP inbox | 60 / min | per remote domain |
 | Feeds (RSS/Atom) | 30 / min | per IP |
 | Direct messages | 20 / min | per user |
+
+IP-based rate limits use `BaudrateWeb.Plugs.RateLimit` (Plug-based, in the
+router pipeline). Per-user rate limits use `BaudrateWeb.RateLimits` (called
+from LiveView event handlers). Both use Hammer with ETS backend and fail open
+on backend errors. Admin users are exempt from per-user content rate limits.
 
 ### Supervision Tree
 

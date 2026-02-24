@@ -458,11 +458,21 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 | TOTP verification | 15 / 5 min | per IP |
 | Registration | 5 / hour | per IP |
 | Password reset | 5 / hour | per IP |
+| Article creation | 10 / 15 min | per user |
+| Article update | 20 / 5 min | per user |
+| Comment creation | 30 / 5 min | per user |
+| Content deletion | 20 / 5 min | per user |
+| User muting | 10 / 5 min | per user |
+| Search (authenticated) | 15 / min | per user |
+| Search (guest) | 10 / min | per IP |
 | Avatar upload | 5 / hour | per user |
 | AP endpoints | 120 / min | per IP |
 | AP inbox | 60 / min | per remote domain |
 | Feeds (RSS/Atom) | 30 / min | per IP |
 | Direct messages | 20 / min | per user |
+
+Per-user rate limits are managed by `BaudrateWeb.RateLimits`. Admin users are
+exempt from per-user content rate limits (their actions are already audit-logged).
 
 Rate limiting uses [Hammer](https://hexdocs.pm/hammer/) with an ETS backend
 (node-local). In multi-node clusters, effective limits are multiplied by node
