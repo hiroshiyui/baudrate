@@ -18,6 +18,7 @@
           <th scope="col">{gettext("Created By")}</th>
           <th scope="col">{gettext("Status")}</th>
           <th scope="col">{gettext("Uses")}</th>
+          <th scope="col">{gettext("Invited User")}</th>
           <th scope="col">{gettext("Expires")}</th>
           <th scope="col">{gettext("Created")}</th>
           <th scope="col">{gettext("Actions")}</th>
@@ -28,7 +29,9 @@
           <td class="font-mono">{code.code}</td>
           <td>
             <span :if={code.created_by}>{code.created_by.username}</span>
-            <span :if={!code.created_by} class="text-base-content/50">{gettext("Deleted user")}</span>
+            <span :if={!code.created_by} class="text-base-content/50">
+              {gettext("Deleted user")}
+            </span>
           </td>
           <td>
             <% status = code_status(code) %>
@@ -49,12 +52,29 @@
           </td>
           <td>{code.use_count} / {code.max_uses}</td>
           <td>
+            <span :if={code.used_by}>
+              <.link
+                navigate={~p"/admin/users?search=#{code.used_by.username}"}
+                class="link link-primary"
+              >
+                {code.used_by.username}
+              </.link>
+            </span>
+            <span :if={!code.used_by} class="text-base-content/50">—</span>
+          </td>
+          <td>
             <span :if={code.expires_at}>
-              <time datetime={Calendar.strftime(code.expires_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(code.expires_at, "%Y-%m-%d %H:%M")}</time>
+              <time datetime={Calendar.strftime(code.expires_at, "%Y-%m-%dT%H:%M:%S")}>
+                {Calendar.strftime(code.expires_at, "%Y-%m-%d %H:%M")}
+              </time>
             </span>
             <span :if={!code.expires_at} class="text-base-content/50">{gettext("Never")}</span>
           </td>
-          <td><time datetime={Calendar.strftime(code.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(code.inserted_at, "%Y-%m-%d %H:%M")}</time></td>
+          <td>
+            <time datetime={Calendar.strftime(code.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
+              {Calendar.strftime(code.inserted_at, "%Y-%m-%d %H:%M")}
+            </time>
+          </td>
           <td>
             <button
               :if={code_status(code) == :active}

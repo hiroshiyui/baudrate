@@ -3,7 +3,8 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   LiveView for admin invite code management.
 
   Only accessible to users with the `"admin"` role. Provides
-  generation and revocation of invite codes.
+  generation and revocation of invite codes, and shows invite chain
+  information (which users were created from each code).
   """
 
   use BaudrateWeb, :live_view
@@ -27,12 +28,19 @@ defmodule BaudrateWeb.Admin.InvitesLive do
 
   @impl true
   def handle_event("generate", _params, socket) do
-    case Auth.generate_invite_code(socket.assigns.current_user.id) do
+    case Auth.generate_invite_code(socket.assigns.current_user) do
       {:ok, _code} ->
         {:noreply,
          socket
          |> put_flash(:info, gettext("Invite code generated."))
          |> assign(:codes, Auth.list_all_invite_codes())}
+
+      {:error, :account_too_new} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Your account is too new to generate invite codes."))}
+
+      {:error, :invite_quota_exceeded} ->
+        {:noreply, put_flash(socket, :error, gettext("Invite quota exceeded."))}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to generate invite code."))}
@@ -64,10 +72,17 @@ defmodule BaudrateWeb.Admin.InvitesLive do
 
   defp code_status(invite) do
     cond do
-      invite.revoked -> :revoked
-      invite.expires_at && DateTime.compare(invite.expires_at, DateTime.utc_now()) == :lt -> :expired
-      invite.use_count >= invite.max_uses -> :used
-      true -> :active
+      invite.revoked ->
+        :revoked
+
+      invite.expires_at && DateTime.compare(invite.expires_at, DateTime.utc_now()) == :lt ->
+        :expired
+
+      invite.use_count >= invite.max_uses ->
+        :used
+
+      true ->
+        :active
     end
   end
 end

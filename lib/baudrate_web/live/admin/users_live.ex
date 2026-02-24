@@ -14,7 +14,9 @@ defmodule BaudrateWeb.Admin.UsersLive do
   alias Baudrate.Auth
   alias Baudrate.Moderation
   alias Baudrate.Setup
-  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1, translate_role: 1, translate_status: 1]
+
+  import BaudrateWeb.Helpers,
+    only: [parse_id: 1, parse_page: 1, translate_role: 1, translate_status: 1]
 
   @valid_statuses ~w(active pending banned)
 
@@ -57,7 +59,12 @@ defmodule BaudrateWeb.Admin.UsersLive do
 
     {:noreply,
      socket
-     |> assign(page: page, status_filter: status_filter, search: search, selected_ids: MapSet.new())
+     |> assign(
+       page: page,
+       status_filter: status_filter,
+       search: search,
+       selected_ids: MapSet.new()
+     )
      |> reload_users()}
   end
 
@@ -168,17 +175,30 @@ defmodule BaudrateWeb.Admin.UsersLive do
         reason = if reason == "", do: nil, else: reason
 
         case Auth.ban_user(user, admin_id, reason) do
-          {:ok, _user} ->
+          {:ok, _user, revoked_count} ->
             Moderation.log_action(admin_id, "ban_user",
               target_type: "user",
               target_id: user.id,
-              details: %{"username" => user.username, "reason" => reason}
+              details: %{
+                "username" => user.username,
+                "reason" => reason,
+                "revoked_invites" => revoked_count
+              }
             )
+
+            flash_msg =
+              if revoked_count > 0 do
+                gettext("User banned successfully. %{count} invite code(s) revoked.",
+                  count: revoked_count
+                )
+              else
+                gettext("User banned successfully.")
+              end
 
             {:noreply,
              socket
              |> assign(ban_target: nil, ban_target_username: nil, ban_reason: "")
-             |> put_flash(:info, gettext("User banned successfully."))
+             |> put_flash(:info, flash_msg)
              |> reload_users()
              |> reload_counts()}
 
@@ -270,7 +290,8 @@ defmodule BaudrateWeb.Admin.UsersLive do
     if MapSet.size(selected) == 0 do
       {:noreply, put_flash(socket, :error, gettext("No users selected for ban."))}
     else
-      {:noreply, assign(socket, selected_ids: selected, show_bulk_ban_modal: true, bulk_ban_reason: "")}
+      {:noreply,
+       assign(socket, selected_ids: selected, show_bulk_ban_modal: true, bulk_ban_reason: "")}
     end
   end
 
@@ -298,7 +319,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
 
           user ->
             case Auth.ban_user(user, admin_id, reason) do
-              {:ok, _} ->
+              {:ok, _, _revoked_count} ->
                 Moderation.log_action(admin_id, "ban_user",
                   target_type: "user",
                   target_id: user.id,
@@ -350,24 +371,28 @@ defmodule BaudrateWeb.Admin.UsersLive do
           old_role = user.role.name
 
           case Auth.update_user_role(user, parsed_role_id, admin_id) do
-          {:ok, updated_user} ->
-            Moderation.log_action(admin_id, "update_role",
-              target_type: "user",
-              target_id: user.id,
-              details: %{"username" => user.username, "old_role" => old_role, "new_role" => updated_user.role.name}
-            )
+            {:ok, updated_user} ->
+              Moderation.log_action(admin_id, "update_role",
+                target_type: "user",
+                target_id: user.id,
+                details: %{
+                  "username" => user.username,
+                  "old_role" => old_role,
+                  "new_role" => updated_user.role.name
+                }
+              )
 
-            {:noreply,
-             socket
-             |> put_flash(:info, gettext("User role updated successfully."))
-             |> reload_users()}
+              {:noreply,
+               socket
+               |> put_flash(:info, gettext("User role updated successfully."))
+               |> reload_users()}
 
-          {:error, :self_action} ->
-            {:noreply, put_flash(socket, :error, gettext("You cannot change your own role."))}
+            {:error, :self_action} ->
+              {:noreply, put_flash(socket, :error, gettext("You cannot change your own role."))}
 
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to update user role."))}
-        end
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, gettext("Failed to update user role."))}
+          end
       end
     else
       :error -> {:noreply, socket}
@@ -436,5 +461,4 @@ defmodule BaudrateWeb.Admin.UsersLive do
   defp reload_counts(socket) do
     assign(socket, :status_counts, Auth.count_users_by_status())
   end
-
 end
