@@ -1,0 +1,102 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">{gettext("My Invites")}</h1>
+    <button phx-click="generate" class="btn btn-primary btn-sm" disabled={!@can_generate}>
+      {gettext("Generate Code")}
+    </button>
+  </div>
+
+  <div class="alert alert-info">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      class="shrink-0 w-6 h-6 stroke-current"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+      >
+      </path>
+    </svg>
+    <span>
+      {gettext("%{remaining} of %{limit} invites remaining",
+        remaining: @quota_remaining,
+        limit: @quota_limit
+      )}
+    </span>
+  </div>
+
+  <div :if={@codes == []} class="text-base-content/50 text-center py-8">
+    {gettext("You haven't generated any invite codes yet.")}
+  </div>
+
+  <div :if={@codes != []} class="overflow-x-auto">
+    <table class="table table-zebra w-full">
+      <thead>
+        <tr>
+          <th scope="col">{gettext("Code")}</th>
+          <th scope="col">{gettext("Status")}</th>
+          <th scope="col">{gettext("Uses")}</th>
+          <th scope="col">{gettext("Invited User")}</th>
+          <th scope="col">{gettext("Expires")}</th>
+          <th scope="col">{gettext("Created")}</th>
+          <th scope="col">{gettext("Actions")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr :for={code <- @codes}>
+          <td class="font-mono">{code.code}</td>
+          <td>
+            <% status = code_status(code) %>
+            <span class={[
+              "badge badge-sm",
+              status == :active && "badge-success",
+              status == :used && "badge-info",
+              status == :expired && "badge-warning",
+              status == :revoked && "badge-error"
+            ]}>
+              {case status do
+                :active -> gettext("Active")
+                :used -> gettext("Used")
+                :expired -> gettext("Expired")
+                :revoked -> gettext("Revoked")
+              end}
+            </span>
+          </td>
+          <td>{code.use_count} / {code.max_uses}</td>
+          <td>
+            <span :if={code.used_by}>{code.used_by.username}</span>
+            <span :if={!code.used_by} class="text-base-content/50">—</span>
+          </td>
+          <td>
+            <span :if={code.expires_at}>
+              <time datetime={Calendar.strftime(code.expires_at, "%Y-%m-%dT%H:%M:%S")}>
+                {Calendar.strftime(code.expires_at, "%Y-%m-%d %H:%M")}
+              </time>
+            </span>
+            <span :if={!code.expires_at} class="text-base-content/50">{gettext("Never")}</span>
+          </td>
+          <td>
+            <time datetime={Calendar.strftime(code.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
+              {Calendar.strftime(code.inserted_at, "%Y-%m-%d %H:%M")}
+            </time>
+          </td>
+          <td>
+            <button
+              :if={code_status(code) == :active}
+              phx-click="revoke"
+              phx-value-id={code.id}
+              data-confirm={gettext("Revoke this invite code?")}
+              class="btn btn-sm btn-ghost text-error"
+            >
+              {gettext("Revoke")}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

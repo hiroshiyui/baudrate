@@ -208,6 +208,7 @@ defmodule BaudrateWeb.Router do
       live "/admin/moderation-log", Admin.ModerationLogLive
       live "/admin/invites", Admin.InvitesLive
       live "/admin/login-attempts", Admin.LoginAttemptsLive
+      live "/invites", UserInvitesLive
       live "/messages", ConversationsLive
       live "/messages/new", ConversationLive
       live "/messages/:id", ConversationLive
@@ -245,7 +246,6 @@ defmodule BaudrateWeb.Router do
       pipe_through :browser
 
       live_dashboard "/dashboard", metrics: BaudrateWeb.Telemetry
-
     end
   end
 end
