@@ -18,8 +18,9 @@ msgstr ""
 #: lib/baudrate_web/live/admin/federation_live.html.heex:153
 #: lib/baudrate_web/live/admin/federation_live.html.heex:197
 #: lib/baudrate_web/live/admin/federation_live.html.heex:277
-#: lib/baudrate_web/live/admin/invites_live.html.heex:23
+#: lib/baudrate_web/live/admin/invites_live.html.heex:24
 #: lib/baudrate_web/live/admin/users_live.html.heex:127
+#: lib/baudrate_web/live/user_invites_live.html.heex:30
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr "操作"
@@ -1149,6 +1150,7 @@ msgstr "向 %{domain} 發送檢舉報告？"
 #: lib/baudrate_web/live/admin/federation_live.html.heex:35
 #: lib/baudrate_web/live/admin/invites_live.html.heex:19
 #: lib/baudrate_web/live/admin/users_live.html.heex:125
+#: lib/baudrate_web/live/user_invites_live.html.heex:25
 #, elixir-autogen, elixir-format
 msgid "Status"
 msgstr "狀態"
@@ -1341,9 +1343,10 @@ msgstr "撰寫回覆..."
 msgid "You are not authorized to edit this article."
 msgstr "您沒有權限編輯此文章。"
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:43
+#: lib/baudrate_web/live/admin/invites_live.html.heex:44
 #: lib/baudrate_web/live/admin/users_live.html.heex:13
 #: lib/baudrate_web/live/admin/users_live.html.heex:51
+#: lib/baudrate_web/live/user_invites_live.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "Active"
 msgstr "啟用中"
@@ -1411,7 +1414,7 @@ msgstr "說明"
 msgid "Edit Board"
 msgstr "編輯版面"
 
-#: lib/baudrate_web/live/admin/users_live.ex:189
+#: lib/baudrate_web/live/admin/users_live.ex:196
 #, elixir-autogen, elixir-format
 msgid "Failed to ban user."
 msgstr "停權用戶失敗。"
@@ -1421,12 +1424,12 @@ msgstr "停權用戶失敗。"
 msgid "Failed to delete board."
 msgstr "刪除版面失敗。"
 
-#: lib/baudrate_web/live/admin/users_live.ex:398
+#: lib/baudrate_web/live/admin/users_live.ex:405
 #, elixir-autogen, elixir-format
 msgid "Failed to unban user."
 msgstr "解除停權失敗。"
 
-#: lib/baudrate_web/live/admin/users_live.ex:369
+#: lib/baudrate_web/live/admin/users_live.ex:376
 #, elixir-autogen, elixir-format
 msgid "Failed to update user role."
 msgstr "更新用戶角色失敗。"
@@ -1524,22 +1527,22 @@ msgstr "解除停權"
 msgid "User Management"
 msgstr "用戶管理"
 
-#: lib/baudrate_web/live/admin/users_live.ex:181
+#: lib/baudrate_web/live/admin/users_live.ex:182
 #, elixir-autogen, elixir-format
 msgid "User banned successfully."
 msgstr "用戶已成功停權。"
 
-#: lib/baudrate_web/live/admin/users_live.ex:362
+#: lib/baudrate_web/live/admin/users_live.ex:369
 #, elixir-autogen, elixir-format
 msgid "User role updated successfully."
 msgstr "用戶角色已成功更新。"
 
-#: lib/baudrate_web/live/admin/users_live.ex:393
+#: lib/baudrate_web/live/admin/users_live.ex:400
 #, elixir-autogen, elixir-format
 msgid "User unbanned successfully."
 msgstr "用戶已成功解除停權。"
 
-#: lib/baudrate_web/live/admin/users_live.ex:366
+#: lib/baudrate_web/live/admin/users_live.ex:373
 #, elixir-autogen, elixir-format
 msgid "You cannot change your own role."
 msgstr "您無法變更自己的角色。"
@@ -1583,7 +1586,7 @@ msgid "Search users by username"
 msgstr "依使用者名稱搜尋"
 
 #: lib/baudrate_web/live/admin/users_live.ex:128
-#: lib/baudrate_web/live/admin/users_live.ex:186
+#: lib/baudrate_web/live/admin/users_live.ex:193
 #, elixir-autogen, elixir-format
 msgid "You cannot ban yourself."
 msgstr "您無法停權自己。"
@@ -1622,8 +1625,8 @@ msgstr "系統主題"
 #: lib/baudrate_web/live/admin/users_live.ex:96
 #: lib/baudrate_web/live/admin/users_live.ex:132
 #: lib/baudrate_web/live/admin/users_live.ex:163
-#: lib/baudrate_web/live/admin/users_live.ex:346
-#: lib/baudrate_web/live/admin/users_live.ex:380
+#: lib/baudrate_web/live/admin/users_live.ex:353
+#: lib/baudrate_web/live/admin/users_live.ex:387
 #: lib/baudrate_web/live/conversation_live.ex:254
 #: lib/baudrate_web/live/user_profile_live.ex:21
 #: lib/baudrate_web/live/user_profile_live.ex:27
@@ -1699,6 +1702,7 @@ msgid "Ban User"
 msgstr "封鎖使用者"
 
 #: lib/baudrate_web/live/admin/invites_live.html.heex:17
+#: lib/baudrate_web/live/user_invites_live.html.heex:24
 #, elixir-autogen, elixir-format
 msgid "Code"
 msgstr "代碼"
@@ -1708,7 +1712,8 @@ msgstr "代碼"
 msgid "Create Board"
 msgstr "建立板塊"
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:22
+#: lib/baudrate_web/live/admin/invites_live.html.heex:23
+#: lib/baudrate_web/live/user_invites_live.html.heex:29
 #, elixir-autogen, elixir-format
 msgid "Created"
 msgstr "建立時間"
@@ -1730,7 +1735,7 @@ msgstr "日期"
 msgid "Delete Board"
 msgstr "刪除板塊"
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:31
+#: lib/baudrate_web/live/admin/invites_live.html.heex:32
 #: lib/baudrate_web/live/admin/moderation_log_live.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "Deleted user"
@@ -1746,27 +1751,32 @@ msgstr "詳細資訊"
 msgid "Dismiss Report"
 msgstr "駁回檢舉"
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:45
+#: lib/baudrate_web/live/admin/invites_live.html.heex:46
+#: lib/baudrate_web/live/user_invites_live.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "Expired"
 msgstr "已過期"
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:21
+#: lib/baudrate_web/live/admin/invites_live.html.heex:22
+#: lib/baudrate_web/live/user_invites_live.html.heex:28
 #, elixir-autogen, elixir-format
 msgid "Expires"
 msgstr "到期時間"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:38
+#: lib/baudrate_web/live/admin/invites_live.ex:45
+#: lib/baudrate_web/live/user_invites_live.ex:43
 #, elixir-autogen, elixir-format
 msgid "Failed to generate invite code."
 msgstr "無法產生邀請碼。"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:61
+#: lib/baudrate_web/live/admin/invites_live.ex:68
+#: lib/baudrate_web/live/user_invites_live.ex:75
 #, elixir-autogen, elixir-format
 msgid "Failed to revoke invite code."
 msgstr "無法撤銷邀請碼。"
 
 #: lib/baudrate_web/live/admin/invites_live.html.heex:5
+#: lib/baudrate_web/live/user_invites_live.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Generate Code"
 msgstr "產生邀請碼"
@@ -1793,12 +1803,14 @@ msgstr "邀請碼管理"
 msgid "Invite Only"
 msgstr "僅限邀請"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:34
+#: lib/baudrate_web/live/admin/invites_live.ex:35
+#: lib/baudrate_web/live/user_invites_live.ex:33
 #, elixir-autogen, elixir-format
 msgid "Invite code generated."
 msgstr "邀請碼已產生。"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:57
+#: lib/baudrate_web/live/admin/invites_live.ex:64
+#: lib/baudrate_web/live/user_invites_live.ex:71
 #, elixir-autogen, elixir-format
 msgid "Invite code revoked."
 msgstr "邀請碼已撤銷。"
@@ -1810,7 +1822,8 @@ msgstr "邀請碼已撤銷。"
 msgid "Moderation Log"
 msgstr "管理日誌"
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:55
+#: lib/baudrate_web/live/admin/invites_live.html.heex:64
+#: lib/baudrate_web/live/user_invites_live.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Never"
 msgstr "永不"
@@ -1840,17 +1853,20 @@ msgstr "註冊需要邀請碼。"
 msgid "Resolve Report"
 msgstr "解決檢舉"
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:66
+#: lib/baudrate_web/live/admin/invites_live.html.heex:75
+#: lib/baudrate_web/live/user_invites_live.html.heex:73
 #, elixir-autogen, elixir-format
 msgid "Revoke"
 msgstr "撤銷"
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:63
+#: lib/baudrate_web/live/admin/invites_live.html.heex:72
+#: lib/baudrate_web/live/user_invites_live.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "Revoke this invite code?"
 msgstr "確定要撤銷此邀請碼？"
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:46
+#: lib/baudrate_web/live/admin/invites_live.html.heex:47
+#: lib/baudrate_web/live/user_invites_live.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "Revoked"
 msgstr "已撤銷"
@@ -1895,12 +1911,14 @@ msgstr "更新板塊"
 msgid "Update Role"
 msgstr "更新角色"
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:44
+#: lib/baudrate_web/live/admin/invites_live.html.heex:45
+#: lib/baudrate_web/live/user_invites_live.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Used"
 msgstr "已使用"
 
 #: lib/baudrate_web/live/admin/invites_live.html.heex:20
+#: lib/baudrate_web/live/user_invites_live.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "Uses"
 msgstr "使用次數"
@@ -2396,7 +2414,7 @@ msgstr "管理看板"
 msgid "Admin Federation"
 msgstr "管理聯邦"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:24
+#: lib/baudrate_web/live/admin/invites_live.ex:25
 #, elixir-autogen, elixir-format
 msgid "Admin Invites"
 msgstr "管理邀請碼"
@@ -3056,13 +3074,13 @@ msgstr "%{n} KB"
 msgid "%{n} MB"
 msgstr "%{n} MB"
 
-#: lib/baudrate_web/controllers/feed_controller.ex:96
-#: lib/baudrate_web/controllers/feed_controller.ex:114
+#: lib/baudrate_web/controllers/feed_controller.ex:101
+#: lib/baudrate_web/controllers/feed_controller.ex:120
 #, elixir-autogen, elixir-format
 msgid "%{username}'s articles"
 msgstr "%{username} 的文章"
 
-#: lib/baudrate_web/controllers/feed_controller.ex:62
+#: lib/baudrate_web/controllers/feed_controller.ex:65
 #, elixir-autogen, elixir-format
 msgid "Articles in %{board_name}"
 msgstr "%{board_name} 的文章"
@@ -3082,30 +3100,30 @@ msgstr "看板 Atom 訂閱"
 msgid "Board RSS Feed"
 msgstr "看板 RSS 訂閱"
 
-#: lib/baudrate_web/controllers/session_controller.ex:180
+#: lib/baudrate_web/controllers/session_controller.ex:183
 #, elixir-autogen, elixir-format
 msgid "Failed to enable TOTP. Please try again."
 msgstr "啟用 TOTP 失敗，請重試。"
 
-#: lib/baudrate_web/controllers/session_controller.ex:92
-#: lib/baudrate_web/controllers/session_controller.ex:233
+#: lib/baudrate_web/controllers/session_controller.ex:93
+#: lib/baudrate_web/controllers/session_controller.ex:237
 #, elixir-autogen, elixir-format
 msgid "Invalid or expired token."
 msgstr "無效或已過期的憑證。"
 
-#: lib/baudrate_web/controllers/session_controller.ex:271
+#: lib/baudrate_web/controllers/session_controller.ex:276
 #, elixir-autogen, elixir-format
 msgid "Invalid recovery code. Please try again."
 msgstr "復原碼無效，請重試。"
 
-#: lib/baudrate_web/controllers/session_controller.ex:84
-#: lib/baudrate_web/controllers/session_controller.ex:225
+#: lib/baudrate_web/controllers/session_controller.ex:85
+#: lib/baudrate_web/controllers/session_controller.ex:229
 #, elixir-autogen, elixir-format
 msgid "Invalid session."
 msgstr "無效的工作階段。"
 
-#: lib/baudrate_web/controllers/session_controller.ex:139
-#: lib/baudrate_web/controllers/session_controller.ex:191
+#: lib/baudrate_web/controllers/session_controller.ex:141
+#: lib/baudrate_web/controllers/session_controller.ex:194
 #, elixir-autogen, elixir-format
 msgid "Invalid verification code. Please try again."
 msgstr "驗證碼無效，請重試。"
@@ -3115,31 +3133,31 @@ msgstr "驗證碼無效，請重試。"
 msgid "RSS Feed"
 msgstr "RSS 訂閱"
 
-#: lib/baudrate_web/controllers/feed_controller.ex:98
+#: lib/baudrate_web/controllers/feed_controller.ex:103
 #, elixir-autogen, elixir-format
 msgid "Recent articles by %{username}"
 msgstr "%{username} 的近期文章"
 
-#: lib/baudrate_web/controllers/feed_controller.ex:34
+#: lib/baudrate_web/controllers/feed_controller.ex:35
 #, elixir-autogen, elixir-format
 msgid "Recent articles on %{site_name}"
 msgstr "%{site_name} 的近期文章"
 
-#: lib/baudrate_web/controllers/session_controller.ex:106
-#: lib/baudrate_web/controllers/session_controller.ex:153
-#: lib/baudrate_web/controllers/session_controller.ex:246
+#: lib/baudrate_web/controllers/session_controller.ex:108
+#: lib/baudrate_web/controllers/session_controller.ex:156
+#: lib/baudrate_web/controllers/session_controller.ex:251
 #, elixir-autogen, elixir-format
 msgid "Session expired. Please log in again."
 msgstr "工作階段已過期，請重新登入。"
 
-#: lib/baudrate_web/controllers/session_controller.ex:113
+#: lib/baudrate_web/controllers/session_controller.ex:115
 #, elixir-autogen, elixir-format
 msgid "TOTP configuration error. Please contact an administrator."
 msgstr "TOTP 設定錯誤，請聯絡管理員。"
 
-#: lib/baudrate_web/controllers/session_controller.ex:122
-#: lib/baudrate_web/controllers/session_controller.ex:161
-#: lib/baudrate_web/controllers/session_controller.ex:254
+#: lib/baudrate_web/controllers/session_controller.ex:124
+#: lib/baudrate_web/controllers/session_controller.ex:164
+#: lib/baudrate_web/controllers/session_controller.ex:259
 #, elixir-autogen, elixir-format
 msgid "Too many failed attempts. Please log in again."
 msgstr "失敗嘗試次數過多，請重新登入。"
@@ -3187,13 +3205,13 @@ msgid "%{count} report selected"
 msgid_plural "%{count} reports selected"
 msgstr[0] "已選取 %{count} 則檢舉"
 
-#: lib/baudrate_web/live/admin/users_live.ex:255
+#: lib/baudrate_web/live/admin/users_live.ex:262
 #, elixir-autogen, elixir-format
 msgid "%{count} user approved."
 msgid_plural "%{count} users approved."
 msgstr[0] "已核准 %{count} 位使用者。"
 
-#: lib/baudrate_web/live/admin/users_live.ex:321
+#: lib/baudrate_web/live/admin/users_live.ex:328
 #, elixir-autogen, elixir-format
 msgid "%{count} user banned."
 msgid_plural "%{count} users banned."
@@ -3236,7 +3254,7 @@ msgstr "駁回所選"
 msgid "Dismiss all selected reports?"
 msgstr "駁回所有選取的檢舉？"
 
-#: lib/baudrate_web/live/admin/users_live.ex:271
+#: lib/baudrate_web/live/admin/users_live.ex:278
 #, elixir-autogen, elixir-format
 msgid "No users selected for ban."
 msgstr "未選取任何使用者進行封鎖。"
@@ -3281,3 +3299,52 @@ msgstr "選取檢舉 #%{id}"
 #, elixir-autogen, elixir-format
 msgid "Member since"
 msgstr "加入日期"
+
+#: lib/baudrate_web/live/user_invites_live.html.heex:13
+#, elixir-autogen, elixir-format
+msgid "%{remaining} of %{limit} invites remaining"
+msgstr "剩餘 %{remaining} / %{limit} 個邀請名額"
+
+#: lib/baudrate_web/live/user_invites_live.ex:61
+#, elixir-autogen, elixir-format
+msgid "Invite code not found."
+msgstr "找不到邀請碼。"
+
+#: lib/baudrate_web/live/admin/invites_live.ex:42
+#: lib/baudrate_web/live/user_invites_live.ex:40
+#, elixir-autogen, elixir-format
+msgid "Invite quota exceeded."
+msgstr "邀請碼配額已用完。"
+
+#: lib/baudrate_web/live/admin/invites_live.html.heex:21
+#: lib/baudrate_web/live/user_invites_live.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Invited User"
+msgstr "受邀用戶"
+
+#: lib/baudrate_web/live/user_invites_live.ex:21
+#: lib/baudrate_web/live/user_invites_live.html.heex:3
+#, elixir-autogen, elixir-format
+msgid "My Invites"
+msgstr "我的邀請碼"
+
+#: lib/baudrate_web/live/admin/users_live.ex:180
+#, elixir-autogen, elixir-format
+msgid "User banned successfully. %{count} invite code(s) revoked."
+msgstr "用戶已成功停權。已撤銷 %{count} 個邀請碼。"
+
+#: lib/baudrate_web/live/user_invites_live.ex:64
+#, elixir-autogen, elixir-format
+msgid "You can only revoke your own invite codes."
+msgstr "您只能撤銷自己的邀請碼。"
+
+#: lib/baudrate_web/live/user_invites_live.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "You haven't generated any invite codes yet."
+msgstr "您還沒有產生任何邀請碼。"
+
+#: lib/baudrate_web/live/admin/invites_live.ex:39
+#: lib/baudrate_web/live/user_invites_live.ex:37
+#, elixir-autogen, elixir-format
+msgid "Your account is too new to generate invite codes."
+msgstr "您的帳號太新，尚無法產生邀請碼。"

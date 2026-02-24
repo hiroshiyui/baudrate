@@ -29,7 +29,7 @@ lib/
 ├── baudrate/                    # Business logic (contexts)
 │   ├── application.ex           # Supervision tree
 │   ├── repo.ex                  # Ecto repository
-│   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars, invite codes, password reset, user blocks, user mutes
+│   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars, invite codes (quota), password reset, user blocks, user mutes
 │   ├── auth/
 │   │   ├── invite_code.ex       # InviteCode schema (invite-only registration)
 │   │   ├── login_attempt.ex     # LoginAttempt schema (per-account brute-force tracking)
@@ -114,7 +114,7 @@ lib/
 │   │   ├── admin/
 │   │   │   ├── boards_live.ex          # Admin board CRUD + moderator management
 │   │   │   ├── federation_live.ex      # Admin federation dashboard
-│   │   │   ├── invites_live.ex         # Admin invite code management (generate, revoke)
+│   │   │   ├── invites_live.ex         # Admin invite code management (generate, revoke, invite chain)
 │   │   │   ├── login_attempts_live.ex # Admin login attempts viewer (paginated, filterable)
 │   │   │   ├── moderation_live.ex     # Moderation queue (reports)
 │   │   │   ├── moderation_log_live.ex # Moderation audit log (filterable, paginated)
@@ -137,6 +137,7 @@ lib/
 │   │   ├── recovery_codes_live.ex        # Recovery codes display
 │   │   ├── register_live.ex     # Public user registration (supports invite-only mode, terms notice, recovery codes)
 │   │   ├── search_live.ex       # Full-text article search
+│   │   ├── user_invites_live.ex # User invite code management (quota-limited, generate, revoke)
 │   │   ├── user_profile_live.ex # Public user profile pages (stats, recent articles)
 │   │   ├── setup_live.ex        # First-run setup wizard
 │   │   ├── totp_reset_live.ex   # Self-service TOTP reset/enable
@@ -325,6 +326,19 @@ shown) and an optional site-specific End User Agreement (admin-configurable via
 `/admin/settings`, stored as markdown). Recovery codes (10 high-entropy base32
 codes in `xxxx-xxxx` format, ~41 bits each, HMAC-SHA256 hashed) are issued at
 registration and displayed once for the user to save.
+
+#### Invite Codes
+
+All authenticated users can generate invite codes at `/invites`. Non-admin users
+are subject to abuse prevention controls:
+
+- **Quota**: 5 codes per rolling 30-day window
+- **Account age**: must be at least 7 days old
+- **Auto-expiry**: non-admin codes expire after 7 days
+
+Admins have unlimited quota and optional expiry. When a user is banned, all their
+active invite codes are automatically revoked. Invite chain tracking records which
+user invited whom via `invited_by_id` on the users table.
 
 ### Password Reset
 
