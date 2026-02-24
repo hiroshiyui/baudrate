@@ -10,7 +10,7 @@ defmodule BaudrateWeb.UserInvitesLive do
   use BaudrateWeb, :live_view
 
   alias Baudrate.Auth
-  import BaudrateWeb.Helpers, only: [parse_id: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, invite_url: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -18,7 +18,7 @@ defmodule BaudrateWeb.UserInvitesLive do
 
     {:ok,
      socket
-     |> assign(page_title: gettext("My Invites"))
+     |> assign(page_title: gettext("My Invites"), qr_modal_code: nil)
      |> load_invite_data(user)}
   end
 
@@ -43,6 +43,16 @@ defmodule BaudrateWeb.UserInvitesLive do
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to generate invite code."))}
     end
+  end
+
+  @impl true
+  def handle_event("show_qr_code", %{"code" => code}, socket) do
+    {:noreply, assign(socket, :qr_modal_code, code)}
+  end
+
+  @impl true
+  def handle_event("close_qr_modal", _params, socket) do
+    {:noreply, assign(socket, :qr_modal_code, nil)}
   end
 
   @impl true
@@ -89,8 +99,17 @@ defmodule BaudrateWeb.UserInvitesLive do
       codes: codes,
       quota_remaining: remaining,
       quota_limit: limit,
-      can_generate: can_generate
+      can_generate: can_generate,
+      qr_codes: build_qr_codes(codes)
     )
+  end
+
+  defp build_qr_codes(codes) do
+    for code <- codes,
+        code_status(code) == :active,
+        into: %{} do
+      {code.code, Auth.totp_qr_data_uri(invite_url(code.code))}
+    end
   end
 
   defp code_status(invite) do

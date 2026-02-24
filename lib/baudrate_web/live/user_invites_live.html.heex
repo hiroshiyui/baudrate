@@ -85,18 +85,64 @@
             </time>
           </td>
           <td>
-            <button
-              :if={code_status(code) == :active}
-              phx-click="revoke"
-              phx-value-id={code.id}
-              data-confirm={gettext("Revoke this invite code?")}
-              class="btn btn-sm btn-ghost text-error"
-            >
-              {gettext("Revoke")}
-            </button>
+            <div :if={code_status(code) == :active} class="flex gap-1">
+              <button
+                id={"copy-invite-#{code.id}"}
+                phx-hook="CopyToClipboardHook"
+                data-copy-text={invite_url(code.code)}
+                data-copied-label={gettext("Copied!")}
+                title={gettext("Copy invite link")}
+                class="btn btn-sm btn-ghost"
+                aria-label={gettext("Copy invite link")}
+              >
+                <.icon name="hero-clipboard-document" class="size-4" />
+              </button>
+              <button
+                phx-click="show_qr_code"
+                phx-value-code={code.code}
+                class="btn btn-sm btn-ghost"
+                title={gettext("Show QR code")}
+                aria-label={gettext("Show QR code")}
+              >
+                <.icon name="hero-qr-code" class="size-4" />
+              </button>
+              <button
+                phx-click="revoke"
+                phx-value-id={code.id}
+                data-confirm={gettext("Revoke this invite code?")}
+                class="btn btn-sm btn-ghost text-error"
+              >
+                {gettext("Revoke")}
+              </button>
+            </div>
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <%!-- QR code modal --%>
+  <div
+    :if={@qr_modal_code}
+    class="modal modal-open"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="qr-modal-title"
+  >
+    <div class="modal-box flex flex-col items-center">
+      <h3 id="qr-modal-title" class="font-bold text-lg mb-4">{gettext("Invite QR code")}</h3>
+      <img
+        src={@qr_codes[@qr_modal_code]}
+        alt={gettext("Invite QR code")}
+        class="w-64 h-64"
+      />
+      <p class="text-sm mt-4 break-all text-center max-w-xs">
+        {invite_url(@qr_modal_code)}
+      </p>
+      <div class="modal-action">
+        <button phx-click="close_qr_modal" class="btn">{gettext("Close")}</button>
+      </div>
+    </div>
+    <div class="modal-backdrop" phx-click="close_qr_modal"></div>
   </div>
 </div>

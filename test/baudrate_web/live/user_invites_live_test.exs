@@ -81,4 +81,30 @@ defmodule BaudrateWeb.UserInvitesLiveTest do
     {:ok, _lv, html} = live(conn, "/invites")
     assert html =~ "disabled"
   end
+
+  test "active codes show copy and QR buttons", %{conn: conn} do
+    user = setup_user("user") |> backdate_user(8)
+    {:ok, invite} = Auth.generate_invite_code(user)
+
+    conn = log_in_user(conn, user)
+    {:ok, lv, html} = live(conn, "/invites")
+
+    assert html =~ "CopyToClipboardHook"
+    assert html =~ "data-copy-text"
+    assert html =~ "/register?invite="
+    assert html =~ "hero-qr-code"
+
+    # Click QR button opens modal with QR image
+    html =
+      lv
+      |> element("button[phx-click=\"show_qr_code\"][phx-value-code=\"#{invite.code}\"]")
+      |> render_click()
+
+    assert html =~ "data:image/svg+xml;base64,"
+    assert html =~ "modal modal-open"
+
+    # Close modal
+    html = lv |> element("button[phx-click=\"close_qr_modal\"]") |> render_click()
+    refute html =~ "modal modal-open"
+  end
 end

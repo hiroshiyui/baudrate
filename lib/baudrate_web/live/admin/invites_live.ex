@@ -12,7 +12,7 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
   alias Baudrate.Auth
-  import BaudrateWeb.Helpers, only: [parse_id: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, invite_url: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -22,7 +22,9 @@ defmodule BaudrateWeb.Admin.InvitesLive do
      assign(socket,
        codes: codes,
        wide_layout: true,
-       page_title: gettext("Admin Invites")
+       page_title: gettext("Admin Invites"),
+       qr_codes: build_qr_codes(codes),
+       qr_modal_code: nil
      )}
   end
 
@@ -30,10 +32,12 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   def handle_event("generate", _params, socket) do
     case Auth.generate_invite_code(socket.assigns.current_user) do
       {:ok, _code} ->
+        codes = Auth.list_all_invite_codes()
+
         {:noreply,
          socket
          |> put_flash(:info, gettext("Invite code generated."))
-         |> assign(:codes, Auth.list_all_invite_codes())}
+         |> assign(codes: codes, qr_codes: build_qr_codes(codes))}
 
       {:error, :account_too_new} ->
         {:noreply,
@@ -45,6 +49,16 @@ defmodule BaudrateWeb.Admin.InvitesLive do
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to generate invite code."))}
     end
+  end
+
+  @impl true
+  def handle_event("show_qr_code", %{"code" => code}, socket) do
+    {:noreply, assign(socket, :qr_modal_code, code)}
+  end
+
+  @impl true
+  def handle_event("close_qr_modal", _params, socket) do
+    {:noreply, assign(socket, :qr_modal_code, nil)}
   end
 
   @impl true
@@ -60,13 +74,23 @@ defmodule BaudrateWeb.Admin.InvitesLive do
 
     case Auth.revoke_invite_code(invite) do
       {:ok, _} ->
+        codes = Auth.list_all_invite_codes()
+
         {:noreply,
          socket
          |> put_flash(:info, gettext("Invite code revoked."))
-         |> assign(:codes, Auth.list_all_invite_codes())}
+         |> assign(codes: codes, qr_codes: build_qr_codes(codes))}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to revoke invite code."))}
+    end
+  end
+
+  defp build_qr_codes(codes) do
+    for code <- codes,
+        code_status(code) == :active,
+        into: %{} do
+      {code.code, Auth.totp_qr_data_uri(invite_url(code.code))}
     end
   end
 
