@@ -54,7 +54,23 @@ defmodule BaudrateWeb.Layouts do
                 <.link navigate="/search">{gettext("Search")}</.link>
               </li>
               <li>
-                <.link navigate="/messages">{gettext("Messages")}</.link>
+                <.link navigate="/messages">
+                  {gettext("Messages")}
+                  <span
+                    :if={assigns[:unread_dm_count] && @unread_dm_count > 0}
+                    class="badge badge-primary badge-xs ml-1"
+                    aria-label={
+                      ngettext(
+                        "%{count} unread message",
+                        "%{count} unread messages",
+                        @unread_dm_count,
+                        count: @unread_dm_count
+                      )
+                    }
+                  >
+                    {@unread_dm_count}
+                  </span>
+                </.link>
               </li>
               <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
               <li :if={@current_user.role.name == "admin"} class="menu-title">
@@ -125,7 +141,23 @@ defmodule BaudrateWeb.Layouts do
               <.link navigate="/search" class="btn btn-ghost">{gettext("Search")}</.link>
             </li>
             <li>
-              <.link navigate="/messages" class="btn btn-ghost">{gettext("Messages")}</.link>
+              <.link navigate="/messages" class="btn btn-ghost">
+                {gettext("Messages")}
+                <span
+                  :if={assigns[:unread_dm_count] && @unread_dm_count > 0}
+                  class="badge badge-primary badge-xs ml-1"
+                  aria-label={
+                    ngettext(
+                      "%{count} unread message",
+                      "%{count} unread messages",
+                      @unread_dm_count,
+                      count: @unread_dm_count
+                    )
+                  }
+                >
+                  {@unread_dm_count}
+                </span>
+              </.link>
             </li>
           </ul>
         </nav>
