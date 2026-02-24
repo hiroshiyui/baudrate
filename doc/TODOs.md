@@ -31,3 +31,36 @@ their content into the board. Requires anti-loop and deduplication safeguards.
 - Need UI in board moderator panel to manage follows
 - Need to handle `Undo(Follow)` on unfollow
 
+### User-Level Outbound Follows
+
+Allow authenticated users to follow remote Fediverse actors from their account,
+receiving the actor's public posts in a personal feed.
+
+#### Requirements
+
+1. **Discovery** — extend the existing `/search` page to support remote actor
+   lookup. When the query matches `@user@domain` or an actor URL, perform a
+   WebFinger lookup + actor fetch and display the result alongside local
+   search results.
+2. **Follow / Unfollow** — send `Follow` activity to the remote actor's inbox;
+   handle `Accept(Follow)` and `Reject(Follow)` responses (currently stub
+   handlers in `InboxHandler`).
+3. **Undo** — send `Undo(Follow)` when unfollowing.
+4. **Following list** — populate the `/ap/users/:username/following` collection
+   (currently returns empty `OrderedCollection`).
+5. **Personal feed** — display incoming `Create` activities from followed actors
+   in a user-facing "Following" feed/timeline.
+6. **Inbox routing** — route inbound posts from followed actors to the
+   follower's personal feed (distinguish from DMs and board content).
+
+#### Implementation Notes
+
+- New `user_follows` table (user_id, remote_actor_id, state, ap_id)
+- `state` tracks follow lifecycle: `pending` → `accepted` / `rejected`
+- Wire `Accept(Follow)` and `Reject(Follow)` stub handlers in `InboxHandler`
+  to update follow state
+- UI: follow button on remote actor profiles, "Following" page listing followed
+  actors, personal feed page
+- Rate limit outbound follow requests to prevent abuse
+- Handle actor migration (`Move` activity) for followed actors
+
