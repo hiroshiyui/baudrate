@@ -67,6 +67,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 ### While Coding
 
 - Always consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification.
+- **Never use bare English strings for user-visible text** — always wrap in `gettext()`. This applies to flash messages, template text, feed metadata, HTML attributes like `title`, and any other text shown to users. Use `gettext()` with `%{var}` interpolation (not string interpolation) for dynamic values. Shared translation helpers (e.g. `translate_role/1`, `translate_status/1`) belong in `BaudrateWeb.Helpers`.
 - Keep i18n strings in sync across locales; rather than using fuzzy matching for uncertain translations, let the messages fallback to English to avoid inaccuracies.
 
 ### After Every Change
