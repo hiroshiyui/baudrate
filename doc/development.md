@@ -345,6 +345,11 @@ Admins have unlimited quota and optional expiry. When a user is banned, all thei
 active invite codes are automatically revoked. Invite chain tracking records which
 user invited whom via `invited_by_id` on the users table.
 
+Each active invite code provides an **invite link** (`/register?invite=CODE`) that
+pre-fills the invite code field on the registration form. A **copy button**
+(clipboard hook) and **QR code** (via `EQRCode`) are available on both the user
+(`/invites`) and admin (`/admin/invites`) invite management pages.
+
 ### Password Reset
 
 Password reset is available at `/password-reset`. Users enter their username,

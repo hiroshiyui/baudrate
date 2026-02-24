@@ -59,7 +59,7 @@ msgid "Admin Account"
 msgstr "管理員帳號"
 
 #: lib/baudrate_web/live/password_reset_live.html.heex:83
-#: lib/baudrate_web/live/register_live.html.heex:92
+#: lib/baudrate_web/live/register_live.html.heex:93
 #: lib/baudrate_web/live/setup_live.html.heex:157
 #, elixir-autogen, elixir-format
 msgid "At least 12 characters"
@@ -98,28 +98,28 @@ msgid "Connected"
 msgstr "已連線"
 
 #: lib/baudrate_web/live/password_reset_live.html.heex:125
-#: lib/baudrate_web/live/register_live.html.heex:146
+#: lib/baudrate_web/live/register_live.html.heex:147
 #: lib/baudrate_web/live/setup_live.html.heex:211
 #, elixir-autogen, elixir-format
 msgid "Contains a digit"
 msgstr "包含數字"
 
 #: lib/baudrate_web/live/password_reset_live.html.heex:97
-#: lib/baudrate_web/live/register_live.html.heex:110
+#: lib/baudrate_web/live/register_live.html.heex:111
 #: lib/baudrate_web/live/setup_live.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "Contains a lowercase letter"
 msgstr "包含小寫字母"
 
 #: lib/baudrate_web/live/password_reset_live.html.heex:139
-#: lib/baudrate_web/live/register_live.html.heex:164
+#: lib/baudrate_web/live/register_live.html.heex:165
 #: lib/baudrate_web/live/setup_live.html.heex:229
 #, elixir-autogen, elixir-format
 msgid "Contains a special character"
 msgstr "包含特殊字元"
 
 #: lib/baudrate_web/live/password_reset_live.html.heex:111
-#: lib/baudrate_web/live/register_live.html.heex:128
+#: lib/baudrate_web/live/register_live.html.heex:129
 #: lib/baudrate_web/live/setup_live.html.heex:193
 #, elixir-autogen, elixir-format
 msgid "Contains an uppercase letter"
@@ -175,7 +175,7 @@ msgid "Password"
 msgstr "密碼"
 
 #: lib/baudrate_web/live/password_reset_live.html.heex:69
-#: lib/baudrate_web/live/register_live.html.heex:74
+#: lib/baudrate_web/live/register_live.html.heex:75
 #: lib/baudrate_web/live/setup_live.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "Password requirements:"
@@ -262,7 +262,7 @@ msgstr "設定雙因素驗證"
 #: lib/baudrate_web/live/login_live.ex:39
 #: lib/baudrate_web/live/login_live.html.heex:2
 #: lib/baudrate_web/live/login_live.html.heex:39
-#: lib/baudrate_web/live/register_live.html.heex:229
+#: lib/baudrate_web/live/register_live.html.heex:230
 #, elixir-autogen, elixir-format
 msgid "Sign In"
 msgstr "登入"
@@ -502,7 +502,7 @@ msgstr "頭像已成功更新。"
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:248
 #: lib/baudrate_web/live/admin/users_live.html.heex:261
 #: lib/baudrate_web/live/admin/users_live.html.heex:305
-#: lib/baudrate_web/live/article_live.ex:430
+#: lib/baudrate_web/live/article_live.ex:434
 #: lib/baudrate_web/live/profile_live.html.heex:67
 #, elixir-autogen, elixir-format
 msgid "Cancel"
@@ -552,7 +552,7 @@ msgstr "頭像變更次數過多，請稍後再試。"
 msgid "Access denied."
 msgstr "存取被拒絕。"
 
-#: lib/baudrate_web/live/register_live.html.heex:228
+#: lib/baudrate_web/live/register_live.html.heex:229
 #, elixir-autogen, elixir-format
 msgid "Already have an account?"
 msgstr "已有帳號？"
@@ -563,7 +563,7 @@ msgstr "已有帳號？"
 msgid "Approve"
 msgstr "核准"
 
-#: lib/baudrate_web/live/article_new_live.ex:195
+#: lib/baudrate_web/live/article_new_live.ex:199
 #, elixir-autogen, elixir-format
 msgid "Article created successfully."
 msgstr "文章已成功建立。"
@@ -612,7 +612,7 @@ msgstr "還沒有帳號？"
 msgid "Failed to approve user."
 msgstr "核准用戶失敗。"
 
-#: lib/baudrate_web/live/article_new_live.ex:202
+#: lib/baudrate_web/live/article_new_live.ex:206
 #, elixir-autogen, elixir-format
 msgid "Failed to create article."
 msgstr "建立文章失敗。"
@@ -656,15 +656,15 @@ msgstr "發表於"
 msgid "Registered"
 msgstr "註冊時間"
 
-#: lib/baudrate_web/live/register_live.ex:101
-#: lib/baudrate_web/live/register_live.ex:104
+#: lib/baudrate_web/live/register_live.ex:108
+#: lib/baudrate_web/live/register_live.ex:111
 #, elixir-autogen, elixir-format
 msgid "Registration successful! You can now sign in."
 msgstr "註冊成功！您現在可以登入。"
 
 #: lib/baudrate_web/live/login_live.html.heex:61
 #: lib/baudrate_web/live/register_live.html.heex:35
-#: lib/baudrate_web/live/register_live.html.heex:223
+#: lib/baudrate_web/live/register_live.html.heex:224
 #, elixir-autogen, elixir-format
 msgid "Sign Up"
 msgstr "註冊"
@@ -676,7 +676,7 @@ msgstr "註冊"
 msgid "Title"
 msgstr "標題"
 
-#: lib/baudrate_web/live/register_live.ex:82
+#: lib/baudrate_web/live/register_live.ex:89
 #, elixir-autogen, elixir-format
 msgid "Too many registration attempts. Please try again later."
 msgstr "註冊嘗試次數過多，請稍後再試。"
@@ -687,12 +687,12 @@ msgstr "註冊嘗試次數過多，請稍後再試。"
 msgid "User approved successfully."
 msgstr "用戶已成功核准。"
 
-#: lib/baudrate_web/live/register_live.ex:107
+#: lib/baudrate_web/live/register_live.ex:114
 #, elixir-autogen, elixir-format
 msgid "Your account has been created and is pending admin approval. You can sign in, but posting and avatar upload are restricted until approved."
 msgstr "您的帳號已建立，正在等待管理員審核。您可以登入，但在核准前無法發表文章或上傳頭像。"
 
-#: lib/baudrate_web/live/register_live.html.heex:193
+#: lib/baudrate_web/live/register_live.html.heex:194
 #, elixir-autogen, elixir-format
 msgid "Your account is pending admin approval."
 msgstr "您的帳號正在等待管理員審核。"
@@ -807,7 +807,7 @@ msgid "Allowlist (allow only specific domains)"
 msgstr "允許清單（僅允許指定網域）"
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:262
-#: lib/baudrate_web/live/article_live.ex:469
+#: lib/baudrate_web/live/article_live.ex:473
 #, elixir-autogen, elixir-format
 msgid "Article deleted."
 msgstr "文章已刪除。"
@@ -858,7 +858,7 @@ msgid "Comma-separated list of domains to block from federation."
 msgstr "以逗號分隔的聯邦封鎖網域清單。"
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:282
-#: lib/baudrate_web/live/article_live.ex:495
+#: lib/baudrate_web/live/article_live.ex:499
 #, elixir-autogen, elixir-format
 msgid "Comment deleted."
 msgstr "留言已刪除。"
@@ -949,13 +949,13 @@ msgid "Failed"
 msgstr "失敗"
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:266
-#: lib/baudrate_web/live/article_live.ex:473
+#: lib/baudrate_web/live/article_live.ex:477
 #, elixir-autogen, elixir-format
 msgid "Failed to delete article."
 msgstr "刪除文章失敗。"
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:286
-#: lib/baudrate_web/live/article_live.ex:498
+#: lib/baudrate_web/live/article_live.ex:502
 #, elixir-autogen, elixir-format
 msgid "Failed to delete comment."
 msgstr "刪除留言失敗。"
@@ -1201,7 +1201,7 @@ msgstr[0] "%{count} 筆結果"
 msgid "Are you sure you want to delete this article?"
 msgstr "確定要刪除這篇文章嗎？"
 
-#: lib/baudrate_web/live/article_edit_live.ex:153
+#: lib/baudrate_web/live/article_edit_live.ex:157
 #, elixir-autogen, elixir-format
 msgid "Article updated successfully."
 msgstr "文章已成功更新。"
@@ -1217,7 +1217,7 @@ msgstr "附件"
 msgid "Back to article"
 msgstr "返回文章"
 
-#: lib/baudrate_web/live/article_live.ex:527
+#: lib/baudrate_web/live/article_live.ex:531
 #, elixir-autogen, elixir-format
 msgid "Comment posted."
 msgstr "留言已發表。"
@@ -1253,7 +1253,7 @@ msgstr "編輯"
 msgid "Edit Article"
 msgstr "編輯文章"
 
-#: lib/baudrate_web/live/article_live.ex:303
+#: lib/baudrate_web/live/article_live.ex:307
 #, elixir-autogen, elixir-format
 msgid "Failed to delete attachment."
 msgstr "刪除附件失敗。"
@@ -1276,8 +1276,8 @@ msgstr "目前沒有留言。"
 #: lib/baudrate_web/live/article_live.ex:122
 #: lib/baudrate_web/live/article_live.ex:147
 #: lib/baudrate_web/live/article_live.ex:185
-#: lib/baudrate_web/live/article_live.ex:306
-#: lib/baudrate_web/live/article_live.ex:501
+#: lib/baudrate_web/live/article_live.ex:310
+#: lib/baudrate_web/live/article_live.ex:505
 #, elixir-autogen, elixir-format
 msgid "Not authorized."
 msgstr "未經授權。"
@@ -1287,8 +1287,8 @@ msgstr "未經授權。"
 msgid "Post Comment"
 msgstr "發表留言"
 
-#: lib/baudrate_web/live/article_live.ex:406
-#: lib/baudrate_web/live/article_live.ex:427
+#: lib/baudrate_web/live/article_live.ex:410
+#: lib/baudrate_web/live/article_live.ex:431
 #, elixir-autogen, elixir-format
 msgid "Reply"
 msgstr "回覆"
@@ -1313,7 +1313,7 @@ msgstr "搜尋"
 msgid "Search..."
 msgstr "搜尋..."
 
-#: lib/baudrate_web/live/article_live.ex:285
+#: lib/baudrate_web/live/article_live.ex:289
 #, elixir-autogen, elixir-format
 msgid "Some files failed to upload."
 msgstr "部分檔案上傳失敗。"
@@ -1333,7 +1333,7 @@ msgstr "上傳錯誤"
 msgid "Write a comment..."
 msgstr "撰寫留言..."
 
-#: lib/baudrate_web/live/article_live.ex:421
+#: lib/baudrate_web/live/article_live.ex:425
 #, elixir-autogen, elixir-format
 msgid "Write a reply..."
 msgstr "撰寫回覆..."
@@ -1660,7 +1660,7 @@ msgid "moderator"
 msgstr "審核管理"
 
 #: lib/baudrate_web/helpers.ex:135
-#: lib/baudrate_web/helpers.ex:150
+#: lib/baudrate_web/helpers.ex:162
 #, elixir-autogen, elixir-format
 msgid "pending"
 msgstr "待處理"
@@ -1680,7 +1680,7 @@ msgstr "操作"
 msgid "Actor"
 msgstr "執行者"
 
-#: lib/baudrate_web/live/register_live.ex:118
+#: lib/baudrate_web/live/register_live.ex:125
 #, elixir-autogen, elixir-format
 msgid "An invite code is required to register."
 msgstr "註冊需要邀請碼。"
@@ -1763,14 +1763,14 @@ msgstr "已過期"
 msgid "Expires"
 msgstr "到期時間"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:46
+#: lib/baudrate_web/live/admin/invites_live.ex:50
 #: lib/baudrate_web/live/user_invites_live.ex:44
 #, elixir-autogen, elixir-format
 msgid "Failed to generate invite code."
 msgstr "無法產生邀請碼。"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:69
-#: lib/baudrate_web/live/user_invites_live.ex:77
+#: lib/baudrate_web/live/admin/invites_live.ex:85
+#: lib/baudrate_web/live/user_invites_live.ex:87
 #, elixir-autogen, elixir-format
 msgid "Failed to revoke invite code."
 msgstr "無法撤銷邀請碼。"
@@ -1781,12 +1781,12 @@ msgstr "無法撤銷邀請碼。"
 msgid "Generate Code"
 msgstr "產生邀請碼"
 
-#: lib/baudrate_web/live/register_live.ex:121
+#: lib/baudrate_web/live/register_live.ex:128
 #, elixir-autogen, elixir-format
 msgid "Invalid invite code."
 msgstr "無效的邀請碼。"
 
-#: lib/baudrate_web/live/register_live.html.heex:67
+#: lib/baudrate_web/live/register_live.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "Invite Code"
 msgstr "邀請碼"
@@ -1803,14 +1803,14 @@ msgstr "邀請碼管理"
 msgid "Invite Only"
 msgstr "僅限邀請"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:35
+#: lib/baudrate_web/live/admin/invites_live.ex:39
 #: lib/baudrate_web/live/user_invites_live.ex:33
 #, elixir-autogen, elixir-format
 msgid "Invite code generated."
 msgstr "邀請碼已產生。"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:65
-#: lib/baudrate_web/live/user_invites_live.ex:73
+#: lib/baudrate_web/live/admin/invites_live.ex:81
+#: lib/baudrate_web/live/user_invites_live.ex:83
 #, elixir-autogen, elixir-format
 msgid "Invite code revoked."
 msgstr "邀請碼已撤銷。"
@@ -1843,7 +1843,7 @@ msgstr "尚無管理操作記錄。"
 msgid "Recent Articles"
 msgstr "最近文章"
 
-#: lib/baudrate_web/live/register_live.html.heex:197
+#: lib/baudrate_web/live/register_live.html.heex:198
 #, elixir-autogen, elixir-format
 msgid "Registration requires an invite code."
 msgstr "註冊需要邀請碼。"
@@ -1853,14 +1853,14 @@ msgstr "註冊需要邀請碼。"
 msgid "Resolve Report"
 msgstr "解決檢舉"
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:86
-#: lib/baudrate_web/live/user_invites_live.html.heex:95
+#: lib/baudrate_web/live/admin/invites_live.html.heex:106
+#: lib/baudrate_web/live/user_invites_live.html.heex:115
 #, elixir-autogen, elixir-format
 msgid "Revoke"
 msgstr "撤銷"
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:83
-#: lib/baudrate_web/live/user_invites_live.html.heex:92
+#: lib/baudrate_web/live/admin/invites_live.html.heex:103
+#: lib/baudrate_web/live/user_invites_live.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Revoke this invite code?"
 msgstr "確定要撤銷此邀請碼？"
@@ -1881,17 +1881,17 @@ msgstr "子板塊"
 msgid "Target"
 msgstr "目標"
 
-#: lib/baudrate_web/live/register_live.ex:130
+#: lib/baudrate_web/live/register_live.ex:137
 #, elixir-autogen, elixir-format
 msgid "This invite code has already been used."
 msgstr "此邀請碼已被使用。"
 
-#: lib/baudrate_web/live/register_live.ex:124
+#: lib/baudrate_web/live/register_live.ex:131
 #, elixir-autogen, elixir-format
 msgid "This invite code has been revoked."
 msgstr "此邀請碼已被撤銷。"
 
-#: lib/baudrate_web/live/register_live.ex:127
+#: lib/baudrate_web/live/register_live.ex:134
 #, elixir-autogen, elixir-format
 msgid "This invite code has expired."
 msgstr "此邀請碼已過期。"
@@ -1940,7 +1940,7 @@ msgid "Confirm New Password"
 msgstr "確認新密碼"
 
 #: lib/baudrate_web/live/admin/settings_live.html.heex:92
-#: lib/baudrate_web/live/register_live.html.heex:209
+#: lib/baudrate_web/live/register_live.html.heex:210
 #, elixir-autogen, elixir-format
 msgid "End User Agreement"
 msgstr "使用者條款"
@@ -1975,12 +1975,12 @@ msgstr "使用者條款儲存失敗。"
 msgid "Forgot your password?"
 msgstr "忘記密碼？"
 
-#: lib/baudrate_web/live/register_live.html.heex:218
+#: lib/baudrate_web/live/register_live.html.heex:219
 #, elixir-autogen, elixir-format
 msgid "I accept the above terms"
 msgstr "我接受以上條款"
 
-#: lib/baudrate_web/live/register_live.html.heex:203
+#: lib/baudrate_web/live/register_live.html.heex:204
 #, elixir-autogen, elixir-format
 msgid "I acknowledge that my activities (including IP address, user-agent, and operation history) will be logged for at least 1 year, and I agree to comply with the laws of the country/region where this instance operates."
 msgstr "我確認我的活動（包括 IP 位址、使用者代理及操作記錄）將被記錄至少 1 年，並同意遵守本站所在國家／地區的法律。"
@@ -2082,7 +2082,7 @@ msgstr "新增"
 msgid "Add Moderator"
 msgstr "新增版主"
 
-#: lib/baudrate_web/live/article_live.ex:373
+#: lib/baudrate_web/live/article_live.ex:377
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this comment?"
 msgstr "確定要刪除此回覆？"
@@ -2196,7 +2196,7 @@ msgstr "檢視 / 發文"
 msgid "No comments found for \"%{query}\"."
 msgstr "找不到「%{query}」的相關評論。"
 
-#: lib/baudrate_web/live/article_live.ex:328
+#: lib/baudrate_web/live/article_live.ex:332
 #, elixir-autogen, elixir-format
 msgid "This article has been deleted."
 msgstr "這篇文章已被刪除。"
@@ -2490,6 +2490,8 @@ msgid "Theme"
 msgstr "佈景主題"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:109
+#: lib/baudrate_web/live/admin/invites_live.html.heex:134
+#: lib/baudrate_web/live/user_invites_live.html.heex:143
 #, elixir-autogen, elixir-format
 msgid "Close"
 msgstr "關閉"
@@ -2529,7 +2531,7 @@ msgstr "取消上傳"
 msgid "Delete attachment"
 msgstr "刪除附件"
 
-#: lib/baudrate_web/live/article_live.ex:375
+#: lib/baudrate_web/live/article_live.ex:379
 #, elixir-autogen, elixir-format
 msgid "Delete comment"
 msgstr "刪除留言"
@@ -2914,17 +2916,17 @@ msgstr "上移"
 msgid "User menu"
 msgstr "使用者選單"
 
-#: lib/baudrate_web/live/register_live.html.heex:184
+#: lib/baudrate_web/live/register_live.html.heex:185
 #: lib/baudrate_web/live/setup_live.html.heex:250
 #, elixir-autogen, elixir-format
 msgid "Fair"
 msgstr "普通"
 
-#: lib/baudrate_web/live/register_live.html.heex:90
-#: lib/baudrate_web/live/register_live.html.heex:108
-#: lib/baudrate_web/live/register_live.html.heex:126
-#: lib/baudrate_web/live/register_live.html.heex:144
-#: lib/baudrate_web/live/register_live.html.heex:162
+#: lib/baudrate_web/live/register_live.html.heex:91
+#: lib/baudrate_web/live/register_live.html.heex:109
+#: lib/baudrate_web/live/register_live.html.heex:127
+#: lib/baudrate_web/live/register_live.html.heex:145
+#: lib/baudrate_web/live/register_live.html.heex:163
 #: lib/baudrate_web/live/setup_live.html.heex:155
 #: lib/baudrate_web/live/setup_live.html.heex:173
 #: lib/baudrate_web/live/setup_live.html.heex:191
@@ -2940,11 +2942,11 @@ msgstr "已達成："
 msgid "Next page"
 msgstr "下一頁"
 
-#: lib/baudrate_web/live/register_live.html.heex:90
-#: lib/baudrate_web/live/register_live.html.heex:108
-#: lib/baudrate_web/live/register_live.html.heex:126
-#: lib/baudrate_web/live/register_live.html.heex:144
-#: lib/baudrate_web/live/register_live.html.heex:162
+#: lib/baudrate_web/live/register_live.html.heex:91
+#: lib/baudrate_web/live/register_live.html.heex:109
+#: lib/baudrate_web/live/register_live.html.heex:127
+#: lib/baudrate_web/live/register_live.html.heex:145
+#: lib/baudrate_web/live/register_live.html.heex:163
 #: lib/baudrate_web/live/setup_live.html.heex:155
 #: lib/baudrate_web/live/setup_live.html.heex:173
 #: lib/baudrate_web/live/setup_live.html.heex:191
@@ -2965,7 +2967,7 @@ msgstr "第 %{number} 頁"
 msgid "Pagination"
 msgstr "分頁導覽"
 
-#: lib/baudrate_web/live/register_live.html.heex:180
+#: lib/baudrate_web/live/register_live.html.heex:181
 #: lib/baudrate_web/live/setup_live.html.heex:246
 #, elixir-autogen, elixir-format
 msgid "Password strength"
@@ -2987,13 +2989,13 @@ msgstr "處理備註"
 msgid "Select moderator"
 msgstr "選擇版主"
 
-#: lib/baudrate_web/live/register_live.html.heex:185
+#: lib/baudrate_web/live/register_live.html.heex:186
 #: lib/baudrate_web/live/setup_live.html.heex:251
 #, elixir-autogen, elixir-format
 msgid "Strong"
 msgstr "強"
 
-#: lib/baudrate_web/live/register_live.html.heex:183
+#: lib/baudrate_web/live/register_live.html.heex:184
 #: lib/baudrate_web/live/setup_live.html.heex:249
 #, elixir-autogen, elixir-format
 msgid "Weak"
@@ -3059,17 +3061,17 @@ msgstr "解除封鎖網域"
 msgid "Unblock User"
 msgstr "解除封鎖使用者"
 
-#: lib/baudrate_web/helpers.ex:167
+#: lib/baudrate_web/helpers.ex:179
 #, elixir-autogen, elixir-format
 msgid "%{n} B"
 msgstr "%{n} B"
 
-#: lib/baudrate_web/helpers.ex:170
+#: lib/baudrate_web/helpers.ex:182
 #, elixir-autogen, elixir-format
 msgid "%{n} KB"
 msgstr "%{n} KB"
 
-#: lib/baudrate_web/helpers.ex:173
+#: lib/baudrate_web/helpers.ex:185
 #, elixir-autogen, elixir-format
 msgid "%{n} MB"
 msgstr "%{n} MB"
@@ -3162,7 +3164,7 @@ msgstr "TOTP 設定錯誤，請聯絡管理員。"
 msgid "Too many failed attempts. Please log in again."
 msgstr "失敗嘗試次數過多，請重新登入。"
 
-#: lib/baudrate_web/helpers.ex:151
+#: lib/baudrate_web/helpers.ex:163
 #, elixir-autogen, elixir-format
 msgid "delivered"
 msgstr "已送達"
@@ -3172,7 +3174,7 @@ msgstr "已送達"
 msgid "dismissed"
 msgstr "已駁回"
 
-#: lib/baudrate_web/helpers.ex:152
+#: lib/baudrate_web/helpers.ex:164
 #, elixir-autogen, elixir-format
 msgid "failed"
 msgstr "失敗"
@@ -3305,12 +3307,12 @@ msgstr "加入日期"
 msgid "%{remaining} of %{limit} invites remaining"
 msgstr "剩餘 %{remaining} / %{limit} 個邀請名額"
 
-#: lib/baudrate_web/live/user_invites_live.ex:62
+#: lib/baudrate_web/live/user_invites_live.ex:72
 #, elixir-autogen, elixir-format
 msgid "Invite code not found."
 msgstr "找不到邀請碼。"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:43
+#: lib/baudrate_web/live/admin/invites_live.ex:47
 #: lib/baudrate_web/live/user_invites_live.ex:41
 #, elixir-autogen, elixir-format
 msgid "Invite quota exceeded."
@@ -3333,7 +3335,7 @@ msgstr "我的邀請碼"
 msgid "User banned successfully. %{count} invite code(s) revoked."
 msgstr "用戶已成功停權。已撤銷 %{count} 個邀請碼。"
 
-#: lib/baudrate_web/live/user_invites_live.ex:66
+#: lib/baudrate_web/live/user_invites_live.ex:76
 #, elixir-autogen, elixir-format
 msgid "You can only revoke your own invite codes."
 msgstr "您只能撤銷自己的邀請碼。"
@@ -3343,7 +3345,7 @@ msgstr "您只能撤銷自己的邀請碼。"
 msgid "You haven't generated any invite codes yet."
 msgstr "您還沒有產生任何邀請碼。"
 
-#: lib/baudrate_web/live/admin/invites_live.ex:40
+#: lib/baudrate_web/live/admin/invites_live.ex:44
 #: lib/baudrate_web/live/user_invites_live.ex:38
 #, elixir-autogen, elixir-format
 msgid "Your account is too new to generate invite codes."
@@ -3361,17 +3363,47 @@ msgstr "操作過於頻繁，請稍後再試。"
 msgid "Too many searches. Please try again later."
 msgstr "搜尋過於頻繁，請稍後再試。"
 
-#: lib/baudrate_web/live/article_live.ex:230
+#: lib/baudrate_web/live/article_live.ex:233
 #, elixir-autogen, elixir-format
 msgid "You are commenting too frequently. Please try again later."
 msgstr "留言過於頻繁，請稍後再試。"
 
-#: lib/baudrate_web/live/article_edit_live.ex:143
+#: lib/baudrate_web/live/article_edit_live.ex:146
 #, elixir-autogen, elixir-format
 msgid "You are editing too frequently. Please try again later."
 msgstr "編輯過於頻繁，請稍後再試。"
 
-#: lib/baudrate_web/live/article_new_live.ex:172
+#: lib/baudrate_web/live/article_new_live.ex:175
 #, elixir-autogen, elixir-format
 msgid "You are posting too frequently. Please try again later."
 msgstr "發文過於頻繁，請稍後再試。"
+
+#: lib/baudrate_web/live/admin/invites_live.html.heex:84
+#: lib/baudrate_web/live/user_invites_live.html.heex:93
+#, elixir-autogen, elixir-format
+msgid "Copied!"
+msgstr "已複製！"
+
+#: lib/baudrate_web/live/admin/invites_live.html.heex:85
+#: lib/baudrate_web/live/admin/invites_live.html.heex:87
+#: lib/baudrate_web/live/user_invites_live.html.heex:94
+#: lib/baudrate_web/live/user_invites_live.html.heex:96
+#, elixir-autogen, elixir-format
+msgid "Copy invite link"
+msgstr "複製邀請連結"
+
+#: lib/baudrate_web/live/admin/invites_live.html.heex:124
+#: lib/baudrate_web/live/admin/invites_live.html.heex:127
+#: lib/baudrate_web/live/user_invites_live.html.heex:133
+#: lib/baudrate_web/live/user_invites_live.html.heex:136
+#, elixir-autogen, elixir-format
+msgid "Invite QR code"
+msgstr "邀請 QR 碼"
+
+#: lib/baudrate_web/live/admin/invites_live.html.heex:95
+#: lib/baudrate_web/live/admin/invites_live.html.heex:96
+#: lib/baudrate_web/live/user_invites_live.html.heex:104
+#: lib/baudrate_web/live/user_invites_live.html.heex:105
+#, elixir-autogen, elixir-format
+msgid "Show QR code"
+msgstr "顯示 QR 碼"
