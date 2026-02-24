@@ -497,8 +497,14 @@ the `dm_access` setting.
 
 | Topic | Format | Events |
 |-------|--------|--------|
-| User | `"dm:user:<user_id>"` | `:dm_received`, `:dm_message_created` |
+| User | `"dm:user:<user_id>"` | `:dm_received`, `:dm_read`, `:dm_message_created` |
 | Conversation | `"dm:conversation:<conversation_id>"` | `:dm_message_created`, `:dm_message_deleted` |
+
+**Navbar notification badge:** The navbar "Messages" link displays a real-time
+unread count badge when the user has unread DMs. `UnreadDmCountHook` subscribes
+to the user's DM PubSub topic via `attach_hook/4` and re-fetches the count on
+`:dm_received` and `:dm_read` events. Wired into both `:require_auth` and
+`:optional_auth` on_mount hooks so the badge appears on all authenticated pages.
 
 **Federation:**
 
