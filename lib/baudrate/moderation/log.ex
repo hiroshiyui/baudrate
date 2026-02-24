@@ -25,6 +25,7 @@ defmodule Baudrate.Moderation.Log do
     timestamps(updated_at: false)
   end
 
+  @doc "Casts and validates fields for creating a moderation log entry."
   def changeset(log, attrs) do
     log
     |> cast(attrs, [:action, :actor_id, :target_type, :target_id, :details])
@@ -32,5 +33,6 @@ defmodule Baudrate.Moderation.Log do
     |> validate_inclusion(:action, @valid_actions)
   end
 
+  @doc "Returns the list of valid moderation action strings."
   def valid_actions, do: @valid_actions
 end

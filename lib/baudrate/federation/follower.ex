@@ -26,6 +26,7 @@ defmodule Baudrate.Federation.Follower do
   @required_fields ~w(actor_uri follower_uri remote_actor_id activity_id)a
   @optional_fields ~w(accepted_at)a
 
+  @doc "Casts and validates fields for creating a follower record."
   def changeset(follower, attrs) do
     follower
     |> cast(attrs, @required_fields ++ @optional_fields)

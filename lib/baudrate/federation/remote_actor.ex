@@ -30,6 +30,7 @@ defmodule Baudrate.Federation.RemoteActor do
   @required_fields ~w(ap_id username domain public_key_pem inbox actor_type fetched_at)a
   @optional_fields ~w(display_name avatar_url shared_inbox)a
 
+  @doc "Casts and validates fields for creating or updating a remote actor cache entry."
   def changeset(remote_actor, attrs) do
     remote_actor
     |> cast(attrs, @required_fields ++ @optional_fields)

@@ -19,6 +19,7 @@ defmodule Baudrate.Content.BoardModerator do
     timestamps(type: :utc_datetime)
   end
 
+  @doc "Casts and validates the board-moderator association."
   def changeset(board_moderator, attrs) do
     board_moderator
     |> cast(attrs, [:board_id, :user_id])

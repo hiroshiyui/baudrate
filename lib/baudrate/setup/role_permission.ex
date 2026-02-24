@@ -17,6 +17,7 @@ defmodule Baudrate.Setup.RolePermission do
     timestamps(type: :utc_datetime)
   end
 
+  @doc "Casts and validates the role-permission association."
   def changeset(role_permission, attrs) do
     role_permission
     |> cast(attrs, [:role_id, :permission_id])

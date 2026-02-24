@@ -38,11 +38,13 @@ defmodule Baudrate.Content.Board do
     timestamps(type: :utc_datetime)
   end
 
+  @doc "Changeset for updating the board's ActivityPub RSA keypair."
   def ap_key_changeset(board, attrs) do
     board
     |> cast(attrs, [:ap_public_key, :ap_private_key_encrypted])
   end
 
+  @doc "Changeset for creating a board with name, slug, permissions, and optional parent."
   def changeset(board, attrs) do
     board
     |> cast(attrs, [:name, :description, :slug, :position, :parent_id, :min_role_to_view, :min_role_to_post, :ap_enabled])

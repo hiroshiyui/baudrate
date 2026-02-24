@@ -19,6 +19,7 @@ defmodule Baudrate.Content.BoardArticle do
     timestamps(type: :utc_datetime)
   end
 
+  @doc "Casts and validates the board-article association."
   def changeset(board_article, attrs) do
     board_article
     |> cast(attrs, [:board_id, :article_id])

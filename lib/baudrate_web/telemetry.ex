@@ -1,4 +1,12 @@
 defmodule BaudrateWeb.Telemetry do
+  @moduledoc """
+  Telemetry supervisor for Phoenix, Ecto, and VM metrics.
+
+  Collects endpoint latency, router dispatch timing, database query
+  performance, and BEAM VM memory/run-queue statistics. Polled every
+  10 seconds.
+  """
+
   use Supervisor
   import Telemetry.Metrics
 

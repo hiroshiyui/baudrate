@@ -63,11 +63,13 @@ defmodule BaudrateWeb.ActivityPubController do
   @slug_re ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/
 
   # --- OPTIONS Preflight ---
-  # CORS plug handles OPTIONS with 204 before this action is reached.
+
+  @doc "CORS preflight fallback (normally handled by the CORS plug before reaching this action)."
   def options_preflight(conn, _params), do: send_resp(conn, 204, "")
 
   # --- WebFinger ---
 
+  @doc "Resolves a WebFinger resource query to a JRD response."
   def webfinger(conn, %{"resource" => resource}) do
     case Federation.webfinger(resource) do
       {:ok, jrd} ->
@@ -89,12 +91,14 @@ defmodule BaudrateWeb.ActivityPubController do
 
   # --- NodeInfo ---
 
+  @doc "Returns the NodeInfo discovery document with links to supported NodeInfo versions."
   def nodeinfo_redirect(conn, _params) do
     conn
     |> put_resp_content_type("application/json")
     |> json(Federation.nodeinfo_links())
   end
 
+  @doc "Returns the NodeInfo 2.1 document with software and usage statistics."
   def nodeinfo(conn, _params) do
     conn
     |> put_resp_content_type("application/json")
@@ -103,6 +107,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
   # --- Actors ---
 
+  @doc "Returns the ActivityPub Person actor for a user, or redirects to home for HTML requests."
   def user_actor(conn, %{"username" => username}) do
     conn = put_resp_header(conn, "vary", "Accept")
 
@@ -122,6 +127,7 @@ defmodule BaudrateWeb.ActivityPubController do
     end
   end
 
+  @doc "Returns the ActivityPub Group actor for a public AP-enabled board."
   def board_actor(conn, %{"slug" => slug}) do
     conn = put_resp_header(conn, "vary", "Accept")
 
@@ -143,6 +149,7 @@ defmodule BaudrateWeb.ActivityPubController do
     end
   end
 
+  @doc "Returns the ActivityPub Organization actor representing the site."
   def site_actor(conn, _params) do
     conn = put_resp_header(conn, "vary", "Accept")
 
@@ -157,6 +164,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
   # --- Outbox ---
 
+  @doc "Returns the paginated outbox collection (Create activities) for a user."
   def user_outbox(conn, %{"username" => username} = params) do
     with true <- Regex.match?(@username_re, username),
          user when not is_nil(user) <-
@@ -169,6 +177,7 @@ defmodule BaudrateWeb.ActivityPubController do
     end
   end
 
+  @doc "Returns the paginated outbox collection (Announce activities) for a public board."
   def board_outbox(conn, %{"slug" => slug} = params) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
@@ -184,6 +193,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
   # --- Followers Collection ---
 
+  @doc "Returns the paginated followers collection for a user."
   def user_followers(conn, %{"username" => username} = params) do
     with true <- Regex.match?(@username_re, username),
          user when not is_nil(user) <-
@@ -198,6 +208,7 @@ defmodule BaudrateWeb.ActivityPubController do
     end
   end
 
+  @doc "Returns the paginated followers collection for a public board."
   def board_followers(conn, %{"slug" => slug} = params) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
@@ -215,6 +226,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
   # --- Following Collection ---
 
+  @doc "Returns the (always empty) following collection for a user."
   def user_following(conn, %{"username" => username}) do
     with true <- Regex.match?(@username_re, username),
          user when not is_nil(user) <-
@@ -229,6 +241,7 @@ defmodule BaudrateWeb.ActivityPubController do
     end
   end
 
+  @doc "Returns the (always empty) following collection for a public board."
   def board_following(conn, %{"slug" => slug}) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
@@ -246,6 +259,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
   # --- Article ---
 
+  @doc "Returns the Article object as JSON-LD, or redirects to the HTML view for browser requests."
   def article(conn, %{"slug" => slug}) do
     conn = put_resp_header(conn, "vary", "Accept")
 
@@ -275,6 +289,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
   # --- Boards Index ---
 
+  @doc "Returns a collection of all public AP-enabled boards."
   def boards_index(conn, _params) do
     conn
     |> put_resp_content_type(@activity_json)
@@ -283,6 +298,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
   # --- Article Replies ---
 
+  @doc "Returns the replies collection (comments as Note objects) for a public article."
   def article_replies(conn, %{"slug" => slug}) do
     with true <- Regex.match?(@slug_re, slug) do
       try do
@@ -306,6 +322,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
   # --- Search ---
 
+  @doc "Returns full-text search results as an OrderedCollection."
   def search(conn, %{"q" => q} = params) when byte_size(q) > 0 do
     conn
     |> put_resp_content_type(@activity_json)
@@ -318,10 +335,12 @@ defmodule BaudrateWeb.ActivityPubController do
 
   # --- Inbox ---
 
+  @doc "Receives activities at the shared inbox (HTTP Signature verified by plug)."
   def shared_inbox(conn, _params) do
     handle_inbox(conn, :shared)
   end
 
+  @doc "Receives activities at a user's inbox."
   def user_inbox(conn, %{"username" => username}) do
     with true <- Regex.match?(@username_re, username),
          user when not is_nil(user) <-
@@ -332,6 +351,7 @@ defmodule BaudrateWeb.ActivityPubController do
     end
   end
 
+  @doc "Receives activities at a board's inbox (public AP-enabled boards only)."
   def board_inbox(conn, %{"slug" => slug}) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),

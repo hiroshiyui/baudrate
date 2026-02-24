@@ -37,6 +37,7 @@ defmodule Baudrate.Content.Article do
 
   @max_body_length 65_536
 
+  @doc "Changeset for creating a local article with title, body, slug, and author."
   def changeset(article, attrs) do
     article
     |> cast(attrs, [:title, :body, :slug, :pinned, :locked, :user_id])

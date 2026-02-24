@@ -23,6 +23,7 @@ defmodule BaudrateWeb.FeedController do
 
   # --- Site-wide feeds ---
 
+  @doc "Renders the site-wide RSS 2.0 feed of recent public articles."
   def site_rss(conn, _params) do
     articles = Content.list_recent_public_articles()
     site_name = Baudrate.Setup.get_setting("site_name") || "Baudrate"
@@ -36,6 +37,7 @@ defmodule BaudrateWeb.FeedController do
     })
   end
 
+  @doc "Renders the site-wide Atom 1.0 feed of recent public articles."
   def site_atom(conn, _params) do
     articles = Content.list_recent_public_articles()
     site_name = Baudrate.Setup.get_setting("site_name") || "Baudrate"
@@ -50,6 +52,7 @@ defmodule BaudrateWeb.FeedController do
 
   # --- Board feeds ---
 
+  @doc "Renders the RSS 2.0 feed for a single public board."
   def board_rss(conn, %{"slug" => slug}) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- get_public_board(slug),
@@ -67,6 +70,7 @@ defmodule BaudrateWeb.FeedController do
     end
   end
 
+  @doc "Renders the Atom 1.0 feed for a single public board."
   def board_atom(conn, %{"slug" => slug}) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- get_public_board(slug),
@@ -85,6 +89,7 @@ defmodule BaudrateWeb.FeedController do
 
   # --- User feeds ---
 
+  @doc "Renders the RSS 2.0 feed of a user's articles in public boards."
   def user_rss(conn, %{"username" => username}) do
     with true <- Regex.match?(@username_re, username),
          user when not is_nil(user) <- Auth.get_user_by_username(username),
@@ -103,6 +108,7 @@ defmodule BaudrateWeb.FeedController do
     end
   end
 
+  @doc "Renders the Atom 1.0 feed of a user's articles in public boards."
   def user_atom(conn, %{"username" => username}) do
     with true <- Regex.match?(@username_re, username),
          user when not is_nil(user) <- Auth.get_user_by_username(username),

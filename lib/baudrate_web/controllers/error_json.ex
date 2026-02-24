@@ -15,6 +15,7 @@ defmodule BaudrateWeb.ErrorJSON do
   # By default, Phoenix returns the status message from
   # the template name. For example, "404.json" becomes
   # "Not Found".
+  @doc "Returns a JSON error map derived from the HTTP status code in the template name."
   def render(template, _assigns) do
     %{errors: %{detail: Phoenix.Controller.status_message_from_template(template)}}
   end

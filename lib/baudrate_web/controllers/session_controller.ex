@@ -47,6 +47,7 @@ defmodule BaudrateWeb.SessionController do
 
   @max_totp_attempts 5
 
+  @doc "Verifies the short-lived Phoenix.Token from LoginLive and routes to the next auth step."
   def create(conn, %{"token" => token}) do
     case Phoenix.Token.verify(conn, "user_auth", token, max_age: 60) do
       {:ok, user_id} ->
@@ -94,6 +95,7 @@ defmodule BaudrateWeb.SessionController do
     end
   end
 
+  @doc "Verifies a TOTP code during login and establishes the session on success."
   def totp_verify(conn, %{"code" => code}) do
     user_id = get_session(conn, :user_id)
     user = user_id && Auth.get_user(user_id)
@@ -141,6 +143,7 @@ defmodule BaudrateWeb.SessionController do
     end
   end
 
+  @doc "Verifies a TOTP code during first-time setup, enables TOTP, and generates recovery codes."
   def totp_enable(conn, %{"code" => code}) do
     user_id = get_session(conn, :user_id)
     user = user_id && Auth.get_user(user_id)
@@ -193,6 +196,7 @@ defmodule BaudrateWeb.SessionController do
     end
   end
 
+  @doc "Handles TOTP reset: invalidates all sessions, disables TOTP, and redirects to setup."
   def totp_reset(conn, %{"token" => token}) do
     case Phoenix.Token.verify(conn, "totp_reset", token, max_age: 60) do
       {:ok, %{user_id: user_id, mode: mode}} ->
@@ -235,6 +239,7 @@ defmodule BaudrateWeb.SessionController do
     end
   end
 
+  @doc "Verifies a one-time recovery code and establishes the session on success."
   def recovery_verify(conn, %{"code" => code}) do
     user_id = get_session(conn, :user_id)
     user = user_id && Auth.get_user(user_id)
@@ -273,12 +278,14 @@ defmodule BaudrateWeb.SessionController do
     end
   end
 
+  @doc "Acknowledges that the user has saved their recovery codes and redirects to home."
   def ack_recovery_codes(conn, _params) do
     conn
     |> delete_session(:recovery_codes)
     |> redirect(to: "/")
   end
 
+  @doc "Logs out the user by deleting the server-side session and dropping the cookie."
   def delete(conn, _params) do
     session_token = get_session(conn, :session_token)
 

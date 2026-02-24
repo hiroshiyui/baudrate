@@ -18,6 +18,7 @@ defmodule BaudrateWeb.ErrorHTML do
   # The default is to render a plain text page based on
   # the template name. For example, "404.html" becomes
   # "Not Found".
+  @doc "Renders a plain-text error page derived from the HTTP status code in the template name."
   def render(template, _assigns) do
     Phoenix.Controller.status_message_from_template(template)
   end

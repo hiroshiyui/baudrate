@@ -22,6 +22,7 @@ defmodule Baudrate.Auth.RecoveryCode do
     timestamps(type: :utc_datetime, updated_at: false)
   end
 
+  @doc "Casts and validates fields for creating a recovery code record."
   def changeset(recovery_code, attrs) do
     recovery_code
     |> cast(attrs, [:user_id, :code_hash, :used_at])

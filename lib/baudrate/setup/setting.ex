@@ -19,6 +19,7 @@ defmodule Baudrate.Setup.Setting do
     timestamps(type: :utc_datetime)
   end
 
+  @doc "Casts and validates key-value fields for a setting record."
   def changeset(setting, attrs) do
     setting
     |> cast(attrs, [:key, :value])

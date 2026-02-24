@@ -23,6 +23,7 @@ defmodule Baudrate.Setup.Role do
     timestamps(type: :utc_datetime)
   end
 
+  @doc "Casts and validates fields for creating or updating a role."
   def changeset(role, attrs) do
     role
     |> cast(attrs, [:name, :description])

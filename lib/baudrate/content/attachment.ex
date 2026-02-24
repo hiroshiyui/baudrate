@@ -32,6 +32,7 @@ defmodule Baudrate.Content.Attachment do
     timestamps(type: :utc_datetime)
   end
 
+  @doc "Casts and validates fields for creating an attachment record."
   def changeset(attachment, attrs) do
     attachment
     |> cast(attrs, [:filename, :original_filename, :content_type, :size, :storage_path, :article_id, :user_id])
@@ -42,6 +43,9 @@ defmodule Baudrate.Content.Attachment do
     |> foreign_key_constraint(:user_id)
   end
 
+  @doc "Returns the maximum attachment file size in bytes (10 MB)."
   def max_size, do: @max_size
+
+  @doc "Returns the list of allowed MIME types for attachments."
   def allowed_content_types, do: @allowed_content_types
 end

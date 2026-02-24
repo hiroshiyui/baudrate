@@ -23,6 +23,7 @@ defmodule Baudrate.Setup.Permission do
     timestamps(type: :utc_datetime)
   end
 
+  @doc "Casts and validates fields for creating or updating a permission."
   def changeset(permission, attrs) do
     permission
     |> cast(attrs, [:name, :description])

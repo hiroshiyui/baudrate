@@ -21,6 +21,7 @@ defmodule Baudrate.Federation.Announce do
     timestamps(type: :utc_datetime)
   end
 
+  @doc "Casts and validates fields for creating an announce record."
   def changeset(announce, attrs) do
     announce
     |> cast(attrs, [:ap_id, :target_ap_id, :activity_id, :remote_actor_id])

@@ -26,6 +26,7 @@ defmodule Baudrate.Moderation.Report do
 
   @valid_statuses ~w(open resolved dismissed)
 
+  @doc "Casts and validates fields for creating or updating a report."
   def changeset(report, attrs) do
     report
     |> cast(attrs, [

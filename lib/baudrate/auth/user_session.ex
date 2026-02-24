@@ -39,6 +39,7 @@ defmodule Baudrate.Auth.UserSession do
     timestamps(type: :utc_datetime, updated_at: false)
   end
 
+  @doc "Casts and validates fields for creating a user session record."
   def changeset(session, attrs) do
     session
     |> cast(attrs, [

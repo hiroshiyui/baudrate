@@ -31,6 +31,7 @@ defmodule Baudrate.Content.ArticleImage do
     timestamps(type: :utc_datetime)
   end
 
+  @doc "Casts and validates fields for creating an article image record."
   def changeset(image, attrs) do
     image
     |> cast(attrs, [:filename, :storage_path, :width, :height, :article_id, :user_id])
@@ -39,5 +40,6 @@ defmodule Baudrate.Content.ArticleImage do
     |> foreign_key_constraint(:user_id)
   end
 
+  @doc "Returns the maximum number of images allowed per article."
   def max_images_per_article, do: @max_images_per_article
 end

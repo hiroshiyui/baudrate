@@ -73,6 +73,7 @@ defmodule Baudrate.Setup.User do
     timestamps(type: :utc_datetime)
   end
 
+  @doc "Changeset for new user registration: validates username, password policy, and hashes the password."
   def registration_changeset(user, attrs) do
     user
     |> cast(attrs, [:username, :password, :password_confirmation, :role_id, :terms_accepted])
@@ -110,6 +111,7 @@ defmodule Baudrate.Setup.User do
     |> validate_confirmation(:password, message: "does not match password")
   end
 
+  @doc "Changeset for resetting a user's password: validates and hashes the new password."
   def password_reset_changeset(user, attrs) do
     user
     |> cast(attrs, [:password, :password_confirmation])
@@ -117,16 +119,19 @@ defmodule Baudrate.Setup.User do
     |> hash_password()
   end
 
+  @doc "Changeset for updating a user's avatar ID."
   def avatar_changeset(user, attrs) do
     user
     |> cast(attrs, [:avatar_id])
   end
 
+  @doc "Changeset for updating TOTP secret and enabled flag."
   def totp_changeset(user, attrs) do
     user
     |> cast(attrs, [:totp_secret, :totp_enabled])
   end
 
+  @doc "Changeset for setting user status to `\"active\"` or `\"pending\"`."
   def status_changeset(user, attrs) do
     user
     |> cast(attrs, [:status])
@@ -134,6 +139,7 @@ defmodule Baudrate.Setup.User do
     |> validate_inclusion(:status, ["active", "pending"])
   end
 
+  @doc "Changeset for banning a user: sets status to `\"banned\"` with timestamp and optional reason."
   def ban_changeset(user, attrs) do
     user
     |> cast(attrs, [:status, :banned_at, :ban_reason])
@@ -142,6 +148,7 @@ defmodule Baudrate.Setup.User do
     |> validate_length(:ban_reason, max: 500)
   end
 
+  @doc "Changeset for unbanning a user: resets status to `\"active\"` and clears ban fields."
   def unban_changeset(user) do
     user
     |> cast(%{status: "active"}, [:status])
@@ -151,6 +158,7 @@ defmodule Baudrate.Setup.User do
     |> put_change(:ban_reason, nil)
   end
 
+  @doc "Changeset for updating a user's role assignment."
   def role_changeset(user, attrs) do
     user
     |> cast(attrs, [:role_id])
@@ -158,6 +166,7 @@ defmodule Baudrate.Setup.User do
     |> assoc_constraint(:role)
   end
 
+  @doc "Changeset for updating the user's ActivityPub RSA keypair."
   def ap_key_changeset(user, attrs) do
     user
     |> cast(attrs, [:ap_public_key, :ap_private_key_encrypted])
@@ -165,6 +174,7 @@ defmodule Baudrate.Setup.User do
 
   @max_signature_lines 8
 
+  @doc "Changeset for updating the user's forum signature (max 500 chars, 8 lines)."
   def signature_changeset(user, attrs) do
     user
     |> cast(attrs, [:signature])
@@ -180,6 +190,7 @@ defmodule Baudrate.Setup.User do
     end)
   end
 
+  @doc "Changeset for updating the user's preferred locale list."
   def locale_changeset(user, attrs) do
     known = Gettext.known_locales(BaudrateWeb.Gettext)
 
@@ -196,6 +207,7 @@ defmodule Baudrate.Setup.User do
     end)
   end
 
+  @doc "Changeset for updating DM access preference (`\"anyone\"`, `\"followers\"`, or `\"nobody\"`)."
   def dm_access_changeset(user, attrs) do
     user
     |> cast(attrs, [:dm_access])
