@@ -4,27 +4,6 @@ Audit date: 2026-02-24
 
 ---
 
-## Test Coverage (77% → 90% target)
-
-### Modules Below 50% Coverage
-
-- [x] **`ProfileLive`** (23%) — locale management, unmute, DM access, remove_avatar (2026-02-24)
-- [x] **`ArticleEditLive`** (25%) — edit submission, permissions, preview (2026-02-24)
-- [x] **`ActorResolver`** (32%) — remote fetch, resolve_by_key_id, refresh (2026-02-24)
-- [x] **`TotpVerifyLive`** (33%) — code submission, lockout (2026-02-24)
-- [x] **`LoginLive`** (43%) — form submission, error paths (2026-02-24)
-- [x] **`HTTPClient`** (47%) — get/2, post/4, signed_get/4 (2026-02-24)
-- [x] **`HTTPSignature`** (52%) — verify/1, verify_digest/1, verify_get/1 (2026-02-24)
-
-### Missing Controller/Context Tests
-
-- [x] **`SessionController`** (63%) — `totp_reset/2`, `recovery_verify/2`, `ack_recovery_codes/2` (2026-02-24)
-- [x] **`Messaging` context** (82%) — `can_receive_remote_dm?/2`, `unread_count_for_conversation/2`, `participant?/2` (2026-02-24)
-
-## Medium: Feature Gaps
-
-- [x] **Bulk moderation actions** — checkbox-based bulk select/approve/ban on Users page, bulk resolve/dismiss on Moderation Queue (2026-02-24)
-
 ## Low: Deployment & Infrastructure
 
 - [ ] **Create Containerfile** — no containerization support (Podman)
