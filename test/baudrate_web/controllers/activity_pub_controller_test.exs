@@ -701,6 +701,102 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
     end
   end
 
+  # --- Inbox Endpoints ---
+  # Note: Inbox endpoints go through HTTP Signature verification.
+  # We test the controller actions directly by calling them with
+  # pre-assigned conn values, bypassing the plug pipeline.
+
+  describe "shared_inbox" do
+    test "returns 400 for invalid JSON body", %{conn: conn} do
+      conn =
+        conn
+        |> assign(:raw_body, "not valid json{{{")
+        |> assign(:remote_actor, nil)
+
+      conn = BaudrateWeb.ActivityPubController.shared_inbox(conn, %{})
+
+      assert json_response(conn, 400)["error"] == "Invalid JSON"
+    end
+  end
+
+  describe "user_inbox" do
+    test "returns 404 for non-existent user", %{conn: conn} do
+      conn =
+        conn
+        |> assign(:raw_body, Jason.encode!(%{"type" => "Follow"}))
+        |> assign(:remote_actor, nil)
+
+      conn = BaudrateWeb.ActivityPubController.user_inbox(conn, %{"username" => "nonexistent"})
+
+      assert json_response(conn, 404)["error"] == "Not Found"
+    end
+
+    test "returns 404 for invalid username format", %{conn: conn} do
+      conn =
+        conn
+        |> assign(:raw_body, Jason.encode!(%{"type" => "Follow"}))
+        |> assign(:remote_actor, nil)
+
+      conn = BaudrateWeb.ActivityPubController.user_inbox(conn, %{"username" => "invalid user"})
+
+      assert json_response(conn, 404)["error"] == "Not Found"
+    end
+  end
+
+  describe "board_inbox" do
+    test "returns 404 for non-existent board", %{conn: conn} do
+      conn =
+        conn
+        |> assign(:raw_body, Jason.encode!(%{"type" => "Follow"}))
+        |> assign(:remote_actor, nil)
+
+      conn = BaudrateWeb.ActivityPubController.board_inbox(conn, %{"slug" => "nonexistent"})
+
+      assert json_response(conn, 404)["error"] == "Not Found"
+    end
+
+    test "returns 404 for private board", %{conn: conn} do
+      {:ok, board} =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Private Inbox Board",
+          slug: "priv-inbox-#{System.unique_integer([:positive])}",
+          min_role_to_view: "user"
+        })
+        |> Repo.insert()
+
+      conn =
+        conn
+        |> assign(:raw_body, Jason.encode!(%{"type" => "Follow"}))
+        |> assign(:remote_actor, nil)
+
+      conn = BaudrateWeb.ActivityPubController.board_inbox(conn, %{"slug" => board.slug})
+
+      assert json_response(conn, 404)["error"] == "Not Found"
+    end
+
+    test "returns 404 for AP-disabled board", %{conn: conn} do
+      {:ok, board} =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "No AP Board",
+          slug: "no-ap-#{System.unique_integer([:positive])}",
+          min_role_to_view: "guest",
+          ap_enabled: false
+        })
+        |> Repo.insert()
+
+      conn =
+        conn
+        |> assign(:raw_body, Jason.encode!(%{"type" => "Follow"}))
+        |> assign(:remote_actor, nil)
+
+      conn = BaudrateWeb.ActivityPubController.board_inbox(conn, %{"slug" => board.slug})
+
+      assert json_response(conn, 404)["error"] == "Not Found"
+    end
+  end
+
   # --- Test Helpers ---
 
   defp setup_board do

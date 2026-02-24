@@ -129,6 +129,100 @@ defmodule BaudrateWeb.ArticleLiveTest do
     assert html =~ "»"
   end
 
+  describe "toggle_pin" do
+    test "admin can pin and unpin an article", %{article: article} do
+      admin = setup_user("admin")
+
+      admin_conn =
+        Phoenix.ConnTest.build_conn()
+        |> log_in_user(admin)
+
+      {:ok, lv, html} = live(admin_conn, "/articles/#{article.slug}")
+      assert html =~ "Pin"
+
+      # Pin the article
+      lv |> element("button[phx-click=toggle_pin]") |> render_click()
+      html = render(lv)
+      assert html =~ "Pinned"
+
+      # Unpin the article
+      lv |> element("button[phx-click=toggle_pin]") |> render_click()
+      html = render(lv)
+      refute html =~ "badge-primary"
+    end
+  end
+
+  describe "toggle_lock" do
+    test "admin can lock and unlock an article", %{article: article} do
+      admin = setup_user("admin")
+
+      admin_conn =
+        Phoenix.ConnTest.build_conn()
+        |> log_in_user(admin)
+
+      {:ok, lv, html} = live(admin_conn, "/articles/#{article.slug}")
+      assert html =~ "Lock"
+
+      # Lock the article
+      lv |> element("button[phx-click=toggle_lock]") |> render_click()
+      html = render(lv)
+      assert html =~ "Locked"
+      assert html =~ "This thread is locked"
+
+      # Unlock the article
+      lv |> element("button[phx-click=toggle_lock]") |> render_click()
+      html = render(lv)
+      refute html =~ "This thread is locked"
+    end
+  end
+
+  describe "delete_comment" do
+    test "admin can delete a comment", %{user: user, article: article} do
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Comment to delete",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      admin = setup_user("admin")
+
+      admin_conn =
+        Phoenix.ConnTest.build_conn()
+        |> log_in_user(admin)
+
+      {:ok, lv, html} = live(admin_conn, "/articles/#{article.slug}")
+      assert html =~ "Comment to delete"
+
+      lv |> element(~s|button[phx-click="delete_comment"][phx-value-id="#{comment.id}"]|) |> render_click()
+      html = render(lv)
+      refute html =~ "Comment to delete"
+    end
+  end
+
+  describe "reply_to and cancel_reply" do
+    test "clicking reply shows reply form and cancel hides it", %{conn: conn, user: user, article: article} do
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Parent comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      # Click reply
+      lv |> element(~s|button[phx-click="reply_to"][phx-value-id="#{comment.id}"]|) |> render_click()
+      html = render(lv)
+      assert html =~ "cancel_reply"
+
+      # Cancel reply
+      lv |> element(~s|button[phx-click="cancel_reply"]|) |> render_click()
+      html = render(lv)
+      refute html =~ "cancel_reply"
+    end
+  end
+
   test "threaded replies stay with their root when paginated", %{conn: conn, user: user, article: article} do
     # Create 21 root comments so we have 2 pages
     root_comments =

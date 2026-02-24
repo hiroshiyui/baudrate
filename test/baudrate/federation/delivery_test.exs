@@ -390,6 +390,57 @@ defmodule Baudrate.Federation.DeliveryTest do
     end
   end
 
+  describe "deliver_flag/2" do
+    test "creates a delivery job with site actor URI" do
+      remote = create_remote_actor()
+      flag_json = Jason.encode!(%{"type" => "Flag", "actor" => "https://local/ap/site"})
+
+      assert {:ok, 1} = Delivery.deliver_flag(flag_json, remote)
+
+      job = Repo.one!(DeliveryJob)
+      site_uri = Federation.actor_uri(:site, nil)
+      assert job.actor_uri == site_uri
+      assert job.inbox_url == remote.inbox
+    end
+
+    test "uses shared_inbox when available" do
+      remote = create_remote_actor(%{shared_inbox: "https://remote.example/inbox"})
+      flag_json = Jason.encode!(%{"type" => "Flag"})
+
+      assert {:ok, 1} = Delivery.deliver_flag(flag_json, remote)
+
+      job = Repo.one!(DeliveryJob)
+      assert job.inbox_url == "https://remote.example/inbox"
+    end
+  end
+
+  describe "deliver_block/3" do
+    test "creates a delivery job with provided actor URI" do
+      user = create_user()
+      remote = create_remote_actor()
+      actor_uri = Federation.actor_uri(:user, user.username)
+      block_json = Jason.encode!(%{"type" => "Block"})
+
+      assert {:ok, 1} = Delivery.deliver_block(block_json, remote, actor_uri)
+
+      job = Repo.one!(DeliveryJob)
+      assert job.actor_uri == actor_uri
+      assert job.inbox_url == remote.inbox
+    end
+
+    test "uses shared_inbox when available" do
+      user = create_user()
+      remote = create_remote_actor(%{shared_inbox: "https://remote.example/inbox"})
+      actor_uri = Federation.actor_uri(:user, user.username)
+      block_json = Jason.encode!(%{"type" => "Block"})
+
+      assert {:ok, 1} = Delivery.deliver_block(block_json, remote, actor_uri)
+
+      job = Repo.one!(DeliveryJob)
+      assert job.inbox_url == "https://remote.example/inbox"
+    end
+  end
+
   describe "get_private_key/1" do
     test "retrieves user private key" do
       user = create_user()

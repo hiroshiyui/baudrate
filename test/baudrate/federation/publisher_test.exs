@@ -372,6 +372,177 @@ defmodule Baudrate.Federation.PublisherTest do
     end
   end
 
+  defp create_remote_actor(attrs \\ %{}) do
+    uid = System.unique_integer([:positive])
+
+    default = %{
+      ap_id: "https://remote.example/users/actor-#{uid}",
+      username: "actor_#{uid}",
+      domain: "remote.example",
+      public_key_pem: elem(KeyStore.generate_keypair(), 0),
+      inbox: "https://remote.example/users/actor-#{uid}/inbox",
+      actor_type: "Person",
+      fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    }
+
+    {:ok, actor} =
+      %RemoteActor{}
+      |> RemoteActor.changeset(Map.merge(default, attrs))
+      |> Repo.insert()
+
+    actor
+  end
+
+  defp create_follower(actor_uri, remote_actor) do
+    Baudrate.Federation.create_follower(
+      actor_uri,
+      remote_actor,
+      "https://remote.example/activities/follow-#{System.unique_integer([:positive])}"
+    )
+  end
+
+  describe "publish_article_created/1" do
+    test "creates delivery jobs for followers" do
+      user = create_user()
+      board = create_board()
+      remote = create_remote_actor()
+      user_uri = Baudrate.Federation.actor_uri(:user, user.username)
+      create_follower(user_uri, remote)
+
+      article = create_article(user, board)
+
+      # Clear auto-triggered delivery jobs
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_article_created(article)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert length(jobs) >= 1
+    end
+  end
+
+  describe "publish_article_deleted/1" do
+    test "creates delivery jobs for followers" do
+      user = create_user()
+      board = create_board()
+      remote = create_remote_actor()
+      user_uri = Baudrate.Federation.actor_uri(:user, user.username)
+      create_follower(user_uri, remote)
+
+      article = create_article(user, board)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_article_deleted(article)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert length(jobs) >= 1
+    end
+  end
+
+  describe "publish_comment_created/2" do
+    test "creates delivery jobs for followers" do
+      user = create_user()
+      board = create_board()
+      remote = create_remote_actor()
+      user_uri = Baudrate.Federation.actor_uri(:user, user.username)
+      create_follower(user_uri, remote)
+
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        %Content.Comment{}
+        |> Content.Comment.changeset(%{
+          body: "Federated comment",
+          body_html: "<p>Federated comment</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_comment_created(comment, article)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert length(jobs) >= 1
+    end
+  end
+
+  describe "publish_article_updated/1" do
+    test "creates delivery jobs for followers" do
+      user = create_user()
+      board = create_board()
+      remote = create_remote_actor()
+      user_uri = Baudrate.Federation.actor_uri(:user, user.username)
+      create_follower(user_uri, remote)
+
+      article = create_article(user, board)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_article_updated(article)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert length(jobs) >= 1
+    end
+  end
+
+  describe "build_flag/3" do
+    test "builds a Flag activity with correct structure" do
+      uid = System.unique_integer([:positive])
+
+      {:ok, remote_actor} =
+        %RemoteActor{}
+        |> RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/flag-target-#{uid}",
+          username: "flag_target_#{uid}",
+          domain: "remote.example",
+          public_key_pem: elem(KeyStore.generate_keypair(), 0),
+          inbox: "https://remote.example/users/flag-target-#{uid}/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert()
+
+      content_ap_ids = ["https://remote.example/posts/1", "https://remote.example/posts/2"]
+      reason = "Spam content"
+
+      result = Publisher.build_flag(remote_actor, content_ap_ids, reason)
+
+      assert is_map(result)
+      assert result["type"] == "Flag"
+      assert result["content"] == "Spam content"
+      assert result["@context"] == "https://www.w3.org/ns/activitystreams"
+
+      site_uri = Baudrate.Federation.actor_uri(:site, nil)
+      assert result["actor"] == site_uri
+
+      assert remote_actor.ap_id in result["object"]
+      assert "https://remote.example/posts/1" in result["object"]
+      assert "https://remote.example/posts/2" in result["object"]
+    end
+
+    test "with empty content_ap_ids, object is just the remote actor" do
+      uid = System.unique_integer([:positive])
+
+      {:ok, remote_actor} =
+        %RemoteActor{}
+        |> RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/flag-empty-#{uid}",
+          username: "flag_empty_#{uid}",
+          domain: "remote.example",
+          public_key_pem: elem(KeyStore.generate_keypair(), 0),
+          inbox: "https://remote.example/users/flag-empty-#{uid}/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert()
+
+      result = Publisher.build_flag(remote_actor, [], "Reason")
+
+      assert result["object"] == [remote_actor.ap_id]
+    end
+  end
+
   describe "build_delete_dm/3" do
     test "Tombstone includes formerType Note" do
       user = create_user()
