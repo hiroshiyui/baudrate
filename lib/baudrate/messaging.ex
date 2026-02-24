@@ -398,19 +398,25 @@ defmodule Baudrate.Messaging do
       ) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    %ConversationReadCursor{}
-    |> ConversationReadCursor.changeset(%{
-      conversation_id: conversation_id,
-      user_id: user_id,
-      last_read_message_id: message.id,
-      last_read_at: now
-    })
-    |> Repo.insert(
-      on_conflict: [
-        set: [last_read_message_id: message.id, last_read_at: now, updated_at: now]
-      ],
-      conflict_target: [:conversation_id, :user_id]
-    )
+    result =
+      %ConversationReadCursor{}
+      |> ConversationReadCursor.changeset(%{
+        conversation_id: conversation_id,
+        user_id: user_id,
+        last_read_message_id: message.id,
+        last_read_at: now
+      })
+      |> Repo.insert(
+        on_conflict: [
+          set: [last_read_message_id: message.id, last_read_at: now, updated_at: now]
+        ],
+        conflict_target: [:conversation_id, :user_id]
+      )
+
+    with {:ok, cursor} <- result do
+      PubSub.broadcast_to_user(user_id, :dm_read, %{conversation_id: conversation_id})
+      {:ok, cursor}
+    end
   end
 
   @doc """

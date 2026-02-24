@@ -341,6 +341,41 @@ defmodule Baudrate.MessagingTest do
     end
   end
 
+  # --- mark_conversation_read broadcasts :dm_read ---
+
+  describe "mark_conversation_read/3 :dm_read broadcast" do
+    test "broadcasts :dm_read to the user's PubSub topic" do
+      user_a = create_user("user")
+      user_b = create_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(user_a, user_b)
+      {:ok, msg} = Messaging.create_message(conv, user_b, %{body: "Hello!"})
+
+      Baudrate.Messaging.PubSub.subscribe_user(user_a.id)
+
+      Messaging.mark_conversation_read(conv, user_a, msg)
+
+      conv_id = conv.id
+      assert_receive {:dm_read, %{conversation_id: ^conv_id}}
+    end
+
+    test "does not broadcast :dm_read on failure" do
+      user_a = create_user("user")
+      user_b = create_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(user_a, user_b)
+      {:ok, msg} = Messaging.create_message(conv, user_b, %{body: "Hello!"})
+
+      Baudrate.Messaging.PubSub.subscribe_user(user_a.id)
+
+      # Mark read once (should succeed and broadcast)
+      Messaging.mark_conversation_read(conv, user_a, msg)
+      assert_receive {:dm_read, _}
+
+      # Mark read again with same message (upserts, still succeeds)
+      Messaging.mark_conversation_read(conv, user_a, msg)
+      assert_receive {:dm_read, _}
+    end
+  end
+
   # --- soft_delete_message ---
 
   describe "soft_delete_message/2" do

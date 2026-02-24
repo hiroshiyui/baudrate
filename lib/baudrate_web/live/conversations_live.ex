@@ -4,7 +4,8 @@ defmodule BaudrateWeb.ConversationsLive do
 
   Displays all conversations for the current user, ordered by most recent
   message. Shows unread badges and the last message snippet. Subscribes
-  to user-level DM PubSub events for real-time updates.
+  to user-level DM PubSub events for real-time updates (`:dm_received`
+  and `:dm_read`).
   """
 
   use BaudrateWeb, :live_view
@@ -37,7 +38,7 @@ defmodule BaudrateWeb.ConversationsLive do
   end
 
   @impl true
-  def handle_info({:dm_received, _payload}, socket) do
+  def handle_info({event, _payload}, socket) when event in [:dm_received, :dm_read] do
     user = socket.assigns.current_user
     conversations = Messaging.list_conversations(user)
     unread_counts = load_unread_counts(conversations, user)
