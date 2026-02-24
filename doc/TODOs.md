@@ -33,5 +33,4 @@ their content into the board. Requires anti-loop and deduplication safeguards.
 
 ## Someday / Maybe
 
-- [ ] Two-way visibility blocking (blocked users can still see public content)
 - [ ] Per-user rate limits on authenticated endpoints (currently IP-only)
