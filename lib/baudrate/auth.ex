@@ -49,7 +49,17 @@ defmodule Baudrate.Auth do
   """
 
   import Ecto.Query
-  alias Baudrate.Auth.{InviteCode, LoginAttempt, RecoveryCode, TotpVault, UserBlock, UserMute, UserSession}
+
+  alias Baudrate.Auth.{
+    InviteCode,
+    LoginAttempt,
+    RecoveryCode,
+    TotpVault,
+    UserBlock,
+    UserMute,
+    UserSession
+  }
+
   alias Baudrate.Repo
   alias Baudrate.Setup
   alias Baudrate.Setup.{Role, User}
@@ -58,6 +68,11 @@ defmodule Baudrate.Auth do
 
   @session_ttl_seconds 14 * 86_400
   @max_sessions_per_user 3
+
+  @invite_quota_limit 5
+  @invite_quota_window_days 30
+  @invite_min_account_age_days 7
+  @invite_default_expiry_days 7
 
   @doc """
   Authenticates a user by username and password.
@@ -369,9 +384,15 @@ defmodule Baudrate.Auth do
             |> Map.put("role_id", role.id)
             |> Map.put("status", "active")
 
+          reg_attrs =
+            attrs
+            |> Map.delete("status")
+            |> Map.delete("invite_code")
+            |> Map.put("invited_by_id", invite.created_by_id)
+
           changeset =
             %User{}
-            |> User.registration_changeset(Map.delete(attrs, "status") |> Map.delete("invite_code"))
+            |> User.registration_changeset(reg_attrs)
             |> User.validate_terms()
             |> Ecto.Changeset.put_change(:status, "active")
 
@@ -541,10 +562,19 @@ defmodule Baudrate.Auth do
       end
 
     case Keyword.get(opts, :search) do
-      nil -> query
-      "" -> query
+      nil ->
+        query
+
+      "" ->
+        query
+
       term ->
-        sanitized = term |> String.replace("\\", "\\\\") |> String.replace("%", "\\%") |> String.replace("_", "\\_")
+        sanitized =
+          term
+          |> String.replace("\\", "\\\\")
+          |> String.replace("%", "\\%")
+          |> String.replace("_", "\\_")
+
         from(u in query, where: ilike(u.username, ^"%#{sanitized}%"))
     end
   end
@@ -562,7 +592,8 @@ defmodule Baudrate.Auth do
   Bans a user. Guards against self-ban.
 
   Sets status to `"banned"`, records `banned_at` and optional `ban_reason`,
-  then invalidates all existing sessions for the user.
+  then invalidates all existing sessions and revokes all active invite codes
+  for the user. Returns `{:ok, banned_user, revoked_codes_count}`.
   """
   def ban_user(user, admin_id, reason \\ nil)
 
@@ -581,7 +612,8 @@ defmodule Baudrate.Auth do
 
     with {:ok, banned_user} <- result do
       delete_all_sessions_for_user(banned_user.id)
-      {:ok, banned_user}
+      {revoked_count, _} = revoke_invite_codes_for_user(banned_user.id)
+      {:ok, banned_user, revoked_count}
     end
   end
 
@@ -660,27 +692,132 @@ defmodule Baudrate.Auth do
   # --- Invite Codes ---
 
   @doc """
+  Checks whether a user can generate an invite code.
+
+  Returns `{:ok, remaining}` where remaining is an integer or `:unlimited`,
+  or `{:error, reason}`.
+
+  ## Checks
+
+    1. Admin role → `{:ok, :unlimited}` (bypasses all limits)
+    2. Account age >= #{@invite_min_account_age_days} days
+    3. Quota remaining > 0 within rolling #{@invite_quota_window_days}-day window
+  """
+  def can_generate_invite?(%User{} = user) do
+    cond do
+      user.role.name == "admin" ->
+        {:ok, :unlimited}
+
+      DateTime.diff(DateTime.utc_now(), user.inserted_at, :second) / 86_400 <
+          @invite_min_account_age_days ->
+        {:error, :account_too_new}
+
+      true ->
+        remaining = invite_quota_remaining(user)
+
+        if remaining > 0 do
+          {:ok, remaining}
+        else
+          {:error, :invite_quota_exceeded}
+        end
+    end
+  end
+
+  @doc """
+  Returns the number of invite codes the user can still generate in the
+  current #{@invite_quota_window_days}-day rolling window (0–#{@invite_quota_limit}).
+
+  Admin users always return #{@invite_quota_limit} (they have unlimited quota
+  but this function returns the limit for display consistency).
+  """
+  def invite_quota_remaining(%User{} = user) do
+    if user.role.name == "admin" do
+      @invite_quota_limit
+    else
+      cutoff =
+        DateTime.utc_now()
+        |> DateTime.add(-@invite_quota_window_days * 86_400, :second)
+
+      count =
+        from(i in InviteCode,
+          where: i.created_by_id == ^user.id and i.inserted_at > ^cutoff,
+          select: count(i.id)
+        )
+        |> Repo.one()
+
+      max(@invite_quota_limit - count, 0)
+    end
+  end
+
+  @doc """
+  Returns the invite quota limit constant.
+  """
+  def invite_quota_limit, do: @invite_quota_limit
+
+  @doc """
+  Lists invite codes created by a specific user, newest first, with `:used_by` preloaded.
+  """
+  def list_user_invite_codes(%User{id: user_id}) do
+    from(i in InviteCode,
+      where: i.created_by_id == ^user_id,
+      order_by: [desc: i.inserted_at],
+      preload: [:used_by]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
   Generates an invite code created by the given user.
+
+  Requires a `%User{}` struct with role preloaded. Enforces quota for non-admin
+  users and auto-sets expiry to #{@invite_default_expiry_days} days for non-admins.
 
   ## Options
 
     * `:max_uses` — max number of times the code can be used (default 1)
-    * `:expires_in_days` — number of days until expiration (default nil = no expiry)
+    * `:expires_in_days` — number of days until expiration (forced to
+      #{@invite_default_expiry_days} for non-admins unless a shorter value is provided)
   """
-  def generate_invite_code(user_id, opts \\ []) do
+  def generate_invite_code(%User{} = user, opts \\ []) do
+    case can_generate_invite?(user) do
+      {:ok, _remaining} ->
+        do_generate_invite_code(user, opts)
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp do_generate_invite_code(%User{} = user, opts) do
     code = :crypto.strong_rand_bytes(4) |> Base.encode16(case: :lower)
     max_uses = Keyword.get(opts, :max_uses, 1)
 
+    expires_in_days =
+      if user.role.name == "admin" do
+        Keyword.get(opts, :expires_in_days)
+      else
+        explicit = Keyword.get(opts, :expires_in_days)
+
+        cond do
+          is_nil(explicit) -> @invite_default_expiry_days
+          explicit > @invite_default_expiry_days -> @invite_default_expiry_days
+          true -> explicit
+        end
+      end
+
     expires_at =
-      case Keyword.get(opts, :expires_in_days) do
-        nil -> nil
-        days -> DateTime.utc_now() |> DateTime.add(days * 86_400, :second) |> DateTime.truncate(:second)
+      case expires_in_days do
+        nil ->
+          nil
+
+        days ->
+          DateTime.utc_now() |> DateTime.add(days * 86_400, :second) |> DateTime.truncate(:second)
       end
 
     %InviteCode{}
     |> InviteCode.changeset(%{
       code: code,
-      created_by_id: user_id,
+      created_by_id: user.id,
       max_uses: max_uses,
       expires_at: expires_at
     })
@@ -756,6 +893,24 @@ defmodule Baudrate.Auth do
     |> Repo.update()
   end
 
+  @doc """
+  Bulk-revokes all active invite codes created by the given user.
+
+  Active = not revoked, not expired, and not fully used.
+  Returns `{count, nil}` with the number of revoked codes.
+  """
+  def revoke_invite_codes_for_user(user_id) do
+    now = DateTime.utc_now()
+
+    from(i in InviteCode,
+      where: i.created_by_id == ^user_id,
+      where: i.revoked == false,
+      where: is_nil(i.expires_at) or i.expires_at > ^now,
+      where: i.use_count < i.max_uses
+    )
+    |> Repo.update_all(set: [revoked: true])
+  end
+
   # --- Password reset ---
 
   @doc """
@@ -764,7 +919,12 @@ defmodule Baudrate.Auth do
   Looks up the user by username, verifies the recovery code (consuming it),
   then updates the password. Returns generic errors to prevent user enumeration.
   """
-  def reset_password_with_recovery_code(username, recovery_code, new_password, new_password_confirmation) do
+  def reset_password_with_recovery_code(
+        username,
+        recovery_code,
+        new_password,
+        new_password_confirmation
+      ) do
     user = Repo.one(from u in User, where: u.username == ^username, preload: :role)
 
     if is_nil(user) do
