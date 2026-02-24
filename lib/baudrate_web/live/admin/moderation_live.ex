@@ -22,8 +22,13 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     else
       {:ok,
        socket
-       |> assign(status_filter: "open")
-       |> assign(page_title: gettext("Admin Moderation"))
+       |> assign(
+         status_filter: "open",
+         selected_report_ids: MapSet.new(),
+         bulk_resolve_note: "",
+         show_bulk_resolve_modal: false,
+         page_title: gettext("Admin Moderation")
+       )
        |> load_reports()}
     end
   end
@@ -32,7 +37,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
   def handle_event("filter", %{"status" => status}, socket) do
     {:noreply,
      socket
-     |> assign(status_filter: status)
+     |> assign(status_filter: status, selected_report_ids: MapSet.new())
      |> load_reports()}
   end
 
@@ -66,6 +71,126 @@ defmodule BaudrateWeb.Admin.ModerationLive do
       :error -> {:noreply, socket}
       {:ok, comment_id} -> do_delete_comment(socket, comment_id)
     end
+  end
+
+  @impl true
+  def handle_event("toggle_select_report", %{"id" => id}, socket) do
+    case parse_id(id) do
+      :error ->
+        {:noreply, socket}
+
+      {:ok, report_id} ->
+        selected =
+          if MapSet.member?(socket.assigns.selected_report_ids, report_id),
+            do: MapSet.delete(socket.assigns.selected_report_ids, report_id),
+            else: MapSet.put(socket.assigns.selected_report_ids, report_id)
+
+        {:noreply, assign(socket, :selected_report_ids, selected)}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_select_all_reports", _params, socket) do
+    all_ids = MapSet.new(socket.assigns.reports, & &1.id)
+
+    selected =
+      if MapSet.subset?(all_ids, socket.assigns.selected_report_ids),
+        do: MapSet.difference(socket.assigns.selected_report_ids, all_ids),
+        else: MapSet.union(socket.assigns.selected_report_ids, all_ids)
+
+    {:noreply, assign(socket, :selected_report_ids, selected)}
+  end
+
+  @impl true
+  def handle_event("show_bulk_resolve_modal", _params, socket) do
+    {:noreply, assign(socket, show_bulk_resolve_modal: true, bulk_resolve_note: "")}
+  end
+
+  @impl true
+  def handle_event("cancel_bulk_resolve", _params, socket) do
+    {:noreply, assign(socket, show_bulk_resolve_modal: false, bulk_resolve_note: "")}
+  end
+
+  @impl true
+  def handle_event("update_bulk_resolve_note", %{"note" => note}, socket) do
+    {:noreply, assign(socket, :bulk_resolve_note, note)}
+  end
+
+  @impl true
+  def handle_event("confirm_bulk_resolve", _params, socket) do
+    admin_id = socket.assigns.current_user.id
+    note = socket.assigns.bulk_resolve_note
+
+    count =
+      Enum.reduce(socket.assigns.selected_report_ids, 0, fn report_id, acc ->
+        report = Moderation.get_report!(report_id)
+
+        case Moderation.resolve_report(report, admin_id, note) do
+          {:ok, _} ->
+            Moderation.log_action(admin_id, "resolve_report",
+              target_type: "report",
+              target_id: report.id,
+              details: %{"note" => note, "bulk" => true}
+            )
+
+            acc + 1
+
+          {:error, _} ->
+            acc
+        end
+      end)
+
+    {:noreply,
+     socket
+     |> assign(selected_report_ids: MapSet.new(), show_bulk_resolve_modal: false, bulk_resolve_note: "")
+     |> put_flash(
+       :info,
+       ngettext(
+         "%{count} report resolved.",
+         "%{count} reports resolved.",
+         count,
+         count: count
+       )
+     )
+     |> load_reports()}
+  end
+
+  @impl true
+  def handle_event("bulk_dismiss", _params, socket) do
+    admin_id = socket.assigns.current_user.id
+
+    count =
+      Enum.reduce(socket.assigns.selected_report_ids, 0, fn report_id, acc ->
+        report = Moderation.get_report!(report_id)
+
+        case Moderation.dismiss_report(report, admin_id) do
+          {:ok, _} ->
+            Moderation.log_action(admin_id, "dismiss_report",
+              target_type: "report",
+              target_id: report.id,
+              details: %{"bulk" => true}
+            )
+
+            acc + 1
+
+          {:error, _} ->
+            acc
+        end
+      end)
+
+    {:noreply,
+     socket
+     |> assign(:selected_report_ids, MapSet.new())
+     |> put_flash(
+       :info,
+       ngettext(
+         "%{count} report dismissed.",
+         "%{count} reports dismissed.",
+         count,
+         count: count
+       )
+     )
+     |> load_reports()}
   end
 
   @impl true

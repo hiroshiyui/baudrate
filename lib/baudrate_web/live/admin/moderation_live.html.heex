@@ -32,12 +32,55 @@
     </button>
   </div>
 
+  <%!-- Bulk action bar (open reports only) --%>
+  <div :if={@status_filter == "open" and @reports != []} class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
+    <label>
+      <input
+        type="checkbox"
+        class="checkbox checkbox-sm"
+        phx-click="toggle_select_all_reports"
+        checked={MapSet.size(@selected_report_ids) > 0 and MapSet.subset?(MapSet.new(@reports, & &1.id), @selected_report_ids)}
+        aria-label={gettext("Select all reports")}
+      />
+    </label>
+    <span :if={MapSet.size(@selected_report_ids) > 0} class="font-medium">
+      {ngettext("%{count} report selected", "%{count} reports selected", MapSet.size(@selected_report_ids), count: MapSet.size(@selected_report_ids))}
+    </span>
+    <button
+      :if={MapSet.size(@selected_report_ids) > 0}
+      phx-click="show_bulk_resolve_modal"
+      class="btn btn-sm btn-success"
+    >
+      {gettext("Resolve Selected")}
+    </button>
+    <button
+      :if={MapSet.size(@selected_report_ids) > 0}
+      phx-click="bulk_dismiss"
+      data-confirm={gettext("Dismiss all selected reports?")}
+      class="btn btn-sm btn-ghost"
+    >
+      {gettext("Dismiss Selected")}
+    </button>
+  </div>
+
   <%!-- Reports --%>
   <div :if={@reports == []} class="text-center py-8 opacity-60">
     {gettext("No reports with status \"%{status}\".", status: @status_filter)}
   </div>
 
-  <div :for={report <- @reports} class="card bg-base-200 shadow-sm">
+  <div :for={report <- @reports} class={["card bg-base-200 shadow-sm", @status_filter == "open" && "relative pl-12"]}>
+    <div :if={@status_filter == "open"} class="absolute top-4 left-4">
+      <label>
+        <input
+          type="checkbox"
+          class="checkbox checkbox-sm"
+          phx-click="toggle_select_report"
+          phx-value-id={report.id}
+          checked={MapSet.member?(@selected_report_ids, report.id)}
+          aria-label={gettext("Select report #%{id}", id: report.id)}
+        />
+      </label>
+    </div>
     <div class="card-body">
       <div class="flex justify-between items-start">
         <div>
@@ -143,4 +186,42 @@
       </div>
     </div>
   </div>
+</div>
+
+<%!-- Bulk resolve modal --%>
+<div
+  :if={@show_bulk_resolve_modal}
+  class="modal modal-open"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="bulk-resolve-modal-title"
+  phx-window-keydown="cancel_bulk_resolve"
+  phx-key="Escape"
+>
+  <div class="modal-box">
+    <h3 id="bulk-resolve-modal-title" class="font-bold text-lg">
+      {ngettext("Resolve %{count} Report", "Resolve %{count} Reports", MapSet.size(@selected_report_ids), count: MapSet.size(@selected_report_ids))}
+    </h3>
+    <div class="py-4">
+      <form phx-change="update_bulk_resolve_note">
+        <label for="bulk-resolve-note" class="label">
+          <span class="label-text">{gettext("Resolution note (optional)")}</span>
+        </label>
+        <textarea
+          id="bulk-resolve-note"
+          class="textarea textarea-bordered w-full"
+          rows="3"
+          name="note"
+          phx-debounce="300"
+        >{@bulk_resolve_note}</textarea>
+      </form>
+    </div>
+    <div class="modal-action">
+      <button phx-click="cancel_bulk_resolve" class="btn">{gettext("Cancel")}</button>
+      <button phx-click="confirm_bulk_resolve" class="btn btn-success" phx-disable-with={gettext("Resolving...")}>
+        {gettext("Confirm Resolve")}
+      </button>
+    </div>
+  </div>
+  <div class="modal-backdrop" phx-click="cancel_bulk_resolve"></div>
 </div>

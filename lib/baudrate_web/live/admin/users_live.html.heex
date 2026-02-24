@@ -83,6 +83,23 @@
     </form>
   </div>
 
+  <%!-- Bulk action bar --%>
+  <div :if={MapSet.size(@selected_ids) > 0} class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
+    <span class="font-medium">
+      {ngettext("%{count} user selected", "%{count} users selected", MapSet.size(@selected_ids), count: MapSet.size(@selected_ids))}
+    </span>
+    <button
+      :if={@status_filter == "pending"}
+      phx-click="bulk_approve"
+      class="btn btn-sm btn-primary"
+    >
+      {gettext("Approve Selected")}
+    </button>
+    <button phx-click="show_bulk_ban_modal" class="btn btn-sm btn-error btn-outline">
+      {gettext("Ban Selected")}
+    </button>
+  </div>
+
   <%!-- Users table --%>
   <div :if={@users == []} class="text-base-content/50 text-center py-8">
     {gettext("No users found.")}
@@ -92,6 +109,17 @@
     <table class="table" aria-labelledby="users-heading">
       <thead>
         <tr>
+          <th>
+            <label>
+              <input
+                type="checkbox"
+                class="checkbox checkbox-sm"
+                phx-click="toggle_select_all"
+                checked={MapSet.size(@selected_ids) > 0 and MapSet.subset?(MapSet.new(@users, & &1.id), @selected_ids)}
+                aria-label={gettext("Select all users")}
+              />
+            </label>
+          </th>
           <th>{gettext("Username")}</th>
           <th>{gettext("Role")}</th>
           <th>{gettext("Status")}</th>
@@ -101,6 +129,18 @@
       </thead>
       <tbody>
         <tr :for={user <- @users}>
+          <td>
+            <label>
+              <input
+                type="checkbox"
+                class="checkbox checkbox-sm"
+                phx-click="toggle_select"
+                phx-value-id={user.id}
+                checked={MapSet.member?(@selected_ids, user.id)}
+                aria-label={gettext("Select %{username}", username: user.username)}
+              />
+            </label>
+          </td>
           <td class="font-medium">{user.username}</td>
           <td>
             <%= if user.id == @current_user.id do %>
@@ -213,4 +253,42 @@
     </div>
   </div>
   <div class="modal-backdrop" phx-click="cancel_ban"></div>
+</div>
+
+<%!-- Bulk ban modal --%>
+<div
+  :if={@show_bulk_ban_modal}
+  class="modal modal-open"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="bulk-ban-modal-title"
+  phx-window-keydown="cancel_bulk_ban"
+  phx-key="Escape"
+>
+  <div class="modal-box">
+    <h3 id="bulk-ban-modal-title" class="font-bold text-lg">
+      {ngettext("Ban %{count} User", "Ban %{count} Users", MapSet.size(@selected_ids), count: MapSet.size(@selected_ids))}
+    </h3>
+    <div class="py-4">
+      <form phx-change="update_bulk_ban_reason">
+        <label for="bulk-ban-reason" class="label">
+          <span class="label-text">{gettext("Reason (optional)")}</span>
+        </label>
+        <textarea
+          id="bulk-ban-reason"
+          class="textarea textarea-bordered w-full"
+          rows="3"
+          name="reason"
+          phx-debounce="300"
+        >{@bulk_ban_reason}</textarea>
+      </form>
+    </div>
+    <div class="modal-action">
+      <button phx-click="cancel_bulk_ban" class="btn">{gettext("Cancel")}</button>
+      <button phx-click="confirm_bulk_ban" class="btn btn-error" phx-disable-with={gettext("Banning...")}>
+        {gettext("Confirm Ban")}
+      </button>
+    </div>
+  </div>
+  <div class="modal-backdrop" phx-click="cancel_bulk_ban"></div>
 </div>

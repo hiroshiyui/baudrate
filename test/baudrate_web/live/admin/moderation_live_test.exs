@@ -3,6 +3,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
   import Phoenix.LiveViewTest
 
+  import Ecto.Query
   alias Baudrate.{Content, Moderation, Repo}
   alias Baudrate.Setup.Setting
 
@@ -178,5 +179,138 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
       |> render_click()
 
     assert html =~ "Comment deleted."
+  end
+
+  # --- Bulk action tests ---
+
+  describe "bulk select reports" do
+    test "toggle_select_report adds and removes from selection", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+      {report, _} = create_report_with_article(admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      # Select
+      html = lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report.id}\"]") |> render_click()
+      assert html =~ "1 report selected"
+
+      # Deselect
+      html = lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report.id}\"]") |> render_click()
+      refute html =~ "report selected"
+    end
+
+    test "toggle_select_all_reports selects and deselects all", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+      {_, _} = create_report_with_article(admin)
+      {_, _} = create_report_with_article(admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      # Select all
+      html = lv |> element("input[phx-click=\"toggle_select_all_reports\"]") |> render_click()
+      assert html =~ "2 reports selected"
+
+      # Deselect all
+      html = lv |> element("input[phx-click=\"toggle_select_all_reports\"]") |> render_click()
+      refute html =~ "report selected"
+    end
+
+    test "selection clears on filter change", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+      {report, _} = create_report_with_article(admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      # Select
+      lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report.id}\"]") |> render_click()
+
+      # Change filter
+      html = lv |> element("button[phx-click=\"filter\"][phx-value-status=\"resolved\"]") |> render_click()
+      refute html =~ "report selected"
+    end
+
+    test "checkboxes only shown for open reports", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+      {report, _} = create_report_with_article(admin)
+      Moderation.resolve_report(report, admin.id, "done")
+
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+      html = lv |> element("button[phx-click=\"filter\"][phx-value-status=\"resolved\"]") |> render_click()
+      refute html =~ "toggle_select_report"
+      refute html =~ "toggle_select_all_reports"
+    end
+  end
+
+  describe "bulk resolve" do
+    test "resolves all selected reports with shared note", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+      {report1, _} = create_report_with_article(admin)
+      {report2, _} = create_report_with_article(admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      # Select both
+      lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report1.id}\"]") |> render_click()
+      lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report2.id}\"]") |> render_click()
+
+      # Open modal
+      lv |> element("button[phx-click=\"show_bulk_resolve_modal\"]") |> render_click()
+
+      # Set note
+      lv |> form("form[phx-change=\"update_bulk_resolve_note\"]", note: "All handled") |> render_change()
+
+      # Confirm
+      html = lv |> element("button[phx-click=\"confirm_bulk_resolve\"]") |> render_click()
+      assert html =~ "2 reports resolved"
+
+      # Verify logs with bulk flag
+      logs = Repo.all(from(l in Moderation.Log, where: l.action == "resolve_report" and l.actor_id == ^admin.id))
+      assert length(logs) == 2
+      assert Enum.all?(logs, fn log -> log.details["bulk"] == true end)
+      assert Enum.all?(logs, fn log -> log.details["note"] == "All handled" end)
+    end
+
+    test "cancel bulk resolve modal closes it", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+      {report, _} = create_report_with_article(admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report.id}\"]") |> render_click()
+      lv |> element("button[phx-click=\"show_bulk_resolve_modal\"]") |> render_click()
+
+      html = lv |> element("button[phx-click=\"cancel_bulk_resolve\"]") |> render_click()
+      refute html =~ "bulk-resolve-modal-title"
+    end
+  end
+
+  describe "bulk dismiss" do
+    test "dismisses all selected reports", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+      {report1, _} = create_report_with_article(admin)
+      {report2, _} = create_report_with_article(admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      # Select both
+      lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report1.id}\"]") |> render_click()
+      lv |> element("input[phx-click=\"toggle_select_report\"][phx-value-id=\"#{report2.id}\"]") |> render_click()
+
+      # Bulk dismiss
+      html = lv |> element("button[phx-click=\"bulk_dismiss\"]") |> render_click()
+      assert html =~ "2 reports dismissed"
+
+      # Verify logs with bulk flag
+      logs = Repo.all(from(l in Moderation.Log, where: l.action == "dismiss_report" and l.actor_id == ^admin.id))
+      assert length(logs) == 2
+      assert Enum.all?(logs, fn log -> log.details["bulk"] == true end)
+    end
   end
 end
