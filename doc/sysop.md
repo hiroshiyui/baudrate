@@ -540,14 +540,29 @@ Before deploying, ensure:
 2. **libvips** installed (for image processing)
 3. **Node.js** not required (esbuild is fetched by Mix)
 
+> **Important:** The build machine must match the target OS and CPU architecture,
+> because the Ammonia HTML sanitizer NIF is compiled to native code via Rustler.
+> Cross-compilation is not supported out of the box.
+
 ### Asset Build
 
 ```bash
-mix assets.deploy   # Tailwind (minified) + esbuild (minified) + phx.digest
+MIX_ENV=prod mix assets.deploy   # Tailwind (minified) + esbuild (minified) + phx.digest
 ```
 
 Generates fingerprinted files and `priv/static/cache_manifest.json`. Without
 this step, pages load without CSS styling and JavaScript doesn't execute.
+
+### Building a Release
+
+```bash
+MIX_ENV=prod mix assets.deploy
+MIX_ENV=prod mix release
+```
+
+The release is written to `_build/prod/rel/baudrate/`. It includes the compiled
+BEAM code, the Ammonia NIF `.so`, ERTS, and the overlay convenience scripts
+(`bin/server`, `bin/migrate`).
 
 ### Uploads Directory
 
@@ -556,19 +571,42 @@ this step, pages load without CSS styling and JavaScript doesn't execute.
 - Must be **writable** by the application process
 - Must be **persistent** across deployments
 - For containers: mount a persistent volume at this path
+- In OTP releases, `priv/static/` is **read-only** — configure an external
+  upload path outside the release directory for production
 
 ### Production Start
 
 ```bash
-# With mix
+# With mix (development / staging)
 PHX_SERVER=true mix phx.server
 
-# With releases
+# With releases — convenience script
+bin/server
+
+# With releases — manual
 PHX_SERVER=true bin/baudrate start
 ```
 
 The endpoint binds to `{0, 0, 0, 0, 0, 0, 0, 0}` (all IPv6/IPv4 interfaces)
 on the configured `PORT` (default 4000).
+
+### Running Migrations in Production
+
+```bash
+# Convenience script (recommended)
+bin/migrate
+
+# Or via eval
+bin/baudrate eval "Baudrate.Release.migrate"
+```
+
+To rollback a specific migration:
+
+```bash
+bin/baudrate eval "Baudrate.Release.rollback(Baudrate.Repo, 20260101000000)"
+```
+
+Replace `20260101000000` with the migration version to roll back to.
 
 ---
 
