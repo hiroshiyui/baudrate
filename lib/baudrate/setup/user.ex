@@ -44,6 +44,11 @@ defmodule Baudrate.Setup.User do
 
     * `dm_access` — controls who can send DMs to this user:
       `"anyone"` (default), `"followers"` (AP followers only), or `"nobody"`.
+
+  ## Invite Chain Tracking
+
+    * `invited_by_id` — references the user who generated the invite code used
+      during registration. `nil` for users who registered via open/approval modes.
   """
 
   use Ecto.Schema
@@ -65,6 +70,7 @@ defmodule Baudrate.Setup.User do
     field :dm_access, :string, default: "anyone"
 
     belongs_to :role, Baudrate.Setup.Role
+    belongs_to :invited_by, __MODULE__
 
     field :password, :string, virtual: true, redact: true
     field :password_confirmation, :string, virtual: true, redact: true
@@ -76,7 +82,14 @@ defmodule Baudrate.Setup.User do
   @doc "Changeset for new user registration: validates username, password policy, and hashes the password."
   def registration_changeset(user, attrs) do
     user
-    |> cast(attrs, [:username, :password, :password_confirmation, :role_id, :terms_accepted])
+    |> cast(attrs, [
+      :username,
+      :password,
+      :password_confirmation,
+      :role_id,
+      :terms_accepted,
+      :invited_by_id
+    ])
     |> validate_username()
     |> validate_password()
     |> assoc_constraint(:role)
