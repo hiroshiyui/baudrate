@@ -74,7 +74,7 @@
             <% else %>
               {participant_name(@other_participant)}
             <% end %>
-            <time class="ml-1">{Calendar.strftime(msg.inserted_at, "%H:%M")}</time>
+            <time datetime={Calendar.strftime(msg.inserted_at, "%Y-%m-%dT%H:%M:%S")} class="ml-1">{Calendar.strftime(msg.inserted_at, "%H:%M")}</time>
           </div>
           <div class={[
             "chat-bubble",

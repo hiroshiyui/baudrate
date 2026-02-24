@@ -64,11 +64,12 @@
   </div>
 
   <%!-- Reports --%>
-  <div :if={@reports == []} class="text-center py-8 opacity-60">
-    {gettext("No reports with status \"%{status}\".", status: @status_filter)}
-  </div>
+  <div aria-live="polite" class="space-y-4">
+    <div :if={@reports == []} class="text-center py-8 opacity-60">
+      {gettext("No reports with status \"%{status}\".", status: @status_filter)}
+    </div>
 
-  <div :for={report <- @reports} class={["card bg-base-200 shadow-sm", @status_filter == "open" && "relative pl-12"]}>
+    <div :for={report <- @reports} class={["card bg-base-200 shadow-sm", @status_filter == "open" && "relative pl-12"]}>
     <div :if={@status_filter == "open"} class="absolute top-4 left-4">
       <label>
         <input
@@ -93,7 +94,7 @@
             {translate_report_status(report.status)}
           </span>
           <span class="text-sm opacity-70 ml-2">
-            {Calendar.strftime(report.inserted_at, "%Y-%m-%d %H:%M")}
+            <time datetime={Calendar.strftime(report.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(report.inserted_at, "%Y-%m-%d %H:%M")}</time>
           </span>
         </div>
         <div :if={report.reporter} class="text-sm opacity-70">
@@ -185,6 +186,7 @@
         </button>
       </div>
     </div>
+  </div>
   </div>
 </div>
 

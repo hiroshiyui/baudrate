@@ -106,10 +106,10 @@
   </div>
 
   <div :if={@users != []} class="overflow-x-auto">
-    <table class="table" aria-labelledby="users-heading">
+    <table class="table" aria-labelledby="users-heading" aria-live="polite">
       <thead>
         <tr>
-          <th>
+          <th scope="col">
             <label>
               <input
                 type="checkbox"
@@ -120,11 +120,11 @@
               />
             </label>
           </th>
-          <th>{gettext("Username")}</th>
-          <th>{gettext("Role")}</th>
-          <th>{gettext("Status")}</th>
-          <th>{gettext("Registered")}</th>
-          <th>{gettext("Actions")}</th>
+          <th scope="col">{gettext("Username")}</th>
+          <th scope="col">{gettext("Role")}</th>
+          <th scope="col">{gettext("Status")}</th>
+          <th scope="col">{gettext("Registered")}</th>
+          <th scope="col">{gettext("Actions")}</th>
         </tr>
       </thead>
       <tbody>
@@ -173,7 +173,7 @@
               {translate_status(user.status)}
             </span>
           </td>
-          <td>{Calendar.strftime(user.inserted_at, "%Y-%m-%d %H:%M")}</td>
+          <td><time datetime={Calendar.strftime(user.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(user.inserted_at, "%Y-%m-%d %H:%M")}</time></td>
           <td class="flex gap-1">
             <button
               :if={user.status == "pending"}

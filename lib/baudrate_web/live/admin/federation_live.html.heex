@@ -31,11 +31,11 @@
           <table class="table table-zebra table-sm">
             <thead>
               <tr>
-                <th>{gettext("Inbox")}</th>
-                <th>{gettext("Status")}</th>
-                <th>{gettext("Attempts")}</th>
-                <th>{gettext("Error")}</th>
-                <th>{gettext("Actions")}</th>
+                <th scope="col">{gettext("Inbox")}</th>
+                <th scope="col">{gettext("Status")}</th>
+                <th scope="col">{gettext("Attempts")}</th>
+                <th scope="col">{gettext("Error")}</th>
+                <th scope="col">{gettext("Actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -86,12 +86,12 @@
         <table class="table table-zebra">
           <thead>
             <tr>
-              <th>{gettext("Domain")}</th>
-              <th>{gettext("Actors")}</th>
-              <th>{gettext("Followers")}</th>
-              <th>{gettext("Content")}</th>
-              <th>{gettext("Last Seen")}</th>
-              <th>{gettext("Actions")}</th>
+              <th scope="col">{gettext("Domain")}</th>
+              <th scope="col">{gettext("Actors")}</th>
+              <th scope="col">{gettext("Followers")}</th>
+              <th scope="col">{gettext("Content")}</th>
+              <th scope="col">{gettext("Last Seen")}</th>
+              <th scope="col">{gettext("Actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -101,7 +101,11 @@
               <td>{instance.follower_count}</td>
               <td>{instance.article_count + instance.comment_count}</td>
               <td class="text-sm opacity-70">
-                {if instance.last_seen, do: Calendar.strftime(instance.last_seen, "%Y-%m-%d %H:%M"), else: "—"}
+                <%= if instance.last_seen do %>
+                  <time datetime={Calendar.strftime(instance.last_seen, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(instance.last_seen, "%Y-%m-%d %H:%M")}</time>
+                <% else %>
+                  —
+                <% end %>
               </td>
               <td>
                 <button
@@ -144,9 +148,9 @@
           <table class="table table-zebra table-sm">
             <thead>
               <tr>
-                <th>{gettext("Board")}</th>
-                <th>{gettext("Federation")}</th>
-                <th>{gettext("Actions")}</th>
+                <th scope="col">{gettext("Board")}</th>
+                <th scope="col">{gettext("Federation")}</th>
+                <th scope="col">{gettext("Actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -187,10 +191,10 @@
         <table class="table table-zebra">
           <thead>
             <tr>
-              <th>{gettext("Board")}</th>
-              <th>{gettext("Visibility")}</th>
-              <th>{gettext("Federation")}</th>
-              <th>{gettext("Actions")}</th>
+              <th scope="col">{gettext("Board")}</th>
+              <th scope="col">{gettext("Visibility")}</th>
+              <th scope="col">{gettext("Federation")}</th>
+              <th scope="col">{gettext("Actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -269,8 +273,8 @@
             <table class="table table-zebra table-sm">
               <thead>
                 <tr>
-                  <th>{gettext("Domain")}</th>
-                  <th>{gettext("Actions")}</th>
+                  <th scope="col">{gettext("Domain")}</th>
+                  <th scope="col">{gettext("Actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -298,7 +302,7 @@
             <table class="table table-zebra table-sm">
               <thead>
                 <tr>
-                  <th>{gettext("Domain")}</th>
+                  <th scope="col">{gettext("Domain")}</th>
                 </tr>
               </thead>
               <tbody>

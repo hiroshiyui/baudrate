@@ -9,15 +9,15 @@
     <table class="table">
       <thead>
         <tr>
-          <th>{gettext("Username")}</th>
-          <th>{gettext("Registered")}</th>
-          <th></th>
+          <th scope="col">{gettext("Username")}</th>
+          <th scope="col">{gettext("Registered")}</th>
+          <th scope="col"></th>
         </tr>
       </thead>
       <tbody>
         <tr :for={user <- @pending_users}>
           <td>{user.username}</td>
-          <td>{Calendar.strftime(user.inserted_at, "%Y-%m-%d %H:%M")}</td>
+          <td><time datetime={Calendar.strftime(user.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(user.inserted_at, "%Y-%m-%d %H:%M")}</time></td>
           <td>
             <button
               phx-click="approve"

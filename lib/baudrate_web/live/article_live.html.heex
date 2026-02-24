@@ -61,7 +61,7 @@
         <.link navigate={~p"/users/#{@article.user.username}"} class="link link-hover font-semibold">{@article.user.username}</.link>
       </span>
       <span :if={@article.user}>&middot;</span>
-      <span>{Calendar.strftime(@article.inserted_at, "%Y-%m-%d %H:%M")}</span>
+      <time datetime={Calendar.strftime(@article.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(@article.inserted_at, "%Y-%m-%d %H:%M")}</time>
     </div>
 
     <div :if={@article.boards != []} class="flex items-center gap-2 text-sm">

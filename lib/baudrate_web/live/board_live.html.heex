@@ -56,7 +56,7 @@
           <.link navigate={~p"/users/#{article.user.username}"} class="link link-hover font-semibold">{article.user.username}</.link>
           &middot;
         </span>
-        {Calendar.strftime(article.inserted_at, "%Y-%m-%d %H:%M")}
+        <time datetime={Calendar.strftime(article.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(article.inserted_at, "%Y-%m-%d %H:%M")}</time>
       </div>
     </div>
   </div>

@@ -14,13 +14,13 @@
     <table class="table table-zebra w-full">
       <thead>
         <tr>
-          <th>{gettext("Code")}</th>
-          <th>{gettext("Created By")}</th>
-          <th>{gettext("Status")}</th>
-          <th>{gettext("Uses")}</th>
-          <th>{gettext("Expires")}</th>
-          <th>{gettext("Created")}</th>
-          <th>{gettext("Actions")}</th>
+          <th scope="col">{gettext("Code")}</th>
+          <th scope="col">{gettext("Created By")}</th>
+          <th scope="col">{gettext("Status")}</th>
+          <th scope="col">{gettext("Uses")}</th>
+          <th scope="col">{gettext("Expires")}</th>
+          <th scope="col">{gettext("Created")}</th>
+          <th scope="col">{gettext("Actions")}</th>
         </tr>
       </thead>
       <tbody>
@@ -50,11 +50,11 @@
           <td>{code.use_count} / {code.max_uses}</td>
           <td>
             <span :if={code.expires_at}>
-              {Calendar.strftime(code.expires_at, "%Y-%m-%d %H:%M")}
+              <time datetime={Calendar.strftime(code.expires_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(code.expires_at, "%Y-%m-%d %H:%M")}</time>
             </span>
             <span :if={!code.expires_at} class="text-base-content/50">{gettext("Never")}</span>
           </td>
-          <td>{Calendar.strftime(code.inserted_at, "%Y-%m-%d %H:%M")}</td>
+          <td><time datetime={Calendar.strftime(code.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(code.inserted_at, "%Y-%m-%d %H:%M")}</time></td>
           <td>
             <button
               :if={code_status(code) == :active}

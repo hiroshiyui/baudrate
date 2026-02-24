@@ -20,14 +20,6 @@ Audit date: 2026-02-24
 - [ ] **No incoming `Accept`/`Reject`/`Move` activity handling** — needed for future outbound follows and account migration
 - [ ] **No delivery job deduplication** — duplicate jobs possible on retry/race (`delivery.ex:67-87`)
 
-## Low: Accessibility
-
-- [ ] **Missing `<time datetime>` elements** — timestamps rendered as plain text throughout all listing pages
-- [ ] **Tables missing `scope="col"` on `<th>`** — all admin tables
-- [ ] **Setup layout `<main>` missing `id="main-content"`** — skip link broken on setup pages (`layouts.ex:242`)
-- [ ] **Missing `aria-live` on dynamic content areas** — search results, moderation queue, user table
-- [ ] **Alert SVG missing `aria-hidden="true"`** — recovery codes warning icon (`recovery_codes_live.html.heex:10`)
-
 ## Planned Features
 
 ### Board-Level Remote Follows (Moderator-Managed)

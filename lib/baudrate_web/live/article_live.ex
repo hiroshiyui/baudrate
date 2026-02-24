@@ -388,7 +388,7 @@ defmodule BaudrateWeb.ArticleLive do
             {@comment.remote_actor.username}@{@comment.remote_actor.domain}
           </span>
           <span>&middot;</span>
-          <span>{Calendar.strftime(@comment.inserted_at, "%Y-%m-%d %H:%M")}</span>
+          <time datetime={Calendar.strftime(@comment.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(@comment.inserted_at, "%Y-%m-%d %H:%M")}</time>
 
           <button
             :if={@can_delete}

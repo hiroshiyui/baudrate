@@ -15,9 +15,9 @@ msgstr ""
 #: lib/baudrate_web/live/admin/boards_live.html.heex:172
 #: lib/baudrate_web/live/admin/federation_live.html.heex:38
 #: lib/baudrate_web/live/admin/federation_live.html.heex:94
-#: lib/baudrate_web/live/admin/federation_live.html.heex:149
-#: lib/baudrate_web/live/admin/federation_live.html.heex:193
-#: lib/baudrate_web/live/admin/federation_live.html.heex:273
+#: lib/baudrate_web/live/admin/federation_live.html.heex:153
+#: lib/baudrate_web/live/admin/federation_live.html.heex:197
+#: lib/baudrate_web/live/admin/federation_live.html.heex:277
 #: lib/baudrate_web/live/admin/invites_live.html.heex:23
 #: lib/baudrate_web/live/admin/users_live.html.heex:127
 #, elixir-autogen, elixir-format
@@ -357,7 +357,7 @@ msgid "Current TOTP Code"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:81
-#: lib/baudrate_web/live/admin/federation_live.html.heex:206
+#: lib/baudrate_web/live/admin/federation_live.html.heex:210
 #: lib/baudrate_web/live/admin/settings_live.html.heex:24
 #: lib/baudrate_web/live/profile_live.html.heex:100
 #, elixir-autogen, elixir-format
@@ -375,8 +375,8 @@ msgid "Enable Two-Factor Authentication"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:81
-#: lib/baudrate_web/live/admin/federation_live.html.heex:156
-#: lib/baudrate_web/live/admin/federation_live.html.heex:206
+#: lib/baudrate_web/live/admin/federation_live.html.heex:160
+#: lib/baudrate_web/live/admin/federation_live.html.heex:210
 #: lib/baudrate_web/live/admin/settings_live.html.heex:23
 #: lib/baudrate_web/live/profile_live.html.heex:95
 #, elixir-autogen, elixir-format
@@ -398,7 +398,7 @@ msgstr ""
 msgid "Enter your password to begin setting up two-factor authentication."
 msgstr ""
 
-#: lib/baudrate_web/live/recovery_codes_live.html.heex:37
+#: lib/baudrate_web/live/recovery_codes_live.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "I've saved my recovery codes"
 msgstr ""
@@ -477,7 +477,7 @@ msgstr ""
 msgid "Too many failed attempts. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/recovery_codes_live.html.heex:23
+#: lib/baudrate_web/live/recovery_codes_live.html.heex:24
 #, elixir-autogen, elixir-format
 msgid "You will not be able to see these codes again!"
 msgstr ""
@@ -498,7 +498,7 @@ msgid "Avatar updated successfully."
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:85
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:220
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:222
 #: lib/baudrate_web/live/admin/users_live.html.heex:249
 #: lib/baudrate_web/live/admin/users_live.html.heex:287
 #: lib/baudrate_web/live/article_live.ex:446
@@ -573,8 +573,8 @@ msgstr ""
 msgid "Back to board"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:147
-#: lib/baudrate_web/live/admin/federation_live.html.heex:190
+#: lib/baudrate_web/live/admin/federation_live.html.heex:151
+#: lib/baudrate_web/live/admin/federation_live.html.heex:194
 #: lib/baudrate_web/live/article_edit_live.html.heex:79
 #: lib/baudrate_web/live/article_new_live.html.heex:87
 #, elixir-autogen, elixir-format
@@ -816,12 +816,12 @@ msgstr ""
 msgid "Attempts"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:113
+#: lib/baudrate_web/live/admin/federation_live.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Block"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:110
+#: lib/baudrate_web/live/admin/federation_live.html.heex:114
 #, elixir-autogen, elixir-format
 msgid "Block all federation with %{domain}?"
 msgstr ""
@@ -836,7 +836,7 @@ msgstr ""
 msgid "Blocklist (block specific domains)"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:180
+#: lib/baudrate_web/live/admin/federation_live.html.heex:184
 #, elixir-autogen, elixir-format
 msgid "Board Federation"
 msgstr ""
@@ -867,24 +867,24 @@ msgstr ""
 msgid "Content"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:121
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:122
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:65
 #, elixir-autogen, elixir-format
 msgid "Delete Article"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:136
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:137
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:66
 #, elixir-autogen, elixir-format
 msgid "Delete Comment"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:118
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Delete this article?"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:133
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "Delete this comment?"
 msgstr ""
@@ -899,12 +899,12 @@ msgstr ""
 msgid "Delivery Queue"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:215
+#: lib/baudrate_web/live/admin/federation_live.html.heex:219
 #, elixir-autogen, elixir-format
 msgid "Disable"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:184
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:185
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr ""
@@ -915,8 +915,8 @@ msgid "Dismissed"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:89
-#: lib/baudrate_web/live/admin/federation_live.html.heex:272
-#: lib/baudrate_web/live/admin/federation_live.html.heex:301
+#: lib/baudrate_web/live/admin/federation_live.html.heex:276
+#: lib/baudrate_web/live/admin/federation_live.html.heex:305
 #, elixir-autogen, elixir-format
 msgid "Domain"
 msgstr ""
@@ -926,7 +926,7 @@ msgstr ""
 msgid "Domain %{domain} has been blocked."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:215
+#: lib/baudrate_web/live/admin/federation_live.html.heex:219
 #, elixir-autogen, elixir-format
 msgid "Enable"
 msgstr ""
@@ -973,8 +973,8 @@ msgstr ""
 #: lib/baudrate_web/components/layouts.ex:158
 #: lib/baudrate_web/live/admin/boards_live.html.heex:80
 #: lib/baudrate_web/live/admin/boards_live.html.heex:171
-#: lib/baudrate_web/live/admin/federation_live.html.heex:148
-#: lib/baudrate_web/live/admin/federation_live.html.heex:192
+#: lib/baudrate_web/live/admin/federation_live.html.heex:152
+#: lib/baudrate_web/live/admin/federation_live.html.heex:196
 #: lib/baudrate_web/live/admin/settings_live.html.heex:21
 #, elixir-autogen, elixir-format
 msgid "Federation"
@@ -1005,7 +1005,7 @@ msgstr ""
 msgid "Followers"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:150
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:151
 #, elixir-autogen, elixir-format
 msgid "Handled by"
 msgstr ""
@@ -1052,7 +1052,7 @@ msgstr ""
 msgid "Moderation Queue"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:183
+#: lib/baudrate_web/live/admin/federation_live.html.heex:187
 #, elixir-autogen, elixir-format
 msgid "No boards configured."
 msgstr ""
@@ -1067,7 +1067,7 @@ msgstr ""
 msgid "No remote instances discovered yet."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:68
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "No reports with status \"%{status}\"."
 msgstr ""
@@ -1079,7 +1079,7 @@ msgstr ""
 msgid "Pending"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:105
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:106
 #, elixir-autogen, elixir-format
 msgid "Reason:"
 msgstr ""
@@ -1100,33 +1100,33 @@ msgstr ""
 msgid "Report resolved."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:141
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:142
 #, elixir-autogen, elixir-format
 msgid "Reported Actor:"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:111
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Reported Article:"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:126
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:127
 #, elixir-autogen, elixir-format
 msgid "Reported Comment:"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:100
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:101
 #, elixir-autogen, elixir-format
 msgid "Reported by"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:173
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:208
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:174
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:210
 #, elixir-autogen, elixir-format
 msgid "Resolution note (optional)"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:177
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:178
 #, elixir-autogen, elixir-format
 msgid "Resolve"
 msgstr ""
@@ -1136,12 +1136,12 @@ msgstr ""
 msgid "Resolved"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:162
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "Send Flag to %{domain}"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:159
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "Send a Flag report to %{domain}?"
 msgstr ""
@@ -1153,7 +1153,7 @@ msgstr ""
 msgid "Status"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:191
+#: lib/baudrate_web/live/admin/federation_live.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Visibility"
 msgstr ""
@@ -1804,11 +1804,6 @@ msgstr ""
 msgid "Invite code revoked."
 msgstr ""
 
-#: lib/baudrate_web/live/user_profile_live.html.heex:8
-#, elixir-autogen, elixir-format
-msgid "Member since %{date}"
-msgstr ""
-
 #: lib/baudrate_web/components/layouts.ex:75
 #: lib/baudrate_web/components/layouts.ex:170
 #: lib/baudrate_web/live/admin/moderation_log_live.html.heex:2
@@ -2060,7 +2055,7 @@ msgid "Your signature (Markdown supported, max 500 characters)"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:150
-#: lib/baudrate_web/live/admin/federation_live.html.heex:285
+#: lib/baudrate_web/live/admin/federation_live.html.heex:289
 #, elixir-autogen, elixir-format
 msgid "Add"
 msgstr ""
@@ -2189,12 +2184,12 @@ msgstr ""
 msgid "This article has been deleted."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:265
+#: lib/baudrate_web/live/admin/federation_live.html.heex:269
 #, elixir-autogen, elixir-format
 msgid "Add All"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:262
+#: lib/baudrate_web/live/admin/federation_live.html.heex:266
 #, elixir-autogen, elixir-format
 msgid "Add all %{count} missing domains to blocklist?"
 msgstr ""
@@ -2210,7 +2205,7 @@ msgstr ""
 msgid "Authorized Fetch (Secure Mode)"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:228
+#: lib/baudrate_web/live/admin/federation_live.html.heex:232
 #, elixir-autogen, elixir-format
 msgid "Blocklist Audit"
 msgstr ""
@@ -2225,12 +2220,12 @@ msgstr ""
 msgid "Blocklist audit failed."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:142
+#: lib/baudrate_web/live/admin/federation_live.html.heex:146
 #, elixir-autogen, elixir-format
 msgid "Board Keys"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:229
+#: lib/baudrate_web/live/admin/federation_live.html.heex:233
 #, elixir-autogen, elixir-format
 msgid "Compare your local domain blocklist against an external known-bad-actor list. Configure the audit URL in Admin Settings."
 msgstr ""
@@ -2246,7 +2241,7 @@ msgstr ""
 msgid "Domain %{domain} added to blocklist."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:296
+#: lib/baudrate_web/live/admin/federation_live.html.heex:300
 #, elixir-autogen, elixir-format
 msgid "Domains you block that are not in the external list (informational only)."
 msgstr ""
@@ -2256,12 +2251,12 @@ msgstr ""
 msgid "Enabled (require HTTP signatures on GETs)"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:240
+#: lib/baudrate_web/live/admin/federation_live.html.heex:244
 #, elixir-autogen, elixir-format
 msgid "External List"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:295
+#: lib/baudrate_web/live/admin/federation_live.html.heex:299
 #, elixir-autogen, elixir-format
 msgid "Extra in Local Blocklist"
 msgstr ""
@@ -2271,7 +2266,7 @@ msgstr ""
 msgid "Failed to fetch external blocklist."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:126
+#: lib/baudrate_web/live/admin/federation_live.html.heex:130
 #, elixir-autogen, elixir-format
 msgid "Key Rotation"
 msgstr ""
@@ -2286,17 +2281,17 @@ msgstr ""
 msgid "Keys rotated successfully."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:244
+#: lib/baudrate_web/live/admin/federation_live.html.heex:248
 #, elixir-autogen, elixir-format
 msgid "Local Blocklist"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:252
+#: lib/baudrate_web/live/admin/federation_live.html.heex:256
 #, elixir-autogen, elixir-format
 msgid "Missing"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:259
+#: lib/baudrate_web/live/admin/federation_live.html.heex:263
 #, elixir-autogen, elixir-format
 msgid "Missing from Local Blocklist"
 msgstr ""
@@ -2306,38 +2301,38 @@ msgstr ""
 msgid "No blocklist audit URL configured. Set it in Admin Settings."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:248
+#: lib/baudrate_web/live/admin/federation_live.html.heex:252
 #, elixir-autogen, elixir-format
 msgid "Overlap"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:166
+#: lib/baudrate_web/live/admin/federation_live.html.heex:170
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:74
 #, elixir-autogen, elixir-format
 msgid "Rotate Keys"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:127
+#: lib/baudrate_web/live/admin/federation_live.html.heex:131
 #, elixir-autogen, elixir-format
 msgid "Rotate RSA keypairs for federation actors. The new public key will be distributed to followers via an Update activity."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:137
+#: lib/baudrate_web/live/admin/federation_live.html.heex:141
 #, elixir-autogen, elixir-format
 msgid "Rotate Site Keys"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:163
+#: lib/baudrate_web/live/admin/federation_live.html.heex:167
 #, elixir-autogen, elixir-format
 msgid "Rotate keypair for %{board}?"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:134
+#: lib/baudrate_web/live/admin/federation_live.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Rotate site keypair? This will invalidate existing signatures."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:233
+#: lib/baudrate_web/live/admin/federation_live.html.heex:237
 #, elixir-autogen, elixir-format
 msgid "Run Audit"
 msgstr ""
@@ -2352,7 +2347,7 @@ msgstr ""
 msgid "When enabled, unsigned GET requests to ActivityPub endpoints return 401. WebFinger and NodeInfo remain public."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/federation_live.html.heex:314
+#: lib/baudrate_web/live/admin/federation_live.html.heex:318
 #, elixir-autogen, elixir-format
 msgid "Your local blocklist matches the external list perfectly."
 msgstr ""
@@ -2965,7 +2960,7 @@ msgstr ""
 msgid "Previous page"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:175
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:176
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Resolution note"
 msgstr ""
@@ -3234,7 +3229,7 @@ msgstr[1] ""
 msgid "Ban Selected"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:222
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:224
 #, elixir-autogen, elixir-format
 msgid "Confirm Resolve"
 msgstr ""
@@ -3254,7 +3249,7 @@ msgstr ""
 msgid "No users selected for ban."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:203
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:205
 #, elixir-autogen, elixir-format
 msgid "Resolve %{count} Report"
 msgid_plural "Resolve %{count} Reports"
@@ -3266,7 +3261,7 @@ msgstr[1] ""
 msgid "Resolve Selected"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:221
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:223
 #, elixir-autogen, elixir-format
 msgid "Resolving..."
 msgstr ""
@@ -3286,7 +3281,12 @@ msgstr ""
 msgid "Select all users"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:80
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "Select report #%{id}"
+msgstr ""
+
+#: lib/baudrate_web/live/user_profile_live.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "Member since"
 msgstr ""

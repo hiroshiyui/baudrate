@@ -18,10 +18,10 @@
       <table class="table table-sm" role="grid" aria-label={gettext("Revision list")}>
         <thead>
           <tr>
-            <th>{gettext("Version")}</th>
-            <th>{gettext("Editor")}</th>
-            <th>{gettext("Date")}</th>
-            <th></th>
+            <th scope="col">{gettext("Version")}</th>
+            <th scope="col">{gettext("Editor")}</th>
+            <th scope="col">{gettext("Date")}</th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <tbody>
@@ -38,7 +38,7 @@
                   {gettext("Unknown")}
                 </span>
               </td>
-              <td>{Calendar.strftime(revision.inserted_at, "%Y-%m-%d %H:%M")}</td>
+              <td><time datetime={Calendar.strftime(revision.inserted_at, "%Y-%m-%dT%H:%M:%S")}>{Calendar.strftime(revision.inserted_at, "%Y-%m-%d %H:%M")}</time></td>
               <td>
                 <button
                   phx-click="select_revision"
