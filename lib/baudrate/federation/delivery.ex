@@ -253,6 +253,32 @@ defmodule Baudrate.Federation.Delivery do
     end
   end
 
+  @doc """
+  Purges old completed and abandoned delivery jobs.
+
+  Deletes `delivered` jobs older than 7 days and `abandoned` jobs older than
+  30 days. Returns the total number of deleted rows.
+  """
+  def purge_completed_jobs do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+    delivered_cutoff = DateTime.add(now, -7, :day)
+    abandoned_cutoff = DateTime.add(now, -30, :day)
+
+    {delivered_count, _} =
+      from(j in DeliveryJob,
+        where: j.status == "delivered" and j.inserted_at < ^delivered_cutoff
+      )
+      |> Repo.delete_all()
+
+    {abandoned_count, _} =
+      from(j in DeliveryJob,
+        where: j.status == "abandoned" and j.inserted_at < ^abandoned_cutoff
+      )
+      |> Repo.delete_all()
+
+    delivered_count + abandoned_count
+  end
+
   defp headers_to_list(headers) do
     Enum.map(headers, fn {k, v} -> {k, v} end)
   end

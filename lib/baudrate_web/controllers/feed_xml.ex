@@ -51,10 +51,26 @@ defmodule BaudrateWeb.FeedXML do
 
   @doc """
   Returns the article body rendered as sanitized HTML for feed content.
+
+  Escapes `]]>` sequences to prevent premature CDATA section termination.
   """
   def article_html(article) do
-    Baudrate.Content.Markdown.to_html(article.body)
+    article.body
+    |> Baudrate.Content.Markdown.to_html()
+    |> escape_cdata()
   end
+
+  @doc """
+  Escapes `]]>` sequences inside CDATA sections to prevent injection.
+
+  Replaces `]]>` with `]]]]><![CDATA[>` which splits the CDATA section
+  and re-opens it, producing the literal text `]]>` in the output.
+  """
+  def escape_cdata(text) when is_binary(text) do
+    String.replace(text, "]]>", "]]]]><![CDATA[>")
+  end
+
+  def escape_cdata(nil), do: ""
 
   @days ~w(Mon Tue Wed Thu Fri Sat Sun)
   @months ~w(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)

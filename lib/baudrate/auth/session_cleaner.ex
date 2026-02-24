@@ -11,6 +11,8 @@ defmodule Baudrate.Auth.SessionCleaner do
     * `Auth.purge_old_login_attempts/0` — removes login attempts older than 7 days
     * Orphan article images — deletes images uploaded during article composition
       but never associated with an article (older than 24 hours)
+    * Delivery jobs — purges delivered jobs older than 7 days and abandoned
+      jobs older than 30 days
 
   The first cleanup is scheduled on `init/1`, so it runs one interval after
   the application boots — not immediately — to avoid slowing startup.
@@ -37,12 +39,21 @@ defmodule Baudrate.Auth.SessionCleaner do
     Baudrate.Auth.purge_expired_sessions()
     Baudrate.Auth.purge_old_login_attempts()
     cleanup_orphan_article_images()
+    cleanup_delivery_jobs()
     schedule_cleanup()
     {:noreply, state}
   end
 
   defp schedule_cleanup do
     Process.send_after(self(), :cleanup, @interval)
+  end
+
+  defp cleanup_delivery_jobs do
+    count = Baudrate.Federation.Delivery.purge_completed_jobs()
+
+    if count > 0 do
+      Logger.info("session_cleaner.delivery_jobs_purged: count=#{count}")
+    end
   end
 
   defp cleanup_orphan_article_images do

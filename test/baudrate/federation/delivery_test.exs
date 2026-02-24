@@ -288,6 +288,74 @@ defmodule Baudrate.Federation.DeliveryTest do
     end
   end
 
+  describe "purge_completed_jobs/0" do
+    test "deletes old delivered jobs" do
+      old = DateTime.utc_now() |> DateTime.add(-8, :day) |> DateTime.truncate(:second)
+
+      %DeliveryJob{}
+      |> DeliveryJob.create_changeset(%{
+        activity_json: "{}",
+        inbox_url: "https://remote.example/inbox",
+        actor_uri: "https://local.example/ap/users/alice"
+      })
+      |> Ecto.Changeset.change(%{status: "delivered", inserted_at: old})
+      |> Repo.insert!()
+
+      assert Delivery.purge_completed_jobs() == 1
+      assert Repo.all(DeliveryJob) == []
+    end
+
+    test "keeps recent delivered jobs" do
+      recent = DateTime.utc_now() |> DateTime.add(-1, :day) |> DateTime.truncate(:second)
+
+      %DeliveryJob{}
+      |> DeliveryJob.create_changeset(%{
+        activity_json: "{}",
+        inbox_url: "https://remote.example/inbox",
+        actor_uri: "https://local.example/ap/users/alice"
+      })
+      |> Ecto.Changeset.change(%{status: "delivered", inserted_at: recent})
+      |> Repo.insert!()
+
+      assert Delivery.purge_completed_jobs() == 0
+      assert length(Repo.all(DeliveryJob)) == 1
+    end
+
+    test "deletes old abandoned jobs" do
+      old = DateTime.utc_now() |> DateTime.add(-31, :day) |> DateTime.truncate(:second)
+
+      %DeliveryJob{}
+      |> DeliveryJob.create_changeset(%{
+        activity_json: "{}",
+        inbox_url: "https://remote.example/inbox",
+        actor_uri: "https://local.example/ap/users/alice"
+      })
+      |> Ecto.Changeset.change(%{status: "abandoned", inserted_at: old})
+      |> Repo.insert!()
+
+      assert Delivery.purge_completed_jobs() == 1
+      assert Repo.all(DeliveryJob) == []
+    end
+
+    test "keeps pending and failed jobs" do
+      old = DateTime.utc_now() |> DateTime.add(-31, :day) |> DateTime.truncate(:second)
+
+      for status <- ["pending", "failed"] do
+        %DeliveryJob{}
+        |> DeliveryJob.create_changeset(%{
+          activity_json: "{}",
+          inbox_url: "https://remote.example/inbox-#{status}",
+          actor_uri: "https://local.example/ap/users/alice"
+        })
+        |> Ecto.Changeset.change(%{status: status, inserted_at: old})
+        |> Repo.insert!()
+      end
+
+      assert Delivery.purge_completed_jobs() == 0
+      assert length(Repo.all(DeliveryJob)) == 2
+    end
+  end
+
   describe "get_private_key/1" do
     test "retrieves user private key" do
       user = create_user()

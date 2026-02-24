@@ -269,7 +269,6 @@ defmodule Baudrate.Federation do
   """
   def board_actor(board) do
     uri = actor_uri(:board, board.slug)
-    board = Repo.preload(board, [])
 
     sub_boards =
       Content.list_sub_boards(board)

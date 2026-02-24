@@ -12,12 +12,6 @@ Audit date: 2026-02-24
 - [ ] **Write deployment guide** — no deployment documentation exists
 - [ ] **Add `.env.example`** — no environment config template
 
-## Low: Code Quality
-
-- [ ] **Dead code** — unused `format_file_size/1` (`article_live.ex:488`), no-op `Repo.preload(board, [])` (`federation.ex:272`)
-- [ ] **No stale delivery job cleanup** — `delivery_jobs` table grows indefinitely
-- [ ] **CDATA injection in RSS/Atom feeds** — `]]>` sequences not escaped in feed content
-
 ## Low: Federation
 
 - [ ] **No `formerType` on outgoing Tombstones** — AP spec recommends it (`publisher.ex:66-69`)
