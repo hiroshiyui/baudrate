@@ -28,6 +28,16 @@ receiving the actor's public posts in a personal feed.
 6. **Inbox routing** — route inbound posts from followed actors to the
    follower's personal feed (distinguish from DMs and board content).
 
+#### Shared Remote Actor Lookup
+
+Both user-level and board-level follows share a common
+`Federation.lookup_remote_actor/1` function (WebFinger + actor fetch), but the
+**UI entry points are separate** to avoid mixing user and admin contexts:
+
+- `/search` — users discover remote actors to follow personally
+- Board moderator panel (e.g., `/admin/boards/:slug/follows`) — moderators
+  discover remote actors to follow on behalf of a board
+
 #### Implementation Notes
 
 - New `user_follows` table (user_id, remote_actor_id, state, ap_id)
@@ -61,7 +71,6 @@ their content into the board. Requires anti-loop and deduplication safeguards.
 - Rules 1 + 2 are the minimum viable safeguards
 - Rules 3 + 4 are defense-in-depth
 - Need a new `board_follows` table (board_id, remote_actor_id, followed_by_id)
-- Need UI in board moderator panel to manage follows
-- Reuse the remote actor discovery from `/search` (WebFinger + actor fetch) for
-  locating actors to follow
+- UI in board moderator panel with its own actor search field — uses shared
+  `Federation.lookup_remote_actor/1` but separate from `/search`
 - Need to handle `Undo(Follow)` on unfollow
