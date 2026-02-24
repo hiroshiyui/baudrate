@@ -471,29 +471,105 @@ count. Consider a distributed backend (e.g., Redis) for production clusters.
 Rate limiting **fails open** — backend errors allow requests through rather
 than causing denial of service.
 
-### Reverse Proxy
+### Reverse Proxy (Nginx)
 
-Your reverse proxy **must** correctly set these headers:
+Baudrate runs plain HTTP behind a reverse proxy. TLS termination happens at
+Nginx — **you do not need to configure HTTPS in Phoenix itself**. The
+production endpoint already sets `url: [scheme: "https", port: 443]` and
+`force_ssl: [rewrite_on: [:x_forwarded_proto]]`, so Phoenix generates correct
+`https://` URLs and redirects HTTP→HTTPS based on the `X-Forwarded-Proto`
+header from Nginx.
+
+#### Full Nginx Configuration
 
 ```nginx
-location / {
-    proxy_pass http://127.0.0.1:4000;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $remote_addr;     # SET, not append
-    proxy_set_header X-Forwarded-Proto $scheme;
+# Redirect HTTP → HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name forum.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name forum.example.com;
+
+    # --- TLS ---
+    ssl_certificate     /etc/letsencrypt/live/forum.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/forum.example.com/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+
+    # OCSP stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    ssl_trusted_certificate /etc/letsencrypt/live/forum.example.com/chain.pem;
+
+    # --- Request limits ---
+    client_max_body_size 16M;      # Match your upload size limit
+
+    # --- Proxy to Phoenix ---
+    location / {
+        proxy_pass http://127.0.0.1:4000;
+        proxy_http_version 1.1;
+
+        # WebSocket support (required for LiveView)
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        # Host and scheme forwarding
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;       # SET, not append
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Timeouts for long-lived WebSocket connections
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+
+        # Disable buffering for LiveView streaming
+        proxy_buffering off;
+    }
 }
 ```
 
-**Critical:** `X-Forwarded-For` must be **set** (not appended). Appending
-allows IP spoofing and breaks rate limiting. Without `X-Forwarded-Proto`,
-HTTPS detection fails causing redirect loops.
+Replace `forum.example.com` with your domain and adjust certificate paths to
+match your TLS provider (Let's Encrypt, etc.).
 
-WebSocket passthrough (`Upgrade` + `Connection` headers) is required for
-LiveView real-time updates. Without it, pages load but don't update in
-real-time and forms may not submit properly.
+#### Why This Matters
+
+| Header / Setting | What breaks without it |
+|------------------|------------------------|
+| `X-Forwarded-For $remote_addr` | Rate limiting sees only the proxy's IP — all users share one limit |
+| `X-Forwarded-Proto $scheme` | `force_ssl` can't detect HTTPS → infinite redirect loop |
+| `Upgrade` + `Connection` | LiveView falls back to long-polling; real-time updates and form submissions break |
+| `proxy_read_timeout 600s` | Nginx closes idle WebSocket connections after 60s default, causing LiveView disconnects |
+| `proxy_buffering off` | LiveView streaming responses are delayed until the buffer fills |
+
+#### Critical Security Notes
+
+- **`X-Forwarded-For` must be SET, not appended.** Using `$proxy_add_x_forwarded_for`
+  allows clients to spoof their IP by sending a fake `X-Forwarded-For` header,
+  breaking rate limiting and IP-based security logging.
+- **Bind Phoenix to localhost only** if Nginx and Phoenix run on the same
+  machine. In `runtime.exs`, change `ip: {0, 0, 0, 0, 0, 0, 0, 0}` to
+  `ip: {127, 0, 0, 1}` (IPv4) or `ip: {0, 0, 0, 0, 0, 0, 0, 1}` (IPv6
+  loopback) to prevent direct access bypassing Nginx.
+
+#### Obtaining TLS Certificates
+
+Using [Let's Encrypt](https://letsencrypt.org/) with Certbot:
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d forum.example.com
+```
+
+Certbot automatically configures Nginx and sets up auto-renewal via a systemd
+timer. Verify renewal works: `sudo certbot renew --dry-run`.
 
 ### Session Security
 
