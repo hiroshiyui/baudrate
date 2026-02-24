@@ -52,6 +52,28 @@ defmodule BaudrateWeb.BoardLiveTest do
     assert render(lv) =~ "PubSub Article"
   end
 
+  test "board with children shows sub-board cards", %{conn: conn, board: board} do
+    _child =
+      %Board{}
+      |> Board.changeset(%{name: "Sub Board", slug: "sub-board", parent_id: board.id})
+      |> Repo.insert!()
+
+    {:ok, _lv, html} = live(conn, "/boards/general")
+    assert html =~ "Sub Board"
+  end
+
+  test "breadcrumb navigation on sub-board page", %{conn: conn, board: board} do
+    child =
+      %Board{}
+      |> Board.changeset(%{name: "Child Board", slug: "child-board", parent_id: board.id})
+      |> Repo.insert!()
+
+    {:ok, _lv, html} = live(conn, "/boards/#{child.slug}")
+    # Breadcrumb should contain parent board link
+    assert html =~ "General"
+    assert html =~ "Child Board"
+  end
+
   test "navigates between pages", %{conn: conn, user: user, board: board} do
     for i <- 1..25 do
       Content.create_article(
