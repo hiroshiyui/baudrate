@@ -10,6 +10,7 @@ defmodule BaudrateWeb.UserProfileLive do
 
   alias Baudrate.Auth
   alias Baudrate.Content
+  alias BaudrateWeb.RateLimits
   import BaudrateWeb.Helpers, only: [translate_role: 1]
 
   @impl true
@@ -57,17 +58,24 @@ defmodule BaudrateWeb.UserProfileLive do
     current_user = socket.assigns.current_user
 
     if current_user do
-      profile_user = socket.assigns.profile_user
-
-      case Auth.mute_user(current_user, profile_user) do
-        {:ok, _} ->
+      case RateLimits.check_mute_user(current_user.id) do
+        {:error, :rate_limited} ->
           {:noreply,
-           socket
-           |> assign(:is_muted, true)
-           |> put_flash(:info, gettext("User muted."))}
+           put_flash(socket, :error, gettext("Too many actions. Please try again later."))}
 
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to mute user."))}
+        :ok ->
+          profile_user = socket.assigns.profile_user
+
+          case Auth.mute_user(current_user, profile_user) do
+            {:ok, _} ->
+              {:noreply,
+               socket
+               |> assign(:is_muted, true)
+               |> put_flash(:info, gettext("User muted."))}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, gettext("Failed to mute user."))}
+          end
       end
     else
       {:noreply, socket}

@@ -18,6 +18,7 @@ defmodule BaudrateWeb.ArticleNewLive do
   alias Baudrate.Auth
   alias Baudrate.Content
   alias Baudrate.Content.ArticleImageStorage
+  alias BaudrateWeb.RateLimits
   import BaudrateWeb.Helpers, only: [parse_id: 1]
 
   @impl true
@@ -161,28 +162,48 @@ defmodule BaudrateWeb.ArticleNewLive do
       {:noreply, put_flash(socket, :error, gettext("Please select at least one board."))}
     else
       user = socket.assigns.current_user
-      slug = Content.generate_slug(params["title"] || "")
 
-      attrs =
-        params
-        |> Map.put("slug", slug)
-        |> Map.put("user_id", user.id)
+      if user.role.name == "admin" do
+        do_create_article(socket, user, params, board_ids)
+      else
+        case RateLimits.check_create_article(user.id) do
+          {:error, :rate_limited} ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               gettext("You are posting too frequently. Please try again later.")
+             )}
 
-      image_ids = Enum.map(socket.assigns.uploaded_images, & &1.id)
-
-      case Content.create_article(attrs, board_ids, image_ids: image_ids) do
-        {:ok, %{article: article}} ->
-          {:noreply,
-           socket
-           |> put_flash(:info, gettext("Article created successfully."))
-           |> redirect(to: ~p"/articles/#{article.slug}")}
-
-        {:error, :article, changeset, _} ->
-          {:noreply, assign(socket, :form, to_form(changeset, as: :article))}
-
-        {:error, _, _, _} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to create article."))}
+          :ok ->
+            do_create_article(socket, user, params, board_ids)
+        end
       end
+    end
+  end
+
+  defp do_create_article(socket, user, params, board_ids) do
+    slug = Content.generate_slug(params["title"] || "")
+
+    attrs =
+      params
+      |> Map.put("slug", slug)
+      |> Map.put("user_id", user.id)
+
+    image_ids = Enum.map(socket.assigns.uploaded_images, & &1.id)
+
+    case Content.create_article(attrs, board_ids, image_ids: image_ids) do
+      {:ok, %{article: article}} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Article created successfully."))
+         |> redirect(to: ~p"/articles/#{article.slug}")}
+
+      {:error, :article, changeset, _} ->
+        {:noreply, assign(socket, :form, to_form(changeset, as: :article))}
+
+      {:error, _, _, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to create article."))}
     end
   end
 

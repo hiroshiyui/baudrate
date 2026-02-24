@@ -12,10 +12,21 @@ defmodule BaudrateWeb.SearchLive do
   use BaudrateWeb, :live_view
 
   alias Baudrate.Content
+  alias BaudrateWeb.RateLimits
   import BaudrateWeb.Helpers, only: [parse_page: 1]
 
   @impl true
   def mount(_params, _session, socket) do
+    peer_ip =
+      if connected?(socket) do
+        case get_connect_info(socket, :peer_data) do
+          %{address: addr} -> addr |> :inet.ntoa() |> to_string()
+          _ -> "unknown"
+        end
+      else
+        "unknown"
+      end
+
     {:ok,
      socket
      |> assign(:query, "")
@@ -25,6 +36,7 @@ defmodule BaudrateWeb.SearchLive do
      |> assign(:total, 0)
      |> assign(:page, 1)
      |> assign(:total_pages, 1)
+     |> assign(:peer_ip, peer_ip)
      |> assign(:page_title, gettext("Search"))}
   end
 
@@ -35,20 +47,30 @@ defmodule BaudrateWeb.SearchLive do
     page = parse_page(params["page"])
 
     if query != "" do
-      result =
-        case tab do
-          "articles" ->
-            Content.search_articles(query, page: page, user: socket.assigns.current_user)
+      case check_search_rate(socket) do
+        {:error, :rate_limited} ->
+          {:noreply,
+           socket
+           |> assign(:query, query)
+           |> assign(:tab, tab)
+           |> put_flash(:error, gettext("Too many searches. Please try again later."))}
 
-          "comments" ->
-            Content.search_comments(query, page: page, user: socket.assigns.current_user)
-        end
+        :ok ->
+          result =
+            case tab do
+              "articles" ->
+                Content.search_articles(query, page: page, user: socket.assigns.current_user)
 
-      {:noreply,
-       socket
-       |> assign(:query, query)
-       |> assign(:tab, tab)
-       |> assign_search_results(tab, result)}
+              "comments" ->
+                Content.search_comments(query, page: page, user: socket.assigns.current_user)
+            end
+
+          {:noreply,
+           socket
+           |> assign(:query, query)
+           |> assign(:tab, tab)
+           |> assign_search_results(tab, result)}
+      end
     else
       {:noreply,
        assign(socket,
@@ -66,6 +88,13 @@ defmodule BaudrateWeb.SearchLive do
   @impl true
   def handle_event("search", %{"q" => query}, socket) do
     {:noreply, push_patch(socket, to: ~p"/search?#{%{q: query, tab: socket.assigns.tab}}")}
+  end
+
+  defp check_search_rate(socket) do
+    case socket.assigns.current_user do
+      %{id: user_id} -> RateLimits.check_search(user_id)
+      nil -> RateLimits.check_search_by_ip(socket.assigns.peer_ip)
+    end
   end
 
   defp assign_search_results(socket, "articles", result) do

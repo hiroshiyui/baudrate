@@ -10,6 +10,7 @@ defmodule BaudrateWeb.ArticleEditLive do
 
   alias Baudrate.Content
   alias Baudrate.Content.ArticleImageStorage
+  alias BaudrateWeb.RateLimits
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -128,6 +129,27 @@ defmodule BaudrateWeb.ArticleEditLive do
 
   @impl true
   def handle_event("submit", %{"article" => params}, socket) do
+    user = socket.assigns.current_user
+
+    if user.role.name == "admin" do
+      do_update_article(socket, params)
+    else
+      case RateLimits.check_update_article(user.id) do
+        :ok ->
+          do_update_article(socket, params)
+
+        {:error, :rate_limited} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("You are editing too frequently. Please try again later.")
+           )}
+      end
+    end
+  end
+
+  defp do_update_article(socket, params) do
     case Content.update_article(socket.assigns.article, params, socket.assigns.current_user) do
       {:ok, updated_article} ->
         {:noreply,

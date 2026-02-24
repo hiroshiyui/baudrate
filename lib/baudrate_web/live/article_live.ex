@@ -13,6 +13,7 @@ defmodule BaudrateWeb.ArticleLive do
   alias Baudrate.Content.PubSub, as: ContentPubSub
   alias Baudrate.Moderation
   alias BaudrateWeb.Helpers
+  alias BaudrateWeb.RateLimits
   import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1, format_file_size: 1]
 
   @impl true
@@ -102,30 +103,20 @@ defmodule BaudrateWeb.ArticleLive do
   @impl true
   def handle_event("delete_article", _params, socket) do
     article = socket.assigns.article
+    user = socket.assigns.current_user
 
     if socket.assigns.can_delete do
-      case Content.soft_delete_article(article) do
-        {:ok, _} ->
-          user = socket.assigns.current_user
+      if user.role.name != "admin" do
+        case RateLimits.check_delete_content(user.id) do
+          {:error, :rate_limited} ->
+            {:noreply,
+             put_flash(socket, :error, gettext("Too many actions. Please try again later."))}
 
-          if user.id != article.user_id do
-            Moderation.log_action(user.id, "delete_article",
-              target_type: "article",
-              target_id: article.id,
-              details: %{"title" => article.title}
-            )
-          end
-
-          board = List.first(article.boards)
-          redirect_path = if board, do: ~p"/boards/#{board.slug}", else: ~p"/"
-
-          {:noreply,
-           socket
-           |> put_flash(:info, gettext("Article deleted."))
-           |> redirect(to: redirect_path)}
-
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to delete article."))}
+          :ok ->
+            do_delete_article(socket, article, user)
+        end
+      else
+        do_delete_article(socket, article, user)
       end
     else
       {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
@@ -202,31 +193,19 @@ defmodule BaudrateWeb.ArticleLive do
         {:noreply, socket}
 
       {:ok, comment_id} ->
-        article = socket.assigns.article
         user = socket.assigns.current_user
-        comment = Baudrate.Repo.get!(Baudrate.Content.Comment, comment_id)
 
-        if Content.can_delete_comment?(user, comment, article) do
-          case Content.soft_delete_comment(comment) do
-            {:ok, _} ->
-              if user.id != comment.user_id do
-                Moderation.log_action(user.id, "delete_comment",
-                  target_type: "comment",
-                  target_id: comment.id,
-                  details: %{"article_title" => article.title}
-                )
-              end
-
+        if user.role.name != "admin" do
+          case RateLimits.check_delete_content(user.id) do
+            {:error, :rate_limited} ->
               {:noreply,
-               socket
-               |> load_comments(socket.assigns.comment_page)
-               |> put_flash(:info, gettext("Comment deleted."))}
+               put_flash(socket, :error, gettext("Too many actions. Please try again later."))}
 
-            {:error, _} ->
-              {:noreply, put_flash(socket, :error, gettext("Failed to delete comment."))}
+            :ok ->
+              do_delete_comment(socket, comment_id, user)
           end
         else
-          {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
+          do_delete_comment(socket, comment_id, user)
         end
     end
   end
@@ -243,31 +222,22 @@ defmodule BaudrateWeb.ArticleLive do
   @impl true
   def handle_event("submit_comment", %{"comment" => params}, socket) do
     user = socket.assigns.current_user
-    article = socket.assigns.article
 
-    attrs =
-      params
-      |> Map.put("article_id", article.id)
-      |> Map.put("user_id", user.id)
+    if user.role.name != "admin" do
+      case RateLimits.check_create_comment(user.id) do
+        {:error, :rate_limited} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("You are commenting too frequently. Please try again later.")
+           )}
 
-    attrs =
-      if socket.assigns.replying_to do
-        Map.put(attrs, "parent_id", socket.assigns.replying_to)
-      else
-        attrs
+        :ok ->
+          do_create_comment(socket, user, params)
       end
-
-    case Content.create_comment(attrs) do
-      {:ok, _comment} ->
-        {:noreply,
-         socket
-         |> load_comments(socket.assigns.comment_page)
-         |> assign(:comment_form, to_form(Content.change_comment(), as: :comment))
-         |> assign(:replying_to, nil)
-         |> put_flash(:info, gettext("Comment posted."))}
-
-      {:error, changeset} ->
-        {:noreply, assign(socket, :comment_form, to_form(changeset, as: :comment))}
+    else
+      do_create_comment(socket, user, params)
     end
   end
 
@@ -482,6 +452,87 @@ defmodule BaudrateWeb.ArticleLive do
       <% end %>
     </div>
     """
+  end
+
+  defp do_delete_article(socket, article, user) do
+    case Content.soft_delete_article(article) do
+      {:ok, _} ->
+        if user.id != article.user_id do
+          Moderation.log_action(user.id, "delete_article",
+            target_type: "article",
+            target_id: article.id,
+            details: %{"title" => article.title}
+          )
+        end
+
+        board = List.first(article.boards)
+        redirect_path = if board, do: ~p"/boards/#{board.slug}", else: ~p"/"
+
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Article deleted."))
+         |> redirect(to: redirect_path)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to delete article."))}
+    end
+  end
+
+  defp do_delete_comment(socket, comment_id, user) do
+    article = socket.assigns.article
+    comment = Baudrate.Repo.get!(Baudrate.Content.Comment, comment_id)
+
+    if Content.can_delete_comment?(user, comment, article) do
+      case Content.soft_delete_comment(comment) do
+        {:ok, _} ->
+          if user.id != comment.user_id do
+            Moderation.log_action(user.id, "delete_comment",
+              target_type: "comment",
+              target_id: comment.id,
+              details: %{"article_title" => article.title}
+            )
+          end
+
+          {:noreply,
+           socket
+           |> load_comments(socket.assigns.comment_page)
+           |> put_flash(:info, gettext("Comment deleted."))}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to delete comment."))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
+    end
+  end
+
+  defp do_create_comment(socket, user, params) do
+    article = socket.assigns.article
+
+    attrs =
+      params
+      |> Map.put("article_id", article.id)
+      |> Map.put("user_id", user.id)
+
+    attrs =
+      if socket.assigns.replying_to do
+        Map.put(attrs, "parent_id", socket.assigns.replying_to)
+      else
+        attrs
+      end
+
+    case Content.create_comment(attrs) do
+      {:ok, _comment} ->
+        {:noreply,
+         socket
+         |> load_comments(socket.assigns.comment_page)
+         |> assign(:comment_form, to_form(Content.change_comment(), as: :comment))
+         |> assign(:replying_to, nil)
+         |> put_flash(:info, gettext("Comment posted."))}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :comment_form, to_form(changeset, as: :comment))}
+    end
   end
 
   defp load_comments(socket, page) do
