@@ -55,6 +55,113 @@ defmodule Baudrate.MessagingTest do
     |> Repo.insert!()
   end
 
+  # --- can_receive_remote_dm? ---
+
+  describe "can_receive_remote_dm?/2" do
+    test "allows active user with dm_access=anyone" do
+      user = create_user("user")
+      remote_actor = create_remote_actor()
+      assert Messaging.can_receive_remote_dm?(user, remote_actor)
+    end
+
+    test "denies when user is banned" do
+      user = create_user("user")
+
+      user =
+        user
+        |> Baudrate.Setup.User.ban_changeset(%{
+          status: "banned",
+          banned_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.update!()
+        |> Repo.preload(:role)
+
+      remote_actor = create_remote_actor()
+      refute Messaging.can_receive_remote_dm?(user, remote_actor)
+    end
+
+    test "denies when dm_access=nobody" do
+      user = create_user("user", dm_access: "nobody")
+      remote_actor = create_remote_actor()
+      refute Messaging.can_receive_remote_dm?(user, remote_actor)
+    end
+
+    test "denies when remote actor's domain is blocked" do
+      user = create_user("user")
+      remote_actor = create_remote_actor(%{domain: "blocked.example"})
+
+      Baudrate.Setup.set_setting("ap_domain_blocklist", "blocked.example")
+
+      refute Messaging.can_receive_remote_dm?(user, remote_actor)
+    end
+
+    test "denies when user blocked remote actor's AP ID" do
+      user = create_user("user")
+      remote_actor = create_remote_actor()
+      Baudrate.Auth.block_remote_actor(user, remote_actor.ap_id)
+      refute Messaging.can_receive_remote_dm?(user, remote_actor)
+    end
+  end
+
+  # --- participant? ---
+
+  describe "participant?/2" do
+    test "returns true for both participants" do
+      user_a = create_user("user")
+      user_b = create_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(user_a, user_b)
+
+      assert Messaging.participant?(conv, user_a)
+      assert Messaging.participant?(conv, user_b)
+    end
+
+    test "returns false for non-participant" do
+      user_a = create_user("user")
+      user_b = create_user("user")
+      user_c = create_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(user_a, user_b)
+
+      refute Messaging.participant?(conv, user_c)
+    end
+  end
+
+  # --- unread_count_for_conversation ---
+
+  describe "unread_count_for_conversation/2" do
+    test "counts unread messages from other user" do
+      user_a = create_user("user")
+      user_b = create_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(user_a, user_b)
+
+      {:ok, _} = Messaging.create_message(conv, user_b, %{body: "Hello!"})
+      {:ok, _} = Messaging.create_message(conv, user_b, %{body: "Are you there?"})
+
+      assert Messaging.unread_count_for_conversation(conv.id, user_a) == 2
+    end
+
+    test "returns 0 after marking read" do
+      user_a = create_user("user")
+      user_b = create_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(user_a, user_b)
+
+      {:ok, _} = Messaging.create_message(conv, user_b, %{body: "Hello!"})
+      {:ok, msg2} = Messaging.create_message(conv, user_b, %{body: "Second"})
+
+      Messaging.mark_conversation_read(conv, user_a, msg2)
+      assert Messaging.unread_count_for_conversation(conv.id, user_a) == 0
+    end
+
+    test "does not count own messages" do
+      user_a = create_user("user")
+      user_b = create_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(user_a, user_b)
+
+      {:ok, _} = Messaging.create_message(conv, user_a, %{body: "My message"})
+
+      assert Messaging.unread_count_for_conversation(conv.id, user_a) == 0
+    end
+  end
+
   # --- can_send_dm? ---
 
   describe "can_send_dm?/2" do

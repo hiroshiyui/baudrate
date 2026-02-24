@@ -166,6 +166,128 @@ defmodule BaudrateWeb.SessionControllerTest do
     end
   end
 
+  describe "POST /auth/totp-reset" do
+    test "valid token with mode :reset disables TOTP and redirects to setup", %{conn: conn} do
+      user = setup_user("user")
+      secret = Auth.generate_totp_secret()
+      {:ok, user} = Auth.enable_totp(user, secret)
+      assert user.totp_enabled
+
+      token =
+        Phoenix.Token.sign(BaudrateWeb.Endpoint, "totp_reset", %{user_id: user.id, mode: :reset})
+
+      conn = post(conn, "/auth/totp-reset", %{"token" => token})
+      assert redirected_to(conn) == "/totp/setup"
+      assert get_session(conn, :totp_setup_secret) != nil
+      assert get_session(conn, :user_id) == user.id
+
+      updated_user = Auth.get_user(user.id)
+      refute updated_user.totp_enabled
+    end
+
+    test "valid token with mode :enable redirects to setup without disabling TOTP", %{conn: conn} do
+      user = setup_user("user")
+      refute user.totp_enabled
+
+      token =
+        Phoenix.Token.sign(BaudrateWeb.Endpoint, "totp_reset", %{
+          user_id: user.id,
+          mode: :enable
+        })
+
+      conn = post(conn, "/auth/totp-reset", %{"token" => token})
+      assert redirected_to(conn) == "/totp/setup"
+      assert get_session(conn, :totp_setup_secret) != nil
+
+      updated_user = Auth.get_user(user.id)
+      refute updated_user.totp_enabled
+    end
+
+    test "invalid/expired token redirects to /profile with error", %{conn: conn} do
+      conn = post(conn, "/auth/totp-reset", %{"token" => "bad_token"})
+      assert redirected_to(conn) == "/profile"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Invalid or expired token"
+    end
+
+    test "token for nonexistent user redirects to /login", %{conn: conn} do
+      token =
+        Phoenix.Token.sign(BaudrateWeb.Endpoint, "totp_reset", %{user_id: 0, mode: :reset})
+
+      conn = post(conn, "/auth/totp-reset", %{"token" => token})
+      assert redirected_to(conn) == "/login"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) != nil
+    end
+  end
+
+  describe "POST /auth/recovery-verify" do
+    test "valid recovery code establishes session", %{conn: conn} do
+      user = setup_user("user")
+      secret = Auth.generate_totp_secret()
+      {:ok, user} = Auth.enable_totp(user, secret)
+      [code | _] = Auth.generate_recovery_codes(user)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> post("/auth/recovery-verify", %{"code" => code})
+
+      assert redirected_to(conn) == "/"
+      assert get_session(conn, :session_token) != nil
+      assert is_nil(get_session(conn, :user_id))
+    end
+
+    test "invalid recovery code shows error and increments attempts", %{conn: conn} do
+      user = setup_user("user")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(user, secret)
+      Auth.generate_recovery_codes(user)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> post("/auth/recovery-verify", %{"code" => "wrong-code-here"})
+
+      assert redirected_to(conn) == "/totp/recovery"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Invalid recovery code"
+      assert get_session(conn, :totp_attempts) == 1
+    end
+
+    test "locks out at max attempts", %{conn: conn} do
+      user = setup_user("user")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(user, secret)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{user_id: user.id, totp_attempts: 5})
+        |> post("/auth/recovery-verify", %{"code" => "any-code"})
+
+      assert redirected_to(conn) == "/login"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Too many failed attempts"
+    end
+
+    test "redirects to /login without session", %{conn: conn} do
+      conn = post(conn, "/auth/recovery-verify", %{"code" => "some-code"})
+      assert redirected_to(conn) == "/login"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) != nil
+    end
+  end
+
+  describe "POST /auth/ack-recovery-codes" do
+    test "clears recovery_codes from session and redirects to /", %{conn: conn} do
+      user = setup_user("user")
+
+      conn =
+        conn
+        |> log_in_user(user)
+        |> Plug.Test.init_test_session(%{recovery_codes: ["code1", "code2"]})
+        |> post("/auth/ack-recovery-codes")
+
+      assert redirected_to(conn) == "/"
+      assert is_nil(get_session(conn, :recovery_codes))
+    end
+  end
+
   describe "DELETE /logout" do
     test "clears session and redirects to /login", %{conn: conn} do
       user = setup_user("user")

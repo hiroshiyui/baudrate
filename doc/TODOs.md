@@ -18,8 +18,8 @@ Audit date: 2026-02-24
 
 ### Missing Controller/Context Tests
 
-- [ ] **`SessionController`** (63%) — `totp_reset/2`, `recovery_verify/2`, `ack_recovery_codes/2`
-- [ ] **`Messaging` context** (82%) — `can_receive_remote_dm?/2`, `unread_count_for_conversation/2`, `participant?/2`
+- [x] **`SessionController`** (63%) — `totp_reset/2`, `recovery_verify/2`, `ack_recovery_codes/2` (2026-02-24)
+- [x] **`Messaging` context** (82%) — `can_receive_remote_dm?/2`, `unread_count_for_conversation/2`, `participant?/2` (2026-02-24)
 
 ## Medium: Feature Gaps
 
