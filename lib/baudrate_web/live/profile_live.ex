@@ -17,8 +17,7 @@ defmodule BaudrateWeb.ProfileLive do
   alias Baudrate.Auth
   alias Baudrate.Avatar
   alias BaudrateWeb.Locale
-
-  @max_avatar_changes_per_hour 5
+  alias BaudrateWeb.RateLimits
 
   @impl true
   def mount(_params, _session, socket) do
@@ -74,7 +73,7 @@ defmodule BaudrateWeb.ProfileLive do
   def handle_event("save_crop", crop_params, socket) do
     user = socket.assigns.current_user
 
-    case check_rate_limit(user.id) do
+    case RateLimits.check_avatar_change(user.id) do
       :ok ->
         process_and_save_avatar(socket, user, crop_params)
 
@@ -209,7 +208,7 @@ defmodule BaudrateWeb.ProfileLive do
   def handle_event("remove_avatar", _params, socket) do
     user = socket.assigns.current_user
 
-    case check_rate_limit(user.id) do
+    case RateLimits.check_avatar_change(user.id) do
       :ok ->
         Avatar.delete_avatar(user.avatar_id)
         {:ok, updated_user} = Auth.remove_avatar(user)
@@ -282,13 +281,6 @@ defmodule BaudrateWeb.ProfileLive do
   end
 
   defp upload_error_to_string(err), do: BaudrateWeb.Helpers.upload_error_to_string(err)
-
-  defp check_rate_limit(user_id) do
-    case Hammer.check_rate("avatar_change:#{user_id}", 3_600_000, @max_avatar_changes_per_hour) do
-      {:allow, _count} -> :ok
-      {:deny, _limit} -> {:error, :rate_limited}
-    end
-  end
 
   defp save_locales(socket, new_locales) do
     user = socket.assigns.current_user

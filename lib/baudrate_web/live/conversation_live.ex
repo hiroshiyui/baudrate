@@ -16,6 +16,7 @@ defmodule BaudrateWeb.ConversationLive do
   alias Baudrate.Auth
   alias Baudrate.Messaging
   alias Baudrate.Messaging.PubSub, as: MessagingPubSub
+  alias BaudrateWeb.RateLimits
   import BaudrateWeb.Helpers, only: [parse_id: 1, participant_name: 1]
 
   @max_messages 100
@@ -106,7 +107,7 @@ defmodule BaudrateWeb.ConversationLive do
       socket = ensure_conversation(socket, user)
       conversation = socket.assigns.conversation
 
-      case check_rate_limit(user.id) do
+      case RateLimits.check_dm_send(user.id) do
         :ok ->
           case Messaging.create_message(conversation, user, %{body: body}) do
             {:ok, message} ->
@@ -253,11 +254,4 @@ defmodule BaudrateWeb.ConversationLive do
   defp error_message(:not_found), do: gettext("Conversation not found.")
   defp error_message(:recipient_not_found), do: gettext("User not found.")
   defp error_message(_), do: gettext("Something went wrong.")
-
-  defp check_rate_limit(user_id) do
-    case Hammer.check_rate("dm:user:#{user_id}", 60_000, 20) do
-      {:allow, _count} -> :ok
-      {:deny, _limit} -> {:error, :rate_limited}
-    end
-  end
 end
