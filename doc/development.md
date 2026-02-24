@@ -1,5 +1,9 @@
 # Development Guide
 
+Baudrate is a **public information hub**, not a social network. Public content
+should remain visible to all users; blocking controls interaction, not
+visibility. Design decisions should reflect this philosophy.
+
 ## Tech Stack
 
 | Layer | Technology |
