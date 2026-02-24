@@ -1,6 +1,6 @@
 # Baudrate — Project TODOs
 
-Audit date: 2026-02-23
+Audit date: 2026-02-24
 
 ---
 
@@ -23,7 +23,7 @@ Audit date: 2026-02-23
 
 ## Medium: Feature Gaps
 
-- [ ] **Bulk moderation actions** — one-at-a-time only; no bulk delete/ban in admin
+- [x] **Bulk moderation actions** — checkbox-based bulk select/approve/ban on Users page, bulk resolve/dismiss on Moderation Queue (2026-02-24)
 
 ## Low: Deployment & Infrastructure
 
