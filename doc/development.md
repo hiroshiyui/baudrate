@@ -195,27 +195,19 @@ credential validation, then triggers a hidden form POST to the
 
 ### Brute-Force Protection
 
+> **See the [SysOp Guide](sysop.md#login-monitoring-adminlogin-attempts) for
+> operational details on login monitoring and throttle thresholds.**
+
 Login attempts are rate-limited at two levels:
 
 1. **Per-IP** — Hammer ETS (10 attempts / 5 min)
-2. **Per-account** — progressive delay based on failed attempts in the last hour:
-
-| Failures (1h window) | Delay after last failure |
-|----------------------|------------------------|
-| 0–4 | None |
-| 5–9 | 5 seconds |
-| 10–14 | 30 seconds |
-| 15+ | 120 seconds |
+2. **Per-account** — progressive delay based on failed attempts in the last
+   hour (5s / 30s / 120s at 5 / 10 / 15+ failures)
 
 This uses **progressive delay** (not hard lockout) to avoid a DoS vector where
 an attacker could lock out any account by submitting wrong passwords. The delay
 is checked before `authenticate_by_password/2` to avoid incurring bcrypt cost
 on throttled attempts.
-
-All login attempts (success and failure) are recorded in the `login_attempts`
-table for audit purposes. Admins can view attempts at `/admin/login-attempts`
-(paginated, filterable by username). Records older than 7 days are purged
-hourly by `SessionCleaner`.
 
 Key functions in `Auth`:
 - `record_login_attempt/3` — records an attempt (username lowercased)
@@ -224,6 +216,8 @@ Key functions in `Auth`:
 - `purge_old_login_attempts/0` — cleanup (called by `SessionCleaner`)
 
 ### Session Management
+
+> **See the [SysOp Guide](sysop.md#session-security) for operational details.**
 
 | Aspect | Detail |
 |--------|--------|
@@ -235,6 +229,9 @@ Key functions in `Auth`:
 | Cleanup | `SessionCleaner` GenServer purges expired sessions every hour |
 
 ### RBAC
+
+> **See the [SysOp Guide](sysop.md#roles--permissions-rbac) for role
+> management and user administration.**
 
 Roles and permissions use a normalized 3-table design. Higher roles inherit
 all permissions of lower roles:
@@ -264,6 +261,8 @@ Permission names follow a `scope.action` convention (e.g., `admin.manage_users`,
 requirement (e.g., `role_meets_minimum?("moderator", "user")` → `true`).
 
 ### Board Permissions
+
+> **See the [SysOp Guide](sysop.md#board-management) for board administration.**
 
 Boards have two role-based permission fields:
 
@@ -311,14 +310,12 @@ User avatars are processed server-side for security:
 
 ### User Registration
 
-Public user registration is available at `/register`. The system supports three
-modes controlled by the `registration_mode` setting:
+> **See the [SysOp Guide](sysop.md#registration-modes) for configuring
+> registration modes, invite codes, and user approval.**
 
-| Mode | Default | Behavior |
-|------|---------|----------|
-| `"approval_required"` | Yes | New users get `status: "pending"` — can log in and browse, but cannot create articles or upload avatars until approved by an admin |
-| `"open"` | No | New users get `status: "active"` immediately |
-| `"invite_only"` | No | Registration requires a valid invite code; invited users get `status: "active"` immediately |
+Public user registration is available at `/register`. The system supports three
+modes controlled by the `registration_mode` setting (`approval_required`,
+`open`, `invite_only`).
 
 Registration is rate-limited to 5 attempts per hour per IP. The same password
 policy as the setup wizard applies (12+ chars, complexity requirements).
@@ -328,9 +325,6 @@ shown) and an optional site-specific End User Agreement (admin-configurable via
 `/admin/settings`, stored as markdown). Recovery codes (10 high-entropy base32
 codes in `xxxx-xxxx` format, ~41 bits each, HMAC-SHA256 hashed) are issued at
 registration and displayed once for the user to save.
-
-Admin approval is available at `/admin/pending-users` (admin role only).
-Admin invite code management is available at `/admin/invites` (admin role only).
 
 ### Password Reset
 
@@ -503,6 +497,8 @@ the `dm_access` setting.
 
 ### Moderation
 
+> **See the [SysOp Guide](sysop.md#moderation) for moderation operations.**
+
 The moderation system includes a content reporting queue (`/admin/moderation`)
 and an audit log (`/admin/moderation-log`). All moderation actions — banning,
 unbanning, role changes, report resolution, board CRUD, and content deletion —
@@ -595,14 +591,9 @@ The `Baudrate.Federation` context handles all federation logic.
 - Outbound Article objects include `tag` array with `Hashtag` objects (extracted from body, code blocks excluded)
 - Cross-post deduplication: same remote article arriving via multiple board inboxes links to all boards
 
-**Admin controls:**
-- Federation kill switch — instance-level toggle (`ap_federation_enabled` setting); when disabled, all AP endpoints return 404, delivery worker skips, WebFinger/NodeInfo remain available for discovery
-- Federation mode — `blocklist` (default: block specific domains) or `allowlist` (only allow specific domains)
-- Domain blocklist — admin UI textarea for comma-separated blocked domains (`ap_domain_blocklist` setting); blocked domains are rejected at inbox and skipped during delivery
-- Domain allowlist — admin UI textarea for comma-separated allowed domains (`ap_domain_allowlist` setting); when in allowlist mode and empty, all domains are blocked
-- Per-board federation toggle — `ap_enabled` field on boards; when disabled, board AP endpoints return 404, delivery skips the board's followers, WebFinger/actor resolution excludes the board
-- Federation dashboard (`/admin/federation`) — known instances with stats, delivery queue management (retry/abandon), per-board federation toggles, one-click domain blocking, key rotation controls, blocklist audit
-- Moderation queue (`/admin/moderation`) — view/resolve/dismiss reports, delete reported content, send Flag reports to remote instances
+**Admin controls:** See the [SysOp Guide](sysop.md#federation) for federation
+administration (kill switch, federation modes, domain blocklist/allowlist,
+per-board toggle, delivery queue management, key rotation, blocklist audit).
 
 **User blocks:**
 
@@ -632,52 +623,40 @@ or sending any federation activity. Mutes are purely local:
 
 **Authorized fetch mode:**
 
-Optional "secure mode" requiring HTTP signatures on GET requests to AP endpoints
-(also known as "secure mode" or "authorized fetch"). Controlled via the
-`ap_authorized_fetch` admin setting:
+Optional "secure mode" requiring HTTP signatures on GET requests to AP endpoints.
+Implemented as `BaudrateWeb.Plugs.AuthorizedFetch` in the `:activity_pub`
+pipeline. WebFinger and NodeInfo remain publicly accessible (spec requirement).
+`HTTPSignature.sign_get/3` and `HTTPClient.signed_get/4` provide signed GET
+support for outbound requests.
 
-- When enabled, unsigned GET requests to AP endpoints return 401 Unauthorized
-- WebFinger (`/.well-known/webfinger`) and NodeInfo (`/.well-known/nodeinfo`, `/nodeinfo/*`) remain publicly accessible without signatures (spec requirement)
-- Implemented as `BaudrateWeb.Plugs.AuthorizedFetch` in the `:activity_pub` pipeline
-- Outbound actor resolution automatically falls back to signed GET on 401 responses from remote instances that require authorized fetch
-- `HTTPSignature.sign_get/3` and `HTTPClient.signed_get/4` provide signed GET support
+> See the [SysOp Guide](sysop.md#authorized-fetch) for configuration.
 
 **Key rotation:**
 
-Actor RSA keypairs can be rotated via the admin federation dashboard.
-New public keys are distributed to followers via `Update` activities:
+Actor RSA keypairs can be rotated and new public keys are distributed to
+followers via `Update` activities:
 
 - `Federation.rotate_keys/2` — rotate keypair for user, board, or site actor
 - `KeyStore.rotate_user_keypair/1`, `rotate_board_keypair/1`, `rotate_site_keypair/0` — low-level rotation functions
 - `Publisher.build_update_actor/2` — builds `Update(Person/Group/Organization)` activity
-- Admin UI: "Rotate Site Keys" button + per-board "Rotate Keys" in federation dashboard
-- All key rotations are recorded in the moderation log
+
+> See the [SysOp Guide](sysop.md#key-rotation) for admin UI details.
 
 **Domain blocklist audit:**
 
-The admin federation dashboard includes a blocklist audit feature that compares
-the local domain blocklist against an external known-bad-actor list:
-
 - `BlocklistAudit.audit/0` — fetches external list, compares to local blocklist, returns diff
-- Supports multiple formats: JSON array, newline-separated, CSV (Mastodon export format with `domain,severity,reason`)
-- External list URL configured via `ap_blocklist_audit_url` admin setting
-- Admin UI shows: external/local counts, overlap, missing domains (with "Add" / "Add All" buttons), extra domains (informational)
-- All bulk-add operations are recorded in the moderation log
+- Supports multiple formats: JSON array, newline-separated, CSV (Mastodon export format)
+
+> See the [SysOp Guide](sysop.md#blocklist-audit) for configuration and usage.
 
 **Stale actor cleanup:**
 
-The `StaleActorCleaner` GenServer runs daily (configurable via
-`stale_actor_cleanup_interval`, default 24h) to clean up remote actors whose
-`fetched_at` exceeds the configured max age (`stale_actor_max_age`, default
-30 days). For each stale actor:
+The `StaleActorCleaner` GenServer runs daily to clean up remote actors whose
+`fetched_at` exceeds the configured max age. Referenced actors are refreshed
+via `ActorResolver.refresh/1`; unreferenced actors are deleted. Processing is
+batched (50 per cycle) and skips when federation is disabled.
 
-- If referenced (followers, articles, comments, likes, announces, or reports)
-  → refreshed via `ActorResolver.refresh/1`
-- If unreferenced → deleted from the database
-
-Processing is batched (50 actors per cycle) and skips when federation is
-disabled. Failed refresh attempts are tracked to prevent infinite
-re-processing within a single cleanup run.
+> See the [SysOp Guide](sysop.md#stale-actor-cleanup) for configuration.
 
 **Security:**
 - HTTP Signature verification on all inbox requests
@@ -786,6 +765,9 @@ RateLimit (30/min per IP) → FeedController (XML response)
 ```
 
 ### Rate Limiting
+
+> **See the [SysOp Guide](sysop.md#rate-limiting) for operational details
+> and reverse proxy configuration.**
 
 | Endpoint | Limit | Scope |
 |----------|-------|-------|
@@ -944,6 +926,7 @@ via optional socket assigns (`feed_site`, `feed_board_slug`).
 
 ## Further Reading
 
+- [SysOp Guide](sysop.md) — installation, configuration, and maintenance for system operators
 - [AP Endpoint API Reference](api.md) — external-facing documentation for all ActivityPub and public API endpoints
 - [Troubleshooting Guide](troubleshooting.md) — common issues and solutions for operators and developers
 

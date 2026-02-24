@@ -1,6 +1,7 @@
 # Troubleshooting Guide
 
 Common issues and solutions for operators deploying and running Baudrate.
+See the [SysOp Guide](sysop.md) for the comprehensive operational reference.
 
 ---
 
@@ -20,6 +21,9 @@ Common issues and solutions for operators deploying and running Baudrate.
 
 ## Setup & First Run
 
+> **See the [SysOp Guide](sysop.md#installation) for the full installation
+> and first-run setup guide.**
+
 ### Development setup
 
 ```bash
@@ -36,11 +40,7 @@ mix phx.gen.cert
 This creates `priv/cert/selfsigned_key.pem` and `priv/cert/selfsigned.pem`.
 Your browser will show a security warning — this is expected for development.
 
-### First-run wizard
-
-On first launch, Baudrate redirects all requests to `/setup`. The wizard
-creates the initial admin account and seeds roles/permissions. The setup is
-considered complete when the `setup_completed` setting is set to `"true"`.
+### First-run wizard interrupted
 
 If the setup wizard is interrupted partway through (e.g., roles seeded but no
 admin account created), you can reset and re-run:
@@ -49,39 +49,16 @@ admin account created), you can reset and re-run:
 mix ecto.reset  # Drops, recreates, and re-migrates the database
 ```
 
-### PostgreSQL requirements
+### PostgreSQL `pg_trgm` extension missing
 
-Baudrate requires the `pg_trgm` extension for full-text search (CJK support).
-The migration creates it automatically, but your PostgreSQL user needs the
-`CREATE EXTENSION` privilege, or the extension must be pre-installed by a
-superuser:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-```
+See [Database](#database) section below for resolution.
 
 ---
 
 ## Environment Variables
 
-### Required (production)
-
-| Variable | Description | How to generate |
-|----------|-------------|-----------------|
-| `DATABASE_URL` | PostgreSQL connection string | `ecto://USER:PASS@HOST/DATABASE` |
-| `SECRET_KEY_BASE` | Session/cookie signing + encryption key derivation | `mix phx.gen.secret` |
-| `PHX_HOST` | Public hostname for URL generation | Your domain (e.g., `forum.example.com`) |
-| `PHX_SERVER` | Enable the HTTP server in releases | Set to `"true"` |
-
-### Optional
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `4000` | HTTP listening port |
-| `POOL_SIZE` | `10` | Database connection pool size |
-| `ECTO_IPV6` | unset | Set to `"true"` to enable IPv6 for database connections |
-| `DATABASE_SSL` | `"true"` | Set to `"false"` to disable SSL for database connections |
-| `DNS_CLUSTER_QUERY` | unset | DNS SRV record for Erlang clustering (e.g., `"baudrate.example.com"`) |
+> **See the [SysOp Guide](sysop.md#environment-variables) for the complete
+> reference of all environment variables and their defaults.**
 
 ### SECRET_KEY_BASE — critical warning
 

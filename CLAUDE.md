@@ -117,3 +117,4 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 | `lib/baudrate_web/live/auth_hooks.ex` | LiveView auth on_mount hooks |
 | `lib/baudrate_web/components/core_components.ex` | Shared UI components |
 | `doc/development.md` | Full architecture & project structure |
+| `doc/sysop.md` | SysOp guide: installation, configuration, maintenance |

@@ -78,7 +78,10 @@ Note: Federation private keys are encrypted using a key derived from
 
 ## Documentation
 
-See [doc/development.md](doc/development.md) for architecture details, project structure, and development notes.
+- [SysOp Guide](doc/sysop.md) — installation, configuration, and maintenance for system operators
+- [Development Guide](doc/development.md) — architecture, project structure, and development notes
+- [AP API Reference](doc/api.md) — ActivityPub and public API endpoint documentation
+- [Troubleshooting](doc/troubleshooting.md) — common issues and solutions
 
 ## License
 
