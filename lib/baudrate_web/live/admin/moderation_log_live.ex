@@ -67,5 +67,12 @@ defmodule BaudrateWeb.Admin.ModerationLogLive do
   defp translate_action("create_board"), do: gettext("Create Board")
   defp translate_action("update_board"), do: gettext("Update Board")
   defp translate_action("delete_board"), do: gettext("Delete Board")
+  defp translate_action("block_user"), do: gettext("Block User")
+  defp translate_action("unblock_user"), do: gettext("Unblock User")
+  defp translate_action("block_domain"), do: gettext("Block Domain")
+  defp translate_action("unblock_domain"), do: gettext("Unblock Domain")
+  defp translate_action("rotate_keys"), do: gettext("Rotate Keys")
+  defp translate_action("add_board_moderator"), do: gettext("Add Board Moderator")
+  defp translate_action("remove_board_moderator"), do: gettext("Remove Board Moderator")
   defp translate_action(other), do: other
 end
