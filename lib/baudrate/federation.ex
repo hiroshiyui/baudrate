@@ -115,6 +115,10 @@ defmodule Baudrate.Federation do
   @security_context "https://w3id.org/security/v1"
   @as_public "https://www.w3.org/ns/activitystreams#Public"
 
+  @state_accepted "accepted"
+  @state_pending "pending"
+  @state_rejected "rejected"
+
   @doc """
   Returns the base URL from the endpoint configuration.
   """
@@ -623,7 +627,7 @@ defmodule Baudrate.Federation do
             remote_uris =
               from(uf in UserFollow,
                 where:
-                  uf.user_id == ^user.id and uf.state == "accepted" and
+                  uf.user_id == ^user.id and uf.state == @state_accepted and
                     not is_nil(uf.remote_actor_id),
                 join: ra in assoc(uf, :remote_actor),
                 select: %{ap_id: ra.ap_id, inserted_at: uf.inserted_at}
@@ -633,7 +637,7 @@ defmodule Baudrate.Federation do
             local_uris =
               from(uf in UserFollow,
                 where:
-                  uf.user_id == ^user.id and uf.state == "accepted" and
+                  uf.user_id == ^user.id and uf.state == @state_accepted and
                     not is_nil(uf.followed_user_id),
                 join: u in assoc(uf, :followed_user),
                 select: %{username: u.username, inserted_at: uf.inserted_at}
@@ -671,7 +675,7 @@ defmodule Baudrate.Federation do
 
                 followed_uris =
                   from(bf in BoardFollow,
-                    where: bf.board_id == ^board.id and bf.state == "accepted",
+                    where: bf.board_id == ^board.id and bf.state == @state_accepted,
                     join: ra in assoc(bf, :remote_actor),
                     order_by: [desc: bf.inserted_at],
                     offset: ^offset,
@@ -959,7 +963,7 @@ defmodule Baudrate.Federation do
     |> UserFollow.changeset(%{
       user_id: user.id,
       remote_actor_id: remote_actor.id,
-      state: "pending",
+      state: @state_pending,
       ap_id: ap_id
     })
     |> Repo.insert()
@@ -979,7 +983,7 @@ defmodule Baudrate.Federation do
       %UserFollow{} = follow ->
         follow
         |> UserFollow.changeset(%{
-          state: "accepted",
+          state: @state_accepted,
           accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
         |> Repo.update()
@@ -1000,7 +1004,7 @@ defmodule Baudrate.Federation do
       %UserFollow{} = follow ->
         follow
         |> UserFollow.changeset(%{
-          state: "rejected",
+          state: @state_rejected,
           rejected_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
         |> Repo.update()
@@ -1060,7 +1064,7 @@ defmodule Baudrate.Federation do
       from(uf in UserFollow,
         where:
           uf.user_id == ^user_id and uf.remote_actor_id == ^remote_actor_id and
-            uf.state == "accepted"
+            uf.state == @state_accepted
       )
     )
   end
@@ -1100,7 +1104,7 @@ defmodule Baudrate.Federation do
   def count_user_follows(user_id) do
     Repo.one(
       from(uf in UserFollow,
-        where: uf.user_id == ^user_id and uf.state == "accepted",
+        where: uf.user_id == ^user_id and uf.state == @state_accepted,
         select: count(uf.id)
       )
     ) || 0
@@ -1123,7 +1127,7 @@ defmodule Baudrate.Federation do
     |> BoardFollow.changeset(%{
       board_id: board.id,
       remote_actor_id: remote_actor.id,
-      state: "pending",
+      state: @state_pending,
       ap_id: ap_id
     })
     |> Repo.insert()
@@ -1143,7 +1147,7 @@ defmodule Baudrate.Federation do
       %BoardFollow{} = follow ->
         follow
         |> BoardFollow.changeset(%{
-          state: "accepted",
+          state: @state_accepted,
           accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
         |> Repo.update()
@@ -1164,7 +1168,7 @@ defmodule Baudrate.Federation do
       %BoardFollow{} = follow ->
         follow
         |> BoardFollow.changeset(%{
-          state: "rejected",
+          state: @state_rejected,
           rejected_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
         |> Repo.update()
@@ -1213,7 +1217,7 @@ defmodule Baudrate.Federation do
       from(bf in BoardFollow,
         where:
           bf.board_id == ^board_id and bf.remote_actor_id == ^remote_actor_id and
-            bf.state == "accepted"
+            bf.state == @state_accepted
       )
     )
   end
@@ -1227,7 +1231,7 @@ defmodule Baudrate.Federation do
   """
   def boards_following_actor(remote_actor_id) do
     from(bf in BoardFollow,
-      where: bf.remote_actor_id == ^remote_actor_id and bf.state == "accepted",
+      where: bf.remote_actor_id == ^remote_actor_id and bf.state == @state_accepted,
       join: b in assoc(bf, :board),
       where: b.ap_enabled == true and b.min_role_to_view == "guest",
       select: b
@@ -1270,7 +1274,7 @@ defmodule Baudrate.Federation do
   def count_board_follows(board_id) do
     Repo.one(
       from(bf in BoardFollow,
-        where: bf.board_id == ^board_id and bf.state == "accepted",
+        where: bf.board_id == ^board_id and bf.state == @state_accepted,
         select: count(bf.id)
       )
     ) || 0
@@ -1327,7 +1331,7 @@ defmodule Baudrate.Federation do
         on: uf.remote_actor_id == fi.remote_actor_id,
         join: ra in RemoteActor,
         on: ra.id == fi.remote_actor_id,
-        where: uf.user_id == ^user.id and uf.state == "accepted",
+        where: uf.user_id == ^user.id and uf.state == @state_accepted,
         where: is_nil(fi.deleted_at)
       )
 
@@ -1345,7 +1349,7 @@ defmodule Baudrate.Federation do
       from(a in Baudrate.Content.Article,
         join: uf in UserFollow,
         on: uf.followed_user_id == a.user_id,
-        where: uf.user_id == ^user.id and uf.state == "accepted",
+        where: uf.user_id == ^user.id and uf.state == @state_accepted,
         where: is_nil(a.deleted_at)
       )
 
@@ -1442,7 +1446,7 @@ defmodule Baudrate.Federation do
   """
   def local_followers_of_remote_actor(remote_actor_id) do
     from(uf in UserFollow,
-      where: uf.remote_actor_id == ^remote_actor_id and uf.state == "accepted",
+      where: uf.remote_actor_id == ^remote_actor_id and uf.state == @state_accepted,
       select: uf.user_id
     )
     |> Repo.all()
@@ -1469,7 +1473,7 @@ defmodule Baudrate.Federation do
       |> UserFollow.changeset(%{
         user_id: follower_id,
         followed_user_id: followed_id,
-        state: "accepted",
+        state: @state_accepted,
         ap_id: ap_id,
         accepted_at: now
       })
@@ -1520,7 +1524,7 @@ defmodule Baudrate.Federation do
   """
   def local_followers_of_user(followed_user_id) do
     from(uf in UserFollow,
-      where: uf.followed_user_id == ^followed_user_id and uf.state == "accepted",
+      where: uf.followed_user_id == ^followed_user_id and uf.state == @state_accepted,
       select: uf.user_id
     )
     |> Repo.all()

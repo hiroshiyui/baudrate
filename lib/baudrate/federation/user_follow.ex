@@ -25,12 +25,16 @@ defmodule Baudrate.Federation.UserFollow do
   alias Baudrate.Federation.RemoteActor
   alias Baudrate.Setup.User
 
+  @state_accepted "accepted"
+  @state_pending "pending"
+  @state_rejected "rejected"
+
   schema "user_follows" do
     belongs_to :user, User
     belongs_to :remote_actor, RemoteActor
     belongs_to :followed_user, User
 
-    field :state, :string, default: "pending"
+    field :state, :string, default: @state_pending
     field :ap_id, :string
     field :accepted_at, :utc_datetime
     field :rejected_at, :utc_datetime
@@ -46,7 +50,7 @@ defmodule Baudrate.Federation.UserFollow do
     user_follow
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_inclusion(:state, ~w(pending accepted rejected))
+    |> validate_inclusion(:state, [@state_pending, @state_accepted, @state_rejected])
     |> validate_exactly_one_target()
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:remote_actor_id)
