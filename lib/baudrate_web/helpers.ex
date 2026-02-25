@@ -117,14 +117,31 @@ defmodule BaudrateWeb.Helpers do
   def translate_role(other), do: other
 
   @doc """
+  Returns a human-friendly display name for a user or remote actor.
+
+  Falls back to `username` when `display_name` is nil or empty.
+  """
+  def display_name(%Baudrate.Setup.User{display_name: dn})
+      when is_binary(dn) and dn != "",
+      do: dn
+
+  def display_name(%Baudrate.Setup.User{username: username}), do: username
+
+  def display_name(%Baudrate.Federation.RemoteActor{display_name: dn})
+      when is_binary(dn) and dn != "",
+      do: dn
+
+  def display_name(%Baudrate.Federation.RemoteActor{username: username}), do: username
+
+  @doc """
   Returns a display name for a conversation participant.
 
-  Local users show their username; remote actors show `username@domain`.
+  Local users show their display name; remote actors show `display_name` or `username@domain`.
   """
-  def participant_name(%Baudrate.Setup.User{} = user), do: user.username
+  def participant_name(%Baudrate.Setup.User{} = user), do: display_name(user)
 
   def participant_name(%Baudrate.Federation.RemoteActor{} = actor),
-    do: "#{actor.username}@#{actor.domain}"
+    do: "#{display_name(actor)}@#{actor.domain}"
 
   def participant_name(_), do: "?"
 

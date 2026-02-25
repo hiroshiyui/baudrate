@@ -215,14 +215,71 @@ defmodule BaudrateWeb.HelpersTest do
     end
   end
 
+  describe "display_name/1" do
+    test "returns display_name when set for User" do
+      user = %Baudrate.Setup.User{username: "alice", display_name: "Alice Wonderland"}
+      assert Helpers.display_name(user) == "Alice Wonderland"
+    end
+
+    test "falls back to username when display_name is nil for User" do
+      user = %Baudrate.Setup.User{username: "alice", display_name: nil}
+      assert Helpers.display_name(user) == "alice"
+    end
+
+    test "falls back to username when display_name is empty for User" do
+      user = %Baudrate.Setup.User{username: "alice", display_name: ""}
+      assert Helpers.display_name(user) == "alice"
+    end
+
+    test "returns display_name when set for RemoteActor" do
+      actor = %Baudrate.Federation.RemoteActor{
+        username: "bob",
+        domain: "remote.example",
+        display_name: "Bob Builder"
+      }
+
+      assert Helpers.display_name(actor) == "Bob Builder"
+    end
+
+    test "falls back to username when display_name is nil for RemoteActor" do
+      actor = %Baudrate.Federation.RemoteActor{
+        username: "bob",
+        domain: "remote.example",
+        display_name: nil
+      }
+
+      assert Helpers.display_name(actor) == "bob"
+    end
+  end
+
   describe "participant_name/1" do
-    test "User struct returns username" do
-      user = %Baudrate.Setup.User{username: "alice"}
+    test "User struct returns display name" do
+      user = %Baudrate.Setup.User{username: "alice", display_name: "Alice W."}
+      assert Helpers.participant_name(user) == "Alice W."
+    end
+
+    test "User struct falls back to username" do
+      user = %Baudrate.Setup.User{username: "alice", display_name: nil}
       assert Helpers.participant_name(user) == "alice"
     end
 
-    test "RemoteActor struct returns username@domain" do
-      actor = %Baudrate.Federation.RemoteActor{username: "bob", domain: "remote.example"}
+    test "RemoteActor struct returns display_name@domain" do
+      actor = %Baudrate.Federation.RemoteActor{
+        username: "bob",
+        domain: "remote.example",
+        display_name: "Bob Builder"
+      }
+
+      assert Helpers.participant_name(actor) == "Bob Builder@remote.example"
+    end
+
+    test "RemoteActor struct falls back to username@domain" do
+      actor = %Baudrate.Federation.RemoteActor{
+        username: "bob",
+        domain: "remote.example",
+        display_name: nil
+      }
+
       assert Helpers.participant_name(actor) == "bob@remote.example"
     end
 
