@@ -1414,19 +1414,12 @@ defmodule Baudrate.Federation do
   defp extract_hashtags(nil), do: []
 
   defp extract_hashtags(body) do
-    cleaned =
-      body
-      |> String.replace(~r/```[\s\S]*?```/u, "")
-      |> String.replace(~r/`[^`]+`/, "")
-
-    Regex.scan(~r/(?:^|[^&\w])#([a-zA-Z]\w{0,63})/u, cleaned, capture: :all_but_first)
-    |> List.flatten()
-    |> Enum.uniq_by(&String.downcase/1)
+    Baudrate.Content.extract_tags(body)
     |> Enum.map(fn tag ->
       %{
         "type" => "Hashtag",
         "name" => "##{tag}",
-        "href" => "#{base_url()}/tags/#{String.downcase(tag)}"
+        "href" => "#{base_url()}/tags/#{tag}"
       }
     end)
   end

@@ -42,6 +42,12 @@ defmodule BaudrateWeb.ArticleEditLive do
   end
 
   @impl true
+  def handle_event("hashtag_suggest", %{"prefix" => prefix}, socket) do
+    tags = Content.search_tags(prefix, limit: 10)
+    {:noreply, push_event(socket, "hashtag_suggestions", %{tags: tags})}
+  end
+
+  @impl true
   def handle_event("validate", %{"article" => params}, socket) do
     changeset =
       Content.change_article_for_edit(socket.assigns.article, params)

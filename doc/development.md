@@ -52,12 +52,13 @@ lib/
 │   │   ├── article_revision.ex  # ArticleRevision schema (edit history snapshots)
 │   │   ├── article_image_storage.ex # Image processing (resize, WebP, strip EXIF)
 │   │   ├── article_like.ex      # ArticleLike schema (local + remote likes)
+│   │   ├── article_tag.ex        # ArticleTag schema (article ↔ hashtag, extracted from body)
 │   │   ├── attachment.ex         # Attachment schema (files on articles, type/size validation)
 │   │   ├── board.ex             # Board schema (hierarchical via parent_id, role-based permissions)
 │   │   ├── board_article.ex     # Join table: board ↔ article
 │   │   ├── board_moderator.ex   # Join table: board ↔ moderator
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
-│   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark + Ammonia NIF)
+│   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark + Ammonia NIF + hashtag linkification)
 │   │   └── pubsub.ex            # PubSub helpers for real-time content updates
 │   ├── sanitizer/
 │   │   └── native.ex            # Rustler NIF bindings to Ammonia HTML sanitizer
@@ -146,6 +147,7 @@ lib/
 │   │   ├── recovery_codes_live.ex        # Recovery codes display
 │   │   ├── register_live.ex     # Public user registration (supports invite-only mode, terms notice, recovery codes)
 │   │   ├── search_live.ex       # Full-text search + remote actor lookup (WebFinger/AP)
+│   │   ├── tag_live.ex          # Browse articles by hashtag (/tags/:tag)
 │   │   ├── user_invites_live.ex # User invite code management (quota-limited, generate, revoke)
 │   │   ├── user_profile_live.ex # Public user profile pages (stats, recent articles)
 │   │   ├── setup_live.ex        # First-run setup wizard
@@ -405,6 +407,31 @@ Key modules:
 - `Content.ArticleImageStorage` — image processing and storage
 - `Content` — CRUD functions (`create_article_image/1`, `list_article_images/1`,
   `associate_article_images/3`, `delete_article_image/1`, `delete_orphan_article_images/1`)
+
+### Article Hashtags
+
+Hashtags (`#tag`) in article bodies are extracted, stored, and linkified:
+
+1. **Extraction**: `Content.extract_tags/1` scans text with a Unicode-aware
+   regex (`\p{L}[\w]{0,63}`) supporting Latin, CJK, and other scripts.
+   Code blocks and inline code are stripped before scanning.
+2. **Storage**: Tags are persisted in the `article_tags` table (article_id, tag)
+   via `Content.sync_article_tags/1`, called automatically on article
+   create/update. Tags are stored as lowercase strings.
+3. **Linkification**: `Content.Markdown.to_html/1` adds a post-sanitize step
+   that converts `#tag` to `<a href="/tags/tag" class="hashtag">#tag</a>`.
+   Tags inside `<pre>`, `<code>`, and `<a>` elements are skipped.
+4. **Browse page**: `/tags/:tag` shows paginated articles matching the tag,
+   respecting board visibility and block/mute filters.
+5. **Autocomplete**: Article editors include a `HashtagAutocompleteHook` that
+   suggests existing tags as the user types `#prefix`.
+6. **Federation**: `Federation.extract_hashtags/1` delegates to
+   `Content.extract_tags/1` for consistent hashtag parsing.
+
+Key modules:
+- `Content.ArticleTag` — schema (`article_tags` table)
+- `Content.Markdown` — rendering pipeline (Earmark → Ammonia → linkification)
+- `TagLive` — `/tags/:tag` browse page
 
 ### Content Model
 
@@ -970,6 +997,21 @@ In preview mode, the textarea is hidden and a preview `<div>` (rendered with
 disabled while in preview mode.
 
 Source: `assets/js/markdown_toolbar_hook.js`, `lib/baudrate_web/live/markdown_preview_hook.ex`
+
+### `HashtagAutocompleteHook`
+
+Provides hashtag autocomplete in article/comment textareas. Attached to a
+wrapper `<div>` around the textarea (since `MarkdownToolbarHook` already
+occupies `phx-hook` on the textarea itself). Automatically enabled when the
+`toolbar` attribute is set on `<.input type="textarea">`.
+
+When the user types `#` followed by one or more characters, the hook debounces
+(200ms) then sends `pushEvent("hashtag_suggest", %{prefix: "..."})` to the
+server. The server queries `Content.search_tags/2` and pushes back
+`"hashtag_suggestions"` with matching tags. The hook renders a positioned
+dropdown with keyboard navigation (ArrowUp/Down, Enter/Tab, Escape).
+
+Source: `assets/js/hashtag_autocomplete_hook.js`
 
 ### Syndication Feeds (RSS / Atom)
 

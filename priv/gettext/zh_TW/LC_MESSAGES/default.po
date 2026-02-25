@@ -11,7 +11,7 @@ msgstr ""
 "Language: zh_TW\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: lib/baudrate_web/components/core_components.ex:399
+#: lib/baudrate_web/components/core_components.ex:413
 #: lib/baudrate_web/live/admin/boards_live.html.heex:191
 #: lib/baudrate_web/live/admin/federation_live.html.heex:38
 #: lib/baudrate_web/live/admin/federation_live.html.heex:98
@@ -563,7 +563,7 @@ msgstr "已有帳號？"
 msgid "Approve"
 msgstr "核准"
 
-#: lib/baudrate_web/live/article_new_live.ex:199
+#: lib/baudrate_web/live/article_new_live.ex:205
 #, elixir-autogen, elixir-format
 msgid "Article created successfully."
 msgstr "文章已成功建立。"
@@ -612,7 +612,7 @@ msgstr "還沒有帳號？"
 msgid "Failed to approve user."
 msgstr "核准用戶失敗。"
 
-#: lib/baudrate_web/live/article_new_live.ex:206
+#: lib/baudrate_web/live/article_new_live.ex:212
 #, elixir-autogen, elixir-format
 msgid "Failed to create article."
 msgstr "建立文章失敗。"
@@ -640,7 +640,7 @@ msgstr "待審核用戶"
 msgid "Pinned"
 msgstr "置頂"
 
-#: lib/baudrate_web/live/article_new_live.ex:162
+#: lib/baudrate_web/live/article_new_live.ex:168
 #, elixir-autogen, elixir-format
 msgid "Please select at least one board."
 msgstr "請至少選擇一個版面。"
@@ -703,8 +703,9 @@ msgstr "您的帳號正在等待管理員審核。"
 msgid "Your account is pending approval."
 msgstr "您的帳號尚待審核。"
 
-#: lib/baudrate_web/live/search_live.html.heex:172
-#: lib/baudrate_web/live/search_live.html.heex:198
+#: lib/baudrate_web/live/search_live.html.heex:175
+#: lib/baudrate_web/live/search_live.html.heex:201
+#: lib/baudrate_web/live/tag_live.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "by %{author}"
 msgstr "由 %{author} 發表"
@@ -1192,7 +1193,8 @@ msgstr "登入"
 msgid "to participate."
 msgstr "來參與。"
 
-#: lib/baudrate_web/live/search_live.html.heex:158
+#: lib/baudrate_web/live/search_live.html.heex:161
+#: lib/baudrate_web/live/tag_live.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "1 result"
 msgid_plural "%{count} results"
@@ -1203,7 +1205,7 @@ msgstr[0] "%{count} 筆結果"
 msgid "Are you sure you want to delete this article?"
 msgstr "確定要刪除這篇文章嗎？"
 
-#: lib/baudrate_web/live/article_edit_live.ex:157
+#: lib/baudrate_web/live/article_edit_live.ex:163
 #, elixir-autogen, elixir-format
 msgid "Article updated successfully."
 msgstr "文章已成功更新。"
@@ -2394,8 +2396,8 @@ msgstr "最多 %{count} 張圖片，每張上限 %{size} MB。圖片將顯示在
 msgid "Remove image"
 msgstr "移除圖片"
 
-#: lib/baudrate_web/live/article_edit_live.ex:91
-#: lib/baudrate_web/live/article_new_live.ex:112
+#: lib/baudrate_web/live/article_edit_live.ex:97
+#: lib/baudrate_web/live/article_new_live.ex:118
 #, elixir-autogen, elixir-format
 msgid "Some images failed to upload."
 msgstr "部分圖片上傳失敗。"
@@ -2599,7 +2601,7 @@ msgstr "檢視"
 msgid "by %{editor}"
 msgstr "由 %{editor} 編輯"
 
-#: lib/baudrate_web/components/core_components.ex:291
+#: lib/baudrate_web/components/core_components.ex:305
 #, elixir-autogen, elixir-format
 msgid "Markdown preview"
 msgstr "Markdown 預覽"
@@ -2938,8 +2940,8 @@ msgstr "普通"
 msgid "Met:"
 msgstr "已達成："
 
-#: lib/baudrate_web/components/core_components.ex:587
-#: lib/baudrate_web/components/core_components.ex:594
+#: lib/baudrate_web/components/core_components.ex:601
+#: lib/baudrate_web/components/core_components.ex:608
 #, elixir-autogen, elixir-format
 msgid "Next page"
 msgstr "下一頁"
@@ -2958,13 +2960,13 @@ msgstr "下一頁"
 msgid "Not met:"
 msgstr "未達成："
 
-#: lib/baudrate_web/components/core_components.ex:569
-#: lib/baudrate_web/components/core_components.ex:577
+#: lib/baudrate_web/components/core_components.ex:583
+#: lib/baudrate_web/components/core_components.ex:591
 #, elixir-autogen, elixir-format
 msgid "Page %{number}"
 msgstr "第 %{number} 頁"
 
-#: lib/baudrate_web/components/core_components.ex:546
+#: lib/baudrate_web/components/core_components.ex:560
 #, elixir-autogen, elixir-format
 msgid "Pagination"
 msgstr "分頁導覽"
@@ -2975,8 +2977,8 @@ msgstr "分頁導覽"
 msgid "Password strength"
 msgstr "密碼強度"
 
-#: lib/baudrate_web/components/core_components.ex:552
-#: lib/baudrate_web/components/core_components.ex:559
+#: lib/baudrate_web/components/core_components.ex:566
+#: lib/baudrate_web/components/core_components.ex:573
 #, elixir-autogen, elixir-format
 msgid "Previous page"
 msgstr "上一頁"
@@ -3372,12 +3374,12 @@ msgstr "搜尋過於頻繁，請稍後再試。"
 msgid "You are commenting too frequently. Please try again later."
 msgstr "留言過於頻繁，請稍後再試。"
 
-#: lib/baudrate_web/live/article_edit_live.ex:146
+#: lib/baudrate_web/live/article_edit_live.ex:152
 #, elixir-autogen, elixir-format
 msgid "You are editing too frequently. Please try again later."
 msgstr "編輯過於頻繁，請稍後再試。"
 
-#: lib/baudrate_web/live/article_new_live.ex:175
+#: lib/baudrate_web/live/article_new_live.ex:181
 #, elixir-autogen, elixir-format
 msgid "You are posting too frequently. Please try again later."
 msgstr "發文過於頻繁，請稍後再試。"
@@ -3443,7 +3445,7 @@ msgstr "無法取消追蹤此使用者。"
 
 #: lib/baudrate_web/live/search_live.html.heex:89
 #: lib/baudrate_web/live/search_live.html.heex:97
-#: lib/baudrate_web/live/search_live.html.heex:246
+#: lib/baudrate_web/live/search_live.html.heex:249
 #: lib/baudrate_web/live/user_profile_live.html.heex:29
 #, elixir-autogen, elixir-format
 msgid "Follow"
@@ -3485,7 +3487,7 @@ msgid "Remote actor"
 msgstr "遠端使用者"
 
 #: lib/baudrate_web/live/search_live.html.heex:64
-#: lib/baudrate_web/live/search_live.html.heex:229
+#: lib/baudrate_web/live/search_live.html.heex:232
 #, elixir-autogen, elixir-format
 msgid "Sign in to follow"
 msgstr "登入以追蹤"
@@ -3493,7 +3495,7 @@ msgstr "登入以追蹤"
 #: lib/baudrate_web/live/following_live.html.heex:45
 #: lib/baudrate_web/live/following_live.html.heex:93
 #: lib/baudrate_web/live/search_live.html.heex:81
-#: lib/baudrate_web/live/search_live.html.heex:238
+#: lib/baudrate_web/live/search_live.html.heex:241
 #: lib/baudrate_web/live/user_profile_live.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "Unfollow"
@@ -3581,7 +3583,7 @@ msgstr "已成功追蹤。"
 
 #: lib/baudrate_web/live/feed_live.html.heex:96
 #: lib/baudrate_web/live/following_live.html.heex:34
-#: lib/baudrate_web/live/search_live.html.heex:222
+#: lib/baudrate_web/live/search_live.html.heex:225
 #, elixir-autogen, elixir-format
 msgid "Local"
 msgstr "本站"
@@ -3603,7 +3605,7 @@ msgid "Unfollow %{username}"
 msgstr "取消追蹤 %{username}"
 
 #: lib/baudrate_web/live/following_live.html.heex:42
-#: lib/baudrate_web/live/search_live.html.heex:235
+#: lib/baudrate_web/live/search_live.html.heex:238
 #: lib/baudrate_web/live/user_profile_live.html.heex:36
 #, elixir-autogen, elixir-format
 msgid "Unfollow this user?"
@@ -3619,3 +3621,14 @@ msgstr "使用者"
 #, elixir-autogen, elixir-format
 msgid "You cannot follow yourself."
 msgstr "您無法追蹤自己。"
+
+#: lib/baudrate_web/live/tag_live.ex:37
+#: lib/baudrate_web/live/tag_live.ex:46
+#, elixir-autogen, elixir-format
+msgid "Articles tagged #%{tag}"
+msgstr "標記 #%{tag} 的文章"
+
+#: lib/baudrate_web/live/tag_live.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "No articles found with tag #%{tag}."
+msgstr "找不到標記 #%{tag} 的文章。"

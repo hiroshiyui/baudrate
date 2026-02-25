@@ -20,6 +20,7 @@ defmodule Baudrate.Content do
     Article,
     ArticleImage,
     ArticleRevision,
+    ArticleTag,
     Attachment,
     ArticleLike,
     Board,
@@ -279,6 +280,8 @@ defmodule Baudrate.Content do
       |> Repo.transaction()
 
     with {:ok, %{article: article}} <- result do
+      sync_article_tags(article)
+
       for board_id <- board_ids do
         ContentPubSub.broadcast_to_board(board_id, :article_created, %{article_id: article.id})
       end
@@ -327,6 +330,7 @@ defmodule Baudrate.Content do
       |> Repo.transaction()
 
     with {:ok, %{article: updated_article}} <- result do
+      sync_article_tags(updated_article)
       updated_article = Repo.preload(updated_article, :boards)
 
       for board <- updated_article.boards do
@@ -1333,6 +1337,166 @@ defmodule Baudrate.Content do
     |> Repo.delete_all()
 
     paths
+  end
+
+  # --- Article Tags ---
+
+  @hashtag_re ~r/(?:^|(?<=\s|[^\w&]))#(\p{L}[\w]{0,63})/u
+
+  @doc """
+  Extracts hashtag strings from text.
+
+  Strips code blocks and inline code before scanning. Returns a list of
+  unique lowercase tag strings.
+
+  ## Examples
+
+      iex> Baudrate.Content.extract_tags("Hello #Elixir and #Phoenix!")
+      ["elixir", "phoenix"]
+
+      iex> Baudrate.Content.extract_tags("`#not_a_tag`")
+      []
+  """
+  @spec extract_tags(String.t() | nil) :: [String.t()]
+  def extract_tags(nil), do: []
+  def extract_tags(""), do: []
+
+  def extract_tags(text) when is_binary(text) do
+    cleaned =
+      text
+      |> String.replace(~r/```[\s\S]*?```/u, "")
+      |> String.replace(~r/`[^`]+`/, "")
+
+    Regex.scan(@hashtag_re, cleaned, capture: :all_but_first)
+    |> List.flatten()
+    |> Enum.map(&String.downcase/1)
+    |> Enum.uniq()
+  end
+
+  @doc """
+  Syncs article_tags for the given article based on its body.
+
+  Extracts hashtags from the body, compares with existing tags in the DB,
+  inserts new ones and deletes removed ones. Returns `:ok`.
+  """
+  @spec sync_article_tags(%Article{}) :: :ok
+  def sync_article_tags(%Article{} = article) do
+    new_tags = extract_tags(article.body)
+
+    existing_tags =
+      from(at in ArticleTag, where: at.article_id == ^article.id, select: at.tag)
+      |> Repo.all()
+
+    to_add = new_tags -- existing_tags
+    to_remove = existing_tags -- new_tags
+
+    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+
+    if to_add != [] do
+      entries =
+        Enum.map(to_add, fn tag ->
+          %{article_id: article.id, tag: tag, inserted_at: now}
+        end)
+
+      Repo.insert_all(ArticleTag, entries, on_conflict: :nothing)
+    end
+
+    if to_remove != [] do
+      from(at in ArticleTag, where: at.article_id == ^article.id and at.tag in ^to_remove)
+      |> Repo.delete_all()
+    end
+
+    :ok
+  end
+
+  @doc """
+  Lists articles matching a given tag, with pagination.
+
+  Respects board visibility, mute/block filters, and excludes soft-deleted
+  articles. Articles are ordered newest first with user and boards preloaded.
+
+  ## Options
+
+    * `:page` — page number (default 1)
+    * `:per_page` — articles per page (default #{@per_page})
+    * `:user` — current user (nil for guests)
+
+  Returns `%{articles, total, page, per_page, total_pages}`.
+  """
+  def articles_by_tag(tag, opts \\ []) do
+    page = max(Keyword.get(opts, :page, 1), 1)
+    per_page = Keyword.get(opts, :per_page, @per_page)
+    offset = (page - 1) * per_page
+    user = Keyword.get(opts, :user)
+    allowed_roles = allowed_view_roles(user)
+    {hidden_uids, hidden_ap_ids} = hidden_filters(user)
+
+    base_query =
+      from(a in Article,
+        join: at in ArticleTag,
+        on: at.article_id == a.id,
+        join: ba in BoardArticle,
+        on: ba.article_id == a.id,
+        join: b in Board,
+        on: b.id == ba.board_id,
+        where: at.tag == ^tag and is_nil(a.deleted_at) and b.min_role_to_view in ^allowed_roles,
+        distinct: a.id
+      )
+      |> apply_search_hidden_filters(hidden_uids, hidden_ap_ids)
+
+    total = Repo.one(from(q in subquery(base_query), select: count()))
+
+    articles =
+      from(a in Article,
+        join: at in ArticleTag,
+        on: at.article_id == a.id,
+        join: ba in BoardArticle,
+        on: ba.article_id == a.id,
+        join: b in Board,
+        on: b.id == ba.board_id,
+        where: at.tag == ^tag and is_nil(a.deleted_at) and b.min_role_to_view in ^allowed_roles,
+        distinct: a.id,
+        order_by: [desc: a.inserted_at],
+        offset: ^offset,
+        limit: ^per_page,
+        preload: [:user, :boards]
+      )
+      |> apply_search_hidden_filters(hidden_uids, hidden_ap_ids)
+      |> Repo.all()
+
+    total_pages = max(ceil(total / per_page), 1)
+
+    %{
+      articles: articles,
+      total: total,
+      page: page,
+      per_page: per_page,
+      total_pages: total_pages
+    }
+  end
+
+  @doc """
+  Searches for tags matching a prefix.
+
+  Returns up to `limit` distinct tag strings sorted alphabetically.
+
+  ## Options
+
+    * `:limit` — max results (default 10)
+  """
+  @spec search_tags(String.t(), keyword()) :: [String.t()]
+  def search_tags(prefix, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 10)
+    pattern = sanitize_like(String.downcase(prefix)) <> "%"
+
+    from(at in ArticleTag,
+      where: like(at.tag, ^pattern),
+      group_by: at.tag,
+      order_by: at.tag,
+      limit: ^limit,
+      select: at.tag
+    )
+    |> Repo.all()
   end
 
   # --- Feed Queries ---

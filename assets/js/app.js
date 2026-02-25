@@ -28,12 +28,13 @@ import AvatarCropHook from "./avatar_crop_hook"
 import MarkdownToolbarHook from "./markdown_toolbar_hook"
 import ScrollBottomHook from "./scroll_bottom_hook"
 import CopyToClipboardHook from "./copy_to_clipboard_hook"
+import HashtagAutocompleteHook from "./hashtag_autocomplete_hook"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, AvatarCropHook, MarkdownToolbarHook, ScrollBottomHook, CopyToClipboardHook},
+  hooks: {...colocatedHooks, AvatarCropHook, MarkdownToolbarHook, ScrollBottomHook, CopyToClipboardHook, HashtagAutocompleteHook},
 })
 
 // Theme switcher: apply saved theme and listen for toggle events

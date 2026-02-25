@@ -270,10 +270,29 @@ defmodule BaudrateWeb.CoreComponents do
       <label>
         <span :if={@label} class="label mb-1">{@label}</span>
         <div :if={@toolbar} id={"#{@id}-md-toolbar"} phx-update="ignore"></div>
+        <div
+          :if={@toolbar}
+          id={"#{@id}-hashtag-wrap"}
+          phx-hook="HashtagAutocompleteHook"
+          class="relative"
+        >
+          <textarea
+            id={@id}
+            name={@name}
+            phx-hook="MarkdownToolbarHook"
+            class={[
+              @class || "w-full textarea",
+              @errors != [] && (@error_class || "textarea-error")
+            ]}
+            aria-invalid={@errors != [] && "true"}
+            aria-describedby={@errors != [] && "#{@id}-error"}
+            {@rest}
+          >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
+        </div>
         <textarea
+          :if={!@toolbar}
           id={@id}
           name={@name}
-          phx-hook={@toolbar && "MarkdownToolbarHook"}
           class={[
             @class || "w-full textarea",
             @errors != [] && (@error_class || "textarea-error")

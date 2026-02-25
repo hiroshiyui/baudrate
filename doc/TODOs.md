@@ -1,6 +1,26 @@
 # Baudrate — Project TODOs
 
-Audit date: 2026-02-24
+Audit date: 2026-02-25
+
+---
+
+## Completed Features
+
+### Hashtag Features (DONE)
+
+- [x] `article_tags` table — stores extracted hashtags per article
+- [x] `ArticleTag` schema — article ↔ tag association with validation
+- [x] `Content.extract_tags/1` — Unicode-aware hashtag extraction (`\p{L}[\w]{0,63}`)
+- [x] `Content.sync_article_tags/1` — auto-syncs tags on article create/update
+- [x] `Content.articles_by_tag/2` — paginated tag browse with visibility + mute filters
+- [x] `Content.search_tags/2` — prefix-based tag search for autocomplete
+- [x] Markdown linkification — `#tag` → clickable `<a class="hashtag">` links (post-sanitize)
+- [x] `/tags/:tag` route + `TagLive` — tag browse page
+- [x] `HashtagAutocompleteHook` — JS autocomplete in article editors
+- [x] `Federation.extract_hashtags/1` refactored to use shared `Content.extract_tags/1`
+- [x] Backfill migration for existing articles
+- [x] i18n translations (en, zh_TW, ja_JP)
+- [x] Tests for all new code
 
 ---
 

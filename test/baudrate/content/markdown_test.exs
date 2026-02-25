@@ -96,4 +96,53 @@ defmodule Baudrate.Content.MarkdownTest do
       refute html =~ scheme <> ":"
     end
   end
+
+  describe "hashtag linkification" do
+    test "linkifies #tag to clickable link" do
+      html = Markdown.to_html("Check out #elixir")
+      assert html =~ ~s[<a href="/tags/elixir" class="hashtag">#elixir</a>]
+    end
+
+    test "does not linkify tags inside code blocks" do
+      html = Markdown.to_html("`#not_a_tag`")
+      refute html =~ "hashtag"
+      assert html =~ "#not_a_tag"
+    end
+
+    test "does not linkify tags inside fenced code blocks" do
+      html = Markdown.to_html("```\n#not_a_tag\n```")
+      refute html =~ ~s[class="hashtag"]
+    end
+
+    test "does not linkify tags inside links" do
+      html = Markdown.to_html("[#elixir](https://example.com)")
+      # The tag inside an existing link should not get double-linked
+      refute html =~ ~s[class="hashtag"]
+    end
+
+    test "handles multiple tags in one text" do
+      html = Markdown.to_html("Learn #elixir and #phoenix today")
+      assert html =~ ~s[<a href="/tags/elixir" class="hashtag">#elixir</a>]
+      assert html =~ ~s[<a href="/tags/phoenix" class="hashtag">#phoenix</a>]
+    end
+
+    test "does not linkify markdown headings (# Heading)" do
+      html = Markdown.to_html("# Heading")
+      assert html =~ "<h1>"
+      refute html =~ ~s[class="hashtag"]
+    end
+
+    test "linkifies CJK hashtags correctly" do
+      html = Markdown.to_html("Visit #台灣 and learn #エリクサー")
+      assert html =~ ~s[<a href="/tags/台灣" class="hashtag">#台灣</a>]
+      assert html =~ ~s[<a href="/tags/エリクサー" class="hashtag">#エリクサー</a>]
+    end
+
+    test "normalizes tag links to lowercase" do
+      html = Markdown.to_html("Check #Elixir")
+      assert html =~ ~s[href="/tags/elixir"]
+      # The display text preserves original case
+      assert html =~ "#Elixir</a>"
+    end
+  end
 end
