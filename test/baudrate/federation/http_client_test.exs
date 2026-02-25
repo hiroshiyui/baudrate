@@ -73,6 +73,104 @@ defmodule Baudrate.Federation.HTTPClientTest do
     end
   end
 
+  describe "get/2 redirects" do
+    test "follows 301 redirect" do
+      {:ok, agent} = Agent.start_link(fn -> 0 end)
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        call = Agent.get_and_update(agent, fn n -> {n, n + 1} end)
+
+        if call == 0 do
+          conn
+          |> Plug.Conn.put_resp_header("location", "https://remote.example/users/alice-moved")
+          |> Plug.Conn.send_resp(301, "")
+        else
+          Plug.Conn.send_resp(conn, 200, ~s({"type":"Person"}))
+        end
+      end)
+
+      assert {:ok, %{status: 200, body: body}} =
+               HTTPClient.get("https://remote.example/users/alice")
+
+      assert body =~ "Person"
+      assert Agent.get(agent, & &1) == 2
+    end
+
+    test "follows 302 redirect" do
+      {:ok, agent} = Agent.start_link(fn -> 0 end)
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        call = Agent.get_and_update(agent, fn n -> {n, n + 1} end)
+
+        if call == 0 do
+          conn
+          |> Plug.Conn.put_resp_header("location", "https://remote.example/users/alice-found")
+          |> Plug.Conn.send_resp(302, "")
+        else
+          Plug.Conn.send_resp(conn, 200, ~s({"type":"Person"}))
+        end
+      end)
+
+      assert {:ok, %{status: 200}} = HTTPClient.get("https://remote.example/users/alice")
+    end
+
+    test "follows 307 redirect" do
+      {:ok, agent} = Agent.start_link(fn -> 0 end)
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        call = Agent.get_and_update(agent, fn n -> {n, n + 1} end)
+
+        if call == 0 do
+          conn
+          |> Plug.Conn.put_resp_header("location", "https://remote.example/users/alice-temp")
+          |> Plug.Conn.send_resp(307, "")
+        else
+          Plug.Conn.send_resp(conn, 200, ~s({"ok":true}))
+        end
+      end)
+
+      assert {:ok, %{status: 200}} = HTTPClient.get("https://remote.example/users/alice")
+    end
+
+    test "follows 308 redirect" do
+      {:ok, agent} = Agent.start_link(fn -> 0 end)
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        call = Agent.get_and_update(agent, fn n -> {n, n + 1} end)
+
+        if call == 0 do
+          conn
+          |> Plug.Conn.put_resp_header("location", "https://remote.example/users/alice-perm")
+          |> Plug.Conn.send_resp(308, "")
+        else
+          Plug.Conn.send_resp(conn, 200, ~s({"ok":true}))
+        end
+      end)
+
+      assert {:ok, %{status: 200}} = HTTPClient.get("https://remote.example/users/alice")
+    end
+
+    test "returns error on too many redirects" do
+      Req.Test.stub(HTTPClient, fn conn ->
+        conn
+        |> Plug.Conn.put_resp_header("location", "https://remote.example/loop")
+        |> Plug.Conn.send_resp(301, "")
+      end)
+
+      assert {:error, :too_many_redirects} =
+               HTTPClient.get("https://remote.example/loop")
+    end
+
+    test "returns http_error when Location header is missing on redirect" do
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 301, "")
+      end)
+
+      assert {:error, {:http_error, 301}} =
+               HTTPClient.get("https://remote.example/users/alice")
+    end
+  end
+
   describe "post/3" do
     test "returns body on 202" do
       Req.Test.stub(HTTPClient, fn conn ->

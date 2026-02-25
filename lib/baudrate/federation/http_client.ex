@@ -193,8 +193,8 @@ defmodule Baudrate.Federation.HTTPClient do
   # Extracts and resolves the Location header from a redirect response.
   # Handles both absolute and relative URLs.
   defp get_redirect_location(resp_headers, base_uri) do
-    case List.keyfind(resp_headers, "location", 0) do
-      {_, location} ->
+    case Map.get(resp_headers, "location") do
+      [location | _] ->
         # Resolve relative URLs against the base
         resolved =
           case URI.parse(location) do
@@ -204,7 +204,7 @@ defmodule Baudrate.Federation.HTTPClient do
 
         {:ok, resolved}
 
-      nil ->
+      _ ->
         :error
     end
   end
