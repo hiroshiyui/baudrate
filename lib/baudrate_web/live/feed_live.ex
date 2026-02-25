@@ -130,4 +130,14 @@ defmodule BaudrateWeb.FeedLive do
         {:noreply, put_flash(socket, :error, gettext("Failed to create article."))}
     end
   end
+
+  defp digest(nil), do: ""
+
+  defp digest(text) do
+    text
+    |> Baudrate.Sanitizer.Native.strip_tags()
+    |> String.replace(~r/\s+/, " ")
+    |> String.trim()
+    |> String.slice(0, 200)
+  end
 end

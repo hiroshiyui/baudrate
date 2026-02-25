@@ -109,9 +109,9 @@
             {item.feed_item.title}
           </h2>
 
-          <div class="prose prose-sm max-w-none break-words">
-            {Phoenix.HTML.raw(item.feed_item.body_html || "")}
-          </div>
+          <p class="text-sm text-base-content/80 line-clamp-3">
+            {digest(item.feed_item.body_html)}
+          </p>
 
           <div :if={item.feed_item.source_url} class="mt-2">
             <a
@@ -158,6 +158,10 @@
           >
             {item.article.title}
           </.link>
+
+          <p class="text-sm text-base-content/80 line-clamp-3">
+            {digest(item.article.body)}
+          </p>
 
           <div :if={item.article.boards != []} class="flex gap-1 mt-1">
             <span :for={board <- item.article.boards} class="badge badge-outline badge-sm">
