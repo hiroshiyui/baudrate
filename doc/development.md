@@ -649,7 +649,7 @@ The `Baudrate.Federation` context handles all federation logic.
 
 **Following collection endpoints** (paginated with `?page=N`):
 - `/ap/users/:username/following` — paginated `OrderedCollection` of accepted followed actor URIs
-- `/ap/boards/:slug/following` — empty `OrderedCollection` (public boards only, boards don't follow)
+- `/ap/boards/:slug/following` — paginated `OrderedCollection` of accepted board follow actor URIs
 
 **User outbound follows** (Phase 1 — backend only, UI in Phase 2):
 - `Federation.lookup_remote_actor/1` — WebFinger + actor fetch by `@user@domain` or actor URL
@@ -680,6 +680,21 @@ The `Baudrate.Federation` context handles all federation logic.
 - User profile — follow/unfollow button next to mute button
 - `following_collection/2` — includes local follow actor URIs
 - Feed includes articles from locally-followed users via union query
+
+**Board-level remote follows** (moderator-managed):
+- `boards.ap_accept_policy` — `"open"` (accept from anyone) or `"followers_only"` (only accept from actors the board follows); default: `"followers_only"`
+- `board_follows` table — tracks outbound follow relationships from boards to remote actors
+- `BoardFollow` schema — `board_id`, `remote_actor_id`, `state` (pending/accepted/rejected), `ap_id`
+- `Federation.create_board_follow/2` — create pending follow, returns AP ID
+- `Federation.accept_board_follow/1` / `reject_board_follow/1` — state transitions on Accept/Reject
+- `Federation.delete_board_follow/2` — delete follow record (unfollow)
+- `Federation.boards_following_actor/1` — returns boards with accepted follows for auto-routing
+- `Publisher.build_board_follow/3` / `build_board_undo_follow/2` — build Follow/Undo(Follow) from board actor
+- Accept policy enforcement: `followers_only` boards reject Create(Article/Page) from unfollowed actors
+- Auto-routing: when a followed actor sends content without addressing a board, it is routed to following boards
+- Accept/Reject fallback: when user follow not found, tries board follow as fallback
+- `/boards/:slug/follows` — management UI for board moderators (follow/unfollow, accept policy toggle)
+- Board page shows "Manage Follows" link for board moderators when `ap_enabled`
 
 **Mastodon/Lemmy compatibility:**
 - `attributedTo` arrays — extracts first binary URI for validation

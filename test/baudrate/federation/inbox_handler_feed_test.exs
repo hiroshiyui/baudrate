@@ -275,7 +275,8 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       position: uid,
       min_role_to_view: "guest",
       min_role_to_post: "user",
-      ap_enabled: false
+      ap_enabled: false,
+      ap_accept_policy: "open"
     }
 
     {:ok, board} =

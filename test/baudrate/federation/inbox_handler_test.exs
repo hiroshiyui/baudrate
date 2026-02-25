@@ -53,7 +53,11 @@ defmodule Baudrate.Federation.InboxHandlerTest do
     slug = slug || "board-#{System.unique_integer([:positive])}"
 
     %Baudrate.Content.Board{}
-    |> Baudrate.Content.Board.changeset(%{name: "Test Board", slug: slug})
+    |> Baudrate.Content.Board.changeset(%{
+      name: "Test Board",
+      slug: slug,
+      ap_accept_policy: "open"
+    })
     |> Repo.insert!()
   end
 
