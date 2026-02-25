@@ -1,0 +1,69 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">
+      {gettext("Following")}
+      <span :if={@follows != []} class="badge badge-neutral ml-2">{length(@follows)}</span>
+    </h1>
+  </div>
+
+  <div :if={@follows == []} class="text-base-content/50 text-center py-8">
+    {gettext("You haven't followed anyone yet.")}
+    <div class="mt-2">
+      <.link navigate="/search" class="link link-primary">
+        {gettext("Search for remote actors to follow")}
+      </.link>
+    </div>
+  </div>
+
+  <div :if={@follows != []} class="space-y-2">
+    <div :for={follow <- @follows} class="card bg-base-200 shadow-sm">
+      <div class="card-body p-4 flex flex-row items-center gap-4">
+        <div class="avatar">
+          <div class="w-12 h-12 rounded-full bg-base-300 flex items-center justify-center">
+            <img
+              :if={follow.remote_actor.avatar_url}
+              src={follow.remote_actor.avatar_url}
+              alt=""
+              class="rounded-full"
+            />
+            <.icon
+              :if={!follow.remote_actor.avatar_url}
+              name="hero-user-circle"
+              class="size-8 opacity-50"
+            />
+          </div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold truncate">
+            {follow.remote_actor.display_name || follow.remote_actor.username}
+          </div>
+          <div class="text-sm text-base-content/70 truncate">
+            @{follow.remote_actor.username}@{follow.remote_actor.domain}
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class={[
+            "badge badge-sm",
+            follow.state == "accepted" && "badge-success",
+            follow.state == "pending" && "badge-warning",
+            follow.state == "rejected" && "badge-error"
+          ]}>
+            {case follow.state do
+              "accepted" -> gettext("Accepted")
+              "pending" -> gettext("Pending")
+              "rejected" -> gettext("Rejected")
+            end}
+          </span>
+          <button
+            phx-click="unfollow"
+            phx-value-id={follow.remote_actor.id}
+            data-confirm={gettext("Unfollow this actor?")}
+            class="btn btn-sm btn-ghost text-error"
+          >
+            {gettext("Unfollow")}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

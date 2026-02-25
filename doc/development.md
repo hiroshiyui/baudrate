@@ -134,6 +134,7 @@ lib/
 │   │   ├── board_live.ex        # Board view with article listing
 │   │   ├── conversation_live.ex # Single DM conversation thread view
 │   │   ├── conversations_live.ex # DM conversation list
+│   │   ├── following_live.ex    # Following management (outbound remote actor follows)
 │   │   ├── home_live.ex         # Home page (board listing, public for guests)
 │   │   ├── login_live.ex        # Login form (phx-trigger-action pattern)
 │   │   ├── password_reset_live.ex  # Password reset via recovery codes
@@ -141,7 +142,7 @@ lib/
 │   │   ├── recovery_code_verify_live.ex  # Recovery code login
 │   │   ├── recovery_codes_live.ex        # Recovery codes display
 │   │   ├── register_live.ex     # Public user registration (supports invite-only mode, terms notice, recovery codes)
-│   │   ├── search_live.ex       # Full-text article search
+│   │   ├── search_live.ex       # Full-text search + remote actor lookup (WebFinger/AP)
 │   │   ├── user_invites_live.ex # User invite code management (quota-limited, generate, revoke)
 │   │   ├── user_profile_live.ex # Public user profile pages (stats, recent articles)
 │   │   ├── setup_live.ex        # First-run setup wizard

@@ -24,15 +24,14 @@ receiving the actor's public posts in a personal feed.
 - [x] Rate limit: 10 outbound follows per hour per user
 - [x] Tests for all new code
 
-#### Phase 2 — Discovery UI (TODO)
+#### Phase 2 — Discovery UI (DONE)
 
-1. **Discovery** — extend the existing `/search` page to support remote actor
-   lookup. When the query matches `@user@domain` or an actor URL, perform a
-   WebFinger lookup + actor fetch and display the result alongside local
-   search results.
-2. **Follow / Unfollow buttons** — UI to trigger follow/unfollow actions
-3. **Following management page** — list followed actors, unfollow
-4. **i18n** — translations for follow-related UI text
+- [x] Extend `/search` with remote actor lookup (`@user@domain` and `https://` actor URLs)
+- [x] Follow / Unfollow buttons on remote actor card (with rate limiting)
+- [x] `/following` management page — list followed actors with state badges, unfollow
+- [x] Navigation links in mobile and desktop nav
+- [x] i18n translations (en, zh_TW, ja_JP) for all follow-related UI text
+- [x] Tests for search remote actor lookup and following management page
 
 #### Phase 3 — Personal Feed (TODO)
 

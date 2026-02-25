@@ -17,6 +17,90 @@
     </div>
   </form>
 
+  <%!-- Remote actor loading indicator --%>
+  <div :if={@remote_actor_loading} class="card bg-base-200 shadow-sm mb-4">
+    <div class="card-body p-4 flex flex-row items-center gap-3">
+      <span class="loading loading-spinner loading-sm"></span>
+      <span class="text-base-content/70">{gettext("Looking up remote actor...")}</span>
+    </div>
+  </div>
+
+  <%!-- Remote actor result card --%>
+  <div
+    :if={@remote_actor && !@remote_actor_loading}
+    class="card bg-base-200 shadow-sm mb-4"
+    role="region"
+    aria-label={gettext("Remote actor")}
+  >
+    <div class="card-body p-4 flex flex-row items-center gap-4">
+      <div class="avatar">
+        <div class="w-12 h-12 rounded-full bg-base-300 flex items-center justify-center">
+          <img
+            :if={@remote_actor.avatar_url}
+            src={@remote_actor.avatar_url}
+            alt=""
+            class="rounded-full"
+          />
+          <.icon
+            :if={!@remote_actor.avatar_url}
+            name="hero-user-circle"
+            class="size-8 opacity-50"
+          />
+        </div>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="font-bold truncate">
+          {@remote_actor.display_name || @remote_actor.username}
+        </div>
+        <div class="text-sm text-base-content/70 truncate">
+          @{@remote_actor.username}@{@remote_actor.domain}
+        </div>
+        <span class="badge badge-outline badge-xs mt-1">{@remote_actor.actor_type}</span>
+      </div>
+      <div class="flex-none">
+        <%= cond do %>
+          <% !@current_user -> %>
+            <.link navigate="/login" class="btn btn-sm btn-outline">
+              {gettext("Sign in to follow")}
+            </.link>
+          <% @follow_state == "pending" -> %>
+            <button
+              phx-click="unfollow"
+              phx-value-id={@remote_actor.id}
+              class="btn btn-sm btn-warning btn-outline"
+            >
+              {gettext("Pending")}
+            </button>
+          <% @follow_state == "accepted" -> %>
+            <button
+              phx-click="unfollow"
+              phx-value-id={@remote_actor.id}
+              data-confirm={gettext("Unfollow this actor?")}
+              class="btn btn-sm btn-outline"
+            >
+              {gettext("Unfollow")}
+            </button>
+          <% @follow_state == "rejected" -> %>
+            <button
+              phx-click="follow"
+              phx-value-id={@remote_actor.id}
+              class="btn btn-sm btn-primary"
+            >
+              {gettext("Follow")}
+            </button>
+          <% true -> %>
+            <button
+              phx-click="follow"
+              phx-value-id={@remote_actor.id}
+              class="btn btn-sm btn-primary"
+            >
+              {gettext("Follow")}
+            </button>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
   <div
     :if={@query != ""}
     role="tablist"
