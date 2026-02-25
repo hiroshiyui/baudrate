@@ -25,12 +25,12 @@ Audit date: 2026-02-25
 
 ## Code Quality
 
-- [ ] **Extract pagination helper** — deduplicate ~160 lines across `search_articles/2`, `search_comments/2`, `articles_by_tag/2`, `list_feed_items/2`.
-- [ ] **Split large modules** — `federation.ex` (1800 lines), `content.ex` (1729), `auth.ex` (1531), `inbox_handler.ex` (1127).
-- [ ] **Refactor `following_collection/2`** — 3-level nested `case` in `federation.ex:609-698`, extract per-actor-type helpers.
-- [ ] **Unify hidden filter functions** — `apply_hidden_filters/3` and `apply_search_hidden_filters/3` in `content.ex:1014-1053` are near-identical.
-- [ ] **Fix function naming inconsistency** — `get_X_by_ap_id` returns nil (no `!`), `get_X_by_slug!` raises; `get_user/1` returns tuple, `get_user_by_username/1` returns nil.
-- [ ] **Replace magic string `"accepted"`** — appears 10+ times in federation queries, should be a module attribute.
+- [x] **Replace magic follow state strings** — extracted `@state_accepted`/`@state_pending`/`@state_rejected` module attributes in `federation.ex`, `user_follow.ex`, and `board_follow.ex`.
+- [x] **Unify hidden filter functions** — removed duplicate `apply_search_hidden_filters/3`; all call sites now use `apply_hidden_filters/3`.
+- [x] **Refactor `following_collection/2`** — extracted `resolve_actor/1`, `user_following_collection/3`, and `board_following_collection/3` helpers to flatten nested cases.
+- [x] **Extract pagination helper** — added `Baudrate.Content.Pagination` with `paginate_opts/2` and `paginate_query/3`; deduplicated `search_articles/2`, `search_comments/2`, and `articles_by_tag/2`. (`list_feed_items/2` excluded — uses merge-sort pagination from heterogeneous sources.)
+- [ ] **Split large modules** — _deferred: high risk, needs incremental approach over multiple sessions._
+- [ ] **Fix function naming inconsistency** — _deferred: analysis shows naming is mostly consistent; `get_user/1` uses tuples justifiably for multiple failure modes._
 
 ## Planned Features
 
