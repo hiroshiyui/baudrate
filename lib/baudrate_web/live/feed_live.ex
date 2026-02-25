@@ -134,10 +134,16 @@ defmodule BaudrateWeb.FeedLive do
   defp digest(nil), do: ""
 
   defp digest(text) do
-    text
-    |> Baudrate.Sanitizer.Native.strip_tags()
-    |> String.replace(~r/\s+/, " ")
-    |> String.trim()
-    |> String.slice(0, 200)
+    plain =
+      text
+      |> Baudrate.Sanitizer.Native.strip_tags()
+      |> String.replace(~r/\s+/, " ")
+      |> String.trim()
+
+    if String.length(plain) > 200 do
+      String.slice(plain, 0, 200) <> "…"
+    else
+      plain
+    end
   end
 end
