@@ -73,7 +73,9 @@ window.addEventListener("storage", (e) => {
   if (e.key === FONT_SIZE_KEY) setFontSize(e.newValue || 100)
 })
 
-// Sync aria-expanded with DaisyUI dropdown focus state
+// Sync aria-expanded with DaisyUI dropdown open/close state.
+// DaisyUI toggles via focus (keyboard) AND :active/:focus-within (click),
+// so we handle both focusin/focusout and click events.
 document.addEventListener("focusin", (e) => {
   const dropdown = e.target.closest(".dropdown")
   if (dropdown) {
@@ -90,6 +92,18 @@ document.addEventListener("focusout", (e) => {
         if (trigger) trigger.setAttribute("aria-expanded", "false")
       }
     }, 0)
+  }
+})
+document.addEventListener("click", (e) => {
+  const trigger = e.target.closest(".dropdown [aria-haspopup]")
+  if (trigger) {
+    const expanded = trigger.getAttribute("aria-expanded") === "true"
+    trigger.setAttribute("aria-expanded", expanded ? "false" : "true")
+  } else {
+    // Click outside any dropdown — close all
+    document.querySelectorAll(".dropdown [aria-haspopup][aria-expanded='true']").forEach((el) => {
+      el.setAttribute("aria-expanded", "false")
+    })
   }
 })
 

@@ -34,7 +34,6 @@ defmodule BaudrateWeb.Layouts do
             role="button"
             aria-label={gettext("Open navigation menu")}
             aria-haspopup="true"
-            aria-expanded="false"
             class="btn btn-ghost"
           >
             <.icon name="hero-bars-3" class="size-5" />
@@ -197,7 +196,6 @@ defmodule BaudrateWeb.Layouts do
             tabindex="0"
             role="button"
             aria-haspopup="true"
-            aria-expanded="false"
             class="btn btn-ghost gap-2"
           >
             <.avatar user={@current_user} size={36} />
@@ -277,7 +275,7 @@ defmodule BaudrateWeb.Layouts do
 
   def flash_group(assigns) do
     ~H"""
-    <div id={@id} aria-live="polite">
+    <div id={@id} aria-live="polite" aria-atomic="true">
       <.flash kind={:info} flash={@flash} />
       <.flash kind={:error} flash={@flash} />
 
