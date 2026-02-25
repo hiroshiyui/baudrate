@@ -33,13 +33,20 @@ receiving the actor's public posts in a personal feed.
 - [x] i18n translations (en, zh_TW, ja_JP) for all follow-related UI text
 - [x] Tests for search remote actor lookup and following management page
 
-#### Phase 3 — Personal Feed (TODO)
+#### Phase 3 — Personal Feed (DONE)
 
-5. **Personal feed** — display incoming `Create` activities from followed actors
-   in a user-facing "Following" feed/timeline.
-6. **Inbox routing** — route inbound posts from followed actors to the
-   follower's personal feed (distinguish from DMs and board content).
-7. **Handle actor migration** (`Move` activity) for followed actors
+- [x] `feed_items` table — stores posts from followed actors that don't land elsewhere
+- [x] `FeedItem` schema with activity_type/object_type validation
+- [x] `Federation.PubSub` — user-level feed event broadcasting
+- [x] Feed item CRUD: create, list (paginated with hidden filter), get, soft-delete, cleanup
+- [x] `migrate_user_follows/2` — Move activity support
+- [x] Inbox routing fallback — Create(Note/Article/Page) → feed item when no board/reply target
+- [x] Delete propagation — soft-deletes feed items on content/actor deletion
+- [x] Move activity handler — resolves new actor, migrates follows with dedup
+- [x] `/feed` LiveView — paginated personal timeline with real-time updates
+- [x] Navigation links in mobile and desktop nav
+- [x] i18n translations (en, zh_TW, ja_JP)
+- [x] Tests for all new code
 
 #### Shared Remote Actor Lookup
 

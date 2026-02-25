@@ -128,7 +128,16 @@ defmodule Baudrate.Federation.InboxHandler do
     if direct_message?(object) do
       handle_incoming_dm(object, remote_actor)
     else
-      handle_create_note_comment(object, remote_actor)
+      case handle_create_note_comment(object, remote_actor) do
+        :ok ->
+          :ok
+
+        {:error, reason} when reason in [:article_not_found, :missing_in_reply_to] ->
+          maybe_create_feed_item(object, remote_actor, "Note")
+
+        other ->
+          other
+      end
     end
   end
 
@@ -176,6 +185,12 @@ defmodule Baudrate.Federation.InboxHandler do
             {:error, :create_article_failed}
         end
       end
+    else
+      {:error, :board_not_found} ->
+        maybe_create_feed_item(object, remote_actor, type)
+
+      other ->
+        other
     end
   end
 
@@ -458,16 +473,41 @@ defmodule Baudrate.Federation.InboxHandler do
     :ok
   end
 
-  # --- Move — future: migrate followers to new actor ---
+  # --- Move — migrate follows to new actor ---
 
   defp dispatch(
          %{"type" => "Move", "actor" => actor_uri, "target" => target_uri},
-         _remote_actor,
+         remote_actor,
          _target
        )
        when is_binary(target_uri) do
-    Logger.info("federation.activity: type=Move from=#{actor_uri} to=#{target_uri}")
-    :ok
+    if actor_uri != remote_actor.ap_id do
+      Logger.warning(
+        "federation.activity: type=Move rejected actor_mismatch signer=#{remote_actor.ap_id} actor=#{actor_uri}"
+      )
+
+      {:error, :actor_mismatch}
+    else
+      Logger.info("federation.activity: type=Move from=#{actor_uri} to=#{target_uri}")
+
+      case ActorResolver.resolve(target_uri) do
+        {:ok, new_actor} ->
+          {migrated, deleted} = Federation.migrate_user_follows(remote_actor.id, new_actor.id)
+
+          Logger.info(
+            "federation.move_complete: from=#{actor_uri} to=#{target_uri} migrated=#{migrated} deduped=#{deleted}"
+          )
+
+          :ok
+
+        {:error, reason} ->
+          Logger.warning(
+            "federation.move_failed: from=#{actor_uri} to=#{target_uri} reason=#{inspect(reason)}"
+          )
+
+          :ok
+      end
+    end
   end
 
   # --- Catch-all ---
@@ -558,6 +598,15 @@ defmodule Baudrate.Federation.InboxHandler do
           |> Baudrate.Repo.update()
 
           Logger.info("federation.activity: type=Delete(DM) ap_id=#{object_uri}")
+          :ok
+        else
+          {:error, :unauthorized}
+        end
+
+      feed_item = Federation.get_feed_item_by_ap_id(object_uri) ->
+        if feed_item.remote_actor_id == remote_actor.id do
+          Federation.soft_delete_feed_item_by_ap_id(object_uri, remote_actor.id)
+          Logger.info("federation.activity: type=Delete(FeedItem) ap_id=#{object_uri}")
           :ok
         else
           {:error, :unauthorized}
@@ -680,6 +729,62 @@ defmodule Baudrate.Federation.InboxHandler do
       :ok
     else
       {:error, :dm_rejected}
+    end
+  end
+
+  # --- Feed item fallback ---
+
+  defp maybe_create_feed_item(object, remote_actor, object_type) do
+    # Only create feed items if at least one local user follows this actor
+    case Federation.local_followers_of_remote_actor(remote_actor.id) do
+      [] ->
+        :ok
+
+      _followers ->
+        ap_id = object["id"]
+
+        # Idempotency check
+        if is_binary(ap_id) && Federation.get_feed_item_by_ap_id(ap_id) do
+          :ok
+        else
+          with :ok <- validate_attribution_match(object, remote_actor),
+               {:ok, body, body_html} <- sanitize_content(object) do
+            published_at = parse_published(object["published"])
+            title = if object_type in ["Article", "Page"], do: object["name"]
+            source_url = object["url"] || object["id"]
+
+            case Federation.create_feed_item(%{
+                   remote_actor_id: remote_actor.id,
+                   activity_type: "Create",
+                   object_type: object_type,
+                   ap_id: ap_id,
+                   title: title,
+                   body: body,
+                   body_html: body_html,
+                   source_url: source_url,
+                   published_at: published_at
+                 }) do
+              {:ok, _feed_item} ->
+                Logger.info(
+                  "federation.activity: type=Create(#{object_type}/FeedItem) ap_id=#{ap_id}"
+                )
+
+                :ok
+
+              {:error, %Ecto.Changeset{} = changeset} ->
+                if has_unique_error?(changeset), do: :ok, else: {:error, :create_feed_item_failed}
+            end
+          end
+        end
+    end
+  end
+
+  defp parse_published(nil), do: DateTime.utc_now() |> DateTime.truncate(:second)
+
+  defp parse_published(str) when is_binary(str) do
+    case DateTime.from_iso8601(str) do
+      {:ok, dt, _offset} -> DateTime.truncate(dt, :second)
+      _ -> DateTime.utc_now() |> DateTime.truncate(:second)
     end
   end
 

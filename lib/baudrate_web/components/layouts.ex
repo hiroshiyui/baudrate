@@ -75,6 +75,9 @@ defmodule BaudrateWeb.Layouts do
               <li>
                 <.link navigate="/following">{gettext("Following")}</.link>
               </li>
+              <li>
+                <.link navigate="/feed">{gettext("Feed")}</.link>
+              </li>
               <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
               <li :if={@current_user.role.name == "admin"} class="menu-title">
                 {gettext("Admin")}
@@ -165,6 +168,11 @@ defmodule BaudrateWeb.Layouts do
             <li>
               <.link navigate="/following" class="btn btn-ghost">
                 {gettext("Following")}
+              </.link>
+            </li>
+            <li>
+              <.link navigate="/feed" class="btn btn-ghost">
+                {gettext("Feed")}
               </.link>
             </li>
           </ul>

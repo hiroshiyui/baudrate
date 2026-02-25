@@ -295,7 +295,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert length(comments) == 1
     end
 
-    test "rejects comment with missing inReplyTo" do
+    test "silently drops comment with missing inReplyTo when no followers" do
       remote_actor = create_remote_actor()
 
       activity = %{
@@ -310,8 +310,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
         }
       }
 
-      assert {:error, :missing_in_reply_to} =
-               InboxHandler.handle(activity, remote_actor, :shared)
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
     end
   end
 
@@ -346,7 +345,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert hd(remote_articles).title == "Remote Article Title"
     end
 
-    test "rejects article with no matching board" do
+    test "silently drops article with no matching board when no followers" do
       remote_actor = create_remote_actor()
 
       activity = %{
@@ -364,7 +363,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
         }
       }
 
-      assert {:error, :board_not_found} = InboxHandler.handle(activity, remote_actor, :shared)
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
     end
   end
 
@@ -1504,8 +1503,12 @@ defmodule Baudrate.Federation.InboxHandlerTest do
   end
 
   describe "Move" do
-    test "returns :ok (stub handler)" do
+    test "returns :ok and logs when target is unresolvable" do
       remote_actor = create_remote_actor()
+
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 404, "Not Found")
+      end)
 
       activity = %{
         "id" => "#{remote_actor.ap_id}#move-1",

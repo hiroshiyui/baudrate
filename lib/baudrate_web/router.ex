@@ -213,6 +213,7 @@ defmodule BaudrateWeb.Router do
       live "/messages/new", ConversationLive
       live "/messages/:id", ConversationLive
       live "/following", FollowingLive
+      live "/feed", FeedLive
     end
 
     delete "/logout", SessionController, :delete

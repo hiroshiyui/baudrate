@@ -45,6 +45,13 @@ defmodule Baudrate.Federation do
   endpoint populated with accepted follows. WebFinger client for remote
   actor discovery.
 
+  Phase 7 — Personal feed: incoming `Create` activities from followed
+  remote actors that don't land in a local board, comment thread, or DM
+  are stored as `FeedItem` records. One row per activity (keyed by `ap_id`),
+  visibility determined at query time via JOIN with `user_follows`. `Move`
+  activity handling migrates follows to the new actor. `Delete` propagation
+  soft-deletes feed items.
+
   Private boards are excluded from all federation endpoints — WebFinger,
   actor profiles, outbox, inbox, followers, and audience resolution all
   return 404 or skip private boards. Articles exclusively in private
@@ -83,7 +90,19 @@ defmodule Baudrate.Federation do
   alias Baudrate.Setup
   alias Baudrate.Content
   alias Baudrate.Content.Markdown
-  alias Baudrate.Federation.{Announce, Follower, KeyStore, Publisher, RemoteActor, UserFollow}
+  alias Baudrate.Auth
+
+  alias Baudrate.Federation.{
+    Announce,
+    FeedItem,
+    Follower,
+    KeyStore,
+    Publisher,
+    RemoteActor,
+    UserFollow
+  }
+
+  alias Baudrate.Federation.PubSub, as: FederationPubSub
 
   @as_context "https://www.w3.org/ns/activitystreams"
   @security_context "https://w3id.org/security/v1"
@@ -999,6 +1018,164 @@ defmodule Baudrate.Federation do
     ) || 0
   end
 
+  # --- Feed Items ---
+
+  @feed_per_page 20
+
+  @doc """
+  Creates a feed item and broadcasts to all local followers of the source actor.
+
+  Returns `{:ok, %FeedItem{}}` or `{:error, changeset}`.
+  """
+  def create_feed_item(attrs) do
+    case %FeedItem{} |> FeedItem.changeset(attrs) |> Repo.insert() do
+      {:ok, feed_item} ->
+        remote_actor_id = feed_item.remote_actor_id
+
+        for user_id <- local_followers_of_remote_actor(remote_actor_id) do
+          FederationPubSub.broadcast_to_user_feed(
+            user_id,
+            :feed_item_created,
+            %{feed_item_id: feed_item.id}
+          )
+        end
+
+        {:ok, feed_item}
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
+  Lists paginated feed items for a user based on their accepted follows.
+
+  JOINs `feed_items` with `user_follows` to show only items from actors
+  the user follows. Excludes soft-deleted items and items from blocked/muted actors.
+
+  Returns `%{items: [...], total: n, page: n, per_page: n, total_pages: n}`.
+  """
+  def list_feed_items(user, opts \\ []) do
+    page = max(Keyword.get(opts, :page, 1), 1)
+    per_page = Keyword.get(opts, :per_page, @feed_per_page)
+    offset = (page - 1) * per_page
+
+    {_hidden_user_ids, hidden_ap_ids} = Auth.hidden_ids(user)
+
+    base_query =
+      from(fi in FeedItem,
+        join: uf in UserFollow,
+        on: uf.remote_actor_id == fi.remote_actor_id,
+        join: ra in RemoteActor,
+        on: ra.id == fi.remote_actor_id,
+        where: uf.user_id == ^user.id and uf.state == "accepted",
+        where: is_nil(fi.deleted_at)
+      )
+
+    base_query =
+      if hidden_ap_ids != [] do
+        from([fi, _uf, ra] in base_query, where: ra.ap_id not in ^hidden_ap_ids)
+      else
+        base_query
+      end
+
+    total = Repo.one(from(q in base_query, select: count(q.id)))
+
+    items =
+      from([fi, _uf, ra] in base_query,
+        order_by: [desc: fi.published_at],
+        offset: ^offset,
+        limit: ^per_page,
+        preload: [:remote_actor]
+      )
+      |> Repo.all()
+
+    total_pages = max(ceil(total / per_page), 1)
+
+    %{
+      items: items,
+      total: total,
+      page: page,
+      per_page: per_page,
+      total_pages: total_pages
+    }
+  end
+
+  @doc """
+  Returns a feed item by its ActivityPub ID, or nil.
+  """
+  def get_feed_item_by_ap_id(ap_id) when is_binary(ap_id) do
+    Repo.one(from(fi in FeedItem, where: fi.ap_id == ^ap_id))
+  end
+
+  @doc """
+  Soft-deletes a feed item by AP ID, scoped to a remote actor.
+
+  Returns `{count, nil}`.
+  """
+  def soft_delete_feed_item_by_ap_id(ap_id, remote_actor_id) when is_binary(ap_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    from(fi in FeedItem,
+      where:
+        fi.ap_id == ^ap_id and fi.remote_actor_id == ^remote_actor_id and is_nil(fi.deleted_at)
+    )
+    |> Repo.update_all(set: [deleted_at: now])
+  end
+
+  @doc """
+  Bulk soft-deletes all feed items from a given remote actor.
+
+  Used when a remote actor is deleted. Returns `{count, nil}`.
+  """
+  def cleanup_feed_items_for_actor(remote_actor_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    from(fi in FeedItem,
+      where: fi.remote_actor_id == ^remote_actor_id and is_nil(fi.deleted_at)
+    )
+    |> Repo.update_all(set: [deleted_at: now])
+  end
+
+  @doc """
+  Returns user IDs of local users with accepted follows for the given remote actor.
+  """
+  def local_followers_of_remote_actor(remote_actor_id) do
+    from(uf in UserFollow,
+      where: uf.remote_actor_id == ^remote_actor_id and uf.state == "accepted",
+      select: uf.user_id
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Migrates user follows from one remote actor to another (for Move activity).
+
+  Updates all follows pointing to `old_actor_id` to point to `new_actor_id`.
+  If a user already follows the new actor, the duplicate follow is deleted.
+
+  Returns `{migrated_count, deleted_count}`.
+  """
+  def migrate_user_follows(old_actor_id, new_actor_id) do
+    follows = Repo.all(from(uf in UserFollow, where: uf.remote_actor_id == ^old_actor_id))
+
+    {migrated, deleted} =
+      Enum.reduce(follows, {0, 0}, fn follow, {m, d} ->
+        if user_follows?(follow.user_id, new_actor_id) do
+          Repo.delete!(follow)
+          {m, d + 1}
+        else
+          follow
+          |> UserFollow.changeset(%{remote_actor_id: new_actor_id})
+          |> Repo.update!()
+
+          {m + 1, d}
+        end
+      end)
+
+    {migrated, deleted}
+  end
+
   # --- Article Object ---
 
   @doc """
@@ -1203,6 +1380,8 @@ defmodule Baudrate.Federation do
           where: dm.sender_remote_actor_id == ^actor.id and is_nil(dm.deleted_at)
         )
         |> Repo.update_all(set: [deleted_at: now])
+
+        cleanup_feed_items_for_actor(actor.id)
 
         :ok
     end

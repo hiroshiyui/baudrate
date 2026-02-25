@@ -1,0 +1,89 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">
+      {gettext("Feed")}
+      <span :if={@total > 0} class="badge badge-neutral ml-2">{@total}</span>
+    </h1>
+  </div>
+
+  <div :if={@items == []} class="text-base-content/50 text-center py-8">
+    {gettext("Your feed is empty.")}
+    <div class="mt-2">
+      <.link navigate="/search" class="link link-primary">
+        {gettext("Search for remote actors to follow")}
+      </.link>
+    </div>
+  </div>
+
+  <div :if={@items != []} class="space-y-4">
+    <div :for={item <- @items} class="card bg-base-200 shadow-sm">
+      <div class="card-body p-4">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="avatar">
+            <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center">
+              <img
+                :if={item.remote_actor.avatar_url}
+                src={item.remote_actor.avatar_url}
+                alt=""
+                class="rounded-full"
+              />
+              <.icon
+                :if={!item.remote_actor.avatar_url}
+                name="hero-user-circle"
+                class="size-7 opacity-50"
+              />
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-sm truncate">
+              {item.remote_actor.display_name || item.remote_actor.username}
+            </div>
+            <div class="text-xs text-base-content/60 truncate">
+              @{item.remote_actor.username}@{item.remote_actor.domain}
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <span class={[
+              "badge badge-xs",
+              item.object_type == "Note" && "badge-info",
+              item.object_type in ["Article", "Page"] && "badge-accent"
+            ]}>
+              {item.object_type}
+            </span>
+            <time
+              class="text-xs text-base-content/50"
+              datetime={DateTime.to_iso8601(item.published_at)}
+            >
+              {Calendar.strftime(item.published_at, "%Y-%m-%d %H:%M")}
+            </time>
+          </div>
+        </div>
+
+        <h2 :if={item.title} class="font-semibold text-lg mb-1">{item.title}</h2>
+
+        <div class="prose prose-sm max-w-none break-words">
+          {Phoenix.HTML.raw(item.body_html || "")}
+        </div>
+
+        <div :if={item.source_url} class="mt-2">
+          <a
+            href={item.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="link link-primary text-sm"
+          >
+            {gettext("View original")}
+            <.icon name="hero-arrow-top-right-on-square-mini" class="size-3 ml-1 inline" />
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <.pagination
+    :if={@items != []}
+    page={@page}
+    total_pages={@total_pages}
+    path={~p"/feed"}
+  />
+</div>

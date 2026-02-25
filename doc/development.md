@@ -84,6 +84,8 @@ lib/
 │   │   ├── key_vault.ex         # AES-256-GCM encryption for private keys at rest
 │   │   ├── remote_actor.ex      # RemoteActor schema (cached remote profiles)
 │   │   ├── user_follow.ex       # UserFollow schema (outbound user → remote actor follows)
+│   │   ├── feed_item.ex         # FeedItem schema (posts from followed remote actors)
+│   │   ├── pubsub.ex            # Federation PubSub (user feed events)
 │   │   ├── publisher.ex         # ActivityStreams JSON builders for outgoing activities
 │   │   ├── sanitizer.ex         # HTML sanitizer for federated content (Ammonia NIF)
 │   │   ├── delivery_stats.ex    # Delivery queue stats and admin management
@@ -134,6 +136,7 @@ lib/
 │   │   ├── board_live.ex        # Board view with article listing
 │   │   ├── conversation_live.ex # Single DM conversation thread view
 │   │   ├── conversations_live.ex # DM conversation list
+│   │   ├── feed_live.ex          # Personal feed (posts from followed remote actors)
 │   │   ├── following_live.ex    # Following management (outbound remote actor follows)
 │   │   ├── home_live.ex         # Home page (board listing, public for guests)
 │   │   ├── login_live.ex        # Login form (phx-trigger-action pattern)
@@ -621,6 +624,16 @@ The `Baudrate.Federation` context handles all federation logic.
 - `Publisher.build_follow/3` / `build_undo_follow/2` — build Follow/Undo(Follow) activities
 - `Delivery.deliver_follow/3` — enqueue follow/unfollow delivery to remote inbox
 - Rate limited: 10 outbound follows per hour per user (`RateLimits.check_outbound_follow/1`)
+
+**Personal feed** (Phase 3):
+- `feed_items` table — stores incoming posts from followed actors that don't land in boards/comments/DMs
+- One row per activity (keyed by `ap_id`), visibility via JOIN with `user_follows` at query time
+- `Federation.create_feed_item/1` — insert + broadcast to followers via `Federation.PubSub`
+- `Federation.list_feed_items/2` — paginated query, excludes soft-deleted, filters blocked/muted
+- Inbox handler fallback: Create(Note) without reply target, Create(Article/Page) without board → feed item
+- Delete propagation: soft-deletes feed items on content or actor deletion
+- `Federation.migrate_user_follows/2` — Move activity support (migrate + deduplicate)
+- `/feed` LiveView — paginated personal timeline with real-time PubSub updates
 
 **Mastodon/Lemmy compatibility:**
 - `attributedTo` arrays — extracts first binary URI for validation
