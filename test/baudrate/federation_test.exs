@@ -179,6 +179,25 @@ defmodule Baudrate.FederationTest do
 
       refute Map.has_key?(actor, "summary")
     end
+
+    test "includes name when display_name is set" do
+      user = setup_user_with_role("user")
+      {:ok, user} = KeyStore.ensure_user_keypair(user)
+      {:ok, user} = Baudrate.Auth.update_display_name(user, "John Doe")
+
+      actor = Federation.user_actor(user)
+
+      assert actor["name"] == "John Doe"
+    end
+
+    test "omits name when display_name is nil" do
+      user = setup_user_with_role("user")
+      {:ok, user} = KeyStore.ensure_user_keypair(user)
+
+      actor = Federation.user_actor(user)
+
+      refute Map.has_key?(actor, "name")
+    end
   end
 
   describe "board_actor/1" do

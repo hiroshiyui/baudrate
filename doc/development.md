@@ -102,7 +102,7 @@ lib/
 │       ├── role.ex              # Role schema (admin/moderator/user/guest)
 │       ├── role_permission.ex   # Join table: role ↔ permission
 │       ├── setting.ex           # Key-value settings (site_name, setup_completed, etc.)
-│       └── user.ex              # User schema with password, TOTP, avatar, status, signature fields
+│       └── user.ex              # User schema with password, TOTP, avatar, display_name, status, signature fields
 ├── baudrate_web/                # Web layer
 │   ├── components/
 │   │   ├── core_components.ex   # Shared UI components (avatar, flash, input, etc.)
@@ -363,6 +363,17 @@ Password reset is available at `/password-reset`. Users enter their username,
 a recovery code, and a new password. Each recovery code can only be used once.
 Recovery codes are the sole password recovery mechanism — there is no email in
 the system. Rate limited to 5 attempts per hour per IP.
+
+### User Display Name
+
+Users can set an optional display name (max 64 characters) in their profile at
+`/profile`. The display name is sanitized on write: HTML tags stripped, control
+characters and bidi override characters removed, whitespace normalized, and
+truncated to 64 characters. When set, the display name is shown in place of
+`username` across the UI (navbar, article bylines, comment authors, search
+results, user profiles, moderation logs). The `username` remains the identifier
+in URLs, `@mentions`, and admin user management. For ActivityPub federation, the
+display name is mapped to the `name` field on the Person actor.
 
 ### User Bio
 

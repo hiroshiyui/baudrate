@@ -358,6 +358,7 @@ defmodule Baudrate.Federation do
         "publicKeyPem" => KeyStore.get_public_key_pem(user)
       }
     }
+    |> put_if("name", user.display_name)
     |> put_if("summary", render_bio_html(user.bio))
     |> put_if("icon", user_avatar_icon(user))
   end
