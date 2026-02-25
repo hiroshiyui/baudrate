@@ -59,7 +59,10 @@
         <span :if={article.pinned} class="badge badge-sm badge-accent">{gettext("Pinned")}</span>
         {article.title}
       </.link>
-      <div class="text-sm text-base-content/70">
+      <p :if={article.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
+        {digest(article.body)}
+      </p>
+      <div class="text-sm text-base-content/70 mt-1">
         <span :if={article.user}>
           {gettext("by")}
           <.link

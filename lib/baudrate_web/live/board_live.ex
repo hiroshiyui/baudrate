@@ -77,4 +77,20 @@ defmodule BaudrateWeb.BoardLive do
 
     {:noreply, assign(socket, articles: articles, page: page, total_pages: total_pages)}
   end
+
+  defp digest(nil), do: ""
+
+  defp digest(text) do
+    plain =
+      text
+      |> Baudrate.Sanitizer.Native.strip_tags()
+      |> String.replace(~r/\s+/, " ")
+      |> String.trim()
+
+    if String.length(plain) > 200 do
+      String.slice(plain, 0, 200) <> "…"
+    else
+      plain
+    end
+  end
 end
