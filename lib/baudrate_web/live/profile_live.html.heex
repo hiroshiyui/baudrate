@@ -87,6 +87,27 @@
         <div class="text-lg font-semibold">{@current_user.username}</div>
       </div>
 
+      <%!-- Display Name section --%>
+      <div>
+        <div class="text-sm text-base-content/70 mb-2">{gettext("Display Name")}</div>
+        <.form
+          for={@display_name_form}
+          phx-change="validate_display_name"
+          phx-submit="save_display_name"
+          class="space-y-3"
+        >
+          <.input
+            field={@display_name_form[:display_name]}
+            type="text"
+            maxlength="64"
+            placeholder={gettext("Your display name (max 64 characters)")}
+          />
+          <button type="submit" class="btn btn-sm btn-primary">
+            {gettext("Save Display Name")}
+          </button>
+        </.form>
+      </div>
+
       <div>
         <div class="text-sm text-base-content/70">{gettext("Role")}</div>
         <div class="text-lg font-semibold">{@current_user.role.name}</div>
@@ -288,7 +309,7 @@
           <div :for={mute <- @mutes} class="flex items-center gap-3">
             <%= if mute.muted_user do %>
               <.avatar user={mute.muted_user} size={36} />
-              <span class="font-semibold">{mute.muted_user.username}</span>
+              <span class="font-semibold">{display_name(mute.muted_user)}</span>
             <% else %>
               <div class="avatar avatar-placeholder">
                 <div

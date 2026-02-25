@@ -2,8 +2,9 @@ defmodule BaudrateWeb.ProfileLive do
   @moduledoc """
   LiveView for the user profile page (`/profile`).
 
-  Displays read-only account details, avatar management, and locale preferences
-  for the current user. `@current_user` is available via the `:require_auth` hook.
+  Displays read-only account details, avatar management, display name editing,
+  and locale preferences for the current user. `@current_user` is available
+  via the `:require_auth` hook.
 
   ## Locale Preferences
 
@@ -25,6 +26,7 @@ defmodule BaudrateWeb.ProfileLive do
     policy = Auth.totp_policy(user.role.name)
     is_active = Auth.user_active?(user)
 
+    display_name_changeset = Baudrate.Setup.User.display_name_changeset(user, %{})
     bio_changeset = Baudrate.Setup.User.bio_changeset(user, %{})
     signature_changeset = Baudrate.Setup.User.signature_changeset(user, %{})
     mutes = Auth.list_mutes(user)
@@ -36,6 +38,7 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:show_crop_modal, false)
       |> assign(:preferred_locales, user.preferred_locales || [])
       |> assign(:available_locales, Locale.available_locales())
+      |> assign(:display_name_form, to_form(display_name_changeset, as: :display_name))
       |> assign(:bio_form, to_form(bio_changeset, as: :bio))
       |> assign(:signature_form, to_form(signature_changeset, as: :signature))
       |> assign(:signature_preview, Baudrate.Content.Markdown.to_html(user.signature))
@@ -130,6 +133,37 @@ defmodule BaudrateWeb.ProfileLive do
       save_locales(socket, new_locales)
     else
       {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("validate_display_name", %{"display_name" => params}, socket) do
+    user = socket.assigns.current_user
+
+    changeset =
+      Baudrate.Setup.User.display_name_changeset(user, params)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, :display_name_form, to_form(changeset, as: :display_name))}
+  end
+
+  @impl true
+  def handle_event(
+        "save_display_name",
+        %{"display_name" => %{"display_name" => display_name}},
+        socket
+      ) do
+    user = socket.assigns.current_user
+
+    case Auth.update_display_name(user, display_name) do
+      {:ok, updated_user} ->
+        {:noreply,
+         socket
+         |> assign(:current_user, updated_user)
+         |> put_flash(:info, gettext("Display name updated."))}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :display_name_form, to_form(changeset, as: :display_name))}
     end
   end
 
