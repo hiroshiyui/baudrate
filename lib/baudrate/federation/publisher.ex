@@ -261,6 +261,50 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
+  Builds a `Follow` activity from a board actor to a remote actor.
+
+  Returns `{activity_map, board_actor_uri}`.
+  """
+  def build_board_follow(board, remote_actor, follow_ap_id) do
+    board_uri = Federation.actor_uri(:board, board.slug)
+
+    activity = %{
+      "@context" => @as_context,
+      "id" => follow_ap_id,
+      "type" => "Follow",
+      "actor" => board_uri,
+      "object" => remote_actor.ap_id
+    }
+
+    {activity, board_uri}
+  end
+
+  @doc """
+  Builds an `Undo(Follow)` activity from a board actor for cancelling an outbound follow.
+
+  Embeds the original Follow's AP ID as the inner object.
+  Returns `{activity_map, board_actor_uri}`.
+  """
+  def build_board_undo_follow(board, board_follow) do
+    board_uri = Federation.actor_uri(:board, board.slug)
+
+    activity = %{
+      "@context" => @as_context,
+      "id" => "#{board_uri}#undo-follow-#{System.unique_integer([:positive])}",
+      "type" => "Undo",
+      "actor" => board_uri,
+      "object" => %{
+        "id" => board_follow.ap_id,
+        "type" => "Follow",
+        "actor" => board_uri,
+        "object" => board_follow.remote_actor.ap_id
+      }
+    }
+
+    {activity, board_uri}
+  end
+
+  @doc """
   Builds an `Update` activity for an actor (used for key rotation distribution).
 
   Returns `{activity_map, actor_uri}`.

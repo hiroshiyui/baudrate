@@ -87,7 +87,7 @@ defmodule Baudrate.Federation do
     * `/ap/users/:username/followers` — user followers (GET, paginated)
     * `/ap/users/:username/following` — user following (GET, always empty)
     * `/ap/boards/:slug/followers` — board followers (GET, paginated)
-    * `/ap/boards/:slug/following` — board following (GET, always empty)
+    * `/ap/boards/:slug/following` — board following (GET, paginated)
   """
 
   import Ecto.Query
@@ -100,6 +100,7 @@ defmodule Baudrate.Federation do
 
   alias Baudrate.Federation.{
     Announce,
+    BoardFollow,
     FeedItem,
     Follower,
     KeyStore,
@@ -600,7 +601,7 @@ defmodule Baudrate.Federation do
   Returns a paginated `OrderedCollection` for the given actor's following list.
 
   For user actors, returns accepted outbound follows. For board actors,
-  returns an empty collection (boards do not yet support outbound follows).
+  returns accepted board follows (remote actors the board follows).
 
   Without `?page`, returns the root collection with `totalItems` and `first` link.
   With `?page=N`, returns an `OrderedCollectionPage` with followed actor URIs.
@@ -658,14 +659,41 @@ defmodule Baudrate.Federation do
         end
 
       :error ->
-        # Board or site actors — return empty collection
-        %{
-          "@context" => @as_context,
-          "id" => following_uri,
-          "type" => "OrderedCollection",
-          "totalItems" => 0,
-          "orderedItems" => []
-        }
+        case extract_board_from_actor_uri(actor_uri) do
+          {:ok, board} ->
+            case parse_page(page_params) do
+              nil ->
+                total = count_board_follows(board.id)
+                build_collection_root(following_uri, total)
+
+              page ->
+                offset = (page - 1) * @items_per_page
+
+                followed_uris =
+                  from(bf in BoardFollow,
+                    where: bf.board_id == ^board.id and bf.state == "accepted",
+                    join: ra in assoc(bf, :remote_actor),
+                    order_by: [desc: bf.inserted_at],
+                    offset: ^offset,
+                    limit: ^@items_per_page,
+                    select: ra.ap_id
+                  )
+                  |> Repo.all()
+
+                has_next = length(followed_uris) == @items_per_page
+                build_collection_page(following_uri, followed_uris, page, has_next)
+            end
+
+          :error ->
+            # Site actor — return empty collection
+            %{
+              "@context" => @as_context,
+              "id" => following_uri,
+              "type" => "OrderedCollection",
+              "totalItems" => 0,
+              "orderedItems" => []
+            }
+        end
     end
   end
 
@@ -677,6 +705,24 @@ defmodule Baudrate.Federation do
       username = String.replace_prefix(uri, prefix, "")
       user = Repo.get_by(Setup.User, username: username)
       if user, do: {:ok, user}, else: :error
+    else
+      :error
+    end
+  end
+
+  defp extract_board_from_actor_uri(uri) do
+    base = base_url()
+    prefix = "#{base}/ap/boards/"
+
+    if String.starts_with?(uri, prefix) do
+      slug = String.replace_prefix(uri, prefix, "")
+      board = Repo.get_by(Content.Board, slug: slug)
+
+      if board && board.ap_enabled && board.min_role_to_view == "guest" do
+        {:ok, board}
+      else
+        :error
+      end
     else
       :error
     end
@@ -1056,6 +1102,176 @@ defmodule Baudrate.Federation do
       from(uf in UserFollow,
         where: uf.user_id == ^user_id and uf.state == "accepted",
         select: count(uf.id)
+      )
+    ) || 0
+  end
+
+  # --- Board Follows ---
+
+  @doc """
+  Creates a board follow record and returns the generated Follow AP ID.
+
+  Inserts a `BoardFollow` with state `"pending"`. The caller is responsible
+  for building and delivering the Follow activity using the returned AP ID.
+
+  Returns `{:ok, %BoardFollow{}}` or `{:error, changeset}`.
+  """
+  def create_board_follow(board, remote_actor) do
+    ap_id = "#{actor_uri(:board, board.slug)}#follow-#{System.unique_integer([:positive])}"
+
+    %BoardFollow{}
+    |> BoardFollow.changeset(%{
+      board_id: board.id,
+      remote_actor_id: remote_actor.id,
+      state: "pending",
+      ap_id: ap_id
+    })
+    |> Repo.insert()
+  end
+
+  @doc """
+  Marks a board follow as accepted by matching the Follow activity's AP ID.
+
+  Called when an `Accept(Follow)` activity is received from the remote actor.
+  Returns `{:ok, %BoardFollow{}}` or `{:error, :not_found}`.
+  """
+  def accept_board_follow(follow_ap_id) when is_binary(follow_ap_id) do
+    case Repo.one(from(bf in BoardFollow, where: bf.ap_id == ^follow_ap_id)) do
+      nil ->
+        {:error, :not_found}
+
+      %BoardFollow{} = follow ->
+        follow
+        |> BoardFollow.changeset(%{
+          state: "accepted",
+          accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Marks a board follow as rejected by matching the Follow activity's AP ID.
+
+  Called when a `Reject(Follow)` activity is received from the remote actor.
+  Returns `{:ok, %BoardFollow{}}` or `{:error, :not_found}`.
+  """
+  def reject_board_follow(follow_ap_id) when is_binary(follow_ap_id) do
+    case Repo.one(from(bf in BoardFollow, where: bf.ap_id == ^follow_ap_id)) do
+      nil ->
+        {:error, :not_found}
+
+      %BoardFollow{} = follow ->
+        follow
+        |> BoardFollow.changeset(%{
+          state: "rejected",
+          rejected_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Deletes a board follow record (for unfollow).
+
+  Returns `{:ok, %BoardFollow{}}` or `{:error, :not_found}`.
+  """
+  def delete_board_follow(board, remote_actor) do
+    case Repo.one(
+           from(bf in BoardFollow,
+             where: bf.board_id == ^board.id and bf.remote_actor_id == ^remote_actor.id
+           )
+         ) do
+      nil -> {:error, :not_found}
+      %BoardFollow{} = follow -> Repo.delete(follow)
+    end
+  end
+
+  @doc """
+  Returns the board follow record for the given board and remote actor pair, or nil.
+  """
+  def get_board_follow(board_id, remote_actor_id) do
+    Repo.one(
+      from(bf in BoardFollow,
+        where: bf.board_id == ^board_id and bf.remote_actor_id == ^remote_actor_id
+      )
+    )
+  end
+
+  @doc """
+  Returns the board follow record matching the given Follow activity AP ID, or nil.
+  """
+  def get_board_follow_by_ap_id(ap_id) do
+    Repo.one(from(bf in BoardFollow, where: bf.ap_id == ^ap_id))
+  end
+
+  @doc """
+  Returns true if an accepted follow record exists for the board/remote_actor pair.
+  """
+  def board_follows_actor?(board_id, remote_actor_id) do
+    Repo.exists?(
+      from(bf in BoardFollow,
+        where:
+          bf.board_id == ^board_id and bf.remote_actor_id == ^remote_actor_id and
+            bf.state == "accepted"
+      )
+    )
+  end
+
+  @doc """
+  Returns boards with accepted follows for a given remote actor.
+
+  Used for auto-routing: when a followed actor sends a Create activity
+  that doesn't explicitly address a board, this determines which boards
+  should receive it.
+  """
+  def boards_following_actor(remote_actor_id) do
+    from(bf in BoardFollow,
+      where: bf.remote_actor_id == ^remote_actor_id and bf.state == "accepted",
+      join: b in assoc(bf, :board),
+      where: b.ap_enabled == true and b.min_role_to_view == "guest",
+      select: b
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists board follows with optional state filter, preloading remote actors.
+
+  ## Options
+
+    * `:state` — filter by state (e.g., `"accepted"`, `"pending"`)
+
+  Returns a list of `%BoardFollow{}` structs with `:remote_actor` preloaded.
+  """
+  def list_board_follows(board_id, opts \\ []) do
+    state = Keyword.get(opts, :state)
+
+    query =
+      from(bf in BoardFollow,
+        where: bf.board_id == ^board_id,
+        order_by: [desc: bf.inserted_at],
+        preload: [:remote_actor]
+      )
+
+    query =
+      if state do
+        from(bf in query, where: bf.state == ^state)
+      else
+        query
+      end
+
+    Repo.all(query)
+  end
+
+  @doc """
+  Returns the count of accepted board follows for the given board.
+  """
+  def count_board_follows(board_id) do
+    Repo.one(
+      from(bf in BoardFollow,
+        where: bf.board_id == ^board_id and bf.state == "accepted",
+        select: count(bf.id)
       )
     ) || 0
   end

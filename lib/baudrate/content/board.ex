@@ -10,6 +10,8 @@ defmodule Baudrate.Content.Board do
 
     * `ap_public_key` — PEM-encoded RSA public key for ActivityPub federation
     * `ap_private_key_encrypted` — AES-256-GCM encrypted PEM-encoded RSA private key
+    * `ap_accept_policy` — `"open"` (accept from anyone) or `"followers_only"`
+      (only accept content from actors the board follows); default: `"followers_only"`
   """
 
   use Ecto.Schema
@@ -25,6 +27,7 @@ defmodule Baudrate.Content.Board do
     field :min_role_to_view, :string, default: "guest"
     field :min_role_to_post, :string, default: "user"
     field :ap_enabled, :boolean, default: true
+    field :ap_accept_policy, :string, default: "followers_only"
     field :ap_public_key, :string
     field :ap_private_key_encrypted, :binary
 
@@ -55,13 +58,15 @@ defmodule Baudrate.Content.Board do
       :parent_id,
       :min_role_to_view,
       :min_role_to_post,
-      :ap_enabled
+      :ap_enabled,
+      :ap_accept_policy
     ])
     |> validate_required([:name, :slug])
     |> validate_length(:name, max: 100)
     |> validate_length(:description, max: 1000)
     |> validate_inclusion(:min_role_to_view, ~w(guest user moderator admin))
     |> validate_inclusion(:min_role_to_post, ~w(user moderator admin))
+    |> validate_inclusion(:ap_accept_policy, ~w(open followers_only))
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
       message: "must be lowercase alphanumeric with hyphens"
     )
@@ -81,13 +86,15 @@ defmodule Baudrate.Content.Board do
       :parent_id,
       :min_role_to_view,
       :min_role_to_post,
-      :ap_enabled
+      :ap_enabled,
+      :ap_accept_policy
     ])
     |> validate_required([:name])
     |> validate_length(:name, max: 100)
     |> validate_length(:description, max: 1000)
     |> validate_inclusion(:min_role_to_view, ~w(guest user moderator admin))
     |> validate_inclusion(:min_role_to_post, ~w(user moderator admin))
+    |> validate_inclusion(:ap_accept_policy, ~w(open followers_only))
     |> validate_no_parent_cycle(board)
     |> assoc_constraint(:parent)
   end

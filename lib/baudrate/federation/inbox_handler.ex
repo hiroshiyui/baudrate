@@ -133,7 +133,8 @@ defmodule Baudrate.Federation.InboxHandler do
           :ok
 
         {:error, reason} when reason in [:article_not_found, :missing_in_reply_to] ->
-          maybe_create_feed_item(object, remote_actor, "Note")
+          # Try auto-routing to boards that follow this actor, then fall back to feed item
+          maybe_auto_route_to_boards(object, remote_actor, "Note")
 
         other ->
           other
@@ -152,42 +153,20 @@ defmodule Baudrate.Federation.InboxHandler do
        when type in ["Article", "Page"] do
     with :ok <- validate_attribution_match(object, remote_actor),
          {:ok, body, _body_html} <- sanitize_content(object),
-         {:ok, board} <- resolve_target_board(object) do
-      ap_id = object["id"]
-      existing = is_binary(ap_id) && Content.get_article_by_ap_id(ap_id)
-
-      if existing do
-        # Cross-post: link to additional board if not already linked
-        Content.add_article_to_board(existing, board.id)
-        :ok
-      else
-        title = object["name"] || "Untitled"
-        slug = Content.generate_slug(title)
-
-        case Content.create_remote_article(
-               %{
-                 title: title,
-                 body: body,
-                 slug: slug,
-                 ap_id: ap_id,
-                 remote_actor_id: remote_actor.id
-               },
-               [board.id]
-             ) do
-          {:ok, _multi} ->
-            Logger.info("federation.activity: type=Create(#{type}) ap_id=#{ap_id}")
-            :ok
-
-          {:error, :article, %Ecto.Changeset{} = changeset, _} ->
-            if has_unique_error?(changeset), do: :ok, else: {:error, :create_article_failed}
-
-          {:error, _step, _reason, _changes} ->
-            {:error, :create_article_failed}
-        end
-      end
+         {:ok, board} <- resolve_target_board(object),
+         :ok <- check_board_accept_policy(board, remote_actor) do
+      create_article_in_board(object, body, remote_actor, board, type)
     else
       {:error, :board_not_found} ->
-        maybe_create_feed_item(object, remote_actor, type)
+        # Auto-route: if the actor is followed by boards, create article there
+        maybe_auto_route_to_boards(object, remote_actor, type)
+
+      {:error, :not_authorized} ->
+        Logger.info(
+          "federation.activity: type=Create(#{type}) rejected by accept policy actor=#{remote_actor.ap_id}"
+        )
+
+        :ok
 
       other ->
         other
@@ -379,17 +358,7 @@ defmodule Baudrate.Federation.InboxHandler do
     follow_id = extract_follow_id(follow_obj)
 
     if follow_id do
-      case Federation.accept_user_follow(follow_id) do
-        {:ok, _follow} ->
-          Logger.info(
-            "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id}"
-          )
-
-        {:error, :not_found} ->
-          Logger.info(
-            "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id} (not found)"
-          )
-      end
+      accept_follow_with_fallback(follow_id, remote_actor)
     else
       Logger.info(
         "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} (no follow id)"
@@ -406,18 +375,7 @@ defmodule Baudrate.Federation.InboxHandler do
          _target
        )
        when is_binary(object_uri) do
-    case Federation.accept_user_follow(object_uri) do
-      {:ok, _follow} ->
-        Logger.info(
-          "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} follow=#{object_uri}"
-        )
-
-      {:error, :not_found} ->
-        Logger.info(
-          "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} follow=#{object_uri} (not found)"
-        )
-    end
-
+    accept_follow_with_fallback(object_uri, remote_actor)
     :ok
   end
 
@@ -431,17 +389,7 @@ defmodule Baudrate.Federation.InboxHandler do
     follow_id = extract_follow_id(follow_obj)
 
     if follow_id do
-      case Federation.reject_user_follow(follow_id) do
-        {:ok, _follow} ->
-          Logger.info(
-            "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id}"
-          )
-
-        {:error, :not_found} ->
-          Logger.info(
-            "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id} (not found)"
-          )
-      end
+      reject_follow_with_fallback(follow_id, remote_actor)
     else
       Logger.info(
         "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} (no follow id)"
@@ -458,18 +406,7 @@ defmodule Baudrate.Federation.InboxHandler do
          _target
        )
        when is_binary(object_uri) do
-    case Federation.reject_user_follow(object_uri) do
-      {:ok, _follow} ->
-        Logger.info(
-          "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} follow=#{object_uri}"
-        )
-
-      {:error, :not_found} ->
-        Logger.info(
-          "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} follow=#{object_uri} (not found)"
-        )
-    end
-
+    reject_follow_with_fallback(object_uri, remote_actor)
     :ok
   end
 
@@ -906,6 +843,104 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp resolve_local_article_by_ap_or_uri(_), do: nil
 
+  # --- Accept policy and auto-routing helpers ---
+
+  defp check_board_accept_policy(%{ap_accept_policy: "open"}, _remote_actor), do: :ok
+
+  defp check_board_accept_policy(%{ap_accept_policy: "followers_only"} = board, remote_actor) do
+    if Federation.board_follows_actor?(board.id, remote_actor.id) do
+      :ok
+    else
+      {:error, :not_authorized}
+    end
+  end
+
+  defp create_article_in_board(object, body, remote_actor, board, type) do
+    ap_id = object["id"]
+    existing = is_binary(ap_id) && Content.get_article_by_ap_id(ap_id)
+
+    if existing do
+      # Cross-post: link to additional board if not already linked
+      Content.add_article_to_board(existing, board.id)
+      :ok
+    else
+      title = object["name"] || "Untitled"
+      slug = Content.generate_slug(title)
+
+      case Content.create_remote_article(
+             %{
+               title: title,
+               body: body,
+               slug: slug,
+               ap_id: ap_id,
+               remote_actor_id: remote_actor.id
+             },
+             [board.id]
+           ) do
+        {:ok, _multi} ->
+          Logger.info("federation.activity: type=Create(#{type}) ap_id=#{ap_id}")
+          :ok
+
+        {:error, :article, %Ecto.Changeset{} = changeset, _} ->
+          if has_unique_error?(changeset), do: :ok, else: {:error, :create_article_failed}
+
+        {:error, _step, _reason, _changes} ->
+          {:error, :create_article_failed}
+      end
+    end
+  end
+
+  defp maybe_auto_route_to_boards(object, remote_actor, type) do
+    case Federation.boards_following_actor(remote_actor.id) do
+      [] ->
+        maybe_create_feed_item(object, remote_actor, type)
+
+      boards ->
+        with :ok <- validate_attribution_match(object, remote_actor),
+             {:ok, body, _body_html} <- sanitize_content(object) do
+          ap_id = object["id"]
+          existing = is_binary(ap_id) && Content.get_article_by_ap_id(ap_id)
+
+          if existing do
+            # Link to all following boards
+            for board <- boards do
+              Content.add_article_to_board(existing, board.id)
+            end
+
+            :ok
+          else
+            title = object["name"] || "Untitled"
+            slug = Content.generate_slug(title)
+            board_ids = Enum.map(boards, & &1.id)
+
+            case Content.create_remote_article(
+                   %{
+                     title: title,
+                     body: body,
+                     slug: slug,
+                     ap_id: ap_id,
+                     remote_actor_id: remote_actor.id
+                   },
+                   board_ids
+                 ) do
+              {:ok, _multi} ->
+                Logger.info(
+                  "federation.activity: type=Create(#{type}) ap_id=#{ap_id} auto_routed=#{length(boards)}"
+                )
+
+                :ok
+
+              {:error, :article, %Ecto.Changeset{} = changeset, _} ->
+                if has_unique_error?(changeset), do: :ok, else: {:error, :create_article_failed}
+
+              {:error, _step, _reason, _changes} ->
+                {:error, :create_article_failed}
+            end
+          end
+        end
+    end
+  end
+
   defp resolve_target_board(object) do
     audience_uris =
       List.wrap(object["audience"]) ++
@@ -993,6 +1028,51 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp extract_follow_id(%{"id" => id}) when is_binary(id) and id != "", do: id
   defp extract_follow_id(_), do: nil
+
+  # Try user follow first, then board follow as fallback
+  defp accept_follow_with_fallback(follow_id, remote_actor) do
+    case Federation.accept_user_follow(follow_id) do
+      {:ok, _follow} ->
+        Logger.info(
+          "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id}"
+        )
+
+      {:error, :not_found} ->
+        case Federation.accept_board_follow(follow_id) do
+          {:ok, _follow} ->
+            Logger.info(
+              "federation.activity: type=Accept(BoardFollow) actor=#{remote_actor.ap_id} follow=#{follow_id}"
+            )
+
+          {:error, :not_found} ->
+            Logger.info(
+              "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id} (not found)"
+            )
+        end
+    end
+  end
+
+  defp reject_follow_with_fallback(follow_id, remote_actor) do
+    case Federation.reject_user_follow(follow_id) do
+      {:ok, _follow} ->
+        Logger.info(
+          "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id}"
+        )
+
+      {:error, :not_found} ->
+        case Federation.reject_board_follow(follow_id) do
+          {:ok, _follow} ->
+            Logger.info(
+              "federation.activity: type=Reject(BoardFollow) actor=#{remote_actor.ap_id} follow=#{follow_id}"
+            )
+
+          {:error, :not_found} ->
+            Logger.info(
+              "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id} (not found)"
+            )
+        end
+    end
+  end
 
   # --- Flag helpers ---
 
