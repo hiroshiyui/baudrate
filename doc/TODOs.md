@@ -13,11 +13,11 @@ Audit date: 2026-02-25
 
 ## Test Coverage
 
-- [ ] **HTTPClient redirect handling tests** — `federation/http_client.ex:40-83` has no tests for redirects (SSRF via redirect, loops, max redirects, missing Location header).
-- [ ] **Permission boundary tests on soft-deleted/locked articles** — `can_edit_article?/2`, `can_delete_article?/2`, `can_pin_article?/2` on deleted/locked articles.
-- [ ] **Rate limit error path test** — `rate_limit.ex:70-73` fails open on Hammer backend error, untested.
-- [ ] **`update_dm_access/2` unit test** — tested indirectly via LiveView but no dedicated unit test.
-- [ ] **Soft-delete idempotency tests** — double-delete should not error.
+- [x] **HTTPClient redirect handling tests** — added 6 tests covering 301/302/307/308 redirects, too-many-redirects, missing Location header. Also fixed `get_redirect_location/2` bug (used `List.keyfind` on Req 0.5+ map headers).
+- [x] **Permission boundary tests on soft-deleted/locked articles** — added 20 tests for `can_edit_article?/2`, `can_delete_article?/2`, `can_pin_article?/2`, `can_lock_article?/2` across admin/author/mod/other, including soft-deleted and locked articles.
+- [x] **Rate limit error path test** — Added `BaudrateWeb.RateLimiter` behaviour + Hammer adapter + Mox mock. Error path (fail-open) now tested in all 3 rate limit modules.
+- [x] **`update_dm_access/2` unit test** — added 4 tests: valid values ("anyone", "followers", "nobody") + invalid value returns error changeset, with persistence verification.
+- [x] **Soft-delete idempotency tests** — added tests for double `soft_delete_article/1` and `soft_delete_comment/1`.
 
 ## Locale
 
