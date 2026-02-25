@@ -62,13 +62,14 @@
       <p :if={article.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
         {digest(article.body)}
       </p>
-      <div class="text-sm text-base-content/70 mt-1">
-        <span :if={article.user}>
+      <div class="flex items-center gap-1 text-sm text-base-content/70 mt-1">
+        <span :if={article.user} class="inline-flex items-center gap-1">
           {gettext("by")}
           <.link
             navigate={~p"/users/#{article.user.username}"}
-            class="link link-hover font-semibold"
+            class="inline-flex items-center gap-1 link link-hover font-semibold"
           >
+            <.avatar user={article.user} size={24} />
             {display_name(article.user)}
           </.link>
           &middot;
