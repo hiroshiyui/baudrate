@@ -38,7 +38,7 @@
           <img
             :if={@remote_actor.avatar_url}
             src={@remote_actor.avatar_url}
-            alt=""
+            alt={@remote_actor.display_name || @remote_actor.username}
             class="rounded-full"
           />
           <.icon

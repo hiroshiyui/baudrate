@@ -81,7 +81,7 @@
               <img
                 :if={@search_result.avatar_url}
                 src={@search_result.avatar_url}
-                alt=""
+                alt={@search_result.display_name || @search_result.username}
                 class="rounded-full"
               />
               <.icon
@@ -140,7 +140,7 @@
               <img
                 :if={follow.remote_actor.avatar_url}
                 src={follow.remote_actor.avatar_url}
-                alt=""
+                alt={follow.remote_actor.display_name || follow.remote_actor.username}
                 class="rounded-full"
               />
               <.icon

@@ -25,7 +25,9 @@
               <img
                 :if={item.feed_item.remote_actor.avatar_url}
                 src={item.feed_item.remote_actor.avatar_url}
-                alt=""
+                alt={
+                  item.feed_item.remote_actor.display_name || item.feed_item.remote_actor.username
+                }
                 class="rounded-full"
               />
               <.icon

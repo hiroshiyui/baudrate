@@ -53,7 +53,7 @@
             <img
               :if={follow.remote_actor.avatar_url}
               src={follow.remote_actor.avatar_url}
-              alt=""
+              alt={follow.remote_actor.display_name || follow.remote_actor.username}
               class="rounded-full"
             />
             <.icon

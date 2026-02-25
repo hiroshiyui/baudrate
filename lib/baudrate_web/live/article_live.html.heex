@@ -125,7 +125,11 @@
             height={img.height}
             loading="lazy"
             class="w-full h-full object-cover hover:scale-105 transition-transform duration-200 border border-base-300"
-            alt={gettext("Uploaded image")}
+            alt={
+              gettext("Image %{number}",
+                number: Enum.find_index(@article_images, &(&1.id == img.id)) + 1
+              )
+            }
           />
         </a>
       </div>
