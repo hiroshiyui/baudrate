@@ -1,6 +1,6 @@
 defmodule BaudrateWeb.Plugs.RateLimit do
   @moduledoc """
-  Plug for IP-based rate limiting using Hammer.
+  Plug for IP-based rate limiting via `BaudrateWeb.RateLimiter`.
 
   ## Usage
 
@@ -48,7 +48,7 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     ip = remote_ip(conn)
     bucket = "#{action}:#{ip}"
 
-    case Hammer.check_rate(bucket, scale_ms, limit) do
+    case BaudrateWeb.RateLimiter.check_rate(bucket, scale_ms, limit) do
       {:allow, _count} ->
         conn
 

@@ -3,8 +3,8 @@ defmodule BaudrateWeb.Plugs.RateLimitDomain do
   Per-domain rate limiting for ActivityPub inbox endpoints.
 
   Runs after HTTP Signature verification. Extracts the domain from
-  the verified remote actor and applies a Hammer rate limit bucket
-  per domain (60 requests per minute).
+  the verified remote actor and applies a rate limit bucket via
+  `BaudrateWeb.RateLimiter` per domain (60 requests per minute).
   """
 
   import Plug.Conn
@@ -24,7 +24,7 @@ defmodule BaudrateWeb.Plugs.RateLimitDomain do
       %{domain: domain} ->
         bucket = "ap_domain:#{domain}"
 
-        case Hammer.check_rate(bucket, @scale_ms, @limit) do
+        case BaudrateWeb.RateLimiter.check_rate(bucket, @scale_ms, @limit) do
           {:allow, _count} ->
             conn
 

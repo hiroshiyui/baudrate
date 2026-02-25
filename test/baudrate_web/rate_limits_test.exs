@@ -1,134 +1,153 @@
 defmodule BaudrateWeb.RateLimitsTest do
   use ExUnit.Case, async: true
 
+  import Mox
+
   alias BaudrateWeb.RateLimits
 
-  # Each test uses a unique user_id to avoid cross-test interference
-  # since Hammer ETS state persists within the test run.
+  setup :verify_on_exit!
 
   describe "check_create_article/1" do
     test "allows requests under the limit" do
-      user_id = System.unique_integer([:positive])
-      assert :ok = RateLimits.check_create_article(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:allow, 1} end)
+      assert :ok = RateLimits.check_create_article(1)
     end
 
     test "denies requests over the limit" do
-      user_id = System.unique_integer([:positive])
-
-      for _ <- 1..10, do: assert(:ok == RateLimits.check_create_article(user_id))
-      assert {:error, :rate_limited} = RateLimits.check_create_article(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:deny, 10} end)
+      assert {:error, :rate_limited} = RateLimits.check_create_article(1)
     end
   end
 
   describe "check_update_article/1" do
     test "allows requests under the limit" do
-      user_id = System.unique_integer([:positive])
-      assert :ok = RateLimits.check_update_article(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:allow, 1} end)
+      assert :ok = RateLimits.check_update_article(1)
     end
 
     test "denies requests over the limit" do
-      user_id = System.unique_integer([:positive])
-
-      for _ <- 1..20, do: assert(:ok == RateLimits.check_update_article(user_id))
-      assert {:error, :rate_limited} = RateLimits.check_update_article(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:deny, 20} end)
+      assert {:error, :rate_limited} = RateLimits.check_update_article(1)
     end
   end
 
   describe "check_create_comment/1" do
     test "allows requests under the limit" do
-      user_id = System.unique_integer([:positive])
-      assert :ok = RateLimits.check_create_comment(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:allow, 1} end)
+      assert :ok = RateLimits.check_create_comment(1)
     end
 
     test "denies requests over the limit" do
-      user_id = System.unique_integer([:positive])
-
-      for _ <- 1..30, do: assert(:ok == RateLimits.check_create_comment(user_id))
-      assert {:error, :rate_limited} = RateLimits.check_create_comment(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:deny, 30} end)
+      assert {:error, :rate_limited} = RateLimits.check_create_comment(1)
     end
   end
 
   describe "check_delete_content/1" do
     test "allows requests under the limit" do
-      user_id = System.unique_integer([:positive])
-      assert :ok = RateLimits.check_delete_content(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:allow, 1} end)
+      assert :ok = RateLimits.check_delete_content(1)
     end
 
     test "denies requests over the limit" do
-      user_id = System.unique_integer([:positive])
-
-      for _ <- 1..20, do: assert(:ok == RateLimits.check_delete_content(user_id))
-      assert {:error, :rate_limited} = RateLimits.check_delete_content(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:deny, 20} end)
+      assert {:error, :rate_limited} = RateLimits.check_delete_content(1)
     end
   end
 
   describe "check_mute_user/1" do
     test "allows requests under the limit" do
-      user_id = System.unique_integer([:positive])
-      assert :ok = RateLimits.check_mute_user(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:allow, 1} end)
+      assert :ok = RateLimits.check_mute_user(1)
     end
 
     test "denies requests over the limit" do
-      user_id = System.unique_integer([:positive])
-
-      for _ <- 1..10, do: assert(:ok == RateLimits.check_mute_user(user_id))
-      assert {:error, :rate_limited} = RateLimits.check_mute_user(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:deny, 10} end)
+      assert {:error, :rate_limited} = RateLimits.check_mute_user(1)
     end
   end
 
   describe "check_search/1" do
     test "allows requests under the limit" do
-      user_id = System.unique_integer([:positive])
-      assert :ok = RateLimits.check_search(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:allow, 1} end)
+      assert :ok = RateLimits.check_search(1)
     end
 
     test "denies requests over the limit" do
-      user_id = System.unique_integer([:positive])
-
-      for _ <- 1..15, do: assert(:ok == RateLimits.check_search(user_id))
-      assert {:error, :rate_limited} = RateLimits.check_search(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:deny, 15} end)
+      assert {:error, :rate_limited} = RateLimits.check_search(1)
     end
   end
 
   describe "check_search_by_ip/1" do
     test "allows requests under the limit" do
-      ip = "10.#{:rand.uniform(255)}.#{:rand.uniform(255)}.#{:rand.uniform(255)}"
-      assert :ok = RateLimits.check_search_by_ip(ip)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:allow, 1} end)
+      assert :ok = RateLimits.check_search_by_ip("10.0.0.1")
     end
 
     test "denies requests over the limit" do
-      ip = "10.#{:rand.uniform(255)}.#{:rand.uniform(255)}.#{:rand.uniform(255)}"
-
-      for _ <- 1..10, do: assert(:ok == RateLimits.check_search_by_ip(ip))
-      assert {:error, :rate_limited} = RateLimits.check_search_by_ip(ip)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:deny, 10} end)
+      assert {:error, :rate_limited} = RateLimits.check_search_by_ip("10.0.0.1")
     end
   end
 
   describe "check_avatar_change/1" do
     test "allows requests under the limit" do
-      user_id = System.unique_integer([:positive])
-      assert :ok = RateLimits.check_avatar_change(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:allow, 1} end)
+      assert :ok = RateLimits.check_avatar_change(1)
     end
 
     test "denies requests over the limit" do
-      user_id = System.unique_integer([:positive])
-
-      for _ <- 1..5, do: assert(:ok == RateLimits.check_avatar_change(user_id))
-      assert {:error, :rate_limited} = RateLimits.check_avatar_change(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:deny, 5} end)
+      assert {:error, :rate_limited} = RateLimits.check_avatar_change(1)
     end
   end
 
   describe "check_dm_send/1" do
     test "allows requests under the limit" do
-      user_id = System.unique_integer([:positive])
-      assert :ok = RateLimits.check_dm_send(user_id)
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:allow, 1} end)
+      assert :ok = RateLimits.check_dm_send(1)
     end
 
     test "denies requests over the limit" do
-      user_id = System.unique_integer([:positive])
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:deny, 20} end)
+      assert {:error, :rate_limited} = RateLimits.check_dm_send(1)
+    end
+  end
 
-      for _ <- 1..20, do: assert(:ok == RateLimits.check_dm_send(user_id))
-      assert {:error, :rate_limited} = RateLimits.check_dm_send(user_id)
+  describe "check_outbound_follow/1" do
+    test "allows requests under the limit" do
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:allow, 1} end)
+      assert :ok = RateLimits.check_outbound_follow(1)
+    end
+
+    test "denies requests over the limit" do
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l -> {:deny, 10} end)
+      assert {:error, :rate_limited} = RateLimits.check_outbound_follow(1)
+    end
+  end
+
+  describe "error path (fail-open)" do
+    test "returns :ok on backend error" do
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l ->
+        {:error, :backend_down}
+      end)
+
+      assert :ok = RateLimits.check_create_article(1)
+    end
+
+    test "logs error on backend failure" do
+      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _b, _s, _l ->
+        {:error, :backend_down}
+      end)
+
+      log =
+        ExUnit.CaptureLog.capture_log(fn ->
+          RateLimits.check_create_article(1)
+        end)
+
+      assert log =~ "rate_limit.error"
+      assert log =~ "backend_down"
     end
   end
 end

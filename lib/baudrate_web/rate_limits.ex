@@ -89,7 +89,7 @@ defmodule BaudrateWeb.RateLimits do
   end
 
   defp check(bucket, scale_ms, limit, action) do
-    case Hammer.check_rate(bucket, scale_ms, limit) do
+    case BaudrateWeb.RateLimiter.check_rate(bucket, scale_ms, limit) do
       {:allow, _count} ->
         :ok
 
