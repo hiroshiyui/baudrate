@@ -105,6 +105,29 @@ defmodule Baudrate.FederationTest do
       assert collection["orderedItems"] == []
       assert collection["id"] == "#{uri}/following"
     end
+
+    test "board following collection returns followed actors" do
+      board = setup_board("board-fc-#{System.unique_integer([:positive])}")
+      actor1 = setup_remote_actor()
+      actor2 = setup_remote_actor()
+
+      {:ok, f1} = Federation.create_board_follow(board, actor1)
+      {:ok, _f2} = Federation.create_board_follow(board, actor2)
+      Federation.accept_board_follow(f1.ap_id)
+
+      uri = Federation.actor_uri(:board, board.slug)
+
+      # Root collection shows total count
+      root = Federation.following_collection(uri)
+      assert root["type"] == "OrderedCollection"
+      assert root["totalItems"] == 1
+
+      # Page 1 shows accepted follows only
+      page = Federation.following_collection(uri, %{"page" => "1"})
+      assert page["type"] == "OrderedCollectionPage"
+      assert actor1.ap_id in page["orderedItems"]
+      refute actor2.ap_id in page["orderedItems"]
+    end
   end
 
   describe "user_actor/1" do
@@ -386,5 +409,26 @@ defmodule Baudrate.FederationTest do
     test "returns nil for non-list input" do
       assert Federation.resolve_board_from_audience(nil) == nil
     end
+  end
+
+  defp setup_remote_actor do
+    alias Baudrate.Federation.RemoteActor
+
+    uid = System.unique_integer([:positive])
+
+    {:ok, actor} =
+      %RemoteActor{}
+      |> RemoteActor.changeset(%{
+        ap_id: "https://remote.example/users/actor-#{uid}",
+        username: "actor_#{uid}",
+        domain: "remote.example",
+        public_key_pem: "-----BEGIN PUBLIC KEY-----\nfake\n-----END PUBLIC KEY-----",
+        inbox: "https://remote.example/users/actor-#{uid}/inbox",
+        actor_type: "Person",
+        fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+      |> Repo.insert()
+
+    actor
   end
 end
