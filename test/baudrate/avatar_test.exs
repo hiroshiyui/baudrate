@@ -58,12 +58,21 @@ defmodule Baudrate.AvatarTest do
   end
 
   describe "avatar_url/2" do
-    test "returns correct path for size 48" do
-      assert Avatar.avatar_url("abc123", 48) == "/uploads/avatars/abc123/48.webp"
+    test "returns exact path when file exists", %{png_path: png_path} do
+      {:ok, avatar_id} = Avatar.process_upload(png_path, nil)
+
+      assert Avatar.avatar_url(avatar_id, 48) == "/uploads/avatars/#{avatar_id}/48.webp"
+      assert Avatar.avatar_url(avatar_id, 36) == "/uploads/avatars/#{avatar_id}/36.webp"
+      assert Avatar.avatar_url(avatar_id, 24) == "/uploads/avatars/#{avatar_id}/24.webp"
+
+      cleanup_avatar(avatar_id)
     end
 
-    test "returns correct path for size 36" do
-      assert Avatar.avatar_url("abc123", 36) == "/uploads/avatars/abc123/36.webp"
+    test "falls back to next larger size when file missing" do
+      # "abc123" doesn't exist on disk — fallback kicks in
+      assert Avatar.avatar_url("abc123", 48) == "/uploads/avatars/abc123/48.webp"
+      assert Avatar.avatar_url("abc123", 36) == "/uploads/avatars/abc123/48.webp"
+      assert Avatar.avatar_url("abc123", 24) == "/uploads/avatars/abc123/36.webp"
     end
   end
 

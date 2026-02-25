@@ -84,7 +84,11 @@ defmodule Baudrate.Avatar do
     if File.exists?(abs_path) do
       path
     else
-      fallback_size = @sizes |> Enum.filter(&(&1 > size)) |> Enum.min(fn -> size end)
+      fallback_size =
+        case @sizes |> Enum.filter(&(&1 > size)) do
+          [] -> size
+          larger -> Enum.min(larger)
+        end
       "/uploads/avatars/#{avatar_id}/#{fallback_size}.webp"
     end
   end
