@@ -116,6 +116,49 @@ defmodule BaudrateWeb.BoardLiveTest do
     assert html =~ "3"
   end
 
+  test "article with new comment bumps to top", %{conn: conn, user: user, board: board} do
+    {:ok, %{article: old_article}} =
+      Content.create_article(
+        %{
+          title: "Elderberry Pancakes",
+          body: "Body",
+          slug: "old-art-#{System.unique_integer([:positive])}",
+          user_id: user.id
+        },
+        [board.id]
+      )
+
+    # Ensure distinct timestamps (utc_datetime has second precision)
+    Process.sleep(1100)
+
+    {:ok, _} =
+      Content.create_article(
+        %{
+          title: "Zigzag Waffles",
+          body: "Body",
+          slug: "new-art-#{System.unique_integer([:positive])}",
+          user_id: user.id
+        },
+        [board.id]
+      )
+
+    Process.sleep(1100)
+
+    # Comment on the older article to bump it
+    other_user = setup_user("user")
+
+    Content.create_comment(%{
+      "body" => "Bumping comment",
+      "article_id" => old_article.id,
+      "user_id" => other_user.id
+    })
+
+    {:ok, _lv, html} = live(conn, "/boards/general")
+    {old_pos, _} = :binary.match(html, "Elderberry Pancakes")
+    {new_pos, _} = :binary.match(html, "Zigzag Waffles")
+    assert old_pos < new_pos, "Article with new comment should appear before newer article"
+  end
+
   test "navigates between pages", %{conn: conn, user: user, board: board} do
     for i <- 1..25 do
       Content.create_article(

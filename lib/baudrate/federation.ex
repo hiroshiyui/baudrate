@@ -1380,30 +1380,29 @@ defmodule Baudrate.Federation do
     local_total = Repo.one(from(a in local_query, select: count(a.id)))
 
     # Comments on articles the user authored or commented on
+    participated_subquery =
+      from(oc in Baudrate.Content.Comment,
+        where: oc.article_id == parent_as(:article).id and oc.user_id == ^user.id,
+        select: 1
+      )
+
     comment_query =
       from(c in Baudrate.Content.Comment,
         join: a in Baudrate.Content.Article,
+        as: :article,
         on: a.id == c.article_id,
-        left_join: own_comment in Baudrate.Content.Comment,
-        on: own_comment.article_id == a.id and own_comment.user_id == ^user.id,
-        where: a.user_id == ^user.id or not is_nil(own_comment.id),
-        where: is_nil(c.deleted_at) and is_nil(a.deleted_at),
-        distinct: c.id
+        where: a.user_id == ^user.id or exists(participated_subquery),
+        where: is_nil(c.deleted_at) and is_nil(a.deleted_at)
       )
 
     comment_query =
       if hidden_user_ids != [] do
-        from([c, _a, _oc] in comment_query, where: c.user_id not in ^hidden_user_ids)
+        from([c, _a] in comment_query, where: c.user_id not in ^hidden_user_ids)
       else
         comment_query
       end
 
-    comment_total =
-      Repo.one(
-        from(sub in subquery(from([c, _a, _oc] in comment_query, select: c.id)),
-          select: count()
-        )
-      )
+    comment_total = Repo.one(from([c, _a] in comment_query, select: count(c.id)))
 
     total = remote_total + local_total + comment_total
 
@@ -1454,7 +1453,7 @@ defmodule Baudrate.Federation do
       end)
 
     comment_items =
-      from([c, _a, _oc] in comment_query,
+      from([c, _a] in comment_query,
         order_by: [desc: c.inserted_at],
         limit: ^(offset + per_page),
         preload: [:user, article: :user]

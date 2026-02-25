@@ -211,7 +211,13 @@ defmodule Baudrate.Content do
 
     articles =
       from(q in base_query,
-        order_by: [desc: q.pinned, desc: q.inserted_at],
+        left_join: c in Comment,
+        on: c.article_id == q.id and is_nil(c.deleted_at),
+        group_by: q.id,
+        order_by: [
+          desc: q.pinned,
+          desc: fragment("GREATEST(?, MAX(?))", q.inserted_at, c.inserted_at)
+        ],
         offset: ^offset,
         limit: ^per_page,
         preload: :user
