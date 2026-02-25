@@ -146,6 +146,31 @@ defmodule BaudrateWeb.ArticleLiveTest do
     assert html =~ "»"
   end
 
+  test "renders board-less article for authenticated user", %{conn: conn, user: user} do
+    {:ok, %{article: boardless}} =
+      Content.create_article(
+        %{title: "Boardless Post", body: "No boards", slug: "boardless-post", user_id: user.id},
+        []
+      )
+
+    {:ok, _lv, html} = live(conn, "/articles/#{boardless.slug}")
+    assert html =~ "Boardless Post"
+  end
+
+  test "renders board-less article for guest visitor" do
+    author = setup_user("user")
+
+    {:ok, %{article: boardless}} =
+      Content.create_article(
+        %{title: "Guest Viewable", body: "Public post", slug: "guest-viewable", user_id: author.id},
+        []
+      )
+
+    conn = Phoenix.ConnTest.build_conn()
+    {:ok, _lv, html} = live(conn, "/articles/#{boardless.slug}")
+    assert html =~ "Guest Viewable"
+  end
+
   describe "toggle_pin" do
     test "admin can pin and unpin an article", %{article: article} do
       admin = setup_user("admin")
