@@ -74,12 +74,13 @@
     </div>
 
     <div class="flex items-center gap-2 text-sm text-base-content/70">
-      <span :if={@article.user}>
+      <span :if={@article.user} class="inline-flex items-center gap-1">
         {gettext("by")}
         <.link
           navigate={~p"/users/#{@article.user.username}"}
-          class="link link-hover font-semibold"
+          class="inline-flex items-center gap-1 link link-hover font-semibold"
         >
+          <.avatar user={@article.user} size={24} />
           {display_name(@article.user)}
         </.link>
       </span>
