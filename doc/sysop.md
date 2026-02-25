@@ -600,7 +600,6 @@ timer. Verify renewal works: `sudo certbot renew --dry-run`.
 - **Content size limits** — 256 KB AP payload, 64 KB content body
 - **File uploads** — magic byte validation, re-encoding as WebP (strips EXIF,
   destroys polyglots)
-- **Non-image attachments** — forced download via `Content-Disposition: attachment`
 - **CSP** — restrictive Content-Security-Policy, no eval
 - **X-Frame-Options** — DENY
 
@@ -652,7 +651,7 @@ BEAM code, the Ammonia NIF `.so`, ERTS, and the overlay convenience scripts
 
 ### Uploads Directory
 
-`priv/static/uploads/` stores avatars, article images, and attachments:
+`priv/static/uploads/` stores avatars and article images:
 
 - Must be **writable** by the application process
 - Must be **persistent** across deployments

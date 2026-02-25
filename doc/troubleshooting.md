@@ -196,7 +196,7 @@ with NIF-related errors.
 
 ### Uploads directory
 
-User-uploaded files (avatars, article images, attachments) are stored in
+User-uploaded files (avatars, article images) are stored in
 `priv/static/uploads/`. This directory must be:
 
 1. **Writable** by the application process

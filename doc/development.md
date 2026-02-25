@@ -45,7 +45,6 @@ lib/
 │   │   └── user_session.ex      # Ecto schema for server-side sessions
 │   ├── avatar.ex                # Avatar image processing (crop, resize, WebP)
 │   ├── content.ex               # Content context: boards, articles, comments, likes, user stats, revision tracking
-│   ├── attachment_storage.ex     # File attachment processing (magic bytes, image re-encoding)
 │   ├── content/
 │   │   ├── article.ex           # Article schema (posts, local + remote, soft-delete)
 │   │   ├── article_image.ex     # ArticleImage schema (gallery images on articles)
@@ -53,7 +52,6 @@ lib/
 │   │   ├── article_image_storage.ex # Image processing (resize, WebP, strip EXIF)
 │   │   ├── article_like.ex      # ArticleLike schema (local + remote likes)
 │   │   ├── article_tag.ex        # ArticleTag schema (article ↔ hashtag, extracted from body)
-│   │   ├── attachment.ex         # Attachment schema (files on articles, type/size validation)
 │   │   ├── board.ex             # Board schema (hierarchical via parent_id, role-based permissions)
 │   │   ├── board_article.ex     # Join table: board ↔ article
 │   │   ├── board_moderator.ex   # Join table: board ↔ moderator
@@ -155,7 +153,6 @@ lib/
 │   │   ├── totp_setup_live.ex   # TOTP enrollment with QR code
 │   │   └── totp_verify_live.ex  # TOTP code verification
 │   ├── plugs/
-│   │   ├── attachment_headers.ex # Content-Disposition for non-image attachments
 │   │   ├── authorized_fetch.ex  # Optional HTTP Signature verification on AP GET requests
 │   │   ├── cache_body.ex        # Cache raw request body (for HTTP signature verification)
 │   │   ├── cors.ex              # CORS headers for AP GET endpoints (Allow-Origin: *)
@@ -802,7 +799,6 @@ batched (50 per cycle) and skips when federation is disabled.
 - Non-guest boards (`min_role_to_view != "guest"`) hidden from all AP endpoints (actor, outbox, inbox, WebFinger, audience resolution)
 - Optional authorized fetch mode — require HTTP signatures on GET requests to AP endpoints (exempt: WebFinger, NodeInfo)
 - Signed outbound GET requests — actor resolution falls back to signed GET when remote instances require authorized fetch
-- Non-image attachments forced to download (`Content-Disposition: attachment`) via `AttachmentHeaders` plug to prevent inline PDF/JS execution
 - Session cookie `secure` flag handled by `force_ssl` / `Plug.SSL` in production
 - CSP `img-src` allows `https:` for remote avatars; all other directives remain restrictive
 
@@ -845,7 +841,7 @@ no navigation).
 - `aria-invalid="true"` and `aria-describedby="<id>-error"` on form inputs with validation errors
 - Error messages wrapped in `<div id="<id>-error" role="alert">` for programmatic association
 - `aria-expanded` on reply buttons and moderator management toggle
-- `aria-label` on all icon-only buttons (delete attachment, cancel upload, delete comment)
+- `aria-label` on all icon-only buttons (cancel upload, delete comment)
 - Pagination wrapped in `<nav aria-label>` with `aria-current="page"` on the active page and `aria-label` on prev/next/page links
 - Password strength `<progress>` has `aria-label` and dynamic `aria-valuetext` ("Weak"/"Fair"/"Strong"); requirement icons are `aria-hidden` with sr-only met/unmet state text
 
