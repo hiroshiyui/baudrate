@@ -478,7 +478,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       assert body["type"] == "OrderedCollection"
       assert body["totalItems"] == 0
-      assert body["orderedItems"] == []
+      assert body["first"] =~ "/following?page=1"
     end
 
     test "returns 404 for private board", %{conn: conn} do
