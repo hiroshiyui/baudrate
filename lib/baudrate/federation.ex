@@ -612,93 +612,103 @@ defmodule Baudrate.Federation do
   """
   def following_collection(actor_uri, page_params \\ %{}) do
     following_uri = "#{actor_uri}/following"
+    page = parse_page(page_params)
 
-    case extract_user_from_actor_uri(actor_uri) do
+    case resolve_actor(actor_uri) do
+      {:user, user} ->
+        user_following_collection(following_uri, user, page)
+
+      {:board, board} ->
+        board_following_collection(following_uri, board, page)
+
+      :site ->
+        %{
+          "@context" => @as_context,
+          "id" => following_uri,
+          "type" => "OrderedCollection",
+          "totalItems" => 0,
+          "orderedItems" => []
+        }
+    end
+  end
+
+  defp resolve_actor(uri) do
+    case extract_user_from_actor_uri(uri) do
       {:ok, user} ->
-        case parse_page(page_params) do
-          nil ->
-            total = count_user_follows(user.id)
-            build_collection_root(following_uri, total)
-
-          page ->
-            offset = (page - 1) * @items_per_page
-
-            # Remote follows: use remote_actor.ap_id
-            remote_uris =
-              from(uf in UserFollow,
-                where:
-                  uf.user_id == ^user.id and uf.state == @state_accepted and
-                    not is_nil(uf.remote_actor_id),
-                join: ra in assoc(uf, :remote_actor),
-                select: %{ap_id: ra.ap_id, inserted_at: uf.inserted_at}
-              )
-
-            # Local follows: build actor_uri from followed user's username
-            local_uris =
-              from(uf in UserFollow,
-                where:
-                  uf.user_id == ^user.id and uf.state == @state_accepted and
-                    not is_nil(uf.followed_user_id),
-                join: u in assoc(uf, :followed_user),
-                select: %{username: u.username, inserted_at: uf.inserted_at}
-              )
-
-            remote_entries =
-              Repo.all(remote_uris)
-              |> Enum.map(&{&1.ap_id, &1.inserted_at})
-
-            local_entries =
-              Repo.all(local_uris)
-              |> Enum.map(&{actor_uri(:user, &1.username), &1.inserted_at})
-
-            followed_uris =
-              (remote_entries ++ local_entries)
-              |> Enum.sort_by(&elem(&1, 1), {:desc, DateTime})
-              |> Enum.drop(offset)
-              |> Enum.take(@items_per_page)
-              |> Enum.map(&elem(&1, 0))
-
-            has_next = length(followed_uris) == @items_per_page
-            build_collection_page(following_uri, followed_uris, page, has_next)
-        end
+        {:user, user}
 
       :error ->
-        case extract_board_from_actor_uri(actor_uri) do
-          {:ok, board} ->
-            case parse_page(page_params) do
-              nil ->
-                total = count_board_follows(board.id)
-                build_collection_root(following_uri, total)
-
-              page ->
-                offset = (page - 1) * @items_per_page
-
-                followed_uris =
-                  from(bf in BoardFollow,
-                    where: bf.board_id == ^board.id and bf.state == @state_accepted,
-                    join: ra in assoc(bf, :remote_actor),
-                    order_by: [desc: bf.inserted_at],
-                    offset: ^offset,
-                    limit: ^@items_per_page,
-                    select: ra.ap_id
-                  )
-                  |> Repo.all()
-
-                has_next = length(followed_uris) == @items_per_page
-                build_collection_page(following_uri, followed_uris, page, has_next)
-            end
-
-          :error ->
-            # Site actor — return empty collection
-            %{
-              "@context" => @as_context,
-              "id" => following_uri,
-              "type" => "OrderedCollection",
-              "totalItems" => 0,
-              "orderedItems" => []
-            }
+        case extract_board_from_actor_uri(uri) do
+          {:ok, board} -> {:board, board}
+          :error -> :site
         end
     end
+  end
+
+  defp user_following_collection(following_uri, user, nil) do
+    total = count_user_follows(user.id)
+    build_collection_root(following_uri, total)
+  end
+
+  defp user_following_collection(following_uri, user, page) do
+    offset = (page - 1) * @items_per_page
+
+    # Remote follows: use remote_actor.ap_id
+    remote_entries =
+      from(uf in UserFollow,
+        where:
+          uf.user_id == ^user.id and uf.state == @state_accepted and
+            not is_nil(uf.remote_actor_id),
+        join: ra in assoc(uf, :remote_actor),
+        select: %{ap_id: ra.ap_id, inserted_at: uf.inserted_at}
+      )
+      |> Repo.all()
+      |> Enum.map(&{&1.ap_id, &1.inserted_at})
+
+    # Local follows: build actor_uri from followed user's username
+    local_entries =
+      from(uf in UserFollow,
+        where:
+          uf.user_id == ^user.id and uf.state == @state_accepted and
+            not is_nil(uf.followed_user_id),
+        join: u in assoc(uf, :followed_user),
+        select: %{username: u.username, inserted_at: uf.inserted_at}
+      )
+      |> Repo.all()
+      |> Enum.map(&{actor_uri(:user, &1.username), &1.inserted_at})
+
+    followed_uris =
+      (remote_entries ++ local_entries)
+      |> Enum.sort_by(&elem(&1, 1), {:desc, DateTime})
+      |> Enum.drop(offset)
+      |> Enum.take(@items_per_page)
+      |> Enum.map(&elem(&1, 0))
+
+    has_next = length(followed_uris) == @items_per_page
+    build_collection_page(following_uri, followed_uris, page, has_next)
+  end
+
+  defp board_following_collection(following_uri, board, nil) do
+    total = count_board_follows(board.id)
+    build_collection_root(following_uri, total)
+  end
+
+  defp board_following_collection(following_uri, board, page) do
+    offset = (page - 1) * @items_per_page
+
+    followed_uris =
+      from(bf in BoardFollow,
+        where: bf.board_id == ^board.id and bf.state == @state_accepted,
+        join: ra in assoc(bf, :remote_actor),
+        order_by: [desc: bf.inserted_at],
+        offset: ^offset,
+        limit: ^@items_per_page,
+        select: ra.ap_id
+      )
+      |> Repo.all()
+
+    has_next = length(followed_uris) == @items_per_page
+    build_collection_page(following_uri, followed_uris, page, has_next)
   end
 
   defp extract_user_from_actor_uri(uri) do
