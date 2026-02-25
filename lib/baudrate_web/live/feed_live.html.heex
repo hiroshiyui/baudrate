@@ -13,6 +13,41 @@
       </h1>
     </div>
 
+    <div :if={@can_post} class="card bg-base-200 shadow-sm">
+      <div class="card-body p-4">
+        <div class="flex gap-3">
+          <div class="hidden sm:block flex-shrink-0">
+            <.avatar user={@current_user} size={36} />
+          </div>
+          <.form
+            for={@form}
+            phx-change="validate_post"
+            phx-submit="submit_post"
+            class="flex-1 space-y-2"
+          >
+            <.input
+              field={@form[:title]}
+              placeholder={gettext("Title")}
+              aria-label={gettext("Title")}
+              autocomplete="off"
+            />
+            <.input
+              field={@form[:body]}
+              type="textarea"
+              placeholder={gettext("Oh! I just had a thought!")}
+              aria-label={gettext("Oh! I just had a thought!")}
+              rows={3}
+            />
+            <div class="flex justify-end">
+              <button type="submit" class="btn btn-primary btn-sm">
+                {gettext("Post")}
+              </button>
+            </div>
+          </.form>
+        </div>
+      </div>
+    </div>
+
     <div :if={@items == []} class="text-base-content/50 text-center py-8">
       {gettext("Your feed is empty.")}
       <div class="mt-2">
