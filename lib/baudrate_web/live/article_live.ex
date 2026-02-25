@@ -12,9 +12,8 @@ defmodule BaudrateWeb.ArticleLive do
   alias Baudrate.Content
   alias Baudrate.Content.PubSub, as: ContentPubSub
   alias Baudrate.Moderation
-  alias BaudrateWeb.Helpers
   alias BaudrateWeb.RateLimits
-  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1, format_file_size: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1]
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -52,7 +51,6 @@ defmodule BaudrateWeb.ArticleLive do
         end
 
       comment_changeset = Content.change_comment()
-      attachments = Content.list_attachments_for_article(article)
       article_images = Content.list_article_images(article.id)
       revision_count = Content.count_article_revisions(article.id)
 
@@ -71,23 +69,11 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:can_comment, can_comment)
         |> assign(:comment_form, to_form(comment_changeset, as: :comment))
         |> assign(:replying_to, nil)
-        |> assign(:attachments, attachments)
         |> assign(:article_images, article_images)
         |> assign(:revision_count, revision_count)
         |> assign(:page_title, article.title)
 
       if connected?(socket), do: ContentPubSub.subscribe_article(article.id)
-
-      socket =
-        if can_edit do
-          allow_upload(socket, :attachments,
-            accept: ~w(.jpg .jpeg .png .webp .gif .pdf .txt .md .zip),
-            max_entries: 5,
-            max_file_size: 10_000_000
-          )
-        else
-          socket
-        end
 
       {:ok, socket}
     end
@@ -252,68 +238,6 @@ defmodule BaudrateWeb.ArticleLive do
   @impl true
   def handle_event("cancel_reply", _params, socket) do
     {:noreply, assign(socket, :replying_to, nil)}
-  end
-
-  @impl true
-  def handle_event("validate_attachments", _params, socket) do
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("upload_attachments", _params, socket) do
-    article = socket.assigns.article
-    user = socket.assigns.current_user
-
-    uploaded_files =
-      consume_uploaded_entries(socket, :attachments, fn %{path: path}, entry ->
-        case Baudrate.AttachmentStorage.process_upload(path, entry.client_name, entry.client_type) do
-          {:ok, file_info} ->
-            attrs =
-              Map.merge(file_info, %{
-                original_filename: entry.client_name,
-                article_id: article.id,
-                user_id: user.id
-              })
-
-            case Content.create_attachment(attrs) do
-              {:ok, attachment} -> {:ok, attachment}
-              {:error, _} -> {:postpone, :error}
-            end
-
-          {:error, _reason} ->
-            {:postpone, :error}
-        end
-      end)
-
-    if Enum.any?(uploaded_files, &(&1 == :error)) do
-      {:noreply, put_flash(socket, :error, gettext("Some files failed to upload."))}
-    else
-      attachments = Content.list_attachments_for_article(article)
-      {:noreply, assign(socket, :attachments, attachments)}
-    end
-  end
-
-  @impl true
-  def handle_event("delete_attachment", %{"id" => id}, socket) do
-    if socket.assigns.can_edit do
-      attachment = Content.get_attachment!(id)
-
-      case Content.delete_attachment(attachment) do
-        {:ok, _} ->
-          attachments = Content.list_attachments_for_article(socket.assigns.article)
-          {:noreply, assign(socket, :attachments, attachments)}
-
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to delete attachment."))}
-      end
-    else
-      {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
-    end
-  end
-
-  @impl true
-  def handle_event("cancel-upload", %{"ref" => ref}, socket) do
-    {:noreply, cancel_upload(socket, :attachments, ref)}
   end
 
   @impl true
@@ -557,9 +481,6 @@ defmodule BaudrateWeb.ArticleLive do
   defp user_can_view_article?(article, user) do
     Enum.any?(article.boards, &Content.can_view_board?(&1, user))
   end
-
-  defp upload_error_to_string(err),
-    do: Helpers.upload_error_to_string(err, max_size: "10 MB", max_files: 5)
 
   defp build_comment_tree(comments) do
     roots = Enum.filter(comments, &is_nil(&1.parent_id))

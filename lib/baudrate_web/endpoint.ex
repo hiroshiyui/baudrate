@@ -41,11 +41,6 @@ defmodule BaudrateWeb.Endpoint do
   # Must run before any rate-limiting plug so buckets use the real client IP.
   plug BaudrateWeb.Plugs.RealIp
 
-  # Set Content-Disposition: attachment for non-image uploads to prevent
-  # inline rendering of PDFs/ZIPs that could execute JS in site origin.
-  # Must run before Plug.Static so headers are registered via before_send.
-  plug BaudrateWeb.Plugs.AttachmentHeaders
-
   # Serve at "/" the static files from "priv/static" directory.
   #
   # When code reloading is disabled (e.g., in production),

@@ -21,7 +21,6 @@ defmodule Baudrate.Content do
     ArticleImage,
     ArticleRevision,
     ArticleTag,
-    Attachment,
     ArticleLike,
     Board,
     BoardArticle,
@@ -1133,41 +1132,6 @@ defmodule Baudrate.Content do
     Repo.one(from(l in ArticleLike, where: l.article_id == ^article_id, select: count(l.id))) ||
       0
   end
-
-  # --- Attachments ---
-
-  @doc """
-  Creates an attachment record.
-  """
-  def create_attachment(attrs) do
-    %Attachment{}
-    |> Attachment.changeset(attrs)
-    |> Repo.insert()
-  end
-
-  @doc """
-  Lists attachments for an article.
-  """
-  def list_attachments_for_article(%Article{id: article_id}) do
-    from(a in Attachment,
-      where: a.article_id == ^article_id,
-      order_by: [asc: a.inserted_at]
-    )
-    |> Repo.all()
-  end
-
-  @doc """
-  Deletes an attachment record and its file on disk.
-  """
-  def delete_attachment(%Attachment{} = attachment) do
-    Baudrate.AttachmentStorage.delete_attachment(attachment)
-    Repo.delete(attachment)
-  end
-
-  @doc """
-  Fetches an attachment by ID.
-  """
-  def get_attachment!(id), do: Repo.get!(Attachment, id)
 
   # --- Article Images ---
 
