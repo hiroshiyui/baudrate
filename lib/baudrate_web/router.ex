@@ -193,6 +193,7 @@ defmodule BaudrateWeb.Router do
     live_session :authenticated,
       layout: {BaudrateWeb.Layouts, :app},
       on_mount: [{BaudrateWeb.AuthHooks, :require_auth}] do
+      live "/boards/:slug/follows", BoardFollowsLive
       live "/boards/:slug/articles/new", ArticleNewLive
       live "/articles/new", ArticleNewLive
       live "/articles/:slug/edit", ArticleEditLive

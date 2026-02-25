@@ -11,13 +11,22 @@
       <% end %>
     </ul>
   </nav>
-  <.link
-    :if={@can_create}
-    navigate={~p"/boards/#{@board.slug}/articles/new"}
-    class="btn btn-sm btn-primary"
-  >
-    {gettext("New Article")}
-  </.link>
+  <div class="flex gap-2">
+    <.link
+      :if={@can_manage_follows}
+      navigate={~p"/boards/#{@board.slug}/follows"}
+      class="btn btn-sm btn-ghost"
+    >
+      {gettext("Manage Follows")}
+    </.link>
+    <.link
+      :if={@can_create}
+      navigate={~p"/boards/#{@board.slug}/articles/new"}
+      class="btn btn-sm btn-primary"
+    >
+      {gettext("New Article")}
+    </.link>
+  </div>
 </div>
 
 <h1 class="text-2xl font-bold mb-2">{@board.name}</h1>

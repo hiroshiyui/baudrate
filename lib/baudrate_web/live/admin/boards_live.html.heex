@@ -88,6 +88,16 @@
           options={[{gettext("Enabled"), true}, {gettext("Disabled"), false}]}
         />
 
+        <.input
+          field={@form[:ap_accept_policy]}
+          type="select"
+          label={gettext("Accept Policy")}
+          options={[
+            {gettext("Followers only"), "followers_only"},
+            {gettext("Open"), "open"}
+          ]}
+        />
+
         <div class="flex justify-end gap-2 mt-4">
           <button type="button" phx-click="cancel" class="btn">{gettext("Cancel")}</button>
           <button type="submit" class="btn btn-primary">{gettext("Save")}</button>

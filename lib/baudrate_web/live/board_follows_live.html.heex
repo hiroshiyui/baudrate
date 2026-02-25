@@ -1,0 +1,193 @@
+<div class="space-y-6">
+  <nav class="breadcrumbs text-sm" aria-label={gettext("Breadcrumb")}>
+    <ul>
+      <li><.link navigate="/">{gettext("Home")}</.link></li>
+      <li><.link navigate={~p"/boards/#{@board.slug}"}>{@board.name}</.link></li>
+      <li>{gettext("Board Follows")}</li>
+    </ul>
+  </nav>
+
+  <h1 class="text-2xl font-bold">{gettext("Board Follows")} &mdash; {@board.name}</h1>
+
+  <%!-- Accept policy section --%>
+  <div class="card bg-base-200 shadow-sm">
+    <div class="card-body p-4">
+      <h2 class="card-title text-lg">{gettext("Accept Policy")}</h2>
+      <p class="text-sm text-base-content/70 mb-3">
+        <%= if @board.ap_accept_policy == "open" do %>
+          {gettext("Anyone can post to this board")}
+        <% else %>
+          {gettext("Only followed actors can post to this board")}
+        <% end %>
+      </p>
+      <div class="flex gap-2">
+        <button
+          phx-click="update_policy"
+          phx-value-policy="followers_only"
+          class={[
+            "btn btn-sm",
+            @board.ap_accept_policy == "followers_only" && "btn-primary",
+            @board.ap_accept_policy != "followers_only" && "btn-ghost"
+          ]}
+        >
+          {gettext("Followers only")}
+        </button>
+        <button
+          phx-click="update_policy"
+          phx-value-policy="open"
+          class={[
+            "btn btn-sm",
+            @board.ap_accept_policy == "open" && "btn-primary",
+            @board.ap_accept_policy != "open" && "btn-ghost"
+          ]}
+        >
+          {gettext("Open")}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <%!-- Search for remote actor --%>
+  <div class="card bg-base-200 shadow-sm">
+    <div class="card-body p-4">
+      <h2 class="card-title text-lg">{gettext("Follow Remote Actor")}</h2>
+      <form phx-submit="search" class="flex gap-2">
+        <input
+          type="text"
+          name="query"
+          value={@search_query}
+          placeholder={gettext("Search for a remote actor to follow (e.g. @user@domain)")}
+          class="input input-bordered flex-1"
+          autocomplete="off"
+          aria-label={gettext("Search for a remote actor to follow (e.g. @user@domain)")}
+        />
+        <button type="submit" class="btn btn-primary" disabled={@search_loading}>
+          <%= if @search_loading do %>
+            <span class="loading loading-spinner loading-sm"></span>
+          <% else %>
+            {gettext("Search")}
+          <% end %>
+        </button>
+      </form>
+
+      <div :if={@search_error} class="text-error text-sm mt-2">
+        {@search_error}
+      </div>
+
+      <div :if={@search_result} class="mt-4 card bg-base-100 shadow-sm">
+        <div class="card-body p-4 flex flex-row items-center gap-4">
+          <div class="avatar">
+            <div class="w-12 h-12 rounded-full bg-base-300 flex items-center justify-center">
+              <img
+                :if={@search_result.avatar_url}
+                src={@search_result.avatar_url}
+                alt=""
+                class="rounded-full"
+              />
+              <.icon
+                :if={!@search_result.avatar_url}
+                name="hero-user-circle"
+                class="size-8 opacity-50"
+              />
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold truncate">
+              {@search_result.display_name || @search_result.username}
+            </div>
+            <div class="text-sm text-base-content/70 truncate">
+              @{@search_result.username}@{@search_result.domain}
+            </div>
+            <div
+              :if={@search_result.summary && @search_result.summary != ""}
+              class="text-sm text-base-content/70 mt-1 line-clamp-2"
+            >
+              {Baudrate.Sanitizer.Native.strip_tags(@search_result.summary)}
+            </div>
+          </div>
+          <%= if already_following?(@follows, @search_result.id) do %>
+            <span class="badge badge-ghost">{gettext("Already following")}</span>
+          <% else %>
+            <button
+              phx-click="follow"
+              phx-value-id={@search_result.id}
+              class="btn btn-sm btn-primary"
+            >
+              {gettext("Follow")}
+            </button>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%!-- Current follows list --%>
+  <div>
+    <h2 class="text-lg font-semibold mb-3">
+      {gettext("Current Follows")}
+      <span :if={@follows != []} class="badge badge-neutral ml-2">{length(@follows)}</span>
+    </h2>
+
+    <div :if={@follows == []} class="text-base-content/50 text-center py-8">
+      {gettext("No follows yet.")}
+    </div>
+
+    <div :if={@follows != []} class="space-y-2">
+      <div :for={follow <- @follows} class="card bg-base-200 shadow-sm">
+        <div class="card-body p-4 flex flex-row items-center gap-4">
+          <div class="avatar">
+            <div class="w-12 h-12 rounded-full bg-base-300 flex items-center justify-center">
+              <img
+                :if={follow.remote_actor.avatar_url}
+                src={follow.remote_actor.avatar_url}
+                alt=""
+                class="rounded-full"
+              />
+              <.icon
+                :if={!follow.remote_actor.avatar_url}
+                name="hero-user-circle"
+                class="size-8 opacity-50"
+              />
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold truncate">
+              {follow.remote_actor.display_name || follow.remote_actor.username}
+            </div>
+            <div class="text-sm text-base-content/70 truncate">
+              @{follow.remote_actor.username}@{follow.remote_actor.domain}
+            </div>
+            <div
+              :if={follow.remote_actor.summary && follow.remote_actor.summary != ""}
+              class="text-sm text-base-content/70 mt-1 line-clamp-2"
+            >
+              {Baudrate.Sanitizer.Native.strip_tags(follow.remote_actor.summary)}
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class={[
+              "badge badge-sm",
+              follow.state == "accepted" && "badge-success",
+              follow.state == "pending" && "badge-warning",
+              follow.state == "rejected" && "badge-error"
+            ]}>
+              {case follow.state do
+                "accepted" -> gettext("Accepted")
+                "pending" -> gettext("Pending")
+                "rejected" -> gettext("Rejected")
+              end}
+            </span>
+            <button
+              phx-click="unfollow"
+              phx-value-id={follow.remote_actor.id}
+              data-confirm={gettext("Unfollow this actor?")}
+              class="btn btn-sm btn-ghost text-error"
+            >
+              {gettext("Unfollow")}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
