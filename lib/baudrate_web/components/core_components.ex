@@ -72,7 +72,7 @@ defmodule BaudrateWeb.CoreComponents do
         </div>
         <div class="flex-1" />
         <button type="button" class="group self-start cursor-pointer" aria-label={gettext("close")}>
-          <.icon name="hero-x-mark" class="size-5 opacity-40 group-hover:opacity-70" />
+          <.icon name="hero-x-mark" class="size-5 opacity-60 group-hover:opacity-90" />
         </button>
       </div>
     </div>
@@ -349,7 +349,7 @@ defmodule BaudrateWeb.CoreComponents do
   defp error(assigns) do
     ~H"""
     <p class="mt-1.5 flex gap-2 items-center text-sm text-error">
-      <.icon name="hero-exclamation-circle" class="size-5" />
+      <.icon name="hero-exclamation-circle" class="size-5" aria-hidden="true" />
       {render_slot(@inner_block)}
     </p>
     """
@@ -369,7 +369,7 @@ defmodule BaudrateWeb.CoreComponents do
         <h1 class="text-lg font-semibold leading-8">
           {render_slot(@inner_block)}
         </h1>
-        <p :if={@subtitle != []} class="text-sm text-base-content/70">
+        <p :if={@subtitle != []} class="text-sm text-base-content/80">
           {render_slot(@subtitle)}
         </p>
       </div>
@@ -492,7 +492,7 @@ defmodule BaudrateWeb.CoreComponents do
 
   def icon(%{name: "hero-" <> _} = assigns) do
     ~H"""
-    <span class={[@name, @class]} {@rest} />
+    <span class={[@name, @class]} aria-hidden="true" {@rest} />
     """
   end
 
@@ -572,13 +572,14 @@ defmodule BaudrateWeb.CoreComponents do
         >
           &laquo;
         </.link>
-        <span
+        <button
           :if={@page <= 1}
-          class="join-item btn btn-sm btn-disabled"
+          disabled
+          class="join-item btn btn-sm"
           aria-label={gettext("Previous page")}
         >
           &laquo;
-        </span>
+        </button>
 
         <%= for p <- @page_range do %>
           <.link
@@ -607,13 +608,14 @@ defmodule BaudrateWeb.CoreComponents do
         >
           &raquo;
         </.link>
-        <span
+        <button
           :if={@page >= @total_pages}
-          class="join-item btn btn-sm btn-disabled"
+          disabled
+          class="join-item btn btn-sm"
           aria-label={gettext("Next page")}
         >
           &raquo;
-        </span>
+        </button>
       </div>
     </nav>
     """
