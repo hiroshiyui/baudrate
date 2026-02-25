@@ -797,6 +797,40 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
     end
   end
 
+  # --- Board-less Articles ---
+
+  describe "board-less articles" do
+    test "returns Article JSON-LD for board-less article", %{conn: conn} do
+      user = setup_user("user")
+      article = setup_boardless_article(user)
+
+      conn = conn |> ap_conn() |> get("/ap/articles/#{article.slug}")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "Article"
+      assert body["name"] == article.title
+      assert body["attributedTo"] =~ user.username
+    end
+
+    test "returns replies for board-less article", %{conn: conn} do
+      user = setup_user("user")
+      article = setup_boardless_article(user)
+
+      {:ok, _comment} =
+        Baudrate.Content.create_comment(%{
+          "body" => "Comment on boardless",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      conn = conn |> json_conn() |> get("/ap/articles/#{article.slug}/replies")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "OrderedCollection"
+      assert body["totalItems"] == 1
+    end
+  end
+
   # --- Test Helpers ---
 
   defp setup_board do
@@ -826,6 +860,23 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
           user_id: user.id
         },
         [board.id]
+      )
+
+    Baudrate.Repo.preload(article, [:boards, :user])
+  end
+
+  defp setup_boardless_article(user) do
+    slug = "ap-boardless-#{System.unique_integer([:positive])}"
+
+    {:ok, %{article: article}} =
+      Baudrate.Content.create_article(
+        %{
+          title: "Boardless AP Article",
+          body: "Body for **boardless** article.",
+          slug: slug,
+          user_id: user.id
+        },
+        []
       )
 
     Baudrate.Repo.preload(article, [:boards, :user])

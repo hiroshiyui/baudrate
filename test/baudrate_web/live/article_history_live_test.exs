@@ -112,6 +112,54 @@ defmodule BaudrateWeb.ArticleHistoryLiveTest do
     assert html =~ "hero-clock"
   end
 
+  describe "board-less articles" do
+    test "renders history for board-less article", %{conn: conn, user: user} do
+      {:ok, %{article: boardless}} =
+        Content.create_article(
+          %{
+            title: "Boardless History",
+            body: "Original body",
+            slug: "boardless-history",
+            user_id: user.id
+          },
+          []
+        )
+
+      {:ok, _updated} =
+        Content.update_article(boardless, %{title: "Edited Boardless", body: "Edited body"}, user)
+
+      {:ok, _lv, html} = live(conn, "/articles/#{boardless.slug}/history")
+      assert html =~ "Edit History"
+      assert html =~ "Edited Boardless"
+    end
+
+    test "guest can view history of board-less article" do
+      author = setup_user("user")
+
+      {:ok, %{article: boardless}} =
+        Content.create_article(
+          %{
+            title: "Boardless Guest History",
+            body: "Original body",
+            slug: "boardless-guest-history",
+            user_id: author.id
+          },
+          []
+        )
+
+      {:ok, _updated} =
+        Content.update_article(
+          boardless,
+          %{title: "Edited Guest Boardless", body: "Edited body"},
+          author
+        )
+
+      guest_conn = Phoenix.ConnTest.build_conn()
+      {:ok, _lv, html} = live(guest_conn, "/articles/#{boardless.slug}/history")
+      assert html =~ "Edit History"
+    end
+  end
+
   test "back link navigates to article", %{conn: conn, user: user, article: article} do
     {:ok, _} =
       Content.update_article(article, %{title: "Edited", body: "Edited body"}, user)

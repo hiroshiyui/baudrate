@@ -280,6 +280,87 @@ defmodule BaudrateWeb.ArticleLiveTest do
     end
   end
 
+  describe "board-less articles" do
+    test "authenticated user can post comments on board-less article", %{conn: conn, user: user} do
+      {:ok, %{article: boardless}} =
+        Content.create_article(
+          %{
+            title: "Boardless Commenting",
+            body: "Test body",
+            slug: "boardless-commenting",
+            user_id: user.id
+          },
+          []
+        )
+
+      {:ok, lv, html} = live(conn, "/articles/#{boardless.slug}")
+      assert html =~ "Write a comment"
+
+      html =
+        lv
+        |> form("form[phx-submit=submit_comment]", comment: %{body: "Comment on boardless!"})
+        |> render_submit()
+
+      assert html =~ "Comment on boardless!"
+    end
+
+    test "admin sees moderation controls on board-less article", %{user: user} do
+      {:ok, %{article: boardless}} =
+        Content.create_article(
+          %{
+            title: "Boardless Moderation",
+            body: "Test body",
+            slug: "boardless-moderation",
+            user_id: user.id
+          },
+          []
+        )
+
+      admin = setup_user("admin")
+
+      admin_conn =
+        Phoenix.ConnTest.build_conn()
+        |> log_in_user(admin)
+
+      {:ok, _lv, html} = live(admin_conn, "/articles/#{boardless.slug}")
+      assert html =~ "Pin"
+      assert html =~ "Lock"
+      assert html =~ "Delete"
+    end
+
+    test "locking then unlocking a board-less article restores comment form", %{user: user} do
+      {:ok, %{article: boardless}} =
+        Content.create_article(
+          %{
+            title: "Boardless Lock Test",
+            body: "Test body",
+            slug: "boardless-lock-test",
+            user_id: user.id
+          },
+          []
+        )
+
+      admin = setup_user("admin")
+
+      admin_conn =
+        Phoenix.ConnTest.build_conn()
+        |> log_in_user(admin)
+
+      {:ok, lv, _html} = live(admin_conn, "/articles/#{boardless.slug}")
+
+      # Lock the article
+      lv |> element("button[phx-click=toggle_lock]") |> render_click()
+      html = render(lv)
+      assert html =~ "This thread is locked"
+
+      # Unlock the article
+      lv |> element("button[phx-click=toggle_lock]") |> render_click()
+      html = render(lv)
+      refute html =~ "This thread is locked"
+      assert html =~ "Write a comment"
+    end
+  end
+
   test "threaded replies stay with their root when paginated", %{
     conn: conn,
     user: user,
