@@ -1321,10 +1321,11 @@ defmodule Baudrate.Federation do
   end
 
   @doc """
-  Lists paginated feed items for a user based on their accepted follows.
+  Lists paginated feed items for a user.
 
-  JOINs `feed_items` with `user_follows` to show only items from actors
-  the user follows. Excludes soft-deleted items and items from blocked/muted actors.
+  Includes the user's own articles plus remote feed items and local articles
+  from accepted follows. Excludes soft-deleted items and items from
+  blocked/muted actors.
 
   Returns `%{items: [...], total: n, page: n, per_page: n, total_pages: n}`.
   """
@@ -1355,12 +1356,12 @@ defmodule Baudrate.Federation do
 
     remote_total = Repo.one(from(q in remote_query, select: count(q.id)))
 
-    # Local articles from followed local users
+    # Local articles from self + followed local users
     local_query =
       from(a in Baudrate.Content.Article,
-        join: uf in UserFollow,
-        on: uf.followed_user_id == a.user_id,
-        where: uf.user_id == ^user.id and uf.state == @state_accepted,
+        left_join: uf in UserFollow,
+        on: uf.followed_user_id == a.user_id and uf.user_id == ^user.id and uf.state == @state_accepted,
+        where: a.user_id == ^user.id or not is_nil(uf.id),
         where: is_nil(a.deleted_at)
       )
 

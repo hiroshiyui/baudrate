@@ -197,16 +197,19 @@ defmodule BaudrateWeb.FeedLiveTest do
       assert Baudrate.Repo.get_by(Baudrate.Content.Article, title: "My Quick Post")
     end
 
-    test "resets form after successful submission", %{conn: conn} do
+    test "resets form after successful submission and article appears in feed", %{conn: conn} do
       {:ok, lv, _html} = live(conn, "/feed")
 
       lv
       |> form("form", article: %{title: "Quick Post", body: "Body text"})
       |> render_submit()
 
-      # Form should be reset — fields should not contain old values
+      # Form inputs should be cleared (value should not remain in the input)
       html = render(lv)
-      refute html =~ "Quick Post"
+      refute html =~ ~s(value="Quick Post")
+
+      # But the article should appear in the feed
+      assert html =~ "Quick Post"
     end
 
     test "rate-limited users see error flash", %{conn: conn, user: user} do
