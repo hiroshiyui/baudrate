@@ -139,6 +139,24 @@ defmodule Baudrate.ContentTest do
       assert %{title: _} = errors_on(changeset)
     end
 
+    test "ignores pinned and locked params (mass assignment protection)" do
+      user = create_user("user")
+      board = create_board(%{name: "Board", slug: "mass-assign-board"})
+
+      attrs = %{
+        title: "Sneaky",
+        body: "Trying to set pinned/locked",
+        slug: "sneaky-article",
+        user_id: user.id,
+        pinned: true,
+        locked: true
+      }
+
+      assert {:ok, %{article: article}} = Content.create_article(attrs, [board.id])
+      assert article.pinned == false
+      assert article.locked == false
+    end
+
     test "rejects duplicate slug" do
       user = create_user("user")
       board = create_board(%{name: "Board", slug: "dup-board"})
@@ -166,11 +184,13 @@ defmodule Baudrate.ContentTest do
           [board.id]
         )
 
-      {:ok, %{article: _pinned}} =
+      {:ok, %{article: pinned}} =
         Content.create_article(
-          %{title: "Pinned", body: "b", slug: "pinned", user_id: user.id, pinned: true},
+          %{title: "Pinned", body: "b", slug: "pinned", user_id: user.id},
           [board.id]
         )
+
+      Content.toggle_pin_article(pinned)
 
       articles = Content.list_articles_for_board(board)
       titles = Enum.map(articles, & &1.title)

@@ -40,7 +40,7 @@ defmodule Baudrate.Content.Article do
   @doc "Changeset for creating a local article with title, body, slug, and author."
   def changeset(article, attrs) do
     article
-    |> cast(attrs, [:title, :body, :slug, :pinned, :locked, :user_id])
+    |> cast(attrs, [:title, :body, :slug, :user_id])
     |> validate_required([:title, :body, :slug])
     |> validate_length(:body, max: @max_body_length)
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,

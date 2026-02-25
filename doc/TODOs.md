@@ -6,10 +6,10 @@ Audit date: 2026-02-25
 
 ## Security
 
-- [ ] **Mass assignment: strip `pinned`/`locked` from article creation** — `Article.changeset/2` casts `:pinned`/`:locked`, allowing regular users to bypass moderator-only checks. Strip these from user params in `create_article`.
-- [ ] **Add image ownership check in article edit** — `remove_image` event in `article_edit_live.ex:113-129` should verify `image.article_id == article.id` before deletion.
-- [ ] **Password reset timing leak** — verify `reset_password_with_recovery_code` uses constant-time comparison for username lookup.
-- [ ] **Tighten CSP** — remove `'unsafe-inline'` from `style-src` in `router.ex:64-66`.
+- [x] **Mass assignment: strip `pinned`/`locked` from article creation** — removed `:pinned`/`:locked` from `Article.changeset/2` cast list. These fields are only set via `toggle_pin_article/1` and `toggle_lock_article/1`.
+- [x] **Add image ownership check in article edit** — `remove_image` event verifies `image.article_id == article.id` before deletion.
+- [x] **Password reset timing leak** — confirmed safe: `auth.ex:943` already uses `Bcrypt.no_user_verify()` for constant-time behavior. No action needed.
+- [ ] **Tighten CSP** — remove `'unsafe-inline'` from `style-src` in `router.ex:64-66`. _Deferred: DaisyUI/LiveView require inline styles; removing breaks UI. Needs nonce-based CSP approach._
 
 ## Test Coverage
 

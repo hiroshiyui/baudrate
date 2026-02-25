@@ -4,6 +4,7 @@ defmodule BaudrateWeb.ArticleEditLive do
 
   Only the article author or an admin can access this page.
   Supports uploading up to 4 images (total with existing) per article.
+  Image removal verifies ownership (image must belong to the article being edited).
   """
 
   use BaudrateWeb, :live_view
@@ -111,21 +112,27 @@ defmodule BaudrateWeb.ArticleEditLive do
 
   @impl true
   def handle_event("remove_image", %{"id" => id}, socket) do
+    article = socket.assigns.article
     image = Content.get_article_image!(id)
-    Content.delete_article_image(image)
 
-    updated = Enum.reject(socket.assigns.article_images, &(&1.id == image.id))
-    max = Baudrate.Content.ArticleImage.max_images_per_article()
-    max_new = max(max - length(updated), 0)
+    if image.article_id != article.id do
+      {:noreply, put_flash(socket, :error, gettext("Image not found."))}
+    else
+      Content.delete_article_image(image)
 
-    {:noreply,
-     socket
-     |> assign(:article_images, updated)
-     |> allow_upload(:article_images,
-       accept: ~w(.jpg .jpeg .png .webp .gif),
-       max_entries: max_new,
-       max_file_size: 5_000_000
-     )}
+      updated = Enum.reject(socket.assigns.article_images, &(&1.id == image.id))
+      max = Baudrate.Content.ArticleImage.max_images_per_article()
+      max_new = max(max - length(updated), 0)
+
+      {:noreply,
+       socket
+       |> assign(:article_images, updated)
+       |> allow_upload(:article_images,
+         accept: ~w(.jpg .jpeg .png .webp .gif),
+         max_entries: max_new,
+         max_file_size: 5_000_000
+       )}
+    end
   end
 
   @impl true

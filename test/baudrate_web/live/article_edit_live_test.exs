@@ -5,7 +5,7 @@ defmodule BaudrateWeb.ArticleEditLiveTest do
 
   alias Baudrate.Repo
   alias Baudrate.Content
-  alias Baudrate.Content.Board
+  alias Baudrate.Content.{ArticleImage, Board}
   alias Baudrate.Setup.Setting
 
   setup %{conn: conn} do
@@ -104,5 +104,46 @@ defmodule BaudrateWeb.ArticleEditLiveTest do
     {:ok, _lv, html} = live(conn, "/articles/#{article.slug}/edit")
     assert html =~ "Edit Article"
     assert html =~ "My Article"
+  end
+
+  test "remove_image rejects image belonging to another article", %{
+    conn: conn,
+    user: user,
+    board: board,
+    article: article
+  } do
+    # Create a second article owned by the same user
+    {:ok, %{article: other_article}} =
+      Content.create_article(
+        %{
+          title: "Other Article",
+          body: "Other body",
+          slug: "other-edit-article",
+          user_id: user.id
+        },
+        [board.id]
+      )
+
+    # Insert an image record belonging to the other article (no actual file needed)
+    {:ok, other_image} =
+      %ArticleImage{}
+      |> ArticleImage.changeset(%{
+        filename: "other.webp",
+        storage_path: "/tmp/nonexistent.webp",
+        width: 100,
+        height: 100,
+        article_id: other_article.id,
+        user_id: user.id
+      })
+      |> Repo.insert()
+
+    {:ok, lv, _html} = live(conn, "/articles/#{article.slug}/edit")
+
+    # Attempt to remove an image that belongs to another article
+    html = render_click(lv, "remove_image", %{"id" => other_image.id})
+    assert html =~ "Image not found"
+
+    # Verify the image was NOT deleted
+    assert Repo.get!(ArticleImage, other_image.id)
   end
 end
