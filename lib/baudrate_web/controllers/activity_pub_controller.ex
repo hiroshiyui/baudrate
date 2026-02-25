@@ -268,7 +268,8 @@ defmodule BaudrateWeb.ActivityPubController do
         try do
           article = Baudrate.Content.get_article_by_slug!(slug)
 
-          if Enum.any?(article.boards, &(&1.min_role_to_view == "guest")) do
+          if article.boards == [] or
+               Enum.any?(article.boards, &(&1.min_role_to_view == "guest")) do
             conn
             |> put_resp_content_type(@activity_json)
             |> json(Federation.article_object(article))
@@ -304,7 +305,8 @@ defmodule BaudrateWeb.ActivityPubController do
       try do
         article = Baudrate.Content.get_article_by_slug!(slug)
 
-        if Enum.any?(article.boards, &(&1.min_role_to_view == "guest")) do
+        if article.boards == [] or
+             Enum.any?(article.boards, &(&1.min_role_to_view == "guest")) do
           conn
           |> put_resp_content_type(@activity_json)
           |> json(Federation.article_replies(article))

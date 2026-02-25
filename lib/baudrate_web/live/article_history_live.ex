@@ -61,6 +61,8 @@ defmodule BaudrateWeb.ArticleHistoryLive do
     Enum.at(revisions, index + 1)
   end
 
+  defp user_can_view_article?(article, _user) when article.boards == [], do: true
+
   defp user_can_view_article?(article, user) do
     Enum.any?(article.boards, &Content.can_view_board?(&1, user))
   end
