@@ -38,14 +38,22 @@ defmodule BaudrateWeb.ArticleLive do
 
       is_board_mod =
         if current_user do
-          Enum.any?(article.boards, &Content.board_moderator?(&1, current_user))
+          if article.boards == [] do
+            current_user.role.name in ["admin", "moderator"]
+          else
+            Enum.any?(article.boards, &Content.board_moderator?(&1, current_user))
+          end
         else
           false
         end
 
       can_comment =
         if current_user && not article.locked do
-          Enum.any?(article.boards, &Content.can_post_in_board?(&1, current_user))
+          if article.boards == [] do
+            Baudrate.Auth.can_create_content?(current_user)
+          else
+            Enum.any?(article.boards, &Content.can_post_in_board?(&1, current_user))
+          end
         else
           false
         end
@@ -154,7 +162,11 @@ defmodule BaudrateWeb.ArticleLive do
               boards =
                 if Ecto.assoc_loaded?(updated.boards), do: updated.boards, else: article.boards
 
-              Enum.any?(boards, &Content.can_post_in_board?(&1, socket.assigns.current_user))
+              if boards == [] do
+                Baudrate.Auth.can_create_content?(socket.assigns.current_user)
+              else
+                Enum.any?(boards, &Content.can_post_in_board?(&1, socket.assigns.current_user))
+              end
             else
               false
             end
