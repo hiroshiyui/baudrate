@@ -165,6 +165,73 @@ defmodule BaudrateWeb.FeedLiveTest do
     end
   end
 
+  describe "quick-post composer" do
+    test "composer card renders for authenticated users", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/feed")
+      assert html =~ "Oh! I just had a thought!"
+      assert html =~ "Post"
+    end
+
+    test "validates form fields", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      html =
+        lv
+        |> form("form", article: %{title: "", body: ""})
+        |> render_change()
+
+      assert html =~ "can&#39;t be blank"
+    end
+
+    test "successfully creates an article with no boards", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      html =
+        lv
+        |> form("form", article: %{title: "My Quick Post", body: "Hello from the feed!"})
+        |> render_submit()
+
+      assert html =~ "Article posted!"
+
+      # Article exists in database
+      assert Baudrate.Repo.get_by(Baudrate.Content.Article, title: "My Quick Post")
+    end
+
+    test "resets form after successful submission", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      lv
+      |> form("form", article: %{title: "Quick Post", body: "Body text"})
+      |> render_submit()
+
+      # Form should be reset — fields should not contain old values
+      html = render(lv)
+      refute html =~ "Quick Post"
+    end
+
+    test "rate-limited users see error flash", %{conn: conn, user: user} do
+      # Exhaust the rate limit (10 per 15 minutes for non-admin)
+      for _ <- 1..10 do
+        BaudrateWeb.RateLimits.check_create_article(user.id)
+      end
+
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      html =
+        lv
+        |> form("form", article: %{title: "Rate Limited Post", body: "Should fail"})
+        |> render_submit()
+
+      assert html =~ "posting too frequently"
+    end
+
+    test "composer does not render for guests" do
+      conn = build_conn()
+      {:error, {:redirect, %{to: to}}} = live(conn, "/feed")
+      assert to =~ "/login"
+    end
+  end
+
   describe "requires authentication" do
     test "redirects unauthenticated user to login" do
       conn = build_conn()
