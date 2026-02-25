@@ -5,6 +5,11 @@ defmodule BaudrateWeb.RateLimitsTest do
 
   alias BaudrateWeb.RateLimits
 
+  setup do
+    Mox.set_mox_private()
+    :ok
+  end
+
   setup :verify_on_exit!
 
   describe "check_create_article/1" do

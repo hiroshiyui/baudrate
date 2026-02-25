@@ -9,6 +9,11 @@ defmodule BaudrateWeb.Plugs.RateLimitDomainTest do
   @evil_domain "evil.example"
   @good_domain "good.example"
 
+  setup do
+    Mox.set_mox_private()
+    :ok
+  end
+
   setup :verify_on_exit!
 
   defp build_conn(actor \\ nil) do
