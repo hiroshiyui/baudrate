@@ -2,15 +2,17 @@ defmodule BaudrateWeb.FeedLive do
   @moduledoc """
   LiveView for the personal feed page.
 
-  Displays incoming posts from remote actors the user follows.
+  Displays incoming posts from remote actors the user follows,
+  with a personal info sidebar showing the current user's profile summary.
   Subscribes to `Federation.PubSub` for real-time updates.
   """
 
   use BaudrateWeb, :live_view
 
+  alias Baudrate.Content
   alias Baudrate.Federation
   alias Baudrate.Federation.PubSub, as: FederationPubSub
-  import BaudrateWeb.Helpers, only: [parse_page: 1]
+  import BaudrateWeb.Helpers, only: [parse_page: 1, translate_role: 1]
 
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
@@ -19,7 +21,13 @@ defmodule BaudrateWeb.FeedLive do
       FederationPubSub.subscribe_user_feed(user.id)
     end
 
-    {:ok, assign(socket, :page_title, gettext("Feed"))}
+    {:ok,
+     assign(socket,
+       page_title: gettext("Feed"),
+       wide_layout: true,
+       article_count: Content.count_articles_by_user(user.id),
+       comment_count: Content.count_comments_by_user(user.id)
+     )}
   end
 
   def handle_params(params, _uri, socket) do

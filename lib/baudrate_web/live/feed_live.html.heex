@@ -1,134 +1,181 @@
-<div class="space-y-6">
-  <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold">
-      {gettext("Feed")}
-      <span :if={@total > 0} class="badge badge-neutral ml-2">{@total}</span>
-    </h1>
-  </div>
-
-  <div :if={@items == []} class="text-base-content/50 text-center py-8">
-    {gettext("Your feed is empty.")}
-    <div class="mt-2">
-      <.link navigate="/search" class="link link-primary">
-        {gettext("Search for users or remote actors to follow")}
-      </.link>
-    </div>
-  </div>
-
-  <div :if={@items != []} class="space-y-4">
-    <div :for={item <- @items} class="card bg-base-200 shadow-sm">
-      <%!-- Remote feed item --%>
-      <div :if={item.source == :remote} class="card-body p-4">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="avatar">
-            <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center">
-              <img
-                :if={item.feed_item.remote_actor.avatar_url}
-                src={item.feed_item.remote_actor.avatar_url}
-                alt={
-                  item.feed_item.remote_actor.display_name || item.feed_item.remote_actor.username
-                }
-                class="rounded-full"
-              />
-              <.icon
-                :if={!item.feed_item.remote_actor.avatar_url}
-                name="hero-user-circle"
-                class="size-7 opacity-50"
-              />
-            </div>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="font-bold text-sm truncate">
-              {item.feed_item.remote_actor.display_name || item.feed_item.remote_actor.username}
-            </div>
-            <div class="text-xs text-base-content/60 truncate">
-              @{item.feed_item.remote_actor.username}@{item.feed_item.remote_actor.domain}
-            </div>
-          </div>
-          <div class="flex items-center gap-2 flex-shrink-0">
-            <span class={[
-              "badge badge-xs",
-              item.feed_item.object_type == "Note" && "badge-info",
-              item.feed_item.object_type in ["Article", "Page"] && "badge-accent"
-            ]}>
-              {item.feed_item.object_type}
-            </span>
-            <time
-              class="text-xs text-base-content/50"
-              datetime={DateTime.to_iso8601(item.feed_item.published_at)}
-            >
-              {Calendar.strftime(item.feed_item.published_at, "%Y-%m-%d %H:%M")}
-            </time>
-          </div>
-        </div>
-
-        <h2 :if={item.feed_item.title} class="font-semibold text-lg mb-1">
-          {item.feed_item.title}
-        </h2>
-
-        <div class="prose prose-sm max-w-none break-words">
-          {Phoenix.HTML.raw(item.feed_item.body_html || "")}
-        </div>
-
-        <div :if={item.feed_item.source_url} class="mt-2">
-          <a
-            href={item.feed_item.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="link link-primary text-sm"
-          >
-            {gettext("View original")}
-            <.icon name="hero-arrow-top-right-on-square-mini" class="size-3 ml-1 inline" />
-          </a>
-        </div>
-      </div>
-
-      <%!-- Local article from followed user --%>
-      <div :if={item.source == :local} class="card-body p-4">
-        <div class="flex items-center gap-3 mb-2">
-          <.avatar user={item.article.user} size={36} />
-          <div class="flex-1 min-w-0">
-            <.link
-              navigate={~p"/users/#{item.article.user.username}"}
-              class="font-bold text-sm truncate link link-hover"
-            >
-              {item.article.user.username}
-            </.link>
-            <div class="text-xs text-base-content/60">
-              <span class="badge badge-info badge-xs">{gettext("Local")}</span>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 flex-shrink-0">
-            <span class="badge badge-xs badge-accent">{gettext("Article")}</span>
-            <time
-              class="text-xs text-base-content/50"
-              datetime={Calendar.strftime(item.article.inserted_at, "%Y-%m-%dT%H:%M:%S")}
-            >
-              {Calendar.strftime(item.article.inserted_at, "%Y-%m-%d %H:%M")}
-            </time>
-          </div>
-        </div>
-
-        <.link
-          navigate={~p"/articles/#{item.article.slug}"}
-          class="font-semibold text-lg mb-1 link link-hover"
+<div class="lg:grid lg:grid-cols-[1fr_16rem] lg:gap-6">
+  <div class="space-y-6" role="main" aria-label={gettext("Feed")}>
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold">
+        {gettext("Feed")}
+        <span
+          :if={@total > 0}
+          class="badge badge-neutral ml-2"
+          aria-label={gettext("%{count} items", count: @total)}
         >
-          {item.article.title}
-        </.link>
+          {@total}
+        </span>
+      </h1>
+    </div>
 
-        <div :if={item.article.boards != []} class="flex gap-1 mt-1">
-          <span :for={board <- item.article.boards} class="badge badge-outline badge-sm">
-            {board.name}
-          </span>
-        </div>
+    <div :if={@items == []} class="text-base-content/50 text-center py-8">
+      {gettext("Your feed is empty.")}
+      <div class="mt-2">
+        <.link navigate="/search" class="link link-primary">
+          {gettext("Search for users or remote actors to follow")}
+        </.link>
       </div>
     </div>
+
+    <div :if={@items != []} class="space-y-4" role="feed" aria-label={gettext("Feed")}>
+      <article :for={item <- @items} class="card bg-base-200 shadow-sm">
+        <%!-- Remote feed item --%>
+        <div :if={item.source == :remote} class="card-body p-4">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="avatar">
+              <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center">
+                <img
+                  :if={item.feed_item.remote_actor.avatar_url}
+                  src={item.feed_item.remote_actor.avatar_url}
+                  alt={
+                    item.feed_item.remote_actor.display_name ||
+                      item.feed_item.remote_actor.username
+                  }
+                  class="rounded-full"
+                />
+                <.icon
+                  :if={!item.feed_item.remote_actor.avatar_url}
+                  name="hero-user-circle"
+                  class="size-7 opacity-50"
+                />
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-sm truncate">
+                {item.feed_item.remote_actor.display_name || item.feed_item.remote_actor.username}
+              </div>
+              <div class="text-xs text-base-content/60 truncate">
+                @{item.feed_item.remote_actor.username}@{item.feed_item.remote_actor.domain}
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <span class={[
+                "badge badge-xs",
+                item.feed_item.object_type == "Note" && "badge-info",
+                item.feed_item.object_type in ["Article", "Page"] && "badge-accent"
+              ]}>
+                {item.feed_item.object_type}
+              </span>
+              <time
+                class="text-xs text-base-content/50"
+                datetime={DateTime.to_iso8601(item.feed_item.published_at)}
+              >
+                {Calendar.strftime(item.feed_item.published_at, "%Y-%m-%d %H:%M")}
+              </time>
+            </div>
+          </div>
+
+          <h2 :if={item.feed_item.title} class="font-semibold text-lg mb-1">
+            {item.feed_item.title}
+          </h2>
+
+          <div class="prose prose-sm max-w-none break-words">
+            {Phoenix.HTML.raw(item.feed_item.body_html || "")}
+          </div>
+
+          <div :if={item.feed_item.source_url} class="mt-2">
+            <a
+              href={item.feed_item.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="link link-primary text-sm"
+            >
+              {gettext("View original")}
+              <.icon name="hero-arrow-top-right-on-square-mini" class="size-3 ml-1 inline" />
+            </a>
+          </div>
+        </div>
+
+        <%!-- Local article from followed user --%>
+        <div :if={item.source == :local} class="card-body p-4">
+          <div class="flex items-center gap-3 mb-2">
+            <.avatar user={item.article.user} size={36} />
+            <div class="flex-1 min-w-0">
+              <.link
+                navigate={~p"/users/#{item.article.user.username}"}
+                class="font-bold text-sm truncate link link-hover"
+              >
+                {display_name(item.article.user)}
+              </.link>
+              <div class="text-xs text-base-content/60">
+                <span class="badge badge-info badge-xs">{gettext("Local")}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <span class="badge badge-xs badge-accent">{gettext("Article")}</span>
+              <time
+                class="text-xs text-base-content/50"
+                datetime={Calendar.strftime(item.article.inserted_at, "%Y-%m-%dT%H:%M:%S")}
+              >
+                {Calendar.strftime(item.article.inserted_at, "%Y-%m-%d %H:%M")}
+              </time>
+            </div>
+          </div>
+
+          <.link
+            navigate={~p"/articles/#{item.article.slug}"}
+            class="font-semibold text-lg mb-1 link link-hover"
+          >
+            {item.article.title}
+          </.link>
+
+          <div :if={item.article.boards != []} class="flex gap-1 mt-1">
+            <span :for={board <- item.article.boards} class="badge badge-outline badge-sm">
+              {board.name}
+            </span>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <.pagination
+      :if={@items != []}
+      page={@page}
+      total_pages={@total_pages}
+      path={~p"/feed"}
+    />
   </div>
 
-  <.pagination
-    :if={@items != []}
-    page={@page}
-    total_pages={@total_pages}
-    path={~p"/feed"}
-  />
+  <aside class="hidden lg:block" aria-label={gettext("Profile")}>
+    <div class="card bg-base-200 shadow-sm sticky top-24">
+      <div class="card-body p-4 items-center text-center">
+        <.avatar user={@current_user} size={48} />
+        <h2 class="font-bold truncate max-w-full">{display_name(@current_user)}</h2>
+        <div
+          :if={@current_user.display_name}
+          class="text-sm text-base-content/70 truncate max-w-full"
+        >
+          @{@current_user.username}
+        </div>
+        <span class="badge badge-outline">{translate_role(@current_user.role.name)}</span>
+        <p class="text-sm text-base-content/70">
+          {gettext("Member since")}
+          <time datetime={Calendar.strftime(@current_user.inserted_at, "%Y-%m-%d")}>
+            {Calendar.strftime(@current_user.inserted_at, "%Y-%m-%d")}
+          </time>
+        </p>
+
+        <div class="stats stats-vertical shadow w-full mt-2">
+          <div class="stat py-2">
+            <div class="stat-title">{gettext("Articles")}</div>
+            <div class="stat-value text-lg">{@article_count}</div>
+          </div>
+          <div class="stat py-2">
+            <div class="stat-title">{gettext("Comments")}</div>
+            <div class="stat-value text-lg">{@comment_count}</div>
+          </div>
+        </div>
+
+        <.link navigate={~p"/profile"} class="btn btn-sm btn-outline w-full mt-2">
+          <.icon name="hero-user-circle" class="size-4" />
+          {gettext("Profile")}
+        </.link>
+      </div>
+    </div>
+  </aside>
 </div>

@@ -72,6 +72,15 @@ defmodule BaudrateWeb.FeedLiveTest do
       assert html =~ "Feed"
     end
 
+    test "shows personal info sidebar with user details", %{conn: conn, user: user} do
+      {:ok, _lv, html} = live(conn, "/feed")
+      assert html =~ user.username
+      assert html =~ "Member since"
+      assert html =~ "Articles"
+      assert html =~ "Comments"
+      assert html =~ "/profile"
+    end
+
     test "shows empty state when no items", %{conn: conn} do
       {:ok, _lv, html} = live(conn, "/feed")
       assert html =~ "feed is empty"
