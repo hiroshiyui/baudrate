@@ -243,6 +243,106 @@ defmodule BaudrateWeb.FeedLiveTest do
     end
   end
 
+  describe "comments in feed" do
+    test "shows comments on own articles from other users", %{conn: conn, user: user} do
+      board = create_board()
+      {:ok, %{article: article}} = create_article_raw(user, board, %{title: "My Own Article"})
+      other_user = setup_user("user")
+
+      {:ok, _comment} =
+        Baudrate.Content.create_comment(%{
+          "body" => "Great article!",
+          "article_id" => article.id,
+          "user_id" => other_user.id
+        })
+
+      {:ok, _lv, html} = live(conn, "/feed")
+      assert html =~ "Great article!"
+      assert html =~ "commented on"
+      assert html =~ "My Own Article"
+    end
+
+    test "shows comments on articles user has commented on", %{conn: conn, user: user} do
+      other_author = setup_user("user")
+      {:ok, _} = Federation.create_local_follow(user, other_author)
+      board = create_board()
+
+      {:ok, %{article: article}} =
+        create_article_raw(other_author, board, %{title: "Interesting Discussion"})
+
+      # User comments on the article first
+      {:ok, _} =
+        Baudrate.Content.create_comment(%{
+          "body" => "My initial thought",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      # Third user comments on the same article
+      third_user = setup_user("user")
+
+      {:ok, _} =
+        Baudrate.Content.create_comment(%{
+          "body" => "Another perspective here",
+          "article_id" => article.id,
+          "user_id" => third_user.id
+        })
+
+      {:ok, _lv, html} = live(conn, "/feed")
+      assert html =~ "Another perspective here"
+      assert html =~ "commented on"
+      assert html =~ "Interesting Discussion"
+    end
+
+    test "shows own comments in feed", %{conn: conn, user: user} do
+      board = create_board()
+      {:ok, %{article: article}} = create_article_raw(user, board, %{title: "Self Comment Test"})
+
+      {:ok, _} =
+        Baudrate.Content.create_comment(%{
+          "body" => "My own comment on my article",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, _lv, html} = live(conn, "/feed")
+      assert html =~ "My own comment on my article"
+      assert html =~ "Self Comment Test"
+    end
+
+    test "does not show comments from blocked users", %{conn: conn, user: user} do
+      board = create_board()
+      {:ok, %{article: article}} = create_article_raw(user, board, %{title: "Blocked Test"})
+      blocked_user = setup_user("user")
+
+      {:ok, _} =
+        Baudrate.Content.create_comment(%{
+          "body" => "Comment from blocked person",
+          "article_id" => article.id,
+          "user_id" => blocked_user.id
+        })
+
+      {:ok, _} = Baudrate.Auth.block_user(user, blocked_user)
+
+      {:ok, _lv, html} = live(conn, "/feed")
+      refute html =~ "Comment from blocked person"
+    end
+  end
+
+  defp create_article_raw(user, board, attrs) do
+    uid = System.unique_integer([:positive])
+
+    Baudrate.Content.create_article(
+      %{
+        title: attrs[:title] || "Article #{uid}",
+        body: attrs[:body] || "Body for article #{uid}",
+        slug: "test-article-#{uid}",
+        user_id: user.id
+      },
+      [board.id]
+    )
+  end
+
   defp create_board do
     alias Baudrate.Content.Board
 
