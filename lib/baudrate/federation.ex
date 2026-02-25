@@ -39,6 +39,12 @@ defmodule Baudrate.Federation do
   `published`, `summary` (signature), and `icon` (avatar). Board actors
   include `baudrate:parentBoard` and `baudrate:subBoards`.
 
+  Phase 6 — User-level outbound follows: local users can follow remote
+  actors via `Follow` / `Undo(Follow)` activities. `Accept(Follow)` and
+  `Reject(Follow)` responses update follow state. Following collection
+  endpoint populated with accepted follows. WebFinger client for remote
+  actor discovery.
+
   Private boards are excluded from all federation endpoints — WebFinger,
   actor profiles, outbox, inbox, followers, and audience resolution all
   return 404 or skip private boards. Articles exclusively in private
@@ -77,7 +83,7 @@ defmodule Baudrate.Federation do
   alias Baudrate.Setup
   alias Baudrate.Content
   alias Baudrate.Content.Markdown
-  alias Baudrate.Federation.{Announce, Follower, KeyStore, Publisher}
+  alias Baudrate.Federation.{Announce, Follower, KeyStore, Publisher, RemoteActor, UserFollow}
 
   @as_context "https://www.w3.org/ns/activitystreams"
   @security_context "https://w3id.org/security/v1"
@@ -179,6 +185,79 @@ defmodule Baudrate.Federation do
       ]
     }
   end
+
+  # --- Remote Actor Lookup ---
+
+  @doc """
+  Looks up a remote actor by `@user@domain` handle or actor URL.
+
+  For `@user@domain` handles, performs a WebFinger lookup to discover the
+  actor's AP ID, then resolves via `ActorResolver`. For direct actor URLs,
+  resolves directly.
+
+  Returns `{:ok, %RemoteActor{}}` or `{:error, reason}`.
+  """
+  def lookup_remote_actor("@" <> rest) do
+    lookup_remote_actor(rest)
+  end
+
+  def lookup_remote_actor(query) when is_binary(query) do
+    cond do
+      # Handle @user@domain format
+      String.contains?(query, "@") && !String.contains?(query, "/") ->
+        case String.split(query, "@", parts: 2) do
+          [user, domain] when user != "" and domain != "" ->
+            webfinger_lookup(user, domain)
+
+          _ ->
+            {:error, :invalid_query}
+        end
+
+      # Handle direct actor URL
+      String.starts_with?(query, "https://") ->
+        alias Baudrate.Federation.ActorResolver
+        ActorResolver.resolve(query)
+
+      true ->
+        {:error, :invalid_query}
+    end
+  end
+
+  defp webfinger_lookup(user, domain) do
+    alias Baudrate.Federation.{ActorResolver, HTTPClient}
+
+    resource = "acct:#{user}@#{domain}"
+    url = "https://#{domain}/.well-known/webfinger?resource=#{URI.encode_www_form(resource)}"
+
+    case HTTPClient.get(url, headers: [{"accept", "application/jrd+json"}]) do
+      {:ok, %{body: body}} ->
+        with {:ok, jrd} <- Jason.decode(body),
+             {:ok, actor_url} <- extract_self_link(jrd) do
+          ActorResolver.resolve(actor_url)
+        end
+
+      {:error, reason} ->
+        {:error, {:webfinger_failed, reason}}
+    end
+  end
+
+  defp extract_self_link(%{"links" => links}) when is_list(links) do
+    ap_link =
+      Enum.find(links, fn link ->
+        link["rel"] == "self" &&
+          link["type"] in [
+            "application/activity+json",
+            "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
+          ]
+      end)
+
+    case ap_link do
+      %{"href" => href} when is_binary(href) and href != "" -> {:ok, href}
+      _ -> {:error, :no_self_link}
+    end
+  end
+
+  defp extract_self_link(_), do: {:error, :invalid_jrd}
 
   # --- NodeInfo ---
 
@@ -481,20 +560,65 @@ defmodule Baudrate.Federation do
   # --- Following Collection ---
 
   @doc """
-  Returns an empty `OrderedCollection` for the given actor's following list.
+  Returns a paginated `OrderedCollection` for the given actor's following list.
 
-  Baudrate does not yet support outbound follows, so this always returns
-  an empty collection. Some AP clients (e.g. Mastodon) expect this
-  endpoint to exist.
+  For user actors, returns accepted outbound follows. For board actors,
+  returns an empty collection (boards do not yet support outbound follows).
+
+  Without `?page`, returns the root collection with `totalItems` and `first` link.
+  With `?page=N`, returns an `OrderedCollectionPage` with followed actor URIs.
   """
-  def following_collection(actor_uri) do
-    %{
-      "@context" => @as_context,
-      "id" => "#{actor_uri}/following",
-      "type" => "OrderedCollection",
-      "totalItems" => 0,
-      "orderedItems" => []
-    }
+  def following_collection(actor_uri, page_params \\ %{}) do
+    following_uri = "#{actor_uri}/following"
+
+    case extract_user_from_actor_uri(actor_uri) do
+      {:ok, user} ->
+        case parse_page(page_params) do
+          nil ->
+            total = count_user_follows(user.id)
+            build_collection_root(following_uri, total)
+
+          page ->
+            offset = (page - 1) * @items_per_page
+
+            followed_uris =
+              from(uf in UserFollow,
+                where: uf.user_id == ^user.id and uf.state == "accepted",
+                join: ra in assoc(uf, :remote_actor),
+                order_by: [desc: uf.inserted_at],
+                offset: ^offset,
+                limit: ^@items_per_page,
+                select: ra.ap_id
+              )
+              |> Repo.all()
+
+            has_next = length(followed_uris) == @items_per_page
+            build_collection_page(following_uri, followed_uris, page, has_next)
+        end
+
+      :error ->
+        # Board or site actors — return empty collection
+        %{
+          "@context" => @as_context,
+          "id" => following_uri,
+          "type" => "OrderedCollection",
+          "totalItems" => 0,
+          "orderedItems" => []
+        }
+    end
+  end
+
+  defp extract_user_from_actor_uri(uri) do
+    base = base_url()
+    prefix = "#{base}/ap/users/"
+
+    if String.starts_with?(uri, prefix) do
+      username = String.replace_prefix(uri, prefix, "")
+      user = Repo.get_by(Setup.User, username: username)
+      if user, do: {:ok, user}, else: :error
+    else
+      :error
+    end
   end
 
   # --- Pagination Helpers ---
@@ -709,6 +833,170 @@ defmodule Baudrate.Federation do
   """
   def count_followers(actor_uri) do
     Repo.one(from(f in Follower, where: f.actor_uri == ^actor_uri, select: count(f.id))) || 0
+  end
+
+  # --- User Follows (Outbound) ---
+
+  @doc """
+  Creates a user follow record and returns the generated Follow AP ID.
+
+  Inserts a `UserFollow` with state `"pending"`. The caller is responsible
+  for building and delivering the Follow activity using the returned AP ID.
+
+  Returns `{:ok, %UserFollow{}}` or `{:error, changeset}`.
+  """
+  def create_user_follow(user, remote_actor) do
+    ap_id = "#{actor_uri(:user, user.username)}#follow-#{System.unique_integer([:positive])}"
+
+    %UserFollow{}
+    |> UserFollow.changeset(%{
+      user_id: user.id,
+      remote_actor_id: remote_actor.id,
+      state: "pending",
+      ap_id: ap_id
+    })
+    |> Repo.insert()
+  end
+
+  @doc """
+  Marks an outbound follow as accepted by matching the Follow activity's AP ID.
+
+  Called when an `Accept(Follow)` activity is received from the remote actor.
+  Returns `{:ok, %UserFollow{}}` or `{:error, :not_found}`.
+  """
+  def accept_user_follow(follow_ap_id) when is_binary(follow_ap_id) do
+    case Repo.one(from(uf in UserFollow, where: uf.ap_id == ^follow_ap_id)) do
+      nil ->
+        {:error, :not_found}
+
+      %UserFollow{} = follow ->
+        follow
+        |> UserFollow.changeset(%{
+          state: "accepted",
+          accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Marks an outbound follow as rejected by matching the Follow activity's AP ID.
+
+  Called when a `Reject(Follow)` activity is received from the remote actor.
+  Returns `{:ok, %UserFollow{}}` or `{:error, :not_found}`.
+  """
+  def reject_user_follow(follow_ap_id) when is_binary(follow_ap_id) do
+    case Repo.one(from(uf in UserFollow, where: uf.ap_id == ^follow_ap_id)) do
+      nil ->
+        {:error, :not_found}
+
+      %UserFollow{} = follow ->
+        follow
+        |> UserFollow.changeset(%{
+          state: "rejected",
+          rejected_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Deletes a user follow record (for unfollow).
+
+  Returns `{:ok, %UserFollow{}}` or `{:error, :not_found}`.
+  """
+  def delete_user_follow(user, remote_actor) do
+    case Repo.one(
+           from(uf in UserFollow,
+             where: uf.user_id == ^user.id and uf.remote_actor_id == ^remote_actor.id
+           )
+         ) do
+      nil -> {:error, :not_found}
+      %UserFollow{} = follow -> Repo.delete(follow)
+    end
+  end
+
+  @doc """
+  Returns the user follow record for the given user and remote actor pair, or nil.
+  """
+  def get_user_follow(user_id, remote_actor_id) do
+    Repo.one(
+      from(uf in UserFollow,
+        where: uf.user_id == ^user_id and uf.remote_actor_id == ^remote_actor_id
+      )
+    )
+  end
+
+  @doc """
+  Returns the user follow record matching the given Follow activity AP ID, or nil.
+  """
+  def get_user_follow_by_ap_id(ap_id) do
+    Repo.one(from(uf in UserFollow, where: uf.ap_id == ^ap_id))
+  end
+
+  @doc """
+  Returns true if a follow record exists for the user/remote_actor pair (any state).
+  """
+  def user_follows?(user_id, remote_actor_id) do
+    Repo.exists?(
+      from(uf in UserFollow,
+        where: uf.user_id == ^user_id and uf.remote_actor_id == ^remote_actor_id
+      )
+    )
+  end
+
+  @doc """
+  Returns true if an accepted follow record exists for the user/remote_actor pair.
+  """
+  def user_follows_accepted?(user_id, remote_actor_id) do
+    Repo.exists?(
+      from(uf in UserFollow,
+        where:
+          uf.user_id == ^user_id and uf.remote_actor_id == ^remote_actor_id and
+            uf.state == "accepted"
+      )
+    )
+  end
+
+  @doc """
+  Lists followed remote actors for a user with optional state filter.
+
+  ## Options
+
+    * `:state` — filter by state (e.g., `"accepted"`, `"pending"`)
+
+  Returns a list of `%UserFollow{}` structs with `:remote_actor` preloaded.
+  """
+  def list_user_follows(user_id, opts \\ []) do
+    state = Keyword.get(opts, :state)
+
+    query =
+      from(uf in UserFollow,
+        where: uf.user_id == ^user_id,
+        order_by: [desc: uf.inserted_at],
+        preload: [:remote_actor]
+      )
+
+    query =
+      if state do
+        from(uf in query, where: uf.state == ^state)
+      else
+        query
+      end
+
+    Repo.all(query)
+  end
+
+  @doc """
+  Returns the count of accepted outbound follows for the given user.
+  """
+  def count_user_follows(user_id) do
+    Repo.one(
+      from(uf in UserFollow,
+        where: uf.user_id == ^user_id and uf.state == "accepted",
+        select: count(uf.id)
+      )
+    ) || 0
   end
 
   # --- Article Object ---

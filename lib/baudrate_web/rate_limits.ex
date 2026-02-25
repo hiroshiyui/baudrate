@@ -23,6 +23,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_search_by_ip/1`  | `search:ip:`       | 1 min   | 10    |
   | `check_avatar_change/1` | `avatar_change:`   | 1 hour  | 5     |
   | `check_dm_send/1`       | `dm_send:`         | 1 min   | 20    |
+  | `check_outbound_follow/1`| `outbound_follow:` | 1 hour  | 10    |
   """
 
   require Logger
@@ -79,6 +80,12 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_dm_send(integer()) :: :ok | {:error, :rate_limited}
   def check_dm_send(user_id) do
     check("dm_send:#{user_id}", 60_000, 20, :dm_send)
+  end
+
+  @doc "Outbound follow: 10 per hour per user."
+  @spec check_outbound_follow(integer()) :: :ok | {:error, :rate_limited}
+  def check_outbound_follow(user_id) do
+    check("outbound_follow:#{user_id}", 3_600_000, 10, :outbound_follow)
   end
 
   defp check(bucket, scale_ms, limit, action) do

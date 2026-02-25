@@ -226,8 +226,8 @@ defmodule BaudrateWeb.ActivityPubController do
 
   # --- Following Collection ---
 
-  @doc "Returns the (always empty) following collection for a user."
-  def user_following(conn, %{"username" => username}) do
+  @doc "Returns the paginated following collection for a user."
+  def user_following(conn, %{"username" => username} = params) do
     with true <- Regex.match?(@username_re, username),
          user when not is_nil(user) <-
            Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
@@ -235,7 +235,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
       conn
       |> put_resp_content_type(@activity_json)
-      |> json(Federation.following_collection(actor_uri))
+      |> json(Federation.following_collection(actor_uri, params))
     else
       _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
     end

@@ -11,22 +11,36 @@ Audit date: 2026-02-24
 Allow authenticated users to follow remote Fediverse actors from their account,
 receiving the actor's public posts in a personal feed.
 
-#### Requirements
+#### Phase 1 — Backend Foundation (DONE)
+
+- [x] `user_follows` table (user_id, remote_actor_id, state, ap_id, accepted_at, rejected_at)
+- [x] `UserFollow` schema with state validation (`pending` / `accepted` / `rejected`)
+- [x] `Federation.lookup_remote_actor/1` — WebFinger client + actor resolution
+- [x] Context CRUD: create, accept, reject, delete, list, count, exists checks
+- [x] `Publisher.build_follow/3` and `build_undo_follow/2`
+- [x] `Delivery.deliver_follow/3`
+- [x] `InboxHandler` — wired `Accept(Follow)` and `Reject(Follow)` handlers
+- [x] `following_collection/2` — paginated collection for user actors
+- [x] Rate limit: 10 outbound follows per hour per user
+- [x] Tests for all new code
+
+#### Phase 2 — Discovery UI (TODO)
 
 1. **Discovery** — extend the existing `/search` page to support remote actor
    lookup. When the query matches `@user@domain` or an actor URL, perform a
    WebFinger lookup + actor fetch and display the result alongside local
    search results.
-2. **Follow / Unfollow** — send `Follow` activity to the remote actor's inbox;
-   handle `Accept(Follow)` and `Reject(Follow)` responses (currently stub
-   handlers in `InboxHandler`).
-3. **Undo** — send `Undo(Follow)` when unfollowing.
-4. **Following list** — populate the `/ap/users/:username/following` collection
-   (currently returns empty `OrderedCollection`).
+2. **Follow / Unfollow buttons** — UI to trigger follow/unfollow actions
+3. **Following management page** — list followed actors, unfollow
+4. **i18n** — translations for follow-related UI text
+
+#### Phase 3 — Personal Feed (TODO)
+
 5. **Personal feed** — display incoming `Create` activities from followed actors
    in a user-facing "Following" feed/timeline.
 6. **Inbox routing** — route inbound posts from followed actors to the
    follower's personal feed (distinguish from DMs and board content).
+7. **Handle actor migration** (`Move` activity) for followed actors
 
 #### Shared Remote Actor Lookup
 
@@ -37,17 +51,6 @@ Both user-level and board-level follows share a common
 - `/search` — users discover remote actors to follow personally
 - Board moderator panel (e.g., `/admin/boards/:slug/follows`) — moderators
   discover remote actors to follow on behalf of a board
-
-#### Implementation Notes
-
-- New `user_follows` table (user_id, remote_actor_id, state, ap_id)
-- `state` tracks follow lifecycle: `pending` → `accepted` / `rejected`
-- Wire `Accept(Follow)` and `Reject(Follow)` stub handlers in `InboxHandler`
-  to update follow state
-- UI: follow button on remote actor profiles, "Following" page listing followed
-  actors, personal feed page
-- Rate limit outbound follow requests to prevent abuse
-- Handle actor migration (`Move` activity) for followed actors
 
 ### Board-Level Remote Follows (Moderator-Managed)
 

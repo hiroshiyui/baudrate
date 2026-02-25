@@ -83,6 +83,7 @@ lib/
 │   │   ├── key_store.ex         # RSA-2048 keypair management for actors (generate, ensure, rotate)
 │   │   ├── key_vault.ex         # AES-256-GCM encryption for private keys at rest
 │   │   ├── remote_actor.ex      # RemoteActor schema (cached remote profiles)
+│   │   ├── user_follow.ex       # UserFollow schema (outbound user → remote actor follows)
 │   │   ├── publisher.ex         # ActivityStreams JSON builders for outgoing activities
 │   │   ├── sanitizer.ex         # HTML sanitizer for federated content (Ammonia NIF)
 │   │   ├── delivery_stats.ex    # Delivery queue stats and admin management
@@ -582,7 +583,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - `Delete(actor)` — removes all follower records and soft-deletes all content (articles, comments, DMs) from the deleted actor
 - `Flag` — incoming reports stored in local moderation queue
 - `Block` / `Undo(Block)` — remote actor blocks (logged for informational purposes)
-- `Accept(Follow)` / `Reject(Follow)` — stub handlers (future: outbound follow management)
+- `Accept(Follow)` / `Reject(Follow)` — mark outbound user follows as accepted/rejected
 - `Move` — stub handler (future: account migration)
 
 **Outbound delivery** (via `Publisher` + `Delivery` + `DeliveryWorker`):
@@ -593,6 +594,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - `Create(Note)` — DM to remote actor, delivered to personal inbox (not shared inbox) for privacy
 - `Delete(Tombstone)` — DM deletion, delivered to remote recipient's personal inbox
 - `Block` / `Undo(Block)` — delivered to the blocked actor's inbox when a user blocks/unblocks a remote actor
+- `Follow` / `Undo(Follow)` — sent when a local user follows/unfollows a remote actor
 - `Update(Person/Group/Organization)` — distributed to followers on key rotation or profile changes
 - Delivery targets: followers of the article's author + followers of all public boards
 - Shared inbox deduplication: multiple followers at the same instance → one delivery
@@ -605,9 +607,19 @@ The `Baudrate.Federation` context handles all federation logic.
 - `/ap/users/:username/followers` — paginated `OrderedCollection` of follower URIs
 - `/ap/boards/:slug/followers` — paginated `OrderedCollection` (public boards only, 404 for private)
 
-**Following collection endpoints** (always empty, for AP client compatibility):
-- `/ap/users/:username/following` — empty `OrderedCollection`
-- `/ap/boards/:slug/following` — empty `OrderedCollection` (public boards only)
+**Following collection endpoints** (paginated with `?page=N`):
+- `/ap/users/:username/following` — paginated `OrderedCollection` of accepted followed actor URIs
+- `/ap/boards/:slug/following` — empty `OrderedCollection` (public boards only, boards don't follow)
+
+**User outbound follows** (Phase 1 — backend only, UI in Phase 2):
+- `Federation.lookup_remote_actor/1` — WebFinger + actor fetch by `@user@domain` or actor URL
+- `Federation.create_user_follow/2` — create pending follow record, returns AP ID
+- `Federation.accept_user_follow/1` / `reject_user_follow/1` — state transitions on Accept/Reject
+- `Federation.delete_user_follow/2` — delete follow record (unfollow)
+- `Federation.list_user_follows/2` — list follows with optional state filter
+- `Publisher.build_follow/3` / `build_undo_follow/2` — build Follow/Undo(Follow) activities
+- `Delivery.deliver_follow/3` — enqueue follow/unfollow delivery to remote inbox
+- Rate limited: 10 outbound follows per hour per user (`RateLimits.check_outbound_follow/1`)
 
 **Mastodon/Lemmy compatibility:**
 - `attributedTo` arrays — extracts first binary URI for validation

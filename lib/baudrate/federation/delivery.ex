@@ -226,6 +226,18 @@ defmodule Baudrate.Federation.Delivery do
     enqueue(flag_json, site_uri, [inbox])
   end
 
+  # --- Follow Delivery ---
+
+  @doc """
+  Delivers a Follow or Undo(Follow) activity to a remote actor's inbox.
+
+  Uses the following user's actor as the sender.
+  """
+  def deliver_follow(follow_json, remote_actor, actor_uri) do
+    inbox = remote_actor.shared_inbox || remote_actor.inbox
+    enqueue(follow_json, actor_uri, [inbox])
+  end
+
   # --- Block Delivery ---
 
   @doc """

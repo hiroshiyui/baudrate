@@ -451,7 +451,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
   # --- Following Collection Endpoints ---
 
   describe "GET /ap/users/:username/following" do
-    test "returns empty OrderedCollection", %{conn: conn} do
+    test "returns paginated OrderedCollection with zero items", %{conn: conn} do
       user = setup_user("user")
 
       conn = conn |> json_conn() |> get("/ap/users/#{user.username}/following")
@@ -459,7 +459,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       assert body["type"] == "OrderedCollection"
       assert body["totalItems"] == 0
-      assert body["orderedItems"] == []
+      assert body["first"] =~ "/following?page=1"
       assert body["id"] =~ "/following"
     end
 

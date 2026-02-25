@@ -354,25 +354,107 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
-  # --- Accept(Follow) — future: mark outbound follow as accepted ---
+  # --- Accept(Follow) — mark outbound follow as accepted ---
 
   defp dispatch(
-         %{"type" => "Accept", "object" => %{"type" => "Follow"}},
+         %{"type" => "Accept", "object" => %{"type" => "Follow"} = follow_obj},
          remote_actor,
          _target
        ) do
-    Logger.info("federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id}")
+    follow_id = extract_follow_id(follow_obj)
+
+    if follow_id do
+      case Federation.accept_user_follow(follow_id) do
+        {:ok, _follow} ->
+          Logger.info(
+            "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id}"
+          )
+
+        {:error, :not_found} ->
+          Logger.info(
+            "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id} (not found)"
+          )
+      end
+    else
+      Logger.info(
+        "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} (no follow id)"
+      )
+    end
+
     :ok
   end
 
-  # --- Reject(Follow) — future: mark outbound follow as rejected ---
+  # Accept where object is a string URI (some implementations send just the Follow ID)
+  defp dispatch(
+         %{"type" => "Accept", "object" => object_uri},
+         remote_actor,
+         _target
+       )
+       when is_binary(object_uri) do
+    case Federation.accept_user_follow(object_uri) do
+      {:ok, _follow} ->
+        Logger.info(
+          "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} follow=#{object_uri}"
+        )
+
+      {:error, :not_found} ->
+        Logger.info(
+          "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} follow=#{object_uri} (not found)"
+        )
+    end
+
+    :ok
+  end
+
+  # --- Reject(Follow) — mark outbound follow as rejected ---
 
   defp dispatch(
-         %{"type" => "Reject", "object" => %{"type" => "Follow"}},
+         %{"type" => "Reject", "object" => %{"type" => "Follow"} = follow_obj},
          remote_actor,
          _target
        ) do
-    Logger.info("federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id}")
+    follow_id = extract_follow_id(follow_obj)
+
+    if follow_id do
+      case Federation.reject_user_follow(follow_id) do
+        {:ok, _follow} ->
+          Logger.info(
+            "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id}"
+          )
+
+        {:error, :not_found} ->
+          Logger.info(
+            "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id} (not found)"
+          )
+      end
+    else
+      Logger.info(
+        "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} (no follow id)"
+      )
+    end
+
+    :ok
+  end
+
+  # Reject where object is a string URI
+  defp dispatch(
+         %{"type" => "Reject", "object" => object_uri},
+         remote_actor,
+         _target
+       )
+       when is_binary(object_uri) do
+    case Federation.reject_user_follow(object_uri) do
+      {:ok, _follow} ->
+        Logger.info(
+          "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} follow=#{object_uri}"
+        )
+
+      {:error, :not_found} ->
+        Logger.info(
+          "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} follow=#{object_uri} (not found)"
+        )
+    end
+
     :ok
   end
 
@@ -801,6 +883,11 @@ defmodule Baudrate.Federation.InboxHandler do
       Keyword.get(opts, :constraint) == :unique
     end)
   end
+
+  # --- Follow helpers (Accept/Reject) ---
+
+  defp extract_follow_id(%{"id" => id}) when is_binary(id) and id != "", do: id
+  defp extract_follow_id(_), do: nil
 
   # --- Flag helpers ---
 

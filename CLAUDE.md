@@ -40,7 +40,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 
 - **Auth** (`lib/baudrate/auth.ex`) — authentication (login, registration, TOTP, sessions, password reset), user management (avatars, invite codes, blocks, mutes)
 - **Content** (`lib/baudrate/content.ex`) — boards, articles, comments, likes, permissions, board moderators, search
-- **Federation** (`lib/baudrate/federation.ex`) — AP actors, outbox, followers, announces, delivery
+- **Federation** (`lib/baudrate/federation.ex`) — AP actors, outbox, followers, announces, delivery, user outbound follows
 - **Messaging** (`lib/baudrate/messaging.ex`) — 1-on-1 direct messages, conversations, DM access control, federation
 - **Setup** (`lib/baudrate/setup.ex`) — first-run wizard, RBAC seeding, settings, role level utilities
 - **Moderation** (`lib/baudrate/moderation.ex`) — reports, resolve/dismiss, audit log
