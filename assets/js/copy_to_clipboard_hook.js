@@ -2,8 +2,9 @@
  * CopyToClipboardHook — LiveView JS hook for one-click clipboard copy.
  *
  * Reads the text to copy from `data-copy-text` on the hook element.
- * On click, copies the text and briefly swaps the element's `title`
- * attribute to the value of `data-copied-label` as visual feedback.
+ * On click, copies the text and briefly swaps the element's `title` and
+ * `aria-label` attributes to the value of `data-copied-label` as visual
+ * and screen reader feedback.
  */
 const CopyToClipboardHook = {
   mounted() {
@@ -16,12 +17,15 @@ const CopyToClipboardHook = {
         const copiedLabel = this.el.dataset.copiedLabel
         if (!copiedLabel) return
 
-        const original = this.el.getAttribute("title")
+        const originalTitle = this.el.getAttribute("title")
+        const originalAriaLabel = this.el.getAttribute("aria-label")
         this.el.setAttribute("title", copiedLabel)
+        this.el.setAttribute("aria-label", copiedLabel)
         this.el.classList.add("btn-success")
 
         setTimeout(() => {
-          this.el.setAttribute("title", original || "")
+          this.el.setAttribute("title", originalTitle || "")
+          this.el.setAttribute("aria-label", originalAriaLabel || "")
           this.el.classList.remove("btn-success")
         }, 2000)
       })

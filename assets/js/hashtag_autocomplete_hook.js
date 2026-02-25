@@ -114,6 +114,7 @@ const HashtagAutocompleteHook = {
 
       this.el.appendChild(this.dropdown)
     }
+    this.textarea.setAttribute("aria-expanded", "true")
     this.renderDropdown()
   },
 
@@ -143,7 +144,10 @@ const HashtagAutocompleteHook = {
     if (this.dropdown) {
       this.dropdown.remove()
       this.dropdown = null
-      if (this.textarea) this.textarea.removeAttribute("aria-controls")
+      if (this.textarea) {
+        this.textarea.removeAttribute("aria-controls")
+        this.textarea.setAttribute("aria-expanded", "false")
+      }
     }
     this.suggestions = []
     this.selectedIndex = -1
