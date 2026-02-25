@@ -503,6 +503,35 @@ defmodule Baudrate.AuthTest do
     end
   end
 
+  describe "update_dm_access/2" do
+    test "sets dm_access to 'anyone'" do
+      user = create_user("user")
+      assert {:ok, updated} = Auth.update_dm_access(user, "anyone")
+      assert updated.dm_access == "anyone"
+      assert Repo.get!(Setup.User, user.id).dm_access == "anyone"
+    end
+
+    test "sets dm_access to 'followers'" do
+      user = create_user("user")
+      assert {:ok, updated} = Auth.update_dm_access(user, "followers")
+      assert updated.dm_access == "followers"
+      assert Repo.get!(Setup.User, user.id).dm_access == "followers"
+    end
+
+    test "sets dm_access to 'nobody'" do
+      user = create_user("user")
+      assert {:ok, updated} = Auth.update_dm_access(user, "nobody")
+      assert updated.dm_access == "nobody"
+      assert Repo.get!(Setup.User, user.id).dm_access == "nobody"
+    end
+
+    test "returns error changeset for invalid value" do
+      user = create_user("user")
+      assert {:error, changeset} = Auth.update_dm_access(user, "invalid")
+      assert %{dm_access: _} = errors_on(changeset)
+    end
+  end
+
   describe "block_user/2 and unblock_user/2" do
     test "blocks and unblocks a local user" do
       user = create_user("user")
