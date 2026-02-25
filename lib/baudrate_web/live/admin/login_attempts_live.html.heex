@@ -37,8 +37,8 @@
       <tbody>
         <tr :for={attempt <- @attempts}>
           <td class="whitespace-nowrap text-sm">
-            <time datetime={Calendar.strftime(attempt.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
-              {Calendar.strftime(attempt.inserted_at, "%Y-%m-%d %H:%M:%S")}
+            <time datetime={datetime_attr(attempt.inserted_at)}>
+              {format_datetime(attempt.inserted_at, "%Y-%m-%d %H:%M:%S")}
             </time>
           </td>
           <td>{attempt.username}</td>

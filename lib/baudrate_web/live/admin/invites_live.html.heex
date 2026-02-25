@@ -64,15 +64,15 @@
           </td>
           <td>
             <span :if={code.expires_at}>
-              <time datetime={Calendar.strftime(code.expires_at, "%Y-%m-%dT%H:%M:%S")}>
-                {Calendar.strftime(code.expires_at, "%Y-%m-%d %H:%M")}
+              <time datetime={datetime_attr(code.expires_at)}>
+                {format_datetime(code.expires_at)}
               </time>
             </span>
             <span :if={!code.expires_at} class="text-base-content/50">{gettext("Never")}</span>
           </td>
           <td>
-            <time datetime={Calendar.strftime(code.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
-              {Calendar.strftime(code.inserted_at, "%Y-%m-%d %H:%M")}
+            <time datetime={datetime_attr(code.inserted_at)}>
+              {format_datetime(code.inserted_at)}
             </time>
           </td>
           <td>

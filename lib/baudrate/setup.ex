@@ -27,8 +27,8 @@ defmodule Baudrate.Setup do
   ## Admin Settings
 
   `change_settings/1` and `save_settings/1` provide virtual-changeset-based
-  management of site-wide settings (site name, registration mode, federation
-  toggle, domain blocklist) used by the admin settings UI.
+  management of site-wide settings (site name, registration mode, timezone,
+  federation toggle, domain blocklist) used by the admin settings UI.
 
   `federation_enabled?/0` returns whether federation is active (defaults to true).
 
@@ -219,7 +219,8 @@ defmodule Baudrate.Setup do
   @valid_federation_modes ~w(blocklist allowlist)
 
   @doc """
-  Returns a virtual changeset for admin settings (site_name, registration_mode).
+  Returns a virtual changeset for admin settings (site_name, registration_mode,
+  timezone, federation options).
 
   Used by `Admin.SettingsLive` for form validation.
   """
@@ -227,6 +228,7 @@ defmodule Baudrate.Setup do
     types = %{
       site_name: :string,
       registration_mode: :string,
+      timezone: :string,
       ap_domain_blocklist: :string,
       ap_federation_enabled: :string,
       ap_federation_mode: :string,
@@ -238,6 +240,7 @@ defmodule Baudrate.Setup do
     defaults = %{
       site_name: get_setting("site_name") || "",
       registration_mode: registration_mode(),
+      timezone: get_setting("timezone") || "Etc/UTC",
       ap_domain_blocklist: get_setting("ap_domain_blocklist") || "",
       ap_federation_enabled: get_setting("ap_federation_enabled") || "true",
       ap_federation_mode: get_setting("ap_federation_mode") || "blocklist",
@@ -254,10 +257,21 @@ defmodule Baudrate.Setup do
     |> Ecto.Changeset.validate_inclusion(:ap_federation_enabled, ["true", "false"])
     |> Ecto.Changeset.validate_inclusion(:ap_federation_mode, @valid_federation_modes)
     |> Ecto.Changeset.validate_inclusion(:ap_authorized_fetch, ["true", "false"])
+    |> validate_timezone()
+  end
+
+  defp validate_timezone(changeset) do
+    Ecto.Changeset.validate_change(changeset, :timezone, fn :timezone, tz ->
+      if tz in Baudrate.Timezone.identifiers() do
+        []
+      else
+        [timezone: "is not a valid IANA timezone"]
+      end
+    end)
   end
 
   @doc """
-  Validates and persists admin settings.
+  Validates and persists admin settings (including timezone).
 
   Returns `{:ok, changes}` on success or `{:error, changeset}` on validation failure.
   """
@@ -270,6 +284,7 @@ defmodule Baudrate.Setup do
       Repo.transaction(fn ->
         set_setting("site_name", changes.site_name)
         set_setting("registration_mode", changes.registration_mode)
+        set_setting("timezone", changes.timezone || "Etc/UTC")
         set_setting("ap_domain_blocklist", changes.ap_domain_blocklist || "")
         set_setting("ap_federation_enabled", changes.ap_federation_enabled || "true")
         set_setting("ap_federation_mode", changes.ap_federation_mode || "blocklist")

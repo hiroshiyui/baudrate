@@ -77,6 +77,24 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
     assert Setup.get_setting("site_name") == "Test Site"
   end
 
+  test "admin can save timezone setting", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_user(conn, admin)
+
+    {:ok, lv, html} = live(conn, "/admin/settings")
+    assert html =~ "Timezone"
+
+    html =
+      lv
+      |> form("#settings-form",
+        settings: %{site_name: "Test Site", timezone: "Asia/Taipei"}
+      )
+      |> render_submit()
+
+    assert html =~ "Settings saved successfully"
+    assert Setup.get_setting("timezone") == "Asia/Taipei"
+  end
+
   describe "EUA management" do
     test "EUA textarea renders on settings page", %{conn: conn} do
       admin = setup_user("admin")

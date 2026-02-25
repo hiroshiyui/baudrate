@@ -215,6 +215,7 @@ defmodule BaudrateWeb.HelpersTest do
     end
   end
 
+
   describe "display_name/1" do
     test "returns display_name when set for User" do
       user = %Baudrate.Setup.User{username: "alice", display_name: "Alice Wonderland"}

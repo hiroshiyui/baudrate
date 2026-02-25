@@ -90,7 +90,7 @@ defmodule BaudrateWeb.ConversationsLive do
       diff < 3600 -> gettext("%{count}m ago", count: div(diff, 60))
       diff < 86_400 -> gettext("%{count}h ago", count: div(diff, 3600))
       diff < 604_800 -> gettext("%{count}d ago", count: div(diff, 86_400))
-      true -> Calendar.strftime(datetime, "%Y-%m-%d")
+      true -> BaudrateWeb.Helpers.format_date(datetime)
     end
   end
 end

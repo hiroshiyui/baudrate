@@ -3,8 +3,8 @@ defmodule BaudrateWeb.Admin.SettingsLive do
   LiveView for managing site-wide admin settings.
 
   Only accessible to users with the `"admin"` role. Provides a form
-  to edit the site name, registration mode, federation settings, and
-  End User Agreement, backed by the `Baudrate.Setup` context.
+  to edit the site name, timezone, registration mode, federation settings,
+  and End User Agreement, backed by the `Baudrate.Setup` context.
   """
 
   use BaudrateWeb, :live_view
@@ -18,11 +18,16 @@ defmodule BaudrateWeb.Admin.SettingsLive do
     changeset = Setup.change_settings()
     eua = Setup.get_eua() || ""
 
+    timezone_options =
+      Baudrate.Timezone.identifiers()
+      |> Enum.map(&{&1, &1})
+
     socket =
       socket
       |> assign(form: to_form(changeset, as: :settings))
       |> assign(eua: eua)
       |> assign(eua_form: to_form(%{"eua" => eua}, as: :eua_settings))
+      |> assign(timezone_options: timezone_options)
       |> assign(page_title: gettext("Admin Settings"))
 
     {:ok, socket}

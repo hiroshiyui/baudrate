@@ -74,6 +74,8 @@ config :baudrate, Baudrate.Federation,
   # 30 days in seconds (matches actor_cache_ttl convention)
   stale_actor_max_age: 2_592_000
 
+config :elixir, :time_zone_database, Tz.TimeZoneDatabase
+
 config :gettext, default_locale: "en"
 config :baudrate, BaudrateWeb.Gettext, default_locale: "en", locales: ~w(en zh_TW)
 

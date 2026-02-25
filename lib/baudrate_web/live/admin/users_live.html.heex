@@ -182,8 +182,8 @@
             </span>
           </td>
           <td>
-            <time datetime={Calendar.strftime(user.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
-              {Calendar.strftime(user.inserted_at, "%Y-%m-%d %H:%M")}
+            <time datetime={datetime_attr(user.inserted_at)}>
+              {format_datetime(user.inserted_at)}
             </time>
           </td>
           <td class="flex gap-1">

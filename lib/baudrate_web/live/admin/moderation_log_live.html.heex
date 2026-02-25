@@ -42,8 +42,8 @@
       <tbody>
         <tr :for={log <- @logs}>
           <td class="whitespace-nowrap text-sm">
-            <time datetime={Calendar.strftime(log.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
-              {Calendar.strftime(log.inserted_at, "%Y-%m-%d %H:%M")}
+            <time datetime={datetime_attr(log.inserted_at)}>
+              {format_datetime(log.inserted_at)}
             </time>
           </td>
           <td>

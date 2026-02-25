@@ -136,8 +136,8 @@
       <div>
         <div class="text-sm text-base-content/70">{gettext("Member Since")}</div>
         <div class="text-lg font-semibold">
-          <time datetime={Calendar.strftime(@current_user.inserted_at, "%Y-%m-%d")}>
-            {Calendar.strftime(@current_user.inserted_at, "%Y-%m-%d")}
+          <time datetime={format_date(@current_user.inserted_at)}>
+            {format_date(@current_user.inserted_at)}
           </time>
         </div>
       </div>

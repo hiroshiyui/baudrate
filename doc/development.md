@@ -95,11 +95,12 @@ lib/
 │   │   ├── log.ex               # ModerationLog schema (audit trail of moderation actions)
 │   │   └── report.ex            # Report schema (article, comment, remote actor targets)
 │   ├── setup.ex                 # Setup context: first-run wizard, RBAC seeding, settings
+│   ├── timezone.ex              # IANA timezone identifiers (compiled from tz library data)
 │   └── setup/
 │       ├── permission.ex        # Permission schema (scope.action naming)
 │       ├── role.ex              # Role schema (admin/moderator/user/guest)
 │       ├── role_permission.ex   # Join table: role ↔ permission
-│       ├── setting.ex           # Key-value settings (site_name, setup_completed, etc.)
+│       ├── setting.ex           # Key-value settings (site_name, timezone, setup_completed, etc.)
 │       └── user.ex              # User schema with password, TOTP, avatar, display_name, status, signature fields
 ├── baudrate_web/                # Web layer
 │   ├── components/
@@ -125,7 +126,7 @@ lib/
 │   │   │   ├── moderation_live.ex     # Moderation queue (reports)
 │   │   │   ├── moderation_log_live.ex # Moderation audit log (filterable, paginated)
 │   │   │   ├── pending_users_live.ex  # Admin approval of pending registrations
-│   │   │   ├── settings_live.ex       # Admin site settings (name, registration, federation)
+│   │   │   ├── settings_live.ex       # Admin site settings (name, timezone, registration, federation)
 │   │   │   └── users_live.ex          # Admin user management (paginated, filterable, ban, unban, role change)
 │   │   ├── article_edit_live.ex  # Article editing form
 │   │   ├── article_history_live.ex # Article edit history with inline diffs

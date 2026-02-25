@@ -100,7 +100,7 @@
                 class="text-xs text-base-content/50"
                 datetime={DateTime.to_iso8601(item.feed_item.published_at)}
               >
-                {Calendar.strftime(item.feed_item.published_at, "%Y-%m-%d %H:%M")}
+                {format_datetime(item.feed_item.published_at)}
               </time>
             </div>
           </div>
@@ -145,9 +145,9 @@
               <span class="badge badge-xs badge-accent">{gettext("Article")}</span>
               <time
                 class="text-xs text-base-content/50"
-                datetime={Calendar.strftime(item.article.inserted_at, "%Y-%m-%dT%H:%M:%S")}
+                datetime={datetime_attr(item.article.inserted_at)}
               >
-                {Calendar.strftime(item.article.inserted_at, "%Y-%m-%d %H:%M")}
+                {format_datetime(item.article.inserted_at)}
               </time>
             </div>
           </div>
@@ -200,9 +200,9 @@
               <span class="badge badge-xs badge-secondary">{gettext("Comment")}</span>
               <time
                 class="text-xs text-base-content/50"
-                datetime={Calendar.strftime(item.comment.inserted_at, "%Y-%m-%dT%H:%M:%S")}
+                datetime={datetime_attr(item.comment.inserted_at)}
               >
-                {Calendar.strftime(item.comment.inserted_at, "%Y-%m-%d %H:%M")}
+                {format_datetime(item.comment.inserted_at)}
               </time>
             </div>
           </div>
@@ -246,8 +246,8 @@
         <span class="badge badge-outline">{translate_role(@current_user.role.name)}</span>
         <p class="text-sm text-base-content/70">
           {gettext("Member since")}
-          <time datetime={Calendar.strftime(@current_user.inserted_at, "%Y-%m-%d")}>
-            {Calendar.strftime(@current_user.inserted_at, "%Y-%m-%d")}
+          <time datetime={format_date(@current_user.inserted_at)}>
+            {format_date(@current_user.inserted_at)}
           </time>
         </p>
 

@@ -180,8 +180,8 @@
           <span :if={article.user}>
             {gettext("by %{author}", author: display_name(article.user))} &middot;
           </span>
-          <time datetime={Calendar.strftime(article.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
-            {Calendar.strftime(article.inserted_at, "%Y-%m-%d %H:%M")}
+          <time datetime={datetime_attr(article.inserted_at)}>
+            {format_datetime(article.inserted_at)}
           </time>
           <span :if={article.boards != []}>&middot;</span>
           <span :for={board <- article.boards} class="badge badge-outline badge-sm ml-1">
@@ -209,8 +209,8 @@
           <span :if={comment.remote_actor}>
             {display_name(comment.remote_actor)} &middot;
           </span>
-          <time datetime={Calendar.strftime(comment.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
-            {Calendar.strftime(comment.inserted_at, "%Y-%m-%d %H:%M")}
+          <time datetime={datetime_attr(comment.inserted_at)}>
+            {format_datetime(comment.inserted_at)}
           </time>
         </div>
       </div>

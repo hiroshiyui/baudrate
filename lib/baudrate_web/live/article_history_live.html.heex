@@ -42,8 +42,8 @@
                 </span>
               </td>
               <td>
-                <time datetime={Calendar.strftime(revision.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
-                  {Calendar.strftime(revision.inserted_at, "%Y-%m-%d %H:%M")}
+                <time datetime={datetime_attr(revision.inserted_at)}>
+                  {format_datetime(revision.inserted_at)}
                 </time>
               </td>
               <td>

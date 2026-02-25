@@ -7,6 +7,65 @@ defmodule BaudrateWeb.Helpers do
   use Gettext, backend: BaudrateWeb.Gettext
 
   @doc """
+  Formats a NaiveDateTime/DateTime in the site's configured timezone.
+
+  Uses the `timezone` setting from `Baudrate.Setup`. Falls back to `"Etc/UTC"`
+  when the setting is not configured.
+
+  ## Examples
+
+      iex> BaudrateWeb.Helpers.format_datetime(~N[2026-01-15 08:30:00])
+      "2026-01-15 08:30"
+
+      iex> BaudrateWeb.Helpers.format_datetime(~N[2026-01-15 08:30:00], "%Y-%m-%d")
+      "2026-01-15"
+  """
+  def format_datetime(datetime, format \\ "%Y-%m-%d %H:%M")
+
+  def format_datetime(nil, _format), do: ""
+
+  def format_datetime(%NaiveDateTime{} = ndt, format) do
+    tz = Baudrate.Setup.get_setting("timezone") || "Etc/UTC"
+
+    ndt
+    |> DateTime.from_naive!("Etc/UTC")
+    |> DateTime.shift_zone!(tz)
+    |> Calendar.strftime(format)
+  end
+
+  def format_datetime(%DateTime{} = dt, format) do
+    tz = Baudrate.Setup.get_setting("timezone") || "Etc/UTC"
+
+    dt
+    |> DateTime.shift_zone!(tz)
+    |> Calendar.strftime(format)
+  end
+
+  @doc """
+  Returns an ISO datetime string for the HTML `datetime` attribute.
+
+  ## Examples
+
+      iex> BaudrateWeb.Helpers.datetime_attr(~N[2026-01-15 08:30:00])
+      "2026-01-15T08:30:00"
+  """
+  def datetime_attr(datetime) do
+    format_datetime(datetime, "%Y-%m-%dT%H:%M:%S")
+  end
+
+  @doc """
+  Formats a date only (no time portion).
+
+  ## Examples
+
+      iex> BaudrateWeb.Helpers.format_date(~N[2026-01-15 08:30:00])
+      "2026-01-15"
+  """
+  def format_date(datetime) do
+    format_datetime(datetime, "%Y-%m-%d")
+  end
+
+  @doc """
   Safely parses a string parameter to a positive integer.
   Returns `{:ok, integer}` on success, `:error` on failure.
 

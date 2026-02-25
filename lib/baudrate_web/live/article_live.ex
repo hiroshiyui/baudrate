@@ -303,8 +303,8 @@ defmodule BaudrateWeb.ArticleLive do
             {display_name(@comment.remote_actor)}@{@comment.remote_actor.domain}
           </span>
           <span>&middot;</span>
-          <time datetime={Calendar.strftime(@comment.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
-            {Calendar.strftime(@comment.inserted_at, "%Y-%m-%d %H:%M")}
+          <time datetime={datetime_attr(@comment.inserted_at)}>
+            {format_datetime(@comment.inserted_at)}
           </time>
 
           <button

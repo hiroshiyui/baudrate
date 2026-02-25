@@ -37,6 +37,18 @@ defmodule BaudrateWeb.CoreComponents do
   """
   defdelegate display_name(entity), to: BaudrateWeb.Helpers
 
+  @doc "Formats a datetime in the site's configured timezone. See `BaudrateWeb.Helpers.format_datetime/2`."
+  defdelegate format_datetime(datetime, format), to: BaudrateWeb.Helpers
+
+  @doc "Formats a datetime in the site's configured timezone with default format. See `BaudrateWeb.Helpers.format_datetime/1`."
+  defdelegate format_datetime(datetime), to: BaudrateWeb.Helpers
+
+  @doc "Returns an ISO datetime string for HTML datetime attribute. See `BaudrateWeb.Helpers.datetime_attr/1`."
+  defdelegate datetime_attr(datetime), to: BaudrateWeb.Helpers
+
+  @doc "Formats date only (no time). See `BaudrateWeb.Helpers.format_date/1`."
+  defdelegate format_date(datetime), to: BaudrateWeb.Helpers
+
   @doc """
   Renders flash notices.
 

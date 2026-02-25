@@ -11,7 +11,7 @@ msgstr ""
 "Language: en\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: lib/baudrate_web/components/core_components.ex:424
+#: lib/baudrate_web/components/core_components.ex:436
 #: lib/baudrate_web/live/admin/boards_live.html.heex:201
 #: lib/baudrate_web/live/admin/federation_live.html.heex:38
 #: lib/baudrate_web/live/admin/federation_live.html.heex:98
@@ -41,7 +41,7 @@ msgstr ""
 msgid "We can't find the internet"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:80
+#: lib/baudrate_web/components/core_components.ex:92
 #: lib/baudrate_web/live/profile_live.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "close"
@@ -360,7 +360,7 @@ msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:88
 #: lib/baudrate_web/live/admin/federation_live.html.heex:230
-#: lib/baudrate_web/live/admin/settings_live.html.heex:24
+#: lib/baudrate_web/live/admin/settings_live.html.heex:30
 #: lib/baudrate_web/live/profile_live.html.heex:126
 #, elixir-autogen, elixir-format
 msgid "Disabled"
@@ -379,7 +379,7 @@ msgstr ""
 #: lib/baudrate_web/live/admin/boards_live.html.heex:88
 #: lib/baudrate_web/live/admin/federation_live.html.heex:172
 #: lib/baudrate_web/live/admin/federation_live.html.heex:230
-#: lib/baudrate_web/live/admin/settings_live.html.heex:23
+#: lib/baudrate_web/live/admin/settings_live.html.heex:29
 #: lib/baudrate_web/live/profile_live.html.heex:121
 #, elixir-autogen, elixir-format
 msgid "Enabled"
@@ -537,7 +537,7 @@ msgid "Remove Avatar"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:103
-#: lib/baudrate_web/live/admin/settings_live.html.heex:83
+#: lib/baudrate_web/live/admin/settings_live.html.heex:89
 #: lib/baudrate_web/live/profile_live.html.heex:74
 #, elixir-autogen, elixir-format
 msgid "Save"
@@ -616,7 +616,7 @@ msgid "Failed to approve user."
 msgstr ""
 
 #: lib/baudrate_web/live/article_new_live.ex:167
-#: lib/baudrate_web/live/feed_live.ex:130
+#: lib/baudrate_web/live/feed_live.ex:131
 #, elixir-autogen, elixir-format
 msgid "Failed to create article."
 msgstr ""
@@ -749,32 +749,32 @@ msgstr ""
 msgid "Admin"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.ex:26
+#: lib/baudrate_web/live/admin/settings_live.ex:31
 #: lib/baudrate_web/live/admin/settings_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Admin Settings"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:14
+#: lib/baudrate_web/live/admin/settings_live.html.heex:20
 #, elixir-autogen, elixir-format
 msgid "Approval Required"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:97
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:13
-#: lib/baudrate_web/live/admin/settings_live.html.heex:13
+#: lib/baudrate_web/live/admin/settings_live.html.heex:19
 #: lib/baudrate_web/live/board_follows_live.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "Open"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:11
+#: lib/baudrate_web/live/admin/settings_live.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "Registration Mode"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:82
-#: lib/baudrate_web/live/admin/settings_live.html.heex:108
+#: lib/baudrate_web/live/admin/settings_live.html.heex:88
+#: lib/baudrate_web/live/admin/settings_live.html.heex:114
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr ""
@@ -785,7 +785,7 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.ex:48
+#: lib/baudrate_web/live/admin/settings_live.ex:53
 #, elixir-autogen, elixir-format
 msgid "Settings saved successfully."
 msgstr ""
@@ -805,12 +805,12 @@ msgstr ""
 msgid "Actors"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:48
+#: lib/baudrate_web/live/admin/settings_live.html.heex:54
 #, elixir-autogen, elixir-format
 msgid "Allowed Domains (federation)"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:33
+#: lib/baudrate_web/live/admin/settings_live.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Allowlist (allow only specific domains)"
 msgstr ""
@@ -836,12 +836,12 @@ msgstr ""
 msgid "Block all federation with %{domain}?"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:39
+#: lib/baudrate_web/live/admin/settings_live.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "Blocked Domains (federation)"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:32
+#: lib/baudrate_web/live/admin/settings_live.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "Blocklist (block specific domains)"
 msgstr ""
@@ -856,12 +856,12 @@ msgstr ""
 msgid "Browse the boards below, or"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:52
+#: lib/baudrate_web/live/admin/settings_live.html.heex:58
 #, elixir-autogen, elixir-format
 msgid "Comma-separated list of domains to allow. Only used in allowlist mode. When empty, all domains are blocked."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:43
+#: lib/baudrate_web/live/admin/settings_live.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "Comma-separated list of domains to block from federation."
 msgstr ""
@@ -985,7 +985,7 @@ msgstr ""
 #: lib/baudrate_web/live/admin/boards_live.html.heex:200
 #: lib/baudrate_web/live/admin/federation_live.html.heex:164
 #: lib/baudrate_web/live/admin/federation_live.html.heex:208
-#: lib/baudrate_web/live/admin/settings_live.html.heex:21
+#: lib/baudrate_web/live/admin/settings_live.html.heex:27
 #, elixir-autogen, elixir-format
 msgid "Federation"
 msgstr ""
@@ -1000,7 +1000,7 @@ msgstr ""
 msgid "Federation Dashboard"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:30
+#: lib/baudrate_web/live/admin/settings_live.html.heex:36
 #, elixir-autogen, elixir-format
 msgid "Federation Mode"
 msgstr ""
@@ -1258,7 +1258,7 @@ msgstr ""
 msgid "Edit Article"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:107
+#: lib/baudrate_web/helpers.ex:166
 #, elixir-autogen, elixir-format
 msgid "File type not accepted"
 msgstr ""
@@ -1313,7 +1313,7 @@ msgstr ""
 msgid "Search..."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:108
+#: lib/baudrate_web/helpers.ex:167
 #, elixir-autogen, elixir-format
 msgid "Upload error"
 msgstr ""
@@ -1624,38 +1624,38 @@ msgstr ""
 msgid "User not found."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:151
+#: lib/baudrate_web/helpers.ex:210
 #, elixir-autogen, elixir-format
 msgid "active"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:113
+#: lib/baudrate_web/helpers.ex:172
 #, elixir-autogen, elixir-format
 msgid "admin"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:153
+#: lib/baudrate_web/helpers.ex:212
 #, elixir-autogen, elixir-format
 msgid "banned"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:116
+#: lib/baudrate_web/helpers.ex:175
 #, elixir-autogen, elixir-format
 msgid "guest"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:114
+#: lib/baudrate_web/helpers.ex:173
 #, elixir-autogen, elixir-format
 msgid "moderator"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:152
-#: lib/baudrate_web/helpers.ex:179
+#: lib/baudrate_web/helpers.ex:211
+#: lib/baudrate_web/helpers.ex:238
 #, elixir-autogen, elixir-format
 msgid "pending"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:115
+#: lib/baudrate_web/helpers.ex:174
 #, elixir-autogen, elixir-format
 msgid "user"
 msgstr ""
@@ -1789,7 +1789,7 @@ msgstr ""
 msgid "Invite Codes"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:15
+#: lib/baudrate_web/live/admin/settings_live.html.heex:21
 #, elixir-autogen, elixir-format
 msgid "Invite Only"
 msgstr ""
@@ -1930,23 +1930,23 @@ msgstr ""
 msgid "Confirm New Password"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:92
+#: lib/baudrate_web/live/admin/settings_live.html.heex:98
 #: lib/baudrate_web/live/register_live.html.heex:210
 #, elixir-autogen, elixir-format
 msgid "End User Agreement"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:102
+#: lib/baudrate_web/live/admin/settings_live.html.heex:108
 #, elixir-autogen, elixir-format
 msgid "End User Agreement (Markdown)"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.ex:68
+#: lib/baudrate_web/live/admin/settings_live.ex:73
 #, elixir-autogen, elixir-format
 msgid "End User Agreement saved."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:105
+#: lib/baudrate_web/live/admin/settings_live.html.heex:111
 #, elixir-autogen, elixir-format
 msgid "Enter your site-specific terms here..."
 msgstr ""
@@ -1956,7 +1956,7 @@ msgstr ""
 msgid "Enter your username and a recovery code to reset your password."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.ex:71
+#: lib/baudrate_web/live/admin/settings_live.ex:76
 #, elixir-autogen, elixir-format
 msgid "Failed to save End User Agreement."
 msgstr ""
@@ -1992,7 +1992,7 @@ msgstr ""
 msgid "New Password"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:94
+#: lib/baudrate_web/live/admin/settings_live.html.heex:100
 #, elixir-autogen, elixir-format
 msgid "Optional site-specific terms shown during registration. Supports Markdown formatting."
 msgstr ""
@@ -2018,7 +2018,7 @@ msgstr ""
 msgid "Reset Password"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:109
+#: lib/baudrate_web/live/admin/settings_live.html.heex:115
 #, elixir-autogen, elixir-format
 msgid "Save Agreement"
 msgstr ""
@@ -2208,7 +2208,7 @@ msgstr ""
 msgid "Added %{count} domains to blocklist."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:59
+#: lib/baudrate_web/live/admin/settings_live.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Authorized Fetch (Secure Mode)"
 msgstr ""
@@ -2218,7 +2218,7 @@ msgstr ""
 msgid "Blocklist Audit"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:73
+#: lib/baudrate_web/live/admin/settings_live.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "Blocklist Audit URL"
 msgstr ""
@@ -2238,7 +2238,7 @@ msgstr ""
 msgid "Compare your local domain blocklist against an external known-bad-actor list. Configure the audit URL in Admin Settings."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:61
+#: lib/baudrate_web/live/admin/settings_live.html.heex:67
 #, elixir-autogen, elixir-format
 msgid "Disabled (public GETs allowed)"
 msgstr ""
@@ -2254,7 +2254,7 @@ msgstr ""
 msgid "Domains you block that are not in the external list (informational only)."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:62
+#: lib/baudrate_web/live/admin/settings_live.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "Enabled (require HTTP signatures on GETs)"
 msgstr ""
@@ -2345,12 +2345,12 @@ msgstr ""
 msgid "Run Audit"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:77
+#: lib/baudrate_web/live/admin/settings_live.html.heex:83
 #, elixir-autogen, elixir-format
 msgid "URL to an external domain blocklist (CSV or JSON). Used by the federation dashboard audit feature."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:66
+#: lib/baudrate_web/live/admin/settings_live.html.heex:72
 #, elixir-autogen, elixir-format
 msgid "When enabled, unsigned GET requests to ActivityPub endpoints return 401. WebFinger and NodeInfo remain public."
 msgstr ""
@@ -2575,7 +2575,7 @@ msgstr ""
 msgid "by %{editor}"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:316
+#: lib/baudrate_web/components/core_components.ex:328
 #, elixir-autogen, elixir-format
 msgid "Markdown preview"
 msgstr ""
@@ -2918,8 +2918,8 @@ msgstr ""
 msgid "Met:"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:623
-#: lib/baudrate_web/components/core_components.ex:631
+#: lib/baudrate_web/components/core_components.ex:635
+#: lib/baudrate_web/components/core_components.ex:643
 #, elixir-autogen, elixir-format
 msgid "Next page"
 msgstr ""
@@ -2938,13 +2938,13 @@ msgstr ""
 msgid "Not met:"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:605
-#: lib/baudrate_web/components/core_components.ex:613
+#: lib/baudrate_web/components/core_components.ex:617
+#: lib/baudrate_web/components/core_components.ex:625
 #, elixir-autogen, elixir-format
 msgid "Page %{number}"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:581
+#: lib/baudrate_web/components/core_components.ex:593
 #, elixir-autogen, elixir-format
 msgid "Pagination"
 msgstr ""
@@ -2956,8 +2956,8 @@ msgstr ""
 msgid "Password strength"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:587
-#: lib/baudrate_web/components/core_components.ex:595
+#: lib/baudrate_web/components/core_components.ex:599
+#: lib/baudrate_web/components/core_components.ex:607
 #, elixir-autogen, elixir-format
 msgid "Previous page"
 msgstr ""
@@ -3001,12 +3001,12 @@ msgstr ""
 msgid "Block User"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:95
+#: lib/baudrate_web/helpers.ex:154
 #, elixir-autogen, elixir-format
 msgid "File too large"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:96
+#: lib/baudrate_web/helpers.ex:155
 #, elixir-autogen, elixir-format
 msgid "File too large (max %{size})"
 msgstr ""
@@ -3026,12 +3026,12 @@ msgstr ""
 msgid "Search users..."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:102
+#: lib/baudrate_web/helpers.ex:161
 #, elixir-autogen, elixir-format
 msgid "Too many files"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:103
+#: lib/baudrate_web/helpers.ex:162
 #, elixir-autogen, elixir-format
 msgid "Too many files (max %{n})"
 msgstr ""
@@ -3046,17 +3046,17 @@ msgstr ""
 msgid "Unblock User"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:196
+#: lib/baudrate_web/helpers.ex:255
 #, elixir-autogen, elixir-format
 msgid "%{n} B"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:199
+#: lib/baudrate_web/helpers.ex:258
 #, elixir-autogen, elixir-format
 msgid "%{n} KB"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:202
+#: lib/baudrate_web/helpers.ex:261
 #, elixir-autogen, elixir-format
 msgid "%{n} MB"
 msgstr ""
@@ -3149,27 +3149,27 @@ msgstr ""
 msgid "Too many failed attempts. Please log in again."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:180
+#: lib/baudrate_web/helpers.ex:239
 #, elixir-autogen, elixir-format
 msgid "delivered"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:161
+#: lib/baudrate_web/helpers.ex:220
 #, elixir-autogen, elixir-format
 msgid "dismissed"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:181
+#: lib/baudrate_web/helpers.ex:240
 #, elixir-autogen, elixir-format
 msgid "failed"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:159
+#: lib/baudrate_web/helpers.ex:218
 #, elixir-autogen, elixir-format
 msgid "open"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:160
+#: lib/baudrate_web/helpers.ex:219
 #, elixir-autogen, elixir-format
 msgid "resolved"
 msgstr ""
@@ -3370,7 +3370,7 @@ msgid "You are editing too frequently. Please try again later."
 msgstr ""
 
 #: lib/baudrate_web/live/article_new_live.ex:136
-#: lib/baudrate_web/live/feed_live.ex:95
+#: lib/baudrate_web/live/feed_live.ex:96
 #, elixir-autogen, elixir-format
 msgid "You are posting too frequently. Please try again later."
 msgstr ""
@@ -3529,7 +3529,7 @@ msgstr "You haven't followed anyone yet."
 
 #: lib/baudrate_web/components/layouts.ex:78
 #: lib/baudrate_web/components/layouts.ex:175
-#: lib/baudrate_web/live/feed_live.ex:33
+#: lib/baudrate_web/live/feed_live.ex:34
 #: lib/baudrate_web/live/feed_live.html.heex:2
 #: lib/baudrate_web/live/feed_live.html.heex:5
 #: lib/baudrate_web/live/feed_live.html.heex:60
@@ -3789,7 +3789,7 @@ msgstr ""
 msgid "%{count} items"
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.ex:119
+#: lib/baudrate_web/live/feed_live.ex:120
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Article posted!"
 msgstr ""
@@ -3805,6 +3805,7 @@ msgstr ""
 msgid "Oh! I just had a thought!"
 msgstr ""
 
+#: lib/baudrate_web/live/board_live.html.heex:85
 #: lib/baudrate_web/live/feed_live.html.heex:176
 #, elixir-autogen, elixir-format, fuzzy
 msgid "1 comment"
@@ -3820,4 +3821,9 @@ msgstr ""
 #: lib/baudrate_web/live/feed_live.html.heex:211
 #, elixir-autogen, elixir-format
 msgid "commented on"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "Timezone"
 msgstr ""

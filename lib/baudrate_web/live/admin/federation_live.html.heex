@@ -106,8 +106,8 @@
               <td>{instance.article_count + instance.comment_count}</td>
               <td class="text-sm opacity-70">
                 <%= if instance.last_seen do %>
-                  <time datetime={Calendar.strftime(instance.last_seen, "%Y-%m-%dT%H:%M:%S")}>
-                    {Calendar.strftime(instance.last_seen, "%Y-%m-%d %H:%M")}
+                  <time datetime={datetime_attr(instance.last_seen)}>
+                    {format_datetime(instance.last_seen)}
                   </time>
                 <% else %>
                   —

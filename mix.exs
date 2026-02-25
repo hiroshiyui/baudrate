@@ -72,6 +72,7 @@ defmodule Baudrate.MixProject do
       {:image, "~> 0.54"},
       {:earmark, "~> 1.4"},
       {:rustler, "~> 0.36", runtime: false},
+      {:tz, "~> 0.28"},
       {:mox, "~> 1.0", only: :test}
     ]
   end
