@@ -2,10 +2,11 @@ defmodule BaudrateWeb.FeedLive do
   @moduledoc """
   LiveView for the personal feed page.
 
-  Displays incoming posts from remote actors the user follows,
-  with a personal info sidebar showing the current user's profile summary.
-  Includes a quick-post composer for creating board-less articles directly
-  from the feed. Subscribes to `Federation.PubSub` for real-time updates.
+  Displays incoming posts from remote actors the user follows, local articles
+  from followed users, and comments on articles the user authored or
+  previously commented on. Includes a personal info sidebar and a quick-post
+  composer for creating board-less articles. Subscribes to
+  `Federation.PubSub` for real-time updates.
   """
 
   use BaudrateWeb, :live_view

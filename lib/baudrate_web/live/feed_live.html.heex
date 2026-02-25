@@ -163,11 +163,63 @@
             {digest(item.article.body)}
           </p>
 
-          <div :if={item.article.boards != []} class="flex gap-1 mt-1">
-            <span :for={board <- item.article.boards} class="badge badge-outline badge-sm">
-              {board.name}
-            </span>
+          <div class="flex items-center gap-3 mt-2">
+            <div :if={item.article.boards != []} class="flex gap-1">
+              <span :for={board <- item.article.boards} class="badge badge-outline badge-sm">
+                {board.name}
+              </span>
+            </div>
+            <.link
+              :if={item.comment_count > 0}
+              navigate={~p"/articles/#{item.article.slug}"}
+              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-base-content"
+              aria-label={ngettext("1 comment", "%{count} comments", item.comment_count)}
+            >
+              <.icon name="hero-chat-bubble-left-ellipsis" class="size-4" />
+              {item.comment_count}
+            </.link>
           </div>
+        </div>
+
+        <%!-- Comment on user's article or participated thread --%>
+        <div :if={item.source == :local_comment} class="card-body p-4">
+          <div class="flex items-center gap-3 mb-2">
+            <.avatar user={item.comment.user} size={36} />
+            <div class="flex-1 min-w-0">
+              <.link
+                navigate={~p"/users/#{item.comment.user.username}"}
+                class="font-bold text-sm truncate link link-hover"
+              >
+                {display_name(item.comment.user)}
+              </.link>
+              <div class="text-xs text-base-content/60">
+                <span class="badge badge-info badge-xs">{gettext("Local")}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <span class="badge badge-xs badge-secondary">{gettext("Comment")}</span>
+              <time
+                class="text-xs text-base-content/50"
+                datetime={Calendar.strftime(item.comment.inserted_at, "%Y-%m-%dT%H:%M:%S")}
+              >
+                {Calendar.strftime(item.comment.inserted_at, "%Y-%m-%d %H:%M")}
+              </time>
+            </div>
+          </div>
+
+          <div class="text-sm text-base-content/60 mb-1">
+            {gettext("commented on")}
+            <.link
+              navigate={~p"/articles/#{item.comment.article.slug}"}
+              class="link link-hover font-semibold"
+            >
+              {item.comment.article.title}
+            </.link>
+          </div>
+
+          <p class="text-sm text-base-content/80 line-clamp-3">
+            {digest(item.comment.body)}
+          </p>
         </div>
       </article>
     </div>

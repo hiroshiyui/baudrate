@@ -1323,9 +1323,12 @@ defmodule Baudrate.Federation do
   @doc """
   Lists paginated feed items for a user.
 
-  Includes the user's own articles plus remote feed items and local articles
-  from accepted follows. Excludes soft-deleted items and items from
-  blocked/muted actors.
+  Includes the user's own articles, remote feed items and local articles
+  from accepted follows, and comments on articles the user authored or
+  previously commented on (including the user's own comments). Excludes
+  soft-deleted items and items from blocked/muted actors. Local article
+  items include a `comment_count` key; comment items include the comment
+  with preloaded `:user` and `article: :user`.
 
   Returns `%{items: [...], total: n, page: n, per_page: n, total_pages: n}`.
   """
@@ -1376,9 +1379,35 @@ defmodule Baudrate.Federation do
 
     local_total = Repo.one(from(a in local_query, select: count(a.id)))
 
-    total = remote_total + local_total
+    # Comments on articles the user authored or commented on
+    comment_query =
+      from(c in Baudrate.Content.Comment,
+        join: a in Baudrate.Content.Article,
+        on: a.id == c.article_id,
+        left_join: own_comment in Baudrate.Content.Comment,
+        on: own_comment.article_id == a.id and own_comment.user_id == ^user.id,
+        where: a.user_id == ^user.id or not is_nil(own_comment.id),
+        where: is_nil(c.deleted_at) and is_nil(a.deleted_at),
+        distinct: c.id
+      )
 
-    # Fetch both sets with extra items for proper merge-sort pagination
+    comment_query =
+      if hidden_user_ids != [] do
+        from([c, _a, _oc] in comment_query, where: c.user_id not in ^hidden_user_ids)
+      else
+        comment_query
+      end
+
+    comment_total =
+      Repo.one(
+        from(sub in subquery(from([c, _a, _oc] in comment_query, select: c.id)),
+          select: count()
+        )
+      )
+
+    total = remote_total + local_total + comment_total
+
+    # Fetch all sets with extra items for proper merge-sort pagination
     remote_items =
       from([fi, _uf, ra] in remote_query,
         order_by: [desc: fi.published_at],
@@ -1390,20 +1419,54 @@ defmodule Baudrate.Federation do
         %{source: :remote, feed_item: fi, sorted_at: fi.published_at}
       end)
 
-    local_items =
+    local_articles =
       from(a in local_query,
         order_by: [desc: a.inserted_at],
         limit: ^(offset + per_page),
         preload: [:user, boards: []]
       )
       |> Repo.all()
-      |> Enum.map(fn article ->
-        %{source: :local, article: article, sorted_at: article.inserted_at}
+
+    # Batch-load comment counts for local articles
+    local_article_ids = Enum.map(local_articles, & &1.id)
+
+    comment_counts =
+      if local_article_ids != [] do
+        from(c in Baudrate.Content.Comment,
+          where: c.article_id in ^local_article_ids and is_nil(c.deleted_at),
+          group_by: c.article_id,
+          select: {c.article_id, count(c.id)}
+        )
+        |> Repo.all()
+        |> Map.new()
+      else
+        %{}
+      end
+
+    local_items =
+      Enum.map(local_articles, fn article ->
+        %{
+          source: :local,
+          article: article,
+          comment_count: Map.get(comment_counts, article.id, 0),
+          sorted_at: article.inserted_at
+        }
+      end)
+
+    comment_items =
+      from([c, _a, _oc] in comment_query,
+        order_by: [desc: c.inserted_at],
+        limit: ^(offset + per_page),
+        preload: [:user, article: :user]
+      )
+      |> Repo.all()
+      |> Enum.map(fn c ->
+        %{source: :local_comment, comment: c, sorted_at: c.inserted_at}
       end)
 
     # Merge, sort, paginate
     items =
-      (remote_items ++ local_items)
+      (remote_items ++ local_items ++ comment_items)
       |> Enum.sort_by(& &1.sorted_at, {:desc, DateTime})
       |> Enum.drop(offset)
       |> Enum.take(per_page)
