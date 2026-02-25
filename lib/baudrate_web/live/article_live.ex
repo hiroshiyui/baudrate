@@ -282,8 +282,9 @@ defmodule BaudrateWeb.ArticleLive do
           <.link
             :if={@comment.user}
             navigate={~p"/users/#{@comment.user.username}"}
-            class="font-semibold text-base-content link link-hover"
+            class="inline-flex items-center gap-1 font-semibold text-base-content link link-hover"
           >
+            <.avatar user={@comment.user} size={24} />
             {display_name(@comment.user)}
           </.link>
           <span :if={@comment.remote_actor} class="font-semibold text-base-content">
