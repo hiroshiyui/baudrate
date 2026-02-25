@@ -135,7 +135,7 @@ lib/
 │   │   ├── board_live.ex        # Board view with article listing
 │   │   ├── conversation_live.ex # Single DM conversation thread view
 │   │   ├── conversations_live.ex # DM conversation list
-│   │   ├── feed_live.ex          # Personal feed (posts from followed remote actors)
+│   │   ├── feed_live.ex          # Personal feed (remote posts, local articles, comment activity)
 │   │   ├── following_live.ex    # Following management (outbound remote actor follows)
 │   │   ├── home_live.ex         # Home page (board listing, public for guests)
 │   │   ├── login_live.ex        # Login form (phx-trigger-action pattern)
@@ -673,7 +673,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - `feed_items` table — stores incoming posts from followed actors that don't land in boards/comments/DMs
 - One row per activity (keyed by `ap_id`), visibility via JOIN with `user_follows` at query time
 - `Federation.create_feed_item/1` — insert + broadcast to followers via `Federation.PubSub`
-- `Federation.list_feed_items/2` — paginated union query: remote feed items + local articles from followed users
+- `Federation.list_feed_items/2` — paginated union query: remote feed items + local articles from followed users + comments on articles the user authored or participated in
 - Inbox handler fallback: Create(Note) without reply target, Create(Article/Page) without board → feed item
 - Delete propagation: soft-deletes feed items on content or actor deletion
 - `Federation.migrate_user_follows/2` — Move activity support (migrate + deduplicate)
@@ -687,7 +687,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - `/following` — shows both local and remote follows with Local/Remote badges
 - User profile — follow/unfollow button next to mute button
 - `following_collection/2` — includes local follow actor URIs
-- Feed includes articles from locally-followed users via union query
+- Feed includes articles from locally-followed users and comments on authored/participated articles via union query
 
 **Board-level remote follows** (moderator-managed):
 - `boards.ap_accept_policy` — `"open"` (accept from anyone) or `"followers_only"` (only accept from actors the board follows); default: `"followers_only"`
