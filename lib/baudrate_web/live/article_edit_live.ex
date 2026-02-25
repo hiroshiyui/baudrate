@@ -32,7 +32,9 @@ defmodule BaudrateWeb.ArticleEditLive do
        |> allow_upload(:article_images,
          accept: ~w(.jpg .jpeg .png .webp .gif),
          max_entries: max(max_new, 0),
-         max_file_size: 5_000_000
+         max_file_size: 5_000_000,
+         auto_upload: true,
+         progress: &handle_progress/3
        )}
     else
       {:ok,
@@ -58,59 +60,6 @@ defmodule BaudrateWeb.ArticleEditLive do
   end
 
   @impl true
-  def handle_event("validate_images", _params, socket) do
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("upload_images", _params, socket) do
-    article = socket.assigns.article
-    user = socket.assigns.current_user
-    max = Baudrate.Content.ArticleImage.max_images_per_article()
-    existing_count = length(socket.assigns.article_images)
-
-    uploaded =
-      consume_uploaded_entries(socket, :article_images, fn %{path: path}, _entry ->
-        if existing_count >= max do
-          {:postpone, :max_reached}
-        else
-          case ArticleImageStorage.process_upload(path) do
-            {:ok, file_info} ->
-              attrs = Map.merge(file_info, %{user_id: user.id, article_id: article.id})
-
-              case Content.create_article_image(attrs) do
-                {:ok, image} -> {:ok, image}
-                {:error, _} -> {:postpone, :error}
-              end
-
-            {:error, _} ->
-              {:postpone, :error}
-          end
-        end
-      end)
-
-    new_images = Enum.reject(uploaded, &(&1 == :error || &1 == :max_reached))
-    all_images = socket.assigns.article_images ++ new_images
-    max_new = max(max - length(all_images), 0)
-
-    socket =
-      if Enum.any?(uploaded, &(&1 == :error)) do
-        put_flash(socket, :error, gettext("Some images failed to upload."))
-      else
-        socket
-      end
-
-    {:noreply,
-     socket
-     |> assign(:article_images, all_images)
-     |> allow_upload(:article_images,
-       accept: ~w(.jpg .jpeg .png .webp .gif),
-       max_entries: max_new,
-       max_file_size: 5_000_000
-     )}
-  end
-
-  @impl true
   def handle_event("remove_image", %{"id" => id}, socket) do
     article = socket.assigns.article
     image = Content.get_article_image!(id)
@@ -130,7 +79,9 @@ defmodule BaudrateWeb.ArticleEditLive do
        |> allow_upload(:article_images,
          accept: ~w(.jpg .jpeg .png .webp .gif),
          max_entries: max_new,
-         max_file_size: 5_000_000
+         max_file_size: 5_000_000,
+         auto_upload: true,
+         progress: &handle_progress/3
        )}
     end
   end
@@ -172,6 +123,59 @@ defmodule BaudrateWeb.ArticleEditLive do
 
       {:error, changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset, as: :article))}
+    end
+  end
+
+  defp handle_progress(:article_images, entry, socket) do
+    if entry.done? do
+      article = socket.assigns.article
+      user = socket.assigns.current_user
+      max = Baudrate.Content.ArticleImage.max_images_per_article()
+      existing_count = length(socket.assigns.article_images)
+
+      uploaded =
+        consume_uploaded_entries(socket, :article_images, fn %{path: path}, _entry ->
+          if existing_count >= max do
+            {:postpone, :max_reached}
+          else
+            case ArticleImageStorage.process_upload(path) do
+              {:ok, file_info} ->
+                attrs = Map.merge(file_info, %{user_id: user.id, article_id: article.id})
+
+                case Content.create_article_image(attrs) do
+                  {:ok, image} -> {:ok, image}
+                  {:error, _} -> {:postpone, :error}
+                end
+
+              {:error, _} ->
+                {:postpone, :error}
+            end
+          end
+        end)
+
+      new_images = Enum.reject(uploaded, &(&1 == :error || &1 == :max_reached))
+      all_images = socket.assigns.article_images ++ new_images
+      max_new = max(max - length(all_images), 0)
+
+      socket =
+        if Enum.any?(uploaded, &(&1 == :error)) do
+          put_flash(socket, :error, gettext("Some images failed to upload."))
+        else
+          socket
+        end
+
+      {:noreply,
+       socket
+       |> assign(:article_images, all_images)
+       |> allow_upload(:article_images,
+         accept: ~w(.jpg .jpeg .png .webp .gif),
+         max_entries: max_new,
+         max_file_size: 5_000_000,
+         auto_upload: true,
+         progress: &handle_progress/3
+       )}
+    else
+      {:noreply, socket}
     end
   end
 

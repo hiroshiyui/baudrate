@@ -58,7 +58,7 @@
 
       <%!-- Upload input (only show if under max) --%>
       <div :if={length(@article_images) < 4}>
-        <form phx-change="validate_images" phx-submit="upload_images" class="space-y-2">
+        <div class="space-y-2">
           <.live_file_input
             upload={@uploads.article_images}
             class="file-input file-input-bordered file-input-sm w-full"
@@ -86,15 +86,7 @@
           <div :for={err <- upload_errors(@uploads.article_images)} class="text-sm text-error">
             {upload_error_to_string(err)}
           </div>
-
-          <button
-            :if={@uploads.article_images.entries != []}
-            type="submit"
-            class="btn btn-sm btn-outline"
-          >
-            {gettext("Upload Images")}
-          </button>
-        </form>
+        </div>
       </div>
     </div>
 
