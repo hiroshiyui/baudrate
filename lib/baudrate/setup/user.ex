@@ -45,6 +45,13 @@ defmodule Baudrate.Setup.User do
     * `dm_access` — controls who can send DMs to this user:
       `"anyone"` (default), `"followers"` (AP followers only), or `"nobody"`.
 
+  ## Display Name
+
+    * `display_name` — optional human-friendly display name (max 64 characters).
+      Sanitized on write: HTML tags stripped, control characters and bidi overrides
+      removed, whitespace normalized. Mapped to the ActivityPub `name` field on the
+      Person actor. Falls back to `username` for display when `nil`.
+
   ## Bio
 
     * `bio` — plaintext bio/about-me text (max 500 characters). Supports hashtag
@@ -62,6 +69,7 @@ defmodule Baudrate.Setup.User do
 
   schema "users" do
     field :username, :string
+    field :display_name, :string
     field :hashed_password, :string
     field :totp_secret, :binary
     field :totp_enabled, :boolean, default: false
@@ -232,6 +240,32 @@ defmodule Baudrate.Setup.User do
     user
     |> cast(attrs, [:bio])
     |> validate_length(:bio, max: 500)
+  end
+
+  @doc "Changeset for updating the user's display name (max 64 chars, sanitized)."
+  def display_name_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:display_name])
+    |> update_change(:display_name, &sanitize_display_name/1)
+    |> validate_length(:display_name, max: 64)
+  end
+
+  defp sanitize_display_name(nil), do: nil
+
+  defp sanitize_display_name(name) when is_binary(name) do
+    result =
+      name
+      |> Baudrate.Sanitizer.Native.strip_tags()
+      # Remove control characters
+      |> String.replace(~r/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/, "")
+      # Remove Unicode bidi override characters
+      |> String.replace(~r/[\x{200E}\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}]/u, "")
+      |> String.trim()
+      # Collapse consecutive whitespace to single space
+      |> String.replace(~r/\s+/, " ")
+      |> String.slice(0, 64)
+
+    if result == "", do: nil, else: result
   end
 
   @doc "Changeset for updating DM access preference (`\"anyone\"`, `\"followers\"`, or `\"nobody\"`)."

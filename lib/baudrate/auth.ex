@@ -689,6 +689,17 @@ defmodule Baudrate.Auth do
     |> Repo.update()
   end
 
+  # --- Display Name ---
+
+  @doc """
+  Updates a user's display name. Pass `nil` or empty string to clear.
+  """
+  def update_display_name(user, display_name) do
+    user
+    |> User.display_name_changeset(%{display_name: display_name})
+    |> Repo.update()
+  end
+
   # --- Bio ---
 
   @doc """

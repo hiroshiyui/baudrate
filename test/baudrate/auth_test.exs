@@ -503,6 +503,66 @@ defmodule Baudrate.AuthTest do
     end
   end
 
+  describe "update_display_name/2" do
+    test "sets a display name" do
+      user = create_user("user")
+      assert {:ok, updated} = Auth.update_display_name(user, "John Doe")
+      assert updated.display_name == "John Doe"
+      assert Repo.get!(User, user.id).display_name == "John Doe"
+    end
+
+    test "clears display name to nil with empty string" do
+      user = create_user("user")
+      {:ok, user} = Auth.update_display_name(user, "John Doe")
+      assert {:ok, updated} = Auth.update_display_name(user, "")
+      assert updated.display_name == nil
+    end
+
+    test "clears display name to nil with nil" do
+      user = create_user("user")
+      {:ok, user} = Auth.update_display_name(user, "John Doe")
+      assert {:ok, updated} = Auth.update_display_name(user, nil)
+      assert updated.display_name == nil
+    end
+
+    test "enforces 64-character limit" do
+      user = create_user("user")
+      long_name = String.duplicate("あ", 65)
+      assert {:ok, updated} = Auth.update_display_name(user, long_name)
+      assert String.length(updated.display_name) == 64
+    end
+
+    test "strips HTML tags" do
+      user = create_user("user")
+      assert {:ok, updated} = Auth.update_display_name(user, "<b>Bold</b> Name")
+      assert updated.display_name == "Bold Name"
+    end
+
+    test "removes control characters" do
+      user = create_user("user")
+      assert {:ok, updated} = Auth.update_display_name(user, "Hello\x00World\x7F")
+      assert updated.display_name == "HelloWorld"
+    end
+
+    test "removes bidi override characters" do
+      user = create_user("user")
+      assert {:ok, updated} = Auth.update_display_name(user, "Hello\u202AWorld\u202C")
+      assert updated.display_name == "HelloWorld"
+    end
+
+    test "collapses whitespace" do
+      user = create_user("user")
+      assert {:ok, updated} = Auth.update_display_name(user, "  John   Doe  ")
+      assert updated.display_name == "John Doe"
+    end
+
+    test "whitespace-only becomes nil" do
+      user = create_user("user")
+      assert {:ok, updated} = Auth.update_display_name(user, "   ")
+      assert updated.display_name == nil
+    end
+  end
+
   describe "update_dm_access/2" do
     test "sets dm_access to 'anyone'" do
       user = create_user("user")
