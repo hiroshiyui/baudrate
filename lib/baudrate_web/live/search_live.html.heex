@@ -55,6 +55,12 @@
         <div class="text-sm text-base-content/70 truncate">
           @{@remote_actor.username}@{@remote_actor.domain}
         </div>
+        <div
+          :if={@remote_actor.summary && @remote_actor.summary != ""}
+          class="text-sm text-base-content/70 mt-1 line-clamp-2"
+        >
+          {Baudrate.Sanitizer.Native.strip_tags(@remote_actor.summary)}
+        </div>
         <span class="badge badge-outline badge-xs mt-1">{@remote_actor.actor_type}</span>
       </div>
       <div class="flex-none">
@@ -220,6 +226,12 @@
           <.link navigate={~p"/users/#{user.username}"} class="font-bold truncate link link-hover">
             {user.username}
           </.link>
+          <div
+            :if={user.bio && user.bio != ""}
+            class="text-sm text-base-content/70 mt-1 line-clamp-2"
+          >
+            {user.bio}
+          </div>
           <div class="flex items-center gap-2 mt-1">
             <span class="badge badge-outline badge-xs">{translate_role(user.role.name)}</span>
             <span class="badge badge-info badge-xs">{gettext("Local")}</span>

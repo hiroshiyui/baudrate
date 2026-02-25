@@ -5,6 +5,9 @@ defmodule Baudrate.Federation.RemoteActor do
   Stores actor profile data fetched from remote instances, including
   the public key needed for HTTP Signature verification. Actor data
   is refreshed when `fetched_at` exceeds the configured TTL.
+
+  The `summary` field stores the sanitized HTML bio/about text from
+  the remote actor's ActivityPub `summary` property.
   """
 
   use Ecto.Schema
@@ -16,6 +19,7 @@ defmodule Baudrate.Federation.RemoteActor do
     field :domain, :string
     field :display_name, :string
     field :avatar_url, :string
+    field :summary, :string
     field :public_key_pem, :string
     field :inbox, :string
     field :shared_inbox, :string
@@ -28,7 +32,7 @@ defmodule Baudrate.Federation.RemoteActor do
   end
 
   @required_fields ~w(ap_id username domain public_key_pem inbox actor_type fetched_at)a
-  @optional_fields ~w(display_name avatar_url shared_inbox)a
+  @optional_fields ~w(display_name avatar_url summary shared_inbox)a
 
   @doc "Casts and validates fields for creating or updating a remote actor cache entry."
   def changeset(remote_actor, attrs) do

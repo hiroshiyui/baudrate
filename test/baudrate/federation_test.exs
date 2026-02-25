@@ -122,6 +122,40 @@ defmodule Baudrate.FederationTest do
       assert actor["following"] =~ "/following"
       assert actor["publicKey"]["publicKeyPem"] =~ "BEGIN PUBLIC KEY"
     end
+
+    test "maps bio to summary (not signature)" do
+      user = setup_user_with_role("user")
+      {:ok, user} = KeyStore.ensure_user_keypair(user)
+
+      {:ok, user} = Baudrate.Auth.update_bio(user, "Hello from my bio")
+      {:ok, user} = Baudrate.Auth.update_signature(user, "My signature")
+
+      actor = Federation.user_actor(user)
+
+      assert actor["summary"] =~ "Hello from my bio"
+      refute actor["summary"] =~ "My signature"
+    end
+
+    test "linkifies hashtags in bio for AP summary" do
+      user = setup_user_with_role("user")
+      {:ok, user} = KeyStore.ensure_user_keypair(user)
+
+      {:ok, user} = Baudrate.Auth.update_bio(user, "I like #elixir and #phoenix")
+
+      actor = Federation.user_actor(user)
+
+      assert actor["summary"] =~ ~s(<a href="/tags/elixir" class="hashtag">#elixir</a>)
+      assert actor["summary"] =~ ~s(<a href="/tags/phoenix" class="hashtag">#phoenix</a>)
+    end
+
+    test "omits summary when bio is nil" do
+      user = setup_user_with_role("user")
+      {:ok, user} = KeyStore.ensure_user_keypair(user)
+
+      actor = Federation.user_actor(user)
+
+      refute Map.has_key?(actor, "summary")
+    end
   end
 
   describe "board_actor/1" do

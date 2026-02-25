@@ -140,6 +140,7 @@ defmodule Baudrate.Federation.ActorResolver do
          domain: domain,
          display_name: Sanitizer.sanitize_display_name(json["name"]),
          avatar_url: extract_avatar(json),
+         summary: sanitize_summary(json["summary"]),
          public_key_pem: public_key_pem,
          inbox: inbox,
          shared_inbox: get_in(json, ["endpoints", "sharedInbox"]),
@@ -158,6 +159,15 @@ defmodule Baudrate.Federation.ActorResolver do
   defp extract_avatar(%{"icon" => %{"url" => url}}) when is_binary(url), do: url
   defp extract_avatar(%{"icon" => url}) when is_binary(url), do: url
   defp extract_avatar(_), do: nil
+
+  defp sanitize_summary(nil), do: nil
+  defp sanitize_summary(""), do: nil
+
+  defp sanitize_summary(summary) when is_binary(summary) do
+    summary
+    |> Sanitizer.sanitize()
+    |> String.slice(0, 5000)
+  end
 
   defp extract_username_from_id(ap_id) do
     ap_id |> URI.parse() |> Map.get(:path, "") |> String.split("/") |> List.last() || "unknown"

@@ -70,6 +70,12 @@
           <div class="text-sm text-base-content/70 truncate">
             @{follow.remote_actor.username}@{follow.remote_actor.domain}
           </div>
+          <div
+            :if={follow.remote_actor.summary && follow.remote_actor.summary != ""}
+            class="text-sm text-base-content/70 mt-1 line-clamp-2"
+          >
+            {Baudrate.Sanitizer.Native.strip_tags(follow.remote_actor.summary)}
+          </div>
         </div>
         <div class="flex items-center gap-2">
           <span class={[
