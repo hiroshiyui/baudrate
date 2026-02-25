@@ -34,7 +34,7 @@
               <td>
                 <span :if={revision.editor}>
                   <.link navigate={~p"/users/#{revision.editor.username}"} class="link link-hover">
-                    {revision.editor.username}
+                    {display_name(revision.editor)}
                   </.link>
                 </span>
                 <span :if={!revision.editor} class="text-base-content/50">
@@ -72,7 +72,7 @@
       <h2 class="text-lg font-semibold">
         {gettext("Version #%{number}", number: length(@revisions) - @selected_index)}
         <span :if={selected.editor} class="font-normal text-sm text-base-content/70">
-          {gettext("by %{editor}", editor: selected.editor.username)}
+          {gettext("by %{editor}", editor: display_name(selected.editor))}
         </span>
       </h2>
 

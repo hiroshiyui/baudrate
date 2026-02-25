@@ -32,6 +32,12 @@ defmodule BaudrateWeb.CoreComponents do
   alias Phoenix.LiveView.JS
 
   @doc """
+  Returns a human-friendly display name for a user or remote actor.
+  Delegates to `BaudrateWeb.Helpers.display_name/1`.
+  """
+  defdelegate display_name(entity), to: BaudrateWeb.Helpers
+
+  @doc """
   Renders flash notices.
 
   ## Examples
@@ -520,14 +526,15 @@ defmodule BaudrateWeb.CoreComponents do
       @class
     ]}>
       <div class={size_class(@size)}>
-        <img src={@url} alt={@user.username} />
+        <img src={@url} alt={display_name(@user)} />
       </div>
     </div>
     """
   end
 
   def avatar(assigns) do
-    assigns = assign(assigns, :initial, String.first(assigns.user.username) |> String.upcase())
+    name = assigns.user.display_name || assigns.user.username
+    assigns = assign(assigns, :initial, String.first(name) |> String.upcase())
 
     ~H"""
     <div class={[

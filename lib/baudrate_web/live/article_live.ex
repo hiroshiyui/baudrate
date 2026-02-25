@@ -360,10 +360,10 @@ defmodule BaudrateWeb.ArticleLive do
             navigate={~p"/users/#{@comment.user.username}"}
             class="font-semibold text-base-content link link-hover"
           >
-            {@comment.user.username}
+            {display_name(@comment.user)}
           </.link>
           <span :if={@comment.remote_actor} class="font-semibold text-base-content">
-            {@comment.remote_actor.username}@{@comment.remote_actor.domain}
+            {display_name(@comment.remote_actor)}@{@comment.remote_actor.domain}
           </span>
           <span>&middot;</span>
           <time datetime={Calendar.strftime(@comment.inserted_at, "%Y-%m-%dT%H:%M:%S")}>

@@ -28,7 +28,7 @@
         <tr :for={code <- @codes}>
           <td class="font-mono">{code.code}</td>
           <td>
-            <span :if={code.created_by}>{code.created_by.username}</span>
+            <span :if={code.created_by}>{display_name(code.created_by)}</span>
             <span :if={!code.created_by} class="text-base-content/50">
               {gettext("Deleted user")}
             </span>
@@ -57,7 +57,7 @@
                 navigate={~p"/admin/users?search=#{code.used_by.username}"}
                 class="link link-primary"
               >
-                {code.used_by.username}
+                {display_name(code.used_by)}
               </.link>
             </span>
             <span :if={!code.used_by} class="text-base-content/50">—</span>

@@ -50,7 +50,7 @@
       </div>
       <div class="flex-1 min-w-0">
         <div class="font-bold truncate">
-          {@remote_actor.display_name || @remote_actor.username}
+          {display_name(@remote_actor)}
         </div>
         <div class="text-sm text-base-content/70 truncate">
           @{@remote_actor.username}@{@remote_actor.domain}
@@ -178,7 +178,7 @@
         </.link>
         <div class="text-sm text-base-content/70">
           <span :if={article.user}>
-            {gettext("by %{author}", author: article.user.username)} &middot;
+            {gettext("by %{author}", author: display_name(article.user))} &middot;
           </span>
           <time datetime={Calendar.strftime(article.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
             {Calendar.strftime(article.inserted_at, "%Y-%m-%d %H:%M")}
@@ -204,10 +204,10 @@
         <p class="text-sm line-clamp-2">{String.slice(comment.body, 0..200)}</p>
         <div class="text-sm text-base-content/70">
           <span :if={comment.user}>
-            {gettext("by %{author}", author: comment.user.username)} &middot;
+            {gettext("by %{author}", author: display_name(comment.user))} &middot;
           </span>
           <span :if={comment.remote_actor}>
-            {comment.remote_actor.display_name || comment.remote_actor.preferred_username} &middot;
+            {display_name(comment.remote_actor)} &middot;
           </span>
           <time datetime={Calendar.strftime(comment.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
             {Calendar.strftime(comment.inserted_at, "%Y-%m-%d %H:%M")}
@@ -224,7 +224,7 @@
         <.avatar user={user} size={48} />
         <div class="flex-1 min-w-0">
           <.link navigate={~p"/users/#{user.username}"} class="font-bold truncate link link-hover">
-            {user.username}
+            {display_name(user)}
           </.link>
           <div
             :if={user.bio && user.bio != ""}

@@ -47,7 +47,7 @@
             </time>
           </td>
           <td>
-            <span :if={log.actor}>{log.actor.username}</span>
+            <span :if={log.actor}>{display_name(log.actor)}</span>
             <span :if={!log.actor} class="text-base-content/50">{gettext("Deleted user")}</span>
           </td>
           <td>

@@ -111,7 +111,8 @@ defmodule BaudrateWeb.Layouts do
               <li class="divider my-1"></li>
               <li class="menu-title flex flex-row items-center gap-2">
                 <.avatar user={@current_user} size={36} />
-                {@current_user.username} ({translate_role(@current_user.role.name)})
+                <span class="truncate max-w-[10rem]">{display_name(@current_user)}</span>
+                ({translate_role(@current_user.role.name)})
               </li>
               <li>
                 <.link navigate="/profile">{gettext("Profile")}</.link>
@@ -199,7 +200,7 @@ defmodule BaudrateWeb.Layouts do
             class="btn btn-ghost gap-2"
           >
             <.avatar user={@current_user} size={36} />
-            {@current_user.username}
+            <span class="truncate max-w-[10rem]">{display_name(@current_user)}</span>
             <.icon name="hero-chevron-down-micro" class="size-4" />
           </div>
           <nav aria-label={gettext("User menu")}>

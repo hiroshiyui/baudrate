@@ -80,7 +80,7 @@
           navigate={~p"/users/#{@article.user.username}"}
           class="link link-hover font-semibold"
         >
-          {@article.user.username}
+          {display_name(@article.user)}
         </.link>
       </span>
       <span :if={@article.user}>&middot;</span>

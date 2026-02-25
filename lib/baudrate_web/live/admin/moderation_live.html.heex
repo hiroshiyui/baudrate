@@ -114,7 +114,7 @@
             </span>
           </div>
           <div :if={report.reporter} class="text-sm opacity-70">
-            {gettext("Reported by")} {report.reporter.username}
+            {gettext("Reported by")} {display_name(report.reporter)}
           </div>
         </div>
 
@@ -158,7 +158,7 @@
           <p class="text-sm font-semibold">{gettext("Reported Actor:")}</p>
           <p class="font-mono text-sm">{report.remote_actor.ap_id}</p>
           <p class="text-sm opacity-70">
-            {report.remote_actor.display_name || report.remote_actor.username}@{report.remote_actor.domain}
+            {display_name(report.remote_actor)}@{report.remote_actor.domain}
           </p>
         </div>
 
@@ -167,7 +167,7 @@
           :if={report.status in ["resolved", "dismissed"] and report.resolved_by}
           class="mt-2 text-sm opacity-70"
         >
-          {gettext("Handled by")} {report.resolved_by.username}
+          {gettext("Handled by")} {display_name(report.resolved_by)}
           {if report.resolution_note, do: " — #{report.resolution_note}", else: ""}
         </div>
 
