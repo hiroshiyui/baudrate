@@ -162,7 +162,12 @@ defmodule BaudrateWeb.ArticleLiveTest do
 
     {:ok, %{article: boardless}} =
       Content.create_article(
-        %{title: "Guest Viewable", body: "Public post", slug: "guest-viewable", user_id: author.id},
+        %{
+          title: "Guest Viewable",
+          body: "Public post",
+          slug: "guest-viewable",
+          user_id: author.id
+        },
         []
       )
 

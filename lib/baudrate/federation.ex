@@ -1360,7 +1360,9 @@ defmodule Baudrate.Federation do
     local_query =
       from(a in Baudrate.Content.Article,
         left_join: uf in UserFollow,
-        on: uf.followed_user_id == a.user_id and uf.user_id == ^user.id and uf.state == @state_accepted,
+        on:
+          uf.followed_user_id == a.user_id and uf.user_id == ^user.id and
+            uf.state == @state_accepted,
         where: a.user_id == ^user.id or not is_nil(uf.id),
         where: is_nil(a.deleted_at)
       )
