@@ -218,10 +218,26 @@ defmodule Baudrate.Content do
       )
       |> Repo.all()
 
+    article_ids = Enum.map(articles, & &1.id)
+
+    comment_counts =
+      if article_ids != [] do
+        from(c in Comment,
+          where: c.article_id in ^article_ids and is_nil(c.deleted_at),
+          group_by: c.article_id,
+          select: {c.article_id, count(c.id)}
+        )
+        |> Repo.all()
+        |> Map.new()
+      else
+        %{}
+      end
+
     total_pages = max(ceil(total / per_page), 1)
 
     %{
       articles: articles,
+      comment_counts: comment_counts,
       total: total,
       page: page,
       per_page: per_page,

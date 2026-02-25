@@ -49,13 +49,19 @@ defmodule BaudrateWeb.BoardLive do
   def handle_params(params, _uri, socket) do
     page = parse_page(params["page"])
 
-    %{articles: articles, page: page, total_pages: total_pages} =
+    result =
       Content.paginate_articles_for_board(socket.assigns.board,
         page: page,
         user: socket.assigns.current_user
       )
 
-    {:noreply, assign(socket, articles: articles, page: page, total_pages: total_pages)}
+    {:noreply,
+     assign(socket,
+       articles: result.articles,
+       comment_counts: result.comment_counts,
+       page: result.page,
+       total_pages: result.total_pages
+     )}
   end
 
   @impl true
@@ -69,13 +75,19 @@ defmodule BaudrateWeb.BoardLive do
              :article_locked,
              :article_unlocked
            ] do
-    %{articles: articles, page: page, total_pages: total_pages} =
+    result =
       Content.paginate_articles_for_board(socket.assigns.board,
         page: socket.assigns.page,
         user: socket.assigns.current_user
       )
 
-    {:noreply, assign(socket, articles: articles, page: page, total_pages: total_pages)}
+    {:noreply,
+     assign(socket,
+       articles: result.articles,
+       comment_counts: result.comment_counts,
+       page: result.page,
+       total_pages: result.total_pages
+     )}
   end
 
   defp digest(nil), do: ""

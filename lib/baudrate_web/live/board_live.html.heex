@@ -77,6 +77,18 @@
         <time datetime={Calendar.strftime(article.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
           {Calendar.strftime(article.inserted_at, "%Y-%m-%d %H:%M")}
         </time>
+        <.link
+          :if={Map.get(@comment_counts, article.id, 0) > 0}
+          navigate={~p"/articles/#{article.slug}"}
+          class="inline-flex items-center gap-1 text-base-content/60 hover:text-base-content"
+          aria-label={
+            ngettext("1 comment", "%{count} comments", Map.get(@comment_counts, article.id, 0))
+          }
+        >
+          &middot;
+          <.icon name="hero-chat-bubble-left-ellipsis" class="size-4" />
+          {Map.get(@comment_counts, article.id, 0)}
+        </.link>
       </div>
     </div>
   </div>
