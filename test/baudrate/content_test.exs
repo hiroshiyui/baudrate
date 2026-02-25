@@ -92,6 +92,130 @@ defmodule Baudrate.ContentTest do
     end
   end
 
+  # --- Article Permission Functions ---
+
+  describe "article permission functions" do
+    setup do
+      admin = create_user("admin")
+      author = create_user("user")
+      mod = create_user("moderator")
+      other = create_user("user")
+      board = create_board(%{name: "Perm Board", slug: "perm-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Perm Test", body: "body", slug: "perm-test", user_id: author.id},
+          [board.id]
+        )
+
+      {:ok, _} = Content.add_board_moderator(board.id, mod.id)
+
+      %{admin: admin, author: author, mod: mod, other: other, article: article, board: board}
+    end
+
+    test "can_edit_article? — admin can edit", %{admin: admin, article: article} do
+      assert Content.can_edit_article?(admin, article)
+    end
+
+    test "can_edit_article? — author can edit", %{author: author, article: article} do
+      assert Content.can_edit_article?(author, article)
+    end
+
+    test "can_edit_article? — board mod cannot edit", %{mod: mod, article: article} do
+      refute Content.can_edit_article?(mod, article)
+    end
+
+    test "can_edit_article? — other user cannot edit", %{other: other, article: article} do
+      refute Content.can_edit_article?(other, article)
+    end
+
+    test "can_delete_article? — admin can delete", %{admin: admin, article: article} do
+      assert Content.can_delete_article?(admin, article)
+    end
+
+    test "can_delete_article? — author can delete", %{author: author, article: article} do
+      assert Content.can_delete_article?(author, article)
+    end
+
+    test "can_delete_article? — board mod can delete", %{mod: mod, article: article} do
+      assert Content.can_delete_article?(mod, article)
+    end
+
+    test "can_delete_article? — other user cannot delete", %{other: other, article: article} do
+      refute Content.can_delete_article?(other, article)
+    end
+
+    test "can_pin_article? — admin can pin", %{admin: admin, article: article} do
+      assert Content.can_pin_article?(admin, article)
+    end
+
+    test "can_pin_article? — board mod can pin", %{mod: mod, article: article} do
+      assert Content.can_pin_article?(mod, article)
+    end
+
+    test "can_pin_article? — author cannot pin", %{author: author, article: article} do
+      refute Content.can_pin_article?(author, article)
+    end
+
+    test "can_pin_article? — other user cannot pin", %{other: other, article: article} do
+      refute Content.can_pin_article?(other, article)
+    end
+
+    test "can_lock_article? — admin can lock", %{admin: admin, article: article} do
+      assert Content.can_lock_article?(admin, article)
+    end
+
+    test "can_lock_article? — board mod can lock", %{mod: mod, article: article} do
+      assert Content.can_lock_article?(mod, article)
+    end
+
+    test "can_lock_article? — author cannot lock", %{author: author, article: article} do
+      refute Content.can_lock_article?(author, article)
+    end
+
+    test "can_lock_article? — other user cannot lock", %{other: other, article: article} do
+      refute Content.can_lock_article?(other, article)
+    end
+
+    test "permissions unchanged on soft-deleted article", %{
+      admin: admin,
+      author: author,
+      mod: mod,
+      other: other,
+      article: article
+    } do
+      {:ok, deleted} = Content.soft_delete_article(article)
+
+      assert Content.can_edit_article?(admin, deleted)
+      assert Content.can_edit_article?(author, deleted)
+      refute Content.can_edit_article?(mod, deleted)
+      refute Content.can_edit_article?(other, deleted)
+
+      assert Content.can_delete_article?(admin, deleted)
+      assert Content.can_delete_article?(mod, deleted)
+      refute Content.can_delete_article?(other, deleted)
+    end
+
+    test "permissions unchanged on locked article", %{
+      admin: admin,
+      author: author,
+      mod: mod,
+      other: other,
+      article: article
+    } do
+      {:ok, locked} = Content.toggle_lock_article(article)
+
+      assert Content.can_edit_article?(admin, locked)
+      assert Content.can_edit_article?(author, locked)
+      refute Content.can_edit_article?(mod, locked)
+      refute Content.can_edit_article?(other, locked)
+
+      assert Content.can_pin_article?(admin, locked)
+      assert Content.can_pin_article?(mod, locked)
+      refute Content.can_pin_article?(author, locked)
+    end
+  end
+
   # --- Articles ---
 
   describe "create_article/2" do
@@ -434,6 +558,23 @@ defmodule Baudrate.ContentTest do
       assert deleted.deleted_at != nil
     end
 
+    test "double soft-delete is idempotent" do
+      user = create_user("user")
+      board = create_board(%{name: "Idem Del Board", slug: "idem-del-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Double Delete", body: "body", slug: "double-del", user_id: user.id},
+          [board.id]
+        )
+
+      assert {:ok, first_del} = Content.soft_delete_article(article)
+      assert first_del.deleted_at != nil
+
+      assert {:ok, second_del} = Content.soft_delete_article(first_del)
+      assert second_del.deleted_at != nil
+    end
+
     test "soft-deleted articles excluded from list_articles_for_board" do
       user = create_user("user")
       board = create_board(%{name: "SD Board", slug: "sd-board"})
@@ -521,6 +662,37 @@ defmodule Baudrate.ContentTest do
       comments = Content.list_comments_for_article(article)
       assert length(comments) == 1
       assert hd(comments).id == c1.id
+    end
+  end
+
+  describe "soft_delete_comment/1 idempotency" do
+    test "double soft-delete is idempotent" do
+      user = create_user("user")
+      board = create_board(%{name: "Idem Cmt Board", slug: "idem-cmt-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Idem Cmt Art", body: "body", slug: "idem-cmt-art", user_id: user.id},
+          [board.id]
+        )
+
+      remote_actor = create_remote_actor()
+
+      {:ok, comment} =
+        Content.create_remote_comment(%{
+          body: "Will be double deleted",
+          ap_id: "https://remote.example/notes/idem-#{System.unique_integer([:positive])}",
+          article_id: article.id,
+          remote_actor_id: remote_actor.id
+        })
+
+      assert {:ok, first_del} = Content.soft_delete_comment(comment)
+      assert first_del.deleted_at != nil
+      assert first_del.body == "[deleted]"
+
+      assert {:ok, second_del} = Content.soft_delete_comment(first_del)
+      assert second_del.deleted_at != nil
+      assert second_del.body == "[deleted]"
     end
   end
 
