@@ -3632,3 +3632,19 @@ msgstr "標記 #%{tag} 的文章"
 #, elixir-autogen, elixir-format
 msgid "No articles found with tag #%{tag}."
 msgstr "找不到標記 #%{tag} 的文章。"
+
+#, elixir-autogen, elixir-format
+msgid "Bio"
+msgstr "自我介紹"
+
+#, elixir-autogen, elixir-format
+msgid "Save Bio"
+msgstr "儲存自我介紹"
+
+#, elixir-autogen, elixir-format
+msgid "Bio updated."
+msgstr "自我介紹已更新。"
+
+#, elixir-autogen, elixir-format
+msgid "Tell others about yourself (max 500 characters)"
+msgstr "介紹自己（最多 500 字元）"

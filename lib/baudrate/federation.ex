@@ -353,7 +353,7 @@ defmodule Baudrate.Federation do
         "publicKeyPem" => KeyStore.get_public_key_pem(user)
       }
     }
-    |> put_if("summary", user.signature)
+    |> put_if("summary", render_bio_html(user.bio))
     |> put_if("icon", user_avatar_icon(user))
   end
 
@@ -365,6 +365,18 @@ defmodule Baudrate.Federation do
       "mediaType" => "image/webp",
       "url" => "#{base_url()}#{Baudrate.Avatar.avatar_url(avatar_id, "medium")}"
     }
+  end
+
+  @doc false
+  def render_bio_html(nil), do: nil
+  def render_bio_html(""), do: nil
+
+  def render_bio_html(bio) when is_binary(bio) do
+    bio
+    |> Phoenix.HTML.html_escape()
+    |> Phoenix.HTML.safe_to_string()
+    |> String.replace("\n", "<br>")
+    |> Baudrate.Content.Markdown.linkify_hashtags()
   end
 
   defp put_if(map, _key, nil), do: map

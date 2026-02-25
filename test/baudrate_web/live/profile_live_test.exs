@@ -88,6 +88,32 @@ defmodule BaudrateWeb.ProfileLiveTest do
     end
   end
 
+  describe "bio editing" do
+    test "saves bio", %{conn: conn, user: _user} do
+      {:ok, lv, _html} = live(conn, "/profile")
+
+      lv
+      |> form("form[phx-submit='save_bio']", %{bio: %{bio: "Hello, I'm a tester!"}})
+      |> render_submit()
+
+      html = render(lv)
+      assert html =~ "Bio updated" or html =~ "已更新" or html =~ "更新しました"
+    end
+
+    test "validates max length", %{conn: conn, user: _user} do
+      {:ok, lv, _html} = live(conn, "/profile")
+
+      long_bio = String.duplicate("a", 501)
+
+      html =
+        lv
+        |> form("form[phx-submit='save_bio']", %{bio: %{bio: long_bio}})
+        |> render_change()
+
+      assert html =~ "500"
+    end
+  end
+
   describe "DM access" do
     test "updates dm_access setting", %{conn: conn, user: user} do
       {:ok, lv, _html} = live(conn, "/profile")

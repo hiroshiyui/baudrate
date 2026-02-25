@@ -52,6 +52,24 @@ defmodule BaudrateWeb.UserProfileLiveTest do
     assert render_hook(lv, :unmute_user, %{})
   end
 
+  test "displays bio on user profile page", %{conn: conn} do
+    user = setup_user("user")
+    {:ok, _updated} = Auth.update_bio(user, "This is my bio text")
+
+    {:ok, _lv, html} = live(conn, "/users/#{user.username}")
+    assert html =~ "Bio"
+    assert html =~ "This is my bio text"
+  end
+
+  test "linkifies hashtags in bio display", %{conn: conn} do
+    user = setup_user("user")
+    {:ok, _updated} = Auth.update_bio(user, "I love #elixir")
+
+    {:ok, _lv, html} = live(conn, "/users/#{user.username}")
+    assert html =~ ~s(href="/tags/elixir")
+    assert html =~ "#elixir"
+  end
+
   test "displays signature on user profile page", %{conn: conn} do
     user = setup_user("user")
     {:ok, _updated} = Auth.update_signature(user, "My **profile** signature")

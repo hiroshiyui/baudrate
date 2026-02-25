@@ -45,6 +45,12 @@ defmodule Baudrate.Setup.User do
     * `dm_access` — controls who can send DMs to this user:
       `"anyone"` (default), `"followers"` (AP followers only), or `"nobody"`.
 
+  ## Bio
+
+    * `bio` — plaintext bio/about-me text (max 500 characters). Supports hashtag
+      linkification for display. Mapped to the ActivityPub `summary` field on the
+      Person actor. Validated by `bio_changeset/2`.
+
   ## Invite Chain Tracking
 
     * `invited_by_id` — references the user who generated the invite code used
@@ -67,6 +73,7 @@ defmodule Baudrate.Setup.User do
     field :ap_public_key, :string
     field :ap_private_key_encrypted, :binary
     field :signature, :string
+    field :bio, :string
     field :dm_access, :string, default: "anyone"
 
     belongs_to :role, Baudrate.Setup.Role
@@ -218,6 +225,13 @@ defmodule Baudrate.Setup.User do
         [preferred_locales: "contains unknown locales: #{Enum.join(invalid, ", ")}"]
       end
     end)
+  end
+
+  @doc "Changeset for updating the user's bio (max 500 chars, plaintext)."
+  def bio_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:bio])
+    |> validate_length(:bio, max: 500)
   end
 
   @doc "Changeset for updating DM access preference (`\"anyone\"`, `\"followers\"`, or `\"nobody\"`)."

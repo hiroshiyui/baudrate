@@ -364,6 +364,15 @@ a recovery code, and a new password. Each recovery code can only be used once.
 Recovery codes are the sole password recovery mechanism — there is no email in
 the system. Rate limited to 5 attempts per hour per IP.
 
+### User Bio
+
+Users can set a plaintext bio (max 500 characters, no line limit) in their
+profile at `/profile`. The bio supports hashtag linkification via
+`Content.Markdown.linkify_hashtags/1` and is displayed on the public profile
+page at `/users/:username`. For ActivityPub federation, the bio is HTML-escaped,
+newlines converted to `<br>`, and hashtags linkified to produce the `summary`
+field on the Person actor.
+
 ### User Signatures
 
 Users can set a signature (max 500 characters, max 8 lines, markdown format) in
@@ -783,7 +792,7 @@ See [`doc/api.md`](api.md) for the full AP endpoint reference.
 - **Pagination** — outbox, followers, and search collections use AP-spec `OrderedCollectionPage` pagination with `?page=N` (20 items/page). Without `?page`, the root `OrderedCollection` contains `totalItems` and a `first` link.
 - **Rate limiting** — 120 requests/min per IP; 429 responses are JSON (`{"error": "Too Many Requests"}`).
 - **`baudrate:*` extensions** — Article objects include `baudrate:pinned`, `baudrate:locked`, `baudrate:commentCount`, `baudrate:likeCount`. Board actors include `baudrate:parentBoard` and `baudrate:subBoards`.
-- **Enriched actors** — User actors include `published`, `summary` (user signature), and `icon` (avatar as WebP). Board actors include parent/sub-board links.
+- **Enriched actors** — User actors include `published`, `summary` (user bio, plaintext with hashtag linkification), and `icon` (avatar as WebP). Board actors include parent/sub-board links.
 
 ### Layout System
 

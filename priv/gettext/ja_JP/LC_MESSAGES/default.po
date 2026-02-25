@@ -3632,3 +3632,19 @@ msgstr "#%{tag} タグの記事"
 #, elixir-autogen, elixir-format
 msgid "No articles found with tag #%{tag}."
 msgstr "#%{tag} タグの記事が見つかりません。"
+
+#, elixir-autogen, elixir-format
+msgid "Bio"
+msgstr "自己紹介"
+
+#, elixir-autogen, elixir-format
+msgid "Save Bio"
+msgstr "自己紹介を保存"
+
+#, elixir-autogen, elixir-format
+msgid "Bio updated."
+msgstr "自己紹介を更新しました。"
+
+#, elixir-autogen, elixir-format
+msgid "Tell others about yourself (max 500 characters)"
+msgstr "自己紹介（最大500文字）"

@@ -689,6 +689,17 @@ defmodule Baudrate.Auth do
     |> Repo.update()
   end
 
+  # --- Bio ---
+
+  @doc """
+  Updates a user's bio.
+  """
+  def update_bio(user, bio) do
+    user
+    |> User.bio_changeset(%{bio: bio})
+    |> Repo.update()
+  end
+
   # --- Invite Codes ---
 
   @doc """

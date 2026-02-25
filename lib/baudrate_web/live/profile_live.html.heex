@@ -227,6 +227,28 @@
         </p>
       </div>
 
+      <%!-- Bio section --%>
+      <div>
+        <div class="text-sm text-base-content/70 mb-2">{gettext("Bio")}</div>
+        <.form
+          for={@bio_form}
+          phx-change="validate_bio"
+          phx-submit="save_bio"
+          class="space-y-3"
+        >
+          <.input
+            field={@bio_form[:bio]}
+            type="textarea"
+            rows="4"
+            maxlength="500"
+            placeholder={gettext("Tell others about yourself (max 500 characters)")}
+          />
+          <button type="submit" class="btn btn-sm btn-primary">
+            {gettext("Save Bio")}
+          </button>
+        </.form>
+      </div>
+
       <%!-- Signature section --%>
       <div>
         <div class="text-sm text-base-content/70 mb-2">{gettext("Signature")}</div>

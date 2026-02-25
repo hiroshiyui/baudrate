@@ -25,6 +25,7 @@ defmodule BaudrateWeb.ProfileLive do
     policy = Auth.totp_policy(user.role.name)
     is_active = Auth.user_active?(user)
 
+    bio_changeset = Baudrate.Setup.User.bio_changeset(user, %{})
     signature_changeset = Baudrate.Setup.User.signature_changeset(user, %{})
     mutes = Auth.list_mutes(user)
 
@@ -35,6 +36,7 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:show_crop_modal, false)
       |> assign(:preferred_locales, user.preferred_locales || [])
       |> assign(:available_locales, Locale.available_locales())
+      |> assign(:bio_form, to_form(bio_changeset, as: :bio))
       |> assign(:signature_form, to_form(signature_changeset, as: :signature))
       |> assign(:signature_preview, Baudrate.Content.Markdown.to_html(user.signature))
       |> assign(:mutes, mutes)
@@ -128,6 +130,33 @@ defmodule BaudrateWeb.ProfileLive do
       save_locales(socket, new_locales)
     else
       {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("validate_bio", %{"bio" => params}, socket) do
+    user = socket.assigns.current_user
+
+    changeset =
+      Baudrate.Setup.User.bio_changeset(user, params)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, :bio_form, to_form(changeset, as: :bio))}
+  end
+
+  @impl true
+  def handle_event("save_bio", %{"bio" => %{"bio" => bio}}, socket) do
+    user = socket.assigns.current_user
+
+    case Auth.update_bio(user, bio) do
+      {:ok, updated_user} ->
+        {:noreply,
+         socket
+         |> assign(:current_user, updated_user)
+         |> put_flash(:info, gettext("Bio updated."))}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :bio_form, to_form(changeset, as: :bio))}
     end
   end
 
