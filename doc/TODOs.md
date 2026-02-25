@@ -21,7 +21,7 @@ Audit date: 2026-02-25
 
 ## Locale
 
-- [ ] **Clean 28 stale gettext entries** — run `mix gettext.extract --merge` to remove msgids no longer in code.
+- [x] **Clean stale gettext entries** — no obsolete msgids found; removed 52 spurious fuzzy flags from `en/default.po` (source locale, all had empty `msgstr`).
 
 ## Code Quality
 
