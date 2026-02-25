@@ -4,12 +4,14 @@ defmodule BaudrateWeb.UserProfileLive do
 
   Displays a user's avatar, role, join date, content stats,
   and recent articles. Redirects if the user doesn't exist or is banned.
+  Authenticated users can follow/unfollow and mute/unmute other users.
   """
 
   use BaudrateWeb, :live_view
 
   alias Baudrate.Auth
   alias Baudrate.Content
+  alias Baudrate.Federation
   alias BaudrateWeb.RateLimits
   import BaudrateWeb.Helpers, only: [translate_role: 1]
 
@@ -41,6 +43,13 @@ defmodule BaudrateWeb.UserProfileLive do
             false
           end
 
+        is_following =
+          if current_user && current_user.id != user.id do
+            Federation.local_follows?(current_user.id, user.id)
+          else
+            false
+          end
+
         {:ok,
          assign(socket,
            profile_user: user,
@@ -48,8 +57,67 @@ defmodule BaudrateWeb.UserProfileLive do
            article_count: article_count,
            comment_count: comment_count,
            is_muted: is_muted,
+           is_following: is_following,
            page_title: user.username
          )}
+    end
+  end
+
+  @impl true
+  def handle_event("follow_user", _params, socket) do
+    current_user = socket.assigns.current_user
+
+    if current_user do
+      case RateLimits.check_outbound_follow(current_user.id) do
+        {:error, :rate_limited} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("Follow rate limit exceeded. Please try again later.")
+           )}
+
+        :ok ->
+          profile_user = socket.assigns.profile_user
+
+          case Federation.create_local_follow(current_user, profile_user) do
+            {:ok, _follow} ->
+              {:noreply,
+               socket
+               |> assign(:is_following, true)
+               |> put_flash(:info, gettext("Followed successfully."))}
+
+            {:error, :self_follow} ->
+              {:noreply, put_flash(socket, :error, gettext("You cannot follow yourself."))}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, gettext("Already following this user."))}
+          end
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("unfollow_user", _params, socket) do
+    current_user = socket.assigns.current_user
+
+    if current_user do
+      profile_user = socket.assigns.profile_user
+
+      case Federation.delete_local_follow(current_user, profile_user) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> assign(:is_following, false)
+           |> put_flash(:info, gettext("Unfollowed successfully."))}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Could not unfollow user."))}
+      end
+    else
+      {:noreply, socket}
     end
   end
 

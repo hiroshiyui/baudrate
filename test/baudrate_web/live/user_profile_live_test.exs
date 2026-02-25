@@ -1,9 +1,10 @@
 defmodule BaudrateWeb.UserProfileLiveTest do
-  use BaudrateWeb.ConnCase
+  use BaudrateWeb.ConnCase, async: false
 
   import Phoenix.LiveViewTest
 
   alias Baudrate.Auth
+  alias Baudrate.Federation
   alias Baudrate.Repo
   alias Baudrate.Setup.Setting
 
@@ -58,5 +59,57 @@ defmodule BaudrateWeb.UserProfileLiveTest do
     {:ok, _lv, html} = live(conn, "/users/#{user.username}")
     assert html =~ "Signature"
     assert html =~ "profile"
+  end
+
+  describe "follow button" do
+    test "shows follow button on other user's profile", %{conn: conn} do
+      current_user = setup_user("user")
+      profile_user = setup_user("user")
+      conn = log_in_user(conn, current_user)
+
+      {:ok, _lv, html} = live(conn, "/users/#{profile_user.username}")
+      assert html =~ "Follow"
+    end
+
+    test "no follow button on own profile", %{conn: conn} do
+      user = setup_user("user")
+      conn = log_in_user(conn, user)
+
+      {:ok, _lv, html} = live(conn, "/users/#{user.username}")
+      refute html =~ "follow_user"
+    end
+
+    test "follow event creates local follow", %{conn: conn} do
+      current_user = setup_user("user")
+      profile_user = setup_user("user")
+      conn = log_in_user(conn, current_user)
+
+      {:ok, lv, _html} = live(conn, "/users/#{profile_user.username}")
+
+      html = lv |> element(~s(button[phx-click="follow_user"])) |> render_click()
+      assert html =~ "Followed successfully"
+      assert Federation.local_follows?(current_user.id, profile_user.id)
+    end
+
+    test "unfollow event removes local follow", %{conn: conn} do
+      current_user = setup_user("user")
+      profile_user = setup_user("user")
+      {:ok, _} = Federation.create_local_follow(current_user, profile_user)
+      conn = log_in_user(conn, current_user)
+
+      {:ok, lv, html} = live(conn, "/users/#{profile_user.username}")
+      assert html =~ "Unfollow"
+
+      html = lv |> element(~s(button[phx-click="unfollow_user"])) |> render_click()
+      assert html =~ "Unfollowed successfully"
+      refute Federation.local_follows?(current_user.id, profile_user.id)
+    end
+
+    test "guest users don't see follow button", %{conn: conn} do
+      user = setup_user("user")
+
+      {:ok, _lv, html} = live(conn, "/users/#{user.username}")
+      refute html =~ "follow_user"
+    end
   end
 end

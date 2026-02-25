@@ -19,6 +19,27 @@
           {gettext("Message")}
         </.link>
         <button
+          :if={!@is_following}
+          type="button"
+          class="btn btn-sm btn-primary"
+          phx-click="follow_user"
+          aria-label={gettext("Follow %{username}", username: @profile_user.username)}
+        >
+          <.icon name="hero-user-plus" class="size-4" />
+          {gettext("Follow")}
+        </button>
+        <button
+          :if={@is_following}
+          type="button"
+          class="btn btn-sm btn-outline"
+          phx-click="unfollow_user"
+          data-confirm={gettext("Unfollow this user?")}
+          aria-label={gettext("Unfollow %{username}", username: @profile_user.username)}
+        >
+          <.icon name="hero-user-minus" class="size-4" />
+          {gettext("Unfollow")}
+        </button>
+        <button
           :if={!@is_muted}
           type="button"
           class="btn btn-sm btn-outline"

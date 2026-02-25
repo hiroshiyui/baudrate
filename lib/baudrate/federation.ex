@@ -52,6 +52,12 @@ defmodule Baudrate.Federation do
   activity handling migrates follows to the new actor. `Delete` propagation
   soft-deletes feed items.
 
+  Phase 8 — Local user follows: users can follow other local users via
+  the same `user_follows` table (using `followed_user_id` instead of
+  `remote_actor_id`). Local follows auto-accept immediately with no AP
+  delivery. The personal feed shows articles from both remote actors and
+  locally-followed users. Following collection includes local follow URIs.
+
   Private boards are excluded from all federation endpoints — WebFinger,
   actor profiles, outbox, inbox, followers, and audience resolution all
   return 404 or skip private boards. Articles exclusively in private
@@ -600,16 +606,40 @@ defmodule Baudrate.Federation do
           page ->
             offset = (page - 1) * @items_per_page
 
-            followed_uris =
+            # Remote follows: use remote_actor.ap_id
+            remote_uris =
               from(uf in UserFollow,
-                where: uf.user_id == ^user.id and uf.state == "accepted",
+                where:
+                  uf.user_id == ^user.id and uf.state == "accepted" and
+                    not is_nil(uf.remote_actor_id),
                 join: ra in assoc(uf, :remote_actor),
-                order_by: [desc: uf.inserted_at],
-                offset: ^offset,
-                limit: ^@items_per_page,
-                select: ra.ap_id
+                select: %{ap_id: ra.ap_id, inserted_at: uf.inserted_at}
               )
-              |> Repo.all()
+
+            # Local follows: build actor_uri from followed user's username
+            local_uris =
+              from(uf in UserFollow,
+                where:
+                  uf.user_id == ^user.id and uf.state == "accepted" and
+                    not is_nil(uf.followed_user_id),
+                join: u in assoc(uf, :followed_user),
+                select: %{username: u.username, inserted_at: uf.inserted_at}
+              )
+
+            remote_entries =
+              Repo.all(remote_uris)
+              |> Enum.map(&{&1.ap_id, &1.inserted_at})
+
+            local_entries =
+              Repo.all(local_uris)
+              |> Enum.map(&{actor_uri(:user, &1.username), &1.inserted_at})
+
+            followed_uris =
+              (remote_entries ++ local_entries)
+              |> Enum.sort_by(&elem(&1, 1), {:desc, DateTime})
+              |> Enum.drop(offset)
+              |> Enum.take(@items_per_page)
+              |> Enum.map(&elem(&1, 0))
 
             has_next = length(followed_uris) == @items_per_page
             build_collection_page(following_uri, followed_uris, page, has_next)
@@ -993,7 +1023,7 @@ defmodule Baudrate.Federation do
       from(uf in UserFollow,
         where: uf.user_id == ^user_id,
         order_by: [desc: uf.inserted_at],
-        preload: [:remote_actor]
+        preload: [:remote_actor, followed_user: :role]
       )
 
     query =
@@ -1060,9 +1090,10 @@ defmodule Baudrate.Federation do
     per_page = Keyword.get(opts, :per_page, @feed_per_page)
     offset = (page - 1) * per_page
 
-    {_hidden_user_ids, hidden_ap_ids} = Auth.hidden_ids(user)
+    {hidden_user_ids, hidden_ap_ids} = Auth.hidden_ids(user)
 
-    base_query =
+    # Remote feed items from followed remote actors
+    remote_query =
       from(fi in FeedItem,
         join: uf in UserFollow,
         on: uf.remote_actor_id == fi.remote_actor_id,
@@ -1072,23 +1103,64 @@ defmodule Baudrate.Federation do
         where: is_nil(fi.deleted_at)
       )
 
-    base_query =
+    remote_query =
       if hidden_ap_ids != [] do
-        from([fi, _uf, ra] in base_query, where: ra.ap_id not in ^hidden_ap_ids)
+        from([fi, _uf, ra] in remote_query, where: ra.ap_id not in ^hidden_ap_ids)
       else
-        base_query
+        remote_query
       end
 
-    total = Repo.one(from(q in base_query, select: count(q.id)))
+    remote_total = Repo.one(from(q in remote_query, select: count(q.id)))
 
-    items =
-      from([fi, _uf, ra] in base_query,
+    # Local articles from followed local users
+    local_query =
+      from(a in Baudrate.Content.Article,
+        join: uf in UserFollow,
+        on: uf.followed_user_id == a.user_id,
+        where: uf.user_id == ^user.id and uf.state == "accepted",
+        where: is_nil(a.deleted_at)
+      )
+
+    local_query =
+      if hidden_user_ids != [] do
+        from(a in local_query, where: a.user_id not in ^hidden_user_ids)
+      else
+        local_query
+      end
+
+    local_total = Repo.one(from(a in local_query, select: count(a.id)))
+
+    total = remote_total + local_total
+
+    # Fetch both sets with extra items for proper merge-sort pagination
+    remote_items =
+      from([fi, _uf, ra] in remote_query,
         order_by: [desc: fi.published_at],
-        offset: ^offset,
-        limit: ^per_page,
+        limit: ^(offset + per_page),
         preload: [:remote_actor]
       )
       |> Repo.all()
+      |> Enum.map(fn fi ->
+        %{source: :remote, feed_item: fi, sorted_at: fi.published_at}
+      end)
+
+    local_items =
+      from(a in local_query,
+        order_by: [desc: a.inserted_at],
+        limit: ^(offset + per_page),
+        preload: [:user, boards: []]
+      )
+      |> Repo.all()
+      |> Enum.map(fn article ->
+        %{source: :local, article: article, sorted_at: article.inserted_at}
+      end)
+
+    # Merge, sort, paginate
+    items =
+      (remote_items ++ local_items)
+      |> Enum.sort_by(& &1.sorted_at, {:desc, DateTime})
+      |> Enum.drop(offset)
+      |> Enum.take(per_page)
 
     total_pages = max(ceil(total / per_page), 1)
 
@@ -1143,6 +1215,84 @@ defmodule Baudrate.Federation do
   def local_followers_of_remote_actor(remote_actor_id) do
     from(uf in UserFollow,
       where: uf.remote_actor_id == ^remote_actor_id and uf.state == "accepted",
+      select: uf.user_id
+    )
+    |> Repo.all()
+  end
+
+  # --- Local User Follows ---
+
+  @doc """
+  Creates a local follow (user → user on same instance).
+
+  The follow is auto-accepted immediately with no AP delivery required.
+  Returns `{:ok, %UserFollow{}}` or `{:error, changeset}`.
+  """
+  def create_local_follow(%{id: follower_id} = follower, %{id: followed_id}) do
+    if follower_id == followed_id do
+      {:error, :self_follow}
+    else
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      ap_id =
+        "#{actor_uri(:user, follower.username)}#follow-#{System.unique_integer([:positive])}"
+
+      %UserFollow{}
+      |> UserFollow.changeset(%{
+        user_id: follower_id,
+        followed_user_id: followed_id,
+        state: "accepted",
+        ap_id: ap_id,
+        accepted_at: now
+      })
+      |> Repo.insert()
+    end
+  end
+
+  @doc """
+  Deletes a local follow record (user → user unfollow).
+
+  Returns `{:ok, %UserFollow{}}` or `{:error, :not_found}`.
+  """
+  def delete_local_follow(%{id: follower_id}, %{id: followed_id}) do
+    case Repo.one(
+           from(uf in UserFollow,
+             where: uf.user_id == ^follower_id and uf.followed_user_id == ^followed_id
+           )
+         ) do
+      nil -> {:error, :not_found}
+      %UserFollow{} = follow -> Repo.delete(follow)
+    end
+  end
+
+  @doc """
+  Returns the local follow record for the given follower/followed user pair, or nil.
+  """
+  def get_local_follow(follower_user_id, followed_user_id) do
+    Repo.one(
+      from(uf in UserFollow,
+        where: uf.user_id == ^follower_user_id and uf.followed_user_id == ^followed_user_id
+      )
+    )
+  end
+
+  @doc """
+  Returns true if a local follow record exists for the user pair (any state).
+  """
+  def local_follows?(user_id, followed_user_id) do
+    Repo.exists?(
+      from(uf in UserFollow,
+        where: uf.user_id == ^user_id and uf.followed_user_id == ^followed_user_id
+      )
+    )
+  end
+
+  @doc """
+  Returns user IDs of local users with accepted follows for the given local user.
+  """
+  def local_followers_of_user(followed_user_id) do
+    from(uf in UserFollow,
+      where: uf.followed_user_id == ^followed_user_id and uf.state == "accepted",
       select: uf.user_id
     )
     |> Repo.all()

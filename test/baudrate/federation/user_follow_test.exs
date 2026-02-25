@@ -92,7 +92,7 @@ defmodule Baudrate.Federation.UserFollowTest do
       assert %{user_id: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "missing remote_actor_id is invalid" do
+    test "missing both remote_actor_id and followed_user_id is invalid" do
       user = create_user()
 
       changeset =
@@ -103,7 +103,11 @@ defmodule Baudrate.Federation.UserFollowTest do
         })
 
       refute changeset.valid?
-      assert %{remote_actor_id: ["can't be blank"]} = errors_on(changeset)
+
+      assert %{
+               remote_actor_id: ["exactly one of remote_actor_id or followed_user_id must be set"]
+             } =
+               errors_on(changeset)
     end
 
     test "missing state is invalid" do

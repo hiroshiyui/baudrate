@@ -10,14 +10,44 @@
     {gettext("You haven't followed anyone yet.")}
     <div class="mt-2">
       <.link navigate="/search" class="link link-primary">
-        {gettext("Search for remote actors to follow")}
+        {gettext("Search for users or remote actors to follow")}
       </.link>
     </div>
   </div>
 
   <div :if={@follows != []} class="space-y-2">
     <div :for={follow <- @follows} class="card bg-base-200 shadow-sm">
-      <div class="card-body p-4 flex flex-row items-center gap-4">
+      <%!-- Local user follow --%>
+      <div :if={follow.followed_user} class="card-body p-4 flex flex-row items-center gap-4">
+        <.avatar user={follow.followed_user} size={48} />
+        <div class="flex-1 min-w-0">
+          <.link
+            navigate={~p"/users/#{follow.followed_user.username}"}
+            class="font-bold truncate link link-hover"
+          >
+            {follow.followed_user.username}
+          </.link>
+          <div class="flex items-center gap-2 mt-1">
+            <span class="badge badge-outline badge-xs">
+              {translate_role(follow.followed_user.role.name)}
+            </span>
+            <span class="badge badge-info badge-xs">{gettext("Local")}</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="badge badge-sm badge-success">{gettext("Accepted")}</span>
+          <button
+            phx-click="unfollow_user"
+            phx-value-id={follow.followed_user.id}
+            data-confirm={gettext("Unfollow this user?")}
+            class="btn btn-sm btn-ghost text-error"
+          >
+            {gettext("Unfollow")}
+          </button>
+        </div>
+      </div>
+      <%!-- Remote actor follow --%>
+      <div :if={follow.remote_actor} class="card-body p-4 flex flex-row items-center gap-4">
         <div class="avatar">
           <div class="w-12 h-12 rounded-full bg-base-300 flex items-center justify-center">
             <img

@@ -83,7 +83,7 @@ lib/
 │   │   ├── key_store.ex         # RSA-2048 keypair management for actors (generate, ensure, rotate)
 │   │   ├── key_vault.ex         # AES-256-GCM encryption for private keys at rest
 │   │   ├── remote_actor.ex      # RemoteActor schema (cached remote profiles)
-│   │   ├── user_follow.ex       # UserFollow schema (outbound user → remote actor follows)
+│   │   ├── user_follow.ex       # UserFollow schema (outbound follows: remote actors + local users)
 │   │   ├── feed_item.ex         # FeedItem schema (posts from followed remote actors)
 │   │   ├── pubsub.ex            # Federation PubSub (user feed events)
 │   │   ├── publisher.ex         # ActivityStreams JSON builders for outgoing activities
@@ -629,11 +629,21 @@ The `Baudrate.Federation` context handles all federation logic.
 - `feed_items` table — stores incoming posts from followed actors that don't land in boards/comments/DMs
 - One row per activity (keyed by `ap_id`), visibility via JOIN with `user_follows` at query time
 - `Federation.create_feed_item/1` — insert + broadcast to followers via `Federation.PubSub`
-- `Federation.list_feed_items/2` — paginated query, excludes soft-deleted, filters blocked/muted
+- `Federation.list_feed_items/2` — paginated union query: remote feed items + local articles from followed users
 - Inbox handler fallback: Create(Note) without reply target, Create(Article/Page) without board → feed item
 - Delete propagation: soft-deletes feed items on content or actor deletion
 - `Federation.migrate_user_follows/2` — Move activity support (migrate + deduplicate)
 - `/feed` LiveView — paginated personal timeline with real-time PubSub updates
+
+**Local user follows** (Phase 4):
+- `user_follows.followed_user_id` — nullable FK to `users`, with check constraint (exactly one of `remote_actor_id`/`followed_user_id`)
+- `Federation.create_local_follow/2` — auto-accepted immediately, no AP delivery
+- `Federation.delete_local_follow/2` / `get_local_follow/2` / `local_follows?/2`
+- `/search` — "Users" tab with local user search, follow/unfollow buttons
+- `/following` — shows both local and remote follows with Local/Remote badges
+- User profile — follow/unfollow button next to mute button
+- `following_collection/2` — includes local follow actor URIs
+- Feed includes articles from locally-followed users via union query
 
 **Mastodon/Lemmy compatibility:**
 - `attributedTo` arrays — extracts first binary URI for validation

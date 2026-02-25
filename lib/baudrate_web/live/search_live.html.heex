@@ -123,6 +123,14 @@
     >
       {gettext("Comments")}
     </.link>
+    <.link
+      patch={~p"/search?#{%{q: @query, tab: "users"}}"}
+      role="tab"
+      aria-selected={to_string(@tab == "users")}
+      class={"tab #{if @tab == "users", do: "tab-active"}"}
+    >
+      {gettext("Users")}
+    </.link>
   </div>
 
   <div
@@ -139,7 +147,17 @@
     {gettext("No comments found for \"%{query}\".", query: @query)}
   </div>
 
-  <div :if={@query != "" && @total > 0} class="text-sm text-base-content/70 mb-4">
+  <div
+    :if={@query != "" && @tab == "users" && @local_users == []}
+    class="text-base-content/50 text-center py-8"
+  >
+    {gettext("No users found for \"%{query}\".", query: @query)}
+  </div>
+
+  <div
+    :if={@query != "" && @total > 0 && @tab != "users"}
+    class="text-sm text-base-content/70 mb-4"
+  >
     {ngettext("1 result", "%{count} results", @total)}
   </div>
 
@@ -188,6 +206,49 @@
           <time datetime={Calendar.strftime(comment.inserted_at, "%Y-%m-%dT%H:%M:%S")}>
             {Calendar.strftime(comment.inserted_at, "%Y-%m-%d %H:%M")}
           </time>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%!-- Local users results --%>
+  <div :if={@tab == "users" && @local_users != []} class="space-y-2" aria-live="polite">
+    <div :for={user <- @local_users} class="card bg-base-200 shadow-sm">
+      <div class="card-body p-4 flex flex-row items-center gap-4">
+        <.avatar user={user} size={48} />
+        <div class="flex-1 min-w-0">
+          <.link navigate={~p"/users/#{user.username}"} class="font-bold truncate link link-hover">
+            {user.username}
+          </.link>
+          <div class="flex items-center gap-2 mt-1">
+            <span class="badge badge-outline badge-xs">{translate_role(user.role.name)}</span>
+            <span class="badge badge-info badge-xs">{gettext("Local")}</span>
+          </div>
+        </div>
+        <div class="flex-none">
+          <%= cond do %>
+            <% !@current_user -> %>
+              <.link navigate="/login" class="btn btn-sm btn-outline">
+                {gettext("Sign in to follow")}
+              </.link>
+            <% @local_user_follow_states[user.id] == "accepted" -> %>
+              <button
+                phx-click="unfollow_user"
+                phx-value-id={user.id}
+                data-confirm={gettext("Unfollow this user?")}
+                class="btn btn-sm btn-outline"
+              >
+                {gettext("Unfollow")}
+              </button>
+            <% true -> %>
+              <button
+                phx-click="follow_user"
+                phx-value-id={user.id}
+                class="btn btn-sm btn-primary"
+              >
+                {gettext("Follow")}
+              </button>
+          <% end %>
         </div>
       </div>
     </div>

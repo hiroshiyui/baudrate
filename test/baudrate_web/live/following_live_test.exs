@@ -98,6 +98,48 @@ defmodule BaudrateWeb.FollowingLiveTest do
     end
   end
 
+  describe "local follows" do
+    test "shows local follows with Local badge", %{conn: conn, user: user} do
+      followed_user = setup_user("user")
+      {:ok, _} = Federation.create_local_follow(user, followed_user)
+
+      {:ok, _lv, html} = live(conn, "/following")
+      assert html =~ followed_user.username
+      assert html =~ "Local"
+      assert html =~ "Accepted"
+    end
+
+    test "unfollow local user removes from list", %{conn: conn, user: user} do
+      followed_user = setup_user("user")
+      {:ok, _} = Federation.create_local_follow(user, followed_user)
+
+      {:ok, lv, html} = live(conn, "/following")
+      assert html =~ followed_user.username
+
+      html =
+        lv
+        |> element(~s(button[phx-click="unfollow_user"][phx-value-id="#{followed_user.id}"]))
+        |> render_click()
+
+      assert html =~ "Unfollowed successfully"
+      refute html =~ followed_user.username
+      refute Federation.local_follows?(user.id, followed_user.id)
+    end
+
+    test "shows both local and remote follows", %{conn: conn, user: user} do
+      followed_user = setup_user("user")
+      {:ok, _} = Federation.create_local_follow(user, followed_user)
+
+      actor = create_remote_actor(%{username: "remote_alice", domain: "example.org"})
+      {:ok, _} = Federation.create_user_follow(user, actor)
+
+      {:ok, _lv, html} = live(conn, "/following")
+      assert html =~ followed_user.username
+      assert html =~ "remote_alice"
+      assert html =~ "example.org"
+    end
+  end
+
   describe "requires authentication" do
     test "redirects unauthenticated user to login" do
       conn = build_conn()

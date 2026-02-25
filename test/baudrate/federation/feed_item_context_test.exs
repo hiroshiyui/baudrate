@@ -130,7 +130,7 @@ defmodule Baudrate.Federation.FeedItemContextTest do
 
       result = Federation.list_feed_items(user)
       assert length(result.items) == 1
-      assert hd(result.items).id == item.id
+      assert hd(result.items).feed_item.id == item.id
     end
 
     test "excludes soft-deleted items", %{user: user, actor: actor} do

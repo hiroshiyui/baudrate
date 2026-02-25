@@ -1,6 +1,6 @@
 defmodule BaudrateWeb.SearchLive do
   @moduledoc """
-  LiveView for full-text search across articles and comments.
+  LiveView for full-text search across articles, comments, and local users.
 
   Accessible to both guests and authenticated users via `:optional_auth`.
   Search query, active tab, and pagination state live in the URL via
@@ -11,15 +11,19 @@ defmodule BaudrateWeb.SearchLive do
   When the query matches `@user@domain` or an `https://` actor URL,
   performs a remote actor lookup via WebFinger/ActivityPub and displays
   a follow/unfollow card alongside local search results.
+
+  The "Users" tab searches local users and supports follow/unfollow actions
+  for authenticated users.
   """
 
   use BaudrateWeb, :live_view
 
+  alias Baudrate.Auth
   alias Baudrate.Content
   alias Baudrate.Federation
   alias Baudrate.Federation.{Delivery, Publisher}
   alias BaudrateWeb.RateLimits
-  import BaudrateWeb.Helpers, only: [parse_page: 1, parse_id: 1]
+  import BaudrateWeb.Helpers, only: [parse_page: 1, parse_id: 1, translate_role: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -39,6 +43,8 @@ defmodule BaudrateWeb.SearchLive do
      |> assign(:tab, "articles")
      |> assign(:articles, [])
      |> assign(:comments, [])
+     |> assign(:local_users, [])
+     |> assign(:local_user_follow_states, %{})
      |> assign(:total, 0)
      |> assign(:page, 1)
      |> assign(:total_pages, 1)
@@ -52,7 +58,12 @@ defmodule BaudrateWeb.SearchLive do
   @impl true
   def handle_params(params, _uri, socket) do
     query = params["q"] || ""
-    tab = if params["tab"] in ["articles", "comments"], do: params["tab"], else: "articles"
+
+    tab =
+      if params["tab"] in ["articles", "comments", "users"],
+        do: params["tab"],
+        else: "articles"
+
     page = parse_page(params["page"])
 
     socket =
@@ -71,20 +82,28 @@ defmodule BaudrateWeb.SearchLive do
            |> put_flash(:error, gettext("Too many searches. Please try again later."))}
 
         :ok ->
-          result =
-            case tab do
-              "articles" ->
-                Content.search_articles(query, page: page, user: socket.assigns.current_user)
-
-              "comments" ->
-                Content.search_comments(query, page: page, user: socket.assigns.current_user)
-            end
-
           socket =
             socket
             |> assign(:query, query)
             |> assign(:tab, tab)
-            |> assign_search_results(tab, result)
+
+          socket =
+            case tab do
+              "articles" ->
+                result =
+                  Content.search_articles(query, page: page, user: socket.assigns.current_user)
+
+                assign_search_results(socket, "articles", result)
+
+              "comments" ->
+                result =
+                  Content.search_comments(query, page: page, user: socket.assigns.current_user)
+
+                assign_search_results(socket, "comments", result)
+
+              "users" ->
+                search_local_users(socket, query)
+            end
 
           # Trigger async remote actor lookup if query looks like a fediverse handle or URL
           socket =
@@ -104,6 +123,8 @@ defmodule BaudrateWeb.SearchLive do
          tab: tab,
          articles: [],
          comments: [],
+         local_users: [],
+         local_user_follow_states: %{},
          total: 0,
          page: 1,
          total_pages: 1
@@ -182,6 +203,71 @@ defmodule BaudrateWeb.SearchLive do
   end
 
   @impl true
+  def handle_event("follow_user", %{"id" => id}, socket) do
+    case socket.assigns.current_user do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("You are not signed in."))}
+
+      user ->
+        with {:ok, followed_user_id} <- parse_id(id),
+             followed_user when not is_nil(followed_user) <-
+               Auth.get_user(followed_user_id),
+             :ok <- RateLimits.check_outbound_follow(user.id),
+             {:ok, _follow} <- Federation.create_local_follow(user, followed_user) do
+          follow_states =
+            Map.put(socket.assigns.local_user_follow_states, followed_user_id, "accepted")
+
+          {:noreply,
+           socket
+           |> assign(:local_user_follow_states, follow_states)
+           |> put_flash(:info, gettext("Followed successfully."))}
+        else
+          {:error, :self_follow} ->
+            {:noreply, put_flash(socket, :error, gettext("You cannot follow yourself."))}
+
+          {:error, :rate_limited} ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               gettext("Follow rate limit exceeded. Please try again later.")
+             )}
+
+          {:error, %Ecto.Changeset{}} ->
+            {:noreply, put_flash(socket, :error, gettext("Already following this user."))}
+
+          _ ->
+            {:noreply, put_flash(socket, :error, gettext("Could not follow user."))}
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("unfollow_user", %{"id" => id}, socket) do
+    case socket.assigns.current_user do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("You are not signed in."))}
+
+      user ->
+        with {:ok, followed_user_id} <- parse_id(id),
+             followed_user when not is_nil(followed_user) <-
+               Auth.get_user(followed_user_id),
+             {:ok, _follow} <- Federation.delete_local_follow(user, followed_user) do
+          follow_states =
+            Map.delete(socket.assigns.local_user_follow_states, followed_user_id)
+
+          {:noreply,
+           socket
+           |> assign(:local_user_follow_states, follow_states)
+           |> put_flash(:info, gettext("Unfollowed successfully."))}
+        else
+          _ ->
+            {:noreply, put_flash(socket, :error, gettext("Could not unfollow user."))}
+        end
+    end
+  end
+
+  @impl true
   def handle_info({:lookup_remote_actor, query}, socket) do
     case Federation.lookup_remote_actor(query) do
       {:ok, remote_actor} ->
@@ -227,10 +313,42 @@ defmodule BaudrateWeb.SearchLive do
     end
   end
 
+  defp search_local_users(socket, query) do
+    current_user = socket.assigns.current_user
+    exclude_id = if current_user, do: current_user.id, else: nil
+
+    users = Auth.search_users(query, limit: 20, exclude_id: exclude_id)
+
+    follow_states =
+      if current_user do
+        users
+        |> Enum.map(fn u ->
+          case Federation.get_local_follow(current_user.id, u.id) do
+            %{state: state} -> {u.id, state}
+            nil -> {u.id, nil}
+          end
+        end)
+        |> Map.new()
+      else
+        %{}
+      end
+
+    socket
+    |> assign(:local_users, users)
+    |> assign(:local_user_follow_states, follow_states)
+    |> assign(:articles, [])
+    |> assign(:comments, [])
+    |> assign(:total, length(users))
+    |> assign(:page, 1)
+    |> assign(:total_pages, 1)
+  end
+
   defp assign_search_results(socket, "articles", result) do
     socket
     |> assign(:articles, result.articles)
     |> assign(:comments, [])
+    |> assign(:local_users, [])
+    |> assign(:local_user_follow_states, %{})
     |> assign(:total, result.total)
     |> assign(:page, result.page)
     |> assign(:total_pages, result.total_pages)
@@ -240,6 +358,8 @@ defmodule BaudrateWeb.SearchLive do
     socket
     |> assign(:articles, [])
     |> assign(:comments, result.comments)
+    |> assign(:local_users, [])
+    |> assign(:local_user_follow_states, %{})
     |> assign(:total, result.total)
     |> assign(:page, result.page)
     |> assign(:total_pages, result.total_pages)

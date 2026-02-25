@@ -48,6 +48,23 @@ receiving the actor's public posts in a personal feed.
 - [x] i18n translations (en, zh_TW, ja_JP)
 - [x] Tests for all new code
 
+#### Phase 4 — Local User Follows (DONE)
+
+- [x] `followed_user_id` column on `user_follows` table (nullable, with check constraint)
+- [x] `UserFollow` schema: `belongs_to :followed_user`, validation for exactly one target
+- [x] Local follow CRUD: `create_local_follow/2`, `delete_local_follow/2`, `get_local_follow/2`, `local_follows?/2`
+- [x] Local follows auto-accept immediately (state = "accepted", no AP delivery)
+- [x] `list_user_follows/1` preloads both `:remote_actor` and `:followed_user`
+- [x] `following_collection/2` includes local follow URIs
+- [x] `list_feed_items/2` includes articles from locally-followed users (union query)
+- [x] `/search` — "Users" tab with local user search, follow/unfollow buttons
+- [x] `/following` — shows both local and remote follows with appropriate badges
+- [x] User profile — follow/unfollow button (with rate limiting)
+- [x] `/feed` — renders both remote feed items and local articles
+- [x] `local_followers_of_user/1` — for future PubSub integration
+- [x] i18n translations (en, zh_TW, ja_JP)
+- [x] Tests for all new code
+
 #### Shared Remote Actor Lookup
 
 Both user-level and board-level follows share a common

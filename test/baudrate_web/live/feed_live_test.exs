@@ -131,11 +131,74 @@ defmodule BaudrateWeb.FeedLiveTest do
     end
   end
 
+  describe "local follows in feed" do
+    test "feed includes articles from locally-followed users", %{conn: conn, user: user} do
+      # Create a followed user and their article
+      followed_user = setup_user("user")
+      {:ok, _} = Federation.create_local_follow(user, followed_user)
+
+      board = create_board()
+      create_article(followed_user, board, %{title: "Local Followed Article"})
+
+      {:ok, _lv, html} = live(conn, "/feed")
+      assert html =~ "Local Followed Article"
+      assert html =~ followed_user.username
+      assert html =~ "Local"
+    end
+
+    test "feed does not show articles from unfollowed users", %{conn: conn} do
+      unfollowed_user = setup_user("user")
+      board = create_board()
+      create_article(unfollowed_user, board, %{title: "Unfollowed Article"})
+
+      {:ok, _lv, html} = live(conn, "/feed")
+      refute html =~ "Unfollowed Article"
+    end
+  end
+
   describe "requires authentication" do
     test "redirects unauthenticated user to login" do
       conn = build_conn()
       {:error, {:redirect, %{to: to}}} = live(conn, "/feed")
       assert to =~ "/login"
     end
+  end
+
+  defp create_board do
+    alias Baudrate.Content.Board
+
+    uid = System.unique_integer([:positive])
+
+    {:ok, board} =
+      %Board{}
+      |> Board.changeset(%{
+        name: "Board #{uid}",
+        slug: "board-#{uid}",
+        description: "Test board",
+        min_role_to_view: "guest",
+        min_role_to_post: "user"
+      })
+      |> Repo.insert()
+
+    board
+  end
+
+  defp create_article(user, board, attrs) do
+    alias Baudrate.Content
+
+    uid = System.unique_integer([:positive])
+
+    {:ok, article} =
+      Content.create_article(
+        %{
+          title: attrs[:title] || "Article #{uid}",
+          body: attrs[:body] || "Body for article #{uid}",
+          slug: "test-article-#{uid}",
+          user_id: user.id
+        },
+        [board.id]
+      )
+
+    article
   end
 end
