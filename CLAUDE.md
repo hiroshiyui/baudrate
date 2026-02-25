@@ -11,10 +11,13 @@ should remain visible to all; blocking controls interaction, not visibility.
 # Requires: Elixir 1.15+, PostgreSQL, libvips, Rust toolchain (for Ammonia NIF)
 mix setup              # Install deps, create DB, build assets
 mix phx.server         # Start dev server (https://localhost:4001)
-mix test               # Run all tests
+mix test --seed 9527   # Run all tests (use seed 9527 for deterministic order)
 mix test path/to/test  # Run specific test file
 mix test --failed      # Re-run previously failed tests
 mix precommit          # Pre-commit checks: compile --warnings-as-errors, unlock unused, format, test
+
+# Run tests in parallel with 4 partitions (preferred for full suite):
+for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 & done; wait
 ```
 
 ## Stack
@@ -103,10 +106,12 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 
 ## Testing
 
+- **Always use seed 9527 and 4 partitions** when running the full test suite
 - `use BaudrateWeb.ConnCase` for LiveView/controller tests; `use Baudrate.DataCase` for context tests
 - `setup_user("role_name")` — creates a test user with the given role (seeds roles if needed)
 - `log_in_user(conn, user)` — authenticates a connection with session tokens
 - `errors_on(changeset)` — extracts validation errors as `%{field: [messages]}`
+- Async tests using Mox **must** call `Mox.set_mox_private()` in setup to avoid stub leaks between concurrent tests
 
 ## Key Entry Points
 
