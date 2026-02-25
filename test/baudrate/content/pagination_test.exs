@@ -3,6 +3,7 @@ defmodule Baudrate.Content.PaginationTest do
 
   alias Baudrate.Content
   alias Baudrate.Content.Board
+  alias Baudrate.Content.Pagination
   alias Baudrate.Setup
 
   setup do
@@ -127,6 +128,163 @@ defmodule Baudrate.Content.PaginationTest do
 
       result = Content.paginate_articles_for_board(board)
       assert result.total == 2
+    end
+  end
+
+  describe "Pagination.paginate_opts/2" do
+    test "returns defaults when opts are empty" do
+      assert {1, 20, 0} = Pagination.paginate_opts([], 20)
+    end
+
+    test "uses provided page and per_page" do
+      assert {3, 10, 20} = Pagination.paginate_opts([page: 3, per_page: 10], 20)
+    end
+
+    test "clamps page to minimum of 1" do
+      assert {1, 20, 0} = Pagination.paginate_opts([page: 0], 20)
+      assert {1, 20, 0} = Pagination.paginate_opts([page: -5], 20)
+    end
+
+    test "uses default_per_page when not specified" do
+      assert {2, 15, 15} = Pagination.paginate_opts([page: 2], 15)
+    end
+
+    test "calculates correct offset" do
+      assert {5, 10, 40} = Pagination.paginate_opts([page: 5, per_page: 10], 20)
+    end
+  end
+
+  describe "Pagination.paginate_query/3" do
+    test "returns correct pagination result map" do
+      import Ecto.Query
+
+      user = create_user()
+      board = create_board()
+      create_articles(board, user, 5)
+
+      base_query =
+        from(a in Content.Article,
+          join: ba in Content.BoardArticle,
+          on: ba.article_id == a.id,
+          where: ba.board_id == ^board.id and is_nil(a.deleted_at),
+          distinct: a.id
+        )
+
+      result =
+        Pagination.paginate_query(base_query, {1, 2, 0},
+          result_key: :articles,
+          order_by: [desc: dynamic([q], q.inserted_at)],
+          preloads: [:user]
+        )
+
+      assert result.total == 5
+      assert result.page == 1
+      assert result.per_page == 2
+      assert result.total_pages == 3
+      assert length(result.articles) == 2
+    end
+
+    test "returns partial last page" do
+      import Ecto.Query
+
+      user = create_user()
+      board = create_board()
+      create_articles(board, user, 5)
+
+      base_query =
+        from(a in Content.Article,
+          join: ba in Content.BoardArticle,
+          on: ba.article_id == a.id,
+          where: ba.board_id == ^board.id and is_nil(a.deleted_at),
+          distinct: a.id
+        )
+
+      result =
+        Pagination.paginate_query(base_query, {3, 2, 4},
+          result_key: :articles,
+          order_by: [desc: dynamic([q], q.inserted_at)],
+          preloads: [:user]
+        )
+
+      assert result.total == 5
+      assert result.page == 3
+      assert result.total_pages == 3
+      assert length(result.articles) == 1
+    end
+
+    test "returns empty results for page beyond total" do
+      import Ecto.Query
+
+      user = create_user()
+      board = create_board()
+      create_articles(board, user, 5)
+
+      base_query =
+        from(a in Content.Article,
+          join: ba in Content.BoardArticle,
+          on: ba.article_id == a.id,
+          where: ba.board_id == ^board.id and is_nil(a.deleted_at),
+          distinct: a.id
+        )
+
+      result =
+        Pagination.paginate_query(base_query, {10, 2, 18},
+          result_key: :articles,
+          order_by: [desc: dynamic([q], q.inserted_at)],
+          preloads: []
+        )
+
+      assert result.total == 5
+      assert result.page == 10
+      assert result.articles == []
+    end
+
+    test "total_pages is at least 1 when no results" do
+      import Ecto.Query
+
+      base_query =
+        from(a in Content.Article,
+          where: a.id == -1,
+          distinct: a.id
+        )
+
+      result =
+        Pagination.paginate_query(base_query, {1, 20, 0},
+          result_key: :articles,
+          order_by: [desc: dynamic([q], q.inserted_at)],
+          preloads: []
+        )
+
+      assert result.total == 0
+      assert result.total_pages == 1
+      assert result.articles == []
+    end
+
+    test "preloads associations" do
+      import Ecto.Query
+
+      user = create_user()
+      board = create_board()
+      create_articles(board, user, 1)
+
+      base_query =
+        from(a in Content.Article,
+          join: ba in Content.BoardArticle,
+          on: ba.article_id == a.id,
+          where: ba.board_id == ^board.id and is_nil(a.deleted_at),
+          distinct: a.id
+        )
+
+      result =
+        Pagination.paginate_query(base_query, {1, 10, 0},
+          result_key: :articles,
+          order_by: [desc: dynamic([q], q.inserted_at)],
+          preloads: [:user, :boards]
+        )
+
+      article = hd(result.articles)
+      assert %Setup.User{} = article.user
+      assert [%Board{} | _] = article.boards
     end
   end
 end

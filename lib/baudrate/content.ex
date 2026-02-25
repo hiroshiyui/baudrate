@@ -29,6 +29,7 @@ defmodule Baudrate.Content do
     Comment
   }
 
+  alias Baudrate.Content.Pagination
   alias Baudrate.Content.PubSub, as: ContentPubSub
 
   # --- Boards ---
@@ -521,9 +522,7 @@ defmodule Baudrate.Content do
   Returns `%{articles, total, page, per_page, total_pages}`.
   """
   def search_articles(query_string, opts \\ []) do
-    page = max(Keyword.get(opts, :page, 1), 1)
-    per_page = Keyword.get(opts, :per_page, @per_page)
-    offset = (page - 1) * per_page
+    pagination = Pagination.paginate_opts(opts, @per_page)
     user = Keyword.get(opts, :user)
     allowed_roles = allowed_view_roles(user)
     {hidden_uids, hidden_ap_ids} = hidden_filters(user)
@@ -542,34 +541,11 @@ defmodule Baudrate.Content do
       )
       |> apply_hidden_filters(hidden_uids, hidden_ap_ids)
 
-    total = Repo.one(from(q in subquery(base_query), select: count()))
-
-    articles =
-      from(a in Article,
-        join: ba in BoardArticle,
-        on: ba.article_id == a.id,
-        join: b in Board,
-        on: b.id == ba.board_id,
-        where: is_nil(a.deleted_at) and b.min_role_to_view in ^allowed_roles,
-        where: ^where_clause,
-        distinct: a.id,
-        order_by: ^order_clause,
-        offset: ^offset,
-        limit: ^per_page,
-        preload: [:user, :boards]
-      )
-      |> apply_hidden_filters(hidden_uids, hidden_ap_ids)
-      |> Repo.all()
-
-    total_pages = max(ceil(total / per_page), 1)
-
-    %{
-      articles: articles,
-      total: total,
-      page: page,
-      per_page: per_page,
-      total_pages: total_pages
-    }
+    Pagination.paginate_query(base_query, pagination,
+      result_key: :articles,
+      order_by: order_clause,
+      preloads: [:user, :boards]
+    )
   end
 
   defp article_search_clauses(query_string) do
@@ -625,9 +601,7 @@ defmodule Baudrate.Content do
   Returns `%{comments, total, page, per_page, total_pages}`.
   """
   def search_comments(query_string, opts \\ []) do
-    page = max(Keyword.get(opts, :page, 1), 1)
-    per_page = Keyword.get(opts, :per_page, @per_page)
-    offset = (page - 1) * per_page
+    pagination = Pagination.paginate_opts(opts, @per_page)
     user = Keyword.get(opts, :user)
     allowed_roles = allowed_view_roles(user)
     {hidden_uids, hidden_ap_ids} = hidden_filters(user)
@@ -650,38 +624,11 @@ defmodule Baudrate.Content do
       )
       |> apply_hidden_filters(hidden_uids, hidden_ap_ids)
 
-    total = Repo.one(from(q in subquery(base_query), select: count()))
-
-    comments =
-      from(c in Comment,
-        join: a in Article,
-        on: a.id == c.article_id,
-        join: ba in BoardArticle,
-        on: ba.article_id == a.id,
-        join: b in Board,
-        on: b.id == ba.board_id,
-        where:
-          is_nil(c.deleted_at) and is_nil(a.deleted_at) and
-            b.min_role_to_view in ^allowed_roles,
-        where: ilike(c.body, ^pattern),
-        distinct: c.id,
-        order_by: [desc: c.inserted_at],
-        offset: ^offset,
-        limit: ^per_page,
-        preload: [:user, :remote_actor, article: :boards]
-      )
-      |> apply_hidden_filters(hidden_uids, hidden_ap_ids)
-      |> Repo.all()
-
-    total_pages = max(ceil(total / per_page), 1)
-
-    %{
-      comments: comments,
-      total: total,
-      page: page,
-      per_page: per_page,
-      total_pages: total_pages
-    }
+    Pagination.paginate_query(base_query, pagination,
+      result_key: :comments,
+      order_by: [desc: dynamic([q], q.inserted_at)],
+      preloads: [:user, :remote_actor, article: :boards]
+    )
   end
 
   defp contains_cjk?(str) do
@@ -1403,9 +1350,7 @@ defmodule Baudrate.Content do
   Returns `%{articles, total, page, per_page, total_pages}`.
   """
   def articles_by_tag(tag, opts \\ []) do
-    page = max(Keyword.get(opts, :page, 1), 1)
-    per_page = Keyword.get(opts, :per_page, @per_page)
-    offset = (page - 1) * per_page
+    pagination = Pagination.paginate_opts(opts, @per_page)
     user = Keyword.get(opts, :user)
     allowed_roles = allowed_view_roles(user)
     {hidden_uids, hidden_ap_ids} = hidden_filters(user)
@@ -1423,35 +1368,11 @@ defmodule Baudrate.Content do
       )
       |> apply_hidden_filters(hidden_uids, hidden_ap_ids)
 
-    total = Repo.one(from(q in subquery(base_query), select: count()))
-
-    articles =
-      from(a in Article,
-        join: at in ArticleTag,
-        on: at.article_id == a.id,
-        join: ba in BoardArticle,
-        on: ba.article_id == a.id,
-        join: b in Board,
-        on: b.id == ba.board_id,
-        where: at.tag == ^tag and is_nil(a.deleted_at) and b.min_role_to_view in ^allowed_roles,
-        distinct: a.id,
-        order_by: [desc: a.inserted_at],
-        offset: ^offset,
-        limit: ^per_page,
-        preload: [:user, :boards]
-      )
-      |> apply_hidden_filters(hidden_uids, hidden_ap_ids)
-      |> Repo.all()
-
-    total_pages = max(ceil(total / per_page), 1)
-
-    %{
-      articles: articles,
-      total: total,
-      page: page,
-      per_page: per_page,
-      total_pages: total_pages
-    }
+    Pagination.paginate_query(base_query, pagination,
+      result_key: :articles,
+      order_by: [desc: dynamic([q], q.inserted_at)],
+      preloads: [:user, :boards]
+    )
   end
 
   @doc """
