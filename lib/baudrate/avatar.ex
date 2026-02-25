@@ -13,7 +13,7 @@ defmodule Baudrate.Avatar do
   """
 
   @avatar_dir Path.join([:code.priv_dir(:baudrate), "static", "uploads", "avatars"])
-  @sizes [48, 36]
+  @sizes [48, 36, 24]
 
   @magic_bytes %{
     <<0xFF, 0xD8, 0xFF>> => :jpeg,
@@ -23,7 +23,7 @@ defmodule Baudrate.Avatar do
   }
 
   @doc """
-  Processes an uploaded avatar image and saves two sizes (48x48 and 36x36) as WebP.
+  Processes an uploaded avatar image and saves multiple sizes (48x48, 36x36, 24x24) as WebP.
 
   `upload_path` is the temporary file path from LiveView's `consume_uploaded_entries`.
   `crop_params` is a map with normalized percentage keys: `"x"`, `"y"`, `"width"`, `"height"`.
@@ -72,9 +72,21 @@ defmodule Baudrate.Avatar do
 
   @doc """
   Returns the URL path for an avatar image.
+
+  Falls back to the next larger available size if the requested file
+  does not exist on disk (e.g. 24px for avatars uploaded before that
+  size was added).
   """
   def avatar_url(avatar_id, size) when size in @sizes do
-    "/uploads/avatars/#{avatar_id}/#{size}.webp"
+    path = "/uploads/avatars/#{avatar_id}/#{size}.webp"
+    abs_path = Path.join([:code.priv_dir(:baudrate), "static", path])
+
+    if File.exists?(abs_path) do
+      path
+    else
+      fallback_size = @sizes |> Enum.filter(&(&1 > size)) |> Enum.min(fn -> size end)
+      "/uploads/avatars/#{avatar_id}/#{fallback_size}.webp"
+    end
   end
 
   @doc """

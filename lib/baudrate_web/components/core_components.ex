@@ -514,7 +514,7 @@ defmodule BaudrateWeb.CoreComponents do
       <.avatar user={@current_user} size={36} />
   """
   attr :user, :map, required: true
-  attr :size, :integer, default: 48, values: [48, 36]
+  attr :size, :integer, default: 48, values: [48, 36, 24]
   attr :class, :string, default: nil
 
   def avatar(%{user: %{avatar_id: avatar_id}} = assigns) when is_binary(avatar_id) do
@@ -542,7 +542,15 @@ defmodule BaudrateWeb.CoreComponents do
       @class
     ]}>
       <div class={["bg-neutral text-neutral-content", size_class(@size)]}>
-        <span class={if @size == 48, do: "text-lg", else: "text-sm"}>{@initial}</span>
+        <span class={
+          cond do
+            @size == 48 -> "text-lg"
+            @size == 36 -> "text-sm"
+            true -> "text-xs"
+          end
+        }>
+          {@initial}
+        </span>
       </div>
     </div>
     """
@@ -550,6 +558,7 @@ defmodule BaudrateWeb.CoreComponents do
 
   defp size_class(48), do: "w-12 rounded-full"
   defp size_class(36), do: "w-9 rounded-full"
+  defp size_class(24), do: "w-6 rounded-full"
 
   @doc """
   Renders a pagination control using DaisyUI join buttons.
