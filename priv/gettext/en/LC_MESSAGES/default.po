@@ -428,8 +428,8 @@ msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:118
 #: lib/baudrate_web/components/layouts.ex:243
-#: lib/baudrate_web/live/feed_live.html.heex:144
-#: lib/baudrate_web/live/feed_live.html.heex:176
+#: lib/baudrate_web/live/feed_live.html.heex:179
+#: lib/baudrate_web/live/feed_live.html.heex:211
 #: lib/baudrate_web/live/profile_live.ex:46
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -616,6 +616,7 @@ msgid "Failed to approve user."
 msgstr ""
 
 #: lib/baudrate_web/live/article_new_live.ex:212
+#: lib/baudrate_web/live/feed_live.ex:130
 #, elixir-autogen, elixir-format
 msgid "Failed to create article."
 msgstr ""
@@ -675,6 +676,8 @@ msgstr ""
 #: lib/baudrate_web/live/article_edit_live.html.heex:16
 #: lib/baudrate_web/live/article_history_live.html.heex:81
 #: lib/baudrate_web/live/article_new_live.html.heex:24
+#: lib/baudrate_web/live/feed_live.html.heex:30
+#: lib/baudrate_web/live/feed_live.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "Title"
 msgstr ""
@@ -1234,7 +1237,7 @@ msgid "Comment posted."
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:231
-#: lib/baudrate_web/live/feed_live.html.heex:169
+#: lib/baudrate_web/live/feed_live.html.heex:204
 #: lib/baudrate_web/live/search_live.html.heex:130
 #: lib/baudrate_web/live/user_profile_live.html.heex:76
 #, elixir-autogen, elixir-format
@@ -1703,7 +1706,7 @@ msgstr ""
 msgid "Approve User"
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.html.heex:165
+#: lib/baudrate_web/live/feed_live.html.heex:200
 #: lib/baudrate_web/live/search_live.html.heex:122
 #: lib/baudrate_web/live/user_profile_live.html.heex:72
 #, elixir-autogen, elixir-format
@@ -3325,7 +3328,7 @@ msgstr ""
 msgid "Select report #%{id}"
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.html.heex:157
+#: lib/baudrate_web/live/feed_live.html.heex:192
 #: lib/baudrate_web/live/user_profile_live.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Member since"
@@ -3405,6 +3408,7 @@ msgid "You are editing too frequently. Please try again later."
 msgstr ""
 
 #: lib/baudrate_web/live/article_new_live.ex:181
+#: lib/baudrate_web/live/feed_live.ex:95
 #, elixir-autogen, elixir-format
 msgid "You are posting too frequently. Please try again later."
 msgstr ""
@@ -3563,20 +3567,20 @@ msgstr "You haven't followed anyone yet."
 
 #: lib/baudrate_web/components/layouts.ex:78
 #: lib/baudrate_web/components/layouts.ex:175
-#: lib/baudrate_web/live/feed_live.ex:26
+#: lib/baudrate_web/live/feed_live.ex:33
 #: lib/baudrate_web/live/feed_live.html.heex:2
 #: lib/baudrate_web/live/feed_live.html.heex:5
-#: lib/baudrate_web/live/feed_live.html.heex:25
+#: lib/baudrate_web/live/feed_live.html.heex:60
 #, elixir-autogen, elixir-format
 msgid "Feed"
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.html.heex:88
+#: lib/baudrate_web/live/feed_live.html.heex:123
 #, elixir-autogen, elixir-format
 msgid "View original"
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.html.heex:17
+#: lib/baudrate_web/live/feed_live.html.heex:52
 #, elixir-autogen, elixir-format
 msgid "Your feed is empty."
 msgstr ""
@@ -3587,7 +3591,7 @@ msgstr ""
 msgid "Already following this user."
 msgstr "Already following this user."
 
-#: lib/baudrate_web/live/feed_live.html.heex:110
+#: lib/baudrate_web/live/feed_live.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Article"
 msgstr ""
@@ -3615,7 +3619,7 @@ msgstr ""
 msgid "Followed successfully."
 msgstr "Followed successfully."
 
-#: lib/baudrate_web/live/feed_live.html.heex:106
+#: lib/baudrate_web/live/feed_live.html.heex:141
 #: lib/baudrate_web/live/following_live.html.heex:34
 #: lib/baudrate_web/live/search_live.html.heex:237
 #, elixir-autogen, elixir-format
@@ -3627,7 +3631,7 @@ msgstr ""
 msgid "No users found for \"%{query}\"."
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.html.heex:20
+#: lib/baudrate_web/live/feed_live.html.heex:55
 #: lib/baudrate_web/live/following_live.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Search for users or remote actors to follow"
@@ -3820,4 +3824,20 @@ msgstr ""
 #: lib/baudrate_web/live/feed_live.html.heex:9
 #, elixir-autogen, elixir-format
 msgid "%{count} items"
+msgstr ""
+
+#: lib/baudrate_web/live/feed_live.ex:119
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Article posted!"
+msgstr ""
+
+#: lib/baudrate_web/live/feed_live.html.heex:43
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Post"
+msgstr ""
+
+#: lib/baudrate_web/live/feed_live.html.heex:37
+#: lib/baudrate_web/live/feed_live.html.heex:38
+#, elixir-autogen, elixir-format
+msgid "Oh! I just had a thought!"
 msgstr ""

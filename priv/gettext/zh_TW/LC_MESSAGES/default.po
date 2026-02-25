@@ -428,8 +428,8 @@ msgstr "目前沒有文章。"
 
 #: lib/baudrate_web/components/layouts.ex:118
 #: lib/baudrate_web/components/layouts.ex:243
-#: lib/baudrate_web/live/feed_live.html.heex:144
-#: lib/baudrate_web/live/feed_live.html.heex:176
+#: lib/baudrate_web/live/feed_live.html.heex:179
+#: lib/baudrate_web/live/feed_live.html.heex:211
 #: lib/baudrate_web/live/profile_live.ex:46
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -616,6 +616,7 @@ msgid "Failed to approve user."
 msgstr "核准用戶失敗。"
 
 #: lib/baudrate_web/live/article_new_live.ex:212
+#: lib/baudrate_web/live/feed_live.ex:130
 #, elixir-autogen, elixir-format
 msgid "Failed to create article."
 msgstr "建立文章失敗。"
@@ -675,6 +676,8 @@ msgstr "註冊"
 #: lib/baudrate_web/live/article_edit_live.html.heex:16
 #: lib/baudrate_web/live/article_history_live.html.heex:81
 #: lib/baudrate_web/live/article_new_live.html.heex:24
+#: lib/baudrate_web/live/feed_live.html.heex:30
+#: lib/baudrate_web/live/feed_live.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "Title"
 msgstr "標題"
@@ -1233,7 +1236,7 @@ msgid "Comment posted."
 msgstr "留言已發表。"
 
 #: lib/baudrate_web/live/article_live.html.heex:231
-#: lib/baudrate_web/live/feed_live.html.heex:169
+#: lib/baudrate_web/live/feed_live.html.heex:204
 #: lib/baudrate_web/live/search_live.html.heex:130
 #: lib/baudrate_web/live/user_profile_live.html.heex:76
 #, elixir-autogen, elixir-format
@@ -1702,7 +1705,7 @@ msgstr "註冊需要邀請碼。"
 msgid "Approve User"
 msgstr "核准使用者"
 
-#: lib/baudrate_web/live/feed_live.html.heex:165
+#: lib/baudrate_web/live/feed_live.html.heex:200
 #: lib/baudrate_web/live/search_live.html.heex:122
 #: lib/baudrate_web/live/user_profile_live.html.heex:72
 #, elixir-autogen, elixir-format
@@ -3316,7 +3319,7 @@ msgstr "全選使用者"
 msgid "Select report #%{id}"
 msgstr "選取檢舉 #%{id}"
 
-#: lib/baudrate_web/live/feed_live.html.heex:157
+#: lib/baudrate_web/live/feed_live.html.heex:192
 #: lib/baudrate_web/live/user_profile_live.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Member since"
@@ -3396,6 +3399,7 @@ msgid "You are editing too frequently. Please try again later."
 msgstr "編輯過於頻繁，請稍後再試。"
 
 #: lib/baudrate_web/live/article_new_live.ex:181
+#: lib/baudrate_web/live/feed_live.ex:95
 #, elixir-autogen, elixir-format
 msgid "You are posting too frequently. Please try again later."
 msgstr "發文過於頻繁，請稍後再試。"
@@ -3553,20 +3557,20 @@ msgstr "您還沒有追蹤任何人。"
 
 #: lib/baudrate_web/components/layouts.ex:78
 #: lib/baudrate_web/components/layouts.ex:175
-#: lib/baudrate_web/live/feed_live.ex:26
+#: lib/baudrate_web/live/feed_live.ex:33
 #: lib/baudrate_web/live/feed_live.html.heex:2
 #: lib/baudrate_web/live/feed_live.html.heex:5
-#: lib/baudrate_web/live/feed_live.html.heex:25
+#: lib/baudrate_web/live/feed_live.html.heex:60
 #, elixir-autogen, elixir-format
 msgid "Feed"
 msgstr "動態"
 
-#: lib/baudrate_web/live/feed_live.html.heex:88
+#: lib/baudrate_web/live/feed_live.html.heex:123
 #, elixir-autogen, elixir-format
 msgid "View original"
 msgstr "查看原文"
 
-#: lib/baudrate_web/live/feed_live.html.heex:17
+#: lib/baudrate_web/live/feed_live.html.heex:52
 #, elixir-autogen, elixir-format
 msgid "Your feed is empty."
 msgstr "你的動態是空的。"
@@ -3577,7 +3581,7 @@ msgstr "你的動態是空的。"
 msgid "Already following this user."
 msgstr "已追蹤此使用者。"
 
-#: lib/baudrate_web/live/feed_live.html.heex:110
+#: lib/baudrate_web/live/feed_live.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Article"
 msgstr "文章"
@@ -3605,7 +3609,7 @@ msgstr "追蹤 %{username}"
 msgid "Followed successfully."
 msgstr "已成功追蹤。"
 
-#: lib/baudrate_web/live/feed_live.html.heex:106
+#: lib/baudrate_web/live/feed_live.html.heex:141
 #: lib/baudrate_web/live/following_live.html.heex:34
 #: lib/baudrate_web/live/search_live.html.heex:237
 #, elixir-autogen, elixir-format
@@ -3617,7 +3621,7 @@ msgstr "本站"
 msgid "No users found for \"%{query}\"."
 msgstr "找不到「%{query}」的使用者。"
 
-#: lib/baudrate_web/live/feed_live.html.heex:20
+#: lib/baudrate_web/live/feed_live.html.heex:55
 #: lib/baudrate_web/live/following_live.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Search for users or remote actors to follow"
@@ -3811,3 +3815,19 @@ msgstr "你的顯示名稱（最多 64 個字元）"
 #, elixir-autogen, elixir-format
 msgid "%{count} items"
 msgstr "%{count} 則項目"
+
+#: lib/baudrate_web/live/feed_live.ex:119
+#, elixir-autogen, elixir-format
+msgid "Article posted!"
+msgstr "文章已發佈！"
+
+#: lib/baudrate_web/live/feed_live.html.heex:43
+#, elixir-autogen, elixir-format
+msgid "Post"
+msgstr "發佈"
+
+#: lib/baudrate_web/live/feed_live.html.heex:37
+#: lib/baudrate_web/live/feed_live.html.heex:38
+#, elixir-autogen, elixir-format
+msgid "Oh! I just had a thought!"
+msgstr "啊！我突然有個想法！"
