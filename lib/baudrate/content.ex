@@ -540,7 +540,7 @@ defmodule Baudrate.Content do
         where: ^where_clause,
         distinct: a.id
       )
-      |> apply_search_hidden_filters(hidden_uids, hidden_ap_ids)
+      |> apply_hidden_filters(hidden_uids, hidden_ap_ids)
 
     total = Repo.one(from(q in subquery(base_query), select: count()))
 
@@ -558,7 +558,7 @@ defmodule Baudrate.Content do
         limit: ^per_page,
         preload: [:user, :boards]
       )
-      |> apply_search_hidden_filters(hidden_uids, hidden_ap_ids)
+      |> apply_hidden_filters(hidden_uids, hidden_ap_ids)
       |> Repo.all()
 
     total_pages = max(ceil(total / per_page), 1)
@@ -1031,27 +1031,6 @@ defmodule Baudrate.Content do
     end
   end
 
-  # Applies hidden filters to article search queries (no SysOp exemption in search).
-  defp apply_search_hidden_filters(query, [], []), do: query
-
-  defp apply_search_hidden_filters(query, hidden_uids, hidden_ap_ids) do
-    query =
-      if hidden_uids != [] do
-        from(a in query, where: is_nil(a.user_id) or a.user_id not in ^hidden_uids)
-      else
-        query
-      end
-
-    if hidden_ap_ids != [] do
-      from(a in query,
-        left_join: ra in assoc(a, :remote_actor),
-        where: is_nil(a.remote_actor_id) or ra.ap_id not in ^hidden_ap_ids
-      )
-    else
-      query
-    end
-  end
-
   # Applies hidden filters (blocks + mutes) to article queries.
   # Articles use `a.user_id` / `a.remote_actor_id` directly.
   # SysOp board exemption: admin articles in the SysOp board are never filtered.
@@ -1442,7 +1421,7 @@ defmodule Baudrate.Content do
         where: at.tag == ^tag and is_nil(a.deleted_at) and b.min_role_to_view in ^allowed_roles,
         distinct: a.id
       )
-      |> apply_search_hidden_filters(hidden_uids, hidden_ap_ids)
+      |> apply_hidden_filters(hidden_uids, hidden_ap_ids)
 
     total = Repo.one(from(q in subquery(base_query), select: count()))
 
@@ -1461,7 +1440,7 @@ defmodule Baudrate.Content do
         limit: ^per_page,
         preload: [:user, :boards]
       )
-      |> apply_search_hidden_filters(hidden_uids, hidden_ap_ids)
+      |> apply_hidden_filters(hidden_uids, hidden_ap_ids)
       |> Repo.all()
 
     total_pages = max(ceil(total / per_page), 1)
