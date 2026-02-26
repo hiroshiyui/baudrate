@@ -84,6 +84,19 @@
             "URL to an external domain blocklist (CSV or JSON). Used by the federation dashboard audit feature."
           )}
         </p>
+        <h2 class="card-title mt-6">{gettext("Theme")}</h2>
+        <.input
+          field={@form[:theme_light]}
+          type="select"
+          label={gettext("Light Theme")}
+          options={@light_theme_options}
+        />
+        <.input
+          field={@form[:theme_dark]}
+          type="select"
+          label={gettext("Dark Theme")}
+          options={@dark_theme_options}
+        />
         <div class="mt-4">
           <.button variant="primary" type="submit" phx-disable-with={gettext("Saving...")}>
             {gettext("Save")}

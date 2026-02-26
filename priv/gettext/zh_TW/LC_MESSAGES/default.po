@@ -3901,3 +3901,13 @@ msgstr "%{username} 的留言"
 #, elixir-autogen, elixir-format
 msgid "in %{article}"
 msgstr "於 %{article}"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:93
+#, elixir-autogen, elixir-format
+msgid "Light Theme"
+msgstr "亮色主題"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:99
+#, elixir-autogen, elixir-format
+msgid "Dark Theme"
+msgstr "暗色主題"

@@ -28,6 +28,8 @@ defmodule BaudrateWeb.Admin.SettingsLive do
       |> assign(eua: eua)
       |> assign(eua_form: to_form(%{"eua" => eua}, as: :eua_settings))
       |> assign(timezone_options: timezone_options)
+      |> assign(light_theme_options: Setup.light_theme_options())
+      |> assign(dark_theme_options: Setup.dark_theme_options())
       |> assign(page_title: gettext("Admin Settings"))
 
     {:ok, socket}

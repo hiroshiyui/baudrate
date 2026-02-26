@@ -108,6 +108,79 @@ defmodule Baudrate.Setup do
     "guest.view_content" => "View published content"
   }
 
+  @daisyui_themes [
+    # Light themes
+    {"light", "Light (Default)", :light},
+    {"cupcake", "Cupcake", :light},
+    {"bumblebee", "Bumblebee", :light},
+    {"emerald", "Emerald", :light},
+    {"corporate", "Corporate", :light},
+    {"retro", "Retro", :light},
+    {"cyberpunk", "Cyberpunk", :light},
+    {"valentine", "Valentine", :light},
+    {"garden", "Garden", :light},
+    {"lofi", "Lo-Fi", :light},
+    {"pastel", "Pastel", :light},
+    {"fantasy", "Fantasy", :light},
+    {"wireframe", "Wireframe", :light},
+    {"cmyk", "CMYK", :light},
+    {"autumn", "Autumn", :light},
+    {"lemonade", "Lemonade", :light},
+    {"winter", "Winter", :light},
+    {"acid", "Acid", :light},
+    {"caramellatte", "Caramellatte", :light},
+    {"silk", "Silk", :light},
+    {"nord", "Nord", :light},
+    # Dark themes
+    {"dark", "Dark (Default)", :dark},
+    {"synthwave", "Synthwave", :dark},
+    {"halloween", "Halloween", :dark},
+    {"forest", "Forest", :dark},
+    {"aqua", "Aqua", :dark},
+    {"black", "Black", :dark},
+    {"luxury", "Luxury", :dark},
+    {"dracula", "Dracula", :dark},
+    {"night", "Night", :dark},
+    {"coffee", "Coffee", :dark},
+    {"business", "Business", :dark},
+    {"dim", "Dim", :dark},
+    {"sunset", "Sunset", :dark},
+    {"abyss", "Abyss", :dark}
+  ]
+
+  @daisyui_theme_names Enum.map(@daisyui_themes, fn {name, _, _} -> name end)
+
+  @doc """
+  Returns the list of all DaisyUI themes as `{name, label, scheme}` tuples.
+  """
+  def daisyui_themes, do: @daisyui_themes
+
+  @doc """
+  Returns light-scheme themes as `{label, name}` tuples for select options.
+  """
+  def light_theme_options do
+    for {name, label, :light} <- @daisyui_themes, do: {label, name}
+  end
+
+  @doc """
+  Returns dark-scheme themes as `{label, name}` tuples for select options.
+  """
+  def dark_theme_options do
+    for {name, label, :dark} <- @daisyui_themes, do: {label, name}
+  end
+
+  @doc """
+  Returns the admin-configured theme settings.
+
+  Returns `%{light: theme_name, dark: theme_name}`.
+  """
+  def get_theme_settings do
+    %{
+      light: get_setting("theme_light") || "light",
+      dark: get_setting("theme_dark") || "dark"
+    }
+  end
+
   @role_levels %{"guest" => 0, "user" => 1, "moderator" => 2, "admin" => 3}
 
   @doc """
@@ -234,7 +307,9 @@ defmodule Baudrate.Setup do
       ap_federation_mode: :string,
       ap_domain_allowlist: :string,
       ap_authorized_fetch: :string,
-      ap_blocklist_audit_url: :string
+      ap_blocklist_audit_url: :string,
+      theme_light: :string,
+      theme_dark: :string
     }
 
     defaults = %{
@@ -246,7 +321,9 @@ defmodule Baudrate.Setup do
       ap_federation_mode: get_setting("ap_federation_mode") || "blocklist",
       ap_domain_allowlist: get_setting("ap_domain_allowlist") || "",
       ap_authorized_fetch: get_setting("ap_authorized_fetch") || "false",
-      ap_blocklist_audit_url: get_setting("ap_blocklist_audit_url") || ""
+      ap_blocklist_audit_url: get_setting("ap_blocklist_audit_url") || "",
+      theme_light: get_setting("theme_light") || "light",
+      theme_dark: get_setting("theme_dark") || "dark"
     }
 
     {defaults, types}
@@ -257,6 +334,8 @@ defmodule Baudrate.Setup do
     |> Ecto.Changeset.validate_inclusion(:ap_federation_enabled, ["true", "false"])
     |> Ecto.Changeset.validate_inclusion(:ap_federation_mode, @valid_federation_modes)
     |> Ecto.Changeset.validate_inclusion(:ap_authorized_fetch, ["true", "false"])
+    |> Ecto.Changeset.validate_inclusion(:theme_light, @daisyui_theme_names)
+    |> Ecto.Changeset.validate_inclusion(:theme_dark, @daisyui_theme_names)
     |> validate_timezone()
   end
 
@@ -291,6 +370,8 @@ defmodule Baudrate.Setup do
         set_setting("ap_domain_allowlist", changes.ap_domain_allowlist || "")
         set_setting("ap_authorized_fetch", changes.ap_authorized_fetch || "false")
         set_setting("ap_blocklist_audit_url", changes.ap_blocklist_audit_url || "")
+        set_setting("theme_light", changes.theme_light || "light")
+        set_setting("theme_dark", changes.theme_dark || "dark")
 
         Baudrate.Federation.DomainBlockCache.refresh()
 

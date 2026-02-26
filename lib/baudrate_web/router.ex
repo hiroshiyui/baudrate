@@ -63,6 +63,7 @@ defmodule BaudrateWeb.Router do
 
     plug BaudrateWeb.Plugs.SetLocale
     plug BaudrateWeb.Plugs.EnsureSetup
+    plug BaudrateWeb.Plugs.SetTheme
     plug BaudrateWeb.Plugs.RefreshSession
   end
 

@@ -3901,3 +3901,13 @@ msgstr "%{username} のコメント"
 #, elixir-autogen, elixir-format
 msgid "in %{article}"
 msgstr "%{article} にて"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:93
+#, elixir-autogen, elixir-format
+msgid "Light Theme"
+msgstr "ライトテーマ"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:99
+#, elixir-autogen, elixir-format
+msgid "Dark Theme"
+msgstr "ダークテーマ"

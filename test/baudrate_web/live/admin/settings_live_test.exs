@@ -95,6 +95,57 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
     assert Setup.get_setting("timezone") == "Asia/Taipei"
   end
 
+  describe "theme settings" do
+    test "theme dropdowns render with correct options", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+
+      {:ok, _lv, html} = live(conn, "/admin/settings")
+      assert html =~ "Light Theme"
+      assert html =~ "Dark Theme"
+      # Check some theme options are present
+      assert html =~ "Cupcake"
+      assert html =~ "Dracula"
+    end
+
+    test "admin can save theme settings", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/settings")
+
+      html =
+        lv
+        |> form("#settings-form",
+          settings: %{
+            site_name: "Test Site",
+            theme_light: "cupcake",
+            theme_dark: "dracula"
+          }
+        )
+        |> render_submit()
+
+      assert html =~ "Settings saved successfully"
+      assert Setup.get_setting("theme_light") == "cupcake"
+      assert Setup.get_setting("theme_dark") == "dracula"
+    end
+
+    test "default theme values are light and dark", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+
+      {:ok, _lv, html} = live(conn, "/admin/settings")
+
+      # Root layout should have default theme data attributes
+      assert html =~ ~s(data-theme-light="light")
+      assert html =~ ~s(data-theme-dark="dark")
+
+      themes = Setup.get_theme_settings()
+      assert themes.light == "light"
+      assert themes.dark == "dark"
+    end
+  end
+
   describe "EUA management" do
     test "EUA textarea renders on settings page", %{conn: conn} do
       admin = setup_user("admin")

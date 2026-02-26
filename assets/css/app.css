@@ -118,13 +118,50 @@
   --noise: 0;
 }
 
+/* Built-in DaisyUI themes (light) */
+@plugin "../vendor/daisyui-theme" { name: "cupcake"; }
+@plugin "../vendor/daisyui-theme" { name: "bumblebee"; }
+@plugin "../vendor/daisyui-theme" { name: "emerald"; }
+@plugin "../vendor/daisyui-theme" { name: "corporate"; }
+@plugin "../vendor/daisyui-theme" { name: "retro"; }
+@plugin "../vendor/daisyui-theme" { name: "cyberpunk"; }
+@plugin "../vendor/daisyui-theme" { name: "valentine"; }
+@plugin "../vendor/daisyui-theme" { name: "garden"; }
+@plugin "../vendor/daisyui-theme" { name: "lofi"; }
+@plugin "../vendor/daisyui-theme" { name: "pastel"; }
+@plugin "../vendor/daisyui-theme" { name: "fantasy"; }
+@plugin "../vendor/daisyui-theme" { name: "wireframe"; }
+@plugin "../vendor/daisyui-theme" { name: "cmyk"; }
+@plugin "../vendor/daisyui-theme" { name: "autumn"; }
+@plugin "../vendor/daisyui-theme" { name: "lemonade"; }
+@plugin "../vendor/daisyui-theme" { name: "winter"; }
+@plugin "../vendor/daisyui-theme" { name: "acid"; }
+@plugin "../vendor/daisyui-theme" { name: "caramellatte"; }
+@plugin "../vendor/daisyui-theme" { name: "silk"; }
+@plugin "../vendor/daisyui-theme" { name: "nord"; }
+
+/* Built-in DaisyUI themes (dark) */
+@plugin "../vendor/daisyui-theme" { name: "synthwave"; }
+@plugin "../vendor/daisyui-theme" { name: "halloween"; }
+@plugin "../vendor/daisyui-theme" { name: "forest"; }
+@plugin "../vendor/daisyui-theme" { name: "aqua"; }
+@plugin "../vendor/daisyui-theme" { name: "black"; }
+@plugin "../vendor/daisyui-theme" { name: "luxury"; }
+@plugin "../vendor/daisyui-theme" { name: "dracula"; }
+@plugin "../vendor/daisyui-theme" { name: "night"; }
+@plugin "../vendor/daisyui-theme" { name: "coffee"; }
+@plugin "../vendor/daisyui-theme" { name: "business"; }
+@plugin "../vendor/daisyui-theme" { name: "dim"; }
+@plugin "../vendor/daisyui-theme" { name: "sunset"; }
+@plugin "../vendor/daisyui-theme" { name: "abyss"; }
+
 /* Add variants based on LiveView classes */
 @custom-variant phx-click-loading (.phx-click-loading&, .phx-click-loading &);
 @custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
 @custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
 
-/* Use the data attribute for dark mode  */
-@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+/* Use the data attribute for dark mode — matches all dark DaisyUI themes */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *, [data-theme=synthwave], [data-theme=synthwave] *, [data-theme=halloween], [data-theme=halloween] *, [data-theme=forest], [data-theme=forest] *, [data-theme=aqua], [data-theme=aqua] *, [data-theme=black], [data-theme=black] *, [data-theme=luxury], [data-theme=luxury] *, [data-theme=dracula], [data-theme=dracula] *, [data-theme=night], [data-theme=night] *, [data-theme=coffee], [data-theme=coffee] *, [data-theme=business], [data-theme=business] *, [data-theme=dim], [data-theme=dim] *, [data-theme=sunset], [data-theme=sunset] *, [data-theme=abyss], [data-theme=abyss] *));
 
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }

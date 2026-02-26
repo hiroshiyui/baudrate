@@ -37,19 +37,50 @@ const liveSocket = new LiveSocket("/live", Socket, {
   hooks: {...colocatedHooks, AvatarCropHook, MarkdownToolbarHook, ScrollBottomHook, CopyToClipboardHook, HashtagAutocompleteHook},
 })
 
-// Theme switcher: apply saved theme and listen for toggle events
-const setTheme = (theme) => {
-  if (theme === "system") {
-    localStorage.removeItem("phx:theme")
-    document.documentElement.removeAttribute("data-theme")
+// Theme switcher: resolve user preference (light/dark/system) to admin-configured DaisyUI theme
+const getThemeConfig = () => ({
+  light: document.documentElement.dataset.themeLight || "light",
+  dark: document.documentElement.dataset.themeDark || "dark",
+})
+
+const applyTheme = (pref) => {
+  const config = getThemeConfig()
+  let theme
+  if (pref === "light") {
+    theme = config.light
+  } else if (pref === "dark") {
+    theme = config.dark
   } else {
-    localStorage.setItem("phx:theme", theme)
-    document.documentElement.setAttribute("data-theme", theme)
+    // "system" — detect OS preference
+    theme = window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? config.dark
+      : config.light
   }
+  document.documentElement.setAttribute("data-theme", theme)
 }
-setTheme(localStorage.getItem("phx:theme") || "system")
+
+const setTheme = (pref) => {
+  if (pref === "system") {
+    localStorage.removeItem("phx:theme")
+  } else {
+    localStorage.setItem("phx:theme", pref)
+  }
+  applyTheme(pref)
+}
+
+// Apply on load
+applyTheme(localStorage.getItem("phx:theme") || "system")
+
+// Listen for user toggle
 window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme))
-window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"))
+window.addEventListener("storage", (e) => {
+  if (e.key === "phx:theme") applyTheme(e.newValue || "system")
+})
+
+// Listen for OS preference changes (when in "system" mode)
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if (!localStorage.getItem("phx:theme")) applyTheme("system")
+})
 
 // Font size zoom: store zoom percentage in localStorage, apply to <html>
 const FONT_SIZE_MIN = 75

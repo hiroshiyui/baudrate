@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html lang={String.replace(assigns[:locale] || "en", "_", "-")}>
+<html
+  lang={String.replace(assigns[:locale] || "en", "_", "-")}
+  data-theme-light={assigns[:theme_light] || "light"}
+  data-theme-dark={assigns[:theme_dark] || "dark"}
+>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
