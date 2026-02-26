@@ -41,6 +41,9 @@ config :baudrate, federation_async: false
 # Use ETS-backed sandbox for rate limiter in tests
 config :baudrate, :rate_limiter, BaudrateWeb.RateLimiter.Sandbox
 
+# Allow HTTP for localhost in tests (federation SSRF checks)
+config :baudrate, allow_http_localhost: true
+
 # Bypass SSRF checks in tests so Req.Test stubs can intercept HTTP calls
 config :baudrate, :bypass_ssrf_check, true
 config :baudrate, :req_test_options, plug: {Req.Test, Baudrate.Federation.HTTPClient}

@@ -30,6 +30,7 @@ defmodule Baudrate.Federation.HTTPClient do
   @max_redirects 5
   @req_test_options Application.compile_env(:baudrate, :req_test_options, [])
   @bypass_ssrf Application.compile_env(:baudrate, :bypass_ssrf_check, false)
+  @allow_http_localhost Application.compile_env(:baudrate, :allow_http_localhost, false)
 
   @doc """
   Performs a GET request with SSRF protection and federation constraints.
@@ -124,7 +125,7 @@ defmodule Baudrate.Federation.HTTPClient do
     alias Baudrate.Federation.HTTPSignature
 
     sig_headers = HTTPSignature.sign_get(url, private_key_pem, key_id)
-    extra_headers = Enum.map(sig_headers, fn {k, v} -> {k, v} end)
+    extra_headers = Map.to_list(sig_headers)
     existing_headers = Keyword.get(opts, :headers, [])
     get(url, headers: extra_headers ++ existing_headers)
   end
@@ -213,7 +214,7 @@ defmodule Baudrate.Federation.HTTPClient do
 
   defp validate_scheme(%URI{scheme: "http", host: host})
        when host in ["localhost", "127.0.0.1"] do
-    if Mix.env() in [:dev, :test], do: :ok, else: {:error, :https_required}
+    if @allow_http_localhost, do: :ok, else: {:error, :https_required}
   end
 
   defp validate_scheme(_), do: {:error, :https_required}

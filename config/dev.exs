@@ -77,6 +77,9 @@ config :baudrate, BaudrateWeb.Endpoint,
 # Enable dev routes for dashboard
 config :baudrate, dev_routes: true
 
+# Allow HTTP for localhost in development (federation SSRF checks)
+config :baudrate, allow_http_localhost: true
+
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"
 
