@@ -37,27 +37,8 @@ defmodule BaudrateWeb.ArticleLive do
       can_lock =
         if current_user, do: Content.can_lock_article?(current_user, article), else: false
 
-      is_board_mod =
-        if current_user do
-          if article.boards == [] do
-            current_user.role.name in ["admin", "moderator"]
-          else
-            Enum.any?(article.boards, &Content.board_moderator?(&1, current_user))
-          end
-        else
-          false
-        end
-
-      can_comment =
-        if current_user && not article.locked do
-          if article.boards == [] do
-            Baudrate.Auth.can_create_content?(current_user)
-          else
-            Enum.any?(article.boards, &Content.can_post_in_board?(&1, current_user))
-          end
-        else
-          false
-        end
+      is_board_mod = Content.can_moderate_article?(current_user, article)
+      can_comment = Content.can_comment_on_article?(current_user, article)
 
       comment_changeset = Content.change_comment()
       article_images = Content.list_article_images(article.id)
@@ -163,19 +144,8 @@ defmodule BaudrateWeb.ArticleLive do
             details: %{"title" => article.title}
           )
 
-          can_comment =
-            if socket.assigns.current_user && not updated.locked do
-              boards =
-                if Ecto.assoc_loaded?(updated.boards), do: updated.boards, else: article.boards
-
-              if boards == [] do
-                Baudrate.Auth.can_create_content?(socket.assigns.current_user)
-              else
-                Enum.any?(boards, &Content.can_post_in_board?(&1, socket.assigns.current_user))
-              end
-            else
-              false
-            end
+          updated = Baudrate.Repo.preload(updated, :boards)
+          can_comment = Content.can_comment_on_article?(socket.assigns.current_user, updated)
 
           {:noreply,
            socket
@@ -348,7 +318,6 @@ defmodule BaudrateWeb.ArticleLive do
             phx-click="reply_to"
             phx-value-id={@comment.id}
             class="text-sm text-base-content/70 hover:text-base-content cursor-pointer"
-            aria-expanded="false"
           >
             {gettext("Reply")}
           </button>
@@ -423,29 +392,34 @@ defmodule BaudrateWeb.ArticleLive do
 
   defp do_delete_comment(socket, comment_id, user) do
     article = socket.assigns.article
-    comment = Baudrate.Repo.get!(Baudrate.Content.Comment, comment_id)
 
-    if Content.can_delete_comment?(user, comment, article) do
-      case Content.soft_delete_comment(comment) do
-        {:ok, _} ->
-          if user.id != comment.user_id do
-            Moderation.log_action(user.id, "delete_comment",
-              target_type: "comment",
-              target_id: comment.id,
-              details: %{"article_title" => article.title}
-            )
+    case Baudrate.Repo.get(Baudrate.Content.Comment, comment_id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("Comment not found."))}
+
+      comment ->
+        if Content.can_delete_comment?(user, comment, article) do
+          case Content.soft_delete_comment(comment) do
+            {:ok, _} ->
+              if user.id != comment.user_id do
+                Moderation.log_action(user.id, "delete_comment",
+                  target_type: "comment",
+                  target_id: comment.id,
+                  details: %{"article_title" => article.title}
+                )
+              end
+
+              {:noreply,
+               socket
+               |> load_comments(socket.assigns.comment_page)
+               |> put_flash(:info, gettext("Comment deleted."))}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, gettext("Failed to delete comment."))}
           end
-
-          {:noreply,
-           socket
-           |> load_comments(socket.assigns.comment_page)
-           |> put_flash(:info, gettext("Comment deleted."))}
-
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to delete comment."))}
-      end
-    else
-      {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
+        else
+          {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
+        end
     end
   end
 

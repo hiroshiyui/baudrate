@@ -191,23 +191,28 @@ defmodule BaudrateWeb.Admin.FederationLive do
   end
 
   defp do_toggle_federation(socket, board_id) do
-    board = Baudrate.Repo.get!(Content.Board, board_id)
-    new_value = !board.ap_enabled
+    case Baudrate.Repo.get(Content.Board, board_id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("Board not found."))}
 
-    board
-    |> Ecto.Changeset.change(ap_enabled: new_value)
-    |> Baudrate.Repo.update!()
+      board ->
+        new_value = !board.ap_enabled
 
-    {:noreply,
-     socket
-     |> put_flash(
-       :info,
-       gettext("Federation %{action} for %{board}.",
-         action: if(new_value, do: gettext("enabled"), else: gettext("disabled")),
-         board: board.name
-       )
-     )
-     |> load_dashboard()}
+        board
+        |> Ecto.Changeset.change(ap_enabled: new_value)
+        |> Baudrate.Repo.update!()
+
+        {:noreply,
+         socket
+         |> put_flash(
+           :info,
+           gettext("Federation %{action} for %{board}.",
+             action: if(new_value, do: gettext("enabled"), else: gettext("disabled")),
+             board: board.name
+           )
+         )
+         |> load_dashboard()}
+    end
   end
 
   defp add_domain_to_blocklist(domain) do
@@ -235,8 +240,10 @@ defmodule BaudrateWeb.Admin.FederationLive do
   defp rotate_by_type("board", id) do
     case parse_id(id) do
       {:ok, board_id} ->
-        board = Baudrate.Repo.get!(Content.Board, board_id)
-        Federation.rotate_keys(:board, board)
+        case Baudrate.Repo.get(Content.Board, board_id) do
+          nil -> {:error, :not_found}
+          board -> Federation.rotate_keys(:board, board)
+        end
 
       :error ->
         {:error, :invalid_id}
@@ -246,8 +253,10 @@ defmodule BaudrateWeb.Admin.FederationLive do
   defp rotate_by_type("user", id) do
     case parse_id(id) do
       {:ok, user_id} ->
-        user = Baudrate.Repo.get!(Baudrate.Setup.User, user_id)
-        Federation.rotate_keys(:user, user)
+        case Baudrate.Repo.get(Baudrate.Setup.User, user_id) do
+          nil -> {:error, :not_found}
+          user -> Federation.rotate_keys(:user, user)
+        end
 
       :error ->
         {:error, :invalid_id}

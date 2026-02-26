@@ -70,8 +70,16 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   end
 
   defp do_revoke(socket, invite_id) do
-    invite = Baudrate.Repo.get!(Auth.InviteCode, invite_id)
+    case Baudrate.Repo.get(Auth.InviteCode, invite_id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("Invite code not found."))}
 
+      invite ->
+        do_revoke_invite(socket, invite)
+    end
+  end
+
+  defp do_revoke_invite(socket, invite) do
     case Auth.revoke_invite_code(invite) do
       {:ok, _} ->
         codes = Auth.list_all_invite_codes()

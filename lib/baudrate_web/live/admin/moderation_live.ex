@@ -247,43 +247,51 @@ defmodule BaudrateWeb.Admin.ModerationLive do
   end
 
   defp do_delete_article(socket, article_id) do
-    article = Baudrate.Repo.get!(Content.Article, article_id)
+    case Baudrate.Repo.get(Content.Article, article_id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("Article not found."))}
 
-    case Content.soft_delete_article(article) do
-      {:ok, _} ->
-        Moderation.log_action(socket.assigns.current_user.id, "delete_article",
-          target_type: "article",
-          target_id: article.id,
-          details: %{"title" => article.title}
-        )
+      article ->
+        case Content.soft_delete_article(article) do
+          {:ok, _} ->
+            Moderation.log_action(socket.assigns.current_user.id, "delete_article",
+              target_type: "article",
+              target_id: article.id,
+              details: %{"title" => article.title}
+            )
 
-        {:noreply,
-         socket
-         |> put_flash(:info, gettext("Article deleted."))
-         |> load_reports()}
+            {:noreply,
+             socket
+             |> put_flash(:info, gettext("Article deleted."))
+             |> load_reports()}
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to delete article."))}
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to delete article."))}
+        end
     end
   end
 
   defp do_delete_comment(socket, comment_id) do
-    comment = Baudrate.Repo.get!(Content.Comment, comment_id)
+    case Baudrate.Repo.get(Content.Comment, comment_id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("Comment not found."))}
 
-    case Content.soft_delete_comment(comment) do
-      {:ok, _} ->
-        Moderation.log_action(socket.assigns.current_user.id, "delete_comment",
-          target_type: "comment",
-          target_id: comment.id
-        )
+      comment ->
+        case Content.soft_delete_comment(comment) do
+          {:ok, _} ->
+            Moderation.log_action(socket.assigns.current_user.id, "delete_comment",
+              target_type: "comment",
+              target_id: comment.id
+            )
 
-        {:noreply,
-         socket
-         |> put_flash(:info, gettext("Comment deleted."))
-         |> load_reports()}
+            {:noreply,
+             socket
+             |> put_flash(:info, gettext("Comment deleted."))
+             |> load_reports()}
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to delete comment."))}
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to delete comment."))}
+        end
     end
   end
 
