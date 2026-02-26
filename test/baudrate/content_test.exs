@@ -696,6 +696,93 @@ defmodule Baudrate.ContentTest do
     end
   end
 
+  # --- last_activity_at ---
+
+  describe "last_activity_at" do
+    setup do
+      user = create_user("user")
+      board = create_board(%{name: "Activity Board", slug: "activity-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Activity Art", body: "body", slug: "activity-art", user_id: user.id},
+          [board.id]
+        )
+
+      article = Repo.get!(Article, article.id)
+      %{user: user, board: board, article: article}
+    end
+
+    test "is set on article creation", %{article: article} do
+      assert article.last_activity_at != nil
+    end
+
+    test "is updated when a local comment is created", %{article: article, user: user} do
+      # Push article's last_activity_at back to ensure a visible difference
+      past = DateTime.add(DateTime.utc_now(), -60, :second) |> DateTime.truncate(:second)
+
+      from(a in Article, where: a.id == ^article.id)
+      |> Repo.update_all(set: [last_activity_at: past])
+
+      {:ok, _comment} =
+        Content.create_comment(%{
+          "body" => "A comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      updated_article = Repo.get!(Article, article.id)
+      assert DateTime.compare(updated_article.last_activity_at, past) == :gt
+    end
+
+    test "is updated when a remote comment is created", %{article: article} do
+      past = DateTime.add(DateTime.utc_now(), -60, :second) |> DateTime.truncate(:second)
+
+      from(a in Article, where: a.id == ^article.id)
+      |> Repo.update_all(set: [last_activity_at: past])
+
+      remote_actor = create_remote_actor()
+
+      {:ok, _comment} =
+        Content.create_remote_comment(%{
+          body: "Remote comment",
+          ap_id: "https://remote.example/notes/act-#{System.unique_integer([:positive])}",
+          article_id: article.id,
+          remote_actor_id: remote_actor.id
+        })
+
+      updated_article = Repo.get!(Article, article.id)
+      assert DateTime.compare(updated_article.last_activity_at, past) == :gt
+    end
+
+    test "is recalculated when a comment is soft-deleted", %{article: article, user: user} do
+      # Push article's inserted_at and last_activity_at back
+      past = DateTime.add(DateTime.utc_now(), -120, :second) |> DateTime.truncate(:second)
+
+      from(a in Article, where: a.id == ^article.id)
+      |> Repo.update_all(set: [last_activity_at: past, inserted_at: past])
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "To be deleted",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      after_comment = Repo.get!(Article, article.id)
+      assert DateTime.compare(after_comment.last_activity_at, past) == :gt
+
+      {:ok, _} = Content.soft_delete_comment(comment)
+
+      after_delete = Repo.get!(Article, article.id)
+      # Should fall back to article.inserted_at since no comments remain
+      assert DateTime.compare(after_delete.last_activity_at, past) in [:eq, :lt]
+
+      assert DateTime.compare(after_delete.last_activity_at, after_comment.last_activity_at) ==
+               :lt
+    end
+  end
+
   # --- Article Likes ---
 
   describe "create_remote_article_like/1" do

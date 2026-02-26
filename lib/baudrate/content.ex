@@ -210,13 +210,7 @@ defmodule Baudrate.Content do
 
     articles =
       from(q in base_query,
-        left_join: c in Comment,
-        on: c.article_id == q.id and is_nil(c.deleted_at),
-        group_by: q.id,
-        order_by: [
-          desc: q.pinned,
-          desc: fragment("GREATEST(?, MAX(?))", q.inserted_at, c.inserted_at)
-        ],
+        order_by: [desc: q.pinned, desc: q.last_activity_at],
         offset: ^offset,
         limit: ^per_page,
         preload: :user
@@ -881,6 +875,8 @@ defmodule Baudrate.Content do
       |> Repo.insert()
 
     with {:ok, comment} <- result do
+      touch_article_activity(comment.article_id)
+
       ContentPubSub.broadcast_to_article(comment.article_id, :comment_created, %{
         comment_id: comment.id
       })
@@ -914,6 +910,8 @@ defmodule Baudrate.Content do
       |> Repo.insert()
 
     with {:ok, comment} <- result do
+      touch_article_activity(comment.article_id)
+
       ContentPubSub.broadcast_to_article(comment.article_id, :comment_created, %{
         comment_id: comment.id
       })
@@ -1130,6 +1128,8 @@ defmodule Baudrate.Content do
       |> Repo.update()
 
     with {:ok, deleted} <- result do
+      recalculate_article_activity(deleted.article_id)
+
       ContentPubSub.broadcast_to_article(deleted.article_id, :comment_deleted, %{
         comment_id: deleted.id
       })
@@ -1620,6 +1620,30 @@ defmodule Baudrate.Content do
       where: bm.board_id == ^board_id and bm.user_id == ^user_id
     )
     |> Repo.delete_all()
+  end
+
+  # --- Article Activity Timestamps ---
+
+  defp touch_article_activity(article_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    from(a in Article, where: a.id == ^article_id)
+    |> Repo.update_all(set: [last_activity_at: now])
+  end
+
+  defp recalculate_article_activity(article_id) do
+    Repo.query!(
+      """
+      UPDATE articles
+      SET last_activity_at = COALESCE(
+        (SELECT MAX(c.inserted_at) FROM comments c
+         WHERE c.article_id = articles.id AND c.deleted_at IS NULL),
+        articles.inserted_at
+      )
+      WHERE articles.id = $1
+      """,
+      [article_id]
+    )
   end
 
   # --- Federation Hooks ---

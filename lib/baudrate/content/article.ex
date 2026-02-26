@@ -22,6 +22,7 @@ defmodule Baudrate.Content.Article do
     field :locked, :boolean, default: false
     field :ap_id, :string
     field :deleted_at, :utc_datetime
+    field :last_activity_at, :utc_datetime
 
     belongs_to :user, Baudrate.Setup.User
     belongs_to :remote_actor, RemoteActor
