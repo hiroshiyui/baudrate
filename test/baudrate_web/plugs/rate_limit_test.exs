@@ -1,12 +1,9 @@
 defmodule BaudrateWeb.Plugs.RateLimitTest do
   use BaudrateWeb.ConnCase
 
-  import Mox
-
   alias Baudrate.Repo
   alias Baudrate.Setup.Setting
-
-  setup :verify_on_exit!
+  alias BaudrateWeb.RateLimiter.Sandbox
 
   setup %{conn: conn} do
     Repo.insert!(%Setting{key: "setup_completed", value: "true"})
@@ -18,7 +15,7 @@ defmodule BaudrateWeb.Plugs.RateLimitTest do
       user = setup_user("user")
       token = Phoenix.Token.sign(BaudrateWeb.Endpoint, "user_auth", user.id)
 
-      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _bucket, _scale, _limit ->
+      Sandbox.set_fun(fn _bucket, _scale, _limit ->
         {:allow, 1}
       end)
 
@@ -27,7 +24,7 @@ defmodule BaudrateWeb.Plugs.RateLimitTest do
     end
 
     test "blocks requests over the limit", %{conn: conn} do
-      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _bucket, _scale, _limit ->
+      Sandbox.set_fun(fn _bucket, _scale, _limit ->
         {:deny, 10}
       end)
 
@@ -39,7 +36,7 @@ defmodule BaudrateWeb.Plugs.RateLimitTest do
 
   describe "TOTP rate limiting" do
     test "blocks TOTP verify after too many attempts", %{conn: conn} do
-      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _bucket, _scale, _limit ->
+      Sandbox.set_fun(fn _bucket, _scale, _limit ->
         {:deny, 15}
       end)
 
@@ -52,7 +49,7 @@ defmodule BaudrateWeb.Plugs.RateLimitTest do
     end
 
     test "blocks TOTP enable after too many attempts", %{conn: conn} do
-      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _bucket, _scale, _limit ->
+      Sandbox.set_fun(fn _bucket, _scale, _limit ->
         {:deny, 15}
       end)
 
@@ -70,7 +67,7 @@ defmodule BaudrateWeb.Plugs.RateLimitTest do
       user = setup_user("user")
       token = Phoenix.Token.sign(BaudrateWeb.Endpoint, "user_auth", user.id)
 
-      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _bucket, _scale, _limit ->
+      Sandbox.set_fun(fn _bucket, _scale, _limit ->
         {:error, :backend_down}
       end)
 

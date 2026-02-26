@@ -2,19 +2,12 @@ defmodule BaudrateWeb.Plugs.RateLimitDomainTest do
   use ExUnit.Case, async: true
 
   import ExUnit.CaptureLog
-  import Mox
 
   alias BaudrateWeb.Plugs.RateLimitDomain
+  alias BaudrateWeb.RateLimiter.Sandbox
 
   @evil_domain "evil.example"
   @good_domain "good.example"
-
-  setup do
-    Mox.set_mox_private()
-    :ok
-  end
-
-  setup :verify_on_exit!
 
   defp build_conn(actor \\ nil) do
     conn = Plug.Test.conn(:post, "/ap/inbox")
@@ -39,7 +32,7 @@ defmodule BaudrateWeb.Plugs.RateLimitDomainTest do
     end
 
     test "passes through under rate limit" do
-      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _bucket, _scale, _limit ->
+      Sandbox.set_fun(fn _bucket, _scale, _limit ->
         {:allow, 1}
       end)
 
@@ -49,7 +42,7 @@ defmodule BaudrateWeb.Plugs.RateLimitDomainTest do
     end
 
     test "returns 429 when rate limit exceeded" do
-      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _bucket, _scale, _limit ->
+      Sandbox.set_fun(fn _bucket, _scale, _limit ->
         {:deny, 60}
       end)
 
@@ -60,7 +53,7 @@ defmodule BaudrateWeb.Plugs.RateLimitDomainTest do
     end
 
     test "response body is JSON error on 429" do
-      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _bucket, _scale, _limit ->
+      Sandbox.set_fun(fn _bucket, _scale, _limit ->
         {:deny, 60}
       end)
 
@@ -70,7 +63,7 @@ defmodule BaudrateWeb.Plugs.RateLimitDomainTest do
     end
 
     test "response content-type is application/json on 429" do
-      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _bucket, _scale, _limit ->
+      Sandbox.set_fun(fn _bucket, _scale, _limit ->
         {:deny, 60}
       end)
 
@@ -81,7 +74,7 @@ defmodule BaudrateWeb.Plugs.RateLimitDomainTest do
     end
 
     test "logs warning with domain on 429" do
-      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _bucket, _scale, _limit ->
+      Sandbox.set_fun(fn _bucket, _scale, _limit ->
         {:deny, 60}
       end)
 
@@ -95,14 +88,12 @@ defmodule BaudrateWeb.Plugs.RateLimitDomainTest do
     end
 
     test "per-domain isolation: uses domain in bucket key" do
-      expect(BaudrateWeb.RateLimiterMock, :check_rate, fn bucket, _scale, _limit ->
-        assert bucket == "ap_domain:#{@evil_domain}"
-        {:deny, 60}
-      end)
-
-      expect(BaudrateWeb.RateLimiterMock, :check_rate, fn bucket, _scale, _limit ->
-        assert bucket == "ap_domain:#{@good_domain}"
-        {:allow, 1}
+      Sandbox.set_fun(fn bucket, _scale, _limit ->
+        cond do
+          bucket == "ap_domain:#{@evil_domain}" -> {:deny, 60}
+          bucket == "ap_domain:#{@good_domain}" -> {:allow, 1}
+          true -> flunk("Unexpected bucket: #{bucket}")
+        end
       end)
 
       evil_conn = build_conn(mock_actor(@evil_domain)) |> call_plug()
@@ -116,7 +107,7 @@ defmodule BaudrateWeb.Plugs.RateLimitDomainTest do
 
   describe "error path (fail-open)" do
     test "passes through on backend error" do
-      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _bucket, _scale, _limit ->
+      Sandbox.set_fun(fn _bucket, _scale, _limit ->
         {:error, :backend_down}
       end)
 
@@ -126,7 +117,7 @@ defmodule BaudrateWeb.Plugs.RateLimitDomainTest do
     end
 
     test "logs error on backend failure" do
-      stub(BaudrateWeb.RateLimiterMock, :check_rate, fn _bucket, _scale, _limit ->
+      Sandbox.set_fun(fn _bucket, _scale, _limit ->
         {:error, :backend_down}
       end)
 
