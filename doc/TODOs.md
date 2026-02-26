@@ -6,9 +6,9 @@ Audit date: 2026-02-26
 
 ## Must Fix
 
-- [ ] **i18n:** Remove `fuzzy` flag from "Comment" entry in zh_TW and ja_JP after verification (`priv/gettext/{zh_TW,ja_JP}/LC_MESSAGES/default.po:3806`)
-- [ ] **a11y:** Add `scope="col"` to `<th>` elements in table component (`lib/baudrate_web/components/core_components.ex:430-458`) — affects all tables site-wide
-- [ ] **a11y:** Audit `text-base-content/50` and `/70` classes against WCAG 4.5:1 contrast ratio requirement (footer, board, article, search templates)
+- [x] **i18n:** Remove `fuzzy` flag from "Comment" entry in zh_TW and ja_JP after verification (`priv/gettext/{zh_TW,ja_JP}/LC_MESSAGES/default.po:3806`)
+- [x] **a11y:** Add `scope="col"` to `<th>` elements in table component (`lib/baudrate_web/components/core_components.ex:430-458`) — affects all tables site-wide
+- [x] **a11y:** Replaced all `text-base-content/50` with `text-base-content/70` across 24 files to meet WCAG 4.5:1 contrast ratio
 
 ## Should Fix
 
