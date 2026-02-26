@@ -67,6 +67,10 @@ defmodule BaudrateWeb.ArticleLive do
           LinkedData.article_jsonld(article) |> LinkedData.encode_jsonld()
         )
         |> assign(:dc_meta, LinkedData.dublin_core_meta(:article, article))
+        |> assign(:can_forward, can_forward_article?(current_user, article))
+        |> assign(:forward_search_open, false)
+        |> assign(:forward_search_results, [])
+        |> assign(:forward_search_query, "")
 
       if connected?(socket), do: ContentPubSub.subscribe_article(article.id)
 
@@ -229,6 +233,74 @@ defmodule BaudrateWeb.ArticleLive do
   end
 
   @impl true
+  def handle_event("toggle_forward_search", _params, socket) do
+    open = !socket.assigns.forward_search_open
+
+    {:noreply,
+     socket
+     |> assign(:forward_search_open, open)
+     |> assign(:forward_search_results, [])
+     |> assign(:forward_search_query, "")}
+  end
+
+  @impl true
+  def handle_event("search_forward_board", %{"query" => query}, socket) do
+    results =
+      if String.length(String.trim(query)) >= 2 do
+        Content.search_boards(query, socket.assigns.current_user)
+      else
+        []
+      end
+
+    {:noreply,
+     socket
+     |> assign(:forward_search_query, query)
+     |> assign(:forward_search_results, results)}
+  end
+
+  @impl true
+  def handle_event("forward_to_board", %{"board-id" => board_id}, socket) do
+    user = socket.assigns.current_user
+
+    with {:ok, board_id} <- parse_id(board_id),
+         board <- Content.get_board!(board_id),
+         :ok <- check_forward_rate_limit(user),
+         {:ok, updated_article} <-
+           Content.forward_article_to_board(socket.assigns.article, board, user) do
+      {:noreply,
+       socket
+       |> assign(:article, updated_article)
+       |> assign(:can_forward, false)
+       |> assign(:forward_search_open, false)
+       |> assign(:forward_search_results, [])
+       |> assign(:forward_search_query, "")
+       |> put_flash(:info, gettext("Article forwarded to board."))}
+    else
+      {:error, :rate_limited} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Too many actions. Please try again later."))}
+
+      {:error, :already_posted} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("This article is already posted in a board."))}
+
+      {:error, :cannot_post} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("You do not have permission to post in this board.")
+         )}
+
+      {:error, :unauthorized} ->
+        {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to forward article."))}
+    end
+  end
+
+  @impl true
   def handle_info({event, _payload}, socket)
       when event in [:comment_created, :comment_deleted] do
     {:noreply, load_comments(socket, socket.assigns.comment_page)}
@@ -248,7 +320,11 @@ defmodule BaudrateWeb.ArticleLive do
   @impl true
   def handle_info({:article_updated, _payload}, socket) do
     article = Content.get_article_by_slug!(socket.assigns.article.slug)
-    {:noreply, assign(socket, :article, article)}
+
+    {:noreply,
+     socket
+     |> assign(:article, article)
+     |> assign(:can_forward, can_forward_article?(socket.assigns.current_user, article))}
   end
 
   @doc false
@@ -467,6 +543,21 @@ defmodule BaudrateWeb.ArticleLive do
       comment_page: comment_page,
       comment_total_pages: comment_total_pages
     )
+  end
+
+  defp can_forward_article?(nil, _article), do: false
+
+  defp can_forward_article?(user, article) do
+    article.boards == [] and Content.can_forward_article?(user, article)
+  end
+
+  defp check_forward_rate_limit(%{role: %{name: "admin"}}), do: :ok
+
+  defp check_forward_rate_limit(user) do
+    case RateLimits.check_create_article(user.id) do
+      :ok -> :ok
+      {:error, :rate_limited} -> {:error, :rate_limited}
+    end
   end
 
   defp user_can_view_article?(article, _user) when article.boards == [], do: true

@@ -401,6 +401,9 @@ can create articles. Two entry points:
 
 Articles are assigned a URL-safe slug generated from the title with a random
 suffix to avoid collisions. Articles can be cross-posted to multiple boards.
+Board-less articles (created via feed without selecting a board) can be
+forwarded to a board by the author or an admin via the "Forward to Board"
+autocomplete on the article detail page.
 
 ### Article Images
 
@@ -718,6 +721,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - Outbound Article objects include plain-text `summary` (≤ 500 chars) for Mastodon preview display
 - Outbound Article objects include `tag` array with `Hashtag` objects (extracted from body, code blocks excluded)
 - Cross-post deduplication: same remote article arriving via multiple board inboxes links to all boards
+- Forwarding a board-less article sends `Create(Article)` to board followers and `Announce` from the board actor
 
 **Admin controls:** See the [SysOp Guide](sysop.md#federation) for federation
 administration (kill switch, federation modes, domain blocklist/allowlist,

@@ -1298,4 +1298,169 @@ defmodule Baudrate.ContentTest do
       assert {:error, _} = Content.seed_sysop_board(user)
     end
   end
+
+  # --- Search Boards ---
+
+  describe "search_boards/2" do
+    test "returns matching boards" do
+      user = create_user("user")
+      create_board(%{name: "Elixir Discussion", slug: "elixir-disc"})
+      create_board(%{name: "Rust Talk", slug: "rust-talk"})
+
+      results = Content.search_boards("Elix", user)
+      assert length(results) == 1
+      assert hd(results).slug == "elixir-disc"
+    end
+
+    test "respects role permissions" do
+      user = create_user("user")
+      create_board(%{name: "Admin Only", slug: "admin-only", min_role_to_post: "admin"})
+      create_board(%{name: "Open Board", slug: "open-board"})
+
+      results = Content.search_boards("Board", user)
+      slugs = Enum.map(results, & &1.slug)
+      assert "open-board" in slugs
+      refute "admin-only" in slugs
+    end
+
+    test "returns empty list when no match" do
+      user = create_user("user")
+      create_board(%{name: "General", slug: "general-search"})
+
+      assert Content.search_boards("Nonexistent", user) == []
+    end
+  end
+
+  # --- Forward Article to Board ---
+
+  describe "forward_article_to_board/3" do
+    setup do
+      author = create_user("user")
+      admin = create_user("admin")
+      other = create_user("user")
+      board = create_board(%{name: "Target Board", slug: "target-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Boardless Article",
+            body: "body",
+            slug: "boardless-fwd-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          []
+        )
+
+      %{author: author, admin: admin, other: other, board: board, article: article}
+    end
+
+    test "forwards board-less article to board", %{
+      author: author,
+      board: board,
+      article: article
+    } do
+      assert {:ok, updated} = Content.forward_article_to_board(article, board, author)
+      assert length(updated.boards) == 1
+      assert hd(updated.boards).id == board.id
+    end
+
+    test "admin can forward another user's article", %{
+      admin: admin,
+      board: board,
+      article: article
+    } do
+      assert {:ok, updated} = Content.forward_article_to_board(article, board, admin)
+      assert length(updated.boards) == 1
+    end
+
+    test "returns error when article already has boards", %{author: author, board: board} do
+      {:ok, %{article: posted}} =
+        Content.create_article(
+          %{
+            title: "Posted",
+            body: "body",
+            slug: "posted-fwd-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [board.id]
+        )
+
+      assert {:error, :already_posted} =
+               Content.forward_article_to_board(posted, board, author)
+    end
+
+    test "returns error when user is not authorized", %{
+      other: other,
+      board: board,
+      article: article
+    } do
+      assert {:error, :unauthorized} =
+               Content.forward_article_to_board(article, board, other)
+    end
+
+    test "returns error when user cannot post in board", %{author: author, article: article} do
+      restricted =
+        create_board(%{name: "Admin Only", slug: "admin-fwd", min_role_to_post: "admin"})
+
+      assert {:error, :cannot_post} =
+               Content.forward_article_to_board(article, restricted, author)
+    end
+  end
+
+  # --- Can Forward Article ---
+
+  describe "can_forward_article?/2" do
+    test "author can forward" do
+      author = create_user("user")
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Author FWD",
+            body: "body",
+            slug: "author-fwd-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          []
+        )
+
+      assert Content.can_forward_article?(author, article)
+    end
+
+    test "admin can forward" do
+      author = create_user("user")
+      admin = create_user("admin")
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Admin FWD",
+            body: "body",
+            slug: "admin-fwd-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          []
+        )
+
+      assert Content.can_forward_article?(admin, article)
+    end
+
+    test "other user cannot forward" do
+      author = create_user("user")
+      other = create_user("user")
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Other FWD",
+            body: "body",
+            slug: "other-fwd-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          []
+        )
+
+      refute Content.can_forward_article?(other, article)
+    end
+  end
 end

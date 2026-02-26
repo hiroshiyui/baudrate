@@ -370,6 +370,165 @@ defmodule BaudrateWeb.ArticleLiveTest do
     end
   end
 
+  describe "forward to board" do
+    test "shows forward button for board-less articles owned by user", %{conn: conn, user: user} do
+      {:ok, %{article: boardless}} =
+        Content.create_article(
+          %{
+            title: "Forward Me",
+            body: "No board yet",
+            slug: "forward-me",
+            user_id: user.id
+          },
+          []
+        )
+
+      {:ok, _lv, html} = live(conn, "/articles/#{boardless.slug}")
+      assert html =~ "Forward to Board"
+    end
+
+    test "does not show forward button for articles in boards", %{
+      conn: conn,
+      article: article
+    } do
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+      refute html =~ "Forward to Board"
+    end
+
+    test "does not show forward button for other user's board-less articles", %{user: user} do
+      {:ok, %{article: boardless}} =
+        Content.create_article(
+          %{
+            title: "Others Forward",
+            body: "Not mine",
+            slug: "others-forward",
+            user_id: user.id
+          },
+          []
+        )
+
+      other = setup_user("user")
+
+      other_conn =
+        Phoenix.ConnTest.build_conn()
+        |> log_in_user(other)
+
+      {:ok, _lv, html} = live(other_conn, "/articles/#{boardless.slug}")
+      refute html =~ "Forward to Board"
+    end
+
+    test "autocomplete search returns board results", %{conn: conn, user: user} do
+      _target_board =
+        %Board{}
+        |> Board.changeset(%{name: "Target Board", slug: "target-fwd"})
+        |> Repo.insert!()
+
+      {:ok, %{article: boardless}} =
+        Content.create_article(
+          %{
+            title: "Search Forward",
+            body: "body",
+            slug: "search-forward",
+            user_id: user.id
+          },
+          []
+        )
+
+      {:ok, lv, _html} = live(conn, "/articles/#{boardless.slug}")
+
+      # Open search
+      lv |> element("button[phx-click=toggle_forward_search]") |> render_click()
+
+      # Search for board
+      html =
+        lv
+        |> form("form[phx-change=search_forward_board]", %{query: "Target"})
+        |> render_change()
+
+      assert html =~ "Target Board"
+    end
+
+    test "forward action moves article to board and shows flash", %{conn: conn, user: user} do
+      target_board =
+        %Board{}
+        |> Board.changeset(%{name: "Destination", slug: "destination-fwd"})
+        |> Repo.insert!()
+
+      {:ok, %{article: boardless}} =
+        Content.create_article(
+          %{
+            title: "Will Forward",
+            body: "body",
+            slug: "will-forward",
+            user_id: user.id
+          },
+          []
+        )
+
+      {:ok, lv, _html} = live(conn, "/articles/#{boardless.slug}")
+
+      # Open search and forward directly
+      lv |> element("button[phx-click=toggle_forward_search]") |> render_click()
+
+      lv
+      |> form("form[phx-change=search_forward_board]", %{query: "Dest"})
+      |> render_change()
+
+      html =
+        lv
+        |> element(
+          ~s|button[phx-click="forward_to_board"][phx-value-board-id="#{target_board.id}"]|
+        )
+        |> render_click()
+
+      assert html =~ "Article forwarded to board"
+      # Forward button should no longer be visible
+      refute html =~ "Forward to Board"
+    end
+
+    test "admin can forward another user's board-less article", %{user: user} do
+      admin = setup_user("admin")
+
+      admin_conn =
+        Phoenix.ConnTest.build_conn()
+        |> log_in_user(admin)
+
+      target_board =
+        %Board{}
+        |> Board.changeset(%{name: "Admin Dest", slug: "admin-dest-fwd"})
+        |> Repo.insert!()
+
+      {:ok, %{article: boardless}} =
+        Content.create_article(
+          %{
+            title: "Admin Forward",
+            body: "body",
+            slug: "admin-forward",
+            user_id: user.id
+          },
+          []
+        )
+
+      {:ok, lv, html} = live(admin_conn, "/articles/#{boardless.slug}")
+      assert html =~ "Forward to Board"
+
+      lv |> element("button[phx-click=toggle_forward_search]") |> render_click()
+
+      lv
+      |> form("form[phx-change=search_forward_board]", %{query: "Admin"})
+      |> render_change()
+
+      html =
+        lv
+        |> element(
+          ~s|button[phx-click="forward_to_board"][phx-value-board-id="#{target_board.id}"]|
+        )
+        |> render_click()
+
+      assert html =~ "Article forwarded to board"
+    end
+  end
+
   test "threaded replies stay with their root when paginated", %{
     conn: conn,
     user: user,

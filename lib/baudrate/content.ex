@@ -8,9 +8,9 @@ defmodule Baudrate.Content do
   from both local users and remote actors.
 
   Content mutations that are federation-relevant (`create_article/2`,
-  `soft_delete_article/1`) automatically enqueue delivery of the
-  corresponding ActivityPub activities to remote followers via
-  `Federation.Publisher` and `Federation.TaskSupervisor`.
+  `soft_delete_article/1`, `forward_article_to_board/3`) automatically
+  enqueue delivery of the corresponding ActivityPub activities to remote
+  followers via `Federation.Publisher` and `Federation.TaskSupervisor`.
   """
 
   import Ecto.Query
@@ -107,6 +107,17 @@ defmodule Baudrate.Content do
   def list_all_boards do
     from(b in Board, order_by: [asc: b.position, asc: b.name], preload: [:parent])
     |> Repo.all()
+  end
+
+  @doc """
+  Searches boards by name (ILIKE), filtered to boards the user can post in.
+  """
+  def search_boards(query, user) when is_binary(query) do
+    sanitized = "%" <> sanitize_like(query) <> "%"
+
+    from(b in Board, where: ilike(b.name, ^sanitized), order_by: [asc: b.position, asc: b.name])
+    |> Repo.all()
+    |> Enum.filter(&can_post_in_board?(&1, user))
   end
 
   @doc """
@@ -723,6 +734,54 @@ defmodule Baudrate.Content do
     |> Repo.insert(on_conflict: :nothing)
   end
 
+  @doc """
+  Forwards a board-less article to a board.
+
+  Returns `{:error, :already_posted}` if the article already has boards,
+  `{:error, :unauthorized}` if the user cannot forward, and
+  `{:error, :cannot_post}` if the user cannot post in the target board.
+  """
+  def forward_article_to_board(%Article{} = article, %Board{} = board, user) do
+    article = ensure_boards_loaded(article)
+
+    cond do
+      article.boards != [] ->
+        {:error, :already_posted}
+
+      not can_forward_article?(user, article) ->
+        {:error, :unauthorized}
+
+      not can_post_in_board?(board, user) ->
+        {:error, :cannot_post}
+
+      true ->
+        case add_article_to_board(article, board.id) do
+          {:ok, _} ->
+            article = Repo.preload(article, :boards, force: true)
+
+            ContentPubSub.broadcast_to_board(board.id, :article_created, %{
+              article_id: article.id
+            })
+
+            schedule_federation_task(fn ->
+              Baudrate.Federation.Publisher.publish_article_forwarded(article, board)
+            end)
+
+            {:ok, article}
+
+          {:error, _} = err ->
+            err
+        end
+    end
+  end
+
+  @doc """
+  Returns true if the user can forward an article (author or admin).
+  """
+  def can_forward_article?(%{role: %{name: "admin"}}, _article), do: true
+  def can_forward_article?(%{id: uid}, %{user_id: uid}), do: true
+  def can_forward_article?(_, _), do: false
+
   # --- Remote Articles ---
 
   @doc """
@@ -1133,6 +1192,15 @@ defmodule Baudrate.Content do
       ContentPubSub.broadcast_to_article(deleted.article_id, :comment_deleted, %{
         comment_id: deleted.id
       })
+
+      # Only publish deletion for local comments (those with a user_id)
+      if deleted.user_id do
+        schedule_federation_task(fn ->
+          deleted = Repo.preload(deleted, [:user])
+          article = Repo.get!(Article, deleted.article_id) |> Repo.preload([:boards, :user])
+          Baudrate.Federation.Publisher.publish_comment_deleted(deleted, article)
+        end)
+      end
 
       result
     end

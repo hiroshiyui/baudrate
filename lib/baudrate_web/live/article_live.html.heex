@@ -101,6 +101,55 @@
       </.link>
     </div>
 
+    <div :if={@can_forward} class="flex items-center gap-2 text-sm">
+      <button
+        :if={!@forward_search_open}
+        phx-click="toggle_forward_search"
+        class="btn btn-sm btn-outline"
+      >
+        <.icon name="hero-arrow-right-circle" class="size-4" />
+        {gettext("Forward to Board")}
+      </button>
+
+      <div :if={@forward_search_open} class="w-full max-w-md">
+        <.form for={%{}} phx-change="search_forward_board" class="flex items-center gap-2">
+          <input
+            type="text"
+            name="query"
+            value={@forward_search_query}
+            placeholder={gettext("Search boards...")}
+            phx-debounce="300"
+            autocomplete="off"
+            class="input input-sm input-bordered w-full"
+            aria-label={gettext("Search boards")}
+            aria-expanded={to_string(@forward_search_results != [])}
+            role="combobox"
+            aria-controls="forward-board-results"
+          />
+          <button
+            type="button"
+            phx-click="toggle_forward_search"
+            class="btn btn-sm btn-ghost"
+            aria-label={gettext("Cancel")}
+          >
+            <.icon name="hero-x-mark" class="size-4" />
+          </button>
+        </.form>
+        <ul
+          :if={@forward_search_results != []}
+          id="forward-board-results"
+          role="listbox"
+          class="menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+        >
+          <li :for={board <- @forward_search_results}>
+            <button phx-click="forward_to_board" phx-value-board-id={board.id} role="option">
+              {board.name}
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+
     <div class="divider"></div>
 
     <div class="prose max-w-none">{raw(Baudrate.Content.Markdown.to_html(@article.body))}</div>
