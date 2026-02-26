@@ -67,6 +67,51 @@ defmodule Baudrate.Federation.ValidatorTest do
     end
   end
 
+  describe "validate_object_id/1" do
+    test "valid HTTPS URL in object map" do
+      object = %{"id" => "https://remote.example/objects/123", "type" => "Note"}
+      assert {:ok, "https://remote.example/objects/123"} = Validator.validate_object_id(object)
+    end
+
+    test "valid HTTPS URI string" do
+      assert {:ok, "https://remote.example/objects/456"} =
+               Validator.validate_object_id("https://remote.example/objects/456")
+    end
+
+    test "rejects HTTP URL in object map" do
+      object = %{"id" => "http://remote.example/objects/123", "type" => "Note"}
+      assert {:error, :invalid_object_id} = Validator.validate_object_id(object)
+    end
+
+    test "rejects HTTP URI string" do
+      assert {:error, :invalid_object_id} = Validator.validate_object_id("http://insecure.example/obj")
+    end
+
+    test "rejects object map without id" do
+      assert {:error, :invalid_object_id} = Validator.validate_object_id(%{"type" => "Note"})
+    end
+
+    test "rejects object map with non-string id" do
+      assert {:error, :invalid_object_id} = Validator.validate_object_id(%{"id" => 12345})
+    end
+
+    test "rejects nil" do
+      assert {:error, :invalid_object_id} = Validator.validate_object_id(nil)
+    end
+
+    test "rejects empty string" do
+      assert {:error, :invalid_object_id} = Validator.validate_object_id("")
+    end
+
+    test "rejects empty map" do
+      assert {:error, :invalid_object_id} = Validator.validate_object_id(%{})
+    end
+
+    test "rejects javascript: URI string" do
+      assert {:error, :invalid_object_id} = Validator.validate_object_id("javascript:alert(1)")
+    end
+  end
+
   describe "validate_activity/1" do
     test "valid activity with all required fields" do
       activity = %{

@@ -230,20 +230,28 @@ defmodule Baudrate.Federation.InboxHandler do
          _target
        )
        when is_binary(object_id) do
-    ap_id = activity["id"]
+    if not Validator.valid_https_url?(object_id) do
+      Logger.warning(
+        "federation.activity: type=Announce rejected invalid embedded object id=#{inspect(object_id)}"
+      )
 
-    case Federation.create_announce(%{
-           ap_id: ap_id,
-           target_ap_id: object_id,
-           activity_id: ap_id,
-           remote_actor_id: remote_actor.id
-         }) do
-      {:ok, _announce} ->
-        Logger.info("federation.activity: type=Announce(embedded) ap_id=#{ap_id}")
-        :ok
+      {:error, :invalid_object_id}
+    else
+      ap_id = activity["id"]
 
-      {:error, %Ecto.Changeset{} = changeset} ->
-        if has_unique_error?(changeset), do: :ok, else: {:error, :announce_failed}
+      case Federation.create_announce(%{
+             ap_id: ap_id,
+             target_ap_id: object_id,
+             activity_id: ap_id,
+             remote_actor_id: remote_actor.id
+           }) do
+        {:ok, _announce} ->
+          Logger.info("federation.activity: type=Announce(embedded) ap_id=#{ap_id}")
+          :ok
+
+        {:error, %Ecto.Changeset{} = changeset} ->
+          if has_unique_error?(changeset), do: :ok, else: {:error, :announce_failed}
+      end
     end
   end
 
@@ -457,51 +465,51 @@ defmodule Baudrate.Federation.InboxHandler do
   # --- Update helpers ---
 
   defp handle_update_note(object, remote_actor) do
-    ap_id = object["id"]
+    with {:ok, ap_id} <- Validator.validate_object_id(object) do
+      case Content.get_comment_by_ap_id(ap_id) do
+        %{remote_actor_id: actor_id} = comment when actor_id == remote_actor.id ->
+          {:ok, body, body_html} = sanitize_content(object)
 
-    case Content.get_comment_by_ap_id(ap_id) do
-      %{remote_actor_id: actor_id} = comment when actor_id == remote_actor.id ->
-        {:ok, body, body_html} = sanitize_content(object)
+          case Content.update_remote_comment(comment, %{body: body, body_html: body_html}) do
+            {:ok, _} ->
+              Logger.info("federation.activity: type=Update(Note) ap_id=#{ap_id}")
+              :ok
 
-        case Content.update_remote_comment(comment, %{body: body, body_html: body_html}) do
-          {:ok, _} ->
-            Logger.info("federation.activity: type=Update(Note) ap_id=#{ap_id}")
-            :ok
+            {:error, _} ->
+              {:error, :update_failed}
+          end
 
-          {:error, _} ->
-            {:error, :update_failed}
-        end
+        %{} ->
+          {:error, :unauthorized}
 
-      %{} ->
-        {:error, :unauthorized}
-
-      nil ->
-        :ok
+        nil ->
+          :ok
+      end
     end
   end
 
   defp handle_update_article(object, remote_actor) do
-    ap_id = object["id"]
+    with {:ok, ap_id} <- Validator.validate_object_id(object) do
+      case Content.get_article_by_ap_id(ap_id) do
+        %{remote_actor_id: actor_id} = article when actor_id == remote_actor.id ->
+          {:ok, body, _body_html} = sanitize_content(object)
+          title = object["name"] || article.title
 
-    case Content.get_article_by_ap_id(ap_id) do
-      %{remote_actor_id: actor_id} = article when actor_id == remote_actor.id ->
-        {:ok, body, _body_html} = sanitize_content(object)
-        title = object["name"] || article.title
+          case Content.update_remote_article(article, %{title: title, body: body}) do
+            {:ok, _} ->
+              Logger.info("federation.activity: type=Update(Article) ap_id=#{ap_id}")
+              :ok
 
-        case Content.update_remote_article(article, %{title: title, body: body}) do
-          {:ok, _} ->
-            Logger.info("federation.activity: type=Update(Article) ap_id=#{ap_id}")
-            :ok
+            {:error, _} ->
+              {:error, :update_failed}
+          end
 
-          {:error, _} ->
-            {:error, :update_failed}
-        end
+        %{} ->
+          {:error, :unauthorized}
 
-      %{} ->
-        {:error, :unauthorized}
-
-      nil ->
-        :ok
+        nil ->
+          :ok
+      end
     end
   end
 
@@ -559,12 +567,11 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp handle_create_note_comment(object, remote_actor) do
     with :ok <- validate_attribution_match(object, remote_actor),
+         {:ok, ap_id} <- Validator.validate_object_id(object),
          {:ok, body, body_html} <- sanitize_content(object),
          {:ok, article, parent_id} <- resolve_reply_target(object) do
-      ap_id = object["id"]
-
       # Idempotency: if comment with this ap_id already exists, return :ok
-      if is_binary(ap_id) && Content.get_comment_by_ap_id(ap_id) do
+      if Content.get_comment_by_ap_id(ap_id) do
         :ok
       else
         case Content.create_remote_comment(%{
@@ -611,13 +618,12 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp handle_incoming_dm(object, remote_actor) do
     with :ok <- validate_attribution_match(object, remote_actor),
+         {:ok, ap_id} <- Validator.validate_object_id(object),
          {:ok, body, body_html} <- sanitize_content(object),
          {:ok, local_user} <- resolve_dm_recipient(object),
          :ok <- check_dm_permission(local_user, remote_actor) do
-      ap_id = object["id"]
-
       # Idempotency check
-      if is_binary(ap_id) && Messaging.get_message_by_ap_id(ap_id) do
+      if Messaging.get_message_by_ap_id(ap_id) do
         :ok
       else
         case Messaging.receive_remote_dm(local_user, remote_actor, %{
@@ -678,38 +684,40 @@ defmodule Baudrate.Federation.InboxHandler do
         :ok
 
       _followers ->
-        ap_id = object["id"]
+        with {:ok, ap_id} <- Validator.validate_object_id(object) do
+          # Idempotency check
+          if Federation.get_feed_item_by_ap_id(ap_id) do
+            :ok
+          else
+            with :ok <- validate_attribution_match(object, remote_actor),
+                 {:ok, body, body_html} <- sanitize_content(object) do
+              published_at = parse_published(object["published"])
+              title = if object_type in ["Article", "Page"], do: object["name"]
+              source_url = object["url"] || object["id"]
 
-        # Idempotency check
-        if is_binary(ap_id) && Federation.get_feed_item_by_ap_id(ap_id) do
-          :ok
-        else
-          with :ok <- validate_attribution_match(object, remote_actor),
-               {:ok, body, body_html} <- sanitize_content(object) do
-            published_at = parse_published(object["published"])
-            title = if object_type in ["Article", "Page"], do: object["name"]
-            source_url = object["url"] || object["id"]
+              case Federation.create_feed_item(%{
+                     remote_actor_id: remote_actor.id,
+                     activity_type: "Create",
+                     object_type: object_type,
+                     ap_id: ap_id,
+                     title: title,
+                     body: body,
+                     body_html: body_html,
+                     source_url: source_url,
+                     published_at: published_at
+                   }) do
+                {:ok, _feed_item} ->
+                  Logger.info(
+                    "federation.activity: type=Create(#{object_type}/FeedItem) ap_id=#{ap_id}"
+                  )
 
-            case Federation.create_feed_item(%{
-                   remote_actor_id: remote_actor.id,
-                   activity_type: "Create",
-                   object_type: object_type,
-                   ap_id: ap_id,
-                   title: title,
-                   body: body,
-                   body_html: body_html,
-                   source_url: source_url,
-                   published_at: published_at
-                 }) do
-              {:ok, _feed_item} ->
-                Logger.info(
-                  "federation.activity: type=Create(#{object_type}/FeedItem) ap_id=#{ap_id}"
-                )
+                  :ok
 
-                :ok
-
-              {:error, %Ecto.Changeset{} = changeset} ->
-                if has_unique_error?(changeset), do: :ok, else: {:error, :create_feed_item_failed}
+                {:error, %Ecto.Changeset{} = changeset} ->
+                  if has_unique_error?(changeset),
+                    do: :ok,
+                    else: {:error, :create_feed_item_failed}
+              end
             end
           end
         end
@@ -856,36 +864,37 @@ defmodule Baudrate.Federation.InboxHandler do
   end
 
   defp create_article_in_board(object, body, remote_actor, board, type) do
-    ap_id = object["id"]
-    existing = is_binary(ap_id) && Content.get_article_by_ap_id(ap_id)
+    with {:ok, ap_id} <- Validator.validate_object_id(object) do
+      existing = Content.get_article_by_ap_id(ap_id)
 
-    if existing do
-      # Cross-post: link to additional board if not already linked
-      Content.add_article_to_board(existing, board.id)
-      :ok
-    else
-      title = object["name"] || "Untitled"
-      slug = Content.generate_slug(title)
+      if existing do
+        # Cross-post: link to additional board if not already linked
+        Content.add_article_to_board(existing, board.id)
+        :ok
+      else
+        title = object["name"] || "Untitled"
+        slug = Content.generate_slug(title)
 
-      case Content.create_remote_article(
-             %{
-               title: title,
-               body: body,
-               slug: slug,
-               ap_id: ap_id,
-               remote_actor_id: remote_actor.id
-             },
-             [board.id]
-           ) do
-        {:ok, _multi} ->
-          Logger.info("federation.activity: type=Create(#{type}) ap_id=#{ap_id}")
-          :ok
+        case Content.create_remote_article(
+               %{
+                 title: title,
+                 body: body,
+                 slug: slug,
+                 ap_id: ap_id,
+                 remote_actor_id: remote_actor.id
+               },
+               [board.id]
+             ) do
+          {:ok, _multi} ->
+            Logger.info("federation.activity: type=Create(#{type}) ap_id=#{ap_id}")
+            :ok
 
-        {:error, :article, %Ecto.Changeset{} = changeset, _} ->
-          if has_unique_error?(changeset), do: :ok, else: {:error, :create_article_failed}
+          {:error, :article, %Ecto.Changeset{} = changeset, _} ->
+            if has_unique_error?(changeset), do: :ok, else: {:error, :create_article_failed}
 
-        {:error, _step, _reason, _changes} ->
-          {:error, :create_article_failed}
+          {:error, _step, _reason, _changes} ->
+            {:error, :create_article_failed}
+        end
       end
     end
   end
@@ -897,9 +906,9 @@ defmodule Baudrate.Federation.InboxHandler do
 
       boards ->
         with :ok <- validate_attribution_match(object, remote_actor),
+             {:ok, ap_id} <- Validator.validate_object_id(object),
              {:ok, body, _body_html} <- sanitize_content(object) do
-          ap_id = object["id"]
-          existing = is_binary(ap_id) && Content.get_article_by_ap_id(ap_id)
+          existing = Content.get_article_by_ap_id(ap_id)
 
           if existing do
             # Link to all following boards

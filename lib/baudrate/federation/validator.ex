@@ -2,9 +2,9 @@ defmodule Baudrate.Federation.Validator do
   @moduledoc """
   Input validation for incoming ActivityPub data.
 
-  Provides checks for URL format, payload sizes, required activity
-  fields, domain blocking, self-referencing URIs, and attribution
-  consistency.
+  Provides checks for URL format, object ID validation, payload sizes,
+  required activity fields, domain blocking, self-referencing URIs,
+  and attribution consistency.
   """
 
   alias Baudrate.Setup
@@ -46,6 +46,25 @@ defmodule Baudrate.Federation.Validator do
   end
 
   def validate_content_size(nil), do: :ok
+
+  @doc """
+  Validates that an object's `id` is a valid HTTPS URL.
+
+  When the object is a map (inline object), validates `object["id"]`.
+  When the object is a string (URI reference), validates the string itself.
+  Returns `{:ok, id}` or `{:error, :invalid_object_id}`.
+  """
+  def validate_object_id(%{"id" => id}) when is_binary(id) do
+    if valid_https_url?(id), do: {:ok, id}, else: {:error, :invalid_object_id}
+  end
+
+  def validate_object_id(%{}), do: {:error, :invalid_object_id}
+
+  def validate_object_id(uri) when is_binary(uri) do
+    if valid_https_url?(uri), do: {:ok, uri}, else: {:error, :invalid_object_id}
+  end
+
+  def validate_object_id(_), do: {:error, :invalid_object_id}
 
   @doc """
   Validates that an activity JSON has the required fields.
