@@ -7,7 +7,7 @@
     </.link>
   </div>
 
-  <div :if={@conversations == []} class="text-center py-12 text-base-content/50">
+  <div :if={@conversations == []} class="text-center py-12 text-base-content/70">
     <.icon name="hero-chat-bubble-left-right" class="size-12 mx-auto mb-4 opacity-50" />
     <p class="text-lg">{gettext("No messages yet.")}</p>
     <p class="text-sm">{gettext("Start a conversation from a user's profile page.")}</p>
@@ -42,7 +42,7 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
             <span class="font-semibold truncate">{participant_name(other)}</span>
-            <span :if={conv.last_message_at} class="text-xs text-base-content/50 shrink-0 ml-2">
+            <span :if={conv.last_message_at} class="text-xs text-base-content/70 shrink-0 ml-2">
               {format_relative_time(conv.last_message_at)}
             </span>
           </div>

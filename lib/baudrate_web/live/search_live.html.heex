@@ -141,21 +141,21 @@
 
   <div
     :if={@query != "" && @tab == "articles" && @articles == []}
-    class="text-base-content/50 text-center py-8"
+    class="text-base-content/70 text-center py-8"
   >
     {gettext("No articles found for \"%{query}\".", query: @query)}
   </div>
 
   <div
     :if={@query != "" && @tab == "comments" && @comments == []}
-    class="text-base-content/50 text-center py-8"
+    class="text-base-content/70 text-center py-8"
   >
     {gettext("No comments found for \"%{query}\".", query: @query)}
   </div>
 
   <div
     :if={@query != "" && @tab == "users" && @local_users == []}
-    class="text-base-content/50 text-center py-8"
+    class="text-base-content/70 text-center py-8"
   >
     {gettext("No users found for \"%{query}\".", query: @query)}
   </div>

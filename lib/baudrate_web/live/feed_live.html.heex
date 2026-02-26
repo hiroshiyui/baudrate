@@ -48,7 +48,7 @@
       </div>
     </div>
 
-    <div :if={@items == []} class="text-base-content/50 text-center py-8">
+    <div :if={@items == []} class="text-base-content/70 text-center py-8">
       {gettext("Your feed is empty.")}
       <div class="mt-2">
         <.link navigate="/search" class="link link-primary">
@@ -97,7 +97,7 @@
                 {item.feed_item.object_type}
               </span>
               <time
-                class="text-xs text-base-content/50"
+                class="text-xs text-base-content/70"
                 datetime={DateTime.to_iso8601(item.feed_item.published_at)}
               >
                 {format_datetime(item.feed_item.published_at)}
@@ -144,7 +144,7 @@
             <div class="flex items-center gap-2 flex-shrink-0">
               <span class="badge badge-xs badge-accent">{gettext("Article")}</span>
               <time
-                class="text-xs text-base-content/50"
+                class="text-xs text-base-content/70"
                 datetime={datetime_attr(item.article.inserted_at)}
               >
                 {format_datetime(item.article.inserted_at)}
@@ -199,7 +199,7 @@
             <div class="flex items-center gap-2 flex-shrink-0">
               <span class="badge badge-xs badge-secondary">{gettext("Comment")}</span>
               <time
-                class="text-xs text-base-content/50"
+                class="text-xs text-base-content/70"
                 datetime={datetime_attr(item.comment.inserted_at)}
               >
                 {format_datetime(item.comment.inserted_at)}

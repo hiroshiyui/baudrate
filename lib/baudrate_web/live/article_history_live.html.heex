@@ -11,7 +11,7 @@
   <h1 class="text-2xl font-bold mb-1">{gettext("Edit History")}</h1>
   <p class="text-sm text-base-content/70 mb-6">{@article.title}</p>
 
-  <div :if={@revisions == []} class="text-base-content/50 text-center py-8">
+  <div :if={@revisions == []} class="text-base-content/70 text-center py-8">
     {gettext("No edit history available.")}
   </div>
 
@@ -37,7 +37,7 @@
                     {display_name(revision.editor)}
                   </.link>
                 </span>
-                <span :if={!revision.editor} class="text-base-content/50">
+                <span :if={!revision.editor} class="text-base-content/70">
                   {gettext("Unknown")}
                 </span>
               </td>

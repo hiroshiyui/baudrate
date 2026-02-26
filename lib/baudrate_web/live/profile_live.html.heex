@@ -24,7 +24,7 @@
             {gettext("Remove Avatar")}
           </button>
         </div>
-        <span :if={!@is_active} class="text-sm text-base-content/50">
+        <span :if={!@is_active} class="text-sm text-base-content/70">
           {gettext("Your account is pending approval.")}
         </span>
       </div>
@@ -146,7 +146,7 @@
       <div>
         <div class="text-sm text-base-content/70 mb-2">{gettext("Preferred Languages")}</div>
         <%= if @preferred_locales == [] do %>
-          <div class="text-sm text-base-content/50 italic">
+          <div class="text-sm text-base-content/70 italic">
             {gettext("Using browser language settings.")}
           </div>
         <% else %>
@@ -157,7 +157,7 @@
                 <span class="font-semibold">
                   {BaudrateWeb.Locale.locale_display_name(locale)}
                 </span>
-                <span class="text-sm text-base-content/50">{locale}</span>
+                <span class="text-sm text-base-content/70">{locale}</span>
                 <div class="ml-auto flex gap-1">
                   <button
                     :if={idx > 0}
@@ -215,7 +215,7 @@
                 <li>
                   <button type="button" phx-click="add_locale" phx-value-locale={code}>
                     {name}
-                    <span class="text-sm text-base-content/50">{code}</span>
+                    <span class="text-sm text-base-content/70">{code}</span>
                   </button>
                 </li>
               <% end %>
@@ -243,7 +243,7 @@
             {gettext("Nobody")}
           </option>
         </select>
-        <p class="text-sm text-base-content/50 mt-1">
+        <p class="text-sm text-base-content/70 mt-1">
           {gettext("Controls who can send you direct messages.")}
         </p>
       </div>
@@ -288,7 +288,7 @@
             placeholder={gettext("Your signature (Markdown supported, max 500 characters)")}
           />
           <div :if={@signature_preview != ""} class="space-y-1">
-            <p class="text-sm text-base-content/50">{gettext("Preview:")}</p>
+            <p class="text-sm text-base-content/70">{gettext("Preview:")}</p>
             <div class="prose prose-sm max-w-none bg-base-200 rounded-lg p-3 text-base-content/70">
               {raw(@signature_preview)}
             </div>
@@ -302,7 +302,7 @@
       <%!-- Muted Users section --%>
       <div>
         <div class="text-sm text-base-content/70 mb-2">{gettext("Muted Users")}</div>
-        <div :if={@mutes == []} class="text-sm text-base-content/50 italic">
+        <div :if={@mutes == []} class="text-sm text-base-content/70 italic">
           {gettext("No muted users.")}
         </div>
         <div :if={@mutes != []} class="space-y-2">

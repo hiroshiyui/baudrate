@@ -123,7 +123,7 @@
       </div>
 
       <%!-- Current moderators --%>
-      <div :if={@board_moderators == []} class="text-base-content/50 py-2">
+      <div :if={@board_moderators == []} class="text-base-content/70 py-2">
         {gettext("No moderators assigned.")}
       </div>
 
@@ -184,7 +184,7 @@
   </div>
 
   <%!-- Boards table --%>
-  <div :if={@boards == []} class="text-base-content/50 text-center py-8">
+  <div :if={@boards == []} class="text-base-content/70 text-center py-8">
     {gettext("No boards yet.")}
   </div>
 
@@ -214,7 +214,7 @@
             ]}>
               {translate_role(board.min_role_to_view)}
             </span>
-            <span class="text-base-content/50 mx-1">/</span>
+            <span class="text-base-content/70 mx-1">/</span>
             <span class="badge badge-sm badge-info">
               {translate_role(board.min_role_to_post)}
             </span>

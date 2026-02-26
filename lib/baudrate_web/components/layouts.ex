@@ -261,7 +261,7 @@ defmodule BaudrateWeb.Layouts do
       </div>
     </main>
 
-    <footer class="text-center text-sm text-base-content/50 py-6">
+    <footer class="text-center text-sm text-base-content/70 py-6">
       {raw(
         gettext("Of course it runs %{link}! Your public information hub!",
           link:

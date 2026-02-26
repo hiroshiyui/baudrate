@@ -336,8 +336,8 @@ defmodule BaudrateWeb.ArticleLive do
           :if={@comment.user && @comment.user.signature && @comment.user.signature != ""}
           class="mt-1"
         >
-          <div class="divider text-sm text-base-content/50 my-1"></div>
-          <div class="prose prose-sm max-w-none text-base-content/50">
+          <div class="divider text-sm text-base-content/70 my-1"></div>
+          <div class="prose prose-sm max-w-none text-base-content/70">
             {raw(Baudrate.Content.Markdown.to_html(@comment.user.signature))}
           </div>
         </div>
@@ -347,7 +347,7 @@ defmodule BaudrateWeb.ArticleLive do
             :if={@replying_to != @comment.id}
             phx-click="reply_to"
             phx-value-id={@comment.id}
-            class="text-sm text-base-content/50 hover:text-base-content cursor-pointer"
+            class="text-sm text-base-content/70 hover:text-base-content cursor-pointer"
             aria-expanded="false"
           >
             {gettext("Reply")}

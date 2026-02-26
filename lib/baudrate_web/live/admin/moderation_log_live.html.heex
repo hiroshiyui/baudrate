@@ -24,7 +24,7 @@
     </button>
   </div>
 
-  <div :if={@logs == []} class="text-base-content/50 text-center py-8">
+  <div :if={@logs == []} class="text-base-content/70 text-center py-8">
     {gettext("No moderation actions recorded.")}
   </div>
 
@@ -48,7 +48,7 @@
           </td>
           <td>
             <span :if={log.actor}>{display_name(log.actor)}</span>
-            <span :if={!log.actor} class="text-base-content/50">{gettext("Deleted user")}</span>
+            <span :if={!log.actor} class="text-base-content/70">{gettext("Deleted user")}</span>
           </td>
           <td>
             <span class="badge badge-outline badge-sm">{translate_action(log.action)}</span>

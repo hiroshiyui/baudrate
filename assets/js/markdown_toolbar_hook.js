@@ -282,7 +282,7 @@ const MarkdownToolbarHook = {
           this.previewDiv.innerHTML = payload.html;
         } else {
           this.previewDiv.innerHTML =
-            '<p class="text-base-content/50 text-sm italic">Nothing to preview.</p>';
+            '<p class="text-base-content/70 text-sm italic">Nothing to preview.</p>';
         }
       });
     }

@@ -56,12 +56,12 @@
 
         <div
           :if={@search_results == [] && String.length(@search_query) >= 2}
-          class="text-center py-4 text-base-content/50"
+          class="text-center py-4 text-base-content/70"
         >
           {gettext("No users found.")}
         </div>
 
-        <div :if={@search_query == ""} class="text-center py-4 text-base-content/50">
+        <div :if={@search_query == ""} class="text-center py-4 text-base-content/70">
           {gettext("Type a username to search.")}
         </div>
       </div>
@@ -82,7 +82,7 @@
         id="message-list"
         phx-hook="ScrollBottom"
       >
-        <div :if={@messages == []} class="text-center py-8 text-base-content/50">
+        <div :if={@messages == []} class="text-center py-8 text-base-content/70">
           {gettext("No messages yet. Send the first one!")}
         </div>
 
@@ -93,7 +93,7 @@
             if(msg.sender_user_id == @current_user.id, do: "chat-end", else: "chat-start")
           ]}
         >
-          <div class="chat-header text-xs text-base-content/50 mb-1">
+          <div class="chat-header text-xs text-base-content/70 mb-1">
             <%= if msg.sender_user_id == @current_user.id do %>
               {gettext("You")}
             <% else %>

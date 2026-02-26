@@ -140,7 +140,7 @@
       :if={@article.user && @article.user.signature && @article.user.signature != ""}
       class="mt-4"
     >
-      <div class="divider text-sm text-base-content/50">{gettext("Signature")}</div>
+      <div class="divider text-sm text-base-content/70">{gettext("Signature")}</div>
       <div class="prose prose-sm max-w-none text-base-content/70">
         {raw(Baudrate.Content.Markdown.to_html(@article.user.signature))}
       </div>
@@ -151,7 +151,7 @@
   <div class="mt-8">
     <h2 class="text-lg font-semibold mb-4">
       {gettext("Comments")}
-      <span class="text-base-content/50 font-normal text-sm">
+      <span class="text-base-content/70 font-normal text-sm">
         ({length(@comment_roots) + Enum.sum(Enum.map(Map.values(@children_map), &length/1))})
       </span>
     </h2>
@@ -183,7 +183,7 @@
       </.form>
     </div>
 
-    <div :if={@comment_roots == [] && !@can_comment} class="text-base-content/50 text-center py-4">
+    <div :if={@comment_roots == [] && !@can_comment} class="text-base-content/70 text-center py-4">
       {gettext("No comments yet.")}
     </div>
 
