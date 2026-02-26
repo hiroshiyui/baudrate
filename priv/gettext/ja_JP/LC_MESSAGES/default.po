@@ -3803,7 +3803,7 @@ msgid_plural "%{count} comments"
 msgstr[0] "%{count} 件のコメント"
 
 #: lib/baudrate_web/live/feed_live.html.heex:200
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Comment"
 msgstr "コメント"
 
