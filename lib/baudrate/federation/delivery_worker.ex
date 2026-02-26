@@ -6,8 +6,11 @@ defmodule Baudrate.Federation.DeliveryWorker do
   Follows the same pattern as `SessionCleaner`:
   - Polls every 60 seconds (configurable via `delivery_poll_interval`)
   - Processes up to 50 jobs per cycle (configurable via `delivery_batch_size`)
-  - Delivers concurrently via `Task.async_stream` (configurable via `delivery_max_concurrency`, default 10)
+  - Delivers concurrently via `Task.Supervisor.async_stream_nolink`
+    (configurable via `delivery_max_concurrency`, default 10)
   - Skips jobs targeting blocked domains
+  - Graceful shutdown: sets `shutting_down` flag, skips new polls, and lets
+    in-flight tasks finish via the supervised task supervisor
   """
 
   use GenServer
@@ -25,11 +28,16 @@ defmodule Baudrate.Federation.DeliveryWorker do
 
   @impl true
   def init(_opts) do
+    Process.flag(:trap_exit, true)
     schedule_poll()
-    {:ok, %{}}
+    {:ok, %{shutting_down: false}}
   end
 
   @impl true
+  def handle_info(:poll, %{shutting_down: true} = state) do
+    {:noreply, state}
+  end
+
   def handle_info(:poll, state) do
     if Baudrate.Setup.federation_enabled?() do
       process_batch()
@@ -37,6 +45,12 @@ defmodule Baudrate.Federation.DeliveryWorker do
 
     schedule_poll()
     {:noreply, state}
+  end
+
+  @impl true
+  def terminate(reason, _state) do
+    Logger.info("federation.delivery_worker: shutting down (reason: #{inspect(reason)})")
+    :ok
   end
 
   defp schedule_poll do
@@ -68,8 +82,9 @@ defmodule Baudrate.Federation.DeliveryWorker do
     http_receive_timeout = config[:http_receive_timeout] || 30_000
     task_timeout = http_receive_timeout + 15_000
 
-    jobs
-    |> Task.async_stream(
+    Baudrate.Federation.TaskSupervisor
+    |> Task.Supervisor.async_stream_nolink(
+      jobs,
       fn job -> Delivery.deliver_one(job) end,
       max_concurrency: max_concurrency,
       timeout: task_timeout,
