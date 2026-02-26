@@ -27,7 +27,7 @@
             <th scope="col"></th>
           </tr>
         </thead>
-        <tbody>
+        <tbody aria-live="polite">
           <%= for {revision, index} <- Enum.with_index(@revisions) do %>
             <tr class={[@selected_index == index && "bg-base-200"]}>
               <td>{"##{length(@revisions) - index}"}</td>

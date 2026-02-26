@@ -57,7 +57,7 @@
       </div>
     </div>
 
-    <div :if={@items != []} class="space-y-4" role="feed" aria-label={gettext("Feed")}>
+    <div :if={@items != []} class="space-y-4" role="feed" aria-live="polite" aria-label={gettext("Feed")}>
       <article :for={item <- @items} class="card bg-base-200 shadow-sm">
         <%!-- Remote feed item --%>
         <div :if={item.source == :remote} class="card-body p-4">

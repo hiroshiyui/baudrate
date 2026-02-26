@@ -52,7 +52,7 @@
   {gettext("No articles yet.")}
 </div>
 
-<div :if={@articles != []} class="space-y-2">
+<div :if={@articles != []} class="space-y-2" aria-live="polite">
   <div :for={article <- @articles} class="card bg-base-200 shadow-sm">
     <div class="card-body p-4">
       <.link navigate={~p"/articles/#{article.slug}"} class="card-title text-base link link-hover">

@@ -38,7 +38,7 @@
                 <th scope="col">{gettext("Actions")}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody aria-live="polite">
               <tr :for={job <- @failed_jobs}>
                 <td class="font-mono text-sm max-w-xs truncate">{job.inbox_url}</td>
                 <td>
@@ -98,7 +98,7 @@
               <th scope="col">{gettext("Actions")}</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody aria-live="polite">
             <tr :for={instance <- @instances}>
               <td class="font-mono text-sm">{instance.domain}</td>
               <td>{instance.actor_count}</td>
@@ -165,7 +165,7 @@
                 <th scope="col">{gettext("Actions")}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody aria-live="polite">
               <tr :for={board <- @boards} :if={board.ap_enabled}>
                 <td>{board.name}</td>
                 <td>
@@ -209,7 +209,7 @@
               <th scope="col">{gettext("Actions")}</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody aria-live="polite">
             <tr :for={board <- @boards}>
               <td>{board.name}</td>
               <td>
@@ -308,7 +308,7 @@
                   <th scope="col">{gettext("Actions")}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody aria-live="polite">
                 <tr :for={domain <- @audit_result.missing}>
                   <td class="font-mono text-sm">{domain}</td>
                   <td>
@@ -338,7 +338,7 @@
                   <th scope="col">{gettext("Domain")}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody aria-live="polite">
                 <tr :for={domain <- @audit_result.extra}>
                   <td class="font-mono text-sm">{domain}</td>
                 </tr>

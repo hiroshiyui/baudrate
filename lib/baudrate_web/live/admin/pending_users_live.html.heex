@@ -14,7 +14,7 @@
           <th scope="col"></th>
         </tr>
       </thead>
-      <tbody>
+      <tbody aria-live="polite">
         <tr :for={user <- @pending_users}>
           <td>{user.username}</td>
           <td>

@@ -81,6 +81,7 @@
         class="card-body p-4 space-y-3 max-h-[60vh] overflow-y-auto"
         id="message-list"
         phx-hook="ScrollBottom"
+        aria-live="polite"
       >
         <div :if={@messages == []} class="text-center py-8 text-base-content/70">
           {gettext("No messages yet. Send the first one!")}

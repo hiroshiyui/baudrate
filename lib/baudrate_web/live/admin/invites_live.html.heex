@@ -24,7 +24,7 @@
           <th scope="col">{gettext("Actions")}</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody aria-live="polite">
         <tr :for={code <- @codes}>
           <td class="font-mono">{code.code}</td>
           <td>

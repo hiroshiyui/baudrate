@@ -201,7 +201,7 @@
           <th scope="col">{gettext("Actions")}</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody aria-live="polite">
         <tr :for={board <- @boards}>
           <td class="font-medium">{board.name}</td>
           <td class="font-mono text-sm">{board.slug}</td>

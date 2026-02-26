@@ -34,7 +34,7 @@
           <th scope="col">{gettext("Result")}</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody aria-live="polite">
         <tr :for={attempt <- @attempts}>
           <td class="whitespace-nowrap text-sm">
             <time datetime={datetime_attr(attempt.inserted_at)}>
