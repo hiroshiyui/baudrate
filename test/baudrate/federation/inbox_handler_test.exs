@@ -1131,6 +1131,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
   describe "domain blocking" do
     test "rejects activities from blocked domains" do
       Baudrate.Setup.set_setting("ap_domain_blocklist", "blocked-domain.example")
+      Baudrate.Federation.DomainBlockCache.refresh()
 
       remote_actor =
         create_remote_actor(%{

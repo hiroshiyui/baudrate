@@ -91,6 +91,7 @@ defmodule Baudrate.MessagingTest do
       remote_actor = create_remote_actor(%{domain: "blocked.example"})
 
       Baudrate.Setup.set_setting("ap_domain_blocklist", "blocked.example")
+      Baudrate.Federation.DomainBlockCache.refresh()
 
       refute Messaging.can_receive_remote_dm?(user, remote_actor)
     end

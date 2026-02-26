@@ -1,8 +1,12 @@
 defmodule Baudrate.Federation.ValidatorTest do
-  use Baudrate.DataCase, async: true
+  use Baudrate.DataCase, async: false
 
-  alias Baudrate.Federation.Validator
+  alias Baudrate.Federation.{DomainBlockCache, Validator}
   alias Baudrate.Setup
+
+  defp refresh_domain_cache do
+    DomainBlockCache.refresh()
+  end
 
   describe "valid_https_url?/1" do
     test "valid HTTPS URL" do
@@ -84,7 +88,8 @@ defmodule Baudrate.Federation.ValidatorTest do
     end
 
     test "rejects HTTP URI string" do
-      assert {:error, :invalid_object_id} = Validator.validate_object_id("http://insecure.example/obj")
+      assert {:error, :invalid_object_id} =
+               Validator.validate_object_id("http://insecure.example/obj")
     end
 
     test "rejects object map without id" do
@@ -219,17 +224,20 @@ defmodule Baudrate.Federation.ValidatorTest do
 
     test "not blocked when domain is not in the list" do
       Setup.set_setting("ap_domain_blocklist", "bad.example,evil.test")
+      refresh_domain_cache()
       refute Validator.domain_blocked?("remote.example")
     end
 
     test "blocked when domain is in the list" do
       Setup.set_setting("ap_domain_blocklist", "bad.example,evil.test")
+      refresh_domain_cache()
       assert Validator.domain_blocked?("bad.example")
       assert Validator.domain_blocked?("evil.test")
     end
 
     test "domain blocking is case-insensitive" do
       Setup.set_setting("ap_domain_blocklist", "Bad.Example,EVIL.test")
+      refresh_domain_cache()
       assert Validator.domain_blocked?("bad.example")
       assert Validator.domain_blocked?("evil.test")
     end

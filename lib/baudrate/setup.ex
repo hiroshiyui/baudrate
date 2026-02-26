@@ -291,6 +291,9 @@ defmodule Baudrate.Setup do
         set_setting("ap_domain_allowlist", changes.ap_domain_allowlist || "")
         set_setting("ap_authorized_fetch", changes.ap_authorized_fetch || "false")
         set_setting("ap_blocklist_audit_url", changes.ap_blocklist_audit_url || "")
+
+        Baudrate.Federation.DomainBlockCache.refresh()
+
         changes
       end)
     else

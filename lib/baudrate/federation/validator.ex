@@ -7,8 +7,6 @@ defmodule Baudrate.Federation.Validator do
   and attribution consistency.
   """
 
-  alias Baudrate.Setup
-
   @doc """
   Returns true if the URL is a well-formed HTTPS URL.
   """
@@ -98,25 +96,7 @@ defmodule Baudrate.Federation.Validator do
   allowlist is empty in allowlist mode, all domains are blocked (safe default).
   """
   def domain_blocked?(domain) when is_binary(domain) do
-    mode = Setup.get_setting("ap_federation_mode") || "blocklist"
-
-    case mode do
-      "allowlist" ->
-        allowed = parse_domain_list(Setup.get_setting("ap_domain_allowlist") || "")
-        allowed == MapSet.new() or not MapSet.member?(allowed, String.downcase(domain))
-
-      _ ->
-        blocked = parse_domain_list(Setup.get_setting("ap_domain_blocklist") || "")
-        MapSet.member?(blocked, String.downcase(domain))
-    end
-  end
-
-  defp parse_domain_list(str) do
-    str
-    |> String.split(",", trim: true)
-    |> Enum.map(&String.trim/1)
-    |> Enum.map(&String.downcase/1)
-    |> MapSet.new()
+    Baudrate.Federation.DomainBlockCache.domain_blocked?(domain)
   end
 
   @doc """
