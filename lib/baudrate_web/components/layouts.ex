@@ -260,6 +260,15 @@ defmodule BaudrateWeb.Layouts do
       </div>
     </main>
 
+    <footer class="text-center text-sm text-base-content/50 py-6">
+      {raw(
+        gettext("Of course it runs %{link}!",
+          link:
+            ~s(<a href="https://github.com/hiroshiyui/baudrate" class="link link-hover" target="_blank" rel="noopener noreferrer">Baudrate</a>)
+        )
+      )}
+    </footer>
+
     <.flash_group flash={@flash} />
     """
   end
