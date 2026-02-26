@@ -903,9 +903,9 @@ defmodule Baudrate.Federation.InboxHandler do
 
           if existing do
             # Link to all following boards
-            for board <- boards do
+            Enum.each(boards, fn board ->
               Content.add_article_to_board(existing, board.id)
-            end
+            end)
 
             :ok
           else
@@ -1077,45 +1077,11 @@ defmodule Baudrate.Federation.InboxHandler do
   # --- Flag helpers ---
 
   defp build_flag_report_attrs(object_uris, remote_actor, reason) do
-    base = Federation.base_url()
-    article_prefix = "#{base}/ap/articles/"
+    # Filter out the actor's own URI (Flag objects include both actor and content)
+    content_uris = Enum.reject(object_uris, &(&1 == remote_actor.ap_id))
 
-    # Try to match object URIs to local articles or comments
-    {article_id, comment_id} =
-      Enum.reduce(object_uris, {nil, nil}, fn uri, {art_id, com_id} ->
-        cond do
-          # Skip the actor URI itself (Flag objects include both actor and content)
-          uri == remote_actor.ap_id ->
-            {art_id, com_id}
-
-          # Check if it matches a local article URI
-          art_id == nil && String.starts_with?(uri, article_prefix) ->
-            slug = String.replace_prefix(uri, article_prefix, "")
-
-            case Baudrate.Repo.get_by(Content.Article, slug: slug) do
-              %{id: id} -> {id, com_id}
-              nil -> {art_id, com_id}
-            end
-
-          # Check by ap_id for articles
-          art_id == nil ->
-            case Content.get_article_by_ap_id(uri) do
-              %{id: id} ->
-                {id, com_id}
-
-              nil ->
-                # Check for comments
-                if com_id == nil do
-                  case Content.get_comment_by_ap_id(uri) do
-                    %{id: id} -> {art_id, id}
-                    nil -> {art_id, com_id}
-                  end
-                else
-                  {art_id, com_id}
-                end
-            end
-        end
-      end)
+    article_id = find_flagged_article(content_uris)
+    comment_id = if article_id == nil, do: find_flagged_comment(content_uris)
 
     %{
       reason: reason,
@@ -1123,5 +1089,36 @@ defmodule Baudrate.Federation.InboxHandler do
       article_id: article_id,
       comment_id: comment_id
     }
+  end
+
+  defp find_flagged_article(uris) do
+    article_prefix = "#{Federation.base_url()}/ap/articles/"
+
+    Enum.find_value(uris, fn uri ->
+      cond do
+        String.starts_with?(uri, article_prefix) ->
+          slug = String.replace_prefix(uri, article_prefix, "")
+
+          case Baudrate.Repo.get_by(Content.Article, slug: slug) do
+            %{id: id} -> id
+            nil -> nil
+          end
+
+        true ->
+          case Content.get_article_by_ap_id(uri) do
+            %{id: id} -> id
+            nil -> nil
+          end
+      end
+    end)
+  end
+
+  defp find_flagged_comment(uris) do
+    Enum.find_value(uris, fn uri ->
+      case Content.get_comment_by_ap_id(uri) do
+        %{id: id} -> id
+        nil -> nil
+      end
+    end)
   end
 end
