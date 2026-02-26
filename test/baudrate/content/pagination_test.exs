@@ -286,5 +286,33 @@ defmodule Baudrate.Content.PaginationTest do
       assert %Setup.User{} = article.user
       assert [%Board{} | _] = article.boards
     end
+
+    test "page far beyond total returns empty results with correct metadata" do
+      import Ecto.Query
+
+      user = create_user()
+      board = create_board()
+      create_articles(board, user, 3)
+
+      base_query =
+        from(a in Content.Article,
+          join: ba in Content.BoardArticle,
+          on: ba.article_id == a.id,
+          where: ba.board_id == ^board.id and is_nil(a.deleted_at),
+          distinct: a.id
+        )
+
+      result =
+        Pagination.paginate_query(base_query, {1000, 20, 19_980},
+          result_key: :articles,
+          order_by: [desc: dynamic([q], q.inserted_at)],
+          preloads: []
+        )
+
+      assert result.articles == []
+      assert result.total == 3
+      assert result.page == 1000
+      assert result.total_pages == 1
+    end
   end
 end

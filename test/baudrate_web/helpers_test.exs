@@ -105,6 +105,22 @@ defmodule BaudrateWeb.HelpersTest do
     test "non-numeric returns 1" do
       assert Helpers.parse_page("abc") == 1
     end
+
+    test "empty string returns 1" do
+      assert Helpers.parse_page("") == 1
+    end
+
+    test "float string returns 1" do
+      assert Helpers.parse_page("3.14") == 1
+    end
+
+    test "large page number is accepted" do
+      assert Helpers.parse_page("999999") == 999_999
+    end
+
+    test "whitespace-padded string returns 1" do
+      assert Helpers.parse_page(" 5") == 1
+    end
   end
 
   describe "upload_error_to_string/2" do
