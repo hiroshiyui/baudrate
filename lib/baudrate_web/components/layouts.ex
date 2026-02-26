@@ -262,7 +262,7 @@ defmodule BaudrateWeb.Layouts do
 
     <footer class="text-center text-sm text-base-content/50 py-6">
       {raw(
-        gettext("Of course it runs %{link}!",
+        gettext("Of course it runs %{link}! Your public information hub!",
           link:
             ~s(<a href="https://github.com/hiroshiyui/baudrate" class="link link-hover" target="_blank" rel="noopener noreferrer">Baudrate</a>)
         )

@@ -3830,5 +3830,5 @@ msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:265
 #, elixir-autogen, elixir-format
-msgid "Of course it runs %{link}!"
+msgid "Of course it runs %{link}! Your public information hub!"
 msgstr ""

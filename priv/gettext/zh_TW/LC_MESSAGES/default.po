@@ -3819,5 +3819,5 @@ msgstr "時區"
 
 #: lib/baudrate_web/components/layouts.ex:265
 #, elixir-autogen, elixir-format
-msgid "Of course it runs %{link}!"
-msgstr "當然是跑 %{link}！"
+msgid "Of course it runs %{link}! Your public information hub!"
+msgstr "當然是跑 %{link}！您的公開資訊集散地！"

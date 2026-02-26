@@ -3819,5 +3819,5 @@ msgstr "タイムゾーン"
 
 #: lib/baudrate_web/components/layouts.ex:265
 #, elixir-autogen, elixir-format
-msgid "Of course it runs %{link}!"
-msgstr "もちろん %{link} で動いています！"
+msgid "Of course it runs %{link}! Your public information hub!"
+msgstr "もちろん %{link} で動いています！あなたの公開情報ハブ！"
