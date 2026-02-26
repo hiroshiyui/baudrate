@@ -12,10 +12,10 @@ Audit date: 2026-02-26
 
 ## Should Fix
 
-- [ ] **code:** Replace `Repo.get!` with `Repo.get` + error handling in user-facing LiveView handlers (~9 occurrences in `article_live.ex`, `admin/federation_live.ex`, `admin/moderation_live.ex`)
-- [ ] **code:** Extract duplicated board-moderator authorization check in `article_live.ex:40-60` to a shared helper (repeated 3 times)
-- [ ] **a11y:** Remove misleading `aria-expanded="false"` from reply button or implement proper disclosure pattern (`article_live.html.heex:82`)
-- [ ] **a11y:** Increase image remove button touch target size for mobile (`article_new_live.html.heex:47-64`)
+- [x] **code:** Replace `Repo.get!` with `Repo.get` + error handling in user-facing LiveView handlers (7 occurrences in `article_live.ex`, `admin/federation_live.ex`, `admin/moderation_live.ex`, `admin/invites_live.ex`)
+- [x] **code:** Extract `can_moderate_article?/2` and `can_comment_on_article?/2` to `Content` context, replacing duplicated inline checks in `article_live.ex`
+- [x] **a11y:** Remove misleading `aria-expanded="false"` from reply button (not a disclosure pattern — button hides when form shows)
+- [x] **a11y:** Increase image remove button touch target to 44x44px, always visible on mobile (`article_new_live.html.heex`, `article_edit_live.html.heex`)
 
 ## Nice to Have
 
