@@ -83,7 +83,11 @@
             </button>
           </div>
 
-          <div :for={err <- upload_errors(@uploads.article_images)} class="text-sm text-error">
+          <div
+            :for={err <- upload_errors(@uploads.article_images)}
+            class="text-sm text-error"
+            role="alert"
+          >
             {upload_error_to_string(err)}
           </div>
         </div>

@@ -45,6 +45,10 @@ defmodule BaudrateWeb.Router do
     plug :put_root_layout, html: {BaudrateWeb.Layouts, :root}
     plug :protect_from_forgery
 
+    # NOTE: style-src 'unsafe-inline' is required because DaisyUI injects inline
+    # styles for theme switching and component functionality. Removing it breaks
+    # the UI. This is a known DaisyUI requirement and cannot be avoided without
+    # replacing the CSS framework.
     plug :put_secure_browser_headers, %{
       "content-security-policy" =>
         "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' blob: ws: wss:; frame-ancestors 'none'; form-action 'self'; base-uri 'self'",
