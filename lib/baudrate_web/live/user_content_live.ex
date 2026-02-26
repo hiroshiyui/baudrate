@@ -51,8 +51,7 @@ defmodule BaudrateWeb.UserContentLive do
            articles: result.articles,
            page: result.page,
            total_pages: result.total_pages,
-           page_title:
-             gettext("Articles by %{username}", username: user.username)
+           page_title: gettext("Articles by %{username}", username: user.username)
          )}
 
       :comments ->
@@ -64,8 +63,7 @@ defmodule BaudrateWeb.UserContentLive do
            comments: result.comments,
            page: result.page,
            total_pages: result.total_pages,
-           page_title:
-             gettext("Comments by %{username}", username: user.username)
+           page_title: gettext("Comments by %{username}", username: user.username)
          )}
     end
   end

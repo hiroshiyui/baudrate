@@ -258,11 +258,17 @@
         </p>
 
         <div class="stats stats-vertical shadow w-full mt-2">
-          <.link navigate={~p"/users/#{@current_user.username}/articles"} class="stat py-2 hover:bg-base-200 transition-colors cursor-pointer">
+          <.link
+            navigate={~p"/users/#{@current_user.username}/articles"}
+            class="stat py-2 hover:bg-base-200 transition-colors cursor-pointer"
+          >
             <div class="stat-title">{gettext("Articles")}</div>
             <div class="stat-value text-lg">{@article_count}</div>
           </.link>
-          <.link navigate={~p"/users/#{@current_user.username}/comments"} class="stat py-2 hover:bg-base-200 transition-colors cursor-pointer">
+          <.link
+            navigate={~p"/users/#{@current_user.username}/comments"}
+            class="stat py-2 hover:bg-base-200 transition-colors cursor-pointer"
+          >
             <div class="stat-title">{gettext("Comments")}</div>
             <div class="stat-value text-lg">{@comment_count}</div>
           </.link>

@@ -68,11 +68,17 @@
   </div>
 
   <div class="stats stats-horizontal shadow">
-    <.link navigate={~p"/users/#{@profile_user.username}/articles"} class="stat hover:bg-base-200 transition-colors cursor-pointer">
+    <.link
+      navigate={~p"/users/#{@profile_user.username}/articles"}
+      class="stat hover:bg-base-200 transition-colors cursor-pointer"
+    >
       <div class="stat-title">{gettext("Articles")}</div>
       <div class="stat-value text-lg">{@article_count}</div>
     </.link>
-    <.link navigate={~p"/users/#{@profile_user.username}/comments"} class="stat hover:bg-base-200 transition-colors cursor-pointer">
+    <.link
+      navigate={~p"/users/#{@profile_user.username}/comments"}
+      class="stat hover:bg-base-200 transition-colors cursor-pointer"
+    >
       <div class="stat-title">{gettext("Comments")}</div>
       <div class="stat-value text-lg">{@comment_count}</div>
     </.link>
