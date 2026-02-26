@@ -1,17 +1,18 @@
-<div class="lg:grid lg:grid-cols-[1fr_16rem] lg:gap-6">
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">
+    {gettext("Feed")}
+    <span
+      :if={@total > 0}
+      class="badge badge-neutral ml-2"
+      aria-label={gettext("%{count} items", count: @total)}
+    >
+      {@total}
+    </span>
+  </h1>
+</div>
+
+<div class="lg:grid lg:grid-cols-[1fr_16rem] lg:gap-6 lg:items-start">
   <div class="space-y-6" role="main" aria-label={gettext("Feed")}>
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">
-        {gettext("Feed")}
-        <span
-          :if={@total > 0}
-          class="badge badge-neutral ml-2"
-          aria-label={gettext("%{count} items", count: @total)}
-        >
-          {@total}
-        </span>
-      </h1>
-    </div>
 
     <div :if={@can_post} class="card bg-base-200 shadow-sm">
       <div class="card-body p-4">
