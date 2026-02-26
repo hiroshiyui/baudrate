@@ -19,12 +19,12 @@ Audit date: 2026-02-26
 
 ## Nice to Have
 
-- [ ] **test:** Add edge case tests for board ancestor circular references and max depth
-- [ ] **test:** Add pagination boundary tests (page=0, negative, empty results)
-- [ ] **test:** Add federation delivery failure and retry tests
-- [ ] **code:** Replace `for` with `Enum.each` for side-effect-only loops (`inbox_handler.ex:906`)
-- [ ] **code:** Simplify deeply nested `cond`/`case`/`if` in `build_flag_report_attrs/3` (`inbox_handler.ex:1079-1126`)
-- [ ] **code:** Add `@deprecated` annotation to `can_manage_article?/2` legacy alias in `content.ex`
-- [ ] **security:** Document why CSP `style-src 'unsafe-inline'` is required (DaisyUI dependency) in `router.ex:50`
-- [ ] **a11y:** Add visible `<label>` associations to auth form inputs (`login_live.html.heex`, `password_reset_live.html.heex`)
-- [ ] **a11y:** Wrap file upload error messages with `role="alert"` (`article_new_live.html.heex:94-96`)
+- [x] **test:** Add edge case tests for board ancestor max depth and root-parent verification
+- [x] **test:** Add pagination boundary tests (page=0, negative, empty results, far-beyond-total)
+- [x] **test:** Add federation delivery failure and retry tests (exponential backoff, full retry cycle, retry success)
+- [x] **code:** Replace `for` with `Enum.each` for side-effect-only loops (`inbox_handler.ex:906`)
+- [x] **code:** Simplify deeply nested `cond`/`case`/`if` in `build_flag_report_attrs/3` — extracted `find_flagged_article/1` and `find_flagged_comment/1`
+- [x] **code:** Add `@deprecated` annotation to `can_manage_article?/2` legacy alias in `content.ex`
+- [x] **security:** Document why CSP `style-src 'unsafe-inline'` is required (DaisyUI dependency) in `router.ex:50`
+- [x] **a11y:** Auth form inputs already have proper `<label>` associations — verified OK
+- [x] **a11y:** Wrap file upload error messages with `role="alert"` (`article_new_live.html.heex`, `article_edit_live.html.heex`)
