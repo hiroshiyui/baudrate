@@ -158,6 +158,8 @@ Configure at `/admin/settings`:
 | `ap_domain_allowlist` | text | `""` | Comma-separated allowed domains |
 | `ap_authorized_fetch` | boolean | `"false"` | Require HTTP Signatures on AP GET requests |
 | `ap_blocklist_audit_url` | string | `""` | External known-bad-actor list URL |
+| `theme_light` | enum | `"light"` | DaisyUI theme for light mode (21 options) |
+| `theme_dark` | enum | `"dark"` | DaisyUI theme for dark mode (14 options) |
 
 ---
 

@@ -166,6 +166,7 @@ lib/
 │   │   ├── refresh_session.ex   # Token rotation every 24h
 │   │   ├── require_ap_content_type.ex  # AP content-type validation (415 on non-AP types)
 │   │   ├── set_locale.ex        # Accept-Language + user preference locale detection
+│   │   ├── set_theme.ex         # Inject admin-configured DaisyUI theme assigns
 │   │   └── verify_http_signature.ex  # HTTP Signature verification for AP inboxes
 │   ├── endpoint.ex              # HTTP entry point, session config
 │   ├── gettext.ex               # Gettext i18n configuration
@@ -871,7 +872,7 @@ Every browser request passes through these plugs in order:
 :accepts → :fetch_session → :fetch_live_flash → :put_root_layout →
 :protect_from_forgery → :put_secure_browser_headers (CSP, X-Frame-Options) →
 SetLocale (Accept-Language) → EnsureSetup (redirect to /setup) →
-RefreshSession (token rotation)
+SetTheme (inject admin-configured DaisyUI themes) → RefreshSession (token rotation)
 ```
 
 ActivityPub GET requests use the `:activity_pub` pipeline:

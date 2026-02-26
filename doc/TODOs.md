@@ -11,11 +11,9 @@ Identified via competitive analysis against Discourse, Lemmy, Flarum, NodeBB, an
 ### High Priority — Core Forum Gaps
 
 - [ ] **feat:** Notification system — in-app notification center (bell icon) for replies, mentions, new followers; DB-backed notification schema with read/unread state
-- [ ] **feat:** Email notifications — configurable email-on-reply, email digests (daily/weekly), re-engagement emails for inactive users
 - [ ] **feat:** @mention support — `@username` parsing in articles/comments, link to profile, trigger notification; federate as `Mention` tag in AP objects
 - [ ] **feat:** Bookmarks / saved posts — users can bookmark articles and comments for later; simple join table, dedicated `/bookmarks` page
 - [ ] **feat:** Drafts / autosave — auto-save article and comment drafts (DB-backed or localStorage); restore on revisit
-- [ ] **feat:** Sort algorithms — add Hot (time-decay), Top (day/week/month/all), Most Commented sorting for board article listings; user-selectable sort dropdown
 - [ ] **feat:** Polls — inline polls in articles (single-choice, multiple-choice, with optional expiry); federate as `Question` AP object
 - [ ] **feat:** Rich link previews (oneboxing) — auto-expand YouTube, GitHub, Wikipedia, etc. links into embedded cards with metadata
 
@@ -49,5 +47,5 @@ Identified via competitive analysis against Discourse, Lemmy, Flarum, NodeBB, an
 - [ ] **infra:** S3 / CDN object storage — external media storage for horizontal scaling (currently local filesystem only)
 - [ ] **infra:** Admin analytics dashboard — DAU/MAU, posts/day, response times, community health metrics
 - [ ] **a11y:** RTL language support — right-to-left layout for Arabic/Hebrew communities
-- [ ] **feat:** Theme engine — user-selectable themes or admin CSS injection beyond DaisyUI dark/light toggle
+- [x] **feat:** Theme engine — admin-configurable DaisyUI themes (35 built-in themes, light/dark selectors in admin settings)
 - [ ] **infra:** Plugin / extension system — third-party extensibility API
