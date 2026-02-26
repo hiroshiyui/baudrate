@@ -74,6 +74,7 @@ lib/
 │   │   ├── delivery.ex          # Outgoing activity delivery (Accept, queue, retry, block delivery)
 │   │   ├── delivery_job.ex      # DeliveryJob schema (delivery queue records)
 │   │   ├── delivery_worker.ex   # GenServer: polls delivery queue, retries failed jobs
+│   │   ├── domain_block_cache.ex # ETS-backed cache for domain blocking decisions
 │   │   ├── stale_actor_cleaner.ex # GenServer: daily stale remote actor cleanup
 │   │   ├── follower.ex          # Follower schema (remote → local follows)
 │   │   ├── http_client.ex       # SSRF-safe HTTP client for remote fetches (unsigned + signed GET)

@@ -21,9 +21,9 @@ Audit date: 2026-02-26
 - [x] **security:** Object `id` in incoming activities not validated as HTTPS URL before storing as `ap_id` — added `validate_object_id/1` to Validator, guarded all extraction points in InboxHandler
 - [x] **security:** CSP `img-src https:` allows tracking pixels from federated content — removed blanket `https:` from `img-src`
 - [x] **security:** Add `Referrer-Policy` header and `object-src 'none'` to CSP — added `referrer-policy: strict-origin-when-cross-origin` and `object-src 'none'`
-- [ ] **perf:** `domain_blocked?/1` queries DB settings on every inbox/outbox activity — cache in ETS or Agent (`federation/validator.ex:81-93`)
-- [ ] **perf:** No partial index on `comments(article_id) WHERE deleted_at IS NULL` for common query pattern
-- [ ] **perf:** Board article listing joins ALL comments for bump ordering — denormalize to `last_activity_at` column on articles (`content.ex:212-225`)
+- [x] **perf:** `domain_blocked?/1` queries DB settings on every inbox/outbox activity — cached in ETS via `DomainBlockCache` GenServer
+- [x] **perf:** No partial index on `comments(article_id) WHERE deleted_at IS NULL` — added partial index (migration `20260226160000`)
+- [x] **perf:** Board article listing joins ALL comments for bump ordering — denormalized to `last_activity_at` column on articles (migration `20260226160001`)
 - [ ] **a11y:** No `aria-live` regions for dynamically updated content (comment lists, search results)
 - [ ] **infra:** `DeliveryWorker` polling has no jitter — thundering herd risk in clusters (`federation/delivery_worker.ex:45`)
 - [ ] **infra:** No telemetry events for federation delivery despite having telemetry deps

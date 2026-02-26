@@ -354,6 +354,8 @@ Both blocks and mutes support local users and remote actors.
 
 Domain filtering applies to both inbound (inbox) and outbound (delivery).
 Comparison is case-insensitive. Configure at `/admin/settings`.
+Domain lists are cached in ETS for high-throughput lookups and refreshed
+automatically when settings are saved.
 
 ### Domain Blocklist / Allowlist
 
