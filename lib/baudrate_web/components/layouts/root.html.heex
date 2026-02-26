@@ -36,6 +36,12 @@
         href={~p"/feeds/boards/#{assigns[:feed_board_slug]}/atom"}
       />
     <% end %>
+    <%= if assigns[:linked_data_json] do %>
+      {raw("<script type=\"application/ld+json\">" <> @linked_data_json <> "</script>")}
+    <% end %>
+    <%= for {name, content} <- (assigns[:dc_meta] || []) do %>
+      <meta name={name} content={content} />
+    <% end %>
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
