@@ -2,7 +2,9 @@ defmodule Baudrate.Federation.HTTPSignature do
   @moduledoc """
   HTTP Signature verification and signing for ActivityPub federation.
 
-  Implements draft-cavage-http-signatures with `rsa-sha256` algorithm.
+  Implements draft-cavage-http-signatures (draft-cavage-http-signatures-12).
+  Outbound signatures use the `hs2019` algorithm label (RSA PKCS1v15 + SHA-256).
+  Inbound verification accepts both `hs2019` and legacy `rsa-sha256`.
 
   **Verification** (incoming inbox requests):
     1. Parse `Signature` header
@@ -11,9 +13,10 @@ defmodule Baudrate.Federation.HTTPSignature do
     4. Validate `Digest` matches body SHA-256
     5. Resolve remote actor and verify signature with public key
 
-  **Signing** (outgoing Accept(Follow) responses):
+  **Signing** (outgoing requests):
     1. Build signing string from required headers
     2. Sign with local actor's RSA private key
+    3. Use `hs2019` algorithm label in Signature header
   """
 
   require Logger
@@ -173,7 +176,7 @@ defmodule Baudrate.Federation.HTTPSignature do
     signature = :public_key.sign(signing_string, :sha256, private_key) |> Base.encode64()
 
     sig_header =
-      ~s[keyId="#{key_id}",algorithm="rsa-sha256",headers="(request-target) host date digest",signature="#{signature}"]
+      ~s[keyId="#{key_id}",algorithm="hs2019",headers="(request-target) host date digest",signature="#{signature}"]
 
     %{
       "signature" => sig_header,
@@ -210,7 +213,7 @@ defmodule Baudrate.Federation.HTTPSignature do
     signature = :public_key.sign(signing_string, :sha256, private_key) |> Base.encode64()
 
     sig_header =
-      ~s[keyId="#{key_id}",algorithm="rsa-sha256",headers="(request-target) host date",signature="#{signature}"]
+      ~s[keyId="#{key_id}",algorithm="hs2019",headers="(request-target) host date",signature="#{signature}"]
 
     %{
       "signature" => sig_header,

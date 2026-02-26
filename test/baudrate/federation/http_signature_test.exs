@@ -392,4 +392,29 @@ defmodule Baudrate.Federation.HTTPSignatureTest do
       assert {:error, :signature_invalid} = HTTPSignature.verify_get(conn)
     end
   end
+
+  describe "hs2019 algorithm label" do
+    test "sign/5 outputs hs2019 algorithm in signature header" do
+      {_public_pem, private_pem} = KeyStore.generate_keypair()
+      key_id = "https://local.example/ap/users/alice#main-key"
+      body = ~s({"type":"Follow"})
+
+      headers =
+        HTTPSignature.sign(:post, "https://remote.example/ap/inbox", body, private_pem, key_id)
+
+      assert headers["signature"] =~ ~s[algorithm="hs2019"]
+      refute headers["signature"] =~ ~s[algorithm="rsa-sha256"]
+    end
+
+    test "sign_get/3 outputs hs2019 algorithm in signature header" do
+      {_public_pem, private_pem} = KeyStore.generate_keypair()
+      key_id = "https://local.example/ap/users/alice#main-key"
+
+      headers =
+        HTTPSignature.sign_get("https://remote.example/ap/users/bob", private_pem, key_id)
+
+      assert headers["signature"] =~ ~s[algorithm="hs2019"]
+      refute headers["signature"] =~ ~s[algorithm="rsa-sha256"]
+    end
+  end
 end

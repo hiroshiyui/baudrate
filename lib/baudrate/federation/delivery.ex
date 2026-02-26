@@ -335,5 +335,4 @@ defmodule Baudrate.Federation.Delivery do
 
     delivered_count + abandoned_count
   end
-
 end

@@ -7,6 +7,10 @@ defmodule Baudrate.Federation.Publisher do
   The `publish_*` convenience functions build the activity and call
   `Delivery.enqueue_for_article/2` to fan out to follower inboxes.
 
+  All activities include both the ActivityStreams and W3ID Security
+  vocabularies in `@context` for JSON-LD compatibility (`publicKey`
+  resolution requires the security context).
+
   Outbound Note objects include `to`/`cc` addressing for Mastodon
   compatibility — Mastodon requires these fields to determine visibility.
 
@@ -20,6 +24,8 @@ defmodule Baudrate.Federation.Publisher do
   alias Baudrate.Repo
 
   @as_context "https://www.w3.org/ns/activitystreams"
+  @security_context "https://w3id.org/security/v1"
+  @ap_context [@as_context, @security_context]
   @as_public "https://www.w3.org/ns/activitystreams#Public"
 
   # --- Activity Builders ---
@@ -35,7 +41,7 @@ defmodule Baudrate.Federation.Publisher do
     object = Federation.article_object(article)
 
     activity = %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => "#{actor_uri}#create-#{System.unique_integer([:positive])}",
       "type" => "Create",
       "actor" => actor_uri,
@@ -59,7 +65,7 @@ defmodule Baudrate.Federation.Publisher do
     article_uri = Federation.actor_uri(:article, article.slug)
 
     activity = %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => "#{actor_uri}#delete-#{System.unique_integer([:positive])}",
       "type" => "Delete",
       "actor" => actor_uri,
@@ -85,7 +91,7 @@ defmodule Baudrate.Federation.Publisher do
     article_uri = Federation.actor_uri(:article, article.slug)
 
     activity = %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => "#{board_uri}#announce-#{System.unique_integer([:positive])}",
       "type" => "Announce",
       "actor" => board_uri,
@@ -109,7 +115,7 @@ defmodule Baudrate.Federation.Publisher do
     object = Federation.article_object(article)
 
     activity = %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => "#{actor_uri}#update-#{System.unique_integer([:positive])}",
       "type" => "Update",
       "actor" => actor_uri,
@@ -134,7 +140,7 @@ defmodule Baudrate.Federation.Publisher do
     article_uri = Federation.actor_uri(:article, article.slug)
 
     activity = %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => "#{actor_uri}#create-#{System.unique_integer([:positive])}",
       "type" => "Create",
       "actor" => actor_uri,
@@ -157,6 +163,33 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
+  Builds a `Delete(Note)` activity for a soft-deleted comment.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_delete_comment(comment, _article) do
+    comment = Repo.preload(comment, [:user])
+    actor_uri = Federation.actor_uri(:user, comment.user.username)
+    note_uri = "#{actor_uri}#note-#{comment.id}"
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#delete-#{System.unique_integer([:positive])}",
+      "type" => "Delete",
+      "actor" => actor_uri,
+      "to" => [@as_public],
+      "cc" => ["#{actor_uri}/followers"],
+      "object" => %{
+        "id" => note_uri,
+        "type" => "Tombstone",
+        "formerType" => "Note"
+      }
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
   Builds a `Flag` activity for reporting remote content to an instance admin.
 
   Returns `flag_map`.
@@ -165,7 +198,7 @@ defmodule Baudrate.Federation.Publisher do
     site_uri = Federation.actor_uri(:site, nil)
 
     %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => "#{site_uri}#flag-#{System.unique_integer([:positive])}",
       "type" => "Flag",
       "actor" => site_uri,
@@ -183,7 +216,7 @@ defmodule Baudrate.Federation.Publisher do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => "#{actor_uri}#block-#{System.unique_integer([:positive])}",
       "type" => "Block",
       "actor" => actor_uri,
@@ -202,7 +235,7 @@ defmodule Baudrate.Federation.Publisher do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => "#{actor_uri}#undo-block-#{System.unique_integer([:positive])}",
       "type" => "Undo",
       "actor" => actor_uri,
@@ -225,7 +258,7 @@ defmodule Baudrate.Federation.Publisher do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => follow_ap_id,
       "type" => "Follow",
       "actor" => actor_uri,
@@ -245,7 +278,7 @@ defmodule Baudrate.Federation.Publisher do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => "#{actor_uri}#undo-follow-#{System.unique_integer([:positive])}",
       "type" => "Undo",
       "actor" => actor_uri,
@@ -269,7 +302,7 @@ defmodule Baudrate.Federation.Publisher do
     board_uri = Federation.actor_uri(:board, board.slug)
 
     activity = %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => follow_ap_id,
       "type" => "Follow",
       "actor" => board_uri,
@@ -289,7 +322,7 @@ defmodule Baudrate.Federation.Publisher do
     board_uri = Federation.actor_uri(:board, board.slug)
 
     activity = %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => "#{board_uri}#undo-follow-#{System.unique_integer([:positive])}",
       "type" => "Undo",
       "actor" => board_uri,
@@ -326,7 +359,7 @@ defmodule Baudrate.Federation.Publisher do
       end
 
     activity = %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => "#{actor_uri}#update-actor-#{System.unique_integer([:positive])}",
       "type" => "Update",
       "actor" => actor_uri,
@@ -374,6 +407,30 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
+  Publishes federation activities when a board-less article is forwarded to a board.
+
+  Sends `Create(Article)` from user to board followers, and `Announce` from board actor.
+  Only delivers if the board is public (`min_role_to_view == "guest"`) and AP-enabled.
+  """
+  def publish_article_forwarded(article, board) do
+    article = Repo.preload(article, [:boards, :user])
+
+    if board.min_role_to_view == "guest" and board.ap_enabled do
+      # Create(Article) from user → board followers
+      {activity, actor_uri} = build_create_article(article)
+      board_uri = Federation.actor_uri(:board, board.slug)
+      board_inboxes = Delivery.resolve_follower_inboxes(board_uri)
+      if board_inboxes != [], do: Delivery.enqueue(activity, actor_uri, board_inboxes)
+
+      # Announce from board → board's followers
+      {announce, board_actor_uri} = build_announce_article(article, board)
+      Delivery.enqueue_for_followers(announce, board_actor_uri)
+    end
+
+    :ok
+  end
+
+  @doc """
   Publishes a `Delete` activity to all relevant followers.
   """
   def publish_article_deleted(article) do
@@ -388,6 +445,15 @@ defmodule Baudrate.Federation.Publisher do
   def publish_comment_created(comment, article) do
     article = Repo.preload(article, [:boards, :user])
     {activity, actor_uri} = build_create_comment(comment, article)
+    Delivery.enqueue_for_article(activity, actor_uri, article)
+  end
+
+  @doc """
+  Publishes a `Delete(Note)` activity for a soft-deleted comment to all relevant followers.
+  """
+  def publish_comment_deleted(comment, article) do
+    article = Repo.preload(article, [:boards, :user])
+    {activity, actor_uri} = build_delete_comment(comment, article)
     Delivery.enqueue_for_article(activity, actor_uri, article)
   end
 
@@ -440,7 +506,7 @@ defmodule Baudrate.Federation.Publisher do
       |> maybe_add_in_reply_to(message)
 
     activity = %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => "#{actor_uri}#create-dm-#{System.unique_integer([:positive])}",
       "type" => "Create",
       "actor" => actor_uri,
@@ -463,7 +529,7 @@ defmodule Baudrate.Federation.Publisher do
     recipient_uri = resolve_dm_recipient_uri(conversation, sender_user.id)
 
     activity = %{
-      "@context" => @as_context,
+      "@context" => @ap_context,
       "id" => "#{actor_uri}#delete-dm-#{System.unique_integer([:positive])}",
       "type" => "Delete",
       "actor" => actor_uri,

@@ -68,7 +68,12 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["object"]["name"] == "Test Article"
       assert activity["object"]["attributedTo"] == actor_uri
       assert actor_uri =~ user.username
-      assert activity["@context"] == "https://www.w3.org/ns/activitystreams"
+
+      assert activity["@context"] == [
+               "https://www.w3.org/ns/activitystreams",
+               "https://w3id.org/security/v1"
+             ]
+
       assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
       assert "#{actor_uri}/followers" in activity["cc"]
       assert activity["id"] =~ "#create-"
@@ -194,7 +199,12 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["type"] == "Block"
       assert activity["actor"] == actor_uri
       assert activity["object"] == target_ap_id
-      assert activity["@context"] == "https://www.w3.org/ns/activitystreams"
+
+      assert activity["@context"] == [
+               "https://www.w3.org/ns/activitystreams",
+               "https://w3id.org/security/v1"
+             ]
+
       assert activity["id"] =~ "#block-"
     end
   end
@@ -511,7 +521,11 @@ defmodule Baudrate.Federation.PublisherTest do
       assert is_map(result)
       assert result["type"] == "Flag"
       assert result["content"] == "Spam content"
-      assert result["@context"] == "https://www.w3.org/ns/activitystreams"
+
+      assert result["@context"] == [
+               "https://www.w3.org/ns/activitystreams",
+               "https://w3id.org/security/v1"
+             ]
 
       site_uri = Baudrate.Federation.actor_uri(:site, nil)
       assert result["actor"] == site_uri
@@ -583,6 +597,126 @@ defmodule Baudrate.Federation.PublisherTest do
 
       assert activity["object"]["type"] == "Tombstone"
       assert activity["object"]["formerType"] == "Note"
+    end
+  end
+
+  describe "build_delete_comment/2" do
+    test "builds a Delete activity with Tombstone for a comment" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "To be deleted",
+          body_html: "<p>To be deleted</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      {activity, actor_uri} = Publisher.build_delete_comment(comment, article)
+
+      assert activity["type"] == "Delete"
+      assert activity["actor"] == actor_uri
+      assert activity["object"]["type"] == "Tombstone"
+      assert activity["object"]["formerType"] == "Note"
+      assert activity["object"]["id"] == "#{actor_uri}#note-#{comment.id}"
+      assert "#{actor_uri}/followers" in activity["cc"]
+      assert activity["id"] =~ "#delete-"
+    end
+  end
+
+  describe "publish_article_forwarded/2" do
+    test "enqueues delivery for public ap_enabled board" do
+      user = create_user()
+      board = create_board()
+      # Enable AP on the board
+      board
+      |> Ecto.Changeset.change(%{ap_enabled: true, min_role_to_view: "guest"})
+      |> Repo.update!()
+
+      board = Repo.get!(Baudrate.Content.Board, board.id)
+
+      remote = create_remote_actor()
+      board_uri = Baudrate.Federation.actor_uri(:board, board.slug)
+      create_follower(board_uri, remote)
+
+      article = create_article(user, board)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_article_forwarded(article, board)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert length(jobs) >= 1
+    end
+
+    test "skips non-public board" do
+      user = create_user()
+      board = create_board()
+      # Board is user-only
+      board
+      |> Ecto.Changeset.change(%{ap_enabled: true, min_role_to_view: "user"})
+      |> Repo.update!()
+
+      board = Repo.get!(Baudrate.Content.Board, board.id)
+
+      article = create_article(user, board)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_article_forwarded(article, board)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert jobs == []
+    end
+
+    test "skips non-ap-enabled board" do
+      user = create_user()
+      board = create_board()
+      # Board is public but AP disabled
+      board
+      |> Ecto.Changeset.change(%{ap_enabled: false, min_role_to_view: "guest"})
+      |> Repo.update!()
+
+      board = Repo.get!(Baudrate.Content.Board, board.id)
+
+      article = create_article(user, board)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_article_forwarded(article, board)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert jobs == []
+    end
+  end
+
+  describe "publish_comment_deleted/2" do
+    test "creates delivery jobs for followers" do
+      user = create_user()
+      board = create_board()
+      remote = create_remote_actor()
+      user_uri = Baudrate.Federation.actor_uri(:user, user.username)
+      create_follower(user_uri, remote)
+
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "Will be deleted",
+          body_html: "<p>Will be deleted</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_comment_deleted(comment, article)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert length(jobs) >= 1
     end
   end
 end
