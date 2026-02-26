@@ -4,14 +4,18 @@ defmodule BaudrateWeb.Router do
 
   ## Route Structure
 
-  Five main scopes, each with different auth requirements:
+  Six main scopes, each with different auth requirements:
+
+    0. **Health** (`/health`) — API-only scope (no CSRF/session). Returns
+       database connectivity status for load balancers and monitoring.
 
     1. **Public** (`/login`, `/setup`) — `live_session :public` with
-       `:redirect_if_authenticated` hook. `/setup` is outside any live_session
-       and uses the `:setup` layout.
+       `:rate_limit_mount` and `:redirect_if_authenticated` hooks. `/setup`
+       is outside any live_session and uses the `:setup` layout.
 
-    2. **TOTP** (`/totp/*`) — `live_session :totp` with `:require_password_auth`
-       hook. For users who passed password auth but need TOTP verification/setup.
+    2. **TOTP** (`/totp/*`) — `live_session :totp` with `:rate_limit_mount`
+       and `:require_password_auth` hooks. For users who passed password auth
+       but need TOTP verification/setup.
 
     3. **Session controller** (`/auth/*`) — POST-only endpoints for session
        mutations. Split into two scopes with separate rate-limit pipelines
@@ -23,9 +27,9 @@ defmodule BaudrateWeb.Router do
        ensure literal paths match before wildcard `:slug` patterns.
 
     5. **Public browsable** (`/`, `/boards/:slug`, `/articles/:slug`) —
-       `live_session :public_browsable` with `:optional_auth` hook. Accessible
-       to both guests and authenticated users. Private boards redirect guests
-       to `/login`.
+       `live_session :public_browsable` with `:rate_limit_mount` and
+       `:optional_auth` hooks. Accessible to both guests and authenticated
+       users. Private boards redirect guests to `/login`.
 
   ## Browser Pipeline
 
@@ -63,6 +67,13 @@ defmodule BaudrateWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+  end
+
+  # Health check (no auth, no CSRF)
+  scope "/", BaudrateWeb do
+    pipe_through :api
+
+    get "/health", HealthController, :check
   end
 
   pipeline :activity_pub do
@@ -150,7 +161,10 @@ defmodule BaudrateWeb.Router do
 
     live_session :public,
       layout: {BaudrateWeb.Layouts, :app},
-      on_mount: [{BaudrateWeb.AuthHooks, :redirect_if_authenticated}] do
+      on_mount: [
+        {BaudrateWeb.AuthHooks, :rate_limit_mount},
+        {BaudrateWeb.AuthHooks, :redirect_if_authenticated}
+      ] do
       live "/login", LoginLive
       live "/register", RegisterLive
       live "/password-reset", PasswordResetLive
@@ -165,7 +179,10 @@ defmodule BaudrateWeb.Router do
 
     live_session :totp,
       layout: {BaudrateWeb.Layouts, :app},
-      on_mount: [{BaudrateWeb.AuthHooks, :require_password_auth}] do
+      on_mount: [
+        {BaudrateWeb.AuthHooks, :rate_limit_mount},
+        {BaudrateWeb.AuthHooks, :require_password_auth}
+      ] do
       live "/verify", TotpVerifyLive
       live "/setup", TotpSetupLive
       live "/recovery", RecoveryCodeVerifyLive
@@ -230,7 +247,10 @@ defmodule BaudrateWeb.Router do
 
     live_session :public_browsable,
       layout: {BaudrateWeb.Layouts, :app},
-      on_mount: [{BaudrateWeb.AuthHooks, :optional_auth}] do
+      on_mount: [
+        {BaudrateWeb.AuthHooks, :rate_limit_mount},
+        {BaudrateWeb.AuthHooks, :optional_auth}
+      ] do
       live "/", HomeLive
       live "/search", SearchLive
       live "/users/:username", UserProfileLive

@@ -2,7 +2,7 @@ defmodule BaudrateWeb.AuthHooks do
   @moduledoc """
   LiveView `on_mount` hooks for authentication enforcement.
 
-  Four hooks are provided, each attached to `live_session` scopes in the router:
+  Five hooks are provided, each attached to `live_session` scopes in the router:
 
     * `:require_auth` — requires a fully authenticated session (`session_token`
       present and valid). Used for the `:authenticated` live_session. Assigns
@@ -23,6 +23,10 @@ defmodule BaudrateWeb.AuthHooks do
     * `:redirect_if_authenticated` — if the user already has a valid
       `session_token`, redirects to `/`. Used for the `:public` live_session
       (login page) to prevent authenticated users from seeing the login form.
+
+    * `:rate_limit_mount` — rate limits WebSocket connections per IP address
+      (60 mounts per minute). Only enforced on connected mounts (skips static
+      render). Fails open on backend errors.
   """
 
   import Phoenix.LiveView
@@ -140,6 +144,27 @@ defmodule BaudrateWeb.AuthHooks do
     end
   end
 
+  def on_mount(:rate_limit_mount, _params, _session, socket) do
+    if connected?(socket) do
+      ip = extract_peer_ip(socket)
+      bucket = "liveview_mount:#{ip}"
+
+      case BaudrateWeb.RateLimiter.check_rate(bucket, 60_000, 60) do
+        {:deny, _} ->
+          {:halt,
+           socket
+           |> put_flash(:error, gettext("Too many requests. Please try again later."))
+           |> redirect(to: "/")}
+
+        # {:allow, _} or {:error, _} — fail open
+        _ ->
+          {:cont, socket}
+      end
+    else
+      {:cont, socket}
+    end
+  end
+
   def on_mount(:require_admin, _params, _session, socket) do
     if socket.assigns[:current_user] && socket.assigns.current_user.role.name == "admin" do
       {:cont, socket}
@@ -148,6 +173,13 @@ defmodule BaudrateWeb.AuthHooks do
        socket
        |> put_flash(:error, gettext("Access denied."))
        |> redirect(to: "/")}
+    end
+  end
+
+  defp extract_peer_ip(socket) do
+    case Phoenix.LiveView.get_connect_info(socket, :peer_data) do
+      %{address: addr} -> :inet.ntoa(addr) |> to_string()
+      _ -> "unknown"
     end
   end
 
