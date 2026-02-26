@@ -648,7 +648,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - `Update(Person/Group/Organization)` — distributed to followers on key rotation or profile changes
 - Delivery targets: followers of the article's author + followers of all public boards
 - Shared inbox deduplication: multiple followers at the same instance → one delivery
-- DB-backed queue (`delivery_jobs` table) with `DeliveryWorker` GenServer polling
+- DB-backed queue (`delivery_jobs` table) with `DeliveryWorker` GenServer polling (graceful shutdown via `terminate/2`)
 - Exponential backoff: 1m → 5m → 30m → 2h → 12h → 24h, then abandoned after 6 attempts
 - Domain blocklist respected: deliveries to blocked domains are skipped
 - Job deduplication: partial unique index on `(inbox_url, actor_uri)` for pending/failed jobs prevents duplicates on retry/race conditions

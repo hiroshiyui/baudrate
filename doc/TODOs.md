@@ -6,12 +6,12 @@ Audit date: 2026-02-26
 
 ## High Priority
 
-- [ ] **perf:** `board_ancestors/1` loads ALL boards into memory — replace with recursive CTE or iterative `Repo.get` (`content.ex:81`)
-- [ ] **perf:** 5 redundant `Repo.preload(:boards)` per article page — permission checks should skip preload when already loaded (`content.ex:459,476,506,516,532`)
-- [ ] **infra:** Add `/health` endpoint for load balancers and monitoring (DB connectivity check, excluded from HSTS/SSL redirect)
-- [ ] **infra:** `DeliveryWorker` has no graceful shutdown — add `terminate/2` callback to drain in-flight tasks (`federation/delivery_worker.ex`)
-- [ ] **security:** No WebSocket-level rate limiting on public LiveView mounts (login, register, boards) — add rate limit in plug pipeline or Endpoint config
-- [ ] **test:** Zero test coverage for all admin LiveViews (settings, users, boards, moderation, federation, invites, login attempts, moderation log, pending users)
+- [x] **perf:** `board_ancestors/1` loads ALL boards into memory — replaced with iterative `Repo.get` (max 10 PK lookups)
+- [x] **perf:** 5 redundant `Repo.preload(:boards)` per article page — added `ensure_boards_loaded/1` using `Ecto.assoc_loaded?/1`
+- [x] **infra:** Add `/health` endpoint for load balancers and monitoring — `GET /health` with DB connectivity check
+- [x] **infra:** `DeliveryWorker` graceful shutdown — `terminate/2`, `shutting_down` flag, `Task.Supervisor.async_stream_nolink`
+- [x] **security:** WebSocket-level rate limiting on public LiveView mounts — `:rate_limit_mount` hook (60/min/IP)
+- [x] **test:** Admin LiveView test coverage — 9 test files under `test/baudrate_web/live/admin/`
 
 ## Medium Priority
 

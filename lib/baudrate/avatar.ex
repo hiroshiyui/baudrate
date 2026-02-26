@@ -89,6 +89,7 @@ defmodule Baudrate.Avatar do
           [] -> size
           larger -> Enum.min(larger)
         end
+
       "/uploads/avatars/#{avatar_id}/#{fallback_size}.webp"
     end
   end

@@ -24,8 +24,8 @@ defmodule Baudrate.Timezone do
                        false
                    end)
                    |> Enum.map(fn
-                     {:clause, _,
-                      [{:bin, _, [{:bin_element, _, {:string, _, chars}, _, _}]}], _, _} ->
+                     {:clause, _, [{:bin, _, [{:bin_element, _, {:string, _, chars}, _, _}]}], _,
+                      _} ->
                        to_string(chars)
                    end)
                  end)

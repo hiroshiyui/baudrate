@@ -85,8 +85,7 @@
             ngettext("1 comment", "%{count} comments", Map.get(@comment_counts, article.id, 0))
           }
         >
-          &middot;
-          <.icon name="hero-chat-bubble-left-ellipsis" class="size-4" />
+          &middot; <.icon name="hero-chat-bubble-left-ellipsis" class="size-4" />
           {Map.get(@comment_counts, article.id, 0)}
         </.link>
       </div>

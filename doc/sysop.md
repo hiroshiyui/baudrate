@@ -466,6 +466,7 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 | Search (authenticated) | 15 / min | per user |
 | Search (guest) | 10 / min | per IP |
 | Avatar upload | 5 / hour | per user |
+| LiveView mount | 60 / min | per IP |
 | AP endpoints | 120 / min | per IP |
 | AP inbox | 60 / min | per remote domain |
 | Feeds (RSS/Atom) | 30 / min | per IP |
@@ -707,6 +708,22 @@ Replace `20260101000000` with the migration version to roll back to.
 
 In multi-node clusters, these run independently on each node. Operations are
 idempotent (safe but slightly redundant).
+
+### Health Check
+
+`GET /health` returns the application and database health status as JSON:
+
+| Status | HTTP Code | Response |
+|--------|-----------|----------|
+| Healthy | 200 | `{"status":"ok"}` |
+| Unhealthy | 503 | `{"status":"error"}` |
+
+The endpoint runs through the `:api` pipeline (no session, no CSRF token).
+Use it as a health check target for load balancers and monitoring systems.
+
+```bash
+curl http://localhost:4000/health
+```
 
 ### Delivery Job Purge
 
