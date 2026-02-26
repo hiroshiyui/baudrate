@@ -168,6 +168,7 @@ lib/
 │   ├── endpoint.ex              # HTTP entry point, session config
 │   ├── gettext.ex               # Gettext i18n configuration
 │   ├── locale.ex                # Locale resolution (Accept-Language + user prefs)
+│   ├── linked_data.ex          # JSON-LD + Dublin Core metadata builders (SIOC/FOAF/DC)
 │   ├── rate_limits.ex           # Per-user rate limit checks (Hammer, fail-open)
 │   ├── router.ex                # Route scopes and pipelines
 │   └── telemetry.ex             # Telemetry metrics configuration
@@ -1075,6 +1076,41 @@ RSS 2.0 and Atom 1.0 feeds are available at three scopes:
 **Autodiscovery:** `<link rel="alternate">` tags are injected into `<head>` on
 the home page (site-wide feeds) and public board pages (board-specific feeds)
 via optional socket assigns (`feed_site`, `feed_board_slug`).
+
+### Linked Data (JSON-LD + Dublin Core)
+
+Public pages embed structured RDF metadata in `<head>` using JSON-LD
+(`<script type="application/ld+json">`) and Dublin Core `<meta>` tags.
+This allows search engines, crawlers, and linked-data consumers to understand
+the semantic relationships between Baudrate entities.
+
+**Vocabularies:**
+
+| Prefix     | URI                                | Used for                              |
+|------------|------------------------------------|---------------------------------------|
+| `sioc`     | `http://rdfs.org/sioc/ns#`         | Site, Forum, Post, UserAccount        |
+| `foaf`     | `http://xmlns.com/foaf/0.1/`       | Person, name, nick, depiction         |
+| `dc`       | `http://purl.org/dc/elements/1.1/` | title, creator, date, description     |
+| `dcterms`  | `http://purl.org/dc/terms/`        | created, modified                     |
+
+**Entity mappings:**
+
+| Page | JSON-LD @type | Dublin Core meta |
+|------|---------------|-----------------|
+| Home (`/`) | `sioc:Site` | — |
+| Board (`/boards/:slug`) | `sioc:Forum` | DC.title, DC.description |
+| Article (`/articles/:slug`) | `sioc:Post` | DC.title, DC.creator, DC.date, DC.type, DC.description |
+| User profile (`/users/:username`) | `foaf:Person` + `sioc:UserAccount` | DC.title |
+
+**Implementation:** `BaudrateWeb.LinkedData` provides pure builder functions
+(`site_jsonld/1`, `board_jsonld/2`, `article_jsonld/1`, `user_jsonld/1`,
+`dublin_core_meta/2`). Each LiveView calls the relevant builder in `mount/3`
+and assigns the pre-encoded JSON string + DC meta list. The root layout
+(`root.html.heex`) conditionally renders them in `<head>`.
+
+**Security:** JSON-LD is encoded via `Jason.encode!/1` with `</script>`
+sequences escaped. Dublin Core meta values are auto-escaped by Phoenix
+attribute binding.
 
 ## Further Reading
 
