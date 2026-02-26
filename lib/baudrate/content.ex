@@ -78,20 +78,19 @@ defmodule Baudrate.Content do
   Walks the `parent_id` chain upward (max 10 levels to prevent infinite loops).
   """
   def board_ancestors(%Board{} = board) do
-    boards_by_id = from(b in Board) |> Repo.all() |> Map.new(&{&1.id, &1})
-    do_board_ancestors(board, boards_by_id, [], 10)
+    do_board_ancestors(board, [], 10)
   end
 
-  defp do_board_ancestors(%Board{parent_id: nil} = board, _map, acc, _remaining) do
+  defp do_board_ancestors(%Board{parent_id: nil} = board, acc, _remaining) do
     [board | acc]
   end
 
-  defp do_board_ancestors(_board, _map, acc, 0), do: acc
+  defp do_board_ancestors(_board, acc, 0), do: acc
 
-  defp do_board_ancestors(%Board{parent_id: parent_id} = board, map, acc, remaining) do
-    case Map.get(map, parent_id) do
+  defp do_board_ancestors(%Board{parent_id: parent_id} = board, acc, remaining) do
+    case Repo.get(Board, parent_id) do
       nil -> [board | acc]
-      parent -> do_board_ancestors(parent, map, [board | acc], remaining - 1)
+      parent -> do_board_ancestors(parent, [board | acc], remaining - 1)
     end
   end
 
@@ -448,6 +447,11 @@ defmodule Baudrate.Content do
 
   defp board_moderator_for_any?(_boards, _user), do: false
 
+  # Ensures the `:boards` association is loaded, skipping the query when already present.
+  defp ensure_boards_loaded(article) do
+    if Ecto.assoc_loaded?(article.boards), do: article, else: Repo.preload(article, :boards)
+  end
+
   @doc """
   Returns true if the user can moderate the article (admin, global moderator,
   or board moderator of any board the article belongs to).
@@ -456,7 +460,7 @@ defmodule Baudrate.Content do
   def can_moderate_article?(_user = nil, _article), do: false
 
   def can_moderate_article?(user, article) do
-    article = Repo.preload(article, :boards)
+    article = ensure_boards_loaded(article)
 
     if article.boards == [] do
       user.role.name in ["admin", "moderator"]
@@ -473,7 +477,7 @@ defmodule Baudrate.Content do
   def can_comment_on_article?(_user = nil, _article), do: false
 
   def can_comment_on_article?(user, article) do
-    article = Repo.preload(article, :boards)
+    article = ensure_boards_loaded(article)
 
     if article.locked do
       false
@@ -503,7 +507,7 @@ defmodule Baudrate.Content do
   def can_delete_article?(%{id: uid}, %{user_id: uid}), do: true
 
   def can_delete_article?(user, article) do
-    article = Repo.preload(article, :boards)
+    article = ensure_boards_loaded(article)
     board_moderator_for_any?(article.boards, user)
   end
 
@@ -513,7 +517,7 @@ defmodule Baudrate.Content do
   def can_pin_article?(%{role: %{name: "admin"}}, _article), do: true
 
   def can_pin_article?(user, article) do
-    article = Repo.preload(article, :boards)
+    article = ensure_boards_loaded(article)
     board_moderator_for_any?(article.boards, user)
   end
 
@@ -529,7 +533,7 @@ defmodule Baudrate.Content do
   def can_delete_comment?(%{id: uid}, %{user_id: uid}, _article), do: true
 
   def can_delete_comment?(user, _comment, article) do
-    article = Repo.preload(article, :boards)
+    article = ensure_boards_loaded(article)
     board_moderator_for_any?(article.boards, user)
   end
 
