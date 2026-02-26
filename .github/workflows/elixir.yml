@@ -17,8 +17,13 @@ permissions:
 jobs:
   build:
 
-    name: Build and test
+    name: Test (partition ${{ matrix.partition }}/4)
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        partition: [1, 2, 3, 4]
 
     services:
       postgres:
@@ -66,4 +71,6 @@ jobs:
     - name: Install dependencies
       run: mix deps.get
     - name: Run tests
-      run: mix test
+      run: mix test --partitions 4 --seed 9527
+      env:
+        MIX_TEST_PARTITION: ${{ matrix.partition }}
