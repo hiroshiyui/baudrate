@@ -448,6 +448,44 @@ defmodule Baudrate.Content do
 
   defp board_moderator_for_any?(_boards, _user), do: false
 
+  @doc """
+  Returns true if the user can moderate the article (admin, global moderator,
+  or board moderator of any board the article belongs to).
+  For boardless articles, falls back to admin/moderator role check.
+  """
+  def can_moderate_article?(_user = nil, _article), do: false
+
+  def can_moderate_article?(user, article) do
+    article = Repo.preload(article, :boards)
+
+    if article.boards == [] do
+      user.role.name in ["admin", "moderator"]
+    else
+      board_moderator_for_any?(article.boards, user)
+    end
+  end
+
+  @doc """
+  Returns true if the user can comment on the article.
+  Requires: user is authenticated, article is not locked, and user can post
+  in at least one of the article's boards (or can create content if boardless).
+  """
+  def can_comment_on_article?(_user = nil, _article), do: false
+
+  def can_comment_on_article?(user, article) do
+    article = Repo.preload(article, :boards)
+
+    if article.locked do
+      false
+    else
+      if article.boards == [] do
+        Auth.can_create_content?(user)
+      else
+        Enum.any?(article.boards, &can_post_in_board?(&1, user))
+      end
+    end
+  end
+
   # --- Granular Article/Comment Permission Checks ---
 
   @doc """
