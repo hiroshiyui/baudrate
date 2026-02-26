@@ -55,8 +55,9 @@ defmodule BaudrateWeb.Router do
     # replacing the CSS framework.
     plug :put_secure_browser_headers, %{
       "content-security-policy" =>
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' blob: ws: wss:; frame-ancestors 'none'; form-action 'self'; base-uri 'self'",
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: ws: wss:; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
       "permissions-policy" => "geolocation=(), microphone=(), camera=()",
+      "referrer-policy" => "strict-origin-when-cross-origin",
       "x-frame-options" => "DENY"
     }
 
