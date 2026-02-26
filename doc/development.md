@@ -105,7 +105,7 @@ lib/
 ├── baudrate_web/                # Web layer
 │   ├── components/
 │   │   ├── core_components.ex   # Shared UI components (avatar, flash, input, etc.)
-│   │   └── layouts.ex           # App and setup layouts with nav, theme toggle
+│   │   └── layouts.ex           # App and setup layouts with nav, theme toggle, footer
 │   ├── controllers/
 │   │   ├── activity_pub_controller.ex  # ActivityPub endpoints (content-negotiated)
 │   │   ├── error_html.ex        # HTML error pages
@@ -831,8 +831,8 @@ live_session :authenticated,
 The layout receives `@inner_content` (not `@inner_block`) and has access to
 socket assigns like `@current_user`. When `@current_user` is `nil` (guest
 visitors on public pages), the layout shows Sign In / Register links instead
-of the user menu. The setup wizard uses a separate `:setup` layout (minimal,
-no navigation).
+of the user menu. A site-wide footer links to the Baudrate project repository.
+The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 
 **Accessibility (WAI-ARIA):**
 

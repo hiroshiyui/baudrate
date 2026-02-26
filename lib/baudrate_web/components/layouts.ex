@@ -13,11 +13,12 @@ defmodule BaudrateWeb.Layouts do
   embed_templates "layouts/*"
 
   @doc """
-  Renders the app layout with navigation bar.
+  Renders the app layout with navigation bar and footer.
 
   Applied automatically via `layout:` in `live_session`.
   Shows nav links and user menu when `@current_user` is present;
   otherwise shows only the logo and theme toggle.
+  The footer displays a link to the Baudrate project repository.
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
   attr :current_user, :map, default: nil, doc: "the currently authenticated user"
