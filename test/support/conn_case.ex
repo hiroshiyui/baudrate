@@ -34,10 +34,9 @@ defmodule BaudrateWeb.ConnCase do
   setup tags do
     Baudrate.DataCase.setup_sandbox(tags)
 
-    # Stub rate limiter mock with real Hammer backend by default.
-    # Global mode so LiveView processes spawned by tests can see the stub.
-    Mox.set_mox_global()
-    Mox.stub_with(BaudrateWeb.RateLimiterMock, BaudrateWeb.RateLimiter.Hammer)
+    # Default: pass rate limit checks through to the real Hammer backend.
+    # Sandbox walks $callers chain, so LiveView processes inherit this automatically.
+    BaudrateWeb.RateLimiter.Sandbox.set_global_fun(&BaudrateWeb.RateLimiter.Hammer.check_rate/3)
 
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end

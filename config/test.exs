@@ -38,8 +38,8 @@ config :phoenix,
 # errors from fire-and-forget Tasks that outlive the test process.
 config :baudrate, federation_async: false
 
-# Use Mox mock for rate limiter in tests
-config :baudrate, :rate_limiter, BaudrateWeb.RateLimiterMock
+# Use ETS-backed sandbox for rate limiter in tests
+config :baudrate, :rate_limiter, BaudrateWeb.RateLimiter.Sandbox
 
 # Bypass SSRF checks in tests so Req.Test stubs can intercept HTTP calls
 config :baudrate, :bypass_ssrf_check, true

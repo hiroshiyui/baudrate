@@ -3,7 +3,7 @@ defmodule BaudrateWeb.RateLimiter do
   Behaviour for rate limiting backends.
 
   Abstracts `check_rate/3` behind a behaviour so the implementation can be
-  swapped in tests (via Mox) without touching Hammer's global ETS state.
+  swapped in tests without touching Hammer's global ETS state.
 
   The concrete backend is read from application config:
 
