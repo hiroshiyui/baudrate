@@ -446,6 +446,51 @@ defmodule Baudrate.Federation.DeliveryTest do
     end
   end
 
+  describe "deliver_one/1 telemetry" do
+    test "emits start and stop telemetry events on delivery attempt" do
+      test_pid = self()
+      ref = make_ref()
+
+      handler = fn event, measurements, metadata, _ ->
+        send(test_pid, {ref, event, measurements, metadata})
+      end
+
+      :telemetry.attach_many(
+        "test-delivery-telemetry-#{ref |> inspect()}",
+        [
+          [:baudrate, :federation, :delivery, :start],
+          [:baudrate, :federation, :delivery, :stop]
+        ],
+        handler,
+        nil
+      )
+
+      on_exit(fn ->
+        :telemetry.detach("test-delivery-telemetry-#{ref |> inspect()}")
+      end)
+
+      {:ok, job} =
+        %DeliveryJob{}
+        |> DeliveryJob.create_changeset(%{
+          activity_json: ~s({"type":"Create"}),
+          inbox_url: "https://telemetry-test.example/inbox",
+          actor_uri: "https://local.example/ap/users/test"
+        })
+        |> Repo.insert()
+
+      # deliver_one will fail (no key found), but telemetry should still fire
+      Delivery.deliver_one(job)
+
+      assert_receive {^ref, [:baudrate, :federation, :delivery, :start], %{system_time: _},
+                      %{inbox_url: "https://telemetry-test.example/inbox"}}
+
+      assert_receive {^ref, [:baudrate, :federation, :delivery, :stop], %{duration: duration},
+                      %{status: :failed}}
+
+      assert is_integer(duration)
+    end
+  end
+
   describe "get_private_key/1" do
     test "retrieves user private key" do
       user = create_user()

@@ -50,9 +50,8 @@ defmodule Baudrate.Federation.Delivery do
 
     with {:ok, private_key_pem} <- get_private_key(local_actor_uri),
          key_id = "#{local_actor_uri}#main-key",
-         headers = HTTPSignature.sign(:post, remote_actor.inbox, body, private_key_pem, key_id),
-         header_list = headers_to_list(headers) do
-      HTTPClient.post(remote_actor.inbox, body, header_list)
+         headers = HTTPSignature.sign(:post, remote_actor.inbox, body, private_key_pem, key_id) do
+      HTTPClient.post(remote_actor.inbox, body, Map.to_list(headers))
     end
   end
 
@@ -107,11 +106,27 @@ defmodule Baudrate.Federation.Delivery do
   failed with exponential backoff scheduling.
   """
   def deliver_one(%DeliveryJob{} = job) do
+    start_time = System.monotonic_time()
+    metadata = %{inbox_url: job.inbox_url, actor_uri: job.actor_uri, job_id: job.id}
+
+    :telemetry.execute(
+      [:baudrate, :federation, :delivery, :start],
+      %{system_time: System.system_time()},
+      metadata
+    )
+
     # Check domain blocklist before delivery
     inbox_uri = URI.parse(job.inbox_url)
 
     if inbox_uri.host && Validator.domain_blocked?(inbox_uri.host) do
+      duration = System.monotonic_time() - start_time
       Logger.info("federation.delivery_skip: inbox=#{job.inbox_url} reason=domain_blocked")
+
+      :telemetry.execute(
+        [:baudrate, :federation, :delivery, :stop],
+        %{duration: duration},
+        Map.put(metadata, :status, :domain_blocked)
+      )
 
       job
       |> DeliveryJob.mark_abandoned("domain_blocked")
@@ -119,15 +134,29 @@ defmodule Baudrate.Federation.Delivery do
     else
       case do_deliver(job) do
         {:ok, _response} ->
+          duration = System.monotonic_time() - start_time
           Logger.info("federation.delivery_ok: inbox=#{job.inbox_url}")
+
+          :telemetry.execute(
+            [:baudrate, :federation, :delivery, :stop],
+            %{duration: duration},
+            Map.put(metadata, :status, :delivered)
+          )
 
           job
           |> DeliveryJob.mark_delivered()
           |> Repo.update()
 
         {:error, reason} ->
+          duration = System.monotonic_time() - start_time
           error_msg = inspect(reason)
           Logger.warning("federation.delivery_fail: inbox=#{job.inbox_url} error=#{error_msg}")
+
+          :telemetry.execute(
+            [:baudrate, :federation, :delivery, :stop],
+            %{duration: duration},
+            Map.merge(metadata, %{status: :failed, error: error_msg})
+          )
 
           job
           |> DeliveryJob.mark_failed(error_msg)
@@ -143,8 +172,7 @@ defmodule Baudrate.Federation.Delivery do
       headers =
         HTTPSignature.sign(:post, job.inbox_url, job.activity_json, private_key_pem, key_id)
 
-      header_list = headers_to_list(headers)
-      HTTPClient.post(job.inbox_url, job.activity_json, header_list)
+      HTTPClient.post(job.inbox_url, job.activity_json, Map.to_list(headers))
     end
   end
 
@@ -308,7 +336,4 @@ defmodule Baudrate.Federation.Delivery do
     delivered_count + abandoned_count
   end
 
-  defp headers_to_list(headers) do
-    Enum.map(headers, fn {k, v} -> {k, v} end)
-  end
 end
