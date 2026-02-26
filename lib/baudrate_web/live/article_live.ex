@@ -12,6 +12,7 @@ defmodule BaudrateWeb.ArticleLive do
   alias Baudrate.Content
   alias Baudrate.Content.PubSub, as: ContentPubSub
   alias Baudrate.Moderation
+  alias BaudrateWeb.LinkedData
   alias BaudrateWeb.RateLimits
   import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1]
 
@@ -80,6 +81,11 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:article_images, article_images)
         |> assign(:revision_count, revision_count)
         |> assign(:page_title, article.title)
+        |> assign(
+          :linked_data_json,
+          LinkedData.article_jsonld(article) |> LinkedData.encode_jsonld()
+        )
+        |> assign(:dc_meta, LinkedData.dublin_core_meta(:article, article))
 
       if connected?(socket), do: ContentPubSub.subscribe_article(article.id)
 

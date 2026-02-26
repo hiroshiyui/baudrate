@@ -14,6 +14,16 @@ defmodule BaudrateWeb.UserProfileLiveTest do
     {:ok, conn: conn}
   end
 
+  test "renders JSON-LD with foaf:Person and DC meta", %{conn: conn} do
+    user = setup_user("user")
+
+    {:ok, _lv, html} = live(conn, "/users/#{user.username}")
+
+    assert html =~ "application/ld+json"
+    assert html =~ "foaf:Person"
+    assert html =~ "DC.title"
+  end
+
   test "renders profile for valid user", %{conn: conn} do
     user = setup_user("user")
 

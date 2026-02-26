@@ -12,6 +12,7 @@ defmodule BaudrateWeb.UserProfileLive do
   alias Baudrate.Auth
   alias Baudrate.Content
   alias Baudrate.Federation
+  alias BaudrateWeb.LinkedData
   alias BaudrateWeb.RateLimits
   import BaudrateWeb.Helpers, only: [translate_role: 1]
 
@@ -50,6 +51,9 @@ defmodule BaudrateWeb.UserProfileLive do
             false
           end
 
+        jsonld = LinkedData.user_jsonld(user) |> LinkedData.encode_jsonld()
+        dc_meta = LinkedData.dublin_core_meta(:user, user)
+
         {:ok,
          assign(socket,
            profile_user: user,
@@ -58,7 +62,9 @@ defmodule BaudrateWeb.UserProfileLive do
            comment_count: comment_count,
            is_muted: is_muted,
            is_following: is_following,
-           page_title: user.username
+           page_title: user.username,
+           linked_data_json: jsonld,
+           dc_meta: dc_meta
          )}
     end
   end

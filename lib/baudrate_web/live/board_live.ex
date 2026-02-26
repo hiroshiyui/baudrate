@@ -12,6 +12,7 @@ defmodule BaudrateWeb.BoardLive do
 
   alias Baudrate.Content
   alias Baudrate.Content.PubSub, as: ContentPubSub
+  alias BaudrateWeb.LinkedData
   import BaudrateWeb.Helpers, only: [parse_page: 1]
 
   @impl true
@@ -32,6 +33,17 @@ defmodule BaudrateWeb.BoardLive do
 
       feed_slug = if board.min_role_to_view == "guest", do: board.slug
 
+      parent_slug =
+        case ancestors do
+          [_ | _] -> List.last(ancestors).slug
+          _ -> nil
+        end
+
+      jsonld =
+        LinkedData.board_jsonld(board, parent_slug: parent_slug) |> LinkedData.encode_jsonld()
+
+      dc_meta = LinkedData.dublin_core_meta(:board, board)
+
       {:ok,
        assign(socket,
          board: board,
@@ -40,7 +52,9 @@ defmodule BaudrateWeb.BoardLive do
          ancestors: ancestors,
          sub_boards: sub_boards,
          page_title: board.name,
-         feed_board_slug: feed_slug
+         feed_board_slug: feed_slug,
+         linked_data_json: jsonld,
+         dc_meta: dc_meta
        )}
     end
   end

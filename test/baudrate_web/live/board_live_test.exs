@@ -21,6 +21,14 @@ defmodule BaudrateWeb.BoardLiveTest do
     {:ok, conn: conn, user: user, board: board}
   end
 
+  test "renders JSON-LD with sioc:Forum and DC meta", %{conn: conn, board: board} do
+    {:ok, _lv, html} = live(conn, "/boards/#{board.slug}")
+
+    assert html =~ "application/ld+json"
+    assert html =~ "sioc:Forum"
+    assert html =~ "DC.title"
+  end
+
   test "renders board page with pagination", %{conn: conn, user: user, board: board} do
     # Create 25 articles
     for i <- 1..25 do

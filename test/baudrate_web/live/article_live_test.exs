@@ -32,6 +32,15 @@ defmodule BaudrateWeb.ArticleLiveTest do
     {:ok, conn: conn, user: user, board: board, article: article}
   end
 
+  test "renders JSON-LD with sioc:Post and DC meta", %{conn: conn, article: article} do
+    {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+
+    assert html =~ "application/ld+json"
+    assert html =~ "sioc:Post"
+    assert html =~ "DC.title"
+    assert html =~ "DC.creator"
+  end
+
   test "renders article with edit/delete buttons for author", %{conn: conn, article: article} do
     {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
     assert html =~ "Test Article"

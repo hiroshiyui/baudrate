@@ -12,6 +12,15 @@ defmodule BaudrateWeb.HomeLiveTest do
     {:ok, conn: conn}
   end
 
+  test "renders JSON-LD with sioc:Site", %{conn: conn} do
+    Repo.insert!(%Setting{key: "site_name", value: "Test BBS"})
+    {:ok, _lv, html} = live(conn, "/")
+
+    assert html =~ "application/ld+json"
+    assert html =~ "sioc:Site"
+    assert html =~ "Test BBS"
+  end
+
   describe "guest" do
     test "sees public boards", %{conn: conn} do
       %Board{}
