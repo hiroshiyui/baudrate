@@ -1614,6 +1614,44 @@ defmodule Baudrate.Content do
     ) || 0
   end
 
+  @doc """
+  Returns paginated non-deleted articles by a user, newest first.
+  """
+  def paginate_articles_by_user(user_id, opts \\ []) do
+    pagination = Pagination.paginate_opts(opts, @per_page)
+
+    base_query =
+      from(a in Article,
+        where: a.user_id == ^user_id and is_nil(a.deleted_at),
+        distinct: a.id
+      )
+
+    Pagination.paginate_query(base_query, pagination,
+      result_key: :articles,
+      order_by: [desc: dynamic([q], q.inserted_at)],
+      preloads: [:user, :boards]
+    )
+  end
+
+  @doc """
+  Returns paginated non-deleted comments by a user, newest first.
+  """
+  def paginate_comments_by_user(user_id, opts \\ []) do
+    pagination = Pagination.paginate_opts(opts, @per_page)
+
+    base_query =
+      from(c in Comment,
+        where: c.user_id == ^user_id and is_nil(c.deleted_at),
+        distinct: c.id
+      )
+
+    Pagination.paginate_query(base_query, pagination,
+      result_key: :comments,
+      order_by: [desc: dynamic([q], q.inserted_at)],
+      preloads: [:user, article: :boards]
+    )
+  end
+
   # --- Pin / Lock ---
 
   @doc """

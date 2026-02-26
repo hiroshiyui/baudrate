@@ -57,7 +57,13 @@
       </div>
     </div>
 
-    <div :if={@items != []} class="space-y-4" role="feed" aria-live="polite" aria-label={gettext("Feed")}>
+    <div
+      :if={@items != []}
+      class="space-y-4"
+      role="feed"
+      aria-live="polite"
+      aria-label={gettext("Feed")}
+    >
       <article :for={item <- @items} class="card bg-base-200 shadow-sm">
         <%!-- Remote feed item --%>
         <div :if={item.source == :remote} class="card-body p-4">
@@ -252,14 +258,14 @@
         </p>
 
         <div class="stats stats-vertical shadow w-full mt-2">
-          <div class="stat py-2">
+          <.link navigate={~p"/users/#{@current_user.username}/articles"} class="stat py-2 hover:bg-base-200 transition-colors cursor-pointer">
             <div class="stat-title">{gettext("Articles")}</div>
             <div class="stat-value text-lg">{@article_count}</div>
-          </div>
-          <div class="stat py-2">
+          </.link>
+          <.link navigate={~p"/users/#{@current_user.username}/comments"} class="stat py-2 hover:bg-base-200 transition-colors cursor-pointer">
             <div class="stat-title">{gettext("Comments")}</div>
             <div class="stat-value text-lg">{@comment_count}</div>
-          </div>
+          </.link>
         </div>
 
         <.link navigate={~p"/profile"} class="btn btn-sm btn-outline w-full mt-2">

@@ -1,0 +1,88 @@
+<div class="space-y-6">
+  <div class="text-sm breadcrumbs">
+    <ul>
+      <li>
+        <.link navigate={~p"/users/#{@profile_user.username}"}>
+          {gettext("Back to profile")}
+        </.link>
+      </li>
+      <li>{@page_title}</li>
+    </ul>
+  </div>
+
+  <h1 class="text-2xl font-bold">{@page_title}</h1>
+
+  <div :if={@content_type == :articles} class="space-y-2" aria-live="polite">
+    <div :for={article <- @articles} class="card bg-base-200 shadow-sm">
+      <div class="card-body p-4">
+        <.link
+          navigate={~p"/articles/#{article.slug}"}
+          class="card-title text-base link link-hover"
+        >
+          {article.title}
+        </.link>
+        <div class="text-sm text-base-content/70">
+          <time datetime={datetime_attr(article.inserted_at)}>
+            {format_datetime(article.inserted_at)}
+          </time>
+          <span :if={article.boards != []}>
+            &middot;
+            <span :for={board <- article.boards}>
+              <.link navigate={~p"/boards/#{board.slug}"} class="link link-hover">
+                {board.name}
+              </.link>
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div :if={@articles == []} class="text-base-content/70 text-center py-4">
+      {gettext("No articles yet.")}
+    </div>
+  </div>
+
+  <div :if={@content_type == :comments} class="space-y-2" aria-live="polite">
+    <div :for={comment <- @comments} class="card bg-base-200 shadow-sm">
+      <div class="card-body p-4">
+        <div :if={comment.body_html} class="prose prose-sm max-w-none line-clamp-3">
+          {raw(comment.body_html)}
+        </div>
+        <div :if={!comment.body_html} class="prose prose-sm max-w-none line-clamp-3">
+          {raw(Baudrate.Content.Markdown.to_html(comment.body))}
+        </div>
+        <div class="text-sm text-base-content/70 mt-1">
+          <time datetime={datetime_attr(comment.inserted_at)}>
+            {format_datetime(comment.inserted_at)}
+          </time>
+          <span :if={comment.article}>
+            &middot;
+            {raw(
+              gettext("in %{article}",
+                article:
+                  "<a href=\"#{~p"/articles/#{comment.article.slug}"}\" class=\"link link-hover\">" <>
+                    Phoenix.HTML.safe_to_string(Phoenix.HTML.html_escape(comment.article.title)) <>
+                    "</a>"
+              )
+            )}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div :if={@comments == []} class="text-base-content/70 text-center py-4">
+      {gettext("No comments yet.")}
+    </div>
+  </div>
+
+  <.pagination
+    :if={@total_pages > 1}
+    page={@page}
+    total_pages={@total_pages}
+    path={
+      if @content_type == :articles,
+        do: ~p"/users/#{@profile_user.username}/articles",
+        else: ~p"/users/#{@profile_user.username}/comments"
+    }
+  />
+</div>

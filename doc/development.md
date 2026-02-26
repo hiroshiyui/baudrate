@@ -149,6 +149,7 @@ lib/
 │   │   ├── search_live.ex       # Full-text search + remote actor lookup (WebFinger/AP)
 │   │   ├── tag_live.ex          # Browse articles by hashtag (/tags/:tag)
 │   │   ├── user_invites_live.ex # User invite code management (quota-limited, generate, revoke)
+│   │   ├── user_content_live.ex # Paginated user articles/comments (/users/:username/articles|comments)
 │   │   ├── user_profile_live.ex # Public user profile pages (stats, recent articles)
 │   │   ├── setup_live.ex        # First-run setup wizard
 │   │   ├── totp_reset_live.ex   # Self-service TOTP reset/enable

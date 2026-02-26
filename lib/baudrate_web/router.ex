@@ -255,6 +255,8 @@ defmodule BaudrateWeb.Router do
       live "/", HomeLive
       live "/search", SearchLive
       live "/users/:username", UserProfileLive
+      live "/users/:username/articles", UserContentLive, :articles
+      live "/users/:username/comments", UserContentLive, :comments
       live "/boards/:slug", BoardLive
       live "/articles/:slug", ArticleLive
       live "/articles/:slug/history", ArticleHistoryLive

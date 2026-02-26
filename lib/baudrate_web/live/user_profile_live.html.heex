@@ -68,14 +68,14 @@
   </div>
 
   <div class="stats stats-horizontal shadow">
-    <div class="stat">
+    <.link navigate={~p"/users/#{@profile_user.username}/articles"} class="stat hover:bg-base-200 transition-colors cursor-pointer">
       <div class="stat-title">{gettext("Articles")}</div>
       <div class="stat-value text-lg">{@article_count}</div>
-    </div>
-    <div class="stat">
+    </.link>
+    <.link navigate={~p"/users/#{@profile_user.username}/comments"} class="stat hover:bg-base-200 transition-colors cursor-pointer">
       <div class="stat-title">{gettext("Comments")}</div>
       <div class="stat-value text-lg">{@comment_count}</div>
-    </div>
+    </.link>
   </div>
 
   <div :if={@profile_user.bio && @profile_user.bio != ""}>
