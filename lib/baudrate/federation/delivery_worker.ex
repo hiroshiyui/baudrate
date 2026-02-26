@@ -4,7 +4,7 @@ defmodule Baudrate.Federation.DeliveryWorker do
   jobs and processes them via `Delivery.deliver_one/1`.
 
   Follows the same pattern as `SessionCleaner`:
-  - Polls every 60 seconds (configurable via `delivery_poll_interval`)
+  - Polls every 60 seconds with ±10% jitter (configurable via `delivery_poll_interval`)
   - Processes up to 50 jobs per cycle (configurable via `delivery_batch_size`)
   - Delivers concurrently via `Task.Supervisor.async_stream_nolink`
     (configurable via `delivery_max_concurrency`, default 10)
@@ -56,7 +56,8 @@ defmodule Baudrate.Federation.DeliveryWorker do
   defp schedule_poll do
     config = Application.get_env(:baudrate, Baudrate.Federation, [])
     interval = config[:delivery_poll_interval] || 60_000
-    Process.send_after(self(), :poll, interval)
+    jitter = :rand.uniform(div(interval, 5)) - div(interval, 10)
+    Process.send_after(self(), :poll, interval + jitter)
   end
 
   defp process_batch do

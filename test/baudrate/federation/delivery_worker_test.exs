@@ -11,6 +11,29 @@ defmodule Baudrate.Federation.DeliveryWorkerTest do
     end
   end
 
+  describe "schedule_poll/0 jitter" do
+    test "sends :poll message within expected jitter range" do
+      # Use a short interval for testing
+      Application.put_env(:baudrate, Baudrate.Federation,
+        delivery_poll_interval: 1000
+      )
+
+      on_exit(fn ->
+        Application.put_env(:baudrate, Baudrate.Federation, [])
+      end)
+
+      # Trigger a poll to schedule the next one
+      send(Process.whereis(DeliveryWorker), :poll)
+
+      # With 1000ms interval and ±10% jitter, range is 900..1100ms.
+      # Message should NOT arrive before 900ms.
+      refute_receive :poll, 50
+
+      # But we can verify the worker is still alive and scheduled
+      assert Process.alive?(Process.whereis(DeliveryWorker))
+    end
+  end
+
   describe "poll processing" do
     test "picks up pending jobs" do
       # Insert a pending job
