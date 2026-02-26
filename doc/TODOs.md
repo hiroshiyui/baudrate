@@ -18,9 +18,9 @@ Audit date: 2026-02-26
 - [ ] **federation:** No outbound `Delete(Note)` when a comment is soft-deleted — remote instances never learn (`content.ex:1122-1135`)
 - [ ] **federation:** `@context` is a plain string, missing `"https://w3id.org/security/v1"` — strict JSON-LD parsers can't resolve `publicKey` (`federation/publisher.ex:22`)
 - [ ] **federation:** No `hs2019` signature algorithm support — newer Mastodon instances may be rejected (`federation/http_signature.ex:5`)
-- [ ] **security:** Object `id` in incoming activities not validated as HTTPS URL before storing as `ap_id` (`federation/validator.ex:54-69`)
-- [ ] **security:** CSP `img-src https:` allows tracking pixels from federated content — consider proxying or restricting (`router.ex:54`)
-- [ ] **security:** Add `Referrer-Policy` header and `object-src 'none'` to CSP (`router.ex:52-57`)
+- [x] **security:** Object `id` in incoming activities not validated as HTTPS URL before storing as `ap_id` — added `validate_object_id/1` to Validator, guarded all extraction points in InboxHandler
+- [x] **security:** CSP `img-src https:` allows tracking pixels from federated content — removed blanket `https:` from `img-src`
+- [x] **security:** Add `Referrer-Policy` header and `object-src 'none'` to CSP — added `referrer-policy: strict-origin-when-cross-origin` and `object-src 'none'`
 - [ ] **perf:** `domain_blocked?/1` queries DB settings on every inbox/outbox activity — cache in ETS or Agent (`federation/validator.ex:81-93`)
 - [ ] **perf:** No partial index on `comments(article_id) WHERE deleted_at IS NULL` for common query pattern
 - [ ] **perf:** Board article listing joins ALL comments for bump ordering — denormalize to `last_activity_at` column on articles (`content.ex:212-225`)

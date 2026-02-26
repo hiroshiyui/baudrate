@@ -601,7 +601,12 @@ timer. Verify renewal works: `sudo certbot renew --dry-run`.
 - **Content size limits** — 256 KB AP payload, 64 KB content body
 - **File uploads** — magic byte validation, re-encoding as WebP (strips EXIF,
   destroys polyglots)
-- **CSP** — restrictive Content-Security-Policy, no eval
+- **CSP** — restrictive Content-Security-Policy: no eval, `img-src` restricted
+  to `'self' data: blob:` (no blanket `https:` — blocks tracking pixels from
+  federated content), `object-src 'none'` (blocks plugins entirely),
+  `frame-ancestors 'none'`
+- **Referrer-Policy** — `strict-origin-when-cross-origin` prevents leaking full
+  URL paths to external sites
 - **X-Frame-Options** — DENY
 
 ### Clock Synchronization
