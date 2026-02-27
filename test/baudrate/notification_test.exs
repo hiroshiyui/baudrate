@@ -158,6 +158,30 @@ defmodule Baudrate.NotificationTest do
       assert notif.actor_remote_actor_id == remote.id
     end
 
+    test "skips when recipient has blocked remote actor", %{user: user} do
+      remote = create_remote_actor()
+      {:ok, _} = Auth.block_remote_actor(user, remote.ap_id)
+
+      assert {:ok, :skipped} =
+               Notification.create_notification(%{
+                 type: "new_follower",
+                 user_id: user.id,
+                 actor_remote_actor_id: remote.id
+               })
+    end
+
+    test "skips when recipient has muted remote actor", %{user: user} do
+      remote = create_remote_actor()
+      {:ok, _} = Auth.mute_remote_actor(user, remote.ap_id)
+
+      assert {:ok, :skipped} =
+               Notification.create_notification(%{
+                 type: "new_follower",
+                 user_id: user.id,
+                 actor_remote_actor_id: remote.id
+               })
+    end
+
     test "rejects invalid type", %{user: user, actor: actor} do
       assert {:error, changeset} =
                Notification.create_notification(%{

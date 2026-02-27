@@ -41,7 +41,8 @@ defmodule Baudrate.Notification do
 
     with :ok <- check_self_notification(attrs),
          :ok <- check_blocked_or_muted(attrs),
-         :ok <- check_in_app_preference(attrs) do
+         {:ok, user} <- fetch_recipient(attrs),
+         :ok <- check_in_app_preference(attrs, user) do
       %Notification{}
       |> Notification.changeset(attrs)
       |> Repo.insert()
@@ -53,7 +54,7 @@ defmodule Baudrate.Notification do
             %{notification_id: notification.id}
           )
 
-          maybe_send_push(notification)
+          maybe_send_push(notification, user)
 
           {:ok, notification}
 
@@ -243,22 +244,45 @@ defmodule Baudrate.Notification do
     end
   end
 
-  defp check_blocked_or_muted(_attrs), do: :ok
+  defp check_blocked_or_muted(%{user_id: user_id, actor_remote_actor_id: remote_id})
+       when not is_nil(remote_id) do
+    alias Baudrate.Federation.RemoteActor
 
-  defp check_in_app_preference(%{type: type, user_id: user_id}) when is_binary(type) do
-    case Repo.get(User, user_id) do
-      %User{notification_preferences: prefs} when is_map(prefs) ->
-        case get_in(prefs, [type, "in_app"]) do
-          false -> {:ok, :skipped}
-          _ -> :ok
+    case Repo.get(RemoteActor, remote_id) do
+      %RemoteActor{ap_id: ap_id} ->
+        recipient = %User{id: user_id}
+
+        if Auth.blocked?(recipient, ap_id) or Auth.muted?(recipient, ap_id) do
+          {:ok, :skipped}
+        else
+          :ok
         end
 
-      _ ->
+      nil ->
         :ok
     end
   end
 
-  defp check_in_app_preference(_attrs), do: :ok
+  defp check_blocked_or_muted(_attrs), do: :ok
+
+  defp fetch_recipient(%{user_id: user_id}) when not is_nil(user_id) do
+    case Repo.get(User, user_id) do
+      %User{} = user -> {:ok, user}
+      nil -> {:ok, nil}
+    end
+  end
+
+  defp fetch_recipient(_attrs), do: {:ok, nil}
+
+  defp check_in_app_preference(%{type: type}, %User{notification_preferences: prefs})
+       when is_binary(type) and is_map(prefs) do
+    case get_in(prefs, [type, "in_app"]) do
+      false -> {:ok, :skipped}
+      _ -> :ok
+    end
+  end
+
+  defp check_in_app_preference(_attrs, _user), do: :ok
 
   defp has_unique_constraint_error?(errors) do
     Enum.any?(errors, fn
@@ -267,21 +291,18 @@ defmodule Baudrate.Notification do
     end)
   end
 
-  defp maybe_send_push(%Notification{} = notification) do
-    if web_push_enabled_for?(notification.user_id, notification.type) do
+  defp maybe_send_push(%Notification{} = notification, user) do
+    if web_push_enabled_for?(user, notification.type) do
       schedule_push_delivery(notification)
     end
   end
 
-  defp web_push_enabled_for?(user_id, type) when is_binary(type) do
-    case Repo.get(User, user_id) do
-      %User{notification_preferences: prefs} when is_map(prefs) ->
-        get_in(prefs, [type, "web_push"]) != false
-
-      _ ->
-        true
-    end
+  defp web_push_enabled_for?(%User{notification_preferences: prefs}, type)
+       when is_map(prefs) and is_binary(type) do
+    get_in(prefs, [type, "web_push"]) != false
   end
+
+  defp web_push_enabled_for?(_user, _type), do: true
 
   defp schedule_push_delivery(notification) do
     if Application.get_env(:baudrate, :web_push_async, true) do
