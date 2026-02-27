@@ -159,7 +159,9 @@ lib/
 │   │   ├── setup_live.ex        # First-run setup wizard
 │   │   ├── totp_reset_live.ex   # Self-service TOTP reset/enable
 │   │   ├── totp_setup_live.ex   # TOTP enrollment with QR code
-│   │   └── totp_verify_live.ex  # TOTP code verification
+│   │   ├── totp_verify_live.ex  # TOTP code verification
+│   │   ├── unread_dm_count_hook.ex         # Real-time @unread_dm_count via PubSub
+│   │   └── unread_notification_count_hook.ex # Real-time @unread_notification_count via PubSub
 │   ├── plugs/
 │   │   ├── authorized_fetch.ex  # Optional HTTP Signature verification on AP GET requests
 │   │   ├── cache_body.ex        # Cache raw request body (for HTTP signature verification)

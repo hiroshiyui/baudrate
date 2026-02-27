@@ -10,7 +10,7 @@ Identified via competitive analysis against Discourse, Lemmy, Flarum, NodeBB, an
 
 ### High Priority — Core Forum Gaps
 
-- [x] **feat:** Notification system — in-app notification center (bell icon) for replies, mentions, new followers; DB-backed notification schema with read/unread state (Phase 1 schema + Phase 2 hooks done)
+- [x] **feat:** Notification system — in-app notification center (bell icon) for replies, mentions, new followers; DB-backed notification schema with read/unread state (Phase 1 schema + Phase 2 hooks + Phase 3 bell icon done)
 - [x] **feat:** @mention support — `@username` parsing in articles/comments, link to profile, trigger notification; federate as `Mention` tag in AP objects (Phase 2 done)
 - [ ] **feat:** Bookmarks / saved posts — users can bookmark articles and comments for later; simple join table, dedicated `/bookmarks` page
 - [ ] **feat:** Drafts / autosave — auto-save article and comment drafts (DB-backed or localStorage); restore on revisit
@@ -63,15 +63,7 @@ is independently functional and committable by topic.
 
 ### ~~Phase 2: @Mention Parsing + Notification Creation Hooks~~ ✅ Done
 
-### Phase 3: Real-Time Bell Icon + Unread Count Badge
-
-**New:** `lib/baudrate_web/live/unread_notification_count_hook.ex` — follows `UnreadDmCountHook` pattern exactly.
-
-**Modify `lib/baudrate_web/live/auth_hooks.ex`** — add notification count assign + hook attach in `:require_auth` and `:optional_auth`.
-
-**Modify `lib/baudrate_web/components/layouts.ex`** — add bell icon (`hero-bell`) with `@unread_notification_count` badge in desktop nav and mobile menu. Use `badge-secondary`.
-
-**Tests:** `test/baudrate_web/live/unread_notification_count_hook_test.exs`
+### ~~Phase 3: Real-Time Bell Icon + Unread Count Badge~~ ✅ Done
 
 ### Phase 4: Notifications Page (LiveView)
 
