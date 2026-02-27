@@ -1,0 +1,100 @@
+# Baudrate — nginx reverse proxy configuration
+#
+# Replace "baudrate.example" with your actual domain.
+# Replace "/path/to/baudrate" with your actual deployment path.
+# Adjust certificate paths and upstream port as needed.
+#
+# Usage:
+#   cp nginx.conf.sample /etc/nginx/sites-available/baudrate
+#   ln -s /etc/nginx/sites-available/baudrate /etc/nginx/sites-enabled/
+#   nginx -t && systemctl reload nginx
+
+upstream baudrate {
+    server 127.0.0.1:4000;
+}
+
+# Redirect HTTP → HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name baudrate.example;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name baudrate.example;
+
+    # --- TLS (Let's Encrypt) ---
+    ssl_certificate     /etc/letsencrypt/live/baudrate.example/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/baudrate.example/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    # --- Security headers ---
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+    add_header X-Content-Type-Options    "nosniff" always;
+    add_header X-Frame-Options           "DENY" always;
+    add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
+
+    # --- Request limits ---
+    client_max_body_size 20m;
+
+    # --- Fingerprinted static assets (long cache) ---
+    # Phoenix fingerprints CSS/JS filenames with content hashes, safe for
+    # aggressive caching. Served directly by nginx, bypassing the BEAM.
+    location /assets/ {
+        alias /path/to/baudrate/priv/static/assets/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
+    # --- Non-fingerprinted static files (short cache) ---
+    location ~ ^/(fonts|images|uploads|favicon\.ico|favicon\.svg|robots\.txt|service_worker\.js|site\.webmanifest) {
+        root /path/to/baudrate/priv/static;
+        expires 1h;
+        add_header Cache-Control "public";
+        access_log off;
+    }
+
+    # --- LiveView WebSocket ---
+    location /live/websocket {
+        proxy_pass http://baudrate;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host       $host;
+        proxy_set_header X-Real-IP  $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # LiveView long-poll fallback needs generous timeouts
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+
+    # --- Application ---
+    location / {
+        proxy_pass http://baudrate;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+    }
+}
