@@ -249,10 +249,15 @@
       </div>
 
       <%!-- Browser Push Notifications section --%>
-      <div id="push-manager" phx-hook="PushManagerHook">
-        <div class="text-sm text-base-content/70 mb-2">
+      <div
+        id="push-manager"
+        phx-hook="PushManagerHook"
+        role="region"
+        aria-labelledby="push-notifications-heading"
+      >
+        <h3 id="push-notifications-heading" class="text-sm text-base-content/70 mb-2">
           {gettext("Browser Push Notifications")}
-        </div>
+        </h3>
         <%= if @push_supported do %>
           <%= if @push_subscribed do %>
             <button

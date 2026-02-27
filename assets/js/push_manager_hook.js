@@ -50,9 +50,18 @@ const PushManagerHook = {
     this.el.addEventListener("push:unsubscribe", () => this.unsubscribe())
   },
 
+  setLoading(loading) {
+    this.el.querySelectorAll("button").forEach((btn) => {
+      btn.disabled = loading
+      if (loading) btn.classList.add("loading")
+      else btn.classList.remove("loading")
+    })
+  },
+
   subscribe() {
     if (!this.registration) return
 
+    this.setLoading(true)
     const applicationServerKey = urlBase64ToUint8Array(this.vapidKey)
 
     this.registration.pushManager
@@ -77,23 +86,27 @@ const PushManagerHook = {
         })
       })
       .then((response) => {
+        this.setLoading(false)
         if (response.ok) {
           this.pushEvent("push_subscribed", {})
         } else {
-          this.pushEvent("push_subscribe_error", {})
+          this.pushEvent("push_subscribe_error", { reason: "server_error" })
         }
       })
       .catch((err) => {
+        this.setLoading(false)
         if (err.name === "NotAllowedError") {
           this.pushEvent("push_permission_denied", {})
         } else {
-          this.pushEvent("push_subscribe_error", {})
+          this.pushEvent("push_subscribe_error", { reason: err.message || "unknown" })
         }
       })
   },
 
   unsubscribe() {
     if (!this.registration) return
+
+    this.setLoading(true)
 
     this.registration.pushManager
       .getSubscription()
@@ -115,10 +128,12 @@ const PushManagerHook = {
         })
       })
       .then(() => {
+        this.setLoading(false)
         this.pushEvent("push_unsubscribed", {})
       })
       .catch(() => {
-        this.pushEvent("push_unsubscribed", {})
+        this.setLoading(false)
+        this.pushEvent("push_subscribe_error", { reason: "unsubscribe_failed" })
       })
   },
 }
