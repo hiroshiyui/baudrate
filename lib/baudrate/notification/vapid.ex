@@ -66,7 +66,7 @@ defmodule Baudrate.Notification.VAPID do
     signing_input = header <> "." <> claims
 
     der_signature = :crypto.sign(:ecdsa, :sha256, signing_input, [private_key, :prime256v1])
-    raw_signature = der_to_raw_p256(der_signature)
+    {:ok, raw_signature} = der_to_raw_p256(der_signature)
 
     signature = Base.url_encode64(raw_signature, padding: false)
 
@@ -107,14 +107,17 @@ defmodule Baudrate.Notification.VAPID do
   # Converts a DER-encoded ECDSA signature to raw r||s format (64 bytes).
   # DER format: 0x30 <len> 0x02 <r_len> <r_bytes> 0x02 <s_len> <s_bytes>
   # Each of r and s must be exactly 32 bytes (left-padded or trimmed).
+  # Returns `{:ok, binary}` or `{:error, :invalid_der}`.
   defp der_to_raw_p256(der) do
-    <<0x30, _total_len, 0x02, r_len, r_bytes::binary-size(r_len), 0x02, s_len,
-      s_bytes::binary-size(s_len)>> = der
+    case der do
+      <<0x30, _total_len, 0x02, r_len, r_bytes::binary-size(r_len), 0x02, s_len,
+        s_bytes::binary-size(s_len)>>
+      when r_len in 1..33 and s_len in 1..33 ->
+        {:ok, pad_or_trim_to_32(r_bytes) <> pad_or_trim_to_32(s_bytes)}
 
-    r = pad_or_trim_to_32(r_bytes)
-    s = pad_or_trim_to_32(s_bytes)
-
-    r <> s
+      _ ->
+        {:error, :invalid_der}
+    end
   end
 
   # Pads with leading zeros or trims leading zero byte to ensure exactly 32 bytes.
@@ -124,11 +127,14 @@ defmodule Baudrate.Notification.VAPID do
     :binary.copy(<<0>>, 32 - byte_size(bytes)) <> bytes
   end
 
-  defp pad_or_trim_to_32(<<0, rest::binary>>) when byte_size(rest) == 32, do: rest
-
   defp pad_or_trim_to_32(bytes) when byte_size(bytes) > 32 do
-    # Trim leading zeros until 32 bytes
-    trim_leading_zeros(bytes, byte_size(bytes) - 32)
+    trimmed = trim_leading_zeros(bytes, byte_size(bytes) - 32)
+
+    if byte_size(trimmed) > 32 do
+      binary_part(trimmed, byte_size(trimmed) - 32, 32)
+    else
+      trimmed
+    end
   end
 
   defp trim_leading_zeros(<<0, rest::binary>>, n) when n > 0, do: trim_leading_zeros(rest, n - 1)

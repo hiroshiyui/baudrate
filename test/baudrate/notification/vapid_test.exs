@@ -73,6 +73,20 @@ defmodule Baudrate.Notification.VAPIDTest do
       assert String.starts_with?(claims["sub"], "mailto:")
     end
 
+    test "always produces 64-byte raw signature (50 iterations)", %{private_key: _private_key} do
+      for _ <- 1..50 do
+        {_pub_b64, encrypted} = VAPID.generate_keypair()
+        {:ok, priv} = VapidVault.decrypt(encrypted)
+
+        jwt = VAPID.sign_jwt("https://push.example.com", priv)
+        [_, _, sig_b64] = String.split(jwt, ".")
+        raw_sig = Base.url_decode64!(sig_b64, padding: false)
+
+        assert byte_size(raw_sig) == 64,
+               "Expected 64-byte signature, got #{byte_size(raw_sig)}"
+      end
+    end
+
     test "signature is verifiable with the corresponding public key", %{private_key: _private_key} do
       {public_key_b64, encrypted_private} = VAPID.generate_keypair()
       {:ok, priv} = VapidVault.decrypt(encrypted_private)
