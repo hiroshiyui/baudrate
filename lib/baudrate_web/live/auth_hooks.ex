@@ -35,8 +35,10 @@ defmodule BaudrateWeb.AuthHooks do
 
   alias Baudrate.Auth
   alias Baudrate.Messaging
+  alias Baudrate.Notification
   alias BaudrateWeb.MarkdownPreviewHook
   alias BaudrateWeb.UnreadDmCountHook
+  alias BaudrateWeb.UnreadNotificationCountHook
 
   def on_mount(:require_auth, _params, session, socket) do
     session_token = session["session_token"]
@@ -57,8 +59,10 @@ defmodule BaudrateWeb.AuthHooks do
               |> assign(:current_user, user)
               |> assign(:locale, locale)
               |> assign(:unread_dm_count, Messaging.unread_count(user))
+              |> assign(:unread_notification_count, Notification.unread_count(user.id))
               |> MarkdownPreviewHook.attach()
               |> UnreadDmCountHook.attach(user)
+              |> UnreadNotificationCountHook.attach(user)
 
             {:cont, socket}
           end
@@ -87,8 +91,10 @@ defmodule BaudrateWeb.AuthHooks do
               |> assign(:current_user, user)
               |> assign(:locale, locale)
               |> assign(:unread_dm_count, Messaging.unread_count(user))
+              |> assign(:unread_notification_count, Notification.unread_count(user.id))
               |> MarkdownPreviewHook.attach()
               |> UnreadDmCountHook.attach(user)
+              |> UnreadNotificationCountHook.attach(user)
 
             {:cont, socket}
           end
