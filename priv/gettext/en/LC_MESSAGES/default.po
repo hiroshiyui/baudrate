@@ -431,7 +431,7 @@ msgstr ""
 #: lib/baudrate_web/components/layouts.ex:282
 #: lib/baudrate_web/live/feed_live.html.heex:241
 #: lib/baudrate_web/live/feed_live.html.heex:279
-#: lib/baudrate_web/live/profile_live.ex:46
+#: lib/baudrate_web/live/profile_live.ex:47
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Profile"
@@ -492,12 +492,12 @@ msgstr ""
 msgid "Are you sure you want to remove your avatar?"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:282
+#: lib/baudrate_web/live/profile_live.ex:304
 #, elixir-autogen, elixir-format
 msgid "Avatar removed."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:313
+#: lib/baudrate_web/live/profile_live.ex:335
 #, elixir-autogen, elixir-format
 msgid "Avatar updated successfully."
 msgstr ""
@@ -523,12 +523,12 @@ msgstr ""
 msgid "Crop Avatar"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:331
+#: lib/baudrate_web/live/profile_live.ex:353
 #, elixir-autogen, elixir-format
 msgid "Failed to process avatar image."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:322
+#: lib/baudrate_web/live/profile_live.ex:344
 #, elixir-autogen, elixir-format
 msgid "Invalid image file."
 msgstr ""
@@ -545,8 +545,8 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:88
-#: lib/baudrate_web/live/profile_live.ex:288
+#: lib/baudrate_web/live/profile_live.ex:89
+#: lib/baudrate_web/live/profile_live.ex:310
 #, elixir-autogen, elixir-format
 msgid "Too many avatar changes. Please try again later."
 msgstr ""
@@ -723,12 +723,12 @@ msgstr ""
 msgid "Add Language"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:371
+#: lib/baudrate_web/live/profile_live.ex:393
 #, elixir-autogen, elixir-format
 msgid "Failed to update language preferences."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:366
+#: lib/baudrate_web/live/profile_live.ex:388
 #, elixir-autogen, elixir-format
 msgid "Language preferences updated."
 msgstr ""
@@ -2013,7 +2013,7 @@ msgstr ""
 msgid "Password reset successful! You can now sign in."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:291
+#: lib/baudrate_web/live/profile_live.html.heex:317
 #, elixir-autogen, elixir-format
 msgid "Preview:"
 msgstr ""
@@ -2029,7 +2029,7 @@ msgstr ""
 msgid "Save Agreement"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:297
+#: lib/baudrate_web/live/profile_live.html.heex:323
 #, elixir-autogen, elixir-format
 msgid "Save Signature"
 msgstr ""
@@ -2041,13 +2041,13 @@ msgid "Save these recovery codes now!"
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:192
-#: lib/baudrate_web/live/profile_live.html.heex:275
+#: lib/baudrate_web/live/profile_live.html.heex:301
 #: lib/baudrate_web/live/user_profile_live.html.heex:100
 #, elixir-autogen, elixir-format
 msgid "Signature"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:223
+#: lib/baudrate_web/live/profile_live.ex:224
 #, elixir-autogen, elixir-format
 msgid "Signature updated."
 msgstr ""
@@ -2063,7 +2063,7 @@ msgstr ""
 msgid "Too many attempts. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:288
+#: lib/baudrate_web/live/profile_live.html.heex:314
 #, elixir-autogen, elixir-format
 msgid "Your signature (Markdown supported, max 500 characters)"
 msgstr ""
@@ -2620,7 +2620,7 @@ msgstr ""
 msgid "Conversation not found."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:263
+#: lib/baudrate_web/live/profile_live.ex:264
 #, elixir-autogen, elixir-format
 msgid "DM access setting updated."
 msgstr ""
@@ -2650,7 +2650,7 @@ msgstr ""
 msgid "Failed to send message."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:266
+#: lib/baudrate_web/live/profile_live.ex:267
 #, elixir-autogen, elixir-format
 msgid "Failed to update DM access setting."
 msgstr ""
@@ -2828,18 +2828,18 @@ msgstr ""
 msgid "Mute this user? Their content will be hidden from your view."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:304
+#: lib/baudrate_web/live/profile_live.html.heex:330
 #, elixir-autogen, elixir-format
 msgid "Muted Users"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:306
+#: lib/baudrate_web/live/profile_live.html.heex:332
 #, elixir-autogen, elixir-format
 msgid "No muted users."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:329
-#: lib/baudrate_web/live/profile_live.html.heex:331
+#: lib/baudrate_web/live/profile_live.html.heex:355
+#: lib/baudrate_web/live/profile_live.html.heex:357
 #: lib/baudrate_web/live/user_profile_live.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Unmute"
@@ -2855,7 +2855,7 @@ msgstr ""
 msgid "User muted."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:248
+#: lib/baudrate_web/live/profile_live.ex:249
 #: lib/baudrate_web/live/user_profile_live.ex:171
 #, elixir-autogen, elixir-format
 msgid "User unmuted."
@@ -3668,13 +3668,13 @@ msgstr "Already following this user."
 msgid "Anyone can post to this board"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:253
+#: lib/baudrate_web/live/profile_live.html.heex:279
 #: lib/baudrate_web/live/user_profile_live.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "Bio"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:190
+#: lib/baudrate_web/live/profile_live.ex:191
 #, elixir-autogen, elixir-format
 msgid "Bio updated."
 msgstr ""
@@ -3747,7 +3747,7 @@ msgstr ""
 msgid "Remote actor not found."
 msgstr "Remote actor"
 
-#: lib/baudrate_web/live/profile_live.html.heex:268
+#: lib/baudrate_web/live/profile_live.html.heex:294
 #, elixir-autogen, elixir-format
 msgid "Save Bio"
 msgstr ""
@@ -3758,7 +3758,7 @@ msgstr ""
 msgid "Search for a remote actor to follow (e.g. @user@domain)"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:265
+#: lib/baudrate_web/live/profile_live.html.heex:291
 #, elixir-autogen, elixir-format
 msgid "Tell others about yourself (max 500 characters)"
 msgstr ""
@@ -3783,7 +3783,7 @@ msgstr ""
 msgid "Display Name"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:163
+#: lib/baudrate_web/live/profile_live.ex:164
 #, elixir-autogen, elixir-format
 msgid "Display name updated."
 msgstr ""
@@ -4008,4 +4008,19 @@ msgstr ""
 #: lib/baudrate_web/helpers.ex:254
 #, elixir-autogen, elixir-format
 msgid "submitted a moderation report"
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex:255
+#, elixir-autogen, elixir-format
+msgid "Choose which notifications you receive in-app."
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.ex:288
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Failed to update notification preferences."
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex:253
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Notification Preferences"
 msgstr ""

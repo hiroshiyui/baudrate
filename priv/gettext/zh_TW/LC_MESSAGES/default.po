@@ -431,7 +431,7 @@ msgstr "目前沒有文章。"
 #: lib/baudrate_web/components/layouts.ex:282
 #: lib/baudrate_web/live/feed_live.html.heex:241
 #: lib/baudrate_web/live/feed_live.html.heex:279
-#: lib/baudrate_web/live/profile_live.ex:46
+#: lib/baudrate_web/live/profile_live.ex:47
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Profile"
@@ -492,12 +492,12 @@ msgstr "您將無法再次查看這些救援碼！"
 msgid "Are you sure you want to remove your avatar?"
 msgstr "確定要移除頭像嗎？"
 
-#: lib/baudrate_web/live/profile_live.ex:282
+#: lib/baudrate_web/live/profile_live.ex:304
 #, elixir-autogen, elixir-format
 msgid "Avatar removed."
 msgstr "頭像已移除。"
 
-#: lib/baudrate_web/live/profile_live.ex:313
+#: lib/baudrate_web/live/profile_live.ex:335
 #, elixir-autogen, elixir-format
 msgid "Avatar updated successfully."
 msgstr "頭像已成功更新。"
@@ -523,12 +523,12 @@ msgstr "變更頭像"
 msgid "Crop Avatar"
 msgstr "裁剪頭像"
 
-#: lib/baudrate_web/live/profile_live.ex:331
+#: lib/baudrate_web/live/profile_live.ex:353
 #, elixir-autogen, elixir-format
 msgid "Failed to process avatar image."
 msgstr "處理頭像圖片失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:322
+#: lib/baudrate_web/live/profile_live.ex:344
 #, elixir-autogen, elixir-format
 msgid "Invalid image file."
 msgstr "無效的圖片檔案。"
@@ -545,8 +545,8 @@ msgstr "移除頭像"
 msgid "Save"
 msgstr "儲存"
 
-#: lib/baudrate_web/live/profile_live.ex:88
-#: lib/baudrate_web/live/profile_live.ex:288
+#: lib/baudrate_web/live/profile_live.ex:89
+#: lib/baudrate_web/live/profile_live.ex:310
 #, elixir-autogen, elixir-format
 msgid "Too many avatar changes. Please try again later."
 msgstr "頭像變更次數過多，請稍後再試。"
@@ -723,12 +723,12 @@ msgstr "由 %{author} 發表"
 msgid "Add Language"
 msgstr "新增語言"
 
-#: lib/baudrate_web/live/profile_live.ex:371
+#: lib/baudrate_web/live/profile_live.ex:393
 #, elixir-autogen, elixir-format
 msgid "Failed to update language preferences."
 msgstr "更新語言偏好失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:366
+#: lib/baudrate_web/live/profile_live.ex:388
 #, elixir-autogen, elixir-format
 msgid "Language preferences updated."
 msgstr "語言偏好已更新。"
@@ -2012,7 +2012,7 @@ msgstr "密碼重設失敗。"
 msgid "Password reset successful! You can now sign in."
 msgstr "密碼重設成功！您現在可以登入。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:291
+#: lib/baudrate_web/live/profile_live.html.heex:317
 #, elixir-autogen, elixir-format
 msgid "Preview:"
 msgstr "預覽："
@@ -2028,7 +2028,7 @@ msgstr "重設密碼"
 msgid "Save Agreement"
 msgstr "儲存條款"
 
-#: lib/baudrate_web/live/profile_live.html.heex:297
+#: lib/baudrate_web/live/profile_live.html.heex:323
 #, elixir-autogen, elixir-format
 msgid "Save Signature"
 msgstr "儲存簽名檔"
@@ -2040,13 +2040,13 @@ msgid "Save these recovery codes now!"
 msgstr "請立即儲存這些救援碼！"
 
 #: lib/baudrate_web/live/article_live.html.heex:192
-#: lib/baudrate_web/live/profile_live.html.heex:275
+#: lib/baudrate_web/live/profile_live.html.heex:301
 #: lib/baudrate_web/live/user_profile_live.html.heex:100
 #, elixir-autogen, elixir-format
 msgid "Signature"
 msgstr "簽名檔"
 
-#: lib/baudrate_web/live/profile_live.ex:223
+#: lib/baudrate_web/live/profile_live.ex:224
 #, elixir-autogen, elixir-format
 msgid "Signature updated."
 msgstr "簽名檔已更新。"
@@ -2062,7 +2062,7 @@ msgstr "這些救援碼是您忘記密碼時恢復帳號的唯一方式。每個
 msgid "Too many attempts. Please try again later."
 msgstr "嘗試次數過多，請稍後再試。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:288
+#: lib/baudrate_web/live/profile_live.html.heex:314
 #, elixir-autogen, elixir-format
 msgid "Your signature (Markdown supported, max 500 characters)"
 msgstr "您的簽名檔（支援 Markdown，最多 500 字元）"
@@ -2619,7 +2619,7 @@ msgstr "設定誰可以傳送私訊給您。"
 msgid "Conversation not found."
 msgstr "找不到對話。"
 
-#: lib/baudrate_web/live/profile_live.ex:263
+#: lib/baudrate_web/live/profile_live.ex:264
 #, elixir-autogen, elixir-format
 msgid "DM access setting updated."
 msgstr "私訊權限設定已更新。"
@@ -2649,7 +2649,7 @@ msgstr "刪除訊息失敗。"
 msgid "Failed to send message."
 msgstr "傳送訊息失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:266
+#: lib/baudrate_web/live/profile_live.ex:267
 #, elixir-autogen, elixir-format
 msgid "Failed to update DM access setting."
 msgstr "更新私訊權限設定失敗。"
@@ -2827,18 +2827,18 @@ msgstr "靜音 %{username}"
 msgid "Mute this user? Their content will be hidden from your view."
 msgstr "確定要靜音此使用者？其發佈的內容將會從您的檢視中隱藏。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:304
+#: lib/baudrate_web/live/profile_live.html.heex:330
 #, elixir-autogen, elixir-format
 msgid "Muted Users"
 msgstr "已靜音的使用者"
 
-#: lib/baudrate_web/live/profile_live.html.heex:306
+#: lib/baudrate_web/live/profile_live.html.heex:332
 #, elixir-autogen, elixir-format
 msgid "No muted users."
 msgstr "沒有已靜音的使用者。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:329
-#: lib/baudrate_web/live/profile_live.html.heex:331
+#: lib/baudrate_web/live/profile_live.html.heex:355
+#: lib/baudrate_web/live/profile_live.html.heex:357
 #: lib/baudrate_web/live/user_profile_live.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Unmute"
@@ -2854,7 +2854,7 @@ msgstr "取消靜音 %{username}"
 msgid "User muted."
 msgstr "已靜音使用者。"
 
-#: lib/baudrate_web/live/profile_live.ex:248
+#: lib/baudrate_web/live/profile_live.ex:249
 #: lib/baudrate_web/live/user_profile_live.ex:171
 #, elixir-autogen, elixir-format
 msgid "User unmuted."
@@ -3658,13 +3658,13 @@ msgstr "已追蹤"
 msgid "Anyone can post to this board"
 msgstr "任何人皆可發文至此看板"
 
-#: lib/baudrate_web/live/profile_live.html.heex:253
+#: lib/baudrate_web/live/profile_live.html.heex:279
 #: lib/baudrate_web/live/user_profile_live.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "Bio"
 msgstr "自我介紹"
 
-#: lib/baudrate_web/live/profile_live.ex:190
+#: lib/baudrate_web/live/profile_live.ex:191
 #, elixir-autogen, elixir-format
 msgid "Bio updated."
 msgstr "自我介紹已更新。"
@@ -3737,7 +3737,7 @@ msgstr "僅被追蹤的使用者可發文至此看板"
 msgid "Remote actor not found."
 msgstr "找不到遠端使用者。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:268
+#: lib/baudrate_web/live/profile_live.html.heex:294
 #, elixir-autogen, elixir-format
 msgid "Save Bio"
 msgstr "儲存自我介紹"
@@ -3748,7 +3748,7 @@ msgstr "儲存自我介紹"
 msgid "Search for a remote actor to follow (e.g. @user@domain)"
 msgstr "搜尋要追蹤的遠端使用者（例如 @user@domain）"
 
-#: lib/baudrate_web/live/profile_live.html.heex:265
+#: lib/baudrate_web/live/profile_live.html.heex:291
 #, elixir-autogen, elixir-format
 msgid "Tell others about yourself (max 500 characters)"
 msgstr "介紹自己（最多 500 字元）"
@@ -3773,7 +3773,7 @@ msgstr "圖片 %{number}"
 msgid "Display Name"
 msgstr "顯示名稱"
 
-#: lib/baudrate_web/live/profile_live.ex:163
+#: lib/baudrate_web/live/profile_live.ex:164
 #, elixir-autogen, elixir-format
 msgid "Display name updated."
 msgstr "顯示名稱已更新。"
@@ -3997,3 +3997,18 @@ msgstr "發送了通知給您"
 #, elixir-autogen, elixir-format
 msgid "submitted a moderation report"
 msgstr "提交了檢舉報告"
+
+#: lib/baudrate_web/live/profile_live.html.heex:255
+#, elixir-autogen, elixir-format
+msgid "Choose which notifications you receive in-app."
+msgstr "選擇要接收哪些應用程式內通知。"
+
+#: lib/baudrate_web/live/profile_live.ex:288
+#, elixir-autogen, elixir-format
+msgid "Failed to update notification preferences."
+msgstr "更新通知偏好設定失敗。"
+
+#: lib/baudrate_web/live/profile_live.html.heex:253
+#, elixir-autogen, elixir-format
+msgid "Notification Preferences"
+msgstr "通知偏好設定"

@@ -43,6 +43,7 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:signature_form, to_form(signature_changeset, as: :signature))
       |> assign(:signature_preview, Baudrate.Content.Markdown.to_html(user.signature))
       |> assign(:mutes, mutes)
+      |> assign(:notification_preferences, user.notification_preferences || %{})
       |> assign(:page_title, gettext("Profile"))
       |> allow_upload(:avatar,
         accept: ~w(.jpg .jpeg .png .webp),
@@ -264,6 +265,27 @@ defmodule BaudrateWeb.ProfileLive do
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to update DM access setting."))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_notification_pref", %{"type" => type}, socket) do
+    user = socket.assigns.current_user
+    prefs = socket.assigns.notification_preferences
+
+    current_in_app = get_in(prefs, [type, "in_app"]) != false
+    new_prefs = Map.put(prefs, type, %{"in_app" => !current_in_app})
+
+    case Auth.update_notification_preferences(user, new_prefs) do
+      {:ok, updated_user} ->
+        {:noreply,
+         socket
+         |> assign(:current_user, updated_user)
+         |> assign(:notification_preferences, updated_user.notification_preferences)}
+
+      {:error, _changeset} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to update notification preferences."))}
     end
   end
 

@@ -431,7 +431,7 @@ msgstr "まだ記事がありません。"
 #: lib/baudrate_web/components/layouts.ex:282
 #: lib/baudrate_web/live/feed_live.html.heex:241
 #: lib/baudrate_web/live/feed_live.html.heex:279
-#: lib/baudrate_web/live/profile_live.ex:46
+#: lib/baudrate_web/live/profile_live.ex:47
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Profile"
@@ -492,12 +492,12 @@ msgstr "これらのコードは再表示できません！"
 msgid "Are you sure you want to remove your avatar?"
 msgstr "アバターを削除してもよろしいですか？"
 
-#: lib/baudrate_web/live/profile_live.ex:282
+#: lib/baudrate_web/live/profile_live.ex:304
 #, elixir-autogen, elixir-format
 msgid "Avatar removed."
 msgstr "アバターを削除しました。"
 
-#: lib/baudrate_web/live/profile_live.ex:313
+#: lib/baudrate_web/live/profile_live.ex:335
 #, elixir-autogen, elixir-format
 msgid "Avatar updated successfully."
 msgstr "アバターを更新しました。"
@@ -523,12 +523,12 @@ msgstr "アバターを変更"
 msgid "Crop Avatar"
 msgstr "アバターを切り抜き"
 
-#: lib/baudrate_web/live/profile_live.ex:331
+#: lib/baudrate_web/live/profile_live.ex:353
 #, elixir-autogen, elixir-format
 msgid "Failed to process avatar image."
 msgstr "アバター画像の処理に失敗しました。"
 
-#: lib/baudrate_web/live/profile_live.ex:322
+#: lib/baudrate_web/live/profile_live.ex:344
 #, elixir-autogen, elixir-format
 msgid "Invalid image file."
 msgstr "無効な画像ファイルです。"
@@ -545,8 +545,8 @@ msgstr "アバターを削除"
 msgid "Save"
 msgstr "保存"
 
-#: lib/baudrate_web/live/profile_live.ex:88
-#: lib/baudrate_web/live/profile_live.ex:288
+#: lib/baudrate_web/live/profile_live.ex:89
+#: lib/baudrate_web/live/profile_live.ex:310
 #, elixir-autogen, elixir-format
 msgid "Too many avatar changes. Please try again later."
 msgstr "アバターの変更回数が多すぎます。しばらくしてからもう一度お試しください。"
@@ -723,12 +723,12 @@ msgstr "%{author} による投稿"
 msgid "Add Language"
 msgstr "言語を追加"
 
-#: lib/baudrate_web/live/profile_live.ex:371
+#: lib/baudrate_web/live/profile_live.ex:393
 #, elixir-autogen, elixir-format
 msgid "Failed to update language preferences."
 msgstr "言語設定の更新に失敗しました。"
 
-#: lib/baudrate_web/live/profile_live.ex:366
+#: lib/baudrate_web/live/profile_live.ex:388
 #, elixir-autogen, elixir-format
 msgid "Language preferences updated."
 msgstr "言語設定を更新しました。"
@@ -2012,7 +2012,7 @@ msgstr "パスワードのリセットに失敗しました。"
 msgid "Password reset successful! You can now sign in."
 msgstr "パスワードのリセットが完了しました！ログインしてください。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:291
+#: lib/baudrate_web/live/profile_live.html.heex:317
 #, elixir-autogen, elixir-format
 msgid "Preview:"
 msgstr "プレビュー："
@@ -2028,7 +2028,7 @@ msgstr "パスワードリセット"
 msgid "Save Agreement"
 msgstr "規約を保存"
 
-#: lib/baudrate_web/live/profile_live.html.heex:297
+#: lib/baudrate_web/live/profile_live.html.heex:323
 #, elixir-autogen, elixir-format
 msgid "Save Signature"
 msgstr "署名を保存"
@@ -2040,13 +2040,13 @@ msgid "Save these recovery codes now!"
 msgstr "リカバリーコードを今すぐ保存してください！"
 
 #: lib/baudrate_web/live/article_live.html.heex:192
-#: lib/baudrate_web/live/profile_live.html.heex:275
+#: lib/baudrate_web/live/profile_live.html.heex:301
 #: lib/baudrate_web/live/user_profile_live.html.heex:100
 #, elixir-autogen, elixir-format
 msgid "Signature"
 msgstr "署名"
 
-#: lib/baudrate_web/live/profile_live.ex:223
+#: lib/baudrate_web/live/profile_live.ex:224
 #, elixir-autogen, elixir-format
 msgid "Signature updated."
 msgstr "署名を更新しました。"
@@ -2062,7 +2062,7 @@ msgstr "これらのコードは、パスワードを忘れた場合にアカウ
 msgid "Too many attempts. Please try again later."
 msgstr "試行回数が多すぎます。しばらくしてからもう一度お試しください。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:288
+#: lib/baudrate_web/live/profile_live.html.heex:314
 #, elixir-autogen, elixir-format
 msgid "Your signature (Markdown supported, max 500 characters)"
 msgstr "署名（Markdown対応、最大500文字）"
@@ -2619,7 +2619,7 @@ msgstr "ダイレクトメッセージの送信を許可する対象を設定し
 msgid "Conversation not found."
 msgstr "会話が見つかりません。"
 
-#: lib/baudrate_web/live/profile_live.ex:263
+#: lib/baudrate_web/live/profile_live.ex:264
 #, elixir-autogen, elixir-format
 msgid "DM access setting updated."
 msgstr "DM アクセス設定を更新しました。"
@@ -2649,7 +2649,7 @@ msgstr "メッセージの削除に失敗しました。"
 msgid "Failed to send message."
 msgstr "メッセージの送信に失敗しました。"
 
-#: lib/baudrate_web/live/profile_live.ex:266
+#: lib/baudrate_web/live/profile_live.ex:267
 #, elixir-autogen, elixir-format
 msgid "Failed to update DM access setting."
 msgstr "DM アクセス設定の更新に失敗しました。"
@@ -2827,18 +2827,18 @@ msgstr "%{username} をミュート"
 msgid "Mute this user? Their content will be hidden from your view."
 msgstr "このユーザーをミュートしますか？投稿内容が非表示になります。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:304
+#: lib/baudrate_web/live/profile_live.html.heex:330
 #, elixir-autogen, elixir-format
 msgid "Muted Users"
 msgstr "ミュート中のユーザー"
 
-#: lib/baudrate_web/live/profile_live.html.heex:306
+#: lib/baudrate_web/live/profile_live.html.heex:332
 #, elixir-autogen, elixir-format
 msgid "No muted users."
 msgstr "ミュート中のユーザーはいません。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:329
-#: lib/baudrate_web/live/profile_live.html.heex:331
+#: lib/baudrate_web/live/profile_live.html.heex:355
+#: lib/baudrate_web/live/profile_live.html.heex:357
 #: lib/baudrate_web/live/user_profile_live.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Unmute"
@@ -2854,7 +2854,7 @@ msgstr "%{username} のミュートを解除"
 msgid "User muted."
 msgstr "ユーザーをミュートしました。"
 
-#: lib/baudrate_web/live/profile_live.ex:248
+#: lib/baudrate_web/live/profile_live.ex:249
 #: lib/baudrate_web/live/user_profile_live.ex:171
 #, elixir-autogen, elixir-format
 msgid "User unmuted."
@@ -3658,13 +3658,13 @@ msgstr "フォロー中"
 msgid "Anyone can post to this board"
 msgstr "誰でもこのボードに投稿できます"
 
-#: lib/baudrate_web/live/profile_live.html.heex:253
+#: lib/baudrate_web/live/profile_live.html.heex:279
 #: lib/baudrate_web/live/user_profile_live.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "Bio"
 msgstr "自己紹介"
 
-#: lib/baudrate_web/live/profile_live.ex:190
+#: lib/baudrate_web/live/profile_live.ex:191
 #, elixir-autogen, elixir-format
 msgid "Bio updated."
 msgstr "自己紹介を更新しました。"
@@ -3737,7 +3737,7 @@ msgstr "フォローしたアクターのみ投稿できます"
 msgid "Remote actor not found."
 msgstr "リモートアクターが見つかりません。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:268
+#: lib/baudrate_web/live/profile_live.html.heex:294
 #, elixir-autogen, elixir-format
 msgid "Save Bio"
 msgstr "自己紹介を保存"
@@ -3748,7 +3748,7 @@ msgstr "自己紹介を保存"
 msgid "Search for a remote actor to follow (e.g. @user@domain)"
 msgstr "フォローするリモートアクターを検索（例: @user@domain）"
 
-#: lib/baudrate_web/live/profile_live.html.heex:265
+#: lib/baudrate_web/live/profile_live.html.heex:291
 #, elixir-autogen, elixir-format
 msgid "Tell others about yourself (max 500 characters)"
 msgstr "自己紹介（最大500文字）"
@@ -3773,7 +3773,7 @@ msgstr "画像 %{number}"
 msgid "Display Name"
 msgstr "表示名"
 
-#: lib/baudrate_web/live/profile_live.ex:163
+#: lib/baudrate_web/live/profile_live.ex:164
 #, elixir-autogen, elixir-format
 msgid "Display name updated."
 msgstr "表示名を更新しました。"
@@ -3997,3 +3997,18 @@ msgstr "通知を送りました"
 #, elixir-autogen, elixir-format
 msgid "submitted a moderation report"
 msgstr "モデレーション報告を提出しました"
+
+#: lib/baudrate_web/live/profile_live.html.heex:255
+#, elixir-autogen, elixir-format
+msgid "Choose which notifications you receive in-app."
+msgstr "アプリ内で受け取る通知を選択してください。"
+
+#: lib/baudrate_web/live/profile_live.ex:288
+#, elixir-autogen, elixir-format
+msgid "Failed to update notification preferences."
+msgstr "通知設定の更新に失敗しました。"
+
+#: lib/baudrate_web/live/profile_live.html.heex:253
+#, elixir-autogen, elixir-format
+msgid "Notification Preferences"
+msgstr "通知設定"

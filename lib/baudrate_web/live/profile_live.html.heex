@@ -248,6 +248,32 @@
         </p>
       </div>
 
+      <%!-- Notification Preferences section --%>
+      <div>
+        <div class="text-sm text-base-content/70 mb-2">{gettext("Notification Preferences")}</div>
+        <p class="text-sm text-base-content/70 mb-3">
+          {gettext("Choose which notifications you receive in-app.")}
+        </p>
+        <div class="space-y-2">
+          <div
+            :for={
+              type <- ~w(reply_to_article reply_to_comment mention new_follower article_liked article_forwarded moderation_report admin_announcement)
+            }
+            class="flex items-center justify-between"
+          >
+            <span class="text-sm">{BaudrateWeb.Helpers.notification_text(type)}</span>
+            <input
+              type="checkbox"
+              class="toggle toggle-sm toggle-primary"
+              checked={get_in(@notification_preferences, [type, "in_app"]) != false}
+              phx-click="toggle_notification_pref"
+              phx-value-type={type}
+              aria-label={BaudrateWeb.Helpers.notification_text(type)}
+            />
+          </div>
+        </div>
+      </div>
+
       <%!-- Bio section --%>
       <div>
         <div class="text-sm text-base-content/70 mb-2">{gettext("Bio")}</div>
