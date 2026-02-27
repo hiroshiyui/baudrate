@@ -124,6 +124,36 @@ defmodule BaudrateWeb.ProfileLiveTest do
     end
   end
 
+  describe "notification preferences" do
+    test "renders notification preference toggles", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/profile")
+
+      assert html =~ "Notification Preferences"
+      assert html =~ "replied to your article"
+      assert html =~ "mentioned you"
+      assert html =~ "toggle"
+    end
+
+    test "toggles notification preference off", %{conn: conn, user: user} do
+      {:ok, lv, _html} = live(conn, "/profile")
+      render_click(lv, "toggle_notification_pref", %{"type" => "mention"})
+
+      updated = Repo.get!(Baudrate.Setup.User, user.id)
+      assert updated.notification_preferences["mention"]["in_app"] == false
+    end
+
+    test "toggles notification preference back on", %{conn: conn, user: user} do
+      {:ok, _} =
+        Auth.update_notification_preferences(user, %{"mention" => %{"in_app" => false}})
+
+      {:ok, lv, _html} = live(conn, "/profile")
+      render_click(lv, "toggle_notification_pref", %{"type" => "mention"})
+
+      updated = Repo.get!(Baudrate.Setup.User, user.id)
+      assert updated.notification_preferences["mention"]["in_app"] == true
+    end
+  end
+
   describe "remove avatar" do
     test "removes user avatar", %{conn: conn, user: user} do
       {:ok, _} = Auth.update_avatar(user, "test-avatar-id")

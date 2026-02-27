@@ -10,7 +10,7 @@ Identified via competitive analysis against Discourse, Lemmy, Flarum, NodeBB, an
 
 ### High Priority — Core Forum Gaps
 
-- [x] **feat:** Notification system — in-app notification center (bell icon) for replies, mentions, new followers; DB-backed notification schema with read/unread state (Phase 1–4 done: schema, hooks, bell icon, notifications page)
+- [x] **feat:** Notification system — in-app notification center (bell icon) for replies, mentions, new followers; DB-backed notification schema with read/unread state (Phase 1–5 done: schema, hooks, bell icon, notifications page, per-type preferences)
 - [x] **feat:** @mention support — `@username` parsing in articles/comments, link to profile, trigger notification; federate as `Mention` tag in AP objects (Phase 2 done)
 - [ ] **feat:** Bookmarks / saved posts — users can bookmark articles and comments for later; simple join table, dedicated `/bookmarks` page
 - [ ] **feat:** Drafts / autosave — auto-save article and comment drafts (DB-backed or localStorage); restore on revisit
@@ -67,17 +67,7 @@ is independently functional and committable by topic.
 
 ### ~~Phase 4: Notifications Page (LiveView)~~ ✅ Done
 
-### Phase 5: Per-Type Notification Preferences
-
-**Migration:** Add `notification_preferences :map DEFAULT '{}'` to users table.
-
-**Modify `lib/baudrate/setup/user.ex`** — add `notification_preferences` field + changeset.
-
-**Modify `lib/baudrate/notification.ex`** — check `in_app` preference before inserting.
-
-**Modify `lib/baudrate_web/live/profile_live.ex` + `.html.heex`** — "Notification Preferences" section with per-type toggle checkboxes (in_app + push columns).
-
-**Tests:** `test/baudrate/notification_preferences_test.exs`, update `test/baudrate_web/live/profile_live_test.exs`
+### ~~Phase 5: Per-Type Notification Preferences~~ ✅ Done
 
 ### Phase 6: Web Push (VAPID + Service Worker + Encryption)
 
