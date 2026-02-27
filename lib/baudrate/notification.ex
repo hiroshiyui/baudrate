@@ -20,6 +20,7 @@ defmodule Baudrate.Notification do
   alias Baudrate.Setup.User
 
   @per_page 20
+  @max_per_page 100
 
   @doc """
   Creates a notification for a user.
@@ -84,11 +85,11 @@ defmodule Baudrate.Notification do
   ## Options
 
     * `:page` — page number (default 1)
-    * `:per_page` — items per page (default #{@per_page})
+    * `:per_page` — items per page (default #{@per_page}, max #{@max_per_page})
   """
   def list_notifications(user_id, opts \\ []) do
     page = max(Keyword.get(opts, :page, 1), 1)
-    per_page = Keyword.get(opts, :per_page, @per_page)
+    per_page = opts |> Keyword.get(:per_page, @per_page) |> min(@max_per_page)
     offset = (page - 1) * per_page
 
     notifications =
