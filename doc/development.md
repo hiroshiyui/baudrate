@@ -1164,9 +1164,14 @@ Regular tests (`mix test`) do **not** start Selenium or include feature tests.
 #### Architecture
 
 Feature tests solve a key compatibility issue: Wallaby 0.30 sends legacy JSON
-Wire Protocol session requests, but Selenium 4.x requires W3C WebDriver
-format. `BaudrateWeb.W3CWebDriver` wraps capabilities in W3C format before
-creating sessions.
+Wire Protocol requests, but Selenium 4.x requires W3C WebDriver format. Two
+layers handle this:
+
+1. **`BaudrateWeb.W3CWebDriver`** — wraps session creation capabilities in W3C format.
+2. **`wallaby_httpclient_patch.exs`** — runtime patch (loaded in `test_helper.exs`) that
+   fixes empty POST bodies (`{}` instead of `""`), transforms `set_value` to
+   W3C `{text: ...}` format, and rewrites legacy URLs (`/execute` → `/execute/sync`,
+   `/window/current/size` → `/window/rect`).
 
 The Ecto SQL sandbox is shared with browser processes via:
 1. `Phoenix.Ecto.SQL.Sandbox` plug in the endpoint (injects metadata into HTTP)
@@ -1176,12 +1181,35 @@ The Ecto SQL sandbox is shared with browser processes via:
 Each test partition gets its own HTTP port (`4002 + partition`) to avoid
 collisions when running tests in parallel.
 
+#### Feature Test Helpers
+
+`BaudrateWeb.FeatureCase` provides shared helpers:
+
+- **`log_in_via_browser/2`** — fills the login form and waits for redirect. Only
+  works for `"user"` role (admin/moderator require TOTP).
+- **`create_board/1`** — creates a board with `ap_enabled: false` (prevents
+  federation delivery in tests).
+- **`create_article/3`** — creates an article in a board for a given user.
+
+#### Test Coverage
+
+| Test File | Tests | Coverage |
+|-----------|-------|----------|
+| `home_page_test.exs` | 4 | Guest welcome, board listing, personalized greeting, board navigation |
+| `login_test.exs` | 4 | Successful login, failed login, registration link, redirect if authenticated |
+| `registration_test.exs` | 2 | Registration with recovery codes, acknowledging codes |
+| `browsing_test.exs` | 3 | Home→board→article flow, empty board, article with author/comments |
+| `article_creation_test.exs` | 2 | Create article via form, new article link from board |
+| `logout_test.exs` | 1 | Sign out redirects to login |
+| `setup_wizard_test.exs` | 1 | Full setup wizard flow (DB→Site Name→Admin→Recovery Codes) |
+
 #### Key Files
 
 | File | Purpose |
 |------|---------|
-| `test/support/feature_case.ex` | Feature test case template |
+| `test/support/feature_case.ex` | Feature test case template + helpers |
 | `test/support/w3c_webdriver.ex` | W3C WebDriver session creation |
+| `test/support/wallaby_httpclient_patch.exs` | W3C compatibility patch for Wallaby HTTP client |
 | `test/support/selenium_server.ex` | Selenium auto-start |
 | `lib/baudrate_web/live/sandbox_hook.ex` | LiveView sandbox hook |
 | `lib/mix/tasks/selenium_setup.ex` | `mix selenium.setup` task |
