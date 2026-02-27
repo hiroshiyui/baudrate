@@ -59,7 +59,9 @@ defmodule Baudrate.Notification.WebPush do
     salt = :crypto.strong_rand_bytes(16)
 
     # Derive IKM from auth secret (RFC 8291 §3.4)
-    # info = "WebPush: info\0" || ua_public || as_public
+    # PRK = HKDF-Extract(salt=auth_secret, IKM=ecdh_secret)
+    # hkdf_sha256(salt, ikm, ...) → :crypto.mac(:hmac, :sha256, salt, ikm)
+    # This is correct: salt=subscriber_auth, IKM=shared_secret per RFC 8291
     auth_info = "WebPush: info\0" <> subscriber_p256dh <> server_public
     ikm = hkdf_sha256(subscriber_auth, shared_secret, auth_info, 32)
 
@@ -235,7 +237,7 @@ defmodule Baudrate.Notification.WebPush do
         get_in(notification.data || %{}, ["message"]) || ""
 
       _ ->
-        if notification.article do
+        if notification.article && is_nil(notification.article.deleted_at) do
           notification.article.title || ""
         else
           ""
@@ -247,7 +249,7 @@ defmodule Baudrate.Notification.WebPush do
     base = BaudrateWeb.Endpoint.url()
 
     cond do
-      notification.article ->
+      notification.article && is_nil(notification.article.deleted_at) ->
         "#{base}/articles/#{notification.article.slug}"
 
       notification.type == "new_follower" ->
@@ -275,7 +277,7 @@ defmodule Baudrate.Notification.WebPush do
 
       notification.actor_remote_actor ->
         notification.actor_remote_actor.display_name ||
-          notification.actor_remote_actor.preferred_username ||
+          notification.actor_remote_actor.username ||
           "Remote user"
 
       true ->

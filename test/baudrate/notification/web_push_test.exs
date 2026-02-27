@@ -116,6 +116,31 @@ defmodule Baudrate.Notification.WebPushTest do
     end
   end
 
+  describe "deliver_notification/1 with soft-deleted article" do
+    test "succeeds when article is soft-deleted", %{user: user, actor: actor} do
+      _sub = create_subscription(user)
+
+      article = create_article(user)
+      notification = create_notification_with_article(user, actor, article)
+
+      # Soft-delete the article
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.update_all(
+        from(a in Baudrate.Content.Article, where: a.id == ^article.id),
+        set: [deleted_at: now]
+      )
+
+      Req.Test.stub(Baudrate.Notification.WebPush, fn conn ->
+        Req.Test.json(conn, %{"status" => "ok"})
+      end)
+
+      # Should succeed without crashing — soft-deleted article
+      # causes fallback body/url instead of showing deleted content
+      assert :ok = WebPush.deliver_notification(notification)
+    end
+  end
+
   # --- Helpers ---
 
   defp create_user(prefix) do
@@ -160,6 +185,36 @@ defmodule Baudrate.Notification.WebPushTest do
         type: "article_liked",
         user_id: user.id,
         actor_user_id: actor.id
+      })
+      |> Repo.insert()
+
+    notification
+  end
+
+  defp create_article(user) do
+    uid = System.unique_integer([:positive])
+
+    {:ok, article} =
+      %Baudrate.Content.Article{}
+      |> Baudrate.Content.Article.changeset(%{
+        title: "Test Article #{uid}",
+        body: "Article body for testing",
+        slug: "test-article-#{uid}",
+        user_id: user.id
+      })
+      |> Repo.insert()
+
+    article
+  end
+
+  defp create_notification_with_article(user, actor, article) do
+    {:ok, notification} =
+      %Baudrate.Notification.Notification{}
+      |> Baudrate.Notification.Notification.changeset(%{
+        type: "reply_to_article",
+        user_id: user.id,
+        actor_user_id: actor.id,
+        article_id: article.id
       })
       |> Repo.insert()
 
