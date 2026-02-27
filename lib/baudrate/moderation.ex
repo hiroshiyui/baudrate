@@ -18,9 +18,15 @@ defmodule Baudrate.Moderation do
   Creates a new report.
   """
   def create_report(attrs) do
-    %Report{}
-    |> Report.changeset(attrs)
-    |> Repo.insert()
+    result =
+      %Report{}
+      |> Report.changeset(attrs)
+      |> Repo.insert()
+
+    with {:ok, report} <- result do
+      Baudrate.Notification.Hooks.notify_report_created(report.id)
+      result
+    end
   end
 
   @doc """

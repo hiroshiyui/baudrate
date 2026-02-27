@@ -62,6 +62,7 @@ defmodule Baudrate.Federation.InboxHandler do
       case Federation.create_follower(actor_uri, remote_actor, activity["id"]) do
         {:ok, _follower} ->
           send_accept_async(activity, actor_uri, remote_actor)
+          notify_follow_target(target, remote_actor)
           :ok
 
         {:error, %Ecto.Changeset{} = changeset} ->
@@ -584,6 +585,13 @@ defmodule Baudrate.Federation.InboxHandler do
              }) do
           {:ok, _comment} ->
             Logger.info("federation.activity: type=Create(Note) ap_id=#{ap_id}")
+
+            Baudrate.Notification.Hooks.notify_remote_comment_created(
+              article.id,
+              parent_id,
+              remote_actor.id
+            )
+
             :ok
 
           {:error, %Ecto.Changeset{} = changeset} ->
@@ -1082,6 +1090,13 @@ defmodule Baudrate.Federation.InboxHandler do
         end
     end
   end
+
+  # --- Notification helpers ---
+
+  defp notify_follow_target({:user, user}, remote_actor),
+    do: Baudrate.Notification.Hooks.notify_remote_follow(user.id, remote_actor.id)
+
+  defp notify_follow_target(_, _), do: :ok
 
   # --- Flag helpers ---
 

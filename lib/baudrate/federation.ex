@@ -1545,15 +1545,21 @@ defmodule Baudrate.Federation do
       ap_id =
         "#{actor_uri(:user, follower.username)}#follow-#{System.unique_integer([:positive])}"
 
-      %UserFollow{}
-      |> UserFollow.changeset(%{
-        user_id: follower_id,
-        followed_user_id: followed_id,
-        state: @state_accepted,
-        ap_id: ap_id,
-        accepted_at: now
-      })
-      |> Repo.insert()
+      result =
+        %UserFollow{}
+        |> UserFollow.changeset(%{
+          user_id: follower_id,
+          followed_user_id: followed_id,
+          state: @state_accepted,
+          ap_id: ap_id,
+          accepted_at: now
+        })
+        |> Repo.insert()
+
+      with {:ok, _follow} <- result do
+        Baudrate.Notification.Hooks.notify_local_follow(follower_id, followed_id)
+        result
+      end
     end
   end
 

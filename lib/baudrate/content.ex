@@ -312,6 +312,10 @@ defmodule Baudrate.Content do
         ContentPubSub.broadcast_to_board(board_id, :article_created, %{article_id: article.id})
       end
 
+      if article.user_id do
+        Baudrate.Notification.Hooks.notify_article_created(article)
+      end
+
       schedule_federation_task(fn ->
         article = Repo.preload(article, [:boards, :user])
         Baudrate.Federation.Publisher.publish_article_created(article)
@@ -763,6 +767,8 @@ defmodule Baudrate.Content do
               article_id: article.id
             })
 
+            Baudrate.Notification.Hooks.notify_article_forwarded(article, user.id)
+
             schedule_federation_task(fn ->
               Baudrate.Federation.Publisher.publish_article_forwarded(article, board)
             end)
@@ -941,6 +947,8 @@ defmodule Baudrate.Content do
       })
 
       if comment.user_id do
+        Baudrate.Notification.Hooks.notify_comment_created(comment)
+
         schedule_federation_task(fn ->
           comment = Repo.preload(comment, [:user])
           article = Repo.get!(Article, comment.article_id) |> Repo.preload([:boards, :user])
@@ -1222,9 +1230,19 @@ defmodule Baudrate.Content do
   Creates a remote article like received via ActivityPub.
   """
   def create_remote_article_like(attrs) do
-    %ArticleLike{}
-    |> ArticleLike.remote_changeset(attrs)
-    |> Repo.insert()
+    result =
+      %ArticleLike{}
+      |> ArticleLike.remote_changeset(attrs)
+      |> Repo.insert()
+
+    with {:ok, like} <- result do
+      Baudrate.Notification.Hooks.notify_remote_article_liked(
+        like.article_id,
+        like.remote_actor_id
+      )
+
+      result
+    end
   end
 
   @doc """
