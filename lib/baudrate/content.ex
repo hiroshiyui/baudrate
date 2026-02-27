@@ -221,7 +221,7 @@ defmodule Baudrate.Content do
 
     articles =
       from(q in base_query,
-        order_by: [desc: q.pinned, desc: q.last_activity_at],
+        order_by: [desc: q.pinned, desc: q.last_activity_at, desc: q.id],
         offset: ^offset,
         limit: ^per_page,
         preload: :user

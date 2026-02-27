@@ -125,6 +125,9 @@ defmodule BaudrateWeb.BoardLiveTest do
   end
 
   test "article with new comment bumps to top", %{conn: conn, user: user, board: board} do
+    import Ecto.Query
+    alias Baudrate.Content.Article
+
     {:ok, %{article: old_article}} =
       Content.create_article(
         %{
@@ -136,10 +139,7 @@ defmodule BaudrateWeb.BoardLiveTest do
         [board.id]
       )
 
-    # Ensure distinct timestamps (utc_datetime has second precision)
-    Process.sleep(1100)
-
-    {:ok, _} =
+    {:ok, %{article: new_article}} =
       Content.create_article(
         %{
           title: "Zigzag Waffles",
@@ -150,8 +150,6 @@ defmodule BaudrateWeb.BoardLiveTest do
         [board.id]
       )
 
-    Process.sleep(1100)
-
     # Comment on the older article to bump it
     other_user = setup_user("user")
 
@@ -160,6 +158,16 @@ defmodule BaudrateWeb.BoardLiveTest do
       "article_id" => old_article.id,
       "user_id" => other_user.id
     })
+
+    # Ensure deterministic ordering regardless of wall-clock timing:
+    # bumped article gets a future timestamp, the other gets a past timestamp.
+    {1, _} =
+      from(a in Article, where: a.id == ^old_article.id)
+      |> Repo.update_all(set: [last_activity_at: ~U[2099-01-01 00:00:00Z]])
+
+    {1, _} =
+      from(a in Article, where: a.id == ^new_article.id)
+      |> Repo.update_all(set: [last_activity_at: ~U[2000-01-01 00:00:00Z]])
 
     {:ok, _lv, html} = live(conn, "/boards/general")
     {old_pos, _} = :binary.match(html, "Elderberry Pancakes")
