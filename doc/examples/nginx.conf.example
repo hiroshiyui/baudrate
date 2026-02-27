@@ -5,7 +5,7 @@
 # Adjust certificate paths and upstream port as needed.
 #
 # Usage:
-#   cp nginx.conf.sample /etc/nginx/sites-available/baudrate
+#   cp nginx.conf.example /etc/nginx/sites-available/baudrate
 #   ln -s /etc/nginx/sites-available/baudrate /etc/nginx/sites-enabled/
 #   nginx -t && systemctl reload nginx
 
@@ -77,7 +77,8 @@ server {
         proxy_set_header Connection "upgrade";
         proxy_set_header Host       $host;
         proxy_set_header X-Real-IP  $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        # SET, not append — prevents clients spoofing IPs via X-Forwarded-For
+        proxy_set_header X-Forwarded-For   $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
 
         # LiveView long-poll fallback needs generous timeouts
@@ -91,10 +92,14 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        # SET, not append — prevents clients spoofing IPs via X-Forwarded-For
+        proxy_set_header X-Forwarded-For   $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
 
         proxy_read_timeout 60s;
         proxy_send_timeout 60s;
+
+        # Disable buffering for LiveView streaming
+        proxy_buffering off;
     }
 }
