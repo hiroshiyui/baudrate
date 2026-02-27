@@ -32,7 +32,17 @@ defmodule Baudrate.Notification.PushSubscription do
     |> cast(attrs, [:endpoint, :p256dh, :auth, :user_agent, :user_id])
     |> validate_required([:endpoint, :p256dh, :auth, :user_id])
     |> validate_length(:endpoint, max: 2048)
+    |> validate_endpoint_url()
     |> unique_constraint(:endpoint)
     |> foreign_key_constraint(:user_id)
+  end
+
+  defp validate_endpoint_url(changeset) do
+    validate_change(changeset, :endpoint, fn :endpoint, endpoint ->
+      case URI.parse(endpoint) do
+        %URI{scheme: "https", host: host} when is_binary(host) and host != "" -> []
+        _ -> [endpoint: "must be a valid HTTPS URL"]
+      end
+    end)
   end
 end

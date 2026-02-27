@@ -29,7 +29,9 @@ defmodule BaudrateWeb.PushSubscriptionController do
     user = conn.assigns.current_user
 
     with {:ok, p256dh} <- decode_base64url(params["p256dh"], "p256dh"),
-         {:ok, auth} <- decode_base64url(params["auth"], "auth") do
+         :ok <- validate_binary_size(p256dh, 65, "p256dh"),
+         {:ok, auth} <- decode_base64url(params["auth"], "auth"),
+         :ok <- validate_binary_size(auth, 16, "auth") do
       attrs = %{
         endpoint: params["endpoint"],
         p256dh: p256dh,
@@ -73,6 +75,11 @@ defmodule BaudrateWeb.PushSubscriptionController do
         conn
         |> put_status(:unprocessable_entity)
         |> json(%{errors: %{field => ["invalid base64url encoding"]}})
+
+      {:error, field, :invalid_size} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{errors: %{field => ["invalid size"]}})
     end
   end
 
@@ -134,6 +141,9 @@ defmodule BaudrateWeb.PushSubscriptionController do
   end
 
   defp decode_base64url(_, field), do: {:error, field}
+
+  defp validate_binary_size(binary, expected, _field) when byte_size(binary) == expected, do: :ok
+  defp validate_binary_size(_binary, _expected, field), do: {:error, field, :invalid_size}
 
   defp changeset_errors(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
