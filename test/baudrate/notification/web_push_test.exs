@@ -49,6 +49,60 @@ defmodule Baudrate.Notification.WebPushTest do
       assert idlen == 65
     end
 
+    test "round-trip encrypt/decrypt produces original plaintext (RFC 8291)" do
+      # Generate subscriber keypair (simulates browser-side keys)
+      {subscriber_pub, subscriber_priv} = :crypto.generate_key(:ecdh, :prime256v1)
+      subscriber_auth = :crypto.strong_rand_bytes(16)
+
+      plaintext = ~s({"title":"Hello","body":"RFC 8291 round-trip test"})
+      encrypted = WebPush.encrypt(plaintext, subscriber_pub, subscriber_auth)
+
+      # Decrypt: parse aes128gcm wire format
+      <<salt::binary-16, _rs::unsigned-big-32, idlen::8, rest::binary>> = encrypted
+      <<server_public::binary-size(idlen), ciphertext_with_tag::binary>> = rest
+
+      # Recompute ECDH shared secret from subscriber's private key + server's public key
+      shared_secret = :crypto.compute_key(:ecdh, server_public, subscriber_priv, :prime256v1)
+
+      # Derive IKM (RFC 8291 §3.4)
+      auth_info = "WebPush: info\0" <> subscriber_pub <> server_public
+      ikm = test_hkdf_sha256(subscriber_auth, shared_secret, auth_info, 32)
+
+      # Derive CEK and nonce (RFC 8291 §3.3)
+      cek = test_hkdf_sha256(salt, ikm, "Content-Encoding: aes128gcm\0", 16)
+      nonce = test_hkdf_sha256(salt, ikm, "Content-Encoding: nonce\0", 12)
+
+      # Split ciphertext and tag (AES-128-GCM tag is last 16 bytes)
+      ct_len = byte_size(ciphertext_with_tag) - 16
+      <<ciphertext::binary-size(ct_len), tag::binary-16>> = ciphertext_with_tag
+
+      # Decrypt
+      padded =
+        :crypto.crypto_one_time_aead(:aes_128_gcm, cek, nonce, ciphertext, <<>>, tag, false)
+
+      assert is_binary(padded), "Decryption failed (authentication error)"
+
+      # Remove RFC 8188 padding: content ends at delimiter byte 0x02
+      # padded = plaintext <> <<2>> (from encrypt/3)
+      assert :binary.last(padded) == 2
+      decrypted = binary_part(padded, 0, byte_size(padded) - 1)
+
+      assert decrypted == plaintext
+    end
+
+    test "round-trip works with various payload sizes" do
+      {subscriber_pub, subscriber_priv} = :crypto.generate_key(:ecdh, :prime256v1)
+      subscriber_auth = :crypto.strong_rand_bytes(16)
+
+      for size <- [0, 1, 16, 100, 1000, 3900] do
+        plaintext = :binary.copy(<<0x41>>, size)
+        encrypted = WebPush.encrypt(plaintext, subscriber_pub, subscriber_auth)
+
+        decrypted = test_decrypt(encrypted, subscriber_pub, subscriber_priv, subscriber_auth)
+        assert decrypted == plaintext, "Round-trip failed for #{size}-byte payload"
+      end
+    end
+
     test "each encryption produces different output" do
       {subscriber_pub, _subscriber_priv} = :crypto.generate_key(:ecdh, :prime256v1)
       subscriber_auth = :crypto.strong_rand_bytes(16)
@@ -219,5 +273,40 @@ defmodule Baudrate.Notification.WebPushTest do
       |> Repo.insert()
 
     notification
+  end
+
+  # RFC 8291 decryption for round-trip testing
+  defp test_decrypt(encrypted, subscriber_pub, subscriber_priv, subscriber_auth) do
+    <<salt::binary-16, _rs::unsigned-big-32, idlen::8, rest::binary>> = encrypted
+    <<server_public::binary-size(idlen), ciphertext_with_tag::binary>> = rest
+
+    shared_secret = :crypto.compute_key(:ecdh, server_public, subscriber_priv, :prime256v1)
+
+    auth_info = "WebPush: info\0" <> subscriber_pub <> server_public
+    ikm = test_hkdf_sha256(subscriber_auth, shared_secret, auth_info, 32)
+
+    cek = test_hkdf_sha256(salt, ikm, "Content-Encoding: aes128gcm\0", 16)
+    nonce = test_hkdf_sha256(salt, ikm, "Content-Encoding: nonce\0", 12)
+
+    ct_len = byte_size(ciphertext_with_tag) - 16
+    <<ciphertext::binary-size(ct_len), tag::binary-16>> = ciphertext_with_tag
+
+    padded = :crypto.crypto_one_time_aead(:aes_128_gcm, cek, nonce, ciphertext, <<>>, tag, false)
+    binary_part(padded, 0, byte_size(padded) - 1)
+  end
+
+  defp test_hkdf_sha256(salt, ikm, info, length) do
+    prk = :crypto.mac(:hmac, :sha256, salt, ikm)
+    test_hkdf_expand(prk, info, length, 1, <<>>, <<>>)
+  end
+
+  defp test_hkdf_expand(_prk, _info, length, _counter, _prev, acc)
+       when byte_size(acc) >= length do
+    binary_part(acc, 0, length)
+  end
+
+  defp test_hkdf_expand(prk, info, length, counter, prev, acc) do
+    t = :crypto.mac(:hmac, :sha256, prk, prev <> info <> <<counter>>)
+    test_hkdf_expand(prk, info, length, counter + 1, t, acc <> t)
   end
 end
