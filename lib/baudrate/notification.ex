@@ -12,8 +12,10 @@ defmodule Baudrate.Notification do
 
   import Ecto.Query
 
+  require Logger
+
   alias Baudrate.Auth
-  alias Baudrate.Notification.{Notification, PubSub}
+  alias Baudrate.Notification.{Notification, PubSub, WebPush}
   alias Baudrate.Repo
   alias Baudrate.Setup.User
 
@@ -49,6 +51,8 @@ defmodule Baudrate.Notification do
             :notification_created,
             %{notification_id: notification.id}
           )
+
+          maybe_send_push(notification)
 
           {:ok, notification}
 
@@ -260,5 +264,32 @@ defmodule Baudrate.Notification do
       {_field, {_msg, opts}} -> Keyword.get(opts, :constraint) in [:unique]
       _ -> false
     end)
+  end
+
+  defp maybe_send_push(%Notification{} = notification) do
+    if web_push_enabled_for?(notification.user_id, notification.type) do
+      schedule_push_delivery(notification)
+    end
+  end
+
+  defp web_push_enabled_for?(user_id, type) when is_binary(type) do
+    case Repo.get(User, user_id) do
+      %User{notification_preferences: prefs} when is_map(prefs) ->
+        get_in(prefs, [type, "web_push"]) != false
+
+      _ ->
+        true
+    end
+  end
+
+  defp schedule_push_delivery(notification) do
+    if Application.get_env(:baudrate, :web_push_async, true) do
+      Task.Supervisor.start_child(
+        Baudrate.Federation.TaskSupervisor,
+        fn -> WebPush.deliver_notification(notification) end
+      )
+    else
+      WebPush.deliver_notification(notification)
+    end
   end
 end

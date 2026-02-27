@@ -43,6 +43,10 @@ config :phoenix,
 # errors from fire-and-forget Tasks that outlive the test process.
 config :baudrate, federation_async: false
 
+# Run web push delivery synchronously in tests
+config :baudrate, web_push_async: false
+config :baudrate, :req_web_push_test_options, plug: {Req.Test, Baudrate.Notification.WebPush}
+
 # Use ETS-backed sandbox for rate limiter in tests
 config :baudrate, :rate_limiter, BaudrateWeb.RateLimiter.Sandbox
 
