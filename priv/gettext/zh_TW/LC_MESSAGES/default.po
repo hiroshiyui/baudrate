@@ -2587,16 +2587,19 @@ msgid "Markdown preview"
 msgstr "Markdown 預覽"
 
 #: lib/baudrate_web/live/conversations_live.ex:92
+#: lib/baudrate_web/live/notifications_live.ex:107
 #, elixir-autogen, elixir-format
 msgid "%{count}d ago"
 msgstr "%{count} 天前"
 
 #: lib/baudrate_web/live/conversations_live.ex:91
+#: lib/baudrate_web/live/notifications_live.ex:106
 #, elixir-autogen, elixir-format
 msgid "%{count}h ago"
 msgstr "%{count} 小時前"
 
 #: lib/baudrate_web/live/conversations_live.ex:90
+#: lib/baudrate_web/live/notifications_live.ex:105
 #, elixir-autogen, elixir-format
 msgid "%{count}m ago"
 msgstr "%{count} 分鐘前"
@@ -2741,6 +2744,7 @@ msgid "You cannot send messages to this user."
 msgstr "您無法傳送訊息給此使用者。"
 
 #: lib/baudrate_web/live/conversations_live.ex:89
+#: lib/baudrate_web/live/notifications_live.ex:104
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "剛才"
@@ -3052,17 +3056,17 @@ msgstr "解除封鎖網域"
 msgid "Unblock User"
 msgstr "解除封鎖使用者"
 
-#: lib/baudrate_web/helpers.ex:255
+#: lib/baudrate_web/helpers.ex:283
 #, elixir-autogen, elixir-format
 msgid "%{n} B"
 msgstr "%{n} B"
 
-#: lib/baudrate_web/helpers.ex:258
+#: lib/baudrate_web/helpers.ex:286
 #, elixir-autogen, elixir-format
 msgid "%{n} KB"
 msgstr "%{n} KB"
 
-#: lib/baudrate_web/helpers.ex:261
+#: lib/baudrate_web/helpers.ex:289
 #, elixir-autogen, elixir-format
 msgid "%{n} MB"
 msgstr "%{n} MB"
@@ -3922,6 +3926,74 @@ msgstr[0] "%{count} 則未讀通知"
 
 #: lib/baudrate_web/components/layouts.ex:77
 #: lib/baudrate_web/components/layouts.ex:190
+#: lib/baudrate_web/live/notifications_live.ex:30
+#: lib/baudrate_web/live/notifications_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Notifications"
 msgstr "通知"
+
+#: lib/baudrate_web/live/notifications_live.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Mark all as read"
+msgstr "全部標為已讀"
+
+#: lib/baudrate_web/live/notifications_live.html.heex:86
+#: lib/baudrate_web/live/notifications_live.html.heex:87
+#, elixir-autogen, elixir-format
+msgid "Mark as read"
+msgstr "標為已讀"
+
+#: lib/baudrate_web/live/notifications_live.html.heex:16
+#, elixir-autogen, elixir-format
+msgid "No notifications yet."
+msgstr "目前沒有通知。"
+
+#: lib/baudrate_web/live/notifications_live.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "You'll be notified when someone replies, mentions you, or follows you."
+msgstr "當有人回覆、提及或追蹤您時，您會收到通知。"
+
+#: lib/baudrate_web/helpers.ex:251
+#, elixir-autogen, elixir-format
+msgid "followed you"
+msgstr "追蹤了您"
+
+#: lib/baudrate_web/helpers.ex:253
+#, elixir-autogen, elixir-format
+msgid "forwarded your article"
+msgstr "轉發了您的文章"
+
+#: lib/baudrate_web/helpers.ex:252
+#, elixir-autogen, elixir-format
+msgid "liked your article"
+msgstr "讚了您的文章"
+
+#: lib/baudrate_web/helpers.ex:250
+#, elixir-autogen, elixir-format
+msgid "mentioned you"
+msgstr "提及了您"
+
+#: lib/baudrate_web/helpers.ex:255
+#, elixir-autogen, elixir-format
+msgid "posted an announcement"
+msgstr "發布了公告"
+
+#: lib/baudrate_web/helpers.ex:248
+#, elixir-autogen, elixir-format
+msgid "replied to your article"
+msgstr "回覆了您的文章"
+
+#: lib/baudrate_web/helpers.ex:249
+#, elixir-autogen, elixir-format
+msgid "replied to your comment"
+msgstr "回覆了您的留言"
+
+#: lib/baudrate_web/helpers.ex:256
+#, elixir-autogen, elixir-format
+msgid "sent you a notification"
+msgstr "發送了通知給您"
+
+#: lib/baudrate_web/helpers.ex:254
+#, elixir-autogen, elixir-format
+msgid "submitted a moderation report"
+msgstr "提交了檢舉報告"

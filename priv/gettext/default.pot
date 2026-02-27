@@ -2588,16 +2588,19 @@ msgid "Markdown preview"
 msgstr ""
 
 #: lib/baudrate_web/live/conversations_live.ex:92
+#: lib/baudrate_web/live/notifications_live.ex:107
 #, elixir-autogen, elixir-format
 msgid "%{count}d ago"
 msgstr ""
 
 #: lib/baudrate_web/live/conversations_live.ex:91
+#: lib/baudrate_web/live/notifications_live.ex:106
 #, elixir-autogen, elixir-format
 msgid "%{count}h ago"
 msgstr ""
 
 #: lib/baudrate_web/live/conversations_live.ex:90
+#: lib/baudrate_web/live/notifications_live.ex:105
 #, elixir-autogen, elixir-format
 msgid "%{count}m ago"
 msgstr ""
@@ -2742,6 +2745,7 @@ msgid "You cannot send messages to this user."
 msgstr ""
 
 #: lib/baudrate_web/live/conversations_live.ex:89
+#: lib/baudrate_web/live/notifications_live.ex:104
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr ""
@@ -3053,17 +3057,17 @@ msgstr ""
 msgid "Unblock User"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:255
+#: lib/baudrate_web/helpers.ex:283
 #, elixir-autogen, elixir-format
 msgid "%{n} B"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:258
+#: lib/baudrate_web/helpers.ex:286
 #, elixir-autogen, elixir-format
 msgid "%{n} KB"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:261
+#: lib/baudrate_web/helpers.ex:289
 #, elixir-autogen, elixir-format
 msgid "%{n} MB"
 msgstr ""
@@ -3934,6 +3938,74 @@ msgstr[1] ""
 
 #: lib/baudrate_web/components/layouts.ex:77
 #: lib/baudrate_web/components/layouts.ex:190
+#: lib/baudrate_web/live/notifications_live.ex:30
+#: lib/baudrate_web/live/notifications_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Notifications"
+msgstr ""
+
+#: lib/baudrate_web/live/notifications_live.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Mark all as read"
+msgstr ""
+
+#: lib/baudrate_web/live/notifications_live.html.heex:86
+#: lib/baudrate_web/live/notifications_live.html.heex:87
+#, elixir-autogen, elixir-format
+msgid "Mark as read"
+msgstr ""
+
+#: lib/baudrate_web/live/notifications_live.html.heex:16
+#, elixir-autogen, elixir-format
+msgid "No notifications yet."
+msgstr ""
+
+#: lib/baudrate_web/live/notifications_live.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "You'll be notified when someone replies, mentions you, or follows you."
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:251
+#, elixir-autogen, elixir-format
+msgid "followed you"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:253
+#, elixir-autogen, elixir-format
+msgid "forwarded your article"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:252
+#, elixir-autogen, elixir-format
+msgid "liked your article"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:250
+#, elixir-autogen, elixir-format
+msgid "mentioned you"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:255
+#, elixir-autogen, elixir-format
+msgid "posted an announcement"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:248
+#, elixir-autogen, elixir-format
+msgid "replied to your article"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:249
+#, elixir-autogen, elixir-format
+msgid "replied to your comment"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:256
+#, elixir-autogen, elixir-format
+msgid "sent you a notification"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:254
+#, elixir-autogen, elixir-format
+msgid "submitted a moderation report"
 msgstr ""

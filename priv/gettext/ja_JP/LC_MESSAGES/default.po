@@ -2587,16 +2587,19 @@ msgid "Markdown preview"
 msgstr "Markdown プレビュー"
 
 #: lib/baudrate_web/live/conversations_live.ex:92
+#: lib/baudrate_web/live/notifications_live.ex:107
 #, elixir-autogen, elixir-format
 msgid "%{count}d ago"
 msgstr "%{count}日前"
 
 #: lib/baudrate_web/live/conversations_live.ex:91
+#: lib/baudrate_web/live/notifications_live.ex:106
 #, elixir-autogen, elixir-format
 msgid "%{count}h ago"
 msgstr "%{count}時間前"
 
 #: lib/baudrate_web/live/conversations_live.ex:90
+#: lib/baudrate_web/live/notifications_live.ex:105
 #, elixir-autogen, elixir-format
 msgid "%{count}m ago"
 msgstr "%{count}分前"
@@ -2741,6 +2744,7 @@ msgid "You cannot send messages to this user."
 msgstr "このユーザーにメッセージを送信できません。"
 
 #: lib/baudrate_web/live/conversations_live.ex:89
+#: lib/baudrate_web/live/notifications_live.ex:104
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "たった今"
@@ -3052,17 +3056,17 @@ msgstr "ドメインのブロックを解除"
 msgid "Unblock User"
 msgstr "ユーザーのブロックを解除"
 
-#: lib/baudrate_web/helpers.ex:255
+#: lib/baudrate_web/helpers.ex:283
 #, elixir-autogen, elixir-format
 msgid "%{n} B"
 msgstr "%{n} B"
 
-#: lib/baudrate_web/helpers.ex:258
+#: lib/baudrate_web/helpers.ex:286
 #, elixir-autogen, elixir-format
 msgid "%{n} KB"
 msgstr "%{n} KB"
 
-#: lib/baudrate_web/helpers.ex:261
+#: lib/baudrate_web/helpers.ex:289
 #, elixir-autogen, elixir-format
 msgid "%{n} MB"
 msgstr "%{n} MB"
@@ -3922,6 +3926,74 @@ msgstr[0] "%{count} 件の未読通知"
 
 #: lib/baudrate_web/components/layouts.ex:77
 #: lib/baudrate_web/components/layouts.ex:190
+#: lib/baudrate_web/live/notifications_live.ex:30
+#: lib/baudrate_web/live/notifications_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Notifications"
 msgstr "通知"
+
+#: lib/baudrate_web/live/notifications_live.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Mark all as read"
+msgstr "すべて既読にする"
+
+#: lib/baudrate_web/live/notifications_live.html.heex:86
+#: lib/baudrate_web/live/notifications_live.html.heex:87
+#, elixir-autogen, elixir-format
+msgid "Mark as read"
+msgstr "既読にする"
+
+#: lib/baudrate_web/live/notifications_live.html.heex:16
+#, elixir-autogen, elixir-format
+msgid "No notifications yet."
+msgstr "通知はまだありません。"
+
+#: lib/baudrate_web/live/notifications_live.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "You'll be notified when someone replies, mentions you, or follows you."
+msgstr "返信、メンション、フォローがあると通知されます。"
+
+#: lib/baudrate_web/helpers.ex:251
+#, elixir-autogen, elixir-format
+msgid "followed you"
+msgstr "あなたをフォローしました"
+
+#: lib/baudrate_web/helpers.ex:253
+#, elixir-autogen, elixir-format
+msgid "forwarded your article"
+msgstr "あなたの記事を転送しました"
+
+#: lib/baudrate_web/helpers.ex:252
+#, elixir-autogen, elixir-format
+msgid "liked your article"
+msgstr "あなたの記事にいいねしました"
+
+#: lib/baudrate_web/helpers.ex:250
+#, elixir-autogen, elixir-format
+msgid "mentioned you"
+msgstr "あなたをメンションしました"
+
+#: lib/baudrate_web/helpers.ex:255
+#, elixir-autogen, elixir-format
+msgid "posted an announcement"
+msgstr "お知らせを投稿しました"
+
+#: lib/baudrate_web/helpers.ex:248
+#, elixir-autogen, elixir-format
+msgid "replied to your article"
+msgstr "あなたの記事に返信しました"
+
+#: lib/baudrate_web/helpers.ex:249
+#, elixir-autogen, elixir-format
+msgid "replied to your comment"
+msgstr "あなたのコメントに返信しました"
+
+#: lib/baudrate_web/helpers.ex:256
+#, elixir-autogen, elixir-format
+msgid "sent you a notification"
+msgstr "通知を送りました"
+
+#: lib/baudrate_web/helpers.ex:254
+#, elixir-autogen, elixir-format
+msgid "submitted a moderation report"
+msgstr "モデレーション報告を提出しました"
