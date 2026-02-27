@@ -12,6 +12,14 @@
     </ul>
   </nav>
   <div class="flex gap-2">
+    <button
+      :if={@current_user && MapSet.size(@unread_article_ids) > 0}
+      phx-click="mark_all_read"
+      class="btn btn-sm btn-ghost"
+    >
+      <.icon name="hero-check" class="size-4" />
+      {gettext("Mark all as read")}
+    </button>
     <.link
       :if={@can_manage_follows}
       navigate={~p"/boards/#{@board.slug}/follows"}
@@ -41,7 +49,15 @@
       class="card bg-base-200 shadow-sm hover:shadow-md transition-shadow"
     >
       <div class="card-body p-4">
-        <h3 class="card-title text-base">{sub.name}</h3>
+        <h3 class="card-title text-base">
+          {sub.name}
+          <span
+            :if={@current_user && MapSet.member?(@unread_sub_board_ids, sub.id)}
+            class="inline-block w-2 h-2 rounded-full bg-primary"
+            aria-label={gettext("Unread")}
+          >
+          </span>
+        </h3>
         <p :if={sub.description} class="text-sm text-base-content/70">{sub.description}</p>
       </div>
     </.link>
@@ -58,6 +74,12 @@
       <.link navigate={~p"/articles/#{article.slug}"} class="card-title text-base link link-hover">
         <span :if={article.pinned} class="badge badge-sm badge-accent">{gettext("Pinned")}</span>
         {article.title}
+        <span
+          :if={@current_user && MapSet.member?(@unread_article_ids, article.id)}
+          class="inline-block w-2 h-2 rounded-full bg-primary"
+          aria-label={gettext("Unread")}
+        >
+        </span>
       </.link>
       <p :if={article.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
         {digest(article.body)}

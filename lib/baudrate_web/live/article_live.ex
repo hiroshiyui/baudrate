@@ -79,7 +79,13 @@ defmodule BaudrateWeb.ArticleLive do
           )
         )
 
-      if connected?(socket), do: ContentPubSub.subscribe_article(article.id)
+      if connected?(socket) do
+        ContentPubSub.subscribe_article(article.id)
+
+        if current_user do
+          Content.mark_article_read(current_user.id, article.id)
+        end
+      end
 
       {:ok, socket}
     end

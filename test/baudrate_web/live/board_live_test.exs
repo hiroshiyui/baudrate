@@ -1,11 +1,12 @@
 defmodule BaudrateWeb.BoardLiveTest do
   use BaudrateWeb.ConnCase
 
+  import Ecto.Query
   import Phoenix.LiveViewTest
 
   alias Baudrate.Repo
   alias Baudrate.Content
-  alias Baudrate.Content.Board
+  alias Baudrate.Content.{Article, Board}
   alias Baudrate.Setup.Setting
 
   setup %{conn: conn} do
@@ -192,5 +193,99 @@ defmodule BaudrateWeb.BoardLiveTest do
 
     # Should be on page 2
     assert render(lv) =~ "btn-active"
+  end
+
+  describe "unread indicators" do
+    test "shows unread dot for articles with activity after user registration", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      # Move user registration to the past
+      past = DateTime.add(DateTime.utc_now(), -3600, :second)
+
+      Repo.update_all(
+        from(u in Baudrate.Setup.User, where: u.id == ^user.id),
+        set: [inserted_at: past]
+      )
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "New Post", body: "body", slug: "new-post", user_id: user.id},
+          [board.id]
+        )
+
+      # Activity 30 min ago — after registration but before now
+      activity_time =
+        DateTime.add(DateTime.utc_now(), -1800, :second) |> DateTime.truncate(:second)
+
+      Repo.update_all(
+        from(a in Article, where: a.id == ^article.id),
+        set: [last_activity_at: activity_time]
+      )
+
+      {:ok, _lv, html} = live(conn, "/boards/general")
+      assert html =~ "rounded-full bg-primary"
+    end
+
+    test "mark all as read clears unread indicators", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      # Move user registration to the past
+      past = DateTime.add(DateTime.utc_now(), -3600, :second)
+
+      Repo.update_all(
+        from(u in Baudrate.Setup.User, where: u.id == ^user.id),
+        set: [inserted_at: past]
+      )
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Unread Post", body: "body", slug: "unread-post", user_id: user.id},
+          [board.id]
+        )
+
+      # Activity 30 min ago — after registration but before now
+      activity_time =
+        DateTime.add(DateTime.utc_now(), -1800, :second) |> DateTime.truncate(:second)
+
+      Repo.update_all(
+        from(a in Article, where: a.id == ^article.id),
+        set: [last_activity_at: activity_time]
+      )
+
+      {:ok, lv, html} = live(conn, "/boards/general")
+      assert html =~ "mark_all_read"
+
+      html = lv |> element("button[phx-click=mark_all_read]") |> render_click()
+      refute html =~ "rounded-full bg-primary"
+    end
+
+    test "guests see no unread indicators", %{board: board} do
+      guest_conn = build_conn()
+      Repo.insert!(%Setting{key: "setup_completed", value: "true"}, on_conflict: :nothing)
+
+      admin = setup_user("admin")
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Guest Post", body: "body", slug: "guest-post", user_id: admin.id},
+          [board.id]
+        )
+
+      # Even with activity, guests should see no indicators
+      activity_time =
+        DateTime.add(DateTime.utc_now(), -1800, :second) |> DateTime.truncate(:second)
+
+      Repo.update_all(
+        from(a in Article, where: a.id == ^article.id),
+        set: [last_activity_at: activity_time]
+      )
+
+      {:ok, _lv, html} = live(guest_conn, "/boards/general")
+      refute html =~ "rounded-full bg-primary"
+    end
   end
 end

@@ -19,15 +19,20 @@ defmodule Baudrate.Content do
   alias Baudrate.Content.{
     Article,
     ArticleImage,
+    ArticleRead,
     ArticleRevision,
     ArticleTag,
     ArticleLike,
     Board,
     BoardArticle,
     BoardModerator,
+    BoardRead,
     Bookmark,
     Comment
   }
+
+  # UTC epoch used as default when no read record exists
+  @epoch ~U[1970-01-01 00:00:00Z]
 
   alias Baudrate.Content.Pagination
   alias Baudrate.Content.PubSub, as: ContentPubSub
@@ -246,9 +251,12 @@ defmodule Baudrate.Content do
 
     total_pages = max(ceil(total / per_page), 1)
 
+    unread_ids = unread_article_ids(current_user, article_ids, board_id)
+
     %{
       articles: articles,
       comment_counts: comment_counts,
+      unread_article_ids: unread_ids,
       total: total,
       page: page,
       per_page: per_page,
@@ -1944,4 +1952,162 @@ defmodule Baudrate.Content do
       {:ok, board}
     end
   end
+
+  # --- Read Tracking ---
+
+  @doc """
+  Records that a user has read an article at the current time.
+
+  Upserts the `article_reads` row so repeated visits update `read_at`.
+  """
+  def mark_article_read(user_id, article_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    %ArticleRead{}
+    |> ArticleRead.changeset(%{user_id: user_id, article_id: article_id, read_at: now})
+    |> Repo.insert(
+      on_conflict: [set: [read_at: now]],
+      conflict_target: [:user_id, :article_id]
+    )
+  end
+
+  @doc """
+  Records that a user has marked all articles in a board as read.
+
+  Sets the board-level floor timestamp so any article with
+  `last_activity_at <= read_at` is considered read.
+  """
+  def mark_board_read(user_id, board_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    %BoardRead{}
+    |> BoardRead.changeset(%{user_id: user_id, board_id: board_id, read_at: now})
+    |> Repo.insert(
+      on_conflict: [set: [read_at: now]],
+      conflict_target: [:user_id, :board_id]
+    )
+  end
+
+  @doc """
+  Returns a `MapSet` of article IDs (from the given list) that are unread
+  for the user.
+
+  An article is unread when its `last_activity_at` is strictly greater than
+  `GREATEST(article_read.read_at, board_read.read_at, user.inserted_at)`.
+
+  Returns `MapSet.new()` when the user is `nil` (guest).
+  """
+  def unread_article_ids(nil, _article_ids, _board_id), do: MapSet.new()
+  def unread_article_ids(_user, [], _board_id), do: MapSet.new()
+
+  def unread_article_ids(%{id: user_id, inserted_at: user_registered_at}, article_ids, board_id) do
+    # Get the board-level floor (mark-all-as-read timestamp)
+    board_floor =
+      from(br in BoardRead,
+        where: br.user_id == ^user_id and br.board_id == ^board_id,
+        select: br.read_at
+      )
+      |> Repo.one()
+
+    # The baseline is the latest of board_floor and user registration time
+    baseline = latest_datetime(board_floor, user_registered_at)
+
+    from(a in Article,
+      left_join: ar in ArticleRead,
+      on: ar.article_id == a.id and ar.user_id == ^user_id,
+      where: a.id in ^article_ids,
+      where:
+        a.last_activity_at >
+          fragment(
+            "GREATEST(?, ?)",
+            coalesce(ar.read_at, ^@epoch),
+            ^baseline
+          ),
+      select: a.id
+    )
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
+  @doc """
+  Returns a `MapSet` of board IDs (from the given list) that contain at
+  least one unread article for the user.
+
+  Returns `MapSet.new()` when the user is `nil` (guest).
+  """
+  def unread_board_ids(nil, _board_ids), do: MapSet.new()
+  def unread_board_ids(_user, []), do: MapSet.new()
+
+  def unread_board_ids(%{id: user_id, inserted_at: user_registered_at} = _user, board_ids) do
+    # Build map of each input board → all descendant board IDs (including itself)
+    descendants = descendant_board_ids_map(board_ids)
+    all_desc_ids = descendants |> Map.values() |> List.flatten() |> Enum.uniq()
+
+    # Get all board-level floors for all boards (input + descendants)
+    board_floors =
+      from(br in BoardRead,
+        where: br.user_id == ^user_id and br.board_id in ^all_desc_ids,
+        select: {br.board_id, br.read_at}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    # A board is unread if it or any descendant board has unread articles
+    board_ids
+    |> Enum.filter(fn board_id ->
+      desc_ids = Map.get(descendants, board_id, [board_id])
+
+      Enum.any?(desc_ids, fn desc_id ->
+        board_floor = Map.get(board_floors, desc_id)
+        baseline = latest_datetime(board_floor, user_registered_at)
+
+        from(a in Article,
+          join: ba in BoardArticle,
+          on: ba.article_id == a.id,
+          left_join: ar in ArticleRead,
+          on: ar.article_id == a.id and ar.user_id == ^user_id,
+          where: ba.board_id == ^desc_id and is_nil(a.deleted_at),
+          where:
+            a.last_activity_at >
+              fragment(
+                "GREATEST(?, ?)",
+                coalesce(ar.read_at, ^@epoch),
+                ^baseline
+              ),
+          select: true,
+          limit: 1
+        )
+        |> Repo.one()
+        |> is_truthy()
+      end)
+    end)
+    |> MapSet.new()
+  end
+
+  # Returns a map: %{board_id => [board_id | descendant_ids]}
+  # Uses a recursive CTE to find all descendants of each input board.
+  defp descendant_board_ids_map([]), do: %{}
+
+  defp descendant_board_ids_map(board_ids) do
+    result =
+      Repo.query!(
+        """
+        WITH RECURSIVE tree AS (
+          SELECT id, id AS root_id FROM boards WHERE id = ANY($1)
+          UNION ALL
+          SELECT b.id, t.root_id FROM boards b JOIN tree t ON b.parent_id = t.id
+        )
+        SELECT root_id, array_agg(id) FROM tree GROUP BY root_id
+        """,
+        [board_ids]
+      )
+
+    Map.new(result.rows, fn [root_id, ids] -> {root_id, ids} end)
+  end
+
+  defp latest_datetime(nil, b), do: b
+  defp latest_datetime(a, b), do: if(DateTime.compare(a, b) == :gt, do: a, else: b)
+
+  defp is_truthy(nil), do: false
+  defp is_truthy(_), do: true
 end

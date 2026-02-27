@@ -26,7 +26,15 @@
       class="card bg-base-200 shadow-sm hover:bg-base-300 transition-colors"
     >
       <div class="card-body p-4">
-        <h3 class="card-title text-base">{board.name}</h3>
+        <h3 class="card-title text-base">
+          {board.name}
+          <span
+            :if={@current_user && MapSet.member?(@unread_board_ids, board.id)}
+            class="inline-block w-2 h-2 rounded-full bg-primary"
+            aria-label={gettext("Unread")}
+          >
+          </span>
+        </h3>
         <p :if={board.description} class="text-sm text-base-content/70">{board.description}</p>
       </div>
     </.link>

@@ -48,6 +48,8 @@ lib/
 │   ├── content/
 │   │   ├── article.ex           # Article schema (posts, local + remote, soft-delete)
 │   │   ├── article_image.ex     # ArticleImage schema (gallery images on articles)
+│   │   ├── article_read.ex      # ArticleRead schema (per-user article read tracking)
+│   │   ├── board_read.ex        # BoardRead schema (per-user board "mark all read" floor)
 │   │   ├── article_revision.ex  # ArticleRevision schema (edit history snapshots)
 │   │   ├── article_image_storage.ex # Image processing (resize, WebP, strip EXIF)
 │   │   ├── article_like.ex      # ArticleLike schema (local + remote likes)

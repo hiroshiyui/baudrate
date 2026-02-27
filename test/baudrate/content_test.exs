@@ -1748,4 +1748,251 @@ defmodule Baudrate.ContentTest do
       assert result.bookmarks == []
     end
   end
+
+  describe "read tracking" do
+    test "mark_article_read creates a read record" do
+      user = create_user("user")
+      board = create_board(%{name: "Read Board", slug: "read-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(%{title: "A1", body: "b", slug: "a1", user_id: user.id}, [
+          board.id
+        ])
+
+      assert {:ok, read} = Content.mark_article_read(user.id, article.id)
+      assert read.user_id == user.id
+      assert read.article_id == article.id
+      assert read.read_at
+    end
+
+    test "mark_article_read upserts on repeated visits" do
+      user = create_user("user")
+      board = create_board(%{name: "Read Board 2", slug: "read-board-2"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(%{title: "A2", body: "b", slug: "a2", user_id: user.id}, [
+          board.id
+        ])
+
+      {:ok, read1} = Content.mark_article_read(user.id, article.id)
+      # Force an earlier read_at so the upsert is visible
+      Repo.update_all(
+        from(ar in Baudrate.Content.ArticleRead, where: ar.id == ^read1.id),
+        set: [read_at: ~U[2020-01-01 00:00:00Z]]
+      )
+
+      {:ok, read2} = Content.mark_article_read(user.id, article.id)
+      assert read2.id == read1.id
+      assert DateTime.compare(read2.read_at, ~U[2020-01-01 00:00:00Z]) == :gt
+    end
+
+    test "mark_board_read creates/upserts a board read record" do
+      user = create_user("user")
+      board = create_board(%{name: "Read Board 3", slug: "read-board-3"})
+
+      assert {:ok, br} = Content.mark_board_read(user.id, board.id)
+      assert br.user_id == user.id
+      assert br.board_id == board.id
+      assert br.read_at
+
+      # Upsert
+      Repo.update_all(
+        from(b in Baudrate.Content.BoardRead, where: b.id == ^br.id),
+        set: [read_at: ~U[2020-01-01 00:00:00Z]]
+      )
+
+      {:ok, br2} = Content.mark_board_read(user.id, board.id)
+      assert br2.id == br.id
+      assert DateTime.compare(br2.read_at, ~U[2020-01-01 00:00:00Z]) == :gt
+    end
+
+    test "unread_article_ids returns unread articles" do
+      user = create_user("user")
+      board = create_board(%{name: "Unread Board", slug: "unread-board"})
+
+      # Move user registration to the past so activity timestamps work reliably
+      past_registration = DateTime.add(DateTime.utc_now(), -3600, :second)
+
+      Repo.update_all(
+        from(u in Baudrate.Setup.User, where: u.id == ^user.id),
+        set: [inserted_at: past_registration]
+      )
+
+      user = %{user | inserted_at: past_registration}
+
+      {:ok, %{article: a1}} =
+        Content.create_article(%{title: "U1", body: "b", slug: "u1", user_id: user.id}, [
+          board.id
+        ])
+
+      {:ok, %{article: a2}} =
+        Content.create_article(%{title: "U2", body: "b", slug: "u2", user_id: user.id}, [
+          board.id
+        ])
+
+      # Activity is 30 min ago — after registration (1h ago) but before now
+      activity_time =
+        DateTime.add(DateTime.utc_now(), -1800, :second) |> DateTime.truncate(:second)
+
+      Repo.update_all(
+        from(a in Article, where: a.id in ^[a1.id, a2.id]),
+        set: [last_activity_at: activity_time]
+      )
+
+      unread = Content.unread_article_ids(user, [a1.id, a2.id], board.id)
+      assert MapSet.member?(unread, a1.id)
+      assert MapSet.member?(unread, a2.id)
+
+      # Mark a1 as read — read_at = now() which is after activity_time
+      Content.mark_article_read(user.id, a1.id)
+      unread = Content.unread_article_ids(user, [a1.id, a2.id], board.id)
+      refute MapSet.member?(unread, a1.id)
+      assert MapSet.member?(unread, a2.id)
+    end
+
+    test "unread_article_ids respects board_read floor" do
+      user = create_user("user")
+      board = create_board(%{name: "Floor Board", slug: "floor-board"})
+
+      # Move user registration to the past
+      past_registration = DateTime.add(DateTime.utc_now(), -3600, :second)
+
+      Repo.update_all(
+        from(u in Baudrate.Setup.User, where: u.id == ^user.id),
+        set: [inserted_at: past_registration]
+      )
+
+      user = %{user | inserted_at: past_registration}
+
+      {:ok, %{article: a1}} =
+        Content.create_article(%{title: "F1", body: "b", slug: "f1", user_id: user.id}, [
+          board.id
+        ])
+
+      # Activity 30 min ago — after registration but before now
+      activity_time =
+        DateTime.add(DateTime.utc_now(), -1800, :second) |> DateTime.truncate(:second)
+
+      Repo.update_all(
+        from(a in Article, where: a.id == ^a1.id),
+        set: [last_activity_at: activity_time]
+      )
+
+      unread = Content.unread_article_ids(user, [a1.id], board.id)
+      assert MapSet.member?(unread, a1.id)
+
+      # Mark board as read — read_at = now() which is after activity_time
+      Content.mark_board_read(user.id, board.id)
+
+      unread = Content.unread_article_ids(user, [a1.id], board.id)
+      assert MapSet.equal?(unread, MapSet.new())
+    end
+
+    test "unread_article_ids returns empty for guests" do
+      assert Content.unread_article_ids(nil, [1, 2, 3], 1) == MapSet.new()
+    end
+
+    test "unread_board_ids identifies boards with unread articles" do
+      user = create_user("user")
+      board1 = create_board(%{name: "BU1", slug: "bu1"})
+      board2 = create_board(%{name: "BU2", slug: "bu2"})
+
+      # Move user registration to the past
+      past_registration = DateTime.add(DateTime.utc_now(), -3600, :second)
+
+      Repo.update_all(
+        from(u in Baudrate.Setup.User, where: u.id == ^user.id),
+        set: [inserted_at: past_registration]
+      )
+
+      user = %{user | inserted_at: past_registration}
+
+      {:ok, %{article: _a1}} =
+        Content.create_article(%{title: "BU1A", body: "b", slug: "bu1a", user_id: user.id}, [
+          board1.id
+        ])
+
+      # Activity 30 min ago — after registration but before now
+      activity_time =
+        DateTime.add(DateTime.utc_now(), -1800, :second) |> DateTime.truncate(:second)
+
+      Repo.update_all(
+        from(a in Article,
+          join: ba in Baudrate.Content.BoardArticle,
+          on: ba.article_id == a.id,
+          where: ba.board_id == ^board1.id
+        ),
+        set: [last_activity_at: activity_time]
+      )
+
+      # Board2 has no articles — should not be unread
+      unread = Content.unread_board_ids(user, [board1.id, board2.id])
+      assert MapSet.member?(unread, board1.id)
+      refute MapSet.member?(unread, board2.id)
+    end
+
+    test "parent board is unread when sub-board has unread articles" do
+      user = create_user("user")
+      parent = create_board(%{name: "Parent", slug: "parent-board"})
+      child = create_board(%{name: "Child", slug: "child-board", parent_id: parent.id})
+
+      # Move user registration to the past
+      past_registration = DateTime.add(DateTime.utc_now(), -3600, :second)
+
+      Repo.update_all(
+        from(u in Baudrate.Setup.User, where: u.id == ^user.id),
+        set: [inserted_at: past_registration]
+      )
+
+      user = %{user | inserted_at: past_registration}
+
+      # Create article in child board only
+      {:ok, %{article: _article}} =
+        Content.create_article(
+          %{title: "Child Art", body: "b", slug: "child-art", user_id: user.id},
+          [child.id]
+        )
+
+      # Set activity 30 min ago — after registration but before now
+      activity_time =
+        DateTime.add(DateTime.utc_now(), -1800, :second) |> DateTime.truncate(:second)
+
+      Repo.update_all(
+        from(a in Article,
+          join: ba in Baudrate.Content.BoardArticle,
+          on: ba.article_id == a.id,
+          where: ba.board_id == ^child.id
+        ),
+        set: [last_activity_at: activity_time]
+      )
+
+      # Parent board should be marked unread because child board has unread articles
+      unread = Content.unread_board_ids(user, [parent.id])
+      assert MapSet.member?(unread, parent.id)
+    end
+
+    test "articles before user registration are treated as read" do
+      board = create_board(%{name: "Old Board", slug: "old-board"})
+      old_user = create_user("user")
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Old", body: "b", slug: "old-art", user_id: old_user.id},
+          [board.id]
+        )
+
+      # Set article activity to the past (before any user registration)
+      past = ~U[2020-01-01 00:00:00Z]
+
+      Repo.update_all(
+        from(a in Article, where: a.id == ^article.id),
+        set: [last_activity_at: past]
+      )
+
+      # New user registers — article should be read (activity before registration)
+      new_user = create_user("user")
+      unread = Content.unread_article_ids(new_user, [article.id], board.id)
+      assert MapSet.equal?(unread, MapSet.new())
+    end
+  end
 end

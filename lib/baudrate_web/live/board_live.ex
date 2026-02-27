@@ -31,6 +31,9 @@ defmodule BaudrateWeb.BoardLive do
       ancestors = Content.board_ancestors(board)
       sub_boards = Content.list_visible_sub_boards(board, current_user)
 
+      sub_board_ids = Enum.map(sub_boards, & &1.id)
+      unread_sub_board_ids = Content.unread_board_ids(current_user, sub_board_ids)
+
       feed_slug = if board.min_role_to_view == "guest", do: board.slug
 
       parent_slug =
@@ -51,6 +54,7 @@ defmodule BaudrateWeb.BoardLive do
          can_manage_follows: can_manage_follows,
          ancestors: ancestors,
          sub_boards: sub_boards,
+         unread_sub_board_ids: unread_sub_board_ids,
          page_title: board.name,
          feed_board_slug: feed_slug,
          linked_data_json: jsonld,
@@ -73,6 +77,30 @@ defmodule BaudrateWeb.BoardLive do
      assign(socket,
        articles: result.articles,
        comment_counts: result.comment_counts,
+       unread_article_ids: result.unread_article_ids,
+       page: result.page,
+       total_pages: result.total_pages
+     )}
+  end
+
+  @impl true
+  def handle_event("mark_all_read", _params, socket) do
+    current_user = socket.assigns.current_user
+    board = socket.assigns.board
+
+    Content.mark_board_read(current_user.id, board.id)
+
+    result =
+      Content.paginate_articles_for_board(board,
+        page: socket.assigns.page,
+        user: current_user
+      )
+
+    {:noreply,
+     assign(socket,
+       articles: result.articles,
+       comment_counts: result.comment_counts,
+       unread_article_ids: result.unread_article_ids,
        page: result.page,
        total_pages: result.total_pages
      )}
@@ -99,6 +127,7 @@ defmodule BaudrateWeb.BoardLive do
      assign(socket,
        articles: result.articles,
        comment_counts: result.comment_counts,
+       unread_article_ids: result.unread_article_ids,
        page: result.page,
        total_pages: result.total_pages
      )}

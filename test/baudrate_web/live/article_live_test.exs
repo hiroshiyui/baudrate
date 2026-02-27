@@ -1,6 +1,7 @@
 defmodule BaudrateWeb.ArticleLiveTest do
   use BaudrateWeb.ConnCase
 
+  import Ecto.Query
   import Phoenix.LiveViewTest
 
   alias Baudrate.Repo
@@ -588,5 +589,31 @@ defmodule BaudrateWeb.ArticleLiveTest do
     {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
     assert html =~ "Root 1"
     assert html =~ "Reply to first root"
+  end
+
+  test "visiting article marks it as read", %{conn: conn, user: user, article: article} do
+    # No read record before visit
+    read =
+      Baudrate.Repo.one(
+        from(ar in Baudrate.Content.ArticleRead,
+          where: ar.user_id == ^user.id and ar.article_id == ^article.id
+        )
+      )
+
+    assert is_nil(read)
+
+    # Visit the article
+    {:ok, _lv, _html} = live(conn, "/articles/#{article.slug}")
+
+    # Now there should be a read record
+    read =
+      Baudrate.Repo.one(
+        from(ar in Baudrate.Content.ArticleRead,
+          where: ar.user_id == ^user.id and ar.article_id == ^article.id
+        )
+      )
+
+    assert read
+    assert read.read_at
   end
 end
