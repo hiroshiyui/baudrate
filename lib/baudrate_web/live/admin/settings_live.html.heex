@@ -108,6 +108,39 @@
 
   <div class="card bg-base-200 shadow-sm">
     <div class="card-body">
+      <h2 class="card-title">{gettext("Web Push Notifications (VAPID)")}</h2>
+      <p class="text-sm text-base-content/70">
+        {gettext("VAPID keys are required for sending browser push notifications.")}
+      </p>
+      <%= if @vapid_configured do %>
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="badge badge-success">{gettext("Configured")}</span>
+          </div>
+          <div>
+            <div class="text-sm text-base-content/70">{gettext("Public Key")}</div>
+            <code class="text-xs break-all">{@vapid_public_key}</code>
+          </div>
+        </div>
+      <% else %>
+        <button
+          type="button"
+          class="btn btn-primary"
+          phx-click="generate_vapid_keys"
+          data-confirm={
+            gettext(
+              "This will generate new VAPID keys. Existing push subscriptions will stop working. Continue?"
+            )
+          }
+        >
+          {gettext("Generate VAPID Keys")}
+        </button>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="card bg-base-200 shadow-sm">
+    <div class="card-body">
       <h2 class="card-title">{gettext("End User Agreement")}</h2>
       <p class="text-sm text-base-content/70">
         {gettext(

@@ -22,6 +22,8 @@ defmodule BaudrateWeb.Admin.SettingsLive do
       Baudrate.Timezone.identifiers()
       |> Enum.map(&{&1, &1})
 
+    vapid_public_key = Setup.get_setting("vapid_public_key")
+
     socket =
       socket
       |> assign(form: to_form(changeset, as: :settings))
@@ -30,6 +32,8 @@ defmodule BaudrateWeb.Admin.SettingsLive do
       |> assign(timezone_options: timezone_options)
       |> assign(light_theme_options: Setup.light_theme_options())
       |> assign(dark_theme_options: Setup.dark_theme_options())
+      |> assign(vapid_configured: vapid_public_key != nil)
+      |> assign(vapid_public_key: vapid_public_key)
       |> assign(page_title: gettext("Admin Settings"))
 
     {:ok, socket}
@@ -77,5 +81,21 @@ defmodule BaudrateWeb.Admin.SettingsLive do
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to save End User Agreement."))}
     end
+  end
+
+  @impl true
+  def handle_event("generate_vapid_keys", _params, socket) do
+    alias Baudrate.Notification.VAPID
+
+    {public_key_b64, encrypted_private} = VAPID.generate_keypair()
+
+    Setup.set_setting("vapid_public_key", public_key_b64)
+    Setup.set_setting("vapid_private_key_encrypted", Base.encode64(encrypted_private))
+
+    {:noreply,
+     socket
+     |> assign(vapid_configured: true)
+     |> assign(vapid_public_key: public_key_b64)
+     |> put_flash(:info, gettext("VAPID keys generated successfully."))}
   end
 end

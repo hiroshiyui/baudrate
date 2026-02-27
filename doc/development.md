@@ -99,7 +99,11 @@ lib/
 │   ├── notification/
 │   │   ├── hooks.ex             # Fire-and-forget notification creation hooks (comment, article, like, follow, report)
 │   │   ├── notification.ex      # Notification schema (type, read, data, actor, article, comment refs)
-│   │   └── pubsub.ex            # PubSub helpers for real-time notification updates
+│   │   ├── pubsub.ex            # PubSub helpers for real-time notification updates
+│   │   ├── push_subscription.ex # PushSubscription schema (endpoint, p256dh, auth, user_id)
+│   │   ├── vapid.ex             # VAPID key generation (ECDSA P-256) + ES256 JWT signing
+│   │   ├── vapid_vault.ex       # AES-256-GCM encryption for VAPID private keys
+│   │   └── web_push.ex          # RFC 8291 content encryption + push delivery via Req
 │   ├── setup.ex                 # Setup context: first-run wizard, RBAC seeding, settings
 │   ├── timezone.ex              # IANA timezone identifiers (compiled from tz library data)
 │   └── setup/
@@ -122,6 +126,7 @@ lib/
 │   │   │   ├── rss.xml.eex     # RSS 2.0 channel + items template
 │   │   │   └── atom.xml.eex    # Atom 1.0 feed + entries template
 │   │   ├── page_controller.ex   # Static page controller
+│   │   ├── push_subscription_controller.ex  # POST/DELETE /api/push-subscriptions (Web Push)
 │   │   └── session_controller.ex  # POST endpoints for session mutations
 │   ├── live/
 │   │   ├── admin/
@@ -1060,6 +1065,50 @@ server. The server queries `Content.search_tags/2` and pushes back
 dropdown with keyboard navigation (ArrowUp/Down, Enter/Tab, Escape).
 
 Source: `assets/js/hashtag_autocomplete_hook.js`
+
+### `PushManagerHook`
+
+Manages Web Push subscription lifecycle. Attached to a `<div>` on the profile
+page. On mount, registers the service worker (`/service_worker.js`), checks
+existing subscription state, and reports `push_support` to the server.
+
+Handles `subscribe_push` (request permission → `pushManager.subscribe` →
+POST `/api/push-subscriptions`) and `unsubscribe_push` (unsubscribe → DELETE
+endpoint). Reports back `push_subscribed`, `push_unsubscribed`,
+`push_permission_denied`, or `push_subscribe_error`.
+
+Source: `assets/js/push_manager_hook.js`
+
+### Web Push Architecture
+
+Baudrate implements Web Push notifications using VAPID (RFC 8292) and
+aes128gcm content encryption (RFC 8291), with zero external dependencies
+beyond OTP `:crypto`.
+
+**Key components:**
+
+| Module | Purpose |
+|--------|---------|
+| `Notification.VapidVault` | AES-256-GCM encryption for VAPID private keys at rest |
+| `Notification.VAPID` | ECDSA P-256 keypair generation, ES256 JWT signing |
+| `Notification.WebPush` | RFC 8291 encryption (ECDH + HKDF + AES-128-GCM) + delivery |
+| `Notification.PushSubscription` | Ecto schema for browser push endpoints |
+| `PushSubscriptionController` | API endpoints for subscription create/delete |
+
+**Flow:**
+
+1. Admin generates VAPID keys in Settings (stored encrypted in `settings` table)
+2. `root.html.heex` emits VAPID public key as `<meta name="vapid-public-key">`
+3. `PushManagerHook` registers service worker and subscribes to push
+4. Browser sends `PushSubscription` (endpoint, p256dh, auth) to server
+5. On notification creation, `maybe_send_push/1` checks user preferences
+6. `WebPush.deliver_notification/1` encrypts payload and POSTs to push service
+7. Service worker receives push event and displays native notification
+
+**Service worker:** `assets/js/service_worker.js` — handles `push` (show
+notification) and `notificationclick` (focus/open window) events. Built
+separately via the `service_worker` esbuild target to `/service_worker.js`
+(must be at root for maximum scope).
 
 ### Syndication Feeds (RSS / Atom)
 

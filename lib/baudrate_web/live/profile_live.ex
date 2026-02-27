@@ -44,6 +44,8 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:signature_preview, Baudrate.Content.Markdown.to_html(user.signature))
       |> assign(:mutes, mutes)
       |> assign(:notification_preferences, user.notification_preferences || %{})
+      |> assign(:push_supported, false)
+      |> assign(:push_subscribed, false)
       |> assign(:page_title, gettext("Profile"))
       |> allow_upload(:avatar,
         accept: ~w(.jpg .jpeg .png .webp),
@@ -265,6 +267,68 @@ defmodule BaudrateWeb.ProfileLive do
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to update DM access setting."))}
+    end
+  end
+
+  @impl true
+  def handle_event("push_support", %{"supported" => supported, "subscribed" => subscribed}, socket) do
+    {:noreply,
+     socket
+     |> assign(:push_supported, supported)
+     |> assign(:push_subscribed, subscribed)}
+  end
+
+  @impl true
+  def handle_event("push_subscribed", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:push_subscribed, true)
+     |> put_flash(:info, gettext("Push notifications enabled."))}
+  end
+
+  @impl true
+  def handle_event("push_unsubscribed", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:push_subscribed, false)
+     |> put_flash(:info, gettext("Push notifications disabled."))}
+  end
+
+  @impl true
+  def handle_event("push_permission_denied", _params, socket) do
+    {:noreply,
+     put_flash(
+       socket,
+       :error,
+       gettext("Push notification permission was denied by the browser.")
+     )}
+  end
+
+  @impl true
+  def handle_event("push_subscribe_error", _params, socket) do
+    {:noreply, put_flash(socket, :error, gettext("Failed to enable push notifications."))}
+  end
+
+  @impl true
+  def handle_event("toggle_web_push_pref", %{"type" => type}, socket) do
+    user = socket.assigns.current_user
+    prefs = socket.assigns.notification_preferences
+
+    type_prefs = Map.get(prefs, type, %{})
+    current_web_push = Map.get(type_prefs, "web_push", true)
+    new_type_prefs = Map.put(type_prefs, "web_push", !current_web_push)
+    new_prefs = Map.put(prefs, type, new_type_prefs)
+
+    case Auth.update_notification_preferences(user, new_prefs) do
+      {:ok, updated_user} ->
+        {:noreply,
+         socket
+         |> assign(:current_user, updated_user)
+         |> assign(:notification_preferences, updated_user.notification_preferences)}
+
+      {:error, _changeset} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to update notification preferences."))}
     end
   end
 

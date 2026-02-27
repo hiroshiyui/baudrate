@@ -38,7 +38,7 @@ Identified via competitive analysis against Discourse, Lemmy, Flarum, NodeBB, an
 
 ### Lower Priority — Engagement & Platform
 
-- [ ] **feat:** Web Push notifications — push notifications via Web Push API for real-time alerts without visiting the site
+- [x] **feat:** Web Push notifications — push notifications via Web Push API for real-time alerts without visiting the site (Phase 6 done: VAPID, RFC 8291 encryption, service worker, subscription management)
 - [ ] **feat:** Badges / achievements — milestone-based badges rewarding active contributors (first post, 100 articles, etc.)
 - [ ] **feat:** Trust levels / reputation — automated privilege escalation based on user activity (post count, time spent, likes received)
 - [ ] **infra:** Outbound webhooks — fire HTTP webhooks on events (article created, user registered, etc.) for Slack/Discord/CI integration
@@ -69,25 +69,7 @@ is independently functional and committable by topic.
 
 ### ~~Phase 5: Per-Type Notification Preferences~~ ✅ Done
 
-### Phase 6: Web Push (VAPID + Service Worker + Encryption)
-
-**New files:**
-
-| File | Purpose |
-|------|---------|
-| `lib/baudrate/notification/vapid_vault.ex` | AES-256-GCM for VAPID private key (follows `KeyVault` pattern) |
-| `lib/baudrate/notification/vapid.ex` | ECDSA P-256 key generation via `:crypto`, ES256 JWT signing |
-| `lib/baudrate/notification/web_push.ex` | RFC 8291 aes128gcm encryption + delivery via `Req` |
-| `lib/baudrate/notification/push_subscription.ex` | Ecto schema: endpoint, p256dh, auth, user_agent, user_id |
-| `lib/baudrate_web/controllers/push_subscription_controller.ex` | POST/DELETE `/api/push-subscriptions` |
-| `assets/js/service_worker.js` | `push` event → `showNotification`, `notificationclick` → `openWindow` |
-| `assets/js/push_subscription_hook.js` | LiveView hook: register SW, subscribe PushManager, POST subscription |
-
-**Migration:** `create_push_subscriptions` — user_id, endpoint (unique), p256dh, auth, user_agent.
-
-**Modify existing files:** `config/config.exs` (esbuild service_worker target), `config/test.exs` (disable push), `mix.exs` (aliases), `lib/baudrate_web.ex` (static_paths), `lib/baudrate_web/router.ex` (routes + CSP), `assets/js/app.js` (hook), `lib/baudrate/notification.ex` (`maybe_send_push/1`), admin settings_live (VAPID key management), `root.html.heex` (`data-vapid-key`).
-
-**Tests:** vapid_vault, vapid, web_push, push_subscription schema, push_subscription_controller
+### ~~Phase 6: Web Push (VAPID + Service Worker + Encryption)~~ ✅ Done
 
 ### Phase 7: PWA Manifest + Docs
 

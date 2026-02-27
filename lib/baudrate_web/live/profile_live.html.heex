@@ -248,29 +248,85 @@
         </p>
       </div>
 
+      <%!-- Browser Push Notifications section --%>
+      <div id="push-manager" phx-hook="PushManagerHook">
+        <div class="text-sm text-base-content/70 mb-2">{gettext("Browser Push Notifications")}</div>
+        <%= if @push_supported do %>
+          <%= if @push_subscribed do %>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline btn-error"
+              phx-click={JS.push("unsubscribe_push", target: "#push-manager")}
+            >
+              {gettext("Disable Push")}
+            </button>
+          <% else %>
+            <button
+              type="button"
+              class="btn btn-sm btn-primary"
+              phx-click={JS.push("subscribe_push", target: "#push-manager")}
+            >
+              {gettext("Enable Push")}
+            </button>
+          <% end %>
+        <% else %>
+          <p class="text-sm text-base-content/70 italic">
+            {gettext("Push notifications are not supported by this browser.")}
+          </p>
+        <% end %>
+      </div>
+
       <%!-- Notification Preferences section --%>
       <div>
         <div class="text-sm text-base-content/70 mb-2">{gettext("Notification Preferences")}</div>
         <p class="text-sm text-base-content/70 mb-3">
-          {gettext("Choose which notifications you receive in-app.")}
+          {gettext("Choose which notifications you receive.")}
         </p>
-        <div class="space-y-2">
-          <div
-            :for={
-              type <- ~w(reply_to_article reply_to_comment mention new_follower article_liked article_forwarded moderation_report admin_announcement)
-            }
-            class="flex items-center justify-between"
-          >
-            <span class="text-sm">{BaudrateWeb.Helpers.notification_text(type)}</span>
-            <input
-              type="checkbox"
-              class="toggle toggle-sm toggle-primary"
-              checked={get_in(@notification_preferences, [type, "in_app"]) != false}
-              phx-click="toggle_notification_pref"
-              phx-value-type={type}
-              aria-label={BaudrateWeb.Helpers.notification_text(type)}
-            />
-          </div>
+        <div class="overflow-x-auto">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>{gettext("Type")}</th>
+                <th class="text-center">{gettext("In-App")}</th>
+                <th :if={@push_subscribed} class="text-center">{gettext("Push")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                :for={
+                  type <- ~w(reply_to_article reply_to_comment mention new_follower article_liked article_forwarded moderation_report admin_announcement)
+                }
+              >
+                <td class="text-sm">{BaudrateWeb.Helpers.notification_text(type)}</td>
+                <td class="text-center">
+                  <input
+                    type="checkbox"
+                    class="toggle toggle-sm toggle-primary"
+                    checked={get_in(@notification_preferences, [type, "in_app"]) != false}
+                    phx-click="toggle_notification_pref"
+                    phx-value-type={type}
+                    aria-label={
+                      gettext("In-App") <> ": " <> BaudrateWeb.Helpers.notification_text(type)
+                    }
+                  />
+                </td>
+                <td :if={@push_subscribed} class="text-center">
+                  <input
+                    type="checkbox"
+                    class="toggle toggle-sm toggle-secondary"
+                    checked={
+                      get_in(@notification_preferences, [type, "web_push"]) != false
+                    }
+                    phx-click="toggle_web_push_pref"
+                    phx-value-type={type}
+                    aria-label={
+                      gettext("Push") <> ": " <> BaudrateWeb.Helpers.notification_text(type)
+                    }
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
