@@ -47,6 +47,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - **Messaging** (`lib/baudrate/messaging.ex`) — 1-on-1 direct messages, conversations, DM access control, federation
 - **Setup** (`lib/baudrate/setup.ex`) — first-run wizard, RBAC seeding, settings, role level utilities
 - **Moderation** (`lib/baudrate/moderation.ex`) — reports, resolve/dismiss, audit log
+- **Notification** (`lib/baudrate/notification.ex`) — in-app notifications, unread counts, mark read, cleanup, admin announcements
 
 ### Key Gotchas
 
@@ -124,6 +125,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 | `lib/baudrate/messaging.ex` | Messaging context: DMs, conversations, read cursors |
 | `lib/baudrate/setup.ex` | Setup context: roles, settings, role level utilities |
 | `lib/baudrate/moderation.ex` | Moderation context: reports, audit log |
+| `lib/baudrate/notification.ex` | Notification context: in-app notifications, PubSub |
 | `lib/baudrate_web/live/auth_hooks.ex` | LiveView auth on_mount hooks |
 | `lib/baudrate_web/components/core_components.ex` | Shared UI components |
 | `doc/development.md` | Full architecture & project structure |

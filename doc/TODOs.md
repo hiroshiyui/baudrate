@@ -10,8 +10,8 @@ Identified via competitive analysis against Discourse, Lemmy, Flarum, NodeBB, an
 
 ### High Priority — Core Forum Gaps
 
-- [ ] **feat:** Notification system — in-app notification center (bell icon) for replies, mentions, new followers; DB-backed notification schema with read/unread state
-- [ ] **feat:** @mention support — `@username` parsing in articles/comments, link to profile, trigger notification; federate as `Mention` tag in AP objects
+- [x] **feat:** Notification system — in-app notification center (bell icon) for replies, mentions, new followers; DB-backed notification schema with read/unread state (Phase 1 schema + Phase 2 hooks done)
+- [x] **feat:** @mention support — `@username` parsing in articles/comments, link to profile, trigger notification; federate as `Mention` tag in AP objects (Phase 2 done)
 - [ ] **feat:** Bookmarks / saved posts — users can bookmark articles and comments for later; simple join table, dedicated `/bookmarks` page
 - [ ] **feat:** Drafts / autosave — auto-save article and comment drafts (DB-backed or localStorage); restore on revisit
 - [ ] **feat:** Polls — inline polls in articles (single-choice, multiple-choice, with optional expiry); federate as `Question` AP object
@@ -59,73 +59,9 @@ mentions, follows, or likes. This plan implements in-app notifications, @mention
 parsing, Web Push (VAPID + RFC 8291), and a PWA manifest in 7 phases. Each phase
 is independently functional and committable by topic.
 
-### Phase 1: Notification Schema, Context, and PubSub (Foundation)
+### ~~Phase 1: Notification Schema, Context, and PubSub (Foundation)~~ ✅ Done
 
-**Migration:** `priv/repo/migrations/YYYYMMDDHHMMSS_create_notifications.exs`
-
-```
-notifications table:
-  - type: string, not null (reply_to_article|reply_to_comment|mention|new_follower|
-    article_liked|article_forwarded|moderation_report|admin_announcement)
-  - read: boolean, default false, not null
-  - data: map (JSONB), default %{}, not null
-  - user_id: references(:users, on_delete: :delete_all), not null
-  - actor_user_id: references(:users, on_delete: :nilify_all), nullable
-  - actor_remote_actor_id: references(:remote_actors, on_delete: :nilify_all), nullable
-  - article_id: references(:articles, on_delete: :delete_all), nullable
-  - comment_id: references(:comments, on_delete: :delete_all), nullable
-  - timestamps(type: :utc_datetime)
-
-Indexes:
-  - (user_id, read)
-  - (user_id, inserted_at)
-  - unique (user_id, type, actor_user_id, article_id, comment_id) WHERE actor_user_id IS NOT NULL
-  - unique (user_id, type, actor_remote_actor_id, article_id, comment_id) WHERE actor_remote_actor_id IS NOT NULL
-```
-
-**New files:**
-
-| File | Purpose |
-|------|---------|
-| `lib/baudrate/notification/notification.ex` | Ecto schema with `@valid_types`, changeset |
-| `lib/baudrate/notification/pubsub.ex` | PubSub helpers: topic `"notifications:user:<id>"`, events `:notification_created`, `:notification_read`, `:notifications_all_read` — follows `Messaging.PubSub` pattern |
-| `lib/baudrate/notification.ex` | Context: `create_notification/1`, `unread_count/1`, `list_notifications/2` (paginated), `mark_as_read/1`, `mark_all_as_read/1`, `cleanup_old_notifications/1`, `create_admin_announcement/2` |
-| `test/baudrate/notification_test.exs` | Context tests |
-| `test/baudrate/notification/pubsub_test.exs` | PubSub tests (async: true, no DB) |
-
-**Key logic in `create_notification/1`:**
-
-- Reject self-notifications (`user_id == actor_user_id`)
-- Check `Auth.blocked?/2` and `Auth.muted?/2` — skip if actor is blocked/muted
-- On unique constraint violation (dedup index): return `{:ok, :duplicate}` silently
-- On success: `PubSub.broadcast_to_user(user_id, :notification_created, %{notification_id: id})`
-
-### Phase 2: @Mention Parsing + Notification Creation Hooks
-
-**Modify `lib/baudrate/content/markdown.ex`:**
-
-- `extract_mentions/1` — regex `@([a-zA-Z0-9_]{3,32})` on raw text, returns unique downcased usernames
-- `linkify_mentions/1` — post-sanitize, converts `@username` to `<a href="/users/username" class="mention">@username</a>` (same skip pattern as `linkify_hashtags/1`)
-- Add `linkify_mentions/1` to `to_html/1` pipeline after `linkify_hashtags/1`
-
-**Notification hooks — files to modify:**
-
-| File | Hook location | Notification type |
-|------|--------------|-------------------|
-| `lib/baudrate/content.ex` `create_comment/1` | After PubSub broadcast | `reply_to_article` → article author; `reply_to_comment` → parent comment author; `mention` → each @mentioned user |
-| `lib/baudrate/content.ex` `create_article/2` | After PubSub broadcast | `mention` → each @mentioned user |
-| `lib/baudrate/content.ex` `create_remote_article_like/1` | After insert | `article_liked` → article author |
-| `lib/baudrate/content.ex` `forward_article_to_board/3` | After success | `article_forwarded` → article author |
-| `lib/baudrate/federation.ex` `create_local_follow/2` | After insert | `new_follower` → followed user |
-| `lib/baudrate/federation/inbox_handler.ex` Follow handler | After follower created | `new_follower` → local user being followed |
-| `lib/baudrate/federation/inbox_handler.ex` Like handler | After like created | `article_liked` → article author |
-| `lib/baudrate/federation/inbox_handler.ex` Create(Note) as comment | After remote comment | `reply_to_article` → author; `reply_to_comment` → parent author |
-| `lib/baudrate/federation/inbox_handler.ex` Flag handler | After report created | `moderation_report` → all admins |
-| `lib/baudrate/moderation.ex` `create_report/1` | After insert | `moderation_report` → all admins |
-
-**Helper:** Add `admin_user_ids/0` to `lib/baudrate/setup.ex`.
-
-**Tests:** `test/baudrate/content/markdown_test.exs`, `test/baudrate/notification_hooks_test.exs`
+### ~~Phase 2: @Mention Parsing + Notification Creation Hooks~~ ✅ Done
 
 ### Phase 3: Real-Time Bell Icon + Unread Count Badge
 

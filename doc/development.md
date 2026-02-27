@@ -56,7 +56,7 @@ lib/
 │   │   ├── board_article.ex     # Join table: board ↔ article
 │   │   ├── board_moderator.ex   # Join table: board ↔ moderator
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
-│   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark + Ammonia NIF + hashtag linkification)
+│   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark + Ammonia NIF + hashtag/mention linkification + mention extraction)
 │   │   └── pubsub.ex            # PubSub helpers for real-time content updates
 │   ├── sanitizer/
 │   │   └── native.ex            # Rustler NIF bindings to Ammonia HTML sanitizer
@@ -95,6 +95,11 @@ lib/
 │   ├── moderation/
 │   │   ├── log.ex               # ModerationLog schema (audit trail of moderation actions)
 │   │   └── report.ex            # Report schema (article, comment, remote actor targets)
+│   ├── notification.ex          # Notification context: create, list, mark read, cleanup, admin announcements
+│   ├── notification/
+│   │   ├── hooks.ex             # Fire-and-forget notification creation hooks (comment, article, like, follow, report)
+│   │   ├── notification.ex      # Notification schema (type, read, data, actor, article, comment refs)
+│   │   └── pubsub.ex            # PubSub helpers for real-time notification updates
 │   ├── setup.ex                 # Setup context: first-run wizard, RBAC seeding, settings
 │   ├── timezone.ex              # IANA timezone identifiers (compiled from tz library data)
 │   └── setup/
