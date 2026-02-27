@@ -10,7 +10,7 @@ Identified via competitive analysis against Discourse, Lemmy, Flarum, NodeBB, an
 
 ### High Priority — Core Forum Gaps
 
-- [x] **feat:** Notification system — in-app notification center (bell icon) for replies, mentions, new followers; DB-backed notification schema with read/unread state (Phase 1 schema + Phase 2 hooks + Phase 3 bell icon done)
+- [x] **feat:** Notification system — in-app notification center (bell icon) for replies, mentions, new followers; DB-backed notification schema with read/unread state (Phase 1–4 done: schema, hooks, bell icon, notifications page)
 - [x] **feat:** @mention support — `@username` parsing in articles/comments, link to profile, trigger notification; federate as `Mention` tag in AP objects (Phase 2 done)
 - [ ] **feat:** Bookmarks / saved posts — users can bookmark articles and comments for later; simple join table, dedicated `/bookmarks` page
 - [ ] **feat:** Drafts / autosave — auto-save article and comment drafts (DB-backed or localStorage); restore on revisit
@@ -65,22 +65,7 @@ is independently functional and committable by topic.
 
 ### ~~Phase 3: Real-Time Bell Icon + Unread Count Badge~~ ✅ Done
 
-### Phase 4: Notifications Page (LiveView)
-
-**Route:** Add `live "/notifications", NotificationsLive` to `:authenticated` live_session.
-
-**New files:**
-
-| File | Purpose |
-|------|---------|
-| `lib/baudrate_web/live/notifications_live.ex` | LiveView: paginated list, `mark_read`, `mark_all_read`, real-time refresh via PubSub |
-| `lib/baudrate_web/live/notifications_live.html.heex` | Per-type icon, actor link, target link, relative time, read/unread styling, pagination |
-
-**Modify `lib/baudrate_web/helpers.ex`** — add `notification_text/1` with gettext per type.
-
-**i18n:** New strings in all 4 gettext files (pot + en + zh_TW + ja_JP).
-
-**Tests:** `test/baudrate_web/live/notifications_live_test.exs`
+### ~~Phase 4: Notifications Page (LiveView)~~ ✅ Done
 
 ### Phase 5: Per-Type Notification Preferences
 

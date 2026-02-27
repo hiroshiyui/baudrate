@@ -146,6 +146,7 @@ lib/
 │   │   ├── following_live.ex    # Following management (outbound remote actor follows)
 │   │   ├── home_live.ex         # Home page (board listing, public for guests)
 │   │   ├── login_live.ex        # Login form (phx-trigger-action pattern)
+│   │   ├── notifications_live.ex # Notification center (paginated, mark read, real-time)
 │   │   ├── password_reset_live.ex  # Password reset via recovery codes
 │   │   ├── profile_live.ex      # User profile with avatar upload/crop, locale prefs, signature
 │   │   ├── recovery_code_verify_live.ex  # Recovery code login
