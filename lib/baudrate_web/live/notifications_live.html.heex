@@ -1,0 +1,101 @@
+<div class="space-y-4">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">{gettext("Notifications")}</h1>
+    <button
+      :if={@notifications != [] && Enum.any?(@notifications, &(!&1.read))}
+      phx-click="mark_all_read"
+      class="btn btn-ghost btn-sm"
+    >
+      <.icon name="hero-check-circle" class="size-4" />
+      {gettext("Mark all as read")}
+    </button>
+  </div>
+
+  <div :if={@notifications == []} class="text-center py-12 text-base-content/70">
+    <.icon name="hero-bell" class="size-12 mx-auto mb-4 opacity-50" />
+    <p class="text-lg">{gettext("No notifications yet.")}</p>
+    <p class="text-sm">{gettext("You'll be notified when someone replies, mentions you, or follows you.")}</p>
+  </div>
+
+  <div :if={@notifications != []} class="space-y-2" aria-live="polite">
+    <div
+      :for={notif <- @notifications}
+      class={[
+        "card shadow-sm transition-colors",
+        if(notif.read, do: "bg-base-200 opacity-75", else: "bg-base-200 border-l-4 border-primary")
+      ]}
+    >
+      <div class="card-body p-4 flex flex-row items-start gap-3">
+        <%!-- Type icon --%>
+        <div class={[
+          "flex-shrink-0 rounded-full p-2",
+          if(notif.read, do: "bg-base-300", else: "bg-primary/10")
+        ]}>
+          <.icon name={notification_icon(notif.type)} class={[
+            "size-5",
+            if(notif.read, do: "text-base-content/50", else: "text-primary")
+          ]} />
+        </div>
+
+        <%!-- Content --%>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between gap-2">
+            <p class="text-sm">
+              <.link
+                :if={actor_link(notif)}
+                navigate={actor_link(notif)}
+                class="font-semibold link link-hover"
+              >
+                {actor_name(notif)}
+              </.link>
+              <span :if={!actor_link(notif) && actor_name(notif)} class="font-semibold">
+                {actor_name(notif)}
+              </span>
+              <span class="text-base-content/70">{notification_text(notif.type)}</span>
+            </p>
+            <time
+              class="text-xs text-base-content/50 shrink-0 whitespace-nowrap"
+              datetime={DateTime.to_iso8601(notif.inserted_at)}
+            >
+              {format_relative_time(notif.inserted_at)}
+            </time>
+          </div>
+
+          <%!-- Target link (article title or announcement message) --%>
+          <.link
+            :if={target_link(notif) && target_title(notif)}
+            navigate={target_link(notif)}
+            class="text-sm link link-hover text-base-content/80 truncate block mt-1"
+          >
+            {target_title(notif)}
+          </.link>
+          <p
+            :if={!target_link(notif) && target_title(notif)}
+            class="text-sm text-base-content/80 truncate mt-1"
+          >
+            {target_title(notif)}
+          </p>
+        </div>
+
+        <%!-- Mark read button --%>
+        <button
+          :if={!notif.read}
+          phx-click="mark_read"
+          phx-value-id={notif.id}
+          class="btn btn-ghost btn-xs flex-shrink-0"
+          aria-label={gettext("Mark as read")}
+          title={gettext("Mark as read")}
+        >
+          <.icon name="hero-check" class="size-4" />
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <.pagination
+    :if={@notifications != []}
+    page={@page}
+    total_pages={@total_pages}
+    path={~p"/notifications"}
+  />
+</div>

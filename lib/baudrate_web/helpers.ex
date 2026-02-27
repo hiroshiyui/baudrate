@@ -241,6 +241,34 @@ defmodule BaudrateWeb.Helpers do
   def translate_delivery_status(other), do: other
 
   @doc """
+  Returns a localized description for a notification type.
+
+  Used in the notifications page to describe what happened.
+  """
+  def notification_text("reply_to_article"), do: gettext("replied to your article")
+  def notification_text("reply_to_comment"), do: gettext("replied to your comment")
+  def notification_text("mention"), do: gettext("mentioned you")
+  def notification_text("new_follower"), do: gettext("followed you")
+  def notification_text("article_liked"), do: gettext("liked your article")
+  def notification_text("article_forwarded"), do: gettext("forwarded your article")
+  def notification_text("moderation_report"), do: gettext("submitted a moderation report")
+  def notification_text("admin_announcement"), do: gettext("posted an announcement")
+  def notification_text(_), do: gettext("sent you a notification")
+
+  @doc """
+  Returns the Heroicon name for a notification type.
+  """
+  def notification_icon("reply_to_article"), do: "hero-chat-bubble-left-ellipsis"
+  def notification_icon("reply_to_comment"), do: "hero-chat-bubble-left-right"
+  def notification_icon("mention"), do: "hero-at-symbol"
+  def notification_icon("new_follower"), do: "hero-user-plus"
+  def notification_icon("article_liked"), do: "hero-heart"
+  def notification_icon("article_forwarded"), do: "hero-arrow-uturn-right"
+  def notification_icon("moderation_report"), do: "hero-flag"
+  def notification_icon("admin_announcement"), do: "hero-megaphone"
+  def notification_icon(_), do: "hero-bell"
+
+  @doc """
   Formats a file size in bytes to a human-readable string with localized units.
 
   ## Examples

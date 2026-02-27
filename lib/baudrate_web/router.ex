@@ -236,6 +236,7 @@ defmodule BaudrateWeb.Router do
       live "/messages", ConversationsLive
       live "/messages/new", ConversationLive
       live "/messages/:id", ConversationLive
+      live "/notifications", NotificationsLive
       live "/following", FollowingLive
       live "/feed", FeedLive
     end
