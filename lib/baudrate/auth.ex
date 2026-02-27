@@ -215,6 +215,17 @@ defmodule Baudrate.Auth do
   end
 
   @doc """
+  Gets a user by username (case-insensitive) with role preloaded, or nil if not found.
+
+  Used by mention parsing where `@Username` and `@username` should resolve to
+  the same user.
+  """
+  def get_user_by_username_ci(username) when is_binary(username) do
+    downcased = String.downcase(username)
+    Repo.one(from u in User, where: fragment("lower(?)", u.username) == ^downcased, preload: :role)
+  end
+
+  @doc """
   Verifies a user's password. Returns `true` if the password matches,
   `false` otherwise. Uses constant-time comparison via bcrypt.
   """

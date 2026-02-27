@@ -542,4 +542,12 @@ defmodule Baudrate.Setup do
   def all_roles do
     Repo.all(from r in Role, order_by: r.name)
   end
+
+  @doc """
+  Returns the user IDs of all admin users.
+  """
+  def admin_user_ids do
+    from(u in User, join: r in assoc(u, :role), where: r.name == "admin", select: u.id)
+    |> Repo.all()
+  end
 end
