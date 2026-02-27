@@ -420,7 +420,7 @@ msgstr "デバイスを紛失しましたか？リカバリーコードを使用
 msgid "Member Since"
 msgstr "登録日"
 
-#: lib/baudrate_web/live/board_live.html.heex:68
+#: lib/baudrate_web/live/board_live.html.heex:80
 #: lib/baudrate_web/live/user_content_live.html.heex:41
 #: lib/baudrate_web/live/user_profile_live.html.heex:136
 #, elixir-autogen, elixir-format
@@ -641,7 +641,7 @@ msgid "Pending Users"
 msgstr "承認待ちユーザー"
 
 #: lib/baudrate_web/live/article_live.html.heex:17
-#: lib/baudrate_web/live/board_live.html.heex:75
+#: lib/baudrate_web/live/board_live.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Pinned"
 msgstr "固定"
@@ -1867,7 +1867,7 @@ msgstr "この招待コードを無効化しますか？"
 msgid "Revoked"
 msgstr "無効化済み"
 
-#: lib/baudrate_web/live/board_live.html.heex:44
+#: lib/baudrate_web/live/board_live.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Sub-boards"
 msgstr "サブ掲示板"
@@ -1920,7 +1920,7 @@ msgid "Uses"
 msgstr "使用回数"
 
 #: lib/baudrate_web/live/article_live.html.heex:90
-#: lib/baudrate_web/live/board_live.html.heex:89
+#: lib/baudrate_web/live/board_live.html.heex:101
 #: lib/baudrate_web/live/bookmarks_live.html.heex:32
 #: lib/baudrate_web/live/bookmarks_live.html.heex:61
 #, elixir-autogen, elixir-format
@@ -3811,7 +3811,7 @@ msgstr "投稿"
 msgid "Oh! I just had a thought!"
 msgstr "あっ！ひらめいた！"
 
-#: lib/baudrate_web/live/board_live.html.heex:107
+#: lib/baudrate_web/live/board_live.html.heex:119
 #: lib/baudrate_web/live/feed_live.html.heex:182
 #, elixir-autogen, elixir-format
 msgid "1 comment"
@@ -4146,9 +4146,14 @@ msgstr "ブックマークはまだありません。"
 msgid "Remove bookmark"
 msgstr "ブックマークを解除"
 
-#: lib/baudrate_web/live/board_live.html.heex:57
-#: lib/baudrate_web/live/board_live.html.heex:80
+#: lib/baudrate_web/live/board_live.html.heex:69
+#: lib/baudrate_web/live/board_live.html.heex:92
 #: lib/baudrate_web/live/home_live.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "Unread"
 msgstr "未読"
+
+#: lib/baudrate_web/live/board_live.html.heex:44
+#, elixir-autogen, elixir-format
+msgid "Moderated by"
+msgstr "モデレーター"

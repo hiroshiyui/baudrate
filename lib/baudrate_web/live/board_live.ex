@@ -30,6 +30,7 @@ defmodule BaudrateWeb.BoardLive do
       can_manage_follows = board.ap_enabled && Content.board_moderator?(board, current_user)
       ancestors = Content.board_ancestors(board)
       sub_boards = Content.list_visible_sub_boards(board, current_user)
+      board_moderators = Content.list_board_moderators(board)
 
       sub_board_ids = Enum.map(sub_boards, & &1.id)
       unread_sub_board_ids = Content.unread_board_ids(current_user, sub_board_ids)
@@ -50,6 +51,7 @@ defmodule BaudrateWeb.BoardLive do
       {:ok,
        assign(socket,
          board: board,
+         board_moderators: board_moderators,
          can_create: can_create,
          can_manage_follows: can_manage_follows,
          ancestors: ancestors,

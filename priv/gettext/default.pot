@@ -420,7 +420,7 @@ msgstr ""
 msgid "Member Since"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:68
+#: lib/baudrate_web/live/board_live.html.heex:80
 #: lib/baudrate_web/live/user_content_live.html.heex:41
 #: lib/baudrate_web/live/user_profile_live.html.heex:136
 #, elixir-autogen, elixir-format
@@ -641,7 +641,7 @@ msgid "Pending Users"
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:17
-#: lib/baudrate_web/live/board_live.html.heex:75
+#: lib/baudrate_web/live/board_live.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Pinned"
 msgstr ""
@@ -1868,7 +1868,7 @@ msgstr ""
 msgid "Revoked"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:44
+#: lib/baudrate_web/live/board_live.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Sub-boards"
 msgstr ""
@@ -1921,7 +1921,7 @@ msgid "Uses"
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:90
-#: lib/baudrate_web/live/board_live.html.heex:89
+#: lib/baudrate_web/live/board_live.html.heex:101
 #: lib/baudrate_web/live/bookmarks_live.html.heex:32
 #: lib/baudrate_web/live/bookmarks_live.html.heex:61
 #, elixir-autogen, elixir-format
@@ -3821,7 +3821,7 @@ msgstr ""
 msgid "Oh! I just had a thought!"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:107
+#: lib/baudrate_web/live/board_live.html.heex:119
 #: lib/baudrate_web/live/feed_live.html.heex:182
 #, elixir-autogen, elixir-format
 msgid "1 comment"
@@ -4158,9 +4158,14 @@ msgstr ""
 msgid "Remove bookmark"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:57
-#: lib/baudrate_web/live/board_live.html.heex:80
+#: lib/baudrate_web/live/board_live.html.heex:69
+#: lib/baudrate_web/live/board_live.html.heex:92
 #: lib/baudrate_web/live/home_live.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "Unread"
+msgstr ""
+
+#: lib/baudrate_web/live/board_live.html.heex:44
+#, elixir-autogen, elixir-format
+msgid "Moderated by"
 msgstr ""

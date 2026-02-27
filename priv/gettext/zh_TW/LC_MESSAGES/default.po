@@ -420,7 +420,7 @@ msgstr "遺失裝置？使用救援碼"
 msgid "Member Since"
 msgstr "加入日期"
 
-#: lib/baudrate_web/live/board_live.html.heex:68
+#: lib/baudrate_web/live/board_live.html.heex:80
 #: lib/baudrate_web/live/user_content_live.html.heex:41
 #: lib/baudrate_web/live/user_profile_live.html.heex:136
 #, elixir-autogen, elixir-format
@@ -641,7 +641,7 @@ msgid "Pending Users"
 msgstr "待審核用戶"
 
 #: lib/baudrate_web/live/article_live.html.heex:17
-#: lib/baudrate_web/live/board_live.html.heex:75
+#: lib/baudrate_web/live/board_live.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Pinned"
 msgstr "置頂"
@@ -1867,7 +1867,7 @@ msgstr "確定要撤銷此邀請碼？"
 msgid "Revoked"
 msgstr "已撤銷"
 
-#: lib/baudrate_web/live/board_live.html.heex:44
+#: lib/baudrate_web/live/board_live.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Sub-boards"
 msgstr "子板塊"
@@ -1920,7 +1920,7 @@ msgid "Uses"
 msgstr "使用次數"
 
 #: lib/baudrate_web/live/article_live.html.heex:90
-#: lib/baudrate_web/live/board_live.html.heex:89
+#: lib/baudrate_web/live/board_live.html.heex:101
 #: lib/baudrate_web/live/bookmarks_live.html.heex:32
 #: lib/baudrate_web/live/bookmarks_live.html.heex:61
 #, elixir-autogen, elixir-format
@@ -3811,7 +3811,7 @@ msgstr "發佈"
 msgid "Oh! I just had a thought!"
 msgstr "啊！我突然有個想法！"
 
-#: lib/baudrate_web/live/board_live.html.heex:107
+#: lib/baudrate_web/live/board_live.html.heex:119
 #: lib/baudrate_web/live/feed_live.html.heex:182
 #, elixir-autogen, elixir-format
 msgid "1 comment"
@@ -4146,9 +4146,14 @@ msgstr "尚無書籤。"
 msgid "Remove bookmark"
 msgstr "移除書籤"
 
-#: lib/baudrate_web/live/board_live.html.heex:57
-#: lib/baudrate_web/live/board_live.html.heex:80
+#: lib/baudrate_web/live/board_live.html.heex:69
+#: lib/baudrate_web/live/board_live.html.heex:92
 #: lib/baudrate_web/live/home_live.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "Unread"
 msgstr "未讀"
+
+#: lib/baudrate_web/live/board_live.html.heex:44
+#, elixir-autogen, elixir-format
+msgid "Moderated by"
+msgstr "版主"

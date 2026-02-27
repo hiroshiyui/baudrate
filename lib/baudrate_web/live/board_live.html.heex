@@ -40,6 +40,18 @@
 <h1 class="text-2xl font-bold mb-2">{@board.name}</h1>
 <p :if={@board.description} class="text-base-content/70 mb-6">{@board.description}</p>
 
+<div :if={@board_moderators != []} class="flex flex-wrap items-center gap-2 text-sm text-base-content/70 mb-6">
+  <span>{gettext("Moderated by")}</span>
+  <.link
+    :for={bm <- @board_moderators}
+    navigate={~p"/users/#{bm.user.username}"}
+    class="inline-flex items-center gap-1 link link-hover"
+  >
+    <.avatar user={bm.user} size={24} />
+    {display_name(bm.user)}
+  </.link>
+</div>
+
 <div :if={@sub_boards != []} class="mb-6">
   <h2 class="text-lg font-semibold mb-3">{gettext("Sub-boards")}</h2>
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -195,6 +195,16 @@ defmodule BaudrateWeb.BoardLiveTest do
     assert render(lv) =~ "btn-active"
   end
 
+  test "shows board moderators under description", %{conn: conn, board: board} do
+    mod_user = setup_user("user")
+    Content.add_board_moderator(board.id, mod_user.id)
+
+    {:ok, _lv, html} = live(conn, "/boards/#{board.slug}")
+
+    assert html =~ "Moderated by"
+    assert html =~ mod_user.username
+  end
+
   describe "unread indicators" do
     test "shows unread dot for articles with activity after user registration", %{
       conn: conn,
