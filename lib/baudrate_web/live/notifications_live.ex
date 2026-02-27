@@ -82,7 +82,9 @@ defmodule BaudrateWeb.NotificationsLive do
     {:noreply, socket}
   end
 
-  defp actor_name(%{actor_user: %{username: _} = user}), do: BaudrateWeb.Helpers.display_name(user)
+  defp actor_name(%{actor_user: %{username: _} = user}),
+    do: BaudrateWeb.Helpers.display_name(user)
+
   defp actor_name(%{actor_remote_actor: %{username: u, domain: d}}), do: "#{u}@#{d}"
   defp actor_name(_), do: nil
 

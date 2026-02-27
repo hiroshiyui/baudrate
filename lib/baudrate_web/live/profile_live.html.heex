@@ -250,7 +250,9 @@
 
       <%!-- Browser Push Notifications section --%>
       <div id="push-manager" phx-hook="PushManagerHook">
-        <div class="text-sm text-base-content/70 mb-2">{gettext("Browser Push Notifications")}</div>
+        <div class="text-sm text-base-content/70 mb-2">
+          {gettext("Browser Push Notifications")}
+        </div>
         <%= if @push_supported do %>
           <%= if @push_subscribed do %>
             <button
@@ -292,11 +294,10 @@
               </tr>
             </thead>
             <tbody>
-              <tr
-                :for={
-                  type <- ~w(reply_to_article reply_to_comment mention new_follower article_liked article_forwarded moderation_report admin_announcement)
-                }
-              >
+              <tr :for={
+                type <-
+                  ~w(reply_to_article reply_to_comment mention new_follower article_liked article_forwarded moderation_report admin_announcement)
+              }>
                 <td class="text-sm">{BaudrateWeb.Helpers.notification_text(type)}</td>
                 <td class="text-center">
                   <input
@@ -314,9 +315,7 @@
                   <input
                     type="checkbox"
                     class="toggle toggle-sm toggle-secondary"
-                    checked={
-                      get_in(@notification_preferences, [type, "web_push"]) != false
-                    }
+                    checked={get_in(@notification_preferences, [type, "web_push"]) != false}
                     phx-click="toggle_web_push_pref"
                     phx-value-type={type}
                     aria-label={

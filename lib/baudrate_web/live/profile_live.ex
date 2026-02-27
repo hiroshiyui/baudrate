@@ -271,7 +271,11 @@ defmodule BaudrateWeb.ProfileLive do
   end
 
   @impl true
-  def handle_event("push_support", %{"supported" => supported, "subscribed" => subscribed}, socket) do
+  def handle_event(
+        "push_support",
+        %{"supported" => supported, "subscribed" => subscribed},
+        socket
+      ) do
     {:noreply,
      socket
      |> assign(:push_supported, supported)

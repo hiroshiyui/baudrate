@@ -119,10 +119,13 @@ defmodule Baudrate.Notification.VAPID do
 
   # Pads with leading zeros or trims leading zero byte to ensure exactly 32 bytes.
   defp pad_or_trim_to_32(bytes) when byte_size(bytes) == 32, do: bytes
+
   defp pad_or_trim_to_32(bytes) when byte_size(bytes) < 32 do
     :binary.copy(<<0>>, 32 - byte_size(bytes)) <> bytes
   end
+
   defp pad_or_trim_to_32(<<0, rest::binary>>) when byte_size(rest) == 32, do: rest
+
   defp pad_or_trim_to_32(bytes) when byte_size(bytes) > 32 do
     # Trim leading zeros until 32 bytes
     trim_leading_zeros(bytes, byte_size(bytes) - 32)
@@ -132,6 +135,6 @@ defmodule Baudrate.Notification.VAPID do
   defp trim_leading_zeros(bytes, _), do: bytes
 
   defp vapid_contact do
-    "mailto:" <> (Application.get_env(:baudrate, :vapid_contact, "admin@localhost"))
+    "mailto:" <> Application.get_env(:baudrate, :vapid_contact, "admin@localhost")
   end
 end

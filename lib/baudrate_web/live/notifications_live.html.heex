@@ -14,7 +14,9 @@
   <div :if={@notifications == []} class="text-center py-12 text-base-content/70">
     <.icon name="hero-bell" class="size-12 mx-auto mb-4 opacity-50" />
     <p class="text-lg">{gettext("No notifications yet.")}</p>
-    <p class="text-sm">{gettext("You'll be notified when someone replies, mentions you, or follows you.")}</p>
+    <p class="text-sm">
+      {gettext("You'll be notified when someone replies, mentions you, or follows you.")}
+    </p>
   </div>
 
   <div :if={@notifications != []} class="space-y-2" aria-live="polite">
@@ -22,7 +24,10 @@
       :for={notif <- @notifications}
       class={[
         "card shadow-sm transition-colors",
-        if(notif.read, do: "bg-base-200 opacity-75", else: "bg-base-200 border-l-4 border-primary")
+        if(notif.read,
+          do: "bg-base-200 opacity-75",
+          else: "bg-base-200 border-l-4 border-primary"
+        )
       ]}
     >
       <div class="card-body p-4 flex flex-row items-start gap-3">
@@ -31,10 +36,13 @@
           "flex-shrink-0 rounded-full p-2",
           if(notif.read, do: "bg-base-300", else: "bg-primary/10")
         ]}>
-          <.icon name={notification_icon(notif.type)} class={[
-            "size-5",
-            if(notif.read, do: "text-base-content/50", else: "text-primary")
-          ]} />
+          <.icon
+            name={notification_icon(notif.type)}
+            class={[
+              "size-5",
+              if(notif.read, do: "text-base-content/50", else: "text-primary")
+            ]}
+          />
         </div>
 
         <%!-- Content --%>

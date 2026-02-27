@@ -222,7 +222,10 @@ defmodule Baudrate.Auth do
   """
   def get_user_by_username_ci(username) when is_binary(username) do
     downcased = String.downcase(username)
-    Repo.one(from u in User, where: fragment("lower(?)", u.username) == ^downcased, preload: :role)
+
+    Repo.one(
+      from u in User, where: fragment("lower(?)", u.username) == ^downcased, preload: :role
+    )
   end
 
   @doc """

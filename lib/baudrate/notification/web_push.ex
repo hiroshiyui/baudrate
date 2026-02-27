@@ -102,7 +102,9 @@ defmodule Baudrate.Notification.WebPush do
       auth = subscription.auth
 
       encrypted = encrypt(payload, p256dh, auth)
-      vapid_headers = VAPID.authorization_headers(subscription.endpoint, public_key_b64, private_key)
+
+      vapid_headers =
+        VAPID.authorization_headers(subscription.endpoint, public_key_b64, private_key)
 
       headers =
         vapid_headers ++
@@ -135,7 +137,10 @@ defmodule Baudrate.Notification.WebPush do
           {:error, {:http_error, status}}
 
         {:error, reason} ->
-          Logger.warning("Web push delivery error: #{inspect(reason)} for #{subscription.endpoint}")
+          Logger.warning(
+            "Web push delivery error: #{inspect(reason)} for #{subscription.endpoint}"
+          )
+
           {:error, {:request_failed, reason}}
       end
     end
