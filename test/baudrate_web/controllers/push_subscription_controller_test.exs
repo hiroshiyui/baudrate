@@ -123,6 +123,25 @@ defmodule BaudrateWeb.PushSubscriptionControllerTest do
       conn = post(conn, ~p"/api/push-subscriptions", params)
       assert json_response(conn, 422)
     end
+
+    test "returns 429 when rate limited", %{conn: conn} do
+      alias BaudrateWeb.RateLimiter.Sandbox
+
+      Sandbox.set_fun(fn _bucket, _scale, _limit ->
+        {:deny, 10}
+      end)
+
+      {pub, _priv} = :crypto.generate_key(:ecdh, :prime256v1)
+
+      params = %{
+        "endpoint" => "https://push.example.com/send/rate-limited",
+        "p256dh" => Base.url_encode64(pub, padding: false),
+        "auth" => Base.url_encode64(:crypto.strong_rand_bytes(16), padding: false)
+      }
+
+      conn = post(conn, ~p"/api/push-subscriptions", params)
+      assert json_response(conn, 429)["error"] == "Too Many Requests"
+    end
   end
 
   describe "DELETE /api/push-subscriptions" do

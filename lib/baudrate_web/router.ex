@@ -78,9 +78,13 @@ defmodule BaudrateWeb.Router do
     get "/health", HealthController, :check
   end
 
+  pipeline :rate_limit_push do
+    plug BaudrateWeb.Plugs.RateLimit, action: :push_subscription
+  end
+
   # Push subscription API (requires browser session for CSRF + auth)
   scope "/api", BaudrateWeb do
-    pipe_through [:browser]
+    pipe_through [:browser, :rate_limit_push]
 
     post "/push-subscriptions", PushSubscriptionController, :create
     delete "/push-subscriptions", PushSubscriptionController, :delete

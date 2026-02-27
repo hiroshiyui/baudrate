@@ -15,6 +15,7 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     * `:register` — 5 attempts per hour per IP
     * `:activity_pub` — 120 requests per minute per IP
     * `:feeds` — 30 requests per minute per IP
+    * `:push_subscription` — 10 requests per minute per IP
 
   ## Bucket Naming
 
@@ -35,7 +36,8 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     totp: {300_000, 15},
     register: {3_600_000, 5},
     activity_pub: {60_000, 120},
-    feeds: {60_000, 30}
+    feeds: {60_000, 30},
+    push_subscription: {60_000, 10}
   }
 
   @impl true
@@ -55,7 +57,7 @@ defmodule BaudrateWeb.Plugs.RateLimit do
       {:deny, _limit} ->
         Logger.warning("rate_limit.denied: action=#{action} ip=#{ip}")
 
-        if action == :activity_pub do
+        if action in [:activity_pub, :push_subscription] do
           conn
           |> put_resp_content_type("application/json")
           |> send_resp(429, Jason.encode!(%{error: "Too Many Requests"}))
