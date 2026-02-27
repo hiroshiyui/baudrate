@@ -1130,3 +1130,60 @@ attribute binding.
 ```bash
 mix test
 ```
+
+### Browser Testing (Wallaby + Selenium)
+
+End-to-end browser tests use [Wallaby](https://hexdocs.pm/wallaby/) with
+Selenium 4 and Firefox (headless). Feature tests are **excluded by default**
+from the regular test suite.
+
+#### Prerequisites
+
+- Java runtime (for Selenium Server)
+- Firefox browser
+- GeckoDriver + Selenium Server JAR in `tmp/selenium/`
+
+#### Setup
+
+```bash
+mix selenium.setup    # Downloads Selenium Server 4.27.0 + GeckoDriver 0.36.0
+```
+
+#### Running Feature Tests
+
+```bash
+# Run all feature tests (auto-starts Selenium if needed):
+mix test --include feature test/baudrate_web/features/ --seed 9527
+
+# Run a single feature test:
+mix test --include feature test/baudrate_web/features/home_page_test.exs --seed 9527
+```
+
+Regular tests (`mix test`) do **not** start Selenium or include feature tests.
+
+#### Architecture
+
+Feature tests solve a key compatibility issue: Wallaby 0.30 sends legacy JSON
+Wire Protocol session requests, but Selenium 4.x requires W3C WebDriver
+format. `BaudrateWeb.W3CWebDriver` wraps capabilities in W3C format before
+creating sessions.
+
+The Ecto SQL sandbox is shared with browser processes via:
+1. `Phoenix.Ecto.SQL.Sandbox` plug in the endpoint (injects metadata into HTTP)
+2. `BaudrateWeb.SandboxHook` on_mount hook (allows LiveView processes to share
+   the test's database connection via user-agent metadata)
+
+Each test partition gets its own HTTP port (`4002 + partition`) to avoid
+collisions when running tests in parallel.
+
+#### Key Files
+
+| File | Purpose |
+|------|---------|
+| `test/support/feature_case.ex` | Feature test case template |
+| `test/support/w3c_webdriver.ex` | W3C WebDriver session creation |
+| `test/support/selenium_server.ex` | Selenium auto-start |
+| `lib/baudrate_web/live/sandbox_hook.ex` | LiveView sandbox hook |
+| `lib/mix/tasks/selenium_setup.ex` | `mix selenium.setup` task |
+| `test/baudrate_web/features/` | Feature test directory |
+| `config/test.exs` | Wallaby + Firefox config |
