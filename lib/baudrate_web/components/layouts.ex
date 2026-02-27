@@ -308,12 +308,17 @@ defmodule BaudrateWeb.Layouts do
     </main>
 
     <footer class="text-center text-sm text-base-content/70 py-6">
-      {raw(
-        gettext("Of course it runs %{link}! Your public information hub!",
-          link:
-            ~s(<a href="https://github.com/hiroshiyui/baudrate" class="link link-hover" target="_blank" rel="noopener noreferrer">Baudrate</a>)
-        )
-      )}
+      <p>
+        {raw(
+          gettext("Of course it runs %{link}! Your public information hub!",
+            link:
+              ~s(<a href="https://github.com/hiroshiyui/baudrate" class="link link-hover" target="_blank" rel="noopener noreferrer">Baudrate</a>)
+          )
+        )}
+      </p>
+      <p class="mt-1">
+        {gettext("System timezone: %{timezone}", timezone: system_timezone())}
+      </p>
     </footer>
 
     <.flash_group flash={@flash} />
@@ -452,5 +457,25 @@ defmodule BaudrateWeb.Layouts do
       </button>
     </div>
     """
+  end
+
+  defp system_timezone do
+    tz = Baudrate.Setup.get_setting("timezone") || "Etc/UTC"
+
+    offset =
+      case DateTime.now(tz) do
+        {:ok, dt} ->
+          total_seconds = dt.utc_offset + dt.std_offset
+          sign = if total_seconds >= 0, do: "+", else: "-"
+          abs_seconds = abs(total_seconds)
+          hours = div(abs_seconds, 3600)
+          minutes = div(rem(abs_seconds, 3600), 60)
+          " (#{sign}#{String.pad_leading(Integer.to_string(hours), 2, "0")}#{String.pad_leading(Integer.to_string(minutes), 2, "0")})"
+
+        _ ->
+          ""
+      end
+
+    "#{tz}#{offset}"
   end
 end

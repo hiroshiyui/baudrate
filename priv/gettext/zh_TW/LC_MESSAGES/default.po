@@ -25,18 +25,18 @@ msgstr ""
 msgid "Actions"
 msgstr "操作"
 
-#: lib/baudrate_web/components/layouts.ex:347
-#: lib/baudrate_web/components/layouts.ex:359
+#: lib/baudrate_web/components/layouts.ex:352
+#: lib/baudrate_web/components/layouts.ex:364
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "正在嘗試重新連線"
 
-#: lib/baudrate_web/components/layouts.ex:354
+#: lib/baudrate_web/components/layouts.ex:359
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "發生錯誤！"
 
-#: lib/baudrate_web/components/layouts.ex:342
+#: lib/baudrate_web/components/layouts.ex:347
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "找不到網路連線"
@@ -1594,12 +1594,12 @@ msgstr "無法刪除含有子版面的版面。"
 msgid "Change role for %{username}"
 msgstr "更改 %{username} 的角色"
 
-#: lib/baudrate_web/components/layouts.ex:449
+#: lib/baudrate_web/components/layouts.ex:454
 #, elixir-autogen, elixir-format
 msgid "Dark theme"
 msgstr "深色主題"
 
-#: lib/baudrate_web/components/layouts.ex:440
+#: lib/baudrate_web/components/layouts.ex:445
 #, elixir-autogen, elixir-format
 msgid "Light theme"
 msgstr "淺色主題"
@@ -1609,7 +1609,7 @@ msgstr "淺色主題"
 msgid "Open navigation menu"
 msgstr "開啟導覽選單"
 
-#: lib/baudrate_web/components/layouts.ex:431
+#: lib/baudrate_web/components/layouts.ex:436
 #, elixir-autogen, elixir-format
 msgid "System theme"
 msgstr "系統主題"
@@ -2456,12 +2456,12 @@ msgstr "TOTP 設定"
 msgid "TOTP Verification"
 msgstr "TOTP 驗證"
 
-#: lib/baudrate_web/components/layouts.ex:397
+#: lib/baudrate_web/components/layouts.ex:402
 #, elixir-autogen, elixir-format
 msgid "Decrease font size"
 msgstr "縮小字體"
 
-#: lib/baudrate_web/components/layouts.ex:405
+#: lib/baudrate_web/components/layouts.ex:410
 #, elixir-autogen, elixir-format
 msgid "Increase font size"
 msgstr "放大字體"
@@ -2471,12 +2471,12 @@ msgstr "放大字體"
 msgid "Avatar preview"
 msgstr "頭像預覽"
 
-#: lib/baudrate_web/components/layouts.ex:391
+#: lib/baudrate_web/components/layouts.ex:396
 #, elixir-autogen, elixir-format
 msgid "Font size"
 msgstr "字體大小"
 
-#: lib/baudrate_web/components/layouts.ex:422
+#: lib/baudrate_web/components/layouts.ex:427
 #: lib/baudrate_web/live/admin/settings_live.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Theme"
@@ -3834,7 +3834,7 @@ msgstr "留言於"
 msgid "Timezone"
 msgstr "時區"
 
-#: lib/baudrate_web/components/layouts.ex:312
+#: lib/baudrate_web/components/layouts.ex:313
 #, elixir-autogen, elixir-format
 msgid "Of course it runs %{link}! Your public information hub!"
 msgstr "當然是跑 %{link}！您的公開資訊集散地！"
@@ -4157,3 +4157,8 @@ msgstr "未讀"
 #, elixir-autogen, elixir-format
 msgid "Moderated by"
 msgstr "版主"
+
+#: lib/baudrate_web/components/layouts.ex:320
+#, elixir-autogen, elixir-format
+msgid "System timezone: %{timezone}"
+msgstr "系統時區：%{timezone}"

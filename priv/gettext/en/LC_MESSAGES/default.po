@@ -25,18 +25,18 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:347
-#: lib/baudrate_web/components/layouts.ex:359
+#: lib/baudrate_web/components/layouts.ex:352
+#: lib/baudrate_web/components/layouts.ex:364
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:354
+#: lib/baudrate_web/components/layouts.ex:359
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:342
+#: lib/baudrate_web/components/layouts.ex:347
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr ""
@@ -1595,12 +1595,12 @@ msgstr ""
 msgid "Change role for %{username}"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:449
+#: lib/baudrate_web/components/layouts.ex:454
 #, elixir-autogen, elixir-format
 msgid "Dark theme"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:440
+#: lib/baudrate_web/components/layouts.ex:445
 #, elixir-autogen, elixir-format
 msgid "Light theme"
 msgstr ""
@@ -1610,7 +1610,7 @@ msgstr ""
 msgid "Open navigation menu"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:431
+#: lib/baudrate_web/components/layouts.ex:436
 #, elixir-autogen, elixir-format
 msgid "System theme"
 msgstr ""
@@ -2457,12 +2457,12 @@ msgstr ""
 msgid "TOTP Verification"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:397
+#: lib/baudrate_web/components/layouts.ex:402
 #, elixir-autogen, elixir-format
 msgid "Decrease font size"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:405
+#: lib/baudrate_web/components/layouts.ex:410
 #, elixir-autogen, elixir-format
 msgid "Increase font size"
 msgstr ""
@@ -2472,12 +2472,12 @@ msgstr ""
 msgid "Avatar preview"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:391
+#: lib/baudrate_web/components/layouts.ex:396
 #, elixir-autogen, elixir-format
 msgid "Font size"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:422
+#: lib/baudrate_web/components/layouts.ex:427
 #: lib/baudrate_web/live/admin/settings_live.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Theme"
@@ -3845,7 +3845,7 @@ msgstr ""
 msgid "Timezone"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:312
+#: lib/baudrate_web/components/layouts.ex:313
 #, elixir-autogen, elixir-format
 msgid "Of course it runs %{link}! Your public information hub!"
 msgstr ""
@@ -4169,3 +4169,8 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Moderated by"
 msgstr "Moderated by"
+
+#: lib/baudrate_web/components/layouts.ex:320
+#, elixir-autogen, elixir-format
+msgid "System timezone: %{timezone}"
+msgstr "System timezone: %{timezone}"
