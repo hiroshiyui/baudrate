@@ -73,6 +73,25 @@ defmodule BaudrateWeb.Layouts do
                 </.link>
               </li>
               <li>
+                <.link navigate="/notifications">
+                  {gettext("Notifications")}
+                  <span
+                    :if={assigns[:unread_notification_count] && @unread_notification_count > 0}
+                    class="badge badge-secondary badge-xs ml-1"
+                    aria-label={
+                      ngettext(
+                        "%{count} unread notification",
+                        "%{count} unread notifications",
+                        @unread_notification_count,
+                        count: @unread_notification_count
+                      )
+                    }
+                  >
+                    {@unread_notification_count}
+                  </span>
+                </.link>
+              </li>
+              <li>
                 <.link navigate="/following">{gettext("Following")}</.link>
               </li>
               <li>
@@ -163,6 +182,25 @@ defmodule BaudrateWeb.Layouts do
                   }
                 >
                   {@unread_dm_count}
+                </span>
+              </.link>
+            </li>
+            <li>
+              <.link navigate="/notifications" class="btn btn-ghost">
+                {gettext("Notifications")}
+                <span
+                  :if={assigns[:unread_notification_count] && @unread_notification_count > 0}
+                  class="badge badge-secondary badge-xs ml-1"
+                  aria-label={
+                    ngettext(
+                      "%{count} unread notification",
+                      "%{count} unread notifications",
+                      @unread_notification_count,
+                      count: @unread_notification_count
+                    )
+                  }
+                >
+                  {@unread_notification_count}
                 </span>
               </.link>
             </li>
