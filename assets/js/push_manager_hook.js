@@ -46,8 +46,8 @@ const PushManagerHook = {
         this.pushEvent("push_support", { supported: false, subscribed: false })
       })
 
-    this.handleEvent("subscribe_push", () => this.subscribe())
-    this.handleEvent("unsubscribe_push", () => this.unsubscribe())
+    this.el.addEventListener("push:subscribe", () => this.subscribe())
+    this.el.addEventListener("push:unsubscribe", () => this.unsubscribe())
   },
 
   subscribe() {

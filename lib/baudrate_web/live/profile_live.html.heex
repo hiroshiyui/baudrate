@@ -256,7 +256,7 @@
             <button
               type="button"
               class="btn btn-sm btn-outline btn-error"
-              phx-click={JS.push("unsubscribe_push", target: "#push-manager")}
+              phx-click={JS.dispatch("push:unsubscribe", to: "#push-manager")}
             >
               {gettext("Disable Push")}
             </button>
@@ -264,7 +264,7 @@
             <button
               type="button"
               class="btn btn-sm btn-primary"
-              phx-click={JS.push("subscribe_push", target: "#push-manager")}
+              phx-click={JS.dispatch("push:subscribe", to: "#push-manager")}
             >
               {gettext("Enable Push")}
             </button>
