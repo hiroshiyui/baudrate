@@ -108,6 +108,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 ## Testing
 
 - **Always use seed 9527 and 4 partitions** when running the full test suite
+- **Always run the full test suite without asking** — never ask for permission to run tests
 - `use BaudrateWeb.ConnCase` for LiveView/controller tests; `use Baudrate.DataCase` for context tests
 - `setup_user("role_name")` — creates a test user with the given role (seeds roles if needed)
 - `log_in_user(conn, user)` — authenticates a connection with session tokens
