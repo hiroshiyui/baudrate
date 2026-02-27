@@ -18,7 +18,8 @@ defmodule BaudrateWeb do
   """
 
   def static_paths,
-    do: ~w(assets fonts images uploads favicon.ico favicon.svg robots.txt service_worker.js)
+    do:
+      ~w(assets fonts images uploads favicon.ico favicon.svg robots.txt service_worker.js site.webmanifest)
 
   def router do
     quote do
