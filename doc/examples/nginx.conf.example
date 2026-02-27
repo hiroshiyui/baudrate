@@ -4,13 +4,22 @@
 # Replace "/path/to/baudrate" with your actual deployment path.
 # Adjust certificate paths and upstream port as needed.
 #
+# Optional: generate DH parameters for DHE key exchange:
+#   openssl dhparam -out /etc/nginx/dhparam.pem 2048
+#
 # Usage:
 #   cp nginx.conf.example /etc/nginx/sites-available/baudrate
 #   ln -s /etc/nginx/sites-available/baudrate /etc/nginx/sites-enabled/
 #   nginx -t && systemctl reload nginx
 
+# Hide nginx version in response headers and error pages
+server_tokens off;
+
 upstream baudrate {
     server 127.0.0.1:4000;
+
+    # Reuse TCP connections to Phoenix (avoid per-request connect overhead)
+    keepalive 32;
 }
 
 # Redirect HTTP → HTTPS
@@ -34,19 +43,56 @@ server {
     server_name baudrate.example;
 
     # --- TLS (Let's Encrypt) ---
+    # Mozilla Intermediate profile: https://ssl-config.mozilla.org/
     ssl_certificate     /etc/letsencrypt/live/baudrate.example/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/baudrate.example/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
-    ssl_ciphers         HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
+    ssl_ciphers         ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305;
+    ssl_prefer_server_ciphers off;
     ssl_session_cache   shared:SSL:10m;
-    ssl_session_timeout 10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    # DH parameters for DHE ciphers (generate with: openssl dhparam -out /etc/nginx/dhparam.pem 2048)
+    # ssl_dhparam /etc/nginx/dhparam.pem;
+
+    # OCSP stapling — nginx fetches and caches OCSP responses, avoiding
+    # client-side OCSP lookups that add latency and leak browsing data.
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    ssl_trusted_certificate /etc/letsencrypt/live/baudrate.example/chain.pem;
+    resolver 1.1.1.1 8.8.8.8 valid=300s;
+    resolver_timeout 5s;
 
     # --- Security headers ---
+    # NOTE: add_header in location blocks REPLACES server-level headers (nginx
+    # quirk). Static asset locations below must re-include essential headers.
     add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
     add_header X-Content-Type-Options    "nosniff" always;
     add_header X-Frame-Options           "DENY" always;
     add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
+
+    # --- Gzip compression ---
+    # Compress text-based responses at the nginx layer. Significantly reduces
+    # bandwidth for HTML, CSS, JS, and LiveView JSON diffs.
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_min_length 256;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/javascript
+        application/json
+        application/ld+json
+        application/activity+json
+        application/xml
+        application/rss+xml
+        application/atom+xml
+        image/svg+xml;
 
     # --- Request limits ---
     client_max_body_size 20m;
@@ -58,14 +104,29 @@ server {
         alias /path/to/baudrate/priv/static/assets/;
         expires 1y;
         add_header Cache-Control "public, immutable";
+        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        access_log off;
+    }
+
+    # --- User uploads (avatars, article images) ---
+    # Served directly by nginx. nosniff prevents MIME-type confusion attacks.
+    location /uploads/ {
+        alias /path/to/baudrate/priv/static/uploads/;
+        expires 1h;
+        add_header Cache-Control "public";
+        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+        add_header X-Content-Type-Options "nosniff" always;
         access_log off;
     }
 
     # --- Non-fingerprinted static files (short cache) ---
-    location ~ ^/(fonts|images|uploads|favicon\.ico|favicon\.svg|robots\.txt|service_worker\.js|site\.webmanifest) {
+    location ~ ^/(fonts|images|favicon\.ico|favicon\.svg|robots\.txt|service_worker\.js|site\.webmanifest) {
         root /path/to/baudrate/priv/static;
         expires 1h;
         add_header Cache-Control "public";
+        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+        add_header X-Content-Type-Options "nosniff" always;
         access_log off;
     }
 
@@ -95,6 +156,9 @@ server {
         # SET, not append — prevents clients spoofing IPs via X-Forwarded-For
         proxy_set_header X-Forwarded-For   $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Keepalive to upstream (requires proxy_http_version 1.1)
+        proxy_set_header Connection "";
 
         proxy_read_timeout 60s;
         proxy_send_timeout 60s;

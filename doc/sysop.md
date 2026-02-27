@@ -502,13 +502,14 @@ A complete nginx configuration is provided at
 [`doc/examples/nginx.conf.example`](examples/nginx.conf.example). It includes:
 
 - HTTP → HTTPS redirect with ACME challenge passthrough
-- TLS 1.2/1.3 with Let's Encrypt certificate paths
+- TLS 1.2/1.3 (Mozilla Intermediate profile) with OCSP stapling
 - Security headers (HSTS, nosniff, DENY framing, referrer policy)
+- Gzip compression for HTML, CSS, JS, JSON, and ActivityPub payloads
 - LiveView WebSocket proxy (`/live/websocket`) with 24h timeouts
 - **Direct static asset serving** — fingerprinted assets (`/assets/`) with
-  1-year immutable cache; non-fingerprinted files (fonts, images, uploads,
-  favicon, etc.) with 1-hour cache. Served directly by nginx, bypassing the
-  BEAM for better performance.
+  1-year immutable cache; uploads and other static files with 1-hour cache.
+  Served directly by nginx, bypassing the BEAM for better performance.
+- Upstream keepalive connections to Phoenix
 - Reverse proxy to Phoenix on port 4000
 
 To use it:
