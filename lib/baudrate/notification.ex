@@ -26,6 +26,7 @@ defmodule Baudrate.Notification do
 
     * The recipient is the actor (self-notification)
     * The recipient has blocked or muted the actor
+    * The recipient has disabled in-app notifications for this type
 
   Returns `{:ok, :duplicate}` on unique constraint violation (dedup).
 
@@ -36,7 +37,8 @@ defmodule Baudrate.Notification do
     attrs = normalize_attrs(attrs)
 
     with :ok <- check_self_notification(attrs),
-         :ok <- check_blocked_or_muted(attrs) do
+         :ok <- check_blocked_or_muted(attrs),
+         :ok <- check_in_app_preference(attrs) do
       %Notification{}
       |> Notification.changeset(attrs)
       |> Repo.insert()
@@ -237,6 +239,21 @@ defmodule Baudrate.Notification do
   end
 
   defp check_blocked_or_muted(_attrs), do: :ok
+
+  defp check_in_app_preference(%{type: type, user_id: user_id}) when is_binary(type) do
+    case Repo.get(User, user_id) do
+      %User{notification_preferences: prefs} when is_map(prefs) ->
+        case get_in(prefs, [type, "in_app"]) do
+          false -> {:ok, :skipped}
+          _ -> :ok
+        end
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp check_in_app_preference(_attrs), do: :ok
 
   defp has_unique_constraint_error?(errors) do
     Enum.any?(errors, fn

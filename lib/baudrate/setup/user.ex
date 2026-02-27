@@ -58,6 +58,13 @@ defmodule Baudrate.Setup.User do
       linkification for display. Mapped to the ActivityPub `summary` field on the
       Person actor. Validated by `bio_changeset/2`.
 
+  ## Notification Preferences
+
+    * `notification_preferences` — map of per-type notification settings.
+      Keys are notification type strings (e.g. `"mention"`), values are maps
+      with boolean flags like `%{"in_app" => false}`. Missing types default
+      to enabled (`in_app: true`). Validated by `notification_preferences_changeset/2`.
+
   ## Invite Chain Tracking
 
     * `invited_by_id` — references the user who generated the invite code used
@@ -83,6 +90,7 @@ defmodule Baudrate.Setup.User do
     field :signature, :string
     field :bio, :string
     field :dm_access, :string, default: "anyone"
+    field :notification_preferences, :map, default: %{}
 
     belongs_to :role, Baudrate.Setup.Role
     belongs_to :invited_by, __MODULE__
@@ -274,6 +282,37 @@ defmodule Baudrate.Setup.User do
     |> cast(attrs, [:dm_access])
     |> validate_required([:dm_access])
     |> validate_inclusion(:dm_access, ["anyone", "followers", "nobody"])
+  end
+
+  @valid_notification_types ~w(
+    reply_to_article
+    reply_to_comment
+    mention
+    new_follower
+    article_liked
+    article_forwarded
+    moderation_report
+    admin_announcement
+  )
+
+  @doc """
+  Changeset for updating notification preferences.
+
+  Accepts a map of `%{"type" => %{"in_app" => boolean}}`. Only known
+  notification types are allowed; unknown keys are rejected.
+  """
+  def notification_preferences_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:notification_preferences])
+    |> validate_change(:notification_preferences, fn :notification_preferences, prefs ->
+      invalid_types = Map.keys(prefs) -- @valid_notification_types
+
+      if invalid_types == [] do
+        []
+      else
+        [notification_preferences: "contains unknown types: #{Enum.join(invalid_types, ", ")}"]
+      end
+    end)
   end
 
   defp hash_password(changeset) do

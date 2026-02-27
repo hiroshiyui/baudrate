@@ -1323,6 +1323,20 @@ defmodule Baudrate.Auth do
     |> Repo.update()
   end
 
+  # --- Notification Preferences ---
+
+  @doc """
+  Updates a user's notification preferences map.
+
+  The `prefs` map has notification type keys (e.g. `"mention"`) with value
+  maps like `%{"in_app" => false}`. Returns `{:ok, user}` or `{:error, changeset}`.
+  """
+  def update_notification_preferences(user, prefs) when is_map(prefs) do
+    user
+    |> User.notification_preferences_changeset(%{notification_preferences: prefs})
+    |> Repo.update()
+  end
+
   # --- User Blocks ---
 
   @doc """
