@@ -1463,4 +1463,289 @@ defmodule Baudrate.ContentTest do
       refute Content.can_forward_article?(other, article)
     end
   end
+
+  # --- Bookmarks ---
+
+  describe "bookmark_article/2" do
+    test "creates a bookmark for an article" do
+      user = create_user("user")
+
+      board =
+        create_board(%{name: "BM Board", slug: "bm-board-#{System.unique_integer([:positive])}"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Bookmarkable",
+            body: "body",
+            slug: "bookmarkable-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      assert {:ok, bookmark} = Content.bookmark_article(user.id, article.id)
+      assert bookmark.user_id == user.id
+      assert bookmark.article_id == article.id
+      assert is_nil(bookmark.comment_id)
+    end
+
+    test "returns error on duplicate bookmark" do
+      user = create_user("user")
+
+      board =
+        create_board(%{
+          name: "BM Board2",
+          slug: "bm-board2-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Dup BM",
+            body: "body",
+            slug: "dup-bm-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      assert {:ok, _} = Content.bookmark_article(user.id, article.id)
+      assert {:error, changeset} = Content.bookmark_article(user.id, article.id)
+      assert errors_on(changeset)[:user_id] != nil || errors_on(changeset)[:article_id] != nil
+    end
+  end
+
+  describe "bookmark_comment/2" do
+    test "creates a bookmark for a comment" do
+      user = create_user("user")
+
+      board =
+        create_board(%{
+          name: "BM CBoard",
+          slug: "bm-cboard-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Comment Article",
+            body: "body",
+            slug: "comment-art-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "A comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      assert {:ok, bookmark} = Content.bookmark_comment(user.id, comment.id)
+      assert bookmark.comment_id == comment.id
+      assert is_nil(bookmark.article_id)
+    end
+  end
+
+  describe "delete_bookmark/2" do
+    test "removes own bookmark" do
+      user = create_user("user")
+
+      board =
+        create_board(%{
+          name: "Del BM Board",
+          slug: "del-bm-board-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Del BM",
+            body: "body",
+            slug: "del-bm-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, bookmark} = Content.bookmark_article(user.id, article.id)
+      assert {:ok, _} = Content.delete_bookmark(user.id, bookmark.id)
+      refute Content.article_bookmarked?(user.id, article.id)
+    end
+
+    test "ignores other user's bookmark" do
+      user1 = create_user("user")
+      user2 = create_user("user")
+
+      board =
+        create_board(%{
+          name: "Oth BM Board",
+          slug: "oth-bm-board-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Oth BM",
+            body: "body",
+            slug: "oth-bm-#{System.unique_integer([:positive])}",
+            user_id: user1.id
+          },
+          [board.id]
+        )
+
+      {:ok, bookmark} = Content.bookmark_article(user1.id, article.id)
+      assert {:error, :not_found} = Content.delete_bookmark(user2.id, bookmark.id)
+      assert Content.article_bookmarked?(user1.id, article.id)
+    end
+  end
+
+  describe "article_bookmarked?/2" do
+    test "returns true/false correctly" do
+      user = create_user("user")
+
+      board =
+        create_board(%{name: "AB Board", slug: "ab-board-#{System.unique_integer([:positive])}"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "AB Test",
+            body: "body",
+            slug: "ab-test-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      refute Content.article_bookmarked?(user.id, article.id)
+      {:ok, _} = Content.bookmark_article(user.id, article.id)
+      assert Content.article_bookmarked?(user.id, article.id)
+    end
+  end
+
+  describe "toggle_article_bookmark/2" do
+    test "creates then removes bookmark" do
+      user = create_user("user")
+
+      board =
+        create_board(%{
+          name: "Toggle Board",
+          slug: "toggle-board-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Toggle BM",
+            body: "body",
+            slug: "toggle-bm-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      # First toggle: creates
+      assert {:ok, %Baudrate.Content.Bookmark{}} =
+               Content.toggle_article_bookmark(user.id, article.id)
+
+      assert Content.article_bookmarked?(user.id, article.id)
+
+      # Second toggle: removes
+      assert {:ok, :removed} = Content.toggle_article_bookmark(user.id, article.id)
+      refute Content.article_bookmarked?(user.id, article.id)
+    end
+  end
+
+  describe "list_bookmarks/2" do
+    test "returns paginated bookmarks" do
+      user = create_user("user")
+
+      board =
+        create_board(%{
+          name: "List BM Board",
+          slug: "list-bm-board-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "List BM",
+            body: "body",
+            slug: "list-bm-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, _} = Content.bookmark_article(user.id, article.id)
+      result = Content.list_bookmarks(user.id)
+
+      assert length(result.bookmarks) == 1
+      assert result.page == 1
+      assert result.total_pages == 1
+      assert hd(result.bookmarks).article.title == "List BM"
+    end
+
+    test "excludes soft-deleted articles" do
+      user = create_user("user")
+
+      board =
+        create_board(%{name: "SD Board", slug: "sd-board-#{System.unique_integer([:positive])}"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Will Delete",
+            body: "body",
+            slug: "will-delete-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, _} = Content.bookmark_article(user.id, article.id)
+      Content.soft_delete_article(article)
+
+      result = Content.list_bookmarks(user.id)
+      assert result.bookmarks == []
+    end
+
+    test "excludes soft-deleted comments" do
+      user = create_user("user")
+
+      board =
+        create_board(%{
+          name: "SDC Board",
+          slug: "sdc-board-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "SDC Art",
+            body: "body",
+            slug: "sdc-art-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Deletable comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, _} = Content.bookmark_comment(user.id, comment.id)
+      Content.soft_delete_comment(comment)
+
+      result = Content.list_bookmarks(user.id)
+      assert result.bookmarks == []
+    end
+  end
 end
