@@ -72,3 +72,51 @@ is independently functional and committable by topic.
 ### ~~Phase 6: Web Push (VAPID + Service Worker + Encryption)~~ ✅ Done
 
 ### ~~Phase 7: PWA Manifest + Docs~~ ✅ Done
+
+---
+
+## Audit Report: Notification System + Web Push + PWA Manifest (Phases 1–7)
+
+Audit date: 2026-02-27
+
+### Critical Security Issues
+
+- [x] **S1:** SSRF via unvalidated push endpoint URL — `push_subscription.ex` accepts any URL; server POSTs to it later, enabling internal service attacks. **Fix:** `validate_endpoint_url/1` rejects non-HTTPS endpoints
+- [x] **S2:** Open redirect in service worker — `service_worker.js` `clients.openWindow(url)` uses unvalidated URL from push payload; could be `javascript:` or phishing URL. **Fix:** `isSameOrigin()` check before `openWindow`
+- [ ] **S3:** No rate limiting on push subscription API — `/api/push-subscriptions` endpoint has no rate limit plug; attacker can spam subscriptions
+- [x] **S4:** Unbounded `per_page` parameter — `notification.ex` `list_notifications/2` accepts any integer; `per_page: 1_000_000` causes memory exhaustion. **Fix:** capped at `@max_per_page 100`
+
+### High Correctness Issues
+
+- [ ] **C1:** Remote actor block/mute not checked — `check_blocked_or_muted/1` only handles `actor_user_id` (local actors); federated actors bypass mute/block enforcement
+- [x] **C2:** Missing p256dh/auth size validation — RFC 8291 requires p256dh=65 bytes, auth=16 bytes; invalid sizes crash `:crypto.compute_key` during delivery. **Fix:** `validate_binary_size/3` in controller
+- [ ] **C3:** DER signature parsing crash — `vapid.ex` `der_to_raw_p256/1` uses bare pattern match; malformed DER causes `MatchError` crash
+- [ ] **C4:** Signature component overflow in `pad_or_trim_to_32` — doesn't fail on >32 non-zero bytes; produces invalid 65+ byte signature
+
+### Web Push Cryptography Issues
+
+- [ ] **C5:** Incorrect RFC 5869 HKDF parameter order — `web_push.ex` HKDF implementation may have salt/IKM swapped vs. RFC 5869/8291
+
+### Medium Severity Issues
+
+- [ ] **M1:** N+1 query in preference check — every `create_notification` does `Repo.get(User, user_id)` + `web_push_enabled_for?/2` does another; 1000 announcements = 2000 extra queries
+- [x] **M2:** 20+ English translations empty — empty `msgstr` for notification/push strings in `en/default.po`. **Fix:** filled all msgstr, removed fuzzy flags
+- [ ] **M3:** No loading state on push buttons — `push_manager_hook.js` subscribe/unsubscribe have no UI feedback; double-click possible
+- [ ] **C6:** Unbounded web push signature component sizes — `vapid.ex` no validation that `r_len`/`s_len` are valid P-256 values
+
+### Low Severity Issues
+
+- [ ] **L1:** Missing `aria-labelledby` on push manager — `profile_live.html.heex:252` accessibility issue
+- [ ] **L2:** Notification for deleted article shows empty body — soft-deleted articles result in empty push notification body
+- [ ] **L3:** Preference check returns `:ok` for deleted user — caught by FK constraint but poor design
+- [ ] **L4:** Service worker error handling conflates errors — `push_manager_hook.js` conflates "unsupported" and "permission denied"
+
+### Test Coverage Gaps
+
+- [ ] **T1:** No tests for remote actor block/mute notification suppression
+- [x] **T2:** No tests for push event handlers in ProfileLive — `push_support`, `push_subscribed`, `push_unsubscribed`, `toggle_web_push_pref`. **Fix:** 8 tests added
+- [x] **T3:** No endpoint URL validation tests / p256dh/auth size validation tests. **Fix:** 3 SSRF tests + 2 size tests added
+- [x] **T4:** No per-page bounds test. **Fix:** `caps per_page at 100` test added
+- [ ] **T5:** No soft-delete content tests — notification behavior when referenced article/comment is deleted
+- [ ] **T6:** No RFC 8291 test vectors — no actual decryption test for `encrypt/3`
+- [ ] **T7:** No DER edge case tests — 33+ byte r/s, truncated/malformed DER, empty r/s
