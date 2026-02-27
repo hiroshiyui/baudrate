@@ -90,10 +90,11 @@ defmodule Baudrate.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["compile", "tailwind baudrate", "esbuild baudrate"],
+      "assets.build": ["compile", "tailwind baudrate", "esbuild baudrate", "esbuild service_worker"],
       "assets.deploy": [
         "tailwind baudrate --minify",
         "esbuild baudrate --minify",
+        "esbuild service_worker --minify",
         "phx.digest"
       ],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]

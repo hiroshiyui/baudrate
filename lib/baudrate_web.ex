@@ -17,7 +17,8 @@ defmodule BaudrateWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images uploads favicon.ico favicon.svg robots.txt)
+  def static_paths,
+    do: ~w(assets fonts images uploads favicon.ico favicon.svg robots.txt service_worker.js)
 
   def router do
     quote do
