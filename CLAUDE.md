@@ -114,6 +114,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - `log_in_user(conn, user)` — authenticates a connection with session tokens
 - `errors_on(changeset)` — extracts validation errors as `%{field: [messages]}`
 - Async tests using Mox **must** call `Mox.set_mox_private()` in setup to avoid stub leaks between concurrent tests
+- **Test stability is a priority** — tests must pass deterministically across all partitions under concurrent execution, not just in isolation. Never rely on `Process.sleep` for timestamp separation; use explicit timestamps via `Repo.update_all` instead. Queries with user-visible ordering must include a tiebreaker (e.g. `desc: id`) to avoid nondeterminism when timestamps collide.
 
 ## Key Entry Points
 
