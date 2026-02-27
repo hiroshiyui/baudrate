@@ -492,12 +492,12 @@ msgstr "您將無法再次查看這些救援碼！"
 msgid "Are you sure you want to remove your avatar?"
 msgstr "確定要移除頭像嗎？"
 
-#: lib/baudrate_web/live/profile_live.ex:368
+#: lib/baudrate_web/live/profile_live.ex:372
 #, elixir-autogen, elixir-format
 msgid "Avatar removed."
 msgstr "頭像已移除。"
 
-#: lib/baudrate_web/live/profile_live.ex:399
+#: lib/baudrate_web/live/profile_live.ex:403
 #, elixir-autogen, elixir-format
 msgid "Avatar updated successfully."
 msgstr "頭像已成功更新。"
@@ -523,12 +523,12 @@ msgstr "變更頭像"
 msgid "Crop Avatar"
 msgstr "裁剪頭像"
 
-#: lib/baudrate_web/live/profile_live.ex:417
+#: lib/baudrate_web/live/profile_live.ex:421
 #, elixir-autogen, elixir-format
 msgid "Failed to process avatar image."
 msgstr "處理頭像圖片失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:408
+#: lib/baudrate_web/live/profile_live.ex:412
 #, elixir-autogen, elixir-format
 msgid "Invalid image file."
 msgstr "無效的圖片檔案。"
@@ -546,7 +546,7 @@ msgid "Save"
 msgstr "儲存"
 
 #: lib/baudrate_web/live/profile_live.ex:91
-#: lib/baudrate_web/live/profile_live.ex:374
+#: lib/baudrate_web/live/profile_live.ex:378
 #, elixir-autogen, elixir-format
 msgid "Too many avatar changes. Please try again later."
 msgstr "頭像變更次數過多，請稍後再試。"
@@ -723,12 +723,12 @@ msgstr "由 %{author} 發表"
 msgid "Add Language"
 msgstr "新增語言"
 
-#: lib/baudrate_web/live/profile_live.ex:457
+#: lib/baudrate_web/live/profile_live.ex:461
 #, elixir-autogen, elixir-format
 msgid "Failed to update language preferences."
 msgstr "更新語言偏好失敗。"
 
-#: lib/baudrate_web/live/profile_live.ex:452
+#: lib/baudrate_web/live/profile_live.ex:456
 #, elixir-autogen, elixir-format
 msgid "Language preferences updated."
 msgstr "語言偏好已更新。"
@@ -2012,7 +2012,7 @@ msgstr "密碼重設失敗。"
 msgid "Password reset successful! You can now sign in."
 msgstr "密碼重設成功！您現在可以登入。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:373
+#: lib/baudrate_web/live/profile_live.html.heex:372
 #, elixir-autogen, elixir-format
 msgid "Preview:"
 msgstr "預覽："
@@ -2028,7 +2028,7 @@ msgstr "重設密碼"
 msgid "Save Agreement"
 msgstr "儲存條款"
 
-#: lib/baudrate_web/live/profile_live.html.heex:379
+#: lib/baudrate_web/live/profile_live.html.heex:378
 #, elixir-autogen, elixir-format
 msgid "Save Signature"
 msgstr "儲存簽名檔"
@@ -2040,7 +2040,7 @@ msgid "Save these recovery codes now!"
 msgstr "請立即儲存這些救援碼！"
 
 #: lib/baudrate_web/live/article_live.html.heex:192
-#: lib/baudrate_web/live/profile_live.html.heex:357
+#: lib/baudrate_web/live/profile_live.html.heex:356
 #: lib/baudrate_web/live/user_profile_live.html.heex:100
 #, elixir-autogen, elixir-format
 msgid "Signature"
@@ -2062,7 +2062,7 @@ msgstr "這些救援碼是您忘記密碼時恢復帳號的唯一方式。每個
 msgid "Too many attempts. Please try again later."
 msgstr "嘗試次數過多，請稍後再試。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:370
+#: lib/baudrate_web/live/profile_live.html.heex:369
 #, elixir-autogen, elixir-format
 msgid "Your signature (Markdown supported, max 500 characters)"
 msgstr "您的簽名檔（支援 Markdown，最多 500 字元）"
@@ -2520,7 +2520,7 @@ msgstr "取消上傳"
 msgid "Delete comment"
 msgstr "刪除留言"
 
-#: lib/baudrate_web/components/layouts/root.html.heex:59
+#: lib/baudrate_web/components/layouts/root.html.heex:61
 #, elixir-autogen, elixir-format
 msgid "Skip to main content"
 msgstr "跳至主要內容"
@@ -2587,19 +2587,19 @@ msgid "Markdown preview"
 msgstr "Markdown 預覽"
 
 #: lib/baudrate_web/live/conversations_live.ex:92
-#: lib/baudrate_web/live/notifications_live.ex:107
+#: lib/baudrate_web/live/notifications_live.ex:109
 #, elixir-autogen, elixir-format
 msgid "%{count}d ago"
 msgstr "%{count} 天前"
 
 #: lib/baudrate_web/live/conversations_live.ex:91
-#: lib/baudrate_web/live/notifications_live.ex:106
+#: lib/baudrate_web/live/notifications_live.ex:108
 #, elixir-autogen, elixir-format
 msgid "%{count}h ago"
 msgstr "%{count} 小時前"
 
 #: lib/baudrate_web/live/conversations_live.ex:90
-#: lib/baudrate_web/live/notifications_live.ex:105
+#: lib/baudrate_web/live/notifications_live.ex:107
 #, elixir-autogen, elixir-format
 msgid "%{count}m ago"
 msgstr "%{count} 分鐘前"
@@ -2744,7 +2744,7 @@ msgid "You cannot send messages to this user."
 msgstr "您無法傳送訊息給此使用者。"
 
 #: lib/baudrate_web/live/conversations_live.ex:89
-#: lib/baudrate_web/live/notifications_live.ex:104
+#: lib/baudrate_web/live/notifications_live.ex:106
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "剛才"
@@ -2827,18 +2827,18 @@ msgstr "靜音 %{username}"
 msgid "Mute this user? Their content will be hidden from your view."
 msgstr "確定要靜音此使用者？其發佈的內容將會從您的檢視中隱藏。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:386
+#: lib/baudrate_web/live/profile_live.html.heex:385
 #, elixir-autogen, elixir-format
 msgid "Muted Users"
 msgstr "已靜音的使用者"
 
-#: lib/baudrate_web/live/profile_live.html.heex:388
+#: lib/baudrate_web/live/profile_live.html.heex:387
 #, elixir-autogen, elixir-format
 msgid "No muted users."
 msgstr "沒有已靜音的使用者。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:411
-#: lib/baudrate_web/live/profile_live.html.heex:413
+#: lib/baudrate_web/live/profile_live.html.heex:410
+#: lib/baudrate_web/live/profile_live.html.heex:412
 #: lib/baudrate_web/live/user_profile_live.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Unmute"
@@ -3082,17 +3082,17 @@ msgstr "%{username} 的文章"
 msgid "Articles in %{board_name}"
 msgstr "%{board_name} 的文章"
 
-#: lib/baudrate_web/components/layouts/root.html.heex:26
+#: lib/baudrate_web/components/layouts/root.html.heex:28
 #, elixir-autogen, elixir-format
 msgid "Atom Feed"
 msgstr "Atom 訂閱"
 
-#: lib/baudrate_web/components/layouts/root.html.heex:40
+#: lib/baudrate_web/components/layouts/root.html.heex:42
 #, elixir-autogen, elixir-format
 msgid "Board Atom Feed"
 msgstr "看板 Atom 訂閱"
 
-#: lib/baudrate_web/components/layouts/root.html.heex:34
+#: lib/baudrate_web/components/layouts/root.html.heex:36
 #, elixir-autogen, elixir-format
 msgid "Board RSS Feed"
 msgstr "看板 RSS 訂閱"
@@ -3125,7 +3125,7 @@ msgstr "無效的工作階段。"
 msgid "Invalid verification code. Please try again."
 msgstr "驗證碼無效，請重試。"
 
-#: lib/baudrate_web/components/layouts/root.html.heex:20
+#: lib/baudrate_web/components/layouts/root.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "RSS Feed"
 msgstr "RSS 訂閱"
@@ -3658,7 +3658,7 @@ msgstr "已追蹤"
 msgid "Anyone can post to this board"
 msgstr "任何人皆可發文至此看板"
 
-#: lib/baudrate_web/live/profile_live.html.heex:335
+#: lib/baudrate_web/live/profile_live.html.heex:334
 #: lib/baudrate_web/live/user_profile_live.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "Bio"
@@ -3737,7 +3737,7 @@ msgstr "僅被追蹤的使用者可發文至此看板"
 msgid "Remote actor not found."
 msgstr "找不到遠端使用者。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:350
+#: lib/baudrate_web/live/profile_live.html.heex:349
 #, elixir-autogen, elixir-format
 msgid "Save Bio"
 msgstr "儲存自我介紹"
@@ -3748,7 +3748,7 @@ msgstr "儲存自我介紹"
 msgid "Search for a remote actor to follow (e.g. @user@domain)"
 msgstr "搜尋要追蹤的遠端使用者（例如 @user@domain）"
 
-#: lib/baudrate_web/live/profile_live.html.heex:347
+#: lib/baudrate_web/live/profile_live.html.heex:346
 #, elixir-autogen, elixir-format
 msgid "Tell others about yourself (max 500 characters)"
 msgstr "介紹自己（最多 500 字元）"
@@ -3937,8 +3937,8 @@ msgstr "通知"
 msgid "Mark all as read"
 msgstr "全部標為已讀"
 
-#: lib/baudrate_web/live/notifications_live.html.heex:86
-#: lib/baudrate_web/live/notifications_live.html.heex:87
+#: lib/baudrate_web/live/notifications_live.html.heex:94
+#: lib/baudrate_web/live/notifications_live.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Mark as read"
 msgstr "標為已讀"
@@ -3948,7 +3948,7 @@ msgstr "標為已讀"
 msgid "No notifications yet."
 msgstr "目前沒有通知。"
 
-#: lib/baudrate_web/live/notifications_live.html.heex:17
+#: lib/baudrate_web/live/notifications_live.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "You'll be notified when someone replies, mentions you, or follows you."
 msgstr "當有人回覆、提及或追蹤您時，您會收到通知。"
@@ -3998,23 +3998,23 @@ msgstr "發送了通知給您"
 msgid "submitted a moderation report"
 msgstr "提交了檢舉報告"
 
-#: lib/baudrate_web/live/profile_live.ex:331
-#: lib/baudrate_web/live/profile_live.ex:352
+#: lib/baudrate_web/live/profile_live.ex:335
+#: lib/baudrate_web/live/profile_live.ex:356
 #, elixir-autogen, elixir-format
 msgid "Failed to update notification preferences."
 msgstr "更新通知偏好設定失敗。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:281
+#: lib/baudrate_web/live/profile_live.html.heex:283
 #, elixir-autogen, elixir-format
 msgid "Notification Preferences"
 msgstr "通知偏好設定"
 
-#: lib/baudrate_web/live/profile_live.html.heex:253
+#: lib/baudrate_web/live/profile_live.html.heex:254
 #, elixir-autogen, elixir-format
 msgid "Browser Push Notifications"
 msgstr "瀏覽器推播通知"
 
-#: lib/baudrate_web/live/profile_live.html.heex:283
+#: lib/baudrate_web/live/profile_live.html.heex:285
 #, elixir-autogen, elixir-format
 msgid "Choose which notifications you receive."
 msgstr "選擇要接收哪些通知。"
@@ -4024,17 +4024,17 @@ msgstr "選擇要接收哪些通知。"
 msgid "Configured"
 msgstr "已設定"
 
-#: lib/baudrate_web/live/profile_live.html.heex:261
+#: lib/baudrate_web/live/profile_live.html.heex:263
 #, elixir-autogen, elixir-format
 msgid "Disable Push"
 msgstr "停用推播"
 
-#: lib/baudrate_web/live/profile_live.html.heex:269
+#: lib/baudrate_web/live/profile_live.html.heex:271
 #, elixir-autogen, elixir-format
 msgid "Enable Push"
 msgstr "啟用推播"
 
-#: lib/baudrate_web/live/profile_live.ex:309
+#: lib/baudrate_web/live/profile_live.ex:313
 #, elixir-autogen, elixir-format
 msgid "Failed to enable push notifications."
 msgstr "啟用推播通知失敗。"
@@ -4044,8 +4044,8 @@ msgstr "啟用推播通知失敗。"
 msgid "Generate VAPID Keys"
 msgstr "產生 VAPID 金鑰"
 
-#: lib/baudrate_web/live/profile_live.html.heex:290
-#: lib/baudrate_web/live/profile_live.html.heex:309
+#: lib/baudrate_web/live/profile_live.html.heex:292
+#: lib/baudrate_web/live/profile_live.html.heex:310
 #, elixir-autogen, elixir-format
 msgid "In-App"
 msgstr "應用程式內"
@@ -4055,28 +4055,28 @@ msgstr "應用程式內"
 msgid "Public Key"
 msgstr "公鑰"
 
-#: lib/baudrate_web/live/profile_live.html.heex:291
-#: lib/baudrate_web/live/profile_live.html.heex:323
+#: lib/baudrate_web/live/profile_live.html.heex:293
+#: lib/baudrate_web/live/profile_live.html.heex:322
 #, elixir-autogen, elixir-format
 msgid "Push"
 msgstr "推播"
 
-#: lib/baudrate_web/live/profile_live.ex:303
+#: lib/baudrate_web/live/profile_live.ex:307
 #, elixir-autogen, elixir-format
 msgid "Push notification permission was denied by the browser."
 msgstr "瀏覽器拒絕了推播通知權限。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:274
+#: lib/baudrate_web/live/profile_live.html.heex:276
 #, elixir-autogen, elixir-format
 msgid "Push notifications are not supported by this browser."
 msgstr "此瀏覽器不支援推播通知。"
 
-#: lib/baudrate_web/live/profile_live.ex:294
+#: lib/baudrate_web/live/profile_live.ex:298
 #, elixir-autogen, elixir-format
 msgid "Push notifications disabled."
 msgstr "推播通知已停用。"
 
-#: lib/baudrate_web/live/profile_live.ex:286
+#: lib/baudrate_web/live/profile_live.ex:290
 #, elixir-autogen, elixir-format
 msgid "Push notifications enabled."
 msgstr "推播通知已啟用。"
@@ -4086,7 +4086,7 @@ msgstr "推播通知已啟用。"
 msgid "This will generate new VAPID keys. Existing push subscriptions will stop working. Continue?"
 msgstr "這將產生新的 VAPID 金鑰。現有的推播訂閱將會失效。確定要繼續嗎？"
 
-#: lib/baudrate_web/live/profile_live.html.heex:289
+#: lib/baudrate_web/live/profile_live.html.heex:291
 #, elixir-autogen, elixir-format
 msgid "Type"
 msgstr "類型"
