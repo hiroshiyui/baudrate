@@ -34,8 +34,13 @@ defmodule BaudrateWeb.Endpoint do
   ]
 
   socket "/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [:peer_data, session: @session_options]],
-    longpoll: [connect_info: [:peer_data, session: @session_options]]
+    websocket: [connect_info: [:peer_data, :user_agent, session: @session_options]],
+    longpoll: [connect_info: [:peer_data, :user_agent, session: @session_options]]
+
+  # Allow browser tests (Wallaby) to share the Ecto sandbox connection
+  if Application.compile_env(:baudrate, :sql_sandbox) do
+    plug Phoenix.Ecto.SQL.Sandbox
+  end
 
   # Extract real client IP from proxy header (configured in prod.exs only).
   # Must run before any rate-limiting plug so buckets use the real client IP.

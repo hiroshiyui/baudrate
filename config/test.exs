@@ -13,12 +13,17 @@ config :baudrate, Baudrate.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 
-# We don't run a server during test. If one is required,
-# you can enable the server option below.
+# Start the server for browser (feature) tests.
+# Each partition gets its own port to avoid collisions.
+partition = String.to_integer(System.get_env("MIX_TEST_PARTITION") || "1")
+
 config :baudrate, BaudrateWeb.Endpoint,
-  http: [ip: {127, 0, 0, 1}, port: 4002],
+  http: [ip: {127, 0, 0, 1}, port: 4002 + partition],
   secret_key_base: "qMZzvuSIyA9yTsYnWHQ2a3Yj1ICdEOTpsRVEwhHaN2mE1GqbomjgMl5G7cw/XUxL",
-  server: false
+  server: true
+
+# Enable Ecto SQL sandbox for browser tests (Wallaby)
+config :baudrate, :sql_sandbox, true
 
 # Print only warnings and errors during test
 config :logger, level: :warning
@@ -47,3 +52,21 @@ config :baudrate, allow_http_localhost: true
 # Bypass SSRF checks in tests so Req.Test stubs can intercept HTTP calls
 config :baudrate, :bypass_ssrf_check, true
 config :baudrate, :req_test_options, plug: {Req.Test, Baudrate.Federation.HTTPClient}
+
+# Wallaby browser testing (Firefox via Selenium)
+config :wallaby,
+  driver: Wallaby.Selenium,
+  base_url: "http://localhost:#{4002 + partition}",
+  selenium: [
+    capabilities: %{
+      "browserName" => "firefox",
+      "moz:firefoxOptions" => %{
+        "args" => ["-headless"],
+        "prefs" => %{
+          "general.useragent.override" => "Wallaby/Firefox"
+        }
+      }
+    }
+  ],
+  screenshot_on_failure: true,
+  screenshot_dir: "tmp/wallaby_screenshots"

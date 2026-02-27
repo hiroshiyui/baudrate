@@ -52,6 +52,10 @@ defmodule BaudrateWeb do
     quote do
       use Phoenix.LiveView
 
+      if Application.compile_env(:baudrate, :sql_sandbox) do
+        on_mount BaudrateWeb.SandboxHook
+      end
+
       unquote(html_helpers())
     end
   end
