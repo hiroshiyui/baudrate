@@ -1,0 +1,91 @@
+<div class="space-y-4">
+  <h1 class="text-2xl font-bold">{gettext("Bookmarks")}</h1>
+
+  <div :if={@bookmarks == []} class="text-center py-12 text-base-content/70">
+    <.icon name="hero-star" class="size-12 mx-auto mb-4 opacity-50" />
+    <p class="text-lg">{gettext("No bookmarks yet.")}</p>
+  </div>
+
+  <div :if={@bookmarks != []} class="space-y-2">
+    <div :for={bookmark <- @bookmarks} class="card bg-base-200 shadow-sm">
+      <div class="card-body p-4 flex flex-row items-start gap-3">
+        <%!-- Type icon --%>
+        <div class="flex-shrink-0 rounded-full p-2 bg-base-300">
+          <.icon
+            name={if bookmark.article, do: "hero-document-text", else: "hero-chat-bubble-left"}
+            class="size-5 text-base-content/70"
+          />
+        </div>
+
+        <%!-- Content --%>
+        <div class="flex-1 min-w-0">
+          <%!-- Article bookmark --%>
+          <div :if={bookmark.article}>
+            <.link
+              navigate={bookmark_target_link(bookmark)}
+              class="font-semibold link link-hover"
+            >
+              {bookmark.article.title}
+            </.link>
+            <div class="flex items-center gap-2 text-sm text-base-content/70 mt-1">
+              <span :if={bookmark.article.user}>
+                {gettext("by")} {display_name(bookmark.article.user)}
+              </span>
+              <span :if={bookmark.article.boards != []}>&middot;</span>
+              <span :for={board <- bookmark.article.boards || []}>
+                {board.name}
+              </span>
+              <span>&middot;</span>
+              <time datetime={datetime_attr(bookmark.inserted_at)}>
+                {format_datetime(bookmark.inserted_at)}
+              </time>
+            </div>
+          </div>
+
+          <%!-- Comment bookmark --%>
+          <div :if={bookmark.comment}>
+            <.link
+              :if={bookmark_target_link(bookmark)}
+              navigate={bookmark_target_link(bookmark)}
+              class="font-semibold link link-hover"
+            >
+              {if bookmark.comment.article,
+                do: bookmark.comment.article.title,
+                else: gettext("Comment")}
+            </.link>
+            <p class="text-sm text-base-content/70 mt-1 line-clamp-2">
+              {String.slice(bookmark.comment.body || "", 0..200)}
+            </p>
+            <div class="flex items-center gap-2 text-sm text-base-content/70 mt-1">
+              <span :if={bookmark.comment.user}>
+                {gettext("by")} {display_name(bookmark.comment.user)}
+              </span>
+              <span>&middot;</span>
+              <time datetime={datetime_attr(bookmark.inserted_at)}>
+                {format_datetime(bookmark.inserted_at)}
+              </time>
+            </div>
+          </div>
+        </div>
+
+        <%!-- Remove button --%>
+        <button
+          phx-click="remove_bookmark"
+          phx-value-id={bookmark.id}
+          class="btn btn-ghost btn-xs flex-shrink-0"
+          aria-label={gettext("Remove bookmark")}
+          title={gettext("Remove bookmark")}
+        >
+          <.icon name="hero-x-mark" class="size-4" />
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <.pagination
+    :if={@bookmarks != []}
+    page={@page}
+    total_pages={@total_pages}
+    path={~p"/bookmarks"}
+  />
+</div>

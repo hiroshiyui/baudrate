@@ -251,6 +251,7 @@ defmodule BaudrateWeb.Router do
       live "/notifications", NotificationsLive
       live "/following", FollowingLive
       live "/feed", FeedLive
+      live "/bookmarks", BookmarksLive
     end
 
     delete "/logout", SessionController, :delete

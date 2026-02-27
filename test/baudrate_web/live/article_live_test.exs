@@ -529,6 +529,32 @@ defmodule BaudrateWeb.ArticleLiveTest do
     end
   end
 
+  describe "bookmark" do
+    test "toggle bookmark button", %{conn: conn, article: article} do
+      {:ok, lv, html} = live(conn, "/articles/#{article.slug}")
+      # Should show unbookmarked state
+      assert html =~ "Bookmark"
+      refute html =~ "Bookmarked"
+
+      # Click to bookmark
+      lv |> element(~s|button[phx-click="toggle_bookmark"]|) |> render_click()
+      html = render(lv)
+      assert html =~ "Bookmarked"
+
+      # Click to unbookmark
+      lv |> element(~s|button[phx-click="toggle_bookmark"]|) |> render_click()
+      html = render(lv)
+      assert html =~ "hero-star"
+      refute html =~ "hero-star-solid"
+    end
+
+    test "guest does not see bookmark button", %{article: article} do
+      conn = Phoenix.ConnTest.build_conn()
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+      refute html =~ "toggle_bookmark"
+    end
+  end
+
   test "threaded replies stay with their root when paginated", %{
     conn: conn,
     user: user,

@@ -71,6 +71,13 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:forward_search_open, false)
         |> assign(:forward_search_results, [])
         |> assign(:forward_search_query, "")
+        |> assign(
+          :bookmarked,
+          if(current_user,
+            do: Content.article_bookmarked?(current_user.id, article.id),
+            else: false
+          )
+        )
 
       if connected?(socket), do: ContentPubSub.subscribe_article(article.id)
 
@@ -162,6 +169,15 @@ defmodule BaudrateWeb.ArticleLive do
     else
       {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
     end
+  end
+
+  @impl true
+  def handle_event("toggle_bookmark", _params, socket) do
+    user = socket.assigns.current_user
+    article = socket.assigns.article
+    Content.toggle_article_bookmark(user.id, article.id)
+    bookmarked = Content.article_bookmarked?(user.id, article.id)
+    {:noreply, assign(socket, :bookmarked, bookmarked)}
   end
 
   @impl true

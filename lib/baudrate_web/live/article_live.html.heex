@@ -70,6 +70,18 @@
           {gettext("History")}
           <span class="badge badge-sm">{@revision_count}</span>
         </.link>
+        <button
+          :if={@current_user}
+          phx-click="toggle_bookmark"
+          class="btn btn-sm btn-ghost"
+          aria-label={if @bookmarked, do: gettext("Remove bookmark"), else: gettext("Bookmark")}
+        >
+          <.icon
+            name={if @bookmarked, do: "hero-star-solid", else: "hero-star"}
+            class="size-4"
+          />
+          {if @bookmarked, do: gettext("Bookmarked"), else: gettext("Bookmark")}
+        </button>
       </div>
     </div>
 
