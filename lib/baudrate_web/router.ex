@@ -55,7 +55,7 @@ defmodule BaudrateWeb.Router do
     # replacing the CSS framework.
     plug :put_secure_browser_headers, %{
       "content-security-policy" =>
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: ws: wss:; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: ws: wss:; worker-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
       "permissions-policy" => "geolocation=(), microphone=(), camera=()",
       "referrer-policy" => "strict-origin-when-cross-origin",
       "x-frame-options" => "DENY"
@@ -76,6 +76,14 @@ defmodule BaudrateWeb.Router do
     pipe_through :api
 
     get "/health", HealthController, :check
+  end
+
+  # Push subscription API (requires browser session for CSRF + auth)
+  scope "/api", BaudrateWeb do
+    pipe_through [:browser]
+
+    post "/push-subscriptions", PushSubscriptionController, :create
+    delete "/push-subscriptions", PushSubscriptionController, :delete
   end
 
   pipeline :activity_pub do
