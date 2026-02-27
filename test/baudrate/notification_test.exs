@@ -275,6 +275,22 @@ defmodule Baudrate.NotificationTest do
       assert length(result2.notifications) == 1
     end
 
+    test "caps per_page at 100", %{user: user} do
+      for i <- 1..3 do
+        a = create_user("cap_#{i}")
+
+        Notification.create_notification(%{
+          type: "article_liked",
+          user_id: user.id,
+          actor_user_id: a.id
+        })
+      end
+
+      result = Notification.list_notifications(user.id, per_page: 999_999)
+      assert length(result.notifications) == 3
+      assert result.total_pages == 1
+    end
+
     test "does not return other users' notifications", %{user: user, actor: actor} do
       other_user = create_user("other_recipient")
 

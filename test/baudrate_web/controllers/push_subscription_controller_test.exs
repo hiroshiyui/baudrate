@@ -87,6 +87,32 @@ defmodule BaudrateWeb.PushSubscriptionControllerTest do
       assert json_response(conn, 422)["errors"]
     end
 
+    test "returns 422 with wrong p256dh size (32 bytes instead of 65)", %{conn: conn} do
+      params = %{
+        "endpoint" => "https://push.example.com/send/bad-size",
+        "p256dh" => Base.url_encode64(:crypto.strong_rand_bytes(32), padding: false),
+        "auth" => Base.url_encode64(:crypto.strong_rand_bytes(16), padding: false)
+      }
+
+      conn = post(conn, ~p"/api/push-subscriptions", params)
+      response = json_response(conn, 422)
+      assert response["errors"]["p256dh"] == ["invalid size"]
+    end
+
+    test "returns 422 with wrong auth size (32 bytes instead of 16)", %{conn: conn} do
+      {pub, _priv} = :crypto.generate_key(:ecdh, :prime256v1)
+
+      params = %{
+        "endpoint" => "https://push.example.com/send/bad-auth-size",
+        "p256dh" => Base.url_encode64(pub, padding: false),
+        "auth" => Base.url_encode64(:crypto.strong_rand_bytes(32), padding: false)
+      }
+
+      conn = post(conn, ~p"/api/push-subscriptions", params)
+      response = json_response(conn, 422)
+      assert response["errors"]["auth"] == ["invalid size"]
+    end
+
     test "returns 422 with invalid base64url encoding", %{conn: conn} do
       params = %{
         "endpoint" => "https://push.example.com/send/bad",

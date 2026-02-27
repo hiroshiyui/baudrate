@@ -154,6 +154,64 @@ defmodule BaudrateWeb.ProfileLiveTest do
     end
   end
 
+  describe "push notifications" do
+    test "renders push manager hook", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/profile")
+      assert html =~ "push-manager"
+      assert html =~ "PushManagerHook"
+    end
+
+    test "push_support event shows enable button", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/profile")
+      html = render_hook(lv, "push_support", %{"supported" => true, "subscribed" => false})
+      assert html =~ "Enable Push"
+    end
+
+    test "push_subscribed shows disable button", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/profile")
+      render_hook(lv, "push_support", %{"supported" => true, "subscribed" => false})
+      html = render_hook(lv, "push_subscribed", %{})
+      assert html =~ "Disable Push"
+    end
+
+    test "push_unsubscribed shows enable button", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/profile")
+      render_hook(lv, "push_support", %{"supported" => true, "subscribed" => true})
+      html = render_hook(lv, "push_unsubscribed", %{})
+      assert html =~ "Enable Push"
+    end
+
+    test "push column visible only when subscribed", %{conn: conn} do
+      {:ok, lv, html} = live(conn, "/profile")
+      # Not subscribed: no Push column header in notification prefs table
+      refute html =~ ~s(<th class="text-center">Push</th>)
+
+      html = render_hook(lv, "push_support", %{"supported" => true, "subscribed" => true})
+      assert html =~ ~s(<th class="text-center">Push</th>)
+    end
+
+    test "toggle_web_push_pref updates preferences", %{conn: conn, user: user} do
+      {:ok, lv, _html} = live(conn, "/profile")
+      render_hook(lv, "push_support", %{"supported" => true, "subscribed" => true})
+      render_click(lv, "toggle_web_push_pref", %{"type" => "mention"})
+
+      updated = Repo.get!(Baudrate.Setup.User, user.id)
+      assert updated.notification_preferences["mention"]["web_push"] == false
+    end
+
+    test "push_permission_denied shows flash", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/profile")
+      html = render_hook(lv, "push_permission_denied", %{})
+      assert html =~ "denied"
+    end
+
+    test "push_subscribe_error shows flash", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/profile")
+      html = render_hook(lv, "push_subscribe_error", %{})
+      assert html =~ "Failed to enable push notifications"
+    end
+  end
+
   describe "remove avatar" do
     test "removes user avatar", %{conn: conn, user: user} do
       {:ok, _} = Auth.update_avatar(user, "test-avatar-id")

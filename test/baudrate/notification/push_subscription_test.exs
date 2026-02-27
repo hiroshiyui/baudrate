@@ -81,15 +81,51 @@ defmodule Baudrate.Notification.PushSubscriptionTest do
 
     test "validates endpoint max length", %{user: user} do
       attrs = %{
-        endpoint: String.duplicate("a", 2049),
+        endpoint: "https://push.example.com/" <> String.duplicate("a", 2049),
         p256dh: :crypto.strong_rand_bytes(65),
         auth: :crypto.strong_rand_bytes(16),
         user_id: user.id
       }
 
       changeset = PushSubscription.changeset(%PushSubscription{}, attrs)
-      assert %{endpoint: [msg]} = errors_on(changeset)
-      assert msg =~ "at most"
+      errors = errors_on(changeset)
+      assert Enum.any?(errors[:endpoint] || [], &(&1 =~ "at most"))
+    end
+
+    test "rejects non-HTTPS endpoint (http://)", %{user: user} do
+      attrs = %{
+        endpoint: "http://push.example.com/send/abc123",
+        p256dh: :crypto.strong_rand_bytes(65),
+        auth: :crypto.strong_rand_bytes(16),
+        user_id: user.id
+      }
+
+      changeset = PushSubscription.changeset(%PushSubscription{}, attrs)
+      assert %{endpoint: ["must be a valid HTTPS URL"]} = errors_on(changeset)
+    end
+
+    test "rejects non-URL endpoint", %{user: user} do
+      attrs = %{
+        endpoint: "not-a-url",
+        p256dh: :crypto.strong_rand_bytes(65),
+        auth: :crypto.strong_rand_bytes(16),
+        user_id: user.id
+      }
+
+      changeset = PushSubscription.changeset(%PushSubscription{}, attrs)
+      assert %{endpoint: ["must be a valid HTTPS URL"]} = errors_on(changeset)
+    end
+
+    test "rejects file:// scheme endpoint", %{user: user} do
+      attrs = %{
+        endpoint: "file:///etc/passwd",
+        p256dh: :crypto.strong_rand_bytes(65),
+        auth: :crypto.strong_rand_bytes(16),
+        user_id: user.id
+      }
+
+      changeset = PushSubscription.changeset(%PushSubscription{}, attrs)
+      assert %{endpoint: ["must be a valid HTTPS URL"]} = errors_on(changeset)
     end
 
     test "enforces unique endpoint constraint", %{user: user} do
