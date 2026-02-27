@@ -1110,6 +1110,16 @@ notification) and `notificationclick` (focus/open window) events. Built
 separately via the `service_worker` esbuild target to `/service_worker.js`
 (must be at root for maximum scope).
 
+### PWA Manifest
+
+`priv/static/site.webmanifest` declares Baudrate as an installable
+Progressive Web App. The manifest is linked from `root.html.heex` via
+`<link rel="manifest">` alongside a `<meta name="theme-color">` tag.
+
+With the service worker (Phase 6) and manifest in place, browsers show an
+"Install" prompt. The app opens in `standalone` mode (no browser chrome) and
+uses the SVG favicon as the app icon.
+
 ### Syndication Feeds (RSS / Atom)
 
 RSS 2.0 and Atom 1.0 feeds are available at three scopes:

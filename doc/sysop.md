@@ -17,6 +17,7 @@ instance.
 - [Moderation](#moderation)
 - [Federation](#federation)
 - [Security](#security)
+- [PWA (Progressive Web App)](#pwa-progressive-web-app)
 - [Deployment](#deployment)
 - [Maintenance](#maintenance)
 - [Clustering](#clustering)
@@ -622,6 +623,31 @@ clock drifts, all incoming federation requests will fail signature verification.
 timedatectl status          # Check time sync status
 sudo systemctl enable ntp   # Enable NTP
 ```
+
+---
+
+## PWA (Progressive Web App)
+
+Baudrate ships with a web app manifest at `/site.webmanifest`, allowing users
+to install it as a standalone app from compatible browsers (Chrome, Edge,
+Safari, Firefox).
+
+**Requirements:**
+
+- The site must be served over **HTTPS** (required for service workers and PWA)
+- VAPID keys must be generated in Admin Settings for push notifications to work
+
+**How it works:**
+
+- `priv/static/site.webmanifest` declares the app name, start URL, display
+  mode (`standalone`), theme color, and icon
+- `root.html.heex` includes `<link rel="manifest">` and
+  `<meta name="theme-color">` in the `<head>`
+- Combined with the service worker (registered by `PushManagerHook`), browsers
+  detect the app as installable and may show an install prompt
+
+No additional configuration is required. The manifest uses the SVG favicon as
+the app icon, which scales to any resolution.
 
 ---
 

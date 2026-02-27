@@ -43,7 +43,7 @@ Identified via competitive analysis against Discourse, Lemmy, Flarum, NodeBB, an
 - [ ] **feat:** Trust levels / reputation — automated privilege escalation based on user activity (post count, time spent, likes received)
 - [ ] **infra:** Outbound webhooks — fire HTTP webhooks on events (article created, user registered, etc.) for Slack/Discord/CI integration
 - [ ] **infra:** Public REST API — documented API for third-party client development and integrations
-- [ ] **infra:** PWA manifest — make Baudrate installable as a mobile app from the browser
+- [x] **infra:** PWA manifest — make Baudrate installable as a mobile app from the browser (Phase 7 done: site.webmanifest, theme-color meta, manifest link)
 - [ ] **infra:** S3 / CDN object storage — external media storage for horizontal scaling (currently local filesystem only)
 - [ ] **infra:** Admin analytics dashboard — DAU/MAU, posts/day, response times, community health metrics
 - [ ] **a11y:** RTL language support — right-to-left layout for Arabic/Hebrew communities
@@ -71,20 +71,4 @@ is independently functional and committable by topic.
 
 ### ~~Phase 6: Web Push (VAPID + Service Worker + Encryption)~~ ✅ Done
 
-### Phase 7: PWA Manifest + Docs
-
-**New:** `priv/static/site.webmanifest` — name "Baudrate", start_url "/", display "standalone".
-
-**Modify `root.html.heex`** — `<link rel="manifest">` + `<meta name="theme-color">`.
-
-**Update docs:** `doc/development.md`, `doc/sysop.md`, `doc/TODOs.md`.
-
-### Verification
-
-After each phase:
-```bash
-mix compile --warnings-as-errors
-for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 & done; wait
-```
-
-Manual for Phase 6-7: register SW in browser, accept push permission, trigger notification, verify push appears.
+### ~~Phase 7: PWA Manifest + Docs~~ ✅ Done
