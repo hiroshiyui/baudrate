@@ -145,4 +145,100 @@ defmodule Baudrate.Content.MarkdownTest do
       assert html =~ "#Elixir</a>"
     end
   end
+
+  describe "extract_mentions/1" do
+    test "extracts a single mention" do
+      assert Markdown.extract_mentions("Hello @alice") == ["alice"]
+    end
+
+    test "extracts multiple mentions" do
+      assert Markdown.extract_mentions("@alice and @bob are here") == ["alice", "bob"]
+    end
+
+    test "returns unique downcased usernames" do
+      assert Markdown.extract_mentions("@Alice and @alice again") == ["alice"]
+    end
+
+    test "returns empty list for nil" do
+      assert Markdown.extract_mentions(nil) == []
+    end
+
+    test "returns empty list for empty string" do
+      assert Markdown.extract_mentions("") == []
+    end
+
+    test "does not match inside inline code" do
+      assert Markdown.extract_mentions("Use `@config` here") == []
+    end
+
+    test "does not match inside fenced code blocks" do
+      text = "```\n@username\n```"
+      assert Markdown.extract_mentions(text) == []
+    end
+
+    test "does not match email-like patterns" do
+      assert Markdown.extract_mentions("send to foo@bar") == []
+    end
+
+    test "rejects usernames shorter than 3 chars" do
+      assert Markdown.extract_mentions("@ab is too short") == []
+    end
+
+    test "rejects usernames longer than 32 chars" do
+      long_name = String.duplicate("a", 33)
+      assert Markdown.extract_mentions("@#{long_name}") == []
+    end
+
+    test "accepts usernames with underscores and numbers" do
+      assert Markdown.extract_mentions("@user_123") == ["user_123"]
+    end
+
+    test "extracts mention at start of text" do
+      assert Markdown.extract_mentions("@alice hello") == ["alice"]
+    end
+
+    test "extracts mention at end of text" do
+      assert Markdown.extract_mentions("hello @alice") == ["alice"]
+    end
+  end
+
+  describe "mention linkification" do
+    test "linkifies @username to profile link" do
+      html = Markdown.to_html("Hello @alice")
+      assert html =~ ~s[<a href="/users/alice" class="mention">@alice</a>]
+    end
+
+    test "preserves original case in display" do
+      html = Markdown.to_html("Hello @Alice")
+      assert html =~ ~s[<a href="/users/alice" class="mention">@Alice</a>]
+    end
+
+    test "does not linkify mentions inside code" do
+      html = Markdown.to_html("`@alice`")
+      refute html =~ "mention"
+      assert html =~ "@alice"
+    end
+
+    test "does not linkify mentions inside pre blocks" do
+      html = Markdown.to_html("```\n@alice\n```")
+      refute html =~ ~s[class="mention"]
+    end
+
+    test "does not linkify mentions inside links" do
+      html = Markdown.to_html("[@alice](https://example.com)")
+      refute html =~ ~s[class="mention"]
+    end
+
+    test "handles multiple mentions in one text" do
+      html = Markdown.to_html("@alice and @bob")
+      assert html =~ ~s[<a href="/users/alice" class="mention">@alice</a>]
+      assert html =~ ~s[<a href="/users/bob" class="mention">@bob</a>]
+    end
+
+    test "linkifies both hashtags and mentions" do
+      html = Markdown.to_html("@alice posted about #elixir")
+      assert html =~ ~s[class="mention"]
+      assert html =~ ~s[class="hashtag"]
+    end
+  end
 end
