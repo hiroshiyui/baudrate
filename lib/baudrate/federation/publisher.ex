@@ -466,6 +466,69 @@ defmodule Baudrate.Federation.Publisher do
     Delivery.enqueue_for_article(activity, actor_uri, article)
   end
 
+  # --- Poll Vote Builders ---
+
+  @doc """
+  Builds `Create(Note)` activities for poll votes.
+
+  Following the Mastodon vote protocol, each selected option produces a
+  separate Note with `name` matching the option text and `inReplyTo`
+  pointing to the article AP URI.
+
+  Returns a list of `{activity_map, actor_uri}` tuples (one per option).
+  """
+  def build_create_vote(user, article, voted_options) do
+    article = Repo.preload(article, [:user])
+    actor_uri = Federation.actor_uri(:user, user.username)
+    article_uri = Federation.actor_uri(:article, article.slug)
+
+    Enum.map(voted_options, fn option ->
+      activity = %{
+        "@context" => @ap_context,
+        "id" => "#{actor_uri}#vote-#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => actor_uri,
+        "to" => [Federation.actor_uri(:user, article.user.username)],
+        "object" => %{
+          "id" => "#{actor_uri}#vote-note-#{System.unique_integer([:positive])}",
+          "type" => "Note",
+          "name" => option.text,
+          "inReplyTo" => article_uri,
+          "attributedTo" => actor_uri,
+          "to" => [Federation.actor_uri(:user, article.user.username)]
+        }
+      }
+
+      {activity, actor_uri}
+    end)
+  end
+
+  @doc """
+  Publishes vote activities for a local user's poll vote.
+
+  Delivers to the article author's inbox. For remote articles, delivers
+  to the remote author's inbox. For local articles, delivers to followers.
+  """
+  def publish_vote(user, article, voted_options) do
+    article = Repo.preload(article, [:user])
+    vote_activities = build_create_vote(user, article, voted_options)
+
+    for {activity, actor_uri} <- vote_activities do
+      if article.remote_actor_id do
+        remote_actor = Repo.get!(Baudrate.Federation.RemoteActor, article.remote_actor_id)
+        inbox = remote_actor.shared_inbox || remote_actor.inbox
+
+        if inbox do
+          Delivery.enqueue(activity, actor_uri, [inbox])
+        end
+      else
+        Delivery.enqueue_for_article(activity, actor_uri, article)
+      end
+    end
+
+    :ok
+  end
+
   # --- Direct Message Builders ---
 
   @doc """

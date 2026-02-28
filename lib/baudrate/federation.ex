@@ -1646,7 +1646,7 @@ defmodule Baudrate.Federation do
   Returns an Article JSON-LD map for the given article.
   """
   def article_object(article) do
-    article = Repo.preload(article, [:boards, :user])
+    article = Repo.preload(article, [:boards, :user, poll: :options])
 
     board_uris =
       Enum.map(article.boards, fn board ->
@@ -1681,7 +1681,42 @@ defmodule Baudrate.Federation do
       "baudrate:likeCount" => Content.count_article_likes(article)
     }
 
-    if tags == [], do: map, else: Map.put(map, "tag", tags)
+    map = if tags == [], do: map, else: Map.put(map, "tag", tags)
+    maybe_embed_poll(map, article.poll)
+  end
+
+  defp maybe_embed_poll(map, nil), do: map
+
+  defp maybe_embed_poll(map, %Content.Poll{} = poll) do
+    choice_key = if poll.mode == "single", do: "oneOf", else: "anyOf"
+
+    options =
+      Enum.map(poll.options, fn opt ->
+        %{
+          "type" => "Note",
+          "name" => opt.text,
+          "replies" => %{
+            "type" => "Collection",
+            "totalItems" => opt.votes_count
+          }
+        }
+      end)
+
+    question = %{
+      "type" => "Question",
+      choice_key => options,
+      "votersCount" => poll.voters_count
+    }
+
+    question =
+      if poll.closes_at do
+        Map.put(question, "endTime", DateTime.to_iso8601(poll.closes_at))
+      else
+        question
+      end
+
+    existing_attachment = Map.get(map, "attachment", [])
+    Map.put(map, "attachment", existing_attachment ++ [question])
   end
 
   # --- Article summary/tag helpers ---

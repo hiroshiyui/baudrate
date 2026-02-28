@@ -126,32 +126,41 @@ defmodule Baudrate.Federation.InboxHandler do
          remote_actor,
          _target
        ) do
-    if direct_message?(object) do
-      handle_incoming_dm(object, remote_actor)
-    else
-      case handle_create_note_comment(object, remote_actor) do
-        :ok ->
-          :ok
+    # Check if this is a poll vote first (vote Notes look like DMs — addressed
+    # directly to the poll author with no public addressing)
+    case maybe_handle_poll_vote(object, remote_actor) do
+      :ok ->
+        :ok
 
-        {:error, reason} when reason in [:article_not_found, :missing_in_reply_to] ->
-          # Try auto-routing to boards that follow this actor, then fall back to feed item
-          maybe_auto_route_to_boards(object, remote_actor, "Note")
+      :not_a_vote ->
+        if direct_message?(object) do
+          handle_incoming_dm(object, remote_actor)
+        else
+          case handle_create_note_comment(object, remote_actor) do
+            :ok ->
+              :ok
 
-        other ->
-          other
-      end
+            {:error, reason} when reason in [:article_not_found, :missing_in_reply_to] ->
+              # Try auto-routing to boards that follow this actor, then fall back to feed item
+              maybe_auto_route_to_boards(object, remote_actor, "Note")
+
+            other ->
+              other
+          end
+        end
     end
   end
 
-  # --- Create(Article/Page) — remote article posted to a local board ---
+  # --- Create(Article/Page/Question) — remote article posted to a local board ---
   # Lemmy sends `Page` instead of `Article`; both are handled identically.
+  # Question objects are treated as articles with an attached poll.
 
   defp dispatch(
          %{"type" => "Create", "object" => %{"type" => type} = object},
          remote_actor,
          _target
        )
-       when type in ["Article", "Page"] do
+       when type in ["Article", "Page", "Question"] do
     with :ok <- validate_attribution_match(object, remote_actor),
          {:ok, body, _body_html} <- sanitize_content(object),
          {:ok, board} <- resolve_target_board(object),
@@ -257,6 +266,16 @@ defmodule Baudrate.Federation.InboxHandler do
   end
 
   # --- Update(Note/Article/Page) — content update ---
+
+  # --- Update(Question) — poll count refresh ---
+
+  defp dispatch(
+         %{"type" => "Update", "object" => %{"type" => "Question"} = object},
+         remote_actor,
+         _target
+       ) do
+    handle_update_question(object, remote_actor)
+  end
 
   defp dispatch(
          %{"type" => "Update", "object" => %{"type" => type} = object},
@@ -882,6 +901,7 @@ defmodule Baudrate.Federation.InboxHandler do
       else
         title = object["name"] || "Untitled"
         slug = Content.generate_slug(title)
+        poll_opts = extract_poll_from_object(object, ap_id)
 
         case Content.create_remote_article(
                %{
@@ -891,7 +911,8 @@ defmodule Baudrate.Federation.InboxHandler do
                  ap_id: ap_id,
                  remote_actor_id: remote_actor.id
                },
-               [board.id]
+               [board.id],
+               poll_opts
              ) do
           {:ok, _multi} ->
             Logger.info("federation.activity: type=Create(#{type}) ap_id=#{ap_id}")
@@ -929,6 +950,7 @@ defmodule Baudrate.Federation.InboxHandler do
             title = object["name"] || "Untitled"
             slug = Content.generate_slug(title)
             board_ids = Enum.map(boards, & &1.id)
+            poll_opts = extract_poll_from_object(object, ap_id)
 
             case Content.create_remote_article(
                    %{
@@ -938,7 +960,8 @@ defmodule Baudrate.Federation.InboxHandler do
                      ap_id: ap_id,
                      remote_actor_id: remote_actor.id
                    },
-                   board_ids
+                   board_ids,
+                   poll_opts
                  ) do
               {:ok, _multi} ->
                 Logger.info(
@@ -1144,5 +1167,149 @@ defmodule Baudrate.Federation.InboxHandler do
         nil -> nil
       end
     end)
+  end
+
+  # --- Poll helpers ---
+
+  # Detects if a Create(Note) is a Mastodon-style poll vote.
+  # A vote Note has `name` (the option text) and `inReplyTo` pointing
+  # to a local article that has a poll.
+  defp maybe_handle_poll_vote(%{"name" => name, "inReplyTo" => in_reply_to}, remote_actor)
+       when is_binary(name) and is_binary(in_reply_to) do
+    case resolve_local_article_by_ap_or_uri(in_reply_to) do
+      %{id: article_id} ->
+        case Content.get_poll_for_article(article_id) do
+          nil ->
+            :not_a_vote
+
+          poll ->
+            option = Enum.find(poll.options, &(&1.text == name))
+
+            if option do
+              case Content.create_remote_poll_vote(%{
+                     poll_id: poll.id,
+                     poll_option_id: option.id,
+                     remote_actor_id: remote_actor.id
+                   }) do
+                {:ok, _vote} ->
+                  # Recalc counts
+                  Content.recalc_poll_counts(poll.id)
+
+                  Logger.info(
+                    "federation.activity: type=Create(Note/PollVote) actor=#{remote_actor.ap_id}"
+                  )
+
+                  :ok
+
+                {:error, %Ecto.Changeset{} = changeset} ->
+                  if has_unique_error?(changeset), do: :ok, else: :not_a_vote
+              end
+            else
+              :not_a_vote
+            end
+        end
+
+      nil ->
+        :not_a_vote
+    end
+  end
+
+  defp maybe_handle_poll_vote(_object, _remote_actor), do: :not_a_vote
+
+  # Extracts poll data from a Question object or an Article with a Question attachment.
+  defp extract_poll_from_object(object, ap_id) do
+    poll_data = find_poll_in_object(object)
+
+    if poll_data do
+      {mode, options} = extract_poll_options(poll_data)
+      closes_at = parse_end_time(poll_data["endTime"])
+      voters_count = poll_data["votersCount"] || 0
+
+      option_attrs =
+        options
+        |> Enum.with_index()
+        |> Enum.map(fn {opt, idx} ->
+          %{
+            text: opt["name"] || "Option #{idx + 1}",
+            position: idx,
+            votes_count: get_in(opt, ["replies", "totalItems"]) || 0
+          }
+        end)
+
+      [
+        poll: %{
+          mode: mode,
+          closes_at: closes_at,
+          voters_count: voters_count,
+          ap_id: ap_id,
+          options: option_attrs
+        }
+      ]
+    else
+      []
+    end
+  end
+
+  defp find_poll_in_object(%{"type" => "Question"} = object), do: object
+
+  defp find_poll_in_object(%{"attachment" => attachments}) when is_list(attachments) do
+    Enum.find(attachments, &(is_map(&1) && &1["type"] == "Question"))
+  end
+
+  defp find_poll_in_object(_), do: nil
+
+  defp extract_poll_options(poll_data) do
+    cond do
+      is_list(poll_data["oneOf"]) -> {"single", poll_data["oneOf"]}
+      is_list(poll_data["anyOf"]) -> {"multiple", poll_data["anyOf"]}
+      true -> {"single", []}
+    end
+  end
+
+  defp parse_end_time(nil), do: nil
+
+  defp parse_end_time(str) when is_binary(str) do
+    case DateTime.from_iso8601(str) do
+      {:ok, dt, _offset} -> DateTime.truncate(dt, :second)
+      _ -> nil
+    end
+  end
+
+  defp parse_end_time(_), do: nil
+
+  # Handle Update(Question) — refresh poll counts
+  defp handle_update_question(object, remote_actor) do
+    # Find the poll by ap_id
+    case Baudrate.Repo.get_by(Content.Poll, ap_id: object["id"]) do
+      nil ->
+        # Maybe it's an embedded question — try to find via the article's ap_id
+        :ok
+
+      poll ->
+        poll = Baudrate.Repo.preload(poll, [:article])
+
+        if poll.article && poll.article.remote_actor_id == remote_actor.id do
+          {_mode, options} = extract_poll_options(object)
+          voters_count = object["votersCount"] || 0
+
+          option_counts =
+            Enum.map(options, fn opt ->
+              %{
+                text: opt["name"],
+                votes_count: get_in(opt, ["replies", "totalItems"]) || 0
+              }
+            end)
+
+          Content.update_remote_poll_counts(poll, %{
+            voters_count: voters_count,
+            option_counts: option_counts
+          })
+
+          Logger.info("federation.activity: type=Update(Question) ap_id=#{object["id"]}")
+          :ok
+        else
+          {:error, :unauthorized}
+        end
+    end
   end
 end
