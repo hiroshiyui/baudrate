@@ -470,6 +470,7 @@ defmodule BaudrateWeb.Layouts do
           abs_seconds = abs(total_seconds)
           hours = div(abs_seconds, 3600)
           minutes = div(rem(abs_seconds, 3600), 60)
+
           " (#{sign}#{String.pad_leading(Integer.to_string(hours), 2, "0")}#{String.pad_leading(Integer.to_string(minutes), 2, "0")})"
 
         _ ->
