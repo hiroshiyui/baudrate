@@ -56,7 +56,12 @@
   </.link>
 </aside>
 
-<section :if={@sub_boards != []} id="sub-boards-section" class="mb-6" aria-labelledby="sub-boards-heading">
+<section
+  :if={@sub_boards != []}
+  id="sub-boards-section"
+  class="mb-6"
+  aria-labelledby="sub-boards-heading"
+>
   <h2 id="sub-boards-heading" class="text-lg font-semibold mb-3">{gettext("Sub-boards")}</h2>
   <div id="sub-boards" class="grid grid-cols-1 sm:grid-cols-2 gap-3" data-focus-target>
     <.link

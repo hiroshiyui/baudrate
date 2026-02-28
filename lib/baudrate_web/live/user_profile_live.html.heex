@@ -84,7 +84,11 @@
     </.link>
   </div>
 
-  <section :if={@profile_user.bio && @profile_user.bio != ""} id="profile-bio" aria-labelledby="bio-heading">
+  <section
+    :if={@profile_user.bio && @profile_user.bio != ""}
+    id="profile-bio"
+    aria-labelledby="bio-heading"
+  >
     <h2 id="bio-heading" class="text-lg font-semibold mb-2">{gettext("Bio")}</h2>
     <div class="prose prose-sm max-w-none text-base-content/70 bg-base-200 rounded-lg p-3">
       {raw(
@@ -96,15 +100,25 @@
     </div>
   </section>
 
-  <section :if={@profile_user.signature && @profile_user.signature != ""} id="profile-signature" aria-labelledby="signature-heading">
+  <section
+    :if={@profile_user.signature && @profile_user.signature != ""}
+    id="profile-signature"
+    aria-labelledby="signature-heading"
+  >
     <h2 id="signature-heading" class="text-lg font-semibold mb-2">{gettext("Signature")}</h2>
     <div class="prose prose-sm max-w-none text-base-content/70 bg-base-200 rounded-lg p-3">
       {raw(Baudrate.Content.Markdown.to_html(@profile_user.signature))}
     </div>
   </section>
 
-  <section :if={@recent_articles != []} id="recent-articles-section" aria-labelledby="recent-articles-heading">
-    <h2 id="recent-articles-heading" class="text-lg font-semibold mb-3">{gettext("Recent Articles")}</h2>
+  <section
+    :if={@recent_articles != []}
+    id="recent-articles-section"
+    aria-labelledby="recent-articles-heading"
+  >
+    <h2 id="recent-articles-heading" class="text-lg font-semibold mb-3">
+      {gettext("Recent Articles")}
+    </h2>
     <div id="recent-articles" class="space-y-2" aria-live="polite" data-focus-target>
       <article
         :for={article <- @recent_articles}

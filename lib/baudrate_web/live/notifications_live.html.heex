@@ -19,7 +19,13 @@
     </p>
   </div>
 
-  <div :if={@notifications != []} id="notifications" class="space-y-2" aria-live="polite" data-focus-target>
+  <div
+    :if={@notifications != []}
+    id="notifications"
+    class="space-y-2"
+    aria-live="polite"
+    data-focus-target
+  >
     <div
       :for={notif <- @notifications}
       id={"notification-#{notif.id}"}

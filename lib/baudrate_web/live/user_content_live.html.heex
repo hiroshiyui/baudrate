@@ -12,7 +12,13 @@
 
   <h1 class="text-2xl font-bold">{@page_title}</h1>
 
-  <div :if={@content_type == :articles} id="articles" class="space-y-2" aria-live="polite" data-focus-target>
+  <div
+    :if={@content_type == :articles}
+    id="articles"
+    class="space-y-2"
+    aria-live="polite"
+    data-focus-target
+  >
     <article
       :for={article <- @articles}
       id={"article-#{article.slug}"}
@@ -46,7 +52,13 @@
     </div>
   </div>
 
-  <div :if={@content_type == :comments} id="comments" class="space-y-2" aria-live="polite" data-focus-target>
+  <div
+    :if={@content_type == :comments}
+    id="comments"
+    class="space-y-2"
+    aria-live="polite"
+    data-focus-target
+  >
     <div
       :for={comment <- @comments}
       id={"comment-#{comment.id}"}
