@@ -114,6 +114,99 @@
       </div>
     </div>
 
+    <%!-- Poll Section --%>
+    <div class="fieldset">
+      <div class="flex items-center justify-between mb-1">
+        <span class="label">{gettext("Poll")}</span>
+        <button
+          type="button"
+          phx-click="toggle_poll"
+          class={["btn btn-sm", (@poll_enabled && "btn-error btn-outline") || "btn-ghost"]}
+        >
+          {if @poll_enabled, do: gettext("Remove Poll"), else: gettext("Add Poll")}
+        </button>
+      </div>
+
+      <fieldset :if={@poll_enabled} class="space-y-3" phx-change="validate_poll">
+        <legend class="sr-only">{gettext("Poll")}</legend>
+
+        <div role="group" aria-label={gettext("Poll options")} class="space-y-2">
+          <div :for={{opt, idx} <- Enum.with_index(@poll_options)} class="flex items-center gap-2">
+            <input
+              type="text"
+              name={"poll_options[#{idx}]"}
+              value={opt}
+              placeholder={gettext("Option %{number}", number: idx + 1)}
+              class="input input-bordered input-sm w-full"
+              aria-label={gettext("Option %{number}", number: idx + 1)}
+              maxlength="200"
+            />
+            <button
+              :if={length(@poll_options) > 2}
+              type="button"
+              phx-click="remove_poll_option"
+              phx-value-index={idx}
+              class="btn btn-sm btn-ghost text-error"
+              aria-label={gettext("Remove option %{number}", number: idx + 1)}
+            >
+              <.icon name="hero-x-mark" class="size-4" />
+            </button>
+          </div>
+        </div>
+
+        <button
+          :if={length(@poll_options) < 4}
+          type="button"
+          phx-click="add_poll_option"
+          class="btn btn-sm btn-ghost"
+        >
+          <.icon name="hero-plus" class="size-4" />
+          {gettext("Add option")}
+        </button>
+
+        <div class="flex flex-wrap gap-4">
+          <div class="form-control">
+            <label class="label cursor-pointer gap-2">
+              <input
+                type="radio"
+                name="poll_mode"
+                value="single"
+                checked={@poll_mode == "single"}
+                class="radio radio-sm"
+              />
+              <span class="label-text">{gettext("Single choice")}</span>
+            </label>
+          </div>
+          <div class="form-control">
+            <label class="label cursor-pointer gap-2">
+              <input
+                type="radio"
+                name="poll_mode"
+                value="multiple"
+                checked={@poll_mode == "multiple"}
+                class="radio radio-sm"
+              />
+              <span class="label-text">{gettext("Multiple choice")}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-control w-full max-w-xs">
+          <label class="label">
+            <span class="label-text">{gettext("Expires (optional)")}</span>
+          </label>
+          <select name="poll_expires" class="select select-bordered select-sm">
+            <option value="" selected={@poll_expires == ""}>{gettext("No expiry")}</option>
+            <option value="1h" selected={@poll_expires == "1h"}>{gettext("1 hour")}</option>
+            <option value="6h" selected={@poll_expires == "6h"}>{gettext("6 hours")}</option>
+            <option value="1d" selected={@poll_expires == "1d"}>{gettext("1 day")}</option>
+            <option value="3d" selected={@poll_expires == "3d"}>{gettext("3 days")}</option>
+            <option value="7d" selected={@poll_expires == "7d"}>{gettext("7 days")}</option>
+          </select>
+        </div>
+      </fieldset>
+    </div>
+
     <div class="fieldset mb-2">
       <span class="label mb-1">{gettext("Board")}</span>
       <div class="space-y-2">

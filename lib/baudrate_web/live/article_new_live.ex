@@ -53,6 +53,10 @@ defmodule BaudrateWeb.ArticleNewLive do
        |> assign(:board_slug, params["slug"])
        |> assign(:uploaded_images, [])
        |> assign(:page_title, gettext("Create Article"))
+       |> assign(:poll_enabled, false)
+       |> assign(:poll_options, ["", ""])
+       |> assign(:poll_mode, "single")
+       |> assign(:poll_expires, "")
        |> allow_upload(:article_images,
          accept: ~w(.jpg .jpeg .png .webp .gif),
          max_entries: 4,
@@ -93,15 +97,64 @@ defmodule BaudrateWeb.ArticleNewLive do
   end
 
   @impl true
-  def handle_event("submit", %{"article" => params, "board_ids" => board_ids}, socket) do
-    do_create(socket, params, board_ids)
+  def handle_event("toggle_poll", _params, socket) do
+    {:noreply, assign(socket, :poll_enabled, !socket.assigns.poll_enabled)}
   end
 
-  def handle_event("submit", %{"article" => params}, socket) do
-    do_create(socket, params, [])
+  @impl true
+  def handle_event("add_poll_option", _params, socket) do
+    options = socket.assigns.poll_options
+
+    if length(options) < 4 do
+      {:noreply, assign(socket, :poll_options, options ++ [""])}
+    else
+      {:noreply, socket}
+    end
   end
 
-  defp do_create(socket, params, board_ids) do
+  @impl true
+  def handle_event("remove_poll_option", %{"index" => index}, socket) do
+    options = socket.assigns.poll_options
+    idx = String.to_integer(index)
+
+    if length(options) > 2 do
+      {:noreply, assign(socket, :poll_options, List.delete_at(options, idx))}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event(
+        "validate_poll",
+        %{"poll_options" => poll_options, "poll_mode" => mode, "poll_expires" => expires},
+        socket
+      ) do
+    options = Map.values(poll_options) |> Enum.sort_by(fn _ -> 0 end)
+
+    {:noreply,
+     socket
+     |> assign(:poll_options, options)
+     |> assign(:poll_mode, mode)
+     |> assign(:poll_expires, expires)}
+  end
+
+  def handle_event("validate_poll", _params, socket), do: {:noreply, socket}
+
+  @impl true
+  def handle_event(
+        "submit",
+        %{"article" => params, "board_ids" => board_ids} = all_params,
+        socket
+      ) do
+    do_create(socket, params, board_ids, all_params)
+  end
+
+  def handle_event("submit", %{"article" => params} = all_params, socket) do
+    do_create(socket, params, [], all_params)
+  end
+
+  defp do_create(socket, params, board_ids, all_params) do
     parsed_ids =
       board_ids
       |> List.wrap()
@@ -114,18 +167,18 @@ defmodule BaudrateWeb.ArticleNewLive do
 
     case parsed_ids do
       :error -> {:noreply, socket}
-      ids -> do_create_with_boards(socket, params, Enum.reverse(ids))
+      ids -> do_create_with_boards(socket, params, Enum.reverse(ids), all_params)
     end
   end
 
-  defp do_create_with_boards(socket, params, board_ids) do
+  defp do_create_with_boards(socket, params, board_ids, all_params) do
     if board_ids == [] do
       {:noreply, put_flash(socket, :error, gettext("Please select at least one board."))}
     else
       user = socket.assigns.current_user
 
       if user.role.name == "admin" do
-        do_create_article(socket, user, params, board_ids)
+        do_create_article(socket, user, params, board_ids, all_params)
       else
         case RateLimits.check_create_article(user.id) do
           {:error, :rate_limited} ->
@@ -137,13 +190,13 @@ defmodule BaudrateWeb.ArticleNewLive do
              )}
 
           :ok ->
-            do_create_article(socket, user, params, board_ids)
+            do_create_article(socket, user, params, board_ids, all_params)
         end
       end
     end
   end
 
-  defp do_create_article(socket, user, params, board_ids) do
+  defp do_create_article(socket, user, params, board_ids, all_params) do
     slug = Content.generate_slug(params["title"] || "")
 
     attrs =
@@ -152,8 +205,9 @@ defmodule BaudrateWeb.ArticleNewLive do
       |> Map.put("user_id", user.id)
 
     image_ids = Enum.map(socket.assigns.uploaded_images, & &1.id)
+    poll_opts = build_poll_opts(socket, all_params)
 
-    case Content.create_article(attrs, board_ids, image_ids: image_ids) do
+    case Content.create_article(attrs, board_ids, [image_ids: image_ids] ++ poll_opts) do
       {:ok, %{article: article}} ->
         {:noreply,
          socket
@@ -163,8 +217,82 @@ defmodule BaudrateWeb.ArticleNewLive do
       {:error, :article, changeset, _} ->
         {:noreply, assign(socket, :form, to_form(changeset, as: :article))}
 
+      {:error, :poll, changeset, _} ->
+        {:noreply,
+         socket
+         |> assign(
+           :form,
+           to_form(Content.change_article(%Baudrate.Content.Article{}, params), as: :article)
+         )
+         |> put_flash(:error, format_poll_errors(changeset))}
+
       {:error, _, _, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to create article."))}
+    end
+  end
+
+  defp build_poll_opts(socket, all_params) do
+    if socket.assigns.poll_enabled do
+      poll_options = all_params["poll_options"] || %{}
+      poll_mode = all_params["poll_mode"] || "single"
+      poll_expires = all_params["poll_expires"] || ""
+
+      option_texts =
+        poll_options
+        |> Enum.sort_by(fn {k, _v} -> String.to_integer(k) end)
+        |> Enum.map(fn {_k, v} -> v end)
+        |> Enum.reject(&(String.trim(&1) == ""))
+
+      if option_texts == [] do
+        []
+      else
+        options =
+          option_texts
+          |> Enum.with_index()
+          |> Enum.map(fn {text, idx} -> %{text: text, position: idx} end)
+
+        closes_at = parse_poll_expires(poll_expires)
+
+        poll_attrs = %{mode: poll_mode, closes_at: closes_at, options: options}
+        [poll: poll_attrs]
+      end
+    else
+      []
+    end
+  end
+
+  defp parse_poll_expires(""), do: nil
+
+  defp parse_poll_expires(duration) do
+    seconds =
+      case duration do
+        "1h" -> 3600
+        "6h" -> 6 * 3600
+        "1d" -> 24 * 3600
+        "3d" -> 3 * 24 * 3600
+        "7d" -> 7 * 24 * 3600
+        _ -> nil
+      end
+
+    if seconds do
+      DateTime.utc_now()
+      |> DateTime.add(seconds, :second)
+      |> DateTime.truncate(:second)
+    end
+  end
+
+  defp format_poll_errors(%Ecto.Changeset{} = changeset) do
+    errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+
+    cond do
+      errors[:options] ->
+        gettext("Poll: %{error}", error: List.first(List.flatten(List.wrap(errors[:options]))))
+
+      errors[:mode] ->
+        gettext("Poll: %{error}", error: List.first(errors[:mode]))
+
+      true ->
+        gettext("Failed to create poll.")
     end
   end
 
