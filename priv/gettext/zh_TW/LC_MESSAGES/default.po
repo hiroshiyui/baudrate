@@ -326,7 +326,7 @@ msgstr "無法連線至資料庫，請檢查您的設定。"
 #: lib/baudrate_web/live/article_new_live.html.heex:15
 #: lib/baudrate_web/live/home_live.ex:30
 #: lib/baudrate_web/live/home_live.html.heex:21
-#: lib/baudrate_web/live/search_live.html.heex:138
+#: lib/baudrate_web/live/search_live.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Boards"
 msgstr "看板"
@@ -712,8 +712,8 @@ msgstr "您的帳號正在等待管理員審核。"
 msgid "Your account is pending approval."
 msgstr "您的帳號尚待審核。"
 
-#: lib/baudrate_web/live/search_live.html.heex:196
-#: lib/baudrate_web/live/search_live.html.heex:222
+#: lib/baudrate_web/live/search_live.html.heex:247
+#: lib/baudrate_web/live/search_live.html.heex:273
 #: lib/baudrate_web/live/tag_live.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "by %{author}"
@@ -1090,7 +1090,7 @@ msgstr "沒有狀態為「%{status}」的檢舉。"
 #: lib/baudrate_web/live/admin/users_live.html.heex:60
 #: lib/baudrate_web/live/board_follows_live.html.heex:176
 #: lib/baudrate_web/live/following_live.html.heex:89
-#: lib/baudrate_web/live/search_live.html.heex:78
+#: lib/baudrate_web/live/search_live.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Pending"
 msgstr "待處理"
@@ -1205,7 +1205,7 @@ msgstr "登入"
 msgid "to participate."
 msgstr "來參與。"
 
-#: lib/baudrate_web/live/search_live.html.heex:182
+#: lib/baudrate_web/live/search_live.html.heex:233
 #: lib/baudrate_web/live/tag_live.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "1 result"
@@ -1235,7 +1235,7 @@ msgstr "留言已發表。"
 
 #: lib/baudrate_web/live/article_live.html.heex:213
 #: lib/baudrate_web/live/feed_live.html.heex:272
-#: lib/baudrate_web/live/search_live.html.heex:130
+#: lib/baudrate_web/live/search_live.html.heex:181
 #: lib/baudrate_web/live/user_profile_live.html.heex:82
 #, elixir-autogen, elixir-format
 msgid "Comments"
@@ -1265,7 +1265,7 @@ msgstr "編輯文章"
 msgid "File type not accepted"
 msgstr "不支援的檔案類型"
 
-#: lib/baudrate_web/live/search_live.html.heex:154
+#: lib/baudrate_web/live/search_live.html.heex:205
 #, elixir-autogen, elixir-format
 msgid "No articles found for \"%{query}\"."
 msgstr "找不到「%{query}」的相關文章。"
@@ -1313,7 +1313,7 @@ msgstr "儲存變更"
 msgid "Search"
 msgstr "搜尋"
 
-#: lib/baudrate_web/live/search_live.html.heex:10
+#: lib/baudrate_web/live/search_live.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Search..."
 msgstr "搜尋..."
@@ -1400,6 +1400,7 @@ msgid "Confirm Ban"
 msgstr "確認停權"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:41
+#: lib/baudrate_web/live/search_live.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "Description"
 msgstr "說明"
@@ -1688,7 +1689,7 @@ msgid "Approve User"
 msgstr "核准使用者"
 
 #: lib/baudrate_web/live/feed_live.html.heex:265
-#: lib/baudrate_web/live/search_live.html.heex:122
+#: lib/baudrate_web/live/search_live.html.heex:173
 #: lib/baudrate_web/live/user_profile_live.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Articles"
@@ -2191,7 +2192,7 @@ msgstr "使用者"
 msgid "View / Post"
 msgstr "檢視 / 發文"
 
-#: lib/baudrate_web/live/search_live.html.heex:161
+#: lib/baudrate_web/live/search_live.html.heex:212
 #, elixir-autogen, elixir-format
 msgid "No comments found for \"%{query}\"."
 msgstr "找不到「%{query}」的相關評論。"
@@ -2502,7 +2503,7 @@ msgid "Report status"
 msgstr "檢舉狀態"
 
 #: lib/baudrate_web/live/conversation_live.html.heex:42
-#: lib/baudrate_web/live/search_live.html.heex:113
+#: lib/baudrate_web/live/search_live.html.heex:164
 #, elixir-autogen, elixir-format
 msgid "Search results"
 msgstr "搜尋結果"
@@ -3445,9 +3446,9 @@ msgid "Could not unfollow actor."
 msgstr "無法取消追蹤此使用者。"
 
 #: lib/baudrate_web/live/board_follows_live.html.heex:116
-#: lib/baudrate_web/live/search_live.html.heex:95
-#: lib/baudrate_web/live/search_live.html.heex:103
-#: lib/baudrate_web/live/search_live.html.heex:294
+#: lib/baudrate_web/live/search_live.html.heex:146
+#: lib/baudrate_web/live/search_live.html.heex:154
+#: lib/baudrate_web/live/search_live.html.heex:345
 #: lib/baudrate_web/live/user_profile_live.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Follow"
@@ -3473,7 +3474,7 @@ msgstr "已發送追蹤請求。"
 msgid "Following"
 msgstr "追蹤中"
 
-#: lib/baudrate_web/live/search_live.html.heex:24
+#: lib/baudrate_web/live/search_live.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Looking up remote actor..."
 msgstr "正在查詢遠端使用者⋯"
@@ -3484,13 +3485,13 @@ msgstr "正在查詢遠端使用者⋯"
 msgid "Rejected"
 msgstr "已拒絕"
 
-#: lib/baudrate_web/live/search_live.html.heex:33
+#: lib/baudrate_web/live/search_live.html.heex:84
 #, elixir-autogen, elixir-format
 msgid "Remote actor"
 msgstr "遠端使用者"
 
-#: lib/baudrate_web/live/search_live.html.heex:70
-#: lib/baudrate_web/live/search_live.html.heex:277
+#: lib/baudrate_web/live/search_live.html.heex:121
+#: lib/baudrate_web/live/search_live.html.heex:328
 #, elixir-autogen, elixir-format
 msgid "Sign in to follow"
 msgstr "登入以追蹤"
@@ -3498,8 +3499,8 @@ msgstr "登入以追蹤"
 #: lib/baudrate_web/live/board_follows_live.html.heex:186
 #: lib/baudrate_web/live/following_live.html.heex:45
 #: lib/baudrate_web/live/following_live.html.heex:99
-#: lib/baudrate_web/live/search_live.html.heex:87
-#: lib/baudrate_web/live/search_live.html.heex:286
+#: lib/baudrate_web/live/search_live.html.heex:138
+#: lib/baudrate_web/live/search_live.html.heex:337
 #: lib/baudrate_web/live/user_profile_live.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "Unfollow"
@@ -3507,7 +3508,7 @@ msgstr "取消追蹤"
 
 #: lib/baudrate_web/live/board_follows_live.html.heex:183
 #: lib/baudrate_web/live/following_live.html.heex:96
-#: lib/baudrate_web/live/search_live.html.heex:84
+#: lib/baudrate_web/live/search_live.html.heex:135
 #, elixir-autogen, elixir-format
 msgid "Unfollow this actor?"
 msgstr "確定取消追蹤此使用者？"
@@ -3591,12 +3592,12 @@ msgstr "已成功追蹤。"
 #: lib/baudrate_web/live/feed_live.html.heex:147
 #: lib/baudrate_web/live/feed_live.html.heex:202
 #: lib/baudrate_web/live/following_live.html.heex:34
-#: lib/baudrate_web/live/search_live.html.heex:270
+#: lib/baudrate_web/live/search_live.html.heex:321
 #, elixir-autogen, elixir-format
 msgid "Local"
 msgstr "本站"
 
-#: lib/baudrate_web/live/search_live.html.heex:175
+#: lib/baudrate_web/live/search_live.html.heex:226
 #, elixir-autogen, elixir-format
 msgid "No users found for \"%{query}\"."
 msgstr "找不到「%{query}」的使用者。"
@@ -3613,13 +3614,13 @@ msgid "Unfollow %{username}"
 msgstr "取消追蹤 %{username}"
 
 #: lib/baudrate_web/live/following_live.html.heex:42
-#: lib/baudrate_web/live/search_live.html.heex:283
+#: lib/baudrate_web/live/search_live.html.heex:334
 #: lib/baudrate_web/live/user_profile_live.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Unfollow this user?"
 msgstr "確定取消追蹤此使用者？"
 
-#: lib/baudrate_web/live/search_live.html.heex:146
+#: lib/baudrate_web/live/search_live.html.heex:197
 #, elixir-autogen, elixir-format
 msgid "Users"
 msgstr "使用者"
@@ -4186,7 +4187,57 @@ msgstr "從看板移除"
 msgid "This article cannot be forwarded."
 msgstr "這篇文章不允許轉發。"
 
-#: lib/baudrate_web/live/search_live.html.heex:168
+#: lib/baudrate_web/live/search_live.html.heex:219
 #, elixir-autogen, elixir-format
 msgid "No boards found for \"%{query}\"."
 msgstr "找不到「%{query}」的相關看板。"
+
+#: lib/baudrate_web/live/search_live.html.heex:60
+#, elixir-autogen, elixir-format
+msgid "Articles after a date"
+msgstr "指定日期之後的文章"
+
+#: lib/baudrate_web/live/search_live.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Articles before a date"
+msgstr "指定日期之前的文章"
+
+#: lib/baudrate_web/live/search_live.html.heex:52
+#, elixir-autogen, elixir-format
+msgid "Articles with attached images"
+msgstr "含有附圖的文章"
+
+#: lib/baudrate_web/live/search_live.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "Example: %{example}"
+msgstr "範例：%{example}"
+
+#: lib/baudrate_web/live/search_live.html.heex:40
+#, elixir-autogen, elixir-format
+msgid "Filter by article author"
+msgstr "依文章作者篩選"
+
+#: lib/baudrate_web/live/search_live.html.heex:44
+#, elixir-autogen, elixir-format
+msgid "Filter by board"
+msgstr "依看板篩選"
+
+#: lib/baudrate_web/live/search_live.html.heex:48
+#, elixir-autogen, elixir-format
+msgid "Filter by tag"
+msgstr "依標籤篩選"
+
+#: lib/baudrate_web/live/search_live.html.heex:33
+#, elixir-autogen, elixir-format
+msgid "Operator"
+msgstr "運算子"
+
+#: lib/baudrate_web/live/search_live.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "Search operators"
+msgstr "搜尋運算子"
+
+#: lib/baudrate_web/live/search_live.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "Search... (try author:, board:, tag:)"
+msgstr "搜尋…（試試 author:、board:、tag:）"

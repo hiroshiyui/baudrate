@@ -326,7 +326,7 @@ msgstr "データベースに接続できません。設定を確認してくだ
 #: lib/baudrate_web/live/article_new_live.html.heex:15
 #: lib/baudrate_web/live/home_live.ex:30
 #: lib/baudrate_web/live/home_live.html.heex:21
-#: lib/baudrate_web/live/search_live.html.heex:138
+#: lib/baudrate_web/live/search_live.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Boards"
 msgstr "掲示板"
@@ -712,8 +712,8 @@ msgstr "アカウントは管理者の承認待ちです。"
 msgid "Your account is pending approval."
 msgstr "アカウントは承認待ちです。"
 
-#: lib/baudrate_web/live/search_live.html.heex:196
-#: lib/baudrate_web/live/search_live.html.heex:222
+#: lib/baudrate_web/live/search_live.html.heex:247
+#: lib/baudrate_web/live/search_live.html.heex:273
 #: lib/baudrate_web/live/tag_live.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "by %{author}"
@@ -1090,7 +1090,7 @@ msgstr "ステータス「%{status}」の通報はありません。"
 #: lib/baudrate_web/live/admin/users_live.html.heex:60
 #: lib/baudrate_web/live/board_follows_live.html.heex:176
 #: lib/baudrate_web/live/following_live.html.heex:89
-#: lib/baudrate_web/live/search_live.html.heex:78
+#: lib/baudrate_web/live/search_live.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Pending"
 msgstr "保留中"
@@ -1205,7 +1205,7 @@ msgstr "ログイン"
 msgid "to participate."
 msgstr "して参加しましょう。"
 
-#: lib/baudrate_web/live/search_live.html.heex:182
+#: lib/baudrate_web/live/search_live.html.heex:233
 #: lib/baudrate_web/live/tag_live.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "1 result"
@@ -1235,7 +1235,7 @@ msgstr "コメントを投稿しました。"
 
 #: lib/baudrate_web/live/article_live.html.heex:213
 #: lib/baudrate_web/live/feed_live.html.heex:272
-#: lib/baudrate_web/live/search_live.html.heex:130
+#: lib/baudrate_web/live/search_live.html.heex:181
 #: lib/baudrate_web/live/user_profile_live.html.heex:82
 #, elixir-autogen, elixir-format
 msgid "Comments"
@@ -1265,7 +1265,7 @@ msgstr "記事を編集"
 msgid "File type not accepted"
 msgstr "対応していないファイル形式です"
 
-#: lib/baudrate_web/live/search_live.html.heex:154
+#: lib/baudrate_web/live/search_live.html.heex:205
 #, elixir-autogen, elixir-format
 msgid "No articles found for \"%{query}\"."
 msgstr "「%{query}」に一致する記事が見つかりません。"
@@ -1313,7 +1313,7 @@ msgstr "変更を保存"
 msgid "Search"
 msgstr "検索"
 
-#: lib/baudrate_web/live/search_live.html.heex:10
+#: lib/baudrate_web/live/search_live.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Search..."
 msgstr "検索..."
@@ -1400,6 +1400,7 @@ msgid "Confirm Ban"
 msgstr "BANを確認"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:41
+#: lib/baudrate_web/live/search_live.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "Description"
 msgstr "説明"
@@ -1688,7 +1689,7 @@ msgid "Approve User"
 msgstr "ユーザーを承認"
 
 #: lib/baudrate_web/live/feed_live.html.heex:265
-#: lib/baudrate_web/live/search_live.html.heex:122
+#: lib/baudrate_web/live/search_live.html.heex:173
 #: lib/baudrate_web/live/user_profile_live.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Articles"
@@ -2191,7 +2192,7 @@ msgstr "ユーザー"
 msgid "View / Post"
 msgstr "閲覧 / 投稿"
 
-#: lib/baudrate_web/live/search_live.html.heex:161
+#: lib/baudrate_web/live/search_live.html.heex:212
 #, elixir-autogen, elixir-format
 msgid "No comments found for \"%{query}\"."
 msgstr "「%{query}」に一致するコメントが見つかりません。"
@@ -2502,7 +2503,7 @@ msgid "Report status"
 msgstr "通報ステータス"
 
 #: lib/baudrate_web/live/conversation_live.html.heex:42
-#: lib/baudrate_web/live/search_live.html.heex:113
+#: lib/baudrate_web/live/search_live.html.heex:164
 #, elixir-autogen, elixir-format
 msgid "Search results"
 msgstr "検索結果"
@@ -3445,9 +3446,9 @@ msgid "Could not unfollow actor."
 msgstr "アクターのフォローを解除できませんでした。"
 
 #: lib/baudrate_web/live/board_follows_live.html.heex:116
-#: lib/baudrate_web/live/search_live.html.heex:95
-#: lib/baudrate_web/live/search_live.html.heex:103
-#: lib/baudrate_web/live/search_live.html.heex:294
+#: lib/baudrate_web/live/search_live.html.heex:146
+#: lib/baudrate_web/live/search_live.html.heex:154
+#: lib/baudrate_web/live/search_live.html.heex:345
 #: lib/baudrate_web/live/user_profile_live.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Follow"
@@ -3473,7 +3474,7 @@ msgstr "フォローリクエストを送信しました。"
 msgid "Following"
 msgstr "フォロー中"
 
-#: lib/baudrate_web/live/search_live.html.heex:24
+#: lib/baudrate_web/live/search_live.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Looking up remote actor..."
 msgstr "リモートアクターを検索中…"
@@ -3484,13 +3485,13 @@ msgstr "リモートアクターを検索中…"
 msgid "Rejected"
 msgstr "拒否済み"
 
-#: lib/baudrate_web/live/search_live.html.heex:33
+#: lib/baudrate_web/live/search_live.html.heex:84
 #, elixir-autogen, elixir-format
 msgid "Remote actor"
 msgstr "リモートアクター"
 
-#: lib/baudrate_web/live/search_live.html.heex:70
-#: lib/baudrate_web/live/search_live.html.heex:277
+#: lib/baudrate_web/live/search_live.html.heex:121
+#: lib/baudrate_web/live/search_live.html.heex:328
 #, elixir-autogen, elixir-format
 msgid "Sign in to follow"
 msgstr "フォローするにはログイン"
@@ -3498,8 +3499,8 @@ msgstr "フォローするにはログイン"
 #: lib/baudrate_web/live/board_follows_live.html.heex:186
 #: lib/baudrate_web/live/following_live.html.heex:45
 #: lib/baudrate_web/live/following_live.html.heex:99
-#: lib/baudrate_web/live/search_live.html.heex:87
-#: lib/baudrate_web/live/search_live.html.heex:286
+#: lib/baudrate_web/live/search_live.html.heex:138
+#: lib/baudrate_web/live/search_live.html.heex:337
 #: lib/baudrate_web/live/user_profile_live.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "Unfollow"
@@ -3507,7 +3508,7 @@ msgstr "フォロー解除"
 
 #: lib/baudrate_web/live/board_follows_live.html.heex:183
 #: lib/baudrate_web/live/following_live.html.heex:96
-#: lib/baudrate_web/live/search_live.html.heex:84
+#: lib/baudrate_web/live/search_live.html.heex:135
 #, elixir-autogen, elixir-format
 msgid "Unfollow this actor?"
 msgstr "このアクターのフォローを解除しますか？"
@@ -3591,12 +3592,12 @@ msgstr "フォローしました。"
 #: lib/baudrate_web/live/feed_live.html.heex:147
 #: lib/baudrate_web/live/feed_live.html.heex:202
 #: lib/baudrate_web/live/following_live.html.heex:34
-#: lib/baudrate_web/live/search_live.html.heex:270
+#: lib/baudrate_web/live/search_live.html.heex:321
 #, elixir-autogen, elixir-format
 msgid "Local"
 msgstr "ローカル"
 
-#: lib/baudrate_web/live/search_live.html.heex:175
+#: lib/baudrate_web/live/search_live.html.heex:226
 #, elixir-autogen, elixir-format
 msgid "No users found for \"%{query}\"."
 msgstr "「%{query}」に一致するユーザーが見つかりません。"
@@ -3613,13 +3614,13 @@ msgid "Unfollow %{username}"
 msgstr "%{username} のフォロー解除"
 
 #: lib/baudrate_web/live/following_live.html.heex:42
-#: lib/baudrate_web/live/search_live.html.heex:283
+#: lib/baudrate_web/live/search_live.html.heex:334
 #: lib/baudrate_web/live/user_profile_live.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Unfollow this user?"
 msgstr "このユーザーのフォローを解除しますか？"
 
-#: lib/baudrate_web/live/search_live.html.heex:146
+#: lib/baudrate_web/live/search_live.html.heex:197
 #, elixir-autogen, elixir-format
 msgid "Users"
 msgstr "ユーザー"
@@ -4186,7 +4187,57 @@ msgstr "板から削除"
 msgid "This article cannot be forwarded."
 msgstr "この記事は転送が許可されていません。"
 
-#: lib/baudrate_web/live/search_live.html.heex:168
+#: lib/baudrate_web/live/search_live.html.heex:219
 #, elixir-autogen, elixir-format
 msgid "No boards found for \"%{query}\"."
 msgstr "「%{query}」に一致する掲示板が見つかりません。"
+
+#: lib/baudrate_web/live/search_live.html.heex:60
+#, elixir-autogen, elixir-format
+msgid "Articles after a date"
+msgstr "指定日より後の記事"
+
+#: lib/baudrate_web/live/search_live.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Articles before a date"
+msgstr "指定日より前の記事"
+
+#: lib/baudrate_web/live/search_live.html.heex:52
+#, elixir-autogen, elixir-format
+msgid "Articles with attached images"
+msgstr "画像付きの記事"
+
+#: lib/baudrate_web/live/search_live.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "Example: %{example}"
+msgstr "例：%{example}"
+
+#: lib/baudrate_web/live/search_live.html.heex:40
+#, elixir-autogen, elixir-format
+msgid "Filter by article author"
+msgstr "投稿者で絞り込む"
+
+#: lib/baudrate_web/live/search_live.html.heex:44
+#, elixir-autogen, elixir-format
+msgid "Filter by board"
+msgstr "掲示板で絞り込む"
+
+#: lib/baudrate_web/live/search_live.html.heex:48
+#, elixir-autogen, elixir-format
+msgid "Filter by tag"
+msgstr "タグで絞り込む"
+
+#: lib/baudrate_web/live/search_live.html.heex:33
+#, elixir-autogen, elixir-format
+msgid "Operator"
+msgstr "オペレーター"
+
+#: lib/baudrate_web/live/search_live.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "Search operators"
+msgstr "検索オペレーター"
+
+#: lib/baudrate_web/live/search_live.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "Search... (try author:, board:, tag:)"
+msgstr "検索…（author:、board:、tag: をお試しください）"
