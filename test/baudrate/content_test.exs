@@ -1362,6 +1362,95 @@ defmodule Baudrate.ContentTest do
     end
   end
 
+  describe "search_visible_boards/2" do
+    test "matches board name" do
+      user = create_user("user")
+      create_board(%{name: "Elixir Discussion", slug: "elixir-vis-search"})
+      create_board(%{name: "Rust Talk", slug: "rust-vis-search"})
+
+      result = Content.search_visible_boards("Elix", user: user)
+      assert length(result.boards) == 1
+      assert hd(result.boards).slug == "elixir-vis-search"
+    end
+
+    test "matches board description" do
+      user = create_user("user")
+
+      create_board(%{
+        name: "General",
+        slug: "gen-vis-search",
+        description: "A board for general programming topics"
+      })
+
+      create_board(%{name: "Off-topic", slug: "offtopic-vis-search"})
+
+      result = Content.search_visible_boards("programming", user: user)
+      assert length(result.boards) == 1
+      assert hd(result.boards).slug == "gen-vis-search"
+    end
+
+    test "respects view role visibility" do
+      user = create_user("user")
+
+      create_board(%{
+        name: "Admin Vis Board",
+        slug: "admin-vis-search",
+        min_role_to_view: "admin"
+      })
+
+      create_board(%{name: "User Vis Board", slug: "user-vis-search", min_role_to_view: "guest"})
+
+      result = Content.search_visible_boards("Vis Board", user: user)
+      slugs = Enum.map(result.boards, & &1.slug)
+      assert "user-vis-search" in slugs
+      refute "admin-vis-search" in slugs
+    end
+
+    test "guest cannot see restricted boards" do
+      create_board(%{
+        name: "Restricted Board",
+        slug: "restricted-vis-search",
+        min_role_to_view: "user"
+      })
+
+      create_board(%{
+        name: "Public Board",
+        slug: "public-vis-search",
+        min_role_to_view: "guest"
+      })
+
+      result = Content.search_visible_boards("Board", user: nil)
+      slugs = Enum.map(result.boards, & &1.slug)
+      assert "public-vis-search" in slugs
+      refute "restricted-vis-search" in slugs
+    end
+
+    test "returns empty when no match" do
+      user = create_user("user")
+      create_board(%{name: "General", slug: "general-vis-search"})
+
+      result = Content.search_visible_boards("Nonexistent", user: user)
+      assert result.boards == []
+      assert result.total == 0
+    end
+
+    test "preloads parent board" do
+      user = create_user("user")
+      parent = create_board(%{name: "Parent Category", slug: "parent-vis-search"})
+
+      create_board(%{
+        name: "Child Board",
+        slug: "child-vis-search",
+        parent_id: parent.id
+      })
+
+      result = Content.search_visible_boards("Child", user: user)
+      assert length(result.boards) == 1
+      board = hd(result.boards)
+      assert board.parent.name == "Parent Category"
+    end
+  end
+
   # --- Forward Article to Board ---
 
   describe "forward_article_to_board/3" do

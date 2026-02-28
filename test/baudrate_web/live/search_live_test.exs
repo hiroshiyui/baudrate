@@ -154,4 +154,52 @@ defmodule BaudrateWeb.SearchLiveTest do
     html = render(lv)
     assert html =~ "No comments found"
   end
+
+  test "board search by name shows results", %{conn: conn} do
+    %Board{}
+    |> Board.changeset(%{
+      name: "Elixir Forum",
+      slug: "elixir-forum-search",
+      min_role_to_view: "guest"
+    })
+    |> Repo.insert!()
+
+    {:ok, _lv, html} = live(conn, "/search?q=Elixir+Forum&tab=boards")
+    assert html =~ "Elixir Forum"
+    assert html =~ ~s(href="/boards/elixir-forum-search")
+  end
+
+  test "board search by description shows results", %{conn: conn} do
+    %Board{}
+    |> Board.changeset(%{
+      name: "General",
+      slug: "general-desc-search",
+      description: "A board for general programming discussion",
+      min_role_to_view: "guest"
+    })
+    |> Repo.insert!()
+
+    {:ok, _lv, html} = live(conn, "/search?q=programming+discussion&tab=boards")
+    assert html =~ "General"
+    assert html =~ "general programming discussion"
+  end
+
+  test "board search shows empty state", %{conn: conn} do
+    {:ok, _lv, html} = live(conn, "/search?q=zzzznonexistent&tab=boards")
+    assert html =~ "No boards found"
+  end
+
+  test "board search respects visibility", %{conn: conn} do
+    %Board{}
+    |> Board.changeset(%{
+      name: "Admin Secret Board",
+      slug: "admin-secret-search",
+      min_role_to_view: "admin"
+    })
+    |> Repo.insert!()
+
+    {:ok, _lv, html} = live(conn, "/search?q=Secret+Board&tab=boards")
+    refute html =~ "Admin Secret Board"
+    assert html =~ "No boards found"
+  end
 end
