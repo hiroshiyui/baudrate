@@ -79,4 +79,35 @@ defmodule BaudrateWeb.Admin.InvitesLiveTest do
     html = lv |> element("button[phx-click=\"close_qr_modal\"]") |> render_click()
     refute html =~ "modal modal-open"
   end
+
+  test "admin can generate invite code for another user", %{conn: conn} do
+    admin = setup_user("admin")
+    user = setup_user("user")
+    conn = log_in_user(conn, admin)
+
+    {:ok, lv, _html} = live(conn, "/admin/invites")
+
+    # Search for the user
+    lv |> element("form[phx-change=\"search_users\"]") |> render_change(%{search: %{query: user.username}})
+
+    # Generate code for user
+    html = lv |> element("form[phx-submit=\"generate_for_user\"]") |> render_submit(%{user_id: user.id})
+    assert html =~ "Invite code generated for"
+    assert html =~ user.username
+  end
+
+  test "generated-for-user code shows target user as Created By", %{conn: conn} do
+    admin = setup_user("admin")
+    user = setup_user("user")
+    conn = log_in_user(conn, admin)
+
+    {:ok, lv, _html} = live(conn, "/admin/invites")
+
+    # Search and generate
+    lv |> element("form[phx-change=\"search_users\"]") |> render_change(%{search: %{query: user.username}})
+    html = lv |> element("form[phx-submit=\"generate_for_user\"]") |> render_submit(%{user_id: user.id})
+
+    # The table should show the target user's name in the Created By column
+    assert html =~ user.username
+  end
 end

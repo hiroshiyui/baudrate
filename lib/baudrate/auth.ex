@@ -824,6 +824,36 @@ defmodule Baudrate.Auth do
     end
   end
 
+  @doc """
+  Generates an invite code on behalf of a target user, callable only by admins.
+
+  Bypasses the account age restriction but still enforces the rolling
+  #{@invite_quota_window_days}-day quota (max #{@invite_quota_limit} codes).
+  The code's `created_by_id` is set to the target user.
+
+  Uses admin expiry rules (no forced #{@invite_default_expiry_days}-day cap).
+
+  Returns `{:ok, invite_code}` or `{:error, reason}`.
+
+  ## Errors
+
+    * `{:error, :unauthorized}` — caller is not an admin
+    * `{:error, :invite_quota_exceeded}` — target user's quota is exhausted
+  """
+  def admin_generate_invite_code_for_user(%User{} = admin, %User{} = target_user, opts \\ []) do
+    if admin.role.name != "admin" do
+      {:error, :unauthorized}
+    else
+      remaining = invite_quota_remaining(target_user)
+
+      if remaining <= 0 do
+        {:error, :invite_quota_exceeded}
+      else
+        do_generate_invite_code(target_user, opts)
+      end
+    end
+  end
+
   defp do_generate_invite_code(%User{} = user, opts) do
     code = :crypto.strong_rand_bytes(4) |> Base.encode16(case: :lower)
     max_uses = Keyword.get(opts, :max_uses, 1)

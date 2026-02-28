@@ -18,7 +18,7 @@ msgstr ""
 #: lib/baudrate_web/live/admin/federation_live.html.heex:165
 #: lib/baudrate_web/live/admin/federation_live.html.heex:209
 #: lib/baudrate_web/live/admin/federation_live.html.heex:308
-#: lib/baudrate_web/live/admin/invites_live.html.heex:24
+#: lib/baudrate_web/live/admin/invites_live.html.heex:58
 #: lib/baudrate_web/live/admin/users_live.html.heex:135
 #: lib/baudrate_web/live/user_invites_live.html.heex:46
 #, elixir-autogen, elixir-format
@@ -1163,7 +1163,7 @@ msgid "Send a Flag report to %{domain}?"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:35
-#: lib/baudrate_web/live/admin/invites_live.html.heex:19
+#: lib/baudrate_web/live/admin/invites_live.html.heex:53
 #: lib/baudrate_web/live/admin/users_live.html.heex:133
 #: lib/baudrate_web/live/user_invites_live.html.heex:41
 #, elixir-autogen, elixir-format
@@ -1339,7 +1339,7 @@ msgstr ""
 msgid "You are not authorized to edit this article."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:46
+#: lib/baudrate_web/live/admin/invites_live.html.heex:80
 #: lib/baudrate_web/live/admin/users_live.html.heex:13
 #: lib/baudrate_web/live/admin/users_live.html.heex:51
 #: lib/baudrate_web/live/user_invites_live.html.heex:62
@@ -1618,6 +1618,7 @@ msgstr ""
 msgid "System theme"
 msgstr ""
 
+#: lib/baudrate_web/live/admin/invites_live.ex:101
 #: lib/baudrate_web/live/admin/pending_users_live.ex:34
 #: lib/baudrate_web/live/admin/users_live.ex:103
 #: lib/baudrate_web/live/admin/users_live.ex:139
@@ -1701,7 +1702,7 @@ msgstr ""
 msgid "Ban User"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:17
+#: lib/baudrate_web/live/admin/invites_live.html.heex:51
 #: lib/baudrate_web/live/user_invites_live.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "Code"
@@ -1712,13 +1713,13 @@ msgstr ""
 msgid "Create Board"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:23
+#: lib/baudrate_web/live/admin/invites_live.html.heex:57
 #: lib/baudrate_web/live/user_invites_live.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "Created"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:18
+#: lib/baudrate_web/live/admin/invites_live.html.heex:52
 #, elixir-autogen, elixir-format
 msgid "Created By"
 msgstr ""
@@ -1735,7 +1736,7 @@ msgstr ""
 msgid "Delete Board"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:33
+#: lib/baudrate_web/live/admin/invites_live.html.heex:67
 #: lib/baudrate_web/live/admin/moderation_log_live.html.heex:51
 #, elixir-autogen, elixir-format
 msgid "Deleted user"
@@ -1751,25 +1752,26 @@ msgstr ""
 msgid "Dismiss Report"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:48
+#: lib/baudrate_web/live/admin/invites_live.html.heex:82
 #: lib/baudrate_web/live/user_invites_live.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Expired"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:22
+#: lib/baudrate_web/live/admin/invites_live.html.heex:56
 #: lib/baudrate_web/live/user_invites_live.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "Expires"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:50
+#: lib/baudrate_web/live/admin/invites_live.ex:58
+#: lib/baudrate_web/live/admin/invites_live.ex:128
 #: lib/baudrate_web/live/user_invites_live.ex:44
 #, elixir-autogen, elixir-format
 msgid "Failed to generate invite code."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:93
+#: lib/baudrate_web/live/admin/invites_live.ex:154
 #: lib/baudrate_web/live/user_invites_live.ex:87
 #, elixir-autogen, elixir-format
 msgid "Failed to revoke invite code."
@@ -1803,13 +1805,13 @@ msgstr ""
 msgid "Invite Only"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:39
+#: lib/baudrate_web/live/admin/invites_live.ex:47
 #: lib/baudrate_web/live/user_invites_live.ex:33
 #, elixir-autogen, elixir-format
 msgid "Invite code generated."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:89
+#: lib/baudrate_web/live/admin/invites_live.ex:150
 #: lib/baudrate_web/live/user_invites_live.ex:83
 #, elixir-autogen, elixir-format
 msgid "Invite code revoked."
@@ -1822,13 +1824,13 @@ msgstr ""
 msgid "Moderation Log"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:71
+#: lib/baudrate_web/live/admin/invites_live.html.heex:105
 #: lib/baudrate_web/live/user_invites_live.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "Never"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:10
+#: lib/baudrate_web/live/admin/invites_live.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "No invite codes yet."
 msgstr ""
@@ -1853,19 +1855,19 @@ msgstr ""
 msgid "Resolve Report"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:106
+#: lib/baudrate_web/live/admin/invites_live.html.heex:140
 #: lib/baudrate_web/live/user_invites_live.html.heex:115
 #, elixir-autogen, elixir-format
 msgid "Revoke"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:103
+#: lib/baudrate_web/live/admin/invites_live.html.heex:137
 #: lib/baudrate_web/live/user_invites_live.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Revoke this invite code?"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:49
+#: lib/baudrate_web/live/admin/invites_live.html.heex:83
 #: lib/baudrate_web/live/user_invites_live.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Revoked"
@@ -1911,13 +1913,13 @@ msgstr ""
 msgid "Update Role"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:47
+#: lib/baudrate_web/live/admin/invites_live.html.heex:81
 #: lib/baudrate_web/live/user_invites_live.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Used"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:20
+#: lib/baudrate_web/live/admin/invites_live.html.heex:54
 #: lib/baudrate_web/live/user_invites_live.html.heex:42
 #, elixir-autogen, elixir-format
 msgid "Uses"
@@ -2163,6 +2165,7 @@ msgid "Remove this moderator?"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:172
+#: lib/baudrate_web/live/admin/invites_live.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Select a user..."
 msgstr ""
@@ -2410,7 +2413,7 @@ msgstr ""
 msgid "Admin Federation"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:25
+#: lib/baudrate_web/live/admin/invites_live.ex:31
 #, elixir-autogen, elixir-format
 msgid "Admin Invites"
 msgstr ""
@@ -2487,7 +2490,7 @@ msgid "Theme"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:119
-#: lib/baudrate_web/live/admin/invites_live.html.heex:136
+#: lib/baudrate_web/live/admin/invites_live.html.heex:170
 #: lib/baudrate_web/live/user_invites_live.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Close"
@@ -3038,6 +3041,7 @@ msgid "Search users to add as moderator"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:158
+#: lib/baudrate_web/live/admin/invites_live.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "Search users..."
 msgstr ""
@@ -3317,19 +3321,20 @@ msgstr ""
 msgid "%{remaining} of %{limit} invites remaining"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:75
+#: lib/baudrate_web/live/admin/invites_live.ex:136
 #: lib/baudrate_web/live/user_invites_live.ex:72
 #, elixir-autogen, elixir-format
 msgid "Invite code not found."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:47
+#: lib/baudrate_web/live/admin/invites_live.ex:55
+#: lib/baudrate_web/live/admin/invites_live.ex:125
 #: lib/baudrate_web/live/user_invites_live.ex:41
 #, elixir-autogen, elixir-format
 msgid "Invite quota exceeded."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:21
+#: lib/baudrate_web/live/admin/invites_live.html.heex:55
 #: lib/baudrate_web/live/user_invites_live.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "Invited User"
@@ -3358,7 +3363,7 @@ msgstr ""
 msgid "You haven't generated any invite codes yet."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.ex:44
+#: lib/baudrate_web/live/admin/invites_live.ex:52
 #: lib/baudrate_web/live/user_invites_live.ex:38
 #, elixir-autogen, elixir-format
 msgid "Your account is too new to generate invite codes."
@@ -3393,30 +3398,30 @@ msgstr ""
 msgid "You are posting too frequently. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:84
+#: lib/baudrate_web/live/admin/invites_live.html.heex:118
 #: lib/baudrate_web/live/user_invites_live.html.heex:93
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:85
-#: lib/baudrate_web/live/admin/invites_live.html.heex:87
+#: lib/baudrate_web/live/admin/invites_live.html.heex:119
+#: lib/baudrate_web/live/admin/invites_live.html.heex:121
 #: lib/baudrate_web/live/user_invites_live.html.heex:94
 #: lib/baudrate_web/live/user_invites_live.html.heex:96
 #, elixir-autogen, elixir-format
 msgid "Copy invite link"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:126
-#: lib/baudrate_web/live/admin/invites_live.html.heex:129
+#: lib/baudrate_web/live/admin/invites_live.html.heex:160
+#: lib/baudrate_web/live/admin/invites_live.html.heex:163
 #: lib/baudrate_web/live/user_invites_live.html.heex:135
 #: lib/baudrate_web/live/user_invites_live.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Invite QR code"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/invites_live.html.heex:95
-#: lib/baudrate_web/live/admin/invites_live.html.heex:96
+#: lib/baudrate_web/live/admin/invites_live.html.heex:129
+#: lib/baudrate_web/live/admin/invites_live.html.heex:130
 #: lib/baudrate_web/live/user_invites_live.html.heex:104
 #: lib/baudrate_web/live/user_invites_live.html.heex:105
 #, elixir-autogen, elixir-format
@@ -4499,4 +4504,25 @@ msgstr ""
 #: lib/baudrate_web/components/core_components.ex:310
 #, elixir-autogen, elixir-format
 msgid "Write"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/invites_live.html.heex:11
+#: lib/baudrate_web/live/admin/invites_live.html.heex:38
+#, elixir-autogen, elixir-format
+msgid "Generate for User"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/invites_live.ex:115
+#, elixir-autogen, elixir-format
+msgid "Invite code generated for %{username}."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/invites_live.html.heex:21
+#, elixir-autogen, elixir-format
+msgid "Search users to generate invite code for"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/invites_live.html.heex:30
+#, elixir-autogen, elixir-format
+msgid "Select a user"
 msgstr ""

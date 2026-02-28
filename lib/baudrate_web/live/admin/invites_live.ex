@@ -5,6 +5,10 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   Only accessible to users with the `"admin"` role. Provides
   generation and revocation of invite codes, and shows invite chain
   information (which users were created from each code).
+
+  Admins can also generate invite codes on behalf of other users,
+  bypassing the account age restriction while still enforcing the
+  rolling 30-day quota.
   """
 
   use BaudrateWeb, :live_view
@@ -12,6 +16,8 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
   alias Baudrate.Auth
+  alias Baudrate.Repo
+  alias Baudrate.Setup.User
   import BaudrateWeb.Helpers, only: [parse_id: 1, invite_url: 1]
 
   @impl true
@@ -24,7 +30,9 @@ defmodule BaudrateWeb.Admin.InvitesLive do
        wide_layout: true,
        page_title: gettext("Admin Invites"),
        qr_codes: build_qr_codes(codes),
-       qr_modal_code: nil
+       qr_modal_code: nil,
+       user_search_query: "",
+       user_search_results: []
      )}
   end
 
@@ -51,17 +59,35 @@ defmodule BaudrateWeb.Admin.InvitesLive do
     end
   end
 
-  @impl true
   def handle_event("show_qr_code", %{"code" => code}, socket) do
     {:noreply, assign(socket, :qr_modal_code, code)}
   end
 
-  @impl true
   def handle_event("close_qr_modal", _params, socket) do
     {:noreply, assign(socket, :qr_modal_code, nil)}
   end
 
-  @impl true
+  def handle_event("search_users", %{"search" => %{"query" => query}}, socket) do
+    query = String.trim(query)
+
+    if String.length(query) < 2 do
+      {:noreply, assign(socket, user_search_results: [], user_search_query: query)}
+    else
+      users = Auth.search_users(query, limit: 20)
+      {:noreply, assign(socket, user_search_results: users, user_search_query: query)}
+    end
+  end
+
+  def handle_event("generate_for_user", %{"user_id" => user_id}, socket) do
+    case parse_id(user_id) do
+      :error ->
+        {:noreply, socket}
+
+      {:ok, uid} ->
+        do_generate_for_user(socket, uid)
+    end
+  end
+
   def handle_event("revoke", %{"id" => id}, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}
@@ -69,8 +95,43 @@ defmodule BaudrateWeb.Admin.InvitesLive do
     end
   end
 
+  defp do_generate_for_user(socket, user_id) do
+    case Repo.get(User, user_id) |> Repo.preload(:role) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("User not found."))}
+
+      target_user ->
+        case Auth.admin_generate_invite_code_for_user(
+               socket.assigns.current_user,
+               target_user
+             ) do
+          {:ok, _code} ->
+            codes = Auth.list_all_invite_codes()
+
+            {:noreply,
+             socket
+             |> put_flash(
+               :info,
+               gettext("Invite code generated for %{username}.", username: target_user.username)
+             )
+             |> assign(
+               codes: codes,
+               qr_codes: build_qr_codes(codes),
+               user_search_query: "",
+               user_search_results: []
+             )}
+
+          {:error, :invite_quota_exceeded} ->
+            {:noreply, put_flash(socket, :error, gettext("Invite quota exceeded."))}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to generate invite code."))}
+        end
+    end
+  end
+
   defp do_revoke(socket, invite_id) do
-    case Baudrate.Repo.get(Auth.InviteCode, invite_id) do
+    case Repo.get(Auth.InviteCode, invite_id) do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("Invite code not found."))}
 

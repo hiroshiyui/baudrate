@@ -6,6 +6,40 @@
     </button>
   </div>
 
+  <section aria-labelledby="generate-for-user-heading" class="card bg-base-200 p-4">
+    <h2 id="generate-for-user-heading" class="text-lg font-semibold mb-2">
+      {gettext("Generate for User")}
+    </h2>
+    <form phx-change="search_users" class="mb-2">
+      <input
+        type="text"
+        name="search[query]"
+        value={@user_search_query}
+        placeholder={gettext("Search users...")}
+        class="input input-bordered input-sm w-full"
+        autocomplete="off"
+        aria-label={gettext("Search users to generate invite code for")}
+        phx-debounce="300"
+      />
+    </form>
+    <form :if={@user_search_results != []} phx-submit="generate_for_user" class="flex gap-2">
+      <select
+        name="user_id"
+        class="select select-bordered select-sm flex-1"
+        required
+        aria-label={gettext("Select a user")}
+      >
+        <option value="">{gettext("Select a user...")}</option>
+        <option :for={user <- @user_search_results} value={user.id}>
+          {user.username} ({user.role.name})
+        </option>
+      </select>
+      <button type="submit" class="btn btn-sm btn-primary">
+        {gettext("Generate for User")}
+      </button>
+    </form>
+  </section>
+
   <div :if={@codes == []} class="text-base-content/70 text-center py-8">
     {gettext("No invite codes yet.")}
   </div>

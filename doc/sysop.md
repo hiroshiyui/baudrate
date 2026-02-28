@@ -209,6 +209,10 @@ shown) and an optional site-specific End User Agreement (configurable at
 - Set optional expiration time
 - Track who created and who used each code
 - Revoke active codes at any time
+- **Generate on behalf of a user** — admins can issue invite codes attributed
+  to any user, bypassing the 7-day account age restriction. The user's rolling
+  30-day quota (max 5 codes) is still enforced. The generated code's "Created
+  By" shows the target user, so the user can share it immediately.
 
 ### Login Monitoring (`/admin/login-attempts`)
 
