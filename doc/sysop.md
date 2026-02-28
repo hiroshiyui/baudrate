@@ -19,6 +19,7 @@ instance.
 - [Security](#security)
 - [PWA (Progressive Web App)](#pwa-progressive-web-app)
 - [Deployment](#deployment)
+- [Backup & Restore](#backup--restore)
 - [Maintenance](#maintenance)
 - [Clustering](#clustering)
 - [Admin Routes](#admin-routes)
@@ -615,6 +616,69 @@ Safari, Firefox).
 
 No additional configuration is required. The manifest uses the SVG favicon as
 the app icon, which scales to any resolution.
+
+---
+
+## Backup & Restore
+
+Baudrate provides mix tasks for backing up and restoring the database and
+uploaded files (avatars, article images). Backups are written to the `backups/`
+directory at the project root (git-ignored).
+
+### Backup
+
+```bash
+# Full backup (database + files)
+mix backup
+
+# Database only (custom format, restorable with pg_restore)
+mix backup.db
+
+# Database only (plain SQL, restorable with psql)
+mix backup.db --format sql
+
+# Uploaded files only (tar.gz archive)
+mix backup.files
+
+# Custom output directory
+mix backup --output-dir /mnt/backups
+```
+
+**Naming convention:**
+- Database: `baudrate_db_YYYYMMDD_HHMMSS.dump` (custom) or `.sql` (plain)
+- Files: `baudrate_files_YYYYMMDD_HHMMSS.tar.gz`
+
+The `custom` format (default) is recommended — it is compressed and supports
+selective restore with `pg_restore`. The `sql` format is human-readable and
+useful for inspecting or migrating data.
+
+### Restore
+
+```bash
+# Full restore (database + files)
+mix restore backups/baudrate_db_20260228_120000.dump backups/baudrate_files_20260228_120000.tar.gz
+
+# Database only
+mix restore.db backups/baudrate_db_20260228_120000.dump
+
+# Files only
+mix restore.files backups/baudrate_files_20260228_120000.tar.gz
+```
+
+**Warning:** Restore operations overwrite existing data. Stop the application
+before restoring to avoid conflicts with active connections.
+
+### Automated Backups
+
+Use cron for scheduled backups:
+
+```bash
+# Daily backup at 3:00 AM
+0 3 * * * cd /path/to/baudrate && mix backup --output-dir /mnt/backups 2>&1 | logger -t baudrate-backup
+```
+
+Implement a retention policy to avoid filling disk — delete backups older than
+your desired retention period.
 
 ---
 

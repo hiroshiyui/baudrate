@@ -44,6 +44,9 @@ baudrate-*.tar
 /native/*/target/
 /priv/native/
 
+# Backup files
+/backups/
+
 # In case you use Node.js/npm, you want to ignore these.
 npm-debug.log
 /assets/node_modules/
