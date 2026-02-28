@@ -6,10 +6,6 @@
 
 Identified via competitive analysis against Discourse, Lemmy, Flarum, NodeBB, and Misskey.
 
-### High Priority — Core Forum Gaps
-
-- [ ] **feat:** Rich link previews (oneboxing) — auto-expand YouTube, GitHub, Wikipedia, etc. links into embedded cards with metadata
-
 ### Lower Priority — Engagement & Platform
 
 - [ ] **infra:** Admin analytics dashboard — DAU/MAU, posts/day, response times, community health metrics
