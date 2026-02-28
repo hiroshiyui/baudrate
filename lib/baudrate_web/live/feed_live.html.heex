@@ -12,8 +12,8 @@
 </div>
 
 <div class="lg:grid lg:grid-cols-[1fr_16rem] lg:gap-6 lg:items-start">
-  <div class="space-y-6" role="main" aria-label={gettext("Feed")}>
-    <div :if={@can_post} class="card bg-base-200 shadow-sm">
+  <div class="space-y-6" aria-label={gettext("Feed")}>
+    <div :if={@can_post} id="quick-post" class="card bg-base-200 shadow-sm">
       <div class="card-body p-4">
         <div class="flex gap-3">
           <div class="hidden sm:block flex-shrink-0">
@@ -59,12 +59,13 @@
 
     <div
       :if={@items != []}
+      id="feed-items"
       class="space-y-4"
       role="feed"
       aria-live="polite"
       aria-label={gettext("Feed")}
     >
-      <article :for={item <- @items} class="card bg-base-200 shadow-sm">
+      <article :for={item <- @items} class="feed-item card bg-base-200 shadow-sm">
         <%!-- Remote feed item --%>
         <div :if={item.source == :remote} class="card-body p-4">
           <div class="flex items-center gap-3 mb-2">
@@ -238,7 +239,7 @@
     />
   </div>
 
-  <aside class="hidden lg:block" aria-label={gettext("Profile")}>
+  <aside id="profile-sidebar" class="hidden lg:block" aria-label={gettext("Profile")}>
     <div class="card bg-base-200 shadow-sm sticky top-24">
       <div class="card-body p-4 items-center text-center">
         <.avatar user={@current_user} size={48} />

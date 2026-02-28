@@ -17,13 +17,14 @@
   </p>
 </div>
 
-<div :if={@boards != []}>
-  <h2 class="text-xl font-bold mb-4">{gettext("Boards")}</h2>
-  <div class="space-y-2">
+<section :if={@boards != []} id="boards-section" aria-labelledby="boards-heading">
+  <h2 id="boards-heading" class="text-xl font-bold mb-4">{gettext("Boards")}</h2>
+  <div id="boards" class="space-y-2">
     <.link
       :for={board <- @boards}
+      id={"board-#{board.slug}"}
       navigate={~p"/boards/#{board.slug}"}
-      class="card bg-base-200 shadow-sm hover:bg-base-300 transition-colors"
+      class="board card bg-base-200 shadow-sm hover:bg-base-300 transition-colors"
     >
       <div class="card-body p-4">
         <h3 class="card-title text-base">
@@ -39,4 +40,4 @@
       </div>
     </.link>
   </div>
-</div>
+</section>

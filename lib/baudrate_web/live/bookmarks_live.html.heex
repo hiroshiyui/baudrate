@@ -6,8 +6,12 @@
     <p class="text-lg">{gettext("No bookmarks yet.")}</p>
   </div>
 
-  <div :if={@bookmarks != []} class="space-y-2">
-    <div :for={bookmark <- @bookmarks} class="card bg-base-200 shadow-sm">
+  <div :if={@bookmarks != []} id="bookmarks" class="space-y-2">
+    <div
+      :for={bookmark <- @bookmarks}
+      id={"bookmark-#{bookmark.id}"}
+      class="bookmark card bg-base-200 shadow-sm"
+    >
       <div class="card-body p-4 flex flex-row items-start gap-3">
         <%!-- Type icon --%>
         <div class="flex-shrink-0 rounded-full p-2 bg-base-300">

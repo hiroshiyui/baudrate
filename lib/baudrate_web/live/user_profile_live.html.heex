@@ -1,5 +1,5 @@
 <div class="space-y-6">
-  <div class="flex items-center gap-4">
+  <div id="profile-header" class="flex items-center gap-4">
     <.avatar user={@profile_user} size={48} />
     <div>
       <h1 class="text-2xl font-bold">{display_name(@profile_user)}</h1>
@@ -67,7 +67,7 @@
     </div>
   </div>
 
-  <div class="stats stats-horizontal shadow">
+  <div id="profile-stats" class="stats stats-horizontal shadow">
     <.link
       navigate={~p"/users/#{@profile_user.username}/articles"}
       class="stat hover:bg-base-200 transition-colors cursor-pointer"
@@ -84,8 +84,8 @@
     </.link>
   </div>
 
-  <div :if={@profile_user.bio && @profile_user.bio != ""}>
-    <h2 class="text-lg font-semibold mb-2">{gettext("Bio")}</h2>
+  <section :if={@profile_user.bio && @profile_user.bio != ""} id="profile-bio" aria-labelledby="bio-heading">
+    <h2 id="bio-heading" class="text-lg font-semibold mb-2">{gettext("Bio")}</h2>
     <div class="prose prose-sm max-w-none text-base-content/70 bg-base-200 rounded-lg p-3">
       {raw(
         Baudrate.Content.Markdown.linkify_hashtags(
@@ -94,19 +94,23 @@
         )
       )}
     </div>
-  </div>
+  </section>
 
-  <div :if={@profile_user.signature && @profile_user.signature != ""}>
-    <h2 class="text-lg font-semibold mb-2">{gettext("Signature")}</h2>
+  <section :if={@profile_user.signature && @profile_user.signature != ""} id="profile-signature" aria-labelledby="signature-heading">
+    <h2 id="signature-heading" class="text-lg font-semibold mb-2">{gettext("Signature")}</h2>
     <div class="prose prose-sm max-w-none text-base-content/70 bg-base-200 rounded-lg p-3">
       {raw(Baudrate.Content.Markdown.to_html(@profile_user.signature))}
     </div>
-  </div>
+  </section>
 
-  <div :if={@recent_articles != []}>
-    <h2 class="text-lg font-semibold mb-3">{gettext("Recent Articles")}</h2>
-    <div class="space-y-2" aria-live="polite">
-      <div :for={article <- @recent_articles} class="card bg-base-200 shadow-sm">
+  <section :if={@recent_articles != []} id="recent-articles-section" aria-labelledby="recent-articles-heading">
+    <h2 id="recent-articles-heading" class="text-lg font-semibold mb-3">{gettext("Recent Articles")}</h2>
+    <div id="recent-articles" class="space-y-2" aria-live="polite">
+      <article
+        :for={article <- @recent_articles}
+        id={"article-#{article.slug}"}
+        class="article card bg-base-200 shadow-sm"
+      >
         <div class="card-body p-4">
           <.link
             navigate={~p"/articles/#{article.slug}"}
@@ -128,9 +132,9 @@
             </span>
           </div>
         </div>
-      </div>
+      </article>
     </div>
-  </div>
+  </section>
 
   <div :if={@recent_articles == []} class="text-base-content/70 text-center py-4">
     {gettext("No articles yet.")}

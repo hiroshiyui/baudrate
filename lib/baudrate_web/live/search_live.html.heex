@@ -233,8 +233,17 @@
     {ngettext("1 result", "%{count} results", @total)}
   </div>
 
-  <div :if={@tab == "articles" && @articles != []} class="space-y-2" aria-live="polite">
-    <div :for={article <- @articles} class="card bg-base-200 shadow-sm">
+  <div
+    :if={@tab == "articles" && @articles != []}
+    id="search-results-articles"
+    class="space-y-2"
+    aria-live="polite"
+  >
+    <article
+      :for={article <- @articles}
+      id={"search-article-#{article.slug}"}
+      class="article card bg-base-200 shadow-sm"
+    >
       <div class="card-body p-4">
         <.link
           navigate={~p"/articles/#{article.slug}"}
@@ -255,11 +264,20 @@
           </span>
         </div>
       </div>
-    </div>
+    </article>
   </div>
 
-  <div :if={@tab == "comments" && @comments != []} class="space-y-2" aria-live="polite">
-    <div :for={comment <- @comments} class="card bg-base-200 shadow-sm">
+  <div
+    :if={@tab == "comments" && @comments != []}
+    id="search-results-comments"
+    class="space-y-2"
+    aria-live="polite"
+  >
+    <div
+      :for={comment <- @comments}
+      id={"search-comment-#{comment.id}"}
+      class="comment card bg-base-200 shadow-sm"
+    >
       <div class="card-body p-4">
         <.link
           navigate={~p"/articles/#{comment.article.slug}"}
@@ -283,8 +301,17 @@
     </div>
   </div>
 
-  <div :if={@tab == "boards" && @boards != []} class="space-y-2" aria-live="polite">
-    <div :for={board <- @boards} class="card bg-base-200 shadow-sm">
+  <div
+    :if={@tab == "boards" && @boards != []}
+    id="search-results-boards"
+    class="space-y-2"
+    aria-live="polite"
+  >
+    <div
+      :for={board <- @boards}
+      id={"search-board-#{board.slug}"}
+      class="board card bg-base-200 shadow-sm"
+    >
       <div class="card-body p-4">
         <.link navigate={~p"/boards/#{board.slug}"} class="card-title text-base link link-hover">
           {board.name}
@@ -302,8 +329,17 @@
   </div>
 
   <%!-- Local users results --%>
-  <div :if={@tab == "users" && @local_users != []} class="space-y-2" aria-live="polite">
-    <div :for={user <- @local_users} class="card bg-base-200 shadow-sm">
+  <div
+    :if={@tab == "users" && @local_users != []}
+    id="search-results-users"
+    class="space-y-2"
+    aria-live="polite"
+  >
+    <div
+      :for={user <- @local_users}
+      id={"search-user-#{user.username}"}
+      class="user card bg-base-200 shadow-sm"
+    >
       <div class="card-body p-4 flex flex-row items-center gap-4">
         <.avatar user={user} size={48} />
         <div class="flex-1 min-w-0">

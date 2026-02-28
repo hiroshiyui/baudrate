@@ -12,8 +12,12 @@
     {gettext("No articles found with tag #%{tag}.", tag: @tag)}
   </div>
 
-  <div :if={@articles != []} class="space-y-2" aria-live="polite">
-    <div :for={article <- @articles} class="card bg-base-200 shadow-sm">
+  <div :if={@articles != []} id="articles" class="space-y-2" aria-live="polite">
+    <article
+      :for={article <- @articles}
+      id={"article-#{article.slug}"}
+      class="article card bg-base-200 shadow-sm"
+    >
       <div class="card-body p-4">
         <.link
           navigate={~p"/articles/#{article.slug}"}
@@ -34,7 +38,7 @@
           </span>
         </div>
       </div>
-    </div>
+    </article>
   </div>
 
   <.pagination
