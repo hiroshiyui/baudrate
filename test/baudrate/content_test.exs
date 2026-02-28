@@ -1023,6 +1023,302 @@ defmodule Baudrate.ContentTest do
     end
   end
 
+  describe "search_articles/2 with operators" do
+    test "author: filters by username (case-insensitive)" do
+      alice = create_user("user")
+      bob = create_user("user")
+      board = create_board(%{name: "OpAuth", slug: "op-auth", min_role_to_view: "guest"})
+
+      {:ok, _} =
+        Content.create_article(
+          %{title: "Alice Post", body: "content", slug: "alice-op", user_id: alice.id},
+          [board.id]
+        )
+
+      {:ok, _} =
+        Content.create_article(
+          %{title: "Bob Post", body: "content", slug: "bob-op", user_id: bob.id},
+          [board.id]
+        )
+
+      username = String.upcase(alice.username)
+      result = Content.search_articles("author:#{username}", user: alice)
+      assert result.total == 1
+      assert hd(result.articles).title == "Alice Post"
+    end
+
+    test "author: with non-existent user returns empty" do
+      user = create_user("user")
+      board = create_board(%{name: "OpNoAuth", slug: "op-no-auth", min_role_to_view: "guest"})
+
+      {:ok, _} =
+        Content.create_article(
+          %{title: "Some Post", body: "content", slug: "no-auth-op", user_id: user.id},
+          [board.id]
+        )
+
+      result = Content.search_articles("author:nonexistentuser999", user: user)
+      assert result.total == 0
+      assert result.articles == []
+    end
+
+    test "board: filters by board slug" do
+      user = create_user("user")
+      board1 = create_board(%{name: "Board One", slug: "op-board-one", min_role_to_view: "guest"})
+      board2 = create_board(%{name: "Board Two", slug: "op-board-two", min_role_to_view: "guest"})
+
+      {:ok, _} =
+        Content.create_article(
+          %{title: "In Board One", body: "content", slug: "in-b1-op", user_id: user.id},
+          [board1.id]
+        )
+
+      {:ok, _} =
+        Content.create_article(
+          %{title: "In Board Two", body: "content", slug: "in-b2-op", user_id: user.id},
+          [board2.id]
+        )
+
+      result = Content.search_articles("board:op-board-one", user: user)
+      assert result.total == 1
+      assert hd(result.articles).title == "In Board One"
+    end
+
+    test "tag: filters by single tag" do
+      user = create_user("user")
+      board = create_board(%{name: "OpTag", slug: "op-tag", min_role_to_view: "guest"})
+
+      {:ok, %{article: _}} =
+        Content.create_article(
+          %{title: "Tagged Post", body: "content #elixirtag", slug: "tagged-op", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, _} =
+        Content.create_article(
+          %{title: "Untagged Post", body: "content", slug: "untagged-op", user_id: user.id},
+          [board.id]
+        )
+
+      result = Content.search_articles("tag:elixirtag", user: user)
+      assert result.total == 1
+      assert hd(result.articles).title == "Tagged Post"
+    end
+
+    test "tag: with multiple tags uses AND" do
+      user = create_user("user")
+      board = create_board(%{name: "OpMultiTag", slug: "op-multi-tag", min_role_to_view: "guest"})
+
+      {:ok, %{article: _}} =
+        Content.create_article(
+          %{
+            title: "Both Tags",
+            body: "content #alphatag #betatag",
+            slug: "both-tags-op",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, %{article: _}} =
+        Content.create_article(
+          %{
+            title: "One Tag",
+            body: "content #alphatag",
+            slug: "one-tag-op",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      result = Content.search_articles("tag:alphatag tag:betatag", user: user)
+      assert result.total == 1
+      assert hd(result.articles).title == "Both Tags"
+    end
+
+    test "has:images filters articles with images" do
+      user = create_user("user")
+      board = create_board(%{name: "OpHas", slug: "op-has", min_role_to_view: "guest"})
+
+      {:ok, %{article: art_with_img}} =
+        Content.create_article(
+          %{title: "With Image", body: "content", slug: "with-img-op", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, _} =
+        Content.create_article(
+          %{title: "Without Image", body: "content", slug: "no-img-op", user_id: user.id},
+          [board.id]
+        )
+
+      Repo.insert!(%Content.ArticleImage{
+        article_id: art_with_img.id,
+        user_id: user.id,
+        filename: "test.webp",
+        storage_path: "/uploads/test.webp",
+        width: 100,
+        height: 100
+      })
+
+      result = Content.search_articles("has:images", user: user)
+      assert result.total == 1
+      assert hd(result.articles).title == "With Image"
+    end
+
+    test "has:images excludes articles without images" do
+      user = create_user("user")
+      board = create_board(%{name: "OpNoImg", slug: "op-no-img", min_role_to_view: "guest"})
+
+      {:ok, _} =
+        Content.create_article(
+          %{title: "No Images Here", body: "content", slug: "no-images-op", user_id: user.id},
+          [board.id]
+        )
+
+      result = Content.search_articles("has:images", user: user)
+      assert result.total == 0
+    end
+
+    test "before: and after: date filtering" do
+      user = create_user("user")
+      board = create_board(%{name: "OpDate", slug: "op-date", min_role_to_view: "guest"})
+
+      {:ok, %{article: old_art}} =
+        Content.create_article(
+          %{title: "Old Post", body: "content", slug: "old-op", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, %{article: new_art}} =
+        Content.create_article(
+          %{title: "New Post", body: "content", slug: "new-op", user_id: user.id},
+          [board.id]
+        )
+
+      # Set explicit timestamps for deterministic tests
+      old_dt = ~U[2026-01-10 12:00:00Z]
+      new_dt = ~U[2026-02-20 12:00:00Z]
+
+      Repo.update_all(from(a in Article, where: a.id == ^old_art.id),
+        set: [inserted_at: old_dt]
+      )
+
+      Repo.update_all(from(a in Article, where: a.id == ^new_art.id),
+        set: [inserted_at: new_dt]
+      )
+
+      # before: exclusive — articles before end of 2026-01-15
+      result = Content.search_articles("before:2026-01-15", user: user)
+      titles = Enum.map(result.articles, & &1.title)
+      assert "Old Post" in titles
+      refute "New Post" in titles
+
+      # after: inclusive — articles on or after 2026-02-01
+      result2 = Content.search_articles("after:2026-02-01", user: user)
+      titles2 = Enum.map(result2.articles, & &1.title)
+      assert "New Post" in titles2
+      refute "Old Post" in titles2
+    end
+
+    test "before: + after: date range" do
+      user = create_user("user")
+      board = create_board(%{name: "OpRange", slug: "op-range", min_role_to_view: "guest"})
+
+      {:ok, %{article: art}} =
+        Content.create_article(
+          %{title: "In Range", body: "content", slug: "range-op", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, %{article: art_out}} =
+        Content.create_article(
+          %{title: "Out Range", body: "content", slug: "out-range-op", user_id: user.id},
+          [board.id]
+        )
+
+      Repo.update_all(from(a in Article, where: a.id == ^art.id),
+        set: [inserted_at: ~U[2026-01-15 12:00:00Z]]
+      )
+
+      Repo.update_all(from(a in Article, where: a.id == ^art_out.id),
+        set: [inserted_at: ~U[2026-03-01 12:00:00Z]]
+      )
+
+      result = Content.search_articles("after:2026-01-01 before:2026-02-01", user: user)
+      titles = Enum.map(result.articles, & &1.title)
+      assert "In Range" in titles
+      refute "Out Range" in titles
+    end
+
+    test "invalid date silently ignored" do
+      user = create_user("user")
+      board = create_board(%{name: "OpBadDate", slug: "op-bad-date", min_role_to_view: "guest"})
+
+      {:ok, _} =
+        Content.create_article(
+          %{title: "Any Post", body: "content", slug: "bad-date-op", user_id: user.id},
+          [board.id]
+        )
+
+      # Invalid date should be silently ignored, returning all articles
+      result = Content.search_articles("before:not-a-date", user: user)
+      assert result.total >= 1
+    end
+
+    test "operators + free text combined" do
+      user = create_user("user")
+      board = create_board(%{name: "OpCombo", slug: "op-combo", min_role_to_view: "guest"})
+
+      {:ok, %{article: _}} =
+        Content.create_article(
+          %{
+            title: "Elixir Tutorial",
+            body: "Learn Elixir programming #combotag",
+            slug: "combo-op",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      result =
+        Content.search_articles("tag:combotag Elixir", user: user)
+
+      assert result.total == 1
+      assert hd(result.articles).title == "Elixir Tutorial"
+    end
+
+    test "operators only (no free text) returns results" do
+      user = create_user("user")
+      board = create_board(%{name: "OpOnly", slug: "op-only", min_role_to_view: "guest"})
+
+      {:ok, _} =
+        Content.create_article(
+          %{title: "Board Only", body: "content", slug: "op-only-art", user_id: user.id},
+          [board.id]
+        )
+
+      result = Content.search_articles("board:op-only", user: user)
+      assert result.total == 1
+      assert hd(result.articles).title == "Board Only"
+    end
+
+    test "operators respect board visibility" do
+      user = create_user("user")
+      admin_board = create_board(%{name: "Admin", slug: "op-admin", min_role_to_view: "admin"})
+
+      {:ok, _} =
+        Content.create_article(
+          %{title: "Secret", body: "content", slug: "op-secret", user_id: user.id},
+          [admin_board.id]
+        )
+
+      # Guest cannot see admin-only board articles
+      result = Content.search_articles("board:op-admin", user: nil)
+      assert result.total == 0
+    end
+  end
+
   describe "search_comments/2" do
     test "English query matches comment body" do
       user = create_user("user")

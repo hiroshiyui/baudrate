@@ -202,4 +202,49 @@ defmodule BaudrateWeb.SearchLiveTest do
     refute html =~ "Admin Secret Board"
     assert html =~ "No boards found"
   end
+
+  test "operator search shows filtered results", %{conn: conn, user: user, board: board} do
+    {:ok, _} =
+      Content.create_article(
+        %{
+          title: "Operator Target",
+          body: "test content",
+          slug: "op-target-lv",
+          user_id: user.id
+        },
+        [board.id]
+      )
+
+    {:ok, _} =
+      Content.create_article(
+        %{
+          title: "Other Article",
+          body: "different content",
+          slug: "op-other-lv",
+          user_id: user.id
+        },
+        [board.id]
+      )
+
+    {:ok, _lv, html} = live(conn, "/search?q=board:public-search+Operator&tab=articles")
+    assert html =~ "Operator Target"
+  end
+
+  test "operator help visible on articles tab", %{conn: conn} do
+    {:ok, _lv, html} = live(conn, "/search?q=test&tab=articles")
+    assert html =~ "Search operators"
+    assert html =~ "author:username"
+    assert html =~ "tag:tagname"
+  end
+
+  test "operator help not visible on other tabs", %{conn: conn} do
+    {:ok, _lv, html} = live(conn, "/search?q=test&tab=comments")
+    refute html =~ "Search operators"
+
+    {:ok, _lv, html} = live(conn, "/search?q=test&tab=boards")
+    refute html =~ "Search operators"
+
+    {:ok, _lv, html} = live(conn, "/search?q=test&tab=users")
+    refute html =~ "Search operators"
+  end
 end
