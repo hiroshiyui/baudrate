@@ -529,6 +529,35 @@ Key functions in `Content`:
 User input is escaped via `sanitize_like/1` before interpolation into ILIKE
 patterns to prevent SQL wildcard injection.
 
+#### Advanced Search Operators (Articles Tab)
+
+The Articles tab supports inline search operators mixed with free-text queries.
+Operators are `key:value` tokens parsed from the query string; remaining text
+becomes the free-text search term.
+
+| Operator | Example | Semantics |
+|----------|---------|-----------|
+| `author:username` | `author:alice` | Filter by author (case-insensitive). Multiple = OR. |
+| `board:slug` | `board:general` | Filter by board slug. Multiple = OR. |
+| `tag:tagname` | `tag:elixir` | Filter by tag (lowercase). Multiple = AND (must have all). |
+| `has:images` | `has:images` | Articles with attached images. |
+| `before:YYYY-MM-DD` | `before:2026-01-15` | Articles before end of that day (exclusive). |
+| `after:YYYY-MM-DD` | `after:2026-01-01` | Articles on or after that day (inclusive). |
+
+Example query: `author:alice tag:elixir phoenix tutorial` parses as operators
+`{author: ["alice"], tag: ["elixir"]}` with free text `"phoenix tutorial"`.
+
+If all tokens are operators (no free text remains), text search is skipped and
+results are ordered by `inserted_at desc`. Invalid dates are silently ignored.
+Operator parsing uses string keys internally (never `String.to_atom/1` on user
+input). A collapsible help section is shown below the search bar on the Articles
+tab.
+
+Key functions in `Content`:
+
+- `parse_search_query/1` — extracts operator tokens from query string (private)
+- `apply_search_operators/2` — dispatches to per-operator filter functions (private)
+
 ### User Public Profiles
 
 Public profile pages are available at `/users/:username` for any active user.

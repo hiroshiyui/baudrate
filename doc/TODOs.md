@@ -18,7 +18,6 @@ Identified via competitive analysis against Discourse, Lemmy, Flarum, NodeBB, an
 - [ ] **mod:** Spam detection integration — Akismet or StopForumSpam integration for registration and posting
 - [ ] **mod:** Moderator notes on users — private mod-only notes on user profiles for context sharing between moderators
 - [ ] **mod:** Similar topic suggestions — when creating an article, show existing articles with similar titles to prevent duplicates
-- [ ] **mod:** Advanced search operators — filter by author, date range, board, tag, has:images in search
 - [ ] **mod:** Tag management — admin-managed tag taxonomy with synonyms, hierarchy, and per-board required tags
 - [ ] **mod:** Slow mode — per-topic reply rate limiting for heated threads
 - [ ] **mod:** Split/merge threads — moderator tools to split off-topic replies into new threads or merge duplicate threads
