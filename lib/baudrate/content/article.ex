@@ -13,7 +13,7 @@ defmodule Baudrate.Content.Article do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Baudrate.Content.{ArticleRevision, ArticleLike, Board, BoardArticle, Comment}
+  alias Baudrate.Content.{ArticleRevision, ArticleLike, Board, BoardArticle, Comment, Poll}
   alias Baudrate.Federation.RemoteActor
 
   schema "articles" do
@@ -33,6 +33,7 @@ defmodule Baudrate.Content.Article do
     has_many :comments, Comment
     has_many :likes, ArticleLike
     has_many :revisions, ArticleRevision
+    has_one :poll, Poll
     many_to_many :boards, Board, join_through: "board_articles"
 
     timestamps(type: :utc_datetime)
