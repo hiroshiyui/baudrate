@@ -194,6 +194,7 @@ defmodule BaudrateWeb.CoreComponents do
   attr :multiple, :boolean, default: false, doc: "the multiple flag for select inputs"
   attr :class, :any, default: nil, doc: "the input class to use over defaults"
   attr :error_class, :any, default: nil, doc: "the input error class to use over defaults"
+  attr :label_class, :any, default: nil, doc: "additional CSS classes for the label text"
 
   attr :toolbar, :boolean,
     default: false,
@@ -236,7 +237,7 @@ defmodule BaudrateWeb.CoreComponents do
           disabled={@rest[:disabled]}
           form={@rest[:form]}
         />
-        <span class="label">
+        <span class={["label", @label_class]}>
           <input
             type="checkbox"
             id={@id}
@@ -261,7 +262,7 @@ defmodule BaudrateWeb.CoreComponents do
     ~H"""
     <div class="fieldset mb-2">
       <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
+        <span :if={@label} class={["label mb-1", @label_class]}>{@label}</span>
         <select
           id={@id}
           name={@name}
@@ -286,7 +287,7 @@ defmodule BaudrateWeb.CoreComponents do
     ~H"""
     <div class="fieldset mb-2">
       <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
+        <span :if={@label} class={["label mb-1", @label_class]}>{@label}</span>
         <div :if={@toolbar} id={"#{@id}-md-toolbar"} phx-update="ignore"></div>
         <div
           :if={@toolbar}
@@ -341,7 +342,7 @@ defmodule BaudrateWeb.CoreComponents do
     ~H"""
     <div class="fieldset mb-2">
       <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
+        <span :if={@label} class={["label mb-1", @label_class]}>{@label}</span>
         <input
           type={@type}
           name={@name}

@@ -33,21 +33,23 @@
   >
     <.input
       field={@form[:title]}
-      label={gettext("Title")}
+      label={"📌 " <> gettext("Title")}
+      label_class="text-lg"
       required
     />
 
     <.input
       field={@form[:body]}
       type="textarea"
-      label={gettext("Body")}
+      label={"📝 " <> gettext("Body")}
+      label_class="text-lg"
       toolbar
       required
     />
 
     <%!-- Image Upload Section --%>
     <div class="fieldset">
-      <span class="label mb-1">{gettext("Images")}</span>
+      <span class="label mb-1 text-lg">🖼️ {gettext("Images")}</span>
       <p class="text-sm text-base-content/70 mb-2">
         {gettext("Max %{count} images, %{size} MB each. Images displayed at the end of article.",
           count: 4,
@@ -117,7 +119,7 @@
     <%!-- Poll Section --%>
     <div class="fieldset">
       <div class="flex items-center justify-between mb-1">
-        <span class="label">{gettext("Poll")}</span>
+        <span class="label text-lg">📊 {gettext("Poll")}</span>
         <button
           type="button"
           phx-click="toggle_poll"
@@ -208,7 +210,7 @@
     </div>
 
     <div class="fieldset mb-2">
-      <span class="label mb-1">{gettext("Board")}</span>
+      <span class="label mb-1 text-lg">📁 {gettext("Board")}</span>
       <div class="space-y-2">
         <label :for={board <- @boards} class="flex items-center gap-2 cursor-pointer">
           <input
@@ -223,7 +225,7 @@
       </div>
     </div>
 
-    <.input field={@form[:forwardable]} type="checkbox" label={gettext("Allow forwarding")} />
+    <.input field={@form[:forwardable]} type="checkbox" label={"🔀 " <> gettext("Allow forwarding")} label_class="text-lg" />
 
     <div class="flex items-center gap-3">
       <button type="submit" class="btn btn-primary">
