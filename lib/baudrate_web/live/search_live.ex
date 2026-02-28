@@ -1,6 +1,6 @@
 defmodule BaudrateWeb.SearchLive do
   @moduledoc """
-  LiveView for full-text search across articles, comments, and local users.
+  LiveView for full-text search across articles, comments, boards, and local users.
 
   Accessible to both guests and authenticated users via `:optional_auth`.
   Search query, active tab, and pagination state live in the URL via
@@ -43,6 +43,7 @@ defmodule BaudrateWeb.SearchLive do
      |> assign(:tab, "articles")
      |> assign(:articles, [])
      |> assign(:comments, [])
+     |> assign(:boards, [])
      |> assign(:local_users, [])
      |> assign(:local_user_follow_states, %{})
      |> assign(:total, 0)
@@ -60,7 +61,7 @@ defmodule BaudrateWeb.SearchLive do
     query = params["q"] || ""
 
     tab =
-      if params["tab"] in ["articles", "comments", "users"],
+      if params["tab"] in ["articles", "comments", "boards", "users"],
         do: params["tab"],
         else: "articles"
 
@@ -101,6 +102,15 @@ defmodule BaudrateWeb.SearchLive do
 
                 assign_search_results(socket, "comments", result)
 
+              "boards" ->
+                result =
+                  Content.search_visible_boards(query,
+                    page: page,
+                    user: socket.assigns.current_user
+                  )
+
+                assign_search_results(socket, "boards", result)
+
               "users" ->
                 search_local_users(socket, query)
             end
@@ -123,6 +133,7 @@ defmodule BaudrateWeb.SearchLive do
          tab: tab,
          articles: [],
          comments: [],
+         boards: [],
          local_users: [],
          local_user_follow_states: %{},
          total: 0,
@@ -338,6 +349,7 @@ defmodule BaudrateWeb.SearchLive do
     |> assign(:local_user_follow_states, follow_states)
     |> assign(:articles, [])
     |> assign(:comments, [])
+    |> assign(:boards, [])
     |> assign(:total, length(users))
     |> assign(:page, 1)
     |> assign(:total_pages, 1)
@@ -347,6 +359,7 @@ defmodule BaudrateWeb.SearchLive do
     socket
     |> assign(:articles, result.articles)
     |> assign(:comments, [])
+    |> assign(:boards, [])
     |> assign(:local_users, [])
     |> assign(:local_user_follow_states, %{})
     |> assign(:total, result.total)
@@ -358,6 +371,19 @@ defmodule BaudrateWeb.SearchLive do
     socket
     |> assign(:articles, [])
     |> assign(:comments, result.comments)
+    |> assign(:boards, [])
+    |> assign(:local_users, [])
+    |> assign(:local_user_follow_states, %{})
+    |> assign(:total, result.total)
+    |> assign(:page, result.page)
+    |> assign(:total_pages, result.total_pages)
+  end
+
+  defp assign_search_results(socket, "boards", result) do
+    socket
+    |> assign(:articles, [])
+    |> assign(:comments, [])
+    |> assign(:boards, result.boards)
     |> assign(:local_users, [])
     |> assign(:local_user_follow_states, %{})
     |> assign(:total, result.total)

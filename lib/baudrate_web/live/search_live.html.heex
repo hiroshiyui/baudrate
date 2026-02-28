@@ -130,6 +130,14 @@
       {gettext("Comments")}
     </.link>
     <.link
+      patch={~p"/search?#{%{q: @query, tab: "boards"}}"}
+      role="tab"
+      aria-selected={to_string(@tab == "boards")}
+      class={"tab #{if @tab == "boards", do: "tab-active"}"}
+    >
+      {gettext("Boards")}
+    </.link>
+    <.link
       patch={~p"/search?#{%{q: @query, tab: "users"}}"}
       role="tab"
       aria-selected={to_string(@tab == "users")}
@@ -151,6 +159,13 @@
     class="text-base-content/70 text-center py-8"
   >
     {gettext("No comments found for \"%{query}\".", query: @query)}
+  </div>
+
+  <div
+    :if={@query != "" && @tab == "boards" && @boards == []}
+    class="text-base-content/70 text-center py-8"
+  >
+    {gettext("No boards found for \"%{query}\".", query: @query)}
   </div>
 
   <div
@@ -212,6 +227,24 @@
           <time datetime={datetime_attr(comment.inserted_at)}>
             {format_datetime(comment.inserted_at)}
           </time>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div :if={@tab == "boards" && @boards != []} class="space-y-2" aria-live="polite">
+    <div :for={board <- @boards} class="card bg-base-200 shadow-sm">
+      <div class="card-body p-4">
+        <.link navigate={~p"/boards/#{board.slug}"} class="card-title text-base link link-hover">
+          {board.name}
+        </.link>
+        <p :if={board.description && board.description != ""} class="text-sm line-clamp-2">
+          {board.description}
+        </p>
+        <div :if={board.parent} class="text-sm text-base-content/70">
+          <span class="badge badge-outline badge-sm">
+            {board.parent.name}
+          </span>
         </div>
       </div>
     </div>

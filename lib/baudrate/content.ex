@@ -33,6 +33,7 @@ defmodule Baudrate.Content do
 
   # UTC epoch used as default when no read record exists
   @epoch ~U[1970-01-01 00:00:00Z]
+  @per_page 20
 
   alias Baudrate.Content.Pagination
   alias Baudrate.Content.PubSub, as: ContentPubSub
@@ -127,6 +128,37 @@ defmodule Baudrate.Content do
   end
 
   @doc """
+  Searches boards by name and description, filtered by view permissions.
+
+  Returns a paginated result map with `:boards`, `:total`, `:page`,
+  `:per_page`, and `:total_pages`.
+
+  ## Options
+
+    * `:page` — page number (default 1)
+    * `:per_page` — boards per page (default #{@per_page})
+    * `:user` — current user (nil for guest)
+  """
+  def search_visible_boards(query_string, opts \\ []) do
+    pagination = Pagination.paginate_opts(opts, @per_page)
+    user = Keyword.get(opts, :user)
+    allowed_roles = allowed_view_roles(user)
+    pattern = "%" <> sanitize_like(query_string) <> "%"
+
+    base_query =
+      from(b in Board,
+        where: b.min_role_to_view in ^allowed_roles,
+        where: ilike(b.name, ^pattern) or ilike(coalesce(b.description, ""), ^pattern)
+      )
+
+    Pagination.paginate_query(base_query, pagination,
+      result_key: :boards,
+      order_by: [asc: dynamic([q], q.position), asc: dynamic([q], q.name)],
+      preloads: [:parent]
+    )
+  end
+
+  @doc """
   Returns a board changeset for form tracking.
   """
   def change_board(board \\ %Board{}, attrs \\ %{}) do
@@ -195,8 +227,6 @@ defmodule Baudrate.Content do
     )
     |> Repo.all()
   end
-
-  @per_page 20
 
   @doc """
   Returns a paginated list of articles for a board.
