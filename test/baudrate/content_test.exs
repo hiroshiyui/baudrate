@@ -295,6 +295,37 @@ defmodule Baudrate.ContentTest do
       assert {:ok, _} = Content.create_article(attrs, [board.id])
       assert {:error, :article, _changeset, _} = Content.create_article(attrs, [board.id])
     end
+
+    test "forwardable defaults to true" do
+      user = create_user("user")
+      board = create_board(%{name: "Board", slug: "fwd-default-board"})
+
+      attrs = %{
+        title: "Default Forwardable",
+        body: "body",
+        slug: "fwd-default-#{System.unique_integer([:positive])}",
+        user_id: user.id
+      }
+
+      assert {:ok, %{article: article}} = Content.create_article(attrs, [board.id])
+      assert article.forwardable == true
+    end
+
+    test "forwardable can be set to false" do
+      user = create_user("user")
+      board = create_board(%{name: "Board", slug: "fwd-false-board"})
+
+      attrs = %{
+        title: "Not Forwardable",
+        body: "body",
+        slug: "fwd-false-#{System.unique_integer([:positive])}",
+        user_id: user.id,
+        forwardable: false
+      }
+
+      assert {:ok, %{article: article}} = Content.create_article(attrs, [board.id])
+      assert article.forwardable == false
+    end
   end
 
   describe "list_articles_for_board/1" do
@@ -1373,7 +1404,10 @@ defmodule Baudrate.ContentTest do
       assert length(updated.boards) == 1
     end
 
-    test "returns error when article already has boards", %{author: author, board: board} do
+    test "silently succeeds when article already in target board", %{
+      author: author,
+      board: board
+    } do
       {:ok, %{article: posted}} =
         Content.create_article(
           %{
@@ -1385,8 +1419,52 @@ defmodule Baudrate.ContentTest do
           [board.id]
         )
 
-      assert {:error, :already_posted} =
-               Content.forward_article_to_board(posted, board, author)
+      assert {:ok, returned} = Content.forward_article_to_board(posted, board, author)
+      assert returned.id == posted.id
+    end
+
+    test "any user can forward forwardable article with boards to another board", %{
+      author: author,
+      board: board,
+      other: other
+    } do
+      {:ok, %{article: posted}} =
+        Content.create_article(
+          %{
+            title: "Forwardable",
+            body: "body",
+            slug: "fwdable-#{System.unique_integer([:positive])}",
+            user_id: author.id,
+            forwardable: true
+          },
+          [board.id]
+        )
+
+      board2 =
+        create_board(%{name: "Board 2", slug: "board2-fwd-#{System.unique_integer([:positive])}"})
+
+      assert {:ok, updated} = Content.forward_article_to_board(posted, board2, other)
+      assert length(updated.boards) == 2
+    end
+
+    test "returns error when article is not forwardable", %{author: author, board: board} do
+      {:ok, %{article: posted}} =
+        Content.create_article(
+          %{
+            title: "Not Forwardable",
+            body: "body",
+            slug: "nofwd-#{System.unique_integer([:positive])}",
+            user_id: author.id,
+            forwardable: false
+          },
+          [board.id]
+        )
+
+      board2 =
+        create_board(%{name: "Board NF", slug: "board-nf-#{System.unique_integer([:positive])}"})
+
+      other = create_user("user")
+      assert {:error, :not_forwardable} = Content.forward_article_to_board(posted, board2, other)
     end
 
     test "returns error when user is not authorized", %{
@@ -1404,6 +1482,88 @@ defmodule Baudrate.ContentTest do
 
       assert {:error, :cannot_post} =
                Content.forward_article_to_board(article, restricted, author)
+    end
+  end
+
+  # --- Remove Article from Board ---
+
+  describe "remove_article_from_board/3" do
+    setup do
+      author = create_user("user")
+      admin = create_user("admin")
+      other = create_user("user")
+
+      board1 =
+        create_board(%{name: "Board R1", slug: "board-r1-#{System.unique_integer([:positive])}"})
+
+      board2 =
+        create_board(%{name: "Board R2", slug: "board-r2-#{System.unique_integer([:positive])}"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Multi-board Article",
+            body: "body",
+            slug: "multi-board-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [board1.id, board2.id]
+        )
+
+      %{
+        author: author,
+        admin: admin,
+        other: other,
+        board1: board1,
+        board2: board2,
+        article: article
+      }
+    end
+
+    test "author can remove article from a board", %{
+      author: author,
+      board1: board1,
+      article: article
+    } do
+      assert {:ok, updated} = Content.remove_article_from_board(article, board1, author)
+      assert length(updated.boards) == 1
+      refute Enum.any?(updated.boards, &(&1.id == board1.id))
+    end
+
+    test "admin can remove article from a board", %{
+      admin: admin,
+      board1: board1,
+      article: article
+    } do
+      assert {:ok, updated} = Content.remove_article_from_board(article, board1, admin)
+      assert length(updated.boards) == 1
+    end
+
+    test "other user cannot remove article from a board", %{
+      other: other,
+      board1: board1,
+      article: article
+    } do
+      assert {:error, :unauthorized} = Content.remove_article_from_board(article, board1, other)
+    end
+
+    test "removing from all boards makes article boardless", %{
+      author: author,
+      board1: board1,
+      board2: board2,
+      article: article
+    } do
+      assert {:ok, updated} = Content.remove_article_from_board(article, board1, author)
+      assert {:ok, final} = Content.remove_article_from_board(updated, board2, author)
+      assert final.boards == []
+    end
+
+    test "returns error when article is not in the board", %{author: author, article: article} do
+      other_board =
+        create_board(%{name: "Other", slug: "other-rm-#{System.unique_integer([:positive])}"})
+
+      assert {:error, :not_in_board} =
+               Content.remove_article_from_board(article, other_board, author)
     end
   end
 

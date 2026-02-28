@@ -388,10 +388,35 @@ defmodule BaudrateWeb.ArticleLiveTest do
       assert html =~ "Forward to Board"
     end
 
-    test "does not show forward button for articles in boards", %{
+    test "shows forward button for forwardable articles in boards", %{
       conn: conn,
       article: article
     } do
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+      assert html =~ "Forward to Board"
+    end
+
+    test "does not show forward button for non-forwardable articles in boards", %{
+      conn: conn,
+      user: user
+    } do
+      board =
+        %Board{}
+        |> Board.changeset(%{name: "NF Board", slug: "nf-board-live"})
+        |> Repo.insert!()
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Non Forwardable",
+            body: "body",
+            slug: "non-fwd-live",
+            user_id: user.id,
+            forwardable: false
+          },
+          [board.id]
+        )
+
       {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
       refute html =~ "Forward to Board"
     end
@@ -483,8 +508,6 @@ defmodule BaudrateWeb.ArticleLiveTest do
         |> render_click()
 
       assert html =~ "Article forwarded to board"
-      # Forward button should no longer be visible
-      refute html =~ "Forward to Board"
     end
 
     test "admin can forward another user's board-less article", %{user: user} do
