@@ -44,7 +44,7 @@ lib/
 │   │   ├── user_mute.ex         # UserMute schema (local-only soft-mute/ignore)
 │   │   └── user_session.ex      # Ecto schema for server-side sessions
 │   ├── avatar.ex                # Avatar image processing (crop, resize, WebP)
-│   ├── content.ex               # Content context: boards, articles, comments, likes, user stats, revision tracking
+│   ├── content.ex               # Content context: boards, articles, comments, likes, polls, user stats, revision tracking
 │   ├── content/
 │   │   ├── article.ex           # Article schema (posts, local + remote, soft-delete)
 │   │   ├── article_image.ex     # ArticleImage schema (gallery images on articles)
@@ -59,6 +59,9 @@ lib/
 │   │   ├── board_moderator.ex   # Join table: board ↔ moderator
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
 │   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark + Ammonia NIF + hashtag/mention linkification + mention extraction)
+│   │   ├── poll.ex              # Poll schema (inline polls attached to articles, single/multiple choice)
+│   │   ├── poll_option.ex       # PollOption schema (poll choices with denormalized votes_count)
+│   │   ├── poll_vote.ex         # PollVote schema (local + remote votes, anonymous dedup)
 │   │   └── pubsub.ex            # PubSub helpers for real-time content updates
 │   ├── sanitizer/
 │   │   └── native.ex            # Rustler NIF bindings to Ammonia HTML sanitizer
@@ -535,6 +538,86 @@ implemented via `deleted_at` timestamps on both articles and comments.
 
 Article likes track favorites from local users and remote actors, with
 partial unique indexes enforcing one-like-per-actor-per-article.
+
+#### Polls
+
+Articles may optionally have an inline poll attached at creation time (one poll
+per article, enforced by a unique constraint on `article_id`). Polls support two
+modes: **single-choice** (radio buttons, exactly one selection) and
+**multiple-choice** (checkboxes, one or more selections). An optional `closes_at`
+timestamp makes the poll time-limited; after expiry, votes are rejected.
+
+**Database tables:**
+
+| Table | Purpose |
+|-------|---------|
+| `polls` | Poll metadata: mode (single/multiple), closes_at, voters_count, ap_id, article_id |
+| `poll_options` | Choices: text, position (ordering), denormalized votes_count |
+| `poll_votes` | Individual votes: links user or remote_actor to a poll_option |
+
+**Constraints and indexes:**
+
+- `polls.article_id` — unique (one poll per article)
+- `polls.ap_id` — unique (federation dedup)
+- `poll_votes` — partial unique index on `(poll_id, poll_option_id, user_id)` for local voters
+- `poll_votes` — partial unique index on `(poll_id, poll_option_id, remote_actor_id)` for remote voters
+
+**Poll creation flow:**
+
+Polls are created alongside articles via nested `cast_assoc` in the article
+creation form. Options are limited to 2--4 per poll. Option text is capped at
+200 characters. The `closes_at` timestamp must be in the future at creation time.
+
+**Vote flow:**
+
+`Content.cast_vote/3` handles local voting within an `Ecto.Multi` transaction:
+
+1. Acquires a `FOR UPDATE` row lock on the poll to prevent races
+2. Deletes any existing votes by the user on this poll (enables vote changing)
+3. Inserts new vote rows for the selected option(s)
+4. Recalculates denormalized counters (`votes_count` on each option,
+   `voters_count` on the poll) via raw SQL for accuracy
+
+Votes are **anonymous** — the database tracks voters for dedup but the UI never
+reveals individual votes; only aggregate counts are displayed.
+
+**Key functions in `Content`:**
+
+- `get_poll_for_article/1` — returns poll with preloaded options, or nil
+- `get_user_poll_votes/2` — returns option IDs a user has voted for
+- `cast_vote/3` — transactional vote cast/change for local users
+- `create_remote_poll_vote/1` — inserts a remote actor's vote
+- `recalc_poll_counts/1` — recalculates denormalized counters from vote rows
+- `update_remote_poll_counts/2` — updates counters from inbound `Update(Question)`
+
+**Federation mapping:**
+
+Polls are federated as `Question` attachments on `Article` objects. The mapping
+follows the Mastodon convention:
+
+| Local concept | ActivityPub representation |
+|---------------|--------------------------|
+| Single-choice poll | `Question` with `oneOf` array |
+| Multiple-choice poll | `Question` with `anyOf` array |
+| Poll option | `Note` with `name` (text) and `replies.totalItems` (vote count) |
+| Poll expiry | `endTime` on the `Question` |
+| Voter count | `votersCount` on the `Question` |
+
+Outgoing articles with polls embed the `Question` in the `attachment` array of
+the `Article` object (via `Federation.article_object/1` → `maybe_embed_poll/2`).
+
+Incoming `Create(Article)` or `Create(Question)` activities are parsed by
+`InboxHandler.extract_poll_from_object/2`, which looks for either a top-level
+`Question` type or a `Question` in the `attachment` array.
+
+Vote federation uses the Mastodon vote protocol: each selected option produces a
+separate `Create(Note)` with `name` matching the option text and `inReplyTo`
+pointing to the article AP URI. Incoming vote Notes are detected by
+`maybe_handle_poll_vote/2` in `InboxHandler`, which matches the `name` against
+poll options and records the remote vote.
+
+`Update(Question)` activities refresh denormalized vote counts on remote polls
+without re-processing individual votes.
 
 ### Search
 

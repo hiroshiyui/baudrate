@@ -42,7 +42,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 ### Contexts
 
 - **Auth** (`lib/baudrate/auth.ex`) — authentication (login, registration, TOTP, sessions, password reset), user management (avatars, invite codes, blocks, mutes)
-- **Content** (`lib/baudrate/content.ex`) — boards, articles, comments, likes, permissions, board moderators, search
+- **Content** (`lib/baudrate/content.ex`) — boards, articles, comments, likes, polls, permissions, board moderators, search
 - **Federation** (`lib/baudrate/federation.ex`) — AP actors, outbox, followers, announces, delivery, user outbound follows
 - **Messaging** (`lib/baudrate/messaging.ex`) — 1-on-1 direct messages, conversations, DM access control, federation
 - **Setup** (`lib/baudrate/setup.ex`) — first-run wizard, RBAC seeding, settings, role level utilities
@@ -59,6 +59,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - `can_manage_article?/2` is a backward-compat alias for `can_edit_article?/2` — prefer the granular functions (`can_edit_article?`, `can_delete_article?`, `can_pin_article?`, `can_lock_article?`)
 - Only boards with `min_role_to_view == "guest"` and `ap_enabled == true` are federated
 - Focus management: Add `data-focus-target` to the primary content container in list/browse pages. Do not add to form pages or pages with `autofocus`. JS in `app.js` auto-focuses the first interactive element after LiveView navigation. Links get a `focus-visible` inset box-shadow highlight via `app.css`.
+- Poll votes are anonymous — DB tracks voters for dedup but UI never reveals individual votes. Polls use denormalized counters (`voters_count`, `votes_count`) updated transactionally via `Ecto.Multi` with `FOR UPDATE` locking.
 
 ## Project Conventions
 
@@ -124,7 +125,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 |------|---------|
 | `lib/baudrate_web/router.ex` | Routes with auth live_sessions |
 | `lib/baudrate/auth.ex` | Auth context: authentication, user management (blocks, mutes, invites) |
-| `lib/baudrate/content.ex` | Content context: boards, articles, comments, permissions |
+| `lib/baudrate/content.ex` | Content context: boards, articles, comments, polls, permissions |
 | `lib/baudrate/federation.ex` | Federation context: actors, outbox, followers |
 | `lib/baudrate/messaging.ex` | Messaging context: DMs, conversations, read cursors |
 | `lib/baudrate/setup.ex` | Setup context: roles, settings, role level utilities |

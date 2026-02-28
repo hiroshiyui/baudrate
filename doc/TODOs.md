@@ -8,7 +8,6 @@ Identified via competitive analysis against Discourse, Lemmy, Flarum, NodeBB, an
 
 ### High Priority — Core Forum Gaps
 
-- [ ] **feat:** Polls — inline polls in articles (single-choice, multiple-choice, with optional expiry); federate as `Question` AP object
 - [ ] **feat:** Rich link previews (oneboxing) — auto-expand YouTube, GitHub, Wikipedia, etc. links into embedded cards with metadata
 
 ### Lower Priority — Engagement & Platform
