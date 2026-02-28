@@ -748,22 +748,34 @@ defmodule Baudrate.Content do
   end
 
   @doc """
-  Forwards a board-less article to a board.
+  Forwards an article to a board.
 
-  Returns `{:error, :already_posted}` if the article already has boards,
-  `{:error, :unauthorized}` if the user cannot forward, and
-  `{:error, :cannot_post}` if the user cannot post in the target board.
+  Boardless articles can only be forwarded by the author or an admin.
+  Articles already in boards can be cross-forwarded by any authenticated user,
+  provided the article's `forwardable` flag is `true`.
+
+  Returns `{:ok, article}` (silently) if the article is already in the target board,
+  `{:error, :unauthorized}` if the user cannot forward a boardless article,
+  `{:error, :not_forwardable}` if the article disallows forwarding,
+  and `{:error, :cannot_post}` if the user cannot post in the target board.
   """
   def forward_article_to_board(%Article{} = article, %Board{} = board, user) do
     article = ensure_boards_loaded(article)
 
     cond do
-      article.boards != [] ->
-        {:error, :already_posted}
+      # Already in target board → silently succeed
+      Enum.any?(article.boards, &(&1.id == board.id)) ->
+        {:ok, article}
 
-      not can_forward_article?(user, article) ->
+      # Boardless: existing author/admin-only logic
+      article.boards == [] and not can_forward_article?(user, article) ->
         {:error, :unauthorized}
 
+      # Non-forwardable articles with boards
+      article.boards != [] and not article.forwardable ->
+        {:error, :not_forwardable}
+
+      # Must be able to post in target board
       not can_post_in_board?(board, user) ->
         {:error, :cannot_post}
 
@@ -796,6 +808,42 @@ defmodule Baudrate.Content do
   def can_forward_article?(%{role: %{name: "admin"}}, _article), do: true
   def can_forward_article?(%{id: uid}, %{user_id: uid}), do: true
   def can_forward_article?(_, _), do: false
+
+  @doc """
+  Removes an article from a specific board.
+
+  Only the article author or an admin can remove. Deletes the `BoardArticle`
+  join record linking the article to the board and broadcasts the removal.
+
+  Returns `{:ok, updated_article}` with refreshed boards on success,
+  `{:error, :unauthorized}` if the user cannot remove, and
+  `{:error, :not_in_board}` if the article is not in the target board.
+  """
+  def remove_article_from_board(%Article{} = article, %Board{} = board, user) do
+    article = ensure_boards_loaded(article)
+
+    cond do
+      not can_forward_article?(user, article) ->
+        {:error, :unauthorized}
+
+      not Enum.any?(article.boards, &(&1.id == board.id)) ->
+        {:error, :not_in_board}
+
+      true ->
+        from(ba in BoardArticle,
+          where: ba.article_id == ^article.id and ba.board_id == ^board.id
+        )
+        |> Repo.delete_all()
+
+        article = Repo.preload(article, :boards, force: true)
+
+        ContentPubSub.broadcast_to_board(board.id, :article_deleted, %{
+          article_id: article.id
+        })
+
+        {:ok, article}
+    end
+  end
 
   # --- Remote Articles ---
 
