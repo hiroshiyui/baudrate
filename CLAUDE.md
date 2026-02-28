@@ -74,6 +74,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 ### While Coding
 
 - **Always** consider responsiveness and accessibility for UX/UI; follow the WAI-ARIA specification.
+- **Use HTML5 semantic elements** — `<section>` with `aria-labelledby` for headed content areas, `<article>` for self-contained content items in lists, `<aside>` for supplementary content, `<nav>` for navigation. Assign semantic `id` attributes to content containers and unique `id` + semantic CSS class to each list item.
 - **Never use bare English strings for user-visible text** — always wrap in `gettext()`. This applies to flash messages, template text, feed metadata, HTML attributes like `title`, and any other text shown to users. Use `gettext()` with `%{var}` interpolation (not string interpolation) for dynamic values. Shared translation helpers (e.g. `translate_role/1`, `translate_status/1`) belong in `BaudrateWeb.Helpers`.
 - **Always** keep i18n strings in sync across locale.
 

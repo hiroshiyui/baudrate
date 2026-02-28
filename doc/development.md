@@ -453,6 +453,42 @@ Key modules:
 - `Content` — CRUD functions (`create_article_image/1`, `list_article_images/1`,
   `associate_article_images/3`, `delete_article_image/1`, `delete_orphan_article_images/1`)
 
+### Drafts / Autosave
+
+Article and comment forms auto-save drafts to `localStorage` via a generic
+`DraftSaveHook` (Phoenix LiveView JS hook). No server-side storage is needed.
+
+**How it works:**
+
+- A single `DraftSaveHook` is attached to `<.form>` elements via `phx-hook`
+- On typing, form field values are debounced (1.5s) and saved to localStorage
+- On mount, the hook checks for a matching draft; if found and < 30 days old,
+  it populates the fields and dispatches `input` events to sync with LiveView
+- On form submit, the draft is immediately cleared from localStorage
+- Empty drafts (all fields blank) are removed instead of saved
+- A brief "Draft saved" / "Draft restored" indicator fades in near the submit
+  button (translated via `data-` attributes and gettext)
+
+**Draft key scheme:**
+
+| Context | Key | Fields |
+|---------|-----|--------|
+| New article | `draft:article:new` | `article[title]`, `article[body]` |
+| Edit article | `draft:article:edit:{slug}` | `article[title]`, `article[body]` |
+| Top-level comment | `draft:comment:{article_id}` | `comment[body]` |
+| Reply to comment | `draft:comment:{article_id}:reply:{comment_id}` | `comment[body]` |
+
+**Data attributes on the form element:**
+
+- `data-draft-key` — localStorage key
+- `data-draft-fields` — comma-separated field `name` attributes to save
+- `data-draft-indicator` — CSS selector for indicator `<span>`
+- `data-draft-saved-text` / `data-draft-restored-text` — i18n strings
+
+Key files:
+- `assets/js/draft_save_hook.js` — the hook implementation
+- `assets/js/app.js` — hook registration
+
 ### Article Hashtags
 
 Hashtags (`#tag`) in article bodies are extracted, stored, and linkified:
@@ -907,6 +943,16 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 - `aria-label` on all icon-only buttons (cancel upload, delete comment)
 - Pagination wrapped in `<nav aria-label>` with `aria-current="page"` on the active page and `aria-label` on prev/next/page links
 - Password strength `<progress>` has `aria-label` and dynamic `aria-valuetext` ("Weak"/"Fair"/"Strong"); requirement icons are `aria-hidden` with sr-only met/unmet state text
+
+**Semantic HTML Structure:**
+
+- Use `<section>` (not `<div>`) for major content areas that have headings; connect via `aria-labelledby`
+- Use `<article>` for self-contained content items in lists (article cards in boards, search results, tag pages, user content)
+- Use `<aside>` for supplementary content (sidebar, moderator info)
+- Use `<nav>` for navigation blocks (breadcrumbs, pagination)
+- Layout provides `<header>`, `<nav>`, `<main>`, `<footer>` — do not duplicate with ARIA roles
+- Every content-listing container should have a semantic `id` (e.g., `id="articles"`, `id="comments"`)
+- Every list item should have a unique `id` (e.g., `id={"article-#{slug}"}`) and a semantic CSS class (e.g., `class="article"`)
 
 **Auth hooks:**
 
