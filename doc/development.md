@@ -960,6 +960,7 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 - JS in `app.js` finds the first `[data-focus-target]` inside `<main>` and focuses its first interactive child
 - Skips initial page load and pages with `autofocus` inputs
 - Add `data-focus-target` to list/browse pages; do NOT add to form pages or pages with `autofocus`
+- Links (`<a>`) get a `focus-visible` inset box-shadow (primary color) in `app.css` so keyboard users can see which link is focused when tabbing
 
 **Auth hooks:**
 
