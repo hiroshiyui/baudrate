@@ -934,7 +934,7 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 **Accessibility (WAI-ARIA):**
 
 - Skip-to-content link (`<a href="#main-content">`) at top of `<body>` in `root.html.heex`
-- `id="main-content"` on `<main>` in the app layout for skip-link target
+- `id="main-content"` and `tabindex="-1"` on `<main>` in both app and setup layouts — enables the skip-to-content link to move keyboard focus (not just scroll) to the main content area
 - `aria-haspopup="true"` and `aria-expanded` on all dropdown trigger buttons (mobile hamburger, desktop user menu, language picker); `aria-expanded` is synced dynamically via JS event delegation on `focusin`/`focusout` in `app.js`
 - `aria-live="polite"` on the comment tree container and flash group for screen reader announcements
 - `aria-invalid="true"` and `aria-describedby="<id>-error"` on form inputs with validation errors
