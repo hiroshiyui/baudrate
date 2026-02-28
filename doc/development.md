@@ -420,7 +420,12 @@ Articles are assigned a URL-safe slug generated from the title with a random
 suffix to avoid collisions. Articles can be cross-posted to multiple boards.
 Board-less articles (created via feed without selecting a board) can be
 forwarded to a board by the author or an admin via the "Forward to Board"
-autocomplete on the article detail page.
+autocomplete on the article detail page. Articles already in boards can be
+cross-forwarded to additional boards by any authenticated user, provided the
+article's `forwardable` flag is `true` (the default). Authors control this
+via the "Allow forwarding" checkbox on the create/edit forms. Authors and
+admins can also remove an article from specific boards via the edit form,
+potentially making it boardless again.
 
 ### Article Images
 
@@ -481,7 +486,11 @@ control via `min_role_to_view` and `min_role_to_post` fields (see
 navigation (ancestor chain from root to current board) and list sub-boards
 above articles. Sub-boards and board listings are filtered by the user's role.
 Articles can be cross-posted to multiple boards through the `board_articles`
-join table. Board moderators are tracked via the `board_moderators` join table.
+join table. Each article has a `forwardable` boolean (default `true`) that
+controls whether other users can cross-forward it to additional boards.
+Authors and admins can remove an article from specific boards via
+`Content.remove_article_from_board/3`. Board moderators are tracked via the
+`board_moderators` join table.
 
 Comments are threaded via `parent_id` (self-referential) and belong to an
 article. Both articles and comments can originate locally (via `user_id`) or
@@ -738,7 +747,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - Outbound Article objects include plain-text `summary` (≤ 500 chars) for Mastodon preview display
 - Outbound Article objects include `tag` array with `Hashtag` objects (extracted from body, code blocks excluded)
 - Cross-post deduplication: same remote article arriving via multiple board inboxes links to all boards
-- Forwarding a board-less article sends `Create(Article)` to board followers and `Announce` from the board actor
+- Forwarding an article to a board sends `Create(Article)` to board followers and `Announce` from the board actor (works for both boardless and cross-board forwarding)
 
 **Admin controls:** See the [SysOp Guide](sysop.md#federation) for federation
 administration (kill switch, federation modes, domain blocklist/allowlist,
