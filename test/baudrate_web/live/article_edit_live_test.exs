@@ -94,6 +94,14 @@ defmodule BaudrateWeb.ArticleEditLiveTest do
     assert html =~ "t be blank" or html =~ "required"
   end
 
+  test "renders form with DraftSaveHook and slug-based draft key", %{conn: conn, article: article} do
+    {:ok, _lv, html} = live(conn, "/articles/#{article.slug}/edit")
+    assert html =~ ~s(phx-hook="DraftSaveHook")
+    assert html =~ "data-draft-key=\"draft:article:edit:#{article.slug}\""
+    assert html =~ ~s(data-draft-fields="article[title],article[body]")
+    assert html =~ "draft-indicator-edit"
+  end
+
   test "admin can edit another user's article", %{conn: _conn, article: article} do
     admin = setup_user("admin")
 

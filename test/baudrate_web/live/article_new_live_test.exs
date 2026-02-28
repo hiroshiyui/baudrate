@@ -55,6 +55,14 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
     assert html =~ "Please select at least one board"
   end
 
+  test "renders form with DraftSaveHook and draft indicator", %{conn: conn} do
+    {:ok, _lv, html} = live(conn, "/articles/new")
+    assert html =~ ~s(phx-hook="DraftSaveHook")
+    assert html =~ ~s(data-draft-key="draft:article:new")
+    assert html =~ ~s(data-draft-fields="article[title],article[body]")
+    assert html =~ "draft-indicator-new"
+  end
+
   test "redirects pending user away from article creation", %{conn: _conn} do
     {:ok, pending_user, _codes} =
       Baudrate.Auth.register_user(%{

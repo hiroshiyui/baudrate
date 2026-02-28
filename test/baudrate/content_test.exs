@@ -1090,7 +1090,12 @@ defmodule Baudrate.ContentTest do
 
       {:ok, %{article: _}} =
         Content.create_article(
-          %{title: "Tagged Post", body: "content #elixirtag", slug: "tagged-op", user_id: user.id},
+          %{
+            title: "Tagged Post",
+            body: "content #elixirtag",
+            slug: "tagged-op",
+            user_id: user.id
+          },
           [board.id]
         )
 

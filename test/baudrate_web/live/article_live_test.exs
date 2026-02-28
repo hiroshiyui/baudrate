@@ -290,6 +290,39 @@ defmodule BaudrateWeb.ArticleLiveTest do
     end
   end
 
+  describe "draft autosave hooks" do
+    test "top-level comment form renders with DraftSaveHook", %{conn: conn, article: article} do
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+      assert html =~ ~s(phx-hook="DraftSaveHook")
+      assert html =~ "data-draft-key=\"draft:comment:#{article.id}\""
+      assert html =~ ~s(data-draft-fields="comment[body]")
+      assert html =~ "draft-indicator-comment"
+    end
+
+    test "reply form renders with DraftSaveHook and comment-specific key", %{
+      conn: conn,
+      user: user,
+      article: article
+    } do
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Draft reply test",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      lv
+      |> element(~s|button[phx-click="reply_to"][phx-value-id="#{comment.id}"]|)
+      |> render_click()
+
+      html = render(lv)
+      assert html =~ ~s(phx-hook="DraftSaveHook")
+      assert html =~ "data-draft-key=\"draft:comment:#{article.id}:reply:#{comment.id}\""
+    end
+  end
+
   describe "board-less articles" do
     test "authenticated user can post comments on board-less article", %{conn: conn, user: user} do
       {:ok, %{article: boardless}} =
