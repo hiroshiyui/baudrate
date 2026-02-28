@@ -502,9 +502,9 @@ partial unique indexes enforcing one-like-per-actor-per-article.
 
 ### Search
 
-Full-text search is available at `/search` for both articles and comments,
-with a tabbed UI. Search uses a dual strategy to support both English and CJK
-(Chinese, Japanese, Korean) text:
+Full-text search is available at `/search` for articles, comments, and boards,
+with a tabbed UI (Articles, Comments, Boards, Users). Search uses a dual
+strategy to support both English and CJK (Chinese, Japanese, Korean) text:
 
 | Strategy | Used for | Mechanism |
 |----------|----------|-----------|
@@ -522,6 +522,7 @@ Key functions in `Content`:
 
 - `search_articles/2` — dual-path article search with pagination and board visibility
 - `search_comments/2` — trigram ILIKE comment search with pagination and board visibility
+- `search_visible_boards/2` — board search by name/description with pagination and view-role visibility
 - `contains_cjk?/1` — detects CJK characters in search query (private)
 - `sanitize_like/1` — escapes `%`, `_`, `\` for safe ILIKE queries (private)
 
@@ -715,7 +716,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - `user_follows.followed_user_id` — nullable FK to `users`, with check constraint (exactly one of `remote_actor_id`/`followed_user_id`)
 - `Federation.create_local_follow/2` — auto-accepted immediately, no AP delivery
 - `Federation.delete_local_follow/2` / `get_local_follow/2` / `local_follows?/2`
-- `/search` — "Users" tab with local user search, follow/unfollow buttons
+- `/search` — "Users" tab with local user search, follow/unfollow buttons; "Boards" tab with board search by name/description
 - `/following` — shows both local and remote follows with Local/Remote badges
 - User profile — follow/unfollow button next to mute button
 - `following_collection/2` — includes local follow actor URIs
