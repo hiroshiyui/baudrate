@@ -71,6 +71,14 @@
           <span class="badge badge-sm">{@revision_count}</span>
         </.link>
         <button
+          :if={@can_forward && !@forward_search_open}
+          phx-click="toggle_forward_search"
+          class="btn btn-sm btn-ghost"
+        >
+          <.icon name="hero-arrow-right-circle" class="size-4" />
+          {gettext("Forward to Board")}
+        </button>
+        <button
           :if={@current_user}
           phx-click="toggle_bookmark"
           class="btn btn-sm btn-ghost"
@@ -113,17 +121,8 @@
       </.link>
     </div>
 
-    <div :if={@can_forward} class="flex items-center gap-2 text-sm">
-      <button
-        :if={!@forward_search_open}
-        phx-click="toggle_forward_search"
-        class="btn btn-sm btn-outline"
-      >
-        <.icon name="hero-arrow-right-circle" class="size-4" />
-        {gettext("Forward to Board")}
-      </button>
-
-      <div :if={@forward_search_open} class="w-full max-w-md">
+    <div :if={@can_forward && @forward_search_open} class="flex items-center gap-2 text-sm">
+      <div class="w-full max-w-md">
         <.form for={%{}} phx-change="search_forward_board" class="flex items-center gap-2">
           <input
             type="text"

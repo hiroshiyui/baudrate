@@ -96,12 +96,23 @@
 
     <div :if={@article.boards != []} class="fieldset mb-2">
       <span class="label mb-1">{gettext("Board")}</span>
-      <div class="space-y-2">
-        <span :for={board <- @article.boards} class="badge badge-outline mr-2">
+      <div class="flex flex-wrap gap-2">
+        <span :for={board <- @article.boards} class="badge badge-outline gap-1">
           {board.name}
+          <button
+            type="button"
+            phx-click="remove_board"
+            phx-value-board-id={board.id}
+            class="btn btn-ghost btn-xs"
+            aria-label={gettext("Remove from board")}
+          >
+            <.icon name="hero-x-mark" class="size-3" />
+          </button>
         </span>
       </div>
     </div>
+
+    <.input field={@form[:forwardable]} type="checkbox" label={gettext("Allow forwarding")} />
 
     <button type="submit" class="btn btn-primary">
       {gettext("Save Changes")}

@@ -269,7 +269,10 @@ defmodule BaudrateWeb.ArticleLive do
   def handle_event("search_forward_board", %{"query" => query}, socket) do
     results =
       if String.length(String.trim(query)) >= 2 do
+        existing_board_ids = MapSet.new(socket.assigns.article.boards, & &1.id)
+
         Content.search_boards(query, socket.assigns.current_user)
+        |> Enum.reject(&MapSet.member?(existing_board_ids, &1.id))
       else
         []
       end
@@ -292,7 +295,7 @@ defmodule BaudrateWeb.ArticleLive do
       {:noreply,
        socket
        |> assign(:article, updated_article)
-       |> assign(:can_forward, false)
+       |> assign(:can_forward, can_forward_article?(user, updated_article))
        |> assign(:forward_search_open, false)
        |> assign(:forward_search_results, [])
        |> assign(:forward_search_query, "")
@@ -302,9 +305,8 @@ defmodule BaudrateWeb.ArticleLive do
         {:noreply,
          put_flash(socket, :error, gettext("Too many actions. Please try again later."))}
 
-      {:error, :already_posted} ->
-        {:noreply,
-         put_flash(socket, :error, gettext("This article is already posted in a board."))}
+      {:error, :not_forwardable} ->
+        {:noreply, put_flash(socket, :error, gettext("This article cannot be forwarded."))}
 
       {:error, :cannot_post} ->
         {:noreply,
@@ -570,7 +572,9 @@ defmodule BaudrateWeb.ArticleLive do
   defp can_forward_article?(nil, _article), do: false
 
   defp can_forward_article?(user, article) do
-    article.boards == [] and Content.can_forward_article?(user, article)
+    if article.boards == [],
+      do: Content.can_forward_article?(user, article),
+      else: article.forwardable
   end
 
   defp check_forward_rate_limit(%{role: %{name: "admin"}}), do: :ok
