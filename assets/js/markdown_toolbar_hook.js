@@ -13,7 +13,7 @@
 const BUTTONS = [
   {
     label: "B",
-    title: "Bold",
+    titleKey: "bold",
     action: "wrap",
     before: "**",
     after: "**",
@@ -21,7 +21,7 @@ const BUTTONS = [
   },
   {
     label: "I",
-    title: "Italic",
+    titleKey: "italic",
     action: "wrap",
     before: "*",
     after: "*",
@@ -29,7 +29,7 @@ const BUTTONS = [
   },
   {
     label: "S",
-    title: "Strikethrough",
+    titleKey: "strikethrough",
     action: "wrap",
     before: "~~",
     after: "~~",
@@ -38,27 +38,27 @@ const BUTTONS = [
   { separator: true },
   {
     label: "H2",
-    title: "Heading",
+    titleKey: "heading",
     action: "prefix",
     prefix: "## ",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 19.5H16.5v-1.609a2.25 2.25 0 0 1 1.244-2.012l2.89-1.445c.651-.326 1.116-.955 1.116-1.683 0-.498-.04-.987-.118-1.463-.135-.825-.835-1.422-1.668-1.489a15.202 15.202 0 0 0-3.464.12M2.243 4.492v7.5m0 0v7.502m0-7.501h10.5m0-7.5v7.5m0 0v7.501"/></svg>`,
   },
   {
     label: "Link",
-    title: "Link",
+    titleKey: "link",
     action: "link",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"/></svg>`,
   },
   {
     label: "Image",
-    title: "Image",
+    titleKey: "image",
     action: "image",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/></svg>`,
   },
   { separator: true },
   {
     label: "Code",
-    title: "Inline Code",
+    titleKey: "inline_code",
     action: "wrap",
     before: "`",
     after: "`",
@@ -66,7 +66,7 @@ const BUTTONS = [
   },
   {
     label: "Code Block",
-    title: "Code Block",
+    titleKey: "code_block",
     action: "block",
     before: "```\n",
     after: "\n```",
@@ -75,21 +75,21 @@ const BUTTONS = [
   { separator: true },
   {
     label: "Quote",
-    title: "Blockquote",
+    titleKey: "blockquote",
     action: "prefix",
     prefix: "> ",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"/></svg>`,
   },
   {
     label: "List",
-    title: "Bullet List",
+    titleKey: "bullet_list",
     action: "prefix",
     prefix: "- ",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/></svg>`,
   },
   {
     label: "Numbered",
-    title: "Numbered List",
+    titleKey: "numbered_list",
     action: "prefix",
     prefix: "1. ",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M8.242 5.992h12m-12 6.003H20.24m-12 5.999h12M4.117 7.495v-3.75H2.99m1.125 3.75H2.99m1.125 0H5.24m-1.92 2.577a1.125 1.125 0 1 1 1.591 1.59l-1.83 1.83h2.16M2.99 15.745h1.125a1.125 1.125 0 0 1 0 2.25H3.74m0-.002h.375a1.125 1.125 0 0 1 0 2.25H2.99"/></svg>`,
@@ -97,7 +97,7 @@ const BUTTONS = [
   { separator: true },
   {
     label: "HR",
-    title: "Horizontal Rule",
+    titleKey: "horizontal_rule",
     action: "insert",
     text: "\n---\n",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"/></svg>`,
@@ -199,9 +199,19 @@ const MarkdownToolbarHook = {
 
     if (!this.toolbar) return;
 
+    // Parse i18n strings from server (with English fallback)
+    try {
+      this.i18n = JSON.parse(this.toolbar.dataset.i18n || "{}");
+    } catch {
+      this.i18n = {};
+    }
+
     this.toolbar.className = "flex flex-wrap items-center gap-0.5 mb-1";
     this.toolbar.setAttribute("role", "toolbar");
-    this.toolbar.setAttribute("aria-label", "Markdown formatting");
+    this.toolbar.setAttribute(
+      "aria-label",
+      this.i18n.toolbar_label || "Markdown formatting",
+    );
 
     for (const btn of BUTTONS) {
       if (btn.separator) {
@@ -212,10 +222,11 @@ const MarkdownToolbarHook = {
       }
 
       const button = document.createElement("button");
+      const title = this.i18n[btn.titleKey] || btn.titleKey;
       button.type = "button";
       button.className = "btn btn-ghost btn-sm";
-      button.title = btn.title;
-      button.setAttribute("aria-label", btn.title);
+      button.title = title;
+      button.setAttribute("aria-label", title);
       button.innerHTML = btn.icon;
       this.formatButtons.push(button);
 
@@ -259,8 +270,8 @@ const MarkdownToolbarHook = {
       this.previewBtn = document.createElement("button");
       this.previewBtn.type = "button";
       this.previewBtn.className = "btn btn-ghost btn-sm";
-      this.previewBtn.title = "Preview";
-      this.previewBtn.setAttribute("aria-label", "Preview");
+      this.previewBtn.title = this.i18n.preview || "Preview";
+      this.previewBtn.setAttribute("aria-label", this.i18n.preview || "Preview");
       this.previewBtn.setAttribute("aria-pressed", "false");
       this.previewBtn.innerHTML = PREVIEW_ICON;
 
@@ -276,13 +287,15 @@ const MarkdownToolbarHook = {
         if (!this.isPreview) return;
 
         if (payload.error) {
-          this.previewDiv.innerHTML =
-            '<p class="text-error text-sm">Content too large to preview.</p>';
+          const msg =
+            this.i18n.content_too_large || "Content too large to preview.";
+          this.previewDiv.innerHTML = `<p class="text-error text-sm">${msg}</p>`;
         } else if (payload.html) {
           this.previewDiv.innerHTML = payload.html;
         } else {
-          this.previewDiv.innerHTML =
-            '<p class="text-base-content/70 text-sm italic">Nothing to preview.</p>';
+          const msg =
+            this.i18n.nothing_to_preview || "Nothing to preview.";
+          this.previewDiv.innerHTML = `<p class="text-base-content/70 text-sm italic">${msg}</p>`;
         }
       });
     }
@@ -295,8 +308,11 @@ const MarkdownToolbarHook = {
       this.el.classList.remove("hidden");
       this.previewDiv.classList.add("hidden");
       this.previewBtn.innerHTML = PREVIEW_ICON;
-      this.previewBtn.title = "Preview";
-      this.previewBtn.setAttribute("aria-label", "Preview");
+      this.previewBtn.title = this.i18n.preview || "Preview";
+      this.previewBtn.setAttribute(
+        "aria-label",
+        this.i18n.preview || "Preview",
+      );
       this.previewBtn.setAttribute("aria-pressed", "false");
       this.setFormatButtonsDisabled(false);
       this.el.focus();
@@ -307,8 +323,8 @@ const MarkdownToolbarHook = {
       this.previewDiv.classList.remove("hidden");
       this.previewDiv.innerHTML = SPINNER_HTML;
       this.previewBtn.innerHTML = WRITE_ICON;
-      this.previewBtn.title = "Write";
-      this.previewBtn.setAttribute("aria-label", "Write");
+      this.previewBtn.title = this.i18n.write || "Write";
+      this.previewBtn.setAttribute("aria-label", this.i18n.write || "Write");
       this.previewBtn.setAttribute("aria-pressed", "true");
       this.setFormatButtonsDisabled(true);
 

@@ -288,7 +288,33 @@ defmodule BaudrateWeb.CoreComponents do
     <div class="fieldset mb-2">
       <label>
         <span :if={@label} class={["label mb-1", @label_class]}>{@label}</span>
-        <div :if={@toolbar} id={"#{@id}-md-toolbar"} phx-update="ignore"></div>
+        <div
+          :if={@toolbar}
+          id={"#{@id}-md-toolbar"}
+          phx-update="ignore"
+          data-i18n={
+            Jason.encode!(%{
+              bold: gettext("Bold"),
+              italic: gettext("Italic"),
+              strikethrough: gettext("Strikethrough"),
+              heading: gettext("Heading"),
+              link: gettext("Link"),
+              image: gettext("Image"),
+              inline_code: gettext("Inline Code"),
+              code_block: gettext("Code Block"),
+              blockquote: gettext("Blockquote"),
+              bullet_list: gettext("Bullet List"),
+              numbered_list: gettext("Numbered List"),
+              horizontal_rule: gettext("Horizontal Rule"),
+              preview: gettext("Preview"),
+              write: gettext("Write"),
+              toolbar_label: gettext("Markdown formatting"),
+              nothing_to_preview: gettext("Nothing to preview."),
+              content_too_large: gettext("Content too large to preview.")
+            })
+          }
+        >
+        </div>
         <div
           :if={@toolbar}
           id={"#{@id}-hashtag-wrap"}
