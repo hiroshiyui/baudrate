@@ -10,87 +10,14 @@
   </div>
 
   <article id="article" class="space-y-4" data-focus-target>
-    <div class="flex items-start justify-between gap-4">
-      <div class="flex items-center gap-2 flex-wrap">
-        <h1 class="text-2xl font-bold">{@article.title}</h1>
-        <span :if={@article.pinned} class="badge badge-primary badge-sm">
-          {gettext("Pinned")}
-        </span>
-        <span :if={@article.locked} class="badge badge-warning badge-sm">
-          {gettext("Locked")}
-        </span>
-      </div>
-
-      <div id="article-actions" class="flex gap-2 flex-none flex-wrap justify-end">
-        <.link
-          :if={@can_edit}
-          navigate={~p"/articles/#{@article.slug}/edit"}
-          class="btn btn-sm btn-ghost"
-        >
-          <.icon name="hero-pencil-square" class="size-4" />
-          {gettext("Edit")}
-        </.link>
-        <button
-          :if={@can_delete}
-          phx-click="delete_article"
-          data-confirm={gettext("Are you sure you want to delete this article?")}
-          class="btn btn-sm btn-ghost text-error"
-        >
-          <.icon name="hero-trash" class="size-4" />
-          {gettext("Delete")}
-        </button>
-        <button
-          :if={@can_pin}
-          phx-click="toggle_pin"
-          class="btn btn-sm btn-ghost"
-        >
-          <.icon
-            name={if @article.pinned, do: "hero-bookmark-slash", else: "hero-bookmark"}
-            class="size-4"
-          />
-          {if @article.pinned, do: gettext("Unpin"), else: gettext("Pin")}
-        </button>
-        <button
-          :if={@can_lock}
-          phx-click="toggle_lock"
-          class="btn btn-sm btn-ghost"
-        >
-          <.icon
-            name={if @article.locked, do: "hero-lock-open", else: "hero-lock-closed"}
-            class="size-4"
-          />
-          {if @article.locked, do: gettext("Unlock"), else: gettext("Lock")}
-        </button>
-        <.link
-          :if={@revision_count > 0}
-          navigate={~p"/articles/#{@article.slug}/history"}
-          class="btn btn-sm btn-ghost"
-        >
-          <.icon name="hero-clock" class="size-4" />
-          {gettext("History")}
-          <span class="badge badge-sm">{@revision_count}</span>
-        </.link>
-        <button
-          :if={@can_forward && !@forward_search_open}
-          phx-click="toggle_forward_search"
-          class="btn btn-sm btn-ghost"
-        >
-          <.icon name="hero-arrow-right-circle" class="size-4" />
-          {gettext("Forward to Board")}
-        </button>
-        <button
-          :if={@current_user}
-          phx-click="toggle_bookmark"
-          class="btn btn-sm btn-ghost"
-          aria-label={if @bookmarked, do: gettext("Remove bookmark"), else: gettext("Bookmark")}
-        >
-          <.icon
-            name={if @bookmarked, do: "hero-star-solid", else: "hero-star"}
-            class="size-4"
-          />
-          {if @bookmarked, do: gettext("Bookmarked"), else: gettext("Bookmark")}
-        </button>
-      </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <h1 class="text-2xl font-bold">{@article.title}</h1>
+      <span :if={@article.pinned} class="badge badge-primary badge-sm">
+        {gettext("Pinned")}
+      </span>
+      <span :if={@article.locked} class="badge badge-warning badge-sm">
+        {gettext("Locked")}
+      </span>
     </div>
 
     <div class="flex items-center gap-2 text-sm text-base-content/70">
@@ -121,49 +48,99 @@
       </.link>
     </div>
 
-    <div :if={@can_forward && @forward_search_open} class="flex items-center gap-2 text-sm">
-      <div class="w-full max-w-md">
-        <.form for={%{}} phx-change="search_forward_board" class="flex items-center gap-2">
-          <input
-            type="text"
-            name="query"
-            value={@forward_search_query}
-            placeholder={gettext("Search boards...")}
-            phx-debounce="300"
-            autocomplete="off"
-            class="input input-sm input-bordered w-full"
-            aria-label={gettext("Search boards")}
-            aria-expanded={to_string(@forward_search_results != [])}
-            role="combobox"
-            aria-controls="forward-board-results"
-          />
-          <button
-            type="button"
-            phx-click="toggle_forward_search"
-            class="btn btn-sm btn-ghost"
-            aria-label={gettext("Cancel")}
-          >
-            <.icon name="hero-x-mark" class="size-4" />
-          </button>
-        </.form>
-        <ul
-          :if={@forward_search_results != []}
-          id="forward-board-results"
-          role="listbox"
-          class="menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
-        >
-          <li :for={board <- @forward_search_results}>
-            <button phx-click="forward_to_board" phx-value-board-id={board.id} role="option">
-              {board.name}
-            </button>
-          </li>
-        </ul>
-      </div>
-    </div>
-
     <div class="divider"></div>
 
     <div class="prose max-w-none">{raw(Baudrate.Content.Markdown.to_html(@article.body))}</div>
+
+    <%!-- Poll Section --%>
+    <section :if={@poll} id="article-poll" class="mt-6" aria-labelledby="poll-heading">
+      <div class="card bg-base-200 p-4">
+        <h3 id="poll-heading" class="font-semibold mb-1">
+          {gettext("Poll")}
+          <span class="text-sm font-normal text-base-content/70">
+            ({if @poll.mode == "single",
+              do: gettext("Single choice"),
+              else: gettext("Multiple choice")})
+          </span>
+        </h3>
+
+        <div class="text-sm text-base-content/70 mb-3">
+          <span :if={@poll_closed} class="badge badge-error badge-sm">{gettext("Closed")}</span>
+          <span :if={@poll.closes_at && !@poll_closed}>
+            {gettext("Closes %{time}", time: format_datetime(@poll.closes_at))}
+          </span>
+          <span class="ml-2">
+            {ngettext("%{count} voter", "%{count} voters", @poll.voters_count)}
+          </span>
+        </div>
+
+        <%!-- Vote form: shown when logged in, poll open, and not yet voted --%>
+        <.form
+          :if={@current_user && !@poll_closed && !@has_voted}
+          for={%{}}
+          phx-submit="cast_vote"
+          id="poll-vote-form"
+          class="space-y-2"
+        >
+          <div :for={option <- @poll.options} class="form-control">
+            <label class="label cursor-pointer justify-start gap-3">
+              <input
+                :if={@poll.mode == "single"}
+                type="radio"
+                name="vote_option"
+                value={option.id}
+                class="radio radio-sm"
+              />
+              <input
+                :if={@poll.mode == "multiple"}
+                type="checkbox"
+                name="vote_options[]"
+                value={option.id}
+                class="checkbox checkbox-sm"
+              />
+              <span class="label-text">{option.text}</span>
+            </label>
+          </div>
+          <button type="submit" class="btn btn-sm btn-primary">
+            {gettext("Vote")}
+          </button>
+        </.form>
+
+        <%!-- Results: shown when voted, closed, or guest --%>
+        <div :if={@has_voted || @poll_closed || is_nil(@current_user)} class="space-y-2">
+          <div :for={option <- @poll.options}>
+            <div class="flex items-center justify-between text-sm mb-1">
+              <span class="flex items-center gap-1">
+                <.icon
+                  :if={option.id in @user_votes}
+                  name="hero-check-circle-solid"
+                  class="size-4 text-success"
+                />
+                {option.text}
+              </span>
+              <span class="text-base-content/70">
+                {poll_percentage(option.votes_count, total_votes(@poll))}% ({option.votes_count})
+              </span>
+            </div>
+            <progress
+              class="progress progress-primary w-full"
+              value={option.votes_count}
+              max={max(total_votes(@poll), 1)}
+            >
+              {poll_percentage(option.votes_count, total_votes(@poll))}%
+            </progress>
+          </div>
+
+          <button
+            :if={@has_voted && !@poll_closed}
+            phx-click="change_vote"
+            class="btn btn-sm btn-ghost mt-2"
+          >
+            {gettext("Change vote")}
+          </button>
+        </div>
+      </div>
+    </section>
 
     <%!-- Article Images Gallery --%>
     <div :if={@article_images != []} id="article-images" class="mt-6">
@@ -203,6 +180,117 @@
       <div class="divider text-sm text-base-content/70">{gettext("Signature")}</div>
       <div class="prose prose-sm max-w-none text-base-content/70">
         {raw(Baudrate.Content.Markdown.to_html(@article.user.signature))}
+      </div>
+    </div>
+
+    <div id="article-actions" class="flex gap-2 flex-wrap justify-end mt-4">
+      <.link
+        :if={@can_edit}
+        navigate={~p"/articles/#{@article.slug}/edit"}
+        class="btn btn-sm btn-ghost"
+      >
+        <.icon name="hero-pencil-square" class="size-4" />
+        {gettext("Edit")}
+      </.link>
+      <button
+        :if={@can_delete}
+        phx-click="delete_article"
+        data-confirm={gettext("Are you sure you want to delete this article?")}
+        class="btn btn-sm btn-ghost text-error"
+      >
+        <.icon name="hero-trash" class="size-4" />
+        {gettext("Delete")}
+      </button>
+      <button
+        :if={@can_pin}
+        phx-click="toggle_pin"
+        class="btn btn-sm btn-ghost"
+      >
+        <.icon
+          name={if @article.pinned, do: "hero-bookmark-slash", else: "hero-bookmark"}
+          class="size-4"
+        />
+        {if @article.pinned, do: gettext("Unpin"), else: gettext("Pin")}
+      </button>
+      <button
+        :if={@can_lock}
+        phx-click="toggle_lock"
+        class="btn btn-sm btn-ghost"
+      >
+        <.icon
+          name={if @article.locked, do: "hero-lock-open", else: "hero-lock-closed"}
+          class="size-4"
+        />
+        {if @article.locked, do: gettext("Unlock"), else: gettext("Lock")}
+      </button>
+      <.link
+        :if={@revision_count > 0}
+        navigate={~p"/articles/#{@article.slug}/history"}
+        class="btn btn-sm btn-ghost"
+      >
+        <.icon name="hero-clock" class="size-4" />
+        {gettext("History")}
+        <span class="badge badge-sm">{@revision_count}</span>
+      </.link>
+      <button
+        :if={@can_forward && !@forward_search_open}
+        phx-click="toggle_forward_search"
+        class="btn btn-sm btn-ghost"
+      >
+        <.icon name="hero-arrow-right-circle" class="size-4" />
+        {gettext("Forward to Board")}
+      </button>
+      <button
+        :if={@current_user}
+        phx-click="toggle_bookmark"
+        class="btn btn-sm btn-ghost"
+        aria-label={if @bookmarked, do: gettext("Remove bookmark"), else: gettext("Bookmark")}
+      >
+        <.icon
+          name={if @bookmarked, do: "hero-star-solid", else: "hero-star"}
+          class="size-4"
+        />
+        {if @bookmarked, do: gettext("Bookmarked"), else: gettext("Bookmark")}
+      </button>
+    </div>
+
+    <div :if={@can_forward && @forward_search_open} class="flex items-center gap-2 text-sm mt-2">
+      <div class="w-full max-w-md">
+        <.form for={%{}} phx-change="search_forward_board" class="flex items-center gap-2">
+          <input
+            type="text"
+            name="query"
+            value={@forward_search_query}
+            placeholder={gettext("Search boards...")}
+            phx-debounce="300"
+            autocomplete="off"
+            class="input input-sm input-bordered w-full"
+            aria-label={gettext("Search boards")}
+            aria-expanded={to_string(@forward_search_results != [])}
+            role="combobox"
+            aria-controls="forward-board-results"
+          />
+          <button
+            type="button"
+            phx-click="toggle_forward_search"
+            class="btn btn-sm btn-ghost"
+            aria-label={gettext("Cancel")}
+          >
+            <.icon name="hero-x-mark" class="size-4" />
+          </button>
+        </.form>
+        <ul
+          :if={@forward_search_results != []}
+          id="forward-board-results"
+          role="listbox"
+          class="menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+        >
+          <li :for={board <- @forward_search_results}>
+            <button phx-click="forward_to_board" phx-value-board-id={board.id} role="option">
+              {board.name}
+            </button>
+          </li>
+        </ul>
       </div>
     </div>
   </article>

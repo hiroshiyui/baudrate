@@ -78,6 +78,7 @@ defmodule BaudrateWeb.ArticleLive do
             else: false
           )
         )
+        |> assign_poll_data(article, current_user)
 
       if connected?(socket) do
         ContentPubSub.subscribe_article(article.id)
@@ -325,6 +326,46 @@ defmodule BaudrateWeb.ArticleLive do
   end
 
   @impl true
+  def handle_event("cast_vote", params, socket) do
+    poll = socket.assigns.poll
+    user = socket.assigns.current_user
+
+    if is_nil(user) or is_nil(poll) do
+      {:noreply, put_flash(socket, :error, gettext("Cannot vote on this poll."))}
+    else
+      option_ids = extract_vote_option_ids(params, poll)
+
+      case Content.cast_vote(poll, user, option_ids) do
+        {:ok, updated_poll} ->
+          user_votes = Content.get_user_poll_votes(updated_poll.id, user.id)
+
+          schedule_federation_vote(user, socket.assigns.article, updated_poll, option_ids)
+
+          {:noreply,
+           socket
+           |> assign(:poll, updated_poll)
+           |> assign(:user_votes, user_votes)
+           |> assign(:has_voted, true)
+           |> put_flash(:info, gettext("Vote recorded."))}
+
+        {:error, :poll_closed} ->
+          {:noreply,
+           socket
+           |> assign(:poll_closed, true)
+           |> put_flash(:error, gettext("This poll has closed."))}
+
+        {:error, _reason} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to record vote."))}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("change_vote", _params, socket) do
+    {:noreply, assign(socket, :has_voted, false)}
+  end
+
+  @impl true
   def handle_info({event, _payload}, socket)
       when event in [:comment_created, :comment_deleted] do
     {:noreply, load_comments(socket, socket.assigns.comment_page)}
@@ -348,7 +389,8 @@ defmodule BaudrateWeb.ArticleLive do
     {:noreply,
      socket
      |> assign(:article, article)
-     |> assign(:can_forward, can_forward_article?(socket.assigns.current_user, article))}
+     |> assign(:can_forward, can_forward_article?(socket.assigns.current_user, article))
+     |> assign_poll_data(article, socket.assigns.current_user)}
   end
 
   @doc false
@@ -608,5 +650,70 @@ defmodule BaudrateWeb.ArticleLive do
       |> Enum.group_by(& &1.parent_id)
 
     {roots, children_map}
+  end
+
+  # --- Poll helpers ---
+
+  defp assign_poll_data(socket, article, current_user) do
+    poll = article.poll
+
+    if poll do
+      user_votes =
+        if current_user,
+          do: Content.get_user_poll_votes(poll.id, current_user.id),
+          else: []
+
+      socket
+      |> assign(:poll, poll)
+      |> assign(:user_votes, user_votes)
+      |> assign(:has_voted, user_votes != [])
+      |> assign(:poll_closed, Baudrate.Content.Poll.closed?(poll))
+    else
+      socket
+      |> assign(:poll, nil)
+      |> assign(:user_votes, [])
+      |> assign(:has_voted, false)
+      |> assign(:poll_closed, false)
+    end
+  end
+
+  defp extract_vote_option_ids(params, poll) do
+    case poll.mode do
+      "single" ->
+        case params["vote_option"] do
+          nil -> []
+          id -> [String.to_integer(id)]
+        end
+
+      "multiple" ->
+        (params["vote_options"] || [])
+        |> List.wrap()
+        |> Enum.map(&String.to_integer/1)
+    end
+  end
+
+  defp schedule_federation_vote(user, article, poll, option_ids) do
+    # Only federate votes on remote articles (those with a remote_actor)
+    if article.remote_actor_id do
+      poll = Baudrate.Repo.preload(poll, :options)
+
+      voted_options =
+        poll.options
+        |> Enum.filter(&(&1.id in option_ids))
+
+      Content.schedule_federation_task(fn ->
+        Baudrate.Federation.Publisher.publish_vote(user, article, voted_options)
+      end)
+    end
+  end
+
+  defp poll_percentage(_votes_count, 0), do: 0
+
+  defp poll_percentage(votes_count, total) do
+    Float.round(votes_count / total * 100, 1)
+  end
+
+  defp total_votes(poll) do
+    Enum.sum(Enum.map(poll.options, & &1.votes_count))
   end
 end
