@@ -7,7 +7,11 @@
         type="text"
         name="q"
         value={@query}
-        placeholder={gettext("Search...")}
+        placeholder={
+          if @tab == "articles",
+            do: gettext("Search... (try author:, board:, tag:)"),
+            else: gettext("Search...")
+        }
         class="input input-bordered join-item flex-1"
         autofocus
       />
@@ -16,6 +20,53 @@
       </button>
     </div>
   </form>
+
+  <details :if={@tab == "articles"} class="collapse collapse-arrow bg-base-200 mb-4">
+    <summary class="collapse-title text-sm font-medium">
+      {gettext("Search operators")}
+    </summary>
+    <div class="collapse-content">
+      <div class="overflow-x-auto">
+        <table class="table table-xs" role="table">
+          <thead>
+            <tr>
+              <th>{gettext("Operator")}</th>
+              <th>{gettext("Description")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>author:username</code></td>
+              <td>{gettext("Filter by article author")}</td>
+            </tr>
+            <tr>
+              <td><code>board:slug</code></td>
+              <td>{gettext("Filter by board")}</td>
+            </tr>
+            <tr>
+              <td><code>tag:tagname</code></td>
+              <td>{gettext("Filter by tag")}</td>
+            </tr>
+            <tr>
+              <td><code>has:images</code></td>
+              <td>{gettext("Articles with attached images")}</td>
+            </tr>
+            <tr>
+              <td><code>before:YYYY-MM-DD</code></td>
+              <td>{gettext("Articles before a date")}</td>
+            </tr>
+            <tr>
+              <td><code>after:YYYY-MM-DD</code></td>
+              <td>{gettext("Articles after a date")}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-base-content/70 mt-2">
+        {gettext("Example: %{example}", example: "author:alice tag:elixir phoenix tutorial")}
+      </p>
+    </div>
+  </details>
 
   <%!-- Remote actor loading indicator --%>
   <div :if={@remote_actor_loading} class="card bg-base-200 shadow-sm mb-4">
