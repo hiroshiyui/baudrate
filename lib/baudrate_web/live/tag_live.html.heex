@@ -12,7 +12,7 @@
     {gettext("No articles found with tag #%{tag}.", tag: @tag)}
   </div>
 
-  <div :if={@articles != []} id="articles" class="space-y-2" aria-live="polite">
+  <div :if={@articles != []} id="articles" class="space-y-2" aria-live="polite" data-focus-target>
     <article
       :for={article <- @articles}
       id={"article-#{article.slug}"}

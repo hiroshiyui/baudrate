@@ -105,7 +105,7 @@
 
   <section :if={@recent_articles != []} id="recent-articles-section" aria-labelledby="recent-articles-heading">
     <h2 id="recent-articles-heading" class="text-lg font-semibold mb-3">{gettext("Recent Articles")}</h2>
-    <div id="recent-articles" class="space-y-2" aria-live="polite">
+    <div id="recent-articles" class="space-y-2" aria-live="polite" data-focus-target>
       <article
         :for={article <- @recent_articles}
         id={"article-#{article.slug}"}

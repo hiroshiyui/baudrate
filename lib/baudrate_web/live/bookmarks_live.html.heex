@@ -6,7 +6,7 @@
     <p class="text-lg">{gettext("No bookmarks yet.")}</p>
   </div>
 
-  <div :if={@bookmarks != []} id="bookmarks" class="space-y-2">
+  <div :if={@bookmarks != []} id="bookmarks" class="space-y-2" data-focus-target>
     <div
       :for={bookmark <- @bookmarks}
       id={"bookmark-#{bookmark.id}"}

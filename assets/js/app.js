@@ -145,6 +145,30 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
+// Auto-focus first content item after LiveView client-side navigation.
+// Skips initial page load and pages with autofocus inputs (e.g., search).
+;(() => {
+  let isInitialLoad = true
+
+  window.addEventListener("phx:page-loading-stop", () => {
+    if (isInitialLoad) {
+      isInitialLoad = false
+      return
+    }
+
+    const main = document.getElementById("main-content")
+    if (!main || main.querySelector("[autofocus]")) return
+
+    const target = main.querySelector("[data-focus-target]")
+    if (!target) return
+
+    const focusable = target.querySelector(
+      "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
+    )
+    if (focusable) focusable.focus({ preventScroll: true })
+  })
+})()
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 

@@ -64,6 +64,7 @@
       role="feed"
       aria-live="polite"
       aria-label={gettext("Feed")}
+      data-focus-target
     >
       <article :for={item <- @items} class="feed-item card bg-base-200 shadow-sm">
         <%!-- Remote feed item --%>

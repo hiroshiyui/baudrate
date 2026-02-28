@@ -19,7 +19,7 @@
 
 <section :if={@boards != []} id="boards-section" aria-labelledby="boards-heading">
   <h2 id="boards-heading" class="text-xl font-bold mb-4">{gettext("Boards")}</h2>
-  <div id="boards" class="space-y-2">
+  <div id="boards" class="space-y-2" data-focus-target>
     <.link
       :for={board <- @boards}
       id={"board-#{board.slug}"}
