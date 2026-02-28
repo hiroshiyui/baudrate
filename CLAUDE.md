@@ -58,6 +58,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - Federation delivery runs in async `Task` in production but synchronously in tests (`federation_async: false` in `config/test.exs`) to avoid sandbox ownership errors
 - `can_manage_article?/2` is a backward-compat alias for `can_edit_article?/2` — prefer the granular functions (`can_edit_article?`, `can_delete_article?`, `can_pin_article?`, `can_lock_article?`)
 - Only boards with `min_role_to_view == "guest"` and `ap_enabled == true` are federated
+- Focus management: Add `data-focus-target` to the primary content container in list/browse pages. Do not add to form pages or pages with `autofocus`. JS in `app.js` auto-focuses the first interactive element after LiveView navigation.
 
 ## Project Conventions
 

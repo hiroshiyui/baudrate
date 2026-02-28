@@ -954,6 +954,13 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 - Every content-listing container should have a semantic `id` (e.g., `id="articles"`, `id="comments"`)
 - Every list item should have a unique `id` (e.g., `id={"article-#{slug}"}`) and a semantic CSS class (e.g., `class="article"`)
 
+**Focus Management After Navigation:**
+
+- `data-focus-target` on primary content containers signals where focus should go after LiveView navigation
+- JS in `app.js` finds the first `[data-focus-target]` inside `<main>` and focuses its first interactive child
+- Skips initial page load and pages with `autofocus` inputs
+- Add `data-focus-target` to list/browse pages; do NOT add to form pages or pages with `autofocus`
+
 **Auth hooks:**
 
 | Hook | Behavior |
