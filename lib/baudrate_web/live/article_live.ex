@@ -364,7 +364,10 @@ defmodule BaudrateWeb.ArticleLive do
     assigns = assign(assigns, :children, Map.get(assigns.children_map, assigns.comment.id, []))
 
     ~H"""
-    <div class={["border-l-2 border-base-300 pl-4", @depth > 0 && "ml-4"]}>
+    <div
+      id={"comment-#{@comment.id}"}
+      class={["comment border-l-2 border-base-300 pl-4", @depth > 0 && "ml-4"]}
+    >
       <div class="py-2">
         <div class="flex items-center gap-2 text-sm text-base-content/70 mb-1">
           <.link
@@ -429,6 +432,10 @@ defmodule BaudrateWeb.ArticleLive do
             for={@comment_form}
             phx-change="validate_comment"
             phx-submit="submit_comment"
+            id={"reply-form-#{@comment.id}"}
+            phx-hook="DraftSaveHook"
+            data-draft-key={"draft:comment:#{@comment.article_id}:reply:#{@comment.id}"}
+            data-draft-fields="comment[body]"
             class="space-y-2"
           >
             <.input

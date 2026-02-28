@@ -10,7 +10,19 @@
 
   <h1 class="text-2xl font-bold mb-6">{gettext("Edit Article")}</h1>
 
-  <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
+  <.form
+    for={@form}
+    phx-change="validate"
+    phx-submit="submit"
+    id="article-edit-form"
+    phx-hook="DraftSaveHook"
+    data-draft-key={"draft:article:edit:#{@article.slug}"}
+    data-draft-fields="article[title],article[body]"
+    data-draft-indicator="#draft-indicator-edit"
+    data-draft-saved-text={gettext("Draft saved")}
+    data-draft-restored-text={gettext("Draft restored")}
+    class="space-y-4"
+  >
     <.input
       field={@form[:title]}
       label={gettext("Title")}
@@ -114,8 +126,16 @@
 
     <.input field={@form[:forwardable]} type="checkbox" label={gettext("Allow forwarding")} />
 
-    <button type="submit" class="btn btn-primary">
-      {gettext("Save Changes")}
-    </button>
+    <div class="flex items-center gap-3">
+      <button type="submit" class="btn btn-primary">
+        {gettext("Save Changes")}
+      </button>
+      <span
+        id="draft-indicator-edit"
+        class="text-sm text-base-content/70 transition-opacity duration-300 opacity-0"
+        aria-live="polite"
+      >
+      </span>
+    </div>
   </.form>
 </div>

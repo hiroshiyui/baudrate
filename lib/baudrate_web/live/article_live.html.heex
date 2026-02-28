@@ -9,7 +9,7 @@
     </.link>
   </div>
 
-  <article class="space-y-4">
+  <article id="article" class="space-y-4">
     <div class="flex items-start justify-between gap-4">
       <div class="flex items-center gap-2 flex-wrap">
         <h1 class="text-2xl font-bold">{@article.title}</h1>
@@ -21,7 +21,7 @@
         </span>
       </div>
 
-      <div class="flex gap-2 flex-none flex-wrap justify-end">
+      <div id="article-actions" class="flex gap-2 flex-none flex-wrap justify-end">
         <.link
           :if={@can_edit}
           navigate={~p"/articles/#{@article.slug}/edit"}
@@ -166,7 +166,7 @@
     <div class="prose max-w-none">{raw(Baudrate.Content.Markdown.to_html(@article.body))}</div>
 
     <%!-- Article Images Gallery --%>
-    <div :if={@article_images != []} class="mt-6">
+    <div :if={@article_images != []} id="article-images" class="mt-6">
       <div class={[
         "grid gap-2",
         length(@article_images) == 1 && "grid-cols-1",
@@ -208,8 +208,8 @@
   </article>
 
   <%!-- Comments Section --%>
-  <div class="mt-8">
-    <h2 class="text-lg font-semibold mb-4">
+  <section id="comments-section" class="mt-8" aria-labelledby="comments-heading">
+    <h2 id="comments-heading" class="text-lg font-semibold mb-4">
       {gettext("Comments")}
       <span class="text-base-content/70 font-normal text-sm">
         ({length(@comment_roots) + Enum.sum(Enum.map(Map.values(@children_map), &length/1))})
@@ -228,6 +228,13 @@
         for={@comment_form}
         phx-change="validate_comment"
         phx-submit="submit_comment"
+        id="comment-form"
+        phx-hook="DraftSaveHook"
+        data-draft-key={"draft:comment:#{@article.id}"}
+        data-draft-fields="comment[body]"
+        data-draft-indicator="#draft-indicator-comment"
+        data-draft-saved-text={gettext("Draft saved")}
+        data-draft-restored-text={gettext("Draft restored")}
         class="space-y-3"
       >
         <.input
@@ -237,9 +244,17 @@
           toolbar
           rows="3"
         />
-        <button type="submit" class="btn btn-sm btn-primary">
-          {gettext("Post Comment")}
-        </button>
+        <div class="flex items-center gap-3">
+          <button type="submit" class="btn btn-sm btn-primary">
+            {gettext("Post Comment")}
+          </button>
+          <span
+            id="draft-indicator-comment"
+            class="text-sm text-base-content/70 transition-opacity duration-300 opacity-0"
+            aria-live="polite"
+          >
+          </span>
+        </div>
       </.form>
     </div>
 
@@ -248,7 +263,7 @@
     </div>
 
     <%!-- Comment tree --%>
-    <div class="space-y-4" aria-live="polite" aria-relevant="additions removals">
+    <div id="comments" class="space-y-4" aria-live="polite" aria-relevant="additions removals">
       <%= for comment <- @comment_roots do %>
         <.comment_node
           comment={comment}
@@ -267,5 +282,5 @@
       total_pages={@comment_total_pages}
       path={~p"/articles/#{@article.slug}"}
     />
-  </div>
+  </section>
 </div>
