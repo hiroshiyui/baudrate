@@ -301,7 +301,7 @@ defmodule BaudrateWeb.Layouts do
       </div>
     </header>
 
-    <main id="main-content" class="px-4 py-20 sm:px-6 lg:px-8">
+    <main id="main-content" class="flex-1 px-4 py-20 sm:px-6 lg:px-8">
       <div class={["mx-auto space-y-4", if(assigns[:wide_layout], do: "max-w-7xl", else: "max-w-6xl")]}>
         {@inner_content}
       </div>
