@@ -5,7 +5,9 @@ defmodule Baudrate.Content.Article do
   An article belongs to an author (user) and can be cross-posted to
   multiple boards via the `board_articles` join table. Remote articles
   received via ActivityPub are tracked by `ap_id` and `remote_actor_id`.
-  Soft-delete is handled via `deleted_at`.
+  Soft-delete is handled via `deleted_at`. The `forwardable` flag
+  controls whether other users can cross-forward the article to
+  additional boards (default: `true`).
   """
 
   use Ecto.Schema
@@ -20,6 +22,7 @@ defmodule Baudrate.Content.Article do
     field :slug, :string
     field :pinned, :boolean, default: false
     field :locked, :boolean, default: false
+    field :forwardable, :boolean, default: true
     field :ap_id, :string
     field :deleted_at, :utc_datetime
     field :last_activity_at, :utc_datetime
@@ -40,7 +43,7 @@ defmodule Baudrate.Content.Article do
   @doc "Changeset for creating a local article with title, body, slug, and author."
   def changeset(article, attrs) do
     article
-    |> cast(attrs, [:title, :body, :slug, :user_id])
+    |> cast(attrs, [:title, :body, :slug, :user_id, :forwardable])
     |> validate_required([:title, :body, :slug])
     |> validate_length(:body, max: @max_body_length)
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
@@ -53,7 +56,7 @@ defmodule Baudrate.Content.Article do
   @doc "Changeset for updating a local article (title and body only, slug stays fixed)."
   def update_changeset(article, attrs) do
     article
-    |> cast(attrs, [:title, :body])
+    |> cast(attrs, [:title, :body, :forwardable])
     |> validate_required([:title, :body])
     |> validate_length(:body, max: @max_body_length)
   end
