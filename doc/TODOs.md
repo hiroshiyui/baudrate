@@ -78,7 +78,7 @@ Findings from project-wide code review (2026-03-01). Grouped by category.
 - [ ] **smell-20:** Replace `:httpc` with `Req` in `selenium_setup.ex:78` per CLAUDE.md convention
 - [ ] **smell-21:** Extract `@max_comment_depth 5` module attribute — hardcoded in `content.ex:1370` and `article_live.ex:539`
 - [ ] **smell-22:** Merge `@comments_per_page` and `@per_page` — both equal 20, defined 1282 lines apart (`content.ex:40,1322`)
-- [ ] **smell-23:** Fix `can_forward_article?/2` divergence — different logic in `Content` vs `article_live.ex:759` (LiveView adds `article.forwardable` check)
+- [x] **smell-23:** Fix `can_forward_article?/2` divergence — different logic in `Content` vs `article_live.ex:759` (LiveView adds `article.forwardable` check)
 - [ ] **smell-24:** Fix silently discarded `Repo.update()` result in `create_message/3` — conversation `last_message_at` update not transactional (`messaging.ex:267-295`)
 - [ ] **smell-25:** Narrow bare `rescue e` to expected exception types in image/avatar processing (`article_image_storage.ex:65`, `avatar.ex:50`)
 
