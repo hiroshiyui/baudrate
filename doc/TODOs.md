@@ -48,26 +48,8 @@ Findings from project-wide code review (2026-03-01). Grouped by category.
 
 ---
 
-### i18n — Terminology Consistency
-
-- [x] **i18n-1:** zh_TW: Standardize "Board" to 看板 — currently uses 看板 (31), 版面 (18), 板塊 (4)
-- [x] **i18n-2:** zh_TW: Standardize "User" to 使用者 — currently uses 使用者 (60), 用戶 (16)
-- [x] **i18n-3:** ja_JP: Standardize "Board" to 掲示板 — currently uses 掲示板 (35), ボード (11)
-
----
-
 ### Documentation
 
-- [x] **doc-1:** Remove stale `TOTP_VAULT_KEY` env var from README — TOTP key is derived from `SECRET_KEY_BASE` (`README.md:73`)
-- [x] **doc-2:** Fix or replace `AGENTS.md` — contradicts CLAUDE.md (layout wrapping, DaisyUI, `current_scope`)
-- [x] **doc-3:** Fix CSP `img-src` description conflict — `development.md:991` says "allows https:" but `sysop.md:581` (correct) says "restricted to self/data/blob"
-- [x] **doc-4:** Add "Notifications" section to `development.md` — complete notification system is undocumented
-- [x] **doc-5:** Add "Bookmarks" section to `development.md` — feature fully implemented but undocumented
-- [x] **doc-6:** Add `bookmarks_live.ex` and `board_follows_live.ex` to project structure table in `development.md`
-- [x] **doc-7:** Add `/ap/users/:username/following` and `/ap/boards/:slug/following` endpoints to `doc/api.md`
-- [x] **doc-8:** Update CLAUDE.md auth hooks list — missing `:optional_auth`, `:require_password_auth`, `:redirect_if_authenticated`, `:rate_limit_mount`
-- [x] **doc-9:** Remove stale phase labels ("Phase 1 — backend only, UI in Phase 2") from `development.md:849` and `federation.ex` @moduledoc
-- [x] **doc-10:** Add `@doc` to undocumented public functions: `decrypt_totp_secret/1`, `verify_password/2` (`auth.ex`), `validate_invite_code/1` (`auth.ex`), `get_message_by_ap_id/1` (`messaging.ex`), changeset functions in `invite_code.ex`
 - [ ] **doc-11:** Improve `@spec` coverage across context modules — ~85 missing in `content.ex`, ~48 in `auth.ex`, ~60 in `federation.ex`, 31 in `publisher.ex`
 
 ---
@@ -105,41 +87,5 @@ Findings from project-wide code review (2026-03-01). Grouped by category.
 - [ ] **smell-23:** Fix `can_forward_article?/2` divergence — different logic in `Content` vs `article_live.ex:759` (LiveView adds `article.forwardable` check)
 - [ ] **smell-24:** Fix silently discarded `Repo.update()` result in `create_message/3` — conversation `last_message_at` update not transactional (`messaging.ex:267-295`)
 - [ ] **smell-25:** Narrow bare `rescue e` to expected exception types in image/avatar processing (`article_image_storage.ex:65`, `avatar.ex:50`)
-
----
-
-### UI/UX Accessibility — Critical
-
-- [x] **a11y-1:** Add focus trapping to div-based modals — keyboard users can tab through background content (all admin/user modals using DaisyUI `modal-open`)
-
-### UI/UX Accessibility — Major
-
-- [x] **a11y-2:** Replace `<div role="button">` dropdowns with `<button>` elements — Space key doesn't activate without keydown handler (`layouts.ex:35,232`)
-- [x] **a11y-3:** Associate poll expires `<select>` with its `<label>` — use `for=`/`id` or nest inside label (`article_new_live.html.heex:196`)
-- [x] **a11y-4:** Add `aria-modal="true"` to `<dialog>` and use `.showModal()` for proper focus trap (`profile_live.html.heex:48`)
-- [x] **a11y-5:** Add `aria-hidden="true"` on icons and `sr-only` prefixes in password reset strength checklist — register page has it, reset page doesn't (`password_reset_live.html.heex:79-148`)
-- [x] **a11y-6:** Add `role="tabpanel"` with `aria-labelledby` to search result content panels (`search_live.html.heex:161`)
-- [x] **a11y-7:** Add `aria-label` to conversation unread count badges (`conversations_live.html.heex:51`)
-- [x] **a11y-8:** Add `phx-disable-with` loading feedback to form submit buttons — missing from comment post, article create/edit, login, register, etc.
-- [x] **a11y-9:** Associate notification preference checkboxes with `<label>` elements (`profile_live.html.heex:307`)
-
-### UI/UX Accessibility — Minor
-
-- [x] **a11y-10:** Add initial `aria-expanded="false"` to dropdown triggers (`layouts.ex:37,233`)
-- [x] **a11y-11:** Change profile page heading from `<h2>` to `<h1>` (`profile_live.html.heex:3`)
-- [x] **a11y-12:** Add `id` to `<h1>` headings on feed, notifications, conversations, following pages for `aria-labelledby`
-- [x] **a11y-13:** Add `aria-labelledby` to `<article>` list items pointing to title links (`board_live.html.heex`, `search_live.html.heex`, `feed_live.html.heex`, `tag_live.html.heex`)
-- [x] **a11y-14:** Add per-comment context to reply button `aria-label` — multiple "Reply" buttons indistinguishable (`article_live.ex`)
-- [x] **a11y-15:** Include locale name in move up/down button `aria-label` (`profile_live.html.heex:162-191`)
-- [x] **a11y-16:** Wrap board checkboxes in `<fieldset>/<legend>` or `role="group"` (`article_new_live.html.heex:212`)
-- [x] **a11y-17:** Wrap poll mode radio buttons in `<fieldset>/<legend>` or `role="radiogroup"` (`article_new_live.html.heex:169`)
-- [x] **a11y-18:** Use `<ins>`/`<del>` HTML elements in article history diff — insertions only distinguished by color (`article_history_live.html.heex:83`)
-- [x] **a11y-19:** Add `aria-hidden="true"` to inline SVG icon in user invites alert (`user_invites_live.html.heex:10`)
-- [x] **a11y-20:** Add `aria-pressed` to board follows policy toggle buttons (`board_follows_live.html.heex:27`)
-- [x] **a11y-21:** Add `aria-label` to avatar placeholder divs for actor identity (`core_components.ex:577`)
-- [x] **a11y-22:** Add "opens in new tab" warning to `target="_blank"` image gallery links (`article_live.html.heex:153`)
-- [x] **a11y-23:** Add `data-focus-target` to search, conversations, following list pages
-- [x] **a11y-24:** Add `aria-live="polite"` to remote actor loading indicator (`search_live.html.heex:71`)
-- [x] **a11y-25:** Add `type="button"` to comment like button (`article_live.ex`)
 
 ---
