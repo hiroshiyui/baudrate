@@ -57,7 +57,11 @@
       </div>
     <% end %>
 
-    <button type="submit" class="btn btn-primary w-full">
+    <button
+      type="submit"
+      class="btn btn-primary w-full"
+      phx-disable-with={gettext("Resetting...")}
+    >
       <%= if @mode == :reset do %>
         {gettext("Reset Authenticator")}
       <% else %>

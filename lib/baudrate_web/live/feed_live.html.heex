@@ -39,7 +39,11 @@
               rows={3}
             />
             <div class="flex justify-end">
-              <button type="submit" class="btn btn-primary btn-sm">
+              <button
+                type="submit"
+                class="btn btn-primary btn-sm"
+                phx-disable-with={gettext("Posting...")}
+              >
                 {gettext("Post")}
               </button>
             </div>

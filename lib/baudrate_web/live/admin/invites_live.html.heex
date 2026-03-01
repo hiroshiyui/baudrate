@@ -34,7 +34,11 @@
           {user.username} ({user.role.name})
         </option>
       </select>
-      <button type="submit" class="btn btn-sm btn-primary">
+      <button
+        type="submit"
+        class="btn btn-sm btn-primary"
+        phx-disable-with={gettext("Generating...")}
+      >
         {gettext("Generate for User")}
       </button>
     </form>

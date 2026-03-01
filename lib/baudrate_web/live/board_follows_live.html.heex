@@ -63,7 +63,12 @@
           autocomplete="off"
           aria-label={gettext("Search for a remote actor to follow (e.g. @user@domain)")}
         />
-        <button type="submit" class="btn btn-primary" disabled={@search_loading}>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          disabled={@search_loading}
+          phx-disable-with={gettext("Searching...")}
+        >
           <%= if @search_loading do %>
             <span class="loading loading-spinner loading-sm"></span>
           <% else %>

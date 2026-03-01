@@ -10,7 +10,13 @@
       class="input input-bordered input-sm w-64"
       aria-label={gettext("Filter by username")}
     />
-    <button type="submit" class="btn btn-sm btn-primary">{gettext("Search")}</button>
+    <button
+      type="submit"
+      class="btn btn-sm btn-primary"
+      phx-disable-with={gettext("Searching...")}
+    >
+      {gettext("Search")}
+    </button>
     <.link
       :if={@username_filter != ""}
       patch={~p"/admin/login-attempts"}

@@ -100,7 +100,9 @@
 
         <div class="flex justify-end gap-2 mt-4">
           <button type="button" phx-click="cancel" class="btn">{gettext("Cancel")}</button>
-          <button type="submit" class="btn btn-primary">{gettext("Save")}</button>
+          <button type="submit" class="btn btn-primary" phx-disable-with={gettext("Saving...")}>
+            {gettext("Save")}
+          </button>
         </div>
       </.form>
     </div>
@@ -179,7 +181,11 @@
               <option value={user.id}>{user.username} ({user.role.name})</option>
             <% end %>
           </select>
-          <button type="submit" class="btn btn-sm btn-primary">
+          <button
+            type="submit"
+            class="btn btn-sm btn-primary"
+            phx-disable-with={gettext("Adding...")}
+          >
             {gettext("Add")}
           </button>
         </form>

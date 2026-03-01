@@ -572,7 +572,11 @@ defmodule BaudrateWeb.ArticleLive do
               rows="2"
             />
             <div class="flex gap-2">
-              <button type="submit" class="btn btn-sm btn-primary">
+              <button
+                type="submit"
+                class="btn btn-sm btn-primary"
+                phx-disable-with={gettext("Posting...")}
+              >
                 {gettext("Reply")}
               </button>
               <button type="button" phx-click="cancel_reply" class="btn btn-sm btn-ghost">

@@ -230,7 +230,12 @@
         />
       </div>
 
-      <button id="register-submit" type="submit" class="btn btn-primary w-full">
+      <button
+        id="register-submit"
+        type="submit"
+        class="btn btn-primary w-full"
+        phx-disable-with={gettext("Signing up...")}
+      >
         {gettext("Sign Up")}
       </button>
     </.form>

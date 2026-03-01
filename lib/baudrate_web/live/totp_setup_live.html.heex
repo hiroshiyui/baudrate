@@ -58,7 +58,11 @@
       />
     </div>
 
-    <button type="submit" class="btn btn-primary w-full">
+    <button
+      type="submit"
+      class="btn btn-primary w-full"
+      phx-disable-with={gettext("Verifying...")}
+    >
       {gettext("Verify and Enable")}
     </button>
   </.form>

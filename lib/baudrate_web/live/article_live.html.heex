@@ -101,7 +101,11 @@
               <span class="label-text">{option.text}</span>
             </label>
           </div>
-          <button type="submit" class="btn btn-sm btn-primary">
+          <button
+            type="submit"
+            class="btn btn-sm btn-primary"
+            phx-disable-with={gettext("Voting...")}
+          >
             {gettext("Vote")}
           </button>
         </.form>
@@ -359,7 +363,11 @@
           rows="3"
         />
         <div class="flex items-center gap-3">
-          <button type="submit" class="btn btn-sm btn-primary">
+          <button
+            type="submit"
+            class="btn btn-sm btn-primary"
+            phx-disable-with={gettext("Posting...")}
+          >
             {gettext("Post Comment")}
           </button>
           <span

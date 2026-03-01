@@ -143,7 +143,12 @@
             maxlength="65536"
             aria-label={gettext("Message")}
           />
-          <button type="submit" class="btn btn-primary" aria-label={gettext("Send")}>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            aria-label={gettext("Send")}
+            phx-disable-with={gettext("Sending...")}
+          >
             <.icon name="hero-paper-airplane" class="size-5" />
           </button>
         </.form>

@@ -197,7 +197,13 @@
               class="input input-bordered input-sm w-64"
               aria-label={gettext("Resolution note")}
             />
-            <button type="submit" class="btn btn-success btn-sm">{gettext("Resolve")}</button>
+            <button
+              type="submit"
+              class="btn btn-success btn-sm"
+              phx-disable-with={gettext("Resolving...")}
+            >
+              {gettext("Resolve")}
+            </button>
           </form>
           <button
             phx-click="dismiss"
