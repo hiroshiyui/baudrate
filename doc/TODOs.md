@@ -125,21 +125,21 @@ Findings from project-wide code review (2026-03-01). Grouped by category.
 
 ### UI/UX Accessibility — Minor
 
-- [ ] **a11y-10:** Add initial `aria-expanded="false"` to dropdown triggers (`layouts.ex:37,233`)
-- [ ] **a11y-11:** Change profile page heading from `<h2>` to `<h1>` (`profile_live.html.heex:3`)
-- [ ] **a11y-12:** Add `id` to `<h1>` headings on feed, notifications, conversations, following pages for `aria-labelledby`
-- [ ] **a11y-13:** Add `aria-labelledby` to `<article>` list items pointing to title links (`board_live.html.heex`, `search_live.html.heex`, `feed_live.html.heex`, `tag_live.html.heex`)
-- [ ] **a11y-14:** Add per-comment context to reply button `aria-label` — multiple "Reply" buttons indistinguishable (`article_live.ex`)
-- [ ] **a11y-15:** Include locale name in move up/down button `aria-label` (`profile_live.html.heex:162-191`)
-- [ ] **a11y-16:** Wrap board checkboxes in `<fieldset>/<legend>` or `role="group"` (`article_new_live.html.heex:212`)
-- [ ] **a11y-17:** Wrap poll mode radio buttons in `<fieldset>/<legend>` or `role="radiogroup"` (`article_new_live.html.heex:169`)
-- [ ] **a11y-18:** Use `<ins>`/`<del>` HTML elements in article history diff — insertions only distinguished by color (`article_history_live.html.heex:83`)
-- [ ] **a11y-19:** Add `aria-hidden="true"` to inline SVG icon in user invites alert (`user_invites_live.html.heex:10`)
-- [ ] **a11y-20:** Add `aria-pressed` to board follows policy toggle buttons (`board_follows_live.html.heex:27`)
-- [ ] **a11y-21:** Add `aria-label` to avatar placeholder divs for actor identity (`core_components.ex:577`)
-- [ ] **a11y-22:** Add "opens in new tab" warning to `target="_blank"` image gallery links (`article_live.html.heex:153`)
-- [ ] **a11y-23:** Add `data-focus-target` to search, conversations, following list pages
-- [ ] **a11y-24:** Add `aria-live="polite"` to remote actor loading indicator (`search_live.html.heex:71`)
-- [ ] **a11y-25:** Add `type="button"` to comment like button (`article_live.ex`)
+- [x] **a11y-10:** Add initial `aria-expanded="false"` to dropdown triggers (`layouts.ex:37,233`)
+- [x] **a11y-11:** Change profile page heading from `<h2>` to `<h1>` (`profile_live.html.heex:3`)
+- [x] **a11y-12:** Add `id` to `<h1>` headings on feed, notifications, conversations, following pages for `aria-labelledby`
+- [x] **a11y-13:** Add `aria-labelledby` to `<article>` list items pointing to title links (`board_live.html.heex`, `search_live.html.heex`, `feed_live.html.heex`, `tag_live.html.heex`)
+- [x] **a11y-14:** Add per-comment context to reply button `aria-label` — multiple "Reply" buttons indistinguishable (`article_live.ex`)
+- [x] **a11y-15:** Include locale name in move up/down button `aria-label` (`profile_live.html.heex:162-191`)
+- [x] **a11y-16:** Wrap board checkboxes in `<fieldset>/<legend>` or `role="group"` (`article_new_live.html.heex:212`)
+- [x] **a11y-17:** Wrap poll mode radio buttons in `<fieldset>/<legend>` or `role="radiogroup"` (`article_new_live.html.heex:169`)
+- [x] **a11y-18:** Use `<ins>`/`<del>` HTML elements in article history diff — insertions only distinguished by color (`article_history_live.html.heex:83`)
+- [x] **a11y-19:** Add `aria-hidden="true"` to inline SVG icon in user invites alert (`user_invites_live.html.heex:10`)
+- [x] **a11y-20:** Add `aria-pressed` to board follows policy toggle buttons (`board_follows_live.html.heex:27`)
+- [x] **a11y-21:** Add `aria-label` to avatar placeholder divs for actor identity (`core_components.ex:577`)
+- [x] **a11y-22:** Add "opens in new tab" warning to `target="_blank"` image gallery links (`article_live.html.heex:153`)
+- [x] **a11y-23:** Add `data-focus-target` to search, conversations, following list pages
+- [x] **a11y-24:** Add `aria-live="polite"` to remote actor loading indicator (`search_live.html.heex:71`)
+- [x] **a11y-25:** Add `type="button"` to comment like button (`article_live.ex`)
 
 ---
