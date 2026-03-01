@@ -73,8 +73,8 @@ Findings from project-wide code review (2026-03-01). Grouped by category.
 - [x] **smell-15:** Fix inconsistent `NaiveDateTime` usage in `sync_article_tags/1` — should use `DateTime.utc_now()` like all other `insert_all` calls (`content.ex:2117`)
 - [x] **smell-16:** Fix N+1 query: per-user follow-state lookup in loop — batch with single query (`search_live.ex:332-342`)
 - [x] **smell-17:** Move `Repo.preload` call from LiveView to Content context (`article_live.ex:842`)
-- [ ] **smell-18:** Extract `Board.public?/1` predicate — `min_role_to_view == "guest"` checked 29 times across codebase
-- [ ] **smell-19:** Extract `Board.federated?/1` predicate — `min_role_to_view == "guest" and ap_enabled` checked 6+ times
+- [x] **smell-18:** Extract `Board.public?/1` predicate — `min_role_to_view == "guest"` checked 29 times across codebase
+- [x] **smell-19:** Extract `Board.federated?/1` predicate — `min_role_to_view == "guest" and ap_enabled` checked 6+ times
 - [x] **smell-20:** Replace `:httpc` with `Req` in `selenium_setup.ex:78` per CLAUDE.md convention
 - [ ] **smell-21:** Extract `@max_comment_depth 5` module attribute — hardcoded in `content.ex:1370` and `article_live.ex:539`
 - [ ] **smell-22:** Merge `@comments_per_page` and `@per_page` — both equal 20, defined 1282 lines apart (`content.ex:40,1322`)
