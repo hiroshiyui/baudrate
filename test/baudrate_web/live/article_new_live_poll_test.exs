@@ -16,7 +16,10 @@ defmodule BaudrateWeb.ArticleNewLivePollTest do
 
     board =
       %Board{}
-      |> Board.changeset(%{name: "Poll Board", slug: "poll-new-#{System.unique_integer([:positive])}"})
+      |> Board.changeset(%{
+        name: "Poll Board",
+        slug: "poll-new-#{System.unique_integer([:positive])}"
+      })
       |> Repo.insert!()
 
     {:ok, conn: conn, user: user, board: board}
@@ -80,7 +83,10 @@ defmodule BaudrateWeb.ArticleNewLivePollTest do
       lv |> element("button", "Add option") |> render_click()
 
       # Remove one option (the third one, index 2)
-      lv |> element(~s|button[phx-click="remove_poll_option"][phx-value-index="2"]|) |> render_click()
+      lv
+      |> element(~s|button[phx-click="remove_poll_option"][phx-value-index="2"]|)
+      |> render_click()
+
       html = render(lv)
       assert html =~ "poll_options[0]"
       assert html =~ "poll_options[1]"

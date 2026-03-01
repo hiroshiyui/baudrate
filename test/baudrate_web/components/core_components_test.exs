@@ -11,7 +11,9 @@ defmodule BaudrateWeb.CoreComponentsTest do
     end
 
     test "translates error with count for pluralization" do
-      result = CoreComponents.translate_error({"should be at least %{count} character(s)", [count: 3]})
+      result =
+        CoreComponents.translate_error({"should be at least %{count} character(s)", [count: 3]})
+
       assert is_binary(result)
     end
   end
@@ -47,7 +49,9 @@ defmodule BaudrateWeb.CoreComponentsTest do
     end
 
     test "renders with custom class" do
-      html = render_component(&CoreComponents.icon/1, name: "hero-check", class: "size-6 text-green")
+      html =
+        render_component(&CoreComponents.icon/1, name: "hero-check", class: "size-6 text-green")
+
       assert html =~ "size-6 text-green"
     end
   end

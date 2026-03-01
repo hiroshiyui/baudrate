@@ -23,7 +23,12 @@ defmodule BaudrateWeb.ArticleLivePollTest do
 
     {:ok, %{article: article, poll: poll}} =
       Content.create_article(
-        %{title: "Article With Poll", body: "Body text", slug: "poll-disp-#{System.unique_integer([:positive])}", user_id: user.id},
+        %{
+          title: "Article With Poll",
+          body: "Body text",
+          slug: "poll-disp-#{System.unique_integer([:positive])}",
+          user_id: user.id
+        },
         [board.id],
         poll: %{
           mode: "single",

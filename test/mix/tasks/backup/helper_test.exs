@@ -17,7 +17,9 @@ defmodule Mix.Tasks.Backup.HelperTest do
 
   describe "ensure_backup_dir!/1" do
     test "creates directory and returns path" do
-      dir = Path.join(System.tmp_dir!(), "baudrate_test_backup_#{System.unique_integer([:positive])}")
+      dir =
+        Path.join(System.tmp_dir!(), "baudrate_test_backup_#{System.unique_integer([:positive])}")
+
       refute File.exists?(dir)
 
       result = Helper.ensure_backup_dir!(dir)

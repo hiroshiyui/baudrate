@@ -115,6 +115,7 @@ defmodule BaudrateWeb.ArticleNewLive do
   @impl true
   def handle_event("remove_poll_option", %{"index" => index}, socket) do
     options = socket.assigns.poll_options
+
     idx =
       case Integer.parse(index) do
         {n, ""} -> n

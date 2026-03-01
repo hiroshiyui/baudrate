@@ -57,7 +57,8 @@ defmodule Baudrate.Federation.InboxHandlerPollTest do
       display_name: "Remote Actor #{unique}",
       inbox: "https://remote.example/users/actor_#{unique}/inbox",
       shared_inbox: "https://remote.example/inbox",
-      public_key_pem: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A\n-----END PUBLIC KEY-----",
+      public_key_pem:
+        "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A\n-----END PUBLIC KEY-----",
       fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
     })
     |> Repo.insert!()

@@ -27,6 +27,7 @@ defmodule BaudrateWeb.TagLive do
           {n, ""} when n > 0 -> n
           _ -> 1
         end
+
       user = socket.assigns[:current_user]
 
       result = Content.articles_by_tag(tag, page: page, user: user)

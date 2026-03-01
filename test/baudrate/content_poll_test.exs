@@ -28,7 +28,10 @@ defmodule Baudrate.ContentPollTest do
 
   defp create_board do
     %Board{}
-    |> Board.changeset(%{name: "Poll Board", slug: "poll-board-#{System.unique_integer([:positive])}"})
+    |> Board.changeset(%{
+      name: "Poll Board",
+      slug: "poll-board-#{System.unique_integer([:positive])}"
+    })
     |> Repo.insert!()
   end
 

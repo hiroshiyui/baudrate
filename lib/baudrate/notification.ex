@@ -37,7 +37,10 @@ defmodule Baudrate.Notification do
   `{:ok, notification}`.
   """
   @spec create_notification(map()) ::
-          {:ok, Notification.t()} | {:ok, :skipped} | {:ok, :duplicate} | {:error, Ecto.Changeset.t()}
+          {:ok, Notification.t()}
+          | {:ok, :skipped}
+          | {:ok, :duplicate}
+          | {:error, Ecto.Changeset.t()}
   def create_notification(attrs) do
     attrs = normalize_attrs(attrs)
 
@@ -181,7 +184,10 @@ defmodule Baudrate.Notification do
   results.
   """
   @spec create_admin_announcement(User.t(), String.t()) :: [
-          {:ok, Notification.t()} | {:ok, :skipped} | {:ok, :duplicate} | {:error, Ecto.Changeset.t()}
+          {:ok, Notification.t()}
+          | {:ok, :skipped}
+          | {:ok, :duplicate}
+          | {:error, Ecto.Changeset.t()}
         ]
   def create_admin_announcement(%User{} = admin, message) when is_binary(message) do
     user_ids =

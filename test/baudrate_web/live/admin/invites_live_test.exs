@@ -88,10 +88,16 @@ defmodule BaudrateWeb.Admin.InvitesLiveTest do
     {:ok, lv, _html} = live(conn, "/admin/invites")
 
     # Search for the user
-    lv |> element("form[phx-change=\"search_users\"]") |> render_change(%{search: %{query: user.username}})
+    lv
+    |> element("form[phx-change=\"search_users\"]")
+    |> render_change(%{search: %{query: user.username}})
 
     # Generate code for user
-    html = lv |> element("form[phx-submit=\"generate_for_user\"]") |> render_submit(%{user_id: user.id})
+    html =
+      lv
+      |> element("form[phx-submit=\"generate_for_user\"]")
+      |> render_submit(%{user_id: user.id})
+
     assert html =~ "Invite code generated for"
     assert html =~ user.username
   end
@@ -104,8 +110,14 @@ defmodule BaudrateWeb.Admin.InvitesLiveTest do
     {:ok, lv, _html} = live(conn, "/admin/invites")
 
     # Search and generate
-    lv |> element("form[phx-change=\"search_users\"]") |> render_change(%{search: %{query: user.username}})
-    html = lv |> element("form[phx-submit=\"generate_for_user\"]") |> render_submit(%{user_id: user.id})
+    lv
+    |> element("form[phx-change=\"search_users\"]")
+    |> render_change(%{search: %{query: user.username}})
+
+    html =
+      lv
+      |> element("form[phx-submit=\"generate_for_user\"]")
+      |> render_submit(%{user_id: user.id})
 
     # The table should show the target user's name in the Created By column
     assert html =~ user.username
