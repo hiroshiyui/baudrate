@@ -26,6 +26,7 @@ defmodule Baudrate.Auth.InviteCode do
     timestamps()
   end
 
+  @doc "Changeset for creating a new invite code."
   def changeset(invite_code, attrs) do
     invite_code
     |> cast(attrs, [:code, :created_by_id, :expires_at, :max_uses])
@@ -33,11 +34,13 @@ defmodule Baudrate.Auth.InviteCode do
     |> unique_constraint(:code)
   end
 
+  @doc "Changeset for recording an invite code use (sets `used_by_id`, `used_at`, `use_count`)."
   def use_changeset(invite_code, attrs) do
     invite_code
     |> cast(attrs, [:used_by_id, :used_at, :use_count])
   end
 
+  @doc "Changeset for revoking an invite code."
   def revoke_changeset(invite_code) do
     invite_code
     |> change(revoked: true)
