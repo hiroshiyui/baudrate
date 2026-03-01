@@ -213,6 +213,9 @@ defmodule BaudrateWeb.FeedLiveTest do
     end
 
     test "rate-limited users see error flash", %{conn: conn, user: user} do
+      # Use real Hammer backend so rate limits actually trigger
+      BaudrateWeb.RateLimiter.Sandbox.set_fun(&BaudrateWeb.RateLimiter.Hammer.check_rate/3)
+
       # Exhaust the rate limit (10 per 15 minutes for non-admin)
       for _ <- 1..10 do
         BaudrateWeb.RateLimits.check_create_article(user.id)

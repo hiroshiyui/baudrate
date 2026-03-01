@@ -232,6 +232,9 @@ defmodule BaudrateWeb.FeedControllerTest do
 
   describe "rate limiting" do
     test "returns 429 after exceeding limit", %{conn: conn} do
+      # Use real Hammer backend so rate limits actually trigger
+      BaudrateWeb.RateLimiter.Sandbox.set_fun(&BaudrateWeb.RateLimiter.Hammer.check_rate/3)
+
       for _ <- 1..30 do
         get(conn, "/feeds/rss")
       end

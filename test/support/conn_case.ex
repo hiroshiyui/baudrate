@@ -34,9 +34,11 @@ defmodule BaudrateWeb.ConnCase do
   setup tags do
     Baudrate.DataCase.setup_sandbox(tags)
 
-    # Default: pass rate limit checks through to the real Hammer backend.
-    # Sandbox walks $callers chain, so LiveView processes inherit this automatically.
-    BaudrateWeb.RateLimiter.Sandbox.set_global_fun(&BaudrateWeb.RateLimiter.Hammer.check_rate/3)
+    # Default: allow all rate limit checks in tests. Rate limit–specific tests
+    # use ExUnit.Case (not ConnCase) and set per-test stubs via Sandbox.set_fun/1.
+    # Using always-allow avoids false failures when 4 concurrent test partitions
+    # share the same 127.0.0.1 address against the real Hammer ETS backend.
+    BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1})
 
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end

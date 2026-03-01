@@ -22,9 +22,10 @@ defmodule BaudrateWeb.Router do
        (`:rate_limit_login` for `/auth/session`, `:rate_limit_totp` for TOTP).
 
     4. **Authenticated** (`/articles/new`, `/profile`, `/admin/*`) —
-       `live_session :authenticated` with `:require_auth` hook. All pages
-       requiring full authentication. Defined before public_browsable to
-       ensure literal paths match before wildcard `:slug` patterns.
+       `live_session :authenticated` with `:rate_limit_mount` and
+       `:require_auth` hooks. All pages requiring full authentication.
+       Defined before public_browsable to ensure literal paths match
+       before wildcard `:slug` patterns.
 
     5. **Public browsable** (`/`, `/boards/:slug`, `/articles/:slug`) —
        `live_session :public_browsable` with `:rate_limit_mount` and
@@ -227,7 +228,10 @@ defmodule BaudrateWeb.Router do
 
     live_session :authenticated,
       layout: {BaudrateWeb.Layouts, :app},
-      on_mount: [{BaudrateWeb.AuthHooks, :require_auth}] do
+      on_mount: [
+        {BaudrateWeb.AuthHooks, :rate_limit_mount},
+        {BaudrateWeb.AuthHooks, :require_auth}
+      ] do
       live "/boards/:slug/follows", BoardFollowsLive
       live "/boards/:slug/articles/new", ArticleNewLive
       live "/articles/new", ArticleNewLive
