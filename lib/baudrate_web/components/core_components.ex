@@ -406,10 +406,11 @@ defmodule BaudrateWeb.CoreComponents do
   slot :inner_block, required: true
   slot :subtitle
   slot :actions
+  attr :id, :string, default: nil
 
   def header(assigns) do
     ~H"""
-    <header class={[@actions != [] && "flex items-center justify-between gap-6", "pb-4"]}>
+    <header id={@id} class={[@actions != [] && "flex items-center justify-between gap-6", "pb-4"]}>
       <div>
         <h1 class="text-lg font-semibold leading-8">
           {render_slot(@inner_block)}
@@ -500,9 +501,11 @@ defmodule BaudrateWeb.CoreComponents do
     attr :title, :string, required: true
   end
 
+  attr :id, :string, default: nil
+
   def list(assigns) do
     ~H"""
-    <ul class="list">
+    <ul id={@id} class="list">
       <li :for={item <- @item} class="list-row">
         <div class="list-col-grow">
           <div class="font-bold">{item.title}</div>

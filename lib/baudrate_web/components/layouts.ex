@@ -26,9 +26,12 @@ defmodule BaudrateWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="navbar sticky top-0 z-50 bg-base-200 border-b border-base-300 px-4 sm:px-6 lg:px-8">
+    <header
+      id="site-header"
+      class="navbar sticky top-0 z-50 bg-base-200 border-b border-base-300 px-4 sm:px-6 lg:px-8"
+    >
       <%!-- Mobile hamburger (shown < lg) --%>
-      <div :if={@current_user} class="flex-none lg:hidden">
+      <div :if={@current_user} id="mobile-nav-trigger" class="flex-none lg:hidden">
         <div class="dropdown">
           <div
             tabindex="0"
@@ -157,7 +160,7 @@ defmodule BaudrateWeb.Layouts do
       </div>
 
       <%!-- Desktop nav links (shown >= lg) --%>
-      <div :if={@current_user} class="hidden lg:flex flex-none">
+      <div :if={@current_user} id="desktop-nav" class="hidden lg:flex flex-none">
         <nav aria-label={gettext("Main menu")}>
           <ul class="menu menu-horizontal px-1 items-center">
             <li>
@@ -227,19 +230,19 @@ defmodule BaudrateWeb.Layouts do
       </div>
 
       <%!-- Right side: theme toggle + auth links / user dropdown --%>
-      <div class="flex-none flex items-center gap-2">
+      <div id="header-controls" class="flex-none flex items-center gap-2">
         <.font_size_controls />
         <.theme_toggle />
 
         <%!-- Guest auth links (shown when not logged in) --%>
-        <div :if={!@current_user} class="flex items-center gap-2">
+        <div :if={!@current_user} id="guest-auth-links" class="flex items-center gap-2">
           <.link navigate="/search" class="btn btn-ghost btn-sm">{gettext("Search")}</.link>
           <.link navigate="/login" class="btn btn-ghost btn-sm">{gettext("Sign In")}</.link>
           <.link navigate="/register" class="btn btn-primary btn-sm">{gettext("Register")}</.link>
         </div>
 
         <%!-- Desktop user dropdown (shown >= lg) --%>
-        <div :if={@current_user} class="hidden lg:block dropdown dropdown-end">
+        <div :if={@current_user} id="user-menu-dropdown" class="hidden lg:block dropdown dropdown-end">
           <div
             tabindex="0"
             role="button"
@@ -307,7 +310,7 @@ defmodule BaudrateWeb.Layouts do
       </div>
     </main>
 
-    <footer class="text-center text-sm text-base-content/70 py-6">
+    <footer id="site-footer" class="text-center text-sm text-base-content/70 py-6">
       <p>
         {raw(
           gettext("Of course it runs %{link}! Your public information hub!",
