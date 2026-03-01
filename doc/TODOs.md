@@ -50,9 +50,9 @@ Findings from project-wide code review (2026-03-01). Grouped by category.
 
 ### i18n — Terminology Consistency
 
-- [ ] **i18n-1:** zh_TW: Standardize "Board" to 看板 — currently uses 看板 (31), 版面 (18), 板塊 (4)
-- [ ] **i18n-2:** zh_TW: Standardize "User" to 使用者 — currently uses 使用者 (60), 用戶 (16)
-- [ ] **i18n-3:** ja_JP: Standardize "Board" to 掲示板 — currently uses 掲示板 (35), ボード (11)
+- [x] **i18n-1:** zh_TW: Standardize "Board" to 看板 — currently uses 看板 (31), 版面 (18), 板塊 (4)
+- [x] **i18n-2:** zh_TW: Standardize "User" to 使用者 — currently uses 使用者 (60), 用戶 (16)
+- [x] **i18n-3:** ja_JP: Standardize "Board" to 掲示板 — currently uses 掲示板 (35), ボード (11)
 
 ---
 
