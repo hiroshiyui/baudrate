@@ -331,14 +331,8 @@ defmodule BaudrateWeb.SearchLive do
 
     follow_states =
       if current_user do
-        users
-        |> Enum.map(fn u ->
-          case Federation.get_local_follow(current_user.id, u.id) do
-            %{state: state} -> {u.id, state}
-            nil -> {u.id, nil}
-          end
-        end)
-        |> Map.new()
+        user_ids = Enum.map(users, & &1.id)
+        Federation.batch_local_follow_states(current_user.id, user_ids)
       else
         %{}
       end

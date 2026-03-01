@@ -1601,6 +1601,23 @@ defmodule Baudrate.Federation do
   end
 
   @doc """
+  Returns a map of `%{followed_user_id => state}` for all follow records
+  from `follower_user_id` to any of the given `followed_user_ids`.
+
+  Users not present in the result map have no follow relationship.
+  """
+  def batch_local_follow_states(_follower_user_id, []), do: %{}
+
+  def batch_local_follow_states(follower_user_id, followed_user_ids) do
+    from(uf in UserFollow,
+      where: uf.user_id == ^follower_user_id and uf.followed_user_id in ^followed_user_ids,
+      select: {uf.followed_user_id, uf.state}
+    )
+    |> Repo.all()
+    |> Map.new()
+  end
+
+  @doc """
   Returns true if a local follow record exists for the user pair (any state).
   """
   def local_follows?(user_id, followed_user_id) do
