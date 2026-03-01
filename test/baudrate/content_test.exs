@@ -898,6 +898,309 @@ defmodule Baudrate.ContentTest do
     end
   end
 
+  # --- Local Article Likes ---
+
+  describe "like_article/2 and unlike_article/2" do
+    test "creates and removes a local article like" do
+      author = create_user("user")
+      liker = create_user("user")
+      board = create_board(%{name: "Like Board", slug: "like-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Likeable", body: "body", slug: "likeable", user_id: author.id},
+          [board.id]
+        )
+
+      assert {:ok, _like} = Content.like_article(liker.id, article.id)
+      assert Content.count_article_likes(article) == 1
+
+      assert {1, nil} = Content.unlike_article(liker.id, article.id)
+      assert Content.count_article_likes(article) == 0
+    end
+  end
+
+  describe "article_liked?/2" do
+    test "returns true when user has liked, false otherwise" do
+      author = create_user("user")
+      liker = create_user("user")
+      board = create_board(%{name: "ArtLiked Board", slug: "art-liked-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "ArtLiked", body: "body", slug: "art-liked", user_id: author.id},
+          [board.id]
+        )
+
+      refute Content.article_liked?(liker.id, article.id)
+      Content.like_article(liker.id, article.id)
+      assert Content.article_liked?(liker.id, article.id)
+    end
+  end
+
+  describe "toggle_article_like/2" do
+    test "creates like on first toggle, removes on second" do
+      author = create_user("user")
+      liker = create_user("user")
+      board = create_board(%{name: "Toggle Like Board", slug: "toggle-like-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Toggle Like", body: "body", slug: "toggle-like", user_id: author.id},
+          [board.id]
+        )
+
+      assert {:ok, %Baudrate.Content.ArticleLike{}} =
+               Content.toggle_article_like(liker.id, article.id)
+
+      assert Content.article_liked?(liker.id, article.id)
+
+      assert {:ok, :removed} = Content.toggle_article_like(liker.id, article.id)
+      refute Content.article_liked?(liker.id, article.id)
+    end
+
+    test "returns :self_like for own article" do
+      author = create_user("user")
+      board = create_board(%{name: "Self Like Board", slug: "self-like-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Self Like", body: "body", slug: "self-like", user_id: author.id},
+          [board.id]
+        )
+
+      assert {:error, :self_like} = Content.toggle_article_like(author.id, article.id)
+    end
+
+    test "returns :deleted for soft-deleted article" do
+      author = create_user("user")
+      liker = create_user("user")
+      board = create_board(%{name: "Del Like Board", slug: "del-like-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Del Like", body: "body", slug: "del-like", user_id: author.id},
+          [board.id]
+        )
+
+      Content.soft_delete_article(article)
+      article = Repo.get!(Article, article.id)
+
+      assert {:error, :deleted} = Content.toggle_article_like(liker.id, article.id)
+    end
+  end
+
+  # --- Comment Likes ---
+
+  describe "like_comment/2 and unlike_comment/2" do
+    test "creates and removes a local comment like" do
+      author = create_user("user")
+      liker = create_user("user")
+      board = create_board(%{name: "CL Board", slug: "cl-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "CL Art", body: "body", slug: "cl-art", user_id: author.id},
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "A comment",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      assert {:ok, _like} = Content.like_comment(liker.id, comment.id)
+      assert Content.count_comment_likes(comment) == 1
+
+      assert {1, nil} = Content.unlike_comment(liker.id, comment.id)
+      assert Content.count_comment_likes(comment) == 0
+    end
+  end
+
+  describe "comment_liked?/2" do
+    test "returns true when user has liked, false otherwise" do
+      author = create_user("user")
+      liker = create_user("user")
+      board = create_board(%{name: "CLiked Board", slug: "cliked-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "CLiked", body: "body", slug: "cliked", user_id: author.id},
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Likeable comment",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      refute Content.comment_liked?(liker.id, comment.id)
+      Content.like_comment(liker.id, comment.id)
+      assert Content.comment_liked?(liker.id, comment.id)
+    end
+  end
+
+  describe "toggle_comment_like/2" do
+    test "creates like on first toggle, removes on second" do
+      author = create_user("user")
+      liker = create_user("user")
+      board = create_board(%{name: "TCL Board", slug: "tcl-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "TCL Art", body: "body", slug: "tcl-art", user_id: author.id},
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Toggle comment",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      assert {:ok, %Baudrate.Content.CommentLike{}} =
+               Content.toggle_comment_like(liker.id, comment.id)
+
+      assert Content.comment_liked?(liker.id, comment.id)
+
+      assert {:ok, :removed} = Content.toggle_comment_like(liker.id, comment.id)
+      refute Content.comment_liked?(liker.id, comment.id)
+    end
+
+    test "returns :self_like for own comment" do
+      author = create_user("user")
+      board = create_board(%{name: "SCL Board", slug: "scl-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "SCL Art", body: "body", slug: "scl-art", user_id: author.id},
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "My comment",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      assert {:error, :self_like} = Content.toggle_comment_like(author.id, comment.id)
+    end
+
+    test "returns :deleted for soft-deleted comment" do
+      author = create_user("user")
+      liker = create_user("user")
+      board = create_board(%{name: "DCL Board", slug: "dcl-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "DCL Art", body: "body", slug: "dcl-art", user_id: author.id},
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Deletable comment",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      Content.soft_delete_comment(comment)
+
+      assert {:error, :deleted} = Content.toggle_comment_like(liker.id, comment.id)
+    end
+  end
+
+  describe "comment_likes_by_user/2" do
+    test "returns MapSet of liked comment IDs" do
+      author = create_user("user")
+      liker = create_user("user")
+      board = create_board(%{name: "CLBU Board", slug: "clbu-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "CLBU Art", body: "body", slug: "clbu-art", user_id: author.id},
+          [board.id]
+        )
+
+      {:ok, c1} =
+        Content.create_comment(%{
+          "body" => "Comment 1",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      {:ok, c2} =
+        Content.create_comment(%{
+          "body" => "Comment 2",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      {:ok, c3} =
+        Content.create_comment(%{
+          "body" => "Comment 3",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      Content.like_comment(liker.id, c1.id)
+      Content.like_comment(liker.id, c3.id)
+
+      result = Content.comment_likes_by_user(liker.id, [c1.id, c2.id, c3.id])
+      assert MapSet.member?(result, c1.id)
+      refute MapSet.member?(result, c2.id)
+      assert MapSet.member?(result, c3.id)
+    end
+
+    test "returns empty MapSet for empty list" do
+      user = create_user("user")
+      assert Content.comment_likes_by_user(user.id, []) == MapSet.new()
+    end
+  end
+
+  describe "comment_like_counts/1" do
+    test "returns counts for liked comments" do
+      author = create_user("user")
+      liker1 = create_user("user")
+      liker2 = create_user("user")
+      board = create_board(%{name: "CLC Board", slug: "clc-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "CLC Art", body: "body", slug: "clc-art", user_id: author.id},
+          [board.id]
+        )
+
+      {:ok, c1} =
+        Content.create_comment(%{
+          "body" => "Comment A",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      {:ok, c2} =
+        Content.create_comment(%{
+          "body" => "Comment B",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      Content.like_comment(liker1.id, c1.id)
+      Content.like_comment(liker2.id, c1.id)
+      Content.like_comment(liker1.id, c2.id)
+
+      counts = Content.comment_like_counts([c1.id, c2.id])
+      assert counts[c1.id] == 2
+      assert counts[c2.id] == 1
+    end
+  end
+
   # --- Search ---
 
   describe "search_articles/2" do

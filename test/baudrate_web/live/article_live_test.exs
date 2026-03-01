@@ -601,14 +601,98 @@ defmodule BaudrateWeb.ArticleLiveTest do
       # Click to unbookmark
       lv |> element(~s|button[phx-click="toggle_bookmark"]|) |> render_click()
       html = render(lv)
-      assert html =~ "hero-star"
-      refute html =~ "hero-star-solid"
+      assert html =~ "hero-bookmark"
+      refute html =~ "hero-bookmark-solid"
     end
 
     test "guest does not see bookmark button", %{article: article} do
       conn = Phoenix.ConnTest.build_conn()
       {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
       refute html =~ "toggle_bookmark"
+    end
+  end
+
+  describe "article like" do
+    test "non-author can toggle article like", %{article: article} do
+      other_user = setup_user("user")
+      conn = log_in_user(Phoenix.ConnTest.build_conn(), other_user)
+
+      {:ok, lv, html} = live(conn, "/articles/#{article.slug}")
+      # Should show like count and toggle button
+      assert html =~ "toggle_like"
+      assert html =~ "hero-heart"
+
+      # Click to like
+      lv |> element(~s|button[phx-click="toggle_like"]|) |> render_click()
+      html = render(lv)
+      assert html =~ "hero-heart-solid"
+
+      # Click to unlike
+      lv |> element(~s|button[phx-click="toggle_like"]|) |> render_click()
+      html = render(lv)
+      refute html =~ "hero-heart-solid"
+    end
+
+    test "author does not see like toggle button", %{conn: conn, article: article} do
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+      refute html =~ "toggle_like"
+    end
+
+    test "guest sees like count but no toggle button", %{article: article} do
+      conn = Phoenix.ConnTest.build_conn()
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+      refute html =~ "toggle_like"
+      # Should still render the heart icon (non-interactive)
+      assert html =~ "hero-heart"
+    end
+  end
+
+  describe "comment like" do
+    test "non-author can toggle comment like", %{article: article, user: user} do
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "A likeable comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      other_user = setup_user("user")
+      conn = log_in_user(Phoenix.ConnTest.build_conn(), other_user)
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      # Click to like
+      lv
+      |> element(~s|button[phx-click="toggle_comment_like"][phx-value-id="#{comment.id}"]|)
+      |> render_click()
+
+      html = render(lv)
+      assert html =~ "hero-heart-solid"
+
+      # Click to unlike
+      lv
+      |> element(~s|button[phx-click="toggle_comment_like"][phx-value-id="#{comment.id}"]|)
+      |> render_click()
+
+      html = render(lv)
+      # After unliking, should show empty heart in the comment area
+      refute html =~ "hero-heart-solid"
+    end
+
+    test "author does not see like toggle on own comment", %{
+      conn: conn,
+      article: article,
+      user: user
+    } do
+      {:ok, _comment} =
+        Content.create_comment(%{
+          "body" => "My own comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+      refute html =~ "toggle_comment_like"
     end
   end
 
