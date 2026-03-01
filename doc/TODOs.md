@@ -30,21 +30,21 @@ Findings from project-wide code review (2026-03-01). Grouped by category.
 
 ### Test Coverage — Missing Tests
 
-- [ ] **test-1:** Add tests for `notify_local_article_liked/2` and `notify_local_comment_liked/2` (`notification_hooks_test.exs`)
-- [ ] **test-2:** Add tests for `build_like_article/2`, `build_undo_like_article/2`, `publish_article_liked/2`, `publish_article_unliked/2` (`publisher_test.exs`)
-- [ ] **test-3:** Add tests for `toggle_comment_bookmark/2` and `comment_bookmarked?/2` (`content_test.exs`)
-- [ ] **test-4:** Add tests for `can_comment_on_article?/2` and `can_moderate_article?/2` (`content_test.exs`)
-- [ ] **test-5:** Add unit tests for `update_remote_poll_counts/2`, `recalc_poll_counts/1`, `create_remote_poll_vote/1` (`content_test.exs`)
-- [ ] **test-6:** Add test for `unread_counts_for_conversations/2` (`messaging_test.exs`)
-- [ ] **test-7:** Add test for `publish_key_rotation/2` (`publisher_test.exs`)
-- [ ] **test-8:** Add unit test for `delete_article_like_by_ap_id/2` (2-arity, remote_actor_id guard) (`content_test.exs`)
+- [x] **test-1:** Add tests for `notify_local_article_liked/2` and `notify_local_comment_liked/2` (`notification_hooks_test.exs`)
+- [x] **test-2:** Add tests for `build_like_article/2`, `build_undo_like_article/2`, `publish_article_liked/2`, `publish_article_unliked/2` (`publisher_test.exs`)
+- [x] **test-3:** Add tests for `toggle_comment_bookmark/2` and `comment_bookmarked?/2` (`content_test.exs`)
+- [x] **test-4:** Add tests for `can_comment_on_article?/2` and `can_moderate_article?/2` (`content_test.exs`)
+- [x] **test-5:** Add unit tests for `update_remote_poll_counts/2`, `recalc_poll_counts/1`, `create_remote_poll_vote/1` (`content_test.exs`)
+- [x] **test-6:** Add test for `unread_counts_for_conversations/2` (`messaging_test.exs`)
+- [x] **test-7:** Add test for `publish_key_rotation/2` (`publisher_test.exs`)
+- [x] **test-8:** Add unit test for `delete_article_like_by_ap_id/2` (2-arity, remote_actor_id guard) (`content_test.exs`)
 
 ### Test Coverage — Anti-Patterns
 
-- [ ] **test-9:** Replace `Process.sleep(1100)` with `Repo.update_all` timestamp backdating for ordering test (`messaging_test.exs:293`)
-- [ ] **test-10:** Move delivery hooks test to separate `async: false` module — shared sandbox in async test is dangerous (`content_test.exs:524-575`)
-- [ ] **test-11:** Remove unnecessary `Process.sleep(50)` in publisher tests — synchronous with `federation_async: false` (`publisher_test.exs:52,306,331,373`)
-- [ ] **test-12:** Replace broad `length(jobs) >= 1` assertions with exact count + inbox URL checks (`publisher_test.exs:430,447,477,494`)
+- [x] **test-9:** Replace `Process.sleep(1100)` with `Repo.update_all` timestamp backdating for ordering test (`messaging_test.exs:293`)
+- [x] **test-10:** Move delivery hooks test to separate `async: false` module — shared sandbox in async test is dangerous (`content_test.exs:524-575`)
+- [x] **test-11:** Remove unnecessary `Process.sleep(50)` in publisher tests — synchronous with `federation_async: false` (`publisher_test.exs:52,306,331,373`)
+- [x] **test-12:** Replace broad `length(jobs) >= 1` assertions with exact count + inbox URL checks (`publisher_test.exs:430,447,477,494`)
 
 ---
 
