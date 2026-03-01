@@ -2659,6 +2659,11 @@ defmodule Baudrate.Content do
   end
 
   @doc """
+  Ensures a poll's `:options` association is loaded.
+  """
+  def preload_poll_options(%Poll{} = poll), do: Repo.preload(poll, :options)
+
+  @doc """
   Returns the list of option IDs a user has voted for in a poll.
   """
   def get_user_poll_votes(poll_id, user_id) do

@@ -844,7 +844,7 @@ defmodule BaudrateWeb.ArticleLive do
   defp schedule_federation_vote(user, article, poll, option_ids) do
     # Only federate votes on remote articles (those with a remote_actor)
     if article.remote_actor_id do
-      poll = Baudrate.Repo.preload(poll, :options)
+      poll = Content.preload_poll_options(poll)
 
       voted_options =
         poll.options
