@@ -1,10 +1,10 @@
-<div class="space-y-6">
-  <h1 class="text-2xl font-bold">{gettext("Federation Dashboard")}</h1>
+<div id="admin-federation-page" class="admin-federation-page space-y-6">
+  <h1 id="federation-heading" class="text-2xl font-bold">{gettext("Federation Dashboard")}</h1>
 
   <%!-- Delivery Queue Stats --%>
-  <div class="card bg-base-200 shadow-sm">
+  <div id="delivery-queue-card" class="card bg-base-200 shadow-sm">
     <div class="card-body">
-      <h2 class="card-title">{gettext("Delivery Queue")}</h2>
+      <h2 id="delivery-queue-heading" class="card-title">{gettext("Delivery Queue")}</h2>
 
       <div class="stats stats-vertical sm:stats-horizontal shadow w-full">
         <div class="stat">
@@ -78,16 +78,16 @@
   </div>
 
   <%!-- Known Instances --%>
-  <div class="card bg-base-200 shadow-sm">
+  <div id="known-instances-card" class="card bg-base-200 shadow-sm">
     <div class="card-body">
-      <h2 class="card-title">{gettext("Known Instances")}</h2>
+      <h2 id="known-instances-heading" class="card-title">{gettext("Known Instances")}</h2>
 
       <div :if={@instances == []} class="text-center py-8 opacity-60">
         {gettext("No remote instances discovered yet.")}
       </div>
 
       <div :if={@instances != []} class="overflow-x-auto">
-        <table class="table table-zebra">
+        <table id="instances-table" class="table table-zebra">
           <thead>
             <tr>
               <th scope="col">{gettext("Domain")}</th>
@@ -133,9 +133,9 @@
   </div>
 
   <%!-- Key Rotation --%>
-  <div class="card bg-base-200 shadow-sm">
+  <div id="key-rotation-card" class="card bg-base-200 shadow-sm">
     <div class="card-body">
-      <h2 class="card-title">{gettext("Key Rotation")}</h2>
+      <h2 id="key-rotation-heading" class="card-title">{gettext("Key Rotation")}</h2>
       <p class="text-sm opacity-70 mb-4">
         {gettext(
           "Rotate RSA keypairs for federation actors. The new public key will be distributed to followers via an Update activity."
@@ -157,7 +157,7 @@
       <div :if={@boards != []} class="mt-4">
         <h3 class="font-semibold mb-2">{gettext("Board Keys")}</h3>
         <div class="overflow-x-auto">
-          <table class="table table-zebra table-sm">
+          <table id="board-keys-table" class="table table-zebra table-sm">
             <thead>
               <tr>
                 <th scope="col">{gettext("Board")}</th>
@@ -191,16 +191,16 @@
   </div>
 
   <%!-- Board Federation --%>
-  <div class="card bg-base-200 shadow-sm">
+  <div id="board-federation-card" class="card bg-base-200 shadow-sm">
     <div class="card-body">
-      <h2 class="card-title">{gettext("Board Federation")}</h2>
+      <h2 id="board-federation-heading" class="card-title">{gettext("Board Federation")}</h2>
 
       <div :if={@boards == []} class="text-center py-8 opacity-60">
         {gettext("No boards configured.")}
       </div>
 
       <div :if={@boards != []} class="overflow-x-auto">
-        <table class="table table-zebra">
+        <table id="board-federation-table" class="table table-zebra">
           <thead>
             <tr>
               <th scope="col">{gettext("Board")}</th>
@@ -250,9 +250,9 @@
   </div>
 
   <%!-- Blocklist Audit --%>
-  <div class="card bg-base-200 shadow-sm">
+  <div id="blocklist-audit-card" class="card bg-base-200 shadow-sm">
     <div class="card-body">
-      <h2 class="card-title">{gettext("Blocklist Audit")}</h2>
+      <h2 id="blocklist-audit-heading" class="card-title">{gettext("Blocklist Audit")}</h2>
       <p class="text-sm opacity-70 mb-4">
         {gettext(
           "Compare your local domain blocklist against an external known-bad-actor list. Configure the audit URL in Admin Settings."

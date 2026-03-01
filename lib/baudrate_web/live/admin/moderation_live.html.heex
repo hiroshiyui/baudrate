@@ -1,5 +1,5 @@
-<div class="space-y-6">
-  <h1 class="text-2xl font-bold">{gettext("Moderation Queue")}</h1>
+<div id="admin-moderation-page" class="admin-moderation-page space-y-6">
+  <h1 id="moderation-heading" class="text-2xl font-bold">{gettext("Moderation Queue")}</h1>
 
   <%!-- Status Filter Tabs --%>
   <div class="tabs tabs-boxed" role="tablist" aria-label={gettext("Report status")}>
@@ -75,14 +75,15 @@
   </div>
 
   <%!-- Reports --%>
-  <div aria-live="polite" class="space-y-4">
+  <div id="moderation-reports" aria-live="polite" class="space-y-4">
     <div :if={@reports == []} class="text-center py-8 opacity-60">
       {gettext("No reports with status \"%{status}\".", status: @status_filter)}
     </div>
 
     <div
       :for={report <- @reports}
-      class={["card bg-base-200 shadow-sm", @status_filter == "open" && "relative pl-12"]}
+      id={"report-#{report.id}"}
+      class={["report card bg-base-200 shadow-sm", @status_filter == "open" && "relative pl-12"]}
     >
       <div :if={@status_filter == "open"} class="absolute top-4 left-4">
         <label>

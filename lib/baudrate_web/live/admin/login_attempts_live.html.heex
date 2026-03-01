@@ -1,5 +1,5 @@
-<div class="space-y-6">
-  <h1 class="text-2xl font-bold">{gettext("Login Attempts")}</h1>
+<div id="admin-login-attempts-page" class="admin-login-attempts-page space-y-6">
+  <h1 id="login-attempts-heading" class="text-2xl font-bold">{gettext("Login Attempts")}</h1>
 
   <form phx-submit="search" class="flex gap-2">
     <input
@@ -25,7 +25,11 @@
   </div>
 
   <div :if={@attempts != []} class="overflow-x-auto">
-    <table class="table table-zebra w-full">
+    <table
+      id="login-attempts-table"
+      class="table table-zebra w-full"
+      aria-labelledby="login-attempts-heading"
+    >
       <thead>
         <tr>
           <th scope="col">{gettext("Date")}</th>
@@ -35,7 +39,7 @@
         </tr>
       </thead>
       <tbody aria-live="polite">
-        <tr :for={attempt <- @attempts}>
+        <tr :for={attempt <- @attempts} id={"attempt-#{attempt.id}"}>
           <td class="whitespace-nowrap text-sm">
             <time datetime={datetime_attr(attempt.inserted_at)}>
               {format_datetime(attempt.inserted_at, "%Y-%m-%d %H:%M:%S")}

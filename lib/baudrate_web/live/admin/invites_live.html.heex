@@ -1,6 +1,6 @@
-<div class="space-y-6">
+<div id="admin-invites-page" class="admin-invites-page space-y-6">
   <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold">{gettext("Invite Codes")}</h1>
+    <h1 id="admin-invites-heading" class="text-2xl font-bold">{gettext("Invite Codes")}</h1>
     <button phx-click="generate" class="btn btn-primary btn-sm">
       {gettext("Generate Code")}
     </button>
@@ -45,7 +45,11 @@
   </div>
 
   <div :if={@codes != []} class="overflow-x-auto">
-    <table class="table table-zebra w-full">
+    <table
+      id="admin-invite-codes-table"
+      class="table table-zebra w-full"
+      aria-label={gettext("Invite codes")}
+    >
       <thead>
         <tr>
           <th scope="col">{gettext("Code")}</th>
@@ -59,7 +63,7 @@
         </tr>
       </thead>
       <tbody aria-live="polite">
-        <tr :for={code <- @codes}>
+        <tr :for={code <- @codes} id={"invite-#{code.id}"}>
           <td class="font-mono">{code.code}</td>
           <td>
             <span :if={code.created_by}>{display_name(code.created_by)}</span>

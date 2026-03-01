@@ -1,12 +1,12 @@
-<div class="space-y-6">
-  <h1 class="text-2xl font-bold">{gettext("Pending Users")}</h1>
+<div id="admin-pending-users-page" class="admin-pending-users-page space-y-6">
+  <h1 id="pending-users-heading" class="text-2xl font-bold">{gettext("Pending Users")}</h1>
 
   <div :if={@pending_users == []} class="text-base-content/70 text-center py-8">
     {gettext("No pending users.")}
   </div>
 
   <div :if={@pending_users != []} class="overflow-x-auto">
-    <table class="table">
+    <table id="pending-users-table" class="table" aria-labelledby="pending-users-heading">
       <thead>
         <tr>
           <th scope="col">{gettext("Username")}</th>
@@ -15,7 +15,7 @@
         </tr>
       </thead>
       <tbody aria-live="polite">
-        <tr :for={user <- @pending_users}>
+        <tr :for={user <- @pending_users} id={"pending-user-#{user.id}"}>
           <td>{user.username}</td>
           <td>
             <time datetime={datetime_attr(user.inserted_at)}>

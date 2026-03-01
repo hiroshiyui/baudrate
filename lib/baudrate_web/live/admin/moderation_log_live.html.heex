@@ -1,5 +1,5 @@
-<div class="space-y-6">
-  <h1 class="text-2xl font-bold">{gettext("Moderation Log")}</h1>
+<div id="admin-moderation-log-page" class="admin-moderation-log-page space-y-6">
+  <h1 id="moderation-log-heading" class="text-2xl font-bold">{gettext("Moderation Log")}</h1>
 
   <div class="flex flex-wrap gap-2" role="toolbar" aria-label={gettext("Filter by action")}>
     <button
@@ -29,7 +29,11 @@
   </div>
 
   <div :if={@logs != []} class="overflow-x-auto">
-    <table class="table table-zebra w-full">
+    <table
+      id="moderation-log-table"
+      class="table table-zebra w-full"
+      aria-labelledby="moderation-log-heading"
+    >
       <thead>
         <tr>
           <th scope="col">{gettext("Date")}</th>
@@ -40,7 +44,7 @@
         </tr>
       </thead>
       <tbody aria-live="polite">
-        <tr :for={log <- @logs}>
+        <tr :for={log <- @logs} id={"log-#{log.id}"}>
           <td class="whitespace-nowrap text-sm">
             <time datetime={datetime_attr(log.inserted_at)}>
               {format_datetime(log.inserted_at)}

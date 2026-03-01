@@ -1,7 +1,7 @@
-<div class="space-y-6">
-  <h1 class="text-2xl font-bold">{gettext("Admin Settings")}</h1>
+<div id="admin-settings-page" class="admin-settings-page space-y-6">
+  <h1 id="settings-heading" class="text-2xl font-bold">{gettext("Admin Settings")}</h1>
 
-  <div class="card bg-base-200 shadow-sm">
+  <div id="settings-card" class="card bg-base-200 shadow-sm">
     <div class="card-body">
       <.form for={@form} id="settings-form" phx-change="validate" phx-submit="save">
         <.input field={@form[:site_name]} type="text" label={gettext("Site Name")} required />
@@ -106,7 +106,7 @@
     </div>
   </div>
 
-  <div class="card bg-base-200 shadow-sm">
+  <div id="vapid-card" class="card bg-base-200 shadow-sm">
     <div class="card-body">
       <h2 class="card-title">{gettext("Web Push Notifications (VAPID)")}</h2>
       <p class="text-sm text-base-content/70">
@@ -139,7 +139,7 @@
     </div>
   </div>
 
-  <div class="card bg-base-200 shadow-sm">
+  <div id="eua-card" class="card bg-base-200 shadow-sm">
     <div class="card-body">
       <h2 class="card-title">{gettext("End User Agreement")}</h2>
       <p class="text-sm text-base-content/70">

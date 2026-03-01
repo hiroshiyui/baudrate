@@ -1,4 +1,4 @@
-<div class="space-y-6">
+<div id="admin-boards-page" class="admin-boards-page space-y-6">
   <div class="flex items-center justify-between">
     <h1 id="boards-heading" class="text-2xl font-bold">{gettext("Board Management")}</h1>
     <button :if={!@show_form} phx-click="new" class="btn btn-primary btn-sm">
@@ -7,7 +7,7 @@
   </div>
 
   <%!-- Board form (create / edit) --%>
-  <div :if={@show_form} class="card bg-base-200 shadow-md">
+  <div :if={@show_form} id="board-form-card" class="card bg-base-200 shadow-md">
     <div class="card-body">
       <h2 class="card-title">
         {if @editing_board, do: gettext("Edit Board"), else: gettext("New Board")}
@@ -107,7 +107,11 @@
   </div>
 
   <%!-- Board moderator management panel --%>
-  <div :if={@managing_moderators_board} class="card bg-base-200 shadow-md">
+  <div
+    :if={@managing_moderators_board}
+    id="board-moderators-panel"
+    class="card bg-base-200 shadow-md"
+  >
     <div class="card-body">
       <div class="flex items-center justify-between">
         <h2 class="card-title">
@@ -189,7 +193,7 @@
   </div>
 
   <div :if={@boards != []} class="overflow-x-auto">
-    <table class="table" aria-labelledby="boards-heading">
+    <table id="boards-table" class="table" aria-labelledby="boards-heading">
       <thead>
         <tr>
           <th scope="col">{gettext("Name")}</th>
@@ -202,7 +206,7 @@
         </tr>
       </thead>
       <tbody aria-live="polite">
-        <tr :for={board <- @boards}>
+        <tr :for={board <- @boards} id={"board-#{board.id}"}>
           <td class="font-medium">{board.name}</td>
           <td class="font-mono text-sm">{board.slug}</td>
           <td>{if board.parent, do: board.parent.name, else: gettext("None")}</td>
