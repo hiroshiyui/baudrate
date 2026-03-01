@@ -182,6 +182,18 @@ defmodule BaudrateWeb.AuthHooks do
     end
   end
 
+  def on_mount(:require_admin_or_moderator, _params, _session, socket) do
+    if socket.assigns[:current_user] &&
+         socket.assigns.current_user.role.name in ["admin", "moderator"] do
+      {:cont, socket}
+    else
+      {:halt,
+       socket
+       |> put_flash(:error, gettext("Access denied."))
+       |> redirect(to: "/")}
+    end
+  end
+
   defp extract_peer_ip(socket) do
     case Phoenix.LiveView.get_connect_info(socket, :peer_data) do
       %{address: addr} -> :inet.ntoa(addr) |> to_string()

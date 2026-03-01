@@ -8,29 +8,24 @@ defmodule BaudrateWeb.Admin.ModerationLive do
 
   use BaudrateWeb, :live_view
 
+  on_mount {BaudrateWeb.AuthHooks, :require_admin_or_moderator}
+
   alias Baudrate.Content
   alias Baudrate.Moderation
   import BaudrateWeb.Helpers, only: [parse_id: 1, translate_report_status: 1]
 
   @impl true
   def mount(_params, _session, socket) do
-    if socket.assigns.current_user.role.name not in ["admin", "moderator"] do
-      {:ok,
-       socket
-       |> put_flash(:error, gettext("Access denied."))
-       |> redirect(to: ~p"/")}
-    else
-      {:ok,
-       socket
-       |> assign(
-         status_filter: "open",
-         selected_report_ids: MapSet.new(),
-         bulk_resolve_note: "",
-         show_bulk_resolve_modal: false,
-         page_title: gettext("Admin Moderation")
-       )
-       |> load_reports()}
-    end
+    {:ok,
+     socket
+     |> assign(
+       status_filter: "open",
+       selected_report_ids: MapSet.new(),
+       bulk_resolve_note: "",
+       show_bulk_resolve_modal: false,
+       page_title: gettext("Admin Moderation")
+     )
+     |> load_reports()}
   end
 
   @impl true
