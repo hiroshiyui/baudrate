@@ -58,6 +58,7 @@ lib/
 │   │   ├── board.ex             # Board schema (hierarchical via parent_id, role-based permissions)
 │   │   ├── board_article.ex     # Join table: board ↔ article
 │   │   ├── board_moderator.ex   # Join table: board ↔ moderator
+│   │   ├── comment_like.ex      # CommentLike schema (local + remote likes on comments)
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
 │   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark + Ammonia NIF + hashtag/mention linkification + mention extraction)
 │   │   ├── poll.ex              # Poll schema (inline polls attached to articles, single/multiple choice)
@@ -538,7 +539,11 @@ from remote ActivityPub actors (via `remote_actor_id`). Soft-delete is
 implemented via `deleted_at` timestamps on both articles and comments.
 
 Article likes track favorites from local users and remote actors, with
-partial unique indexes enforcing one-like-per-actor-per-article.
+partial unique indexes enforcing one-like-per-actor-per-article. Comment
+likes follow the same pattern (`comment_likes` table with `CommentLike`
+schema). Local users can toggle likes on articles and comments; self-likes
+are prevented. Article likes are federated outbound (Like/Undo(Like)
+activities); comment likes are local-only.
 
 #### Polls
 

@@ -466,6 +466,74 @@ defmodule Baudrate.Federation.Publisher do
     Delivery.enqueue_for_article(activity, actor_uri, article)
   end
 
+  # --- Article Like ---
+
+  @doc """
+  Builds a `Like` activity for a local user liking an article.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_like_article(user, article) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+    article_uri = Federation.actor_uri(:article, article.slug)
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#like-#{System.unique_integer([:positive])}",
+      "type" => "Like",
+      "actor" => actor_uri,
+      "object" => article_uri,
+      "to" => [@as_public]
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Builds an `Undo(Like)` activity for a local user unliking an article.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_undo_like_article(user, article) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+    article_uri = Federation.actor_uri(:article, article.slug)
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#undo-like-#{System.unique_integer([:positive])}",
+      "type" => "Undo",
+      "actor" => actor_uri,
+      "object" => %{
+        "type" => "Like",
+        "actor" => actor_uri,
+        "object" => article_uri
+      },
+      "to" => [@as_public]
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Publishes a `Like` activity for a local user liking an article.
+  """
+  def publish_article_liked(user_id, article) do
+    user = Repo.get!(Baudrate.Setup.User, user_id)
+    article = Repo.preload(article, [:boards, :user])
+    {activity, actor_uri} = build_like_article(user, article)
+    Delivery.enqueue_for_article(activity, actor_uri, article)
+  end
+
+  @doc """
+  Publishes an `Undo(Like)` activity for a local user unliking an article.
+  """
+  def publish_article_unliked(user_id, article) do
+    user = Repo.get!(Baudrate.Setup.User, user_id)
+    article = Repo.preload(article, [:boards, :user])
+    {activity, actor_uri} = build_undo_like_article(user, article)
+    Delivery.enqueue_for_article(activity, actor_uri, article)
+  end
+
   # --- Poll Vote Builders ---
 
   @doc """

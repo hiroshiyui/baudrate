@@ -13,6 +13,7 @@ defmodule Baudrate.Notification.Notification do
     * `mention` — someone @mentioned you
     * `new_follower` — someone followed you
     * `article_liked` — someone liked your article
+    * `comment_liked` — someone liked your comment
     * `article_forwarded` — your article was forwarded to another board
     * `moderation_report` — a new moderation report (admins only)
     * `admin_announcement` — announcement from an admin
@@ -37,6 +38,7 @@ defmodule Baudrate.Notification.Notification do
     mention
     new_follower
     article_liked
+    comment_liked
     article_forwarded
     moderation_report
     admin_announcement

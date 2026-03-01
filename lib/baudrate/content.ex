@@ -4,8 +4,8 @@ defmodule Baudrate.Content do
 
   Boards are organized hierarchically via `parent_id`. Articles can be
   cross-posted to multiple boards through the `board_articles` join table.
-  Comments support threading via `parent_id`. Likes track article favorites
-  from both local users and remote actors.
+  Comments support threading via `parent_id`. Likes track article and comment
+  favorites from both local users and remote actors.
 
   Content mutations that are federation-relevant (`create_article/2`,
   `soft_delete_article/1`, `forward_article_to_board/3`) automatically
@@ -29,6 +29,7 @@ defmodule Baudrate.Content do
     BoardRead,
     Bookmark,
     Comment,
+    CommentLike,
     Poll,
     PollOption,
     PollVote
@@ -1578,6 +1579,219 @@ defmodule Baudrate.Content do
   def count_article_likes(%Article{id: article_id}) do
     Repo.one(from(l in ArticleLike, where: l.article_id == ^article_id, select: count(l.id))) ||
       0
+  end
+
+  @doc """
+  Creates a local article like for the given user.
+
+  Returns `{:ok, like}` or `{:error, changeset}`.
+  """
+  @spec like_article(term(), term()) :: {:ok, %ArticleLike{}} | {:error, Ecto.Changeset.t()}
+  def like_article(user_id, article_id) do
+    %ArticleLike{}
+    |> ArticleLike.changeset(%{user_id: user_id, article_id: article_id})
+    |> Repo.insert()
+  end
+
+  @doc """
+  Removes a local article like for the given user.
+
+  Returns `{count, nil}`.
+  """
+  @spec unlike_article(term(), term()) :: {non_neg_integer(), nil}
+  def unlike_article(user_id, article_id) do
+    from(l in ArticleLike, where: l.user_id == ^user_id and l.article_id == ^article_id)
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Returns true if the user has liked the given article.
+  """
+  @spec article_liked?(term(), term()) :: boolean()
+  def article_liked?(user_id, article_id) do
+    Repo.exists?(
+      from(l in ArticleLike, where: l.user_id == ^user_id and l.article_id == ^article_id)
+    )
+  end
+
+  @doc """
+  Toggles an article like — creates if not exists, removes if exists.
+
+  Returns `{:ok, like}` when created, `{:ok, :removed}` when deleted,
+  `{:error, :self_like}` if the user owns the article,
+  `{:error, :deleted}` if the article is soft-deleted.
+  """
+  @spec toggle_article_like(term(), term()) ::
+          {:ok, %ArticleLike{}}
+          | {:ok, :removed}
+          | {:error, :self_like | :deleted | Ecto.Changeset.t()}
+  def toggle_article_like(user_id, article_id) do
+    article = Repo.get!(Article, article_id)
+
+    cond do
+      article.user_id == user_id ->
+        {:error, :self_like}
+
+      article.deleted_at != nil ->
+        {:error, :deleted}
+
+      true ->
+        case Repo.get_by(ArticleLike, user_id: user_id, article_id: article_id) do
+          nil ->
+            case like_article(user_id, article_id) do
+              {:ok, like} ->
+                Baudrate.Notification.Hooks.notify_local_article_liked(article_id, user_id)
+
+                schedule_federation_task(fn ->
+                  Baudrate.Federation.Publisher.publish_article_liked(user_id, article)
+                end)
+
+                {:ok, like}
+
+              {:error, %Ecto.Changeset{} = cs} ->
+                if has_unique_constraint_error?(cs) do
+                  unlike_article(user_id, article_id)
+                  {:ok, :removed}
+                else
+                  {:error, cs}
+                end
+            end
+
+          _like ->
+            unlike_article(user_id, article_id)
+
+            schedule_federation_task(fn ->
+              Baudrate.Federation.Publisher.publish_article_unliked(user_id, article)
+            end)
+
+            {:ok, :removed}
+        end
+    end
+  end
+
+  # --- Comment Likes ---
+
+  @doc """
+  Creates a local comment like for the given user.
+
+  Returns `{:ok, like}` or `{:error, changeset}`.
+  """
+  @spec like_comment(term(), term()) :: {:ok, %CommentLike{}} | {:error, Ecto.Changeset.t()}
+  def like_comment(user_id, comment_id) do
+    %CommentLike{}
+    |> CommentLike.changeset(%{user_id: user_id, comment_id: comment_id})
+    |> Repo.insert()
+  end
+
+  @doc """
+  Removes a local comment like for the given user.
+
+  Returns `{count, nil}`.
+  """
+  @spec unlike_comment(term(), term()) :: {non_neg_integer(), nil}
+  def unlike_comment(user_id, comment_id) do
+    from(l in CommentLike, where: l.user_id == ^user_id and l.comment_id == ^comment_id)
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Returns true if the user has liked the given comment.
+  """
+  @spec comment_liked?(term(), term()) :: boolean()
+  def comment_liked?(user_id, comment_id) do
+    Repo.exists?(
+      from(l in CommentLike, where: l.user_id == ^user_id and l.comment_id == ^comment_id)
+    )
+  end
+
+  @doc """
+  Returns the count of likes for a comment.
+  """
+  @spec count_comment_likes(%Comment{}) :: non_neg_integer()
+  def count_comment_likes(%Comment{id: comment_id}) do
+    Repo.one(from(l in CommentLike, where: l.comment_id == ^comment_id, select: count(l.id))) ||
+      0
+  end
+
+  @doc """
+  Toggles a comment like — creates if not exists, removes if exists.
+
+  Returns `{:ok, like}` when created, `{:ok, :removed}` when deleted,
+  `{:error, :self_like}` if the user owns the comment,
+  `{:error, :deleted}` if the comment is soft-deleted.
+  """
+  @spec toggle_comment_like(term(), term()) ::
+          {:ok, %CommentLike{}}
+          | {:ok, :removed}
+          | {:error, :self_like | :deleted | Ecto.Changeset.t()}
+  def toggle_comment_like(user_id, comment_id) do
+    comment = Repo.get!(Comment, comment_id)
+
+    cond do
+      comment.user_id == user_id ->
+        {:error, :self_like}
+
+      comment.deleted_at != nil ->
+        {:error, :deleted}
+
+      true ->
+        case Repo.get_by(CommentLike, user_id: user_id, comment_id: comment_id) do
+          nil ->
+            case like_comment(user_id, comment_id) do
+              {:ok, like} ->
+                Baudrate.Notification.Hooks.notify_local_comment_liked(comment_id, user_id)
+                {:ok, like}
+
+              {:error, %Ecto.Changeset{} = cs} ->
+                if has_unique_constraint_error?(cs) do
+                  unlike_comment(user_id, comment_id)
+                  {:ok, :removed}
+                else
+                  {:error, cs}
+                end
+            end
+
+          _like ->
+            unlike_comment(user_id, comment_id)
+            {:ok, :removed}
+        end
+    end
+  end
+
+  @doc """
+  Returns a MapSet of comment IDs that the given user has liked,
+  filtered to the provided list of comment IDs.
+
+  Useful for efficiently rendering like state across a comment tree.
+  """
+  @spec comment_likes_by_user(term(), [term()]) :: MapSet.t()
+  def comment_likes_by_user(_user_id, []), do: MapSet.new()
+
+  def comment_likes_by_user(user_id, comment_ids) do
+    from(l in CommentLike,
+      where: l.user_id == ^user_id and l.comment_id in ^comment_ids,
+      select: l.comment_id
+    )
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
+  @doc """
+  Returns a map of `%{comment_id => like_count}` for the given comment IDs.
+
+  Useful for efficiently rendering like counts across a comment tree.
+  """
+  @spec comment_like_counts([term()]) :: %{term() => non_neg_integer()}
+  def comment_like_counts([]), do: %{}
+
+  def comment_like_counts(comment_ids) do
+    from(l in CommentLike,
+      where: l.comment_id in ^comment_ids,
+      group_by: l.comment_id,
+      select: {l.comment_id, count(l.id)}
+    )
+    |> Repo.all()
+    |> Map.new()
   end
 
   # --- Bookmarks ---

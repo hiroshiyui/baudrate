@@ -240,6 +240,28 @@
         <.icon name="hero-arrow-right-circle" class="size-4" />
         {gettext("Forward to Board")}
       </button>
+      <%!-- Like count (visible to all) + toggle (for non-authors) --%>
+      <span
+        :if={!@current_user || @article.user_id == @current_user.id}
+        class="btn btn-sm btn-ghost pointer-events-none"
+      >
+        <.icon name="hero-heart" class="size-4" />
+        {ngettext("%{count} Like", "%{count} Likes", @like_count)}
+      </span>
+      <button
+        :if={@current_user && @article.user_id != @current_user.id}
+        phx-click="toggle_like"
+        class="btn btn-sm btn-ghost"
+        aria-label={if @liked, do: gettext("Unlike"), else: gettext("Like")}
+      >
+        <.icon
+          name={if @liked, do: "hero-heart-solid", else: "hero-heart"}
+          class={["size-4", @liked && "text-error"]}
+        />
+        {if @liked,
+          do: ngettext("%{count} Like", "%{count} Likes", @like_count),
+          else: ngettext("%{count} Like", "%{count} Likes", @like_count)}
+      </button>
       <button
         :if={@current_user}
         phx-click="toggle_bookmark"
@@ -365,6 +387,9 @@
           can_delete={@is_board_mod}
           replying_to={@replying_to}
           comment_form={@comment_form}
+          current_user={@current_user}
+          comment_liked_ids={@comment_liked_ids}
+          comment_like_counts={@comment_like_counts}
         />
       <% end %>
     </div>

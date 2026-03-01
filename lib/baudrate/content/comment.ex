@@ -26,6 +26,7 @@ defmodule Baudrate.Content.Comment do
     belongs_to :remote_actor, RemoteActor
 
     has_many :replies, __MODULE__, foreign_key: :parent_id
+    has_many :likes, Baudrate.Content.CommentLike
 
     timestamps(type: :utc_datetime)
   end

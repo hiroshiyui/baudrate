@@ -72,6 +72,16 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:forward_search_results, [])
         |> assign(:forward_search_query, "")
         |> assign(
+          :liked,
+          if(current_user,
+            do: Content.article_liked?(current_user.id, article.id),
+            else: false
+          )
+        )
+        |> assign(:like_count, Content.count_article_likes(article))
+        |> assign(:comment_liked_ids, MapSet.new())
+        |> assign(:comment_like_counts, %{})
+        |> assign(
           :bookmarked,
           if(current_user,
             do: Content.article_bookmarked?(current_user.id, article.id),
@@ -190,6 +200,64 @@ defmodule BaudrateWeb.ArticleLive do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to toggle bookmark."))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_like", _params, socket) do
+    user = socket.assigns.current_user
+    article = socket.assigns.article
+
+    case Content.toggle_article_like(user.id, article.id) do
+      {:ok, _} ->
+        liked = Content.article_liked?(user.id, article.id)
+        like_count = Content.count_article_likes(article)
+        {:noreply, socket |> assign(:liked, liked) |> assign(:like_count, like_count)}
+
+      {:error, :self_like} ->
+        {:noreply, put_flash(socket, :error, gettext("You cannot like your own article."))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to toggle like."))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_comment_like", %{"id" => id}, socket) do
+    case parse_id(id) do
+      :error ->
+        {:noreply, socket}
+
+      {:ok, comment_id} ->
+        user = socket.assigns.current_user
+
+        case Content.toggle_comment_like(user.id, comment_id) do
+          {:ok, _} ->
+            liked_ids = socket.assigns.comment_liked_ids
+
+            liked_ids =
+              if MapSet.member?(liked_ids, comment_id),
+                do: MapSet.delete(liked_ids, comment_id),
+                else: MapSet.put(liked_ids, comment_id)
+
+            # Update the count for this specific comment
+            new_counts = Content.comment_like_counts([comment_id])
+            new_count = Map.get(new_counts, comment_id, 0)
+
+            counts =
+              Map.put(socket.assigns.comment_like_counts, comment_id, new_count)
+
+            {:noreply,
+             socket
+             |> assign(:comment_liked_ids, liked_ids)
+             |> assign(:comment_like_counts, counts)}
+
+          {:error, :self_like} ->
+            {:noreply, put_flash(socket, :error, gettext("You cannot like your own comment."))}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to toggle like."))}
+        end
     end
   end
 
@@ -407,6 +475,9 @@ defmodule BaudrateWeb.ArticleLive do
   attr :can_delete, :boolean, required: true
   attr :replying_to, :any, required: true
   attr :comment_form, :any, required: true
+  attr :current_user, :any, default: nil
+  attr :comment_liked_ids, :any, default: nil
+  attr :comment_like_counts, :any, default: nil
 
   def comment_node(assigns) do
     assigns = assign(assigns, :children, Map.get(assigns.children_map, assigns.comment.id, []))
@@ -463,15 +534,22 @@ defmodule BaudrateWeb.ArticleLive do
           </div>
         </div>
 
-        <div :if={@can_comment && @depth < 5} class="mt-1">
+        <div class="flex items-center gap-3 mt-1">
           <button
-            :if={@replying_to != @comment.id}
+            :if={@can_comment && @depth < 5 && @replying_to != @comment.id}
             phx-click="reply_to"
             phx-value-id={@comment.id}
             class="text-sm text-base-content/70 hover:text-base-content cursor-pointer"
           >
             {gettext("Reply")}
           </button>
+          <%!-- Comment like button --%>
+          <.comment_like_button
+            comment={@comment}
+            current_user={@current_user}
+            comment_liked_ids={@comment_liked_ids}
+            comment_like_counts={@comment_like_counts}
+          />
         </div>
 
         <%!-- Inline reply form --%>
@@ -515,9 +593,50 @@ defmodule BaudrateWeb.ArticleLive do
           can_delete={@can_delete}
           replying_to={@replying_to}
           comment_form={@comment_form}
+          current_user={@current_user}
+          comment_liked_ids={@comment_liked_ids}
+          comment_like_counts={@comment_like_counts}
         />
       <% end %>
     </div>
+    """
+  end
+
+  attr :comment, :map, required: true
+  attr :current_user, :any, default: nil
+  attr :comment_liked_ids, :any, default: nil
+  attr :comment_like_counts, :any, default: nil
+
+  defp comment_like_button(assigns) do
+    liked_ids = assigns.comment_liked_ids || MapSet.new()
+    counts = assigns.comment_like_counts || %{}
+    is_liked = MapSet.member?(liked_ids, assigns.comment.id)
+    is_own = assigns.current_user && assigns.comment.user_id == assigns.current_user.id
+    like_count = Map.get(counts, assigns.comment.id, 0)
+
+    assigns =
+      assigns
+      |> assign(:is_liked, is_liked)
+      |> assign(:is_own, is_own)
+      |> assign(:like_count, like_count)
+
+    ~H"""
+    <span class="inline-flex items-center gap-1 text-sm text-base-content/70">
+      <button
+        :if={@current_user && !@is_own}
+        phx-click="toggle_comment_like"
+        phx-value-id={@comment.id}
+        class="hover:text-error cursor-pointer"
+        aria-label={if @is_liked, do: gettext("Unlike"), else: gettext("Like")}
+      >
+        <.icon
+          name={if @is_liked, do: "hero-heart-solid", else: "hero-heart"}
+          class={["size-4", @is_liked && "text-error"]}
+        />
+      </button>
+      <.icon :if={!@current_user || @is_own} name="hero-heart" class="size-4" />
+      <span :if={@like_count > 0}>{@like_count}</span>
+    </span>
     """
   end
 
@@ -616,11 +735,24 @@ defmodule BaudrateWeb.ArticleLive do
 
     {roots, children_map} = build_comment_tree(comments)
 
+    all_comment_ids = Enum.map(comments, & &1.id)
+
+    comment_liked_ids =
+      if current_user do
+        Content.comment_likes_by_user(current_user.id, all_comment_ids)
+      else
+        MapSet.new()
+      end
+
+    comment_like_counts = Content.comment_like_counts(all_comment_ids)
+
     assign(socket,
       comment_roots: roots,
       children_map: children_map,
       comment_page: comment_page,
-      comment_total_pages: comment_total_pages
+      comment_total_pages: comment_total_pages,
+      comment_liked_ids: comment_liked_ids,
+      comment_like_counts: comment_like_counts
     )
   end
 
