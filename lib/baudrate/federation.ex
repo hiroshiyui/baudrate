@@ -1,62 +1,27 @@
 defmodule Baudrate.Federation do
   @moduledoc """
-  The Federation context provides ActivityPub endpoints, follower management,
-  announce (boost) tracking, and followers collection.
+  The Federation context provides ActivityPub integration for Baudrate.
 
-  Phase 1 exposes actors, outbox collections, and article objects as
-  JSON-LD, along with WebFinger and NodeInfo discovery endpoints.
+  ## Features
 
-  Phase 2a adds inbox endpoints, HTTP Signature verification, remote actor
-  resolution, and Follow/Undo(Follow) handling with auto-accept.
-
-  Phase 2b adds content activity handling: Create(Note/Article), Like,
-  Announce, Delete, Update, and their Undo variants.
-
-  Phase 3 adds outbound delivery: when local users create, update, or
-  delete articles, activities are pushed to remote followers' inboxes
-  via a DB-backed delivery queue with exponential backoff retry.
-
-  Phase 4a adds Mastodon/Lemmy compatibility: Lemmy `Page` objects are
-  treated as `Article`, `Announce` with embedded object maps is supported,
-  `attributedTo` arrays are handled, `sensitive`/`summary` content warnings
-  are preserved, `<span>` tags with safe classes are allowed through the
-  sanitizer, and outbound Note/Article objects include `to`/`cc` addressing.
-
-  Phase 4b completes Mastodon/Lemmy interop: outbound Article objects include
-  a plain-text `summary` (≤ 500 chars) for Mastodon preview display and a
-  `tag` array with `Hashtag` objects extracted from the article body (code
-  blocks excluded). Cross-post deduplication links a remote article to
-  additional boards when the same `ap_id` arrives via multiple board inboxes.
-
-  Phase 5 — Public API: the AP endpoints serve as the public API. Accepts
-  `application/json` in addition to AP media types, CORS enabled on all GET
-  endpoints, `Vary: Accept` on content-negotiated endpoints. Outbox and
-  followers collections are paginated via `?page=N` (20 items/page,
-  `OrderedCollectionPage`). New endpoints: boards index (`/ap/boards`),
-  article replies (`/ap/articles/:slug/replies`), search (`/ap/search?q=`).
-  Article objects enriched with `replies`, `baudrate:pinned`, `baudrate:locked`,
-  `baudrate:commentCount`, `baudrate:likeCount`. User actors include
-  `published`, `summary` (signature), and `icon` (avatar). Board actors
-  include `baudrate:parentBoard` and `baudrate:subBoards`.
-
-  Phase 6 — User-level outbound follows: local users can follow remote
-  actors via `Follow` / `Undo(Follow)` activities. `Accept(Follow)` and
-  `Reject(Follow)` responses update follow state. Following collection
-  endpoint populated with accepted follows. WebFinger client for remote
-  actor discovery.
-
-  Phase 7 — Personal feed: incoming `Create` activities from followed
-  remote actors that don't land in a local board, comment thread, or DM
-  are stored as `FeedItem` records. One row per activity (keyed by `ap_id`),
-  visibility determined at query time via JOIN with `user_follows`. `Move`
-  activity handling migrates follows to the new actor. `Delete` propagation
-  soft-deletes feed items.
-
-  Phase 8 — Local user follows: users can follow other local users via
-  the same `user_follows` table (using `followed_user_id` instead of
-  `remote_actor_id`). Local follows auto-accept immediately with no AP
-  delivery. The personal feed shows articles from both remote actors and
-  locally-followed users. Following collection includes local follow URIs.
+  - **Actor management** — User (`Person`) and Board (`Group`) AP actors with
+    key pairs, WebFinger/NodeInfo discovery, and AP JSON-LD representation
+  - **Inbound processing** — HTTP Signature verification, inbox handling for
+    Follow, Create, Like, Announce, Delete, Update, Move, and their Undo variants;
+    Mastodon/Lemmy compatibility (Page→Article, embedded Announce objects,
+    attributedTo arrays, content warnings)
+  - **Outbound delivery** — DB-backed delivery queue with exponential backoff
+    retry; activities pushed to remote followers' inboxes on article/comment
+    CRUD, likes, follows, blocks, and polls
+  - **Collections** — paginated OrderedCollection endpoints for outbox,
+    followers, following, boards index, article replies, and search
+  - **User follows** — local users can follow remote actors via Follow/Undo(Follow)
+    and local users via auto-accepted follows; both share the `user_follows` table
+  - **Personal feed** — incoming Create activities from followed actors stored as
+    `FeedItem` records; union query merges remote feed, local articles from
+    followed users, and comment participation
+  - **Public API** — AP endpoints double as public API; accepts `application/json`,
+    CORS enabled on GET, `Vary: Accept` on content-negotiated endpoints
 
   Private boards are excluded from all federation endpoints — WebFinger,
   actor profiles, outbox, inbox, followers, and audience resolution all
