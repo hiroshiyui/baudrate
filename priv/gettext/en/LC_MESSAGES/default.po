@@ -3814,12 +3814,12 @@ msgid "%{count} items"
 msgstr ""
 
 #: lib/baudrate_web/live/feed_live.ex:120
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Article posted!"
 msgstr ""
 
 #: lib/baudrate_web/live/feed_live.html.heex:43
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Post"
 msgstr ""
 
@@ -3831,7 +3831,7 @@ msgstr ""
 
 #: lib/baudrate_web/live/board_live.html.heex:133
 #: lib/baudrate_web/live/feed_live.html.heex:184
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "1 comment"
 msgid_plural "%{count} comments"
 msgstr[0] ""
@@ -3839,7 +3839,7 @@ msgstr[1] ""
 
 #: lib/baudrate_web/live/bookmarks_live.html.heex:58
 #: lib/baudrate_web/live/feed_live.html.heex:208
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Comment"
 msgstr ""
 
@@ -3880,7 +3880,7 @@ msgid "Article forwarded to board."
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.ex:330
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Failed to forward article."
 msgstr ""
 
@@ -3890,12 +3890,12 @@ msgid "Forward to Board"
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:268
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Search boards"
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:264
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Search boards..."
 msgstr ""
 
@@ -4150,7 +4150,7 @@ msgid "Bookmarks"
 msgstr ""
 
 #: lib/baudrate_web/live/bookmarks_live.html.heex:6
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "No bookmarks yet."
 msgstr ""
 
@@ -4185,22 +4185,22 @@ msgid "Allow forwarding"
 msgstr ""
 
 #: lib/baudrate_web/live/article_edit_live.ex:109
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Article removed from board."
 msgstr ""
 
 #: lib/baudrate_web/live/article_edit_live.ex:115
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Failed to remove from board."
 msgstr ""
 
 #: lib/baudrate_web/live/article_edit_live.html.heex:121
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Remove from board"
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.ex:316
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "This article cannot be forwarded."
 msgstr ""
 
@@ -4230,27 +4230,27 @@ msgid "Example: %{example}"
 msgstr ""
 
 #: lib/baudrate_web/live/search_live.html.heex:40
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Filter by article author"
 msgstr ""
 
 #: lib/baudrate_web/live/search_live.html.heex:44
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Filter by board"
 msgstr ""
 
 #: lib/baudrate_web/live/search_live.html.heex:48
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Filter by tag"
 msgstr ""
 
 #: lib/baudrate_web/live/search_live.html.heex:33
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Operator"
 msgstr ""
 
 #: lib/baudrate_web/live/search_live.html.heex:26
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Search operators"
 msgstr ""
 
@@ -4279,7 +4279,7 @@ msgid "Board moderators"
 msgstr "Board moderators"
 
 #: lib/baudrate_web/live/article_live.html.heex:73
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{count} voter"
 msgid_plural "%{count} voters"
 msgstr[0] ""
@@ -4311,7 +4311,7 @@ msgid "7 days"
 msgstr ""
 
 #: lib/baudrate_web/live/article_new_live.html.heex:128
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Add Poll"
 msgstr ""
 
@@ -4326,12 +4326,12 @@ msgid "Cannot vote on this poll."
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:139
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Change vote"
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:68
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Closed"
 msgstr ""
 
@@ -4346,12 +4346,12 @@ msgid "Expires (optional)"
 msgstr ""
 
 #: lib/baudrate_web/live/article_new_live.ex:304
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Failed to create poll."
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.ex:364
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Failed to record vote."
 msgstr ""
 
@@ -4368,7 +4368,7 @@ msgstr ""
 
 #: lib/baudrate_web/live/article_new_live.html.heex:141
 #: lib/baudrate_web/live/article_new_live.html.heex:143
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Option %{number}"
 msgstr ""
 
@@ -4391,7 +4391,7 @@ msgid "Poll: %{error}"
 msgstr ""
 
 #: lib/baudrate_web/live/article_new_live.html.heex:128
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Remove Poll"
 msgstr ""
 
@@ -4422,12 +4422,12 @@ msgid "Vote recorded."
 msgstr ""
 
 #: lib/baudrate_web/components/core_components.ex:305
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Blockquote"
 msgstr ""
 
 #: lib/baudrate_web/components/core_components.ex:297
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Bold"
 msgstr ""
 
@@ -4447,7 +4447,7 @@ msgid "Content too large to preview."
 msgstr ""
 
 #: lib/baudrate_web/components/core_components.ex:300
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Heading"
 msgstr ""
 
@@ -4457,12 +4457,12 @@ msgid "Horizontal Rule"
 msgstr ""
 
 #: lib/baudrate_web/components/core_components.ex:302
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Image"
 msgstr ""
 
 #: lib/baudrate_web/components/core_components.ex:303
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Inline Code"
 msgstr ""
 
@@ -4492,7 +4492,7 @@ msgid "Numbered List"
 msgstr ""
 
 #: lib/baudrate_web/components/core_components.ex:309
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Preview"
 msgstr ""
 
