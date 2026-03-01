@@ -151,7 +151,9 @@ lib/
 │   │   ├── article_live.ex      # Single article view with paginated comments
 │   │   ├── article_new_live.ex  # Article creation form
 │   │   ├── auth_hooks.ex        # on_mount hooks: require_auth, optional_auth, etc.
+│   │   ├── board_follows_live.ex # Board follows management (AP follow policy, search remote actors)
 │   │   ├── board_live.ex        # Board view with article listing
+│   │   ├── bookmarks_live.ex    # User bookmarks list (articles + comments, paginated)
 │   │   ├── conversation_live.ex # Single DM conversation thread view
 │   │   ├── conversations_live.ex # DM conversation list
 │   │   ├── feed_live.ex          # Personal feed (remote posts, local articles, comment activity)
@@ -772,6 +774,53 @@ are automatically recorded in the moderation log with actor, action type,
 target, and contextual details. The log is filterable by action type and
 paginated.
 
+### Notifications
+
+In-app notification system with real-time delivery via PubSub.
+
+**Notification types:**
+- `reply_to_article` — someone replied to your article
+- `reply_to_comment` — someone replied to your comment
+- `mention` — someone @mentioned you
+- `new_follower` — someone followed you
+- `article_liked` — someone liked your article
+- `comment_liked` — someone liked your comment
+- `article_forwarded` — your article was forwarded to another board
+- `moderation_report` — a new moderation report (admins only)
+- `admin_announcement` — announcement from an admin
+
+**Key design decisions:**
+- Self-notification suppression — users never receive notifications for their own actions
+- Blocked/muted suppression — notifications from blocked or muted users are silently dropped
+- Deduplication via COALESCE-based unique indexes on `(user_id, type, actor_*, article_id, comment_id)` — on conflict returns `{:ok, :duplicate}`
+- Per-notification-type preferences — users can opt out of specific types via `notification_preferences` (JSON column)
+- Real-time via PubSub events: `:notification_created`, `:notification_read`, `:notifications_all_read`
+- `UnreadNotificationCountHook` on_mount hook maintains `@unread_notification_count` for the nav badge
+- Notification hooks in `Notification.Hooks` are called fire-and-forget from context functions
+
+**Files:**
+- `lib/baudrate/notification.ex` — context (create, list, mark read, unread count, preferences)
+- `lib/baudrate/notification/notification.ex` — schema with type validation
+- `lib/baudrate/notification/hooks.ex` — hook functions called from Content/Federation contexts
+- `lib/baudrate/notification/pubsub.ex` — PubSub broadcast helpers
+- `lib/baudrate_web/live/notifications_live.ex` — paginated notification center with mark-read
+
+### Bookmarks
+
+Users can bookmark articles or comments for later reference. Bookmarks are
+private (only visible to the user who created them) and local-only (not
+federated).
+
+**Key design:**
+- Each bookmark targets exactly one of article or comment, enforced by a database check constraint
+- Unique constraints prevent duplicate bookmarks per user/article and user/comment
+- Toggle functions (`toggle_article_bookmark/2`, `toggle_comment_bookmark/2`) handle insert-or-delete atomically
+- `list_bookmarks/2` returns a paginated mixed list (articles + comments) ordered by bookmark creation time
+
+**Files:**
+- `lib/baudrate/content/bookmark.ex` — schema with validation
+- `lib/baudrate_web/live/bookmarks_live.ex` — paginated bookmarks page at `/bookmarks`
+
 ### ActivityPub Federation
 
 Baudrate federates with the Fediverse (Mastodon, Lemmy, etc.) via ActivityPub.
@@ -846,7 +895,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - `/ap/users/:username/following` — paginated `OrderedCollection` of accepted followed actor URIs
 - `/ap/boards/:slug/following` — paginated `OrderedCollection` of accepted board follow actor URIs
 
-**User outbound follows** (Phase 1 — backend only, UI in Phase 2):
+**User outbound follows**:
 - `Federation.lookup_remote_actor/1` — WebFinger + actor fetch by `@user@domain` or actor URL
 - `Federation.create_user_follow/2` — create pending follow record, returns AP ID
 - `Federation.accept_user_follow/1` / `reject_user_follow/1` — state transitions on Accept/Reject
@@ -856,7 +905,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - `Delivery.deliver_follow/3` — enqueue follow/unfollow delivery to remote inbox
 - Rate limited: 10 outbound follows per hour per user (`RateLimits.check_outbound_follow/1`)
 
-**Personal feed** (Phase 3):
+**Personal feed**:
 - `feed_items` table — stores incoming posts from followed actors that don't land in boards/comments/DMs
 - One row per activity (keyed by `ap_id`), visibility via JOIN with `user_follows` at query time
 - `Federation.create_feed_item/1` — insert + broadcast to followers via `Federation.PubSub`
@@ -866,7 +915,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - `Federation.migrate_user_follows/2` — Move activity support (migrate + deduplicate)
 - `/feed` LiveView — paginated personal timeline with real-time PubSub updates
 
-**Local user follows** (Phase 4):
+**Local user follows**:
 - `user_follows.followed_user_id` — nullable FK to `users`, with check constraint (exactly one of `remote_actor_id`/`followed_user_id`)
 - `Federation.create_local_follow/2` — auto-accepted immediately, no AP delivery
 - `Federation.delete_local_follow/2` / `get_local_follow/2` / `local_follows?/2`
@@ -988,7 +1037,7 @@ batched (50 per cycle) and skips when federation is disabled.
 - Optional authorized fetch mode — require HTTP signatures on GET requests to AP endpoints (exempt: WebFinger, NodeInfo)
 - Signed outbound GET requests — actor resolution falls back to signed GET when remote instances require authorized fetch
 - Session cookie `secure` flag handled by `force_ssl` / `Plug.SSL` in production
-- CSP `img-src` allows `https:` for remote avatars; all other directives remain restrictive
+- CSP `img-src` restricted to `'self' data: blob:` — no blanket `https:` (external images blocked)
 
 **Public API:**
 
