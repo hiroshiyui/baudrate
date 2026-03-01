@@ -70,11 +70,11 @@ For production, you will need to configure:
 
 - `DATABASE_URL` -- PostgreSQL connection string
 - `SECRET_KEY_BASE` -- at least 64 bytes of random data (`mix phx.gen.secret`)
-- `TOTP_VAULT_KEY` -- 32-byte Base64-encoded AES key for TOTP secret encryption
 - `PHX_HOST` -- your production hostname
 
-Note: Federation private keys are encrypted using a key derived from
-`SECRET_KEY_BASE`, so no additional environment variable is needed.
+Note: Both TOTP secrets and federation private keys are encrypted at rest
+using keys derived from `SECRET_KEY_BASE`, so no additional environment
+variables are needed for encryption.
 
 ## Documentation
 
