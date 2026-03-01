@@ -58,16 +58,16 @@ Findings from project-wide code review (2026-03-01). Grouped by category.
 
 ### Documentation
 
-- [ ] **doc-1:** Remove stale `TOTP_VAULT_KEY` env var from README — TOTP key is derived from `SECRET_KEY_BASE` (`README.md:73`)
-- [ ] **doc-2:** Fix or replace `AGENTS.md` — contradicts CLAUDE.md (layout wrapping, DaisyUI, `current_scope`)
-- [ ] **doc-3:** Fix CSP `img-src` description conflict — `development.md:991` says "allows https:" but `sysop.md:581` (correct) says "restricted to self/data/blob"
-- [ ] **doc-4:** Add "Notifications" section to `development.md` — complete notification system is undocumented
-- [ ] **doc-5:** Add "Bookmarks" section to `development.md` — feature fully implemented but undocumented
-- [ ] **doc-6:** Add `bookmarks_live.ex` and `board_follows_live.ex` to project structure table in `development.md`
-- [ ] **doc-7:** Add `/ap/users/:username/following` and `/ap/boards/:slug/following` endpoints to `doc/api.md`
-- [ ] **doc-8:** Update CLAUDE.md auth hooks list — missing `:optional_auth`, `:require_password_auth`, `:redirect_if_authenticated`, `:rate_limit_mount`
-- [ ] **doc-9:** Remove stale phase labels ("Phase 1 — backend only, UI in Phase 2") from `development.md:849` and `federation.ex` @moduledoc
-- [ ] **doc-10:** Add `@doc` to undocumented public functions: `decrypt_totp_secret/1`, `verify_password/2` (`auth.ex`), `validate_invite_code/1` (`auth.ex`), `get_message_by_ap_id/1` (`messaging.ex`), changeset functions in `invite_code.ex`
+- [x] **doc-1:** Remove stale `TOTP_VAULT_KEY` env var from README — TOTP key is derived from `SECRET_KEY_BASE` (`README.md:73`)
+- [x] **doc-2:** Fix or replace `AGENTS.md` — contradicts CLAUDE.md (layout wrapping, DaisyUI, `current_scope`)
+- [x] **doc-3:** Fix CSP `img-src` description conflict — `development.md:991` says "allows https:" but `sysop.md:581` (correct) says "restricted to self/data/blob"
+- [x] **doc-4:** Add "Notifications" section to `development.md` — complete notification system is undocumented
+- [x] **doc-5:** Add "Bookmarks" section to `development.md` — feature fully implemented but undocumented
+- [x] **doc-6:** Add `bookmarks_live.ex` and `board_follows_live.ex` to project structure table in `development.md`
+- [x] **doc-7:** Add `/ap/users/:username/following` and `/ap/boards/:slug/following` endpoints to `doc/api.md`
+- [x] **doc-8:** Update CLAUDE.md auth hooks list — missing `:optional_auth`, `:require_password_auth`, `:redirect_if_authenticated`, `:rate_limit_mount`
+- [x] **doc-9:** Remove stale phase labels ("Phase 1 — backend only, UI in Phase 2") from `development.md:849` and `federation.ex` @moduledoc
+- [x] **doc-10:** Add `@doc` to undocumented public functions: `decrypt_totp_secret/1`, `verify_password/2` (`auth.ex`), `validate_invite_code/1` (`auth.ex`), `get_message_by_ap_id/1` (`messaging.ex`), changeset functions in `invite_code.ex`
 - [ ] **doc-11:** Improve `@spec` coverage across context modules — ~85 missing in `content.ex`, ~48 in `auth.ex`, ~60 in `federation.ex`, 31 in `publisher.ex`
 
 ---
