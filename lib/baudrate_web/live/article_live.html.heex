@@ -1,4 +1,4 @@
-<div class="mx-auto max-w-4xl">
+<div id="article-page" class="article-page mx-auto max-w-4xl">
   <div class="mb-4 flex flex-wrap gap-2">
     <.link
       :for={board <- @article.boards}
@@ -11,7 +11,7 @@
 
   <article id="article" class="space-y-4" data-focus-target>
     <div class="flex items-center gap-2 flex-wrap">
-      <h1 class="text-2xl font-bold">{@article.title}</h1>
+      <h1 id="article-heading" class="text-2xl font-bold">{@article.title}</h1>
       <span :if={@article.pinned} class="badge badge-primary badge-sm">
         {gettext("Pinned")}
       </span>
@@ -254,7 +254,11 @@
       </button>
     </div>
 
-    <div :if={@can_forward && @forward_search_open} class="flex items-center gap-2 text-sm mt-2">
+    <div
+      :if={@can_forward && @forward_search_open}
+      id="forward-search-panel"
+      class="flex items-center gap-2 text-sm mt-2"
+    >
       <div class="w-full max-w-md">
         <.form for={%{}} phx-change="search_forward_board" class="flex items-center gap-2">
           <input

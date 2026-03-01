@@ -1,14 +1,14 @@
-<div class="mx-auto max-w-4xl">
-  <div class="mb-4">
+<div id="article-edit-page" class="article-edit-page mx-auto max-w-4xl">
+  <nav class="mb-4" aria-label={gettext("Breadcrumb")}>
     <.link
       navigate={~p"/articles/#{@article.slug}"}
       class="text-sm text-base-content/70 hover:text-base-content"
     >
       &larr; {gettext("Back to article")}
     </.link>
-  </div>
+  </nav>
 
-  <h1 class="text-2xl font-bold mb-6">{gettext("Edit Article")}</h1>
+  <h1 id="article-edit-heading" class="text-2xl font-bold mb-6">{gettext("Edit Article")}</h1>
 
   <.form
     for={@form}
@@ -40,7 +40,7 @@
     />
 
     <%!-- Image Upload Section --%>
-    <div class="fieldset">
+    <div id="article-images-section" class="fieldset">
       <span class="label mb-1 text-lg">🖼️ {gettext("Images")}</span>
       <p class="text-sm text-base-content/70 mb-2">
         {gettext("Max %{count} images, %{size} MB each. Images displayed at the end of article.",
@@ -126,7 +126,12 @@
       </div>
     </div>
 
-    <.input field={@form[:forwardable]} type="checkbox" label={"🔀 " <> gettext("Allow forwarding")} label_class="text-lg" />
+    <.input
+      field={@form[:forwardable]}
+      type="checkbox"
+      label={"🔀 " <> gettext("Allow forwarding")}
+      label_class="text-lg"
+    />
 
     <div class="flex items-center gap-3">
       <button type="submit" class="btn btn-primary">

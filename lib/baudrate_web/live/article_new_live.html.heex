@@ -1,5 +1,5 @@
-<div class="mx-auto max-w-4xl">
-  <div class="mb-4">
+<div id="article-new-page" class="article-new-page mx-auto max-w-4xl">
+  <nav class="mb-4" aria-label={gettext("Breadcrumb")}>
     <.link
       :if={@board_slug}
       navigate={~p"/boards/#{@board_slug}"}
@@ -14,9 +14,9 @@
     >
       &larr; {gettext("Boards")}
     </.link>
-  </div>
+  </nav>
 
-  <h1 class="text-2xl font-bold mb-6">{gettext("Create Article")}</h1>
+  <h1 id="article-new-heading" class="text-2xl font-bold mb-6">{gettext("Create Article")}</h1>
 
   <.form
     for={@form}
@@ -48,7 +48,7 @@
     />
 
     <%!-- Image Upload Section --%>
-    <div class="fieldset">
+    <div id="article-images-section" class="fieldset">
       <span class="label mb-1 text-lg">🖼️ {gettext("Images")}</span>
       <p class="text-sm text-base-content/70 mb-2">
         {gettext("Max %{count} images, %{size} MB each. Images displayed at the end of article.",
@@ -117,7 +117,7 @@
     </div>
 
     <%!-- Poll Section --%>
-    <div class="fieldset">
+    <div id="article-poll-section" class="fieldset">
       <div class="flex items-center justify-between mb-1">
         <span class="label text-lg">📊 {gettext("Poll")}</span>
         <button
@@ -225,7 +225,12 @@
       </div>
     </div>
 
-    <.input field={@form[:forwardable]} type="checkbox" label={"🔀 " <> gettext("Allow forwarding")} label_class="text-lg" />
+    <.input
+      field={@form[:forwardable]}
+      type="checkbox"
+      label={"🔀 " <> gettext("Allow forwarding")}
+      label_class="text-lg"
+    />
 
     <div class="flex items-center gap-3">
       <button type="submit" class="btn btn-primary">
