@@ -21,6 +21,12 @@ defmodule Baudrate.Auth.TotpVault do
   The module name `"Baudrate.Auth.TotpVault"` is used as AAD. This binds the
   ciphertext to this specific module, preventing ciphertext from being valid
   if decrypted by a different context using the same key.
+
+  ## SECRET_KEY_BASE Dependency
+
+  Changing `SECRET_KEY_BASE` invalidates **all** stored TOTP secrets — users
+  will be locked out of 2FA and must re-enroll their authenticator apps.
+  See the "SECRET_KEY_BASE — critical warning" section in `doc/sysop.md`.
   """
 
   @aad "Baudrate.Auth.TotpVault"

@@ -21,6 +21,12 @@ defmodule Baudrate.Federation.KeyVault do
   The string `"Baudrate.Federation.KeyVault"` is used as AAD. This binds the
   ciphertext to this specific module, preventing ciphertext from being valid
   if decrypted by a different context using the same key.
+
+  ## SECRET_KEY_BASE Dependency
+
+  Changing `SECRET_KEY_BASE` invalidates **all** stored federation private
+  keys — federation will break until keys are rotated via the admin panel.
+  See the "SECRET_KEY_BASE — critical warning" section in `doc/sysop.md`.
   """
 
   @aad "Baudrate.Federation.KeyVault"
