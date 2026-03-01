@@ -105,6 +105,16 @@ defmodule Baudrate.Content do
   end
 
   @doc """
+  Fetches a board by ID, returning `{:ok, board}` or `{:error, :not_found}`.
+  """
+  def get_board(id) do
+    case Repo.get(Board, id) do
+      nil -> {:error, :not_found}
+      board -> {:ok, board}
+    end
+  end
+
+  @doc """
   Fetches a board by ID or raises `Ecto.NoResultsError`.
   """
   def get_board!(id) do
@@ -1583,27 +1593,56 @@ defmodule Baudrate.Content do
     case Repo.get_by(Bookmark, user_id: user_id, article_id: article_id) do
       nil ->
         bookmark_article(user_id, article_id)
+        |> handle_bookmark_conflict(user_id, article_id: article_id)
 
       bookmark ->
-        Repo.delete(bookmark)
-        {:ok, :removed}
+        delete_bookmark(bookmark)
     end
   end
 
   @doc """
   Toggles a comment bookmark — creates if not exists, deletes if exists.
 
-  Returns `{:ok, bookmark}` when created or `{:ok, :removed}` when deleted.
+  Returns `{:ok, bookmark}` when created, `{:ok, :removed}` when deleted,
+  or `{:error, changeset}` on failure.
   """
   def toggle_comment_bookmark(user_id, comment_id) do
     case Repo.get_by(Bookmark, user_id: user_id, comment_id: comment_id) do
       nil ->
         bookmark_comment(user_id, comment_id)
+        |> handle_bookmark_conflict(user_id, comment_id: comment_id)
 
       bookmark ->
-        Repo.delete(bookmark)
-        {:ok, :removed}
+        delete_bookmark(bookmark)
     end
+  end
+
+  defp delete_bookmark(bookmark) do
+    case Repo.delete(bookmark) do
+      {:ok, _} -> {:ok, :removed}
+      {:error, cs} -> {:error, cs}
+    end
+  end
+
+  # Handle unique constraint violation from concurrent toggle — treat as "already exists, so delete"
+  defp handle_bookmark_conflict({:ok, bookmark}, _user_id, _opts), do: {:ok, bookmark}
+
+  defp handle_bookmark_conflict({:error, %Ecto.Changeset{} = cs}, user_id, opts) do
+    if has_unique_constraint_error?(cs) do
+      case Repo.get_by(Bookmark, [{:user_id, user_id} | opts]) do
+        nil -> {:ok, :removed}
+        bookmark -> delete_bookmark(bookmark)
+      end
+    else
+      {:error, cs}
+    end
+  end
+
+  defp has_unique_constraint_error?(changeset) do
+    Enum.any?(changeset.errors, fn
+      {_field, {_msg, meta}} -> Keyword.get(meta, :constraint) == :unique
+      _ -> false
+    end)
   end
 
   @doc """

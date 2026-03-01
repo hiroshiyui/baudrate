@@ -364,14 +364,19 @@ defmodule BaudrateWeb.ProfileLive do
     case RateLimits.check_avatar_change(user.id) do
       :ok ->
         Avatar.delete_avatar(user.avatar_id)
-        {:ok, updated_user} = Auth.remove_avatar(user)
 
-        socket =
-          socket
-          |> assign(:current_user, updated_user)
-          |> put_flash(:info, gettext("Avatar removed."))
+        case Auth.remove_avatar(user) do
+          {:ok, updated_user} ->
+            socket =
+              socket
+              |> assign(:current_user, updated_user)
+              |> put_flash(:info, gettext("Avatar removed."))
 
-        {:noreply, socket}
+            {:noreply, socket}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to remove avatar."))}
+        end
 
       {:error, :rate_limited} ->
         {:noreply,
@@ -393,16 +398,20 @@ defmodule BaudrateWeb.ProfileLive do
         # Delete old avatar files if they exist
         Avatar.delete_avatar(user.avatar_id)
 
-        {:ok, updated_user} = Auth.update_avatar(user, avatar_id)
+        case Auth.update_avatar(user, avatar_id) do
+          {:ok, updated_user} ->
+            socket =
+              socket
+              |> assign(:current_user, updated_user)
+              |> assign(:show_crop_modal, false)
+              |> push_event("avatar_crop_reset", %{})
+              |> put_flash(:info, gettext("Avatar updated successfully."))
 
-        socket =
-          socket
-          |> assign(:current_user, updated_user)
-          |> assign(:show_crop_modal, false)
-          |> push_event("avatar_crop_reset", %{})
-          |> put_flash(:info, gettext("Avatar updated successfully."))
+            {:noreply, socket}
 
-        {:noreply, socket}
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to update avatar."))}
+        end
 
       [{:error, :invalid_image}] ->
         socket =

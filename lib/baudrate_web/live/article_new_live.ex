@@ -115,7 +115,11 @@ defmodule BaudrateWeb.ArticleNewLive do
   @impl true
   def handle_event("remove_poll_option", %{"index" => index}, socket) do
     options = socket.assigns.poll_options
-    idx = String.to_integer(index)
+    idx =
+      case Integer.parse(index) do
+        {n, ""} -> n
+        _ -> -1
+      end
 
     if length(options) > 2 do
       {:noreply, assign(socket, :poll_options, List.delete_at(options, idx))}
@@ -239,7 +243,12 @@ defmodule BaudrateWeb.ArticleNewLive do
 
       option_texts =
         poll_options
-        |> Enum.sort_by(fn {k, _v} -> String.to_integer(k) end)
+        |> Enum.sort_by(fn {k, _v} ->
+          case Integer.parse(k) do
+            {n, ""} -> n
+            _ -> 0
+          end
+        end)
         |> Enum.map(fn {_k, v} -> v end)
         |> Enum.reject(&(String.trim(&1) == ""))
 

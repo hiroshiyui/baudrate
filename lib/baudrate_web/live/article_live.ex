@@ -182,9 +182,15 @@ defmodule BaudrateWeb.ArticleLive do
   def handle_event("toggle_bookmark", _params, socket) do
     user = socket.assigns.current_user
     article = socket.assigns.article
-    Content.toggle_article_bookmark(user.id, article.id)
-    bookmarked = Content.article_bookmarked?(user.id, article.id)
-    {:noreply, assign(socket, :bookmarked, bookmarked)}
+
+    case Content.toggle_article_bookmark(user.id, article.id) do
+      {:ok, _} ->
+        bookmarked = Content.article_bookmarked?(user.id, article.id)
+        {:noreply, assign(socket, :bookmarked, bookmarked)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to toggle bookmark."))}
+    end
   end
 
   @impl true
@@ -289,7 +295,7 @@ defmodule BaudrateWeb.ArticleLive do
     user = socket.assigns.current_user
 
     with {:ok, board_id} <- parse_id(board_id),
-         board <- Content.get_board!(board_id),
+         {:ok, board} <- Content.get_board(board_id),
          :ok <- check_forward_rate_limit(user),
          {:ok, updated_article} <-
            Content.forward_article_to_board(socket.assigns.article, board, user) do
@@ -682,14 +688,23 @@ defmodule BaudrateWeb.ArticleLive do
       "single" ->
         case params["vote_option"] do
           nil -> []
-          id -> [String.to_integer(id)]
+          id -> parse_int_list([id])
         end
 
       "multiple" ->
         (params["vote_options"] || [])
         |> List.wrap()
-        |> Enum.map(&String.to_integer/1)
+        |> parse_int_list()
     end
+  end
+
+  defp parse_int_list(strings) do
+    Enum.flat_map(strings, fn s ->
+      case Integer.parse(s) do
+        {n, ""} -> [n]
+        _ -> []
+      end
+    end)
   end
 
   defp schedule_federation_vote(user, article, poll, option_ids) do

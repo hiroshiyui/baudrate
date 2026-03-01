@@ -22,7 +22,11 @@ defmodule BaudrateWeb.TagLive do
     tag = String.downcase(raw_tag)
 
     if Regex.match?(@tag_re, tag) do
-      page = max(String.to_integer(params["page"] || "1"), 1)
+      page =
+        case Integer.parse(params["page"] || "1") do
+          {n, ""} when n > 0 -> n
+          _ -> 1
+        end
       user = socket.assigns[:current_user]
 
       result = Content.articles_by_tag(tag, page: page, user: user)
