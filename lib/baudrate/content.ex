@@ -1015,11 +1015,25 @@ defmodule Baudrate.Content do
   end
 
   @doc """
-  Returns true if the user can forward an article (author or admin).
+  Returns true if the user can forward an article.
+
+  For boardless articles, only the author or an admin can forward.
+  For articles already in boards, any authenticated user can forward
+  provided the article's `forwardable` flag is `true`.
   """
+  def can_forward_article?(nil, _article), do: false
   def can_forward_article?(%{role: %{name: "admin"}}, _article), do: true
   def can_forward_article?(%{id: uid}, %{user_id: uid}), do: true
-  def can_forward_article?(_, _), do: false
+
+  def can_forward_article?(_user, article) do
+    article = ensure_boards_loaded(article)
+    article.boards != [] and article.forwardable
+  end
+
+  defp article_author_or_admin?(nil, _article), do: false
+  defp article_author_or_admin?(%{role: %{name: "admin"}}, _article), do: true
+  defp article_author_or_admin?(%{id: uid}, %{user_id: uid}), do: true
+  defp article_author_or_admin?(_, _), do: false
 
   @doc """
   Removes an article from a specific board.
@@ -1035,7 +1049,7 @@ defmodule Baudrate.Content do
     article = ensure_boards_loaded(article)
 
     cond do
-      not can_forward_article?(user, article) ->
+      not article_author_or_admin?(user, article) ->
         {:error, :unauthorized}
 
       not Enum.any?(article.boards, &(&1.id == board.id)) ->

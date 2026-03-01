@@ -429,8 +429,7 @@ defmodule BaudrateWeb.ArticleLiveTest do
       assert html =~ "Forward to Board"
     end
 
-    test "does not show forward button for non-forwardable articles in boards", %{
-      conn: conn,
+    test "does not show forward button for non-forwardable articles in boards (other user)", %{
       user: user
     } do
       board =
@@ -450,7 +449,9 @@ defmodule BaudrateWeb.ArticleLiveTest do
           [board.id]
         )
 
-      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+      other = setup_user("user")
+      other_conn = build_conn() |> log_in_user(other)
+      {:ok, _lv, html} = live(other_conn, "/articles/#{article.slug}")
       refute html =~ "Forward to Board"
     end
 

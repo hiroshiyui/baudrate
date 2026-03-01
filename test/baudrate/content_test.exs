@@ -2418,7 +2418,7 @@ defmodule Baudrate.ContentTest do
       assert Content.can_forward_article?(admin, article)
     end
 
-    test "other user cannot forward" do
+    test "other user cannot forward boardless article" do
       author = create_user("user")
       other = create_user("user")
 
@@ -2431,6 +2431,75 @@ defmodule Baudrate.ContentTest do
             user_id: author.id
           },
           []
+        )
+
+      refute Content.can_forward_article?(other, article)
+    end
+
+    test "nil user cannot forward" do
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Nil FWD",
+            body: "body",
+            slug: "nil-fwd-#{System.unique_integer([:positive])}",
+            user_id: create_user("user").id
+          },
+          []
+        )
+
+      refute Content.can_forward_article?(nil, article)
+    end
+
+    test "any user can forward forwardable article with boards" do
+      author = create_user("user")
+      other = create_user("user")
+      uid = System.unique_integer([:positive])
+
+      board =
+        create_board(%{
+          name: "FWD Board #{uid}",
+          slug: "fwd-board-#{uid}",
+          position: 0
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Forwardable",
+            body: "body",
+            slug: "fwd-able-#{uid}",
+            user_id: author.id,
+            forwardable: true
+          },
+          [board.id]
+        )
+
+      assert Content.can_forward_article?(other, article)
+    end
+
+    test "non-forwardable article with boards cannot be forwarded by other user" do
+      author = create_user("user")
+      other = create_user("user")
+      uid = System.unique_integer([:positive])
+
+      board =
+        create_board(%{
+          name: "NFW Board #{uid}",
+          slug: "nfw-board-#{uid}",
+          position: 0
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Not Forwardable",
+            body: "body",
+            slug: "not-fwd-#{uid}",
+            user_id: author.id,
+            forwardable: false
+          },
+          [board.id]
         )
 
       refute Content.can_forward_article?(other, article)

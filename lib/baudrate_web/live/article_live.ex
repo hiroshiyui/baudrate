@@ -67,7 +67,7 @@ defmodule BaudrateWeb.ArticleLive do
           LinkedData.article_jsonld(article) |> LinkedData.encode_jsonld()
         )
         |> assign(:dc_meta, LinkedData.dublin_core_meta(:article, article))
-        |> assign(:can_forward, can_forward_article?(current_user, article))
+        |> assign(:can_forward, Content.can_forward_article?(current_user, article))
         |> assign(:forward_search_open, false)
         |> assign(:forward_search_results, [])
         |> assign(:forward_search_query, "")
@@ -370,7 +370,7 @@ defmodule BaudrateWeb.ArticleLive do
       {:noreply,
        socket
        |> assign(:article, updated_article)
-       |> assign(:can_forward, can_forward_article?(user, updated_article))
+       |> assign(:can_forward, Content.can_forward_article?(user, updated_article))
        |> assign(:forward_search_open, false)
        |> assign(:forward_search_results, [])
        |> assign(:forward_search_query, "")
@@ -463,7 +463,7 @@ defmodule BaudrateWeb.ArticleLive do
     {:noreply,
      socket
      |> assign(:article, article)
-     |> assign(:can_forward, can_forward_article?(socket.assigns.current_user, article))
+     |> assign(:can_forward, Content.can_forward_article?(socket.assigns.current_user, article))
      |> assign_poll_data(article, socket.assigns.current_user)}
   end
 
@@ -764,14 +764,6 @@ defmodule BaudrateWeb.ArticleLive do
       comment_liked_ids: comment_liked_ids,
       comment_like_counts: comment_like_counts
     )
-  end
-
-  defp can_forward_article?(nil, _article), do: false
-
-  defp can_forward_article?(user, article) do
-    if article.boards == [],
-      do: Content.can_forward_article?(user, article),
-      else: article.forwardable
   end
 
   defp check_forward_rate_limit(%{role: %{name: "admin"}}), do: :ok
