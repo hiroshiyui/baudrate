@@ -241,6 +241,12 @@ defmodule Baudrate.Federation.HTTPClientTest do
       assert HTTPClient.private_ip?({0xFEBF, 0, 0, 0, 0, 0, 0, 1})
     end
 
+    test "IPv6 ff00::/8 (multicast) is private" do
+      assert HTTPClient.private_ip?({0xFF00, 0, 0, 0, 0, 0, 0, 0})
+      assert HTTPClient.private_ip?({0xFF02, 0, 0, 0, 0, 0, 0, 1})
+      assert HTTPClient.private_ip?({0xFFFF, 0, 0, 0, 0, 0, 0, 0})
+    end
+
     test "public IPv4 addresses return false" do
       refute HTTPClient.private_ip?({8, 8, 8, 8})
       refute HTTPClient.private_ip?({93, 184, 216, 34})
