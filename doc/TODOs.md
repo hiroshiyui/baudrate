@@ -21,7 +21,7 @@ Findings from project-wide code review (2026-03-01). Grouped by category.
 
 ### Security
 
-- [ ] **sec-1:** Add `:rate_limit_mount` to `:authenticated` live_session — authenticated users bypass WebSocket mount rate limit (`router.ex:228`)
+- [x] **sec-1:** Add `:rate_limit_mount` to `:authenticated` live_session — authenticated users bypass WebSocket mount rate limit (`router.ex:228`)
 - [x] **sec-2:** Add explicit `length:` option to `Plug.Parsers` — defaults to 8MB for non-AP browser requests (`endpoint.ex:77`)
 - [ ] **sec-3:** Document `SECRET_KEY_BASE` rotation impact — rotating invalidates all encrypted TOTP secrets and federation private keys (`totp_vault.ex`, `key_vault.ex`)
 - [ ] **sec-4:** Block IPv6 multicast range (`ff00::/8`) in SSRF `private_ip?/1` check (`http_client.ex:253`)
