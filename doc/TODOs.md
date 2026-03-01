@@ -69,7 +69,7 @@ Findings from project-wide code review (2026-03-01). Grouped by category.
 - [ ] **smell-11:** Replace `try/rescue Ecto.NoResultsError` with non-raising `get_by` queries in `activity_pub_controller.ex:268,305`
 - [ ] **smell-12:** Replace direct `Repo` calls in controller with context functions — 10 instances in `activity_pub_controller.ex`
 - [ ] **smell-13:** Hoist function-local `alias` declarations to module level — scattered across 8+ modules (`content.ex`, `notification.ex`, `auth.ex`, `federation.ex`, `moderation.ex`, `settings_live.ex`)
-- [ ] **smell-14:** Use `is_nil/1` instead of `!= nil` in cond blocks (`content.ex:1635,1734`)
+- [x] **smell-14:** Use `is_nil/1` instead of `!= nil` in cond blocks (`content.ex:1635,1734`)
 - [ ] **smell-15:** Fix inconsistent `NaiveDateTime` usage in `sync_article_tags/1` — should use `DateTime.utc_now()` like all other `insert_all` calls (`content.ex:2117`)
 - [ ] **smell-16:** Fix N+1 query: per-user follow-state lookup in loop — batch with single query (`search_live.ex:332-342`)
 - [ ] **smell-17:** Move `Repo.preload` call from LiveView to Content context (`article_live.ex:842`)
