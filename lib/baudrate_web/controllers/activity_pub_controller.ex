@@ -78,7 +78,7 @@ defmodule BaudrateWeb.ActivityPubController do
         |> json(jrd)
 
       {:error, :not_found} ->
-        conn |> put_status(404) |> json(%{error: "Not Found"})
+        not_found(conn)
 
       {:error, :invalid_resource} ->
         conn |> put_status(400) |> json(%{error: "Invalid resource"})
@@ -120,7 +120,7 @@ defmodule BaudrateWeb.ActivityPubController do
         |> put_resp_content_type(@activity_json)
         |> json(Federation.user_actor(user))
       else
-        _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+        _ -> not_found(conn)
       end
     else
       redirect(conn, to: ~p"/")
@@ -142,7 +142,7 @@ defmodule BaudrateWeb.ActivityPubController do
         |> put_resp_content_type(@activity_json)
         |> json(Federation.board_actor(board))
       else
-        _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+        _ -> not_found(conn)
       end
     else
       redirect(conn, to: ~p"/boards/#{slug}")
@@ -173,7 +173,7 @@ defmodule BaudrateWeb.ActivityPubController do
       |> put_resp_content_type(@activity_json)
       |> json(Federation.user_outbox(user, params))
     else
-      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+      _ -> not_found(conn)
     end
   end
 
@@ -187,7 +187,7 @@ defmodule BaudrateWeb.ActivityPubController do
       |> put_resp_content_type(@activity_json)
       |> json(Federation.board_outbox(board, params))
     else
-      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+      _ -> not_found(conn)
     end
   end
 
@@ -204,7 +204,7 @@ defmodule BaudrateWeb.ActivityPubController do
       |> put_resp_content_type(@activity_json)
       |> json(Federation.followers_collection(actor_uri, params))
     else
-      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+      _ -> not_found(conn)
     end
   end
 
@@ -220,7 +220,7 @@ defmodule BaudrateWeb.ActivityPubController do
       |> put_resp_content_type(@activity_json)
       |> json(Federation.followers_collection(actor_uri, params))
     else
-      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+      _ -> not_found(conn)
     end
   end
 
@@ -237,7 +237,7 @@ defmodule BaudrateWeb.ActivityPubController do
       |> put_resp_content_type(@activity_json)
       |> json(Federation.following_collection(actor_uri, params))
     else
-      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+      _ -> not_found(conn)
     end
   end
 
@@ -253,7 +253,7 @@ defmodule BaudrateWeb.ActivityPubController do
       |> put_resp_content_type(@activity_json)
       |> json(Federation.following_collection(actor_uri))
     else
-      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+      _ -> not_found(conn)
     end
   end
 
@@ -274,14 +274,14 @@ defmodule BaudrateWeb.ActivityPubController do
             |> put_resp_content_type(@activity_json)
             |> json(Federation.article_object(article))
           else
-            conn |> put_status(404) |> json(%{error: "Not Found"})
+            not_found(conn)
           end
         rescue
           Ecto.NoResultsError ->
-            conn |> put_status(404) |> json(%{error: "Not Found"})
+            not_found(conn)
         end
       else
-        _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+        _ -> not_found(conn)
       end
     else
       redirect(conn, to: ~p"/articles/#{slug}")
@@ -311,14 +311,14 @@ defmodule BaudrateWeb.ActivityPubController do
           |> put_resp_content_type(@activity_json)
           |> json(Federation.article_replies(article))
         else
-          conn |> put_status(404) |> json(%{error: "Not Found"})
+          not_found(conn)
         end
       rescue
         Ecto.NoResultsError ->
-          conn |> put_status(404) |> json(%{error: "Not Found"})
+          not_found(conn)
       end
     else
-      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+      _ -> not_found(conn)
     end
   end
 
@@ -349,7 +349,7 @@ defmodule BaudrateWeb.ActivityPubController do
            Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
       handle_inbox(conn, {:user, user})
     else
-      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+      _ -> not_found(conn)
     end
   end
 
@@ -361,7 +361,7 @@ defmodule BaudrateWeb.ActivityPubController do
          true <- board.ap_enabled do
       handle_inbox(conn, {:board, board})
     else
-      _ -> conn |> put_status(404) |> json(%{error: "Not Found"})
+      _ -> not_found(conn)
     end
   end
 
@@ -376,7 +376,7 @@ defmodule BaudrateWeb.ActivityPubController do
             conn |> put_status(202) |> json(%{status: "accepted"})
 
           {:error, :not_found} ->
-            conn |> put_status(404) |> json(%{error: "Not Found"})
+            not_found(conn)
 
           {:error, reason} ->
             Logger.warning("federation.inbox_error: reason=#{inspect(reason)}")
@@ -389,6 +389,8 @@ defmodule BaudrateWeb.ActivityPubController do
   end
 
   # --- Helpers ---
+
+  defp not_found(conn), do: conn |> put_status(404) |> json(%{error: "Not Found"})
 
   defp require_federation(conn, _opts) do
     if Baudrate.Setup.federation_enabled?() do
