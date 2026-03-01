@@ -65,7 +65,7 @@ Findings from project-wide code review (2026-03-01). Grouped by category.
 
 ### Code Smells — Other
 
-- [ ] **smell-10:** Remove deprecated `can_manage_article?/2` and its tests (`content.ex:647`, `article_edit_test.exs:79-122`)
+- [x] **smell-10:** Remove deprecated `can_manage_article?/2` and its tests (`content.ex:647`, `article_edit_test.exs:79-122`)
 - [ ] **smell-11:** Replace `try/rescue Ecto.NoResultsError` with non-raising `get_by` queries in `activity_pub_controller.ex:268,305`
 - [ ] **smell-12:** Replace direct `Repo` calls in controller with context functions — 10 instances in `activity_pub_controller.ex`
 - [ ] **smell-13:** Hoist function-local `alias` declarations to module level — scattered across 8+ modules (`content.ex`, `notification.ex`, `auth.ex`, `federation.ex`, `moderation.ex`, `settings_live.ex`)
