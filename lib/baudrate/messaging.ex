@@ -264,14 +264,18 @@ defmodule Baudrate.Messaging do
         sender_user_id: sender.id
       })
 
-    case Repo.insert(changeset) do
-      {:ok, message} ->
-        now = DateTime.utc_now() |> DateTime.truncate(:second)
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-        conversation
-        |> Ecto.Changeset.change(last_message_at: now)
-        |> Repo.update()
+    multi =
+      Ecto.Multi.new()
+      |> Ecto.Multi.insert(:message, changeset)
+      |> Ecto.Multi.update(
+        :conversation,
+        Ecto.Changeset.change(conversation, last_message_at: now)
+      )
 
+    case Repo.transaction(multi) do
+      {:ok, %{message: message}} ->
         # Broadcast to both conversation and user topics
         PubSub.broadcast_to_conversation(conversation.id, :dm_message_created, %{
           message_id: message.id
@@ -290,7 +294,7 @@ defmodule Baudrate.Messaging do
 
         {:ok, message}
 
-      {:error, changeset} ->
+      {:error, :message, changeset, _} ->
         {:error, changeset}
     end
   end
