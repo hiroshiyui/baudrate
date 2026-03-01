@@ -1,10 +1,18 @@
-<div class="mx-auto max-w-sm mt-10">
-  <h1 class="text-2xl font-bold text-center mb-2">{gettext("Two-Factor Authentication")}</h1>
+<div id="totp-verify-page" class="totp-verify-page mx-auto max-w-sm mt-10">
+  <h1 id="totp-verify-heading" class="text-2xl font-bold text-center mb-2">
+    {gettext("Two-Factor Authentication")}
+  </h1>
   <p class="text-center text-base-content/70 mb-8">
     {gettext("Enter the 6-digit code from your authenticator app.")}
   </p>
 
-  <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
+  <.form
+    for={@form}
+    id="totp-code-form"
+    phx-change="validate"
+    phx-submit="submit"
+    class="space-y-4"
+  >
     <div class="form-control">
       <label class="label" for="totp_code">
         <span class="label-text">{gettext("Verification Code")}</span>
@@ -39,9 +47,13 @@
     <input type="hidden" name="code" value={assigns[:code]} />
   </form>
 
-  <div class="text-center mt-4">
+  <nav
+    id="totp-verify-nav"
+    class="text-center mt-4"
+    aria-label={gettext("TOTP verification help")}
+  >
     <.link navigate="/totp/recovery" class="link link-hover text-sm">
       {gettext("Lost your device? Use a recovery code")}
     </.link>
-  </div>
+  </nav>
 </div>

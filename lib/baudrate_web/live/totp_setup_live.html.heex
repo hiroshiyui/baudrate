@@ -1,5 +1,5 @@
-<div class="mx-auto max-w-sm mt-10">
-  <h1 class="text-2xl font-bold text-center mb-2">
+<div id="totp-setup-page" class="totp-setup-page mx-auto max-w-sm mt-10">
+  <h1 id="totp-setup-heading" class="text-2xl font-bold text-center mb-2">
     {gettext("Set Up Two-Factor Authentication")}
   </h1>
   <p class="text-center text-base-content/70 mb-8">
@@ -14,7 +14,7 @@
     <% end %>
   </p>
 
-  <div class="flex justify-center mb-6">
+  <div id="totp-qr-code" class="flex justify-center mb-6">
     <div class="bg-white p-4 rounded-lg">
       <img src={@qr_svg} alt={gettext("TOTP QR Code")} width="264" height="264" />
     </div>
@@ -24,12 +24,21 @@
     <p class="text-sm text-base-content/70 text-center mb-2">
       {gettext("Or enter this key manually:")}
     </p>
-    <div class="bg-base-200 rounded-lg p-3 text-center font-mono text-sm break-all select-all">
+    <div
+      id="totp-manual-key"
+      class="bg-base-200 rounded-lg p-3 text-center font-mono text-sm break-all select-all"
+    >
       {@secret_b32}
     </div>
   </div>
 
-  <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
+  <.form
+    for={@form}
+    id="totp-verify-form"
+    phx-change="validate"
+    phx-submit="submit"
+    class="space-y-4"
+  >
     <div class="form-control">
       <label class="label" for="totp_code">
         <span class="label-text">{gettext("Verification Code")}</span>

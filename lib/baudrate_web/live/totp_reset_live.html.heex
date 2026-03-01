@@ -1,5 +1,5 @@
-<div class="mx-auto max-w-sm mt-10">
-  <h1 class="text-2xl font-bold text-center mb-2">
+<div id="totp-reset-page" class="totp-reset-page mx-auto max-w-sm mt-10">
+  <h1 id="totp-reset-heading" class="text-2xl font-bold text-center mb-2">
     <%= if @mode == :reset do %>
       {gettext("Reset Authenticator")}
     <% else %>
@@ -14,7 +14,13 @@
     <% end %>
   </p>
 
-  <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
+  <.form
+    for={@form}
+    id="totp-reset-live-form"
+    phx-change="validate"
+    phx-submit="submit"
+    class="space-y-4"
+  >
     <div class="form-control">
       <label class="label" for="totp_reset_password">
         <span class="label-text">{gettext("Password")}</span>
@@ -70,9 +76,9 @@
     <input type="hidden" name="token" value={assigns[:token]} />
   </form>
 
-  <div class="text-center mt-4">
+  <nav id="totp-reset-nav" class="text-center mt-4" aria-label={gettext("TOTP reset help")}>
     <.link navigate="/profile" class="link link-hover text-sm">
       {gettext("Back to Profile")}
     </.link>
-  </div>
+  </nav>
 </div>

@@ -1,11 +1,11 @@
-<div class="space-y-8">
+<div id="setup-page" class="setup-page space-y-8">
   <.header>
     {gettext("Initial Setup")}
     <:subtitle>{gettext("Configure your application before first use.")}</:subtitle>
   </.header>
 
   <%!-- Steps indicator --%>
-  <ul class="steps steps-horizontal w-full">
+  <ul id="setup-steps" class="steps steps-horizontal w-full">
     <li class={[
       "step",
       @step in [:database, :site_name, :admin_account, :recovery_codes] && "step-primary"
@@ -24,7 +24,7 @@
   </ul>
 
   <%!-- Step 1: Database --%>
-  <div :if={@step == :database} class="space-y-6">
+  <div :if={@step == :database} id="setup-step-database" class="space-y-6">
     <div class="card bg-base-200">
       <div class="card-body">
         <h2 class="card-title">{gettext("Database Connection")}</h2>
@@ -82,7 +82,7 @@
   </div>
 
   <%!-- Step 2: Site Name --%>
-  <div :if={@step == :site_name} class="space-y-6">
+  <div :if={@step == :site_name} id="setup-step-site-name" class="space-y-6">
     <div class="card bg-base-200">
       <div class="card-body">
         <h2 class="card-title">{gettext("Site Name")}</h2>
@@ -107,7 +107,7 @@
   </div>
 
   <%!-- Step 3: Admin Account --%>
-  <div :if={@step == :admin_account} class="space-y-6">
+  <div :if={@step == :admin_account} id="setup-step-admin-account" class="space-y-6">
     <div class="card bg-base-200">
       <div class="card-body">
         <h2 class="card-title">{gettext("Admin Account")}</h2>
@@ -271,7 +271,7 @@
   </div>
 
   <%!-- Step 4: Recovery Codes --%>
-  <div :if={@step == :recovery_codes} class="space-y-6">
+  <div :if={@step == :recovery_codes} id="setup-step-recovery-codes" class="space-y-6">
     <div class="card bg-base-200">
       <div class="card-body space-y-4">
         <h2 class="card-title">{gettext("Recovery Codes")}</h2>

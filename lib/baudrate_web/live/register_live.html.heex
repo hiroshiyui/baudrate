@@ -1,7 +1,9 @@
-<div class="mx-auto max-w-sm mt-10">
+<div id="register-page" class="register-page mx-auto max-w-sm mt-10">
   <%!-- Recovery codes display (after successful registration) --%>
-  <div :if={@recovery_codes} class="space-y-4">
-    <h1 class="text-2xl font-bold text-center mb-2">{gettext("Recovery Codes")}</h1>
+  <div :if={@recovery_codes} id="recovery-codes-section" class="space-y-4">
+    <h1 id="recovery-codes-heading" class="text-2xl font-bold text-center mb-2">
+      {gettext("Recovery Codes")}
+    </h1>
 
     <div class="alert alert-warning">
       <.icon name="hero-exclamation-triangle" class="size-5" />
@@ -17,7 +19,7 @@
 
     <div class="card bg-base-200">
       <div class="card-body">
-        <div class="grid grid-cols-2 gap-2 font-mono text-sm">
+        <div id="recovery-codes-grid" class="grid grid-cols-2 gap-2 font-mono text-sm">
           <div :for={code <- @recovery_codes} class="bg-base-300 rounded px-3 py-1.5 text-center">
             {code}
           </div>
@@ -32,12 +34,20 @@
 
   <%!-- Registration form --%>
   <div :if={!@recovery_codes}>
-    <h1 class="text-2xl font-bold text-center mb-2">{gettext("Sign Up")}</h1>
+    <h1 id="register-heading" class="text-2xl font-bold text-center mb-2">
+      {gettext("Sign Up")}
+    </h1>
     <p class="text-center text-base-content/70 mb-8">
       {gettext("Create an account")}
     </p>
 
-    <.form for={@form} phx-change="validate" phx-submit="submit" class="space-y-4">
+    <.form
+      for={@form}
+      id="register-form"
+      phx-change="validate"
+      phx-submit="submit"
+      class="space-y-4"
+    >
       <.input
         field={@form[:username]}
         label={gettext("Username")}
@@ -71,7 +81,7 @@
       />
 
       <%!-- Password strength checklist --%>
-      <div class="space-y-1">
+      <div id="password-strength" class="space-y-1">
         <p class="text-sm font-medium">{gettext("Password requirements:")}</p>
         <ul class="text-sm space-y-0.5">
           <li class="flex items-center gap-1.5">
@@ -220,14 +230,16 @@
         />
       </div>
 
-      <button type="submit" class="btn btn-primary w-full">
+      <button id="register-submit" type="submit" class="btn btn-primary w-full">
         {gettext("Sign Up")}
       </button>
     </.form>
 
-    <p class="text-center text-sm mt-4">
-      {gettext("Already have an account?")}
-      <.link navigate="/login" class="link link-primary">{gettext("Sign In")}</.link>
-    </p>
+    <nav id="register-help-nav" aria-label={gettext("Registration help")}>
+      <p class="text-center text-sm mt-4">
+        {gettext("Already have an account?")}
+        <.link navigate="/login" class="link link-primary">{gettext("Sign In")}</.link>
+      </p>
+    </nav>
   </div>
 </div>
