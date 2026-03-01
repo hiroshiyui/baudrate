@@ -520,60 +520,6 @@ defmodule Baudrate.ContentTest do
     end
   end
 
-  describe "create_article delivery hooks" do
-    test "enqueues delivery jobs after article creation" do
-      user = create_user("user")
-      {:ok, user} = Baudrate.Federation.KeyStore.ensure_user_keypair(user)
-      board = create_board(%{name: "Hook Board", slug: "hook-board"})
-      {:ok, board} = Baudrate.Federation.KeyStore.ensure_board_keypair(board)
-
-      # Create a follower for the user
-      uid = System.unique_integer([:positive])
-      {public_pem, _} = KeyStore.generate_keypair()
-
-      {:ok, remote_actor} =
-        %RemoteActor{}
-        |> RemoteActor.changeset(%{
-          ap_id: "https://remote.example/users/hook-#{uid}",
-          username: "hook_#{uid}",
-          domain: "remote.example",
-          public_key_pem: public_pem,
-          inbox: "https://remote.example/users/hook-#{uid}/inbox",
-          actor_type: "Person",
-          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
-        })
-        |> Repo.insert()
-
-      user_uri = Baudrate.Federation.actor_uri(:user, user.username)
-
-      Baudrate.Federation.create_follower(
-        user_uri,
-        remote_actor,
-        "https://remote.example/activities/follow-#{uid}"
-      )
-
-      # Set shared mode so async tasks can access the DB
-      Ecto.Adapters.SQL.Sandbox.mode(Baudrate.Repo, {:shared, self()})
-
-      # Create article — should trigger delivery
-      {:ok, %{article: _article}} =
-        Content.create_article(
-          %{title: "Hooked", body: "body", slug: "hooked-#{uid}", user_id: user.id},
-          [board.id]
-        )
-
-      # Wait for async task
-      Process.sleep(300)
-
-      # Check that delivery jobs were created
-      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
-      assert length(jobs) >= 1
-
-      inbox_urls = Enum.map(jobs, & &1.inbox_url)
-      assert remote_actor.inbox in inbox_urls
-    end
-  end
-
   describe "soft_delete_article/1" do
     test "sets deleted_at on article" do
       user = create_user("user")

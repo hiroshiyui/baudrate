@@ -289,8 +289,11 @@ defmodule Baudrate.MessagingTest do
       {:ok, conv1} = Messaging.find_or_create_conversation(user, other1)
       {:ok, _msg1} = Messaging.create_message(conv1, user, %{body: "First"})
 
-      # Ensure second conversation has a later timestamp
-      Process.sleep(1100)
+      # Backdate conv1's last_message_at to ensure ordering
+      import Ecto.Query
+
+      from(c in Baudrate.Messaging.Conversation, where: c.id == ^conv1.id)
+      |> Repo.update_all(set: [last_message_at: ~U[2020-01-01 00:00:00Z]])
 
       {:ok, conv2} = Messaging.find_or_create_conversation(user, other2)
       {:ok, _msg2} = Messaging.create_message(conv2, user, %{body: "Second"})

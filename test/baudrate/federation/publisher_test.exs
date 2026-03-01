@@ -48,9 +48,6 @@ defmodule Baudrate.Federation.PublisherTest do
         [board.id]
       )
 
-    # Wait for async federation task to finish or fail
-    Process.sleep(50)
-
     Repo.preload(article, [:boards, :user])
   end
 
@@ -303,7 +300,6 @@ defmodule Baudrate.Federation.PublisherTest do
           [board.id]
         )
 
-      Process.sleep(50)
       article = Repo.preload(article, [:boards, :user])
 
       object = Baudrate.Federation.article_object(article)
@@ -328,7 +324,6 @@ defmodule Baudrate.Federation.PublisherTest do
           [board.id]
         )
 
-      Process.sleep(50)
       article = Repo.preload(article, [:boards, :user])
 
       object = Baudrate.Federation.article_object(article)
@@ -370,7 +365,6 @@ defmodule Baudrate.Federation.PublisherTest do
           [board.id]
         )
 
-      Process.sleep(50)
       article = Repo.preload(article, [:boards, :user])
 
       object = Baudrate.Federation.article_object(article)
@@ -427,7 +421,8 @@ defmodule Baudrate.Federation.PublisherTest do
       Publisher.publish_article_created(article)
 
       jobs = Repo.all(Baudrate.Federation.DeliveryJob)
-      assert length(jobs) >= 1
+      assert length(jobs) == 1
+      assert hd(jobs).inbox_url == remote.inbox
     end
   end
 
@@ -445,7 +440,8 @@ defmodule Baudrate.Federation.PublisherTest do
       Publisher.publish_article_deleted(article)
 
       jobs = Repo.all(Baudrate.Federation.DeliveryJob)
-      assert length(jobs) >= 1
+      assert length(jobs) == 1
+      assert hd(jobs).inbox_url == remote.inbox
     end
   end
 
@@ -474,7 +470,8 @@ defmodule Baudrate.Federation.PublisherTest do
       Publisher.publish_comment_created(comment, article)
 
       jobs = Repo.all(Baudrate.Federation.DeliveryJob)
-      assert length(jobs) >= 1
+      assert length(jobs) == 1
+      assert hd(jobs).inbox_url == remote.inbox
     end
   end
 
@@ -492,7 +489,8 @@ defmodule Baudrate.Federation.PublisherTest do
       Publisher.publish_article_updated(article)
 
       jobs = Repo.all(Baudrate.Federation.DeliveryJob)
-      assert length(jobs) >= 1
+      assert length(jobs) == 1
+      assert hd(jobs).inbox_url == remote.inbox
     end
   end
 
@@ -649,7 +647,9 @@ defmodule Baudrate.Federation.PublisherTest do
       Publisher.publish_article_forwarded(article, board)
 
       jobs = Repo.all(Baudrate.Federation.DeliveryJob)
-      assert length(jobs) >= 1
+      # 2 jobs: Create(Article) + Announce to board followers
+      assert length(jobs) == 2
+      assert Enum.all?(jobs, &(&1.inbox_url == remote.inbox))
     end
 
     test "skips non-public board" do
@@ -716,7 +716,8 @@ defmodule Baudrate.Federation.PublisherTest do
       Publisher.publish_comment_deleted(comment, article)
 
       jobs = Repo.all(Baudrate.Federation.DeliveryJob)
-      assert length(jobs) >= 1
+      assert length(jobs) == 1
+      assert hd(jobs).inbox_url == remote.inbox
     end
   end
 end
