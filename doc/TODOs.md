@@ -60,7 +60,7 @@ Findings from project-wide code review (2026-03-01). Grouped by category.
 - [ ] **smell-2:** Unify `has_unique_constraint_error?` — triplicated in `content.ex:1912`, `notification.ex:296`, `inbox_handler.ex:1061`
 - [ ] **smell-3:** Extract `Content.batch_comment_counts/1` — duplicated batch comment count query in `content.ex:308` and `federation.ex:1477`
 - [ ] **smell-4:** Extract private `do_toggle_like/4` — `toggle_article_like` and `toggle_comment_like` have near-identical structure (`content.ex:1628,1727`)
-- [ ] **smell-5:** Extract private `not_found(conn)` helper — 404 JSON response repeated 12 times in `activity_pub_controller.ex`
+- [x] **smell-5:** Extract private `not_found(conn)` helper — 404 JSON response repeated 18 times in `activity_pub_controller.ex`
 - [ ] **smell-6:** Extract shared `with_rate_limit_or_admin/3` — admin rate-limit bypass pattern repeated in 3 handlers in `article_live.ex`
 
 ### Code Smells — Large Modules
