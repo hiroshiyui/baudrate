@@ -60,6 +60,7 @@ defmodule Baudrate.Federation do
   alias Baudrate.Repo
   alias Baudrate.Setup
   alias Baudrate.Content
+  alias Baudrate.Content.Board
   alias Baudrate.Content.Markdown
   alias Baudrate.Auth
 
@@ -134,7 +135,7 @@ defmodule Baudrate.Federation do
         :board ->
           board = Repo.get_by(Baudrate.Content.Board, slug: identifier)
 
-          if board && board.min_role_to_view == "guest",
+          if board && Board.public?(board),
             do: {:ok, webfinger_jrd(:board, identifier)},
             else: {:error, :not_found}
       end
@@ -372,14 +373,14 @@ defmodule Baudrate.Federation do
 
     sub_boards =
       Content.list_sub_boards(board)
-      |> Enum.filter(&(&1.min_role_to_view == "guest" and &1.ap_enabled))
+      |> Enum.filter(&Board.federated?/1)
       |> Enum.map(&actor_uri(:board, &1.slug))
 
     parent_uri =
       if board.parent_id do
         parent = Repo.get(Baudrate.Content.Board, board.parent_id)
 
-        if parent && parent.min_role_to_view == "guest" && parent.ap_enabled,
+        if parent && Board.federated?(parent),
           do: actor_uri(:board, parent.slug)
       end
 
@@ -708,7 +709,7 @@ defmodule Baudrate.Federation do
       slug = String.replace_prefix(uri, prefix, "")
       board = Repo.get_by(Content.Board, slug: slug)
 
-      if board && board.ap_enabled && board.min_role_to_view == "guest" do
+      if board && Board.federated?(board) do
         {:ok, board}
       else
         :error
@@ -1856,7 +1857,7 @@ defmodule Baudrate.Federation do
         <<^board_prefix::binary, slug::binary>> ->
           if Regex.match?(~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/, slug) do
             board = Repo.get_by(Baudrate.Content.Board, slug: slug)
-            if board && board.min_role_to_view == "guest" && board.ap_enabled, do: board
+            if board && Board.federated?(board), do: board
           end
 
         _ ->

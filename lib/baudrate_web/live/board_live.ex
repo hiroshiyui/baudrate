@@ -11,6 +11,7 @@ defmodule BaudrateWeb.BoardLive do
   use BaudrateWeb, :live_view
 
   alias Baudrate.Content
+  alias Baudrate.Content.Board
   alias Baudrate.Content.PubSub, as: ContentPubSub
   alias BaudrateWeb.LinkedData
   import BaudrateWeb.Helpers, only: [parse_page: 1]
@@ -35,7 +36,7 @@ defmodule BaudrateWeb.BoardLive do
       sub_board_ids = Enum.map(sub_boards, & &1.id)
       unread_sub_board_ids = Content.unread_board_ids(current_user, sub_board_ids)
 
-      feed_slug = if board.min_role_to_view == "guest", do: board.slug
+      feed_slug = if Board.public?(board), do: board.slug
 
       parent_slug =
         case ancestors do

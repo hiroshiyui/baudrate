@@ -50,6 +50,7 @@ defmodule BaudrateWeb.ActivityPubController do
   use BaudrateWeb, :controller
   require Logger
 
+  alias Baudrate.Content.Board
   alias Baudrate.Federation
   alias Baudrate.Federation.KeyStore
 
@@ -135,8 +136,7 @@ defmodule BaudrateWeb.ActivityPubController do
       with true <- Regex.match?(@slug_re, slug),
            board when not is_nil(board) <-
              Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
-           true <- board.min_role_to_view == "guest",
-           true <- board.ap_enabled,
+           true <- Board.federated?(board),
            {:ok, board} <- KeyStore.ensure_board_keypair(board) do
         conn
         |> put_resp_content_type(@activity_json)
@@ -181,8 +181,7 @@ defmodule BaudrateWeb.ActivityPubController do
   def board_outbox(conn, %{"slug" => slug} = params) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
-         true <- board.min_role_to_view == "guest",
-         true <- board.ap_enabled do
+         true <- Board.federated?(board) do
       conn
       |> put_resp_content_type(@activity_json)
       |> json(Federation.board_outbox(board, params))
@@ -212,8 +211,7 @@ defmodule BaudrateWeb.ActivityPubController do
   def board_followers(conn, %{"slug" => slug} = params) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
-         true <- board.min_role_to_view == "guest",
-         true <- board.ap_enabled do
+         true <- Board.federated?(board) do
       actor_uri = Federation.actor_uri(:board, board.slug)
 
       conn
@@ -245,8 +243,7 @@ defmodule BaudrateWeb.ActivityPubController do
   def board_following(conn, %{"slug" => slug}) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
-         true <- board.min_role_to_view == "guest",
-         true <- board.ap_enabled do
+         true <- Board.federated?(board) do
       actor_uri = Federation.actor_uri(:board, board.slug)
 
       conn
@@ -268,8 +265,7 @@ defmodule BaudrateWeb.ActivityPubController do
         try do
           article = Baudrate.Content.get_article_by_slug!(slug)
 
-          if article.boards == [] or
-               Enum.any?(article.boards, &(&1.min_role_to_view == "guest")) do
+          if article.boards == [] or Enum.any?(article.boards, &Board.public?/1) do
             conn
             |> put_resp_content_type(@activity_json)
             |> json(Federation.article_object(article))
@@ -305,8 +301,7 @@ defmodule BaudrateWeb.ActivityPubController do
       try do
         article = Baudrate.Content.get_article_by_slug!(slug)
 
-        if article.boards == [] or
-             Enum.any?(article.boards, &(&1.min_role_to_view == "guest")) do
+        if article.boards == [] or Enum.any?(article.boards, &Board.public?/1) do
           conn
           |> put_resp_content_type(@activity_json)
           |> json(Federation.article_replies(article))
@@ -357,8 +352,7 @@ defmodule BaudrateWeb.ActivityPubController do
   def board_inbox(conn, %{"slug" => slug}) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
-         true <- board.min_role_to_view == "guest",
-         true <- board.ap_enabled do
+         true <- Board.federated?(board) do
       handle_inbox(conn, {:board, board})
     else
       _ -> not_found(conn)

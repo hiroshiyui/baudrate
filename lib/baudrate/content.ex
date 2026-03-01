@@ -493,7 +493,7 @@ defmodule Baudrate.Content do
   Guests can only see boards with `min_role_to_view == "guest"`.
   """
   @spec can_view_board?(%Board{}, map() | nil) :: boolean()
-  def can_view_board?(board, nil), do: board.min_role_to_view == "guest"
+  def can_view_board?(board, nil), do: Board.public?(board)
 
   def can_view_board?(board, user) do
     Setup.role_meets_minimum?(user.role.name, board.min_role_to_view)

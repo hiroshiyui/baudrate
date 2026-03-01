@@ -219,8 +219,8 @@
           <td>
             <span class={[
               "badge badge-sm",
-              board.min_role_to_view == "guest" && "badge-success",
-              board.min_role_to_view != "guest" && "badge-warning"
+              Board.public?(board) && "badge-success",
+              !Board.public?(board) && "badge-warning"
             ]}>
               {translate_role(board.min_role_to_view)}
             </span>

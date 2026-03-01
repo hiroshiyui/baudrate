@@ -11,6 +11,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
   alias Baudrate.{Auth, Content, Moderation, Setup}
+  alias Baudrate.Content.Board
   alias Baudrate.Federation
   alias Baudrate.Federation.{BlocklistAudit, DeliveryStats, InstanceStats}
   import BaudrateWeb.Helpers, only: [parse_id: 1, translate_role: 1, translate_delivery_status: 1]

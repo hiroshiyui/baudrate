@@ -19,6 +19,7 @@ defmodule Baudrate.Federation.Publisher do
   the recipient's personal inbox (not shared inbox) for privacy.
   """
 
+  alias Baudrate.Content.Board
   alias Baudrate.Federation
   alias Baudrate.Federation.Delivery
   alias Baudrate.Repo
@@ -398,7 +399,7 @@ defmodule Baudrate.Federation.Publisher do
     Delivery.enqueue_for_article(activity, actor_uri, article)
 
     # Announce from each public board → board's followers
-    for board <- article.boards, board.min_role_to_view == "guest" do
+    for board <- article.boards, Board.public?(board) do
       {announce, board_uri} = build_announce_article(article, board)
       Delivery.enqueue_for_followers(announce, board_uri)
     end
@@ -415,7 +416,7 @@ defmodule Baudrate.Federation.Publisher do
   def publish_article_forwarded(article, board) do
     article = Repo.preload(article, [:boards, :user])
 
-    if board.min_role_to_view == "guest" and board.ap_enabled do
+    if Board.federated?(board) do
       # Create(Article) from user → board followers
       {activity, actor_uri} = build_create_article(article)
       board_uri = Federation.actor_uri(:board, board.slug)

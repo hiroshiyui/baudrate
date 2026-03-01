@@ -41,6 +41,14 @@ defmodule Baudrate.Content.Board do
     timestamps(type: :utc_datetime)
   end
 
+  @doc "Returns true if the board is publicly visible (guests can view)."
+  def public?(%__MODULE__{min_role_to_view: "guest"}), do: true
+  def public?(%__MODULE__{}), do: false
+
+  @doc "Returns true if the board is federated (public and AP-enabled)."
+  def federated?(%__MODULE__{min_role_to_view: "guest", ap_enabled: true}), do: true
+  def federated?(%__MODULE__{}), do: false
+
   @doc "Changeset for updating the board's ActivityPub RSA keypair."
   def ap_key_changeset(board, attrs) do
     board
