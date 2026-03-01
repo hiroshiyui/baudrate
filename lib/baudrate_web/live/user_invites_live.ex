@@ -65,7 +65,7 @@ defmodule BaudrateWeb.UserInvitesLive do
 
   defp do_revoke(socket, invite_id) do
     user = socket.assigns.current_user
-    invite = Baudrate.Repo.get(Auth.InviteCode, invite_id)
+    invite = Auth.get_invite_code(invite_id)
 
     cond do
       is_nil(invite) ->

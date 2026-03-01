@@ -10,7 +10,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
 
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
-  alias Baudrate.{Content, Moderation, Setup}
+  alias Baudrate.{Auth, Content, Moderation, Setup}
   alias Baudrate.Federation
   alias Baudrate.Federation.{BlocklistAudit, DeliveryStats, InstanceStats}
   import BaudrateWeb.Helpers, only: [parse_id: 1, translate_role: 1, translate_delivery_status: 1]
@@ -191,27 +191,28 @@ defmodule BaudrateWeb.Admin.FederationLive do
   end
 
   defp do_toggle_federation(socket, board_id) do
-    case Baudrate.Repo.get(Content.Board, board_id) do
-      nil ->
+    case Content.get_board(board_id) do
+      {:error, :not_found} ->
         {:noreply, put_flash(socket, :error, gettext("Board not found."))}
 
-      board ->
-        new_value = !board.ap_enabled
+      {:ok, board} ->
+        case Content.toggle_board_federation(board) do
+          {:ok, updated} ->
+            {:noreply,
+             socket
+             |> put_flash(
+               :info,
+               gettext("Federation %{action} for %{board}.",
+                 action:
+                   if(updated.ap_enabled, do: gettext("enabled"), else: gettext("disabled")),
+                 board: updated.name
+               )
+             )
+             |> load_dashboard()}
 
-        board
-        |> Ecto.Changeset.change(ap_enabled: new_value)
-        |> Baudrate.Repo.update!()
-
-        {:noreply,
-         socket
-         |> put_flash(
-           :info,
-           gettext("Federation %{action} for %{board}.",
-             action: if(new_value, do: gettext("enabled"), else: gettext("disabled")),
-             board: board.name
-           )
-         )
-         |> load_dashboard()}
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to update board."))}
+        end
     end
   end
 
@@ -240,9 +241,9 @@ defmodule BaudrateWeb.Admin.FederationLive do
   defp rotate_by_type("board", id) do
     case parse_id(id) do
       {:ok, board_id} ->
-        case Baudrate.Repo.get(Content.Board, board_id) do
-          nil -> {:error, :not_found}
-          board -> Federation.rotate_keys(:board, board)
+        case Content.get_board(board_id) do
+          {:error, :not_found} -> {:error, :not_found}
+          {:ok, board} -> Federation.rotate_keys(:board, board)
         end
 
       :error ->
@@ -253,7 +254,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
   defp rotate_by_type("user", id) do
     case parse_id(id) do
       {:ok, user_id} ->
-        case Baudrate.Repo.get(Baudrate.Setup.User, user_id) do
+        case Auth.get_user(user_id) do
           nil -> {:error, :not_found}
           user -> Federation.rotate_keys(:user, user)
         end

@@ -242,7 +242,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
   end
 
   defp do_delete_article(socket, article_id) do
-    case Baudrate.Repo.get(Content.Article, article_id) do
+    case Content.get_article(article_id) do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("Article not found."))}
 
@@ -267,7 +267,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
   end
 
   defp do_delete_comment(socket, comment_id) do
-    case Baudrate.Repo.get(Content.Comment, comment_id) do
+    case Content.get_comment(comment_id) do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("Comment not found."))}
 

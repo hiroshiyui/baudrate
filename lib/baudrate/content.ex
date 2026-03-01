@@ -107,6 +107,7 @@ defmodule Baudrate.Content do
   @doc """
   Fetches a board by ID, returning `{:ok, board}` or `{:error, :not_found}`.
   """
+  @spec get_board(term()) :: {:ok, %Board{}} | {:error, :not_found}
   def get_board(id) do
     case Repo.get(Board, id) do
       nil -> {:error, :not_found}
@@ -117,6 +118,7 @@ defmodule Baudrate.Content do
   @doc """
   Fetches a board by ID or raises `Ecto.NoResultsError`.
   """
+  @spec get_board!(term()) :: %Board{}
   def get_board!(id) do
     Repo.get!(Board, id)
   end
@@ -181,6 +183,7 @@ defmodule Baudrate.Content do
   @doc """
   Creates a board.
   """
+  @spec create_board(map()) :: {:ok, %Board{}} | {:error, Ecto.Changeset.t()}
   def create_board(attrs) do
     %Board{}
     |> Board.changeset(attrs)
@@ -190,6 +193,7 @@ defmodule Baudrate.Content do
   @doc """
   Updates a board using `update_changeset` (slug excluded).
   """
+  @spec update_board(%Board{}, map()) :: {:ok, %Board{}} | {:error, Ecto.Changeset.t()}
   def update_board(%Board{} = board, attrs) do
     board
     |> Board.update_changeset(attrs)
@@ -202,6 +206,8 @@ defmodule Baudrate.Content do
   Returns `{:error, :protected}` if the board is the SysOp board.
   Returns `{:error, :has_articles}` if the board has articles.
   """
+  @spec delete_board(%Board{}) ::
+          {:ok, %Board{}} | {:error, :protected | :has_articles | :has_children}
   def delete_board(%Board{slug: "sysop"}), do: {:error, :protected}
 
   def delete_board(%Board{} = board) do
@@ -219,8 +225,27 @@ defmodule Baudrate.Content do
   end
 
   @doc """
+  Toggles the `ap_enabled` flag on a board.
+  """
+  @spec toggle_board_federation(%Board{}) :: {:ok, %Board{}} | {:error, Ecto.Changeset.t()}
+  def toggle_board_federation(%Board{} = board) do
+    board
+    |> Ecto.Changeset.change(ap_enabled: !board.ap_enabled)
+    |> Repo.update()
+  end
+
+  @doc """
+  Fetches a board by slug, or nil if not found.
+  """
+  @spec get_board_by_slug(String.t()) :: %Board{} | nil
+  def get_board_by_slug(slug) do
+    Repo.get_by(Board, slug: slug)
+  end
+
+  @doc """
   Fetches a board by slug or raises `Ecto.NoResultsError`.
   """
+  @spec get_board_by_slug!(String.t()) :: %Board{}
   def get_board_by_slug!(slug) do
     Repo.get_by!(Board, slug: slug)
   end
@@ -311,6 +336,7 @@ defmodule Baudrate.Content do
   Fetches an article by slug with boards and user preloaded,
   or raises `Ecto.NoResultsError`.
   """
+  @spec get_article_by_slug!(String.t()) :: %Article{}
   def get_article_by_slug!(slug) do
     Article
     |> Repo.get_by!(slug: slug)
@@ -325,6 +351,9 @@ defmodule Baudrate.Content do
     * `attrs` — article attributes (title, body, slug, user_id, etc.)
     * `board_ids` — list of board IDs to place the article in
   """
+  @spec create_article(map(), [term()], keyword()) ::
+          {:ok, %{article: %Article{}, board_articles: non_neg_integer()}}
+          | {:error, atom() | Ecto.Changeset.t()}
   def create_article(attrs, board_ids, opts \\ []) when is_list(board_ids) do
     image_ids = Keyword.get(opts, :image_ids, [])
     poll_attrs = Keyword.get(opts, :poll)
@@ -402,6 +431,8 @@ defmodule Baudrate.Content do
 
   Publishes an `Update(Article)` activity to federation after success.
   """
+  @spec update_article(%Article{}, map(), map() | nil) ::
+          {:ok, %Article{}} | {:error, Ecto.Changeset.t()}
   def update_article(%Article{} = article, attrs) do
     update_article(article, attrs, nil)
   end
@@ -460,6 +491,7 @@ defmodule Baudrate.Content do
   Returns true if the user can view the given board.
   Guests can only see boards with `min_role_to_view == "guest"`.
   """
+  @spec can_view_board?(%Board{}, map() | nil) :: boolean()
   def can_view_board?(board, nil), do: board.min_role_to_view == "guest"
 
   def can_view_board?(board, user) do
@@ -470,6 +502,7 @@ defmodule Baudrate.Content do
   Returns true if the user can post in the given board.
   Requires active account, content creation permission, and sufficient role.
   """
+  @spec can_post_in_board?(%Board{}, map() | nil) :: boolean()
   def can_post_in_board?(_board, nil), do: false
 
   def can_post_in_board?(board, user) do
@@ -480,6 +513,7 @@ defmodule Baudrate.Content do
   @doc """
   Returns true if the user is a board moderator (assigned, global moderator, or admin).
   """
+  @spec board_moderator?(%Board{}, map() | nil) :: boolean()
   def board_moderator?(_board, nil), do: false
 
   def board_moderator?(board, %{id: user_id, role: %{name: role_name}}) do
@@ -520,6 +554,7 @@ defmodule Baudrate.Content do
   or board moderator of any board the article belongs to).
   For boardless articles, falls back to admin/moderator role check.
   """
+  @spec can_moderate_article?(map() | nil, %Article{}) :: boolean()
   def can_moderate_article?(_user = nil, _article), do: false
 
   def can_moderate_article?(user, article) do
@@ -537,6 +572,7 @@ defmodule Baudrate.Content do
   Requires: user is authenticated, article is not locked, and user can post
   in at least one of the article's boards (or can create content if boardless).
   """
+  @spec can_comment_on_article?(map() | nil, %Article{}) :: boolean()
   def can_comment_on_article?(_user = nil, _article), do: false
 
   def can_comment_on_article?(user, article) do
@@ -559,6 +595,7 @@ defmodule Baudrate.Content do
   Returns true if the user can edit the article (author or admin only).
   Board moderators cannot edit others' articles.
   """
+  @spec can_edit_article?(map(), %Article{}) :: boolean()
   def can_edit_article?(%{role: %{name: "admin"}}, _article), do: true
   def can_edit_article?(%{id: uid}, %{user_id: uid}), do: true
   def can_edit_article?(_, _), do: false
@@ -566,6 +603,7 @@ defmodule Baudrate.Content do
   @doc """
   Returns true if the user can delete the article (author, admin, or board moderator).
   """
+  @spec can_delete_article?(map(), %Article{}) :: boolean()
   def can_delete_article?(%{role: %{name: "admin"}}, _article), do: true
   def can_delete_article?(%{id: uid}, %{user_id: uid}), do: true
 
@@ -592,6 +630,7 @@ defmodule Baudrate.Content do
   @doc """
   Returns true if the user can delete the comment (author, admin, or board moderator).
   """
+  @spec can_delete_comment?(map(), %Comment{}, %Article{}) :: boolean()
   def can_delete_comment?(%{role: %{name: "admin"}}, _comment, _article), do: true
   def can_delete_comment?(%{id: uid}, %{user_id: uid}, _article), do: true
 
@@ -1063,6 +1102,14 @@ defmodule Baudrate.Content do
   end
 
   @doc """
+  Returns an article by ID, or nil if not found.
+  """
+  @spec get_article(term()) :: %Article{} | nil
+  def get_article(id) do
+    Repo.get(Article, id)
+  end
+
+  @doc """
   Fetches an article by its ActivityPub ID.
   """
   def get_article_by_ap_id(ap_id) when is_binary(ap_id) do
@@ -1072,6 +1119,7 @@ defmodule Baudrate.Content do
   @doc """
   Soft-deletes an article by setting `deleted_at`.
   """
+  @spec soft_delete_article(%Article{}) :: {:ok, %Article{}} | {:error, Ecto.Changeset.t()}
   def soft_delete_article(%Article{} = article) do
     result =
       article
@@ -1169,6 +1217,7 @@ defmodule Baudrate.Content do
   Renders the body to HTML via `Markdown.to_html/1` and publishes a
   `Create(Note)` activity to federation.
   """
+  @spec create_comment(map()) :: {:ok, %Comment{}} | {:error, Ecto.Changeset.t()}
   def create_comment(attrs) do
     body_html = Baudrate.Content.Markdown.to_html(attrs["body"] || attrs[:body] || "")
 
@@ -1223,6 +1272,14 @@ defmodule Baudrate.Content do
 
       result
     end
+  end
+
+  @doc """
+  Returns a comment by ID, or nil if not found.
+  """
+  @spec get_comment(term()) :: %Comment{} | nil
+  def get_comment(id) do
+    Repo.get(Comment, id)
   end
 
   @doc """
@@ -1426,6 +1483,7 @@ defmodule Baudrate.Content do
   @doc """
   Soft-deletes a comment by setting `deleted_at` and clearing body.
   """
+  @spec soft_delete_comment(%Comment{}) :: {:ok, %Comment{}} | {:error, Ecto.Changeset.t()}
   def soft_delete_comment(%Comment{} = comment) do
     result =
       comment
@@ -1584,6 +1642,8 @@ defmodule Baudrate.Content do
 
   Returns `{:ok, bookmark}` when created or `{:ok, :removed}` when deleted.
   """
+  @spec toggle_article_bookmark(term(), term()) ::
+          {:ok, %Bookmark{}} | {:ok, :removed} | {:error, Ecto.Changeset.t()}
   def toggle_article_bookmark(user_id, article_id) do
     case Repo.get_by(Bookmark, user_id: user_id, article_id: article_id) do
       nil ->
@@ -1601,6 +1661,8 @@ defmodule Baudrate.Content do
   Returns `{:ok, bookmark}` when created, `{:ok, :removed}` when deleted,
   or `{:error, changeset}` on failure.
   """
+  @spec toggle_comment_bookmark(term(), term()) ::
+          {:ok, %Bookmark{}} | {:ok, :removed} | {:error, Ecto.Changeset.t()}
   def toggle_comment_bookmark(user_id, comment_id) do
     case Repo.get_by(Bookmark, user_id: user_id, comment_id: comment_id) do
       nil ->
@@ -2301,43 +2363,37 @@ defmodule Baudrate.Content do
     descendants = descendant_board_ids_map(board_ids)
     all_desc_ids = descendants |> Map.values() |> List.flatten() |> Enum.uniq()
 
-    # Get all board-level floors for all boards (input + descendants)
-    board_floors =
-      from(br in BoardRead,
-        where: br.user_id == ^user_id and br.board_id in ^all_desc_ids,
-        select: {br.board_id, br.read_at}
+    # Single batch query: find all descendant board IDs that have ≥1 unread article.
+    # Joins BoardRead inline so each board's floor is computed per-row, replacing
+    # the previous N×M individual queries with a single query.
+    unread_desc_ids =
+      from(a in Article,
+        join: ba in BoardArticle,
+        on: ba.article_id == a.id,
+        left_join: ar in ArticleRead,
+        on: ar.article_id == a.id and ar.user_id == ^user_id,
+        left_join: br in BoardRead,
+        on: br.board_id == ba.board_id and br.user_id == ^user_id,
+        where: ba.board_id in ^all_desc_ids and is_nil(a.deleted_at),
+        where:
+          a.last_activity_at >
+            fragment(
+              "GREATEST(?, ?, ?)",
+              coalesce(ar.read_at, ^@epoch),
+              coalesce(br.read_at, ^@epoch),
+              ^user_registered_at
+            ),
+        distinct: true,
+        select: ba.board_id
       )
       |> Repo.all()
-      |> Map.new()
+      |> MapSet.new()
 
-    # A board is unread if it or any descendant board has unread articles
+    # Map back: a root board is unread if any of its descendants is in the unread set
     board_ids
     |> Enum.filter(fn board_id ->
       desc_ids = Map.get(descendants, board_id, [board_id])
-
-      Enum.any?(desc_ids, fn desc_id ->
-        board_floor = Map.get(board_floors, desc_id)
-        baseline = latest_datetime(board_floor, user_registered_at)
-
-        from(a in Article,
-          join: ba in BoardArticle,
-          on: ba.article_id == a.id,
-          left_join: ar in ArticleRead,
-          on: ar.article_id == a.id and ar.user_id == ^user_id,
-          where: ba.board_id == ^desc_id and is_nil(a.deleted_at),
-          where:
-            a.last_activity_at >
-              fragment(
-                "GREATEST(?, ?)",
-                coalesce(ar.read_at, ^@epoch),
-                ^baseline
-              ),
-          select: true,
-          limit: 1
-        )
-        |> Repo.one()
-        |> is_truthy()
-      end)
+      Enum.any?(desc_ids, fn desc_id -> MapSet.member?(unread_desc_ids, desc_id) end)
     end)
     |> MapSet.new()
   end
@@ -2365,9 +2421,6 @@ defmodule Baudrate.Content do
 
   defp latest_datetime(nil, b), do: b
   defp latest_datetime(a, b), do: if(DateTime.compare(a, b) == :gt, do: a, else: b)
-
-  defp is_truthy(nil), do: false
-  defp is_truthy(_), do: true
 
   # --- Polls ---
 

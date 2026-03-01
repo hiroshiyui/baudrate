@@ -548,7 +548,7 @@ defmodule BaudrateWeb.ArticleLive do
   defp do_delete_comment(socket, comment_id, user) do
     article = socket.assigns.article
 
-    case Baudrate.Repo.get(Baudrate.Content.Comment, comment_id) do
+    case Content.get_comment(comment_id) do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("Comment not found."))}
 

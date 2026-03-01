@@ -16,8 +16,6 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
   alias Baudrate.Auth
-  alias Baudrate.Repo
-  alias Baudrate.Setup.User
   import BaudrateWeb.Helpers, only: [parse_id: 1, invite_url: 1]
 
   @impl true
@@ -96,7 +94,7 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   end
 
   defp do_generate_for_user(socket, user_id) do
-    case Repo.get(User, user_id) |> Repo.preload(:role) do
+    case Auth.get_user(user_id) do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("User not found."))}
 
@@ -131,7 +129,7 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   end
 
   defp do_revoke(socket, invite_id) do
-    case Repo.get(Auth.InviteCode, invite_id) do
+    case Auth.get_invite_code(invite_id) do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("Invite code not found."))}
 

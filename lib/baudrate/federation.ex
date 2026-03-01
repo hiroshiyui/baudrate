@@ -156,6 +156,7 @@ defmodule Baudrate.Federation do
 
   Returns `{:ok, jrd_map}` or `{:error, reason}`.
   """
+  @spec webfinger(String.t()) :: {:ok, map()} | {:error, atom()}
   def webfinger(resource) when is_binary(resource) do
     host = URI.parse(base_url()).host
 
@@ -219,6 +220,14 @@ defmodule Baudrate.Federation do
   # --- Remote Actor Lookup ---
 
   @doc """
+  Returns a remote actor by ID, or nil if not found.
+  """
+  @spec get_remote_actor(integer()) :: RemoteActor.t() | nil
+  def get_remote_actor(id) do
+    Repo.get(RemoteActor, id)
+  end
+
+  @doc """
   Looks up a remote actor by `@user@domain` handle or actor URL.
 
   For `@user@domain` handles, performs a WebFinger lookup to discover the
@@ -227,6 +236,7 @@ defmodule Baudrate.Federation do
 
   Returns `{:ok, %RemoteActor{}}` or `{:error, reason}`.
   """
+  @spec lookup_remote_actor(String.t()) :: {:ok, RemoteActor.t()} | {:error, term()}
   def lookup_remote_actor("@" <> rest) do
     lookup_remote_actor(rest)
   end
@@ -896,6 +906,8 @@ defmodule Baudrate.Federation do
   @doc """
   Creates a follower record for a remote actor following a local actor.
   """
+  @spec create_follower(String.t(), RemoteActor.t(), String.t()) ::
+          {:ok, Follower.t()} | {:error, Ecto.Changeset.t()}
   def create_follower(actor_uri, remote_actor, activity_id) do
     %Follower{}
     |> Follower.changeset(%{
@@ -967,6 +979,8 @@ defmodule Baudrate.Federation do
 
   Returns `{:ok, %UserFollow{}}` or `{:error, changeset}`.
   """
+  @spec create_user_follow(Baudrate.Setup.User.t(), RemoteActor.t()) ::
+          {:ok, UserFollow.t()} | {:error, Ecto.Changeset.t()}
   def create_user_follow(user, remote_actor) do
     ap_id = "#{actor_uri(:user, user.username)}#follow-#{System.unique_integer([:positive])}"
 
@@ -1041,10 +1055,24 @@ defmodule Baudrate.Federation do
   @doc """
   Returns the user follow record for the given user and remote actor pair, or nil.
   """
+  @spec get_user_follow(integer(), integer()) :: UserFollow.t() | nil
   def get_user_follow(user_id, remote_actor_id) do
     Repo.one(
       from(uf in UserFollow,
         where: uf.user_id == ^user_id and uf.remote_actor_id == ^remote_actor_id
+      )
+    )
+  end
+
+  @doc """
+  Returns the user follow with remote_actor preloaded, or nil.
+  """
+  @spec get_user_follow_with_actor(integer(), integer()) :: UserFollow.t() | nil
+  def get_user_follow_with_actor(user_id, remote_actor_id) do
+    Repo.one(
+      from(uf in UserFollow,
+        where: uf.user_id == ^user_id and uf.remote_actor_id == ^remote_actor_id,
+        preload: :remote_actor
       )
     )
   end
@@ -1059,6 +1087,7 @@ defmodule Baudrate.Federation do
   @doc """
   Returns true if a follow record exists for the user/remote_actor pair (any state).
   """
+  @spec user_follows?(integer(), integer()) :: boolean()
   def user_follows?(user_id, remote_actor_id) do
     Repo.exists?(
       from(uf in UserFollow,
@@ -1131,6 +1160,8 @@ defmodule Baudrate.Federation do
 
   Returns `{:ok, %BoardFollow{}}` or `{:error, changeset}`.
   """
+  @spec create_board_follow(Baudrate.Content.Board.t(), RemoteActor.t()) ::
+          {:ok, BoardFollow.t()} | {:error, Ecto.Changeset.t()}
   def create_board_follow(board, remote_actor) do
     ap_id = "#{actor_uri(:board, board.slug)}#follow-#{System.unique_integer([:positive])}"
 
@@ -1205,10 +1236,24 @@ defmodule Baudrate.Federation do
   @doc """
   Returns the board follow record for the given board and remote actor pair, or nil.
   """
+  @spec get_board_follow(integer(), integer()) :: BoardFollow.t() | nil
   def get_board_follow(board_id, remote_actor_id) do
     Repo.one(
       from(bf in BoardFollow,
         where: bf.board_id == ^board_id and bf.remote_actor_id == ^remote_actor_id
+      )
+    )
+  end
+
+  @doc """
+  Returns the board follow with remote_actor preloaded, or nil.
+  """
+  @spec get_board_follow_with_actor(integer(), integer()) :: BoardFollow.t() | nil
+  def get_board_follow_with_actor(board_id, remote_actor_id) do
+    Repo.one(
+      from(bf in BoardFollow,
+        where: bf.board_id == ^board_id and bf.remote_actor_id == ^remote_actor_id,
+        preload: :remote_actor
       )
     )
   end
@@ -1892,6 +1937,7 @@ defmodule Baudrate.Federation do
 
   Returns `{:ok, updated_entity}` or `{:error, reason}`.
   """
+  @spec rotate_keys(:user | :board | :site, term()) :: {:ok, term()} | {:error, term()}
   def rotate_keys(actor_type, entity) do
     with {:ok, updated} <- do_rotate(actor_type, entity) do
       Publisher.publish_key_rotation(actor_type, updated)

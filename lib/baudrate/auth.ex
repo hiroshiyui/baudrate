@@ -83,6 +83,8 @@ defmodule Baudrate.Auth do
   behavior regardless of whether the username exists, preventing timing-based
   user enumeration.
   """
+  @spec authenticate_by_password(String.t(), String.t()) ::
+          {:ok, User.t()} | {:error, :invalid_credentials | :banned}
   def authenticate_by_password(username, password) do
     user = Repo.one(from u in User, where: u.username == ^username, preload: :role)
 
@@ -105,6 +107,7 @@ defmodule Baudrate.Auth do
   - `:optional` — user can optionally enable TOTP
   - `:disabled` — guest has no TOTP capability
   """
+  @spec totp_policy(String.t()) :: :required | :optional | :disabled
   def totp_policy(role_name) when role_name in ["admin", "moderator"], do: :required
   def totp_policy("user"), do: :optional
   def totp_policy(_), do: :disabled
@@ -119,6 +122,7 @@ defmodule Baudrate.Auth do
     * `:totp_setup` — role requires TOTP but user hasn't enrolled yet
     * `:authenticated` — no TOTP needed, ready to establish a server-side session
   """
+  @spec login_next_step(User.t()) :: :totp_verify | :totp_setup | :authenticated
   def login_next_step(user) do
     cond do
       user.totp_enabled -> :totp_verify
@@ -161,6 +165,7 @@ defmodule Baudrate.Auth do
   a code that was already used in a given 30-second window will be rejected
   if `since` is set to the timestamp of the previous successful verification.
   """
+  @spec valid_totp?(binary(), String.t(), keyword()) :: boolean()
   def valid_totp?(secret, code, opts \\ []) do
     nimble_opts =
       case Keyword.get(opts, :since) do
@@ -179,6 +184,7 @@ defmodule Baudrate.Auth do
   The raw secret never touches the database — only the AES-256-GCM ciphertext
   is stored in `users.totp_secret`.
   """
+  @spec enable_totp(User.t(), binary()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def enable_totp(user, secret) do
     encrypted = TotpVault.encrypt(secret)
 
@@ -191,6 +197,7 @@ defmodule Baudrate.Auth do
   Decrypts a user's TOTP secret from the stored encrypted form.
   Returns the raw secret binary or nil.
   """
+  @spec decrypt_totp_secret(User.t()) :: binary() | nil
   def decrypt_totp_secret(%User{totp_secret: nil}), do: nil
 
   def decrypt_totp_secret(%User{totp_secret: encrypted}) do
@@ -203,6 +210,7 @@ defmodule Baudrate.Auth do
   @doc """
   Gets a user by ID with role preloaded.
   """
+  @spec get_user(integer()) :: User.t() | nil
   def get_user(id) do
     Repo.one(from u in User, where: u.id == ^id, preload: :role)
   end
@@ -210,6 +218,7 @@ defmodule Baudrate.Auth do
   @doc """
   Gets a user by username with role preloaded, or nil if not found.
   """
+  @spec get_user_by_username(String.t()) :: User.t() | nil
   def get_user_by_username(username) when is_binary(username) do
     Repo.one(from u in User, where: u.username == ^username, preload: :role)
   end
@@ -232,6 +241,7 @@ defmodule Baudrate.Auth do
   Verifies a user's password. Returns `true` if the password matches,
   `false` otherwise. Uses constant-time comparison via bcrypt.
   """
+  @spec verify_password(User.t() | nil, String.t() | nil) :: boolean()
   def verify_password(%User{hashed_password: hashed}, password) when is_binary(password) do
     Bcrypt.verify_pass(password, hashed)
   end
@@ -302,6 +312,7 @@ defmodule Baudrate.Auth do
   via `Repo.update_all` to prevent TOCTOU race conditions. Returns `:ok`
   if exactly one code was consumed, `:error` otherwise.
   """
+  @spec verify_recovery_code(User.t(), String.t() | any()) :: :ok | :error
   def verify_recovery_code(user, code) when is_binary(code) do
     code_hash = hmac_recovery_code(normalize_recovery_code(code))
     now = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -347,6 +358,9 @@ defmodule Baudrate.Auth do
     * `"open"` → status `"active"` (immediately usable)
     * `"approval_required"` → status `"pending"` (can log in but restricted)
   """
+  @spec register_user(map()) ::
+          {:ok, User.t(), [String.t()]}
+          | {:error, Ecto.Changeset.t() | {:invalid_invite, atom()} | :invite_required}
   def register_user(attrs) do
     mode = Setup.registration_mode()
 
@@ -465,6 +479,7 @@ defmodule Baudrate.Auth do
     1. Account status is `"active"` (pending users cannot post)
     2. Role has the `"user.create_content"` permission
   """
+  @spec can_create_content?(User.t()) :: boolean()
   def can_create_content?(user) do
     user_active?(user) && Setup.has_permission?(user.role.name, "user.create_content")
   end
@@ -589,6 +604,8 @@ defmodule Baudrate.Auth do
   then invalidates all existing sessions and revokes all active invite codes
   for the user. Returns `{:ok, banned_user, revoked_codes_count}`.
   """
+  @spec ban_user(User.t(), integer(), String.t() | nil) ::
+          {:ok, User.t(), non_neg_integer()} | {:error, :self_action}
   def ban_user(user, admin_id, reason \\ nil)
 
   def ban_user(%User{id: id}, admin_id, _reason) when id == admin_id do
@@ -623,6 +640,8 @@ defmodule Baudrate.Auth do
   @doc """
   Updates a user's role. Returns `{:error, :self_action}` on self-role-change.
   """
+  @spec update_user_role(User.t(), integer(), integer()) ::
+          {:ok, User.t()} | {:error, Ecto.Changeset.t() | :self_action}
   def update_user_role(%User{id: id}, _role_id, admin_id) when id == admin_id do
     {:error, :self_action}
   end
@@ -657,6 +676,7 @@ defmodule Baudrate.Auth do
   @doc """
   Updates a user's avatar_id.
   """
+  @spec update_avatar(User.t(), integer() | nil) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_avatar(user, avatar_id) do
     user
     |> User.avatar_changeset(%{avatar_id: avatar_id})
@@ -666,6 +686,7 @@ defmodule Baudrate.Auth do
   @doc """
   Removes a user's avatar by setting avatar_id to nil.
   """
+  @spec remove_avatar(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def remove_avatar(user) do
     user
     |> User.avatar_changeset(%{avatar_id: nil})
@@ -794,6 +815,9 @@ defmodule Baudrate.Auth do
     * `:expires_in_days` — number of days until expiration (forced to
       #{@invite_default_expiry_days} for non-admins unless a shorter value is provided)
   """
+  @spec generate_invite_code(User.t(), keyword()) ::
+          {:ok, InviteCode.t()}
+          | {:error, Ecto.Changeset.t() | :invite_quota_exceeded | :account_too_new}
   def generate_invite_code(%User{} = user, opts \\ []) do
     case can_generate_invite?(user) do
       {:ok, _remaining} ->
@@ -871,10 +895,20 @@ defmodule Baudrate.Auth do
   end
 
   @doc """
+  Returns an invite code by ID, or nil if not found.
+  """
+  @spec get_invite_code(integer()) :: InviteCode.t() | nil
+  def get_invite_code(id) do
+    Repo.get(InviteCode, id)
+  end
+
+  @doc """
   Validates an invite code string.
 
   Returns `{:ok, invite}` if valid, or `{:error, reason}` if invalid.
   """
+  @spec validate_invite_code(String.t() | any()) ::
+          {:ok, InviteCode.t()} | {:error, :not_found | :revoked | :expired | :fully_used}
   def validate_invite_code(code) when is_binary(code) do
     case Repo.one(from(i in InviteCode, where: i.code == ^code, preload: [:created_by])) do
       nil ->
@@ -933,6 +967,7 @@ defmodule Baudrate.Auth do
   @doc """
   Revokes an invite code.
   """
+  @spec revoke_invite_code(InviteCode.t()) :: {:ok, InviteCode.t()} | {:error, Ecto.Changeset.t()}
   def revoke_invite_code(%InviteCode{} = invite) do
     invite
     |> InviteCode.revoke_changeset()
@@ -965,6 +1000,8 @@ defmodule Baudrate.Auth do
   Looks up the user by username, verifies the recovery code (consuming it),
   then updates the password. Returns generic errors to prevent user enumeration.
   """
+  @spec reset_password_with_recovery_code(String.t(), String.t(), String.t(), String.t()) ::
+          {:ok, User.t()} | {:error, :invalid_credentials | Ecto.Changeset.t()}
   def reset_password_with_recovery_code(
         username,
         recovery_code,
@@ -1046,6 +1083,7 @@ defmodule Baudrate.Auth do
     * 10–14 failures: 30 seconds after last failure
     * 15+ failures: 120 seconds after last failure
   """
+  @spec check_login_throttle(String.t()) :: :ok | {:delay, pos_integer()}
   def check_login_throttle(username) when is_binary(username) do
     lower = String.downcase(username)
     cutoff = DateTime.utc_now() |> DateTime.add(-@login_throttle_window_seconds, :second)
@@ -1175,6 +1213,8 @@ defmodule Baudrate.Auth do
 
   Returns `{:ok, session_token, refresh_token}` or `{:error, changeset}`.
   """
+  @spec create_user_session(integer(), keyword()) ::
+          {:ok, String.t(), String.t()} | {:error, Ecto.Changeset.t()}
   def create_user_session(user_id, opts \\ []) do
     session_token = generate_token()
     refresh_token = generate_token()
@@ -1227,6 +1267,7 @@ defmodule Baudrate.Auth do
   Looks up a user by session token. Returns `{:ok, user}` if the session
   is valid and not expired, or `{:error, :not_found | :expired}`.
   """
+  @spec get_user_by_session_token(String.t()) :: {:ok, User.t()} | {:error, :not_found | :expired}
   def get_user_by_session_token(raw_token) do
     token_hash = hash_token(raw_token)
 
@@ -1257,6 +1298,8 @@ defmodule Baudrate.Auth do
 
   Returns `{:ok, new_session_token, new_refresh_token}` or `{:error, reason}`.
   """
+  @spec refresh_user_session(String.t()) ::
+          {:ok, String.t(), String.t()} | {:error, :not_found | :expired | Ecto.Changeset.t()}
   def refresh_user_session(raw_refresh_token) do
     refresh_hash = hash_token(raw_refresh_token)
 
@@ -1340,6 +1383,7 @@ defmodule Baudrate.Auth do
   @doc """
   Blocks a local user. Returns `{:ok, block}` or `{:error, changeset}`.
   """
+  @spec block_user(User.t(), User.t()) :: {:ok, UserBlock.t()} | {:error, Ecto.Changeset.t()}
   def block_user(%User{id: user_id}, %User{id: blocked_id}) do
     %UserBlock{}
     |> UserBlock.local_changeset(%{user_id: user_id, blocked_user_id: blocked_id})
@@ -1358,6 +1402,7 @@ defmodule Baudrate.Auth do
   @doc """
   Unblocks a local user. Returns `{count, nil}`.
   """
+  @spec unblock_user(User.t(), User.t()) :: {non_neg_integer(), nil}
   def unblock_user(%User{id: user_id}, %User{id: blocked_id}) do
     from(b in UserBlock,
       where: b.user_id == ^user_id and b.blocked_user_id == ^blocked_id
@@ -1446,6 +1491,7 @@ defmodule Baudrate.Auth do
   @doc """
   Mutes a local user. Returns `{:ok, mute}` or `{:error, changeset}`.
   """
+  @spec mute_user(User.t(), User.t()) :: {:ok, UserMute.t()} | {:error, Ecto.Changeset.t()}
   def mute_user(%User{id: user_id}, %User{id: muted_id}) do
     %UserMute{}
     |> UserMute.local_changeset(%{user_id: user_id, muted_user_id: muted_id})
@@ -1464,6 +1510,7 @@ defmodule Baudrate.Auth do
   @doc """
   Unmutes a local user. Returns `{count, nil}`.
   """
+  @spec unmute_user(User.t(), User.t()) :: {non_neg_integer(), nil}
   def unmute_user(%User{id: user_id}, %User{id: muted_id}) do
     from(m in UserMute,
       where: m.user_id == ^user_id and m.muted_user_id == ^muted_id
@@ -1542,6 +1589,7 @@ defmodule Baudrate.Auth do
 
   Returns `{user_ids, ap_ids}` where both are deduplicated lists.
   """
+  @spec hidden_ids(User.t()) :: {[integer()], [String.t()]}
   def hidden_ids(%User{id: user_id}) do
     blocked =
       from(b in UserBlock,
