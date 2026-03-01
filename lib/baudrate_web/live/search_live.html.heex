@@ -15,7 +15,11 @@
         class="input input-bordered join-item flex-1"
         autofocus
       />
-      <button type="submit" class="btn btn-primary join-item">
+      <button
+        type="submit"
+        class="btn btn-primary join-item"
+        phx-disable-with={gettext("Searching...")}
+      >
         <.icon name="hero-magnifying-glass" class="size-5" />
       </button>
     </div>
@@ -165,6 +169,7 @@
     class="tabs tabs-bordered mb-4"
   >
     <.link
+      id="tab-articles"
       patch={~p"/search?#{%{q: @query, tab: "articles"}}"}
       role="tab"
       aria-selected={to_string(@tab == "articles")}
@@ -173,6 +178,7 @@
       {gettext("Articles")}
     </.link>
     <.link
+      id="tab-comments"
       patch={~p"/search?#{%{q: @query, tab: "comments"}}"}
       role="tab"
       aria-selected={to_string(@tab == "comments")}
@@ -181,6 +187,7 @@
       {gettext("Comments")}
     </.link>
     <.link
+      id="tab-boards"
       patch={~p"/search?#{%{q: @query, tab: "boards"}}"}
       role="tab"
       aria-selected={to_string(@tab == "boards")}
@@ -189,6 +196,7 @@
       {gettext("Boards")}
     </.link>
     <.link
+      id="tab-users"
       patch={~p"/search?#{%{q: @query, tab: "users"}}"}
       role="tab"
       aria-selected={to_string(@tab == "users")}
@@ -200,6 +208,8 @@
 
   <div
     :if={@query != "" && @tab == "articles" && @articles == []}
+    role="tabpanel"
+    aria-labelledby="tab-articles"
     class="text-base-content/70 text-center py-8"
   >
     {gettext("No articles found for \"%{query}\".", query: @query)}
@@ -207,6 +217,8 @@
 
   <div
     :if={@query != "" && @tab == "comments" && @comments == []}
+    role="tabpanel"
+    aria-labelledby="tab-comments"
     class="text-base-content/70 text-center py-8"
   >
     {gettext("No comments found for \"%{query}\".", query: @query)}
@@ -214,6 +226,8 @@
 
   <div
     :if={@query != "" && @tab == "boards" && @boards == []}
+    role="tabpanel"
+    aria-labelledby="tab-boards"
     class="text-base-content/70 text-center py-8"
   >
     {gettext("No boards found for \"%{query}\".", query: @query)}
@@ -221,6 +235,8 @@
 
   <div
     :if={@query != "" && @tab == "users" && @local_users == []}
+    role="tabpanel"
+    aria-labelledby="tab-users"
     class="text-base-content/70 text-center py-8"
   >
     {gettext("No users found for \"%{query}\".", query: @query)}
@@ -236,6 +252,8 @@
   <div
     :if={@tab == "articles" && @articles != []}
     id="search-results-articles"
+    role="tabpanel"
+    aria-labelledby="tab-articles"
     class="space-y-2"
     aria-live="polite"
   >
@@ -270,6 +288,8 @@
   <div
     :if={@tab == "comments" && @comments != []}
     id="search-results-comments"
+    role="tabpanel"
+    aria-labelledby="tab-comments"
     class="space-y-2"
     aria-live="polite"
   >
@@ -304,6 +324,8 @@
   <div
     :if={@tab == "boards" && @boards != []}
     id="search-results-boards"
+    role="tabpanel"
+    aria-labelledby="tab-boards"
     class="space-y-2"
     aria-live="polite"
   >
@@ -332,6 +354,8 @@
   <div
     :if={@tab == "users" && @local_users != []}
     id="search-results-users"
+    role="tabpanel"
+    aria-labelledby="tab-users"
     class="space-y-2"
     aria-live="polite"
   >

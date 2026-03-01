@@ -194,10 +194,10 @@
         </div>
 
         <div class="form-control w-full max-w-xs">
-          <label class="label">
+          <label class="label" for="poll-expires">
             <span class="label-text">{gettext("Expires (optional)")}</span>
           </label>
-          <select name="poll_expires" class="select select-bordered select-sm">
+          <select id="poll-expires" name="poll_expires" class="select select-bordered select-sm">
             <option value="" selected={@poll_expires == ""}>{gettext("No expiry")}</option>
             <option value="1h" selected={@poll_expires == "1h"}>{gettext("1 hour")}</option>
             <option value="6h" selected={@poll_expires == "6h"}>{gettext("6 hours")}</option>
@@ -233,7 +233,7 @@
     />
 
     <div class="flex items-center gap-3">
-      <button type="submit" class="btn btn-primary">
+      <button type="submit" class="btn btn-primary" phx-disable-with={gettext("Creating...")}>
         {gettext("Create Article")}
       </button>
       <span

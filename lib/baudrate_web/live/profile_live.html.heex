@@ -106,7 +106,11 @@
             maxlength="64"
             placeholder={gettext("Your display name (max 64 characters)")}
           />
-          <button type="submit" class="btn btn-sm btn-primary">
+          <button
+            type="submit"
+            class="btn btn-sm btn-primary"
+            phx-disable-with={gettext("Saving...")}
+          >
             {gettext("Save Display Name")}
           </button>
         </.form>
@@ -202,15 +206,15 @@
           Enum.reject(@available_locales, fn {code, _} -> code in @preferred_locales end) %>
         <%= if unselected != [] do %>
           <div class="dropdown mt-2">
-            <div
+            <button
+              type="button"
               tabindex="0"
-              role="button"
               aria-haspopup="true"
               aria-expanded="false"
               class="btn btn-sm btn-outline"
             >
               {gettext("Add Language")}
-            </div>
+            </button>
             <ul
               tabindex="0"
               class="dropdown-content menu bg-base-200 rounded-box z-10 w-52 p-2 shadow-sm"
@@ -309,28 +313,32 @@
               }>
                 <td class="text-sm">{BaudrateWeb.Helpers.notification_text(type)}</td>
                 <td class="text-center">
-                  <input
-                    type="checkbox"
-                    class="toggle toggle-sm toggle-primary"
-                    checked={get_in(@notification_preferences, [type, "in_app"]) != false}
-                    phx-click="toggle_notification_pref"
-                    phx-value-type={type}
-                    aria-label={
-                      gettext("In-App") <> ": " <> BaudrateWeb.Helpers.notification_text(type)
-                    }
-                  />
+                  <label>
+                    <input
+                      type="checkbox"
+                      class="toggle toggle-sm toggle-primary"
+                      checked={get_in(@notification_preferences, [type, "in_app"]) != false}
+                      phx-click="toggle_notification_pref"
+                      phx-value-type={type}
+                      aria-label={
+                        gettext("In-App") <> ": " <> BaudrateWeb.Helpers.notification_text(type)
+                      }
+                    />
+                  </label>
                 </td>
                 <td :if={@push_subscribed} class="text-center">
-                  <input
-                    type="checkbox"
-                    class="toggle toggle-sm toggle-secondary"
-                    checked={get_in(@notification_preferences, [type, "web_push"]) != false}
-                    phx-click="toggle_web_push_pref"
-                    phx-value-type={type}
-                    aria-label={
-                      gettext("Push") <> ": " <> BaudrateWeb.Helpers.notification_text(type)
-                    }
-                  />
+                  <label>
+                    <input
+                      type="checkbox"
+                      class="toggle toggle-sm toggle-secondary"
+                      checked={get_in(@notification_preferences, [type, "web_push"]) != false}
+                      phx-click="toggle_web_push_pref"
+                      phx-value-type={type}
+                      aria-label={
+                        gettext("Push") <> ": " <> BaudrateWeb.Helpers.notification_text(type)
+                      }
+                    />
+                  </label>
                 </td>
               </tr>
             </tbody>
@@ -354,7 +362,11 @@
             maxlength="500"
             placeholder={gettext("Tell others about yourself (max 500 characters)")}
           />
-          <button type="submit" class="btn btn-sm btn-primary">
+          <button
+            type="submit"
+            class="btn btn-sm btn-primary"
+            phx-disable-with={gettext("Saving...")}
+          >
             {gettext("Save Bio")}
           </button>
         </.form>
@@ -383,7 +395,11 @@
               {raw(@signature_preview)}
             </div>
           </div>
-          <button type="submit" class="btn btn-sm btn-primary">
+          <button
+            type="submit"
+            class="btn btn-sm btn-primary"
+            phx-disable-with={gettext("Saving...")}
+          >
             {gettext("Save Signature")}
           </button>
         </.form>
