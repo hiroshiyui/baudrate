@@ -56,10 +56,13 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - LiveView uses `phx-trigger-action` for session writes (POST to `SessionController`)
 - Soft-delete uses `deleted_at` timestamps (not hard delete) for articles and comments
 - Federation delivery runs in async `Task` in production but synchronously in tests (`federation_async: false` in `config/test.exs`) to avoid sandbox ownership errors
-- `can_manage_article?/2` is a backward-compat alias for `can_edit_article?/2` — prefer the granular functions (`can_edit_article?`, `can_delete_article?`, `can_pin_article?`, `can_lock_article?`)
+- `can_manage_article?/2` is deprecated — use the granular functions (`can_edit_article?`, `can_delete_article?`, `can_pin_article?`, `can_lock_article?`)
 - Only boards with `min_role_to_view == "guest"` and `ap_enabled == true` are federated
 - Focus management: Add `data-focus-target` to the primary content container in list/browse pages. Do not add to form pages or pages with `autofocus`. JS in `app.js` auto-focuses the first interactive element after LiveView navigation. Links get a `focus-visible` inset box-shadow highlight via `app.css`.
 - Poll votes are anonymous — DB tracks voters for dedup but UI never reveals individual votes. Polls use denormalized counters (`voters_count`, `votes_count`) updated transactionally via `Ecto.Multi` with `FOR UPDATE` locking.
+- Auth hooks: `:require_admin` (admin only), `:require_admin_or_moderator` (admin + moderator), `:require_auth` (any authenticated user)
+- Pagination: use `Baudrate.Pagination` for cross-context paginated queries (`paginate_opts/3` + `paginate_query/3`)
+- LIKE sanitization: use `Repo.sanitize_like/1` to escape `%`, `_`, `\` in user input for ILIKE queries
 
 ## Project Conventions
 
