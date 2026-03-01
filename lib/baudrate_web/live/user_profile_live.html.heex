@@ -1,8 +1,8 @@
-<div class="space-y-6">
+<div id="user-profile-page" class="user-profile-page space-y-6">
   <div id="profile-header" class="flex items-center gap-4">
     <.avatar user={@profile_user} size={48} />
     <div>
-      <h1 class="text-2xl font-bold">{display_name(@profile_user)}</h1>
+      <h1 id="user-profile-heading" class="text-2xl font-bold">{display_name(@profile_user)}</h1>
       <div :if={@profile_user.display_name} class="text-sm text-base-content/70">
         @{@profile_user.username}
       </div>
@@ -13,7 +13,11 @@
           {format_date(@profile_user.inserted_at)}
         </time>
       </p>
-      <div :if={@current_user && @current_user.id != @profile_user.id} class="flex gap-2 mt-2">
+      <div
+        :if={@current_user && @current_user.id != @profile_user.id}
+        id="user-profile-actions"
+        class="flex gap-2 mt-2"
+      >
         <.link
           navigate={~p"/messages/new?to=#{@profile_user.username}"}
           class="btn btn-sm btn-outline"

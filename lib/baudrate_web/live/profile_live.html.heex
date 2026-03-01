@@ -1,10 +1,10 @@
-<div class="card bg-base-200 shadow-sm">
+<div id="profile-page" class="profile-page card bg-base-200 shadow-sm">
   <div class="card-body">
-    <h2 class="card-title text-2xl mb-4">{gettext("Profile")}</h2>
+    <h2 id="profile-heading" class="card-title text-2xl mb-4">{gettext("Profile")}</h2>
 
     <div class="space-y-4">
       <%!-- Avatar section --%>
-      <div class="flex items-center gap-4">
+      <div id="profile-avatar-section" class="flex items-center gap-4">
         <.avatar user={@current_user} size={48} />
         <div :if={@is_active} class="flex gap-2">
           <button
@@ -82,13 +82,13 @@
         </dialog>
       </div>
 
-      <div>
+      <div id="profile-username">
         <div class="text-sm text-base-content/70">{gettext("Username")}</div>
         <div class="text-lg font-semibold">{@current_user.username}</div>
       </div>
 
       <%!-- Display Name section --%>
-      <div>
+      <div id="profile-display-name">
         <div class="text-sm text-base-content/70 mb-2">{gettext("Display Name")}</div>
         <.form
           for={@display_name_form}
@@ -108,13 +108,13 @@
         </.form>
       </div>
 
-      <div>
+      <div id="profile-role">
         <div class="text-sm text-base-content/70">{gettext("Role")}</div>
         <div class="text-lg font-semibold">{@current_user.role.name}</div>
         <div class="text-sm text-base-content/70">{@current_user.role.description}</div>
       </div>
 
-      <div>
+      <div id="profile-2fa">
         <div class="text-sm text-base-content/70">{gettext("Two-Factor Authentication")}</div>
         <div class="text-lg font-semibold flex items-center gap-2">
           <%= if @current_user.totp_enabled do %>
@@ -133,7 +133,7 @@
         </div>
       </div>
 
-      <div>
+      <div id="profile-member-since">
         <div class="text-sm text-base-content/70">{gettext("Member Since")}</div>
         <div class="text-lg font-semibold">
           <time datetime={format_date(@current_user.inserted_at)}>
@@ -143,7 +143,7 @@
       </div>
 
       <%!-- Preferred Languages section --%>
-      <div>
+      <div id="profile-languages">
         <div class="text-sm text-base-content/70 mb-2">{gettext("Preferred Languages")}</div>
         <%= if @preferred_locales == [] do %>
           <div class="text-sm text-base-content/70 italic">
@@ -225,7 +225,7 @@
       </div>
 
       <%!-- DM access setting --%>
-      <div>
+      <div id="profile-dm-access">
         <div class="text-sm text-base-content/70 mb-2">{gettext("Direct Messages")}</div>
         <select
           name="dm_access"
@@ -284,7 +284,7 @@
       </div>
 
       <%!-- Notification Preferences section --%>
-      <div>
+      <div id="profile-notification-prefs">
         <div class="text-sm text-base-content/70 mb-2">{gettext("Notification Preferences")}</div>
         <p class="text-sm text-base-content/70 mb-3">
           {gettext("Choose which notifications you receive.")}
@@ -335,7 +335,7 @@
       </div>
 
       <%!-- Bio section --%>
-      <div>
+      <div id="profile-bio-section">
         <div class="text-sm text-base-content/70 mb-2">{gettext("Bio")}</div>
         <.form
           for={@bio_form}
@@ -357,7 +357,7 @@
       </div>
 
       <%!-- Signature section --%>
-      <div>
+      <div id="profile-signature-section">
         <div class="text-sm text-base-content/70 mb-2">{gettext("Signature")}</div>
         <.form
           for={@signature_form}
@@ -386,7 +386,7 @@
       </div>
 
       <%!-- Muted Users section --%>
-      <div>
+      <div id="profile-muted-users">
         <div class="text-sm text-base-content/70 mb-2">{gettext("Muted Users")}</div>
         <div :if={@mutes == []} class="text-sm text-base-content/70 italic">
           {gettext("No muted users.")}

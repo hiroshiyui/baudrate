@@ -1,6 +1,6 @@
-<div class="space-y-6">
+<div id="following-page" class="following-page space-y-6">
   <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold">
+    <h1 id="following-heading" class="text-2xl font-bold">
       {gettext("Following")}
       <span :if={@follows != []} class="badge badge-neutral ml-2">{length(@follows)}</span>
     </h1>
@@ -15,8 +15,12 @@
     </div>
   </div>
 
-  <div :if={@follows != []} class="space-y-2" aria-live="polite">
-    <div :for={follow <- @follows} class="card bg-base-200 shadow-sm">
+  <div :if={@follows != []} id="follows" class="space-y-2" aria-live="polite">
+    <div
+      :for={follow <- @follows}
+      id={"follow-#{follow.id}"}
+      class="follow card bg-base-200 shadow-sm"
+    >
       <%!-- Local user follow --%>
       <div :if={follow.followed_user} class="card-body p-4 flex flex-row items-center gap-4">
         <.avatar user={follow.followed_user} size={48} />

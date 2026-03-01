@@ -1,5 +1,5 @@
-<div class="space-y-6">
-  <div class="text-sm breadcrumbs">
+<div id="user-content-page" class="user-content-page space-y-6">
+  <nav class="text-sm breadcrumbs" aria-label={gettext("Breadcrumb")}>
     <ul>
       <li>
         <.link navigate={~p"/users/#{@profile_user.username}"}>
@@ -8,9 +8,9 @@
       </li>
       <li>{@page_title}</li>
     </ul>
-  </div>
+  </nav>
 
-  <h1 class="text-2xl font-bold">{@page_title}</h1>
+  <h1 id="user-content-heading" class="text-2xl font-bold">{@page_title}</h1>
 
   <div
     :if={@content_type == :articles}

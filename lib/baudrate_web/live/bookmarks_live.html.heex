@@ -1,7 +1,7 @@
-<div class="space-y-4">
-  <h1 class="text-2xl font-bold">{gettext("Bookmarks")}</h1>
+<div id="bookmarks-page" class="bookmarks-page space-y-4">
+  <h1 id="bookmarks-heading" class="text-2xl font-bold">{gettext("Bookmarks")}</h1>
 
-  <div :if={@bookmarks == []} class="text-center py-12 text-base-content/70">
+  <div :if={@bookmarks == []} id="bookmarks-empty" class="text-center py-12 text-base-content/70">
     <.icon name="hero-star" class="size-12 mx-auto mb-4 opacity-50" />
     <p class="text-lg">{gettext("No bookmarks yet.")}</p>
   </div>

@@ -1,4 +1,4 @@
-<div class="space-y-6">
+<div id="board-follows-page" class="board-follows-page space-y-6">
   <nav class="breadcrumbs text-sm" aria-label={gettext("Breadcrumb")}>
     <ul>
       <li><.link navigate="/">{gettext("Home")}</.link></li>
@@ -7,10 +7,12 @@
     </ul>
   </nav>
 
-  <h1 class="text-2xl font-bold">{gettext("Board Follows")} &mdash; {@board.name}</h1>
+  <h1 id="board-follows-heading" class="text-2xl font-bold">
+    {gettext("Board Follows")} &mdash; {@board.name}
+  </h1>
 
   <%!-- Accept policy section --%>
-  <div class="card bg-base-200 shadow-sm">
+  <div id="accept-policy-section" class="card bg-base-200 shadow-sm">
     <div class="card-body p-4">
       <h2 class="card-title text-lg">{gettext("Accept Policy")}</h2>
       <p class="text-sm text-base-content/70 mb-3">
@@ -48,7 +50,7 @@
   </div>
 
   <%!-- Search for remote actor --%>
-  <div class="card bg-base-200 shadow-sm">
+  <div id="follow-search-section" class="card bg-base-200 shadow-sm">
     <div class="card-body p-4">
       <h2 class="card-title text-lg">{gettext("Follow Remote Actor")}</h2>
       <form phx-submit="search" class="flex gap-2">
@@ -122,8 +124,8 @@
   </div>
 
   <%!-- Current follows list --%>
-  <div>
-    <h2 class="text-lg font-semibold mb-3">
+  <div id="current-follows-section">
+    <h2 id="current-follows-heading" class="text-lg font-semibold mb-3">
       {gettext("Current Follows")}
       <span :if={@follows != []} class="badge badge-neutral ml-2">{length(@follows)}</span>
     </h2>
