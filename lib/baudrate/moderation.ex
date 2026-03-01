@@ -17,6 +17,7 @@ defmodule Baudrate.Moderation do
   @doc """
   Creates a new report.
   """
+  @spec create_report(map()) :: {:ok, Report.t()} | {:error, Ecto.Changeset.t()}
   def create_report(attrs) do
     result =
       %Report{}
@@ -33,6 +34,7 @@ defmodule Baudrate.Moderation do
   Lists reports filtered by status. Defaults to "open".
   Preloads reporter, article, comment, and remote_actor.
   """
+  @spec list_reports(keyword()) :: [Report.t()]
   def list_reports(opts \\ []) do
     status = Keyword.get(opts, :status, "open")
 
@@ -47,6 +49,7 @@ defmodule Baudrate.Moderation do
   @doc """
   Fetches a report by ID with all preloads, or raises.
   """
+  @spec get_report!(integer()) :: Report.t()
   def get_report!(id) do
     Report
     |> Repo.get!(id)
@@ -56,6 +59,8 @@ defmodule Baudrate.Moderation do
   @doc """
   Resolves a report with a resolution note, marking who resolved it.
   """
+  @spec resolve_report(Report.t(), integer(), String.t() | nil) ::
+          {:ok, Report.t()} | {:error, Ecto.Changeset.t()}
   def resolve_report(%Report{} = report, resolver_id, note \\ nil) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
@@ -72,6 +77,8 @@ defmodule Baudrate.Moderation do
   @doc """
   Dismisses a report (no action taken).
   """
+  @spec dismiss_report(Report.t(), integer()) ::
+          {:ok, Report.t()} | {:error, Ecto.Changeset.t()}
   def dismiss_report(%Report{} = report, resolver_id) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
@@ -87,6 +94,7 @@ defmodule Baudrate.Moderation do
   @doc """
   Returns the count of open reports.
   """
+  @spec open_report_count() :: non_neg_integer()
   def open_report_count do
     Repo.one(from(r in Report, where: r.status == "open", select: count(r.id))) || 0
   end
@@ -102,6 +110,8 @@ defmodule Baudrate.Moderation do
     * `:target_id` — ID of the target entity
     * `:details` — map of additional context (reason, old_role, new_role, etc.)
   """
+  @spec log_action(integer(), String.t(), keyword()) ::
+          {:ok, Log.t()} | {:error, Ecto.Changeset.t()}
   def log_action(actor_id, action, opts \\ []) do
     %Log{}
     |> Log.changeset(%{
@@ -122,6 +132,7 @@ defmodule Baudrate.Moderation do
     * `:page` — page number (default 1)
     * `:action` — filter by action type
   """
+  @spec list_moderation_logs(keyword()) :: map()
   def list_moderation_logs(opts \\ []) do
     alias Baudrate.Pagination
 

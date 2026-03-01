@@ -36,6 +36,8 @@ defmodule Baudrate.Notification do
   On success, broadcasts `:notification_created` via PubSub and returns
   `{:ok, notification}`.
   """
+  @spec create_notification(map()) ::
+          {:ok, Notification.t()} | {:ok, :skipped} | {:ok, :duplicate} | {:error, Ecto.Changeset.t()}
   def create_notification(attrs) do
     attrs = normalize_attrs(attrs)
 
@@ -71,6 +73,7 @@ defmodule Baudrate.Notification do
   @doc """
   Returns the count of unread notifications for a user.
   """
+  @spec unread_count(integer()) :: non_neg_integer()
   def unread_count(user_id) do
     Repo.one(
       from(n in Notification,
@@ -88,6 +91,7 @@ defmodule Baudrate.Notification do
     * `:page` — page number (default 1)
     * `:per_page` — items per page (default #{@per_page}, max #{@max_per_page})
   """
+  @spec list_notifications(integer(), keyword()) :: map()
   def list_notifications(user_id, opts \\ []) do
     alias Baudrate.Pagination
 
@@ -107,6 +111,7 @@ defmodule Baudrate.Notification do
   Returns `{:ok, notification}` or `{:error, changeset}`.
   Broadcasts `:notification_read` on success.
   """
+  @spec mark_as_read(Notification.t()) :: {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
   def mark_as_read(%Notification{} = notification) do
     notification
     |> Notification.changeset(%{read: true})
@@ -132,6 +137,7 @@ defmodule Baudrate.Notification do
   Returns `{count, nil}` where `count` is the number of updated rows.
   Broadcasts `:notifications_all_read` on success.
   """
+  @spec mark_all_as_read(integer()) :: {non_neg_integer(), nil}
   def mark_all_as_read(user_id) do
     {count, _} =
       from(n in Notification,
@@ -155,6 +161,7 @@ defmodule Baudrate.Notification do
 
   Returns `{count, nil}` where `count` is the number of deleted rows.
   """
+  @spec cleanup_old_notifications(pos_integer()) :: {non_neg_integer(), nil}
   def cleanup_old_notifications(days \\ 90) do
     cutoff =
       DateTime.utc_now()
@@ -173,6 +180,9 @@ defmodule Baudrate.Notification do
   Returns a list of `{:ok, notification}` / `{:ok, :skipped}` / `{:ok, :duplicate}`
   results.
   """
+  @spec create_admin_announcement(User.t(), String.t()) :: [
+          {:ok, Notification.t()} | {:ok, :skipped} | {:ok, :duplicate} | {:error, Ecto.Changeset.t()}
+        ]
   def create_admin_announcement(%User{} = admin, message) when is_binary(message) do
     user_ids =
       from(u in User, select: u.id)
@@ -193,6 +203,7 @@ defmodule Baudrate.Notification do
 
   Returns `nil` if not found.
   """
+  @spec get_notification(integer()) :: Notification.t() | nil
   def get_notification(id) do
     Notification
     |> Repo.get(id)

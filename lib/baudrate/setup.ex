@@ -187,11 +187,13 @@ defmodule Baudrate.Setup do
   Returns the numeric level for a role name (guest=0, user=1, moderator=2, admin=3).
   Unknown roles default to 0.
   """
+  @spec role_level(String.t()) :: non_neg_integer()
   def role_level(role_name), do: Map.get(@role_levels, role_name, 0)
 
   @doc """
   Returns true if the user's role meets or exceeds the minimum required role.
   """
+  @spec role_meets_minimum?(String.t(), String.t()) :: boolean()
   def role_meets_minimum?(user_role_name, min_role_name) do
     role_level(user_role_name) >= role_level(min_role_name)
   end
@@ -199,6 +201,7 @@ defmodule Baudrate.Setup do
   @doc """
   Returns the value of a setting by key, or nil if not found.
   """
+  @spec get_setting(String.t()) :: String.t() | nil
   def get_setting(key) when is_binary(key) do
     Repo.one(from s in Setting, where: s.key == ^key, select: s.value)
   end
@@ -206,6 +209,7 @@ defmodule Baudrate.Setup do
   @doc """
   Upserts a setting by key. Creates or updates the setting.
   """
+  @spec set_setting(String.t(), String.t()) :: {:ok, Setting.t()} | {:error, Ecto.Changeset.t()}
   def set_setting(key, value) when is_binary(key) and is_binary(value) do
     case Repo.one(from s in Setting, where: s.key == ^key) do
       nil ->
@@ -354,6 +358,7 @@ defmodule Baudrate.Setup do
 
   Returns `{:ok, changes}` on success or `{:error, changeset}` on validation failure.
   """
+  @spec save_settings(map()) :: {:ok, map()} | {:error, Ecto.Changeset.t()}
   def save_settings(attrs) do
     changeset = change_settings(attrs)
 
@@ -412,6 +417,7 @@ defmodule Baudrate.Setup do
 
   If any step fails, the entire transaction is rolled back.
   """
+  @spec complete_setup(String.t(), map()) :: {:ok, map()} | {:error, term(), term(), map()}
   def complete_setup(site_name, user_attrs) do
     Ecto.Multi.new()
     |> Ecto.Multi.insert(
@@ -507,6 +513,7 @@ defmodule Baudrate.Setup do
   Returns true if the given role has the given permission.
   Queries the database via the 3-table join.
   """
+  @spec has_permission?(String.t(), String.t()) :: boolean()
   def has_permission?(role_name, permission_name) do
     query =
       from rp in RolePermission,

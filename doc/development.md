@@ -32,7 +32,8 @@ native/
 lib/
 ├── baudrate/                    # Business logic (contexts)
 │   ├── application.ex           # Supervision tree
-│   ├── repo.ex                  # Ecto repository
+│   ├── repo.ex                  # Ecto repository + sanitize_like/1 helper
+│   ├── pagination.ex            # Shared pagination (paginate_opts/3, paginate_query/3)
 │   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars, invite codes (quota), password reset, user blocks, user mutes
 │   ├── auth/
 │   │   ├── invite_code.ex       # InviteCode schema (invite-only registration)

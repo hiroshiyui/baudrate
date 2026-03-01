@@ -51,6 +51,7 @@ defmodule Baudrate.Messaging do
     3. Bidirectional block check
     4. Recipient's `dm_access` setting
   """
+  @spec can_send_dm?(User.t(), User.t()) :: boolean()
   def can_send_dm?(%User{id: id}, %User{id: id}), do: false
 
   def can_send_dm?(%User{} = sender, %User{} = recipient) do
@@ -102,6 +103,8 @@ defmodule Baudrate.Messaging do
   Uses canonical ordering (lower user_id = user_a) to prevent duplicate
   conversations. Returns `{:ok, conversation}`.
   """
+  @spec find_or_create_conversation(User.t(), User.t()) ::
+          {:ok, Conversation.t()} | {:error, Ecto.Changeset.t()}
   def find_or_create_conversation(%User{id: id_a} = _user_a, %User{id: id_b} = _user_b) do
     {a_id, b_id} = if id_a < id_b, do: {id_a, id_b}, else: {id_b, id_a}
 
@@ -159,6 +162,7 @@ defmodule Baudrate.Messaging do
 
   Preloads the other participant and computes unread status.
   """
+  @spec list_conversations(User.t(), keyword()) :: [Conversation.t()]
   def list_conversations(%User{id: user_id}, opts \\ []) do
     limit = Keyword.get(opts, :limit, 50)
 
@@ -175,6 +179,7 @@ defmodule Baudrate.Messaging do
   @doc """
   Returns the total unread message count across all conversations for a user.
   """
+  @spec unread_count(User.t()) :: non_neg_integer()
   def unread_count(%User{id: user_id}) do
     # Count messages in all user's conversations that are newer than the read cursor
     from(dm in DirectMessage,
@@ -244,6 +249,8 @@ defmodule Baudrate.Messaging do
   broadcasts PubSub events, and schedules federation delivery if the other
   participant is a remote actor.
   """
+  @spec create_message(Conversation.t(), User.t(), map()) ::
+          {:ok, DirectMessage.t()} | {:error, Ecto.Changeset.t()}
   def create_message(%Conversation{} = conversation, %User{} = sender, attrs) do
     body = attrs[:body] || attrs["body"] || ""
     body_html = Markdown.to_html(body)
@@ -336,6 +343,7 @@ defmodule Baudrate.Messaging do
 
   Excludes soft-deleted messages. Preloads sender_user and sender_remote_actor.
   """
+  @spec list_messages(Conversation.t(), keyword()) :: [DirectMessage.t()]
   def list_messages(%Conversation{id: conversation_id}, opts \\ []) do
     limit = Keyword.get(opts, :limit, 100)
     after_id = Keyword.get(opts, :after_id)
@@ -364,6 +372,8 @@ defmodule Baudrate.Messaging do
 
   Schedules a Delete activity for remote participants.
   """
+  @spec soft_delete_message(DirectMessage.t(), User.t()) ::
+          {:ok, DirectMessage.t()} | {:error, :unauthorized} | {:error, Ecto.Changeset.t()}
   def soft_delete_message(%DirectMessage{} = message, %User{id: user_id}) do
     if message.sender_user_id == user_id do
       result =
@@ -391,6 +401,8 @@ defmodule Baudrate.Messaging do
 
   Upserts the read cursor using ON CONFLICT.
   """
+  @spec mark_conversation_read(Conversation.t(), User.t(), DirectMessage.t()) ::
+          {:ok, ConversationReadCursor.t()} | {:error, Ecto.Changeset.t()}
   def mark_conversation_read(
         %Conversation{id: conversation_id},
         %User{id: user_id},
