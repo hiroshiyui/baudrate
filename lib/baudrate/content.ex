@@ -38,7 +38,7 @@ defmodule Baudrate.Content do
   @epoch ~U[1970-01-01 00:00:00Z]
   @per_page 20
 
-  alias Baudrate.Content.Pagination
+  alias Baudrate.Pagination
   alias Baudrate.Content.PubSub, as: ContentPubSub
 
   # --- Boards ---
@@ -900,12 +900,7 @@ defmodule Baudrate.Content do
     String.match?(str, ~r/[\p{Han}\p{Hiragana}\p{Katakana}\p{Hangul}]/u)
   end
 
-  defp sanitize_like(str) do
-    str
-    |> String.replace("\\", "\\\\")
-    |> String.replace("%", "\\%")
-    |> String.replace("_", "\\_")
-  end
+  defp sanitize_like(str), do: Repo.sanitize_like(str)
 
   defp allowed_view_roles(nil), do: ["guest"]
 

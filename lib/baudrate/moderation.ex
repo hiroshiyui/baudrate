@@ -123,9 +123,10 @@ defmodule Baudrate.Moderation do
     * `:action` — filter by action type
   """
   def list_moderation_logs(opts \\ []) do
-    page = max(Keyword.get(opts, :page, 1), 1)
-    offset = (page - 1) * @log_per_page
+    alias Baudrate.Pagination
+
     action_filter = Keyword.get(opts, :action)
+    pagination = Pagination.paginate_opts(opts, @log_per_page)
 
     base_query =
       if action_filter && action_filter != "" do
@@ -134,19 +135,11 @@ defmodule Baudrate.Moderation do
         from(l in Log)
       end
 
-    total = Repo.one(from(l in base_query, select: count(l.id)))
-
-    logs =
-      from(l in base_query,
-        order_by: [desc: l.inserted_at, desc: l.id],
-        offset: ^offset,
-        limit: ^@log_per_page,
-        preload: [:actor]
-      )
-      |> Repo.all()
-
-    total_pages = max(ceil(total / @log_per_page), 1)
-
-    %{logs: logs, page: page, total_pages: total_pages}
+    base_query
+    |> Pagination.paginate_query(pagination,
+      result_key: :logs,
+      order_by: [desc: dynamic([l], l.inserted_at), desc: dynamic([l], l.id)],
+      preloads: [:actor]
+    )
   end
 end

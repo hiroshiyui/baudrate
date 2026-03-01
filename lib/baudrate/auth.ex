@@ -484,11 +484,7 @@ defmodule Baudrate.Auth do
     limit = Keyword.get(opts, :limit, 10)
     exclude_id = Keyword.get(opts, :exclude_id)
 
-    sanitized =
-      term
-      |> String.replace("\\", "\\\\")
-      |> String.replace("%", "\\%")
-      |> String.replace("_", "\\_")
+    sanitized = Repo.sanitize_like(term)
 
     query =
       from(u in User,
@@ -533,27 +529,16 @@ defmodule Baudrate.Auth do
   Returns `%{users: [...], total: N, page: N, per_page: N, total_pages: N}`.
   """
   def paginate_users(opts \\ []) do
-    page = max(Keyword.get(opts, :page, 1), 1)
-    per_page = Keyword.get(opts, :per_page, @users_per_page)
-    offset = (page - 1) * per_page
+    alias Baudrate.Pagination
 
-    count_base = users_filter_query(opts)
-    total = Repo.one(from(u in count_base, select: count(u.id)))
+    pagination = Pagination.paginate_opts(opts, @users_per_page)
 
-    users =
-      users_base_query(opts)
-      |> then(fn q -> from(u in q, offset: ^offset, limit: ^per_page) end)
-      |> Repo.all()
-
-    total_pages = max(ceil(total / per_page), 1)
-
-    %{
-      users: users,
-      total: total,
-      page: page,
-      per_page: per_page,
-      total_pages: total_pages
-    }
+    users_filter_query(opts)
+    |> Pagination.paginate_query(pagination,
+      result_key: :users,
+      order_by: [desc: dynamic([u], u.inserted_at)],
+      preloads: [:role]
+    )
   end
 
   defp users_base_query(opts) do
@@ -583,12 +568,7 @@ defmodule Baudrate.Auth do
         query
 
       term ->
-        sanitized =
-          term
-          |> String.replace("\\", "\\\\")
-          |> String.replace("%", "\\%")
-          |> String.replace("_", "\\_")
-
+        sanitized = Repo.sanitize_like(term)
         from(u in query, where: ilike(u.username, ^"%#{sanitized}%"))
     end
   end
@@ -1118,26 +1098,16 @@ defmodule Baudrate.Auth do
   Returns `%{attempts: [...], total: N, page: N, per_page: N, total_pages: N}`.
   """
   def paginate_login_attempts(opts \\ []) do
-    page = max(Keyword.get(opts, :page, 1), 1)
-    per_page = Keyword.get(opts, :per_page, @login_attempts_per_page)
-    offset = (page - 1) * per_page
+    alias Baudrate.Pagination
 
-    base = login_attempts_filter_query(opts)
-    total = Repo.one(from(a in base, select: count(a.id)))
+    pagination = Pagination.paginate_opts(opts, @login_attempts_per_page)
 
-    attempts =
-      from(a in base, order_by: [desc: a.inserted_at], offset: ^offset, limit: ^per_page)
-      |> Repo.all()
-
-    total_pages = max(ceil(total / per_page), 1)
-
-    %{
-      attempts: attempts,
-      total: total,
-      page: page,
-      per_page: per_page,
-      total_pages: total_pages
-    }
+    login_attempts_filter_query(opts)
+    |> Pagination.paginate_query(pagination,
+      result_key: :attempts,
+      order_by: [desc: dynamic([a], a.inserted_at)],
+      preloads: []
+    )
   end
 
   defp login_attempts_filter_query(opts) do
@@ -1151,12 +1121,7 @@ defmodule Baudrate.Auth do
         query
 
       term ->
-        sanitized =
-          term
-          |> String.replace("\\", "\\\\")
-          |> String.replace("%", "\\%")
-          |> String.replace("_", "\\_")
-
+        sanitized = Repo.sanitize_like(term)
         from(a in query, where: ilike(a.username, ^"%#{sanitized}%"))
     end
   end

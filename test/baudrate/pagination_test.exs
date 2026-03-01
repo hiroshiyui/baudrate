@@ -1,9 +1,9 @@
-defmodule Baudrate.Content.PaginationTest do
+defmodule Baudrate.PaginationTest do
   use Baudrate.DataCase
 
   alias Baudrate.Content
   alias Baudrate.Content.Board
-  alias Baudrate.Content.Pagination
+  alias Baudrate.Pagination
   alias Baudrate.Setup
 
   setup do

@@ -89,24 +89,16 @@ defmodule Baudrate.Notification do
     * `:per_page` — items per page (default #{@per_page}, max #{@max_per_page})
   """
   def list_notifications(user_id, opts \\ []) do
-    page = max(Keyword.get(opts, :page, 1), 1)
-    per_page = opts |> Keyword.get(:per_page, @per_page) |> min(@max_per_page)
-    offset = (page - 1) * per_page
+    alias Baudrate.Pagination
 
-    notifications =
-      from(n in Notification,
-        where: n.user_id == ^user_id,
-        order_by: [desc: n.inserted_at, desc: n.id],
-        offset: ^offset,
-        limit: ^per_page,
-        preload: [:actor_user, :actor_remote_actor, :article, :comment]
-      )
-      |> Repo.all()
+    pagination = Pagination.paginate_opts(opts, @per_page, max_per_page: @max_per_page)
 
-    total = Repo.one(from(n in Notification, where: n.user_id == ^user_id, select: count(n.id)))
-    total_pages = max(ceil(total / per_page), 1)
-
-    %{notifications: notifications, page: page, total_pages: total_pages}
+    from(n in Notification, where: n.user_id == ^user_id)
+    |> Pagination.paginate_query(pagination,
+      result_key: :notifications,
+      order_by: [desc: dynamic([n], n.inserted_at), desc: dynamic([n], n.id)],
+      preloads: [:actor_user, :actor_remote_actor, :article, :comment]
+    )
   end
 
   @doc """
