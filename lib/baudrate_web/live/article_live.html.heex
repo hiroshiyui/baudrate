@@ -247,7 +247,7 @@
         aria-label={if @bookmarked, do: gettext("Remove bookmark"), else: gettext("Bookmark")}
       >
         <.icon
-          name={if @bookmarked, do: "hero-star-solid", else: "hero-star"}
+          name={if @bookmarked, do: "hero-bookmark-solid", else: "hero-bookmark"}
           class="size-4"
         />
         {if @bookmarked, do: gettext("Bookmarked"), else: gettext("Bookmark")}
