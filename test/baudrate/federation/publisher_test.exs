@@ -494,6 +494,77 @@ defmodule Baudrate.Federation.PublisherTest do
     end
   end
 
+  describe "build_like_article/2" do
+    test "builds a Like activity for an article" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {activity, actor_uri} = Publisher.build_like_article(user, article)
+
+      assert activity["type"] == "Like"
+      assert activity["actor"] == actor_uri
+      assert activity["object"] =~ article.slug
+      assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
+      assert activity["id"] =~ "#like-"
+    end
+  end
+
+  describe "build_undo_like_article/2" do
+    test "builds an Undo(Like) activity" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {activity, actor_uri} = Publisher.build_undo_like_article(user, article)
+
+      assert activity["type"] == "Undo"
+      assert activity["actor"] == actor_uri
+      assert activity["object"]["type"] == "Like"
+      assert activity["object"]["actor"] == actor_uri
+      assert activity["object"]["object"] =~ article.slug
+      assert activity["id"] =~ "#undo-like-"
+    end
+  end
+
+  describe "publish_article_liked/2" do
+    test "creates delivery jobs for article liked" do
+      user = create_user()
+      board = create_board()
+      remote = create_remote_actor()
+      user_uri = Baudrate.Federation.actor_uri(:user, user.username)
+      create_follower(user_uri, remote)
+
+      article = create_article(user, board)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_article_liked(user.id, article)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert length(jobs) == 1
+      assert hd(jobs).inbox_url == remote.inbox
+    end
+  end
+
+  describe "publish_article_unliked/2" do
+    test "creates delivery jobs for article unliked" do
+      user = create_user()
+      board = create_board()
+      remote = create_remote_actor()
+      user_uri = Baudrate.Federation.actor_uri(:user, user.username)
+      create_follower(user_uri, remote)
+
+      article = create_article(user, board)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_article_unliked(user.id, article)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert length(jobs) == 1
+      assert hd(jobs).inbox_url == remote.inbox
+    end
+  end
+
   describe "build_flag/3" do
     test "builds a Flag activity with correct structure" do
       uid = System.unique_integer([:positive])
@@ -623,6 +694,23 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["object"]["id"] == "#{actor_uri}#note-#{comment.id}"
       assert "#{actor_uri}/followers" in activity["cc"]
       assert activity["id"] =~ "#delete-"
+    end
+  end
+
+  describe "publish_key_rotation/2" do
+    test "creates delivery jobs with Update activity for board actor" do
+      board = create_board()
+      remote = create_remote_actor()
+      board_uri = Baudrate.Federation.actor_uri(:board, board.slug)
+      create_follower(board_uri, remote)
+
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_key_rotation(:board, board)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert length(jobs) == 1
+      assert hd(jobs).inbox_url == remote.inbox
     end
   end
 

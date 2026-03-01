@@ -163,6 +163,47 @@ defmodule Baudrate.MessagingTest do
     end
   end
 
+  # --- unread_counts_for_conversations ---
+
+  describe "unread_counts_for_conversations/2" do
+    test "returns unread counts per conversation" do
+      user_a = create_user("user")
+      user_b = create_user("user")
+      user_c = create_user("user")
+
+      {:ok, conv1} = Messaging.find_or_create_conversation(user_a, user_b)
+      {:ok, conv2} = Messaging.find_or_create_conversation(user_a, user_c)
+
+      # User B sends 2 messages in conv1
+      {:ok, _} = Messaging.create_message(conv1, user_b, %{body: "Hello!"})
+      {:ok, _} = Messaging.create_message(conv1, user_b, %{body: "Are you there?"})
+
+      # User C sends 1 message in conv2
+      {:ok, _} = Messaging.create_message(conv2, user_c, %{body: "Hey!"})
+
+      counts = Messaging.unread_counts_for_conversations([conv1.id, conv2.id], user_a)
+      assert counts[conv1.id] == 2
+      assert counts[conv2.id] == 1
+    end
+
+    test "returns 0 for conversations with no unread messages" do
+      user_a = create_user("user")
+      user_b = create_user("user")
+
+      {:ok, conv} = Messaging.find_or_create_conversation(user_a, user_b)
+      {:ok, msg} = Messaging.create_message(conv, user_b, %{body: "Hello!"})
+      Messaging.mark_conversation_read(conv, user_a, msg)
+
+      counts = Messaging.unread_counts_for_conversations([conv.id], user_a)
+      assert counts == %{}
+    end
+
+    test "returns empty map for empty list" do
+      user = create_user("user")
+      assert Messaging.unread_counts_for_conversations([], user) == %{}
+    end
+  end
+
   # --- can_send_dm? ---
 
   describe "can_send_dm?/2" do

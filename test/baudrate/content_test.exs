@@ -216,6 +216,128 @@ defmodule Baudrate.ContentTest do
     end
   end
 
+  describe "can_comment_on_article?/2" do
+    test "returns true for user on unlocked article" do
+      user = create_user("user")
+      board = create_board(%{name: "Comment Board", slug: "comment-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Comment Test", body: "body", slug: "comment-test", user_id: user.id},
+          [board.id]
+        )
+
+      assert Content.can_comment_on_article?(user, article)
+    end
+
+    test "returns false when article is locked" do
+      user = create_user("user")
+      board = create_board(%{name: "Locked Board", slug: "locked-comment-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Locked Art", body: "body", slug: "locked-art", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, locked} = Content.toggle_lock_article(article)
+      other = create_user("user")
+
+      refute Content.can_comment_on_article?(other, locked)
+    end
+
+    test "returns false when user role below board min_role_to_post" do
+      guest = create_user("guest")
+      user = create_user("user")
+
+      board =
+        create_board(%{
+          name: "Mod Post Board",
+          slug: "mod-post-board",
+          min_role_to_post: "moderator"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Mod Post", body: "body", slug: "mod-post", user_id: user.id},
+          [board.id]
+        )
+
+      refute Content.can_comment_on_article?(guest, article)
+    end
+
+    test "returns false for nil user" do
+      user = create_user("user")
+      board = create_board(%{name: "Nil User Board", slug: "nil-user-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Nil User", body: "body", slug: "nil-user", user_id: user.id},
+          [board.id]
+        )
+
+      refute Content.can_comment_on_article?(nil, article)
+    end
+  end
+
+  describe "can_moderate_article?/2" do
+    test "returns true for admin" do
+      admin = create_user("admin")
+      user = create_user("user")
+      board = create_board(%{name: "Mod A Board", slug: "mod-a-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Mod A", body: "body", slug: "mod-a", user_id: user.id},
+          [board.id]
+        )
+
+      assert Content.can_moderate_article?(admin, article)
+    end
+
+    test "returns true for board moderator" do
+      mod = create_user("user")
+      user = create_user("user")
+      board = create_board(%{name: "Mod B Board", slug: "mod-b-board"})
+      {:ok, _} = Content.add_board_moderator(board.id, mod.id)
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Mod B", body: "body", slug: "mod-b", user_id: user.id},
+          [board.id]
+        )
+
+      assert Content.can_moderate_article?(mod, article)
+    end
+
+    test "returns false for regular user" do
+      regular = create_user("user")
+      user = create_user("user")
+      board = create_board(%{name: "Mod C Board", slug: "mod-c-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Mod C", body: "body", slug: "mod-c", user_id: user.id},
+          [board.id]
+        )
+
+      refute Content.can_moderate_article?(regular, article)
+    end
+
+    test "returns false for nil user" do
+      user = create_user("user")
+      board = create_board(%{name: "Mod D Board", slug: "mod-d-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Mod D", body: "body", slug: "mod-d", user_id: user.id},
+          [board.id]
+        )
+
+      refute Content.can_moderate_article?(nil, article)
+    end
+  end
+
   # --- Articles ---
 
   describe "create_article/2" do
@@ -841,6 +963,58 @@ defmodule Baudrate.ContentTest do
       assert Content.count_article_likes(article) == 1
       Content.delete_article_like_by_ap_id(ap_id)
       assert Content.count_article_likes(article) == 0
+    end
+  end
+
+  describe "delete_article_like_by_ap_id/2 (remote_actor_id guard)" do
+    test "deletes when both ap_id and remote_actor_id match" do
+      user = create_user("user")
+      board = create_board(%{name: "2Arity Board", slug: "two-arity-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "2Arity", body: "body", slug: "two-arity", user_id: user.id},
+          [board.id]
+        )
+
+      remote_actor = create_remote_actor()
+      ap_id = "https://remote.example/likes/#{System.unique_integer([:positive])}"
+
+      Content.create_remote_article_like(%{
+        ap_id: ap_id,
+        article_id: article.id,
+        remote_actor_id: remote_actor.id
+      })
+
+      assert Content.count_article_likes(article) == 1
+      Content.delete_article_like_by_ap_id(ap_id, remote_actor.id)
+      assert Content.count_article_likes(article) == 0
+    end
+
+    test "does not delete when remote_actor_id does not match" do
+      user = create_user("user")
+      board = create_board(%{name: "2A Guard Board", slug: "two-a-guard-board"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "2A Guard", body: "body", slug: "two-a-guard", user_id: user.id},
+          [board.id]
+        )
+
+      remote_actor = create_remote_actor()
+      other_actor = create_remote_actor()
+      ap_id = "https://remote.example/likes/#{System.unique_integer([:positive])}"
+
+      Content.create_remote_article_like(%{
+        ap_id: ap_id,
+        article_id: article.id,
+        remote_actor_id: remote_actor.id
+      })
+
+      assert Content.count_article_likes(article) == 1
+      # Try to delete with wrong remote_actor_id — should not delete
+      assert {0, nil} = Content.delete_article_like_by_ap_id(ap_id, other_actor.id)
+      assert Content.count_article_likes(article) == 1
     end
   end
 
@@ -2459,6 +2633,83 @@ defmodule Baudrate.ContentTest do
     end
   end
 
+  describe "toggle_comment_bookmark/2 and comment_bookmarked?/2" do
+    test "creates then removes comment bookmark" do
+      user = create_user("user")
+      author = create_user("user")
+
+      board =
+        create_board(%{
+          name: "CB Board",
+          slug: "cb-board-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "CB Art",
+            body: "body",
+            slug: "cb-art-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Bookmarkable comment",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      refute Content.comment_bookmarked?(user.id, comment.id)
+
+      # First toggle: creates
+      assert {:ok, %Baudrate.Content.Bookmark{}} =
+               Content.toggle_comment_bookmark(user.id, comment.id)
+
+      assert Content.comment_bookmarked?(user.id, comment.id)
+
+      # Second toggle: removes
+      assert {:ok, :removed} = Content.toggle_comment_bookmark(user.id, comment.id)
+      refute Content.comment_bookmarked?(user.id, comment.id)
+    end
+
+    test "comment_bookmarked? returns false for different user" do
+      user = create_user("user")
+      other = create_user("user")
+      author = create_user("user")
+
+      board =
+        create_board(%{
+          name: "CB Other Board",
+          slug: "cb-other-board-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "CB Other Art",
+            body: "body",
+            slug: "cb-other-art-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Another comment",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      {:ok, _} = Content.toggle_comment_bookmark(user.id, comment.id)
+      assert Content.comment_bookmarked?(user.id, comment.id)
+      refute Content.comment_bookmarked?(other.id, comment.id)
+    end
+  end
+
   describe "list_bookmarks/2" do
     test "returns paginated bookmarks" do
       user = create_user("user")
@@ -2545,6 +2796,119 @@ defmodule Baudrate.ContentTest do
 
       result = Content.list_bookmarks(user.id)
       assert result.bookmarks == []
+    end
+  end
+
+  # --- Remote Poll Operations ---
+
+  describe "remote poll operations" do
+    setup do
+      user = create_user("user")
+
+      board =
+        create_board(%{
+          name: "Poll Board",
+          slug: "poll-board-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Poll Art",
+            body: "body",
+            slug: "poll-art-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      # Create poll with options directly
+      {:ok, poll} =
+        %Baudrate.Content.Poll{}
+        |> Baudrate.Content.Poll.changeset(%{
+          mode: "single",
+          article_id: article.id,
+          options: [
+            %{text: "Option A", position: 0},
+            %{text: "Option B", position: 1}
+          ]
+        })
+        |> Repo.insert()
+
+      poll = Repo.preload(poll, :options)
+      [opt_a, opt_b] = Enum.sort_by(poll.options, & &1.position)
+
+      remote_actor = create_remote_actor()
+
+      %{poll: poll, opt_a: opt_a, opt_b: opt_b, remote_actor: remote_actor, article: article}
+    end
+
+    test "create_remote_poll_vote/1 creates a remote vote", %{
+      poll: poll,
+      opt_a: opt_a,
+      remote_actor: remote_actor
+    } do
+      assert {:ok, vote} =
+               Content.create_remote_poll_vote(%{
+                 poll_id: poll.id,
+                 poll_option_id: opt_a.id,
+                 remote_actor_id: remote_actor.id
+               })
+
+      assert vote.poll_id == poll.id
+      assert vote.poll_option_id == opt_a.id
+      assert vote.remote_actor_id == remote_actor.id
+    end
+
+    test "update_remote_poll_counts/2 updates denormalized counters", %{
+      poll: poll,
+      opt_a: opt_a,
+      opt_b: opt_b
+    } do
+      {:ok, _} =
+        Content.update_remote_poll_counts(poll, %{
+          voters_count: 10,
+          option_counts: [
+            %{text: opt_a.text, votes_count: 7},
+            %{text: opt_b.text, votes_count: 3}
+          ]
+        })
+
+      updated_poll = Repo.get!(Baudrate.Content.Poll, poll.id) |> Repo.preload(:options)
+      assert updated_poll.voters_count == 10
+
+      updated_opts = Enum.sort_by(updated_poll.options, & &1.position)
+      assert Enum.at(updated_opts, 0).votes_count == 7
+      assert Enum.at(updated_opts, 1).votes_count == 3
+    end
+
+    test "recalc_poll_counts/1 recalculates from actual votes", %{
+      poll: poll,
+      opt_a: opt_a,
+      opt_b: opt_b,
+      remote_actor: remote_actor
+    } do
+      # Create votes directly
+      Content.create_remote_poll_vote(%{
+        poll_id: poll.id,
+        poll_option_id: opt_a.id,
+        remote_actor_id: remote_actor.id
+      })
+
+      remote2 = create_remote_actor()
+
+      Content.create_remote_poll_vote(%{
+        poll_id: poll.id,
+        poll_option_id: opt_b.id,
+        remote_actor_id: remote2.id
+      })
+
+      {:ok, recalced} = Content.recalc_poll_counts(poll.id)
+      assert recalced.voters_count == 2
+
+      opts = Enum.sort_by(recalced.options, & &1.position)
+      assert Enum.at(opts, 0).votes_count == 1
+      assert Enum.at(opts, 1).votes_count == 1
     end
   end
 

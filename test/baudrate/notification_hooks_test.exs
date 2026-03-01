@@ -93,6 +93,43 @@ defmodule Baudrate.Notification.HooksTest do
     end
   end
 
+  describe "notify_local_article_liked/2" do
+    test "sends article_liked to article author", %{article: article, actor: actor} do
+      Hooks.notify_local_article_liked(article.id, actor.id)
+
+      assert [notif] = list_notifications_for(article.user_id, "article_liked")
+      assert notif.actor_user_id == actor.id
+      assert notif.article_id == article.id
+    end
+
+    test "skips self-like (no notification when liker is author)", %{article: article, user: user} do
+      Hooks.notify_local_article_liked(article.id, user.id)
+
+      assert [] == list_notifications_for(user.id, "article_liked")
+    end
+  end
+
+  describe "notify_local_comment_liked/2" do
+    test "sends comment_liked to comment author", %{article: article, actor: actor, user: user} do
+      comment = create_comment(article, user, "A comment to like")
+
+      Hooks.notify_local_comment_liked(comment.id, actor.id)
+
+      assert [notif] = list_notifications_for(user.id, "comment_liked")
+      assert notif.actor_user_id == actor.id
+      assert notif.comment_id == comment.id
+      assert notif.article_id == article.id
+    end
+
+    test "skips self-like (no notification when liker is author)", %{article: article, user: user} do
+      comment = create_comment(article, user, "My own comment")
+
+      Hooks.notify_local_comment_liked(comment.id, user.id)
+
+      assert [] == list_notifications_for(user.id, "comment_liked")
+    end
+  end
+
   describe "notify_remote_article_liked/2" do
     test "sends article_liked to article author", %{article: article} do
       remote = create_remote_actor()
