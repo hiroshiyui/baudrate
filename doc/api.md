@@ -27,6 +27,8 @@ access. All endpoints live under `/ap/` (objects and actors) or
   - [Board Outbox](#board-outbox)
   - [User Followers](#user-followers)
   - [Board Followers](#board-followers)
+  - [User Following](#user-following)
+  - [Board Following](#board-following)
   - [Boards Index](#boards-index)
   - [Article Replies](#article-replies)
   - [Search](#search)
@@ -561,6 +563,35 @@ GET /ap/boards/:slug/followers?page=1
 **Access control:** Returns 404 if board is private or AP disabled.
 
 Items are remote actor URIs (strings).
+
+---
+
+### User Following
+
+```
+GET /ap/users/:username/following
+GET /ap/users/:username/following?page=1
+```
+
+**Auth:** HTTP Signature required if authorized fetch is enabled
+**Rate limit:** 120 req/min per IP
+
+Paginated `OrderedCollection` of actor URIs the user follows (accepted follows only).
+Items are remote actor URIs (strings) and local user actor URIs.
+
+---
+
+### Board Following
+
+```
+GET /ap/boards/:slug/following
+```
+
+**Auth:** HTTP Signature required if authorized fetch is enabled
+**Rate limit:** 120 req/min per IP
+**Access control:** Returns 404 if board is private or AP disabled.
+
+Returns an empty `OrderedCollection` (boards do not follow other actors).
 
 ---
 
