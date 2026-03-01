@@ -1568,7 +1568,7 @@ msgstr "ステータスで絞り込み"
 #: lib/baudrate_web/components/layouts.ex:277
 #, elixir-autogen, elixir-format
 msgid "Manage Boards"
-msgstr "ボード管理"
+msgstr "掲示板管理"
 
 #: lib/baudrate_web/components/layouts.ex:126
 #: lib/baudrate_web/components/layouts.ex:280
@@ -3670,7 +3670,7 @@ msgstr "フォロー中"
 #: lib/baudrate_web/live/board_follows_live.html.heex:20
 #, elixir-autogen, elixir-format
 msgid "Anyone can post to this board"
-msgstr "誰でもこのボードに投稿できます"
+msgstr "誰でもこの掲示板に投稿できます"
 
 #: lib/baudrate_web/live/profile_live.html.heex:339
 #: lib/baudrate_web/live/user_profile_live.html.heex:96
@@ -3688,23 +3688,23 @@ msgstr "自己紹介を更新しました。"
 #: lib/baudrate_web/live/board_follows_live.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Board Follows"
-msgstr "ボードフォロー"
+msgstr "掲示板フォロー"
 
 #: lib/baudrate_web/live/board_follows_live.ex:138
 #, elixir-autogen, elixir-format
 msgid "Board follow removed."
-msgstr "ボードフォローを解除しました。"
+msgstr "掲示板フォローを解除しました。"
 
 #: lib/baudrate_web/live/board_follows_live.ex:111
 #, elixir-autogen, elixir-format
 msgid "Board follow request sent."
-msgstr "ボードフォローリクエストを送信しました。"
+msgstr "掲示板フォローリクエストを送信しました。"
 
 #: lib/baudrate_web/live/admin/federation_live.ex:196
 #: lib/baudrate_web/live/board_follows_live.ex:29
 #, elixir-autogen, elixir-format
 msgid "Board not found."
-msgstr "ボードが見つかりません。"
+msgstr "掲示板が見つかりません。"
 
 #: lib/baudrate_web/live/board_follows_live.ex:160
 #, elixir-autogen, elixir-format
@@ -3719,7 +3719,7 @@ msgstr "現在のフォロー"
 #: lib/baudrate_web/live/board_follows_live.ex:117
 #, elixir-autogen, elixir-format
 msgid "Failed to create board follow."
-msgstr "ボードフォローの作成に失敗しました。"
+msgstr "掲示板フォローの作成に失敗しました。"
 
 #: lib/baudrate_web/live/board_follows_live.ex:65
 #, elixir-autogen, elixir-format
@@ -3770,7 +3770,7 @@ msgstr "自己紹介（最大500文字）"
 #: lib/baudrate_web/live/board_follows_live.ex:48
 #, elixir-autogen, elixir-format
 msgid "You don't have permission to manage this board."
-msgstr "このボードを管理する権限がありません。"
+msgstr "この掲示板を管理する権限がありません。"
 
 #: lib/baudrate_web/live/article_edit_live.ex:68
 #, elixir-autogen, elixir-format
@@ -4536,7 +4536,7 @@ msgstr "ブックマークの切り替えに失敗しました。"
 #: lib/baudrate_web/live/admin/federation_live.ex:214
 #, elixir-autogen, elixir-format
 msgid "Failed to update board."
-msgstr "ボードの更新に失敗しました。"
+msgstr "掲示板の更新に失敗しました。"
 
 #: lib/baudrate_web/live/admin/invites_live.html.heex:51
 #: lib/baudrate_web/live/user_invites_live.html.heex:40

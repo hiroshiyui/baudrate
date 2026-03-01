@@ -578,7 +578,7 @@ msgstr "文章已成功建立。"
 #: lib/baudrate_web/live/article_new_live.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Back to board"
-msgstr "返回版面"
+msgstr "返回看板"
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:163
 #: lib/baudrate_web/live/admin/federation_live.html.heex:206
@@ -586,7 +586,7 @@ msgstr "返回版面"
 #: lib/baudrate_web/live/article_new_live.html.heex:213
 #, elixir-autogen, elixir-format
 msgid "Board"
-msgstr "版面"
+msgstr "看板"
 
 #: lib/baudrate_web/live/article_edit_live.html.heex:36
 #: lib/baudrate_web/live/article_history_live.html.heex:99
@@ -616,7 +616,7 @@ msgstr "還沒有帳號？"
 #: lib/baudrate_web/live/admin/users_live.ex:121
 #, elixir-autogen, elixir-format
 msgid "Failed to approve user."
-msgstr "核准用戶失敗。"
+msgstr "核准使用者失敗。"
 
 #: lib/baudrate_web/live/article_new_live.ex:235
 #: lib/baudrate_web/live/feed_live.ex:131
@@ -632,14 +632,14 @@ msgstr "新增文章"
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "No pending users."
-msgstr "沒有待審核的用戶。"
+msgstr "沒有待審核的使用者。"
 
 #: lib/baudrate_web/components/layouts.ex:114
 #: lib/baudrate_web/components/layouts.ex:268
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "Pending Users"
-msgstr "待審核用戶"
+msgstr "待審核使用者"
 
 #: lib/baudrate_web/live/article_live.html.heex:16
 #: lib/baudrate_web/live/board_live.html.heex:101
@@ -650,7 +650,7 @@ msgstr "置頂"
 #: lib/baudrate_web/live/article_new_live.ex:181
 #, elixir-autogen, elixir-format
 msgid "Please select at least one board."
-msgstr "請至少選擇一個版面。"
+msgstr "請至少選擇一個看板。"
 
 #: lib/baudrate_web/live/article_live.html.heex:41
 #, elixir-autogen, elixir-format
@@ -694,7 +694,7 @@ msgstr "註冊嘗試次數過多，請稍後再試。"
 #: lib/baudrate_web/live/admin/users_live.ex:116
 #, elixir-autogen, elixir-format
 msgid "User approved successfully."
-msgstr "用戶已成功核准。"
+msgstr "使用者已成功核准。"
 
 #: lib/baudrate_web/live/register_live.ex:114
 #, elixir-autogen, elixir-format
@@ -852,7 +852,7 @@ msgstr "封鎖清單（封鎖指定網域）"
 #: lib/baudrate_web/live/admin/federation_live.html.heex:196
 #, elixir-autogen, elixir-format
 msgid "Board Federation"
-msgstr "版面聯邦設定"
+msgstr "看板聯邦設定"
 
 #: lib/baudrate_web/live/home_live.html.heex:13
 #, elixir-autogen, elixir-format
@@ -996,7 +996,7 @@ msgstr "聯邦"
 #: lib/baudrate_web/live/admin/federation_live.ex:205
 #, elixir-autogen, elixir-format
 msgid "Federation %{action} for %{board}."
-msgstr "版面 %{board} 的聯邦功能已%{action}。"
+msgstr "看板 %{board} 的聯邦功能已%{action}。"
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:2
 #, elixir-autogen, elixir-format
@@ -1068,7 +1068,7 @@ msgstr "審核佇列"
 #: lib/baudrate_web/live/admin/federation_live.html.heex:199
 #, elixir-autogen, elixir-format
 msgid "No boards configured."
-msgstr "尚未設定任何版面。"
+msgstr "尚未設定任何看板。"
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:322
 #, elixir-autogen, elixir-format
@@ -1355,7 +1355,7 @@ msgstr "全部"
 #: lib/baudrate_web/live/admin/boards_live.html.heex:253
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
-msgstr "確定要刪除這個版面嗎？"
+msgstr "確定要刪除這個看板嗎？"
 
 #: lib/baudrate_web/live/admin/users_live.html.heex:207
 #, elixir-autogen, elixir-format
@@ -1371,27 +1371,27 @@ msgstr "已停權"
 #: lib/baudrate_web/live/admin/boards_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Board Management"
-msgstr "版面管理"
+msgstr "看板管理"
 
 #: lib/baudrate_web/live/admin/boards_live.ex:235
 #, elixir-autogen, elixir-format
 msgid "Board created successfully."
-msgstr "版面已成功建立。"
+msgstr "看板已成功建立。"
 
 #: lib/baudrate_web/live/admin/boards_live.ex:189
 #, elixir-autogen, elixir-format
 msgid "Board deleted successfully."
-msgstr "版面已成功刪除。"
+msgstr "看板已成功刪除。"
 
 #: lib/baudrate_web/live/admin/boards_live.ex:258
 #, elixir-autogen, elixir-format
 msgid "Board updated successfully."
-msgstr "版面已成功更新。"
+msgstr "看板已成功更新。"
 
 #: lib/baudrate_web/live/admin/boards_live.ex:196
 #, elixir-autogen, elixir-format
 msgid "Cannot delete board that has articles."
-msgstr "無法刪除含有文章的版面。"
+msgstr "無法刪除含有文章的看板。"
 
 #: lib/baudrate_web/live/admin/users_live.html.heex:270
 #: lib/baudrate_web/live/admin/users_live.html.heex:314
@@ -1408,17 +1408,17 @@ msgstr "說明"
 #: lib/baudrate_web/live/admin/boards_live.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Edit Board"
-msgstr "編輯版面"
+msgstr "編輯看板"
 
 #: lib/baudrate_web/live/admin/users_live.ex:209
 #, elixir-autogen, elixir-format
 msgid "Failed to ban user."
-msgstr "停權用戶失敗。"
+msgstr "停權使用者失敗。"
 
 #: lib/baudrate_web/live/admin/boards_live.ex:202
 #, elixir-autogen, elixir-format
 msgid "Failed to delete board."
-msgstr "刪除版面失敗。"
+msgstr "刪除看板失敗。"
 
 #: lib/baudrate_web/live/admin/users_live.ex:423
 #, elixir-autogen, elixir-format
@@ -1428,7 +1428,7 @@ msgstr "解除停權失敗。"
 #: lib/baudrate_web/live/admin/users_live.ex:394
 #, elixir-autogen, elixir-format
 msgid "Failed to update user role."
-msgstr "更新用戶角色失敗。"
+msgstr "更新使用者角色失敗。"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:17
 #: lib/baudrate_web/live/admin/boards_live.html.heex:199
@@ -1440,18 +1440,18 @@ msgstr "名稱"
 #: lib/baudrate_web/live/admin/boards_live.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "New Board"
-msgstr "新增版面"
+msgstr "新增看板"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:192
 #, elixir-autogen, elixir-format
 msgid "No boards yet."
-msgstr "尚無版面。"
+msgstr "尚無看板。"
 
 #: lib/baudrate_web/live/admin/users_live.html.heex:113
 #: lib/baudrate_web/live/conversation_live.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "No users found."
-msgstr "找不到用戶。"
+msgstr "找不到使用者。"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:75
 #: lib/baudrate_web/live/admin/boards_live.html.heex:212
@@ -1477,7 +1477,7 @@ msgstr "上層"
 #: lib/baudrate_web/live/admin/boards_live.html.heex:74
 #, elixir-autogen, elixir-format
 msgid "Parent Board"
-msgstr "上層版面"
+msgstr "上層看板"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:69
 #: lib/baudrate_web/live/admin/boards_live.html.heex:203
@@ -1494,7 +1494,7 @@ msgstr "原因（選填）"
 #: lib/baudrate_web/live/admin/users_live.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "Search username..."
-msgstr "搜尋用戶名稱..."
+msgstr "搜尋使用者名稱..."
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:22
 #: lib/baudrate_web/live/admin/boards_live.html.heex:35
@@ -1521,22 +1521,22 @@ msgstr "解除停權"
 #: lib/baudrate_web/live/admin/users_live.html.heex:2
 #, elixir-autogen, elixir-format
 msgid "User Management"
-msgstr "用戶管理"
+msgstr "使用者管理"
 
 #: lib/baudrate_web/live/admin/users_live.ex:195
 #, elixir-autogen, elixir-format
 msgid "User banned successfully."
-msgstr "用戶已成功停權。"
+msgstr "使用者已成功停權。"
 
 #: lib/baudrate_web/live/admin/users_live.ex:387
 #, elixir-autogen, elixir-format
 msgid "User role updated successfully."
-msgstr "用戶角色已成功更新。"
+msgstr "使用者角色已成功更新。"
 
 #: lib/baudrate_web/live/admin/users_live.ex:418
 #, elixir-autogen, elixir-format
 msgid "User unbanned successfully."
-msgstr "用戶已成功解除停權。"
+msgstr "使用者已成功解除停權。"
 
 #: lib/baudrate_web/live/admin/users_live.ex:391
 #, elixir-autogen, elixir-format
@@ -1590,7 +1590,7 @@ msgstr "您無法停權自己。"
 #: lib/baudrate_web/live/admin/boards_live.ex:199
 #, elixir-autogen, elixir-format
 msgid "Cannot delete board that has sub-boards."
-msgstr "無法刪除含有子版面的版面。"
+msgstr "無法刪除含有子看板的看板。"
 
 #: lib/baudrate_web/live/admin/users_live.html.heex:164
 #, elixir-autogen, elixir-format
@@ -1710,7 +1710,7 @@ msgstr "代碼"
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:67
 #, elixir-autogen, elixir-format
 msgid "Create Board"
-msgstr "建立板塊"
+msgstr "建立看板"
 
 #: lib/baudrate_web/live/admin/invites_live.html.heex:61
 #: lib/baudrate_web/live/user_invites_live.html.heex:49
@@ -1733,7 +1733,7 @@ msgstr "日期"
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:69
 #, elixir-autogen, elixir-format
 msgid "Delete Board"
-msgstr "刪除板塊"
+msgstr "刪除看板"
 
 #: lib/baudrate_web/live/admin/invites_live.html.heex:71
 #: lib/baudrate_web/live/admin/moderation_log_live.html.heex:55
@@ -1875,7 +1875,7 @@ msgstr "已撤銷"
 #: lib/baudrate_web/live/board_live.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Sub-boards"
-msgstr "子板塊"
+msgstr "子看板"
 
 #: lib/baudrate_web/live/admin/moderation_log_live.html.heex:42
 #, elixir-autogen, elixir-format
@@ -1905,7 +1905,7 @@ msgstr "解除封鎖"
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:68
 #, elixir-autogen, elixir-format
 msgid "Update Board"
-msgstr "更新板塊"
+msgstr "更新看板"
 
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:61
 #, elixir-autogen, elixir-format
@@ -2430,12 +2430,12 @@ msgstr "管理操作紀錄"
 #: lib/baudrate_web/live/admin/pending_users_live.ex:21
 #, elixir-autogen, elixir-format
 msgid "Admin Pending Users"
-msgstr "管理待審核用戶"
+msgstr "管理待審核使用者"
 
 #: lib/baudrate_web/live/admin/users_live.ex:44
 #, elixir-autogen, elixir-format
 msgid "Admin Users"
-msgstr "管理用戶"
+msgstr "管理使用者"
 
 #: lib/baudrate_web/live/password_reset_live.ex:34
 #, elixir-autogen, elixir-format
@@ -3333,7 +3333,7 @@ msgstr "邀請碼配額已用完。"
 #: lib/baudrate_web/live/user_invites_live.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Invited User"
-msgstr "受邀用戶"
+msgstr "受邀使用者"
 
 #: lib/baudrate_web/components/layouts.ex:147
 #: lib/baudrate_web/components/layouts.ex:296
@@ -3346,7 +3346,7 @@ msgstr "我的邀請碼"
 #: lib/baudrate_web/live/admin/users_live.ex:191
 #, elixir-autogen, elixir-format
 msgid "User banned successfully. %{count} invite code(s) revoked."
-msgstr "用戶已成功停權。已撤銷 %{count} 個邀請碼。"
+msgstr "使用者已成功停權。已撤銷 %{count} 個邀請碼。"
 
 #: lib/baudrate_web/live/user_invites_live.ex:76
 #, elixir-autogen, elixir-format
