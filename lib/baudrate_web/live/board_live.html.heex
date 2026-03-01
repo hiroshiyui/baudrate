@@ -94,10 +94,15 @@
   <article
     :for={article <- @articles}
     id={"article-#{article.slug}"}
+    aria-labelledby={"article-title-#{article.slug}"}
     class="article card bg-base-200 shadow-sm"
   >
     <div class="card-body p-4">
-      <.link navigate={~p"/articles/#{article.slug}"} class="card-title text-base link link-hover">
+      <.link
+        navigate={~p"/articles/#{article.slug}"}
+        id={"article-title-#{article.slug}"}
+        class="card-title text-base link link-hover"
+      >
         <span :if={article.pinned} class="badge badge-sm badge-accent">{gettext("Pinned")}</span>
         {article.title}
         <span

@@ -83,10 +83,12 @@
           <%= if previous do %>
             <%= for {tag, text} <- compute_diff(previous.title, selected.title) do %>
               <span :if={tag == :eq}>{text}</span>
-              <span :if={tag == :ins} class="bg-success/30 text-success-content">{text}</span>
-              <span :if={tag == :del} class="bg-error/30 text-error-content line-through">
+              <ins :if={tag == :ins} class="bg-success/30 text-success-content no-underline">
                 {text}
-              </span>
+              </ins>
+              <del :if={tag == :del} class="bg-error/30 text-error-content">
+                {text}
+              </del>
             <% end %>
           <% else %>
             {selected.title}
@@ -101,10 +103,12 @@
           <%= if previous do %>
             <%= for {tag, text} <- compute_diff(previous.body, selected.body) do %>
               <span :if={tag == :eq}>{text}</span>
-              <span :if={tag == :ins} class="bg-success/30 text-success-content">{text}</span>
-              <span :if={tag == :del} class="bg-error/30 text-error-content line-through">
+              <ins :if={tag == :ins} class="bg-success/30 text-success-content no-underline">
                 {text}
-              </span>
+              </ins>
+              <del :if={tag == :del} class="bg-error/30 text-error-content">
+                {text}
+              </del>
             <% end %>
           <% else %>
             {selected.body}

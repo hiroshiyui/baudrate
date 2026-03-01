@@ -540,6 +540,11 @@ defmodule BaudrateWeb.ArticleLive do
             phx-click="reply_to"
             phx-value-id={@comment.id}
             class="text-sm text-base-content/70 hover:text-base-content cursor-pointer"
+            aria-label={
+              gettext("Reply to %{author}",
+                author: display_name(@comment.user || @comment.remote_actor)
+              )
+            }
           >
             {gettext("Reply")}
           </button>
@@ -628,6 +633,7 @@ defmodule BaudrateWeb.ArticleLive do
     <span class="inline-flex items-center gap-1 text-sm text-base-content/70">
       <button
         :if={@current_user && !@is_own}
+        type="button"
         phx-click="toggle_comment_like"
         phx-value-id={@comment.id}
         class="hover:text-error cursor-pointer"

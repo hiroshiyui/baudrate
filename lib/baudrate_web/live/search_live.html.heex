@@ -73,7 +73,12 @@
   </details>
 
   <%!-- Remote actor loading indicator --%>
-  <div :if={@remote_actor_loading} class="card bg-base-200 shadow-sm mb-4">
+  <div
+    :if={@remote_actor_loading}
+    class="card bg-base-200 shadow-sm mb-4"
+    role="status"
+    aria-live="polite"
+  >
     <div class="card-body p-4 flex flex-row items-center gap-3">
       <span class="loading loading-spinner loading-sm"></span>
       <span class="text-base-content/70">{gettext("Looking up remote actor...")}</span>
@@ -260,11 +265,13 @@
     <article
       :for={article <- @articles}
       id={"search-article-#{article.slug}"}
+      aria-labelledby={"search-article-title-#{article.slug}"}
       class="article card bg-base-200 shadow-sm"
     >
       <div class="card-body p-4">
         <.link
           navigate={~p"/articles/#{article.slug}"}
+          id={"search-article-title-#{article.slug}"}
           class="card-title text-base link link-hover"
         >
           {article.title}

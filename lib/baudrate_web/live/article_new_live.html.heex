@@ -166,7 +166,11 @@
           {gettext("Add option")}
         </button>
 
-        <div class="flex flex-wrap gap-4">
+        <div
+          class="flex flex-wrap gap-4"
+          role="radiogroup"
+          aria-label={gettext("Poll voting mode")}
+        >
           <div class="form-control">
             <label class="label cursor-pointer gap-2">
               <input
@@ -211,7 +215,7 @@
 
     <div class="fieldset mb-2">
       <span class="label mb-1 text-lg">📁 {gettext("Board")}</span>
-      <div class="space-y-2">
+      <div class="space-y-2" role="group" aria-label={gettext("Select boards")}>
         <label :for={board <- @boards} class="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"

@@ -38,6 +38,7 @@ defmodule BaudrateWeb.Layouts do
             tabindex="0"
             aria-label={gettext("Open navigation menu")}
             aria-haspopup="true"
+            aria-expanded="false"
             class="btn btn-ghost"
           >
             <.icon name="hero-bars-3" class="size-5" />
@@ -234,6 +235,7 @@ defmodule BaudrateWeb.Layouts do
             type="button"
             tabindex="0"
             aria-haspopup="true"
+            aria-expanded="false"
             class="btn btn-ghost gap-2"
           >
             <.avatar user={@current_user} size={36} />

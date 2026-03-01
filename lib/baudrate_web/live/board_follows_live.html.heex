@@ -26,6 +26,7 @@
         <button
           phx-click="update_policy"
           phx-value-policy="followers_only"
+          aria-pressed={to_string(@board.ap_accept_policy == "followers_only")}
           class={[
             "btn btn-sm",
             @board.ap_accept_policy == "followers_only" && "btn-primary",
@@ -37,6 +38,7 @@
         <button
           phx-click="update_policy"
           phx-value-policy="open"
+          aria-pressed={to_string(@board.ap_accept_policy == "open")}
           class={[
             "btn btn-sm",
             @board.ap_accept_policy == "open" && "btn-primary",

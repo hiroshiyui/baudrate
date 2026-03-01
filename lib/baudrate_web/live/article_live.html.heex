@@ -160,6 +160,11 @@
           target="_blank"
           rel="noopener"
           class="block overflow-hidden rounded-lg"
+          aria-label={
+            gettext("Image %{number} (opens in new tab)",
+              number: Enum.find_index(@article_images, &(&1.id == img.id)) + 1
+            )
+          }
         >
           <img
             src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}

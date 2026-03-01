@@ -579,18 +579,25 @@ defmodule BaudrateWeb.CoreComponents do
     assigns = assign(assigns, :initial, String.first(name) |> String.upcase())
 
     ~H"""
-    <div class={[
-      "avatar avatar-placeholder",
-      @class
-    ]}>
+    <div
+      class={[
+        "avatar avatar-placeholder",
+        @class
+      ]}
+      role="img"
+      aria-label={display_name(@user)}
+    >
       <div class={["bg-neutral text-neutral-content", size_class(@size)]}>
-        <span class={
-          cond do
-            @size == 48 -> "text-lg"
-            @size == 36 -> "text-sm"
-            true -> "text-xs"
-          end
-        }>
+        <span
+          aria-hidden="true"
+          class={
+            cond do
+              @size == 48 -> "text-lg"
+              @size == 36 -> "text-sm"
+              true -> "text-xs"
+            end
+          }
+        >
           {@initial}
         </span>
       </div>
