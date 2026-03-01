@@ -47,11 +47,12 @@ defmodule BaudrateWeb.Layouts do
               tabindex="0"
               class="menu dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
             >
+              <%!-- Main nav (matches desktop nav) --%>
               <li>
                 <.link navigate="/">{gettext("Home")}</.link>
               </li>
               <li>
-                <.link navigate="/">{gettext("Boards")}</.link>
+                <.link navigate="/feed">{gettext("Feed")}</.link>
               </li>
               <li>
                 <.link navigate="/search">{gettext("Search")}</.link>
@@ -94,15 +95,7 @@ defmodule BaudrateWeb.Layouts do
                   </span>
                 </.link>
               </li>
-              <li>
-                <.link navigate="/following">{gettext("Following")}</.link>
-              </li>
-              <li>
-                <.link navigate="/feed">{gettext("Feed")}</.link>
-              </li>
-              <li>
-                <.link navigate="/bookmarks">{gettext("Bookmarks")}</.link>
-              </li>
+              <%!-- Admin section (matches desktop user menu) --%>
               <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
               <li :if={@current_user.role.name == "admin"} class="menu-title">
                 {gettext("Admin")}
@@ -134,6 +127,7 @@ defmodule BaudrateWeb.Layouts do
               <li :if={@current_user.role.name == "admin"}>
                 <.link navigate="/admin/login-attempts">{gettext("Login Attempts")}</.link>
               </li>
+              <%!-- User section (matches desktop user menu) --%>
               <li class="divider my-1"></li>
               <li class="menu-title flex flex-row items-center gap-2">
                 <.avatar user={@current_user} size={36} />
@@ -142,6 +136,12 @@ defmodule BaudrateWeb.Layouts do
               </li>
               <li>
                 <.link navigate="/profile">{gettext("Profile")}</.link>
+              </li>
+              <li>
+                <.link navigate="/bookmarks">{gettext("Bookmarks")}</.link>
+              </li>
+              <li>
+                <.link navigate="/following">{gettext("Following")}</.link>
               </li>
               <li>
                 <.link navigate="/invites">{gettext("My Invites")}</.link>
@@ -167,7 +167,9 @@ defmodule BaudrateWeb.Layouts do
               <.link navigate="/" class="btn btn-ghost">{gettext("Home")}</.link>
             </li>
             <li>
-              <.link navigate="/" class="btn btn-ghost">{gettext("Boards")}</.link>
+              <.link navigate="/feed" class="btn btn-ghost">
+                {gettext("Feed")}
+              </.link>
             </li>
             <li>
               <.link navigate="/search" class="btn btn-ghost">{gettext("Search")}</.link>
@@ -208,21 +210,6 @@ defmodule BaudrateWeb.Layouts do
                 >
                   {@unread_notification_count}
                 </span>
-              </.link>
-            </li>
-            <li>
-              <.link navigate="/following" class="btn btn-ghost">
-                {gettext("Following")}
-              </.link>
-            </li>
-            <li>
-              <.link navigate="/feed" class="btn btn-ghost">
-                {gettext("Feed")}
-              </.link>
-            </li>
-            <li>
-              <.link navigate="/bookmarks" class="btn btn-ghost">
-                {gettext("Bookmarks")}
               </.link>
             </li>
           </ul>
@@ -291,6 +278,12 @@ defmodule BaudrateWeb.Layouts do
               <li :if={@current_user.role.name == "admin"} class="divider my-1"></li>
               <li>
                 <.link navigate="/profile">{gettext("Profile")}</.link>
+              </li>
+              <li>
+                <.link navigate="/bookmarks">{gettext("Bookmarks")}</.link>
+              </li>
+              <li>
+                <.link navigate="/following">{gettext("Following")}</.link>
               </li>
               <li>
                 <.link navigate="/invites">{gettext("My Invites")}</.link>
