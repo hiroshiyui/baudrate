@@ -24,8 +24,7 @@ defmodule Mix.Tasks.Selenium.Setup do
 
   @impl Mix.Task
   def run(_args) do
-    :inets.start()
-    :ssl.start()
+    Application.ensure_all_started(:req)
 
     File.mkdir_p!(@dest_dir)
 
@@ -65,35 +64,16 @@ defmodule Mix.Tasks.Selenium.Setup do
   end
 
   defp download_file(url, dest) do
-    ssl_opts = [
-      ssl: [
-        verify: :verify_peer,
-        cacerts: :public_key.cacerts_get(),
-        customize_hostname_check: [
-          match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
-        ]
-      ]
-    ]
+    case Req.get(url, into: File.stream!(dest)) do
+      {:ok, %Req.Response{status: 200}} ->
+        :ok
 
-    case :httpc.request(:get, {String.to_charlist(url), []}, ssl_opts ++ [autoredirect: true],
-           body_format: :binary
-         ) do
-      {:ok, {{_, 200, _}, _, body}} ->
-        File.write!(dest, body)
-
-      {:ok, {{_, status, _}, headers, _}} when status in [301, 302, 303, 307, 308] ->
-        location =
-          headers
-          |> Enum.find(fn {k, _} -> String.downcase(to_string(k)) == "location" end)
-          |> elem(1)
-          |> to_string()
-
-        download_file(location, dest)
-
-      {:ok, {{_, status, _}, _, _}} ->
+      {:ok, %Req.Response{status: status}} ->
+        File.rm(dest)
         Mix.raise("Failed to download #{url}: HTTP #{status}")
 
       {:error, reason} ->
+        File.rm(dest)
         Mix.raise("Failed to download #{url}: #{inspect(reason)}")
     end
   end
