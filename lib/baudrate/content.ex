@@ -641,12 +641,6 @@ defmodule Baudrate.Content do
   end
 
   @doc """
-  Backward-compatible alias for `can_edit_article?/2`.
-  """
-  @deprecated "Use can_edit_article?/2 instead"
-  def can_manage_article?(user, article), do: can_edit_article?(user, article)
-
-  @doc """
   Generates a URL-safe slug from a title string.
 
   Converts to lowercase, replaces non-alphanumeric characters with hyphens,
