@@ -153,10 +153,12 @@
   <%!-- QR code modal --%>
   <div
     :if={@qr_modal_code}
+    id="qr-modal"
     class="modal modal-open"
     role="dialog"
     aria-modal="true"
     aria-labelledby="qr-modal-title"
+    phx-hook="FocusTrapHook"
     phx-window-keydown="close_qr_modal"
     phx-key="Escape"
   >

@@ -49,6 +49,10 @@
           id="crop-modal"
           class="modal"
           aria-labelledby="crop-modal-title"
+          aria-modal="true"
+          phx-hook="FocusTrapHook"
+          phx-window-keydown="cancel_crop"
+          phx-key="Escape"
           {if @show_crop_modal, do: [open: true], else: []}
         >
           <div class="modal-box max-w-lg">

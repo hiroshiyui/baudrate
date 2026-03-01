@@ -235,10 +235,12 @@
 <%!-- Ban modal --%>
 <div
   :if={@ban_target}
+  id="ban-modal"
   class="modal modal-open"
   role="dialog"
   aria-modal="true"
   aria-labelledby="ban-modal-title"
+  phx-hook="FocusTrapHook"
   phx-window-keydown="cancel_ban"
   phx-key="Escape"
 >
@@ -277,10 +279,12 @@
 <%!-- Bulk ban modal --%>
 <div
   :if={@show_bulk_ban_modal}
+  id="bulk-ban-modal"
   class="modal modal-open"
   role="dialog"
   aria-modal="true"
   aria-labelledby="bulk-ban-modal-title"
+  phx-hook="FocusTrapHook"
   phx-window-keydown="cancel_bulk_ban"
   phx-key="Escape"
 >

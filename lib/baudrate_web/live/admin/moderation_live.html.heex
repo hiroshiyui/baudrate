@@ -215,10 +215,12 @@
 <%!-- Bulk resolve modal --%>
 <div
   :if={@show_bulk_resolve_modal}
+  id="bulk-resolve-modal"
   class="modal modal-open"
   role="dialog"
   aria-modal="true"
   aria-labelledby="bulk-resolve-modal-title"
+  phx-hook="FocusTrapHook"
   phx-window-keydown="cancel_bulk_resolve"
   phx-key="Escape"
 >
