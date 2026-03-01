@@ -114,14 +114,14 @@ Findings from project-wide code review (2026-03-01). Grouped by category.
 
 ### UI/UX Accessibility — Major
 
-- [ ] **a11y-2:** Replace `<div role="button">` dropdowns with `<button>` elements — Space key doesn't activate without keydown handler (`layouts.ex:35,232`)
-- [ ] **a11y-3:** Associate poll expires `<select>` with its `<label>` — use `for=`/`id` or nest inside label (`article_new_live.html.heex:196`)
+- [x] **a11y-2:** Replace `<div role="button">` dropdowns with `<button>` elements — Space key doesn't activate without keydown handler (`layouts.ex:35,232`)
+- [x] **a11y-3:** Associate poll expires `<select>` with its `<label>` — use `for=`/`id` or nest inside label (`article_new_live.html.heex:196`)
 - [x] **a11y-4:** Add `aria-modal="true"` to `<dialog>` and use `.showModal()` for proper focus trap (`profile_live.html.heex:48`)
-- [ ] **a11y-5:** Add `aria-hidden="true"` on icons and `sr-only` prefixes in password reset strength checklist — register page has it, reset page doesn't (`password_reset_live.html.heex:79-148`)
-- [ ] **a11y-6:** Add `role="tabpanel"` with `aria-labelledby` to search result content panels (`search_live.html.heex:161`)
-- [ ] **a11y-7:** Add `aria-label` to conversation unread count badges (`conversations_live.html.heex:51`)
-- [ ] **a11y-8:** Add `phx-disable-with` loading feedback to form submit buttons — missing from comment post, article create/edit, login, register, etc.
-- [ ] **a11y-9:** Associate notification preference checkboxes with `<label>` elements (`profile_live.html.heex:307`)
+- [x] **a11y-5:** Add `aria-hidden="true"` on icons and `sr-only` prefixes in password reset strength checklist — register page has it, reset page doesn't (`password_reset_live.html.heex:79-148`)
+- [x] **a11y-6:** Add `role="tabpanel"` with `aria-labelledby` to search result content panels (`search_live.html.heex:161`)
+- [x] **a11y-7:** Add `aria-label` to conversation unread count badges (`conversations_live.html.heex:51`)
+- [x] **a11y-8:** Add `phx-disable-with` loading feedback to form submit buttons — missing from comment post, article create/edit, login, register, etc.
+- [x] **a11y-9:** Associate notification preference checkboxes with `<label>` elements (`profile_live.html.heex:307`)
 
 ### UI/UX Accessibility — Minor
 
