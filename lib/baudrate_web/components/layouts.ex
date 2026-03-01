@@ -33,15 +33,15 @@ defmodule BaudrateWeb.Layouts do
       <%!-- Mobile hamburger (shown < lg) --%>
       <div :if={@current_user} id="mobile-nav-trigger" class="flex-none lg:hidden">
         <div class="dropdown">
-          <div
+          <button
+            type="button"
             tabindex="0"
-            role="button"
             aria-label={gettext("Open navigation menu")}
             aria-haspopup="true"
             class="btn btn-ghost"
           >
             <.icon name="hero-bars-3" class="size-5" />
-          </div>
+          </button>
           <nav aria-label={gettext("Main menu")}>
             <ul
               tabindex="0"
@@ -230,16 +230,16 @@ defmodule BaudrateWeb.Layouts do
 
         <%!-- Desktop user dropdown (shown >= lg) --%>
         <div :if={@current_user} id="user-menu-dropdown" class="hidden lg:block dropdown dropdown-end">
-          <div
+          <button
+            type="button"
             tabindex="0"
-            role="button"
             aria-haspopup="true"
             class="btn btn-ghost gap-2"
           >
             <.avatar user={@current_user} size={36} />
             <span class="truncate max-w-[10rem]">{display_name(@current_user)}</span>
             <.icon name="hero-chevron-down-micro" class="size-4" />
-          </div>
+          </button>
           <nav aria-label={gettext("User menu")}>
             <ul
               tabindex="0"
