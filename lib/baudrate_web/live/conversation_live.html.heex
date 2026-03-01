@@ -1,5 +1,5 @@
-<div class="space-y-4">
-  <div class="flex items-center gap-3">
+<div id="conversation-page" class="conversation-page space-y-4">
+  <div id="conversation-header" class="flex items-center gap-3">
     <.link
       navigate="/messages"
       class="btn btn-ghost btn-sm"
@@ -7,8 +7,10 @@
     >
       <.icon name="hero-arrow-left" class="size-4" />
     </.link>
-    <h1 :if={@mode == :select_recipient} class="text-xl font-bold">{gettext("New Message")}</h1>
-    <h1 :if={@mode != :select_recipient} class="text-xl font-bold">
+    <h1 :if={@mode == :select_recipient} id="conversation-heading" class="text-xl font-bold">
+      {gettext("New Message")}
+    </h1>
+    <h1 :if={@mode != :select_recipient} id="conversation-heading" class="text-xl font-bold">
       {participant_name(@other_participant)}
     </h1>
   </div>
@@ -89,8 +91,9 @@
 
         <div
           :for={msg <- @messages}
+          id={"message-#{msg.id}"}
           class={[
-            "chat",
+            "message chat",
             if(msg.sender_user_id == @current_user.id, do: "chat-end", else: "chat-start")
           ]}
         >
@@ -128,7 +131,7 @@
         </div>
       </div>
 
-      <div class="border-t border-base-300 p-4">
+      <div id="conversation-compose" class="border-t border-base-300 p-4">
         <.form for={@message_form} phx-submit="send_message" class="flex gap-2">
           <input
             type="text"

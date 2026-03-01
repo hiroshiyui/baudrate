@@ -1,6 +1,6 @@
-<div class="space-y-4">
+<div id="conversations-page" class="conversations-page space-y-4">
   <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold">{gettext("Messages")}</h1>
+    <h1 id="conversations-heading" class="text-2xl font-bold">{gettext("Messages")}</h1>
     <.link navigate="/messages/new" class="btn btn-primary btn-sm">
       <.icon name="hero-pencil-square" class="size-4" />
       {gettext("New Message")}
@@ -13,12 +13,13 @@
     <p class="text-sm">{gettext("Start a conversation from a user's profile page.")}</p>
   </div>
 
-  <div :if={@conversations != []} class="space-y-2" aria-live="polite">
+  <div :if={@conversations != []} id="conversations" class="space-y-2" aria-live="polite">
     <.link
       :for={conv <- @conversations}
+      id={"conversation-#{conv.id}"}
       navigate={~p"/messages/#{conv.id}"}
       class={[
-        "card bg-base-200 shadow-sm hover:bg-base-300 transition-colors cursor-pointer block",
+        "conversation card bg-base-200 shadow-sm hover:bg-base-300 transition-colors cursor-pointer block",
         Map.get(@muted_conversations, conv.id, false) && "opacity-50"
       ]}
     >
