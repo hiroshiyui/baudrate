@@ -1640,7 +1640,7 @@ defmodule Baudrate.Content do
       article.user_id == user_id ->
         {:error, :self_like}
 
-      article.deleted_at != nil ->
+      not is_nil(article.deleted_at) ->
         {:error, :deleted}
 
       true ->
@@ -1739,7 +1739,7 @@ defmodule Baudrate.Content do
       comment.user_id == user_id ->
         {:error, :self_like}
 
-      comment.deleted_at != nil ->
+      not is_nil(comment.deleted_at) ->
         {:error, :deleted}
 
       true ->
