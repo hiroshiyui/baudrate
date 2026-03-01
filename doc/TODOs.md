@@ -63,12 +63,6 @@ Findings from project-wide code review (2026-03-01). Grouped by category.
 - [x] **smell-5:** Extract private `not_found(conn)` helper — 404 JSON response repeated 18 times in `activity_pub_controller.ex`
 - [ ] **smell-6:** Extract shared `with_rate_limit_or_admin/3` — admin rate-limit bypass pattern repeated in 3 handlers in `article_live.ex`
 
-### Code Smells — Large Modules
-
-- [ ] **smell-7:** Split `content.ex` (2,840 lines) — consider: Articles, Comments, Boards, Polls, Search, Likes, Bookmarks
-- [ ] **smell-8:** Split `federation.ex` (1,967 lines) — consider: Actors, Collections, Feed, Delivery
-- [ ] **smell-9:** Split `inbox_handler.ex` (1,315 lines) — extract per-activity-type sub-modules
-
 ### Code Smells — Other
 
 - [ ] **smell-10:** Remove deprecated `can_manage_article?/2` and its tests (`content.ex:647`, `article_edit_test.exs:79-122`)
