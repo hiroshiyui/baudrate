@@ -17,7 +17,7 @@ defmodule Baudrate.Content.ArticleTag do
 
     belongs_to :article, Baudrate.Content.Article
 
-    timestamps(updated_at: false)
+    timestamps(updated_at: false, type: :utc_datetime)
   end
 
   @doc """

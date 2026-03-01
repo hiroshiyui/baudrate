@@ -2122,7 +2122,7 @@ defmodule Baudrate.Content do
     to_add = new_tags -- existing_tags
     to_remove = existing_tags -- new_tags
 
-    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     if to_add != [] do
       entries =
