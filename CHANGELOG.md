@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7] — 2026-03-03
+
+### Fixed
+
+- **Avatar crop broken in production** — CropperJS initialization used a fixed
+  `setTimeout(100ms)` that raced with the LiveView server round-trip. In
+  production with network latency, the crop dialog was not yet visible when
+  CropperJS tried to initialize, resulting in a 0×0 container and a silently
+  broken crop UI. Replaced the timeout with the LiveView hook `updated()`
+  lifecycle callback, which fires after the server's DOM patch renders the
+  dialog.
+
 ## [1.0.6] — 2026-03-02
 
 ### Fixed
@@ -243,6 +255,7 @@ Elixir/Phoenix + LiveView, federating via ActivityPub.
 - Extensive documentation (development guide, SysOp guide, API reference,
   troubleshooting guide)
 
+[1.0.7]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.0.7
 [1.0.6]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.0.6
 [1.0.5]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.0.5
 [1.0.4]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.0.4
