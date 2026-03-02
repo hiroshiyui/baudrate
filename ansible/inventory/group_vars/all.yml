@@ -1,0 +1,21 @@
+---
+# System
+baudrate_user: baudrate
+baudrate_home: /opt/baudrate
+
+# PostgreSQL
+postgres_version: "15"
+postgres_db_name: baudrate_prod
+postgres_db_user: baudrate
+# postgres_db_password provided by secrets.sops.yml (or auto-generated at runtime)
+
+# Networking
+app_port: 4000
+ssh_port: 22
+
+# Deployment paths (used in nginx templates)
+deploy_path: /opt/baudrate
+
+# Erlang/Elixir versions (match .tool-versions)
+erlang_version: "28.3.1"
+elixir_version: "1.19.5"

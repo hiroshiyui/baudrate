@@ -1,0 +1,9 @@
+# SOPS configuration — defines which keys encrypt which files.
+#
+# Replace the fingerprint below with your GPG key:
+#   gpg --list-keys --keyid-format long
+#
+# For multiple operators, list all fingerprints comma-separated.
+creation_rules:
+  - path_regex: \.sops\.yml$
+    pgp: "REPLACE_WITH_YOUR_GPG_FINGERPRINT"
