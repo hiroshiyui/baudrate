@@ -71,6 +71,35 @@
           ansible.builtin.pause:
             prompt: "Press Enter after you have saved the secret key base (Ctrl+C to abort)"
 
+    - name: Generate installation key (not found in secrets.sops.yml)
+      when: installation_key is not defined
+      block:
+        - name: Generate random installation key
+          ansible.builtin.set_fact:
+            installation_key: "{{ lookup('ansible.builtin.password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+
+        - name: Display generated installation key
+          ansible.builtin.debug:
+            msg: |
+              ============================================================
+              Generated INSTALLATION_KEY: {{ installation_key }}
+
+              Use this key to complete the setup wizard at /setup after
+              the first deploy. Save it to your SOPS secrets file:
+
+                sops inventory/group_vars/secrets.sops.yml
+
+              Add the value:
+                installation_key: "{{ installation_key }}"
+
+              NOTE: This key is only needed for the initial setup wizard.
+              You can remove it from the env file after setup is complete.
+              ============================================================
+
+        - name: Confirm installation key has been saved
+          ansible.builtin.pause:
+            prompt: "Press Enter after you have saved the installation key (Ctrl+C to abort)"
+
   roles:
     - role: deploy
       tags: [deploy]
