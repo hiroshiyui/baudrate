@@ -1,0 +1,46 @@
+---
+- name: Install PostgreSQL packages
+  ansible.builtin.apt:
+    name:
+      - "postgresql-{{ postgres_version }}"
+      - "postgresql-contrib-{{ postgres_version }}"
+      - libpq-dev
+      - python3-psycopg2
+    state: present
+
+- name: Ensure PostgreSQL is started and enabled
+  ansible.builtin.systemd:
+    name: postgresql
+    state: started
+    enabled: true
+
+- name: Create baudrate database user
+  become_user: postgres
+  community.postgresql.postgresql_user:
+    name: "{{ postgres_db_user }}"
+    password: "{{ postgres_db_password }}"
+    role_attr_flags: CREATEDB
+
+- name: Create baudrate database
+  become_user: postgres
+  community.postgresql.postgresql_db:
+    name: "{{ postgres_db_name }}"
+    owner: "{{ postgres_db_user }}"
+    encoding: UTF-8
+    lc_collate: en_US.UTF-8
+    lc_ctype: en_US.UTF-8
+
+- name: Enable pg_trgm extension
+  become_user: postgres
+  community.postgresql.postgresql_ext:
+    name: pg_trgm
+    db: "{{ postgres_db_name }}"
+
+- name: Configure pg_hba.conf for scram-sha-256 local auth
+  community.postgresql.postgresql_pg_hba:
+    dest: "/etc/postgresql/{{ postgres_version }}/main/pg_hba.conf"
+    contype: local
+    databases: "{{ postgres_db_name }}"
+    users: "{{ postgres_db_user }}"
+    method: scram-sha-256
+  notify: Restart postgresql

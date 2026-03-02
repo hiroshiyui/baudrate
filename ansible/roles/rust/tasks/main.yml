@@ -1,0 +1,28 @@
+---
+- name: Check if rustup is installed
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.stat:
+    path: "{{ baudrate_home }}/.cargo/bin/rustup"
+  register: rustup_installed
+
+- name: Install rustup
+  when: not rustup_installed.stat.exists
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.shell:
+    cmd: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+  environment:
+    CARGO_HOME: "{{ baudrate_home }}/.cargo"
+    RUSTUP_HOME: "{{ baudrate_home }}/.rustup"
+  args:
+    creates: "{{ baudrate_home }}/.cargo/bin/rustup"
+
+- name: Update Rust toolchain
+  when: rustup_installed.stat.exists
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.command:
+    cmd: "{{ baudrate_home }}/.cargo/bin/rustup update"
+  environment:
+    CARGO_HOME: "{{ baudrate_home }}/.cargo"
+    RUSTUP_HOME: "{{ baudrate_home }}/.rustup"
+  register: rustup_update
+  changed_when: "'updated' in rustup_update.stdout"

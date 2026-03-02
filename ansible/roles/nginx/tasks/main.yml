@@ -1,0 +1,75 @@
+---
+- name: Install nginx and certbot
+  ansible.builtin.apt:
+    name:
+      - nginx
+      - certbot
+      - python3-certbot-nginx
+    state: present
+
+- name: Remove default nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reload nginx
+
+- name: Create ACME webroot directory
+  ansible.builtin.file:
+    path: /var/www/certbot
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0755"
+
+# --- SSL bootstrap (chicken-and-egg solution) ---
+# 1. Deploy HTTP-only config with ACME challenge location
+# 2. Obtain certificate via certbot
+# 3. Deploy full HTTPS config
+
+- name: Check if SSL certificate exists
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ domain }}/fullchain.pem"
+  register: ssl_cert
+
+- name: Deploy pre-SSL nginx config
+  when: not ssl_cert.stat.exists
+  ansible.builtin.template:
+    src: baudrate-pre-ssl.conf.j2
+    dest: /etc/nginx/sites-available/baudrate
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Enable baudrate nginx site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/baudrate
+    dest: /etc/nginx/sites-enabled/baudrate
+    state: link
+  notify: Reload nginx
+
+- name: Flush handlers to start nginx with pre-SSL config
+  ansible.builtin.meta: flush_handlers
+
+- name: Obtain SSL certificate with certbot
+  when: not ssl_cert.stat.exists
+  ansible.builtin.command:
+    cmd: >
+      certbot certonly --webroot
+      --webroot-path /var/www/certbot
+      --domain {{ domain }}
+      --email {{ certbot_email }}
+      --agree-tos
+      --non-interactive
+    creates: "/etc/letsencrypt/live/{{ domain }}/fullchain.pem"
+
+- name: Deploy full nginx config with SSL
+  ansible.builtin.template:
+    src: baudrate.conf.j2
+    dest: /etc/nginx/sites-available/baudrate
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Enable certbot auto-renewal timer
+  ansible.builtin.systemd:
+    name: certbot.timer
+    state: started
+    enabled: true
