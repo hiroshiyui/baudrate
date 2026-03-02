@@ -21,6 +21,9 @@ static_path: "{{ deploy_path }}/static"
 git_repo: "https://github.com/hiroshiyui/baudrate.git"
 keep_releases: 5
 
+# asdf version manager
+asdf_version: "0.16.7"
+
 # Erlang/Elixir versions (match .tool-versions)
 erlang_version: "28.3.1"
 elixir_version: "1.19.5"

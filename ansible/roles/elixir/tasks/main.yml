@@ -11,88 +11,116 @@
       - unixodbc-dev
     state: present
 
-- name: Check if asdf is installed
-  ansible.builtin.stat:
-    path: "{{ baudrate_home }}/.asdf/asdf.sh"
-  register: asdf_installed
-
-- name: Install asdf
-  when: not asdf_installed.stat.exists
+- name: Create asdf bin directory
   become_user: "{{ baudrate_user }}"
-  ansible.builtin.git:
-    repo: https://github.com/asdf-vm/asdf.git
-    dest: "{{ baudrate_home }}/.asdf"
-    version: v0.16.7
-    depth: 1
+  ansible.builtin.file:
+    path: "{{ baudrate_home }}/.asdf/bin"
+    state: directory
+    mode: "0755"
 
-- name: Add asdf to shell profile
+- name: Download asdf binary
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.get_url:
+    url: "https://github.com/asdf-vm/asdf/releases/download/v{{ asdf_version }}/asdf-v{{ asdf_version }}-linux-amd64.tar.gz"
+    dest: "/tmp/asdf-v{{ asdf_version }}.tar.gz"
+    mode: "0644"
+
+- name: Extract asdf binary
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.unarchive:
+    src: "/tmp/asdf-v{{ asdf_version }}.tar.gz"
+    dest: "{{ baudrate_home }}/.asdf/bin"
+    remote_src: true
+
+- name: Verify asdf version
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.command:
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf version"
+  register: asdf_version_check
+  changed_when: false
+
+- name: Remove legacy asdf shell init (pre-0.16)
   become_user: "{{ baudrate_user }}"
   ansible.builtin.lineinfile:
     path: "{{ baudrate_home }}/.bashrc"
     line: '. "$HOME/.asdf/asdf.sh"'
+    state: absent
+
+- name: Add asdf to shell profile
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.blockinfile:
+    path: "{{ baudrate_home }}/.bashrc"
+    marker: "# {mark} ASDF MANAGED BLOCK"
+    block: |
+      export ASDF_DATA_DIR="{{ baudrate_home }}/.asdf"
+      export PATH="{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:$PATH"
     create: true
     mode: "0644"
 
 - name: Install asdf erlang plugin
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
-    cmd: bash -c '. "{{ baudrate_home }}/.asdf/asdf.sh" && asdf plugin add erlang'
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf plugin add erlang"
     creates: "{{ baudrate_home }}/.asdf/plugins/erlang"
   environment:
-    ASDF_DIR: "{{ baudrate_home }}/.asdf"
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
 
 - name: Install asdf elixir plugin
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
-    cmd: bash -c '. "{{ baudrate_home }}/.asdf/asdf.sh" && asdf plugin add elixir'
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf plugin add elixir"
     creates: "{{ baudrate_home }}/.asdf/plugins/elixir"
   environment:
-    ASDF_DIR: "{{ baudrate_home }}/.asdf"
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
 
 - name: Install Erlang {{ erlang_version }}
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
-    cmd: >
-      bash -c '. "{{ baudrate_home }}/.asdf/asdf.sh" &&
-      asdf install erlang {{ erlang_version }} &&
-      asdf set --home erlang {{ erlang_version }}'
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf install erlang {{ erlang_version }}"
     creates: "{{ baudrate_home }}/.asdf/installs/erlang/{{ erlang_version }}"
   environment:
-    ASDF_DIR: "{{ baudrate_home }}/.asdf"
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
-    PATH: "{{ baudrate_home }}/.asdf/shims:{{ baudrate_home }}/.asdf/bin:{{ ansible_env.PATH }}"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_env.PATH }}"
+
+- name: Set Erlang {{ erlang_version }} as global default
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.command:
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf set --home erlang {{ erlang_version }}"
+  environment:
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+  changed_when: true
 
 - name: Install Elixir {{ elixir_version }}
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
-    cmd: >
-      bash -c '. "{{ baudrate_home }}/.asdf/asdf.sh" &&
-      asdf install elixir {{ elixir_version }} &&
-      asdf set --home elixir {{ elixir_version }}'
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf install elixir {{ elixir_version }}"
     creates: "{{ baudrate_home }}/.asdf/installs/elixir/{{ elixir_version }}"
   environment:
-    ASDF_DIR: "{{ baudrate_home }}/.asdf"
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
-    PATH: "{{ baudrate_home }}/.asdf/shims:{{ baudrate_home }}/.asdf/bin:{{ ansible_env.PATH }}"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_env.PATH }}"
+
+- name: Set Elixir {{ elixir_version }} as global default
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.command:
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf set --home elixir {{ elixir_version }}"
+  environment:
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+  changed_when: true
 
 - name: Install Hex
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
-    cmd: bash -c '. "{{ baudrate_home }}/.asdf/asdf.sh" && mix local.hex --force'
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix local.hex --force"
   environment:
-    ASDF_DIR: "{{ baudrate_home }}/.asdf"
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
-    PATH: "{{ baudrate_home }}/.asdf/shims:{{ baudrate_home }}/.asdf/bin:{{ ansible_env.PATH }}"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_env.PATH }}"
   changed_when: false
 
 - name: Install Rebar
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
-    cmd: bash -c '. "{{ baudrate_home }}/.asdf/asdf.sh" && mix local.rebar --force'
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix local.rebar --force"
   environment:
-    ASDF_DIR: "{{ baudrate_home }}/.asdf"
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
-    PATH: "{{ baudrate_home }}/.asdf/shims:{{ baudrate_home }}/.asdf/bin:{{ ansible_env.PATH }}"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_env.PATH }}"
   changed_when: false
