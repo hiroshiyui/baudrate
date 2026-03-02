@@ -157,7 +157,9 @@ defmodule BaudrateWeb.Layouts do
 
       <%!-- Logo --%>
       <div class="flex-1">
-        <.link navigate="/" class="btn btn-ghost text-xl">Baudrate</.link>
+        <.link navigate="/" class="btn btn-ghost text-xl">
+          {Baudrate.Setup.get_setting("site_name") || "Baudrate"}
+        </.link>
       </div>
 
       <%!-- Desktop nav links (shown >= lg) --%>

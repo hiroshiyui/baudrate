@@ -11,7 +11,8 @@
     <meta name="vapid-public-key" content={Baudrate.Setup.get_setting("vapid_public_key") || ""} />
     <meta name="theme-color" content="#570df8" />
     <link rel="manifest" href={~p"/site.webmanifest"} />
-    <.live_title default="Baudrate" suffix=" · Baudrate">
+    <% site_name = Baudrate.Setup.get_setting("site_name") || "Baudrate" %>
+    <.live_title default={site_name} suffix={" · #{site_name}"}>
       {assigns[:page_title]}
     </.live_title>
     <link rel="icon" type="image/svg+xml" href={~p"/favicon.svg"} />
