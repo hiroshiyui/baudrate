@@ -76,8 +76,6 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: "{{ baudrate_user }}"
-    group: "{{ baudrate_user }}"
     mode: "0755"
   loop:
     - "{{ deploy_path }}/releases"
@@ -99,7 +97,6 @@
     release_timestamp: "{{ ansible_date_time.date | replace('-', '') }}_{{ ansible_date_time.time | replace(':', '') }}"
 
 - name: Clone or update source repository
-  become_user: "{{ baudrate_user }}"
   ansible.builtin.git:
     repo: "{{ git_repo }}"
     dest: "{{ deploy_path }}/src"
@@ -111,7 +108,6 @@
 # ============================================================
 
 - name: Install mix dependencies (prod only)
-  become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix deps.get --only prod"
     chdir: "{{ deploy_path }}/src"
@@ -124,7 +120,6 @@
   changed_when: true
 
 - name: Compile application
-  become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix compile"
     chdir: "{{ deploy_path }}/src"
@@ -137,7 +132,6 @@
   changed_when: true
 
 - name: Deploy assets
-  become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix assets.deploy"
     chdir: "{{ deploy_path }}/src"
@@ -148,13 +142,11 @@
   changed_when: true
 
 - name: Remove stale release directory from previous builds
-  become_user: "{{ baudrate_user }}"
   ansible.builtin.file:
     path: "{{ deploy_path }}/src/_build/prod/rel"
     state: absent
 
 - name: Build OTP release
-  become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix release --overwrite"
     chdir: "{{ deploy_path }}/src"
@@ -169,7 +161,6 @@
 # ============================================================
 
 - name: Copy release to timestamped directory
-  become_user: "{{ baudrate_user }}"
   ansible.builtin.copy:
     src: "{{ deploy_path }}/src/_build/prod/rel/baudrate/"
     dest: "{{ deploy_path }}/releases/{{ release_timestamp }}"
@@ -177,7 +168,6 @@
     mode: preserve
 
 - name: Write release tag file
-  become_user: "{{ baudrate_user }}"
   ansible.builtin.copy:
     content: "{{ release_tag }}"
     dest: "{{ deploy_path }}/releases/{{ release_timestamp }}/.release_tag"
@@ -211,8 +201,6 @@
     src: "{{ deploy_path }}/shared/uploads"
     dest: "{{ item.path }}/uploads"
     state: link
-    owner: "{{ baudrate_user }}"
-    group: "{{ baudrate_user }}"
   loop: "{{ release_static_dirs.files }}"
   when:
     - release_static_dirs.matched > 0
@@ -226,8 +214,6 @@
   ansible.builtin.template:
     src: baudrate.env.j2
     dest: "{{ deploy_path }}/env/baudrate.env"
-    owner: "{{ baudrate_user }}"
-    group: "{{ baudrate_user }}"
     mode: "0600"
   no_log: true
   notify: Restart baudrate
@@ -237,6 +223,7 @@
 # ============================================================
 
 - name: Deploy systemd service unit
+  become_user: root
   ansible.builtin.template:
     src: baudrate.service.j2
     dest: /etc/systemd/system/baudrate.service
@@ -246,6 +233,7 @@
     - Restart baudrate
 
 - name: Enable baudrate service
+  become_user: root
   ansible.builtin.systemd:
     name: baudrate
     enabled: true
@@ -255,7 +243,6 @@
 # ============================================================
 
 - name: Run database migrations
-  become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
     cmd: "{{ deploy_path }}/releases/{{ release_timestamp }}/bin/migrate"
   environment:
@@ -277,8 +264,6 @@
     src: "{{ deploy_path }}/releases/{{ release_timestamp }}"
     dest: "{{ deploy_path }}/current"
     state: link
-    owner: "{{ baudrate_user }}"
-    group: "{{ baudrate_user }}"
     force: true
   notify: Restart baudrate
 
@@ -293,8 +278,6 @@
     src: "{{ static_path_result.stdout | trim }}"
     dest: "{{ deploy_path }}/static"
     state: link
-    owner: "{{ baudrate_user }}"
-    group: "{{ baudrate_user }}"
     force: true
 
 # ============================================================

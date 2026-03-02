@@ -103,6 +103,10 @@ complete.
 
 ### What `deploy-baudrate.yml` Does
 
+All tasks run as the `baudrate` system user by default (set at the role level).
+Only systemd operations (service install, enable, reload, restart) escalate to
+root.
+
 | Phase | Description |
 |-------|-------------|
 | Pre-flight | Verify `baudrate` user and asdf exist; warn if deploying an older version |

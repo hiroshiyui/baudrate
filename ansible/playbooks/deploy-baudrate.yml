@@ -102,4 +102,5 @@
 
   roles:
     - role: deploy
+      become_user: "{{ baudrate_user }}"
       tags: [deploy]
