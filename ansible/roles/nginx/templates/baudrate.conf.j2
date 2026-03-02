@@ -91,7 +91,7 @@ server {
     # Phoenix fingerprints CSS/JS filenames with content hashes, safe for
     # aggressive caching. Served directly by nginx, bypassing the BEAM.
     location /assets/ {
-        alias {{ deploy_path }}/priv/static/assets/;
+        alias {{ static_path }}/assets/;
         expires 1y;
         add_header Cache-Control "public, immutable";
         add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
@@ -102,7 +102,7 @@ server {
     # --- User uploads (avatars, article images) ---
     # Served directly by nginx. nosniff prevents MIME-type confusion attacks.
     location /uploads/ {
-        alias {{ deploy_path }}/priv/static/uploads/;
+        alias {{ static_path }}/uploads/;
         expires 1h;
         add_header Cache-Control "public";
         add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
@@ -112,7 +112,7 @@ server {
 
     # --- Non-fingerprinted static files (short cache) ---
     location ~ ^/(fonts|images|favicon\.ico|favicon\.svg|robots\.txt|service_worker\.js|site\.webmanifest) {
-        root {{ deploy_path }}/priv/static;
+        root {{ static_path }};
         expires 1h;
         add_header Cache-Control "public";
         add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
