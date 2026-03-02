@@ -288,6 +288,93 @@ defmodule BaudrateWeb.SessionControllerTest do
     end
   end
 
+  describe "POST /auth/admin-totp-verify" do
+    test "valid code sets timestamp and redirects to return_to", %{conn: conn} do
+      admin = setup_user("admin")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(admin, secret)
+      code = NimbleTOTP.verification_code(secret)
+
+      conn =
+        conn
+        |> log_in_user(admin)
+        |> post("/auth/admin-totp-verify", %{"code" => code, "return_to" => "/admin/users"})
+
+      assert redirected_to(conn) == "/admin/users"
+      assert is_integer(get_session(conn, :admin_totp_verified_at))
+      assert is_nil(get_session(conn, :admin_totp_attempts))
+    end
+
+    test "invalid code shows error and increments attempts", %{conn: conn} do
+      admin = setup_user("admin")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(admin, secret)
+
+      conn =
+        conn
+        |> log_in_user(admin)
+        |> post("/auth/admin-totp-verify", %{"code" => "000000", "return_to" => "/admin/users"})
+
+      assert redirected_to(conn) =~ "/admin/verify"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Invalid verification code"
+      assert get_session(conn, :admin_totp_attempts) == 1
+    end
+
+    test "lockout after 5 failures redirects to /", %{conn: conn} do
+      admin = setup_user("admin")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(admin, secret)
+
+      conn =
+        conn
+        |> log_in_user(admin)
+        |> put_session(:admin_totp_attempts, 5)
+        |> post("/auth/admin-totp-verify", %{"code" => "000000", "return_to" => "/admin/users"})
+
+      assert redirected_to(conn) == "/"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Too many failed attempts"
+      # Session is NOT dropped — user remains logged in
+      assert get_session(conn, :session_token) != nil
+      # Attempts counter is cleared after lockout
+      assert is_nil(get_session(conn, :admin_totp_attempts))
+    end
+
+    test "non-admin gets access denied", %{conn: conn} do
+      user = setup_user("user")
+
+      conn =
+        conn
+        |> log_in_user(user)
+        |> post("/auth/admin-totp-verify", %{"code" => "123456"})
+
+      assert redirected_to(conn) == "/"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Access denied"
+    end
+
+    test "malicious return_to falls back to /admin/settings", %{conn: conn} do
+      admin = setup_user("admin")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(admin, secret)
+      code = NimbleTOTP.verification_code(secret)
+
+      conn =
+        conn
+        |> log_in_user(admin)
+        |> post("/auth/admin-totp-verify", %{
+          "code" => code,
+          "return_to" => "https://evil.com"
+        })
+
+      assert redirected_to(conn) == "/admin/settings"
+    end
+
+    test "unauthenticated user redirects to login", %{conn: conn} do
+      conn = post(conn, "/auth/admin-totp-verify", %{"code" => "123456"})
+      assert redirected_to(conn) == "/login"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Session expired"
+    end
+  end
+
   describe "DELETE /logout" do
     test "clears session and redirects to /login", %{conn: conn} do
       user = setup_user("user")

@@ -15,7 +15,7 @@ defmodule BaudrateWeb.Admin.LoginAttemptsLiveTest do
 
   test "admin can view login attempts page", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, _lv, html} = live(conn, "/admin/login-attempts")
     assert html =~ "Login Attempts"
@@ -31,7 +31,7 @@ defmodule BaudrateWeb.Admin.LoginAttemptsLiveTest do
 
   test "displays login attempt records", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     Auth.record_login_attempt("testuser", "10.0.0.1", false)
     Auth.record_login_attempt("testuser", "10.0.0.2", true)
@@ -45,7 +45,7 @@ defmodule BaudrateWeb.Admin.LoginAttemptsLiveTest do
 
   test "admin can filter by username", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     Auth.record_login_attempt("alice", "10.0.0.1", false)
     Auth.record_login_attempt("bob", "10.0.0.1", false)

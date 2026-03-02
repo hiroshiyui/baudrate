@@ -15,7 +15,7 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
 
   test "admin can view boards page", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, _lv, html} = live(conn, "/admin/boards")
     assert html =~ "Board Management"
@@ -30,7 +30,7 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
 
   test "admin can open new board form", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/boards")
     html = lv |> element("button[phx-click=\"new\"]") |> render_click()
@@ -39,7 +39,7 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
 
   test "admin can create a board", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/boards")
     lv |> element("button[phx-click=\"new\"]") |> render_click()
@@ -65,7 +65,7 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
 
   test "admin can edit a board", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, board} =
       Content.create_board(%{
@@ -87,7 +87,7 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
 
   test "admin can delete an empty board", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, board} =
       Content.create_board(%{
@@ -108,7 +108,7 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
 
   test "admin cannot delete board with articles", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, board} =
       Content.create_board(%{
@@ -151,7 +151,7 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
 
   test "admin cannot delete board with children", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, parent} =
       Content.create_board(%{
@@ -178,7 +178,7 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
 
   test "admin can cancel form", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/boards")
     lv |> element("button[phx-click=\"new\"]") |> render_click()

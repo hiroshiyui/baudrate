@@ -72,7 +72,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
   test "admin can access moderation page", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, _lv, html} = live(conn, "/admin/moderation")
     assert html =~ "Moderation Queue"
@@ -95,7 +95,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
   test "shows open reports by default", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {_report, _article} = create_report_with_article(admin)
 
@@ -105,7 +105,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
   test "filter to resolved tab shows empty state", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/moderation")
 
@@ -119,7 +119,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
   test "resolve a report", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {report, _article} = create_report_with_article(admin)
 
@@ -135,7 +135,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
   test "dismiss a report", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {report, _article} = create_report_with_article(admin)
 
@@ -151,7 +151,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
   test "delete reported article", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {_report, article} = create_report_with_article(admin)
 
@@ -169,7 +169,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
   test "delete reported comment", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {_report, comment} = create_report_with_comment(admin)
 
@@ -190,7 +190,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
   describe "bulk select reports" do
     test "toggle_select_report adds and removes from selection", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
       {report, _} = create_report_with_article(admin)
 
       {:ok, lv, _html} = live(conn, "/admin/moderation")
@@ -214,7 +214,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
     test "toggle_select_all_reports selects and deselects all", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
       {_, _} = create_report_with_article(admin)
       {_, _} = create_report_with_article(admin)
 
@@ -231,7 +231,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
     test "selection clears on filter change", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
       {report, _} = create_report_with_article(admin)
 
       {:ok, lv, _html} = live(conn, "/admin/moderation")
@@ -252,7 +252,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
     test "checkboxes only shown for open reports", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
       {report, _} = create_report_with_article(admin)
       Moderation.resolve_report(report, admin.id, "done")
 
@@ -271,7 +271,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
   describe "bulk resolve" do
     test "resolves all selected reports with shared note", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
       {report1, _} = create_report_with_article(admin)
       {report2, _} = create_report_with_article(admin)
 
@@ -313,7 +313,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
     test "cancel bulk resolve modal closes it", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
       {report, _} = create_report_with_article(admin)
 
       {:ok, lv, _html} = live(conn, "/admin/moderation")
@@ -332,7 +332,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
   describe "bulk dismiss" do
     test "dismisses all selected reports", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
       {report1, _} = create_report_with_article(admin)
       {report2, _} = create_report_with_article(admin)
 

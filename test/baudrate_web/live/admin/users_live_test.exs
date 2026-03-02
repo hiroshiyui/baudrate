@@ -16,7 +16,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
 
   test "admin can view users page", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, _lv, html} = live(conn, "/admin/users")
     assert html =~ "User Management"
@@ -31,7 +31,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
 
   test "admin can filter users by status", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/users")
 
@@ -44,7 +44,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
   test "admin can search users", %{conn: conn} do
     admin = setup_user("admin")
     user = setup_user("user")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/users")
 
@@ -55,7 +55,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
   test "admin can ban a user", %{conn: conn} do
     admin = setup_user("admin")
     user = setup_user("user")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/users")
 
@@ -77,7 +77,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
     admin = setup_user("admin")
     user = setup_user("user")
     {:ok, _, _} = Auth.ban_user(user, admin.id, "test")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/users")
 
@@ -93,7 +93,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
   test "admin can change user role", %{conn: conn} do
     admin = setup_user("admin")
     user = setup_user("user")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     import Ecto.Query
     mod_role = Repo.one!(from(r in Baudrate.Setup.Role, where: r.name == "moderator"))
@@ -112,7 +112,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
 
   test "admin can approve a pending user", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     # Create a pending user
     import Ecto.Query
@@ -145,7 +145,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
 
   test "pagination controls appear when users exceed per_page", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     # Create enough users to exceed 1 page (per_page defaults to 20)
     for _i <- 1..21, do: setup_user("user")
@@ -158,7 +158,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
 
   test "filter and pagination work together", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     # With only admin + 1 user, filtering to "active" should not show pagination
     _user = setup_user("user")
@@ -196,7 +196,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
     test "toggle_select adds and removes user from selection", %{conn: conn} do
       admin = setup_user("admin")
       user = setup_user("user")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, lv, _html} = live(conn, "/admin/users")
 
@@ -221,7 +221,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
       admin = setup_user("admin")
       _user1 = setup_user("user")
       _user2 = setup_user("user")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, lv, _html} = live(conn, "/admin/users")
 
@@ -237,7 +237,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
     test "selection clears on filter change", %{conn: conn} do
       admin = setup_user("admin")
       user = setup_user("user")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, lv, _html} = live(conn, "/admin/users")
 
@@ -258,7 +258,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
     test "selection clears on search", %{conn: conn} do
       admin = setup_user("admin")
       user = setup_user("user")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, lv, _html} = live(conn, "/admin/users")
 
@@ -276,7 +276,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
   describe "bulk approve" do
     test "approves all selected pending users", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       pending1 = create_pending_user()
       pending2 = create_pending_user()
@@ -315,7 +315,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
     test "approve button only visible when filtered to pending", %{conn: conn} do
       admin = setup_user("admin")
       user = setup_user("user")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, lv, _html} = live(conn, "/admin/users")
 
@@ -335,7 +335,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
       admin = setup_user("admin")
       user1 = setup_user("user")
       user2 = setup_user("user")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, lv, _html} = live(conn, "/admin/users")
 
@@ -379,7 +379,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
 
     test "self is excluded from bulk ban selection", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, lv, _html} = live(conn, "/admin/users")
 
@@ -396,7 +396,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
     test "cancel bulk ban modal closes it", %{conn: conn} do
       admin = setup_user("admin")
       user = setup_user("user")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, lv, _html} = live(conn, "/admin/users")
 

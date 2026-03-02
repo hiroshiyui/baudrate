@@ -14,7 +14,7 @@ defmodule BaudrateWeb.Admin.PendingUsersLiveTest do
 
   test "admin can view pending users page", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, _lv, html} = live(conn, "/admin/pending-users")
     assert html =~ "Pending Users"
@@ -23,7 +23,7 @@ defmodule BaudrateWeb.Admin.PendingUsersLiveTest do
 
   test "admin sees pending users in the list", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, _pending_user, _codes} =
       Auth.register_user(%{
@@ -40,7 +40,7 @@ defmodule BaudrateWeb.Admin.PendingUsersLiveTest do
 
   test "admin can approve a pending user", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, pending_user, _codes} =
       Auth.register_user(%{

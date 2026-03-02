@@ -15,7 +15,7 @@ defmodule BaudrateWeb.Admin.InvitesLiveTest do
 
   test "admin can view invites page", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, _lv, html} = live(conn, "/admin/invites")
     assert html =~ "Invite Codes"
@@ -30,7 +30,7 @@ defmodule BaudrateWeb.Admin.InvitesLiveTest do
 
   test "admin can generate an invite code", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/invites")
 
@@ -40,7 +40,7 @@ defmodule BaudrateWeb.Admin.InvitesLiveTest do
 
   test "admin can revoke an invite code", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, invite} = Auth.generate_invite_code(admin)
 
@@ -58,7 +58,7 @@ defmodule BaudrateWeb.Admin.InvitesLiveTest do
     admin = setup_user("admin")
     {:ok, invite} = Auth.generate_invite_code(admin)
 
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
     {:ok, lv, html} = live(conn, "/admin/invites")
 
     assert html =~ "CopyToClipboardHook"
@@ -83,7 +83,7 @@ defmodule BaudrateWeb.Admin.InvitesLiveTest do
   test "admin can generate invite code for another user", %{conn: conn} do
     admin = setup_user("admin")
     user = setup_user("user")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/invites")
 
@@ -105,7 +105,7 @@ defmodule BaudrateWeb.Admin.InvitesLiveTest do
   test "generated-for-user code shows target user as Created By", %{conn: conn} do
     admin = setup_user("admin")
     user = setup_user("user")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/invites")
 

@@ -15,7 +15,7 @@ defmodule BaudrateWeb.Admin.ModerationLogLiveTest do
 
   test "admin can view moderation log", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, _lv, html} = live(conn, "/admin/moderation-log")
     assert html =~ "Moderation Log"
@@ -33,7 +33,7 @@ defmodule BaudrateWeb.Admin.ModerationLogLiveTest do
 
   test "displays moderation log entries", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     Moderation.log_action(admin.id, "ban_user",
       target_type: "user",
@@ -48,7 +48,7 @@ defmodule BaudrateWeb.Admin.ModerationLogLiveTest do
 
   test "admin can filter by action", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     Moderation.log_action(admin.id, "ban_user")
     Moderation.log_action(admin.id, "create_board")

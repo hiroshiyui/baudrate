@@ -16,7 +16,7 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
 
   test "admin can view settings page", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, _lv, html} = live(conn, "/admin/settings")
     assert html =~ "Admin Settings"
@@ -33,7 +33,7 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
 
   test "admin can validate settings", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/settings")
 
@@ -47,7 +47,7 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
 
   test "admin can save settings", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/settings")
 
@@ -63,7 +63,7 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
 
   test "admin sees validation errors on invalid submit", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/settings")
 
@@ -79,7 +79,7 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
 
   test "admin can save timezone setting", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, html} = live(conn, "/admin/settings")
     assert html =~ "Timezone"
@@ -98,7 +98,7 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
   describe "theme settings" do
     test "theme dropdowns render with correct options", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, _lv, html} = live(conn, "/admin/settings")
       assert html =~ "Light Theme"
@@ -110,7 +110,7 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
 
     test "admin can save theme settings", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, lv, _html} = live(conn, "/admin/settings")
 
@@ -132,7 +132,7 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
 
     test "default theme values are light and dark", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, _lv, html} = live(conn, "/admin/settings")
 
@@ -149,7 +149,7 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
   describe "EUA management" do
     test "EUA textarea renders on settings page", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, _lv, html} = live(conn, "/admin/settings")
       assert html =~ "End User Agreement"
@@ -158,7 +158,7 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
 
     test "admin can save EUA text", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, lv, _html} = live(conn, "/admin/settings")
 
@@ -174,7 +174,7 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
     test "admin can update existing EUA", %{conn: conn} do
       Repo.insert!(%Setting{key: "eua", value: "Old EUA text"})
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, lv, _html} = live(conn, "/admin/settings")
 
@@ -189,7 +189,7 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
 
     test "EUA textarea has markdown toolbar and preview", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, _lv, html} = live(conn, "/admin/settings")
 
@@ -200,7 +200,7 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
 
     test "markdown preview works for EUA editor", %{conn: conn} do
       admin = setup_user("admin")
-      conn = log_in_user(conn, admin)
+      conn = log_in_admin(conn, admin)
 
       {:ok, lv, _html} = live(conn, "/admin/settings")
 

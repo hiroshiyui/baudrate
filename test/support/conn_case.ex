@@ -102,4 +102,28 @@ defmodule BaudrateWeb.ConnCase do
       refreshed_at: DateTime.utc_now() |> DateTime.to_iso8601()
     })
   end
+
+  @doc """
+  Creates a DB session and sets session keys for an admin user with sudo mode
+  pre-verified. Enables TOTP on the user if not already enabled. Use this
+  instead of `log_in_user/2` for admin tests that access `/admin/*` routes
+  to bypass TOTP re-verification.
+  """
+  def log_in_admin(conn, user) do
+    # Ensure TOTP is enabled (required by :require_admin_totp hook)
+    unless user.totp_enabled do
+      secret = Baudrate.Auth.generate_totp_secret()
+      Baudrate.Auth.enable_totp(user, secret)
+    end
+
+    {:ok, session_token, refresh_token} = Baudrate.Auth.create_user_session(user.id)
+
+    conn
+    |> Plug.Test.init_test_session(%{
+      session_token: session_token,
+      refresh_token: refresh_token,
+      refreshed_at: DateTime.utc_now() |> DateTime.to_iso8601(),
+      admin_totp_verified_at: System.system_time(:second)
+    })
+  end
 end

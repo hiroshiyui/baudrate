@@ -38,7 +38,7 @@ defmodule BaudrateWeb.Admin.FederationLiveTest do
 
   test "admin can access federation page", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, _lv, html} = live(conn, "/admin/federation")
     assert html =~ "Federation Dashboard"
@@ -53,7 +53,7 @@ defmodule BaudrateWeb.Admin.FederationLiveTest do
 
   test "retry a failed delivery job", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     job = create_failed_delivery_job()
 
@@ -72,7 +72,7 @@ defmodule BaudrateWeb.Admin.FederationLiveTest do
 
   test "abandon a delivery job", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     job = create_failed_delivery_job()
 
@@ -91,7 +91,7 @@ defmodule BaudrateWeb.Admin.FederationLiveTest do
 
   test "block a domain", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     # Create a remote actor so the domain shows up in known instances
     uid = System.unique_integer([:positive])
@@ -122,7 +122,7 @@ defmodule BaudrateWeb.Admin.FederationLiveTest do
 
   test "toggle board federation", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     board = create_board_for_federation("Toggle Board")
 
@@ -142,7 +142,7 @@ defmodule BaudrateWeb.Admin.FederationLiveTest do
 
   test "rotate site keys", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/federation")
 
@@ -156,7 +156,7 @@ defmodule BaudrateWeb.Admin.FederationLiveTest do
 
   test "displays delivery queue stats", %{conn: conn} do
     admin = setup_user("admin")
-    conn = log_in_user(conn, admin)
+    conn = log_in_admin(conn, admin)
 
     # Create some delivery jobs with different statuses
     create_failed_delivery_job()
