@@ -1,0 +1,34 @@
+# {{ ansible_managed }}
+# Baudrate BBS/Forum — systemd service unit
+
+[Unit]
+Description=Baudrate BBS/Forum
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=exec
+User={{ baudrate_user }}
+WorkingDirectory={{ deploy_path }}/current
+EnvironmentFile={{ deploy_path }}/env/baudrate.env
+ExecStart={{ deploy_path }}/current/bin/server
+ExecStop={{ deploy_path }}/current/bin/baudrate stop
+Restart=on-failure
+RestartSec=5
+SyslogIdentifier=baudrate
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ deploy_path }}/shared/uploads
+ReadOnlyPaths={{ deploy_path }}/current {{ deploy_path }}/releases {{ deploy_path }}/env
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

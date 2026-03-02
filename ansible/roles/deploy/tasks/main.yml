@@ -1,0 +1,338 @@
+---
+# Baudrate — Deploy role
+#
+# Builds Baudrate from a git release tag, creates an OTP release,
+# manages symlink-based releases, runs migrations, and restarts the service.
+
+# ============================================================
+# Phase 1: Pre-flight checks
+# ============================================================
+
+- name: Verify baudrate user exists
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ baudrate_user }}"
+  register: baudrate_user_check
+
+- name: Verify asdf is installed
+  ansible.builtin.stat:
+    path: "{{ baudrate_home }}/.asdf/asdf.sh"
+  register: asdf_check
+
+- name: Fail if asdf is not installed
+  ansible.builtin.assert:
+    that:
+      - asdf_check.stat.exists
+    fail_msg: >
+      asdf is not installed for {{ baudrate_user }}.
+      Run setup-server.yml first to provision the server.
+
+- name: Check for currently deployed release
+  ansible.builtin.stat:
+    path: "{{ deploy_path }}/current"
+  register: current_release
+
+- name: Read current release tag
+  when: current_release.stat.exists
+  block:
+    - name: Check for deployed tag file
+      ansible.builtin.stat:
+        path: "{{ deploy_path }}/current/.release_tag"
+      register: tag_file
+
+    - name: Read deployed tag
+      when: tag_file.stat.exists
+      ansible.builtin.slurp:
+        src: "{{ deploy_path }}/current/.release_tag"
+      register: deployed_tag_raw
+
+    - name: Set deployed tag fact
+      when: tag_file.stat.exists
+      ansible.builtin.set_fact:
+        deployed_tag: "{{ deployed_tag_raw.content | b64decode | trim }}"
+
+    - name: Warn if deploying older version
+      when:
+        - deployed_tag is defined
+        - release_tag is version(deployed_tag, '<')
+      block:
+        - name: Display version warning
+          ansible.builtin.debug:
+            msg: |
+              ============================================================
+              WARNING: You are deploying {{ release_tag }} which is OLDER
+              than the currently deployed {{ deployed_tag }}.
+              ============================================================
+
+        - name: Confirm rollback
+          ansible.builtin.pause:
+            prompt: "Press Enter to continue with rollback, or Ctrl+C to abort"
+
+# ============================================================
+# Phase 2: Create directory structure
+# ============================================================
+
+- name: Create deployment directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ baudrate_user }}"
+    group: "{{ baudrate_user }}"
+    mode: "0755"
+  loop:
+    - "{{ deploy_path }}/releases"
+    - "{{ deploy_path }}/shared/uploads/avatars"
+    - "{{ deploy_path }}/shared/uploads/article_images"
+    - "{{ deploy_path }}/env"
+
+- name: Restrict env directory permissions
+  ansible.builtin.file:
+    path: "{{ deploy_path }}/env"
+    mode: "0700"
+
+# ============================================================
+# Phase 3: Source checkout
+# ============================================================
+
+- name: Set release timestamp
+  ansible.builtin.set_fact:
+    release_timestamp: "{{ ansible_date_time.date | replace('-', '') }}_{{ ansible_date_time.time | replace(':', '') }}"
+
+- name: Clone or update source repository
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.git:
+    repo: "{{ git_repo }}"
+    dest: "{{ deploy_path }}/src"
+    version: "{{ release_tag }}"
+    force: true
+
+# ============================================================
+# Phase 4: Build OTP release
+# ============================================================
+
+- name: Install mix dependencies (prod only)
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.command:
+    cmd: >
+      bash -c '. "{{ baudrate_home }}/.asdf/asdf.sh" &&
+      mix deps.get --only prod'
+    chdir: "{{ deploy_path }}/src"
+  environment:
+    ASDF_DIR: "{{ baudrate_home }}/.asdf"
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+    PATH: "{{ baudrate_home }}/.asdf/shims:{{ baudrate_home }}/.asdf/bin:{{ ansible_env.PATH }}"
+    CARGO_HOME: "{{ baudrate_home }}/.cargo"
+    RUSTUP_HOME: "{{ baudrate_home }}/.rustup"
+    MIX_ENV: prod
+  changed_when: true
+
+- name: Compile application
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.command:
+    cmd: >
+      bash -c '. "{{ baudrate_home }}/.asdf/asdf.sh" &&
+      mix compile'
+    chdir: "{{ deploy_path }}/src"
+  environment:
+    ASDF_DIR: "{{ baudrate_home }}/.asdf"
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+    PATH: "{{ baudrate_home }}/.asdf/shims:{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.cargo/bin:{{ ansible_env.PATH }}"
+    CARGO_HOME: "{{ baudrate_home }}/.cargo"
+    RUSTUP_HOME: "{{ baudrate_home }}/.rustup"
+    MIX_ENV: prod
+  changed_when: true
+
+- name: Deploy assets
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.command:
+    cmd: >
+      bash -c '. "{{ baudrate_home }}/.asdf/asdf.sh" &&
+      mix assets.deploy'
+    chdir: "{{ deploy_path }}/src"
+  environment:
+    ASDF_DIR: "{{ baudrate_home }}/.asdf"
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+    PATH: "{{ baudrate_home }}/.asdf/shims:{{ baudrate_home }}/.asdf/bin:{{ ansible_env.PATH }}"
+    MIX_ENV: prod
+  changed_when: true
+
+- name: Build OTP release
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.command:
+    cmd: >
+      bash -c '. "{{ baudrate_home }}/.asdf/asdf.sh" &&
+      mix release --overwrite'
+    chdir: "{{ deploy_path }}/src"
+  environment:
+    ASDF_DIR: "{{ baudrate_home }}/.asdf"
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+    PATH: "{{ baudrate_home }}/.asdf/shims:{{ baudrate_home }}/.asdf/bin:{{ ansible_env.PATH }}"
+    MIX_ENV: prod
+  changed_when: true
+
+# ============================================================
+# Phase 5: Install release
+# ============================================================
+
+- name: Copy release to timestamped directory
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.copy:
+    src: "{{ deploy_path }}/src/_build/prod/rel/baudrate/"
+    dest: "{{ deploy_path }}/releases/{{ release_timestamp }}"
+    remote_src: true
+    mode: preserve
+
+- name: Write release tag file
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.copy:
+    content: "{{ release_tag }}"
+    dest: "{{ deploy_path }}/releases/{{ release_timestamp }}/.release_tag"
+    mode: "0644"
+
+- name: Find uploads directory in release
+  ansible.builtin.find:
+    paths: "{{ deploy_path }}/releases/{{ release_timestamp }}"
+    patterns: "uploads"
+    file_type: directory
+    recurse: true
+  register: release_uploads_dirs
+
+- name: Remove uploads directory from release
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ release_uploads_dirs.files }}"
+  when: release_uploads_dirs.matched > 0
+
+- name: Find priv/static directory in release
+  ansible.builtin.find:
+    paths: "{{ deploy_path }}/releases/{{ release_timestamp }}/lib"
+    patterns: "static"
+    file_type: directory
+    recurse: true
+  register: release_static_dirs
+
+- name: Symlink shared uploads into release static directory
+  ansible.builtin.file:
+    src: "{{ deploy_path }}/shared/uploads"
+    dest: "{{ item.path }}/uploads"
+    state: link
+    owner: "{{ baudrate_user }}"
+    group: "{{ baudrate_user }}"
+  loop: "{{ release_static_dirs.files }}"
+  when:
+    - release_static_dirs.matched > 0
+    - "'/priv/static' in item.path"
+
+# ============================================================
+# Phase 6: Environment file
+# ============================================================
+
+- name: Deploy environment file
+  ansible.builtin.template:
+    src: baudrate.env.j2
+    dest: "{{ deploy_path }}/env/baudrate.env"
+    owner: "{{ baudrate_user }}"
+    group: "{{ baudrate_user }}"
+    mode: "0600"
+  no_log: true
+  notify: Restart baudrate
+
+# ============================================================
+# Phase 7: Systemd service
+# ============================================================
+
+- name: Deploy systemd service unit
+  ansible.builtin.template:
+    src: baudrate.service.j2
+    dest: /etc/systemd/system/baudrate.service
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart baudrate
+
+- name: Enable baudrate service
+  ansible.builtin.systemd:
+    name: baudrate
+    enabled: true
+
+# ============================================================
+# Phase 8: Database migration
+# ============================================================
+
+- name: Run database migrations
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.command:
+    cmd: "{{ deploy_path }}/releases/{{ release_timestamp }}/bin/migrate"
+  environment:
+    DATABASE_URL: "ecto://{{ postgres_db_user }}:{{ postgres_db_password }}@localhost/{{ postgres_db_name }}"
+    SECRET_KEY_BASE: "{{ secret_key_base }}"
+    PHX_HOST: "{{ domain }}"
+    PHX_SERVER: "true"
+  no_log: true
+  register: migration_result
+  changed_when: "'already up' not in migration_result.stdout"
+
+# ============================================================
+# Phase 9: Activate release (atomic symlink swap)
+# ============================================================
+
+- name: Activate release — update current symlink
+  ansible.builtin.file:
+    src: "{{ deploy_path }}/releases/{{ release_timestamp }}"
+    dest: "{{ deploy_path }}/current"
+    state: link
+    owner: "{{ baudrate_user }}"
+    group: "{{ baudrate_user }}"
+    force: true
+  notify: Restart baudrate
+
+- name: Find priv/static path in active release
+  ansible.builtin.shell:
+    cmd: "ls -d {{ deploy_path }}/current/lib/baudrate-*/priv/static"
+  register: static_path_result
+  changed_when: false
+
+- name: Update static symlink
+  ansible.builtin.file:
+    src: "{{ static_path_result.stdout | trim }}"
+    dest: "{{ deploy_path }}/static"
+    state: link
+    owner: "{{ baudrate_user }}"
+    group: "{{ baudrate_user }}"
+    force: true
+
+# ============================================================
+# Phase 10: Restart and health check
+# ============================================================
+
+- name: Flush handlers to restart service
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for application to become healthy
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ app_port }}/health"
+    method: GET
+    status_code: 200
+  register: health_check
+  until: health_check.status == 200
+  retries: 30
+  delay: 2
+
+# ============================================================
+# Phase 11: Cleanup old releases
+# ============================================================
+
+- name: List all releases
+  ansible.builtin.find:
+    paths: "{{ deploy_path }}/releases"
+    file_type: directory
+    recurse: false
+  register: all_releases
+
+- name: Remove old releases (keep {{ keep_releases }} most recent)
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ (all_releases.files | sort(attribute='path') | reverse | list)[keep_releases:] }}"
+  when: all_releases.files | length > keep_releases
