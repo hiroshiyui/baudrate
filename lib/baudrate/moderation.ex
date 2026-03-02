@@ -2,9 +2,10 @@ defmodule Baudrate.Moderation do
   @moduledoc """
   The Moderation context manages content reports and moderation actions.
 
-  Reports can target articles, comments, or remote actors. Admins and
-  moderators can review, resolve, or dismiss reports through the
-  moderation queue.
+  Reports can target articles, comments, remote actors, or local users.
+  Admins and moderators can review, resolve, or dismiss reports through
+  the moderation queue. Authenticated users can submit reports from
+  article pages, comment threads, and user profile pages.
   """
 
   import Ecto.Query
@@ -31,8 +32,40 @@ defmodule Baudrate.Moderation do
   end
 
   @doc """
+  Checks whether the given reporter already has an open report for the
+  same target. Returns `true` if a duplicate exists.
+  """
+  @spec has_open_report?(integer(), map()) :: boolean()
+  def has_open_report?(reporter_id, target_attrs) do
+    base =
+      from(r in Report,
+        where: r.reporter_id == ^reporter_id and r.status == "open"
+      )
+
+    query =
+      Enum.reduce(target_attrs, base, fn
+        {:article_id, id}, q when not is_nil(id) ->
+          from(r in q, where: r.article_id == ^id)
+
+        {:comment_id, id}, q when not is_nil(id) ->
+          from(r in q, where: r.comment_id == ^id)
+
+        {:reported_user_id, id}, q when not is_nil(id) ->
+          from(r in q, where: r.reported_user_id == ^id)
+
+        {:remote_actor_id, id}, q when not is_nil(id) ->
+          from(r in q, where: r.remote_actor_id == ^id)
+
+        _, q ->
+          q
+      end)
+
+    Repo.exists?(query)
+  end
+
+  @doc """
   Lists reports filtered by status. Defaults to "open".
-  Preloads reporter, article, comment, and remote_actor.
+  Preloads reporter, article, comment, remote_actor, reported_user, and resolved_by.
   """
   @spec list_reports(keyword()) :: [Report.t()]
   def list_reports(opts \\ []) do
@@ -41,7 +74,7 @@ defmodule Baudrate.Moderation do
     from(r in Report,
       where: r.status == ^status,
       order_by: [desc: r.inserted_at],
-      preload: [:reporter, :article, :comment, :remote_actor, :resolved_by]
+      preload: [:reporter, :article, :comment, :remote_actor, :reported_user, :resolved_by]
     )
     |> Repo.all()
   end
@@ -53,7 +86,7 @@ defmodule Baudrate.Moderation do
   def get_report!(id) do
     Report
     |> Repo.get!(id)
-    |> Repo.preload([:reporter, :article, :comment, :remote_actor, :resolved_by])
+    |> Repo.preload([:reporter, :article, :comment, :remote_actor, :reported_user, :resolved_by])
   end
 
   @doc """
