@@ -141,4 +141,103 @@ defmodule BaudrateWeb.SetupLiveTest do
       assert html =~ "Connected"
     end
   end
+
+  describe "installation key" do
+    setup do
+      on_exit(fn -> Application.delete_env(:baudrate, :installation_key) end)
+    end
+
+    test "wizard starts at :database when key is not configured", %{conn: conn} do
+      Application.delete_env(:baudrate, :installation_key)
+
+      {:ok, _view, html} = live(conn, ~p"/setup")
+      assert html =~ "Database Connection"
+      refute html =~ "Installation Key"
+    end
+
+    test "wizard starts at :verify_key when key is configured", %{conn: conn} do
+      Application.put_env(:baudrate, :installation_key, "test-secret-key-123")
+
+      {:ok, _view, html} = live(conn, ~p"/setup")
+      assert html =~ "Installation Key"
+      assert html =~ "Enter the installation key to proceed with setup."
+      refute html =~ "Database Connection"
+    end
+
+    test "shows Verification step in steps indicator when key is required", %{conn: conn} do
+      Application.put_env(:baudrate, :installation_key, "test-secret-key-123")
+
+      {:ok, _view, html} = live(conn, ~p"/setup")
+      assert html =~ "Verification"
+    end
+
+    test "does not show Verification step when key is not required", %{conn: conn} do
+      Application.delete_env(:baudrate, :installation_key)
+
+      {:ok, _view, html} = live(conn, ~p"/setup")
+      refute html =~ "Verification"
+    end
+
+    test "correct key advances to :database step", %{conn: conn} do
+      Application.put_env(:baudrate, :installation_key, "correct-key-abc")
+
+      {:ok, view, _html} = live(conn, ~p"/setup")
+
+      html =
+        view
+        |> form("form", key: %{installation_key: "correct-key-abc"})
+        |> render_submit()
+
+      assert html =~ "Database Connection"
+      refute html =~ "Invalid installation key"
+    end
+
+    test "wrong key shows error and stays on :verify_key", %{conn: conn} do
+      Application.put_env(:baudrate, :installation_key, "correct-key-abc")
+
+      {:ok, view, _html} = live(conn, ~p"/setup")
+
+      html =
+        view
+        |> form("form", key: %{installation_key: "wrong-key"})
+        |> render_submit()
+
+      assert html =~ "Invalid installation key."
+      assert html =~ "Installation Key"
+      refute html =~ "Database Connection"
+    end
+
+    test "lockout after 3 failed attempts", %{conn: conn} do
+      Application.put_env(:baudrate, :installation_key, "correct-key-abc")
+
+      {:ok, view, _html} = live(conn, ~p"/setup")
+
+      # Attempt 1
+      view
+      |> form("form", key: %{installation_key: "wrong1"})
+      |> render_submit()
+
+      # Attempt 2
+      view
+      |> form("form", key: %{installation_key: "wrong2"})
+      |> render_submit()
+
+      # Attempt 3 — triggers lockout
+      html =
+        view
+        |> form("form", key: %{installation_key: "wrong3"})
+        |> render_submit()
+
+      assert html =~ "Invalid installation key."
+
+      # Attempt 4 — should show lockout message
+      html =
+        view
+        |> form("form", key: %{installation_key: "correct-key-abc"})
+        |> render_submit()
+
+      assert html =~ "Too many attempts. Please wait before trying again."
+      refute html =~ "Database Connection"
+    end
+  end
 end

@@ -75,5 +75,4 @@ defmodule Baudrate.Content.ArticleEditTest do
       assert %Ecto.Changeset{} = changeset
     end
   end
-
 end
