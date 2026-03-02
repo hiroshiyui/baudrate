@@ -695,6 +695,84 @@ defmodule BaudrateWeb.CoreComponents do
     Enum.to_list(start..finish)
   end
 
+  @doc """
+  Renders a report modal dialog.
+
+  Displays a DaisyUI modal with target info, a reason textarea, and
+  submit/cancel buttons. Controlled by the `show` assign.
+
+  ## Examples
+
+      <.report_modal
+        show={@show_report_modal}
+        target_type={@report_target_type}
+        target_label={@report_target_label}
+        on_close="close_report_modal"
+        on_submit="submit_report"
+      />
+  """
+  attr :show, :boolean, required: true
+  attr :target_type, :string, default: nil
+  attr :target_label, :string, default: nil
+  attr :on_close, :string, required: true
+  attr :on_submit, :string, required: true
+
+  def report_modal(assigns) do
+    title =
+      case assigns.target_type do
+        "article" -> gettext("Report Article")
+        "comment" -> gettext("Report Comment")
+        "user" -> gettext("Report User")
+        _ -> gettext("Report")
+      end
+
+    assigns = assign(assigns, :title, title)
+
+    ~H"""
+    <div
+      :if={@show}
+      id="report-modal"
+      class="modal modal-open"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="report-modal-title"
+      phx-hook="FocusTrapHook"
+      phx-window-keydown={@on_close}
+      phx-key="Escape"
+    >
+      <div class="modal-box">
+        <h3 id="report-modal-title" class="font-bold text-lg">{@title}</h3>
+        <p :if={@target_label} class="text-sm text-base-content/70 mt-1 truncate">
+          {@target_label}
+        </p>
+        <.form for={%{}} phx-submit={@on_submit} class="mt-4">
+          <label for="report-reason" class="label">
+            <span class="label-text">{gettext("Reason")}</span>
+          </label>
+          <textarea
+            id="report-reason"
+            name="reason"
+            class="textarea textarea-bordered w-full"
+            rows="4"
+            required
+            maxlength="2000"
+            placeholder={gettext("Please describe the issue...")}
+          ></textarea>
+          <div class="modal-action">
+            <button type="button" phx-click={@on_close} class="btn">
+              {gettext("Cancel")}
+            </button>
+            <button type="submit" class="btn btn-error" phx-disable-with={gettext("Submitting...")}>
+              {gettext("Report")}
+            </button>
+          </div>
+        </.form>
+      </div>
+      <div class="modal-backdrop" phx-click={@on_close}></div>
+    </div>
+    """
+  end
+
   ## JS Commands
 
   def show(js \\ %JS{}, selector) do

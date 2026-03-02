@@ -12,6 +12,7 @@ defmodule BaudrateWeb.UserProfileLive do
   alias Baudrate.Auth
   alias Baudrate.Content
   alias Baudrate.Federation
+  alias Baudrate.Moderation
   alias BaudrateWeb.LinkedData
   alias BaudrateWeb.RateLimits
   import BaudrateWeb.Helpers, only: [translate_role: 1]
@@ -64,7 +65,11 @@ defmodule BaudrateWeb.UserProfileLive do
            is_following: is_following,
            page_title: user.username,
            linked_data_json: jsonld,
-           dc_meta: dc_meta
+           dc_meta: dc_meta,
+           show_report_modal: false,
+           report_target_type: nil,
+           report_target_id: nil,
+           report_target_label: nil
          )}
     end
   end
@@ -171,6 +176,65 @@ defmodule BaudrateWeb.UserProfileLive do
        |> put_flash(:info, gettext("User unmuted."))}
     else
       {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("open_report_modal", %{"type" => type, "id" => id} = params, socket) do
+    label = params["label"]
+
+    {:noreply,
+     socket
+     |> assign(:show_report_modal, true)
+     |> assign(:report_target_type, type)
+     |> assign(:report_target_id, id)
+     |> assign(:report_target_label, label)}
+  end
+
+  @impl true
+  def handle_event("close_report_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_report_modal, false)
+     |> assign(:report_target_type, nil)
+     |> assign(:report_target_id, nil)
+     |> assign(:report_target_label, nil)}
+  end
+
+  @impl true
+  def handle_event("submit_report", %{"reason" => reason}, socket) do
+    user = socket.assigns.current_user
+    profile_user = socket.assigns.profile_user
+
+    case RateLimits.check_create_report(user.id) do
+      {:error, :rate_limited} ->
+        {:noreply,
+         socket
+         |> assign(:show_report_modal, false)
+         |> put_flash(:error, gettext("Too many reports. Please try again later."))}
+
+      :ok ->
+        target_attrs = %{reported_user_id: profile_user.id}
+
+        if Moderation.has_open_report?(user.id, target_attrs) do
+          {:noreply,
+           socket
+           |> assign(:show_report_modal, false)
+           |> put_flash(:error, gettext("You have already reported this."))}
+        else
+          attrs = Map.merge(target_attrs, %{reason: reason, reporter_id: user.id})
+
+          case Moderation.create_report(attrs) do
+            {:ok, _report} ->
+              {:noreply,
+               socket
+               |> assign(:show_report_modal, false)
+               |> put_flash(:info, gettext("Report submitted. Thank you."))}
+
+            {:error, _changeset} ->
+              {:noreply, put_flash(socket, :error, gettext("Failed to submit report."))}
+          end
+        end
     end
   end
 end

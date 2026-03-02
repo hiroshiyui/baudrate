@@ -283,6 +283,33 @@
         />
         {if @bookmarked, do: gettext("Bookmarked"), else: gettext("Bookmark")}
       </button>
+      <div
+        :if={@current_user && @article.user_id != @current_user.id}
+        class="dropdown dropdown-end"
+      >
+        <button
+          type="button"
+          tabindex="0"
+          class="btn btn-sm btn-ghost"
+          aria-haspopup="true"
+          aria-label={gettext("More actions")}
+        >
+          <.icon name="hero-ellipsis-vertical" class="size-4" />
+        </button>
+        <ul tabindex="0" class="dropdown-content menu bg-base-200 rounded-box z-10 w-48 p-2 shadow-sm">
+          <li>
+            <button
+              phx-click="open_report_modal"
+              phx-value-type="article"
+              phx-value-id={@article.id}
+              phx-value-label={@article.title}
+            >
+              <.icon name="hero-flag" class="size-4" />
+              {gettext("Report")}
+            </button>
+          </li>
+        </ul>
+      </div>
     </div>
 
     <div
@@ -414,3 +441,11 @@
     />
   </section>
 </div>
+
+<.report_modal
+  show={@show_report_modal}
+  target_type={@report_target_type}
+  target_label={@report_target_label}
+  on_close="close_report_modal"
+  on_submit="submit_report"
+/>

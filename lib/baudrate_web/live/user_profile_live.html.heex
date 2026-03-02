@@ -67,6 +67,33 @@
           <.icon name="hero-speaker-wave" class="size-4" />
           {gettext("Unmute")}
         </button>
+        <div class="dropdown dropdown-end">
+          <button
+            type="button"
+            tabindex="0"
+            class="btn btn-sm btn-outline"
+            aria-haspopup="true"
+            aria-label={gettext("More actions")}
+          >
+            <.icon name="hero-ellipsis-vertical" class="size-4" />
+          </button>
+          <ul
+            tabindex="0"
+            class="dropdown-content menu bg-base-200 rounded-box z-10 w-48 p-2 shadow-sm"
+          >
+            <li>
+              <button
+                phx-click="open_report_modal"
+                phx-value-type="user"
+                phx-value-id={@profile_user.id}
+                phx-value-label={"@#{@profile_user.username}"}
+              >
+                <.icon name="hero-flag" class="size-4" />
+                {gettext("Report")}
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
@@ -158,3 +185,12 @@
     {gettext("No articles yet.")}
   </div>
 </div>
+
+<.report_modal
+  :if={@current_user && @current_user.id != @profile_user.id}
+  show={@show_report_modal}
+  target_type={@report_target_type}
+  target_label={@report_target_label}
+  on_close="close_report_modal"
+  on_submit="submit_report"
+/>
