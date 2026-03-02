@@ -6,4 +6,5 @@
 # For multiple operators, list all fingerprints comma-separated.
 creation_rules:
   - path_regex: \.sops\.yml$
-    pgp: "REPLACE_WITH_YOUR_GPG_FINGERPRINT"
+    # pgp: "REPLACE_WITH_YOUR_GPG_FINGERPRINT"
+    pgp: "9F353471AF05D276"
