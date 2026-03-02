@@ -242,6 +242,7 @@ msgstr ""
 msgid "Or enter this key manually:"
 msgstr ""
 
+#: lib/baudrate_web/live/admin_totp_verify_live.ex:56
 #: lib/baudrate_web/live/totp_setup_live.ex:65
 #: lib/baudrate_web/live/totp_verify_live.ex:43
 #, elixir-autogen, elixir-format
@@ -279,12 +280,14 @@ msgstr ""
 msgid "Two-Factor Authentication"
 msgstr ""
 
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:23
 #: lib/baudrate_web/live/totp_setup_live.html.heex:44
 #: lib/baudrate_web/live/totp_verify_live.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "Verification Code"
 msgstr ""
 
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:45
 #: lib/baudrate_web/live/recovery_code_verify_live.html.heex:39
 #: lib/baudrate_web/live/setup_live.html.heex:63
 #: lib/baudrate_web/live/totp_verify_live.html.heex:40
@@ -477,6 +480,7 @@ msgstr ""
 msgid "TOTP QR Code"
 msgstr ""
 
+#: lib/baudrate_web/controllers/session_controller.ex:327
 #: lib/baudrate_web/live/totp_reset_live.ex:48
 #, elixir-autogen, elixir-format
 msgid "Too many failed attempts. Please try again later."
@@ -552,8 +556,9 @@ msgstr ""
 msgid "Too many avatar changes. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/auth_hooks.ex:180
-#: lib/baudrate_web/live/auth_hooks.ex:192
+#: lib/baudrate_web/controllers/session_controller.ex:353
+#: lib/baudrate_web/live/auth_hooks.ex:228
+#: lib/baudrate_web/live/auth_hooks.ex:240
 #, elixir-autogen, elixir-format
 msgid "Access denied."
 msgstr ""
@@ -1549,7 +1554,7 @@ msgstr ""
 msgid "You cannot change your own role."
 msgstr ""
 
-#: lib/baudrate_web/live/auth_hooks.ex:52
+#: lib/baudrate_web/live/auth_hooks.ex:59
 #, elixir-autogen, elixir-format
 msgid "Your account has been banned."
 msgstr ""
@@ -3116,30 +3121,31 @@ msgstr ""
 msgid "Board RSS Feed"
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:186
+#: lib/baudrate_web/controllers/session_controller.ex:194
 #, elixir-autogen, elixir-format
 msgid "Failed to enable TOTP. Please try again."
+msgstr ""
+
+#: lib/baudrate_web/controllers/session_controller.ex:101
+#: lib/baudrate_web/controllers/session_controller.ex:248
+#, elixir-autogen, elixir-format
+msgid "Invalid or expired token."
+msgstr ""
+
+#: lib/baudrate_web/controllers/session_controller.ex:287
+#, elixir-autogen, elixir-format
+msgid "Invalid recovery code. Please try again."
 msgstr ""
 
 #: lib/baudrate_web/controllers/session_controller.ex:93
 #: lib/baudrate_web/controllers/session_controller.ex:240
 #, elixir-autogen, elixir-format
-msgid "Invalid or expired token."
-msgstr ""
-
-#: lib/baudrate_web/controllers/session_controller.ex:279
-#, elixir-autogen, elixir-format
-msgid "Invalid recovery code. Please try again."
-msgstr ""
-
-#: lib/baudrate_web/controllers/session_controller.ex:85
-#: lib/baudrate_web/controllers/session_controller.ex:232
-#, elixir-autogen, elixir-format
 msgid "Invalid session."
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:144
-#: lib/baudrate_web/controllers/session_controller.ex:197
+#: lib/baudrate_web/controllers/session_controller.ex:152
+#: lib/baudrate_web/controllers/session_controller.ex:205
+#: lib/baudrate_web/controllers/session_controller.ex:347
 #, elixir-autogen, elixir-format
 msgid "Invalid verification code. Please try again."
 msgstr ""
@@ -3159,21 +3165,23 @@ msgstr ""
 msgid "Recent articles on %{site_name}"
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:108
-#: lib/baudrate_web/controllers/session_controller.ex:159
-#: lib/baudrate_web/controllers/session_controller.ex:254
+#: lib/baudrate_web/controllers/session_controller.ex:116
+#: lib/baudrate_web/controllers/session_controller.ex:167
+#: lib/baudrate_web/controllers/session_controller.ex:262
+#: lib/baudrate_web/controllers/session_controller.ex:358
 #, elixir-autogen, elixir-format
 msgid "Session expired. Please log in again."
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:117
+#: lib/baudrate_web/controllers/session_controller.ex:125
+#: lib/baudrate_web/controllers/session_controller.ex:317
 #, elixir-autogen, elixir-format
 msgid "TOTP configuration error. Please contact an administrator."
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:127
-#: lib/baudrate_web/controllers/session_controller.ex:167
-#: lib/baudrate_web/controllers/session_controller.ex:262
+#: lib/baudrate_web/controllers/session_controller.ex:135
+#: lib/baudrate_web/controllers/session_controller.ex:175
+#: lib/baudrate_web/controllers/session_controller.ex:270
 #, elixir-autogen, elixir-format
 msgid "Too many failed attempts. Please log in again."
 msgstr ""
@@ -3880,7 +3888,7 @@ msgstr ""
 msgid "Comment not found."
 msgstr ""
 
-#: lib/baudrate_web/live/auth_hooks.ex:162
+#: lib/baudrate_web/live/auth_hooks.ex:169
 #, elixir-autogen, elixir-format
 msgid "Too many requests. Please try again later."
 msgstr ""
@@ -4686,6 +4694,7 @@ msgstr ""
 msgid "Signing up..."
 msgstr ""
 
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:43
 #: lib/baudrate_web/live/recovery_code_verify_live.html.heex:37
 #: lib/baudrate_web/live/totp_setup_live.html.heex:64
 #: lib/baudrate_web/live/totp_verify_live.html.heex:38
@@ -4827,4 +4836,34 @@ msgstr ""
 #: lib/baudrate_web/live/user_profile_live.html.heex:76
 #, elixir-autogen, elixir-format
 msgid "More actions"
+msgstr ""
+
+#: lib/baudrate_web/live/admin_totp_verify_live.ex:26
+#, elixir-autogen, elixir-format
+msgid "Admin Verification"
+msgstr ""
+
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Admin Verification Required"
+msgstr ""
+
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:63
+#, elixir-autogen, elixir-format
+msgid "Admin verification options"
+msgstr ""
+
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "Cancel and return to home"
+msgstr ""
+
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:9
+#, elixir-autogen, elixir-format
+msgid "For security, please re-enter your TOTP code to access admin functions."
+msgstr ""
+
+#: lib/baudrate_web/live/auth_hooks.ex:198
+#, elixir-autogen, elixir-format
+msgid "TOTP must be configured before accessing admin pages."
 msgstr ""

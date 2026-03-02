@@ -242,6 +242,7 @@ msgstr "ユーザー名またはパスワードが無効です。"
 msgid "Or enter this key manually:"
 msgstr "または手動でこのキーを入力："
 
+#: lib/baudrate_web/live/admin_totp_verify_live.ex:56
 #: lib/baudrate_web/live/totp_setup_live.ex:65
 #: lib/baudrate_web/live/totp_verify_live.ex:43
 #, elixir-autogen, elixir-format
@@ -279,12 +280,14 @@ msgstr "ログアウト"
 msgid "Two-Factor Authentication"
 msgstr "二要素認証"
 
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:23
 #: lib/baudrate_web/live/totp_setup_live.html.heex:44
 #: lib/baudrate_web/live/totp_verify_live.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "Verification Code"
 msgstr "確認コード"
 
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:45
 #: lib/baudrate_web/live/recovery_code_verify_live.html.heex:39
 #: lib/baudrate_web/live/setup_live.html.heex:63
 #: lib/baudrate_web/live/totp_verify_live.html.heex:40
@@ -477,6 +480,7 @@ msgstr "リカバリーコードを安全な場所に保管してください。
 msgid "TOTP QR Code"
 msgstr "TOTP QRコード"
 
+#: lib/baudrate_web/controllers/session_controller.ex:327
 #: lib/baudrate_web/live/totp_reset_live.ex:48
 #, elixir-autogen, elixir-format
 msgid "Too many failed attempts. Please try again later."
@@ -552,8 +556,9 @@ msgstr "保存"
 msgid "Too many avatar changes. Please try again later."
 msgstr "アバターの変更回数が多すぎます。しばらくしてからもう一度お試しください。"
 
-#: lib/baudrate_web/live/auth_hooks.ex:180
-#: lib/baudrate_web/live/auth_hooks.ex:192
+#: lib/baudrate_web/controllers/session_controller.ex:353
+#: lib/baudrate_web/live/auth_hooks.ex:228
+#: lib/baudrate_web/live/auth_hooks.ex:240
 #, elixir-autogen, elixir-format
 msgid "Access denied."
 msgstr "アクセスが拒否されました。"
@@ -1548,7 +1553,7 @@ msgstr "ユーザーのBANを解除しました。"
 msgid "You cannot change your own role."
 msgstr "自分のロールは変更できません。"
 
-#: lib/baudrate_web/live/auth_hooks.ex:52
+#: lib/baudrate_web/live/auth_hooks.ex:59
 #, elixir-autogen, elixir-format
 msgid "Your account has been banned."
 msgstr "あなたのアカウントはBANされました。"
@@ -3115,30 +3120,31 @@ msgstr "掲示板 Atom フィード"
 msgid "Board RSS Feed"
 msgstr "掲示板 RSS フィード"
 
-#: lib/baudrate_web/controllers/session_controller.ex:186
+#: lib/baudrate_web/controllers/session_controller.ex:194
 #, elixir-autogen, elixir-format
 msgid "Failed to enable TOTP. Please try again."
 msgstr "TOTPの有効化に失敗しました。もう一度お試しください。"
 
-#: lib/baudrate_web/controllers/session_controller.ex:93
-#: lib/baudrate_web/controllers/session_controller.ex:240
+#: lib/baudrate_web/controllers/session_controller.ex:101
+#: lib/baudrate_web/controllers/session_controller.ex:248
 #, elixir-autogen, elixir-format
 msgid "Invalid or expired token."
 msgstr "無効または期限切れのトークンです。"
 
-#: lib/baudrate_web/controllers/session_controller.ex:279
+#: lib/baudrate_web/controllers/session_controller.ex:287
 #, elixir-autogen, elixir-format
 msgid "Invalid recovery code. Please try again."
 msgstr "リカバリーコードが無効です。もう一度お試しください。"
 
-#: lib/baudrate_web/controllers/session_controller.ex:85
-#: lib/baudrate_web/controllers/session_controller.ex:232
+#: lib/baudrate_web/controllers/session_controller.ex:93
+#: lib/baudrate_web/controllers/session_controller.ex:240
 #, elixir-autogen, elixir-format
 msgid "Invalid session."
 msgstr "無効なセッションです。"
 
-#: lib/baudrate_web/controllers/session_controller.ex:144
-#: lib/baudrate_web/controllers/session_controller.ex:197
+#: lib/baudrate_web/controllers/session_controller.ex:152
+#: lib/baudrate_web/controllers/session_controller.ex:205
+#: lib/baudrate_web/controllers/session_controller.ex:347
 #, elixir-autogen, elixir-format
 msgid "Invalid verification code. Please try again."
 msgstr "認証コードが無効です。もう一度お試しください。"
@@ -3158,21 +3164,23 @@ msgstr "%{username} の最新記事"
 msgid "Recent articles on %{site_name}"
 msgstr "%{site_name} の最新記事"
 
-#: lib/baudrate_web/controllers/session_controller.ex:108
-#: lib/baudrate_web/controllers/session_controller.ex:159
-#: lib/baudrate_web/controllers/session_controller.ex:254
+#: lib/baudrate_web/controllers/session_controller.ex:116
+#: lib/baudrate_web/controllers/session_controller.ex:167
+#: lib/baudrate_web/controllers/session_controller.ex:262
+#: lib/baudrate_web/controllers/session_controller.ex:358
 #, elixir-autogen, elixir-format
 msgid "Session expired. Please log in again."
 msgstr "セッションが期限切れです。再度ログインしてください。"
 
-#: lib/baudrate_web/controllers/session_controller.ex:117
+#: lib/baudrate_web/controllers/session_controller.ex:125
+#: lib/baudrate_web/controllers/session_controller.ex:317
 #, elixir-autogen, elixir-format
 msgid "TOTP configuration error. Please contact an administrator."
 msgstr "TOTP設定エラーです。管理者にお問い合わせください。"
 
-#: lib/baudrate_web/controllers/session_controller.ex:127
-#: lib/baudrate_web/controllers/session_controller.ex:167
-#: lib/baudrate_web/controllers/session_controller.ex:262
+#: lib/baudrate_web/controllers/session_controller.ex:135
+#: lib/baudrate_web/controllers/session_controller.ex:175
+#: lib/baudrate_web/controllers/session_controller.ex:270
 #, elixir-autogen, elixir-format
 msgid "Too many failed attempts. Please log in again."
 msgstr "失敗回数が多すぎます。再度ログインしてください。"
@@ -3869,7 +3877,7 @@ msgstr "記事が見つかりません。"
 msgid "Comment not found."
 msgstr "コメントが見つかりません。"
 
-#: lib/baudrate_web/live/auth_hooks.ex:162
+#: lib/baudrate_web/live/auth_hooks.ex:169
 #, elixir-autogen, elixir-format
 msgid "Too many requests. Please try again later."
 msgstr "リクエストが多すぎます。しばらくしてからもう一度お試しください。"
@@ -4672,6 +4680,7 @@ msgstr "ログイン中..."
 msgid "Signing up..."
 msgstr "登録中..."
 
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:43
 #: lib/baudrate_web/live/recovery_code_verify_live.html.heex:37
 #: lib/baudrate_web/live/totp_setup_live.html.heex:64
 #: lib/baudrate_web/live/totp_verify_live.html.heex:38
@@ -4814,3 +4823,33 @@ msgstr "すでに通報済みです。"
 #, elixir-autogen, elixir-format
 msgid "More actions"
 msgstr "その他の操作"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.ex:26
+#, elixir-autogen, elixir-format
+msgid "Admin Verification"
+msgstr "管理者認証"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Admin Verification Required"
+msgstr "管理者認証が必要です"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:63
+#, elixir-autogen, elixir-format
+msgid "Admin verification options"
+msgstr "管理者認証オプション"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "Cancel and return to home"
+msgstr "キャンセルしてホームに戻る"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:9
+#, elixir-autogen, elixir-format
+msgid "For security, please re-enter your TOTP code to access admin functions."
+msgstr "セキュリティのため、管理機能にアクセスするにはTOTPコードを再入力してください。"
+
+#: lib/baudrate_web/live/auth_hooks.ex:198
+#, elixir-autogen, elixir-format
+msgid "TOTP must be configured before accessing admin pages."
+msgstr "管理ページにアクセスする前にTOTPを設定する必要があります。"
