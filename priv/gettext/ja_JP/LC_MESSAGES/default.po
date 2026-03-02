@@ -4711,3 +4711,28 @@ msgstr "%{author} に返信"
 #, elixir-autogen, elixir-format
 msgid "Select boards"
 msgstr "掲示板を選択"
+
+#: lib/baudrate_web/live/setup_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Verification"
+msgstr "認証"
+
+#: lib/baudrate_web/live/setup_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Installation Key"
+msgstr "インストールキー"
+
+#: lib/baudrate_web/live/setup_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Enter the installation key to proceed with setup."
+msgstr "セットアップを続行するには、インストールキーを入力してください。"
+
+#: lib/baudrate_web/live/setup_live.ex
+#, elixir-autogen, elixir-format
+msgid "Invalid installation key."
+msgstr "インストールキーが無効です。"
+
+#: lib/baudrate_web/live/setup_live.ex
+#, elixir-autogen, elixir-format
+msgid "Too many attempts. Please wait before trying again."
+msgstr "試行回数が多すぎます。しばらくしてからもう一度お試しください。"

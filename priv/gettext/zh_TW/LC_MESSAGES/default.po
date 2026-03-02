@@ -4711,3 +4711,28 @@ msgstr "回覆 %{author}"
 #, elixir-autogen, elixir-format
 msgid "Select boards"
 msgstr "選擇看板"
+
+#: lib/baudrate_web/live/setup_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Verification"
+msgstr "驗證"
+
+#: lib/baudrate_web/live/setup_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Installation Key"
+msgstr "安裝金鑰"
+
+#: lib/baudrate_web/live/setup_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Enter the installation key to proceed with setup."
+msgstr "請輸入安裝金鑰以繼續設定。"
+
+#: lib/baudrate_web/live/setup_live.ex
+#, elixir-autogen, elixir-format
+msgid "Invalid installation key."
+msgstr "安裝金鑰無效。"
+
+#: lib/baudrate_web/live/setup_live.ex
+#, elixir-autogen, elixir-format
+msgid "Too many attempts. Please wait before trying again."
+msgstr "嘗試次數過多，請稍後再試。"
