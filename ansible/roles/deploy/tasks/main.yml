@@ -147,6 +147,12 @@
     MIX_ENV: prod
   changed_when: true
 
+- name: Remove stale release directory from previous builds
+  become_user: "{{ baudrate_user }}"
+  ansible.builtin.file:
+    path: "{{ deploy_path }}/src/_build/prod/rel"
+    state: absent
+
 - name: Build OTP release
   become_user: "{{ baudrate_user }}"
   ansible.builtin.command:
@@ -278,7 +284,7 @@
 
 - name: Find priv/static path in active release
   ansible.builtin.shell:
-    cmd: "readlink -f {{ deploy_path }}/releases/{{ release_timestamp }}/lib/baudrate-*/priv/static"
+    cmd: "readlink -f {{ deploy_path }}/releases/{{ release_timestamp }}/lib/baudrate-*/priv/static | tail -1"
   register: static_path_result
   changed_when: false
 
