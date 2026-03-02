@@ -31,7 +31,7 @@ defmodule BaudrateWeb.Layouts do
       class="navbar sticky top-0 z-50 bg-base-200 border-b border-base-300 px-4 sm:px-6 lg:px-8"
     >
       <%!-- Mobile hamburger (shown < lg) --%>
-      <div :if={@current_user} id="mobile-nav-trigger" class="flex-none lg:hidden">
+      <div id="mobile-nav-trigger" class="flex-none lg:hidden">
         <div class="dropdown">
           <button
             type="button"
@@ -48,17 +48,32 @@ defmodule BaudrateWeb.Layouts do
               tabindex="0"
               class="menu dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
             >
-              <%!-- Main nav (matches desktop nav) --%>
-              <li>
-                <.link navigate="/">{gettext("Home")}</.link>
+              <%!-- Site name (visible only on mobile) --%>
+              <li class="menu-title text-base">
+                {Baudrate.Setup.get_setting("site_name") || "Baudrate"}
               </li>
-              <li>
-                <.link navigate="/feed">{gettext("Feed")}</.link>
-              </li>
-              <li>
+              <li class="divider my-1"></li>
+              <%!-- Guest nav (shown when not logged in) --%>
+              <li :if={!@current_user}>
                 <.link navigate="/search">{gettext("Search")}</.link>
               </li>
-              <li>
+              <li :if={!@current_user}>
+                <.link navigate="/login">{gettext("Sign In")}</.link>
+              </li>
+              <li :if={!@current_user}>
+                <.link navigate="/register">{gettext("Register")}</.link>
+              </li>
+              <%!-- Authenticated nav (matches desktop nav) --%>
+              <li :if={@current_user}>
+                <.link navigate="/">{gettext("Home")}</.link>
+              </li>
+              <li :if={@current_user}>
+                <.link navigate="/feed">{gettext("Feed")}</.link>
+              </li>
+              <li :if={@current_user}>
+                <.link navigate="/search">{gettext("Search")}</.link>
+              </li>
+              <li :if={@current_user}>
                 <.link navigate="/messages">
                   {gettext("Messages")}
                   <span
@@ -77,7 +92,7 @@ defmodule BaudrateWeb.Layouts do
                   </span>
                 </.link>
               </li>
-              <li>
+              <li :if={@current_user}>
                 <.link navigate="/notifications">
                   {gettext("Notifications")}
                   <span
@@ -97,8 +112,8 @@ defmodule BaudrateWeb.Layouts do
                 </.link>
               </li>
               <%!-- Admin section (collapsible, matches desktop user menu) --%>
-              <li :if={@current_user.role.name in ["admin", "moderator"]} class="divider my-1"></li>
-              <li :if={@current_user.role.name in ["admin", "moderator"]}>
+              <li :if={@current_user && @current_user.role.name in ["admin", "moderator"]} class="divider my-1"></li>
+              <li :if={@current_user && @current_user.role.name in ["admin", "moderator"]}>
                 <details>
                   <summary>{gettext("Admin")}</summary>
                   <ul>
@@ -133,25 +148,25 @@ defmodule BaudrateWeb.Layouts do
                 </details>
               </li>
               <%!-- User section (matches desktop user menu) --%>
-              <li class="divider my-1"></li>
-              <li class="menu-title flex flex-row items-center gap-2">
+              <li :if={@current_user} class="divider my-1"></li>
+              <li :if={@current_user} class="menu-title flex flex-row items-center gap-2">
                 <.avatar user={@current_user} size={36} />
                 <span class="truncate max-w-[10rem]">{display_name(@current_user)}</span>
                 ({translate_role(@current_user.role.name)})
               </li>
-              <li>
+              <li :if={@current_user}>
                 <.link navigate="/profile">{gettext("Profile")}</.link>
               </li>
-              <li>
+              <li :if={@current_user}>
                 <.link navigate="/bookmarks">{gettext("Bookmarks")}</.link>
               </li>
-              <li>
+              <li :if={@current_user}>
                 <.link navigate="/following">{gettext("Following")}</.link>
               </li>
-              <li>
+              <li :if={@current_user}>
                 <.link navigate="/invites">{gettext("My Invites")}</.link>
               </li>
-              <li>
+              <li :if={@current_user}>
                 <.link href="/logout" method="delete">{gettext("Sign Out")}</.link>
               </li>
             </ul>
@@ -159,8 +174,8 @@ defmodule BaudrateWeb.Layouts do
         </div>
       </div>
 
-      <%!-- Logo --%>
-      <div class="flex-1">
+      <%!-- Logo (hidden on mobile — site name moves into hamburger menu) --%>
+      <div class="flex-1 hidden lg:block">
         <.link navigate="/" class="btn btn-ghost text-xl">
           {Baudrate.Setup.get_setting("site_name") || "Baudrate"}
         </.link>
@@ -228,8 +243,8 @@ defmodule BaudrateWeb.Layouts do
         <.font_size_controls />
         <.theme_toggle />
 
-        <%!-- Guest auth links (shown when not logged in) --%>
-        <div :if={!@current_user} id="guest-auth-links" class="flex items-center gap-2">
+        <%!-- Guest auth links (desktop only — mobile uses hamburger menu) --%>
+        <div :if={!@current_user} id="guest-auth-links" class="hidden lg:flex items-center gap-2">
           <.link navigate="/search" class="btn btn-ghost btn-sm">{gettext("Search")}</.link>
           <.link navigate="/login" class="btn btn-ghost btn-sm">{gettext("Sign In")}</.link>
           <.link navigate="/register" class="btn btn-primary btn-sm">{gettext("Register")}</.link>
