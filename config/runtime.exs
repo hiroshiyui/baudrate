@@ -55,6 +55,8 @@ if config_env() == :prod do
 
   host = System.get_env("PHX_HOST") || "example.com"
 
+  config :baudrate, :installation_key, System.get_env("INSTALLATION_KEY")
+
   config :baudrate, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :baudrate, BaudrateWeb.Endpoint,

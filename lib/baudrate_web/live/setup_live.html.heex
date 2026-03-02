@@ -6,6 +6,16 @@
 
   <%!-- Steps indicator --%>
   <ul id="setup-steps" class="steps steps-horizontal w-full">
+    <li
+      :if={@key_required}
+      class={[
+        "step",
+        @step in [:verify_key, :database, :site_name, :admin_account, :recovery_codes] &&
+          "step-primary"
+      ]}
+    >
+      {gettext("Verification")}
+    </li>
     <li class={[
       "step",
       @step in [:database, :site_name, :admin_account, :recovery_codes] && "step-primary"
@@ -22,6 +32,41 @@
       {gettext("Recovery Codes")}
     </li>
   </ul>
+
+  <%!-- Step 0: Installation Key Verification --%>
+  <div :if={@step == :verify_key} id="setup-step-verify-key" class="space-y-6">
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title">{gettext("Installation Key")}</h2>
+        <p class="text-sm text-base-content/70">
+          {gettext("Enter the installation key to proceed with setup.")}
+        </p>
+        <.form for={%{}} as={:key} phx-submit="verify_key">
+          <.input
+            name="key[installation_key]"
+            type="password"
+            label={gettext("Installation Key")}
+            value=""
+            required
+            autocomplete="off"
+          />
+          <div :if={@key_error} class="mt-2">
+            <p class="text-sm text-error">{@key_error}</p>
+          </div>
+          <div class="flex justify-end mt-4">
+            <.button
+              variant="primary"
+              type="submit"
+              disabled={@key_attempts >= 3 and @key_locked_until != nil}
+            >
+              <.icon name="hero-key-mini" class="size-4" />
+              {gettext("Verify")}
+            </.button>
+          </div>
+        </.form>
+      </div>
+    </div>
+  </div>
 
   <%!-- Step 1: Database --%>
   <div :if={@step == :database} id="setup-step-database" class="space-y-6">
