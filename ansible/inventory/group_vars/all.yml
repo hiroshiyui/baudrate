@@ -7,7 +7,7 @@ baudrate_home: /opt/baudrate
 postgres_version: "15"
 postgres_db_name: baudrate_prod
 postgres_db_user: baudrate
-# postgres_db_password provided by secrets.sops.yml (or auto-generated at runtime)
+# postgres_db_password provided by all.sops.yml (or auto-generated at runtime)
 
 # Networking
 app_port: 4000

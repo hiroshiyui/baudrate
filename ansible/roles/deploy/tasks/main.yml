@@ -254,6 +254,7 @@
     cmd: "{{ deploy_path }}/releases/{{ release_timestamp }}/bin/migrate"
   environment:
     DATABASE_URL: "ecto://{{ postgres_db_user }}:{{ postgres_db_password }}@localhost/{{ postgres_db_name }}"
+    DATABASE_SSL: "false"
     SECRET_KEY_BASE: "{{ secret_key_base }}"
     PHX_HOST: "{{ domain }}"
     PHX_SERVER: "true"

@@ -43,8 +43,8 @@ Ansible automation for provisioning Baudrate servers.
 
    ```bash
    cd ansible
-   cp inventory/group_vars/secrets.sops.yml.example inventory/group_vars/secrets.sops.yml
-   sops inventory/group_vars/secrets.sops.yml
+   cp inventory/group_vars/all.sops.yml.example inventory/group_vars/all.sops.yml
+   sops inventory/group_vars/all.sops.yml
    ```
 
    This opens your `$EDITOR` with the decrypted file. Set
@@ -194,28 +194,29 @@ postgres_db_password: ENC[AES256_GCM,data:abc123...,type:str]
 ```
 
 The `community.sops.sops` vars plugin (enabled in `ansible.cfg`)
-auto-decrypts `*.sops.yml` files in `group_vars/` and `host_vars/`.
+auto-decrypts `*.sops.yml` files in `group_vars/` and `host_vars/`
+(files must be named after a group or host, e.g. `all.sops.yml`).
 
 ### Common SOPS Commands
 
 ```bash
 # Edit secrets (decrypts → opens $EDITOR → re-encrypts on save)
-sops inventory/group_vars/secrets.sops.yml
+sops inventory/group_vars/all.sops.yml
 
 # Add a new operator's GPG key
 # 1. Edit .sops.yaml to add their fingerprint
 # 2. Re-encrypt with all keys:
-sops updatekeys inventory/group_vars/secrets.sops.yml
+sops updatekeys inventory/group_vars/all.sops.yml
 
 # Rotate the data encryption key
-sops --rotate --in-place inventory/group_vars/secrets.sops.yml
+sops --rotate --in-place inventory/group_vars/all.sops.yml
 ```
 
 ### Adding Team Members
 
 1. Import their public GPG key: `gpg --import teammate.pub`
 2. Add their fingerprint to `.sops.yaml` (comma-separated)
-3. Run `sops updatekeys inventory/group_vars/secrets.sops.yml`
+3. Run `sops updatekeys inventory/group_vars/all.sops.yml`
 
 Now both operators can decrypt with their own private keys.
 
@@ -240,7 +241,7 @@ ansible/
     group_vars/
       all.yml                              # Shared variables
       production.yml                       # Production overrides
-      secrets.sops.yml.example             # Secrets template (copy + encrypt)
+      all.sops.yml.example             # Secrets template (copy → encrypt → all.sops.yml)
   playbooks/
     setup-server.yml                       # Server provisioning playbook
     deploy-baudrate.yml                    # Application deployment playbook

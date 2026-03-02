@@ -8,7 +8,7 @@
 # Requires setup-server.yml to have been run first (server must already have
 # Erlang, Elixir, Rust, PostgreSQL, nginx, and the baudrate system user).
 #
-# Secrets are decrypted automatically from secrets.sops.yml via your GPG key.
+# Secrets are decrypted automatically from all.sops.yml via your GPG key.
 #
 # Usage:
 #   ansible-playbook playbooks/deploy-baudrate.yml
@@ -46,7 +46,7 @@
           - release_tag | length > 0
         fail_msg: "release_tag is required. Specify a git tag (e.g. v1.0.0)."
 
-    - name: Generate secret key base (not found in secrets.sops.yml)
+    - name: Generate secret key base (not found in all.sops.yml)
       when: secret_key_base is not defined
       block:
         - name: Generate random secret key base
@@ -61,7 +61,7 @@
 
               Save this to your SOPS secrets file:
 
-                sops inventory/group_vars/secrets.sops.yml
+                sops inventory/group_vars/all.sops.yml
 
               Add the value:
                 secret_key_base: "{{ secret_key_base }}"
@@ -71,7 +71,7 @@
           ansible.builtin.pause:
             prompt: "Press Enter after you have saved the secret key base (Ctrl+C to abort)"
 
-    - name: Generate installation key (not found in secrets.sops.yml)
+    - name: Generate installation key (not found in all.sops.yml)
       when: installation_key is not defined
       block:
         - name: Generate random installation key
@@ -87,7 +87,7 @@
               Use this key to complete the setup wizard at /setup after
               the first deploy. Save it to your SOPS secrets file:
 
-                sops inventory/group_vars/secrets.sops.yml
+                sops inventory/group_vars/all.sops.yml
 
               Add the value:
                 installation_key: "{{ installation_key }}"

@@ -4,7 +4,7 @@
 # Provisions a Debian 12 server with all infrastructure Baudrate needs.
 # Does NOT deploy the application itself (that will be a separate playbook).
 #
-# Secrets are decrypted automatically from secrets.sops.yml via your GPG key.
+# Secrets are decrypted automatically from all.sops.yml via your GPG key.
 #
 # Usage:
 #   ansible-playbook playbooks/setup-server.yml
@@ -38,7 +38,7 @@
           - certbot_email | length > 0
         fail_msg: "certbot_email is required. Set BAUDRATE_CERTBOT_EMAIL or enter it at the prompt."
 
-    - name: Generate database password (not found in secrets.sops.yml)
+    - name: Generate database password (not found in all.sops.yml)
       when: postgres_db_password is not defined
       block:
         - name: Generate random password
@@ -53,7 +53,7 @@
 
               Save this to your SOPS secrets file:
 
-                sops inventory/group_vars/secrets.sops.yml
+                sops inventory/group_vars/all.sops.yml
 
               Set the value:
                 postgres_db_password: "{{ postgres_db_password }}"

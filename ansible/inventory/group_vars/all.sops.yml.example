@@ -1,12 +1,12 @@
 ---
 # Copy this file, then encrypt it with SOPS:
 #
-#   cp secrets.sops.yml.example secrets.sops.yml
-#   sops --encrypt --in-place secrets.sops.yml
+#   cp all.sops.yml.example all.sops.yml
+#   sops --encrypt --in-place all.sops.yml
 #
 # To edit later:
 #
-#   sops secrets.sops.yml
+#   sops all.sops.yml
 #
 # SOPS encrypts only the values — keys remain readable in git diffs.
 #
