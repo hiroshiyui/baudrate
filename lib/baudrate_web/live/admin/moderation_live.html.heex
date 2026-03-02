@@ -163,6 +163,14 @@
           </p>
         </div>
 
+        <div :if={report.reported_user} class="mt-2 p-3 bg-base-300 rounded-lg">
+          <p class="text-sm font-semibold">{gettext("Reported User:")}</p>
+          <p>
+            {display_name(report.reported_user)}
+            <span class="text-sm opacity-70">(@{report.reported_user.username})</span>
+          </p>
+        </div>
+
         <%!-- Resolution Info --%>
         <div
           :if={report.status in ["resolved", "dismissed"] and report.resolved_by}
