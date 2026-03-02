@@ -4,42 +4,36 @@ const AvatarCropHook = {
   mounted() {
     this.cropper = null
     this.objectUrl = null
+    this.pendingCrop = false
 
     this.previewImg = this.el.querySelector("[data-avatar-preview]")
     this.cropContainer = this.el.querySelector("[data-avatar-crop-container]")
 
-    // Watch for file input additions to initialize crop preview
-    const observer = new MutationObserver(() => {
-      const fileInput = document.querySelector("input[data-phx-hook='Phoenix.LiveFileUpload']")
+    this._bindFileInput = (fileInput) => {
       if (fileInput && !fileInput._avatarBound) {
         fileInput._avatarBound = true
         fileInput.addEventListener("change", (e) => {
           const file = e.target.files && e.target.files[0]
           if (file) {
             this.objectUrl = URL.createObjectURL(file)
+            this.pendingCrop = true
             this.pushEvent("show_crop_modal", {})
-            // Wait for modal to render before initializing cropper
-            setTimeout(() => this.initCrop(this.objectUrl), 100)
           }
         })
       }
+    }
+
+    // Watch for file input additions to initialize crop preview
+    const observer = new MutationObserver(() => {
+      const fileInput = document.querySelector("input[data-phx-hook='Phoenix.LiveFileUpload']")
+      this._bindFileInput(fileInput)
     })
     observer.observe(document.body, { childList: true, subtree: true })
     this._observer = observer
 
     // Also check if input already exists
     const fileInput = document.querySelector("input[data-phx-hook='Phoenix.LiveFileUpload']")
-    if (fileInput && !fileInput._avatarBound) {
-      fileInput._avatarBound = true
-      fileInput.addEventListener("change", (e) => {
-        const file = e.target.files && e.target.files[0]
-        if (file) {
-          this.objectUrl = URL.createObjectURL(file)
-          this.pushEvent("show_crop_modal", {})
-          setTimeout(() => this.initCrop(this.objectUrl), 100)
-        }
-      })
-    }
+    this._bindFileInput(fileInput)
 
     // Listen for open-picker custom event to trigger native file input click
     this.el.addEventListener("avatar:open-picker", () => {
@@ -53,6 +47,18 @@ const AvatarCropHook = {
     this.handleEvent("avatar_crop_reset", () => {
       this.reset()
     })
+  },
+
+  // Called after LiveView patches the DOM — safe to initialize CropperJS
+  // because the dialog's `open` attribute is now present and rendered.
+  updated() {
+    if (this.pendingCrop && this.objectUrl) {
+      const dialog = this.el.querySelector("dialog")
+      if (dialog && dialog.hasAttribute("open")) {
+        this.pendingCrop = false
+        this.initCrop(this.objectUrl)
+      }
+    }
   },
 
   initCrop(url) {
@@ -105,6 +111,7 @@ const AvatarCropHook = {
   },
 
   reset() {
+    this.pendingCrop = false
     this.cleanupCropper()
     if (this.objectUrl) {
       URL.revokeObjectURL(this.objectUrl)
