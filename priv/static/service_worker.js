@@ -1,5 +1,13 @@
 (() => {
   // js/service_worker.js
+  function isSameOrigin(url) {
+    try {
+      const parsed = new URL(url, self.location.origin);
+      return parsed.origin === self.location.origin;
+    } catch {
+      return false;
+    }
+  }
   self.addEventListener("push", (event) => {
     if (!event.data) return;
     let data;
@@ -20,7 +28,8 @@
   });
   self.addEventListener("notificationclick", (event) => {
     event.notification.close();
-    const url = event.notification.data?.url || "/";
+    const rawUrl = event.notification.data?.url;
+    const url = rawUrl && isSameOrigin(rawUrl) ? rawUrl : "/";
     event.waitUntil(
       clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
         for (const client of windowClients) {
