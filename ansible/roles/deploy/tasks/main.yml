@@ -278,7 +278,7 @@
 
 - name: Find priv/static path in active release
   ansible.builtin.shell:
-    cmd: "ls -d {{ deploy_path }}/current/lib/baudrate-*/priv/static"
+    cmd: "readlink -f {{ deploy_path }}/releases/{{ release_timestamp }}/lib/baudrate-*/priv/static"
   register: static_path_result
   changed_when: false
 
