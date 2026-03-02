@@ -7,7 +7,7 @@
  * up the change.
  *
  * A Write/Preview toggle sends the textarea content to the server for rendering
- * via `pushEvent("markdown_preview", ...)` with a reply callback.
+ * via `pushEvent("markdown_preview", ...)` and receives the HTML in the reply.
  */
 
 const BUTTONS = [
@@ -281,23 +281,22 @@ const MarkdownToolbarHook = {
       });
 
       this.toolbar.appendChild(this.previewBtn);
+    }
+  },
 
-      // Listen for server-pushed preview results
-      this.handleEvent("markdown_preview_result", (payload) => {
-        if (!this.isPreview) return;
+  showPreviewResult(payload) {
+    if (!this.isPreview) return;
 
-        if (payload.error) {
-          const msg =
-            this.i18n.content_too_large || "Content too large to preview.";
-          this.previewDiv.innerHTML = `<p class="text-error text-sm">${msg}</p>`;
-        } else if (payload.html) {
-          this.previewDiv.innerHTML = payload.html;
-        } else {
-          const msg =
-            this.i18n.nothing_to_preview || "Nothing to preview.";
-          this.previewDiv.innerHTML = `<p class="text-base-content/70 text-sm italic">${msg}</p>`;
-        }
-      });
+    if (payload.error) {
+      const msg =
+        this.i18n.content_too_large || "Content too large to preview.";
+      this.previewDiv.innerHTML = `<p class="text-error text-sm">${msg}</p>`;
+    } else if (payload.html) {
+      this.previewDiv.innerHTML = payload.html;
+    } else {
+      const msg =
+        this.i18n.nothing_to_preview || "Nothing to preview.";
+      this.previewDiv.innerHTML = `<p class="text-base-content/70 text-sm italic">${msg}</p>`;
     }
   },
 
@@ -328,7 +327,9 @@ const MarkdownToolbarHook = {
       this.previewBtn.setAttribute("aria-pressed", "true");
       this.setFormatButtonsDisabled(true);
 
-      this.pushEvent("markdown_preview", { body: this.el.value });
+      this.pushEvent("markdown_preview", { body: this.el.value }, (reply) => {
+        this.showPreviewResult(reply);
+      });
     }
   },
 

@@ -186,5 +186,29 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
       assert html =~ "End User Agreement saved"
       assert Setup.get_eua() == "Updated EUA text"
     end
+
+    test "EUA textarea has markdown toolbar and preview", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+
+      {:ok, _lv, html} = live(conn, "/admin/settings")
+
+      assert html =~ "eua_settings_eua-md-toolbar"
+      assert html =~ "eua_settings_eua-md-preview"
+      assert html =~ "MarkdownToolbarHook"
+    end
+
+    test "markdown preview works for EUA editor", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/settings")
+
+      # The markdown_preview event should be handled by the attached hook
+      render_hook(lv, "markdown_preview", %{"body" => "**bold** and *italic*"})
+
+      # LiveView is still alive and functional
+      assert render(lv) =~ "End User Agreement"
+    end
   end
 end

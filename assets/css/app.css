@@ -10,6 +10,7 @@
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */
 @plugin "../vendor/heroicons";
+@plugin "@tailwindcss/typography";
 
 @font-face {
   font-family: "Roboto Slab";

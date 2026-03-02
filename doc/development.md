@@ -1273,13 +1273,15 @@ preview their markdown before posting. Preview rendering is done **server-side**
 via `Content.Markdown.to_html/1` to guarantee consistent sanitization.
 
 The JS hook sends the textarea content via `pushEvent("markdown_preview", ...)`
-and listens for a `"markdown_preview_result"` event pushed back from the server.
-On the server side, `BaudrateWeb.MarkdownPreviewHook` intercepts the event via
-`attach_hook/4` (attached in `AuthHooks` for `:require_auth` and `:optional_auth`
-scopes). A 64 KB body size limit is enforced to prevent abuse.
+and receives the rendered HTML in the reply callback. On the server side,
+`BaudrateWeb.MarkdownPreviewHook` intercepts the event via `attach_hook/4`
+(attached in `AuthHooks` for `:require_auth` and `:optional_auth` scopes) and
+uses the `{:halt, reply, socket}` pattern for immediate response. A 64 KB body
+size limit is enforced to prevent abuse.
 
-In preview mode, the textarea is hidden and a preview `<div>` (rendered with
-`phx-update="ignore"`) displays the rendered HTML. Formatting buttons are
+In preview mode, the textarea is hidden and a preview `<div>` (styled with the
+`prose` class from `@tailwindcss/typography` for proper heading, link, list, and
+code block rendering) displays the rendered HTML. Formatting buttons are
 disabled while in preview mode.
 
 Source: `assets/js/markdown_toolbar_hook.js`, `lib/baudrate_web/live/markdown_preview_hook.ex`

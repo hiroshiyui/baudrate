@@ -5,7 +5,10 @@ defmodule BaudrateWeb.MarkdownPreviewHook do
   When a user toggles the markdown preview, the JS hook sends the textarea
   content via `pushEvent`. This hook intercepts the event, renders the
   markdown server-side using `Content.Markdown.to_html/1` (ensuring consistent
-  sanitization), and pushes the rendered HTML back via `push_event`.
+  sanitization), and replies with the rendered HTML directly to the JS caller.
+
+  Uses the `{:halt, reply, socket}` pattern so the JS `pushEvent` reply
+  callback receives the result immediately.
 
   Attach this hook in `on_mount` callbacks via `attach(socket)`.
   """
@@ -28,12 +31,12 @@ defmodule BaudrateWeb.MarkdownPreviewHook do
 
   defp handle_event("markdown_preview", %{"body" => body}, socket)
        when byte_size(body) > @max_body_bytes do
-    {:halt, push_event(socket, "markdown_preview_result", %{error: "body_too_large"})}
+    {:halt, %{error: "body_too_large"}, socket}
   end
 
   defp handle_event("markdown_preview", %{"body" => body}, socket) do
     html = Baudrate.Content.Markdown.to_html(body)
-    {:halt, push_event(socket, "markdown_preview_result", %{html: html})}
+    {:halt, %{html: html}, socket}
   end
 
   defp handle_event(_event, _params, socket) do
