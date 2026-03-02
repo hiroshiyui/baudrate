@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-03-02
+
+### Added
+
+- **Installation key for setup wizard** — optional `INSTALLATION_KEY` env var
+  gates the first-run `/setup` wizard to prevent unauthorized setup completion.
+  Uses constant-time comparison and locks after 3 failed attempts (30s cooldown).
+- Ansible deployment automation (`deploy-baudrate.yml`) with OTP release build,
+  symlink-based rollback, systemd management, and health checks
+- Ansible server provisioning (`setup-server.yml`) with roles for common system
+  packages, PostgreSQL, Elixir (asdf), Rust, and nginx with Let's Encrypt SSL
+- SOPS-based secrets management for Ansible with GPG encryption
+- Installation key auto-generation in the deploy playbook when not pre-configured
+- zh_TW and ja_JP translations for installation key UI strings
+
+### Changed
+
+- Nginx templates updated to use `static_path` symlink for stable asset serving
+
 ## [1.0.0] — 2026-03-01
 
 Initial stable release of Baudrate, a public BBS / Web Forum built with
@@ -150,4 +169,5 @@ Elixir/Phoenix + LiveView, federating via ActivityPub.
 - Extensive documentation (development guide, SysOp guide, API reference,
   troubleshooting guide)
 
+[1.0.1]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.0.1
 [1.0.0]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.0.0
