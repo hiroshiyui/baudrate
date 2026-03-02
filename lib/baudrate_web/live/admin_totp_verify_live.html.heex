@@ -1,0 +1,69 @@
+<div id="admin-totp-verify-page" class="admin-totp-verify-page mx-auto max-w-sm mt-10">
+  <div class="flex justify-center mb-4">
+    <.icon name="hero-shield-check" class="w-12 h-12 text-warning" />
+  </div>
+  <h1 id="admin-verify-heading" class="text-2xl font-bold text-center mb-2">
+    {gettext("Admin Verification Required")}
+  </h1>
+  <p class="text-center text-base-content/70 mb-8">
+    {gettext(
+      "For security, please re-enter your TOTP code to access admin functions."
+    )}
+  </p>
+
+  <.form
+    for={@form}
+    id="admin-totp-code-form"
+    phx-change="validate"
+    phx-submit="submit"
+    class="space-y-4"
+  >
+    <div class="form-control">
+      <label class="label" for="admin_totp_code">
+        <span class="label-text">{gettext("Verification Code")}</span>
+      </label>
+      <input
+        type="text"
+        id="admin_totp_code"
+        name="admin_totp[code]"
+        value={@form[:code].value}
+        class="input input-bordered w-full text-center text-2xl tracking-widest"
+        inputmode="numeric"
+        pattern="[0-9]{6}"
+        maxlength="6"
+        autocomplete="one-time-code"
+        autofocus
+        required
+      />
+    </div>
+
+    <button
+      type="submit"
+      class="btn btn-primary w-full"
+      phx-disable-with={gettext("Verifying...")}
+    >
+      {gettext("Verify")}
+    </button>
+  </.form>
+
+  <form
+    id="admin-totp-verify-form"
+    action="/auth/admin-totp-verify"
+    method="post"
+    phx-trigger-action={@trigger_action}
+  >
+    <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+    <input type="hidden" name="code" value={assigns[:code]} />
+    <input type="hidden" name="return_to" value={@return_to} />
+  </form>
+
+  <nav
+    id="admin-verify-nav"
+    class="text-center mt-4"
+    aria-label={gettext("Admin verification options")}
+  >
+    <.link navigate="/" class="link link-hover text-sm">
+      {gettext("Cancel and return to home")}
+    </.link>
+  </nav>
+</div>

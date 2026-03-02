@@ -4,7 +4,7 @@ defmodule BaudrateWeb.Router do
 
   ## Route Structure
 
-  Six main scopes, each with different auth requirements:
+  Seven main scopes, each with different auth requirements:
 
     0. **Health** (`/health`) — API-only scope (no CSRF/session). Returns
        database connectivity status for load balancers and monitoring.
@@ -21,11 +21,20 @@ defmodule BaudrateWeb.Router do
        mutations. Split into two scopes with separate rate-limit pipelines
        (`:rate_limit_login` for `/auth/session`, `:rate_limit_totp` for TOTP).
 
-    4. **Authenticated** (`/articles/new`, `/profile`, `/admin/*`) —
+    4. **Authenticated** (`/articles/new`, `/profile`, `/admin/verify`) —
        `live_session :authenticated` with `:rate_limit_mount` and
        `:require_auth` hooks. All pages requiring full authentication.
        Defined before public_browsable to ensure literal paths match
-       before wildcard `:slug` patterns.
+       before wildcard `:slug` patterns. `/admin/verify` is in this
+       session (not `:admin`) to avoid redirect loops.
+
+    4b. **Admin** (`/admin/*`) — `live_session :admin` with
+       `:rate_limit_mount`, `:require_auth`, `:require_admin_or_moderator`,
+       and `:require_admin_totp` hooks. Admin pages requiring periodic TOTP
+       re-verification (sudo mode). Crossing from `:authenticated` to
+       `:admin` forces a full page load, re-reading the cookie session
+       for a fresh `admin_totp_verified_at` timestamp. Moderators pass
+       through `:require_admin_totp` without re-verification.
 
     5. **Public browsable** (`/`, `/boards/:slug`, `/articles/:slug`) —
        `live_session :public_browsable` with `:rate_limit_mount` and
@@ -219,6 +228,7 @@ defmodule BaudrateWeb.Router do
     post "/totp-reset", SessionController, :totp_reset
     post "/recovery-verify", SessionController, :recovery_verify
     post "/ack-recovery-codes", SessionController, :ack_recovery_codes
+    post "/admin-totp-verify", SessionController, :admin_totp_verify
   end
 
   # Authenticated routes (defined before public_browsable to ensure literal
@@ -239,6 +249,28 @@ defmodule BaudrateWeb.Router do
       live "/profile", ProfileLive
       live "/profile/totp-reset", TotpResetLive
       live "/profile/recovery-codes", RecoveryCodesLive
+      live "/admin/verify", AdminTotpVerifyLive
+      live "/invites", UserInvitesLive
+      live "/messages", ConversationsLive
+      live "/messages/new", ConversationLive
+      live "/messages/:id", ConversationLive
+      live "/notifications", NotificationsLive
+      live "/following", FollowingLive
+      live "/feed", FeedLive
+      live "/bookmarks", BookmarksLive
+    end
+
+    # Admin routes — separate live_session for TOTP re-verification (sudo mode).
+    # Crossing from :authenticated to :admin forces a full page load, re-reading
+    # the cookie session for a fresh admin_totp_verified_at timestamp.
+    live_session :admin,
+      layout: {BaudrateWeb.Layouts, :app},
+      on_mount: [
+        {BaudrateWeb.AuthHooks, :rate_limit_mount},
+        {BaudrateWeb.AuthHooks, :require_auth},
+        {BaudrateWeb.AuthHooks, :require_admin_or_moderator},
+        {BaudrateWeb.AuthHooks, :require_admin_totp}
+      ] do
       live "/admin/settings", Admin.SettingsLive
       live "/admin/pending-users", Admin.PendingUsersLive
       live "/admin/federation", Admin.FederationLive
@@ -248,14 +280,6 @@ defmodule BaudrateWeb.Router do
       live "/admin/moderation-log", Admin.ModerationLogLive
       live "/admin/invites", Admin.InvitesLive
       live "/admin/login-attempts", Admin.LoginAttemptsLive
-      live "/invites", UserInvitesLive
-      live "/messages", ConversationsLive
-      live "/messages/new", ConversationLive
-      live "/messages/:id", ConversationLive
-      live "/notifications", NotificationsLive
-      live "/following", FollowingLive
-      live "/feed", FeedLive
-      live "/bookmarks", BookmarksLive
     end
 
     delete "/logout", SessionController, :delete

@@ -2,7 +2,7 @@ defmodule BaudrateWeb.AuthHooks do
   @moduledoc """
   LiveView `on_mount` hooks for authentication enforcement.
 
-  Five hooks are provided, each attached to `live_session` scopes in the router:
+  Six hooks are provided, each attached to `live_session` scopes in the router:
 
     * `:require_auth` — requires a fully authenticated session (`session_token`
       present and valid). Used for the `:authenticated` live_session. Assigns
@@ -23,6 +23,13 @@ defmodule BaudrateWeb.AuthHooks do
     * `:redirect_if_authenticated` — if the user already has a valid
       `session_token`, redirects to `/`. Used for the `:public` live_session
       (login page) to prevent authenticated users from seeing the login form.
+
+    * `:require_admin_totp` — requires periodic TOTP re-verification for admin
+      users accessing `/admin/*` pages (sudo mode). Checks
+      `admin_totp_verified_at` in the cookie session; if missing or older than
+      10 minutes, redirects to `/admin/verify?return_to=<path>`. Non-admin
+      users (e.g. moderators) pass through without re-verification.
+      Used in the `:admin` live_session.
 
     * `:rate_limit_mount` — rate limits WebSocket connections per IP address
       (60 mounts per minute). Only enforced on connected mounts (skips static
@@ -168,6 +175,47 @@ defmodule BaudrateWeb.AuthHooks do
       end
     else
       {:cont, socket}
+    end
+  end
+
+  # 10-minute timeout for admin TOTP re-verification (sudo mode)
+  @admin_totp_timeout_seconds 600
+
+  def on_mount(:require_admin_totp, _params, session, socket) do
+    user = socket.assigns[:current_user]
+
+    cond do
+      # Non-admin users (e.g. moderators) pass through without TOTP re-verification
+      is_nil(user) || user.role.name != "admin" ->
+        {:cont, socket}
+
+      # Admin without TOTP configured — redirect to profile to set it up
+      !user.totp_enabled ->
+        {:halt,
+         socket
+         |> put_flash(
+           :error,
+           gettext("TOTP must be configured before accessing admin pages.")
+         )
+         |> redirect(to: "/profile")}
+
+      # Check if admin_totp_verified_at is present and within timeout
+      true ->
+        verified_at = session["admin_totp_verified_at"]
+        now = System.system_time(:second)
+
+        if is_integer(verified_at) && now - verified_at < @admin_totp_timeout_seconds do
+          {:cont, socket}
+        else
+          return_to =
+            if connected?(socket) do
+              get_connect_info(socket, :request_path) || "/admin/settings"
+            else
+              "/admin/settings"
+            end
+
+          {:halt, redirect(socket, to: "/admin/verify?return_to=#{URI.encode_www_form(return_to)}")}
+        end
     end
   end
 

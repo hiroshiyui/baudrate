@@ -33,6 +33,14 @@ defmodule BaudrateWeb.SessionController do
   and the user must re-authenticate from the login page. Attempt count is
   tracked in the cookie session under `:totp_attempts`.
 
+  ## Admin Sudo Mode
+
+  `admin_totp_verify/2` handles TOTP re-verification for admin sudo mode.
+  After 5 failed attempts (`admin_totp_attempts`), the admin is locked out
+  of admin pages but the session is NOT dropped (they remain logged in).
+  On success, `admin_totp_verified_at` (Unix timestamp) is set in the
+  cookie session, granting admin access for 10 minutes.
+
   ## Security Logging
 
   All auth events are logged with structured prefixes (`auth.login_success`,
@@ -281,6 +289,77 @@ defmodule BaudrateWeb.SessionController do
     end
   end
 
+  @doc """
+  Verifies an admin's TOTP code for sudo-mode re-authentication.
+
+  Called via `phx-trigger-action` from `AdminTotpVerifyLive`. On success,
+  sets `admin_totp_verified_at` (Unix timestamp) in the cookie session and
+  redirects to the validated `return_to` path. On failure, increments
+  `admin_totp_attempts` and redirects back to `/admin/verify`. Locks out
+  after 5 failed attempts (redirects to `/` without dropping the session).
+  """
+  def admin_totp_verify(conn, %{"code" => code} = params) do
+    session_token = get_session(conn, :session_token)
+    return_to = sanitize_admin_return_to(params["return_to"])
+
+    case session_token && Auth.get_user_by_session_token(session_token) do
+      {:ok, user} when user.role.name == "admin" ->
+        attempts = get_session(conn, :admin_totp_attempts) || 0
+        secret = Auth.decrypt_totp_secret(user)
+
+        cond do
+          is_nil(secret) ->
+            Logger.error(
+              "auth.admin_totp_decrypt_error: user_id=#{user.id} ip=#{remote_ip(conn)}"
+            )
+
+            conn
+            |> put_flash(:error, gettext("TOTP configuration error. Please contact an administrator."))
+            |> redirect(to: "/profile")
+
+          attempts >= @max_totp_attempts ->
+            Logger.warning(
+              "auth.admin_totp_lockout: user_id=#{user.id} ip=#{remote_ip(conn)}"
+            )
+
+            conn
+            |> delete_session(:admin_totp_attempts)
+            |> put_flash(:error, gettext("Too many failed attempts. Please try again later."))
+            |> redirect(to: "/")
+
+          Auth.valid_totp?(secret, code) ->
+            Logger.info(
+              "auth.admin_totp_verify_success: user_id=#{user.id} ip=#{remote_ip(conn)}"
+            )
+
+            conn
+            |> delete_session(:admin_totp_attempts)
+            |> put_session(:admin_totp_verified_at, System.system_time(:second))
+            |> redirect(to: return_to)
+
+          true ->
+            Logger.warning(
+              "auth.admin_totp_verify_failure: user_id=#{user.id} attempt=#{attempts + 1} ip=#{remote_ip(conn)}"
+            )
+
+            conn
+            |> put_session(:admin_totp_attempts, attempts + 1)
+            |> put_flash(:error, gettext("Invalid verification code. Please try again."))
+            |> redirect(to: "/admin/verify?return_to=#{URI.encode_www_form(return_to)}")
+        end
+
+      {:ok, _non_admin} ->
+        conn
+        |> put_flash(:error, gettext("Access denied."))
+        |> redirect(to: "/")
+
+      _ ->
+        conn
+        |> put_flash(:error, gettext("Session expired. Please log in again."))
+        |> redirect(to: "/login")
+    end
+  end
+
   @doc "Acknowledges that the user has saved their recovery codes and redirects to home."
   def ack_recovery_codes(conn, _params) do
     conn
@@ -328,5 +407,21 @@ defmodule BaudrateWeb.SessionController do
 
   defp remote_ip(conn) do
     conn.remote_ip |> :inet.ntoa() |> to_string()
+  end
+
+  defp sanitize_admin_return_to(nil), do: "/admin/settings"
+
+  defp sanitize_admin_return_to(path) when is_binary(path) do
+    if String.starts_with?(path, "/admin/") &&
+         !String.contains?(path, "..") &&
+         !String.contains?(path, "//") &&
+         !String.contains?(path, "\\") &&
+         !String.contains?(path, "\n") &&
+         !String.contains?(path, "\r") &&
+         !String.contains?(path, "@") do
+      path
+    else
+      "/admin/settings"
+    end
   end
 end
