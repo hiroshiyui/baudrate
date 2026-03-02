@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] — 2026-03-02
+
+### Fixed
+
+- **Assets 404 after redeployment** — the `static` symlink used a path
+  through the `current` symlink with a version-specific directory name;
+  when a new version was deployed, the old version path no longer existed.
+  Now uses `readlink -f` to store an absolute resolved path.
+
+### Changed
+
+- **Registration page layout widened** — container changed from `max-w-sm`
+  (384px) to `max-w-lg` (512px) for better readability
+
 ## [1.0.3] — 2026-03-02
 
 ### Fixed
