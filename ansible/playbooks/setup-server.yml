@@ -1,0 +1,76 @@
+---
+# Baudrate — Server provisioning playbook
+#
+# Provisions a Debian 12 server with all infrastructure Baudrate needs.
+# Does NOT deploy the application itself (that will be a separate playbook).
+#
+# Secrets are decrypted automatically from secrets.sops.yml via your GPG key.
+#
+# Usage:
+#   ansible-playbook playbooks/setup-server.yml
+#   ansible-playbook playbooks/setup-server.yml --tags postgresql
+#
+- name: Provision Baudrate server
+  hosts: production
+  become: true
+
+  vars_prompt:
+    - name: domain
+      prompt: "Site domain name"
+      default: "{{ lookup('ansible.builtin.env', 'BAUDRATE_DOMAIN') }}"
+      private: false
+
+    - name: certbot_email
+      prompt: "Email address for Let's Encrypt notifications"
+      default: "{{ lookup('ansible.builtin.env', 'BAUDRATE_CERTBOT_EMAIL') }}"
+      private: false
+
+  pre_tasks:
+    - name: Validate domain is provided
+      ansible.builtin.assert:
+        that:
+          - domain | length > 0
+        fail_msg: "domain is required. Set BAUDRATE_DOMAIN or enter it at the prompt."
+
+    - name: Validate certbot_email is provided
+      ansible.builtin.assert:
+        that:
+          - certbot_email | length > 0
+        fail_msg: "certbot_email is required. Set BAUDRATE_CERTBOT_EMAIL or enter it at the prompt."
+
+    - name: Generate database password (not found in secrets.sops.yml)
+      when: postgres_db_password is not defined
+      block:
+        - name: Generate random password
+          ansible.builtin.set_fact:
+            postgres_db_password: "{{ lookup('ansible.builtin.password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+
+        - name: Display generated password
+          ansible.builtin.debug:
+            msg: |
+              ============================================================
+              Generated PostgreSQL password: {{ postgres_db_password }}
+
+              Save this to your SOPS secrets file:
+
+                sops inventory/group_vars/secrets.sops.yml
+
+              Set the value:
+                postgres_db_password: "{{ postgres_db_password }}"
+              ============================================================
+
+        - name: Confirm password has been saved
+          ansible.builtin.pause:
+            prompt: "Press Enter after you have saved the password (Ctrl+C to abort)"
+
+  roles:
+    - role: common
+      tags: [common]
+    - role: postgresql
+      tags: [postgresql]
+    - role: elixir
+      tags: [elixir]
+    - role: rust
+      tags: [rust]
+    - role: nginx
+      tags: [nginx]
