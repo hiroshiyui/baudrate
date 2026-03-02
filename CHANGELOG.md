@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] — 2026-03-02
+
+### Fixed
+
+- **File uploads broken in production (avatars, article images)** — upload
+  directory paths used compile-time module attributes with `:code.priv_dir/1`,
+  which resolves to the build directory instead of the release directory in OTP
+  releases. Combined with systemd's `ProtectSystem=strict`, writes to the build
+  path were blocked. Converted to runtime `Application.app_dir/2` function calls.
+
+### Changed
+
+- **Deploy playbook runs as `baudrate` user** — all deploy tasks now default to
+  the `baudrate` system user instead of root. Only systemd operations escalate
+  to root. This fixes root-owned symlinks (`current`, `static`, `uploads`)
+  created by the previous configuration.
+
 ## [1.0.5] — 2026-03-02
 
 ### Fixed
@@ -226,5 +243,10 @@ Elixir/Phoenix + LiveView, federating via ActivityPub.
 - Extensive documentation (development guide, SysOp guide, API reference,
   troubleshooting guide)
 
+[1.0.6]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.0.6
+[1.0.5]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.0.5
+[1.0.4]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.0.4
+[1.0.3]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.0.3
+[1.0.2]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.0.2
 [1.0.1]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.0.1
 [1.0.0]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.0.0
