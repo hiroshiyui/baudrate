@@ -746,6 +746,11 @@ The release is written to `_build/prod/rel/baudrate/`. It includes the compiled
 BEAM code, the Ammonia NIF `.so`, ERTS, and the overlay convenience scripts
 (`bin/server`, `bin/migrate`).
 
+> **Note:** When upgrading versions, remove `_build/prod/rel/` before running
+> `mix release` to avoid stale `lib/baudrate-<old-version>/` directories
+> accumulating alongside the new version. The Ansible deploy playbook handles
+> this automatically.
+
 ### Uploads Directory
 
 `priv/static/uploads/` stores avatars and article images:

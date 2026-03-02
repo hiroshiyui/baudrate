@@ -108,7 +108,7 @@ complete.
 | Pre-flight | Verify `baudrate` user and asdf exist; warn if deploying an older version |
 | Directories | Create `releases/`, `shared/uploads/`, `env/` |
 | Source | Clone repo and checkout the prompted release tag |
-| Build | `mix deps.get` → `mix compile` → `mix assets.deploy` → `mix release` |
+| Build | `mix deps.get` → `mix compile` → `mix assets.deploy` → clean stale rel → `mix release` |
 | Install | Copy release to `releases/<timestamp>/`, symlink shared uploads |
 | Env file | Template `baudrate.env` with `DATABASE_URL`, `SECRET_KEY_BASE`, etc. |
 | Systemd | Install and enable `baudrate.service` |
