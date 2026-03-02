@@ -781,6 +781,15 @@ are automatically recorded in the moderation log with actor, action type,
 target, and contextual details. The log is filterable by action type and
 paginated.
 
+**User-facing reports:** Authenticated users can report articles, comments, and
+other users directly from the UI. Report buttons appear on article pages (for
+articles and comments by other users) and on user profile pages. Reports are
+submitted via a modal dialog with a required reason field (max 2000 chars).
+Duplicate prevention ensures one open report per reporter per target.
+Report creation is rate-limited to 5 per 15 minutes per user.
+Reports target one of: `article_id`, `comment_id`, `remote_actor_id`, or
+`reported_user_id`.
+
 ### Notifications
 
 In-app notification system with real-time delivery via PubSub.

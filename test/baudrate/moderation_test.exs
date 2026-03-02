@@ -158,6 +158,68 @@ defmodule Baudrate.ModerationTest do
     end
   end
 
+  describe "create_report/1 with reported_user_id" do
+    test "creates a report targeting a local user", %{user: user} do
+      target = create_user()
+
+      assert {:ok, %Report{} = report} =
+               Moderation.create_report(%{
+                 reason: "Abusive behavior",
+                 reporter_id: user.id,
+                 reported_user_id: target.id
+               })
+
+      assert report.reported_user_id == target.id
+      assert report.status == "open"
+    end
+  end
+
+  describe "has_open_report?/2" do
+    test "returns false when no open report exists", %{user: user, remote_actor: actor} do
+      refute Moderation.has_open_report?(user.id, %{remote_actor_id: actor.id})
+    end
+
+    test "returns true when an open report exists for same target", %{
+      user: user,
+      remote_actor: actor
+    } do
+      {:ok, _} =
+        Moderation.create_report(%{
+          reason: "Spam",
+          reporter_id: user.id,
+          remote_actor_id: actor.id
+        })
+
+      assert Moderation.has_open_report?(user.id, %{remote_actor_id: actor.id})
+    end
+
+    test "returns false after report is resolved", %{user: user, remote_actor: actor} do
+      {:ok, report} =
+        Moderation.create_report(%{
+          reason: "Spam",
+          reporter_id: user.id,
+          remote_actor_id: actor.id
+        })
+
+      {:ok, _} = Moderation.resolve_report(report, user.id, "Done")
+
+      refute Moderation.has_open_report?(user.id, %{remote_actor_id: actor.id})
+    end
+
+    test "returns true for reported_user_id target", %{user: user} do
+      target = create_user()
+
+      {:ok, _} =
+        Moderation.create_report(%{
+          reason: "Harassment",
+          reporter_id: user.id,
+          reported_user_id: target.id
+        })
+
+      assert Moderation.has_open_report?(user.id, %{reported_user_id: target.id})
+    end
+  end
+
   describe "open_report_count/0" do
     test "returns zero when no reports" do
       assert Moderation.open_report_count() == 0
