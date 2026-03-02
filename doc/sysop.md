@@ -758,8 +758,14 @@ BEAM code, the Ammonia NIF `.so`, ERTS, and the overlay convenience scripts
 - Must be **writable** by the application process
 - Must be **persistent** across deployments
 - For containers: mount a persistent volume at this path
-- In OTP releases, `priv/static/` is **read-only** — configure an external
-  upload path outside the release directory for production
+- The Ansible deploy playbook symlinks the release's `uploads/` directory to
+  the shared `shared/uploads/` directory, making uploads persistent across
+  deploys
+
+**Important:** Upload directory paths are resolved at **runtime** using
+`Application.app_dir/2` — never as compile-time module attributes. In OTP
+releases, compile-time `:code.priv_dir/1` resolves to the build directory,
+not the release directory, causing writes to go to the wrong location.
 
 ### Production Start
 

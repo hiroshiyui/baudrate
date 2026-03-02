@@ -12,7 +12,6 @@ defmodule Baudrate.Avatar do
     * Uses `image` library (libvips NIF) — no CLI shelling, no command injection surface
   """
 
-  @avatar_dir Path.join([:code.priv_dir(:baudrate), "static", "uploads", "avatars"])
   @sizes [48, 36, 24]
 
   @magic_bytes %{
@@ -36,7 +35,7 @@ defmodule Baudrate.Avatar do
          {:ok, {image, _meta}} <- Image.autorotate(image),
          {:ok, cropped} <- apply_crop(image, crop_params) do
       avatar_id = generate_avatar_id()
-      avatar_dir = Path.join(@avatar_dir, avatar_id)
+      avatar_dir = Path.join(avatar_dir(), avatar_id)
       File.mkdir_p!(avatar_dir)
 
       try do
@@ -61,7 +60,7 @@ defmodule Baudrate.Avatar do
   def delete_avatar(nil), do: :ok
 
   def delete_avatar(avatar_id) when is_binary(avatar_id) do
-    dir = Path.join(@avatar_dir, avatar_id)
+    dir = Path.join(avatar_dir(), avatar_id)
 
     if File.dir?(dir) do
       File.rm_rf!(dir)
@@ -149,5 +148,9 @@ defmodule Baudrate.Avatar do
     y = div(img_height - side, 2)
 
     Image.crop(image, x, y, side, side)
+  end
+
+  defp avatar_dir do
+    Application.app_dir(:baudrate, Path.join(["priv", "static", "uploads", "avatars"]))
   end
 end

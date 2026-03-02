@@ -62,6 +62,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - Auth hooks: `:require_admin` (admin only), `:require_admin_or_moderator` (admin + moderator), `:require_auth` (any authenticated user), `:optional_auth` (load user if present), `:require_password_auth` (password-verified session), `:redirect_if_authenticated` (guest-only pages), `:rate_limit_mount` (WebSocket mount rate limit)
 - Pagination: use `Baudrate.Pagination` for cross-context paginated queries (`paginate_opts/3` + `paginate_query/3`)
 - LIKE sanitization: use `Repo.sanitize_like/1` to escape `%`, `_`, `\` in user input for ILIKE queries
+- OTP release paths: Never use `:code.priv_dir/1` in module attributes (`@var`) — it resolves to the build directory at compile time, not the release directory. Use `Application.app_dir(:baudrate, "priv/...")` in a function for runtime resolution.
 
 ## Project Conventions
 

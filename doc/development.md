@@ -345,6 +345,10 @@ User avatars are processed server-side for security:
    with server-generated 64-char hex IDs (no user input in paths)
 5. Rate limited to 5 avatar changes per hour per user
 
+**OTP release note:** Upload directory paths use `Application.app_dir/2` at
+runtime — never compile-time module attributes with `:code.priv_dir/1`, which
+would resolve to the build directory instead of the release directory.
+
 ### User Registration
 
 > **See the [SysOp Guide](sysop.md#registration-modes) for configuring
@@ -459,6 +463,9 @@ Key modules:
 - `Content.ArticleImageStorage` — image processing and storage
 - `Content` — CRUD functions (`create_article_image/1`, `list_article_images/1`,
   `associate_article_images/3`, `delete_article_image/1`, `delete_orphan_article_images/1`)
+
+**OTP release note:** Same as the avatar system — upload directory paths must
+use runtime `Application.app_dir/2` calls, not compile-time module attributes.
 
 ### Drafts / Autosave
 

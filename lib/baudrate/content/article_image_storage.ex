@@ -14,7 +14,6 @@ defmodule Baudrate.Content.ArticleImageStorage do
     * Uses `image` library (libvips NIF) — no CLI shelling, no command injection surface
   """
 
-  @upload_dir Path.join([:code.priv_dir(:baudrate), "static", "uploads", "article_images"])
   @max_dimension 1024
   @min_dimension 16
 
@@ -48,8 +47,8 @@ defmodule Baudrate.Content.ArticleImageStorage do
         end
 
       filename = generate_filename()
-      File.mkdir_p!(@upload_dir)
-      dest = Path.join(@upload_dir, filename)
+      File.mkdir_p!(upload_dir())
+      dest = Path.join(upload_dir(), filename)
 
       try do
         Image.write!(image, dest, strip_metadata: true)
@@ -90,7 +89,9 @@ defmodule Baudrate.Content.ArticleImageStorage do
   @doc """
   Returns the upload directory path.
   """
-  def upload_dir, do: @upload_dir
+  def upload_dir do
+    Application.app_dir(:baudrate, Path.join(["priv", "static", "uploads", "article_images"]))
+  end
 
   # --- Private ---
 
