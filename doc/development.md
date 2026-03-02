@@ -265,6 +265,28 @@ Key functions in `Auth`:
 | Concurrency | Max 3 sessions per user; oldest (by `refreshed_at`) evicted |
 | Cleanup | `SessionCleaner` GenServer purges expired sessions every hour |
 
+### Admin Sudo Mode
+
+Admin routes (`/admin/*`) require periodic TOTP re-verification — similar to
+Unix `sudo`. When an admin navigates to any admin page, the
+`:require_admin_totp` hook checks the `admin_totp_verified_at` timestamp in
+the cookie session. If missing or older than 10 minutes, the admin is
+redirected to `/admin/verify` for TOTP re-verification.
+
+| Aspect | Detail |
+|--------|--------|
+| Timeout | 10 minutes (`@admin_totp_timeout_seconds 600`) |
+| Live session | Admin routes use `:admin` live_session (separate from `:authenticated`) |
+| Moderators | Pass through without re-verification (hook skips non-admin users) |
+| Lockout | 5 failed attempts lock admin out of admin pages (session NOT dropped) |
+| Verification page | `/admin/verify` stays in `:authenticated` to avoid redirect loops |
+| Session key | `admin_totp_verified_at` — Unix timestamp set on successful verification |
+
+The `:admin` live_session boundary forces a full page load when navigating
+from authenticated pages to admin pages, ensuring the cookie session is
+re-read for a fresh timestamp. Within admin pages, live-navigation shares
+the WebSocket session without re-prompting.
+
 ### RBAC
 
 > **See the [SysOp Guide](sysop.md#roles--permissions-rbac) for role
