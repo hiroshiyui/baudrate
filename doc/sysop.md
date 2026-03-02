@@ -86,10 +86,35 @@ mix assets.deploy  # Minify CSS/JS + fingerprint for cache busting
 
 On first launch, all requests redirect to `/setup`. The setup wizard:
 
-1. Creates the initial **admin account** (with password and optional TOTP)
-2. Seeds **roles and permissions** (guest, user, moderator, admin)
-3. Creates the **SysOp board** (protected system announcements board)
-4. Sets the `setup_completed` flag
+1. **(Optional) Verifies the installation key** — if `INSTALLATION_KEY` is set
+2. Creates the initial **admin account** (with password and optional TOTP)
+3. Seeds **roles and permissions** (guest, user, moderator, admin)
+4. Creates the **SysOp board** (protected system announcements board)
+5. Sets the `setup_completed` flag
+
+### Installation Key
+
+The `INSTALLATION_KEY` environment variable gates access to the setup wizard.
+Without it, anyone who discovers the `/setup` URL can complete setup and become
+admin. **Strongly recommended for production deployments.**
+
+- When set, the wizard starts with a verification step before the database check
+- The key is validated with constant-time comparison to prevent timing attacks
+- After 3 failed attempts, the form locks for 30 seconds (brute-force protection)
+- Once setup is complete, the key is no longer needed and can be removed
+
+Set the key in your environment file or generate one during deployment:
+
+```bash
+# Generate a random key
+openssl rand -base64 24
+
+# Set in environment
+export INSTALLATION_KEY="your-random-key-here"
+```
+
+The Ansible deploy playbook auto-generates this key if not configured in your
+SOPS secrets file.
 
 If setup is interrupted partway through, reset the database:
 
@@ -118,6 +143,7 @@ mix ecto.reset  # Drop, recreate, re-migrate
 | `POOL_SIZE` | `10` | Database connection pool size |
 | `ECTO_IPV6` | unset | Set to `"true"` for IPv6 database connections |
 | `DATABASE_SSL` | `"true"` | Set to `"false"` for non-SSL local databases |
+| `INSTALLATION_KEY` | unset | Gates the setup wizard; remove after setup (see [Installation Key](#installation-key)) |
 | `DNS_CLUSTER_QUERY` | unset | DNS SRV record for Erlang clustering |
 
 ### SECRET_KEY_BASE — critical warning

@@ -95,6 +95,12 @@ You will be prompted for:
 If `secret_key_base` is not in your SOPS secrets file, the playbook
 auto-generates one and pauses so you can save it.
 
+If `installation_key` is not defined, the playbook auto-generates a 32-character
+random key and pauses so you can save it. This key is required to complete the
+setup wizard at `/setup` after the first deploy — it prevents unauthorized users
+from running the wizard. The key can be removed from the env file after setup is
+complete.
+
 ### What `deploy-baudrate.yml` Does
 
 | Phase | Description |
