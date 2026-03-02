@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] — 2026-03-02
+
+### Fixed
+
+- **Markdown preview prose styling** — added `@tailwindcss/typography` plugin
+  so the `prose` class renders headings, links, lists, code blocks, and
+  blockquotes with proper styles across all markdown preview, article,
+  comment, and DM views
+- **Markdown preview reply pattern** — switched from `push_event` broadcast
+  to `{:halt, reply, socket}` for immediate response to the JS hook
+- **Ansible SOPS secrets not loading** — renamed `secrets.sops.yml` to
+  `all.sops.yml` so the `community.sops.sops` vars plugin auto-decrypts
+  it (files must be named after an Ansible group)
+- **Ansible database migration failure** — added `DATABASE_SSL=false` to the
+  migration task environment for servers without SSL-configured PostgreSQL
+- **Ansible callback plugin removed** — replaced `community.general.yaml`
+  with built-in `stdout_callback = default` + `result_format = yaml`
+- **Ansible asdf v0.16 installation** — rewrote the Elixir role to download
+  the Go binary from GitHub releases instead of git-cloning the legacy
+  Bash-based asdf
+
+### Security
+
+- **Service worker open redirect** — validate same-origin URLs in
+  notification click handler to prevent navigation to external sites
+
 ## [1.0.1] — 2026-03-02
 
 ### Added
