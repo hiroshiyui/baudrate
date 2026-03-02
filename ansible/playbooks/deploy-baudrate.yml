@@ -1,0 +1,76 @@
+---
+# Baudrate — Application deployment playbook
+#
+# Builds Baudrate from a git release tag on the server, creates an OTP release,
+# manages symlink-based releases for rollback, runs migrations, and (re)starts
+# the app via systemd.
+#
+# Requires setup-server.yml to have been run first (server must already have
+# Erlang, Elixir, Rust, PostgreSQL, nginx, and the baudrate system user).
+#
+# Secrets are decrypted automatically from secrets.sops.yml via your GPG key.
+#
+# Usage:
+#   ansible-playbook playbooks/deploy-baudrate.yml
+#   ansible-playbook playbooks/deploy-baudrate.yml -e release_tag=v1.0.0
+#
+- name: Deploy Baudrate
+  hosts: production
+  become: true
+
+  vars_prompt:
+    - name: domain
+      prompt: "Site domain name"
+      default: "{{ lookup('ansible.builtin.env', 'BAUDRATE_DOMAIN') }}"
+      private: false
+
+    - name: release_tag
+      prompt: "GitHub release tag to deploy (e.g. v1.0.0)"
+      private: false
+
+    - name: git_repo
+      prompt: "Git repository URL"
+      default: "{{ git_repo | default('https://github.com/hiroshiyui/baudrate.git') }}"
+      private: false
+
+  pre_tasks:
+    - name: Validate domain is provided
+      ansible.builtin.assert:
+        that:
+          - domain | length > 0
+        fail_msg: "domain is required. Set BAUDRATE_DOMAIN or enter it at the prompt."
+
+    - name: Validate release_tag is provided
+      ansible.builtin.assert:
+        that:
+          - release_tag | length > 0
+        fail_msg: "release_tag is required. Specify a git tag (e.g. v1.0.0)."
+
+    - name: Generate secret key base (not found in secrets.sops.yml)
+      when: secret_key_base is not defined
+      block:
+        - name: Generate random secret key base
+          ansible.builtin.set_fact:
+            secret_key_base: "{{ lookup('ansible.builtin.password', '/dev/null length=64 chars=ascii_letters,digits') }}"
+
+        - name: Display generated secret key base
+          ansible.builtin.debug:
+            msg: |
+              ============================================================
+              Generated SECRET_KEY_BASE: {{ secret_key_base }}
+
+              Save this to your SOPS secrets file:
+
+                sops inventory/group_vars/secrets.sops.yml
+
+              Add the value:
+                secret_key_base: "{{ secret_key_base }}"
+              ============================================================
+
+        - name: Confirm secret key base has been saved
+          ansible.builtin.pause:
+            prompt: "Press Enter after you have saved the secret key base (Ctrl+C to abort)"
+
+  roles:
+    - role: deploy
+      tags: [deploy]

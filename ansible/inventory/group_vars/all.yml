@@ -15,6 +15,11 @@ ssh_port: 22
 
 # Deployment paths (used in nginx templates)
 deploy_path: /opt/baudrate
+static_path: "{{ deploy_path }}/static"
+
+# Deployment (HTTPS clone, public repo)
+git_repo: "https://github.com/hiroshiyui/baudrate.git"
+keep_releases: 5
 
 # Erlang/Elixir versions (match .tool-versions)
 erlang_version: "28.3.1"
