@@ -1075,7 +1075,7 @@ batched (50 per cycle) and skips when federation is disabled.
 - Optional authorized fetch mode — require HTTP signatures on GET requests to AP endpoints (exempt: WebFinger, NodeInfo)
 - Signed outbound GET requests — actor resolution falls back to signed GET when remote instances require authorized fetch
 - Session cookie `secure` flag handled by `force_ssl` / `Plug.SSL` in production
-- CSP `img-src` restricted to `'self' data: blob:` — no blanket `https:` (external images blocked)
+- CSP `img-src` allows `'self' https: data: blob:` — `https:` is required for federated remote actor avatars
 
 **Public API:**
 

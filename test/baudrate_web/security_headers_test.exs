@@ -16,11 +16,10 @@ defmodule BaudrateWeb.SecurityHeadersTest do
       assert csp =~ "default-src"
     end
 
-    test "allows blob: in img-src for avatar crop preview", %{conn: conn} do
+    test "allows https: in img-src for federated avatars", %{conn: conn} do
       conn = get(conn, "/login")
       [csp] = get_resp_header(conn, "content-security-policy")
-      assert csp =~ "img-src 'self' data: blob:"
-      refute csp =~ "img-src 'self' data: blob: https:"
+      assert csp =~ "img-src 'self' https: data: blob:"
     end
 
     test "blocks plugins with object-src 'none'", %{conn: conn} do
