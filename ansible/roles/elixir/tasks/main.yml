@@ -80,7 +80,7 @@
     creates: "{{ baudrate_home }}/.asdf/installs/erlang/{{ erlang_version }}"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
-    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_env.PATH }}"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
 
 - name: Set Erlang {{ erlang_version }} as global default
   become_user: "{{ baudrate_user }}"
@@ -97,7 +97,7 @@
     creates: "{{ baudrate_home }}/.asdf/installs/elixir/{{ elixir_version }}"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
-    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_env.PATH }}"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
 
 - name: Set Elixir {{ elixir_version }} as global default
   become_user: "{{ baudrate_user }}"
@@ -113,7 +113,7 @@
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix local.hex --force"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
-    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_env.PATH }}"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
   changed_when: false
 
 - name: Install Rebar
@@ -122,5 +122,5 @@
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix local.rebar --force"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
-    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_env.PATH }}"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
   changed_when: false

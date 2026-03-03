@@ -94,7 +94,7 @@
 
 - name: Set release timestamp
   ansible.builtin.set_fact:
-    release_timestamp: "{{ ansible_date_time.date | replace('-', '') }}_{{ ansible_date_time.time | replace(':', '') }}"
+    release_timestamp: "{{ ansible_facts.date_time.date | replace('-', '') }}_{{ ansible_facts.date_time.time | replace(':', '') }}"
 
 - name: Clone or update source repository
   ansible.builtin.git:
@@ -113,7 +113,7 @@
     chdir: "{{ deploy_path }}/src"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
-    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_env.PATH }}"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
     CARGO_HOME: "{{ baudrate_home }}/.cargo"
     RUSTUP_HOME: "{{ baudrate_home }}/.rustup"
     MIX_ENV: prod
@@ -125,7 +125,7 @@
     chdir: "{{ deploy_path }}/src"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
-    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ baudrate_home }}/.cargo/bin:{{ ansible_env.PATH }}"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ baudrate_home }}/.cargo/bin:{{ ansible_facts.env.PATH }}"
     CARGO_HOME: "{{ baudrate_home }}/.cargo"
     RUSTUP_HOME: "{{ baudrate_home }}/.rustup"
     MIX_ENV: prod
@@ -137,7 +137,7 @@
     chdir: "{{ deploy_path }}/src"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
-    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_env.PATH }}"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
     MIX_ENV: prod
   changed_when: true
 
@@ -152,7 +152,7 @@
     chdir: "{{ deploy_path }}/src"
   environment:
     ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
-    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_env.PATH }}"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
     MIX_ENV: prod
   changed_when: true
 
