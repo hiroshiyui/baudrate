@@ -1585,27 +1585,25 @@ defmodule Baudrate.Auth do
 
   @doc """
   Returns combined hidden user IDs and AP IDs from both blocks and mutes
-  in only 2 queries (instead of 4).
+  in a single query using `union_all`.
 
   Returns `{user_ids, ap_ids}` where both are deduplicated lists.
   """
   @spec hidden_ids(User.t()) :: {[integer()], [String.t()]}
   def hidden_ids(%User{id: user_id}) do
-    blocked =
+    blocked_q =
       from(b in UserBlock,
         where: b.user_id == ^user_id,
         select: %{user_id: b.blocked_user_id, ap_id: b.blocked_actor_ap_id}
       )
-      |> Repo.all()
 
-    muted =
+    muted_q =
       from(m in UserMute,
         where: m.user_id == ^user_id,
         select: %{user_id: m.muted_user_id, ap_id: m.muted_actor_ap_id}
       )
-      |> Repo.all()
 
-    all = blocked ++ muted
+    all = blocked_q |> union_all(^muted_q) |> Repo.all()
     user_ids = for(r <- all, r.user_id, do: r.user_id) |> Enum.uniq()
     ap_ids = for(r <- all, r.ap_id, do: r.ap_id) |> Enum.uniq()
     {user_ids, ap_ids}
