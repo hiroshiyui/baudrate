@@ -70,6 +70,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - HTTP Signature signing: `HTTPSignature.sign/5` and `sign_get/3` must NOT return a `"host"` header — `HTTPClient.build_pinned_opts` manages the `Host` header for DNS-pinned connections. Duplicates cause signature verification failures on remote instances.
 - Federation outbound delivery: always call `KeyStore.ensure_user_keypair/1` before enqueuing signed activities (Follow, Undo, etc.) to guarantee the user has an RSA keypair
 - Settings are cached in ETS via `Baudrate.Setup.SettingsCache`; `set_setting/2` auto-refreshes the cache on success. Direct DB writes to the `settings` table must call `SettingsCache.refresh()` manually.
+- Boards are cached in ETS via `Baudrate.Content.BoardCache`; board mutations in `Content` (`create_board`, `update_board`, `delete_board`, `toggle_board_federation`) auto-refresh the cache. Both caches are disabled in tests via `settings_cache_enabled: false`.
 
 ## Project Conventions
 

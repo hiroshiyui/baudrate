@@ -56,6 +56,7 @@ lib/
 │   │   ├── article_like.ex      # ArticleLike schema (local + remote likes)
 │   │   ├── article_tag.ex        # ArticleTag schema (article ↔ hashtag, extracted from body)
 │   │   ├── board.ex             # Board schema (hierarchical via parent_id, role-based permissions)
+│   │   ├── board_cache.ex       # ETS-backed cache for board lookups (GenServer + :ets.lookup)
 │   │   ├── board_article.ex     # Join table: board ↔ article
 │   │   ├── board_moderator.ex   # Join table: board ↔ moderator
 │   │   ├── comment_like.ex      # CommentLike schema (local + remote likes on comments)
@@ -1272,6 +1273,7 @@ Baudrate.Supervisor (one_for_one)
 ├── Phoenix.PubSub                     # PubSub for LiveView
 ├── Baudrate.Auth.SessionCleaner       # Hourly cleanup (sessions, login attempts, orphan images)
 ├── Baudrate.Setup.SettingsCache       # ETS cache for site settings (must start before DomainBlockCache)
+├── Baudrate.Content.BoardCache        # ETS cache for board lookups (by ID, slug, hierarchy)
 ├── Baudrate.Federation.TaskSupervisor # Async federation delivery tasks
 ├── Baudrate.Federation.DomainBlockCache  # ETS cache for domain blocking decisions
 ├── Baudrate.Federation.DeliveryWorker     # Polls delivery queue every 60s
