@@ -149,6 +149,41 @@ defmodule Baudrate.Content.BoardCacheTest do
     end
   end
 
+  describe "descendant_ids/1" do
+    test "returns [board_id] for leaf board" do
+      leaf = create_board!(%{name: "Leaf", slug: "desc-leaf-#{System.unique_integer([:positive])}"})
+      assert BoardCache.descendant_ids(leaf.id) == [leaf.id]
+    end
+
+    test "returns all descendants including self" do
+      root = create_board!(%{name: "Root", slug: "desc-r-#{System.unique_integer([:positive])}"})
+
+      mid =
+        create_board!(%{
+          name: "Mid",
+          slug: "desc-m-#{System.unique_integer([:positive])}",
+          parent_id: root.id
+        })
+
+      leaf =
+        create_board!(%{
+          name: "Leaf",
+          slug: "desc-l-#{System.unique_integer([:positive])}",
+          parent_id: mid.id
+        })
+
+      ids = BoardCache.descendant_ids(root.id)
+      assert root.id in ids
+      assert mid.id in ids
+      assert leaf.id in ids
+      assert length(ids) == 3
+    end
+
+    test "returns [board_id] for unknown board" do
+      assert BoardCache.descendant_ids(999_999) == [999_999]
+    end
+  end
+
   describe "refresh/0" do
     test "reflects newly created boards" do
       assert {:error, :not_found} = BoardCache.get(999_999)
