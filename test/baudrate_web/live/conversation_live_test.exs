@@ -67,8 +67,8 @@ defmodule BaudrateWeb.ConversationLiveTest do
       |> form("form", message: %{body: "  "})
       |> render_submit()
 
-      # Should not crash, no message added
-      refute render(view) =~ "chat-bubble"
+      # Should not crash, no message added (match DaisyUI chat bubble class, not hero icon names)
+      refute render(view) =~ ~s(class="chat-bubble)
     end
   end
 
