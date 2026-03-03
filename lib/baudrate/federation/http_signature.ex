@@ -17,6 +17,8 @@ defmodule Baudrate.Federation.HTTPSignature do
     1. Build signing string from required headers
     2. Sign with local actor's RSA private key
     3. Use `hs2019` algorithm label in Signature header
+    4. Return `signature`, `date`, `digest` headers (NOT `host` —
+       managed by `HTTPClient` for DNS-pinned connections)
   """
 
   require Logger

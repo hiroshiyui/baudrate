@@ -924,6 +924,7 @@ The `Baudrate.Federation` context handles all federation logic.
 - Exponential backoff: 1m → 5m → 30m → 2h → 12h → 24h, then abandoned after 6 attempts
 - Domain blocklist respected: deliveries to blocked domains are skipped
 - Job deduplication: partial unique index on `(inbox_url, actor_uri)` for pending/failed jobs prevents duplicates on retry/race conditions
+- `KeyStore.ensure_user_keypair/1` must be called before enqueuing any signed delivery — ensures the user has an RSA keypair for HTTP Signature signing
 
 **Followers collection endpoints** (paginated with `?page=N`):
 - `/ap/users/:username/followers` — paginated `OrderedCollection` of follower URIs
@@ -1059,6 +1060,7 @@ batched (50 per cycle) and skips when federation is disabled.
 > See the [SysOp Guide](sysop.md#stale-actor-cleanup) for configuration.
 
 **Security:**
+- HTTP Signature signing (outbound) — `hs2019` algorithm (RSA PKCS1v15 + SHA-256), signed headers: `(request-target)`, `host`, `date`, `digest`; key ID format: `{actor_uri}#main-key`. The `host` header is managed by `HTTPClient` (not returned by `HTTPSignature.sign/5`) to avoid duplication with DNS-pinned connections
 - HTTP Signature verification on all inbox requests
 - Inbox content-type validation — rejects non-AP content types with 415 (via `RequireAPContentType` plug)
 - HTML sanitization via Ammonia (Rust NIF, html5ever parser) — allowlist-based, applied before database storage
@@ -1089,7 +1091,7 @@ See [`doc/api.md`](api.md) for the full AP endpoint reference.
 - **Pagination** — outbox, followers, and search collections use AP-spec `OrderedCollectionPage` pagination with `?page=N` (20 items/page). Without `?page`, the root `OrderedCollection` contains `totalItems` and a `first` link.
 - **Rate limiting** — 120 requests/min per IP; 429 responses are JSON (`{"error": "Too Many Requests"}`).
 - **`baudrate:*` extensions** — Article objects include `baudrate:pinned`, `baudrate:locked`, `baudrate:commentCount`, `baudrate:likeCount`. Board actors include `baudrate:parentBoard` and `baudrate:subBoards`.
-- **Enriched actors** — User actors include `published`, `summary` (user bio, plaintext with hashtag linkification), and `icon` (avatar as WebP). Board actors include parent/sub-board links.
+- **Enriched actors** — User actors include `published`, `summary` (user bio, plaintext with hashtag linkification), and `icon` (avatar as WebP, 48px size). Board actors include parent/sub-board links.
 
 ### Layout System
 

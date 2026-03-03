@@ -63,6 +63,9 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - Pagination: use `Baudrate.Pagination` for cross-context paginated queries (`paginate_opts/3` + `paginate_query/3`)
 - LIKE sanitization: use `Repo.sanitize_like/1` to escape `%`, `_`, `\` in user input for ILIKE queries
 - OTP release paths: Never use `:code.priv_dir/1` in module attributes (`@var`) — it resolves to the build directory at compile time, not the release directory. Use `Application.app_dir(:baudrate, "priv/...")` in a function for runtime resolution.
+- Avatar sizes are integers `[48, 36, 24]` — never pass string names like `"medium"` to `Avatar.avatar_url/2`
+- HTTP Signature signing: `HTTPSignature.sign/5` and `sign_get/3` must NOT return a `"host"` header — `HTTPClient.build_pinned_opts` manages the `Host` header for DNS-pinned connections. Duplicates cause signature verification failures on remote instances.
+- Federation outbound delivery: always call `KeyStore.ensure_user_keypair/1` before enqueuing signed activities (Follow, Undo, etc.) to guarantee the user has an RSA keypair
 
 ## Project Conventions
 
