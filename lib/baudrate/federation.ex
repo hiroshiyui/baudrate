@@ -1369,8 +1369,6 @@ defmodule Baudrate.Federation do
         remote_query
       end
 
-    remote_total = Repo.one(from(q in remote_query, select: count(q.id)))
-
     # Local articles from self + followed local users
     local_query =
       from(a in Baudrate.Content.Article,
@@ -1388,8 +1386,6 @@ defmodule Baudrate.Federation do
       else
         local_query
       end
-
-    local_total = Repo.one(from(a in local_query, select: count(a.id)))
 
     # Comments on articles the user authored or commented on
     participated_subquery =
@@ -1414,7 +1410,9 @@ defmodule Baudrate.Federation do
         comment_query
       end
 
-    comment_total = Repo.one(from([c, _a] in comment_query, select: count(c.id)))
+    # Count all three feed sources in a single query
+    {remote_total, local_total, comment_total} =
+      count_feed_totals(user.id, hidden_user_ids, hidden_ap_ids)
 
     total = remote_total + local_total + comment_total
 
@@ -1491,6 +1489,42 @@ defmodule Baudrate.Federation do
       per_page: per_page,
       total_pages: total_pages
     }
+  end
+
+  # Counts remote feed items, local articles, and comments in a single SQL
+  # round-trip using 3 scalar subqueries. The conditions exactly mirror the
+  # Ecto queries in `list_feed_items/2`.
+  defp count_feed_totals(user_id, hidden_user_ids, hidden_ap_ids) do
+    hidden_ap_ids_param = if hidden_ap_ids == [], do: nil, else: hidden_ap_ids
+    hidden_user_ids_param = if hidden_user_ids == [], do: nil, else: hidden_user_ids
+
+    %{rows: [[remote_total, local_total, comment_total]]} =
+      Repo.query!(
+        """
+        SELECT
+          (SELECT count(*) FROM feed_items fi
+             JOIN user_follows uf ON uf.remote_actor_id = fi.remote_actor_id
+             JOIN remote_actors ra ON ra.id = fi.remote_actor_id
+             WHERE uf.user_id = $1 AND uf.state = 'accepted'
+               AND fi.deleted_at IS NULL
+               AND ($2::text[] IS NULL OR ra.ap_id != ALL($2))),
+          (SELECT count(*) FROM articles a
+             LEFT JOIN user_follows uf ON uf.followed_user_id = a.user_id
+               AND uf.user_id = $1 AND uf.state = 'accepted'
+             WHERE (a.user_id = $1 OR uf.id IS NOT NULL)
+               AND a.deleted_at IS NULL
+               AND ($3::bigint[] IS NULL OR a.user_id != ALL($3))),
+          (SELECT count(*) FROM comments c
+             JOIN articles a ON a.id = c.article_id
+             WHERE (a.user_id = $1 OR EXISTS(
+               SELECT 1 FROM comments oc WHERE oc.article_id = a.id AND oc.user_id = $1))
+               AND c.deleted_at IS NULL AND a.deleted_at IS NULL
+               AND ($3::bigint[] IS NULL OR c.user_id != ALL($3)))
+        """,
+        [user_id, hidden_ap_ids_param, hidden_user_ids_param]
+      )
+
+    {remote_total, local_total, comment_total}
   end
 
   @doc """
