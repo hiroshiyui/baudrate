@@ -345,7 +345,7 @@ defmodule Baudrate.Federation do
     %{
       "type" => "Image",
       "mediaType" => "image/webp",
-      "url" => "#{base_url()}#{Baudrate.Avatar.avatar_url(avatar_id, "medium")}"
+      "url" => "#{base_url()}#{Baudrate.Avatar.avatar_url(avatar_id, 48)}"
     }
   end
 
