@@ -61,6 +61,7 @@ defmodule Baudrate.AvatarTest do
     test "returns exact path when file exists", %{png_path: png_path} do
       {:ok, avatar_id} = Avatar.process_upload(png_path, nil)
 
+      assert Avatar.avatar_url(avatar_id, 120) == "/uploads/avatars/#{avatar_id}/120.webp"
       assert Avatar.avatar_url(avatar_id, 48) == "/uploads/avatars/#{avatar_id}/48.webp"
       assert Avatar.avatar_url(avatar_id, 36) == "/uploads/avatars/#{avatar_id}/36.webp"
       assert Avatar.avatar_url(avatar_id, 24) == "/uploads/avatars/#{avatar_id}/24.webp"
@@ -70,7 +71,8 @@ defmodule Baudrate.AvatarTest do
 
     test "falls back to next larger size when file missing" do
       # "abc123" doesn't exist on disk — fallback kicks in
-      assert Avatar.avatar_url("abc123", 48) == "/uploads/avatars/abc123/48.webp"
+      assert Avatar.avatar_url("abc123", 120) == "/uploads/avatars/abc123/120.webp"
+      assert Avatar.avatar_url("abc123", 48) == "/uploads/avatars/abc123/120.webp"
       assert Avatar.avatar_url("abc123", 36) == "/uploads/avatars/abc123/48.webp"
       assert Avatar.avatar_url("abc123", 24) == "/uploads/avatars/abc123/36.webp"
     end
@@ -95,17 +97,21 @@ defmodule Baudrate.AvatarTest do
   end
 
   describe "process_upload/2 with valid images" do
-    test "processes PNG and creates 48x48 and 36x36 WebP files", %{png_path: png_path} do
+    test "processes PNG and creates 120x120, 48x48, and 36x36 WebP files", %{png_path: png_path} do
       crop = %{"x" => 0.1, "y" => 0.1, "width" => 0.8, "height" => 0.8}
       assert {:ok, avatar_id} = Avatar.process_upload(png_path, crop)
 
+      path120 = Path.join([@avatar_dir, avatar_id, "120.webp"])
       path48 = Path.join([@avatar_dir, avatar_id, "48.webp"])
       path36 = Path.join([@avatar_dir, avatar_id, "36.webp"])
+      assert File.exists?(path120)
       assert File.exists?(path48)
       assert File.exists?(path36)
 
+      {:ok, img120} = Image.open(path120)
       {:ok, img48} = Image.open(path48)
       {:ok, img36} = Image.open(path36)
+      assert {120, 120, _} = Image.shape(img120)
       assert {48, 48, _} = Image.shape(img48)
       assert {36, 36, _} = Image.shape(img36)
 

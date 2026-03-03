@@ -552,11 +552,12 @@ defmodule BaudrateWeb.CoreComponents do
 
   ## Examples
 
+      <.avatar user={@current_user} size={120} />
       <.avatar user={@current_user} size={48} />
       <.avatar user={@current_user} size={36} />
   """
   attr :user, :map, required: true
-  attr :size, :integer, default: 48, values: [48, 36, 24]
+  attr :size, :integer, default: 48, values: [120, 48, 36, 24]
   attr :class, :string, default: nil
 
   def avatar(%{user: %{avatar_id: avatar_id}} = assigns) when is_binary(avatar_id) do
@@ -592,6 +593,7 @@ defmodule BaudrateWeb.CoreComponents do
           aria-hidden="true"
           class={
             cond do
+              @size == 120 -> "text-4xl"
               @size == 48 -> "text-lg"
               @size == 36 -> "text-sm"
               true -> "text-xs"
@@ -605,6 +607,7 @@ defmodule BaudrateWeb.CoreComponents do
     """
   end
 
+  defp size_class(120), do: "w-[120px] rounded-full"
   defp size_class(48), do: "w-12 rounded-full"
   defp size_class(36), do: "w-9 rounded-full"
   defp size_class(24), do: "w-6 rounded-full"

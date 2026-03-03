@@ -168,6 +168,29 @@ defmodule BaudrateWeb.CoreComponentsTest do
 
       assert html =~ "Bobby"
     end
+
+    test "renders 120px avatar with image" do
+      user = %Baudrate.Setup.User{username: "carol", display_name: "Carol", avatar_id: "def456"}
+
+      html =
+        render_component(&CoreComponents.avatar/1, user: user, size: 120)
+
+      assert html =~ "<img"
+      assert html =~ "w-[120px]"
+      assert html =~ "def456"
+    end
+
+    test "renders 120px placeholder avatar" do
+      user = %Baudrate.Setup.User{username: "dave", display_name: nil, avatar_id: nil}
+
+      html =
+        render_component(&CoreComponents.avatar/1, user: user, size: 120)
+
+      assert html =~ "avatar-placeholder"
+      assert html =~ "w-[120px]"
+      assert html =~ "text-4xl"
+      assert html =~ "D"
+    end
   end
 
   describe "pagination/1" do

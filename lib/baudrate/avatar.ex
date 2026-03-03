@@ -12,7 +12,7 @@ defmodule Baudrate.Avatar do
     * Uses `image` library (libvips NIF) — no CLI shelling, no command injection surface
   """
 
-  @sizes [48, 36, 24]
+  @sizes [120, 48, 36, 24]
 
   @magic_bytes %{
     <<0xFF, 0xD8, 0xFF>> => :jpeg,
@@ -22,7 +22,7 @@ defmodule Baudrate.Avatar do
   }
 
   @doc """
-  Processes an uploaded avatar image and saves multiple sizes (48x48, 36x36, 24x24) as WebP.
+  Processes an uploaded avatar image and saves multiple sizes (120x120, 48x48, 36x36, 24x24) as WebP.
 
   `upload_path` is the temporary file path from LiveView's `consume_uploaded_entries`.
   `crop_params` is a map with normalized percentage keys: `"x"`, `"y"`, `"width"`, `"height"`.
