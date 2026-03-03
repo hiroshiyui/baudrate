@@ -13,6 +13,7 @@ defmodule Baudrate.Application do
       {DNSCluster, query: Application.get_env(:baudrate, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Baudrate.PubSub},
       Baudrate.Auth.SessionCleaner,
+      Baudrate.Setup.SettingsCache,
       {Task.Supervisor, name: Baudrate.Federation.TaskSupervisor},
       Baudrate.Federation.DomainBlockCache,
       Baudrate.Federation.DeliveryWorker,

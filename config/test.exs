@@ -39,6 +39,10 @@ config :phoenix_live_view,
 config :phoenix,
   sort_verified_routes_query_params: true
 
+# Disable settings ETS cache in tests — each test reads from its own Ecto
+# sandbox transaction, avoiding cross-test interference via shared ETS state.
+config :baudrate, settings_cache_enabled: false
+
 # Run federation delivery synchronously in tests to avoid sandbox ownership
 # errors from fire-and-forget Tasks that outlive the test process.
 config :baudrate, federation_async: false
