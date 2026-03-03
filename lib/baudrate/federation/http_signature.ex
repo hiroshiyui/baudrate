@@ -151,7 +151,9 @@ defmodule Baudrate.Federation.HTTPSignature do
   @doc """
   Signs an outgoing HTTP request and returns a map of headers to include.
 
-  Returns a map with `"signature"`, `"date"`, `"digest"`, and `"host"` keys.
+  Returns a map with `"signature"`, `"date"`, and `"digest"` keys.
+  The `"host"` header is intentionally omitted — it is managed by `HTTPClient`
+  to support DNS-pinned connections.
   """
   def sign(method, url, body, private_key_pem, key_id) do
     uri = URI.parse(url)
@@ -181,16 +183,17 @@ defmodule Baudrate.Federation.HTTPSignature do
     %{
       "signature" => sig_header,
       "date" => now,
-      "digest" => digest,
-      "host" => host
+      "digest" => digest
     }
   end
 
   @doc """
   Signs an outgoing HTTP GET request and returns a map of headers to include.
 
-  Returns a map with `"signature"`, `"date"`, and `"host"` keys.
+  Returns a map with `"signature"` and `"date"` keys.
   GET requests don't have a body, so no `digest` is included.
+  The `"host"` header is intentionally omitted — it is managed by `HTTPClient`
+  to support DNS-pinned connections.
   """
   def sign_get(url, private_key_pem, key_id) do
     uri = URI.parse(url)
@@ -217,8 +220,7 @@ defmodule Baudrate.Federation.HTTPSignature do
 
     %{
       "signature" => sig_header,
-      "date" => now,
-      "host" => host
+      "date" => now
     }
   end
 

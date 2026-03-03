@@ -62,7 +62,8 @@ defmodule Baudrate.Federation.HTTPSignatureTest do
 
       assert is_binary(headers["signature"])
       assert is_binary(headers["date"])
-      assert headers["host"] == "remote.example"
+      # host is intentionally omitted — managed by HTTPClient for DNS pinning
+      refute Map.has_key?(headers, "host")
       refute Map.has_key?(headers, "digest")
 
       # Verify signature header format
