@@ -2690,24 +2690,29 @@ defmodule Baudrate.Content do
   end
 
   # Returns a map: %{board_id => [board_id | descendant_ids]}
-  # Uses a recursive CTE to find all descendants of each input board.
+  # When cache is enabled, reads pre-computed descendants from ETS.
+  # Otherwise, uses a recursive CTE to find all descendants.
   defp descendant_board_ids_map([]), do: %{}
 
   defp descendant_board_ids_map(board_ids) do
-    result =
-      Repo.query!(
-        """
-        WITH RECURSIVE tree AS (
-          SELECT id, id AS root_id FROM boards WHERE id = ANY($1)
-          UNION ALL
-          SELECT b.id, t.root_id FROM boards b JOIN tree t ON b.parent_id = t.id
+    if board_cache_enabled?() do
+      Map.new(board_ids, fn id -> {id, BoardCache.descendant_ids(id)} end)
+    else
+      result =
+        Repo.query!(
+          """
+          WITH RECURSIVE tree AS (
+            SELECT id, id AS root_id FROM boards WHERE id = ANY($1)
+            UNION ALL
+            SELECT b.id, t.root_id FROM boards b JOIN tree t ON b.parent_id = t.id
+          )
+          SELECT root_id, array_agg(id) FROM tree GROUP BY root_id
+          """,
+          [board_ids]
         )
-        SELECT root_id, array_agg(id) FROM tree GROUP BY root_id
-        """,
-        [board_ids]
-      )
 
-    Map.new(result.rows, fn [root_id, ids] -> {root_id, ids} end)
+      Map.new(result.rows, fn [root_id, ids] -> {root_id, ids} end)
+    end
   end
 
   defp latest_datetime(nil, b), do: b

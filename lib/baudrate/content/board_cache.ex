@@ -22,6 +22,7 @@ defmodule Baudrate.Content.BoardCache do
   | `:top_boards` | sorted board list | Root boards (parent_id == nil) |
   | `{:sub_boards, parent_id}` | sorted board list | Children of a parent |
   | `{:ancestors, board_id}` | board list | Pre-computed ancestor chain (root → board) |
+  | `{:descendants, board_id}` | id list | All descendant IDs (including self) |
 
   ## Cache update
 
@@ -112,6 +113,20 @@ defmodule Baudrate.Content.BoardCache do
   end
 
   @doc """
+  Returns all descendant board IDs (including the board itself).
+
+  Returns `[board_id]` if the board has no children.
+  Reads directly from ETS (no GenServer call).
+  """
+  @spec descendant_ids(term()) :: [term()]
+  def descendant_ids(board_id) do
+    case :ets.lookup(@table, {:descendants, board_id}) do
+      [{_, ids}] -> ids
+      [] -> [board_id]
+    end
+  end
+
+  @doc """
   Reloads all boards from the database and rebuilds the ETS cache.
 
   The DB read happens in the calling process (important for Ecto sandbox
@@ -168,10 +183,17 @@ defmodule Baudrate.Content.BoardCache do
         {{:ancestors, board.id}, chain}
       end)
 
+    descendants_entries =
+      Enum.map(boards, fn board ->
+        ids = collect_descendant_ids(board.id, sub_boards_map)
+        {{:descendants, board.id}, ids}
+      end)
+
     by_id_entries ++
       by_slug_entries ++
       sub_boards_entries ++
       ancestors_entries ++
+      descendants_entries ++
       [{:top_boards, top_boards}]
   end
 
@@ -186,6 +208,12 @@ defmodule Baudrate.Content.BoardCache do
       nil -> [board | acc]
       parent -> build_ancestor_chain(parent, by_id, [board | acc], remaining - 1)
     end
+  end
+
+  defp collect_descendant_ids(board_id, sub_boards_map) do
+    children = Map.get(sub_boards_map, board_id, [])
+
+    [board_id | Enum.flat_map(children, &collect_descendant_ids(&1.id, sub_boards_map))]
   end
 
   defp write_to_ets(entries) do
