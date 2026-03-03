@@ -90,6 +90,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 3. check if there is any missing or incomplete test
 4. check if there is any missing or incomplete locale translations
 5. Remove the finishied tasks from TODOs
+6. When a bug is discovered, **always** check for similar issues across the project after applying the fix
 
 ### Code Organization
 
