@@ -39,8 +39,13 @@ defmodule Baudrate.Content do
   @epoch ~U[1970-01-01 00:00:00Z]
   @per_page 20
 
+  alias Baudrate.Content.BoardCache
   alias Baudrate.Pagination
   alias Baudrate.Content.PubSub, as: ContentPubSub
+
+  defp board_cache_enabled? do
+    Application.get_env(:baudrate, :settings_cache_enabled, true)
+  end
 
   # --- Boards ---
 
@@ -48,8 +53,12 @@ defmodule Baudrate.Content do
   Returns top-level boards (no parent), ordered by position.
   """
   def list_top_boards do
-    from(b in Board, where: is_nil(b.parent_id), order_by: b.position)
-    |> Repo.all()
+    if board_cache_enabled?() do
+      BoardCache.top_boards()
+    else
+      from(b in Board, where: is_nil(b.parent_id), order_by: b.position)
+      |> Repo.all()
+    end
   end
 
   @doc """
@@ -59,8 +68,7 @@ defmodule Baudrate.Content do
   def list_visible_top_boards(user) do
     level = if user, do: Setup.role_level(user.role.name), else: 0
 
-    from(b in Board, where: is_nil(b.parent_id), order_by: b.position)
-    |> Repo.all()
+    list_top_boards()
     |> Enum.filter(&(Setup.role_level(&1.min_role_to_view) <= level))
   end
 
@@ -68,8 +76,12 @@ defmodule Baudrate.Content do
   Returns child boards of the given board, ordered by position.
   """
   def list_sub_boards(%Board{id: board_id}) do
-    from(b in Board, where: b.parent_id == ^board_id, order_by: b.position)
-    |> Repo.all()
+    if board_cache_enabled?() do
+      BoardCache.sub_boards(board_id)
+    else
+      from(b in Board, where: b.parent_id == ^board_id, order_by: b.position)
+      |> Repo.all()
+    end
   end
 
   @doc """
@@ -78,8 +90,7 @@ defmodule Baudrate.Content do
   def list_visible_sub_boards(%Board{} = board, user) do
     level = if user, do: Setup.role_level(user.role.name), else: 0
 
-    from(b in Board, where: b.parent_id == ^board.id, order_by: b.position)
-    |> Repo.all()
+    list_sub_boards(board)
     |> Enum.filter(&(Setup.role_level(&1.min_role_to_view) <= level))
   end
 
@@ -89,7 +100,11 @@ defmodule Baudrate.Content do
   Walks the `parent_id` chain upward (max 10 levels to prevent infinite loops).
   """
   def board_ancestors(%Board{} = board) do
-    do_board_ancestors(board, [], 10)
+    if board_cache_enabled?() do
+      BoardCache.ancestors(board.id)
+    else
+      do_board_ancestors(board, [], 10)
+    end
   end
 
   defp do_board_ancestors(%Board{parent_id: nil} = board, acc, _remaining) do
@@ -110,9 +125,13 @@ defmodule Baudrate.Content do
   """
   @spec get_board(term()) :: {:ok, %Board{}} | {:error, :not_found}
   def get_board(id) do
-    case Repo.get(Board, id) do
-      nil -> {:error, :not_found}
-      board -> {:ok, board}
+    if board_cache_enabled?() do
+      BoardCache.get(id)
+    else
+      case Repo.get(Board, id) do
+        nil -> {:error, :not_found}
+        board -> {:ok, board}
+      end
     end
   end
 
@@ -121,7 +140,14 @@ defmodule Baudrate.Content do
   """
   @spec get_board!(term()) :: %Board{}
   def get_board!(id) do
-    Repo.get!(Board, id)
+    if board_cache_enabled?() do
+      case BoardCache.get(id) do
+        {:ok, board} -> board
+        {:error, :not_found} -> raise Ecto.NoResultsError, queryable: Board
+      end
+    else
+      Repo.get!(Board, id)
+    end
   end
 
   @doc """
@@ -186,9 +212,16 @@ defmodule Baudrate.Content do
   """
   @spec create_board(map()) :: {:ok, %Board{}} | {:error, Ecto.Changeset.t()}
   def create_board(attrs) do
-    %Board{}
-    |> Board.changeset(attrs)
-    |> Repo.insert()
+    result =
+      %Board{}
+      |> Board.changeset(attrs)
+      |> Repo.insert()
+
+    with {:ok, _} <- result, true <- board_cache_enabled?() do
+      BoardCache.refresh()
+    end
+
+    result
   end
 
   @doc """
@@ -196,9 +229,16 @@ defmodule Baudrate.Content do
   """
   @spec update_board(%Board{}, map()) :: {:ok, %Board{}} | {:error, Ecto.Changeset.t()}
   def update_board(%Board{} = board, attrs) do
-    board
-    |> Board.update_changeset(attrs)
-    |> Repo.update()
+    result =
+      board
+      |> Board.update_changeset(attrs)
+      |> Repo.update()
+
+    with {:ok, _} <- result, true <- board_cache_enabled?() do
+      BoardCache.refresh()
+    end
+
+    result
   end
 
   @doc """
@@ -219,9 +259,20 @@ defmodule Baudrate.Content do
       Repo.one(from(b in Board, where: b.parent_id == ^board.id, select: count()))
 
     cond do
-      article_count > 0 -> {:error, :has_articles}
-      child_count > 0 -> {:error, :has_children}
-      true -> Repo.delete(board)
+      article_count > 0 ->
+        {:error, :has_articles}
+
+      child_count > 0 ->
+        {:error, :has_children}
+
+      true ->
+        result = Repo.delete(board)
+
+        with {:ok, _} <- result, true <- board_cache_enabled?() do
+          BoardCache.refresh()
+        end
+
+        result
     end
   end
 
@@ -230,9 +281,16 @@ defmodule Baudrate.Content do
   """
   @spec toggle_board_federation(%Board{}) :: {:ok, %Board{}} | {:error, Ecto.Changeset.t()}
   def toggle_board_federation(%Board{} = board) do
-    board
-    |> Ecto.Changeset.change(ap_enabled: !board.ap_enabled)
-    |> Repo.update()
+    result =
+      board
+      |> Ecto.Changeset.change(ap_enabled: !board.ap_enabled)
+      |> Repo.update()
+
+    with {:ok, _} <- result, true <- board_cache_enabled?() do
+      BoardCache.refresh()
+    end
+
+    result
   end
 
   @doc """
@@ -240,7 +298,11 @@ defmodule Baudrate.Content do
   """
   @spec get_board_by_slug(String.t()) :: %Board{} | nil
   def get_board_by_slug(slug) do
-    Repo.get_by(Board, slug: slug)
+    if board_cache_enabled?() do
+      BoardCache.get_by_slug(slug)
+    else
+      Repo.get_by(Board, slug: slug)
+    end
   end
 
   @doc """
@@ -248,7 +310,14 @@ defmodule Baudrate.Content do
   """
   @spec get_board_by_slug!(String.t()) :: %Board{}
   def get_board_by_slug!(slug) do
-    Repo.get_by!(Board, slug: slug)
+    if board_cache_enabled?() do
+      case BoardCache.get_by_slug(slug) do
+        nil -> raise Ecto.NoResultsError, queryable: Board
+        board -> board
+      end
+    else
+      Repo.get_by!(Board, slug: slug)
+    end
   end
 
   # --- Articles ---

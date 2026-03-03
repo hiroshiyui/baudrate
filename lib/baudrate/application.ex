@@ -14,6 +14,7 @@ defmodule Baudrate.Application do
       {Phoenix.PubSub, name: Baudrate.PubSub},
       Baudrate.Auth.SessionCleaner,
       Baudrate.Setup.SettingsCache,
+      Baudrate.Content.BoardCache,
       {Task.Supervisor, name: Baudrate.Federation.TaskSupervisor},
       Baudrate.Federation.DomainBlockCache,
       Baudrate.Federation.DeliveryWorker,
