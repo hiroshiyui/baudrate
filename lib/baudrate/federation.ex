@@ -68,6 +68,7 @@ defmodule Baudrate.Federation do
     Announce,
     BoardFollow,
     FeedItem,
+    FeedItemReply,
     Follower,
     KeyStore,
     Publisher,
@@ -1467,7 +1468,7 @@ defmodule Baudrate.Federation do
       from([c, _a] in comment_query,
         order_by: [desc: c.inserted_at],
         limit: ^(offset + per_page),
-        preload: [:user, article: :user]
+        preload: [:user, :remote_actor, article: :user]
       )
       |> Repo.all()
       |> Enum.map(fn c ->
@@ -1526,6 +1527,76 @@ defmodule Baudrate.Federation do
       where: fi.remote_actor_id == ^remote_actor_id and is_nil(fi.deleted_at)
     )
     |> Repo.update_all(set: [deleted_at: now])
+  end
+
+  # --- Feed Item Replies ---
+
+  @doc """
+  Creates a reply to a remote feed item and schedules federation delivery.
+
+  Renders the body as Markdown → HTML, generates an AP ID, inserts the
+  `FeedItemReply` record, and enqueues a `Create(Note)` activity for
+  delivery to the remote actor's inbox and the replying user's AP followers.
+
+  Returns `{:ok, %FeedItemReply{}}` or `{:error, changeset}`.
+  """
+  def create_feed_item_reply(feed_item, user, body) do
+    ap_id = "#{actor_uri(:user, user.username)}#feed-reply-#{System.unique_integer([:positive])}"
+    body_html = Markdown.to_html(body)
+
+    attrs = %{
+      feed_item_id: feed_item.id,
+      user_id: user.id,
+      body: body,
+      body_html: body_html,
+      ap_id: ap_id
+    }
+
+    case %FeedItemReply{} |> FeedItemReply.changeset(attrs) |> Repo.insert() do
+      {:ok, reply} ->
+        schedule_federation_task(fn ->
+          Publisher.publish_feed_item_reply(reply, feed_item)
+        end)
+
+        {:ok, reply}
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
+  Lists replies for a feed item, ordered by insertion time ascending.
+
+  Preloads the `:user` association (with `:role`).
+  """
+  def list_feed_item_replies(feed_item_id) do
+    from(r in FeedItemReply,
+      where: r.feed_item_id == ^feed_item_id,
+      order_by: [asc: r.inserted_at],
+      preload: [user: :role]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Batch-counts replies grouped by feed item ID.
+
+  Accepts a list of feed item IDs and returns a map of
+  `%{feed_item_id => count}`.
+  """
+  def count_feed_item_replies(feed_item_ids) when is_list(feed_item_ids) do
+    if feed_item_ids == [] do
+      %{}
+    else
+      from(r in FeedItemReply,
+        where: r.feed_item_id in ^feed_item_ids,
+        group_by: r.feed_item_id,
+        select: {r.feed_item_id, count(r.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+    end
   end
 
   @doc """

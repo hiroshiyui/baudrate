@@ -238,6 +238,117 @@ defmodule BaudrateWeb.FeedLiveTest do
     end
   end
 
+  describe "feed item replies" do
+    test "reply button appears on remote feed items", %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      create_feed_item(actor)
+
+      {:ok, _lv, html} = live(conn, "/feed")
+      assert html =~ "Reply"
+      assert html =~ "hero-chat-bubble-left"
+    end
+
+    test "toggle_reply shows and hides the reply form", %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      item = create_feed_item(actor)
+
+      {:ok, lv, html} = live(conn, "/feed")
+      refute html =~ "Write a reply..."
+
+      # Click Reply to show form
+      html = lv |> element("button[phx-value-id='#{item.id}']") |> render_click()
+      assert html =~ "Write a reply..."
+      assert html =~ "Cancel"
+
+      # Click Cancel to hide form
+      html = lv |> element("button[phx-click='cancel_reply']") |> render_click()
+      refute html =~ "Write a reply..."
+    end
+
+    test "submitting a reply creates a record and shows success flash", %{
+      conn: conn,
+      user: user
+    } do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      item = create_feed_item(actor)
+
+      # Ensure user has a keypair for federation delivery
+      Baudrate.Federation.KeyStore.ensure_user_keypair(user)
+
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      # Open reply form
+      lv |> element("button[phx-value-id='#{item.id}']") |> render_click()
+
+      # Submit reply
+      html =
+        lv
+        |> form("form[phx-submit='submit_reply']",
+          reply: %{body: "Hello from test!"},
+          feed_item_id: item.id
+        )
+        |> render_submit()
+
+      assert html =~ "Reply sent!"
+
+      # Verify record was created
+      replies = Baudrate.Federation.list_feed_item_replies(item.id)
+      assert length(replies) == 1
+      assert hd(replies).body == "Hello from test!"
+    end
+
+    test "reply count badge shows after submitting", %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      item = create_feed_item(actor)
+
+      Baudrate.Federation.KeyStore.ensure_user_keypair(user)
+
+      {:ok, lv, _html} = live(conn, "/feed")
+      lv |> element("button[phx-value-id='#{item.id}']") |> render_click()
+
+      lv
+      |> form("form[phx-submit='submit_reply']",
+        reply: %{body: "Counting reply"},
+        feed_item_id: item.id
+      )
+      |> render_submit()
+
+      html = render(lv)
+      assert html =~ "badge badge-xs"
+    end
+
+    test "rate-limited reply shows error flash", %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      item = create_feed_item(actor)
+
+      # Use real Hammer backend
+      BaudrateWeb.RateLimiter.Sandbox.set_fun(&BaudrateWeb.RateLimiter.Hammer.check_rate/3)
+
+      # Exhaust the rate limit (20 per 5 min)
+      for _ <- 1..20 do
+        BaudrateWeb.RateLimits.check_feed_reply(user.id)
+      end
+
+      {:ok, lv, _html} = live(conn, "/feed")
+      lv |> element("button[phx-value-id='#{item.id}']") |> render_click()
+
+      html =
+        lv
+        |> form("form[phx-submit='submit_reply']",
+          reply: %{body: "Should be rate limited"},
+          feed_item_id: item.id
+        )
+        |> render_submit()
+
+      assert html =~ "replying too frequently"
+    end
+  end
+
   describe "requires authentication" do
     test "redirects unauthenticated user to login" do
       conn = build_conn()
@@ -311,6 +422,63 @@ defmodule BaudrateWeb.FeedLiveTest do
       {:ok, _lv, html} = live(conn, "/feed")
       assert html =~ "My own comment on my article"
       assert html =~ "Self Comment Test"
+    end
+
+    test "shows remote actor comments without crashing", %{conn: conn, user: user} do
+      board = create_board()
+      {:ok, %{article: article}} = create_article_raw(user, board, %{title: "Federated Replies"})
+
+      actor =
+        create_remote_actor(%{
+          username: "fediuser",
+          domain: "fedi.example",
+          display_name: "Fedi User"
+        })
+
+      {:ok, _comment} =
+        Baudrate.Content.create_remote_comment(%{
+          body: "Hello from the fediverse!",
+          body_html: "<p>Hello from the fediverse!</p>",
+          ap_id: "https://fedi.example/comments/#{System.unique_integer([:positive])}",
+          article_id: article.id,
+          remote_actor_id: actor.id
+        })
+
+      {:ok, _lv, html} = live(conn, "/feed")
+      assert html =~ "Hello from the fediverse!"
+      assert html =~ "commented on"
+      assert html =~ "Federated Replies"
+      assert html =~ "Fedi User"
+      assert html =~ "fediuser"
+      assert html =~ "fedi.example"
+      assert html =~ "Fediverse"
+    end
+
+    test "shows remote actor comment with fallback icon when no avatar", %{conn: conn, user: user} do
+      board = create_board()
+      {:ok, %{article: article}} = create_article_raw(user, board, %{title: "No Avatar Article"})
+
+      actor =
+        create_remote_actor(%{
+          username: "noavatar",
+          domain: "other.example",
+          display_name: "No Avatar Actor",
+          avatar_url: nil
+        })
+
+      {:ok, _comment} =
+        Baudrate.Content.create_remote_comment(%{
+          body: "Comment without avatar",
+          body_html: "<p>Comment without avatar</p>",
+          ap_id: "https://other.example/comments/#{System.unique_integer([:positive])}",
+          article_id: article.id,
+          remote_actor_id: actor.id
+        })
+
+      {:ok, _lv, html} = live(conn, "/feed")
+      assert html =~ "Comment without avatar"
+      assert html =~ "No Avatar Actor"
+      assert html =~ "hero-user-circle"
     end
 
     test "does not show comments from blocked users", %{conn: conn, user: user} do

@@ -598,6 +598,76 @@ defmodule Baudrate.Federation.Publisher do
     :ok
   end
 
+  # --- Feed Item Reply Builders ---
+
+  @doc """
+  Builds a `Create(Note)` activity for a local user's reply to a remote feed item.
+
+  The Note's `inReplyTo` points to the feed item's AP ID so that the remote
+  instance threads the reply correctly.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_create_feed_item_reply(reply, feed_item, user) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#create-#{System.unique_integer([:positive])}",
+      "type" => "Create",
+      "actor" => actor_uri,
+      "published" => DateTime.to_iso8601(reply.inserted_at),
+      "to" => [@as_public],
+      "cc" => ["#{actor_uri}/followers"],
+      "object" => %{
+        "id" => reply.ap_id,
+        "type" => "Note",
+        "content" => reply.body_html || reply.body,
+        "attributedTo" => actor_uri,
+        "inReplyTo" => feed_item.ap_id,
+        "published" => DateTime.to_iso8601(reply.inserted_at),
+        "to" => [@as_public],
+        "cc" => ["#{actor_uri}/followers"]
+      }
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Publishes a `Create(Note)` reply to a remote feed item.
+
+  Ensures the replying user has an RSA keypair, builds the activity,
+  resolves the remote actor's inbox plus the user's AP follower inboxes,
+  deduplicates, and enqueues for delivery.
+  """
+  def publish_feed_item_reply(reply, feed_item) do
+    reply = Repo.preload(reply, [user: :role])
+    feed_item = Repo.preload(feed_item, [:remote_actor])
+    user = reply.user
+
+    {:ok, user} = Baudrate.Federation.KeyStore.ensure_user_keypair(user)
+
+    {activity, actor_uri} = build_create_feed_item_reply(reply, feed_item, user)
+
+    # Remote actor inbox
+    remote_inbox = feed_item.remote_actor.shared_inbox || feed_item.remote_actor.inbox
+
+    # User's AP follower inboxes
+    follower_inboxes = Delivery.resolve_follower_inboxes(actor_uri)
+
+    inboxes =
+      ([remote_inbox | follower_inboxes])
+      |> Enum.reject(&is_nil/1)
+      |> Enum.uniq()
+
+    if inboxes != [] do
+      Delivery.enqueue(activity, actor_uri, inboxes)
+    else
+      {:ok, 0}
+    end
+  end
+
   # --- Direct Message Builders ---
 
   @doc """

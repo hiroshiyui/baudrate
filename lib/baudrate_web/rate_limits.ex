@@ -25,6 +25,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_dm_send/1`       | `dm_send:`         | 1 min   | 20    |
   | `check_outbound_follow/1`| `outbound_follow:` | 1 hour  | 10    |
   | `check_create_report/1` | `report_create:`   | 15 min  | 5     |
+  | `check_feed_reply/1`   | `feed_reply:`      | 5 min   | 20    |
   """
 
   require Logger
@@ -93,6 +94,12 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_create_report(integer()) :: :ok | {:error, :rate_limited}
   def check_create_report(user_id) do
     check("report_create:#{user_id}", 900_000, 5, :create_report)
+  end
+
+  @doc "Feed item reply: 20 per 5 minutes per user."
+  @spec check_feed_reply(integer()) :: :ok | {:error, :rate_limited}
+  def check_feed_reply(user_id) do
+    check("feed_reply:#{user_id}", 300_000, 20, :feed_reply)
   end
 
   defp check(bucket, scale_ms, limit, action) do

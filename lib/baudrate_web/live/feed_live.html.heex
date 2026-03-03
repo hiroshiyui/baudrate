@@ -125,8 +125,9 @@
             {digest(item.feed_item.body_html)}
           </p>
 
-          <div :if={item.feed_item.source_url} class="mt-2">
+          <div class="flex items-center gap-3 mt-2">
             <a
+              :if={item.feed_item.source_url}
               href={item.feed_item.source_url}
               target="_blank"
               rel="noopener noreferrer"
@@ -135,6 +136,75 @@
               {gettext("View original")}
               <.icon name="hero-arrow-top-right-on-square-mini" class="size-3 ml-1 inline" />
             </a>
+            <button
+              phx-click="toggle_reply"
+              phx-value-id={item.feed_item.id}
+              class="btn btn-ghost btn-xs"
+              aria-label={gettext("Reply")}
+            >
+              <.icon name="hero-chat-bubble-left" class="size-4" />
+              {gettext("Reply")}
+              <span
+                :if={reply_count(assigns, item.feed_item.id) > 0}
+                class="badge badge-xs"
+              >
+                {reply_count(assigns, item.feed_item.id)}
+              </span>
+            </button>
+          </div>
+
+          <%!-- Inline reply form --%>
+          <div :if={@replying_to == item.feed_item.id} class="mt-3 border-t border-base-300 pt-3">
+            <%!-- Existing replies --%>
+            <div
+              :if={Map.get(@replies, item.feed_item.id, []) != []}
+              class="space-y-2 mb-3"
+            >
+              <div
+                :for={reply <- Map.get(@replies, item.feed_item.id, [])}
+                class="flex gap-2 items-start"
+              >
+                <.avatar user={reply.user} size={24} />
+                <div class="flex-1 min-w-0">
+                  <span class="font-semibold text-xs">{display_name(reply.user)}</span>
+                  <span class="text-xs text-base-content/60 ml-1">
+                    {format_datetime(reply.inserted_at)}
+                  </span>
+                  <p class="text-sm text-base-content/80 mt-0.5">{digest(reply.body_html)}</p>
+                </div>
+              </div>
+            </div>
+
+            <.form
+              for={@reply_form}
+              phx-change="validate_reply"
+              phx-submit="submit_reply"
+            >
+              <input type="hidden" name="feed_item_id" value={item.feed_item.id} />
+              <.input
+                field={@reply_form[:body]}
+                type="textarea"
+                rows={3}
+                placeholder={gettext("Write a reply...")}
+                aria-label={gettext("Write a reply...")}
+              />
+              <div class="flex justify-end gap-2 mt-2">
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm"
+                  phx-click="cancel_reply"
+                >
+                  {gettext("Cancel")}
+                </button>
+                <button
+                  type="submit"
+                  class="btn btn-primary btn-sm"
+                  phx-disable-with={gettext("Sending...")}
+                >
+                  {gettext("Reply")}
+                </button>
+              </div>
+            </.form>
           </div>
         </div>
 
@@ -193,8 +263,8 @@
           </div>
         </div>
 
-        <%!-- Comment on user's article or participated thread --%>
-        <div :if={item.source == :local_comment} class="card-body p-4">
+        <%!-- Comment on user's article or participated thread (local user) --%>
+        <div :if={item.source == :local_comment && item.comment.user} class="card-body p-4">
           <div class="flex items-center gap-3 mb-2">
             <.avatar user={item.comment.user} size={36} />
             <div class="flex-1 min-w-0">
@@ -210,6 +280,65 @@
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
               <span class="badge badge-xs badge-secondary">{gettext("Comment")}</span>
+              <time
+                class="text-xs text-base-content/70"
+                datetime={datetime_attr(item.comment.inserted_at)}
+              >
+                {format_datetime(item.comment.inserted_at)}
+              </time>
+            </div>
+          </div>
+
+          <div class="text-sm text-base-content/60 mb-1">
+            {gettext("commented on")}
+            <.link
+              navigate={~p"/articles/#{item.comment.article.slug}"}
+              class="link link-hover font-semibold"
+            >
+              {item.comment.article.title}
+            </.link>
+          </div>
+
+          <p class="text-sm text-base-content/80 line-clamp-3">
+            {digest(item.comment.body)}
+          </p>
+        </div>
+
+        <%!-- Comment on user's article or participated thread (remote actor) --%>
+        <div
+          :if={item.source == :local_comment && !item.comment.user && item.comment.remote_actor}
+          class="card-body p-4"
+        >
+          <div class="flex items-center gap-3 mb-2">
+            <div class="avatar">
+              <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center">
+                <img
+                  :if={item.comment.remote_actor.avatar_url}
+                  src={item.comment.remote_actor.avatar_url}
+                  alt={
+                    item.comment.remote_actor.display_name ||
+                      item.comment.remote_actor.username
+                  }
+                  class="rounded-full"
+                />
+                <.icon
+                  :if={!item.comment.remote_actor.avatar_url}
+                  name="hero-user-circle"
+                  class="size-7 opacity-50"
+                />
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-sm truncate">
+                {item.comment.remote_actor.display_name || item.comment.remote_actor.username}
+              </div>
+              <div class="text-xs text-base-content/60 truncate">
+                @{item.comment.remote_actor.username}@{item.comment.remote_actor.domain}
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <span class="badge badge-xs badge-secondary">{gettext("Comment")}</span>
+              <span class="badge badge-xs badge-accent">{gettext("Fediverse")}</span>
               <time
                 class="text-xs text-base-content/70"
                 datetime={datetime_attr(item.comment.inserted_at)}

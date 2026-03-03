@@ -779,6 +779,78 @@ defmodule Baudrate.Federation.PublisherTest do
     end
   end
 
+  describe "build_create_feed_item_reply/3" do
+    test "builds a Create(Note) activity with inReplyTo pointing to feed item AP ID" do
+      user = create_user()
+      remote = create_remote_actor()
+
+      {:ok, feed_item} =
+        Baudrate.Federation.create_feed_item(%{
+          remote_actor_id: remote.id,
+          activity_type: "Create",
+          object_type: "Note",
+          ap_id: "https://remote.example/notes/#{System.unique_integer([:positive])}",
+          body: "Remote post",
+          body_html: "<p>Remote post</p>",
+          published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      {:ok, reply} = Baudrate.Federation.create_feed_item_reply(feed_item, user, "Nice post!")
+
+      {activity, actor_uri} = Publisher.build_create_feed_item_reply(reply, feed_item, user)
+
+      assert activity["type"] == "Create"
+      assert activity["actor"] == actor_uri
+      assert actor_uri =~ user.username
+      assert activity["object"]["type"] == "Note"
+      assert activity["object"]["inReplyTo"] == feed_item.ap_id
+      assert activity["object"]["id"] == reply.ap_id
+      assert activity["object"]["content"] =~ "Nice post!"
+      assert activity["object"]["attributedTo"] == actor_uri
+      assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
+      assert "#{actor_uri}/followers" in activity["cc"]
+      assert "https://www.w3.org/ns/activitystreams#Public" in activity["object"]["to"]
+      assert "#{actor_uri}/followers" in activity["object"]["cc"]
+      assert activity["id"] =~ "#create-"
+
+      assert activity["@context"] == [
+               "https://www.w3.org/ns/activitystreams",
+               "https://w3id.org/security/v1"
+             ]
+    end
+  end
+
+  describe "publish_feed_item_reply/2" do
+    test "creates delivery jobs for the remote actor inbox" do
+      user = create_user()
+      remote = create_remote_actor()
+
+      {:ok, feed_item} =
+        Baudrate.Federation.create_feed_item(%{
+          remote_actor_id: remote.id,
+          activity_type: "Create",
+          object_type: "Note",
+          ap_id: "https://remote.example/notes/#{System.unique_integer([:positive])}",
+          body: "Remote post",
+          body_html: "<p>Remote post</p>",
+          published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      {:ok, reply} = Baudrate.Federation.create_feed_item_reply(feed_item, user, "Reply text")
+
+      # Clear auto-triggered jobs from create_feed_item_reply
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_feed_item_reply(reply, feed_item)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert length(jobs) >= 1
+
+      inboxes = Enum.map(jobs, & &1.inbox_url)
+      assert remote.inbox in inboxes
+    end
+  end
+
   describe "publish_comment_deleted/2" do
     test "creates delivery jobs for followers" do
       user = create_user()
