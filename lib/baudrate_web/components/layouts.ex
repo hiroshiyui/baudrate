@@ -13,12 +13,17 @@ defmodule BaudrateWeb.Layouts do
   embed_templates "layouts/*"
 
   @doc """
-  Renders the app layout with navigation bar and footer.
+  Renders the app layout with navigation bar, footer, and mobile bottom nav.
 
   Applied automatically via `layout:` in `live_session`.
   Shows nav links and user menu when `@current_user` is present;
   otherwise shows only the logo and theme toggle.
   The footer displays a link to the Baudrate project repository.
+
+  On mobile (below `lg` breakpoint), a fixed bottom dock provides quick
+  one-tap navigation: Home, Feed, Search, Messages, Notifications for
+  authenticated users; Home, Search, Sign In, Register for guests. The active
+  item is highlighted based on `@current_path`.
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
   attr :current_user, :map, default: nil, doc: "the currently authenticated user"
@@ -30,8 +35,8 @@ defmodule BaudrateWeb.Layouts do
       id="site-header"
       class="navbar sticky top-0 z-50 bg-base-200 border-b border-base-300 px-4 sm:px-6 lg:px-8"
     >
-      <%!-- Mobile hamburger (shown < lg) --%>
-      <div id="mobile-nav-trigger" class="flex-none lg:hidden">
+      <%!-- Mobile hamburger (shown < lg, authenticated users only — guest nav is in bottom dock) --%>
+      <div :if={@current_user} id="mobile-nav-trigger" class="flex-none lg:hidden">
         <div class="dropdown">
           <button
             type="button"
@@ -51,65 +56,6 @@ defmodule BaudrateWeb.Layouts do
               <%!-- Site name (visible only on mobile) --%>
               <li class="menu-title text-base">
                 {Baudrate.Setup.get_setting("site_name") || "Baudrate"}
-              </li>
-              <li class="divider my-1"></li>
-              <%!-- Guest nav (shown when not logged in) --%>
-              <li :if={!@current_user}>
-                <.link navigate="/search">{gettext("Search")}</.link>
-              </li>
-              <li :if={!@current_user}>
-                <.link navigate="/login">{gettext("Sign In")}</.link>
-              </li>
-              <li :if={!@current_user}>
-                <.link navigate="/register">{gettext("Register")}</.link>
-              </li>
-              <%!-- Authenticated nav (matches desktop nav) --%>
-              <li :if={@current_user}>
-                <.link navigate="/">{gettext("Home")}</.link>
-              </li>
-              <li :if={@current_user}>
-                <.link navigate="/feed">{gettext("Feed")}</.link>
-              </li>
-              <li :if={@current_user}>
-                <.link navigate="/search">{gettext("Search")}</.link>
-              </li>
-              <li :if={@current_user}>
-                <.link navigate="/messages">
-                  {gettext("Messages")}
-                  <span
-                    :if={assigns[:unread_dm_count] && @unread_dm_count > 0}
-                    class="badge badge-primary badge-xs ml-1"
-                    aria-label={
-                      ngettext(
-                        "%{count} unread message",
-                        "%{count} unread messages",
-                        @unread_dm_count,
-                        count: @unread_dm_count
-                      )
-                    }
-                  >
-                    {@unread_dm_count}
-                  </span>
-                </.link>
-              </li>
-              <li :if={@current_user}>
-                <.link navigate="/notifications">
-                  {gettext("Notifications")}
-                  <span
-                    :if={assigns[:unread_notification_count] && @unread_notification_count > 0}
-                    class="badge badge-secondary badge-xs ml-1"
-                    aria-label={
-                      ngettext(
-                        "%{count} unread notification",
-                        "%{count} unread notifications",
-                        @unread_notification_count,
-                        count: @unread_notification_count
-                      )
-                    }
-                  >
-                    {@unread_notification_count}
-                  </span>
-                </.link>
               </li>
               <%!-- Admin section (collapsible, matches desktop user menu) --%>
               <li :if={@current_user && @current_user.role.name in ["admin", "moderator"]} class="divider my-1"></li>
@@ -239,7 +185,7 @@ defmodule BaudrateWeb.Layouts do
       </div>
 
       <%!-- Right side: theme toggle + auth links / user dropdown --%>
-      <div id="header-controls" class="flex-none flex items-center gap-2">
+      <div id="header-controls" class="flex-none flex items-center gap-2 ml-auto">
         <.font_size_controls />
         <.theme_toggle />
 
@@ -324,25 +270,20 @@ defmodule BaudrateWeb.Layouts do
       </div>
     </header>
 
-    <main id="main-content" tabindex="-1" class="flex-1 px-4 py-20 sm:px-6 lg:px-8 outline-none">
+    <main id="main-content" tabindex="-1" class="flex-1 px-4 pt-6 pb-24 lg:pt-10 lg:pb-20 sm:px-6 lg:px-8 outline-none">
       <div class={["mx-auto space-y-4", if(assigns[:wide_layout], do: "max-w-7xl", else: "max-w-6xl")]}>
         {@inner_content}
       </div>
     </main>
 
-    <footer id="site-footer" class="text-center text-sm text-base-content/70 py-6">
-      <p>
-        {raw(
-          gettext("Of course it runs %{link}! Your public information hub!",
-            link:
-              ~s(<a href="https://github.com/hiroshiyui/baudrate" class="link link-hover" target="_blank" rel="noopener noreferrer">Baudrate</a>)
-          )
-        )}
-      </p>
-      <p class="mt-1">
-        {gettext("System timezone: %{timezone}", timezone: system_timezone())}
-      </p>
-    </footer>
+    <footer id="site-footer" class="py-6"></footer>
+
+    <.mobile_bottom_nav
+      current_user={@current_user}
+      current_path={assigns[:current_path]}
+      unread_dm_count={assigns[:unread_dm_count] || 0}
+      unread_notification_count={assigns[:unread_notification_count] || 0}
+    />
 
     <.flash_group flash={@flash} />
     """
@@ -482,24 +423,131 @@ defmodule BaudrateWeb.Layouts do
     """
   end
 
-  defp system_timezone do
-    tz = Baudrate.Setup.get_setting("timezone") || "Etc/UTC"
+  attr :current_user, :map, default: nil
+  attr :current_path, :string, default: nil
+  attr :unread_dm_count, :integer, default: 0
+  attr :unread_notification_count, :integer, default: 0
 
-    offset =
-      case DateTime.now(tz) do
-        {:ok, dt} ->
-          total_seconds = dt.utc_offset + dt.std_offset
-          sign = if total_seconds >= 0, do: "+", else: "-"
-          abs_seconds = abs(total_seconds)
-          hours = div(abs_seconds, 3600)
-          minutes = div(rem(abs_seconds, 3600), 60)
-
-          " (#{sign}#{String.pad_leading(Integer.to_string(hours), 2, "0")}#{String.pad_leading(Integer.to_string(minutes), 2, "0")})"
-
-        _ ->
-          ""
-      end
-
-    "#{tz}#{offset}"
+  defp mobile_bottom_nav(assigns) do
+    ~H"""
+    <nav id="mobile-bottom-nav" aria-label={gettext("Mobile navigation")} class="dock lg:hidden z-50 bg-base-200 border-t border-base-300">
+      <%= if @current_user do %>
+        <.link
+          navigate="/"
+          aria-label={gettext("Home")}
+          aria-current={if active_nav?(@current_path, "/"), do: "page"}
+          class={if active_nav?(@current_path, "/"), do: "dock-active"}
+        >
+          <.icon name="hero-home" class="size-[1.2em]" />
+        </.link>
+        <.link
+          navigate="/feed"
+          aria-label={gettext("Feed")}
+          aria-current={if active_nav?(@current_path, "/feed"), do: "page"}
+          class={if active_nav?(@current_path, "/feed"), do: "dock-active"}
+        >
+          <.icon name="hero-rss" class="size-[1.2em]" />
+        </.link>
+        <.link
+          navigate="/search"
+          aria-label={gettext("Search")}
+          aria-current={if active_nav?(@current_path, "/search"), do: "page"}
+          class={if active_nav?(@current_path, "/search"), do: "dock-active"}
+        >
+          <.icon name="hero-magnifying-glass" class="size-[1.2em]" />
+        </.link>
+        <.link
+          navigate="/messages"
+          aria-label={gettext("Messages")}
+          aria-current={if active_nav?(@current_path, "/messages"), do: "page"}
+          class={if active_nav?(@current_path, "/messages"), do: "dock-active"}
+        >
+          <span class="indicator">
+            <span
+              :if={@unread_dm_count > 0}
+              class="indicator-item badge badge-primary badge-xs"
+              aria-label={
+                ngettext(
+                  "%{count} unread message",
+                  "%{count} unread messages",
+                  @unread_dm_count,
+                  count: @unread_dm_count
+                )
+              }
+            >
+              {@unread_dm_count}
+            </span>
+            <.icon name="hero-chat-bubble-left-right" class="size-[1.2em]" />
+          </span>
+        </.link>
+        <.link
+          navigate="/notifications"
+          aria-label={gettext("Notifications")}
+          aria-current={if active_nav?(@current_path, "/notifications"), do: "page"}
+          class={if active_nav?(@current_path, "/notifications"), do: "dock-active"}
+        >
+          <span class="indicator">
+            <span
+              :if={@unread_notification_count > 0}
+              class="indicator-item badge badge-secondary badge-xs"
+              aria-label={
+                ngettext(
+                  "%{count} unread notification",
+                  "%{count} unread notifications",
+                  @unread_notification_count,
+                  count: @unread_notification_count
+                )
+              }
+            >
+              {@unread_notification_count}
+            </span>
+            <.icon name="hero-bell" class="size-[1.2em]" />
+          </span>
+        </.link>
+      <% else %>
+        <.link
+          navigate="/"
+          aria-label={gettext("Home")}
+          aria-current={if active_nav?(@current_path, "/"), do: "page"}
+          class={if active_nav?(@current_path, "/"), do: "dock-active"}
+        >
+          <.icon name="hero-home" class="size-[1.2em]" />
+        </.link>
+        <.link
+          navigate="/search"
+          aria-label={gettext("Search")}
+          aria-current={if active_nav?(@current_path, "/search"), do: "page"}
+          class={if active_nav?(@current_path, "/search"), do: "dock-active"}
+        >
+          <.icon name="hero-magnifying-glass" class="size-[1.2em]" />
+        </.link>
+        <.link
+          navigate="/login"
+          aria-label={gettext("Sign In")}
+          aria-current={if active_nav?(@current_path, "/login"), do: "page"}
+          class={if active_nav?(@current_path, "/login"), do: "dock-active"}
+        >
+          <.icon name="hero-arrow-right-on-rectangle" class="size-[1.2em]" />
+        </.link>
+        <.link
+          navigate="/register"
+          aria-label={gettext("Register")}
+          aria-current={if active_nav?(@current_path, "/register"), do: "page"}
+          class={if active_nav?(@current_path, "/register"), do: "dock-active"}
+        >
+          <.icon name="hero-user-plus" class="size-[1.2em]" />
+        </.link>
+      <% end %>
+    </nav>
+    """
   end
+
+  defp active_nav?(current_path, "/"), do: current_path == "/"
+
+  defp active_nav?(current_path, target) when is_binary(current_path) do
+    String.starts_with?(current_path, target)
+  end
+
+  defp active_nav?(_, _), do: false
+
 end

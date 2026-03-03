@@ -1130,6 +1130,18 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 - Every content-listing container should have a semantic `id` (e.g., `id="articles"`, `id="comments"`)
 - Every list item should have a unique `id` (e.g., `id={"article-#{slug}"}`) and a semantic CSS class (e.g., `class="article"`)
 
+**Mobile Bottom Navigation:**
+
+- A fixed DaisyUI `dock` component (`id="mobile-bottom-nav"`) appears below `lg` breakpoint (< 1024px), hidden on desktop via `lg:hidden`; background matches the top navbar (`bg-base-200 border-t border-base-300`)
+- Icon-only items with `aria-label` for accessibility (no text labels)
+- Authenticated users see 5 items: Home (`hero-home`), Feed (`hero-rss`), Search (`hero-magnifying-glass`), Messages (`hero-chat-bubble-left-right` + unread badge), Notifications (`hero-bell` + unread badge)
+- Guests see 4 items: Home (`hero-home`), Search (`hero-magnifying-glass`), Sign In (`hero-arrow-right-on-rectangle`), Register (`hero-user-plus`)
+- Mobile hamburger menu only shows for authenticated users (admin/user sections); guest nav items are exclusively in the bottom dock
+- Active item gets `dock-active` class and `aria-current="page"` based on `@current_path` (exact match for `/`, prefix match for others)
+- `@current_path` is set via `attach_hook(:set_current_path, :handle_params, ...)` in auth hooks and updates on every navigation
+- `<main>` has extra bottom padding on mobile (`pb-24 lg:pb-20`) to prevent content from being obscured by the dock
+- `viewport-fit=cover` in `root.html.heex` ensures proper rendering on iOS devices with safe areas
+
 **Focus Management After Navigation:**
 
 - `data-focus-target` on primary content containers signals where focus should go after LiveView navigation

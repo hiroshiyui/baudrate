@@ -70,6 +70,7 @@ defmodule BaudrateWeb.AuthHooks do
               |> MarkdownPreviewHook.attach()
               |> UnreadDmCountHook.attach(user)
               |> UnreadNotificationCountHook.attach(user)
+              |> attach_current_path_hook()
 
             {:cont, socket}
           end
@@ -102,15 +103,24 @@ defmodule BaudrateWeb.AuthHooks do
               |> MarkdownPreviewHook.attach()
               |> UnreadDmCountHook.attach(user)
               |> UnreadNotificationCountHook.attach(user)
+              |> attach_current_path_hook()
 
             {:cont, socket}
           end
 
         {:error, _reason} ->
-          {:cont, socket |> assign(:current_user, nil) |> MarkdownPreviewHook.attach()}
+          {:cont,
+           socket
+           |> assign(:current_user, nil)
+           |> MarkdownPreviewHook.attach()
+           |> attach_current_path_hook()}
       end
     else
-      {:cont, socket |> assign(:current_user, nil) |> MarkdownPreviewHook.attach()}
+      {:cont,
+       socket
+       |> assign(:current_user, nil)
+       |> MarkdownPreviewHook.attach()
+       |> attach_current_path_hook()}
     end
   end
 
@@ -127,6 +137,7 @@ defmodule BaudrateWeb.AuthHooks do
           socket
           |> assign(:current_user, user)
           |> assign(:locale, locale)
+          |> attach_current_path_hook()
 
         {:cont, socket}
       else
@@ -144,16 +155,16 @@ defmodule BaudrateWeb.AuthHooks do
       case Auth.get_user_by_session_token(session_token) do
         {:ok, user} ->
           if user.status == "banned" do
-            {:cont, socket}
+            {:cont, attach_current_path_hook(socket)}
           else
             {:halt, redirect(socket, to: "/")}
           end
 
         {:error, _} ->
-          {:cont, socket}
+          {:cont, attach_current_path_hook(socket)}
       end
     else
-      {:cont, socket}
+      {:cont, attach_current_path_hook(socket)}
     end
   end
 
@@ -214,7 +225,8 @@ defmodule BaudrateWeb.AuthHooks do
               "/admin/settings"
             end
 
-          {:halt, redirect(socket, to: "/admin/verify?return_to=#{URI.encode_www_form(return_to)}")}
+          {:halt,
+           redirect(socket, to: "/admin/verify?return_to=#{URI.encode_www_form(return_to)}")}
         end
     end
   end
@@ -248,6 +260,14 @@ defmodule BaudrateWeb.AuthHooks do
       _ -> "unknown"
     end
   end
+
+  defp attach_current_path_hook(%{private: %{lifecycle: _}} = socket) do
+    attach_hook(socket, :set_current_path, :handle_params, fn _params, uri, socket ->
+      {:cont, assign(socket, :current_path, URI.parse(uri).path)}
+    end)
+  end
+
+  defp attach_current_path_hook(socket), do: socket
 
   defp resolve_user_locale(user) do
     case BaudrateWeb.Locale.resolve_from_preferences(user.preferred_locales) do
