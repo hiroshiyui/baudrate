@@ -61,6 +61,7 @@ lib/
 │   │   ├── comment_like.ex      # CommentLike schema (local + remote likes on comments)
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
 │   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark + Ammonia NIF + hashtag/mention linkification + mention extraction)
+│   │   ├── pagination.ex        # Content-specific paginated query helpers
 │   │   ├── poll.ex              # Poll schema (inline polls attached to articles, single/multiple choice)
 │   │   ├── poll_option.ex       # PollOption schema (poll choices with denormalized votes_count)
 │   │   ├── poll_vote.ex         # PollVote schema (local + remote votes, anonymous dedup)
@@ -120,6 +121,18 @@ lib/
 │       ├── role_permission.ex   # Join table: role ↔ permission
 │       ├── setting.ex           # Key-value settings (site_name, timezone, setup_completed, etc.)
 │       └── user.ex              # User schema with password, TOTP, avatar, display_name, status, signature fields
+├── mix/
+│   └── tasks/
+│       ├── backup.ex            # mix backup — full instance backup (DB + files)
+│       ├── backup/
+│       │   ├── db.ex            # Database backup implementation
+│       │   ├── files.ex         # File backup implementation (uploads, avatars)
+│       │   └── helper.ex        # Shared backup/restore helpers
+│       ├── restore.ex           # mix restore — full instance restore
+│       ├── restore/
+│       │   ├── db.ex            # Database restore implementation
+│       │   └── files.ex         # File restore implementation
+│       └── selenium_setup.ex    # mix selenium.setup — download Selenium + GeckoDriver
 ├── baudrate_web/                # Web layer
 │   ├── components/
 │   │   ├── core_components.ex   # Shared UI components (avatar, flash, input, etc.)
@@ -133,7 +146,9 @@ lib/
 │   │   ├── feed_xml/            # EEx templates for RSS and Atom XML
 │   │   │   ├── rss.xml.eex     # RSS 2.0 channel + items template
 │   │   │   └── atom.xml.eex    # Atom 1.0 feed + entries template
+│   │   ├── health_controller.ex # Health check endpoint
 │   │   ├── page_controller.ex   # Static page controller
+│   │   ├── page_html.ex         # Page HTML view module
 │   │   ├── push_subscription_controller.ex  # POST/DELETE /api/push-subscriptions (Web Push)
 │   │   └── session_controller.ex  # POST endpoints for session mutations
 │   ├── live/
@@ -176,6 +191,9 @@ lib/
 │   │   ├── totp_reset_live.ex   # Self-service TOTP reset/enable
 │   │   ├── totp_setup_live.ex   # TOTP enrollment with QR code
 │   │   ├── totp_verify_live.ex  # TOTP code verification
+│   │   ├── admin_totp_verify_live.ex       # Admin TOTP re-verification for sudo mode
+│   │   ├── markdown_preview_hook.ex       # LiveView hook for markdown preview toggling
+│   │   ├── sandbox_hook.ex                # Ecto sandbox hook for feature tests
 │   │   ├── unread_dm_count_hook.ex         # Real-time @unread_dm_count via PubSub
 │   │   └── unread_notification_count_hook.ex # Real-time @unread_notification_count via PubSub
 │   ├── plugs/
@@ -193,8 +211,12 @@ lib/
 │   │   └── verify_http_signature.ex  # HTTP Signature verification for AP inboxes
 │   ├── endpoint.ex              # HTTP entry point, session config
 │   ├── gettext.ex               # Gettext i18n configuration
+│   ├── helpers.ex               # Shared translation helpers (translate_role/1, translate_status/1, etc.)
 │   ├── locale.ex                # Locale resolution (Accept-Language + user prefs)
 │   ├── linked_data.ex          # JSON-LD + Dublin Core metadata builders (SIOC/FOAF/DC)
+│   ├── rate_limiter.ex          # Rate limiter behaviour (Sandbox / Hammer backends)
+│   ├── rate_limiter/
+│   │   └── hammer.ex            # Hammer-based rate limiter backend
 │   ├── rate_limits.ex           # Per-user rate limit checks (Hammer, fail-open)
 │   ├── router.ex                # Route scopes and pipelines
 │   └── telemetry.ex             # Telemetry metrics configuration
@@ -363,7 +385,7 @@ User avatars are processed server-side for security:
 1. Client selects image → Cropper.js provides interactive crop UI
 2. Normalized crop coordinates (percentages) are sent to the server
 3. Server validates magic bytes, re-encodes as WebP (destroying polyglots),
-   strips all EXIF/metadata, and produces 48x48 and 36x36 thumbnails
+   strips all EXIF/metadata, and produces 120×120, 48×48, 36×36, and 24×24 thumbnails
 4. Files stored at `priv/static/uploads/avatars/{avatar_id}/{size}.webp`
    with server-generated 64-char hex IDs (no user input in paths)
 5. Rate limited to 5 avatar changes per hour per user
@@ -1166,9 +1188,12 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 |------|----------|
 | `:require_auth` | Requires valid session; redirects to `/login` if unauthenticated or banned |
 | `:require_admin` | Requires admin role; redirects non-admins to `/` with access denied flash. Must be used after `:require_auth` (needs `@current_user`) |
+| `:require_admin_or_moderator` | Requires admin or moderator role; redirects others to `/` with access denied flash |
+| `:require_admin_totp` | Admin TOTP re-verification (10-min sudo mode); non-admin users (e.g. moderators) pass through. Admins without TOTP are redirected to `/profile`; admins with expired verification are redirected to `/admin/verify` |
 | `:optional_auth` | Loads user if session exists; assigns `nil` for guests or banned users (no redirect) |
 | `:require_password_auth` | Requires password-level auth (for TOTP flow); redirects banned users to `/login` |
 | `:redirect_if_authenticated` | Redirects authenticated users to `/` (for login/register pages); allows banned users through |
+| `:rate_limit_mount` | Rate limits WebSocket connections: 60/min per IP. Fails open on backend errors. Only checked on connected mounts |
 
 ### Request Pipeline
 
@@ -1228,6 +1253,8 @@ RateLimit (30/min per IP) → FeedController (XML response)
 | AP inbox | 60 / min | per remote domain |
 | Feeds (RSS/Atom) | 30 / min | per IP |
 | Direct messages | 20 / min | per user |
+| Feed item replies | 20 / 5 min | per user |
+| LiveView mount | 60 / min | per IP |
 
 IP-based rate limits use `BaudrateWeb.Plugs.RateLimit` (Plug-based, in the
 router pipeline). Per-user rate limits use `BaudrateWeb.RateLimits` (called

@@ -26,12 +26,15 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 |-------|-----------|
 | Language | Elixir 1.15+ / OTP 26+ |
 | Web | Phoenix 1.8 / LiveView 1.1 |
+| HTTP server | Bandit |
 | Database | PostgreSQL (Ecto) |
 | CSS | Tailwind CSS + DaisyUI |
 | HTTP client | Req (never use HTTPoison, Tesla, or httpc) |
+| Markdown | Earmark |
 | 2FA | NimbleTOTP + EQRCode |
 | HTML sanitization | Ammonia (Rust NIF via Rustler) — requires Rust toolchain |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
+| Timezone data | tz |
 | i18n | Gettext — zh_TW and ja_JP locales |
 
 ## Architecture
@@ -122,8 +125,9 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - `use BaudrateWeb.ConnCase` for LiveView/controller tests; `use Baudrate.DataCase` for context tests
 - `setup_user("role_name")` — creates a test user with the given role (seeds roles if needed)
 - `log_in_user(conn, user)` — authenticates a connection with session tokens
+- `log_in_admin(conn, user)` — authenticates an admin with TOTP sudo mode enabled (sets `admin_totp_verified_at`)
 - `errors_on(changeset)` — extracts validation errors as `%{field: [messages]}`
-- Async tests using Mox **must** call `Mox.set_mox_private()` in setup to avoid stub leaks between concurrent tests
+- Rate limiter stubbing: tests use `BaudrateWeb.RateLimiter.Sandbox` — call `set_global_response({:allow, 1})` to bypass rate limits, or `set_fun(&BaudrateWeb.RateLimiter.Hammer.check_rate/3)` for real Hammer backend
 - **Test stability is a priority** — tests must pass deterministically across all partitions under concurrent execution, not just in isolation. Never rely on `Process.sleep` for timestamp separation; use explicit timestamps via `Repo.update_all` instead. Queries with user-visible ordering must include a tiebreaker (e.g. `desc: id`) to avoid nondeterminism when timestamps collide.
 
 ## Key Entry Points
@@ -133,7 +137,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 | `lib/baudrate_web/router.ex` | Routes with auth live_sessions |
 | `lib/baudrate/auth.ex` | Auth context: authentication, user management (blocks, mutes, invites) |
 | `lib/baudrate/content.ex` | Content context: boards, articles, comments, polls, permissions |
-| `lib/baudrate/federation.ex` | Federation context: actors, outbox, followers |
+| `lib/baudrate/federation.ex` | Federation context: actors, outbox, followers, feed items, feed item replies |
 | `lib/baudrate/messaging.ex` | Messaging context: DMs, conversations, read cursors |
 | `lib/baudrate/setup.ex` | Setup context: roles, settings, role level utilities |
 | `lib/baudrate/moderation.ex` | Moderation context: reports, audit log |

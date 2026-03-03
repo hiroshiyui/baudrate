@@ -494,6 +494,7 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 | TOTP verification | 15 / 5 min | per IP |
 | Registration | 5 / hour | per IP |
 | Password reset | 5 / hour | per IP |
+| Password reset | progressive delay (5s/30s/120s) | per account |
 | Article creation | 10 / 15 min | per user |
 | Article update | 20 / 5 min | per user |
 | Comment creation | 30 / 5 min | per user |
@@ -507,6 +508,7 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 | AP inbox | 60 / min | per remote domain |
 | Feeds (RSS/Atom) | 30 / min | per IP |
 | Direct messages | 20 / min | per user |
+| Feed item replies | 20 / 5 min | per user |
 
 Per-user rate limits are managed by `BaudrateWeb.RateLimits`. Admin users are
 exempt from per-user content rate limits (their actions are already audit-logged).
@@ -604,10 +606,9 @@ timer. Verify renewal works: `sudo certbot renew --dry-run`.
 - **Content size limits** — 256 KB AP payload, 64 KB content body
 - **File uploads** — magic byte validation, re-encoding as WebP (strips EXIF,
   destroys polyglots)
-- **CSP** — restrictive Content-Security-Policy: no eval, `img-src` restricted
-  to `'self' data: blob:` (no blanket `https:` — blocks tracking pixels from
-  federated content), `object-src 'none'` (blocks plugins entirely),
-  `frame-ancestors 'none'`
+- **CSP** — restrictive Content-Security-Policy: no eval, `img-src 'self' https: data: blob:`
+  (`https:` is required for federated remote actor avatars), `object-src 'none'`
+  (blocks plugins entirely), `frame-ancestors 'none'`
 - **Referrer-Policy** — `strict-origin-when-cross-origin` prevents leaking full
   URL paths to external sites
 - **X-Frame-Options** — DENY
@@ -887,6 +888,7 @@ discover each other via `Phoenix.PubSub.PG2`.
 | `/admin/moderation-log` | Audit trail of all admin actions |
 | `/admin/invites` | Invite code generation and revocation |
 | `/admin/login-attempts` | Login attempt history (filterable, paginated) |
+| `/admin/verify` | Admin TOTP re-verification (sudo mode, 10-min timeout) |
 
 ---
 
