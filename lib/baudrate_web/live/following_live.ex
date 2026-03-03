@@ -12,7 +12,7 @@ defmodule BaudrateWeb.FollowingLive do
 
   alias Baudrate.Auth
   alias Baudrate.Federation
-  alias Baudrate.Federation.{Delivery, Publisher}
+  alias Baudrate.Federation.{Delivery, KeyStore, Publisher}
   import BaudrateWeb.Helpers, only: [parse_id: 1, translate_role: 1]
 
   @impl true
@@ -34,7 +34,8 @@ defmodule BaudrateWeb.FollowingLive do
          remote_actor when not is_nil(remote_actor) <-
            Federation.get_remote_actor(remote_actor_id),
          follow when not is_nil(follow) <-
-           Federation.get_user_follow_with_actor(user.id, remote_actor_id) do
+           Federation.get_user_follow_with_actor(user.id, remote_actor_id),
+         {:ok, user} <- KeyStore.ensure_user_keypair(user) do
       {activity, actor_uri} = Publisher.build_undo_follow(user, follow)
       Delivery.deliver_follow(activity, remote_actor, actor_uri)
       Federation.delete_user_follow(user, remote_actor)

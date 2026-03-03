@@ -167,13 +167,20 @@ defmodule Baudrate.Federation.Delivery do
   end
 
   defp do_deliver(%DeliveryJob{} = job) do
-    with {:ok, private_key_pem} <- get_private_key(job.actor_uri) do
-      key_id = "#{job.actor_uri}#main-key"
+    case get_private_key(job.actor_uri) do
+      {:ok, private_key_pem} ->
+        key_id = "#{job.actor_uri}#main-key"
 
-      headers =
-        HTTPSignature.sign(:post, job.inbox_url, job.activity_json, private_key_pem, key_id)
+        headers =
+          HTTPSignature.sign(:post, job.inbox_url, job.activity_json, private_key_pem, key_id)
 
-      HTTPClient.post(job.inbox_url, job.activity_json, Map.to_list(headers))
+        HTTPClient.post(job.inbox_url, job.activity_json, Map.to_list(headers))
+
+      :error ->
+        {:error, :unknown_actor}
+
+      {:error, _} = err ->
+        err
     end
   end
 
