@@ -87,6 +87,7 @@ defmodule Baudrate.Federation.KeyStore do
 
         {:ok, _} = Setup.set_setting("ap_site_public_key", public_pem)
         {:ok, _} = Setup.set_setting("ap_site_private_key_encrypted", encoded)
+        Baudrate.Setup.SettingsCache.refresh()
         {:ok, %{public_pem: public_pem}}
 
       public_pem ->
@@ -145,6 +146,7 @@ defmodule Baudrate.Federation.KeyStore do
 
     {:ok, _} = Setup.set_setting("ap_site_public_key", public_pem)
     {:ok, _} = Setup.set_setting("ap_site_private_key_encrypted", encoded)
+    Baudrate.Setup.SettingsCache.refresh()
     {:ok, %{public_pem: public_pem}}
   end
 

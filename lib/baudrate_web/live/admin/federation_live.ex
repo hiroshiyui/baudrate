@@ -74,6 +74,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
           else: current <> ", " <> domain
 
       Setup.set_setting("ap_domain_blocklist", new_list)
+      Baudrate.Setup.SettingsCache.refresh()
     end
 
     {:noreply,
@@ -234,6 +235,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
           else: current <> ", " <> domain
 
       Setup.set_setting("ap_domain_blocklist", new_list)
+      Baudrate.Setup.SettingsCache.refresh()
     end
   end
 

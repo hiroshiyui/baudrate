@@ -91,6 +91,7 @@ defmodule BaudrateWeb.Admin.SettingsLive do
 
     Setup.set_setting("vapid_public_key", public_key_b64)
     Setup.set_setting("vapid_private_key_encrypted", Base.encode64(encrypted_private))
+    Baudrate.Setup.SettingsCache.refresh()
 
     {:noreply,
      socket
