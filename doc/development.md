@@ -92,6 +92,7 @@ lib/
 │   │   ├── remote_actor.ex      # RemoteActor schema (cached remote profiles)
 │   │   ├── user_follow.ex       # UserFollow schema (outbound follows: remote actors + local users)
 │   │   ├── feed_item.ex         # FeedItem schema (posts from followed remote actors)
+│   │   ├── feed_item_reply.ex   # FeedItemReply schema (local replies to remote feed items)
 │   │   ├── pubsub.ex            # Federation PubSub (user feed events)
 │   │   ├── publisher.ex         # ActivityStreams JSON builders for outgoing activities
 │   │   ├── sanitizer.ex         # HTML sanitizer for federated content (Ammonia NIF)
@@ -953,6 +954,13 @@ The `Baudrate.Federation` context handles all federation logic.
 - Delete propagation: soft-deletes feed items on content or actor deletion
 - `Federation.migrate_user_follows/2` — Move activity support (migrate + deduplicate)
 - `/feed` LiveView — paginated personal timeline with real-time PubSub updates
+
+**Feed item replies**:
+- `feed_item_replies` table — local users can reply to remote feed items inline
+- `Federation.create_feed_item_reply/3` — renders Markdown body to HTML, generates AP ID, inserts record, schedules `Create(Note)` delivery with `inReplyTo` pointing to the feed item's AP ID
+- `Publisher.build_create_feed_item_reply/3` — builds the `Create(Note)` activity
+- `Publisher.publish_feed_item_reply/2` — ensures user keypair, delivers to remote actor inbox + user's AP followers
+- Rate limited: 20 feed item replies per 5 minutes per user (`RateLimits.check_feed_reply/1`)
 
 **Local user follows**:
 - `user_follows.followed_user_id` — nullable FK to `users`, with check constraint (exactly one of `remote_actor_id`/`followed_user_id`)
