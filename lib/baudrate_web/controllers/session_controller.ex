@@ -314,13 +314,14 @@ defmodule BaudrateWeb.SessionController do
             )
 
             conn
-            |> put_flash(:error, gettext("TOTP configuration error. Please contact an administrator."))
+            |> put_flash(
+              :error,
+              gettext("TOTP configuration error. Please contact an administrator.")
+            )
             |> redirect(to: "/profile")
 
           attempts >= @max_totp_attempts ->
-            Logger.warning(
-              "auth.admin_totp_lockout: user_id=#{user.id} ip=#{remote_ip(conn)}"
-            )
+            Logger.warning("auth.admin_totp_lockout: user_id=#{user.id} ip=#{remote_ip(conn)}")
 
             conn
             |> delete_session(:admin_totp_attempts)
