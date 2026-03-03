@@ -77,6 +77,7 @@ defmodule BaudrateWeb.Endpoint do
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
+    body_reader: {BaudrateWeb.Plugs.CacheBodyReader, :read_body, []},
     json_decoder: Phoenix.json_library(),
     length: 1_000_000
 
