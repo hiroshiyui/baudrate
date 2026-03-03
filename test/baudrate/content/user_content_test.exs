@@ -89,6 +89,60 @@ defmodule Baudrate.Content.UserContentTest do
     end
   end
 
+  describe "count_user_content_stats/1" do
+    test "returns {0, 0} for user with no content", %{user: _user} do
+      other = setup_user("user")
+      assert {0, 0} = Content.count_user_content_stats(other.id)
+    end
+
+    test "counts articles and comments together", %{user: user, board: board} do
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            "title" => "Stats Art",
+            "body" => "Body",
+            "slug" => "stats-#{System.unique_integer([:positive])}",
+            "user_id" => user.id
+          },
+          [board.id]
+        )
+
+      {:ok, _} =
+        Content.create_comment(%{
+          "body" => "Stats Comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      assert {1, 1} = Content.count_user_content_stats(user.id)
+    end
+
+    test "excludes soft-deleted articles and comments", %{user: user, board: board} do
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            "title" => "Del Art",
+            "body" => "Body",
+            "slug" => "sdel-#{System.unique_integer([:positive])}",
+            "user_id" => user.id
+          },
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Del Comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      Content.soft_delete_article(article)
+      Content.soft_delete_comment(comment)
+
+      assert {0, 0} = Content.count_user_content_stats(user.id)
+    end
+  end
+
   describe "paginate_articles_by_user/2" do
     test "returns paginated articles by user", %{user: user, board: board} do
       {:ok, %{article: _}} =

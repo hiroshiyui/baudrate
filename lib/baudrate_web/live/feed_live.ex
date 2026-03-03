@@ -30,13 +30,15 @@ defmodule BaudrateWeb.FeedLive do
 
     can_post = Auth.can_create_content?(user)
 
+    {article_count, comment_count} = Content.count_user_content_stats(user.id)
+
     socket =
       socket
       |> assign(
         page_title: gettext("Feed"),
         wide_layout: true,
-        article_count: Content.count_articles_by_user(user.id),
-        comment_count: Content.count_comments_by_user(user.id),
+        article_count: article_count,
+        comment_count: comment_count,
         can_post: can_post,
         replying_to: nil,
         reply_form: to_form(FeedItemReply.changeset(%FeedItemReply{}, %{}), as: :reply),

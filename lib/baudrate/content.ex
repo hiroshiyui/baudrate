@@ -2369,6 +2369,23 @@ defmodule Baudrate.Content do
   end
 
   @doc """
+  Returns `{article_count, comment_count}` for a user in a single query.
+  """
+  def count_user_content_stats(user_id) do
+    %{rows: [[articles, comments]]} =
+      Repo.query!(
+        """
+        SELECT
+          (SELECT count(*) FROM articles WHERE user_id = $1 AND deleted_at IS NULL),
+          (SELECT count(*) FROM comments WHERE user_id = $1 AND deleted_at IS NULL)
+        """,
+        [user_id]
+      )
+
+    {articles, comments}
+  end
+
+  @doc """
   Returns the count of non-deleted articles by a user.
   """
   def count_articles_by_user(user_id) do
