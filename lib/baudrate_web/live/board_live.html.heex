@@ -1,44 +1,43 @@
-<div class="mb-4 flex items-center justify-between">
-  <nav class="breadcrumbs text-sm" aria-label={gettext("Breadcrumb")}>
-    <ul>
-      <li><.link navigate="/">{gettext("Home")}</.link></li>
-      <%= for ancestor <- @ancestors do %>
-        <%= if ancestor.id == @board.id do %>
-          <li>{ancestor.name}</li>
-        <% else %>
-          <li><.link navigate={~p"/boards/#{ancestor.slug}"}>{ancestor.name}</.link></li>
-        <% end %>
+<nav class="breadcrumbs text-sm mb-4" aria-label={gettext("Breadcrumb")}>
+  <ul>
+    <li><.link navigate="/">{gettext("Home")}</.link></li>
+    <%= for ancestor <- @ancestors do %>
+      <%= if ancestor.id == @board.id do %>
+        <li>{ancestor.name}</li>
+      <% else %>
+        <li><.link navigate={~p"/boards/#{ancestor.slug}"}>{ancestor.name}</.link></li>
       <% end %>
-    </ul>
-  </nav>
-  <div class="flex gap-2">
-    <button
-      :if={@current_user && MapSet.size(@unread_article_ids) > 0}
-      phx-click="mark_all_read"
-      class="btn btn-sm btn-ghost"
-    >
-      <.icon name="hero-check" class="size-4" />
-      {gettext("Mark all as read")}
-    </button>
-    <.link
-      :if={@can_manage_follows}
-      navigate={~p"/boards/#{@board.slug}/follows"}
-      class="btn btn-sm btn-ghost"
-    >
-      {gettext("Manage Follows")}
-    </.link>
-    <.link
-      :if={@can_create}
-      navigate={~p"/boards/#{@board.slug}/articles/new"}
-      class="btn btn-sm btn-primary"
-    >
-      {gettext("New Article")}
-    </.link>
-  </div>
-</div>
+    <% end %>
+  </ul>
+</nav>
 
 <h1 id="board-heading" class="text-2xl font-bold mb-2">{@board.name}</h1>
-<p :if={@board.description} class="text-base-content/70 mb-6">{@board.description}</p>
+<p :if={@board.description} class="text-base-content/70 mb-4">{@board.description}</p>
+
+<div class="flex flex-wrap gap-2 mb-6">
+  <.link
+    :if={@can_create}
+    navigate={~p"/boards/#{@board.slug}/articles/new"}
+    class="btn btn-sm btn-primary"
+  >
+    {gettext("New Article")}
+  </.link>
+  <.link
+    :if={@can_manage_follows}
+    navigate={~p"/boards/#{@board.slug}/follows"}
+    class="btn btn-sm btn-ghost"
+  >
+    {gettext("Manage Follows")}
+  </.link>
+  <button
+    :if={@current_user && MapSet.size(@unread_article_ids) > 0}
+    phx-click="mark_all_read"
+    class="btn btn-sm btn-ghost"
+  >
+    <.icon name="hero-check" class="size-4" />
+    {gettext("Mark all as read")}
+  </button>
+</div>
 
 <aside
   :if={@board_moderators != []}
