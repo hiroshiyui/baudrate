@@ -120,6 +120,7 @@ lib/
 │       ├── role.ex              # Role schema (admin/moderator/user/guest)
 │       ├── role_permission.ex   # Join table: role ↔ permission
 │       ├── setting.ex           # Key-value settings (site_name, timezone, setup_completed, etc.)
+│       ├── settings_cache.ex    # ETS-backed cache for settings (GenServer + :ets.lookup)
 │       └── user.ex              # User schema with password, TOTP, avatar, display_name, status, signature fields
 ├── mix/
 │   └── tasks/
@@ -1270,11 +1271,17 @@ Baudrate.Supervisor (one_for_one)
 ├── DNSCluster                         # DNS-based cluster discovery
 ├── Phoenix.PubSub                     # PubSub for LiveView
 ├── Baudrate.Auth.SessionCleaner       # Hourly cleanup (sessions, login attempts, orphan images)
+├── Baudrate.Setup.SettingsCache       # ETS cache for site settings (must start before DomainBlockCache)
 ├── Baudrate.Federation.TaskSupervisor # Async federation delivery tasks
+├── Baudrate.Federation.DomainBlockCache  # ETS cache for domain blocking decisions
 ├── Baudrate.Federation.DeliveryWorker     # Polls delivery queue every 60s
 ├── Baudrate.Federation.StaleActorCleaner # Daily stale remote actor cleanup
 └── BaudrateWeb.Endpoint                  # HTTP server
 ```
+
+**Startup order dependency:** `SettingsCache` must start before `DomainBlockCache`
+because `DomainBlockCache.init/1` calls `Setup.get_setting/1`, which reads from
+the settings ETS cache.
 
 ### Real-time Updates
 
