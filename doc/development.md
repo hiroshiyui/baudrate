@@ -1451,6 +1451,23 @@ With the service worker (Phase 6) and manifest in place, browsers show an
 "Install" prompt. The app opens in `standalone` mode (no browser chrome) and
 uses the SVG favicon as the app icon.
 
+#### Web Share Target
+
+The manifest includes a `share_target` configuration that allows users to
+share text from other apps directly into Baudrate when installed as a PWA.
+
+- **Endpoint**: `POST /share` (CSRF-exempt via `:share_target` pipeline)
+- **Parameters**: `title`, `text`, `url` (form-urlencoded)
+- **Flow**: `ShareTargetController` checks session authentication:
+  - **Authenticated**: redirects to `/articles/new?title=...&text=...&url=...`
+    with the shared content as query params. `ArticleNewLive` pre-fills the
+    form and allows boardless article submission.
+  - **Unauthenticated**: stores the target path in `:return_to` session key
+    and redirects to `/login`. After successful login,
+    `SessionController.establish_session/3` consumes the stored path and
+    redirects to the pre-filled article form.
+- **Limits**: title truncated to 200 chars, text to 64 KB, url to 2048 chars
+
 ### Syndication Feeds (RSS / Atom)
 
 RSS 2.0 and Atom 1.0 feeds are available at three scopes:
