@@ -164,7 +164,7 @@ defmodule Baudrate.Content.Bookmarks do
         order_by: [desc: b.inserted_at, desc: b.id],
         offset: ^offset,
         limit: ^per_page,
-        preload: [article: [:boards, :user], comment: [:article, :user]]
+        preload: [article: [:boards, :user, :remote_actor], comment: [:article, :user, :remote_actor]]
       )
       |> Repo.all()
 

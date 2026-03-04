@@ -123,7 +123,7 @@ defmodule Baudrate.Content.Tags do
     Pagination.paginate_query(base_query, pagination,
       result_key: :articles,
       order_by: [desc: dynamic([q], q.inserted_at)],
-      preloads: [:user, :boards]
+      preloads: [:user, :remote_actor, :boards]
     )
   end
 

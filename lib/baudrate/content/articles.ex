@@ -76,7 +76,7 @@ defmodule Baudrate.Content.Articles do
         order_by: [desc: q.pinned, desc: q.last_activity_at, desc: q.id],
         offset: ^offset,
         limit: ^per_page,
-        preload: :user
+        preload: [:user, :remote_actor]
       )
       |> Repo.all()
 
@@ -118,7 +118,7 @@ defmodule Baudrate.Content.Articles do
   def get_article_by_slug!(slug) do
     Article
     |> Repo.get_by!(slug: slug)
-    |> Repo.preload([:boards, :user, poll: :options])
+    |> Repo.preload([:boards, :user, :remote_actor, poll: :options])
   end
 
   @doc """
