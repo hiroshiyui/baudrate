@@ -31,16 +31,18 @@ defmodule BaudrateWeb.ArticleNewLive do
        |> put_flash(:error, gettext("Your account is pending approval."))
        |> redirect(to: ~p"/")}
     else
-      boards = Content.list_top_boards() |> Enum.filter(&Content.can_post_in_board?(&1, user))
-
-      selected_board_ids =
+      {boards, selected_board_ids} =
         case params do
           %{"slug" => slug} ->
             board = Content.get_board_by_slug!(slug)
-            [board.id]
+            top = Content.list_top_boards() |> Enum.filter(&Content.can_post_in_board?(&1, user))
+
+            if Enum.any?(top, &(&1.id == board.id)),
+              do: {top, [board.id]},
+              else: {top ++ [board], [board.id]}
 
           _ ->
-            []
+            {Content.list_top_boards() |> Enum.filter(&Content.can_post_in_board?(&1, user)), []}
         end
 
       changeset = Content.change_article()
