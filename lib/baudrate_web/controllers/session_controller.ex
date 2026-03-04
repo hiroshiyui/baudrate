@@ -179,13 +179,12 @@ defmodule BaudrateWeb.SessionController do
         case Auth.enable_totp(user, secret) do
           {:ok, updated_user} ->
             Logger.info("auth.totp_enabled: user_id=#{user.id} ip=#{remote_ip(conn)}")
-            raw_codes = Auth.generate_recovery_codes(updated_user)
 
             conn
             |> delete_session(:totp_setup_secret)
             |> delete_session(:totp_attempts)
-            |> put_session(:recovery_codes, raw_codes)
-            |> establish_session(updated_user, "/profile/recovery-codes")
+            |> put_flash(:info, gettext("Two-factor authentication enabled successfully."))
+            |> establish_session(updated_user, "/profile")
 
           {:error, _changeset} ->
             Logger.error("auth.totp_enable_failed: user_id=#{user.id} ip=#{remote_ip(conn)}")

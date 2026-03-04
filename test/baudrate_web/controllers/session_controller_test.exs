@@ -112,13 +112,11 @@ defmodule BaudrateWeb.SessionControllerTest do
         |> Plug.Test.init_test_session(%{user_id: user.id, totp_setup_secret: secret})
         |> post("/auth/totp-enable", %{"code" => code})
 
-      assert redirected_to(conn) == "/profile/recovery-codes"
+      assert redirected_to(conn) == "/profile"
       assert get_session(conn, :session_token) != nil
       assert get_session(conn, :refresh_token) != nil
       assert is_nil(get_session(conn, :user_id))
       assert is_nil(get_session(conn, :totp_setup_secret))
-      assert is_list(get_session(conn, :recovery_codes))
-      assert length(get_session(conn, :recovery_codes)) == 10
 
       updated_user = Auth.get_user(user.id)
       assert updated_user.totp_enabled == true
@@ -455,9 +453,9 @@ defmodule BaudrateWeb.SessionControllerTest do
         })
         |> post("/auth/totp-enable", %{"code" => code})
 
-      # totp_enable passes "/profile/recovery-codes" as redirect_to,
+      # totp_enable passes "/profile" as redirect_to,
       # so return_to should be ignored
-      assert redirected_to(conn) == "/profile/recovery-codes"
+      assert redirected_to(conn) == "/profile"
     end
 
     test "sanitizes malicious return_to with double slashes", %{conn: conn} do
