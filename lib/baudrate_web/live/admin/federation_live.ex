@@ -283,7 +283,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
     delivery_counts = DeliveryStats.status_counts()
     failed_jobs = DeliveryStats.list_actionable_jobs(20)
     error_rate = DeliveryStats.error_rate_24h()
-    boards = Content.list_top_boards()
+    boards = Content.list_all_boards()
 
     assign(socket,
       instances: instances,

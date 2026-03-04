@@ -167,7 +167,12 @@
             </thead>
             <tbody aria-live="polite">
               <tr :for={board <- @boards} :if={board.ap_enabled}>
-                <td>{board.name}</td>
+                <td>
+                  <span :if={board.parent} class="text-base-content/50">
+                    {board.parent.name} /
+                  </span>
+                  {board.name}
+                </td>
                 <td>
                   <span class="badge badge-sm badge-success">{gettext("Enabled")}</span>
                 </td>
@@ -211,7 +216,12 @@
           </thead>
           <tbody aria-live="polite">
             <tr :for={board <- @boards}>
-              <td>{board.name}</td>
+              <td>
+                <span :if={board.parent} class="text-base-content/50">
+                  {board.parent.name} /
+                </span>
+                {board.name}
+              </td>
               <td>
                 <span class={[
                   "badge badge-sm",
