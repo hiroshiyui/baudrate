@@ -117,8 +117,8 @@ defmodule BaudrateWeb.FeedLiveTest do
       create_feed_item(actor, %{source_url: "https://remote.example/notes/original"})
 
       {:ok, _lv, html} = live(conn, "/feed")
-      assert html =~ "View original"
       assert html =~ "remote.example/notes/original"
+      assert html =~ "hero-link"
     end
   end
 

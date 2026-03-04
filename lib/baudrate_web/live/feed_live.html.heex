@@ -131,10 +131,11 @@
               href={item.feed_item.source_url}
               target="_blank"
               rel="noopener noreferrer"
-              class="link link-primary text-sm"
+              class="btn btn-ghost btn-xs"
+              title={gettext("View original")}
+              aria-label={gettext("View original")}
             >
-              {gettext("View original")}
-              <.icon name="hero-arrow-top-right-on-square-mini" class="size-3 ml-1 inline" />
+              <.icon name="hero-link" class="size-4" />
             </a>
             <button
               phx-click="toggle_reply"
