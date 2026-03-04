@@ -49,7 +49,8 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       body = json_response(conn, 200)
 
-      assert body["subject"] =~ board.slug
+      assert body["subject"] == "acct:#{board.slug}@#{host}"
+      assert body["properties"]["https://www.w3.org/ns/activitystreams#type"] == "Group"
     end
 
     test "resolves board acct resource without ! prefix (Mastodon compat)", %{conn: conn} do
@@ -61,9 +62,10 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       body = json_response(conn, 200)
 
-      assert body["subject"] =~ "!my-board"
+      assert body["subject"] == "acct:my-board@#{host}"
       assert [%{"rel" => "self", "href" => href}] = body["links"]
       assert href =~ "/ap/boards/my-board"
+      assert body["properties"]["https://www.w3.org/ns/activitystreams#type"] == "Group"
     end
 
     test "bare name resolves user before board", %{conn: conn} do

@@ -48,9 +48,10 @@ defmodule Baudrate.FederationTest do
       host = URI.parse(Federation.base_url()).host
 
       {:ok, jrd} = Federation.webfinger("acct:!#{board.slug}@#{host}")
-      assert jrd["subject"] =~ board.slug
+      assert jrd["subject"] == "acct:#{board.slug}@#{host}"
       assert [%{"rel" => "self", "href" => href}] = jrd["links"]
       assert href =~ "/ap/boards/#{board.slug}"
+      assert jrd["properties"]["https://www.w3.org/ns/activitystreams#type"] == "Group"
     end
 
     test "resolves board by acct URI without ! prefix (Mastodon compat)" do
@@ -58,9 +59,10 @@ defmodule Baudrate.FederationTest do
       host = URI.parse(Federation.base_url()).host
 
       {:ok, jrd} = Federation.webfinger("acct:my-board@#{host}")
-      assert jrd["subject"] =~ "!my-board"
+      assert jrd["subject"] == "acct:my-board@#{host}"
       assert [%{"rel" => "self", "href" => href}] = jrd["links"]
       assert href =~ "/ap/boards/my-board"
+      assert jrd["properties"]["https://www.w3.org/ns/activitystreams#type"] == "Group"
     end
 
     test "bare name resolves user before board" do

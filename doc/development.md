@@ -936,7 +936,7 @@ The `Baudrate.Federation` context handles all federation logic.
 | Article | Article | `/ap/articles/:slug` |
 
 **Discovery endpoints:**
-- `/.well-known/webfinger` — resolve `acct:user@host` or `acct:!board@host`
+- `/.well-known/webfinger` — resolve `acct:user@host` or `acct:board-slug@host` (also accepts `!` prefix for Lemmy compat); board responses include `properties` with `type: "Group"`
 - `/.well-known/nodeinfo` → `/nodeinfo/2.1` — instance metadata
 
 **Outbound endpoints** (content-negotiated: JSON-LD for AP/JSON clients, HTML redirect otherwise):

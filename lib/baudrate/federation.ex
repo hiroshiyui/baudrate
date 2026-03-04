@@ -123,6 +123,13 @@ defmodule Baudrate.Federation do
     * `acct:slug@host` → board actor (Mastodon-compatible bare slug fallback;
       tries user first, falls back to board if no matching user exists)
 
+  Board WebFinger responses use the bare slug in `subject` (no `!` prefix)
+  to match Mastodon's expectation from `preferredUsername`, and include a
+  `properties` map with `"https://www.w3.org/ns/activitystreams#type" => "Group"`
+  for Lemmy-compatible type disambiguation.
+
+  Only federated boards (public + AP-enabled) are discoverable via WebFinger.
+
   Returns `{:ok, jrd_map}` or `{:error, reason}`.
   """
   @spec webfinger(String.t()) :: {:ok, map()} | {:error, atom()}
@@ -150,7 +157,7 @@ defmodule Baudrate.Federation do
   defp resolve_board_webfinger(slug) do
     board = Repo.get_by(Baudrate.Content.Board, slug: slug)
 
-    if board && Board.public?(board),
+    if board && Board.federated?(board),
       do: {:ok, webfinger_jrd(:board, slug)},
       else: {:error, :not_found}
   end
@@ -183,13 +190,10 @@ defmodule Baudrate.Federation do
 
   defp webfinger_jrd(type, identifier) do
     uri = actor_uri(type, identifier)
+    host = URI.parse(base_url()).host
 
-    %{
-      "subject" =>
-        case type do
-          :user -> "acct:#{identifier}@#{URI.parse(base_url()).host}"
-          :board -> "acct:!#{identifier}@#{URI.parse(base_url()).host}"
-        end,
+    base = %{
+      "subject" => "acct:#{identifier}@#{host}",
       "aliases" => [uri],
       "links" => [
         %{
@@ -199,6 +203,16 @@ defmodule Baudrate.Federation do
         }
       ]
     }
+
+    case type do
+      :board ->
+        Map.put(base, "properties", %{
+          "https://www.w3.org/ns/activitystreams#type" => "Group"
+        })
+
+      _ ->
+        base
+    end
   end
 
   # --- Remote Actor Lookup ---
