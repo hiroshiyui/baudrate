@@ -101,6 +101,15 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 5. Remove the finishied tasks from TODOs
 6. When a bug is discovered, **always** check for similar issues across the project after applying the fix
 
+### Release Engineering
+
+When creating a new release:
+
+1. Update `version` in `mix.exs` to match the new tag version
+2. Commit, push, and create the git tag (e.g. `v1.1.21`)
+3. Push the tag (`git push --tags`)
+4. Create the GitHub release via `gh release create`
+
 ### Code Organization
 
 - Tests in `test/` mirror the `lib/` structure

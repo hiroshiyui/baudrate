@@ -738,6 +738,10 @@ this step, pages load without CSS styling and JavaScript doesn't execute.
 
 ### Building a Release
 
+**Before building**, ensure the `version` in `mix.exs` matches the release tag
+(e.g. `"1.1.21"` for tag `v1.1.21`). This version appears in the release
+directory name (`lib/baudrate-<version>/`) and in runtime diagnostics.
+
 ```bash
 MIX_ENV=prod mix assets.deploy
 MIX_ENV=prod mix release
