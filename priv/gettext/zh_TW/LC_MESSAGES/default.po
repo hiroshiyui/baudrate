@@ -3792,6 +3792,11 @@ msgstr "搜尋要追蹤的遠端使用者（例如 @user@domain）"
 msgid "Tell others about yourself (max 500 characters)"
 msgstr "介紹自己（最多 500 字元）"
 
+#: lib/baudrate_web/live/board_follows_live.ex:44
+#, elixir-autogen, elixir-format
+msgid "This board is not federated. Enable federation and set visibility to public first."
+msgstr "此看板尚未啟用聯邦。請先啟用聯邦功能並將可見性設為公開。"
+
 #: lib/baudrate_web/live/board_follows_live.ex:48
 #, elixir-autogen, elixir-format
 msgid "You don't have permission to manage this board."

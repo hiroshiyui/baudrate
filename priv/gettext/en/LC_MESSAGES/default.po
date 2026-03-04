@@ -3802,6 +3802,11 @@ msgstr ""
 msgid "Tell others about yourself (max 500 characters)"
 msgstr ""
 
+#: lib/baudrate_web/live/board_follows_live.ex:44
+#, elixir-autogen, elixir-format
+msgid "This board is not federated. Enable federation and set visibility to public first."
+msgstr ""
+
 #: lib/baudrate_web/live/board_follows_live.ex:48
 #, elixir-autogen, elixir-format
 msgid "You don't have permission to manage this board."

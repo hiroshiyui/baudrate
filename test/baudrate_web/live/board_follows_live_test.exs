@@ -99,6 +99,28 @@ defmodule BaudrateWeb.BoardFollowsLiveTest do
       {:ok, _lv, html} = live(conn, ~p"/boards/#{board.slug}/follows")
       assert html =~ "Board Follows"
     end
+
+    test "non-federated board (ap_enabled false) redirects with error", %{conn: conn} do
+      user = setup_user("admin")
+      user = Repo.preload(user, :role)
+      board = create_board(%{ap_enabled: false})
+
+      conn = log_in_user(conn, user)
+      {:ok, conn} = live(conn, ~p"/boards/#{board.slug}/follows") |> follow_redirect(conn)
+      assert conn.request_path == "/boards/#{board.slug}"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "not federated"
+    end
+
+    test "non-public board (min_role_to_view user) redirects with error", %{conn: conn} do
+      user = setup_user("admin")
+      user = Repo.preload(user, :role)
+      board = create_board(%{min_role_to_view: "user"})
+
+      conn = log_in_user(conn, user)
+      {:ok, conn} = live(conn, ~p"/boards/#{board.slug}/follows") |> follow_redirect(conn)
+      assert conn.request_path == "/boards/#{board.slug}"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "not federated"
+    end
   end
 
   describe "accept policy change" do

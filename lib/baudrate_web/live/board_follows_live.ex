@@ -10,11 +10,14 @@ defmodule BaudrateWeb.BoardFollowsLive do
 
   Accessible at `/boards/:slug/follows` within the `:authenticated` live_session.
   Only board moderators and admins can access this page.
+  The board must be federated (`ap_enabled == true` and `min_role_to_view == "guest"`)
+  to ensure remote instances can fetch the board actor for signature verification.
   """
 
   use BaudrateWeb, :live_view
 
   alias Baudrate.Content
+  alias Baudrate.Content.Board
   alias Baudrate.Federation
   alias Baudrate.Federation.{Delivery, KeyStore, Publisher}
 
@@ -29,7 +32,24 @@ defmodule BaudrateWeb.BoardFollowsLive do
          |> put_flash(:error, gettext("Board not found."))
          |> redirect(to: ~p"/")}
 
-      Content.board_moderator?(board, socket.assigns.current_user) ->
+      not Content.board_moderator?(board, socket.assigns.current_user) ->
+        {:ok,
+         socket
+         |> put_flash(:error, gettext("You don't have permission to manage this board."))
+         |> redirect(to: ~p"/boards/#{slug}")}
+
+      not Board.federated?(board) ->
+        {:ok,
+         socket
+         |> put_flash(
+           :error,
+           gettext(
+             "This board is not federated. Enable federation and set visibility to public first."
+           )
+         )
+         |> redirect(to: ~p"/boards/#{slug}")}
+
+      true ->
         follows = Federation.list_board_follows(board.id)
 
         {:ok,
@@ -41,12 +61,6 @@ defmodule BaudrateWeb.BoardFollowsLive do
          |> assign(:search_loading, false)
          |> assign(:search_error, nil)
          |> assign(:page_title, gettext("Board Follows"))}
-
-      true ->
-        {:ok,
-         socket
-         |> put_flash(:error, gettext("You don't have permission to manage this board."))
-         |> redirect(to: ~p"/boards/#{slug}")}
     end
   end
 
