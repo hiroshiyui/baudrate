@@ -34,8 +34,8 @@ defmodule BaudrateWeb.Endpoint do
   ]
 
   socket "/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [:peer_data, :user_agent, session: @session_options]],
-    longpoll: [connect_info: [:peer_data, :user_agent, session: @session_options]]
+    websocket: [connect_info: [:peer_data, :x_headers, :user_agent, session: @session_options]],
+    longpoll: [connect_info: [:peer_data, :x_headers, :user_agent, session: @session_options]]
 
   # Allow browser tests (Wallaby) to share the Ecto sandbox connection
   if Application.compile_env(:baudrate, :sql_sandbox) do

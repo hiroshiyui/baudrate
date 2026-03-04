@@ -23,19 +23,11 @@ defmodule BaudrateWeb.SearchLive do
   alias Baudrate.Federation
   alias Baudrate.Federation.{Delivery, KeyStore, Publisher}
   alias BaudrateWeb.RateLimits
-  import BaudrateWeb.Helpers, only: [parse_page: 1, parse_id: 1, translate_role: 1]
+  import BaudrateWeb.Helpers, only: [parse_page: 1, parse_id: 1, translate_role: 1, extract_peer_ip: 1]
 
   @impl true
   def mount(_params, _session, socket) do
-    peer_ip =
-      if connected?(socket) do
-        case get_connect_info(socket, :peer_data) do
-          %{address: addr} -> addr |> :inet.ntoa() |> to_string()
-          _ -> "unknown"
-        end
-      else
-        "unknown"
-      end
+    peer_ip = if connected?(socket), do: extract_peer_ip(socket), else: "unknown"
 
     {:ok,
      socket

@@ -21,7 +21,7 @@ defmodule BaudrateWeb.RegisterLive do
   alias Baudrate.Auth
   alias Baudrate.Setup
   alias Baudrate.Setup.User
-  import BaudrateWeb.Helpers, only: [password_strength: 1]
+  import BaudrateWeb.Helpers, only: [password_strength: 1, extract_peer_ip: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -29,15 +29,7 @@ defmodule BaudrateWeb.RegisterLive do
     registration_mode = Setup.registration_mode()
     eua = Setup.get_eua()
 
-    peer_ip =
-      if connected?(socket) do
-        case get_connect_info(socket, :peer_data) do
-          %{address: addr} -> addr |> :inet.ntoa() |> to_string()
-          _ -> "unknown"
-        end
-      else
-        "unknown"
-      end
+    peer_ip = if connected?(socket), do: extract_peer_ip(socket), else: "unknown"
 
     socket =
       socket

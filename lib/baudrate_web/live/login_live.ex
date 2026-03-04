@@ -17,18 +17,11 @@ defmodule BaudrateWeb.LoginLive do
   require Logger
 
   alias Baudrate.Auth
+  import BaudrateWeb.Helpers, only: [extract_peer_ip: 1]
 
   @impl true
   def mount(_params, _session, socket) do
-    peer_ip =
-      if connected?(socket) do
-        case get_connect_info(socket, :peer_data) do
-          %{address: addr} -> addr |> :inet.ntoa() |> to_string()
-          _ -> "unknown"
-        end
-      else
-        "unknown"
-      end
+    peer_ip = if connected?(socket), do: extract_peer_ip(socket), else: "unknown"
 
     socket =
       socket

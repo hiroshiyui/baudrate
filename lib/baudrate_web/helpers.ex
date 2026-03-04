@@ -271,6 +271,52 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon(_), do: "hero-bell"
 
   @doc """
+  Extracts the real client IP from a LiveView socket.
+
+  Checks the proxy header configured for `BaudrateWeb.Plugs.RealIp` (e.g.
+  `x-forwarded-for`) from the WebSocket upgrade request's `x_headers` first.
+  Falls back to `peer_data` (the raw TCP peer address) when no proxy header
+  is configured or present.
+
+  Returns a string IP address, or `"unknown"` if neither source is available.
+
+  ## Examples
+
+      # With x-forwarded-for header configured and present:
+      extract_peer_ip(socket)  #=> "203.0.113.50"
+
+      # Without proxy header (direct connection):
+      extract_peer_ip(socket)  #=> "127.0.0.1"
+  """
+  def extract_peer_ip(socket) do
+    header =
+      Application.get_env(:baudrate, BaudrateWeb.Plugs.RealIp, [])
+      |> Keyword.get(:header)
+
+    x_headers = Phoenix.LiveView.get_connect_info(socket, :x_headers) || []
+
+    ip_from_header =
+      if header do
+        case List.keyfind(x_headers, header, 0) do
+          {_, value} ->
+            value |> String.split(",") |> List.first() |> String.trim()
+
+          nil ->
+            nil
+        end
+      end
+
+    if ip_from_header do
+      ip_from_header
+    else
+      case Phoenix.LiveView.get_connect_info(socket, :peer_data) do
+        %{address: addr} -> addr |> :inet.ntoa() |> to_string()
+        _ -> "unknown"
+      end
+    end
+  end
+
+  @doc """
   Formats a file size in bytes to a human-readable string with localized units.
 
   ## Examples

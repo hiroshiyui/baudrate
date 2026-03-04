@@ -46,6 +46,7 @@ defmodule BaudrateWeb.AuthHooks do
   alias BaudrateWeb.MarkdownPreviewHook
   alias BaudrateWeb.UnreadDmCountHook
   alias BaudrateWeb.UnreadNotificationCountHook
+  import BaudrateWeb.Helpers, only: [extract_peer_ip: 1]
 
   def on_mount(:require_auth, _params, session, socket) do
     session_token = session["session_token"]
@@ -251,13 +252,6 @@ defmodule BaudrateWeb.AuthHooks do
        socket
        |> put_flash(:error, gettext("Access denied."))
        |> redirect(to: "/")}
-    end
-  end
-
-  defp extract_peer_ip(socket) do
-    case Phoenix.LiveView.get_connect_info(socket, :peer_data) do
-      %{address: addr} -> :inet.ntoa(addr) |> to_string()
-      _ -> "unknown"
     end
   end
 

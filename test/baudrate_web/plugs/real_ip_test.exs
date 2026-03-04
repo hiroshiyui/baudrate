@@ -70,4 +70,81 @@ defmodule BaudrateWeb.Plugs.RealIpTest do
       assert result.remote_ip == {10, 0, 0, 1}
     end
   end
+
+  describe "extract_peer_ip/1 (shared LiveView helper)" do
+    defp fake_socket(connect_info) do
+      %Phoenix.LiveView.Socket{private: %{connect_info: connect_info}}
+    end
+
+    setup do
+      on_exit(fn -> Application.delete_env(:baudrate, RealIp) end)
+    end
+
+    test "returns IP from x-forwarded-for when header is configured" do
+      Application.put_env(:baudrate, RealIp, header: "x-forwarded-for")
+
+      socket =
+        fake_socket(%{
+          x_headers: [{"x-forwarded-for", "203.0.113.50, 10.0.0.1"}],
+          peer_data: %{address: {127, 0, 0, 1}}
+        })
+
+      assert BaudrateWeb.Helpers.extract_peer_ip(socket) == "203.0.113.50"
+    end
+
+    test "returns single IP from x-forwarded-for" do
+      Application.put_env(:baudrate, RealIp, header: "x-forwarded-for")
+
+      socket =
+        fake_socket(%{
+          x_headers: [{"x-forwarded-for", "198.51.100.42"}],
+          peer_data: %{address: {127, 0, 0, 1}}
+        })
+
+      assert BaudrateWeb.Helpers.extract_peer_ip(socket) == "198.51.100.42"
+    end
+
+    test "falls back to peer_data when no header configured" do
+      Application.delete_env(:baudrate, RealIp)
+
+      socket =
+        fake_socket(%{
+          x_headers: [{"x-forwarded-for", "203.0.113.50"}],
+          peer_data: %{address: {192, 168, 1, 1}}
+        })
+
+      assert BaudrateWeb.Helpers.extract_peer_ip(socket) == "192.168.1.1"
+    end
+
+    test "falls back to peer_data when header configured but absent in x_headers" do
+      Application.put_env(:baudrate, RealIp, header: "x-forwarded-for")
+
+      socket =
+        fake_socket(%{
+          x_headers: [],
+          peer_data: %{address: {10, 0, 0, 5}}
+        })
+
+      assert BaudrateWeb.Helpers.extract_peer_ip(socket) == "10.0.0.5"
+    end
+
+    test "falls back to peer_data when x_headers is nil" do
+      Application.put_env(:baudrate, RealIp, header: "x-forwarded-for")
+
+      socket =
+        fake_socket(%{
+          peer_data: %{address: {10, 0, 0, 5}}
+        })
+
+      assert BaudrateWeb.Helpers.extract_peer_ip(socket) == "10.0.0.5"
+    end
+
+    test "returns unknown when neither source is available" do
+      Application.delete_env(:baudrate, RealIp)
+
+      socket = fake_socket(%{})
+
+      assert BaudrateWeb.Helpers.extract_peer_ip(socket) == "unknown"
+    end
+  end
 end
