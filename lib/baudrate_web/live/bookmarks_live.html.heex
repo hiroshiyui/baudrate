@@ -35,6 +35,12 @@
               <span :if={bookmark.article.user}>
                 {gettext("by")} {display_name(bookmark.article.user)}
               </span>
+              <span :if={bookmark.article.remote_actor}>
+                {gettext("by")}
+                <span class="font-semibold">
+                  {display_name(bookmark.article.remote_actor)}<span class="text-base-content/50">@{bookmark.article.remote_actor.domain}</span>
+                </span>
+              </span>
               <span :if={bookmark.article.boards != []}>&middot;</span>
               <span :for={board <- bookmark.article.boards || []}>
                 {board.name}
@@ -63,6 +69,12 @@
             <div class="flex items-center gap-2 text-sm text-base-content/70 mt-1">
               <span :if={bookmark.comment.user}>
                 {gettext("by")} {display_name(bookmark.comment.user)}
+              </span>
+              <span :if={bookmark.comment.remote_actor}>
+                {gettext("by")}
+                <span class="font-semibold">
+                  {display_name(bookmark.comment.remote_actor)}<span class="text-base-content/50">@{bookmark.comment.remote_actor.domain}</span>
+                </span>
               </span>
               <span>&middot;</span>
               <time datetime={datetime_attr(bookmark.inserted_at)}>

@@ -282,6 +282,13 @@
           <span :if={article.user}>
             {gettext("by %{author}", author: display_name(article.user))} &middot;
           </span>
+          <span :if={article.remote_actor} class="inline-flex items-center gap-1">
+            {gettext("by")}
+            <span class="font-semibold">
+              {display_name(article.remote_actor)}<span class="text-base-content/50">@{article.remote_actor.domain}</span>
+            </span>
+            &middot;
+          </span>
           <time datetime={datetime_attr(article.inserted_at)}>
             {format_datetime(article.inserted_at)}
           </time>
