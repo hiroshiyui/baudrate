@@ -21,12 +21,12 @@
     data-draft-indicator="#draft-indicator-edit"
     data-draft-saved-text={gettext("Draft saved")}
     data-draft-restored-text={gettext("Draft restored")}
-    class="space-y-4"
+    class="space-y-6"
   >
     <.input
       field={@form[:title]}
       label={gettext("Title")}
-      label_class="text-lg"
+      label_class="text-lg font-semibold"
       required
     />
 
@@ -34,14 +34,14 @@
       field={@form[:body]}
       type="textarea"
       label={gettext("Body")}
-      label_class="text-lg"
+      label_class="text-lg font-semibold"
       toolbar
       required
     />
 
     <%!-- Image Upload Section --%>
     <div id="article-images-section" class="fieldset">
-      <span class="label mb-1 text-lg">{gettext("Images")}</span>
+      <span class="label mb-1 text-lg font-semibold">{gettext("Images")}</span>
       <p class="text-sm text-base-content/70 mb-2">
         {gettext("Max %{count} images, %{size} MB each. Images displayed at the end of article.",
           count: 4,
@@ -112,7 +112,7 @@
     </div>
 
     <div :if={@article.boards != []} class="fieldset mb-2">
-      <span class="label mb-1 text-lg">{gettext("Board")}</span>
+      <span class="label mb-1 text-lg font-semibold">{gettext("Board")}</span>
       <div class="flex flex-wrap gap-2">
         <span :for={board <- @article.boards} class="badge badge-outline gap-1">
           {board.name}
@@ -133,7 +133,7 @@
       field={@form[:forwardable]}
       type="checkbox"
       label={gettext("Allow forwarding")}
-      label_class="text-lg"
+      label_class="text-lg font-semibold"
     />
 
     <div class="flex items-center gap-3">
