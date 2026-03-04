@@ -210,21 +210,16 @@ defmodule Baudrate.ContentPollTest do
       voter = create_user()
       board = create_board()
 
-      past = DateTime.utc_now() |> DateTime.add(1, :second)
+      {:ok, %{poll: poll}} = create_article_with_poll(user, board)
 
-      poll_attrs = %{
-        mode: "single",
-        closes_at: past,
-        options: [
-          %{text: "A", position: 0},
-          %{text: "B", position: 1}
-        ]
-      }
+      # Backdate closes_at to the past instead of waiting real time
+      past = DateTime.utc_now() |> DateTime.add(-60, :second) |> DateTime.truncate(:second)
 
-      {:ok, %{poll: poll}} = create_article_with_poll(user, board, poll_attrs)
+      import Ecto.Query
+      from(p in Baudrate.Content.Poll, where: p.id == ^poll.id)
+      |> Repo.update_all(set: [closes_at: past])
 
-      # Wait for the poll to close
-      Process.sleep(1100)
+      poll = %{poll | closes_at: past}
 
       option = List.first(poll.options)
       assert {:error, :poll_closed} = Content.cast_vote(poll, voter, [option.id])

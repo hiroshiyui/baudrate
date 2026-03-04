@@ -48,8 +48,8 @@ defmodule Baudrate.Federation.DeliveryWorkerTest do
       # Trigger a poll manually
       send(Process.whereis(DeliveryWorker), :poll)
 
-      # Give it time to process
-      Process.sleep(200)
+      # Block until the GenServer finishes processing the :poll message
+      :sys.get_state(DeliveryWorker)
 
       # The job should have been attempted (will fail since inbox is fake,
       # but status should change from pending)
@@ -75,7 +75,7 @@ defmodule Baudrate.Federation.DeliveryWorkerTest do
 
       # Trigger a poll
       send(Process.whereis(DeliveryWorker), :poll)
-      Process.sleep(200)
+      :sys.get_state(DeliveryWorker)
 
       # Job should not have been touched
       updated = Repo.get!(DeliveryJob, job.id)
@@ -96,7 +96,7 @@ defmodule Baudrate.Federation.DeliveryWorkerTest do
         |> Repo.insert()
 
       send(Process.whereis(DeliveryWorker), :poll)
-      Process.sleep(200)
+      :sys.get_state(DeliveryWorker)
 
       updated = Repo.get!(DeliveryJob, job.id)
       assert updated.status == "delivered"
@@ -116,7 +116,7 @@ defmodule Baudrate.Federation.DeliveryWorkerTest do
         |> Repo.insert()
 
       send(Process.whereis(DeliveryWorker), :poll)
-      Process.sleep(200)
+      :sys.get_state(DeliveryWorker)
 
       updated = Repo.get!(DeliveryJob, job.id)
       assert updated.status == "abandoned"

@@ -74,6 +74,14 @@ defmodule Baudrate.Federation.InboxHandlerTest do
   end
 
   describe "Follow" do
+    setup do
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 202, "Accepted")
+      end)
+
+      :ok
+    end
+
     test "creates a follower record" do
       user = setup_user_with_role("user")
       {:ok, user} = KeyStore.ensure_user_keypair(user)
@@ -89,9 +97,6 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       }
 
       assert :ok = InboxHandler.handle(activity, remote_actor, {:user, user})
-
-      # Give async Accept delivery task time to not interfere
-      Process.sleep(50)
 
       # Verify follower was created
       assert Federation.follower_exists?(actor_uri, remote_actor.ap_id)
@@ -112,7 +117,6 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       }
 
       assert :ok = InboxHandler.handle(activity, remote_actor, {:user, user})
-      Process.sleep(50)
 
       # Second follow with different activity_id
       activity2 =
@@ -123,7 +127,6 @@ defmodule Baudrate.Federation.InboxHandlerTest do
         )
 
       assert :ok = InboxHandler.handle(activity2, remote_actor, {:user, user})
-      Process.sleep(50)
 
       # Still exactly 1 follower
       assert Federation.count_followers(actor_uri) == 1
@@ -131,6 +134,14 @@ defmodule Baudrate.Federation.InboxHandlerTest do
   end
 
   describe "Undo(Follow)" do
+    setup do
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 202, "Accepted")
+      end)
+
+      :ok
+    end
+
     test "removes follower record" do
       user = setup_user_with_role("user")
       {:ok, user} = KeyStore.ensure_user_keypair(user)
@@ -146,7 +157,6 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       }
 
       assert :ok = InboxHandler.handle(follow_activity, remote_actor, {:user, user})
-      Process.sleep(50)
       assert Federation.follower_exists?(actor_uri, remote_actor.ap_id)
 
       # Now undo the follow
@@ -1357,6 +1367,14 @@ defmodule Baudrate.Federation.InboxHandlerTest do
   end
 
   describe "Delete(actor)" do
+    setup do
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 202, "Accepted")
+      end)
+
+      :ok
+    end
+
     test "removes all follower records for the deleted actor" do
       user = setup_user_with_role("user")
       {:ok, user} = KeyStore.ensure_user_keypair(user)
@@ -1373,7 +1391,6 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       }
 
       assert :ok = InboxHandler.handle(follow_activity, remote_actor, {:user, user})
-      Process.sleep(50)
       assert Federation.follower_exists?(actor_uri, remote_actor.ap_id)
 
       # Delete the actor (object == actor_uri)

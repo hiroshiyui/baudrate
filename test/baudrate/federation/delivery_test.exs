@@ -241,10 +241,8 @@ defmodule Baudrate.Federation.DeliveryTest do
           [board.id]
         )
 
-      # Wait for auto-triggered delivery
-      Process.sleep(100)
-
-      # Clear auto-created jobs to test enqueue_for_article directly
+      # Clear auto-created jobs (federation runs synchronously in test)
+      # to test enqueue_for_article directly
       Repo.delete_all(DeliveryJob)
 
       article = Repo.preload(article, [:boards, :user])
@@ -278,7 +276,6 @@ defmodule Baudrate.Federation.DeliveryTest do
           [board.id]
         )
 
-      Process.sleep(100)
       Repo.delete_all(DeliveryJob)
 
       article = Repo.preload(article, [:boards, :user])
@@ -316,7 +313,6 @@ defmodule Baudrate.Federation.DeliveryTest do
           [private_board.id]
         )
 
-      Process.sleep(100)
       Repo.delete_all(DeliveryJob)
 
       article = Repo.preload(article, [:boards, :user])

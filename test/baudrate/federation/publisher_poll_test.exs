@@ -56,7 +56,6 @@ defmodule Baudrate.Federation.PublisherPollTest do
         }
       )
 
-    Process.sleep(50)
     Repo.preload(article, [:boards, :user, poll: :options])
   end
 
@@ -100,7 +99,6 @@ defmodule Baudrate.Federation.PublisherPollTest do
           }
         )
 
-      Process.sleep(50)
       article = Repo.preload(article, [:boards, :user, poll: :options])
       object = Federation.article_object(article)
 
@@ -130,7 +128,6 @@ defmodule Baudrate.Federation.PublisherPollTest do
           }
         )
 
-      Process.sleep(50)
       article = Repo.preload(article, [:boards, :user, poll: :options])
       object = Federation.article_object(article)
 
@@ -149,7 +146,6 @@ defmodule Baudrate.Federation.PublisherPollTest do
           [board.id]
         )
 
-      Process.sleep(50)
       article = Repo.preload(article, [:boards, :user, poll: :options])
       object = Federation.article_object(article)
 

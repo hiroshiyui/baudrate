@@ -1013,20 +1013,19 @@ defmodule Baudrate.Federation.InboxHandler do
   defp resolve_target_uri(_, _), do: nil
 
   defp send_accept_async(follow_activity, actor_uri, remote_actor) do
-    Task.Supervisor.start_child(
-      Baudrate.Federation.TaskSupervisor,
-      fn ->
-        case Delivery.send_accept(follow_activity, actor_uri, remote_actor) do
-          {:ok, _} ->
-            Logger.info("federation.accept_sent: to=#{remote_actor.inbox}")
+    fun = fn ->
+      case Delivery.send_accept(follow_activity, actor_uri, remote_actor) do
+        {:ok, _} ->
+          Logger.info("federation.accept_sent: to=#{remote_actor.inbox}")
 
-          {:error, reason} ->
-            Logger.warning(
-              "federation.accept_failed: to=#{remote_actor.inbox} reason=#{inspect(reason)}"
-            )
-        end
+        {:error, reason} ->
+          Logger.warning(
+            "federation.accept_failed: to=#{remote_actor.inbox} reason=#{inspect(reason)}"
+          )
       end
-    )
+    end
+
+    Baudrate.Federation.schedule_federation_task(fun)
   end
 
   # --- Validation helpers ---
