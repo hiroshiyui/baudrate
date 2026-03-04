@@ -334,6 +334,7 @@ abandoned jobs from the admin federation dashboard (`/admin/federation`).
 - Clock skew causing signature rejection (fix NTP)
 - Domain is blocked by the remote instance
 - DNS resolution failure
+- Board follow 422 errors — check delivery job `last_error` for the response body (includes remote server's rejection reason since v1.1.17)
 
 ### Federation kill switch
 

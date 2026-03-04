@@ -1060,6 +1060,8 @@ The `Baudrate.Federation` context handles all federation logic.
 - Outbound Article objects include `tag` array with `Hashtag` objects (extracted from body, code blocks excluded)
 - Cross-post deduplication: same remote article arriving via multiple board inboxes links to all boards
 - Forwarding an article to a board sends `Create(Article)` to board followers and `Announce` from the board actor (works for both boardless and cross-board forwarding)
+- Board WebFinger uses bare slug in `subject` (no `!` prefix) matching Mastodon's expectation from `preferredUsername`; includes `properties` with `type: "Group"` for Lemmy disambiguation; `!` prefix accepted in queries for backward compat
+- Federation HTTP errors include response body (truncated to 4 KB) for diagnostics — delivery failures log the body
 
 **Admin controls:** See the [SysOp Guide](sysop.md#federation) for federation
 administration (kill switch, federation modes, domain blocklist/allowlist,

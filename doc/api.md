@@ -93,7 +93,7 @@ GET /.well-known/webfinger?resource=acct:alice@example.com
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `resource` | Yes | `acct:username@host` for users, `acct:!slug@host` for boards (Lemmy-compatible `!` prefix) |
+| `resource` | Yes | `acct:username@host` for users, `acct:slug@host` for boards (also accepts `acct:!slug@host` with Lemmy-compatible `!` prefix) |
 
 **Example response:**
 
@@ -123,9 +123,34 @@ GET /.well-known/webfinger?resource=acct:alice@example.com
 | 400 | Missing `resource` parameter or invalid format |
 | 404 | User/board not found, or board is private (`min_role_to_view != "guest"`) |
 
+**Board WebFinger example:**
+
+```
+GET /.well-known/webfinger?resource=acct:general@example.com
+```
+
+```json
+{
+  "subject": "acct:general@example.com",
+  "aliases": ["https://example.com/ap/boards/general"],
+  "links": [
+    {
+      "rel": "self",
+      "type": "application/activity+json",
+      "href": "https://example.com/ap/boards/general"
+    }
+  ],
+  "properties": {
+    "https://www.w3.org/ns/activitystreams#type": "Group"
+  }
+}
+```
+
 **Notes:**
-- Only public boards (`min_role_to_view == "guest"` and `ap_enabled == true`) are discoverable
-- Board resources use the `!` prefix convention: `acct:!general@example.com`
+- Only federated boards (`min_role_to_view == "guest"` and `ap_enabled == true`) are discoverable
+- Board WebFinger uses the bare slug in `subject` (matching `preferredUsername`) for Mastodon compatibility
+- The `properties` field with `type: "Group"` follows the Lemmy convention for actor type disambiguation
+- Queries with `!` prefix (`acct:!general@example.com`) are accepted for Lemmy backward compatibility
 
 ---
 
@@ -863,7 +888,7 @@ software:
 - **Content warnings** — `sensitive: true` + `summary` fields are prepended as `[CW: summary]` to the body
 - **Lemmy `Page` objects** — Treated identically to `Article` for `Create` and `Update`
 - **Lemmy `Announce` with embedded objects** — Extracts the inner `id` field (not just bare URIs)
-- **Lemmy WebFinger boards** — `acct:!slug@host` format with `!` prefix
+- **Board WebFinger** — Uses bare slug in `subject` (matching `preferredUsername`) for Mastodon compatibility; includes `properties` with `type: "Group"` for Lemmy-compatible disambiguation; accepts `!` prefix in queries for backward compatibility
 - **Mastodon HTML classes** — `<span>` tags with safe classes (`h-card`, `hashtag`, `mention`, `invisible`) are preserved through the HTML sanitizer
 - **Cross-post deduplication** — The same remote article arriving via multiple board inboxes is linked to all boards (not duplicated)
 
