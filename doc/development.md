@@ -45,8 +45,21 @@ lib/
 │   │   ├── user_mute.ex         # UserMute schema (local-only soft-mute/ignore)
 │   │   └── user_session.ex      # Ecto schema for server-side sessions
 │   ├── avatar.ex                # Avatar image processing (crop, resize, WebP)
-│   ├── content.ex               # Content context: boards, articles, comments, likes, polls, user stats, revision tracking
+│   ├── content.ex               # Content context facade: defdelegate to focused sub-modules
 │   ├── content/
+│   │   ├── articles.ex          # Article CRUD, cross-posting, revisions, pin/lock
+│   │   ├── boards.ex            # Board CRUD, moderators, SysOp board seeding
+│   │   ├── bookmarks.ex         # Article and comment bookmark operations
+│   │   ├── comments.ex          # Comment CRUD, threading, activity timestamps
+│   │   ├── feed.ex              # Public feed queries, user content statistics
+│   │   ├── filters.ex           # Shared query helpers (block/mute, role visibility, LIKE sanitization)
+│   │   ├── images.ex            # Article image management
+│   │   ├── likes.ex             # Article and comment like operations
+│   │   ├── permissions.ex       # Board access checks, granular permissions, slug generation
+│   │   ├── polls.ex             # Poll creation, voting, counter management
+│   │   ├── read_tracking.ex     # Per-user article/board read state tracking
+│   │   ├── search.ex            # Full-text search across articles, comments, boards
+│   │   ├── tags.ex              # Hashtag extraction, syncing, and querying
 │   │   ├── article.ex           # Article schema (posts, local + remote, soft-delete)
 │   │   ├── article_image.ex     # ArticleImage schema (gallery images on articles)
 │   │   ├── article_read.ex      # ArticleRead schema (per-user article read tracking)
@@ -59,6 +72,7 @@ lib/
 │   │   ├── board_cache.ex       # ETS-backed cache for board lookups (GenServer + :ets.lookup)
 │   │   ├── board_article.ex     # Join table: board ↔ article
 │   │   ├── board_moderator.ex   # Join table: board ↔ moderator
+│   │   ├── bookmark.ex          # Bookmark schema (article + comment bookmarks)
 │   │   ├── comment_like.ex      # CommentLike schema (local + remote likes on comments)
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
 │   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark + Ammonia NIF + hashtag/mention linkification + mention extraction)
@@ -574,6 +588,29 @@ Key modules:
 - `Content.ArticleTag` — schema (`article_tags` table)
 - `Content.Markdown` — rendering pipeline (Earmark → Ammonia → linkification)
 - `TagLive` — `/tags/:tag` browse page
+
+### Content Architecture
+
+The `Baudrate.Content` module is a **facade** — it delegates all calls to
+focused sub-modules under `Baudrate.Content.*`. External callers (LiveViews,
+controllers, federation handlers, tests) always call `Content.function_name`
+and never need to know about the internal split.
+
+| Sub-Module | Responsibility |
+|---|---|
+| `Content.Filters` | Shared query helpers (block/mute filters, role visibility, LIKE sanitization, CJK detection) |
+| `Content.Boards` | Board CRUD, board cache integration, federation toggle, board moderator assignments, SysOp board |
+| `Content.Permissions` | Board access checks, granular article/comment permissions, slug generation |
+| `Content.Articles` | Article CRUD (local + remote), cross-posting, revisions, pin/lock |
+| `Content.Comments` | Comment CRUD (local + remote), threaded listing, article activity timestamps |
+| `Content.Likes` | Article and comment likes (local + remote), toggle, counts |
+| `Content.Bookmarks` | Article and comment bookmarks, toggle, paginated listing |
+| `Content.Images` | Article image creation, association, cleanup |
+| `Content.Tags` | Hashtag extraction from article bodies, tag syncing, tag-based browsing |
+| `Content.Search` | Full-text search across articles, comments, and boards (FTS + CJK ILIKE + operators) |
+| `Content.Feed` | Public feed listings, per-user article/comment queries, content statistics |
+| `Content.ReadTracking` | Per-user article/board read state, unread indicators |
+| `Content.Polls` | Poll creation, voting (local + remote), denormalized counter management |
 
 ### Content Model
 
