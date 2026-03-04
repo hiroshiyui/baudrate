@@ -1,6 +1,8 @@
 defmodule BaudrateWeb.ActivityPubControllerTest do
   use BaudrateWeb.ConnCase
 
+  import Ecto.Query
+
   alias Baudrate.Repo
   alias Baudrate.Setup.Setting
 
@@ -48,6 +50,58 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       body = json_response(conn, 200)
 
       assert body["subject"] =~ board.slug
+    end
+
+    test "resolves board acct resource without ! prefix (Mastodon compat)", %{conn: conn} do
+      _board = setup_board(%{slug: "my-board"})
+      host = URI.parse(BaudrateWeb.Endpoint.url()).host
+
+      conn =
+        conn |> json_conn() |> get("/.well-known/webfinger?resource=acct:my-board@#{host}")
+
+      body = json_response(conn, 200)
+
+      assert body["subject"] =~ "!my-board"
+      assert [%{"rel" => "self", "href" => href}] = body["links"]
+      assert href =~ "/ap/boards/my-board"
+    end
+
+    test "bare name resolves user before board", %{conn: conn} do
+      # Use a name valid as both username and board slug (no underscores, no hyphens)
+      shared_name = "sharedname#{System.unique_integer([:positive])}"
+      host = URI.parse(BaudrateWeb.Endpoint.url()).host
+
+      alias Baudrate.Setup
+      alias Baudrate.Setup.{Role, User}
+
+      unless Repo.exists?(from(r in Role, where: r.name == "admin")) do
+        Setup.seed_roles_and_permissions()
+      end
+
+      role = Repo.one!(from(r in Role, where: r.name == "user"))
+
+      {:ok, _user} =
+        %User{}
+        |> User.registration_changeset(%{
+          "username" => shared_name,
+          "password" => "Password123!x",
+          "password_confirmation" => "Password123!x",
+          "role_id" => role.id
+        })
+        |> Repo.insert()
+
+      setup_board(%{slug: shared_name})
+
+      conn =
+        conn
+        |> json_conn()
+        |> get("/.well-known/webfinger?resource=acct:#{shared_name}@#{host}")
+
+      body = json_response(conn, 200)
+
+      # Should resolve as user, not board
+      assert [%{"href" => href}] = body["links"]
+      assert href =~ "/ap/users/#{shared_name}"
     end
 
     test "returns 404 for non-existent user", %{conn: conn} do
@@ -198,6 +252,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       assert body["preferredUsername"] == user.username
       assert body["publicKey"]["publicKeyPem"] =~ "BEGIN PUBLIC KEY"
       assert body["published"]
+      assert get_resp_header(conn, "cache-control") == ["no-store"]
     end
 
     test "returns Person JSON-LD for ld+json accept header", %{conn: conn} do
@@ -245,6 +300,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       assert body["preferredUsername"] == board.slug
       assert body["name"] == board.name
       assert body["publicKey"]["publicKeyPem"] =~ "BEGIN PUBLIC KEY"
+      assert get_resp_header(conn, "cache-control") == ["no-store"]
     end
 
     test "redirects to board HTML page for browser accept header", %{conn: conn} do
@@ -272,6 +328,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       assert body["type"] == "Organization"
       assert body["name"] == "Test Forum"
       assert body["publicKey"]["publicKeyPem"] =~ "BEGIN PUBLIC KEY"
+      assert get_resp_header(conn, "cache-control") == ["no-store"]
     end
 
     test "redirects to home for browser accept header", %{conn: conn} do
@@ -833,16 +890,18 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
   # --- Test Helpers ---
 
-  defp setup_board do
+  defp setup_board(attrs \\ %{}) do
     alias Baudrate.Content.Board
+
+    default = %{
+      name: "AP Test Board",
+      slug: "ap-test-#{System.unique_integer([:positive])}",
+      description: "ActivityPub test board"
+    }
 
     {:ok, board} =
       %Board{}
-      |> Board.changeset(%{
-        name: "AP Test Board",
-        slug: "ap-test-#{System.unique_integer([:positive])}",
-        description: "ActivityPub test board"
-      })
+      |> Board.changeset(Map.merge(default, attrs))
       |> Repo.insert()
 
     board

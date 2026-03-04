@@ -110,7 +110,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
   @doc "Returns the ActivityPub Person actor for a user, or redirects to home for HTML requests."
   def user_actor(conn, %{"username" => username}) do
-    conn = put_resp_header(conn, "vary", "Accept")
+    conn = conn |> put_resp_header("vary", "Accept") |> no_store()
 
     if wants_json?(conn) do
       with true <- Regex.match?(@username_re, username),
@@ -130,7 +130,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
   @doc "Returns the ActivityPub Group actor for a public AP-enabled board."
   def board_actor(conn, %{"slug" => slug}) do
-    conn = put_resp_header(conn, "vary", "Accept")
+    conn = conn |> put_resp_header("vary", "Accept") |> no_store()
 
     if wants_json?(conn) do
       with true <- Regex.match?(@slug_re, slug),
@@ -151,7 +151,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
   @doc "Returns the ActivityPub Organization actor representing the site."
   def site_actor(conn, _params) do
-    conn = put_resp_header(conn, "vary", "Accept")
+    conn = conn |> put_resp_header("vary", "Accept") |> no_store()
 
     if wants_json?(conn) do
       conn
@@ -401,4 +401,8 @@ defmodule BaudrateWeb.ActivityPubController do
       String.contains?(accept, "application/ld+json") or
       String.contains?(accept, "application/json")
   end
+
+  # Prevent CDN/proxy caching of actor endpoints — cached 404s or HTML
+  # redirects would break remote signature verification.
+  defp no_store(conn), do: put_resp_header(conn, "cache-control", "no-store")
 end
