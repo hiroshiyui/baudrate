@@ -151,7 +151,16 @@ defmodule Baudrate.Federation.Delivery do
         {:error, reason} ->
           duration = System.monotonic_time() - start_time
           error_msg = inspect(reason)
-          Logger.warning("federation.delivery_fail: inbox=#{job.inbox_url} error=#{error_msg}")
+
+          case reason do
+            {:http_error, status, body} when body != "" ->
+              Logger.warning(
+                "federation.delivery_fail: inbox=#{job.inbox_url} status=#{status} body=#{String.slice(body, 0, 500)}"
+              )
+
+            _ ->
+              Logger.warning("federation.delivery_fail: inbox=#{job.inbox_url} error=#{error_msg}")
+          end
 
           :telemetry.execute(
             [:baudrate, :federation, :delivery, :stop],

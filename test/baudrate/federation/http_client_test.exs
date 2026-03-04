@@ -47,7 +47,7 @@ defmodule Baudrate.Federation.HTTPClientTest do
         Plug.Conn.send_resp(conn, 404, "Not Found")
       end)
 
-      assert {:error, {:http_error, 404}} =
+      assert {:error, {:http_error, 404, "Not Found"}} =
                HTTPClient.get("https://remote.example/users/missing")
     end
 
@@ -56,7 +56,7 @@ defmodule Baudrate.Federation.HTTPClientTest do
         Plug.Conn.send_resp(conn, 500, "Internal Server Error")
       end)
 
-      assert {:error, {:http_error, 500}} =
+      assert {:error, {:http_error, 500, "Internal Server Error"}} =
                HTTPClient.get("https://remote.example/users/error")
     end
 
@@ -166,7 +166,7 @@ defmodule Baudrate.Federation.HTTPClientTest do
         Plug.Conn.send_resp(conn, 301, "")
       end)
 
-      assert {:error, {:http_error, 301}} =
+      assert {:error, {:http_error, 301, ""}} =
                HTTPClient.get("https://remote.example/users/alice")
     end
   end
@@ -186,7 +186,7 @@ defmodule Baudrate.Federation.HTTPClientTest do
         Plug.Conn.send_resp(conn, 401, "Unauthorized")
       end)
 
-      assert {:error, {:http_error, 401}} =
+      assert {:error, {:http_error, 401, "Unauthorized"}} =
                HTTPClient.post("https://remote.example/inbox", "{}")
     end
   end

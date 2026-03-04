@@ -65,7 +65,7 @@ defmodule Baudrate.Federation.ActorResolver do
         {:ok, %{body: body}} ->
           parse_and_upsert(body, actor_ap_id)
 
-        {:error, {:http_error, 401}} ->
+        {:error, {:http_error, 401, _}} ->
           # Remote requires authorized fetch — retry with signed request
           signed_fetch(actor_ap_id)
 

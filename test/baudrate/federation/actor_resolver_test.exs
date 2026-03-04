@@ -221,7 +221,7 @@ defmodule Baudrate.Federation.ActorResolverTest do
         Plug.Conn.send_resp(conn, 401, "Unauthorized")
       end)
 
-      assert {:error, {:http_error, 401}} =
+      assert {:error, {:http_error, 401, _}} =
                ActorResolver.resolve("https://remote.example/users/always-401")
     end
 

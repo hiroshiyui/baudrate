@@ -23,6 +23,11 @@ defmodule Baudrate.Federation.HTTPClient do
   Automatic redirects are disabled (`max_redirects: 0`). Redirects are
   followed manually in a loop, with each redirect destination validated
   against the SSRF rules (scheme, host, DNS, private IP) before connecting.
+
+  ## Error Format
+
+  Non-2xx responses return `{:error, {:http_error, status, body}}` where
+  `body` is the response body truncated to 4 KB for diagnostic logging.
   """
 
   require Logger
@@ -37,6 +42,10 @@ defmodule Baudrate.Federation.HTTPClient do
 
   DNS is resolved once and pinned to the connection. Redirects are followed
   manually with full SSRF validation at each hop.
+
+  Returns `{:ok, %{status: status, body: body}}` on success (2xx), or
+  `{:error, {:http_error, status, body}}` on non-2xx responses (body
+  truncated to 4 KB for diagnostics).
   """
   def get(url, opts \\ []) do
     config = federation_config()
@@ -71,11 +80,11 @@ defmodule Baudrate.Federation.HTTPClient do
         when status in [301, 302, 303, 307, 308] ->
           case get_redirect_location(resp_headers, resolved.uri) do
             {:ok, location} -> do_get(location, headers, config, remaining - 1)
-            :error -> {:error, {:http_error, status}}
+            :error -> {:error, {:http_error, status, ""}}
           end
 
-        {:ok, %Req.Response{status: status}} ->
-          {:error, {:http_error, status}}
+        {:ok, %Req.Response{status: status, body: resp_body}} ->
+          {:error, {:http_error, status, truncate_body(resp_body)}}
 
         {:error, reason} ->
           {:error, {:request_failed, reason}}
@@ -88,6 +97,10 @@ defmodule Baudrate.Federation.HTTPClient do
 
   DNS is resolved once and pinned to the connection. Redirects are not
   followed for POST requests.
+
+  Returns `{:ok, %{status: status, body: body}}` on success (2xx), or
+  `{:error, {:http_error, status, body}}` on non-2xx responses (body
+  truncated to 4 KB for diagnostics).
   """
   def post(url, body, headers \\ [], _opts \\ []) do
     with {:ok, resolved} <- validate_and_resolve(url) do
@@ -107,8 +120,8 @@ defmodule Baudrate.Federation.HTTPClient do
         {:ok, %Req.Response{status: status, body: resp_body}} when status in 200..299 ->
           {:ok, %{status: status, body: resp_body}}
 
-        {:ok, %Req.Response{status: status}} ->
-          {:error, {:http_error, status}}
+        {:ok, %Req.Response{status: status, body: resp_body}} ->
+          {:error, {:http_error, status, truncate_body(resp_body)}}
 
         {:error, reason} ->
           {:error, {:request_failed, reason}}
@@ -274,6 +287,9 @@ defmodule Baudrate.Federation.HTTPClient do
   end
 
   def private_ip?(_), do: false
+
+  defp truncate_body(body) when is_binary(body), do: String.slice(body, 0, 4096)
+  defp truncate_body(body), do: body |> inspect() |> String.slice(0, 4096)
 
   defp user_agent do
     "Baudrate/0.1.0 (+#{BaudrateWeb.Endpoint.url()})"
