@@ -33,7 +33,7 @@ defmodule BaudrateWeb.Layouts do
     ~H"""
     <header
       id="site-header"
-      class="navbar sticky top-0 z-50 bg-base-200 border-b border-base-300 px-4 sm:px-6 lg:px-8"
+      class="navbar sticky top-0 z-50 bg-base-200 border-b-2 border-base-300 px-4 sm:px-6 lg:px-8"
     >
       <%!-- Mobile hamburger (shown < lg, authenticated users only — guest nav is in bottom dock) --%>
       <div :if={@current_user} id="mobile-nav-trigger" class="flex-none lg:hidden">
@@ -430,7 +430,7 @@ defmodule BaudrateWeb.Layouts do
 
   defp mobile_bottom_nav(assigns) do
     ~H"""
-    <nav id="mobile-bottom-nav" aria-label={gettext("Mobile navigation")} class="dock lg:hidden z-50 bg-base-200 border-t border-base-300">
+    <nav id="mobile-bottom-nav" aria-label={gettext("Mobile navigation")} class="dock lg:hidden z-50 bg-base-200 border-t-2 border-base-300">
       <%= if @current_user do %>
         <.link
           navigate="/"
