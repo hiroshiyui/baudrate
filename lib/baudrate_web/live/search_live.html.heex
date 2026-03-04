@@ -284,7 +284,20 @@
           </span>
           <span :if={article.remote_actor} class="inline-flex items-center gap-1">
             {gettext("by")}
-            <span class="font-semibold">
+            <span class="inline-flex items-center gap-1 font-semibold">
+              <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
+                <img
+                  :if={article.remote_actor.avatar_url}
+                  src={article.remote_actor.avatar_url}
+                  alt={display_name(article.remote_actor)}
+                  class="w-6 h-6 rounded-full"
+                />
+                <.icon
+                  :if={!article.remote_actor.avatar_url}
+                  name="hero-user-circle"
+                  class="size-5 opacity-50"
+                />
+              </span>
               {display_name(article.remote_actor)}<span class="text-base-content/50">@{article.remote_actor.domain}</span>
             </span>
             &middot;
@@ -326,7 +339,20 @@
           <span :if={comment.user}>
             {gettext("by %{author}", author: display_name(comment.user))} &middot;
           </span>
-          <span :if={comment.remote_actor}>
+          <span :if={comment.remote_actor} class="inline-flex items-center gap-1">
+            <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
+              <img
+                :if={comment.remote_actor.avatar_url}
+                src={comment.remote_actor.avatar_url}
+                alt={display_name(comment.remote_actor)}
+                class="w-6 h-6 rounded-full"
+              />
+              <.icon
+                :if={!comment.remote_actor.avatar_url}
+                name="hero-user-circle"
+                class="size-5 opacity-50"
+              />
+            </span>
             {display_name(comment.remote_actor)} &middot;
           </span>
           <time datetime={datetime_attr(comment.inserted_at)}>

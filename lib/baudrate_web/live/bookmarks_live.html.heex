@@ -35,9 +35,22 @@
               <span :if={bookmark.article.user}>
                 {gettext("by")} {display_name(bookmark.article.user)}
               </span>
-              <span :if={bookmark.article.remote_actor}>
+              <span :if={bookmark.article.remote_actor} class="inline-flex items-center gap-1">
                 {gettext("by")}
-                <span class="font-semibold">
+                <span class="inline-flex items-center gap-1 font-semibold">
+                  <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
+                    <img
+                      :if={bookmark.article.remote_actor.avatar_url}
+                      src={bookmark.article.remote_actor.avatar_url}
+                      alt={display_name(bookmark.article.remote_actor)}
+                      class="w-6 h-6 rounded-full"
+                    />
+                    <.icon
+                      :if={!bookmark.article.remote_actor.avatar_url}
+                      name="hero-user-circle"
+                      class="size-5 opacity-50"
+                    />
+                  </span>
                   {display_name(bookmark.article.remote_actor)}<span class="text-base-content/50">@{bookmark.article.remote_actor.domain}</span>
                 </span>
               </span>
@@ -70,9 +83,22 @@
               <span :if={bookmark.comment.user}>
                 {gettext("by")} {display_name(bookmark.comment.user)}
               </span>
-              <span :if={bookmark.comment.remote_actor}>
+              <span :if={bookmark.comment.remote_actor} class="inline-flex items-center gap-1">
                 {gettext("by")}
-                <span class="font-semibold">
+                <span class="inline-flex items-center gap-1 font-semibold">
+                  <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
+                    <img
+                      :if={bookmark.comment.remote_actor.avatar_url}
+                      src={bookmark.comment.remote_actor.avatar_url}
+                      alt={display_name(bookmark.comment.remote_actor)}
+                      class="w-6 h-6 rounded-full"
+                    />
+                    <.icon
+                      :if={!bookmark.comment.remote_actor.avatar_url}
+                      name="hero-user-circle"
+                      class="size-5 opacity-50"
+                    />
+                  </span>
                   {display_name(bookmark.comment.remote_actor)}<span class="text-base-content/50">@{bookmark.comment.remote_actor.domain}</span>
                 </span>
               </span>
