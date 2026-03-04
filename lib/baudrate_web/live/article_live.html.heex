@@ -193,62 +193,6 @@
     </div>
 
     <div id="article-actions" class="flex gap-2 flex-wrap justify-end mt-4">
-      <.link
-        :if={@can_edit}
-        navigate={~p"/articles/#{@article.slug}/edit"}
-        class="btn btn-sm btn-ghost"
-      >
-        <.icon name="hero-pencil-square" class="size-4" />
-        {gettext("Edit")}
-      </.link>
-      <button
-        :if={@can_delete}
-        phx-click="delete_article"
-        data-confirm={gettext("Are you sure you want to delete this article?")}
-        class="btn btn-sm btn-ghost text-error"
-      >
-        <.icon name="hero-trash" class="size-4" />
-        {gettext("Delete")}
-      </button>
-      <button
-        :if={@can_pin}
-        phx-click="toggle_pin"
-        class="btn btn-sm btn-ghost"
-      >
-        <.icon
-          name={if @article.pinned, do: "hero-bookmark-slash", else: "hero-bookmark"}
-          class="size-4"
-        />
-        {if @article.pinned, do: gettext("Unpin"), else: gettext("Pin")}
-      </button>
-      <button
-        :if={@can_lock}
-        phx-click="toggle_lock"
-        class="btn btn-sm btn-ghost"
-      >
-        <.icon
-          name={if @article.locked, do: "hero-lock-open", else: "hero-lock-closed"}
-          class="size-4"
-        />
-        {if @article.locked, do: gettext("Unlock"), else: gettext("Lock")}
-      </button>
-      <.link
-        :if={@revision_count > 0}
-        navigate={~p"/articles/#{@article.slug}/history"}
-        class="btn btn-sm btn-ghost"
-      >
-        <.icon name="hero-clock" class="size-4" />
-        {gettext("History")}
-        <span class="badge badge-sm">{@revision_count}</span>
-      </.link>
-      <button
-        :if={@can_forward && !@forward_search_open}
-        phx-click="toggle_forward_search"
-        class="btn btn-sm btn-ghost"
-      >
-        <.icon name="hero-arrow-right-circle" class="size-4" />
-        {gettext("Forward to Board")}
-      </button>
       <%!-- Like count (visible to all) + toggle (for non-authors) --%>
       <span
         :if={!@current_user || @article.user_id == @current_user.id}
@@ -284,7 +228,11 @@
         {if @bookmarked, do: gettext("Bookmarked"), else: gettext("Bookmark")}
       </button>
       <div
-        :if={@current_user && @article.user_id != @current_user.id}
+        :if={
+          @can_edit || @can_delete || @can_pin || @can_lock || @revision_count > 0 ||
+            (@can_forward && !@forward_search_open) ||
+            (@current_user != nil && @article.user_id != @current_user.id)
+        }
         class="dropdown dropdown-end"
       >
         <button
@@ -298,9 +246,53 @@
         </button>
         <ul
           tabindex="0"
-          class="dropdown-content menu bg-base-200 rounded-box z-10 w-48 p-2 shadow-sm"
+          class="dropdown-content menu bg-base-200 rounded-box z-10 w-52 p-2 shadow-sm"
         >
-          <li>
+          <li :if={@can_edit}>
+            <.link navigate={~p"/articles/#{@article.slug}/edit"}>
+              <.icon name="hero-pencil-square" class="size-4" />
+              {gettext("Edit")}
+            </.link>
+          </li>
+          <li :if={@revision_count > 0}>
+            <.link navigate={~p"/articles/#{@article.slug}/history"}>
+              <.icon name="hero-clock" class="size-4" />
+              {gettext("History")}
+              <span class="badge badge-sm">{@revision_count}</span>
+            </.link>
+          </li>
+          <li :if={@can_forward && !@forward_search_open}>
+            <button phx-click="toggle_forward_search">
+              <.icon name="hero-arrow-right-circle" class="size-4" />
+              {gettext("Forward to Board")}
+            </button>
+          </li>
+          <li :if={@can_pin}>
+            <button phx-click="toggle_pin">
+              <.icon
+                name={if @article.pinned, do: "hero-bookmark-slash", else: "hero-bookmark"}
+                class="size-4"
+              />
+              {if @article.pinned, do: gettext("Unpin"), else: gettext("Pin")}
+            </button>
+          </li>
+          <li :if={@can_lock}>
+            <button phx-click="toggle_lock">
+              <.icon
+                name={if @article.locked, do: "hero-lock-open", else: "hero-lock-closed"}
+                class="size-4"
+              />
+              {if @article.locked, do: gettext("Unlock"), else: gettext("Lock")}
+            </button>
+          </li>
+          <li
+            :if={
+              (@current_user != nil && @article.user_id != @current_user.id) || @can_delete
+            }
+            class="border-t border-base-300 my-1"
+          >
+          </li>
+          <li :if={@current_user && @article.user_id != @current_user.id}>
             <button
               phx-click="open_report_modal"
               phx-value-type="article"
@@ -309,6 +301,16 @@
             >
               <.icon name="hero-flag" class="size-4" />
               {gettext("Report")}
+            </button>
+          </li>
+          <li :if={@can_delete}>
+            <button
+              phx-click="delete_article"
+              data-confirm={gettext("Are you sure you want to delete this article?")}
+              class="text-error"
+            >
+              <.icon name="hero-trash" class="size-4" />
+              {gettext("Delete")}
             </button>
           </li>
         </ul>
