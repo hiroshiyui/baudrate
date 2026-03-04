@@ -278,13 +278,27 @@ defmodule Baudrate.Content do
 
   @doc """
   Toggles the `ap_enabled` flag on a board.
+
+  When enabling federation, also ensures the board has an RSA keypair
+  for HTTP Signature signing.
   """
   @spec toggle_board_federation(%Board{}) :: {:ok, %Board{}} | {:error, Ecto.Changeset.t()}
   def toggle_board_federation(%Board{} = board) do
+    enabling = !board.ap_enabled
+
     result =
-      board
-      |> Ecto.Changeset.change(ap_enabled: !board.ap_enabled)
-      |> Repo.update()
+      if enabling do
+        # Ensure keypair exists before enabling federation
+        with {:ok, board} <- Baudrate.Federation.KeyStore.ensure_board_keypair(board) do
+          board
+          |> Ecto.Changeset.change(ap_enabled: true)
+          |> Repo.update()
+        end
+      else
+        board
+        |> Ecto.Changeset.change(ap_enabled: false)
+        |> Repo.update()
+      end
 
     with {:ok, _} <- result, true <- board_cache_enabled?() do
       BoardCache.refresh()
