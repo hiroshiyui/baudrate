@@ -100,7 +100,13 @@
                 @{item.feed_item.remote_actor.username}@{item.feed_item.remote_actor.domain}
               </div>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex flex-col items-end flex-shrink-0">
+              <time
+                class="text-xs text-base-content/70"
+                datetime={DateTime.to_iso8601(item.feed_item.published_at)}
+              >
+                {format_datetime(item.feed_item.published_at)}
+              </time>
               <span class={[
                 "badge badge-xs",
                 item.feed_item.object_type == "Note" && "badge-info",
@@ -108,12 +114,6 @@
               ]}>
                 {item.feed_item.object_type}
               </span>
-              <time
-                class="text-xs text-base-content/70"
-                datetime={DateTime.to_iso8601(item.feed_item.published_at)}
-              >
-                {format_datetime(item.feed_item.published_at)}
-              </time>
             </div>
           </div>
 
@@ -221,17 +221,17 @@
                 {display_name(item.article.user)}
               </.link>
               <div class="text-xs text-base-content/60">
-                <span class="badge badge-info badge-xs">{gettext("Local")}</span>
+                <.icon name="hero-home-solid" class="size-3.5 text-gray-400" title={gettext("Local")} />
               </div>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
-              <span class="badge badge-xs badge-accent">{gettext("Article")}</span>
+            <div class="flex flex-col items-end flex-shrink-0">
               <time
                 class="text-xs text-base-content/70"
                 datetime={datetime_attr(item.article.inserted_at)}
               >
                 {format_datetime(item.article.inserted_at)}
               </time>
+              <span class="badge badge-xs badge-accent">{gettext("Article")}</span>
             </div>
           </div>
 
@@ -276,17 +276,17 @@
                 {display_name(item.comment.user)}
               </.link>
               <div class="text-xs text-base-content/60">
-                <span class="badge badge-info badge-xs">{gettext("Local")}</span>
+                <.icon name="hero-home-solid" class="size-3.5 text-gray-400" title={gettext("Local")} />
               </div>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
-              <span class="badge badge-xs badge-secondary">{gettext("Comment")}</span>
+            <div class="flex flex-col items-end flex-shrink-0">
               <time
                 class="text-xs text-base-content/70"
                 datetime={datetime_attr(item.comment.inserted_at)}
               >
                 {format_datetime(item.comment.inserted_at)}
               </time>
+              <span class="badge badge-xs badge-secondary">{gettext("Comment")}</span>
             </div>
           </div>
 
@@ -337,15 +337,17 @@
                 @{item.comment.remote_actor.username}@{item.comment.remote_actor.domain}
               </div>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
-              <span class="badge badge-xs badge-secondary">{gettext("Comment")}</span>
-              <span class="badge badge-xs badge-accent">{gettext("Fediverse")}</span>
+            <div class="flex flex-col items-end flex-shrink-0">
               <time
                 class="text-xs text-base-content/70"
                 datetime={datetime_attr(item.comment.inserted_at)}
               >
                 {format_datetime(item.comment.inserted_at)}
               </time>
+              <div class="flex gap-1">
+                <span class="badge badge-xs badge-secondary">{gettext("Comment")}</span>
+                <span class="badge badge-xs badge-accent">{gettext("Fediverse")}</span>
+              </div>
             </div>
           </div>
 
