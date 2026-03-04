@@ -4,10 +4,15 @@ defmodule BaudrateWeb.Router do
 
   ## Route Structure
 
-  Seven main scopes, each with different auth requirements:
+  Eight main scopes, each with different auth requirements:
 
     0. **Health** (`/health`) — API-only scope (no CSRF/session). Returns
        database connectivity status for load balancers and monitoring.
+
+    0b. **Share Target** (`/share`) — CSRF-exempt browser pipeline for PWA
+       Web Share Target. The OS sends a POST without a CSRF token when
+       sharing text from another app. Authenticates via session cookie and
+       redirects to `/articles/new` with pre-filled query params.
 
     1. **Public** (`/login`, `/setup`) — `live_session :public` with
        `:rate_limit_mount` and `:redirect_if_authenticated` hooks. `/setup`
@@ -98,6 +103,34 @@ defmodule BaudrateWeb.Router do
 
     post "/push-subscriptions", PushSubscriptionController, :create
     delete "/push-subscriptions", PushSubscriptionController, :delete
+  end
+
+  # Share target pipeline — identical to :browser but without CSRF protection.
+  # The OS POST from PWA Web Share Target has no CSRF token.
+  pipeline :share_target do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, html: {BaudrateWeb.Layouts, :root}
+
+    plug :put_secure_browser_headers, %{
+      "content-security-policy" =>
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self' blob: ws: wss:; worker-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
+      "permissions-policy" => "geolocation=(), microphone=(), camera=()",
+      "referrer-policy" => "strict-origin-when-cross-origin",
+      "x-frame-options" => "DENY"
+    }
+
+    plug BaudrateWeb.Plugs.SetLocale
+    plug BaudrateWeb.Plugs.EnsureSetup
+    plug BaudrateWeb.Plugs.SetTheme
+    plug BaudrateWeb.Plugs.RefreshSession
+  end
+
+  # PWA Web Share Target (CSRF-exempt, OS sends POST without token)
+  scope "/", BaudrateWeb do
+    pipe_through :share_target
+    post "/share", ShareTargetController, :create
   end
 
   pipeline :activity_pub do
