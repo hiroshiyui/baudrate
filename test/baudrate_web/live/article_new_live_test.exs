@@ -90,6 +90,32 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
     assert html =~ "draft-indicator-new"
   end
 
+  test "pre-fills form from share query params", %{conn: conn} do
+    {:ok, _lv, html} =
+      live(conn, "/articles/new?title=Shared+Title&text=Some+text&url=https://example.com")
+
+    assert html =~ "Shared Title"
+    assert html =~ "Some text"
+    assert html =~ "https://example.com"
+    assert html =~ "No board selected"
+  end
+
+  test "boardless article submission succeeds when from share", %{conn: conn} do
+    {:ok, lv, _html} = live(conn, "/articles/new?title=Shared+Article&text=Shared+body+content")
+
+    lv
+    |> form("form", article: %{title: "Shared Article", body: "Shared body content"})
+    |> render_submit()
+
+    {path, _flash} = assert_redirect(lv)
+    assert path =~ "/articles/"
+  end
+
+  test "share hint is not shown without share params", %{conn: conn} do
+    {:ok, _lv, html} = live(conn, "/articles/new")
+    refute html =~ "No board selected"
+  end
+
   test "redirects pending user away from article creation", %{conn: _conn} do
     {:ok, pending_user, _codes} =
       Baudrate.Auth.register_user(%{

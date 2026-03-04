@@ -10,6 +10,13 @@ defmodule BaudrateWeb.ArticleNewLive do
   media gallery at the end of the article. Images are processed to WebP,
   downscaled to max 1024px, and stripped of metadata.
 
+  ## PWA Web Share Target
+
+  When accessed with `?title=...&text=...&url=...` query params (from the
+  PWA Share Target flow), the form is pre-filled with the shared content.
+  In this mode, submitting without selecting a board is allowed — the
+  article is created as a personal (boardless) article.
+
   Requires the user to be active and have `user.create_content` permission.
   """
 
@@ -43,7 +50,15 @@ defmodule BaudrateWeb.ArticleNewLive do
             {nil, boards}
         end
 
-      changeset = Content.change_article()
+      # Pre-fill from PWA Web Share Target query params
+      share_title = params["title"] || ""
+      share_text = params["text"] || ""
+      share_url = params["url"] || ""
+      from_share = share_title != "" or share_text != "" or share_url != ""
+      body = compose_share_body(share_text, share_url)
+
+      initial = if from_share, do: %{"title" => share_title, "body" => body}, else: %{}
+      changeset = Content.change_article(%Baudrate.Content.Article{}, initial)
 
       {:ok,
        socket
@@ -51,6 +66,7 @@ defmodule BaudrateWeb.ArticleNewLive do
        |> assign(:fixed_board, fixed_board)
        |> assign(:boards, boards)
        |> assign(:board_slug, params["slug"])
+       |> assign(:from_share, from_share)
        |> assign(:uploaded_images, [])
        |> assign(:page_title, gettext("Create Article"))
        |> assign(:poll_enabled, false)
@@ -177,7 +193,7 @@ defmodule BaudrateWeb.ArticleNewLive do
   end
 
   defp do_create_with_boards(socket, params, board_ids, all_params) do
-    if board_ids == [] do
+    if board_ids == [] and not socket.assigns.from_share do
       {:noreply, put_flash(socket, :error, gettext("Please select at least one board."))}
     else
       user = socket.assigns.current_user
@@ -350,4 +366,9 @@ defmodule BaudrateWeb.ArticleNewLive do
 
   defp upload_error_to_string(err),
     do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "5 MB", max_files: 4)
+
+  defp compose_share_body("", ""), do: ""
+  defp compose_share_body(text, ""), do: text
+  defp compose_share_body("", url), do: url
+  defp compose_share_body(text, url), do: text <> "\n" <> url
 end

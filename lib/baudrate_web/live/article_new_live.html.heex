@@ -227,6 +227,9 @@
           <span>{board.name}</span>
         </label>
       </div>
+      <p :if={@from_share} class="text-sm text-base-content/70 mt-2">
+        {gettext("No board selected — this will be a personal article.")}
+      </p>
     </div>
 
     <.input
