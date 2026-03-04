@@ -480,30 +480,47 @@ defmodule BaudrateWeb.ArticleLive do
         target_attrs =
           build_report_target(socket.assigns.report_target_type, socket.assigns.report_target_id)
 
-        if Moderation.has_open_report?(user.id, target_attrs) do
-          {:noreply,
-           socket
-           |> assign(:show_report_modal, false)
-           |> put_flash(:error, gettext("You have already reported this."))}
-        else
-          attrs = Map.merge(target_attrs, %{reason: reason, reporter_id: user.id})
+        cond do
+          target_attrs == %{} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to submit report."))}
 
-          case Moderation.create_report(attrs) do
-            {:ok, _report} ->
-              {:noreply,
-               socket
-               |> assign(:show_report_modal, false)
-               |> put_flash(:info, gettext("Report submitted. Thank you."))}
+          Moderation.has_open_report?(user.id, target_attrs) ->
+            {:noreply,
+             socket
+             |> assign(:show_report_modal, false)
+             |> put_flash(:error, gettext("You have already reported this."))}
 
-            {:error, _changeset} ->
-              {:noreply, put_flash(socket, :error, gettext("Failed to submit report."))}
-          end
+          true ->
+            attrs = Map.merge(target_attrs, %{reason: reason, reporter_id: user.id})
+
+            case Moderation.create_report(attrs) do
+              {:ok, _report} ->
+                {:noreply,
+                 socket
+                 |> assign(:show_report_modal, false)
+                 |> put_flash(:info, gettext("Report submitted. Thank you."))}
+
+              {:error, _changeset} ->
+                {:noreply, put_flash(socket, :error, gettext("Failed to submit report."))}
+            end
         end
     end
   end
 
-  defp build_report_target("article", id), do: %{article_id: String.to_integer(id)}
-  defp build_report_target("comment", id), do: %{comment_id: String.to_integer(id)}
+  defp build_report_target("article", id) do
+    case Integer.parse(id) do
+      {num, ""} -> %{article_id: num}
+      _ -> %{}
+    end
+  end
+
+  defp build_report_target("comment", id) do
+    case Integer.parse(id) do
+      {num, ""} -> %{comment_id: num}
+      _ -> %{}
+    end
+  end
+
   defp build_report_target(_, _), do: %{}
 
   @impl true

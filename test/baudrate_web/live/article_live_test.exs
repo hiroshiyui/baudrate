@@ -757,4 +757,42 @@ defmodule BaudrateWeb.ArticleLiveTest do
     assert read
     assert read.read_at
   end
+
+  describe "submit_report with malformed target IDs" do
+    test "handles non-numeric article report target gracefully", %{
+      conn: conn,
+      article: article
+    } do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      # Open report modal with a crafted non-numeric ID
+      render_click(lv, "open_report_modal", %{
+        "type" => "article",
+        "id" => "abc",
+        "label" => "test"
+      })
+
+      # The submit_report event should not crash the LiveView
+      html = render_click(lv, "submit_report", %{"reason" => "spam"})
+
+      assert html =~ "Failed to submit report"
+    end
+
+    test "handles non-numeric comment report target gracefully", %{
+      conn: conn,
+      article: article
+    } do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      render_click(lv, "open_report_modal", %{
+        "type" => "comment",
+        "id" => "not-a-number",
+        "label" => "test"
+      })
+
+      html = render_click(lv, "submit_report", %{"reason" => "harassment"})
+
+      assert html =~ "Failed to submit report"
+    end
+  end
 end
