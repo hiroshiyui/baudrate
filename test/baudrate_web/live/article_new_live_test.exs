@@ -27,10 +27,37 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
     assert html =~ "Body"
   end
 
-  test "renders form with pre-selected board", %{conn: conn, board: board} do
+  test "renders form with fixed board when accessed from board URL", %{conn: conn, board: board} do
     {:ok, _lv, html} = live(conn, "/boards/#{board.slug}/articles/new")
     assert html =~ "Create Article"
-    assert html =~ "General"
+    # Board is fixed via hidden input, no picker shown
+    assert html =~ ~s(type="hidden" name="board_ids[]" value="#{board.id}")
+    refute html =~ ~s(type="checkbox" name="board_ids[]")
+  end
+
+  test "creates article from board URL without selecting boards", %{conn: conn, board: board} do
+    {:ok, lv, _html} = live(conn, "/boards/#{board.slug}/articles/new")
+
+    lv
+    |> form("form", article: %{title: "Board Article", body: "Posted from board page"})
+    |> render_submit()
+
+    {path, _flash} = assert_redirect(lv)
+    assert path =~ "/articles/"
+  end
+
+  test "renders form with fixed sub-board when accessed from sub-board URL", %{
+    conn: conn,
+    board: board
+  } do
+    sub_board =
+      %Board{}
+      |> Board.changeset(%{name: "Sub Board", slug: "sub", parent_id: board.id})
+      |> Repo.insert!()
+
+    {:ok, _lv, html} = live(conn, "/boards/#{sub_board.slug}/articles/new")
+    assert html =~ "Create Article"
+    assert html =~ ~s(type="hidden" name="board_ids[]" value="#{sub_board.id}")
   end
 
   test "creates article successfully", %{conn: conn, board: board} do

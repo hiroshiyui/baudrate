@@ -2,8 +2,8 @@ defmodule BaudrateWeb.ArticleNewLive do
   @moduledoc """
   LiveView for creating new articles.
 
-  Accessible from both board pages (pre-selects that board via `board_slug`
-  param) and as a standalone route at `/articles/new` where the user picks
+  Accessible from both board pages (uses the board from the URL, no picker
+  shown) and as a standalone route at `/articles/new` where the user picks
   boards from a multi-select.
 
   Supports uploading up to 4 images (max 5 MB each) that are displayed as a
@@ -31,18 +31,16 @@ defmodule BaudrateWeb.ArticleNewLive do
        |> put_flash(:error, gettext("Your account is pending approval."))
        |> redirect(to: ~p"/")}
     else
-      {boards, selected_board_ids} =
+      {fixed_board, boards} =
         case params do
           %{"slug" => slug} ->
-            board = Content.get_board_by_slug!(slug)
-            top = Content.list_top_boards() |> Enum.filter(&Content.can_post_in_board?(&1, user))
-
-            if Enum.any?(top, &(&1.id == board.id)),
-              do: {top, [board.id]},
-              else: {top ++ [board], [board.id]}
+            {Content.get_board_by_slug!(slug), []}
 
           _ ->
-            {Content.list_top_boards() |> Enum.filter(&Content.can_post_in_board?(&1, user)), []}
+            boards =
+              Content.list_top_boards() |> Enum.filter(&Content.can_post_in_board?(&1, user))
+
+            {nil, boards}
         end
 
       changeset = Content.change_article()
@@ -50,8 +48,8 @@ defmodule BaudrateWeb.ArticleNewLive do
       {:ok,
        socket
        |> assign(:form, to_form(changeset, as: :article))
+       |> assign(:fixed_board, fixed_board)
        |> assign(:boards, boards)
-       |> assign(:selected_board_ids, selected_board_ids)
        |> assign(:board_slug, params["slug"])
        |> assign(:uploaded_images, [])
        |> assign(:page_title, gettext("Create Article"))
