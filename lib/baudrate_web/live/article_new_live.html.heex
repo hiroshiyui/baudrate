@@ -81,6 +81,9 @@
       <%!-- Upload input --%>
       <div :if={length(@uploaded_images) < 4}>
         <div class="space-y-2">
+          <label class="sr-only" for={@uploads.article_images.ref}>
+            {gettext("Upload images")}
+          </label>
           <.live_file_input
             upload={@uploads.article_images}
             class="file-input file-input-bordered file-input-sm w-full"
