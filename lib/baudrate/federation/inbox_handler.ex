@@ -823,6 +823,47 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp prepend_content_warning(body, _object), do: body
 
+  # Derive article title from the AP object.
+  # Article/Page objects use "name"; for Notes (no "name"), extract from body text.
+  defp derive_title(%{"name" => name}, _body) when is_binary(name) and name != "", do: name
+
+  defp derive_title(_object, body) when is_binary(body) and body != "" do
+    body
+    |> String.split(~r/\n/, parts: 2)
+    |> hd()
+    |> String.trim()
+    |> truncate_title(80)
+    |> case do
+      "" -> "Untitled"
+      title -> title
+    end
+  end
+
+  defp derive_title(_object, _body), do: "Untitled"
+
+  # Truncate a title to roughly `max_len` graphemes. For CJK text (no spaces),
+  # cuts at `max_len` and appends "…". For space-separated text, breaks at the
+  # last word boundary before `max_len` to avoid mid-word cuts.
+  defp truncate_title(text, max_len) when is_binary(text) do
+    if String.length(text) <= max_len do
+      text
+    else
+      chunk = String.slice(text, 0, max_len)
+
+      case String.contains?(chunk, " ") do
+        true ->
+          # Break at last space to avoid mid-word truncation
+          chunk
+          |> String.replace(~r/\s+\S*$/, "")
+          |> Kernel.<>("…")
+
+        false ->
+          # CJK or single long token — cut at max_len
+          chunk <> "…"
+      end
+    end
+  end
+
   defp strip_html(html) when is_binary(html) do
     html
     |> String.replace(~r/<br\s*\/?>/, "\n")
@@ -911,7 +952,7 @@ defmodule Baudrate.Federation.InboxHandler do
         Content.add_article_to_board(existing, board.id)
         :ok
       else
-        title = object["name"] || "Untitled"
+        title = derive_title(object, body)
         slug = Content.generate_slug(title)
         poll_opts = extract_poll_from_object(object, ap_id)
 
@@ -959,7 +1000,7 @@ defmodule Baudrate.Federation.InboxHandler do
 
             :ok
           else
-            title = object["name"] || "Untitled"
+            title = derive_title(object, body)
             slug = Content.generate_slug(title)
             board_ids = Enum.map(boards, & &1.id)
             poll_opts = extract_poll_from_object(object, ap_id)

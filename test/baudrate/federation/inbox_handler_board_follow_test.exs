@@ -291,9 +291,10 @@ defmodule Baudrate.Federation.InboxHandlerBoardFollowTest do
 
       assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
 
-      # Note should be auto-routed as an article
+      # Note should be auto-routed as an article with title derived from content
       article = Content.get_article_by_ap_id(ap_id)
       assert article != nil
+      assert article.title == "Auto-routed note content"
       article = Repo.preload(article, :boards)
       assert Enum.any?(article.boards, &(&1.id == board.id))
     end

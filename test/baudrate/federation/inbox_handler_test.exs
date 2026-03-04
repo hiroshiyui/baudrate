@@ -379,6 +379,96 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
     end
+
+    test "derives title from content body when name is absent" do
+      _user = setup_user_with_role("user")
+      board = create_board()
+      remote_actor = create_remote_actor()
+
+      board_uri = Federation.actor_uri(:board, board.slug)
+      ap_id = "https://remote.example/articles/no-name-#{System.unique_integer([:positive])}"
+
+      activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => ap_id,
+          "type" => "Article",
+          "content" => "<p>First line of the article</p><p>More content here</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "audience" => [board_uri],
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      article = Content.get_article_by_ap_id(ap_id)
+      assert article.title == "First line of the article"
+    end
+
+    test "truncates long derived title at word boundary with ellipsis" do
+      _user = setup_user_with_role("user")
+      board = create_board()
+      remote_actor = create_remote_actor()
+
+      board_uri = Federation.actor_uri(:board, board.slug)
+      ap_id = "https://remote.example/articles/long-#{System.unique_integer([:positive])}"
+
+      long_content = String.duplicate("word ", 30) |> String.trim()
+
+      activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => ap_id,
+          "type" => "Article",
+          "content" => "<p>#{long_content}</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "audience" => [board_uri],
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      article = Content.get_article_by_ap_id(ap_id)
+      assert String.ends_with?(article.title, "…")
+      assert String.length(article.title) <= 81
+    end
+
+    test "truncates long CJK derived title with ellipsis" do
+      _user = setup_user_with_role("user")
+      board = create_board()
+      remote_actor = create_remote_actor()
+
+      board_uri = Federation.actor_uri(:board, board.slug)
+      ap_id = "https://remote.example/articles/cjk-#{System.unique_integer([:positive])}"
+
+      cjk_content = String.duplicate("漢", 100)
+
+      activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => ap_id,
+          "type" => "Article",
+          "content" => "<p>#{cjk_content}</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "audience" => [board_uri],
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      article = Content.get_article_by_ap_id(ap_id)
+      assert String.ends_with?(article.title, "…")
+      assert String.length(article.title) == 81
+    end
   end
 
   describe "Like" do
