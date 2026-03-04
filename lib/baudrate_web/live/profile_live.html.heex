@@ -116,6 +116,65 @@
         </.form>
       </div>
 
+      <%!-- Bio section --%>
+      <div id="profile-bio-section">
+        <div class="text-sm text-base-content/70 mb-2">{gettext("Bio")}</div>
+        <.form
+          for={@bio_form}
+          phx-change="validate_bio"
+          phx-submit="save_bio"
+          class="space-y-3"
+        >
+          <.input
+            field={@bio_form[:bio]}
+            type="textarea"
+            rows="4"
+            maxlength="500"
+            placeholder={gettext("Tell others about yourself (max 500 characters)")}
+          />
+          <button
+            type="submit"
+            class="btn btn-sm btn-primary"
+            phx-disable-with={gettext("Saving...")}
+          >
+            {gettext("Save Bio")}
+          </button>
+        </.form>
+      </div>
+
+      <%!-- Signature section --%>
+      <div id="profile-signature-section">
+        <div class="text-sm text-base-content/70 mb-2">{gettext("Signature")}</div>
+        <.form
+          for={@signature_form}
+          phx-change="validate_signature"
+          phx-submit="save_signature"
+          class="space-y-3"
+        >
+          <.input
+            field={@signature_form[:signature]}
+            type="textarea"
+            rows="4"
+            maxlength="500"
+            toolbar
+            placeholder={gettext("Your signature (Markdown supported, max 500 characters)")}
+          />
+          <div :if={@signature_preview != ""} class="space-y-1">
+            <p class="text-sm text-base-content/70">{gettext("Preview:")}</p>
+            <div class="prose prose-sm max-w-none bg-base-200 rounded-lg p-3 text-base-content/70">
+              {raw(@signature_preview)}
+            </div>
+          </div>
+          <button
+            type="submit"
+            class="btn btn-sm btn-primary"
+            phx-disable-with={gettext("Saving...")}
+          >
+            {gettext("Save Signature")}
+          </button>
+        </.form>
+      </div>
+
       <div id="profile-role">
         <div class="text-sm text-base-content/70">{gettext("Role")}</div>
         <div class="text-lg font-semibold">{@current_user.role.name}</div>
@@ -344,65 +403,6 @@
             </tbody>
           </table>
         </div>
-      </div>
-
-      <%!-- Bio section --%>
-      <div id="profile-bio-section">
-        <div class="text-sm text-base-content/70 mb-2">{gettext("Bio")}</div>
-        <.form
-          for={@bio_form}
-          phx-change="validate_bio"
-          phx-submit="save_bio"
-          class="space-y-3"
-        >
-          <.input
-            field={@bio_form[:bio]}
-            type="textarea"
-            rows="4"
-            maxlength="500"
-            placeholder={gettext("Tell others about yourself (max 500 characters)")}
-          />
-          <button
-            type="submit"
-            class="btn btn-sm btn-primary"
-            phx-disable-with={gettext("Saving...")}
-          >
-            {gettext("Save Bio")}
-          </button>
-        </.form>
-      </div>
-
-      <%!-- Signature section --%>
-      <div id="profile-signature-section">
-        <div class="text-sm text-base-content/70 mb-2">{gettext("Signature")}</div>
-        <.form
-          for={@signature_form}
-          phx-change="validate_signature"
-          phx-submit="save_signature"
-          class="space-y-3"
-        >
-          <.input
-            field={@signature_form[:signature]}
-            type="textarea"
-            rows="4"
-            maxlength="500"
-            toolbar
-            placeholder={gettext("Your signature (Markdown supported, max 500 characters)")}
-          />
-          <div :if={@signature_preview != ""} class="space-y-1">
-            <p class="text-sm text-base-content/70">{gettext("Preview:")}</p>
-            <div class="prose prose-sm max-w-none bg-base-200 rounded-lg p-3 text-base-content/70">
-              {raw(@signature_preview)}
-            </div>
-          </div>
-          <button
-            type="submit"
-            class="btn btn-sm btn-primary"
-            phx-disable-with={gettext("Saving...")}
-          >
-            {gettext("Save Signature")}
-          </button>
-        </.form>
       </div>
 
       <%!-- Muted Users section --%>
