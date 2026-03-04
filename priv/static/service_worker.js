@@ -26,6 +26,9 @@
     };
     event.waitUntil(self.registration.showNotification(data.title || "Baudrate", options));
   });
+  self.addEventListener("fetch", (event) => {
+    event.respondWith(fetch(event.request));
+  });
   self.addEventListener("notificationclick", (event) => {
     event.notification.close();
     const rawUrl = event.notification.data?.url;

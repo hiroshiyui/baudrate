@@ -1,5 +1,5 @@
-// Minimal push-only service worker for Baudrate Web Push notifications.
-// Handles push events (display notification) and notification clicks (open URL).
+// Service worker for Baudrate PWA.
+// Handles push notifications, notification clicks, and fetch (network-first).
 
 function isSameOrigin(url) {
   try {
@@ -30,6 +30,12 @@ self.addEventListener("push", (event) => {
   }
 
   event.waitUntil(self.registration.showNotification(data.title || "Baudrate", options))
+})
+
+// Network-first fetch handler — required for PWA installability on Firefox.
+// Falls back to network for all requests (no offline cache).
+self.addEventListener("fetch", (event) => {
+  event.respondWith(fetch(event.request))
 })
 
 self.addEventListener("notificationclick", (event) => {
