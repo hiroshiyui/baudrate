@@ -88,7 +88,17 @@
 
       <div id="profile-username">
         <div class="text-sm text-base-content/70">{gettext("Username")}</div>
-        <div class="text-lg font-semibold">{@current_user.username}</div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-lg font-semibold">{@current_user.username}</span>
+          <a
+            href={~p"/users/#{@current_user.username}"}
+            target="_blank"
+            class="link link-hover text-sm text-base-content/60 truncate max-w-xs"
+            title={BaudrateWeb.Endpoint.url() <> ~p"/users/#{@current_user.username}"}
+          >
+            🔗{BaudrateWeb.Endpoint.url() <> ~p"/users/#{@current_user.username}"}
+          </a>
+        </div>
       </div>
 
       <%!-- Display Name section --%>
