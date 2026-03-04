@@ -827,11 +827,23 @@ defmodule Baudrate.Federation.InboxHandler do
     html
     |> String.replace(~r/<br\s*\/?>/, "\n")
     |> String.replace(~r/<\/p>\s*<p[^>]*>/, "\n\n")
-    |> String.replace(~r/<[^>]+>/, "")
+    |> Baudrate.Sanitizer.Native.strip_tags()
+    |> decode_html_entities()
     |> String.trim()
   end
 
   defp strip_html(_), do: ""
+
+  defp decode_html_entities(text) do
+    text
+    |> String.replace("&amp;", "&")
+    |> String.replace("&lt;", "<")
+    |> String.replace("&gt;", ">")
+    |> String.replace("&quot;", "\"")
+    |> String.replace("&#39;", "'")
+    |> String.replace("&#x27;", "'")
+    |> String.replace("&apos;", "'")
+  end
 
   # --- Reply/target resolution helpers ---
 
