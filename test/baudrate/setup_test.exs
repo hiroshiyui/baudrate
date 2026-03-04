@@ -353,6 +353,28 @@ defmodule Baudrate.SetupTest do
     end
   end
 
+  describe "roles_at_or_below/1" do
+    test "returns only guest for guest" do
+      assert Setup.roles_at_or_below("guest") == ["guest"]
+    end
+
+    test "returns guest and user for user" do
+      assert Setup.roles_at_or_below("user") == ["guest", "user"]
+    end
+
+    test "returns guest, user, and moderator for moderator" do
+      assert Setup.roles_at_or_below("moderator") == ["guest", "user", "moderator"]
+    end
+
+    test "returns all roles for admin" do
+      assert Setup.roles_at_or_below("admin") == ["guest", "user", "moderator", "admin"]
+    end
+
+    test "returns only guest for unknown role" do
+      assert Setup.roles_at_or_below("unknown") == ["guest"]
+    end
+  end
+
   describe "get_eua/0" do
     test "returns nil when no EUA set" do
       assert Setup.get_eua() == nil

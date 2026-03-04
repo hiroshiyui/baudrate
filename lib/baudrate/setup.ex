@@ -191,6 +191,27 @@ defmodule Baudrate.Setup do
   def role_level(role_name), do: Map.get(@role_levels, role_name, 0)
 
   @doc """
+  Returns a list of role names whose level is at or below the given role's level.
+
+  ## Examples
+
+      iex> roles_at_or_below("user")
+      ["guest", "user"]
+
+      iex> roles_at_or_below("admin")
+      ["guest", "user", "moderator", "admin"]
+  """
+  @spec roles_at_or_below(String.t()) :: [String.t()]
+  def roles_at_or_below(role_name) do
+    max_level = role_level(role_name)
+
+    @role_levels
+    |> Enum.filter(fn {_name, lvl} -> lvl <= max_level end)
+    |> Enum.sort_by(fn {_name, lvl} -> lvl end)
+    |> Enum.map(fn {name, _lvl} -> name end)
+  end
+
+  @doc """
   Returns true if the user's role meets or exceeds the minimum required role.
   """
   @spec role_meets_minimum?(String.t(), String.t()) :: boolean()
