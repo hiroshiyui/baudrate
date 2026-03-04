@@ -373,6 +373,57 @@ defmodule BaudrateWeb.SessionControllerTest do
       assert redirected_to(conn) == "/login"
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Session expired"
     end
+
+    test "sanitizes admin return_to with null byte", %{conn: conn} do
+      admin = setup_user("admin")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(admin, secret)
+      code = NimbleTOTP.verification_code(secret)
+
+      conn =
+        conn
+        |> log_in_user(admin)
+        |> post("/auth/admin-totp-verify", %{
+          "code" => code,
+          "return_to" => "/admin/users\0malicious"
+        })
+
+      assert redirected_to(conn) == "/admin/settings"
+    end
+
+    test "sanitizes admin return_to with path traversal", %{conn: conn} do
+      admin = setup_user("admin")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(admin, secret)
+      code = NimbleTOTP.verification_code(secret)
+
+      conn =
+        conn
+        |> log_in_user(admin)
+        |> post("/auth/admin-totp-verify", %{
+          "code" => code,
+          "return_to" => "/admin/../../../etc/passwd"
+        })
+
+      assert redirected_to(conn) == "/admin/settings"
+    end
+
+    test "sanitizes admin return_to with double slashes", %{conn: conn} do
+      admin = setup_user("admin")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(admin, secret)
+      code = NimbleTOTP.verification_code(secret)
+
+      conn =
+        conn
+        |> log_in_user(admin)
+        |> post("/auth/admin-totp-verify", %{
+          "code" => code,
+          "return_to" => "/admin//evil.com"
+        })
+
+      assert redirected_to(conn) == "/admin/settings"
+    end
   end
 
   describe "establish_session with :return_to" do

@@ -454,7 +454,8 @@ defmodule BaudrateWeb.SessionController do
          !String.contains?(path, "\\") &&
          !String.contains?(path, "\n") &&
          !String.contains?(path, "\r") &&
-         !String.contains?(path, "@") do
+         !String.contains?(path, "@") &&
+         !String.contains?(path, "\0") do
       path
     else
       "/admin/settings"
