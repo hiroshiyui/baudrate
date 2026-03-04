@@ -385,7 +385,21 @@ defmodule BaudrateWeb.SessionController do
   # Creates a server-side session, stores session_token and refresh_token
   # in the cookie, clears all intermediate auth keys (user_id, totp_*),
   # renews the session ID to prevent fixation, and redirects to the given path.
+  #
+  # When `redirect_to` is the default `"/"`, checks for a `:return_to` key
+  # in the cookie session (set by `ShareTargetController` for unauthenticated
+  # share attempts). The stored path is sanitized and consumed on use.
   defp establish_session(conn, user, redirect_to \\ "/") do
+    final_redirect =
+      if redirect_to == "/" do
+        case get_session(conn, :return_to) do
+          nil -> "/"
+          path -> sanitize_return_to(path)
+        end
+      else
+        redirect_to
+      end
+
     opts = [
       ip_address: remote_ip(conn),
       user_agent: get_req_header(conn, "user-agent") |> List.first()
@@ -399,16 +413,37 @@ defmodule BaudrateWeb.SessionController do
     |> delete_session(:totp_verified)
     |> delete_session(:totp_verified_at)
     |> delete_session(:totp_setup_secret)
+    |> delete_session(:return_to)
     |> put_session(:session_token, session_token)
     |> put_session(:refresh_token, refresh_token)
     |> put_session(:refreshed_at, DateTime.utc_now() |> DateTime.to_iso8601())
     |> put_session(:preferred_locales, user.preferred_locales || [])
-    |> redirect(to: redirect_to)
+    |> redirect(to: final_redirect)
   end
 
   defp remote_ip(conn) do
     conn.remote_ip |> :inet.ntoa() |> to_string()
   end
+
+  # Sanitizes a return_to path stored by ShareTargetController.
+  # Only allows local paths starting with "/" — rejects schemes, double slashes,
+  # path traversal, control characters, and "@" (authority component).
+  defp sanitize_return_to(path) when is_binary(path) do
+    if String.starts_with?(path, "/") &&
+         !String.starts_with?(path, "//") &&
+         !String.contains?(path, "..") &&
+         !String.contains?(path, "\\") &&
+         !String.contains?(path, "\n") &&
+         !String.contains?(path, "\r") &&
+         !String.contains?(path, "@") &&
+         !String.contains?(path, "\0") do
+      path
+    else
+      "/"
+    end
+  end
+
+  defp sanitize_return_to(_), do: "/"
 
   defp sanitize_admin_return_to(nil), do: "/admin/settings"
 

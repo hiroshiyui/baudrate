@@ -375,6 +375,84 @@ defmodule BaudrateWeb.SessionControllerTest do
     end
   end
 
+  describe "establish_session with :return_to" do
+    test "redirects to stored return_to path after login", %{conn: conn} do
+      user = setup_user("user")
+      token = Phoenix.Token.sign(BaudrateWeb.Endpoint, "user_auth", user.id)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{return_to: "/articles/new?title=Shared"})
+        |> post("/auth/session", %{"token" => token})
+
+      assert redirected_to(conn) == "/articles/new?title=Shared"
+      assert is_nil(get_session(conn, :return_to))
+    end
+
+    test "ignores return_to when explicit redirect_to is provided", %{conn: conn} do
+      user = setup_user("admin")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(user, secret)
+      code = NimbleTOTP.verification_code(secret)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{
+          user_id: user.id,
+          totp_setup_secret: secret,
+          return_to: "/articles/new?title=Shared"
+        })
+        |> post("/auth/totp-enable", %{"code" => code})
+
+      # totp_enable passes "/profile/recovery-codes" as redirect_to,
+      # so return_to should be ignored
+      assert redirected_to(conn) == "/profile/recovery-codes"
+    end
+
+    test "sanitizes malicious return_to with double slashes", %{conn: conn} do
+      user = setup_user("user")
+      token = Phoenix.Token.sign(BaudrateWeb.Endpoint, "user_auth", user.id)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{return_to: "//evil.com/steal"})
+        |> post("/auth/session", %{"token" => token})
+
+      assert redirected_to(conn) == "/"
+    end
+
+    test "sanitizes malicious return_to with path traversal", %{conn: conn} do
+      user = setup_user("user")
+      token = Phoenix.Token.sign(BaudrateWeb.Endpoint, "user_auth", user.id)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{return_to: "/foo/../../../etc/passwd"})
+        |> post("/auth/session", %{"token" => token})
+
+      assert redirected_to(conn) == "/"
+    end
+
+    test "sanitizes malicious return_to with @ authority", %{conn: conn} do
+      user = setup_user("user")
+      token = Phoenix.Token.sign(BaudrateWeb.Endpoint, "user_auth", user.id)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{return_to: "/redirect@evil.com"})
+        |> post("/auth/session", %{"token" => token})
+
+      assert redirected_to(conn) == "/"
+    end
+
+    test "falls back to / when return_to is nil", %{conn: conn} do
+      user = setup_user("user")
+      token = Phoenix.Token.sign(BaudrateWeb.Endpoint, "user_auth", user.id)
+      conn = post(conn, "/auth/session", %{"token" => token})
+      assert redirected_to(conn) == "/"
+    end
+  end
+
   describe "DELETE /logout" do
     test "clears session and redirects to /login", %{conn: conn} do
       user = setup_user("user")
