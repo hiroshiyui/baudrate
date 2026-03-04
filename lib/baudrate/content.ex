@@ -1022,11 +1022,7 @@ defmodule Baudrate.Content do
   defp allowed_view_roles(nil), do: ["guest"]
 
   defp allowed_view_roles(%{role: %{name: role_name}}) do
-    level = Setup.role_level(role_name)
-
-    for {name, lvl} <- [{"guest", 0}, {"user", 1}, {"moderator", 2}, {"admin", 3}],
-        lvl <= level,
-        do: name
+    Setup.roles_at_or_below(role_name)
   end
 
   # --- Cross-post ---
@@ -2887,14 +2883,18 @@ defmodule Baudrate.Content do
     |> Ecto.Multi.run(:options, fn repo, _ ->
       option_counts = data[:option_counts] || []
 
-      Enum.each(option_counts, fn %{text: text, votes_count: count} ->
+      Enum.reduce_while(option_counts, {:ok, :done}, fn %{text: text, votes_count: count}, acc ->
         case Enum.find(poll.options, &(&1.text == text)) do
-          nil -> :skip
-          option -> repo.update!(Ecto.Changeset.change(option, votes_count: count))
+          nil ->
+            {:cont, acc}
+
+          option ->
+            case repo.update(Ecto.Changeset.change(option, votes_count: count)) do
+              {:ok, _} -> {:cont, acc}
+              {:error, changeset} -> {:halt, {:error, changeset}}
+            end
         end
       end)
-
-      {:ok, :done}
     end)
     |> Repo.transaction()
   end
