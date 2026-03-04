@@ -53,6 +53,47 @@ defmodule Baudrate.FederationTest do
       assert href =~ "/ap/boards/#{board.slug}"
     end
 
+    test "resolves board by acct URI without ! prefix (Mastodon compat)" do
+      _board = setup_board("my-board")
+      host = URI.parse(Federation.base_url()).host
+
+      {:ok, jrd} = Federation.webfinger("acct:my-board@#{host}")
+      assert jrd["subject"] =~ "!my-board"
+      assert [%{"rel" => "self", "href" => href}] = jrd["links"]
+      assert href =~ "/ap/boards/my-board"
+    end
+
+    test "bare name resolves user before board" do
+      # Use a name valid as both username and board slug (no underscores, no hyphens)
+      shared_name = "sharedname#{System.unique_integer([:positive])}"
+
+      alias Baudrate.Setup
+      alias Baudrate.Setup.{Role, User}
+
+      unless Repo.exists?(from(r in Role, where: r.name == "admin")) do
+        Setup.seed_roles_and_permissions()
+      end
+
+      role = Repo.one!(from(r in Role, where: r.name == "user"))
+
+      {:ok, _user} =
+        %User{}
+        |> User.registration_changeset(%{
+          "username" => shared_name,
+          "password" => "Password123!x",
+          "password_confirmation" => "Password123!x",
+          "role_id" => role.id
+        })
+        |> Repo.insert()
+
+      setup_board(shared_name)
+      host = URI.parse(Federation.base_url()).host
+
+      {:ok, jrd} = Federation.webfinger("acct:#{shared_name}@#{host}")
+      assert [%{"href" => href}] = jrd["links"]
+      assert href =~ "/ap/users/#{shared_name}"
+    end
+
     test "returns error for non-existent user" do
       host = URI.parse(Federation.base_url()).host
       assert {:error, :not_found} = Federation.webfinger("acct:nonexistent@#{host}")

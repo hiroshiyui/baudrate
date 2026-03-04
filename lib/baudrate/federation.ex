@@ -119,7 +119,9 @@ defmodule Baudrate.Federation do
 
   Supports:
     * `acct:username@host` → user actor
-    * `acct:!slug@host` → board actor (Lemmy-compatible)
+    * `acct:!slug@host` → board actor (Lemmy-compatible `!` prefix)
+    * `acct:slug@host` → board actor (Mastodon-compatible bare slug fallback;
+      tries user first, falls back to board if no matching user exists)
 
   Returns `{:ok, jrd_map}` or `{:error, reason}`.
   """
@@ -131,16 +133,26 @@ defmodule Baudrate.Federation do
       case type do
         :user ->
           user = Repo.get_by(Baudrate.Setup.User, username: identifier)
-          if user, do: {:ok, webfinger_jrd(:user, identifier)}, else: {:error, :not_found}
+
+          if user do
+            {:ok, webfinger_jrd(:user, identifier)}
+          else
+            # Name could also be a board slug — try board fallback
+            resolve_board_webfinger(identifier)
+          end
 
         :board ->
-          board = Repo.get_by(Baudrate.Content.Board, slug: identifier)
-
-          if board && Board.public?(board),
-            do: {:ok, webfinger_jrd(:board, identifier)},
-            else: {:error, :not_found}
+          resolve_board_webfinger(identifier)
       end
     end
+  end
+
+  defp resolve_board_webfinger(slug) do
+    board = Repo.get_by(Baudrate.Content.Board, slug: slug)
+
+    if board && Board.public?(board),
+      do: {:ok, webfinger_jrd(:board, slug)},
+      else: {:error, :not_found}
   end
 
   defp parse_acct(resource, host) do
@@ -152,11 +164,16 @@ defmodule Baudrate.Federation do
           {:error, :invalid_resource}
         end
 
-      [_, "", username, ^host] ->
-        if Regex.match?(~r/\A[a-zA-Z0-9_]+\z/, username) do
-          {:ok, :user, username}
-        else
-          {:error, :invalid_resource}
+      [_, "", name, ^host] ->
+        cond do
+          Regex.match?(~r/\A[a-zA-Z0-9_]+\z/, name) ->
+            {:ok, :user, name}
+
+          Regex.match?(~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/, name) ->
+            {:ok, :board, name}
+
+          true ->
+            {:error, :invalid_resource}
         end
 
       _ ->
