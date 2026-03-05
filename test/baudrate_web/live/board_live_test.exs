@@ -6,7 +6,8 @@ defmodule BaudrateWeb.BoardLiveTest do
 
   alias Baudrate.Repo
   alias Baudrate.Content
-  alias Baudrate.Content.{Article, Board}
+  alias Baudrate.Content.{Article, Board, BoardArticle}
+  alias Baudrate.Federation.RemoteActor
   alias Baudrate.Setup.Setting
 
   setup %{conn: conn} do
@@ -296,6 +297,80 @@ defmodule BaudrateWeb.BoardLiveTest do
 
       {:ok, _lv, html} = live(guest_conn, "/boards/general")
       refute html =~ "rounded-full bg-primary"
+    end
+  end
+
+  describe "article timestamp links" do
+    test "local article timestamp links to article page", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Local Post",
+            body: "Body",
+            slug: "local-ts-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, _lv, html} = live(conn, "/boards/general")
+
+      # The timestamp should be wrapped in a link to the article page
+      assert html =~ ~s(href="/articles/#{article.slug}")
+      # Should NOT have target="_blank" (it's an internal link)
+      refute html =~ ~s(href="/articles/#{article.slug}" target="_blank")
+    end
+
+    test "federated article timestamp links to source URL", %{conn: conn, board: board} do
+      slug = "remote-ts-#{System.unique_integer([:positive])}"
+      source_url = "https://remote.example/articles/#{slug}"
+
+      {:ok, actor} =
+        %RemoteActor{}
+        |> RemoteActor.changeset(%{
+          ap_id: "https://remote.example/actor/#{slug}",
+          username: "remote_#{slug}",
+          domain: "remote.example",
+          public_key_pem:
+            "-----BEGIN PUBLIC KEY-----\nMIIBIjANBg==\n-----END PUBLIC KEY-----",
+          inbox: "https://remote.example/inbox",
+          shared_inbox: "https://remote.example/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now()
+        })
+        |> Repo.insert()
+
+      {:ok, article} =
+        %Article{}
+        |> Article.remote_changeset(%{
+          title: "Remote Post",
+          body: "Remote body",
+          slug: slug,
+          ap_id: source_url,
+          remote_actor_id: actor.id
+        })
+        |> Repo.insert()
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert!(%BoardArticle{
+        board_id: board.id,
+        article_id: article.id,
+        inserted_at: now,
+        updated_at: now
+      })
+
+      {:ok, _lv, html} = live(conn, "/boards/general")
+
+      # The timestamp should link to the source URL
+      assert html =~ ~s(href="#{source_url}")
+      # Should open in a new tab with nofollow
+      assert html =~ ~s(target="_blank")
+      assert html =~ ~s(rel="nofollow noopener noreferrer")
     end
   end
 end
