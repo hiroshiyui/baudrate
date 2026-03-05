@@ -102,6 +102,30 @@ defmodule BaudrateWeb.Admin.InvitesLiveTest do
     assert html =~ user.username
   end
 
+  test "invite codes are paginated at 30 per page", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_admin(conn, admin)
+
+    # Generate 31 invite codes
+    for _ <- 1..31 do
+      {:ok, _} = Auth.generate_invite_code(admin)
+    end
+
+    {:ok, _lv, html} = live(conn, "/admin/invites")
+
+    # Page 1 should show 30 codes
+    row_count = length(Regex.scan(~r/id="invite-\d+"/, html))
+    assert row_count == 30
+
+    # Pagination should show page 2
+    assert html =~ ~s(href="/admin/invites?page=2")
+
+    # Page 2 should show 1 code
+    {:ok, _lv, html} = live(conn, "/admin/invites?page=2")
+    row_count = length(Regex.scan(~r/id="invite-\d+"/, html))
+    assert row_count == 1
+  end
+
   test "generated-for-user code shows target user as Created By", %{conn: conn} do
     admin = setup_user("admin")
     user = setup_user("user")

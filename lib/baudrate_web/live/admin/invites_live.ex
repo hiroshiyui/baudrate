@@ -16,18 +16,18 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
   alias Baudrate.Auth
-  import BaudrateWeb.Helpers, only: [parse_id: 1, invite_url: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1, invite_url: 1]
 
   @impl true
   def mount(_params, _session, socket) do
-    codes = Auth.list_all_invite_codes()
-
     {:ok,
      assign(socket,
-       codes: codes,
+       codes: [],
+       page: 1,
+       total_pages: 1,
        wide_layout: true,
        page_title: gettext("Admin Invites"),
-       qr_codes: build_qr_codes(codes),
+       qr_codes: %{},
        qr_modal_code: nil,
        user_search_query: "",
        user_search_results: []
@@ -35,15 +35,19 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   end
 
   @impl true
+  def handle_params(params, _uri, socket) do
+    page = parse_page(params["page"])
+    {:noreply, load_page(socket, page)}
+  end
+
+  @impl true
   def handle_event("generate", _params, socket) do
     case Auth.generate_invite_code(socket.assigns.current_user) do
       {:ok, _code} ->
-        codes = Auth.list_all_invite_codes()
-
         {:noreply,
          socket
          |> put_flash(:info, gettext("Invite code generated."))
-         |> assign(codes: codes, qr_codes: build_qr_codes(codes))}
+         |> reload_page()}
 
       {:error, :account_too_new} ->
         {:noreply,
@@ -104,20 +108,14 @@ defmodule BaudrateWeb.Admin.InvitesLive do
                target_user
              ) do
           {:ok, _code} ->
-            codes = Auth.list_all_invite_codes()
-
             {:noreply,
              socket
              |> put_flash(
                :info,
                gettext("Invite code generated for %{username}.", username: target_user.username)
              )
-             |> assign(
-               codes: codes,
-               qr_codes: build_qr_codes(codes),
-               user_search_query: "",
-               user_search_results: []
-             )}
+             |> assign(user_search_query: "", user_search_results: [])
+             |> reload_page()}
 
           {:error, :invite_quota_exceeded} ->
             {:noreply, put_flash(socket, :error, gettext("Invite quota exceeded."))}
@@ -141,16 +139,30 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   defp do_revoke_invite(socket, invite) do
     case Auth.revoke_invite_code(invite) do
       {:ok, _} ->
-        codes = Auth.list_all_invite_codes()
-
         {:noreply,
          socket
          |> put_flash(:info, gettext("Invite code revoked."))
-         |> assign(codes: codes, qr_codes: build_qr_codes(codes))}
+         |> reload_page()}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to revoke invite code."))}
     end
+  end
+
+  defp load_page(socket, page) do
+    %{codes: codes, page: page, total_pages: total_pages} =
+      Auth.list_all_invite_codes(page: page)
+
+    assign(socket,
+      codes: codes,
+      page: page,
+      total_pages: total_pages,
+      qr_codes: build_qr_codes(codes)
+    )
+  end
+
+  defp reload_page(socket) do
+    load_page(socket, socket.assigns.page)
   end
 
   defp build_qr_codes(codes) do

@@ -154,6 +154,8 @@
     </table>
   </div>
 
+  <.pagination page={@page} total_pages={@total_pages} path={~p"/admin/invites"} />
+
   <%!-- QR code modal --%>
   <div
     :if={@qr_modal_code}

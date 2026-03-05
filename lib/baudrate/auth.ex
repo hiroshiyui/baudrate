@@ -964,6 +964,31 @@ defmodule Baudrate.Auth do
     |> Repo.all()
   end
 
+  @invites_per_page 30
+
+  @doc """
+  Lists all invite codes with pagination, newest first.
+
+  ## Options
+
+    * `:page` — page number (default 1)
+    * `:per_page` — items per page (default #{@invites_per_page})
+
+  Returns `%{codes: [...], total: N, page: N, per_page: N, total_pages: N}`.
+  """
+  def list_all_invite_codes(opts) do
+    alias Baudrate.Pagination
+
+    pagination = Pagination.paginate_opts(opts, @invites_per_page)
+
+    from(i in InviteCode)
+    |> Pagination.paginate_query(pagination,
+      result_key: :codes,
+      order_by: [desc: dynamic([i], i.inserted_at), desc: dynamic([i], i.id)],
+      preloads: [:created_by, :used_by]
+    )
+  end
+
   @doc """
   Revokes an invite code.
   """
