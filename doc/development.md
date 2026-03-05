@@ -230,6 +230,7 @@ lib/
 │   ├── helpers.ex               # Shared translation helpers (translate_role/1, translate_status/1, etc.)
 │   ├── locale.ex                # Locale resolution (Accept-Language + user prefs)
 │   ├── linked_data.ex          # JSON-LD + Dublin Core metadata builders (SIOC/FOAF/DC)
+│   ├── open_graph.ex            # Open Graph + Twitter Card meta tag builders
 │   ├── rate_limiter.ex          # Rate limiter behaviour (Sandbox / Hammer backends)
 │   ├── rate_limiter/
 │   │   └── hammer.ex            # Hammer-based rate limiter backend
@@ -1572,6 +1573,27 @@ and assigns the pre-encoded JSON string + DC meta list. The root layout
 **Security:** JSON-LD is encoded via `Jason.encode!/1` with `</script>`
 sequences escaped. Dublin Core meta values are auto-escaped by Phoenix
 attribute binding.
+
+### Open Graph & Twitter Card Meta Tags
+
+Public pages emit Open Graph (`og:*`) and Twitter Card (`twitter:*`) meta tags
+in `<head>` to enable rich link previews when URLs are shared on Mastodon,
+Slack, Discord, and other platforms.
+
+**Implementation:** `BaudrateWeb.OpenGraph` provides builder functions
+(`article_tags/2`, `board_tags/1`, `user_tags/3`, `home_tags/1`, `default_tags/1`).
+Each returns a list of `{property, content}` tuples. LiveViews assign `og_meta`
+in `mount/3`; the root layout renders them with the correct attribute
+(`property` for OG, `name` for Twitter Card / profile).
+
+**Tag mappings:**
+
+| Page | og:type | twitter:card | og:image |
+|------|---------|-------------|----------|
+| Article (`/articles/:slug`) | `article` | `summary_large_image` (with image) / `summary` | First article image → author avatar → site icon |
+| Board (`/boards/:slug`) | `website` | `summary` | Site icon |
+| User profile (`/users/:username`) | `profile` | `summary` | User avatar → site icon |
+| Home (`/`) | `website` | `summary` | Site icon |
 
 ## Further Reading
 
