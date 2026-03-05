@@ -180,4 +180,11 @@ a:focus-visible {
   max-width: 100vw;
 }
 
+/* Ensure long URLs and unbroken strings wrap in prose content
+   (Chrome Android does not wrap them by default) */
+.prose {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
 /* This file is for your main application CSS */
