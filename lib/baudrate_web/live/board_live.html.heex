@@ -163,9 +163,15 @@
             {format_datetime(article.inserted_at)}
           </time>
         </a>
-        <time :if={!article.ap_id} datetime={datetime_attr(article.inserted_at)}>
-          {format_datetime(article.inserted_at)}
-        </time>
+        <.link
+          :if={!article.ap_id}
+          navigate={~p"/articles/#{article.slug}"}
+          class="link link-hover"
+        >
+          <time datetime={datetime_attr(article.inserted_at)}>
+            {format_datetime(article.inserted_at)}
+          </time>
+        </.link>
         <.link
           :if={Map.get(@comment_counts, article.id, 0) > 0}
           navigate={~p"/articles/#{article.slug}"}
