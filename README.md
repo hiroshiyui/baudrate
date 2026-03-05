@@ -1,8 +1,8 @@
-# Baudrate: Yet Another Bulletin Board System
+# Baudrate: ActivityPub-enabled Bulletin Board System
 
 ## About
 
-Baudrate is a BBS built with [Elixir](https://elixir-lang.org/) and [Phoenix](https://www.phoenixframework.org/).
+Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.org/) and [Phoenix](https://www.phoenixframework.org/).
 
 ### Features
 

@@ -1,6 +1,6 @@
 # Development Guide
 
-Baudrate is a **public information hub**, not a social network. Public content
+Baudrate is an **ActivityPub-enabled Bulletin Board System** and a **public information hub**, not a social network. Public content
 should remain visible to all users; blocking controls interaction, not
 visibility. Design decisions should reflect this philosophy.
 

@@ -1,4 +1,4 @@
-# Baudrate
+# Baudrate: ActivityPub-enabled Bulletin Board System
 
 Public BBS / Web Forum built with Elixir/Phoenix + LiveView, federating via **ActivityPub**.
 Baudrate is a **public information hub**, not a social network — public content

@@ -1,7 +1,7 @@
 # SysOp Guide
 
 Operational guide for installing, configuring, and maintaining a Baudrate
-instance.
+(ActivityPub-enabled Bulletin Board System) instance.
 
 ---
 
