@@ -48,6 +48,10 @@ defmodule Baudrate.Content.LinkPreview.Fetcher do
       {:cache, %LinkPreview{} = cached} ->
         {:ok, cached}
 
+      {:error, %Ecto.Changeset{} = changeset} ->
+        upsert_failed(url, url_hash, domain, inspect(changeset.errors))
+        {:error, :changeset_error}
+
       {:error, reason} ->
         # Record the failure
         upsert_failed(url, url_hash, domain, to_string(reason))
