@@ -40,6 +40,8 @@ defmodule Baudrate.Auth.SessionCleaner do
     Baudrate.Auth.purge_old_login_attempts()
     cleanup_orphan_article_images()
     cleanup_delivery_jobs()
+    refresh_stale_link_previews()
+    purge_orphan_link_previews()
     schedule_cleanup()
     {:noreply, state}
   end
@@ -53,6 +55,29 @@ defmodule Baudrate.Auth.SessionCleaner do
 
     if count > 0 do
       Logger.info("session_cleaner.delivery_jobs_purged: count=#{count}")
+    end
+  end
+
+  defp refresh_stale_link_previews do
+    count = Baudrate.Content.refresh_stale_link_previews()
+
+    if count > 0 do
+      Logger.info("session_cleaner.link_previews_refreshed: count=#{count}")
+    end
+  end
+
+  defp purge_orphan_link_previews do
+    paths = Baudrate.Content.purge_stale_link_previews()
+
+    for path <- paths do
+      abs_path =
+        Application.app_dir(:baudrate, Path.join(["priv", "static", path]))
+
+      case File.rm(abs_path) do
+        :ok -> :ok
+        {:error, :enoent} -> :ok
+        {:error, reason} -> Logger.warning("Failed to delete preview image #{path}: #{reason}")
+      end
     end
   end
 
