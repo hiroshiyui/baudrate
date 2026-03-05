@@ -111,9 +111,13 @@
         >
         </span>
       </.link>
-      <p :if={article.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
+      <.link
+        :if={article.body}
+        navigate={~p"/articles/#{article.slug}"}
+        class="text-sm text-base-content/80 line-clamp-3 mt-1 block"
+      >
         {digest(article.body)}
-      </p>
+      </.link>
       <div class="flex items-center gap-1 text-sm text-base-content/70 mt-1">
         <span :if={article.user} class="inline-flex items-center gap-1">
           {gettext("by")}
