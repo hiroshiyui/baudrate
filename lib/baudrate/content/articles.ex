@@ -24,6 +24,8 @@ defmodule Baudrate.Content.Articles do
     Tags
   }
 
+  alias Baudrate.Content.LinkPreview.Worker, as: PreviewWorker
+
   alias Baudrate.Content.PubSub, as: ContentPubSub
 
   @per_page 20
@@ -118,7 +120,7 @@ defmodule Baudrate.Content.Articles do
   def get_article_by_slug!(slug) do
     Article
     |> Repo.get_by!(slug: slug)
-    |> Repo.preload([:boards, :user, :remote_actor, poll: :options])
+    |> Repo.preload([:boards, :user, :remote_actor, :link_preview, poll: :options])
   end
 
   @doc """
@@ -182,6 +184,9 @@ defmodule Baudrate.Content.Articles do
         Baudrate.Federation.Publisher.publish_article_created(article)
       end)
 
+      body_html = Baudrate.Content.Markdown.to_html(article.body || "")
+      PreviewWorker.schedule_preview_fetch(:article, article.id, body_html, article.user_id)
+
       result
     end
   end
@@ -242,6 +247,8 @@ defmodule Baudrate.Content.Articles do
           Baudrate.Federation.Publisher.publish_article_updated(updated_article)
         end)
       end
+
+      maybe_update_article_preview(article, updated_article)
 
       {:ok, updated_article}
     else
@@ -402,6 +409,9 @@ defmodule Baudrate.Content.Articles do
         ContentPubSub.broadcast_to_board(board_id, :article_created, %{article_id: article.id})
       end
 
+      body_html = Baudrate.Content.Markdown.to_html(article.body || "")
+      PreviewWorker.schedule_preview_fetch(:article, article.id, body_html)
+
       result
     end
   end
@@ -555,6 +565,43 @@ defmodule Baudrate.Content.Articles do
       end
 
       result
+    end
+  end
+
+  defp maybe_update_article_preview(old_article, updated_article) do
+    alias Baudrate.Content.LinkPreview.UrlExtractor
+
+    old_html = Baudrate.Content.Markdown.to_html(old_article.body || "")
+    new_html = Baudrate.Content.Markdown.to_html(updated_article.body || "")
+
+    old_url =
+      case UrlExtractor.extract_first_url(old_html) do
+        {:ok, url} -> url
+        :none -> nil
+      end
+
+    new_url =
+      case UrlExtractor.extract_first_url(new_html) do
+        {:ok, url} -> url
+        :none -> nil
+      end
+
+    if old_url != new_url do
+      # Clear old preview association
+      if old_article.link_preview_id do
+        from(a in Article, where: a.id == ^updated_article.id)
+        |> Repo.update_all(set: [link_preview_id: nil])
+      end
+
+      # Schedule new fetch if there's a new URL
+      if new_url do
+        PreviewWorker.schedule_preview_fetch(
+          :article,
+          updated_article.id,
+          new_html,
+          updated_article.user_id
+        )
+      end
     end
   end
 

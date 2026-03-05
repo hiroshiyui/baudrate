@@ -292,6 +292,13 @@ defmodule Baudrate.Messaging do
         # Schedule federation delivery if other participant is remote
         maybe_federate_dm(message, conversation, sender)
 
+        Baudrate.Content.LinkPreview.Worker.schedule_preview_fetch(
+          :direct_message,
+          message.id,
+          body_html,
+          sender.id
+        )
+
         {:ok, message}
 
       {:error, :message, changeset, _} ->
@@ -335,6 +342,16 @@ defmodule Baudrate.Messaging do
           conversation_id: conversation.id
         })
 
+        body_html = attrs[:body_html] || attrs["body_html"]
+
+        if body_html do
+          Baudrate.Content.LinkPreview.Worker.schedule_preview_fetch(
+            :direct_message,
+            message.id,
+            body_html
+          )
+        end
+
         {:ok, message}
 
       {:error, changeset} ->
@@ -358,7 +375,7 @@ defmodule Baudrate.Messaging do
         where: is_nil(dm.deleted_at),
         order_by: [asc: dm.inserted_at],
         limit: ^limit,
-        preload: [:sender_user, :sender_remote_actor]
+        preload: [:sender_user, :sender_remote_actor, :link_preview]
       )
 
     query =
@@ -478,7 +495,7 @@ defmodule Baudrate.Messaging do
     Repo.one(
       from(dm in DirectMessage,
         where: dm.id == ^id,
-        preload: [:sender_user, :sender_remote_actor]
+        preload: [:sender_user, :sender_remote_actor, :link_preview]
       )
     )
   end

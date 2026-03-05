@@ -38,12 +38,15 @@ defmodule Baudrate.Content do
     Feed,
     Images,
     Likes,
+    LinkPreview,
     Permissions,
     Polls,
     ReadTracking,
     Search,
     Tags
   }
+
+  alias Baudrate.Repo
 
   # --- Boards ---
 
@@ -257,6 +260,69 @@ defmodule Baudrate.Content do
   defdelegate create_remote_poll_vote(attrs), to: Polls
   defdelegate update_remote_poll_counts(poll, data), to: Polls
   defdelegate recalc_poll_counts(poll_id), to: Polls
+
+  # --- Link Previews ---
+
+  @doc """
+  Refreshes stale link previews (fetched > 7 days ago) in batches of 10.
+  """
+  def refresh_stale_link_previews do
+    import Ecto.Query
+
+    cutoff = DateTime.utc_now() |> DateTime.add(-7, :day)
+
+    previews =
+      from(lp in LinkPreview,
+        where: lp.status == "fetched" and lp.fetched_at < ^cutoff,
+        limit: 10
+      )
+      |> Repo.all()
+
+    Enum.each(previews, fn preview ->
+      Baudrate.Content.LinkPreview.Fetcher.refetch(preview)
+    end)
+
+    length(previews)
+  end
+
+  @doc """
+  Purges orphan link previews (no associations, older than 30 days).
+  Returns the list of deleted image paths for filesystem cleanup.
+  """
+  def purge_stale_link_previews do
+    import Ecto.Query
+
+    cutoff = DateTime.utc_now() |> DateTime.add(-30, :day)
+
+    orphans =
+      from(lp in LinkPreview,
+        where: lp.fetched_at < ^cutoff,
+        where:
+          fragment(
+            "NOT EXISTS (SELECT 1 FROM articles WHERE link_preview_id = ?) AND NOT EXISTS (SELECT 1 FROM comments WHERE link_preview_id = ?) AND NOT EXISTS (SELECT 1 FROM direct_messages WHERE link_preview_id = ?) AND NOT EXISTS (SELECT 1 FROM feed_items WHERE link_preview_id = ?) AND NOT EXISTS (SELECT 1 FROM feed_item_replies WHERE link_preview_id = ?)",
+            lp.id,
+            lp.id,
+            lp.id,
+            lp.id,
+            lp.id
+          )
+      )
+      |> Repo.all()
+
+    image_paths =
+      orphans
+      |> Enum.map(& &1.image_path)
+      |> Enum.reject(&is_nil/1)
+
+    orphan_ids = Enum.map(orphans, & &1.id)
+
+    if orphan_ids != [] do
+      from(lp in LinkPreview, where: lp.id in ^orphan_ids)
+      |> Repo.delete_all()
+    end
+
+    image_paths
+  end
 
   # --- Federation Hooks ---
 

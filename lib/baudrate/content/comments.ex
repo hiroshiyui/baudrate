@@ -15,6 +15,8 @@ defmodule Baudrate.Content.Comments do
     Filters
   }
 
+  alias Baudrate.Content.LinkPreview.Worker, as: PreviewWorker
+
   alias Baudrate.Content.PubSub, as: ContentPubSub
 
   @comments_per_page 20
@@ -53,6 +55,8 @@ defmodule Baudrate.Content.Comments do
         end)
       end
 
+      PreviewWorker.schedule_preview_fetch(:comment, comment.id, body_html, comment.user_id)
+
       result
     end
   end
@@ -79,6 +83,10 @@ defmodule Baudrate.Content.Comments do
       ContentPubSub.broadcast_to_article(comment.article_id, :comment_created, %{
         comment_id: comment.id
       })
+
+      if comment.body_html do
+        PreviewWorker.schedule_preview_fetch(:comment, comment.id, comment.body_html)
+      end
 
       result
     end
@@ -111,7 +119,7 @@ defmodule Baudrate.Content.Comments do
     from(c in Comment,
       where: c.article_id == ^article_id and is_nil(c.deleted_at),
       order_by: [asc: c.inserted_at],
-      preload: [:user, :remote_actor]
+      preload: [:user, :remote_actor, :link_preview]
     )
     |> Repo.all()
   end
@@ -122,7 +130,7 @@ defmodule Baudrate.Content.Comments do
     from(c in Comment,
       where: c.article_id == ^article_id and is_nil(c.deleted_at),
       order_by: [asc: c.inserted_at],
-      preload: [:user, :remote_actor]
+      preload: [:user, :remote_actor, :link_preview]
     )
     |> Filters.apply_hidden_filters(hidden_uids, hidden_ap_ids)
     |> Repo.all()
@@ -167,7 +175,7 @@ defmodule Baudrate.Content.Comments do
         order_by: [asc: c.inserted_at],
         offset: ^offset,
         limit: ^per_page,
-        preload: [:user, :remote_actor]
+        preload: [:user, :remote_actor, :link_preview]
       )
       |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
 
@@ -199,7 +207,7 @@ defmodule Baudrate.Content.Comments do
           c.article_id == ^article_id and is_nil(c.deleted_at) and
             c.parent_id in ^parent_ids,
         order_by: [asc: c.inserted_at],
-        preload: [:user, :remote_actor]
+        preload: [:user, :remote_actor, :link_preview]
       )
       |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
 
