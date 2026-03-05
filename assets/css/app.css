@@ -187,4 +187,14 @@ a:focus-visible {
   word-break: break-word;
 }
 
+/* Stretched link: makes a parent container fully clickable via an ::after overlay.
+   Apply .stretched-link to the primary <a>, and .relative to the parent card.
+   Nested links that should remain independently clickable need "relative z-10". */
+.stretched-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
 /* This file is for your main application CSS */

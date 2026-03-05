@@ -94,13 +94,13 @@
     :for={article <- @articles}
     id={"article-#{article.slug}"}
     aria-labelledby={"article-title-#{article.slug}"}
-    class="article card bg-base-200 shadow-sm"
+    class="article card bg-base-200 shadow-sm relative"
   >
     <div class="card-body p-4">
       <.link
         navigate={~p"/articles/#{article.slug}"}
         id={"article-title-#{article.slug}"}
-        class="card-title text-base link link-hover"
+        class="card-title text-base link link-hover stretched-link"
       >
         <span :if={article.pinned} class="badge badge-sm badge-accent">{gettext("Pinned")}</span>
         {article.title}
@@ -111,19 +111,15 @@
         >
         </span>
       </.link>
-      <.link
-        :if={article.body}
-        navigate={~p"/articles/#{article.slug}"}
-        class="text-sm text-base-content/80 line-clamp-3 mt-1 block"
-      >
+      <p :if={article.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
         {digest(article.body)}
-      </.link>
+      </p>
       <div class="flex items-center gap-1 text-sm text-base-content/70 mt-1">
         <span :if={article.user} class="inline-flex items-center gap-1">
           {gettext("by")}
           <.link
             navigate={~p"/users/#{article.user.username}"}
-            class="inline-flex items-center gap-1 link link-hover font-semibold"
+            class="inline-flex items-center gap-1 link link-hover font-semibold relative z-10"
           >
             <.avatar user={article.user} size={24} />
             {display_name(article.user)}
@@ -136,7 +132,7 @@
             href={remote_actor_profile_url(article.remote_actor)}
             target="_blank"
             rel="nofollow noopener noreferrer"
-            class="inline-flex items-center gap-1 font-semibold link link-hover"
+            class="inline-flex items-center gap-1 font-semibold link link-hover relative z-10"
           >
             <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
               <img
