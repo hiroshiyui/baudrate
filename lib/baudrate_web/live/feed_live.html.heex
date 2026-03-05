@@ -96,7 +96,7 @@
               <a
                 href={remote_actor_profile_url(item.feed_item.remote_actor)}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="nofollow noopener noreferrer"
                 class="link link-hover"
               >
                 <div class="font-bold text-sm truncate">
@@ -137,7 +137,7 @@
               :if={item.feed_item.source_url}
               href={item.feed_item.source_url}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="nofollow noopener noreferrer"
               class="btn btn-ghost btn-xs"
               title={gettext("View original")}
               aria-label={gettext("View original")}
@@ -340,7 +340,7 @@
               <a
                 href={remote_actor_profile_url(item.comment.remote_actor)}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="nofollow noopener noreferrer"
                 class="link link-hover"
               >
                 <div class="font-bold text-sm truncate">

@@ -585,7 +585,7 @@ defmodule BaudrateWeb.ArticleLive do
             :if={@comment.remote_actor}
             href={remote_actor_profile_url(@comment.remote_actor)}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="nofollow noopener noreferrer"
             class="font-semibold text-base-content link link-hover"
           >
             {display_name(@comment.remote_actor)}@{@comment.remote_actor.domain}
