@@ -26,6 +26,7 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
   - Cross-post deduplication for articles arriving via multiple board inboxes
   - Mastodon compatibility: `attributedTo` arrays, `sensitive`/`summary` content warnings, `to`/`cc` addressing, `<span>` tag preservation, article summary and hashtag tags
   - Lemmy compatibility: `Page` object type, `Announce` with embedded objects, `!board@host` WebFinger
+- **Link previews** -- server-side Open Graph / Twitter Card metadata fetching with image proxy for articles, comments, and DMs
 - **User public profiles** -- public profile pages with stats, recent articles, and clickable author names
 - **Avatar system** -- upload, crop, WebP conversion with server-side security
 - **Flexible registration** -- open, approval-required, or invite-only modes with admin-managed invite codes
@@ -99,6 +100,7 @@ Built with these excellent open-source projects:
 - [Hammer](https://hexdocs.pm/hammer/)
 - [Earmark](https://hexdocs.pm/earmark/) (Markdown rendering)
 - [Req](https://hexdocs.pm/req/) (HTTP client for federation)
+- [Floki](https://hexdocs.pm/floki/) (HTML parsing for link preview extraction)
 - [Ammonia](https://crates.io/crates/ammonia) (Rust HTML sanitizer)
 - [Rustler](https://crates.io/crates/rustler) (Rust NIF bindings for Erlang/Elixir)
 - [regex](https://crates.io/crates/regex) (Rust regular expressions)

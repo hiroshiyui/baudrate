@@ -15,6 +15,7 @@ visibility. Design decisions should reflect this philosophy.
 | JS bundler | esbuild |
 | Image processing | image (libvips NIF) |
 | 2FA | NimbleTOTP + EQRCode |
+| HTML parsing | Floki |
 | HTML sanitization | Ammonia (Rust NIF via Rustler) |
 | Rate limiting | Hammer |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
