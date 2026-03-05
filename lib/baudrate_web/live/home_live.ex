@@ -12,6 +12,7 @@ defmodule BaudrateWeb.HomeLive do
   alias Baudrate.Content
   alias Baudrate.Setup
   alias BaudrateWeb.LinkedData
+  alias BaudrateWeb.OpenGraph
 
   @impl true
   def mount(_params, _session, socket) do
@@ -29,7 +30,8 @@ defmodule BaudrateWeb.HomeLive do
        unread_board_ids: unread_board_ids,
        page_title: gettext("Boards"),
        feed_site: true,
-       linked_data_json: jsonld
+       linked_data_json: jsonld,
+       og_meta: OpenGraph.home_tags(site_name)
      )}
   end
 end

@@ -14,6 +14,7 @@ defmodule BaudrateWeb.UserProfileLive do
   alias Baudrate.Federation
   alias Baudrate.Moderation
   alias BaudrateWeb.LinkedData
+  alias BaudrateWeb.OpenGraph
   alias BaudrateWeb.RateLimits
   import BaudrateWeb.Helpers, only: [translate_role: 1]
 
@@ -66,6 +67,7 @@ defmodule BaudrateWeb.UserProfileLive do
            page_title: user.username,
            linked_data_json: jsonld,
            dc_meta: dc_meta,
+           og_meta: OpenGraph.user_tags(user, article_count, comment_count),
            show_report_modal: false,
            report_target_type: nil,
            report_target_id: nil,

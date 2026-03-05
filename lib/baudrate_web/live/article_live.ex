@@ -13,6 +13,7 @@ defmodule BaudrateWeb.ArticleLive do
   alias Baudrate.Content.PubSub, as: ContentPubSub
   alias Baudrate.Moderation
   alias BaudrateWeb.LinkedData
+  alias BaudrateWeb.OpenGraph
   alias BaudrateWeb.RateLimits
   import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1]
 
@@ -67,6 +68,7 @@ defmodule BaudrateWeb.ArticleLive do
           LinkedData.article_jsonld(article) |> LinkedData.encode_jsonld()
         )
         |> assign(:dc_meta, LinkedData.dublin_core_meta(:article, article))
+        |> assign(:og_meta, OpenGraph.article_tags(article, article_images))
         |> assign(:can_forward, Content.can_forward_article?(current_user, article))
         |> assign(:forward_search_open, false)
         |> assign(:forward_search_results, [])

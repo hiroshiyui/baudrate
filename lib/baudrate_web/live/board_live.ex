@@ -14,6 +14,7 @@ defmodule BaudrateWeb.BoardLive do
   alias Baudrate.Content.Board
   alias Baudrate.Content.PubSub, as: ContentPubSub
   alias BaudrateWeb.LinkedData
+  alias BaudrateWeb.OpenGraph
   import BaudrateWeb.Helpers, only: [parse_page: 1]
 
   @impl true
@@ -61,7 +62,8 @@ defmodule BaudrateWeb.BoardLive do
          page_title: board.name,
          feed_board_slug: feed_slug,
          linked_data_json: jsonld,
-         dc_meta: dc_meta
+         dc_meta: dc_meta,
+         og_meta: OpenGraph.board_tags(board)
        )}
     end
   end
