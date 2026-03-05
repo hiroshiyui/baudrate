@@ -1810,7 +1810,7 @@ defmodule Baudrate.Federation do
   Returns an Article JSON-LD map for the given article.
   """
   def article_object(article) do
-    article = Repo.preload(article, [:boards, :user, poll: :options])
+    article = Repo.preload(article, [:boards, :user, :link_preview, poll: :options])
 
     board_uris =
       Enum.map(article.boards, fn board ->
@@ -1846,7 +1846,13 @@ defmodule Baudrate.Federation do
     }
 
     map = if tags == [], do: map, else: Map.put(map, "tag", tags)
-    maybe_embed_poll(map, article.poll)
+
+    map =
+      map
+      |> maybe_embed_poll(article.poll)
+      |> maybe_embed_link_preview(article)
+
+    map
   end
 
   defp maybe_embed_poll(map, nil), do: map
@@ -1882,6 +1888,20 @@ defmodule Baudrate.Federation do
     existing_attachment = Map.get(map, "attachment", [])
     Map.put(map, "attachment", existing_attachment ++ [question])
   end
+
+  defp maybe_embed_link_preview(map, %{link_preview: %Content.LinkPreview{status: "fetched"} = lp}) do
+    attachment = %{
+      "type" => "Document",
+      "mediaType" => "text/html",
+      "url" => lp.url,
+      "name" => lp.title || lp.url
+    }
+
+    existing = Map.get(map, "attachment", [])
+    Map.put(map, "attachment", existing ++ [attachment])
+  end
+
+  defp maybe_embed_link_preview(map, _), do: map
 
   # --- Article summary/tag helpers ---
 

@@ -642,7 +642,7 @@ defmodule Baudrate.Federation.Publisher do
   deduplicates, and enqueues for delivery.
   """
   def publish_feed_item_reply(reply, feed_item) do
-    reply = Repo.preload(reply, [user: :role])
+    reply = Repo.preload(reply, user: :role)
     feed_item = Repo.preload(feed_item, [:remote_actor])
     user = reply.user
 
@@ -657,7 +657,7 @@ defmodule Baudrate.Federation.Publisher do
     follower_inboxes = Delivery.resolve_follower_inboxes(actor_uri)
 
     inboxes =
-      ([remote_inbox | follower_inboxes])
+      [remote_inbox | follower_inboxes]
       |> Enum.reject(&is_nil/1)
       |> Enum.uniq()
 
