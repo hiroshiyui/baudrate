@@ -1,0 +1,12 @@
+[package]
+name = "baudrate_html_parser"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "baudrate_html_parser"
+crate-type = ["cdylib"]
+
+[dependencies]
+scraper = "0.22"
+rustler = "0.37"
