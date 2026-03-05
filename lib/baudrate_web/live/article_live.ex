@@ -532,6 +532,17 @@ defmodule BaudrateWeb.ArticleLive do
   end
 
   @impl true
+  def handle_info({:link_preview_fetched, %{article_id: _}}, socket) do
+    article = Content.get_article_by_slug!(socket.assigns.article.slug)
+    {:noreply, assign(socket, :article, article)}
+  end
+
+  @impl true
+  def handle_info({:link_preview_fetched, %{comment_id: _}}, socket) do
+    {:noreply, load_comments(socket, socket.assigns.comment_page)}
+  end
+
+  @impl true
   def handle_info({:article_deleted, _payload}, socket) do
     board = List.first(socket.assigns.article.boards)
     redirect_path = if board, do: ~p"/boards/#{board.slug}", else: ~p"/"
@@ -615,6 +626,11 @@ defmodule BaudrateWeb.ArticleLive do
         <div :if={!@comment.body_html} class="prose prose-sm max-w-none">
           {raw(Baudrate.Content.Markdown.to_html(@comment.body))}
         </div>
+
+        <.link_preview
+          :if={@comment.link_preview && @comment.link_preview.status in ["fetched", "failed"]}
+          preview={@comment.link_preview}
+        />
 
         <div
           :if={@comment.user && @comment.user.signature && @comment.user.signature != ""}

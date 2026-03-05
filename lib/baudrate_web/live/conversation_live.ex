@@ -202,6 +202,12 @@ defmodule BaudrateWeb.ConversationLive do
   end
 
   @impl true
+  def handle_info({:link_preview_fetched, _payload}, socket) do
+    messages = Messaging.list_messages(socket.assigns.conversation)
+    {:noreply, assign(socket, :messages, messages)}
+  end
+
+  @impl true
   def handle_info(_msg, socket), do: {:noreply, socket}
 
   # --- Private helpers ---

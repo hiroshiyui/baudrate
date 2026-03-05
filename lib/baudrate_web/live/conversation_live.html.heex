@@ -116,6 +116,10 @@
             <% else %>
               {msg.body}
             <% end %>
+            <.link_preview
+              :if={msg.link_preview && msg.link_preview.status in ["fetched", "failed"]}
+              preview={msg.link_preview}
+            />
           </div>
           <div :if={msg.sender_user_id == @current_user.id} class="chat-footer">
             <button

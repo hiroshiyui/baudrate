@@ -829,4 +829,65 @@ defmodule BaudrateWeb.CoreComponents do
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
   end
+
+  @doc """
+  Renders a link preview card for Open Graph metadata.
+
+  Displays a card with the preview image (if available), title, description,
+  and domain. For failed previews, shows a minimal card with just the URL and
+  domain.
+
+  ## Attributes
+
+    * `preview` — a `%LinkPreview{}` struct (required)
+  """
+  attr :preview, :map, required: true
+
+  def link_preview(%{preview: %{status: "failed"}} = assigns) do
+    ~H"""
+    <a
+      href={@preview.url}
+      target="_blank"
+      rel="nofollow noopener noreferrer"
+      class="card bg-base-200 not-prose overflow-hidden border border-base-300 mt-3 max-w-lg block"
+      aria-label={gettext("Link preview")}
+    >
+      <div class="card-body p-3">
+        <span class="text-sm text-base-content/70 truncate">{@preview.url}</span>
+        <span class="text-xs text-base-content/50">{@preview.domain}</span>
+      </div>
+    </a>
+    """
+  end
+
+  def link_preview(%{preview: %{status: "fetched"}} = assigns) do
+    ~H"""
+    <a
+      href={@preview.url}
+      target="_blank"
+      rel="nofollow noopener noreferrer"
+      class="card card-side bg-base-200 not-prose overflow-hidden border border-base-300 mt-3 max-w-lg block"
+      aria-label={gettext("Link preview: %{title}", title: @preview.title || @preview.url)}
+    >
+      <figure :if={@preview.image_path} class="w-32 shrink-0">
+        <img
+          src={@preview.image_path}
+          alt=""
+          class="object-cover h-full w-full"
+          loading="lazy"
+          referrerpolicy="no-referrer"
+        />
+      </figure>
+      <div class="card-body p-3">
+        <h3 :if={@preview.title} class="card-title text-sm line-clamp-1">{@preview.title}</h3>
+        <p :if={@preview.description} class="text-xs text-base-content/70 line-clamp-2">
+          {@preview.description}
+        </p>
+        <span class="text-xs text-base-content/50">{@preview.domain}</span>
+      </div>
+    </a>
+    """
+  end
+
+  def link_preview(assigns), do: ~H""
 end

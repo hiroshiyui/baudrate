@@ -76,6 +76,11 @@
 
     <div class="prose max-w-none">{raw(Baudrate.Content.Markdown.to_html(@article.body))}</div>
 
+    <.link_preview
+      :if={@article.link_preview && @article.link_preview.status in ["fetched", "failed"]}
+      preview={@article.link_preview}
+    />
+
     <%!-- Poll Section --%>
     <section :if={@poll} id="article-poll" class="mt-6" aria-labelledby="poll-heading">
       <div class="card bg-base-200 p-4">
@@ -310,9 +315,7 @@
             </button>
           </li>
           <li
-            :if={
-              (@current_user != nil && @article.user_id != @current_user.id) || @can_delete
-            }
+            :if={(@current_user != nil && @article.user_id != @current_user.id) || @can_delete}
             class="border-t border-base-300 my-1"
           >
           </li>
