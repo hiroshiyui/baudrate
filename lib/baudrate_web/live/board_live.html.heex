@@ -114,7 +114,7 @@
       <p :if={article.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
         {digest(article.body)}
       </p>
-      <div class="flex items-center gap-1 text-sm text-base-content/70 mt-1">
+      <div class="flex flex-wrap items-center gap-1 text-sm text-base-content/70 mt-1">
         <span :if={article.user} class="inline-flex items-center gap-1">
           {gettext("by")}
           <.link
