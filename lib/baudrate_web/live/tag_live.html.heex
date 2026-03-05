@@ -33,7 +33,12 @@
           </span>
           <span :if={article.remote_actor} class="inline-flex items-center gap-1">
             {gettext("by")}
-            <span class="inline-flex items-center gap-1 font-semibold">
+            <a
+              href={remote_actor_profile_url(article.remote_actor)}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1 font-semibold link link-hover"
+            >
               <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
                 <img
                   :if={article.remote_actor.avatar_url}
@@ -48,7 +53,7 @@
                 />
               </span>
               {display_name(article.remote_actor)}<span class="text-base-content/50">@{article.remote_actor.domain}</span>
-            </span>
+            </a>
             &middot;
           </span>
           <time datetime={datetime_attr(article.inserted_at)}>

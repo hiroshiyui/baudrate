@@ -111,12 +111,19 @@
         </div>
       </div>
       <div class="flex-1 min-w-0">
-        <div class="font-bold truncate">
-          {display_name(@remote_actor)}
-        </div>
-        <div class="text-sm text-base-content/70 truncate">
-          @{@remote_actor.username}@{@remote_actor.domain}
-        </div>
+        <a
+          href={remote_actor_profile_url(@remote_actor)}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="link link-hover"
+        >
+          <div class="font-bold truncate">
+            {display_name(@remote_actor)}
+          </div>
+          <div class="text-sm text-base-content/70 truncate">
+            @{@remote_actor.username}@{@remote_actor.domain}
+          </div>
+        </a>
         <div
           :if={@remote_actor.summary && @remote_actor.summary != ""}
           class="text-sm text-base-content/70 mt-1 line-clamp-2"
@@ -284,7 +291,12 @@
           </span>
           <span :if={article.remote_actor} class="inline-flex items-center gap-1">
             {gettext("by")}
-            <span class="inline-flex items-center gap-1 font-semibold">
+            <a
+              href={remote_actor_profile_url(article.remote_actor)}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1 font-semibold link link-hover"
+            >
               <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
                 <img
                   :if={article.remote_actor.avatar_url}
@@ -299,7 +311,7 @@
                 />
               </span>
               {display_name(article.remote_actor)}<span class="text-base-content/50">@{article.remote_actor.domain}</span>
-            </span>
+            </a>
             &middot;
           </span>
           <time datetime={datetime_attr(article.inserted_at)}>
@@ -339,7 +351,13 @@
           <span :if={comment.user}>
             {gettext("by %{author}", author: display_name(comment.user))} &middot;
           </span>
-          <span :if={comment.remote_actor} class="inline-flex items-center gap-1">
+          <a
+            :if={comment.remote_actor}
+            href={remote_actor_profile_url(comment.remote_actor)}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1 link link-hover"
+          >
             <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
               <img
                 :if={comment.remote_actor.avatar_url}
@@ -353,8 +371,9 @@
                 class="size-5 opacity-50"
               />
             </span>
-            {display_name(comment.remote_actor)} &middot;
-          </span>
+            {display_name(comment.remote_actor)}
+          </a>
+          <span :if={comment.remote_actor}>&middot;</span>
           <time datetime={datetime_attr(comment.inserted_at)}>
             {format_datetime(comment.inserted_at)}
           </time>

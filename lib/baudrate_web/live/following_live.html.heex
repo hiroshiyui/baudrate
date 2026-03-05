@@ -68,12 +68,19 @@
           </div>
         </div>
         <div class="flex-1 min-w-0">
-          <div class="font-bold truncate">
-            {follow.remote_actor.display_name || follow.remote_actor.username}
-          </div>
-          <div class="text-sm text-base-content/70 truncate">
-            @{follow.remote_actor.username}@{follow.remote_actor.domain}
-          </div>
+          <a
+            href={remote_actor_profile_url(follow.remote_actor)}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="link link-hover"
+          >
+            <div class="font-bold truncate">
+              {follow.remote_actor.display_name || follow.remote_actor.username}
+            </div>
+            <div class="text-sm text-base-content/70 truncate">
+              @{follow.remote_actor.username}@{follow.remote_actor.domain}
+            </div>
+          </a>
           <div
             :if={follow.remote_actor.summary && follow.remote_actor.summary != ""}
             class="text-sm text-base-content/70 mt-1 line-clamp-2"

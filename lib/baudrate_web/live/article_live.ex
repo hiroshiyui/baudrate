@@ -581,9 +581,15 @@ defmodule BaudrateWeb.ArticleLive do
             <.avatar user={@comment.user} size={24} />
             {display_name(@comment.user)}
           </.link>
-          <span :if={@comment.remote_actor} class="font-semibold text-base-content">
+          <a
+            :if={@comment.remote_actor}
+            href={remote_actor_profile_url(@comment.remote_actor)}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-semibold text-base-content link link-hover"
+          >
             {display_name(@comment.remote_actor)}@{@comment.remote_actor.domain}
-          </span>
+          </a>
           <span>&middot;</span>
           <time datetime={datetime_attr(@comment.inserted_at)}>
             {format_datetime(@comment.inserted_at)}

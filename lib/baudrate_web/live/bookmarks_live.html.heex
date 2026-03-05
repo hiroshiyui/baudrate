@@ -37,7 +37,12 @@
               </span>
               <span :if={bookmark.article.remote_actor} class="inline-flex items-center gap-1">
                 {gettext("by")}
-                <span class="inline-flex items-center gap-1 font-semibold">
+                <a
+                  href={remote_actor_profile_url(bookmark.article.remote_actor)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-1 font-semibold link link-hover"
+                >
                   <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
                     <img
                       :if={bookmark.article.remote_actor.avatar_url}
@@ -52,7 +57,7 @@
                     />
                   </span>
                   {display_name(bookmark.article.remote_actor)}<span class="text-base-content/50">@{bookmark.article.remote_actor.domain}</span>
-                </span>
+                </a>
               </span>
               <span :if={bookmark.article.boards != []}>&middot;</span>
               <span :for={board <- bookmark.article.boards || []}>
@@ -85,7 +90,12 @@
               </span>
               <span :if={bookmark.comment.remote_actor} class="inline-flex items-center gap-1">
                 {gettext("by")}
-                <span class="inline-flex items-center gap-1 font-semibold">
+                <a
+                  href={remote_actor_profile_url(bookmark.comment.remote_actor)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-1 font-semibold link link-hover"
+                >
                   <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
                     <img
                       :if={bookmark.comment.remote_actor.avatar_url}
@@ -100,7 +110,7 @@
                     />
                   </span>
                   {display_name(bookmark.comment.remote_actor)}<span class="text-base-content/50">@{bookmark.comment.remote_actor.domain}</span>
-                </span>
+                </a>
               </span>
               <span>&middot;</span>
               <time datetime={datetime_attr(bookmark.inserted_at)}>

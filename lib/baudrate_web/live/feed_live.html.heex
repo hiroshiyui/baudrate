@@ -93,12 +93,19 @@
               </div>
             </div>
             <div class="flex-1 min-w-0">
-              <div class="font-bold text-sm truncate">
-                {item.feed_item.remote_actor.display_name || item.feed_item.remote_actor.username}
-              </div>
-              <div class="text-xs text-base-content/60 truncate">
-                @{item.feed_item.remote_actor.username}@{item.feed_item.remote_actor.domain}
-              </div>
+              <a
+                href={remote_actor_profile_url(item.feed_item.remote_actor)}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="link link-hover"
+              >
+                <div class="font-bold text-sm truncate">
+                  {item.feed_item.remote_actor.display_name || item.feed_item.remote_actor.username}
+                </div>
+                <div class="text-xs text-base-content/60 truncate">
+                  @{item.feed_item.remote_actor.username}@{item.feed_item.remote_actor.domain}
+                </div>
+              </a>
             </div>
             <div class="flex flex-col items-end flex-shrink-0">
               <time
@@ -330,12 +337,19 @@
               </div>
             </div>
             <div class="flex-1 min-w-0">
-              <div class="font-bold text-sm truncate">
-                {item.comment.remote_actor.display_name || item.comment.remote_actor.username}
-              </div>
-              <div class="text-xs text-base-content/60 truncate">
-                @{item.comment.remote_actor.username}@{item.comment.remote_actor.domain}
-              </div>
+              <a
+                href={remote_actor_profile_url(item.comment.remote_actor)}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="link link-hover"
+              >
+                <div class="font-bold text-sm truncate">
+                  {item.comment.remote_actor.display_name || item.comment.remote_actor.username}
+                </div>
+                <div class="text-xs text-base-content/60 truncate">
+                  @{item.comment.remote_actor.username}@{item.comment.remote_actor.domain}
+                </div>
+              </a>
             </div>
             <div class="flex flex-col items-end flex-shrink-0">
               <time
