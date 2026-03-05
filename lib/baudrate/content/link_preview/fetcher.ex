@@ -7,7 +7,7 @@ defmodule Baudrate.Content.LinkPreview.Fetcher do
     2. Check DB for existing cached preview (7-day TTL, 24-hour failed retry delay)
     3. Check rate limits (per-domain + per-user)
     4. Fetch HTML via `HTTPClient`
-    5. Parse OG/Twitter/fallback metadata with Floki
+    5. Parse OG/Twitter/fallback metadata with html5ever NIF
     6. Proxy image if present (re-encode to WebP)
     7. Upsert `LinkPreview` record
   """
@@ -21,6 +21,7 @@ defmodule Baudrate.Content.LinkPreview.Fetcher do
   alias Baudrate.Federation.HTTPClient
   alias Baudrate.Federation.Validator
   alias Baudrate.Repo
+  alias Baudrate.HtmlParser.Native, as: HtmlParser
   alias Baudrate.Sanitizer.Native, as: Sanitizer
   alias BaudrateWeb.RateLimits
 
@@ -176,60 +177,11 @@ defmodule Baudrate.Content.LinkPreview.Fetcher do
   defp html_content_type?(_), do: true
 
   defp parse_og_metadata(html, _url) do
-    case Floki.parse_document(html) do
-      {:ok, tree} ->
-        %{
-          title: find_title(tree),
-          description: find_description(tree),
-          image_url: find_image(tree),
-          site_name: find_meta(tree, "og:site_name")
-        }
-        |> sanitize_metadata()
+    %{title: title, description: description, image_url: image_url, site_name: site_name} =
+      HtmlParser.parse_og_metadata(html)
 
-      _ ->
-        %{}
-    end
-  end
-
-  defp find_title(tree) do
-    find_meta(tree, "og:title") ||
-      find_meta_name(tree, "twitter:title") ||
-      find_tag_text(tree, "title")
-  end
-
-  defp find_description(tree) do
-    find_meta(tree, "og:description") ||
-      find_meta_name(tree, "twitter:description") ||
-      find_meta_name(tree, "description")
-  end
-
-  defp find_image(tree) do
-    find_meta(tree, "og:image") || find_meta_name(tree, "twitter:image")
-  end
-
-  defp find_meta(tree, property) do
-    selector = "meta[property=\"#{property}\"]"
-
-    case Floki.find(tree, selector) do
-      [el | _] -> Floki.attribute(el, "content") |> List.first()
-      _ -> nil
-    end
-  end
-
-  defp find_meta_name(tree, name) do
-    selector = "meta[name=\"#{name}\"]"
-
-    case Floki.find(tree, selector) do
-      [el | _] -> Floki.attribute(el, "content") |> List.first()
-      _ -> nil
-    end
-  end
-
-  defp find_tag_text(tree, tag) do
-    case Floki.find(tree, tag) do
-      [el | _] -> Floki.text(el) |> String.trim()
-      _ -> nil
-    end
+    %{title: title, description: description, image_url: image_url, site_name: site_name}
+    |> sanitize_metadata()
   end
 
   defp sanitize_metadata(metadata) do

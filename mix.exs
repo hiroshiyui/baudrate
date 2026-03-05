@@ -71,7 +71,6 @@ defmodule Baudrate.MixProject do
       {:hammer, "~> 6.2"},
       {:image, "~> 0.54"},
       {:earmark, "~> 1.4"},
-      {:floki, "~> 0.36"},
       {:rustler, "~> 0.36", runtime: false},
       {:tz, "~> 0.28"},
       {:wallaby, "~> 0.30", runtime: false, only: :test}
