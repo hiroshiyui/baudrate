@@ -19,6 +19,7 @@ defmodule Baudrate.Messaging.DirectMessage do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Baudrate.Content.LinkPreview
   alias Baudrate.Federation.RemoteActor
   alias Baudrate.Messaging.Conversation
   alias Baudrate.Setup.User
@@ -35,6 +36,7 @@ defmodule Baudrate.Messaging.DirectMessage do
     belongs_to :conversation, Conversation
     belongs_to :sender_user, User
     belongs_to :sender_remote_actor, RemoteActor
+    belongs_to :link_preview, LinkPreview
 
     timestamps(type: :utc_datetime)
   end

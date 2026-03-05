@@ -11,7 +11,7 @@ defmodule Baudrate.Content.Comment do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Baudrate.Content.Article
+  alias Baudrate.Content.{Article, LinkPreview}
   alias Baudrate.Federation.RemoteActor
 
   schema "comments" do
@@ -24,6 +24,7 @@ defmodule Baudrate.Content.Comment do
     belongs_to :parent, __MODULE__
     belongs_to :user, Baudrate.Setup.User
     belongs_to :remote_actor, RemoteActor
+    belongs_to :link_preview, LinkPreview
 
     has_many :replies, __MODULE__, foreign_key: :parent_id
     has_many :likes, Baudrate.Content.CommentLike

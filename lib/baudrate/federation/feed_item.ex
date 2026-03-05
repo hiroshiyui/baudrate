@@ -13,12 +13,14 @@ defmodule Baudrate.Federation.FeedItem do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Baudrate.Content.LinkPreview
   alias Baudrate.Federation.RemoteActor
 
   @max_body_length 65_536
 
   schema "feed_items" do
     belongs_to :remote_actor, RemoteActor
+    belongs_to :link_preview, LinkPreview
 
     field :activity_type, :string, default: "Create"
     field :object_type, :string, default: "Note"

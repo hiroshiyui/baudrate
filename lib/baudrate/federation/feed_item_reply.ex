@@ -11,12 +11,14 @@ defmodule Baudrate.Federation.FeedItemReply do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Baudrate.Content.LinkPreview
   alias Baudrate.Federation.FeedItem
   alias Baudrate.Setup.User
 
   schema "feed_item_replies" do
     belongs_to :feed_item, FeedItem
     belongs_to :user, User
+    belongs_to :link_preview, LinkPreview
 
     field :body, :string
     field :body_html, :string
