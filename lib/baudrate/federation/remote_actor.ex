@@ -8,6 +8,10 @@ defmodule Baudrate.Federation.RemoteActor do
 
   The `summary` field stores the sanitized HTML bio/about text from
   the remote actor's ActivityPub `summary` property.
+
+  The `url` field stores the human-readable profile URL from the actor's
+  `url` property (e.g. `https://mastodon.social/@user`), distinct from
+  `ap_id` which is the canonical ActivityPub identifier.
   """
 
   use Ecto.Schema
@@ -23,6 +27,7 @@ defmodule Baudrate.Federation.RemoteActor do
     field :public_key_pem, :string
     field :inbox, :string
     field :shared_inbox, :string
+    field :url, :string
     field :actor_type, :string, default: "Person"
     field :fetched_at, :utc_datetime
 
@@ -32,7 +37,7 @@ defmodule Baudrate.Federation.RemoteActor do
   end
 
   @required_fields ~w(ap_id username domain public_key_pem inbox actor_type fetched_at)a
-  @optional_fields ~w(display_name avatar_url summary shared_inbox)a
+  @optional_fields ~w(display_name avatar_url summary shared_inbox url)a
 
   @doc "Casts and validates fields for creating or updating a remote actor cache entry."
   def changeset(remote_actor, attrs) do

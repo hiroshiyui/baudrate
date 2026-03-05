@@ -106,6 +106,77 @@ defmodule Baudrate.Federation.ActorResolverTest do
       assert Repo.get_by(RemoteActor, ap_id: "https://remote.example/users/new-actor")
     end
 
+    test "extracts and stores url from actor JSON" do
+      {public_pem, _private_pem} = KeyStore.generate_keypair()
+
+      actor_json =
+        Jason.encode!(%{
+          "id" => "https://remote.example/users/with-url",
+          "type" => "Person",
+          "preferredUsername" => "with-url",
+          "url" => "https://remote.example/@with-url",
+          "inbox" => "https://remote.example/users/with-url/inbox",
+          "publicKey" => %{
+            "id" => "https://remote.example/users/with-url#main-key",
+            "publicKeyPem" => public_pem
+          }
+        })
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 200, actor_json)
+      end)
+
+      assert {:ok, actor} = ActorResolver.resolve("https://remote.example/users/with-url")
+      assert actor.url == "https://remote.example/@with-url"
+    end
+
+    test "stores nil url when not present in actor JSON" do
+      {public_pem, _private_pem} = KeyStore.generate_keypair()
+
+      actor_json =
+        Jason.encode!(%{
+          "id" => "https://remote.example/users/no-url",
+          "type" => "Person",
+          "preferredUsername" => "no-url",
+          "inbox" => "https://remote.example/users/no-url/inbox",
+          "publicKey" => %{
+            "id" => "https://remote.example/users/no-url#main-key",
+            "publicKeyPem" => public_pem
+          }
+        })
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 200, actor_json)
+      end)
+
+      assert {:ok, actor} = ActorResolver.resolve("https://remote.example/users/no-url")
+      assert actor.url == nil
+    end
+
+    test "rejects non-HTTPS url in actor JSON" do
+      {public_pem, _private_pem} = KeyStore.generate_keypair()
+
+      actor_json =
+        Jason.encode!(%{
+          "id" => "https://remote.example/users/http-url",
+          "type" => "Person",
+          "preferredUsername" => "http-url",
+          "url" => "http://remote.example/@http-url",
+          "inbox" => "https://remote.example/users/http-url/inbox",
+          "publicKey" => %{
+            "id" => "https://remote.example/users/http-url#main-key",
+            "publicKeyPem" => public_pem
+          }
+        })
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 200, actor_json)
+      end)
+
+      assert {:ok, actor} = ActorResolver.resolve("https://remote.example/users/http-url")
+      assert actor.url == nil
+    end
+
     test "returns error on invalid JSON response" do
       Req.Test.stub(HTTPClient, fn conn ->
         Plug.Conn.send_resp(conn, 200, ~s({"invalid": "no id field"}))

@@ -140,6 +140,7 @@ defmodule Baudrate.Federation.ActorResolver do
          domain: domain,
          display_name: Sanitizer.sanitize_display_name(json["name"]),
          avatar_url: extract_avatar(json),
+         url: extract_url(json),
          summary: sanitize_summary(json["summary"]),
          public_key_pem: public_key_pem,
          inbox: inbox,
@@ -162,6 +163,9 @@ defmodule Baudrate.Federation.ActorResolver do
 
   defp sanitize_avatar_url("https://" <> _ = url), do: url
   defp sanitize_avatar_url(_), do: nil
+
+  defp extract_url(%{"url" => "https://" <> _ = url}) when is_binary(url), do: url
+  defp extract_url(_), do: nil
 
   defp sanitize_summary(nil), do: nil
   defp sanitize_summary(""), do: nil
