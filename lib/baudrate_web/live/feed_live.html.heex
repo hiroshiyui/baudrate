@@ -100,7 +100,8 @@
                 class="link link-hover"
               >
                 <div class="font-bold text-sm truncate">
-                  {item.feed_item.remote_actor.display_name || item.feed_item.remote_actor.username}
+                  {item.feed_item.remote_actor.display_name ||
+                    item.feed_item.remote_actor.username}
                 </div>
                 <div class="text-xs text-base-content/60 truncate">
                   @{item.feed_item.remote_actor.username}@{item.feed_item.remote_actor.domain}
@@ -228,7 +229,11 @@
                 {display_name(item.article.user)}
               </.link>
               <div class="text-xs text-base-content/60">
-                <.icon name="hero-home-solid" class="size-3.5 text-gray-400" title={gettext("Local")} />
+                <.icon
+                  name="hero-home-solid"
+                  class="size-3.5 text-gray-400"
+                  title={gettext("Local")}
+                />
               </div>
             </div>
             <div class="flex flex-col items-end flex-shrink-0">
@@ -283,7 +288,11 @@
                 {display_name(item.comment.user)}
               </.link>
               <div class="text-xs text-base-content/60">
-                <.icon name="hero-home-solid" class="size-3.5 text-gray-400" title={gettext("Local")} />
+                <.icon
+                  name="hero-home-solid"
+                  class="size-3.5 text-gray-400"
+                  title={gettext("Local")}
+                />
               </div>
             </div>
             <div class="flex flex-col items-end flex-shrink-0">

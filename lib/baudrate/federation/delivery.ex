@@ -159,7 +159,9 @@ defmodule Baudrate.Federation.Delivery do
               )
 
             _ ->
-              Logger.warning("federation.delivery_fail: inbox=#{job.inbox_url} error=#{error_msg}")
+              Logger.warning(
+                "federation.delivery_fail: inbox=#{job.inbox_url} error=#{error_msg}"
+              )
           end
 
           :telemetry.execute(

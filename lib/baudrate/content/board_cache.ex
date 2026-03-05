@@ -175,7 +175,8 @@ defmodule Baudrate.Content.BoardCache do
       |> Enum.filter(& &1.parent_id)
       |> Enum.group_by(& &1.parent_id)
 
-    sub_boards_entries = Enum.map(sub_boards_map, fn {pid, children} -> {{:sub_boards, pid}, children} end)
+    sub_boards_entries =
+      Enum.map(sub_boards_map, fn {pid, children} -> {{:sub_boards, pid}, children} end)
 
     ancestors_entries =
       Enum.map(boards, fn board ->

@@ -47,9 +47,7 @@ defmodule Baudrate.Setup.SettingsCacheTest do
       assert SettingsCache.get("ephemeral_key") == "will_be_deleted"
 
       # Delete the setting directly from the DB
-      Baudrate.Repo.delete_all(
-        from s in Baudrate.Setup.Setting, where: s.key == "ephemeral_key"
-      )
+      Baudrate.Repo.delete_all(from s in Baudrate.Setup.Setting, where: s.key == "ephemeral_key")
 
       SettingsCache.refresh()
 

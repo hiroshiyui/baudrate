@@ -335,8 +335,7 @@ defmodule BaudrateWeb.BoardLiveTest do
           ap_id: "https://remote.example/actor/#{slug}",
           username: "remote_#{slug}",
           domain: "remote.example",
-          public_key_pem:
-            "-----BEGIN PUBLIC KEY-----\nMIIBIjANBg==\n-----END PUBLIC KEY-----",
+          public_key_pem: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBg==\n-----END PUBLIC KEY-----",
           inbox: "https://remote.example/inbox",
           shared_inbox: "https://remote.example/inbox",
           actor_type: "Person",

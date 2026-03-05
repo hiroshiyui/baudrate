@@ -25,7 +25,12 @@ defmodule Baudrate.Content.BoardCacheTest do
 
   describe "get/1" do
     test "returns {:ok, board} for existing board" do
-      board = create_board!(%{name: "Cache Test", slug: "cache-test-#{System.unique_integer([:positive])}"})
+      board =
+        create_board!(%{
+          name: "Cache Test",
+          slug: "cache-test-#{System.unique_integer([:positive])}"
+        })
+
       assert {:ok, cached} = BoardCache.get(board.id)
       assert cached.id == board.id
       assert cached.name == "Cache Test"
@@ -69,8 +74,15 @@ defmodule Baudrate.Content.BoardCacheTest do
     end
 
     test "excludes child boards" do
-      parent = create_board!(%{name: "Parent", slug: "parent-#{System.unique_integer([:positive])}"})
-      child = create_board!(%{name: "Child", slug: "child-#{System.unique_integer([:positive])}", parent_id: parent.id})
+      parent =
+        create_board!(%{name: "Parent", slug: "parent-#{System.unique_integer([:positive])}"})
+
+      child =
+        create_board!(%{
+          name: "Child",
+          slug: "child-#{System.unique_integer([:positive])}",
+          parent_id: parent.id
+        })
 
       top_ids = Enum.map(BoardCache.top_boards(), & &1.id)
       assert parent.id in top_ids
@@ -80,7 +92,8 @@ defmodule Baudrate.Content.BoardCacheTest do
 
   describe "sub_boards/1" do
     test "returns children sorted by position" do
-      parent = create_board!(%{name: "Parent", slug: "sub-parent-#{System.unique_integer([:positive])}"})
+      parent =
+        create_board!(%{name: "Parent", slug: "sub-parent-#{System.unique_integer([:positive])}"})
 
       child_b =
         create_board!(%{
@@ -116,7 +129,9 @@ defmodule Baudrate.Content.BoardCacheTest do
 
   describe "ancestors/1" do
     test "returns [board] for root board" do
-      root = create_board!(%{name: "Root", slug: "anc-root-#{System.unique_integer([:positive])}"})
+      root =
+        create_board!(%{name: "Root", slug: "anc-root-#{System.unique_integer([:positive])}"})
+
       chain = BoardCache.ancestors(root.id)
       assert length(chain) == 1
       assert hd(chain).id == root.id
@@ -151,7 +166,9 @@ defmodule Baudrate.Content.BoardCacheTest do
 
   describe "descendant_ids/1" do
     test "returns [board_id] for leaf board" do
-      leaf = create_board!(%{name: "Leaf", slug: "desc-leaf-#{System.unique_integer([:positive])}"})
+      leaf =
+        create_board!(%{name: "Leaf", slug: "desc-leaf-#{System.unique_integer([:positive])}"})
+
       assert BoardCache.descendant_ids(leaf.id) == [leaf.id]
     end
 
@@ -197,7 +214,11 @@ defmodule Baudrate.Content.BoardCacheTest do
     end
 
     test "reflects updated boards" do
-      board = create_board!(%{name: "Original", slug: "refresh-upd-#{System.unique_integer([:positive])}"})
+      board =
+        create_board!(%{
+          name: "Original",
+          slug: "refresh-upd-#{System.unique_integer([:positive])}"
+        })
 
       {:ok, _updated} = Content.update_board(board, %{name: "Updated Name"})
       BoardCache.refresh()
@@ -207,7 +228,12 @@ defmodule Baudrate.Content.BoardCacheTest do
     end
 
     test "reflects deleted boards" do
-      board = create_board!(%{name: "ToDelete", slug: "refresh-del-#{System.unique_integer([:positive])}"})
+      board =
+        create_board!(%{
+          name: "ToDelete",
+          slug: "refresh-del-#{System.unique_integer([:positive])}"
+        })
+
       assert {:ok, _cached} = BoardCache.get(board.id)
 
       {:ok, _} = Content.delete_board(board)

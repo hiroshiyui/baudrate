@@ -216,6 +216,7 @@ defmodule Baudrate.ContentPollTest do
       past = DateTime.utc_now() |> DateTime.add(-60, :second) |> DateTime.truncate(:second)
 
       import Ecto.Query
+
       from(p in Baudrate.Content.Poll, where: p.id == ^poll.id)
       |> Repo.update_all(set: [closes_at: past])
 

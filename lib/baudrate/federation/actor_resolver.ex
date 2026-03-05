@@ -157,7 +157,9 @@ defmodule Baudrate.Federation.ActorResolver do
 
   defp extract_public_key(_), do: {:error, :missing_public_key}
 
-  defp extract_avatar(%{"icon" => %{"url" => url}}) when is_binary(url), do: sanitize_avatar_url(url)
+  defp extract_avatar(%{"icon" => %{"url" => url}}) when is_binary(url),
+    do: sanitize_avatar_url(url)
+
   defp extract_avatar(%{"icon" => url}) when is_binary(url), do: sanitize_avatar_url(url)
   defp extract_avatar(_), do: nil
 

@@ -58,7 +58,11 @@ defmodule BaudrateWeb.Layouts do
                 {Baudrate.Setup.get_setting("site_name") || "Baudrate"}
               </li>
               <%!-- Admin section (collapsible, matches desktop user menu) --%>
-              <li :if={@current_user && @current_user.role.name in ["admin", "moderator"]} class="divider my-1"></li>
+              <li
+                :if={@current_user && @current_user.role.name in ["admin", "moderator"]}
+                class="divider my-1"
+              >
+              </li>
               <li :if={@current_user && @current_user.role.name in ["admin", "moderator"]}>
                 <details>
                   <summary>{gettext("Admin")}</summary>
@@ -270,7 +274,11 @@ defmodule BaudrateWeb.Layouts do
       </div>
     </header>
 
-    <main id="main-content" tabindex="-1" class="flex-1 px-4 pt-6 pb-24 lg:pt-10 lg:pb-20 sm:px-6 lg:px-8 outline-none">
+    <main
+      id="main-content"
+      tabindex="-1"
+      class="flex-1 px-4 pt-6 pb-24 lg:pt-10 lg:pb-20 sm:px-6 lg:px-8 outline-none"
+    >
       <div class={["mx-auto space-y-4", if(assigns[:wide_layout], do: "max-w-7xl", else: "max-w-6xl")]}>
         {@inner_content}
       </div>
@@ -430,7 +438,11 @@ defmodule BaudrateWeb.Layouts do
 
   defp mobile_bottom_nav(assigns) do
     ~H"""
-    <nav id="mobile-bottom-nav" aria-label={gettext("Mobile navigation")} class="dock lg:hidden z-50 bg-base-200 border-t-2 border-base-300">
+    <nav
+      id="mobile-bottom-nav"
+      aria-label={gettext("Mobile navigation")}
+      class="dock lg:hidden z-50 bg-base-200 border-t-2 border-base-300"
+    >
       <%= if @current_user do %>
         <.link
           navigate="/"
@@ -549,5 +561,4 @@ defmodule BaudrateWeb.Layouts do
   end
 
   defp active_nav?(_, _), do: false
-
 end
