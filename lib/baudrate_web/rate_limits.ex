@@ -26,6 +26,8 @@ defmodule BaudrateWeb.RateLimits do
   | `check_outbound_follow/1`| `outbound_follow:` | 1 hour  | 10    |
   | `check_create_report/1` | `report_create:`   | 15 min  | 5     |
   | `check_feed_reply/1`   | `feed_reply:`      | 5 min   | 20    |
+  | `check_link_preview_domain/1` | `lp_domain:` | 1 min   | 10    |
+  | `check_link_preview_user/1`   | `lp_user:`   | 1 min   | 5     |
   """
 
   require Logger
@@ -100,6 +102,18 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_feed_reply(integer()) :: :ok | {:error, :rate_limited}
   def check_feed_reply(user_id) do
     check("feed_reply:#{user_id}", 300_000, 20, :feed_reply)
+  end
+
+  @doc "Link preview domain fetch: 10 per minute per domain."
+  @spec check_link_preview_domain(String.t()) :: :ok | {:error, :rate_limited}
+  def check_link_preview_domain(domain) do
+    check("lp_domain:#{domain}", 60_000, 10, :link_preview_domain)
+  end
+
+  @doc "Link preview user fetch: 5 per minute per user."
+  @spec check_link_preview_user(integer()) :: :ok | {:error, :rate_limited}
+  def check_link_preview_user(user_id) do
+    check("lp_user:#{user_id}", 60_000, 5, :link_preview_user)
   end
 
   defp check(bucket, scale_ms, limit, action) do
