@@ -32,6 +32,7 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 | HTTP client | Req (never use HTTPoison, Tesla, or httpc) |
 | Markdown | Earmark |
 | 2FA | NimbleTOTP + EQRCode |
+| HTML parsing | Floki |
 | HTML sanitization | Ammonia (Rust NIF via Rustler) — requires Rust toolchain |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
 | Timezone data | tz |
@@ -45,7 +46,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 ### Contexts
 
 - **Auth** (`lib/baudrate/auth.ex`) — authentication (login, registration, TOTP, sessions, password reset), user management (avatars, invite codes, blocks, mutes)
-- **Content** (`lib/baudrate/content.ex`) — boards, articles, comments, likes, polls, permissions, board moderators, search
+- **Content** (`lib/baudrate/content.ex`) — boards, articles, comments, likes, polls, permissions, board moderators, search, link previews
 - **Federation** (`lib/baudrate/federation.ex`) — AP actors, outbox, followers, announces, delivery, user outbound follows, feed item replies
 - **Messaging** (`lib/baudrate/messaging.ex`) — 1-on-1 direct messages, conversations, DM access control, federation
 - **Setup** (`lib/baudrate/setup.ex`) — first-run wizard, RBAC seeding, settings, role level utilities
@@ -72,6 +73,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - Federation outbound delivery: always call `KeyStore.ensure_user_keypair/1` before enqueuing signed activities (Follow, Undo, etc.) to guarantee the user has an RSA keypair
 - Settings are cached in ETS via `Baudrate.Setup.SettingsCache`; `set_setting/2` auto-refreshes the cache on success. Direct DB writes to the `settings` table must call `SettingsCache.refresh()` manually.
 - Boards are cached in ETS via `Baudrate.Content.BoardCache`; board mutations in `Content` (`create_board`, `update_board`, `delete_board`, `toggle_board_federation`) auto-refresh the cache. Both caches are disabled in tests via `settings_cache_enabled: false`.
+- Link previews: async fetch of OG metadata after content save (first URL only). Images are proxied server-side (re-encoded to WebP via libvips). The `link_previews` table is shared/deduplicated by URL hash. Preview cards render via `<.link_preview>` component in `core_components.ex`. Stale previews (>7 days) are refreshed hourly by `SessionCleaner`; orphans (>30 days, no FK refs) are purged.
 
 ## Project Conventions
 

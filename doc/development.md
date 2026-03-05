@@ -1691,3 +1691,48 @@ collisions when running tests in parallel.
 | `lib/mix/tasks/selenium_setup.ex` | `mix selenium.setup` task |
 | `test/baudrate_web/features/` | Feature test directory |
 | `config/test.exs` | Wallaby + Firefox config |
+
+## Inbound Link Previews
+
+When users post URLs in articles, comments, or DMs, the system fetches Open Graph / Twitter Card metadata from the linked page and renders a rich preview card.
+
+### Architecture
+
+```
+Content Creation → Extract First URL → Async Fetch OG Metadata → Store LinkPreview → PubSub → UI Update
+```
+
+- **First URL only** per content item (like Mastodon/Slack)
+- **Async fetch** — content saves immediately; preview appears via PubSub push
+- **Shared `link_previews` table** — deduplicated by SHA-256 URL hash; FK from each content table
+- **Server-side image proxy** — OG images are fetched, re-encoded to WebP via libvips, and served locally (no remote image loading in browser)
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `lib/baudrate/content/link_preview.ex` | Schema + changeset |
+| `lib/baudrate/content/link_preview/url_extractor.ex` | HTML → first external URL |
+| `lib/baudrate/content/link_preview/fetcher.ex` | URL → OG metadata → DB |
+| `lib/baudrate/content/link_preview/image_proxy.ex` | Image fetch + WebP re-encode |
+| `lib/baudrate/content/link_preview/worker.ex` | Async scheduling via TaskSupervisor |
+
+### Security
+
+- **SSRF**: Reuses `HTTPClient` (HTTPS-only, private IP rejection, DNS pinning)
+- **Image proxy**: Remote images are never loaded in the browser — fetched server-side, re-encoded to WebP, served from `/uploads/link_preview_images/`
+- **XSS**: All metadata sanitized with `Sanitizer.Native.strip_tags/1`, control chars stripped, truncated
+- **Rate limiting**: 10 fetches/min per target domain + 5/min per posting user
+- **Domain blocks**: Checked before fetching
+
+### Invalidation
+
+- **TTL**: 7 days; stale previews re-fetched hourly by `SessionCleaner`
+- **Failed previews**: Shown as fallback card (URL + domain only), not retried for 24 hours
+- **Content edit**: When an article's first URL changes, old preview is cleared and new one fetched
+- **Orphan purge**: Previews with no content associations older than 30 days are hard-deleted
+
+### Federation
+
+- **Outbound**: Fetched previews are emitted as `attachment` entries (`type: "Document"`) on outgoing Article objects
+- **Inbound**: Remote content with links triggers the same async fetch pipeline
