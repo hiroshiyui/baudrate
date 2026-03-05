@@ -100,7 +100,7 @@ Built with these excellent open-source projects:
 - [Hammer](https://hexdocs.pm/hammer/)
 - [Earmark](https://hexdocs.pm/earmark/) (Markdown rendering)
 - [Req](https://hexdocs.pm/req/) (HTTP client for federation)
-- [Floki](https://hexdocs.pm/floki/) (HTML parsing for link preview extraction)
+- [html5ever](https://github.com/servo/html5ever) (Rust HTML parser NIF for link preview extraction)
 - [Ammonia](https://crates.io/crates/ammonia) (Rust HTML sanitizer)
 - [Rustler](https://crates.io/crates/rustler) (Rust NIF bindings for Erlang/Elixir)
 - [regex](https://crates.io/crates/regex) (Rust regular expressions)

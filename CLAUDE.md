@@ -32,7 +32,7 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 | HTTP client | Req (never use HTTPoison, Tesla, or httpc) |
 | Markdown | Earmark |
 | 2FA | NimbleTOTP + EQRCode |
-| HTML parsing | Floki |
+| HTML parsing | html5ever (Rust NIF via Rustler) |
 | HTML sanitization | Ammonia (Rust NIF via Rustler) — requires Rust toolchain |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
 | Timezone data | tz |
