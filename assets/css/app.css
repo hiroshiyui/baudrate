@@ -174,4 +174,10 @@ a:focus-visible {
   outline: none;
 }
 
+/* Prevent the fixed-position dock from expanding beyond the viewport
+   when page content overflows horizontally on mobile */
+.dock {
+  max-width: 100vw;
+}
+
 /* This file is for your main application CSS */
