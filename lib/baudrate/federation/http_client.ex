@@ -93,6 +93,65 @@ defmodule Baudrate.Federation.HTTPClient do
   end
 
   @doc """
+  Performs a GET request for HTML content with SSRF protection.
+
+  Similar to `get/2` but uses a generic `Accept: text/html` header and
+  a generic user-agent (not AP-specific). Used for link preview fetching.
+
+  ## Options
+
+    * `:headers` — extra request headers
+    * `:max_size` — override maximum response size (default: federation config)
+  """
+  def get_html(url, opts \\ []) do
+    config = federation_config()
+    extra_headers = Keyword.get(opts, :headers, [])
+    max_size = Keyword.get(opts, :max_size, config[:max_payload_size])
+    config = Keyword.put(config, :max_payload_size, max_size)
+
+    all_headers = [
+      {"user-agent", generic_user_agent()},
+      {"accept", "text/html, application/xhtml+xml"}
+      | extra_headers
+    ]
+
+    do_get_html(url, all_headers, config, @max_redirects)
+  end
+
+  defp do_get_html(_url, _headers, _config, remaining) when remaining < 0 do
+    {:error, :too_many_redirects}
+  end
+
+  defp do_get_html(url, headers, config, remaining) do
+    with {:ok, resolved} <- validate_and_resolve(url) do
+      req_opts = build_pinned_opts(resolved, headers, config)
+
+      case Req.get(req_opts) do
+        {:ok, %Req.Response{status: status, body: body, headers: resp_headers}}
+        when status in 200..299 ->
+          if byte_size(body) > config[:max_payload_size] do
+            {:error, :response_too_large}
+          else
+            {:ok, %{status: status, body: body, headers: resp_headers}}
+          end
+
+        {:ok, %Req.Response{status: status, headers: resp_headers}}
+        when status in [301, 302, 303, 307, 308] ->
+          case get_redirect_location(resp_headers, resolved.uri) do
+            {:ok, location} -> do_get_html(location, headers, config, remaining - 1)
+            :error -> {:error, {:http_error, status, ""}}
+          end
+
+        {:ok, %Req.Response{status: status, body: resp_body}} ->
+          {:error, {:http_error, status, truncate_body(resp_body)}}
+
+        {:error, reason} ->
+          {:error, {:request_failed, reason}}
+      end
+    end
+  end
+
+  @doc """
   Performs a POST request with SSRF protection and federation constraints.
 
   DNS is resolved once and pinned to the connection. Redirects are not
@@ -293,6 +352,10 @@ defmodule Baudrate.Federation.HTTPClient do
 
   defp user_agent do
     "Baudrate/0.1.0 (+#{BaudrateWeb.Endpoint.url()})"
+  end
+
+  defp generic_user_agent do
+    "Baudrate/0.1.0"
   end
 
   defp federation_config do
