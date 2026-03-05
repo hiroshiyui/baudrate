@@ -291,7 +291,24 @@ defmodule BaudrateWeb.LinkedData do
   defp format_iso8601(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
   defp format_iso8601(nil), do: nil
 
-  defp excerpt(text) do
+  @doc """
+  Extracts a plain-text excerpt from HTML or Markdown content.
+
+  Strips HTML tags, collapses whitespace, and truncates to 200 characters
+  with an ellipsis if the text is longer.
+
+  ## Parameters
+
+    * `text` — raw HTML or Markdown string
+
+  ## Returns
+
+  A plain-text string, at most 200 characters plus trailing "…".
+  """
+  @spec excerpt(String.t() | nil) :: String.t()
+  def excerpt(nil), do: ""
+
+  def excerpt(text) do
     text
     |> Sanitizer.strip_tags()
     |> String.replace(~r/\s+/, " ")
