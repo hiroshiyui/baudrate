@@ -758,7 +758,7 @@ BEAM code, the Ammonia NIF `.so`, ERTS, and the overlay convenience scripts
 
 ### Uploads Directory
 
-`priv/static/uploads/` stores avatars and article images:
+`priv/static/uploads/` stores avatars, article images, and link preview images:
 
 - Must be **writable** by the application process
 - Must be **persistent** across deployments
@@ -766,6 +766,8 @@ BEAM code, the Ammonia NIF `.so`, ERTS, and the overlay convenience scripts
 - The Ansible deploy playbook symlinks the release's `uploads/` directory to
   the shared `shared/uploads/` directory, making uploads persistent across
   deploys
+- Subdirectories (`avatars/`, `article_images/`, `link_preview_images/`) are
+  created automatically on first use via `File.mkdir_p!/1`
 
 **Important:** Upload directory paths are resolved at **runtime** using
 `Application.app_dir/2` — never as compile-time module attributes. In OTP
