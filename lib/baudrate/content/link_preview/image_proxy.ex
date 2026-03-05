@@ -107,7 +107,7 @@ defmodule Baudrate.Content.LinkPreview.ImageProxy do
 
     with {:ok, image} <- Image.from_binary(body),
          {:ok, resized} <- resize_to_fit(image),
-         :ok <- Image.write(resized, abs, strip_metadata: true) do
+         {:ok, _written} <- Image.write(resized, abs, strip_metadata: true) do
       {:ok, serving_path}
     end
   rescue
