@@ -193,6 +193,18 @@ defmodule BaudrateWeb.Helpers do
   def display_name(%Baudrate.Federation.RemoteActor{username: username}), do: username
 
   @doc """
+  Returns the best profile URL for a remote actor.
+
+  Prefers the human-friendly `url` field (e.g. `https://mastodon.social/@user`),
+  falling back to `ap_id` (e.g. `https://mastodon.social/users/user`).
+  """
+  def remote_actor_profile_url(%Baudrate.Federation.RemoteActor{url: url})
+      when is_binary(url) and url != "",
+      do: url
+
+  def remote_actor_profile_url(%Baudrate.Federation.RemoteActor{ap_id: ap_id}), do: ap_id
+
+  @doc """
   Returns a display name for a conversation participant.
 
   Local users show their display name; remote actors show `display_name` or `username@domain`.

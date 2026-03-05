@@ -37,6 +37,9 @@ defmodule BaudrateWeb.CoreComponents do
   """
   defdelegate display_name(entity), to: BaudrateWeb.Helpers
 
+  @doc "Returns the best profile URL for a remote actor. See `BaudrateWeb.Helpers.remote_actor_profile_url/1`."
+  defdelegate remote_actor_profile_url(actor), to: BaudrateWeb.Helpers
+
   @doc "Formats a datetime in the site's configured timezone. See `BaudrateWeb.Helpers.format_datetime/2`."
   defdelegate format_datetime(datetime, format), to: BaudrateWeb.Helpers
 

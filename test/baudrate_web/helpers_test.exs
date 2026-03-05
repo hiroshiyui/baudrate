@@ -303,4 +303,39 @@ defmodule BaudrateWeb.HelpersTest do
       assert Helpers.participant_name(%{}) == "?"
     end
   end
+
+  describe "remote_actor_profile_url/1" do
+    test "returns url when present" do
+      actor = %Baudrate.Federation.RemoteActor{
+        username: "alice",
+        domain: "remote.example",
+        ap_id: "https://remote.example/users/alice",
+        url: "https://remote.example/@alice"
+      }
+
+      assert Helpers.remote_actor_profile_url(actor) == "https://remote.example/@alice"
+    end
+
+    test "falls back to ap_id when url is nil" do
+      actor = %Baudrate.Federation.RemoteActor{
+        username: "alice",
+        domain: "remote.example",
+        ap_id: "https://remote.example/users/alice",
+        url: nil
+      }
+
+      assert Helpers.remote_actor_profile_url(actor) == "https://remote.example/users/alice"
+    end
+
+    test "falls back to ap_id when url is empty" do
+      actor = %Baudrate.Federation.RemoteActor{
+        username: "alice",
+        domain: "remote.example",
+        ap_id: "https://remote.example/users/alice",
+        url: ""
+      }
+
+      assert Helpers.remote_actor_profile_url(actor) == "https://remote.example/users/alice"
+    end
+  end
 end
