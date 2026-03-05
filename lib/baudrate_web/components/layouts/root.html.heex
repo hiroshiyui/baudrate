@@ -50,6 +50,13 @@
     <%= for {name, content} <- (assigns[:dc_meta] || []) do %>
       <meta name={name} content={content} />
     <% end %>
+    <%= for {property, content} <- (assigns[:og_meta] || []) do %>
+      <%= if String.starts_with?(property, "twitter:") or String.starts_with?(property, "profile:") do %>
+        <meta name={property} content={content} />
+      <% else %>
+        <meta property={property} content={content} />
+      <% end %>
+    <% end %>
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
