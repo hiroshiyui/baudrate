@@ -58,10 +58,8 @@ defmodule BaudrateWeb.Layouts do
                 {Baudrate.Setup.get_setting("site_name") || "Baudrate"}
               </li>
               <%!-- Admin section (collapsible, matches desktop user menu) --%>
-              <li
-                :if={@current_user && @current_user.role.name in ["admin", "moderator"]}
-                class="divider my-1"
-              >
+              <li :if={@current_user && @current_user.role.name in ["admin", "moderator"]}>
+                <hr />
               </li>
               <li :if={@current_user && @current_user.role.name in ["admin", "moderator"]}>
                 <details>
@@ -98,7 +96,9 @@ defmodule BaudrateWeb.Layouts do
                 </details>
               </li>
               <%!-- User section (matches desktop user menu) --%>
-              <li :if={@current_user} class="divider my-1"></li>
+              <li :if={@current_user}>
+                <hr />
+              </li>
               <li :if={@current_user} class="menu-title flex flex-row items-center gap-2">
                 <.avatar user={@current_user} size={36} />
                 <span class="truncate max-w-[10rem]">{display_name(@current_user)}</span>
@@ -252,7 +252,9 @@ defmodule BaudrateWeb.Layouts do
                   </ul>
                 </details>
               </li>
-              <li :if={@current_user.role.name in ["admin", "moderator"]} class="divider my-1"></li>
+              <li :if={@current_user.role.name in ["admin", "moderator"]}>
+                <hr />
+              </li>
               <li>
                 <.link navigate="/profile">{gettext("Profile")}</.link>
               </li>
