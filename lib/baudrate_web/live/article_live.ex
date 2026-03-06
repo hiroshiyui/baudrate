@@ -585,7 +585,7 @@ defmodule BaudrateWeb.ArticleLive do
       class={["comment border-l-2 border-base-300 pl-4", @depth > 0 && "ml-4"]}
     >
       <div class="py-2">
-        <div class="flex items-center gap-2 text-sm text-base-content/70 mb-1">
+        <div class="flex flex-wrap items-center gap-2 text-sm text-base-content/70 mb-1">
           <.link
             :if={@comment.user}
             navigate={~p"/users/#{@comment.user.username}"}
