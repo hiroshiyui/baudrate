@@ -31,7 +31,7 @@
           {board.name}
           <span
             :if={@current_user && MapSet.member?(@unread_board_ids, board.id)}
-            class="inline-block w-2 h-2 rounded-full bg-primary"
+            class="inline-block w-2 h-2 flex-shrink-0 rounded-full bg-primary"
             aria-label={gettext("Unread")}
           >
           </span>

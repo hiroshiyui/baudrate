@@ -74,7 +74,7 @@
           {sub.name}
           <span
             :if={@current_user && MapSet.member?(@unread_sub_board_ids, sub.id)}
-            class="inline-block w-2 h-2 rounded-full bg-primary"
+            class="inline-block w-2 h-2 flex-shrink-0 rounded-full bg-primary"
             aria-label={gettext("Unread")}
           >
           </span>
@@ -106,7 +106,7 @@
         {article.title}
         <span
           :if={@current_user && MapSet.member?(@unread_article_ids, article.id)}
-          class="inline-block w-2 h-2 rounded-full bg-primary"
+          class="inline-block w-2 h-2 flex-shrink-0 rounded-full bg-primary"
           aria-label={gettext("Unread")}
         >
         </span>
