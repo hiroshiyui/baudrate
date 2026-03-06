@@ -20,6 +20,13 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
     {:ok, conn: conn, user: user, board: board}
   end
 
+  test "redirects unauthenticated user to login" do
+    conn = Phoenix.ConnTest.build_conn()
+
+    assert {:error, {:redirect, %{to: "/login"}}} =
+             live(conn, "/articles/new")
+  end
+
   test "renders article creation form", %{conn: conn} do
     {:ok, _lv, html} = live(conn, "/articles/new")
     assert html =~ "Create Article"

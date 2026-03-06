@@ -21,6 +21,13 @@ defmodule BaudrateWeb.BookmarksLiveTest do
     {:ok, conn: conn, user: user, board: board}
   end
 
+  test "redirects unauthenticated user to login", %{conn: _conn} do
+    conn = Phoenix.ConnTest.build_conn()
+
+    assert {:error, {:redirect, %{to: "/login"}}} =
+             live(conn, "/bookmarks")
+  end
+
   test "shows empty state when no bookmarks", %{conn: conn} do
     {:ok, _lv, html} = live(conn, "/bookmarks")
     assert html =~ "No bookmarks yet."
