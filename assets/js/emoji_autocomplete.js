@@ -64,26 +64,29 @@ function acceptSuggestion(textarea, suggestion) {
   hideDropdown()
 }
 
+function positionDropdown(textarea) {
+  if (!dropdown) return
+  const rect = textarea.getBoundingClientRect()
+  // Place below the textarea, aligned to the left edge
+  dropdown.style.top = (rect.bottom + window.scrollY + 4) + "px"
+  dropdown.style.left = rect.left + "px"
+  dropdown.style.width = Math.min(rect.width, 288) + "px"
+}
+
 function showDropdown(textarea) {
   if (!dropdown) {
     dropdown = document.createElement("ul")
-    dropdown.className = "menu bg-base-200 rounded-box shadow-lg absolute z-50 w-72 max-h-52 overflow-y-auto"
+    // Use fixed positioning on document.body so LiveView DOM patching can't remove it
+    dropdown.className = "menu bg-base-200 rounded-box shadow-lg z-50 max-h-52 overflow-y-auto"
+    dropdown.style.position = "absolute"
     dropdown.setAttribute("role", "listbox")
     dropdown.id = "emoji-autocomplete-list"
+    document.body.appendChild(dropdown)
   }
   textarea.setAttribute("aria-controls", dropdown.id)
   textarea.setAttribute("aria-expanded", "true")
 
-  // Position the dropdown relative to the textarea's closest positioned ancestor.
-  // Toolbar textareas are in a div.relative wrapper; for others, make the parent relative.
-  let wrapper = textarea.closest(".relative") || textarea.parentElement
-  if (!wrapper.style.position && !getComputedStyle(wrapper).position.match(/relative|absolute|fixed/)) {
-    wrapper.style.position = "relative"
-  }
-  if (wrapper && !wrapper.contains(dropdown)) {
-    wrapper.appendChild(dropdown)
-  }
-
+  positionDropdown(textarea)
   renderDropdown(textarea)
 }
 
