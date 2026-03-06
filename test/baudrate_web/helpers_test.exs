@@ -304,6 +304,31 @@ defmodule BaudrateWeb.HelpersTest do
     end
   end
 
+  describe "format_relative_time/1" do
+    test "returns 'just now' for very recent times" do
+      now = DateTime.utc_now()
+      assert Helpers.format_relative_time(now) =~ "just now"
+    end
+
+    test "returns minutes ago for times within the hour" do
+      past = DateTime.utc_now() |> DateTime.add(-300, :second)
+      result = Helpers.format_relative_time(past)
+      assert result =~ "5" and result =~ "m ago"
+    end
+
+    test "returns hours ago for times within the day" do
+      past = DateTime.utc_now() |> DateTime.add(-7200, :second)
+      result = Helpers.format_relative_time(past)
+      assert result =~ "2" and result =~ "h ago"
+    end
+
+    test "returns days ago for times within the week" do
+      past = DateTime.utc_now() |> DateTime.add(-172_800, :second)
+      result = Helpers.format_relative_time(past)
+      assert result =~ "2" and result =~ "d ago"
+    end
+  end
+
   describe "remote_actor_profile_url/1" do
     test "returns url when present" do
       actor = %Baudrate.Federation.RemoteActor{
