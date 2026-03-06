@@ -78,7 +78,7 @@ defmodule Baudrate.Avatar do
   """
   def avatar_url(avatar_id, size) when size in @sizes do
     path = "/uploads/avatars/#{avatar_id}/#{size}.webp"
-    abs_path = Path.join([:code.priv_dir(:baudrate), "static", path])
+    abs_path = Path.join([Application.app_dir(:baudrate, "priv"), "static", path])
 
     if File.exists?(abs_path) do
       path

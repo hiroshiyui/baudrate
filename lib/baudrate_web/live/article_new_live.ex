@@ -100,11 +100,18 @@ defmodule BaudrateWeb.ArticleNewLive do
 
   @impl true
   def handle_event("remove_image", %{"id" => id}, socket) do
-    image = Content.get_article_image!(id)
-    Content.delete_article_image(image)
+    uploaded_ids = Enum.map(socket.assigns.uploaded_images, & &1.id)
 
-    updated = Enum.reject(socket.assigns.uploaded_images, &(&1.id == image.id))
-    {:noreply, assign(socket, :uploaded_images, updated)}
+    with {:ok, image_id} <- parse_id(id),
+         true <- image_id in uploaded_ids do
+      image = Content.get_article_image!(image_id)
+      Content.delete_article_image(image)
+
+      updated = Enum.reject(socket.assigns.uploaded_images, &(&1.id == image_id))
+      {:noreply, assign(socket, :uploaded_images, updated)}
+    else
+      _ -> {:noreply, put_flash(socket, :error, gettext("Image not found."))}
+    end
   end
 
   @impl true
