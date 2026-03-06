@@ -13,7 +13,7 @@ defmodule BaudrateWeb.ConversationsLive do
   alias Baudrate.Auth
   alias Baudrate.Messaging
   alias Baudrate.Messaging.PubSub, as: MessagingPubSub
-  import BaudrateWeb.Helpers, only: [participant_name: 1]
+  import BaudrateWeb.Helpers, only: [participant_name: 1, format_relative_time: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -79,18 +79,5 @@ defmodule BaudrateWeb.ConversationsLive do
 
   defp other_participant(conv, current_user) do
     Messaging.other_participant(conv, current_user)
-  end
-
-  defp format_relative_time(datetime) do
-    now = DateTime.utc_now()
-    diff = DateTime.diff(now, datetime, :second)
-
-    cond do
-      diff < 60 -> gettext("just now")
-      diff < 3600 -> gettext("%{count}m ago", count: div(diff, 60))
-      diff < 86_400 -> gettext("%{count}h ago", count: div(diff, 3600))
-      diff < 604_800 -> gettext("%{count}d ago", count: div(diff, 86_400))
-      true -> BaudrateWeb.Helpers.format_date(datetime)
-    end
   end
 end

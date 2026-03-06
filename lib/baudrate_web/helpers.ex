@@ -329,6 +329,29 @@ defmodule BaudrateWeb.Helpers do
   end
 
   @doc """
+  Formats a datetime as a relative time string (e.g. "just now", "3h ago").
+
+  For times older than 7 days, falls back to `format_date/1`.
+
+  ## Examples
+
+      iex> BaudrateWeb.Helpers.format_relative_time(DateTime.utc_now())
+      "just now"
+  """
+  def format_relative_time(datetime) do
+    now = DateTime.utc_now()
+    diff = DateTime.diff(now, datetime, :second)
+
+    cond do
+      diff < 60 -> gettext("just now")
+      diff < 3600 -> gettext("%{count}m ago", count: div(diff, 60))
+      diff < 86_400 -> gettext("%{count}h ago", count: div(diff, 3600))
+      diff < 604_800 -> gettext("%{count}d ago", count: div(diff, 86_400))
+      true -> format_date(datetime)
+    end
+  end
+
+  @doc """
   Formats a file size in bytes to a human-readable string with localized units.
 
   ## Examples

@@ -16,7 +16,8 @@ defmodule BaudrateWeb.NotificationsLive do
     only: [
       parse_page: 1,
       notification_text: 1,
-      notification_icon: 1
+      notification_icon: 1,
+      format_relative_time: 1
     ]
 
   @impl true
@@ -97,17 +98,4 @@ defmodule BaudrateWeb.NotificationsLive do
   defp target_title(%{article: %{title: title}}) when not is_nil(title), do: title
   defp target_title(%{type: "admin_announcement", data: %{"message" => msg}}), do: msg
   defp target_title(_), do: nil
-
-  defp format_relative_time(datetime) do
-    now = DateTime.utc_now()
-    diff = DateTime.diff(now, datetime, :second)
-
-    cond do
-      diff < 60 -> gettext("just now")
-      diff < 3600 -> gettext("%{count}m ago", count: div(diff, 60))
-      diff < 86_400 -> gettext("%{count}h ago", count: div(diff, 3600))
-      diff < 604_800 -> gettext("%{count}d ago", count: div(diff, 86_400))
-      true -> BaudrateWeb.Helpers.format_date(datetime)
-    end
-  end
 end
