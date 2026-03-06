@@ -142,6 +142,53 @@ document.addEventListener("click", (e) => {
   }
 })
 
+// Graceful reconnect: delay showing disconnect flash so brief interruptions
+// (e.g. phone sleep/wake) don't flash a scary red error at the user.
+// Only show after 2s of sustained disconnection; hide immediately on reconnect.
+;(() => {
+  const GRACE_MS = 2000
+  let timer = null
+
+  const setVisible = (id, visible) => {
+    const el = document.getElementById(id)
+    if (!el) return
+    if (visible) {
+      el.removeAttribute("hidden")
+      el.style.display = ""
+    } else {
+      el.setAttribute("hidden", "")
+      el.style.display = "none"
+    }
+  }
+
+  const hideAll = () => {
+    setVisible("client-error", false)
+    setVisible("server-error", false)
+  }
+
+  const observer = new MutationObserver(() => {
+    const cl = document.documentElement.classList
+    const disconnected = cl.contains("phx-client-error") || cl.contains("phx-server-error")
+
+    if (disconnected) {
+      if (!timer) {
+        timer = setTimeout(() => {
+          const cl2 = document.documentElement.classList
+          if (cl2.contains("phx-client-error")) setVisible("client-error", true)
+          if (cl2.contains("phx-server-error")) setVisible("server-error", true)
+        }, GRACE_MS)
+      }
+    } else {
+      if (timer) { clearTimeout(timer); timer = null }
+      hideAll()
+    }
+  })
+
+  observer.observe(document.documentElement, {
+    attributes: true, attributeFilter: ["class"]
+  })
+})()
+
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
