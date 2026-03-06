@@ -866,7 +866,7 @@ defmodule BaudrateWeb.CoreComponents do
       href={@preview.url}
       target="_blank"
       rel="nofollow noopener noreferrer"
-      class="card card-side bg-base-200 not-prose overflow-hidden border border-base-300 mt-3 max-w-lg block"
+      class="card card-side bg-base-200 not-prose overflow-hidden border border-base-300 mt-3 max-w-lg"
       aria-label={gettext("Link preview: %{title}", title: @preview.title || @preview.url)}
     >
       <figure :if={@preview.image_path} class="w-32 shrink-0">
