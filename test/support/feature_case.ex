@@ -46,6 +46,12 @@ defmodule BaudrateWeb.FeatureCase do
     # 127.0.0.1 so real Hammer rate limiting would trigger across sequential tests
     BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1})
 
+    # Clear Hammer buckets for direct Hammer.check_rate calls in LiveViews
+    # (login_live, register_live, password_reset_live bypass the sandbox)
+    Hammer.delete_buckets("login:127.0.0.1")
+    Hammer.delete_buckets("register:127.0.0.1")
+    Hammer.delete_buckets("password_reset:127.0.0.1")
+
     # Ensure setup wizard doesn't redirect — insert setup_completed setting
     ensure_setup_completed()
 
