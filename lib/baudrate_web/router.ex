@@ -318,6 +318,14 @@ defmodule BaudrateWeb.Router do
     delete "/logout", SessionController, :delete
   end
 
+  # Handle redirect — Mastodon and other AP implementations use the actor `url`
+  # field for profile links, which follows the /@username convention.
+  scope "/", BaudrateWeb do
+    pipe_through :browser
+
+    get "/@:handle", HandleRedirectController, :show
+  end
+
   # Public browsable routes (accessible to guests and authenticated users)
   scope "/", BaudrateWeb do
     pipe_through :browser
