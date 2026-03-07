@@ -475,13 +475,14 @@ defmodule Baudrate.Federation.Publisher do
 
   Returns `{activity_map, actor_uri}`.
   """
-  def build_like_article(user, article) do
+  def build_like_article(user, article, like_ap_id \\ nil) do
     actor_uri = Federation.actor_uri(:user, user.username)
-    article_uri = Federation.actor_uri(:article, article.slug)
+    article_uri = article.ap_id || Federation.actor_uri(:article, article.slug)
+    like_id = like_ap_id || "#{actor_uri}#like-#{System.unique_integer([:positive])}"
 
     activity = %{
       "@context" => @ap_context,
-      "id" => "#{actor_uri}#like-#{System.unique_integer([:positive])}",
+      "id" => like_id,
       "type" => "Like",
       "actor" => actor_uri,
       "object" => article_uri,
@@ -496,9 +497,10 @@ defmodule Baudrate.Federation.Publisher do
 
   Returns `{activity_map, actor_uri}`.
   """
-  def build_undo_like_article(user, article) do
+  def build_undo_like_article(user, article, like_ap_id \\ nil) do
     actor_uri = Federation.actor_uri(:user, user.username)
-    article_uri = Federation.actor_uri(:article, article.slug)
+    article_uri = article.ap_id || Federation.actor_uri(:article, article.slug)
+    like_id = like_ap_id || "#{actor_uri}#like-#{System.unique_integer([:positive])}"
 
     activity = %{
       "@context" => @ap_context,
@@ -506,6 +508,7 @@ defmodule Baudrate.Federation.Publisher do
       "type" => "Undo",
       "actor" => actor_uri,
       "object" => %{
+        "id" => like_id,
         "type" => "Like",
         "actor" => actor_uri,
         "object" => article_uri
@@ -522,17 +525,21 @@ defmodule Baudrate.Federation.Publisher do
   def publish_article_liked(user_id, article) do
     user = Repo.get!(Baudrate.Setup.User, user_id)
     article = Repo.preload(article, [:boards, :user])
-    {activity, actor_uri} = build_like_article(user, article)
+
+    like = Repo.get_by(Baudrate.Content.ArticleLike, user_id: user_id, article_id: article.id)
+    like_ap_id = like && like.ap_id
+
+    {activity, actor_uri} = build_like_article(user, article, like_ap_id)
     Delivery.enqueue_for_article(activity, actor_uri, article)
   end
 
   @doc """
   Publishes an `Undo(Like)` activity for a local user unliking an article.
   """
-  def publish_article_unliked(user_id, article) do
+  def publish_article_unliked(user_id, article, like_ap_id \\ nil) do
     user = Repo.get!(Baudrate.Setup.User, user_id)
     article = Repo.preload(article, [:boards, :user])
-    {activity, actor_uri} = build_undo_like_article(user, article)
+    {activity, actor_uri} = build_undo_like_article(user, article, like_ap_id)
     Delivery.enqueue_for_article(activity, actor_uri, article)
   end
 
@@ -686,7 +693,7 @@ defmodule Baudrate.Federation.Publisher do
     recipient_uri = resolve_dm_recipient_uri(conversation, sender_user.id)
     recipient_acct = resolve_dm_recipient_acct(conversation, sender_user.id)
 
-    message_uri = "#{actor_uri}#dm-#{message.id}"
+    message_uri = message.ap_id || "#{actor_uri}#dm-#{message.id}"
 
     object =
       %{
@@ -728,7 +735,7 @@ defmodule Baudrate.Federation.Publisher do
   """
   def build_delete_dm(message, sender_user, conversation) do
     actor_uri = Federation.actor_uri(:user, sender_user.username)
-    message_uri = "#{actor_uri}#dm-#{message.id}"
+    message_uri = message.ap_id || "#{actor_uri}#dm-#{message.id}"
     recipient_uri = resolve_dm_recipient_uri(conversation, sender_user.id)
 
     activity = %{

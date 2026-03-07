@@ -1821,7 +1821,7 @@ defmodule Baudrate.Federation do
 
     map = %{
       "@context" => @as_context,
-      "id" => actor_uri(:article, article.slug),
+      "id" => article.ap_id || actor_uri(:article, article.slug),
       "type" => "Article",
       "name" => article.title,
       "summary" => build_article_summary(article.body),
@@ -1838,7 +1838,7 @@ defmodule Baudrate.Federation do
       "cc" => board_uris,
       "audience" => board_uris,
       "url" => "#{base_url()}/articles/#{article.slug}",
-      "replies" => "#{actor_uri(:article, article.slug)}/replies",
+      "replies" => "#{article.ap_id || actor_uri(:article, article.slug)}/replies",
       "baudrate:pinned" => article.pinned,
       "baudrate:locked" => article.locked,
       "baudrate:commentCount" => Content.count_comments_for_article(article),
