@@ -39,6 +39,9 @@ defmodule Baudrate.Content.Comments do
       |> Repo.insert()
 
     with {:ok, comment} <- result do
+      # Stamp the local AP ID so remote replies can resolve back to this comment
+      comment = stamp_local_ap_id(comment)
+
       touch_article_activity(comment.article_id)
 
       ContentPubSub.broadcast_to_article(comment.article_id, :comment_created, %{
@@ -57,7 +60,7 @@ defmodule Baudrate.Content.Comments do
 
       PreviewWorker.schedule_preview_fetch(:comment, comment.id, body_html, comment.user_id)
 
-      result
+      {:ok, comment}
     end
   end
 
@@ -302,6 +305,20 @@ defmodule Baudrate.Content.Comments do
       [article_id]
     )
   end
+
+  # Stamps a local comment with its canonical AP ID so that remote replies
+  # (whose `inReplyTo` points here) can be resolved back to this comment.
+  defp stamp_local_ap_id(%Comment{ap_id: nil, user_id: user_id} = comment)
+       when is_integer(user_id) do
+    user = Repo.get!(Baudrate.Setup.User, user_id)
+    ap_id = Baudrate.Federation.actor_uri(:user, user.username) <> "#note-#{comment.id}"
+
+    comment
+    |> Ecto.Changeset.change(ap_id: ap_id)
+    |> Repo.update!()
+  end
+
+  defp stamp_local_ap_id(comment), do: comment
 
   defp schedule_federation_task(fun), do: Baudrate.Federation.schedule_federation_task(fun)
 end

@@ -89,6 +89,24 @@ defmodule Baudrate.Content.CommentCreateTest do
       assert reply.parent_id == parent.id
     end
 
+    test "stamps local comment with AP ID for federation" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Federable comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      expected_ap_id =
+        Baudrate.Federation.actor_uri(:user, user.username) <> "#note-#{comment.id}"
+
+      assert comment.ap_id == expected_ap_id
+    end
+
     test "validates required fields" do
       assert {:error, changeset} = Content.create_comment(%{"body" => ""})
       assert %{body: _, article_id: _, user_id: _} = errors_on(changeset)

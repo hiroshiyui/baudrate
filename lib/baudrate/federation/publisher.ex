@@ -139,6 +139,7 @@ defmodule Baudrate.Federation.Publisher do
     article = Repo.preload(article, [:user])
     actor_uri = Federation.actor_uri(:user, comment.user.username)
     article_uri = Federation.actor_uri(:article, article.slug)
+    note_uri = comment.ap_id || "#{actor_uri}#note-#{comment.id}"
 
     activity = %{
       "@context" => @ap_context,
@@ -149,7 +150,7 @@ defmodule Baudrate.Federation.Publisher do
       "to" => [@as_public],
       "cc" => ["#{actor_uri}/followers"],
       "object" => %{
-        "id" => "#{actor_uri}#note-#{comment.id}",
+        "id" => note_uri,
         "type" => "Note",
         "content" => comment.body_html || comment.body,
         "attributedTo" => actor_uri,
@@ -171,7 +172,7 @@ defmodule Baudrate.Federation.Publisher do
   def build_delete_comment(comment, _article) do
     comment = Repo.preload(comment, [:user])
     actor_uri = Federation.actor_uri(:user, comment.user.username)
-    note_uri = "#{actor_uri}#note-#{comment.id}"
+    note_uri = comment.ap_id || "#{actor_uri}#note-#{comment.id}"
 
     activity = %{
       "@context" => @ap_context,

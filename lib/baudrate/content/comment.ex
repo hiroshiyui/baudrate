@@ -35,11 +35,12 @@ defmodule Baudrate.Content.Comment do
   @doc "Changeset for local comments created by authenticated users."
   def changeset(comment, attrs) do
     comment
-    |> cast(attrs, [:body, :body_html, :article_id, :parent_id, :user_id])
+    |> cast(attrs, [:body, :body_html, :ap_id, :article_id, :parent_id, :user_id])
     |> validate_required([:body, :article_id, :user_id])
     |> foreign_key_constraint(:article_id)
     |> foreign_key_constraint(:parent_id)
     |> foreign_key_constraint(:user_id)
+    |> unique_constraint(:ap_id)
   end
 
   @doc "Changeset for remote comments received via ActivityPub."
