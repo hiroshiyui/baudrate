@@ -148,6 +148,15 @@ defmodule Baudrate.Federation.SanitizerTest do
       assert result =~ "<a "
     end
 
+    test "preserves mention and u-url classes on anchor (Mastodon mention links)" do
+      html =
+        ~s(<span class="h-card"><a href="https://mastodon.social/@eff" class="u-url mention">@eff</a></span>)
+
+      result = Sanitizer.sanitize(html)
+      assert result =~ ~s(class="u-url mention")
+      assert result =~ ~s(class="h-card")
+    end
+
     test "preserves span with hashtag class (Mastodon hashtags)" do
       html = ~s(<span class="hashtag">#elixir</span>)
       result = Sanitizer.sanitize(html)

@@ -73,6 +73,38 @@ defmodule Baudrate.Sanitizer.NativeTest do
       refute result =~ "evil"
     end
 
+    test "preserves anchor with safe classes: hashtag, mention, u-url" do
+      for class <- ~w[hashtag mention u-url] do
+        html = ~s[<a href="https://example.com" class="#{class}">link</a>]
+        result = Native.sanitize_federation(html)
+        assert result =~ ~s[class="#{class}"], "Expected #{class} to be preserved on <a>"
+      end
+    end
+
+    test "preserves Mastodon mention anchor with u-url mention classes" do
+      html =
+        ~s[<span class="h-card"><a href="https://mastodon.social/@eff" class="u-url mention">@eff</a></span>]
+
+      result = Native.sanitize_federation(html)
+      assert result =~ ~s[class="u-url mention"]
+      assert result =~ ~s[class="h-card"]
+    end
+
+    test "strips unsafe class from anchor but keeps tag" do
+      html = ~s[<a href="https://example.com" class="malicious">link</a>]
+      result = Native.sanitize_federation(html)
+      assert result =~ "<a "
+      refute result =~ "malicious"
+    end
+
+    test "keeps only safe classes from mixed anchor class list" do
+      html = ~s[<a href="https://example.com" class="mention evil u-url">link</a>]
+      result = Native.sanitize_federation(html)
+      assert result =~ "mention"
+      assert result =~ "u-url"
+      refute result =~ "evil"
+    end
+
     test "strips script tag and content" do
       html = "<p>ok</p><script>alert('xss')</script><p>fine</p>"
       result = Native.sanitize_federation(html)

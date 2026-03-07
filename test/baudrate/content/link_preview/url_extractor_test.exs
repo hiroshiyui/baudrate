@@ -69,5 +69,23 @@ defmodule Baudrate.Content.LinkPreview.UrlExtractorTest do
       html = ~s(<p><a href="https://first.com">1</a> <a href="https://second.com">2</a></p>)
       assert {:ok, "https://first.com"} = UrlExtractor.extract_first_url(html)
     end
+
+    test "skips Mastodon mention links after federation sanitization" do
+      # Mastodon sends mentions as: <span class="h-card"><a class="u-url mention" href="...">
+      # The sanitizer must preserve the mention class on <a> so the extractor can skip it.
+      raw_html =
+        ~s(<p><span class="h-card"><a href="https://mastodon.social/@eff" class="u-url mention">@<span>eff</span></a></span> wrote about this</p>)
+
+      sanitized = Baudrate.Sanitizer.Native.sanitize_federation(raw_html)
+      assert :none = UrlExtractor.extract_first_url(sanitized)
+    end
+
+    test "extracts real URL after Mastodon mention in sanitized content" do
+      raw_html =
+        ~s(<p><span class="h-card"><a href="https://mastodon.social/@user" class="u-url mention">@<span>user</span></a></span> check <a href="https://example.com/article">this</a></p>)
+
+      sanitized = Baudrate.Sanitizer.Native.sanitize_federation(raw_html)
+      assert {:ok, "https://example.com/article"} = UrlExtractor.extract_first_url(sanitized)
+    end
   end
 end

@@ -7,6 +7,7 @@ use std::sync::OnceLock;
 static LANGUAGE_CLASS_RE: OnceLock<Regex> = OnceLock::new();
 
 const SAFE_SPAN_CLASSES: &[&str] = &["h-card", "hashtag", "mention", "invisible"];
+const SAFE_ANCHOR_CLASSES: &[&str] = &["hashtag", "mention", "u-url"];
 
 fn language_class_regex() -> &'static Regex {
     LANGUAGE_CLASS_RE.get_or_init(|| Regex::new(r"^language-[a-zA-Z0-9_+\-]+$").unwrap())
@@ -35,7 +36,7 @@ fn sanitize_federation(html: &str) -> String {
     let tags = federation_tags();
 
     let mut tag_attributes: HashMap<&str, HashSet<&str>> = HashMap::new();
-    tag_attributes.insert("a", ["href"].into_iter().collect());
+    tag_attributes.insert("a", ["href", "class"].into_iter().collect());
     tag_attributes.insert("span", ["class"].into_iter().collect());
 
     let url_schemes: HashSet<&str> = ["http", "https"].into_iter().collect();
@@ -49,6 +50,17 @@ fn sanitize_federation(html: &str) -> String {
         .clean_content_tags(clean_content_tags())
         .strip_comments(true)
         .attribute_filter(|element, attribute, value| match (element, attribute) {
+            ("a", "class") => {
+                let filtered: Vec<&str> = value
+                    .split_whitespace()
+                    .filter(|c| SAFE_ANCHOR_CLASSES.contains(c))
+                    .collect();
+                if filtered.is_empty() {
+                    None
+                } else {
+                    Some(Cow::Owned(filtered.join(" ")))
+                }
+            }
             ("span", "class") => {
                 let filtered: Vec<&str> = value
                     .split_whitespace()
