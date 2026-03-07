@@ -937,6 +937,20 @@ The `Baudrate.Federation` context handles all federation logic.
 | Site | Organization | `/ap/site` |
 | Article | Article | `/ap/articles/:slug` |
 
+**AP ID stamping** — all local AP objects receive a canonical `ap_id` immediately after creation:
+
+| Object | URI Pattern | Stamped In |
+|--------|-------------|------------|
+| Article | `{base}/ap/articles/{slug}` | `Content.Articles.create_article/2,3` |
+| Comment | `{actor_uri}#note-{id}` | `Content.Comments.create_comment/1` |
+| ArticleLike | `{actor_uri}#like-{id}` | `Content.Likes.like_article/2` |
+| Poll | `{article_ap_id}#poll` | `Content.Articles.create_article/2,3` |
+| DirectMessage | `{actor_uri}#dm-{id}` | `Messaging.create_message/3` |
+
+AP IDs are generated post-insert (require the DB-assigned `id`) and stored via immediate
+`Repo.update!`. Publisher functions use the stored `ap_id` field with a fallback to
+`Federation.actor_uri/2` for backwards compatibility.
+
 **Discovery endpoints:**
 - `/.well-known/webfinger` — resolve `acct:user@host` or `acct:board-slug@host` (also accepts `!` prefix for Lemmy compat); board responses include `properties` with `type: "Group"`
 - `/.well-known/nodeinfo` → `/nodeinfo/2.1` — instance metadata
