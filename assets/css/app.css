@@ -174,11 +174,19 @@ a:focus-visible {
   outline: none;
 }
 
-/* Touch/tap feedback for interactive cards (mirrors focus-visible highlight) */
+/* Touch/tap feedback for interactive cards (mirrors focus-visible highlight).
+   On release the shadow blurs outward and fades to transparent. */
+a.card,
+.card:has(> .card-body > .stretched-link) {
+  box-shadow: inset 0 0 0 0 transparent;
+  transition: box-shadow 0.4s ease-out;
+}
+
 a.card:active,
 .card:has(> .card-body > .stretched-link:active) {
   box-shadow: inset 0 0 0 1px var(--color-primary);
   border-radius: var(--radius-box);
+  transition: none;
 }
 
 /* Prevent the fixed-position dock from expanding beyond the viewport
