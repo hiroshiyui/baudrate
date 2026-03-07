@@ -713,7 +713,7 @@ defmodule BaudrateWeb.ArticleLive do
               type="textarea"
               placeholder={gettext("Write a reply...")}
               toolbar
-              rows="2"
+              rows="6"
             />
             <div class="flex gap-2">
               <button
