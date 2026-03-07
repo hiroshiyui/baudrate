@@ -168,7 +168,11 @@ defmodule Baudrate.Content.Articles do
       |> Polls.maybe_insert_poll(poll_attrs)
       |> Repo.transaction()
 
-    with {:ok, %{article: article}} <- result do
+    with {:ok, %{article: article} = multi_result} <- result do
+      # Stamp canonical AP IDs so remote instances can reference these objects
+      article = stamp_article_ap_id(article)
+      multi_result = maybe_stamp_poll_ap_id(multi_result, article)
+
       Tags.sync_article_tags(article)
 
       for board_id <- board_ids do
@@ -187,7 +191,7 @@ defmodule Baudrate.Content.Articles do
       body_html = Baudrate.Content.Markdown.to_html(article.body || "")
       PreviewWorker.schedule_preview_fetch(:article, article.id, body_html, article.user_id)
 
-      result
+      {:ok, %{multi_result | article: article}}
     end
   end
 
@@ -604,6 +608,29 @@ defmodule Baudrate.Content.Articles do
       end
     end
   end
+
+  defp maybe_stamp_poll_ap_id(%{poll: %{ap_id: nil} = poll} = multi_result, article) do
+    ap_id = (article.ap_id || Baudrate.Federation.actor_uri(:article, article.slug)) <> "#poll"
+
+    poll =
+      poll
+      |> Ecto.Changeset.change(ap_id: ap_id)
+      |> Repo.update!()
+
+    %{multi_result | poll: poll}
+  end
+
+  defp maybe_stamp_poll_ap_id(multi_result, _article), do: multi_result
+
+  defp stamp_article_ap_id(%Article{ap_id: nil, slug: slug} = article) when is_binary(slug) do
+    ap_id = Baudrate.Federation.actor_uri(:article, slug)
+
+    article
+    |> Ecto.Changeset.change(ap_id: ap_id)
+    |> Repo.update!()
+  end
+
+  defp stamp_article_ap_id(article), do: article
 
   defp schedule_federation_task(fun), do: Baudrate.Federation.schedule_federation_task(fun)
 end

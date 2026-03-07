@@ -38,7 +38,7 @@ defmodule Baudrate.Content.Poll do
   @doc "Changeset for creating a local poll."
   def changeset(poll, attrs) do
     poll
-    |> cast(attrs, [:mode, :closes_at, :article_id])
+    |> cast(attrs, [:mode, :closes_at, :ap_id, :article_id])
     |> validate_required([:mode])
     |> validate_inclusion(:mode, @valid_modes)
     |> validate_closes_at_in_future()
@@ -46,6 +46,7 @@ defmodule Baudrate.Content.Poll do
     |> validate_option_count()
     |> assoc_constraint(:article)
     |> unique_constraint(:article_id)
+    |> unique_constraint(:ap_id)
   end
 
   @doc "Changeset for remote polls received via ActivityPub."

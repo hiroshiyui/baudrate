@@ -54,7 +54,7 @@ defmodule Baudrate.Content.Article do
   @doc "Changeset for creating a local article with title, body, slug, and author."
   def changeset(article, attrs) do
     article
-    |> cast(attrs, [:title, :body, :slug, :user_id, :forwardable])
+    |> cast(attrs, [:title, :body, :slug, :ap_id, :user_id, :forwardable])
     |> validate_required([:title, :body, :slug])
     |> validate_length(:body, max: @max_body_length)
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
@@ -62,6 +62,7 @@ defmodule Baudrate.Content.Article do
     )
     |> assoc_constraint(:user)
     |> unique_constraint(:slug)
+    |> unique_constraint(:ap_id)
   end
 
   @doc "Changeset for updating a local article (title and body only, slug stays fixed)."
