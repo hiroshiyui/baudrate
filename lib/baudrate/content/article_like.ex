@@ -26,11 +26,12 @@ defmodule Baudrate.Content.ArticleLike do
   @doc "Changeset for local likes created by authenticated users."
   def changeset(like, attrs) do
     like
-    |> cast(attrs, [:article_id, :user_id])
+    |> cast(attrs, [:ap_id, :article_id, :user_id])
     |> validate_required([:article_id, :user_id])
     |> foreign_key_constraint(:article_id)
     |> foreign_key_constraint(:user_id)
     |> unique_constraint([:article_id, :user_id])
+    |> unique_constraint(:ap_id)
   end
 
   @doc "Changeset for remote likes received via ActivityPub."

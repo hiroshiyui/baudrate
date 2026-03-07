@@ -71,9 +71,14 @@ defmodule Baudrate.Content.Likes do
   """
   @spec like_article(term(), term()) :: {:ok, %ArticleLike{}} | {:error, Ecto.Changeset.t()}
   def like_article(user_id, article_id) do
-    %ArticleLike{}
-    |> ArticleLike.changeset(%{user_id: user_id, article_id: article_id})
-    |> Repo.insert()
+    result =
+      %ArticleLike{}
+      |> ArticleLike.changeset(%{user_id: user_id, article_id: article_id})
+      |> Repo.insert()
+
+    with {:ok, like} <- result do
+      {:ok, stamp_like_ap_id(like)}
+    end
   end
 
   @doc """
@@ -140,11 +145,12 @@ defmodule Baudrate.Content.Likes do
                 end
             end
 
-          _like ->
+          like ->
+            like_ap_id = like.ap_id
             unlike_article(user_id, article_id)
 
             schedule_federation_task(fn ->
-              Baudrate.Federation.Publisher.publish_article_unliked(user_id, article)
+              Baudrate.Federation.Publisher.publish_article_unliked(user_id, article, like_ap_id)
             end)
 
             {:ok, :removed}
@@ -286,6 +292,18 @@ defmodule Baudrate.Content.Likes do
       _ -> false
     end)
   end
+
+  defp stamp_like_ap_id(%ArticleLike{ap_id: nil, user_id: user_id} = like)
+       when is_integer(user_id) do
+    user = Repo.get!(Baudrate.Setup.User, user_id)
+    ap_id = Baudrate.Federation.actor_uri(:user, user.username) <> "#like-#{like.id}"
+
+    like
+    |> Ecto.Changeset.change(ap_id: ap_id)
+    |> Repo.update!()
+  end
+
+  defp stamp_like_ap_id(like), do: like
 
   defp schedule_federation_task(fun), do: Baudrate.Federation.schedule_federation_task(fun)
 end

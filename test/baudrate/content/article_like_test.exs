@@ -66,6 +66,19 @@ defmodule Baudrate.Content.ArticleLikeTest do
     actor
   end
 
+  describe "ap_id stamping" do
+    test "local like gets ap_id stamped via like_article" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, like} = Baudrate.Content.like_article(user.id, article.id)
+
+      expected = Baudrate.Federation.actor_uri(:user, user.username) <> "#like-#{like.id}"
+      assert like.ap_id == expected
+    end
+  end
+
   describe "changeset/2 (local)" do
     test "valid local like" do
       user = create_user()
