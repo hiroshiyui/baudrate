@@ -67,7 +67,7 @@
       :for={sub <- @sub_boards}
       id={"sub-board-#{sub.slug}"}
       navigate={~p"/boards/#{sub.slug}"}
-      class="board card bg-base-200 shadow-sm hover:shadow-md transition-shadow"
+      class="board card bg-base-200 shadow-sm hover:bg-base-300 transition-colors"
     >
       <div class="card-body p-4">
         <h3 class="card-title text-base">
@@ -94,7 +94,7 @@
     :for={article <- @articles}
     id={"article-#{article.slug}"}
     aria-labelledby={"article-title-#{article.slug}"}
-    class="article card bg-base-200 shadow-sm relative"
+    class="article card bg-base-200 shadow-sm hover:bg-base-300 transition-colors relative"
   >
     <div class="card-body p-4">
       <.link
