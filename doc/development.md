@@ -959,7 +959,7 @@ The `Baudrate.Federation` context handles all federation logic.
 
 **Incoming activities handled** (via `InboxHandler`):
 - `Follow` / `Undo(Follow)` — follower management with auto-accept
-- `Create(Note)` — stored as threaded comments on local articles, or as DMs if privately addressed (no `as:Public`, no followers collection)
+- `Create(Note)` — stored as threaded comments on local articles (with remote reply chain walking up to 10 hops to resolve intermediate replies), or as DMs if privately addressed (no `as:Public`, no followers collection)
 - `Create(Article)` / `Create(Page)` — stored as remote articles in target boards (Page for Lemmy interop)
 - `Like` / `Undo(Like)` — article favorites
 - `Announce` / `Undo(Announce)` — boosts/shares (bare URI or embedded object map)
