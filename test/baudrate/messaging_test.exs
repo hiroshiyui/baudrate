@@ -317,6 +317,17 @@ defmodule Baudrate.MessagingTest do
       {:error, changeset} = Messaging.create_message(conv, user_a, %{body: ""})
       assert errors_on(changeset)[:body]
     end
+
+    test "stamps local DM with AP ID for federation" do
+      user_a = create_user("user")
+      user_b = create_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(user_a, user_b)
+
+      {:ok, msg} = Messaging.create_message(conv, user_a, %{body: "Hello!"})
+
+      expected = Baudrate.Federation.actor_uri(:user, user_a.username) <> "#dm-#{msg.id}"
+      assert msg.ap_id == expected
+    end
   end
 
   # --- list_conversations ---

@@ -276,6 +276,9 @@ defmodule Baudrate.Messaging do
 
     case Repo.transaction(multi) do
       {:ok, %{message: message}} ->
+        # Stamp the canonical AP ID so remote instances can reference this DM
+        message = stamp_dm_ap_id(message, sender)
+
         # Broadcast to both conversation and user topics
         PubSub.broadcast_to_conversation(conversation.id, :dm_message_created, %{
           message_id: message.id
@@ -559,6 +562,16 @@ defmodule Baudrate.Messaging do
       end)
     end
   end
+
+  defp stamp_dm_ap_id(%DirectMessage{ap_id: nil} = message, %User{} = sender) do
+    ap_id = Federation.actor_uri(:user, sender.username) <> "#dm-#{message.id}"
+
+    message
+    |> Ecto.Changeset.change(ap_id: ap_id)
+    |> Repo.update!()
+  end
+
+  defp stamp_dm_ap_id(message, _sender), do: message
 
   defdelegate schedule_federation_task(fun), to: Baudrate.Federation
 end

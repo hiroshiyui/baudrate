@@ -44,11 +44,12 @@ defmodule Baudrate.Messaging.DirectMessage do
   @doc "Changeset for creating a local user message."
   def changeset(message, attrs) do
     message
-    |> cast(attrs, [:body, :body_html, :conversation_id, :sender_user_id, :ap_in_reply_to])
+    |> cast(attrs, [:body, :body_html, :ap_id, :conversation_id, :sender_user_id, :ap_in_reply_to])
     |> validate_required([:body, :conversation_id, :sender_user_id])
     |> validate_length(:body, max: @max_body_length)
     |> foreign_key_constraint(:conversation_id)
     |> foreign_key_constraint(:sender_user_id)
+    |> unique_constraint(:ap_id)
     |> check_constraint(:sender_user_id, name: :direct_messages_one_sender)
   end
 
