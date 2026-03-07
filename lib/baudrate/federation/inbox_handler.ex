@@ -7,8 +7,9 @@ defmodule Baudrate.Federation.InboxHandler do
     * `Undo(Follow)` — remove follower record
     * `Undo(Like)` — remove article like
     * `Undo(Announce)` — remove announce record
-    * `Create(Note)` — store as remote comment (if `inReplyTo` matches local article),
-      or as a direct message (if privately addressed to a local user)
+    * `Create(Note)` — store as remote comment (if `inReplyTo` resolves to a local
+      article or comment, including via remote reply chain walking), or as a
+      direct message (if privately addressed to a local user)
     * `Create(Note) as DM` — private note addressed only to a local user (no public/followers)
     * `Create(Article)` — store as remote article in target board
     * `Create(Page)` — treat as `Create(Article)` (Lemmy interop)
@@ -889,22 +890,98 @@ defmodule Baudrate.Federation.InboxHandler do
   # --- Reply/target resolution helpers ---
 
   defp resolve_reply_target(%{"inReplyTo" => in_reply_to}) when is_binary(in_reply_to) do
-    # First check if it's a reply to an existing comment (threading)
-    case Content.get_comment_by_ap_id(in_reply_to) do
+    case resolve_in_reply_to_locally(in_reply_to) do
+      {:ok, _article, _parent_id} = ok ->
+        ok
+
+      {:error, _} ->
+        # The inReplyTo points to a remote object we don't have locally.
+        # Walk up the reply chain by fetching remote objects to find a
+        # known ancestor (e.g. a stored article or comment).
+        walk_remote_reply_chain(in_reply_to)
+    end
+  end
+
+  defp resolve_reply_target(_), do: {:error, :missing_in_reply_to}
+
+  # Tries to resolve an inReplyTo URI against local data only.
+  defp resolve_in_reply_to_locally(uri) do
+    # Check if it's a reply to an existing comment (threading)
+    case Content.get_comment_by_ap_id(uri) do
       %{article_id: article_id, id: parent_id} ->
         article = Baudrate.Repo.get(Baudrate.Content.Article, article_id)
         if article, do: {:ok, article, parent_id}, else: {:error, :article_not_found}
 
       nil ->
         # Check if it's a direct reply to a local article
-        case resolve_local_article_by_ap_or_uri(in_reply_to) do
-          %{} = article -> {:ok, article, nil}
-          nil -> {:error, :article_not_found}
+        case resolve_local_article_by_ap_or_uri(uri) do
+          %{} = article ->
+            {:ok, article, nil}
+
+          nil ->
+            # Fallback: parse #note-{id} fragment for local comments that may
+            # lack a stored ap_id (created before ap_id stamping was added)
+            resolve_local_comment_by_fragment(uri)
         end
     end
   end
 
-  defp resolve_reply_target(_), do: {:error, :missing_in_reply_to}
+  @reply_chain_max_depth 10
+
+  # Fetches remote objects following inReplyTo links up the chain until we
+  # find an ancestor that maps to a known local article or comment.
+  defp walk_remote_reply_chain(uri, depth \\ 0)
+
+  defp walk_remote_reply_chain(_uri, depth) when depth >= @reply_chain_max_depth do
+    {:error, :article_not_found}
+  end
+
+  defp walk_remote_reply_chain(uri, depth) do
+    alias Baudrate.Federation.{HTTPClient, Validator}
+
+    if Validator.local_actor?(uri) do
+      # Already checked locally — give up to avoid infinite loops
+      {:error, :article_not_found}
+    else
+      with {:ok, %{body: body}} when is_binary(body) <-
+             HTTPClient.get(uri, headers: [{"accept", "application/activity+json"}]),
+           {:ok, %{"inReplyTo" => parent_uri}} when is_binary(parent_uri) <-
+             Jason.decode(body) do
+        case resolve_in_reply_to_locally(parent_uri) do
+          {:ok, article, _parent_id} ->
+            # Found a known ancestor — the reply is to this article (no
+            # parent_id since the intermediate comments aren't stored)
+            {:ok, article, nil}
+
+          {:error, _} ->
+            walk_remote_reply_chain(parent_uri, depth + 1)
+        end
+      else
+        _ -> {:error, :article_not_found}
+      end
+    end
+  end
+
+  # Parses a local comment URI like "https://host/ap/users/alice#note-42"
+  # to resolve old comments that were created before ap_id stamping.
+  defp resolve_local_comment_by_fragment(uri) do
+    base = Baudrate.Federation.base_url()
+
+    with true <- String.starts_with?(uri, base),
+         %URI{fragment: "note-" <> id_str} <- URI.parse(uri),
+         {comment_id, ""} <- Integer.parse(id_str),
+         %{article_id: article_id, deleted_at: nil} = comment <- Content.get_comment(comment_id),
+         %{} = article <- Baudrate.Repo.get(Baudrate.Content.Article, article_id) do
+      # Backfill the ap_id for future lookups
+      if is_nil(comment.ap_id) do
+        comment |> Ecto.Changeset.change(ap_id: uri) |> Baudrate.Repo.update()
+      end
+
+      {:ok, article, comment.id}
+    else
+      _ -> {:error, :article_not_found}
+    end
+  end
 
   defp resolve_local_article_by_ap_or_uri(uri) when is_binary(uri) do
     # Try by ap_id first

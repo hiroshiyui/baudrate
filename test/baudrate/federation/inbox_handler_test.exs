@@ -326,6 +326,86 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
     end
+
+    test "walks remote reply chain to resolve intermediate replies as comments" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      article_uri = Federation.actor_uri(:article, article.slug)
+      intermediate_uri = "https://remote.example/notes/intermediate-reply"
+
+      # Stub the HTTP fetch: the intermediate reply points back to our article
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        case conn.request_path do
+          "/notes/intermediate-reply" ->
+            body = Jason.encode!(%{"id" => intermediate_uri, "inReplyTo" => article_uri})
+
+            conn
+            |> Plug.Conn.put_resp_content_type("application/activity+json")
+            |> Plug.Conn.send_resp(200, body)
+
+          _ ->
+            Plug.Conn.send_resp(conn, 404, "Not Found")
+        end
+      end)
+
+      # A reply whose inReplyTo points to the intermediate (unknown locally)
+      activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/notes/deep-reply-#{System.unique_integer([:positive])}",
+          "type" => "Note",
+          "content" => "<p>Deep reply via chain walk</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "inReplyTo" => intermediate_uri
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      comments = Content.list_comments_for_article(article)
+      assert length(comments) == 1
+      assert hd(comments).body == "Deep reply via chain walk"
+    end
+
+    test "chain walk stops at max depth and falls through" do
+      remote_actor = create_remote_actor()
+
+      # Stub: every fetch returns another inReplyTo, creating an infinite chain
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        next_id = "https://remote.example#{conn.request_path}-next"
+
+        body =
+          Jason.encode!(%{
+            "id" => "https://remote.example#{conn.request_path}",
+            "inReplyTo" => next_id
+          })
+
+        conn
+        |> Plug.Conn.put_resp_content_type("application/activity+json")
+        |> Plug.Conn.send_resp(200, body)
+      end)
+
+      activity = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/notes/deep-#{System.unique_integer([:positive])}",
+          "type" => "Note",
+          "content" => "<p>Infinite chain</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "inReplyTo" => "https://remote.example/notes/chain-start"
+        }
+      }
+
+      # Should not hang — falls through after max depth
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+    end
   end
 
   describe "Create(Article) — remote article" do

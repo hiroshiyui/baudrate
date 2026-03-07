@@ -11,6 +11,12 @@ defmodule Baudrate.Federation.InboxHandlerDmTest do
   setup do
     Setup.seed_roles_and_permissions()
     Repo.insert!(%Setting{key: "site_name", value: "Test Site"})
+
+    # Stub remote fetches so reply-chain walking doesn't crash in tests
+    Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+      Plug.Conn.send_resp(conn, 404, "Not Found")
+    end)
+
     :ok
   end
 
