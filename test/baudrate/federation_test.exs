@@ -96,6 +96,18 @@ defmodule Baudrate.FederationTest do
       assert href =~ "/ap/users/#{shared_name}"
     end
 
+    test "resolves site (instance actor) by acct URI" do
+      host = URI.parse(Federation.base_url()).host
+
+      {:ok, jrd} = Federation.webfinger("acct:site@#{host}")
+      assert jrd["subject"] == "acct:site@#{host}"
+      assert [%{"rel" => "self", "href" => href}] = jrd["links"]
+      assert href =~ "/ap/site"
+
+      assert jrd["properties"]["https://www.w3.org/ns/activitystreams#type"] ==
+               "Organization"
+    end
+
     test "returns error for non-existent user" do
       host = URI.parse(Federation.base_url()).host
       assert {:error, :not_found} = Federation.webfinger("acct:nonexistent@#{host}")

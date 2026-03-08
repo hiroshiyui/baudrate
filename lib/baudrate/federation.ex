@@ -118,10 +118,13 @@ defmodule Baudrate.Federation do
   Resolves a WebFinger resource string and returns a JRD map.
 
   Supports:
+    * `acct:site@host` → instance actor (Organization)
     * `acct:username@host` → user actor
     * `acct:!slug@host` → board actor (Lemmy-compatible `!` prefix)
     * `acct:slug@host` → board actor (Mastodon-compatible bare slug fallback;
       tries user first, falls back to board if no matching user exists)
+
+  The instance actor (`site`) is resolved first, before user/board lookups.
 
   Board WebFinger responses use the bare slug in `subject` (no `!` prefix)
   to match Mastodon's expectation from `preferredUsername`, and include a
@@ -139,13 +142,18 @@ defmodule Baudrate.Federation do
     with {:ok, type, identifier} <- parse_acct(resource, host) do
       case type do
         :user ->
-          user = Repo.get_by(Baudrate.Setup.User, username: identifier)
-
-          if user do
-            {:ok, webfinger_jrd(:user, identifier)}
+          if identifier == "site" do
+            # "site" is the instance actor's preferredUsername
+            {:ok, webfinger_jrd(:site, "site")}
           else
-            # Name could also be a board slug — try board fallback
-            resolve_board_webfinger(identifier)
+            user = Repo.get_by(Baudrate.Setup.User, username: identifier)
+
+            if user do
+              {:ok, webfinger_jrd(:user, identifier)}
+            else
+              # Name could also be a board slug — try board fallback
+              resolve_board_webfinger(identifier)
+            end
           end
 
         :board ->
@@ -208,6 +216,11 @@ defmodule Baudrate.Federation do
       :board ->
         Map.put(base, "properties", %{
           "https://www.w3.org/ns/activitystreams#type" => "Group"
+        })
+
+      :site ->
+        Map.put(base, "properties", %{
+          "https://www.w3.org/ns/activitystreams#type" => "Organization"
         })
 
       _ ->

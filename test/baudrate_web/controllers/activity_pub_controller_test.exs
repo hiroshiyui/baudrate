@@ -106,6 +106,19 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       assert href =~ "/ap/users/#{shared_name}"
     end
 
+    test "resolves site (instance actor) acct resource", %{conn: conn} do
+      host = URI.parse(BaudrateWeb.Endpoint.url()).host
+
+      conn =
+        conn |> json_conn() |> get("/.well-known/webfinger?resource=acct:site@#{host}")
+
+      body = json_response(conn, 200)
+      assert body["subject"] == "acct:site@#{host}"
+      assert [%{"rel" => "self", "href" => href}] = body["links"]
+      assert href =~ "/ap/site"
+      assert body["properties"]["https://www.w3.org/ns/activitystreams#type"] == "Organization"
+    end
+
     test "returns 404 for non-existent user", %{conn: conn} do
       host = URI.parse(BaudrateWeb.Endpoint.url()).host
 
