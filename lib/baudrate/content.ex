@@ -21,6 +21,7 @@ defmodule Baudrate.Content do
     * `Content.Articles` — article CRUD, cross-posting, revisions, pin/lock
     * `Content.Comments` — comment CRUD, threading, activity timestamps
     * `Content.Likes` — article and comment likes
+    * `Content.Boosts` — article and comment boosts
     * `Content.Bookmarks` — article and comment bookmarks
     * `Content.Images` — article image management
     * `Content.Tags` — hashtag extraction, syncing, and querying
@@ -34,6 +35,7 @@ defmodule Baudrate.Content do
     Articles,
     Boards,
     Bookmarks,
+    Boosts,
     Comments,
     Feed,
     Images,
@@ -171,6 +173,49 @@ defmodule Baudrate.Content do
   defdelegate toggle_comment_like(user_id, comment_id), to: Likes
   defdelegate comment_likes_by_user(user_id, comment_ids), to: Likes
   defdelegate comment_like_counts(comment_ids), to: Likes
+  defdelegate create_remote_comment_like(attrs), to: Likes
+  defdelegate article_likes_by_user(user_id, article_ids), to: Likes
+  defdelegate article_like_counts(article_ids), to: Likes
+
+  def delete_comment_like_by_ap_id(ap_id),
+    do: Likes.delete_comment_like_by_ap_id(ap_id)
+
+  def delete_comment_like_by_ap_id(ap_id, remote_actor_id),
+    do: Likes.delete_comment_like_by_ap_id(ap_id, remote_actor_id)
+
+  # --- Article Boosts ---
+
+  defdelegate create_remote_article_boost(attrs), to: Boosts
+  defdelegate count_article_boosts(article), to: Boosts
+  defdelegate boost_article(user_id, article_id), to: Boosts
+  defdelegate unboost_article(user_id, article_id), to: Boosts
+  defdelegate article_boosted?(user_id, article_id), to: Boosts
+  defdelegate toggle_article_boost(user_id, article_id), to: Boosts
+  defdelegate article_boosts_by_user(user_id, article_ids), to: Boosts
+  defdelegate article_boost_counts(article_ids), to: Boosts
+
+  def delete_article_boost_by_ap_id(ap_id),
+    do: Boosts.delete_article_boost_by_ap_id(ap_id)
+
+  def delete_article_boost_by_ap_id(ap_id, remote_actor_id),
+    do: Boosts.delete_article_boost_by_ap_id(ap_id, remote_actor_id)
+
+  # --- Comment Boosts ---
+
+  defdelegate create_remote_comment_boost(attrs), to: Boosts
+  defdelegate count_comment_boosts(comment), to: Boosts
+  defdelegate boost_comment(user_id, comment_id), to: Boosts
+  defdelegate unboost_comment(user_id, comment_id), to: Boosts
+  defdelegate comment_boosted?(user_id, comment_id), to: Boosts
+  defdelegate toggle_comment_boost(user_id, comment_id), to: Boosts
+  defdelegate comment_boosts_by_user(user_id, comment_ids), to: Boosts
+  defdelegate comment_boost_counts(comment_ids), to: Boosts
+
+  def delete_comment_boost_by_ap_id(ap_id),
+    do: Boosts.delete_comment_boost_by_ap_id(ap_id)
+
+  def delete_comment_boost_by_ap_id(ap_id, remote_actor_id),
+    do: Boosts.delete_comment_boost_by_ap_id(ap_id, remote_actor_id)
 
   # --- Bookmarks ---
 

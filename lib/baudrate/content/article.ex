@@ -42,6 +42,7 @@ defmodule Baudrate.Content.Article do
     has_many :board_articles, BoardArticle
     has_many :comments, Comment
     has_many :likes, ArticleLike
+    has_many :boosts, Baudrate.Content.ArticleBoost
     has_many :revisions, ArticleRevision
     has_one :poll, Poll
     many_to_many :boards, Board, join_through: "board_articles"

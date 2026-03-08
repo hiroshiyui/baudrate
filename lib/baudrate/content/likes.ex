@@ -158,7 +158,76 @@ defmodule Baudrate.Content.Likes do
     end
   end
 
+  @doc """
+  Returns a MapSet of article IDs that the given user has liked,
+  filtered to the provided list of article IDs.
+  """
+  @spec article_likes_by_user(term(), [term()]) :: MapSet.t()
+  def article_likes_by_user(_user_id, []), do: MapSet.new()
+
+  def article_likes_by_user(user_id, article_ids) do
+    from(l in ArticleLike,
+      where: l.user_id == ^user_id and l.article_id in ^article_ids,
+      select: l.article_id
+    )
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
+  @doc """
+  Returns a map of `%{article_id => like_count}` for the given article IDs.
+  """
+  @spec article_like_counts([term()]) :: %{term() => non_neg_integer()}
+  def article_like_counts([]), do: %{}
+
+  def article_like_counts(article_ids) do
+    from(l in ArticleLike,
+      where: l.article_id in ^article_ids,
+      group_by: l.article_id,
+      select: {l.article_id, count(l.id)}
+    )
+    |> Repo.all()
+    |> Map.new()
+  end
+
   # --- Comment Likes ---
+
+  @doc """
+  Creates a remote comment like received via ActivityPub.
+  """
+  def create_remote_comment_like(attrs) do
+    result =
+      %CommentLike{}
+      |> CommentLike.remote_changeset(attrs)
+      |> Repo.insert()
+
+    with {:ok, like} <- result do
+      Baudrate.Notification.Hooks.notify_remote_comment_liked(
+        like.comment_id,
+        like.remote_actor_id
+      )
+
+      result
+    end
+  end
+
+  @doc """
+  Deletes a comment like by its ActivityPub ID.
+  """
+  def delete_comment_like_by_ap_id(ap_id) when is_binary(ap_id) do
+    from(l in CommentLike, where: l.ap_id == ^ap_id)
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Deletes a comment like by its ActivityPub ID, scoped to the given remote actor.
+  """
+  def delete_comment_like_by_ap_id(ap_id, remote_actor_id) when is_binary(ap_id) do
+    from(l in CommentLike,
+      where: l.ap_id == ^ap_id and l.remote_actor_id == ^remote_actor_id
+    )
+    |> Repo.delete_all()
+  end
 
   @doc """
   Creates a local comment like for the given user.
@@ -167,9 +236,14 @@ defmodule Baudrate.Content.Likes do
   """
   @spec like_comment(term(), term()) :: {:ok, %CommentLike{}} | {:error, Ecto.Changeset.t()}
   def like_comment(user_id, comment_id) do
-    %CommentLike{}
-    |> CommentLike.changeset(%{user_id: user_id, comment_id: comment_id})
-    |> Repo.insert()
+    result =
+      %CommentLike{}
+      |> CommentLike.changeset(%{user_id: user_id, comment_id: comment_id})
+      |> Repo.insert()
+
+    with {:ok, like} <- result do
+      {:ok, stamp_comment_like_ap_id(like)}
+    end
   end
 
   @doc """
@@ -229,6 +303,11 @@ defmodule Baudrate.Content.Likes do
             case like_comment(user_id, comment_id) do
               {:ok, like} ->
                 Baudrate.Notification.Hooks.notify_local_comment_liked(comment_id, user_id)
+
+                schedule_federation_task(fn ->
+                  Baudrate.Federation.Publisher.publish_comment_liked(user_id, comment)
+                end)
+
                 {:ok, like}
 
               {:error, %Ecto.Changeset{} = cs} ->
@@ -240,8 +319,18 @@ defmodule Baudrate.Content.Likes do
                 end
             end
 
-          _like ->
+          like ->
+            like_ap_id = like.ap_id
             unlike_comment(user_id, comment_id)
+
+            schedule_federation_task(fn ->
+              Baudrate.Federation.Publisher.publish_comment_unliked(
+                user_id,
+                comment,
+                like_ap_id
+              )
+            end)
+
             {:ok, :removed}
         end
     end
@@ -304,6 +393,18 @@ defmodule Baudrate.Content.Likes do
   end
 
   defp stamp_like_ap_id(like), do: like
+
+  defp stamp_comment_like_ap_id(%CommentLike{ap_id: nil, user_id: user_id} = like)
+       when is_integer(user_id) do
+    user = Repo.get!(Baudrate.Setup.User, user_id)
+    ap_id = Baudrate.Federation.actor_uri(:user, user.username) <> "#comment-like-#{like.id}"
+
+    like
+    |> Ecto.Changeset.change(ap_id: ap_id)
+    |> Repo.update!()
+  end
+
+  defp stamp_comment_like_ap_id(like), do: like
 
   defp schedule_federation_task(fun), do: Baudrate.Federation.schedule_federation_task(fun)
 end

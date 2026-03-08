@@ -28,6 +28,7 @@ defmodule Baudrate.Content.Comment do
 
     has_many :replies, __MODULE__, foreign_key: :parent_id
     has_many :likes, Baudrate.Content.CommentLike
+    has_many :boosts, Baudrate.Content.CommentBoost
 
     timestamps(type: :utc_datetime)
   end
