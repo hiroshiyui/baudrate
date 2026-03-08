@@ -206,7 +206,10 @@ defmodule Baudrate.Notification.HooksTest do
       assert notif.article_id == article.id
     end
 
-    test "skips self-boost (no notification when booster is author)", %{article: article, user: user} do
+    test "skips self-boost (no notification when booster is author)", %{
+      article: article,
+      user: user
+    } do
       Hooks.notify_local_article_boosted(article.id, user.id)
 
       assert [] == list_notifications_for(user.id, "article_boosted")
@@ -237,7 +240,10 @@ defmodule Baudrate.Notification.HooksTest do
       assert notif.article_id == article.id
     end
 
-    test "skips self-boost (no notification when booster is author)", %{article: article, user: user} do
+    test "skips self-boost (no notification when booster is author)", %{
+      article: article,
+      user: user
+    } do
       comment = create_comment(article, user, "My own comment")
 
       Hooks.notify_local_comment_boosted(comment.id, user.id)

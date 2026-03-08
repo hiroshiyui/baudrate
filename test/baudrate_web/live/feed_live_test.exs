@@ -258,7 +258,11 @@ defmodule BaudrateWeb.FeedLiveTest do
       refute html =~ "Write a reply..."
 
       # Click Reply to show form
-      html = lv |> element("button[phx-click='toggle_reply'][phx-value-id='#{item.id}']") |> render_click()
+      html =
+        lv
+        |> element("button[phx-click='toggle_reply'][phx-value-id='#{item.id}']")
+        |> render_click()
+
       assert html =~ "Write a reply..."
       assert html =~ "Cancel"
 
@@ -281,7 +285,9 @@ defmodule BaudrateWeb.FeedLiveTest do
       {:ok, lv, _html} = live(conn, "/feed")
 
       # Open reply form
-      lv |> element("button[phx-click='toggle_reply'][phx-value-id='#{item.id}']") |> render_click()
+      lv
+      |> element("button[phx-click='toggle_reply'][phx-value-id='#{item.id}']")
+      |> render_click()
 
       # Submit reply
       html =
@@ -308,7 +314,10 @@ defmodule BaudrateWeb.FeedLiveTest do
       Baudrate.Federation.KeyStore.ensure_user_keypair(user)
 
       {:ok, lv, _html} = live(conn, "/feed")
-      lv |> element("button[phx-click='toggle_reply'][phx-value-id='#{item.id}']") |> render_click()
+
+      lv
+      |> element("button[phx-click='toggle_reply'][phx-value-id='#{item.id}']")
+      |> render_click()
 
       lv
       |> form("form[phx-submit='submit_reply']",
@@ -335,7 +344,10 @@ defmodule BaudrateWeb.FeedLiveTest do
       end
 
       {:ok, lv, _html} = live(conn, "/feed")
-      lv |> element("button[phx-click='toggle_reply'][phx-value-id='#{item.id}']") |> render_click()
+
+      lv
+      |> element("button[phx-click='toggle_reply'][phx-value-id='#{item.id}']")
+      |> render_click()
 
       html =
         lv

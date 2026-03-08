@@ -15,7 +15,8 @@ defmodule BaudrateWeb.BoardLive do
   alias Baudrate.Content.PubSub, as: ContentPubSub
   alias BaudrateWeb.LinkedData
   alias BaudrateWeb.OpenGraph
-  import BaudrateWeb.Helpers, only: [parse_page: 1, parse_id: 1]
+  alias BaudrateWeb.InteractionHelpers
+  import BaudrateWeb.Helpers, only: [parse_page: 1]
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -128,74 +129,28 @@ defmodule BaudrateWeb.BoardLive do
 
   @impl true
   def handle_event("toggle_article_like", %{"id" => id}, socket) do
-    case parse_id(id) do
-      :error ->
-        {:noreply, socket}
-
-      {:ok, article_id} ->
-        user = socket.assigns.current_user
-
-        case Content.toggle_article_like(user.id, article_id) do
-          {:ok, _} ->
-            liked_ids = socket.assigns.article_liked_ids
-
-            liked_ids =
-              if MapSet.member?(liked_ids, article_id),
-                do: MapSet.delete(liked_ids, article_id),
-                else: MapSet.put(liked_ids, article_id)
-
-            new_counts = Content.article_like_counts([article_id])
-            new_count = Map.get(new_counts, article_id, 0)
-            counts = Map.put(socket.assigns.article_like_counts, article_id, new_count)
-
-            {:noreply,
-             socket
-             |> assign(:article_liked_ids, liked_ids)
-             |> assign(:article_like_counts, counts)}
-
-          {:error, :self_like} ->
-            {:noreply, put_flash(socket, :error, gettext("You cannot like your own article."))}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to toggle like."))}
-        end
-    end
+    InteractionHelpers.handle_toggle_with_counts(
+      socket,
+      id,
+      &Content.toggle_article_like/2,
+      &Content.article_like_counts/1,
+      :article_liked_ids,
+      :article_like_counts,
+      InteractionHelpers.article_like_opts()
+    )
   end
 
   @impl true
   def handle_event("toggle_article_boost", %{"id" => id}, socket) do
-    case parse_id(id) do
-      :error ->
-        {:noreply, socket}
-
-      {:ok, article_id} ->
-        user = socket.assigns.current_user
-
-        case Content.toggle_article_boost(user.id, article_id) do
-          {:ok, _} ->
-            boosted_ids = socket.assigns.article_boosted_ids
-
-            boosted_ids =
-              if MapSet.member?(boosted_ids, article_id),
-                do: MapSet.delete(boosted_ids, article_id),
-                else: MapSet.put(boosted_ids, article_id)
-
-            new_counts = Content.article_boost_counts([article_id])
-            new_count = Map.get(new_counts, article_id, 0)
-            counts = Map.put(socket.assigns.article_boost_counts, article_id, new_count)
-
-            {:noreply,
-             socket
-             |> assign(:article_boosted_ids, boosted_ids)
-             |> assign(:article_boost_counts, counts)}
-
-          {:error, :self_boost} ->
-            {:noreply, put_flash(socket, :error, gettext("You cannot boost your own article."))}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to toggle boost."))}
-        end
-    end
+    InteractionHelpers.handle_toggle_with_counts(
+      socket,
+      id,
+      &Content.toggle_article_boost/2,
+      &Content.article_boost_counts/1,
+      :article_boosted_ids,
+      :article_boost_counts,
+      InteractionHelpers.article_boost_opts()
+    )
   end
 
   @impl true

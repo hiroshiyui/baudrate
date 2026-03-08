@@ -13,7 +13,8 @@ defmodule Baudrate.Content.Likes do
     Article,
     ArticleLike,
     Comment,
-    CommentLike
+    CommentLike,
+    Interactions
   }
 
   # --- Article Likes ---
@@ -77,7 +78,7 @@ defmodule Baudrate.Content.Likes do
       |> Repo.insert()
 
     with {:ok, like} <- result do
-      {:ok, stamp_like_ap_id(like)}
+      {:ok, Interactions.stamp_ap_id(like, "like")}
     end
   end
 
@@ -133,7 +134,7 @@ defmodule Baudrate.Content.Likes do
       not is_nil(article.deleted_at) ->
         {:error, :deleted}
 
-      not article_visible_to_user?(article_id, user_id) ->
+      not Interactions.article_visible_to_user?(article_id, user_id) ->
         {:error, :not_found}
 
       true ->
@@ -143,14 +144,14 @@ defmodule Baudrate.Content.Likes do
               {:ok, like} ->
                 Baudrate.Notification.Hooks.notify_local_article_liked(article_id, user_id)
 
-                schedule_federation_task(fn ->
+                Interactions.schedule_federation_task(fn ->
                   Baudrate.Federation.Publisher.publish_article_liked(user_id, article)
                 end)
 
                 {:ok, like}
 
               {:error, %Ecto.Changeset{} = cs} ->
-                if has_unique_constraint_error?(cs) do
+                if Interactions.has_unique_constraint_error?(cs) do
                   unlike_article(user_id, article_id)
                   {:ok, :removed}
                 else
@@ -162,7 +163,7 @@ defmodule Baudrate.Content.Likes do
             like_ap_id = like.ap_id
             unlike_article(user_id, article_id)
 
-            schedule_federation_task(fn ->
+            Interactions.schedule_federation_task(fn ->
               Baudrate.Federation.Publisher.publish_article_unliked(user_id, article, like_ap_id)
             end)
 
@@ -255,7 +256,7 @@ defmodule Baudrate.Content.Likes do
       |> Repo.insert()
 
     with {:ok, like} <- result do
-      {:ok, stamp_comment_like_ap_id(like)}
+      {:ok, Interactions.stamp_ap_id(like, "comment-like")}
     end
   end
 
@@ -320,7 +321,7 @@ defmodule Baudrate.Content.Likes do
       not is_nil(comment.deleted_at) ->
         {:error, :deleted}
 
-      not article_visible_to_user?(comment.article_id, user_id) ->
+      not Interactions.article_visible_to_user?(comment.article_id, user_id) ->
         {:error, :not_found}
 
       true ->
@@ -330,14 +331,14 @@ defmodule Baudrate.Content.Likes do
               {:ok, like} ->
                 Baudrate.Notification.Hooks.notify_local_comment_liked(comment_id, user_id)
 
-                schedule_federation_task(fn ->
+                Interactions.schedule_federation_task(fn ->
                   Baudrate.Federation.Publisher.publish_comment_liked(user_id, comment)
                 end)
 
                 {:ok, like}
 
               {:error, %Ecto.Changeset{} = cs} ->
-                if has_unique_constraint_error?(cs) do
+                if Interactions.has_unique_constraint_error?(cs) do
                   unlike_comment(user_id, comment_id)
                   {:ok, :removed}
                 else
@@ -349,7 +350,7 @@ defmodule Baudrate.Content.Likes do
             like_ap_id = like.ap_id
             unlike_comment(user_id, comment_id)
 
-            schedule_federation_task(fn ->
+            Interactions.schedule_federation_task(fn ->
               Baudrate.Federation.Publisher.publish_comment_unliked(
                 user_id,
                 comment,
@@ -397,76 +398,4 @@ defmodule Baudrate.Content.Likes do
     |> Repo.all()
     |> Map.new()
   end
-
-  @doc """
-  Returns true if a changeset has a unique constraint error.
-  """
-  def has_unique_constraint_error?(changeset) do
-    Enum.any?(changeset.errors, fn
-      {_field, {_msg, meta}} -> Keyword.get(meta, :constraint) == :unique
-      _ -> false
-    end)
-  end
-
-  defp stamp_like_ap_id(%ArticleLike{ap_id: nil, user_id: user_id} = like)
-       when is_integer(user_id) do
-    user = Repo.get!(Baudrate.Setup.User, user_id)
-    ap_id = Baudrate.Federation.actor_uri(:user, user.username) <> "#like-#{like.id}"
-
-    like
-    |> Ecto.Changeset.change(ap_id: ap_id)
-    |> Repo.update!()
-  end
-
-  defp stamp_like_ap_id(like), do: like
-
-  defp stamp_comment_like_ap_id(%CommentLike{ap_id: nil, user_id: user_id} = like)
-       when is_integer(user_id) do
-    user = Repo.get!(Baudrate.Setup.User, user_id)
-    ap_id = Baudrate.Federation.actor_uri(:user, user.username) <> "#comment-like-#{like.id}"
-
-    like
-    |> Ecto.Changeset.change(ap_id: ap_id)
-    |> Repo.update!()
-  end
-
-  defp stamp_comment_like_ap_id(like), do: like
-
-  defp schedule_federation_task(fun), do: Baudrate.Federation.schedule_federation_task(fun)
-
-  # Returns true if the article is in at least one board the user can view.
-  # Articles with no board associations (board-less quick posts) are always visible.
-  defp article_visible_to_user?(article_id, user_id) do
-    user = Repo.get(Baudrate.Setup.User, user_id)
-    user = user && Repo.preload(user, :role)
-
-    board_count =
-      from(ba in Baudrate.Content.BoardArticle,
-        where: ba.article_id == ^article_id,
-        select: count()
-      )
-      |> Repo.one()
-
-    # Board-less articles (quick posts) are visible to all authenticated users
-    if board_count == 0 do
-      true
-    else
-      role_name = if user, do: user.role.name, else: "guest"
-
-      Repo.exists?(
-        from(ba in Baudrate.Content.BoardArticle,
-          join: b in Baudrate.Content.Board,
-          on: b.id == ba.board_id,
-          where:
-            ba.article_id == ^article_id and
-              b.min_role_to_view in ^accessible_roles(role_name)
-        )
-      )
-    end
-  end
-
-  defp accessible_roles("admin"), do: ~w(guest user moderator admin)
-  defp accessible_roles("moderator"), do: ~w(guest user moderator)
-  defp accessible_roles("user"), do: ~w(guest user)
-  defp accessible_roles(_), do: ~w(guest)
 end

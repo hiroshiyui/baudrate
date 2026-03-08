@@ -19,6 +19,7 @@ defmodule BaudrateWeb.FeedLive do
   alias Baudrate.Federation.FeedItemReply
   alias Baudrate.Federation.PubSub, as: FederationPubSub
   alias BaudrateWeb.RateLimits
+  alias BaudrateWeb.InteractionHelpers
   import BaudrateWeb.Helpers, only: [parse_page: 1, parse_id: 1, translate_role: 1]
 
   def mount(_params, _session, socket) do
@@ -174,7 +175,10 @@ defmodule BaudrateWeb.FeedLive do
           {:noreply,
            socket
            |> assign(:replying_to, feed_item_id)
-           |> assign(:reply_form, to_form(FeedItemReply.changeset(%FeedItemReply{}, %{}), as: :reply))
+           |> assign(
+             :reply_form,
+             to_form(FeedItemReply.changeset(%FeedItemReply{}, %{}), as: :reply)
+           )
            |> assign(:replies, %{feed_item_id => replies})}
         end
     end
@@ -213,193 +217,71 @@ defmodule BaudrateWeb.FeedLive do
   end
 
   def handle_event("toggle_article_like", %{"id" => id}, socket) do
-    case parse_id(id) do
-      :error ->
-        {:noreply, socket}
-
-      {:ok, article_id} ->
-        user = socket.assigns.current_user
-
-        case Content.toggle_article_like(user.id, article_id) do
-          {:ok, _} ->
-            liked_ids = socket.assigns.article_liked_ids
-
-            liked_ids =
-              if MapSet.member?(liked_ids, article_id),
-                do: MapSet.delete(liked_ids, article_id),
-                else: MapSet.put(liked_ids, article_id)
-
-            new_counts = Content.article_like_counts([article_id])
-            new_count = Map.get(new_counts, article_id, 0)
-            counts = Map.put(socket.assigns.article_like_counts, article_id, new_count)
-
-            {:noreply,
-             socket
-             |> assign(:article_liked_ids, liked_ids)
-             |> assign(:article_like_counts, counts)}
-
-          {:error, :self_like} ->
-            {:noreply, put_flash(socket, :error, gettext("You cannot like your own article."))}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to toggle like."))}
-        end
-    end
+    InteractionHelpers.handle_toggle_with_counts(
+      socket,
+      id,
+      &Content.toggle_article_like/2,
+      &Content.article_like_counts/1,
+      :article_liked_ids,
+      :article_like_counts,
+      InteractionHelpers.article_like_opts()
+    )
   end
 
   def handle_event("toggle_article_boost", %{"id" => id}, socket) do
-    case parse_id(id) do
-      :error ->
-        {:noreply, socket}
-
-      {:ok, article_id} ->
-        user = socket.assigns.current_user
-
-        case Content.toggle_article_boost(user.id, article_id) do
-          {:ok, _} ->
-            boosted_ids = socket.assigns.article_boosted_ids
-
-            boosted_ids =
-              if MapSet.member?(boosted_ids, article_id),
-                do: MapSet.delete(boosted_ids, article_id),
-                else: MapSet.put(boosted_ids, article_id)
-
-            new_counts = Content.article_boost_counts([article_id])
-            new_count = Map.get(new_counts, article_id, 0)
-            counts = Map.put(socket.assigns.article_boost_counts, article_id, new_count)
-
-            {:noreply,
-             socket
-             |> assign(:article_boosted_ids, boosted_ids)
-             |> assign(:article_boost_counts, counts)}
-
-          {:error, :self_boost} ->
-            {:noreply, put_flash(socket, :error, gettext("You cannot boost your own article."))}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to toggle boost."))}
-        end
-    end
+    InteractionHelpers.handle_toggle_with_counts(
+      socket,
+      id,
+      &Content.toggle_article_boost/2,
+      &Content.article_boost_counts/1,
+      :article_boosted_ids,
+      :article_boost_counts,
+      InteractionHelpers.article_boost_opts()
+    )
   end
 
   def handle_event("toggle_comment_like", %{"id" => id}, socket) do
-    case parse_id(id) do
-      :error ->
-        {:noreply, socket}
-
-      {:ok, comment_id} ->
-        user = socket.assigns.current_user
-
-        case Content.toggle_comment_like(user.id, comment_id) do
-          {:ok, _} ->
-            liked_ids = socket.assigns.comment_liked_ids
-
-            liked_ids =
-              if MapSet.member?(liked_ids, comment_id),
-                do: MapSet.delete(liked_ids, comment_id),
-                else: MapSet.put(liked_ids, comment_id)
-
-            new_counts = Content.comment_like_counts([comment_id])
-            new_count = Map.get(new_counts, comment_id, 0)
-            counts = Map.put(socket.assigns.comment_like_counts, comment_id, new_count)
-
-            {:noreply,
-             socket
-             |> assign(:comment_liked_ids, liked_ids)
-             |> assign(:comment_like_counts, counts)}
-
-          {:error, :self_like} ->
-            {:noreply, put_flash(socket, :error, gettext("You cannot like your own comment."))}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to toggle like."))}
-        end
-    end
+    InteractionHelpers.handle_toggle_with_counts(
+      socket,
+      id,
+      &Content.toggle_comment_like/2,
+      &Content.comment_like_counts/1,
+      :comment_liked_ids,
+      :comment_like_counts,
+      InteractionHelpers.comment_like_opts()
+    )
   end
 
   def handle_event("toggle_comment_boost", %{"id" => id}, socket) do
-    case parse_id(id) do
-      :error ->
-        {:noreply, socket}
-
-      {:ok, comment_id} ->
-        user = socket.assigns.current_user
-
-        case Content.toggle_comment_boost(user.id, comment_id) do
-          {:ok, _} ->
-            boosted_ids = socket.assigns.comment_boosted_ids
-
-            boosted_ids =
-              if MapSet.member?(boosted_ids, comment_id),
-                do: MapSet.delete(boosted_ids, comment_id),
-                else: MapSet.put(boosted_ids, comment_id)
-
-            new_counts = Content.comment_boost_counts([comment_id])
-            new_count = Map.get(new_counts, comment_id, 0)
-            counts = Map.put(socket.assigns.comment_boost_counts, comment_id, new_count)
-
-            {:noreply,
-             socket
-             |> assign(:comment_boosted_ids, boosted_ids)
-             |> assign(:comment_boost_counts, counts)}
-
-          {:error, :self_boost} ->
-            {:noreply, put_flash(socket, :error, gettext("You cannot boost your own comment."))}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to toggle boost."))}
-        end
-    end
+    InteractionHelpers.handle_toggle_with_counts(
+      socket,
+      id,
+      &Content.toggle_comment_boost/2,
+      &Content.comment_boost_counts/1,
+      :comment_boosted_ids,
+      :comment_boost_counts,
+      InteractionHelpers.comment_boost_opts()
+    )
   end
 
   def handle_event("toggle_feed_item_like", %{"id" => id}, socket) do
-    case parse_id(id) do
-      :error ->
-        {:noreply, socket}
-
-      {:ok, feed_item_id} ->
-        user = socket.assigns.current_user
-
-        case Federation.toggle_feed_item_like(user, feed_item_id) do
-          {:ok, _} ->
-            liked_ids = socket.assigns.feed_item_liked_ids
-
-            liked_ids =
-              if MapSet.member?(liked_ids, feed_item_id),
-                do: MapSet.delete(liked_ids, feed_item_id),
-                else: MapSet.put(liked_ids, feed_item_id)
-
-            {:noreply, assign(socket, :feed_item_liked_ids, liked_ids)}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to toggle like."))}
-        end
-    end
+    InteractionHelpers.handle_toggle_mapset(
+      socket,
+      id,
+      &Federation.toggle_feed_item_like/2,
+      :feed_item_liked_ids,
+      gettext("Failed to toggle like.")
+    )
   end
 
   def handle_event("toggle_feed_item_boost", %{"id" => id}, socket) do
-    case parse_id(id) do
-      :error ->
-        {:noreply, socket}
-
-      {:ok, feed_item_id} ->
-        user = socket.assigns.current_user
-
-        case Federation.toggle_feed_item_boost(user, feed_item_id) do
-          {:ok, _} ->
-            boosted_ids = socket.assigns.feed_item_boosted_ids
-
-            boosted_ids =
-              if MapSet.member?(boosted_ids, feed_item_id),
-                do: MapSet.delete(boosted_ids, feed_item_id),
-                else: MapSet.put(boosted_ids, feed_item_id)
-
-            {:noreply, assign(socket, :feed_item_boosted_ids, boosted_ids)}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to toggle boost."))}
-        end
-    end
+    InteractionHelpers.handle_toggle_mapset(
+      socket,
+      id,
+      &Federation.toggle_feed_item_boost/2,
+      :feed_item_boosted_ids,
+      gettext("Failed to toggle boost.")
+    )
   end
 
   def handle_event("cancel_reply", _params, socket) do

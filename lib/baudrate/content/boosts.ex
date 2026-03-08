@@ -13,7 +13,8 @@ defmodule Baudrate.Content.Boosts do
     Article,
     ArticleBoost,
     Comment,
-    CommentBoost
+    CommentBoost,
+    Interactions
   }
 
   # --- Article Boosts ---
@@ -74,7 +75,7 @@ defmodule Baudrate.Content.Boosts do
       |> Repo.insert()
 
     with {:ok, boost} <- result do
-      {:ok, stamp_boost_ap_id(boost)}
+      {:ok, Interactions.stamp_ap_id(boost, "announce")}
     end
   end
 
@@ -122,7 +123,7 @@ defmodule Baudrate.Content.Boosts do
       not is_nil(article.deleted_at) ->
         {:error, :deleted}
 
-      not article_visible_to_user?(article_id, user_id) ->
+      not Interactions.article_visible_to_user?(article_id, user_id) ->
         {:error, :not_found}
 
       true ->
@@ -132,14 +133,14 @@ defmodule Baudrate.Content.Boosts do
               {:ok, boost} ->
                 Baudrate.Notification.Hooks.notify_local_article_boosted(article_id, user_id)
 
-                schedule_federation_task(fn ->
+                Interactions.schedule_federation_task(fn ->
                   Baudrate.Federation.Publisher.publish_article_boosted(user_id, article)
                 end)
 
                 {:ok, boost}
 
               {:error, %Ecto.Changeset{} = cs} ->
-                if has_unique_constraint_error?(cs) do
+                if Interactions.has_unique_constraint_error?(cs) do
                   unboost_article(user_id, article_id)
                   {:ok, :removed}
                 else
@@ -151,7 +152,7 @@ defmodule Baudrate.Content.Boosts do
             boost_ap_id = boost.ap_id
             unboost_article(user_id, article_id)
 
-            schedule_federation_task(fn ->
+            Interactions.schedule_federation_task(fn ->
               Baudrate.Federation.Publisher.publish_article_unboosted(
                 user_id,
                 article,
@@ -251,7 +252,7 @@ defmodule Baudrate.Content.Boosts do
       |> Repo.insert()
 
     with {:ok, boost} <- result do
-      {:ok, stamp_comment_boost_ap_id(boost)}
+      {:ok, Interactions.stamp_ap_id(boost, "comment-announce")}
     end
   end
 
@@ -299,7 +300,7 @@ defmodule Baudrate.Content.Boosts do
       not is_nil(comment.deleted_at) ->
         {:error, :deleted}
 
-      not article_visible_to_user?(comment.article_id, user_id) ->
+      not Interactions.article_visible_to_user?(comment.article_id, user_id) ->
         {:error, :not_found}
 
       true ->
@@ -309,14 +310,14 @@ defmodule Baudrate.Content.Boosts do
               {:ok, boost} ->
                 Baudrate.Notification.Hooks.notify_local_comment_boosted(comment_id, user_id)
 
-                schedule_federation_task(fn ->
+                Interactions.schedule_federation_task(fn ->
                   Baudrate.Federation.Publisher.publish_comment_boosted(user_id, comment)
                 end)
 
                 {:ok, boost}
 
               {:error, %Ecto.Changeset{} = cs} ->
-                if has_unique_constraint_error?(cs) do
+                if Interactions.has_unique_constraint_error?(cs) do
                   unboost_comment(user_id, comment_id)
                   {:ok, :removed}
                 else
@@ -328,7 +329,7 @@ defmodule Baudrate.Content.Boosts do
             boost_ap_id = boost.ap_id
             unboost_comment(user_id, comment_id)
 
-            schedule_federation_task(fn ->
+            Interactions.schedule_federation_task(fn ->
               Baudrate.Federation.Publisher.publish_comment_unboosted(
                 user_id,
                 comment,
@@ -370,75 +371,4 @@ defmodule Baudrate.Content.Boosts do
     |> Repo.all()
     |> Map.new()
   end
-
-  # --- Private helpers ---
-
-  defp stamp_boost_ap_id(%ArticleBoost{ap_id: nil, user_id: user_id} = boost)
-       when is_integer(user_id) do
-    user = Repo.get!(Baudrate.Setup.User, user_id)
-    ap_id = Baudrate.Federation.actor_uri(:user, user.username) <> "#announce-#{boost.id}"
-
-    boost
-    |> Ecto.Changeset.change(ap_id: ap_id)
-    |> Repo.update!()
-  end
-
-  defp stamp_boost_ap_id(boost), do: boost
-
-  defp stamp_comment_boost_ap_id(%CommentBoost{ap_id: nil, user_id: user_id} = boost)
-       when is_integer(user_id) do
-    user = Repo.get!(Baudrate.Setup.User, user_id)
-    ap_id = Baudrate.Federation.actor_uri(:user, user.username) <> "#comment-announce-#{boost.id}"
-
-    boost
-    |> Ecto.Changeset.change(ap_id: ap_id)
-    |> Repo.update!()
-  end
-
-  defp stamp_comment_boost_ap_id(boost), do: boost
-
-  defp has_unique_constraint_error?(changeset) do
-    Enum.any?(changeset.errors, fn
-      {_field, {_msg, meta}} -> Keyword.get(meta, :constraint) == :unique
-      _ -> false
-    end)
-  end
-
-  defp schedule_federation_task(fun), do: Baudrate.Federation.schedule_federation_task(fun)
-
-  # Returns true if the article is in at least one board the user can view.
-  # Articles with no board associations (board-less quick posts) are always visible.
-  defp article_visible_to_user?(article_id, user_id) do
-    user = Repo.get(Baudrate.Setup.User, user_id)
-    user = user && Repo.preload(user, :role)
-
-    board_count =
-      from(ba in Baudrate.Content.BoardArticle,
-        where: ba.article_id == ^article_id,
-        select: count()
-      )
-      |> Repo.one()
-
-    # Board-less articles (quick posts) are visible to all authenticated users
-    if board_count == 0 do
-      true
-    else
-      role_name = if user, do: user.role.name, else: "guest"
-
-      Repo.exists?(
-        from(ba in Baudrate.Content.BoardArticle,
-          join: b in Baudrate.Content.Board,
-          on: b.id == ba.board_id,
-          where:
-            ba.article_id == ^article_id and
-              b.min_role_to_view in ^accessible_roles(role_name)
-        )
-      )
-    end
-  end
-
-  defp accessible_roles("admin"), do: ~w(guest user moderator admin)
-  defp accessible_roles("moderator"), do: ~w(guest user moderator)
-  defp accessible_roles("user"), do: ~w(guest user)
-  defp accessible_roles(_), do: ~w(guest)
 end

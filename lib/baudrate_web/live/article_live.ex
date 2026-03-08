@@ -15,6 +15,7 @@ defmodule BaudrateWeb.ArticleLive do
   alias BaudrateWeb.LinkedData
   alias BaudrateWeb.OpenGraph
   alias BaudrateWeb.RateLimits
+  alias BaudrateWeb.InteractionHelpers
   import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1]
 
   @impl true
@@ -259,79 +260,28 @@ defmodule BaudrateWeb.ArticleLive do
 
   @impl true
   def handle_event("toggle_comment_boost", %{"id" => id}, socket) do
-    case parse_id(id) do
-      :error ->
-        {:noreply, socket}
-
-      {:ok, comment_id} ->
-        user = socket.assigns.current_user
-
-        case Content.toggle_comment_boost(user.id, comment_id) do
-          {:ok, _} ->
-            boosted_ids = socket.assigns.comment_boosted_ids
-
-            boosted_ids =
-              if MapSet.member?(boosted_ids, comment_id),
-                do: MapSet.delete(boosted_ids, comment_id),
-                else: MapSet.put(boosted_ids, comment_id)
-
-            new_counts = Content.comment_boost_counts([comment_id])
-            new_count = Map.get(new_counts, comment_id, 0)
-
-            counts =
-              Map.put(socket.assigns.comment_boost_counts, comment_id, new_count)
-
-            {:noreply,
-             socket
-             |> assign(:comment_boosted_ids, boosted_ids)
-             |> assign(:comment_boost_counts, counts)}
-
-          {:error, :self_boost} ->
-            {:noreply, put_flash(socket, :error, gettext("You cannot boost your own comment."))}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to toggle boost."))}
-        end
-    end
+    InteractionHelpers.handle_toggle_with_counts(
+      socket,
+      id,
+      &Content.toggle_comment_boost/2,
+      &Content.comment_boost_counts/1,
+      :comment_boosted_ids,
+      :comment_boost_counts,
+      InteractionHelpers.comment_boost_opts()
+    )
   end
 
   @impl true
   def handle_event("toggle_comment_like", %{"id" => id}, socket) do
-    case parse_id(id) do
-      :error ->
-        {:noreply, socket}
-
-      {:ok, comment_id} ->
-        user = socket.assigns.current_user
-
-        case Content.toggle_comment_like(user.id, comment_id) do
-          {:ok, _} ->
-            liked_ids = socket.assigns.comment_liked_ids
-
-            liked_ids =
-              if MapSet.member?(liked_ids, comment_id),
-                do: MapSet.delete(liked_ids, comment_id),
-                else: MapSet.put(liked_ids, comment_id)
-
-            # Update the count for this specific comment
-            new_counts = Content.comment_like_counts([comment_id])
-            new_count = Map.get(new_counts, comment_id, 0)
-
-            counts =
-              Map.put(socket.assigns.comment_like_counts, comment_id, new_count)
-
-            {:noreply,
-             socket
-             |> assign(:comment_liked_ids, liked_ids)
-             |> assign(:comment_like_counts, counts)}
-
-          {:error, :self_like} ->
-            {:noreply, put_flash(socket, :error, gettext("You cannot like your own comment."))}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, gettext("Failed to toggle like."))}
-        end
-    end
+    InteractionHelpers.handle_toggle_with_counts(
+      socket,
+      id,
+      &Content.toggle_comment_like/2,
+      &Content.comment_like_counts/1,
+      :comment_liked_ids,
+      :comment_like_counts,
+      InteractionHelpers.comment_like_opts()
+    )
   end
 
   @impl true

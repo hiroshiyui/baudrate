@@ -7,7 +7,7 @@ defmodule Baudrate.Content.Bookmarks do
 
   import Ecto.Query
   alias Baudrate.Repo
-  alias Baudrate.Content.{Bookmark, Likes}
+  alias Baudrate.Content.Bookmark
 
   @bookmarks_per_page 20
   @max_bookmarks_per_page 100
@@ -112,7 +112,7 @@ defmodule Baudrate.Content.Bookmarks do
   defp handle_bookmark_conflict({:ok, bookmark}, _user_id, _opts), do: {:ok, bookmark}
 
   defp handle_bookmark_conflict({:error, %Ecto.Changeset{} = cs}, user_id, opts) do
-    if Likes.has_unique_constraint_error?(cs) do
+    if Baudrate.Content.Interactions.has_unique_constraint_error?(cs) do
       case Repo.get_by(Bookmark, [{:user_id, user_id} | opts]) do
         nil -> {:ok, :removed}
         bookmark -> do_delete_bookmark(bookmark)
