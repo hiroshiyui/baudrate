@@ -119,6 +119,7 @@ defmodule Baudrate.Content.Articles do
   @spec get_article_by_slug!(String.t()) :: %Article{}
   def get_article_by_slug!(slug) do
     Article
+    |> where([a], is_nil(a.deleted_at))
     |> Repo.get_by!(slug: slug)
     |> Repo.preload([:boards, :user, :remote_actor, :link_preview, poll: :options])
   end
