@@ -968,13 +968,13 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 `Federation.actor_uri/2` for backwards compatibility.
 
 **Discovery endpoints:**
-- `/.well-known/webfinger` — resolve `acct:user@host` or `acct:board-slug@host` (also accepts `!` prefix for Lemmy compat); board responses include `properties` with `type: "Group"`
+- `/.well-known/webfinger` — resolve `acct:site@host` (instance actor), `acct:user@host` (user), or `acct:board-slug@host` (board, also accepts `!` prefix for Lemmy compat); site and board responses include `properties` with actor type (`"Organization"` / `"Group"`)
 - `/.well-known/nodeinfo` → `/nodeinfo/2.1` — instance metadata
 
 **Outbound endpoints** (content-negotiated: JSON-LD for AP/JSON clients, HTML redirect otherwise):
 - `/ap/users/:username` — Person actor with publicKey, inbox, outbox, published, icon
 - `/ap/boards/:slug` — Group actor with sub-board/parent-board links
-- `/ap/site` — Organization actor
+- `/ap/site` — Organization actor (instance actor, discoverable as `acct:site@host`)
 - `/ap/articles/:slug` — Article object with replies link and `baudrate:*` extensions
 - `/ap/users/:username/outbox` — paginated `OrderedCollection` of `Create(Article)`
 - `/ap/boards/:slug/outbox` — paginated `OrderedCollection` of `Announce(Article)`

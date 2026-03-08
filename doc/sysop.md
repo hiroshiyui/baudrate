@@ -374,6 +374,12 @@ Both blocks and mutes support local users and remote actors.
 - WebFinger and NodeInfo remain available for discovery
 - Also togglable from `/admin/federation`
 
+**Instance actor**: Baudrate publishes an Organization actor at `/ap/site`
+representing the instance in the ActivityPub federation. It is discoverable
+via WebFinger as `acct:site@<your-domain>` and is used for instance-level
+signed fetches (authorized fetch mode). Its keypair is managed alongside
+user and board keypairs (see [Key Rotation](#key-rotation)).
+
 **Per-board toggle** (`ap_enabled` on each board at `/admin/boards`):
 
 - When disabled: board AP endpoints return 404, delivery skips board followers
