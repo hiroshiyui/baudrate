@@ -33,7 +33,7 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
 - **Admin dashboard** -- site settings, registration mode, pending user approval, federation dashboard, moderation queue, moderation log, invite code management
 - **Rate limiting** on login, TOTP, registration, avatar uploads, and federation endpoints
 - **Security hardened** -- HSTS, CSP, signed + encrypted cookies, TOTP/key encryption at rest
-- **Notifications** -- real-time in-app notifications for replies, mentions, follows, likes, and moderator actions
+- **Notifications** -- real-time in-app notifications for replies, mentions, follows, likes, boosts, and moderator actions
 - **Direct messages** -- 1-on-1 conversations with read cursors, mute controls, and federated delivery
 - **Search** -- full-text search across articles and comments with CJK support and search operators
 - **Polls** -- single/multi-choice polls with anonymous voting, expiration, and denormalized counters

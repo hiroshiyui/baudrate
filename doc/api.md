@@ -781,10 +781,10 @@ verification.
 | `Create` | `Article` or `Page` | Creates remote article in target board |
 | `Create` | `Note` (public) | Creates comment on local article (resolved via `inReplyTo`) |
 | `Create` | `Note` (DM) | Creates direct message (see [DM Detection](#dm-detection)) |
-| `Like` | article URI | Records a like on the article |
-| `Undo` | `Like` | Removes the like |
-| `Announce` | article URI or embedded object | Records a boost/share |
-| `Undo` | `Announce` | Removes the boost |
+| `Like` | article or comment URI | Records a like on the article or comment |
+| `Undo` | `Like` | Removes the like (from both article and comment likes) |
+| `Announce` | article or comment URI, or embedded object | Records a boost/share (creates article/comment boost for local content) |
+| `Undo` | `Announce` | Removes the boost (from announces and article/comment boosts) |
 | `Update` | `Article`, `Page`, or `Note` | Updates remote content (authorship verified) |
 | `Update` | `Person` or `Group` | Refreshes cached remote actor profile |
 | `Delete` | content URI or `Tombstone` | Soft-deletes matching article, comment, or DM (authorship verified) |
