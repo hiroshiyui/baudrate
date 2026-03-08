@@ -39,6 +39,7 @@ defmodule Baudrate.Content.ArticleBoost do
     boost
     |> cast(attrs, [:ap_id, :article_id, :remote_actor_id])
     |> validate_required([:ap_id, :article_id, :remote_actor_id])
+    |> validate_format(:ap_id, ~r/^https?:\/\//, message: "must be an HTTP(S) URL")
     |> foreign_key_constraint(:article_id)
     |> foreign_key_constraint(:remote_actor_id)
     |> unique_constraint(:ap_id)
