@@ -544,6 +544,8 @@ A complete nginx configuration is provided at
   Served directly by nginx, bypassing the BEAM for better performance.
 - Upstream keepalive connections to Phoenix
 - Reverse proxy to Phoenix on port 4000
+- **Near-zero downtime deploys** — `proxy_next_upstream` retries on 502 during
+  restarts (up to 30s, 3 attempts); custom 502 maintenance page as fallback
 
 To use it:
 
@@ -563,7 +565,7 @@ nginx -t && systemctl reload nginx
 | `X-Forwarded-Proto $scheme` | `force_ssl` can't detect HTTPS → infinite redirect loop |
 | `Upgrade` + `Connection` | LiveView falls back to long-polling; real-time updates and form submissions break |
 | `proxy_read_timeout 600s` | Nginx closes idle WebSocket connections after 60s default, causing LiveView disconnects |
-| `proxy_buffering off` | LiveView streaming responses are delayed until the buffer fills |
+| `proxy_next_upstream` | Without retry, users see raw 502 errors during deploys instead of a brief wait |
 
 #### Critical Security Notes
 
@@ -789,6 +791,27 @@ PHX_SERVER=true bin/baudrate start
 
 The endpoint binds to `{0, 0, 0, 0, 0, 0, 0, 0}` (all IPv6/IPv4 interfaces)
 on the configured `PORT` (default 4000).
+
+### Near-Zero Downtime Deploys
+
+The Ansible deploy playbook minimises downtime through three mechanisms:
+
+1. **Migrations before restart** — Database migrations run from the new release
+   directory *before* the symlink swap and service restart. Since Ecto migrations
+   are additive (new columns/tables), the old running code tolerates them.
+
+2. **Graceful shutdown** — Bandit's `shutdown_timeout: 30_000` (in `runtime.exs`)
+   drains in-flight HTTP requests for up to 30 seconds on SIGTERM. The systemd
+   `TimeoutStopSec=35` gives it 5 extra seconds of margin.
+
+3. **Nginx request buffering** — `proxy_next_upstream error timeout http_502`
+   tells nginx to hold incoming requests and retry up to 3 times over 30 seconds
+   when the upstream returns 502 during the restart window. If all retries fail,
+   a custom 502 maintenance page with auto-refresh is shown.
+
+The typical restart window (symlink swap → health check pass) is 2–5 seconds.
+During this window, nginx buffers new requests and delivers them once the new
+release is healthy.
 
 ### Running Migrations in Production
 
