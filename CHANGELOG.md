@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.3] — 2026-03-08
+
+### Added
+
+- **"Remove from board" action** on multi-board articles — when an article exists
+  in multiple boards, the dropdown shows per-board removal buttons that detach
+  the article from individual boards without affecting forwarded copies
+
+### Fixed
+
+- **Forwarded article disappears from all boards on delete** — deleting a
+  multi-board article now only removes the board association, not the article
+  itself; forwarded copies in other boards remain visible
+- **Soft-deleted articles accessible via direct URL** — `get_article_by_slug!`
+  now filters out articles with `deleted_at` set, returning 404 instead of
+  showing deleted content
+
 ## [1.3.2] — 2026-03-08
 
 ### Fixed
@@ -772,6 +789,7 @@ Elixir/Phoenix + LiveView, federating via ActivityPub.
 - Extensive documentation (development guide, SysOp guide, API reference,
   troubleshooting guide)
 
+[1.3.3]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.3
 [1.3.2]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.2
 [1.3.1]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.1
 [1.3.0]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.0
