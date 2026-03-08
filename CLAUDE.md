@@ -74,7 +74,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - HTTP Signature signing: `HTTPSignature.sign/5` and `sign_get/3` must NOT return a `"host"` header — `HTTPClient.build_pinned_opts` manages the `Host` header for DNS-pinned connections. Duplicates cause signature verification failures on remote instances.
 - Federation outbound delivery: always call `KeyStore.ensure_user_keypair/1` before enqueuing signed activities (Follow, Undo, etc.) to guarantee the user has an RSA keypair
 - Settings are cached in ETS via `Baudrate.Setup.SettingsCache`; `set_setting/2` auto-refreshes the cache on success. Direct DB writes to the `settings` table must call `SettingsCache.refresh()` manually.
-- Boards are cached in ETS via `Baudrate.Content.BoardCache`; board mutations in `Content` (`create_board`, `update_board`, `delete_board`, `toggle_board_federation`) auto-refresh the cache. Both caches are disabled in tests via `settings_cache_enabled: false`.
+- Boards are cached in ETS via `Baudrate.Content.BoardCache`; board mutations in `Content` (`create_board`, `update_board`, `delete_board`, `toggle_board_federation`) auto-refresh the cache. Settings cache is disabled in tests via `settings_cache_enabled: false`; board cache runs normally in tests.
 - Link previews: async fetch of OG metadata after content save (first URL only). Images are proxied server-side (re-encoded to WebP via libvips). The `link_previews` table is shared/deduplicated by URL hash. Preview cards render via `<.link_preview>` component in `core_components.ex`. Stale previews (>7 days) are refreshed hourly by `SessionCleaner`; orphans (>30 days, no FK refs) are purged.
 
 ## Project Conventions

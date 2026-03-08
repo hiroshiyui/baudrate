@@ -171,8 +171,10 @@ lib/
 │   │   ├── health_controller.ex # Health check endpoint
 │   │   ├── page_controller.ex   # Static page controller
 │   │   ├── page_html.ex         # Page HTML view module
+│   │   ├── handle_redirect_controller.ex  # Redirects /@username to /users/:username (Mastodon compat)
 │   │   ├── push_subscription_controller.ex  # POST/DELETE /api/push-subscriptions (Web Push)
-│   │   └── session_controller.ex  # POST endpoints for session mutations
+│   │   ├── session_controller.ex  # POST endpoints for session mutations
+│   │   └── share_target_controller.ex  # PWA Web Share Target POST handler
 │   ├── live/
 │   │   ├── admin/
 │   │   │   ├── boards_live.ex          # Admin board CRUD + moderator management
