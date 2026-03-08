@@ -103,7 +103,17 @@ defmodule Baudrate.Content.Boosts do
   `{:error, :deleted}` if the article is soft-deleted.
   """
   def toggle_article_boost(user_id, article_id) do
-    article = Repo.get!(Article, article_id)
+    case Repo.get(Article, article_id) do
+      nil ->
+        {:error, :not_found}
+
+      article ->
+        do_toggle_article_boost(user_id, article)
+    end
+  end
+
+  defp do_toggle_article_boost(user_id, article) do
+    article_id = article.id
 
     cond do
       article.user_id == user_id ->
@@ -111,6 +121,9 @@ defmodule Baudrate.Content.Boosts do
 
       not is_nil(article.deleted_at) ->
         {:error, :deleted}
+
+      not article_visible_to_user?(article_id, user_id) ->
+        {:error, :not_found}
 
       true ->
         case Repo.get_by(ArticleBoost, user_id: user_id, article_id: article_id) do
@@ -267,7 +280,17 @@ defmodule Baudrate.Content.Boosts do
   `{:error, :deleted}` if the comment is soft-deleted.
   """
   def toggle_comment_boost(user_id, comment_id) do
-    comment = Repo.get!(Comment, comment_id)
+    case Repo.get(Comment, comment_id) do
+      nil ->
+        {:error, :not_found}
+
+      comment ->
+        do_toggle_comment_boost(user_id, comment)
+    end
+  end
+
+  defp do_toggle_comment_boost(user_id, comment) do
+    comment_id = comment.id
 
     cond do
       comment.user_id == user_id ->
@@ -275,6 +298,9 @@ defmodule Baudrate.Content.Boosts do
 
       not is_nil(comment.deleted_at) ->
         {:error, :deleted}
+
+      not article_visible_to_user?(comment.article_id, user_id) ->
+        {:error, :not_found}
 
       true ->
         case Repo.get_by(CommentBoost, user_id: user_id, comment_id: comment_id) do
@@ -379,4 +405,40 @@ defmodule Baudrate.Content.Boosts do
   end
 
   defp schedule_federation_task(fun), do: Baudrate.Federation.schedule_federation_task(fun)
+
+  # Returns true if the article is in at least one board the user can view.
+  # Articles with no board associations (board-less quick posts) are always visible.
+  defp article_visible_to_user?(article_id, user_id) do
+    user = Repo.get(Baudrate.Setup.User, user_id)
+    user = user && Repo.preload(user, :role)
+
+    board_count =
+      from(ba in Baudrate.Content.BoardArticle,
+        where: ba.article_id == ^article_id,
+        select: count()
+      )
+      |> Repo.one()
+
+    # Board-less articles (quick posts) are visible to all authenticated users
+    if board_count == 0 do
+      true
+    else
+      role_name = if user, do: user.role.name, else: "guest"
+
+      Repo.exists?(
+        from(ba in Baudrate.Content.BoardArticle,
+          join: b in Baudrate.Content.Board,
+          on: b.id == ba.board_id,
+          where:
+            ba.article_id == ^article_id and
+              b.min_role_to_view in ^accessible_roles(role_name)
+        )
+      )
+    end
+  end
+
+  defp accessible_roles("admin"), do: ~w(guest user moderator admin)
+  defp accessible_roles("moderator"), do: ~w(guest user moderator)
+  defp accessible_roles("user"), do: ~w(guest user)
+  defp accessible_roles(_), do: ~w(guest)
 end

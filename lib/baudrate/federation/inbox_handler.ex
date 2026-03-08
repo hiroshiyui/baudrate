@@ -194,35 +194,45 @@ defmodule Baudrate.Federation.InboxHandler do
     ap_id = activity["id"]
 
     case resolve_local_article_by_ap_or_uri(object_uri) do
-      %{id: article_id} ->
-        case Content.create_remote_article_like(%{
-               ap_id: ap_id,
-               article_id: article_id,
-               remote_actor_id: remote_actor.id
-             }) do
-          {:ok, _like} ->
-            Logger.info("federation.activity: type=Like(Article) ap_id=#{ap_id}")
-            :ok
+      %{id: article_id} = article ->
+        if not article_federated?(article) do
+          :ok
+        else
+          case Content.create_remote_article_like(%{
+                 ap_id: ap_id,
+                 article_id: article_id,
+                 remote_actor_id: remote_actor.id
+               }) do
+            {:ok, _like} ->
+              Logger.info("federation.activity: type=Like(Article) ap_id=#{ap_id}")
+              :ok
 
-          {:error, %Ecto.Changeset{} = changeset} ->
-            if has_unique_error?(changeset), do: :ok, else: {:error, :like_failed}
+            {:error, %Ecto.Changeset{} = changeset} ->
+              if has_unique_error?(changeset), do: :ok, else: {:error, :like_failed}
+          end
         end
 
       nil ->
         # Try resolving as a local comment
         case Content.get_comment_by_ap_id(object_uri) do
-          %{id: comment_id} ->
-            case Content.create_remote_comment_like(%{
-                   ap_id: ap_id,
-                   comment_id: comment_id,
-                   remote_actor_id: remote_actor.id
-                 }) do
-              {:ok, _like} ->
-                Logger.info("federation.activity: type=Like(Comment) ap_id=#{ap_id}")
-                :ok
+          %{article_id: aid} = comment ->
+            like_article = Baudrate.Repo.get(Baudrate.Content.Article, aid)
 
-              {:error, %Ecto.Changeset{} = changeset} ->
-                if has_unique_error?(changeset), do: :ok, else: {:error, :like_failed}
+            if like_article && article_federated?(like_article) do
+              case Content.create_remote_comment_like(%{
+                     ap_id: ap_id,
+                     comment_id: comment.id,
+                     remote_actor_id: remote_actor.id
+                   }) do
+                {:ok, _like} ->
+                  Logger.info("federation.activity: type=Like(Comment) ap_id=#{ap_id}")
+                  :ok
+
+                {:error, %Ecto.Changeset{} = changeset} ->
+                  if has_unique_error?(changeset), do: :ok, else: {:error, :like_failed}
+              end
+            else
+              :ok
             end
 
           nil ->
@@ -1220,28 +1230,55 @@ defmodule Baudrate.Federation.InboxHandler do
   end
 
   # Creates an article_boost or comment_boost if the Announce target is local content.
+  # Only accepts boosts on articles in public, AP-enabled boards.
   defp maybe_create_local_boost(object_uri, ap_id, remote_actor) do
     case resolve_local_article_by_ap_or_uri(object_uri) do
-      %{id: article_id} ->
-        Content.create_remote_article_boost(%{
-          ap_id: ap_id,
-          article_id: article_id,
-          remote_actor_id: remote_actor.id
-        })
+      %{id: article_id} = article ->
+        if article_federated?(article) do
+          Content.create_remote_article_boost(%{
+            ap_id: ap_id,
+            article_id: article_id,
+            remote_actor_id: remote_actor.id
+          })
+        else
+          :ok
+        end
 
       nil ->
         case Content.get_comment_by_ap_id(object_uri) do
-          %{id: comment_id} ->
-            Content.create_remote_comment_boost(%{
-              ap_id: ap_id,
-              comment_id: comment_id,
-              remote_actor_id: remote_actor.id
-            })
+          %{article_id: article_id} = comment ->
+            article = Baudrate.Repo.get(Baudrate.Content.Article, article_id)
+
+            if article && article_federated?(article) do
+              Content.create_remote_comment_boost(%{
+                ap_id: ap_id,
+                comment_id: comment.id,
+                remote_actor_id: remote_actor.id
+              })
+            else
+              :ok
+            end
 
           nil ->
             :ok
         end
     end
+  end
+
+  # Returns true if the article is in at least one public, AP-enabled board.
+  defp article_federated?(article) do
+    import Ecto.Query
+
+    Baudrate.Repo.exists?(
+      from(ba in Baudrate.Content.BoardArticle,
+        join: b in Baudrate.Content.Board,
+        on: b.id == ba.board_id,
+        where:
+          ba.article_id == ^article.id and
+            b.min_role_to_view == "guest" and
+            b.ap_enabled == true
+      )
+    )
   end
 
   # --- Follow helpers (Accept/Reject) ---
