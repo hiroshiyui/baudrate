@@ -543,6 +543,401 @@ defmodule Baudrate.Federation.Publisher do
     Delivery.enqueue_for_article(activity, actor_uri, article)
   end
 
+  # --- Comment Like ---
+
+  @doc """
+  Builds a `Like` activity for a local user liking a comment.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_like_comment(user, comment, like_ap_id \\ nil) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+    comment_uri = comment.ap_id
+    like_id = like_ap_id || "#{actor_uri}#comment-like-#{System.unique_integer([:positive])}"
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => like_id,
+      "type" => "Like",
+      "actor" => actor_uri,
+      "object" => comment_uri,
+      "to" => [@as_public]
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Builds an `Undo(Like)` activity for a local user unliking a comment.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_undo_like_comment(user, comment, like_ap_id \\ nil) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+    comment_uri = comment.ap_id
+    like_id = like_ap_id || "#{actor_uri}#comment-like-#{System.unique_integer([:positive])}"
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#undo-comment-like-#{System.unique_integer([:positive])}",
+      "type" => "Undo",
+      "actor" => actor_uri,
+      "object" => %{
+        "id" => like_id,
+        "type" => "Like",
+        "actor" => actor_uri,
+        "object" => comment_uri
+      },
+      "to" => [@as_public]
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Publishes a `Like` activity for a local user liking a comment.
+  """
+  def publish_comment_liked(user_id, comment) do
+    user = Repo.get!(Baudrate.Setup.User, user_id)
+    comment = Repo.preload(comment, article: [:boards, :user])
+
+    like =
+      Repo.get_by(Baudrate.Content.CommentLike, user_id: user_id, comment_id: comment.id)
+
+    like_ap_id = like && like.ap_id
+
+    {activity, actor_uri} = build_like_comment(user, comment, like_ap_id)
+    Delivery.enqueue_for_article(activity, actor_uri, comment.article)
+  end
+
+  @doc """
+  Publishes an `Undo(Like)` activity for a local user unliking a comment.
+  """
+  def publish_comment_unliked(user_id, comment, like_ap_id \\ nil) do
+    user = Repo.get!(Baudrate.Setup.User, user_id)
+    comment = Repo.preload(comment, article: [:boards, :user])
+    {activity, actor_uri} = build_undo_like_comment(user, comment, like_ap_id)
+    Delivery.enqueue_for_article(activity, actor_uri, comment.article)
+  end
+
+  # --- Article Boost (User Announce) ---
+
+  @doc """
+  Builds an `Announce` activity from a local user boosting an article.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_user_announce_article(user, article, boost_ap_id \\ nil) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+    article_uri = article.ap_id || Federation.actor_uri(:article, article.slug)
+    announce_id = boost_ap_id || "#{actor_uri}#announce-#{System.unique_integer([:positive])}"
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => announce_id,
+      "type" => "Announce",
+      "actor" => actor_uri,
+      "object" => article_uri,
+      "to" => [@as_public],
+      "cc" => ["#{actor_uri}/followers"]
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Builds an `Undo(Announce)` activity for a local user unboosting an article.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_undo_user_announce_article(user, article, boost_ap_id \\ nil) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+    article_uri = article.ap_id || Federation.actor_uri(:article, article.slug)
+    announce_id = boost_ap_id || "#{actor_uri}#announce-#{System.unique_integer([:positive])}"
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#undo-announce-#{System.unique_integer([:positive])}",
+      "type" => "Undo",
+      "actor" => actor_uri,
+      "object" => %{
+        "id" => announce_id,
+        "type" => "Announce",
+        "actor" => actor_uri,
+        "object" => article_uri
+      },
+      "to" => [@as_public],
+      "cc" => ["#{actor_uri}/followers"]
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Publishes an `Announce` activity for a local user boosting an article.
+  """
+  def publish_article_boosted(user_id, article) do
+    user = Repo.get!(Baudrate.Setup.User, user_id)
+    article = Repo.preload(article, [:boards, :user])
+
+    boost =
+      Repo.get_by(Baudrate.Content.ArticleBoost, user_id: user_id, article_id: article.id)
+
+    boost_ap_id = boost && boost.ap_id
+
+    {activity, actor_uri} = build_user_announce_article(user, article, boost_ap_id)
+    Delivery.enqueue_for_article(activity, actor_uri, article)
+  end
+
+  @doc """
+  Publishes an `Undo(Announce)` activity for a local user unboosting an article.
+  """
+  def publish_article_unboosted(user_id, article, boost_ap_id \\ nil) do
+    user = Repo.get!(Baudrate.Setup.User, user_id)
+    article = Repo.preload(article, [:boards, :user])
+    {activity, actor_uri} = build_undo_user_announce_article(user, article, boost_ap_id)
+    Delivery.enqueue_for_article(activity, actor_uri, article)
+  end
+
+  # --- Comment Boost (User Announce) ---
+
+  @doc """
+  Builds an `Announce` activity from a local user boosting a comment.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_user_announce_comment(user, comment, boost_ap_id \\ nil) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+    comment_uri = comment.ap_id
+
+    announce_id =
+      boost_ap_id || "#{actor_uri}#comment-announce-#{System.unique_integer([:positive])}"
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => announce_id,
+      "type" => "Announce",
+      "actor" => actor_uri,
+      "object" => comment_uri,
+      "to" => [@as_public],
+      "cc" => ["#{actor_uri}/followers"]
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Builds an `Undo(Announce)` activity for a local user unboosting a comment.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_undo_user_announce_comment(user, comment, boost_ap_id \\ nil) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+    comment_uri = comment.ap_id
+
+    announce_id =
+      boost_ap_id || "#{actor_uri}#comment-announce-#{System.unique_integer([:positive])}"
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#undo-comment-announce-#{System.unique_integer([:positive])}",
+      "type" => "Undo",
+      "actor" => actor_uri,
+      "object" => %{
+        "id" => announce_id,
+        "type" => "Announce",
+        "actor" => actor_uri,
+        "object" => comment_uri
+      },
+      "to" => [@as_public],
+      "cc" => ["#{actor_uri}/followers"]
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Publishes an `Announce` activity for a local user boosting a comment.
+  """
+  def publish_comment_boosted(user_id, comment) do
+    user = Repo.get!(Baudrate.Setup.User, user_id)
+    comment = Repo.preload(comment, article: [:boards, :user])
+
+    boost =
+      Repo.get_by(Baudrate.Content.CommentBoost, user_id: user_id, comment_id: comment.id)
+
+    boost_ap_id = boost && boost.ap_id
+
+    {activity, actor_uri} = build_user_announce_comment(user, comment, boost_ap_id)
+    Delivery.enqueue_for_article(activity, actor_uri, comment.article)
+  end
+
+  @doc """
+  Publishes an `Undo(Announce)` activity for a local user unboosting a comment.
+  """
+  def publish_comment_unboosted(user_id, comment, boost_ap_id \\ nil) do
+    user = Repo.get!(Baudrate.Setup.User, user_id)
+    comment = Repo.preload(comment, article: [:boards, :user])
+    {activity, actor_uri} = build_undo_user_announce_comment(user, comment, boost_ap_id)
+    Delivery.enqueue_for_article(activity, actor_uri, comment.article)
+  end
+
+  # --- Feed Item Like/Boost ---
+
+  @doc """
+  Builds a `Like` activity for a local user liking a remote feed item.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_like_feed_item(user, feed_item) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#feed-like-#{System.unique_integer([:positive])}",
+      "type" => "Like",
+      "actor" => actor_uri,
+      "object" => feed_item.ap_id,
+      "to" => [@as_public]
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Builds an `Undo(Like)` activity for unliking a remote feed item.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_undo_like_feed_item(user, feed_item, like_ap_id) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#undo-feed-like-#{System.unique_integer([:positive])}",
+      "type" => "Undo",
+      "actor" => actor_uri,
+      "object" => %{
+        "id" => like_ap_id,
+        "type" => "Like",
+        "actor" => actor_uri,
+        "object" => feed_item.ap_id
+      },
+      "to" => [@as_public]
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Builds an `Announce` activity for a local user boosting a remote feed item.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_announce_feed_item(user, feed_item) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#feed-announce-#{System.unique_integer([:positive])}",
+      "type" => "Announce",
+      "actor" => actor_uri,
+      "object" => feed_item.ap_id,
+      "to" => [@as_public],
+      "cc" => ["#{actor_uri}/followers"]
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Builds an `Undo(Announce)` activity for unboosting a remote feed item.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_undo_announce_feed_item(user, feed_item, boost_ap_id) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#undo-feed-announce-#{System.unique_integer([:positive])}",
+      "type" => "Undo",
+      "actor" => actor_uri,
+      "object" => %{
+        "id" => boost_ap_id,
+        "type" => "Announce",
+        "actor" => actor_uri,
+        "object" => feed_item.ap_id
+      },
+      "to" => [@as_public],
+      "cc" => ["#{actor_uri}/followers"]
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Publishes a `Like` activity for a local user liking a remote feed item.
+  Delivers to the remote actor's inbox.
+  """
+  def publish_feed_item_liked(user, feed_item) do
+    feed_item = Repo.preload(feed_item, [:remote_actor])
+    {activity, actor_uri} = build_like_feed_item(user, feed_item)
+    inbox = feed_item.remote_actor.shared_inbox || feed_item.remote_actor.inbox
+
+    if inbox do
+      Delivery.enqueue(activity, actor_uri, [inbox])
+    else
+      {:ok, 0}
+    end
+  end
+
+  @doc """
+  Publishes an `Undo(Like)` activity for unliking a remote feed item.
+  """
+  def publish_feed_item_unliked(user, feed_item, like_ap_id) do
+    feed_item = Repo.preload(feed_item, [:remote_actor])
+    {activity, actor_uri} = build_undo_like_feed_item(user, feed_item, like_ap_id)
+    inbox = feed_item.remote_actor.shared_inbox || feed_item.remote_actor.inbox
+
+    if inbox do
+      Delivery.enqueue(activity, actor_uri, [inbox])
+    else
+      {:ok, 0}
+    end
+  end
+
+  @doc """
+  Publishes an `Announce` activity for a local user boosting a remote feed item.
+  Delivers to the remote actor's inbox.
+  """
+  def publish_feed_item_boosted(user, feed_item) do
+    feed_item = Repo.preload(feed_item, [:remote_actor])
+    {activity, actor_uri} = build_announce_feed_item(user, feed_item)
+    inbox = feed_item.remote_actor.shared_inbox || feed_item.remote_actor.inbox
+
+    if inbox do
+      Delivery.enqueue(activity, actor_uri, [inbox])
+    else
+      {:ok, 0}
+    end
+  end
+
+  @doc """
+  Publishes an `Undo(Announce)` activity for unboosting a remote feed item.
+  """
+  def publish_feed_item_unboosted(user, feed_item, boost_ap_id) do
+    feed_item = Repo.preload(feed_item, [:remote_actor])
+    {activity, actor_uri} = build_undo_announce_feed_item(user, feed_item, boost_ap_id)
+    inbox = feed_item.remote_actor.shared_inbox || feed_item.remote_actor.inbox
+
+    if inbox do
+      Delivery.enqueue(activity, actor_uri, [inbox])
+    else
+      {:ok, 0}
+    end
+  end
+
   # --- Poll Vote Builders ---
 
   @doc """

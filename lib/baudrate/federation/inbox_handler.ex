@@ -105,6 +105,7 @@ defmodule Baudrate.Federation.InboxHandler do
        )
        when is_binary(like_ap_id) do
     Content.delete_article_like_by_ap_id(like_ap_id, remote_actor.id)
+    Content.delete_comment_like_by_ap_id(like_ap_id, remote_actor.id)
     :ok
   end
 
@@ -117,6 +118,8 @@ defmodule Baudrate.Federation.InboxHandler do
        )
        when is_binary(announce_ap_id) do
     Federation.delete_announce_by_ap_id(announce_ap_id, remote_actor.id)
+    Content.delete_article_boost_by_ap_id(announce_ap_id, remote_actor.id)
+    Content.delete_comment_boost_by_ap_id(announce_ap_id, remote_actor.id)
     :ok
   end
 
@@ -188,17 +191,17 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp dispatch(%{"type" => "Like", "object" => object_uri} = activity, remote_actor, _target)
        when is_binary(object_uri) do
+    ap_id = activity["id"]
+
     case resolve_local_article_by_ap_or_uri(object_uri) do
       %{id: article_id} ->
-        ap_id = activity["id"]
-
         case Content.create_remote_article_like(%{
                ap_id: ap_id,
                article_id: article_id,
                remote_actor_id: remote_actor.id
              }) do
           {:ok, _like} ->
-            Logger.info("federation.activity: type=Like ap_id=#{ap_id}")
+            Logger.info("federation.activity: type=Like(Article) ap_id=#{ap_id}")
             :ok
 
           {:error, %Ecto.Changeset{} = changeset} ->
@@ -206,8 +209,26 @@ defmodule Baudrate.Federation.InboxHandler do
         end
 
       nil ->
-        # Target not local — ignore gracefully
-        :ok
+        # Try resolving as a local comment
+        case Content.get_comment_by_ap_id(object_uri) do
+          %{id: comment_id} ->
+            case Content.create_remote_comment_like(%{
+                   ap_id: ap_id,
+                   comment_id: comment_id,
+                   remote_actor_id: remote_actor.id
+                 }) do
+              {:ok, _like} ->
+                Logger.info("federation.activity: type=Like(Comment) ap_id=#{ap_id}")
+                :ok
+
+              {:error, %Ecto.Changeset{} = changeset} ->
+                if has_unique_error?(changeset), do: :ok, else: {:error, :like_failed}
+            end
+
+          nil ->
+            # Target not local — ignore gracefully
+            :ok
+        end
     end
   end
 
@@ -217,6 +238,7 @@ defmodule Baudrate.Federation.InboxHandler do
        when is_binary(object_uri) do
     ap_id = activity["id"]
 
+    # Track in general announces table
     case Federation.create_announce(%{
            ap_id: ap_id,
            target_ap_id: object_uri,
@@ -225,11 +247,15 @@ defmodule Baudrate.Federation.InboxHandler do
          }) do
       {:ok, _announce} ->
         Logger.info("federation.activity: type=Announce ap_id=#{ap_id}")
-        :ok
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        if has_unique_error?(changeset), do: :ok, else: {:error, :announce_failed}
+        unless has_unique_error?(changeset), do: Logger.info("federation.announce: failed")
     end
+
+    # Also create article/comment boost if target is local content
+    maybe_create_local_boost(object_uri, ap_id, remote_actor)
+
+    :ok
   end
 
   # --- Announce with embedded object map (Lemmy interop) ---
@@ -1191,6 +1217,31 @@ defmodule Baudrate.Federation.InboxHandler do
     Enum.any?(errors, fn {_field, {_msg, opts}} ->
       Keyword.get(opts, :constraint) == :unique
     end)
+  end
+
+  # Creates an article_boost or comment_boost if the Announce target is local content.
+  defp maybe_create_local_boost(object_uri, ap_id, remote_actor) do
+    case resolve_local_article_by_ap_or_uri(object_uri) do
+      %{id: article_id} ->
+        Content.create_remote_article_boost(%{
+          ap_id: ap_id,
+          article_id: article_id,
+          remote_actor_id: remote_actor.id
+        })
+
+      nil ->
+        case Content.get_comment_by_ap_id(object_uri) do
+          %{id: comment_id} ->
+            Content.create_remote_comment_boost(%{
+              ap_id: ap_id,
+              comment_id: comment_id,
+              remote_actor_id: remote_actor.id
+            })
+
+          nil ->
+            :ok
+        end
+    end
   end
 
   # --- Follow helpers (Accept/Reject) ---

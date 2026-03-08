@@ -1957,6 +1957,130 @@ defmodule Baudrate.Federation do
     end)
   end
 
+  # --- Feed Item Likes ---
+
+  alias Baudrate.Federation.{FeedItemLike, FeedItemBoost}
+
+  @doc """
+  Toggles a like on a remote feed item — creates if not exists, removes if exists.
+  Sends AP Like/Undo(Like) to the remote actor's inbox.
+  """
+  def toggle_feed_item_like(user, feed_item_id) do
+    feed_item = Repo.get!(FeedItem, feed_item_id)
+
+    case Repo.get_by(FeedItemLike, user_id: user.id, feed_item_id: feed_item_id) do
+      nil ->
+        result =
+          %FeedItemLike{}
+          |> FeedItemLike.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
+          |> Repo.insert()
+
+        with {:ok, like} <- result do
+          ap_id =
+            actor_uri(:user, user.username) <>
+              "#feed-like-#{like.id}"
+
+          like =
+            like
+            |> Ecto.Changeset.change(ap_id: ap_id)
+            |> Repo.update!()
+
+          schedule_federation_task(fn ->
+            Publisher.publish_feed_item_liked(user, feed_item)
+          end)
+
+          {:ok, like}
+        end
+
+      like ->
+        like_ap_id = like.ap_id
+        Repo.delete!(like)
+
+        schedule_federation_task(fn ->
+          Publisher.publish_feed_item_unliked(user, feed_item, like_ap_id)
+        end)
+
+        {:ok, :removed}
+    end
+  end
+
+  @doc """
+  Returns a MapSet of feed item IDs that the given user has liked.
+  """
+  def feed_item_likes_by_user(_user_id, []), do: MapSet.new()
+
+  def feed_item_likes_by_user(user_id, feed_item_ids) do
+    import Ecto.Query
+
+    from(l in FeedItemLike,
+      where: l.user_id == ^user_id and l.feed_item_id in ^feed_item_ids,
+      select: l.feed_item_id
+    )
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
+  # --- Feed Item Boosts ---
+
+  @doc """
+  Toggles a boost on a remote feed item — creates if not exists, removes if exists.
+  Sends AP Announce/Undo(Announce) to the remote actor's inbox.
+  """
+  def toggle_feed_item_boost(user, feed_item_id) do
+    feed_item = Repo.get!(FeedItem, feed_item_id)
+
+    case Repo.get_by(FeedItemBoost, user_id: user.id, feed_item_id: feed_item_id) do
+      nil ->
+        result =
+          %FeedItemBoost{}
+          |> FeedItemBoost.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
+          |> Repo.insert()
+
+        with {:ok, boost} <- result do
+          ap_id =
+            actor_uri(:user, user.username) <>
+              "#feed-announce-#{boost.id}"
+
+          boost =
+            boost
+            |> Ecto.Changeset.change(ap_id: ap_id)
+            |> Repo.update!()
+
+          schedule_federation_task(fn ->
+            Publisher.publish_feed_item_boosted(user, feed_item)
+          end)
+
+          {:ok, boost}
+        end
+
+      boost ->
+        boost_ap_id = boost.ap_id
+        Repo.delete!(boost)
+
+        schedule_federation_task(fn ->
+          Publisher.publish_feed_item_unboosted(user, feed_item, boost_ap_id)
+        end)
+
+        {:ok, :removed}
+    end
+  end
+
+  @doc """
+  Returns a MapSet of feed item IDs that the given user has boosted.
+  """
+  def feed_item_boosts_by_user(_user_id, []), do: MapSet.new()
+
+  def feed_item_boosts_by_user(user_id, feed_item_ids) do
+    import Ecto.Query
+
+    from(b in FeedItemBoost,
+      where: b.user_id == ^user_id and b.feed_item_id in ^feed_item_ids,
+      select: b.feed_item_id
+    )
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
   # --- Announces ---
 
   @doc """
