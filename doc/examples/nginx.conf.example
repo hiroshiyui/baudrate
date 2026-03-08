@@ -163,10 +163,29 @@ server {
         # Keepalive to upstream (requires proxy_http_version 1.1)
         proxy_set_header Connection "";
 
+        proxy_connect_timeout 5s;
         proxy_read_timeout 60s;
         proxy_send_timeout 60s;
 
-        # Disable buffering for LiveView streaming
-        proxy_buffering off;
+        # Buffer responses so nginx can retry or hold requests briefly
+        # during restarts. LiveView streaming uses WebSocket (separate
+        # location above), so buffering here only affects regular HTTP.
+        proxy_buffering on;
+        proxy_buffer_size 16k;
+        proxy_buffers 8 16k;
+
+        # During restarts (502), show a brief maintenance page instead
+        # of an ugly error. The proxy_next_upstream directive tells nginx
+        # to wait and retry for up to 30s if the upstream is unavailable.
+        proxy_next_upstream error timeout http_502;
+        proxy_next_upstream_timeout 30s;
+        proxy_next_upstream_tries 3;
+    }
+
+    # Custom 502 error page — shown only if all retry attempts fail
+    error_page 502 /502.html;
+    location = /502.html {
+        root /usr/share/nginx/html;
+        internal;
     }
 }

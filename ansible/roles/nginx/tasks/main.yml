@@ -61,6 +61,12 @@
       --non-interactive
     creates: "/etc/letsencrypt/live/{{ domain }}/fullchain.pem"
 
+- name: Deploy custom 502 maintenance page
+  ansible.builtin.copy:
+    src: 502.html
+    dest: /usr/share/nginx/html/502.html
+    mode: "0644"
+
 - name: Deploy full nginx config with SSL
   ansible.builtin.template:
     src: baudrate.conf.j2
