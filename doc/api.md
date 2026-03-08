@@ -195,7 +195,7 @@ GET /nodeinfo/2.1
   "software": {
     "name": "baudrate",
     "version": "0.1.0",
-    "repository": "https://github.com/example/baudrate"
+    "repository": "https://github.com/hiroshiyui/baudrate"
   },
   "protocols": ["activitypub"],
   "openRegistrations": true,
