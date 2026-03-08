@@ -800,7 +800,7 @@ The Ansible deploy playbook minimises downtime through three mechanisms:
    directory *before* the symlink swap and service restart. Since Ecto migrations
    are additive (new columns/tables), the old running code tolerates them.
 
-2. **Graceful shutdown** — Bandit's `shutdown_timeout: 30_000` (in `runtime.exs`)
+2. **Graceful shutdown** — Thousand Island's `shutdown_timeout: 30_000` (in `runtime.exs`)
    drains in-flight HTTP requests for up to 30 seconds on SIGTERM. The systemd
    `TimeoutStopSec=35` gives it 5 extra seconds of margin.
 

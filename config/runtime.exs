@@ -70,7 +70,7 @@ if config_env() == :prod do
       # Drain in-flight requests for up to 30s on shutdown (SIGTERM).
       # Works with systemd TimeoutStopSec=35 and nginx proxy_next_upstream
       # to achieve near-zero downtime deploys.
-      shutdown_timeout: 30_000
+      thousand_island_options: [shutdown_timeout: 30_000]
     ],
     secret_key_base: secret_key_base
 
