@@ -1966,7 +1966,21 @@ defmodule Baudrate.Federation do
   Sends AP Like/Undo(Like) to the remote actor's inbox.
   """
   def toggle_feed_item_like(user, feed_item_id) do
-    feed_item = Repo.get!(FeedItem, feed_item_id)
+    case Repo.get(FeedItem, feed_item_id) do
+      nil ->
+        {:error, :not_found}
+
+      feed_item ->
+        if not feed_item_accessible?(user, feed_item) do
+          {:error, :not_found}
+        else
+          do_toggle_feed_item_like(user, feed_item)
+        end
+    end
+  end
+
+  defp do_toggle_feed_item_like(user, feed_item) do
+    feed_item_id = feed_item.id
 
     case Repo.get_by(FeedItemLike, user_id: user.id, feed_item_id: feed_item_id) do
       nil ->
@@ -2027,7 +2041,21 @@ defmodule Baudrate.Federation do
   Sends AP Announce/Undo(Announce) to the remote actor's inbox.
   """
   def toggle_feed_item_boost(user, feed_item_id) do
-    feed_item = Repo.get!(FeedItem, feed_item_id)
+    case Repo.get(FeedItem, feed_item_id) do
+      nil ->
+        {:error, :not_found}
+
+      feed_item ->
+        if not feed_item_accessible?(user, feed_item) do
+          {:error, :not_found}
+        else
+          do_toggle_feed_item_boost(user, feed_item)
+        end
+    end
+  end
+
+  defp do_toggle_feed_item_boost(user, feed_item) do
+    feed_item_id = feed_item.id
 
     case Repo.get_by(FeedItemBoost, user_id: user.id, feed_item_id: feed_item_id) do
       nil ->
@@ -2079,6 +2107,20 @@ defmodule Baudrate.Federation do
     )
     |> Repo.all()
     |> MapSet.new()
+  end
+
+  # Returns true if the user follows the remote actor who created the feed item.
+  defp feed_item_accessible?(user, feed_item) do
+    import Ecto.Query
+
+    Repo.exists?(
+      from(uf in Baudrate.Federation.UserFollow,
+        where:
+          uf.user_id == ^user.id and
+            uf.remote_actor_id == ^feed_item.remote_actor_id and
+            uf.state == "accepted"
+      )
+    )
   end
 
   # --- Announces ---

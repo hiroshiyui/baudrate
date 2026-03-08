@@ -158,21 +158,25 @@ defmodule BaudrateWeb.FeedLive do
   end
 
   def handle_event("toggle_reply", %{"id" => feed_item_id_str}, socket) do
-    feed_item_id = String.to_integer(feed_item_id_str)
+    case parse_id(feed_item_id_str) do
+      :error ->
+        {:noreply, socket}
 
-    if socket.assigns.replying_to == feed_item_id do
-      {:noreply,
-       socket
-       |> assign(:replying_to, nil)
-       |> assign(:replies, %{})}
-    else
-      replies = Federation.list_feed_item_replies(feed_item_id)
+      {:ok, feed_item_id} ->
+        if socket.assigns.replying_to == feed_item_id do
+          {:noreply,
+           socket
+           |> assign(:replying_to, nil)
+           |> assign(:replies, %{})}
+        else
+          replies = Federation.list_feed_item_replies(feed_item_id)
 
-      {:noreply,
-       socket
-       |> assign(:replying_to, feed_item_id)
-       |> assign(:reply_form, to_form(FeedItemReply.changeset(%FeedItemReply{}, %{}), as: :reply))
-       |> assign(:replies, %{feed_item_id => replies})}
+          {:noreply,
+           socket
+           |> assign(:replying_to, feed_item_id)
+           |> assign(:reply_form, to_form(FeedItemReply.changeset(%FeedItemReply{}, %{}), as: :reply))
+           |> assign(:replies, %{feed_item_id => replies})}
+        end
     end
   end
 
@@ -185,21 +189,26 @@ defmodule BaudrateWeb.FeedLive do
   end
 
   def handle_event("submit_reply", %{"reply" => params, "feed_item_id" => fi_id_str}, socket) do
-    user = socket.assigns.current_user
-    feed_item_id = String.to_integer(fi_id_str)
+    case parse_id(fi_id_str) do
+      :error ->
+        {:noreply, socket}
 
-    case RateLimits.check_feed_reply(user.id) do
-      {:error, :rate_limited} ->
-        {:noreply,
-         put_flash(
-           socket,
-           :error,
-           gettext("You are replying too frequently. Please try again later.")
-         )}
+      {:ok, feed_item_id} ->
+        user = socket.assigns.current_user
 
-      :ok ->
-        feed_item = Baudrate.Repo.get!(Federation.FeedItem, feed_item_id)
-        do_create_reply(socket, feed_item, user, params["body"] || "")
+        case RateLimits.check_feed_reply(user.id) do
+          {:error, :rate_limited} ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               gettext("You are replying too frequently. Please try again later.")
+             )}
+
+          :ok ->
+            feed_item = Baudrate.Repo.get!(Federation.FeedItem, feed_item_id)
+            do_create_reply(socket, feed_item, user, params["body"] || "")
+        end
     end
   end
 
@@ -344,42 +353,52 @@ defmodule BaudrateWeb.FeedLive do
   end
 
   def handle_event("toggle_feed_item_like", %{"id" => id}, socket) do
-    feed_item_id = String.to_integer(id)
-    user = socket.assigns.current_user
+    case parse_id(id) do
+      :error ->
+        {:noreply, socket}
 
-    case Federation.toggle_feed_item_like(user, feed_item_id) do
-      {:ok, _} ->
-        liked_ids = socket.assigns.feed_item_liked_ids
+      {:ok, feed_item_id} ->
+        user = socket.assigns.current_user
 
-        liked_ids =
-          if MapSet.member?(liked_ids, feed_item_id),
-            do: MapSet.delete(liked_ids, feed_item_id),
-            else: MapSet.put(liked_ids, feed_item_id)
+        case Federation.toggle_feed_item_like(user, feed_item_id) do
+          {:ok, _} ->
+            liked_ids = socket.assigns.feed_item_liked_ids
 
-        {:noreply, assign(socket, :feed_item_liked_ids, liked_ids)}
+            liked_ids =
+              if MapSet.member?(liked_ids, feed_item_id),
+                do: MapSet.delete(liked_ids, feed_item_id),
+                else: MapSet.put(liked_ids, feed_item_id)
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to toggle like."))}
+            {:noreply, assign(socket, :feed_item_liked_ids, liked_ids)}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to toggle like."))}
+        end
     end
   end
 
   def handle_event("toggle_feed_item_boost", %{"id" => id}, socket) do
-    feed_item_id = String.to_integer(id)
-    user = socket.assigns.current_user
+    case parse_id(id) do
+      :error ->
+        {:noreply, socket}
 
-    case Federation.toggle_feed_item_boost(user, feed_item_id) do
-      {:ok, _} ->
-        boosted_ids = socket.assigns.feed_item_boosted_ids
+      {:ok, feed_item_id} ->
+        user = socket.assigns.current_user
 
-        boosted_ids =
-          if MapSet.member?(boosted_ids, feed_item_id),
-            do: MapSet.delete(boosted_ids, feed_item_id),
-            else: MapSet.put(boosted_ids, feed_item_id)
+        case Federation.toggle_feed_item_boost(user, feed_item_id) do
+          {:ok, _} ->
+            boosted_ids = socket.assigns.feed_item_boosted_ids
 
-        {:noreply, assign(socket, :feed_item_boosted_ids, boosted_ids)}
+            boosted_ids =
+              if MapSet.member?(boosted_ids, feed_item_id),
+                do: MapSet.delete(boosted_ids, feed_item_id),
+                else: MapSet.put(boosted_ids, feed_item_id)
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to toggle boost."))}
+            {:noreply, assign(socket, :feed_item_boosted_ids, boosted_ids)}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to toggle boost."))}
+        end
     end
   end
 
