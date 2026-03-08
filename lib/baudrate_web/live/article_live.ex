@@ -85,8 +85,18 @@ defmodule BaudrateWeb.ArticleLive do
           )
         )
         |> assign(:like_count, Content.count_article_likes(article))
+        |> assign(
+          :boosted,
+          if(current_user,
+            do: Content.article_boosted?(current_user.id, article.id),
+            else: false
+          )
+        )
+        |> assign(:boost_count, Content.count_article_boosts(article))
         |> assign(:comment_liked_ids, MapSet.new())
         |> assign(:comment_like_counts, %{})
+        |> assign(:comment_boosted_ids, MapSet.new())
+        |> assign(:comment_boost_counts, %{})
         |> assign(
           :bookmarked,
           if(current_user,
@@ -225,6 +235,63 @@ defmodule BaudrateWeb.ArticleLive do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to toggle like."))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_boost", _params, socket) do
+    user = socket.assigns.current_user
+    article = socket.assigns.article
+
+    case Content.toggle_article_boost(user.id, article.id) do
+      {:ok, _} ->
+        boosted = Content.article_boosted?(user.id, article.id)
+        boost_count = Content.count_article_boosts(article)
+        {:noreply, socket |> assign(:boosted, boosted) |> assign(:boost_count, boost_count)}
+
+      {:error, :self_boost} ->
+        {:noreply, put_flash(socket, :error, gettext("You cannot boost your own article."))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to toggle boost."))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_comment_boost", %{"id" => id}, socket) do
+    case parse_id(id) do
+      :error ->
+        {:noreply, socket}
+
+      {:ok, comment_id} ->
+        user = socket.assigns.current_user
+
+        case Content.toggle_comment_boost(user.id, comment_id) do
+          {:ok, _} ->
+            boosted_ids = socket.assigns.comment_boosted_ids
+
+            boosted_ids =
+              if MapSet.member?(boosted_ids, comment_id),
+                do: MapSet.delete(boosted_ids, comment_id),
+                else: MapSet.put(boosted_ids, comment_id)
+
+            new_counts = Content.comment_boost_counts([comment_id])
+            new_count = Map.get(new_counts, comment_id, 0)
+
+            counts =
+              Map.put(socket.assigns.comment_boost_counts, comment_id, new_count)
+
+            {:noreply,
+             socket
+             |> assign(:comment_boosted_ids, boosted_ids)
+             |> assign(:comment_boost_counts, counts)}
+
+          {:error, :self_boost} ->
+            {:noreply, put_flash(socket, :error, gettext("You cannot boost your own comment."))}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to toggle boost."))}
+        end
     end
   end
 
@@ -575,6 +642,8 @@ defmodule BaudrateWeb.ArticleLive do
   attr :current_user, :any, default: nil
   attr :comment_liked_ids, :any, default: nil
   attr :comment_like_counts, :any, default: nil
+  attr :comment_boosted_ids, :any, default: nil
+  attr :comment_boost_counts, :any, default: nil
 
   def comment_node(assigns) do
     assigns = assign(assigns, :children, Map.get(assigns.children_map, assigns.comment.id, []))
@@ -663,6 +732,13 @@ defmodule BaudrateWeb.ArticleLive do
             comment_liked_ids={@comment_liked_ids}
             comment_like_counts={@comment_like_counts}
           />
+          <%!-- Comment boost button --%>
+          <.comment_boost_button
+            comment={@comment}
+            current_user={@current_user}
+            comment_boosted_ids={@comment_boosted_ids}
+            comment_boost_counts={@comment_boost_counts}
+          />
           <%!-- Report comment menu --%>
           <div
             :if={@current_user && @comment.user_id != @current_user.id}
@@ -744,6 +820,8 @@ defmodule BaudrateWeb.ArticleLive do
           current_user={@current_user}
           comment_liked_ids={@comment_liked_ids}
           comment_like_counts={@comment_like_counts}
+          comment_boosted_ids={@comment_boosted_ids}
+          comment_boost_counts={@comment_boost_counts}
         />
       <% end %>
     </div>
@@ -785,6 +863,53 @@ defmodule BaudrateWeb.ArticleLive do
       </button>
       <.icon :if={!@current_user || @is_own} name="hero-heart" class="size-4" />
       <span :if={@like_count > 0}>{@like_count}</span>
+    </span>
+    """
+  end
+
+  attr :comment, :map, required: true
+  attr :current_user, :any, default: nil
+  attr :comment_boosted_ids, :any, default: nil
+  attr :comment_boost_counts, :any, default: nil
+
+  defp comment_boost_button(assigns) do
+    boosted_ids = assigns.comment_boosted_ids || MapSet.new()
+    counts = assigns.comment_boost_counts || %{}
+    is_boosted = MapSet.member?(boosted_ids, assigns.comment.id)
+    is_own = assigns.current_user && assigns.comment.user_id == assigns.current_user.id
+    boost_count = Map.get(counts, assigns.comment.id, 0)
+
+    assigns =
+      assigns
+      |> assign(:is_boosted, is_boosted)
+      |> assign(:is_own, is_own)
+      |> assign(:boost_count, boost_count)
+
+    ~H"""
+    <span class="inline-flex items-center gap-1 text-sm text-base-content/70">
+      <button
+        :if={@current_user && !@is_own}
+        type="button"
+        phx-click="toggle_comment_boost"
+        phx-value-id={@comment.id}
+        class="hover:text-success cursor-pointer"
+        aria-label={if @is_boosted, do: gettext("Unboost"), else: gettext("Boost")}
+      >
+        <.icon
+          name={
+            if @is_boosted,
+              do: "hero-arrow-path-rounded-square-solid",
+              else: "hero-arrow-path-rounded-square"
+          }
+          class={["size-4", @is_boosted && "text-success"]}
+        />
+      </button>
+      <.icon
+        :if={!@current_user || @is_own}
+        name="hero-arrow-path-rounded-square"
+        class="size-4"
+      />
+      <span :if={@boost_count > 0}>{@boost_count}</span>
     </span>
     """
   end
@@ -895,13 +1020,24 @@ defmodule BaudrateWeb.ArticleLive do
 
     comment_like_counts = Content.comment_like_counts(all_comment_ids)
 
+    comment_boosted_ids =
+      if current_user do
+        Content.comment_boosts_by_user(current_user.id, all_comment_ids)
+      else
+        MapSet.new()
+      end
+
+    comment_boost_counts = Content.comment_boost_counts(all_comment_ids)
+
     assign(socket,
       comment_roots: roots,
       children_map: children_map,
       comment_page: comment_page,
       comment_total_pages: comment_total_pages,
       comment_liked_ids: comment_liked_ids,
-      comment_like_counts: comment_like_counts
+      comment_like_counts: comment_like_counts,
+      comment_boosted_ids: comment_boosted_ids,
+      comment_boost_counts: comment_boost_counts
     )
   end
 

@@ -244,6 +244,30 @@
           do: ngettext("%{count} Like", "%{count} Likes", @like_count),
           else: ngettext("%{count} Like", "%{count} Likes", @like_count)}
       </button>
+      <%!-- Boost count (visible to all) + toggle (for non-authors) --%>
+      <span
+        :if={!@current_user || @article.user_id == @current_user.id}
+        class="btn btn-sm btn-ghost pointer-events-none"
+      >
+        <.icon name="hero-arrow-path-rounded-square" class="size-4" />
+        {ngettext("%{count} Boost", "%{count} Boosts", @boost_count)}
+      </span>
+      <button
+        :if={@current_user && @article.user_id != @current_user.id}
+        phx-click="toggle_boost"
+        class="btn btn-sm btn-ghost"
+        aria-label={if @boosted, do: gettext("Unboost"), else: gettext("Boost")}
+      >
+        <.icon
+          name={
+            if @boosted,
+              do: "hero-arrow-path-rounded-square-solid",
+              else: "hero-arrow-path-rounded-square"
+          }
+          class={["size-4", @boosted && "text-success"]}
+        />
+        {ngettext("%{count} Boost", "%{count} Boosts", @boost_count)}
+      </button>
       <button
         :if={@current_user}
         phx-click="toggle_bookmark"

@@ -15,7 +15,7 @@ defmodule BaudrateWeb.BoardLive do
   alias Baudrate.Content.PubSub, as: ContentPubSub
   alias BaudrateWeb.LinkedData
   alias BaudrateWeb.OpenGraph
-  import BaudrateWeb.Helpers, only: [parse_page: 1]
+  import BaudrateWeb.Helpers, only: [parse_page: 1, parse_id: 1]
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -78,13 +78,28 @@ defmodule BaudrateWeb.BoardLive do
         user: socket.assigns.current_user
       )
 
+    current_user = socket.assigns.current_user
+    article_ids = Enum.map(result.articles, & &1.id)
+
+    {article_liked_ids, article_boosted_ids} =
+      if current_user do
+        {Content.article_likes_by_user(current_user.id, article_ids),
+         Content.article_boosts_by_user(current_user.id, article_ids)}
+      else
+        {MapSet.new(), MapSet.new()}
+      end
+
     {:noreply,
      assign(socket,
        articles: result.articles,
        comment_counts: result.comment_counts,
        unread_article_ids: result.unread_article_ids,
        page: result.page,
-       total_pages: result.total_pages
+       total_pages: result.total_pages,
+       article_liked_ids: article_liked_ids,
+       article_boosted_ids: article_boosted_ids,
+       article_like_counts: Content.article_like_counts(article_ids),
+       article_boost_counts: Content.article_boost_counts(article_ids)
      )}
   end
 
@@ -112,6 +127,78 @@ defmodule BaudrateWeb.BoardLive do
   end
 
   @impl true
+  def handle_event("toggle_article_like", %{"id" => id}, socket) do
+    case parse_id(id) do
+      :error ->
+        {:noreply, socket}
+
+      {:ok, article_id} ->
+        user = socket.assigns.current_user
+
+        case Content.toggle_article_like(user.id, article_id) do
+          {:ok, _} ->
+            liked_ids = socket.assigns.article_liked_ids
+
+            liked_ids =
+              if MapSet.member?(liked_ids, article_id),
+                do: MapSet.delete(liked_ids, article_id),
+                else: MapSet.put(liked_ids, article_id)
+
+            new_counts = Content.article_like_counts([article_id])
+            new_count = Map.get(new_counts, article_id, 0)
+            counts = Map.put(socket.assigns.article_like_counts, article_id, new_count)
+
+            {:noreply,
+             socket
+             |> assign(:article_liked_ids, liked_ids)
+             |> assign(:article_like_counts, counts)}
+
+          {:error, :self_like} ->
+            {:noreply, put_flash(socket, :error, gettext("You cannot like your own article."))}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to toggle like."))}
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_article_boost", %{"id" => id}, socket) do
+    case parse_id(id) do
+      :error ->
+        {:noreply, socket}
+
+      {:ok, article_id} ->
+        user = socket.assigns.current_user
+
+        case Content.toggle_article_boost(user.id, article_id) do
+          {:ok, _} ->
+            boosted_ids = socket.assigns.article_boosted_ids
+
+            boosted_ids =
+              if MapSet.member?(boosted_ids, article_id),
+                do: MapSet.delete(boosted_ids, article_id),
+                else: MapSet.put(boosted_ids, article_id)
+
+            new_counts = Content.article_boost_counts([article_id])
+            new_count = Map.get(new_counts, article_id, 0)
+            counts = Map.put(socket.assigns.article_boost_counts, article_id, new_count)
+
+            {:noreply,
+             socket
+             |> assign(:article_boosted_ids, boosted_ids)
+             |> assign(:article_boost_counts, counts)}
+
+          {:error, :self_boost} ->
+            {:noreply, put_flash(socket, :error, gettext("You cannot boost your own article."))}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to toggle boost."))}
+        end
+    end
+  end
+
+  @impl true
   def handle_info({event, _payload}, socket)
       when event in [
              :article_created,
@@ -128,13 +215,28 @@ defmodule BaudrateWeb.BoardLive do
         user: socket.assigns.current_user
       )
 
+    current_user = socket.assigns.current_user
+    article_ids = Enum.map(result.articles, & &1.id)
+
+    {article_liked_ids, article_boosted_ids} =
+      if current_user do
+        {Content.article_likes_by_user(current_user.id, article_ids),
+         Content.article_boosts_by_user(current_user.id, article_ids)}
+      else
+        {MapSet.new(), MapSet.new()}
+      end
+
     {:noreply,
      assign(socket,
        articles: result.articles,
        comment_counts: result.comment_counts,
        unread_article_ids: result.unread_article_ids,
        page: result.page,
-       total_pages: result.total_pages
+       total_pages: result.total_pages,
+       article_liked_ids: article_liked_ids,
+       article_boosted_ids: article_boosted_ids,
+       article_like_counts: Content.article_like_counts(article_ids),
+       article_boost_counts: Content.article_boost_counts(article_ids)
      )}
   end
 

@@ -183,6 +183,62 @@
           &middot; <.icon name="hero-chat-bubble-left-ellipsis" class="size-4" />
           {Map.get(@comment_counts, article.id, 0)}
         </.link>
+        <%!-- Like button --%>
+        <button
+          :if={@current_user && article.user_id != @current_user.id}
+          phx-click="toggle_article_like"
+          phx-value-id={article.id}
+          class="relative z-10 inline-flex items-center gap-1 text-base-content/60 hover:text-error cursor-pointer"
+          aria-label={
+            if MapSet.member?(@article_liked_ids, article.id),
+              do: gettext("Unlike"),
+              else: gettext("Like")
+          }
+        >
+          &middot;
+          <.icon
+            name={
+              if MapSet.member?(@article_liked_ids, article.id),
+                do: "hero-heart-solid",
+                else: "hero-heart"
+            }
+            class={[
+              "size-4",
+              MapSet.member?(@article_liked_ids, article.id) && "text-error"
+            ]}
+          />
+          <span :if={Map.get(@article_like_counts, article.id, 0) > 0}>
+            {Map.get(@article_like_counts, article.id, 0)}
+          </span>
+        </button>
+        <%!-- Boost button --%>
+        <button
+          :if={@current_user && article.user_id != @current_user.id}
+          phx-click="toggle_article_boost"
+          phx-value-id={article.id}
+          class="relative z-10 inline-flex items-center gap-1 text-base-content/60 hover:text-success cursor-pointer"
+          aria-label={
+            if MapSet.member?(@article_boosted_ids, article.id),
+              do: gettext("Unboost"),
+              else: gettext("Boost")
+          }
+        >
+          &middot;
+          <.icon
+            name={
+              if MapSet.member?(@article_boosted_ids, article.id),
+                do: "hero-arrow-path-rounded-square-solid",
+                else: "hero-arrow-path-rounded-square"
+            }
+            class={[
+              "size-4",
+              MapSet.member?(@article_boosted_ids, article.id) && "text-success"
+            ]}
+          />
+          <span :if={Map.get(@article_boost_counts, article.id, 0) > 0}>
+            {Map.get(@article_boost_counts, article.id, 0)}
+          </span>
+        </button>
       </div>
     </div>
   </article>

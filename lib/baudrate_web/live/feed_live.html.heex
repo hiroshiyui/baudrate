@@ -133,7 +133,7 @@
             {digest(item.feed_item.body_html)}
           </p>
 
-          <div class="flex items-center mt-2">
+          <div class="flex items-center gap-1 mt-2">
             <a
               :if={item.feed_item.source_url}
               href={item.feed_item.source_url}
@@ -159,6 +159,50 @@
               >
                 {reply_count(assigns, item.feed_item.id)}
               </span>
+            </button>
+            <button
+              phx-click="toggle_feed_item_like"
+              phx-value-id={item.feed_item.id}
+              class="btn btn-ghost btn-xs"
+              aria-label={
+                if MapSet.member?(@feed_item_liked_ids, item.feed_item.id),
+                  do: gettext("Unlike"),
+                  else: gettext("Like")
+              }
+            >
+              <.icon
+                name={
+                  if MapSet.member?(@feed_item_liked_ids, item.feed_item.id),
+                    do: "hero-heart-solid",
+                    else: "hero-heart"
+                }
+                class={[
+                  "size-4",
+                  MapSet.member?(@feed_item_liked_ids, item.feed_item.id) && "text-error"
+                ]}
+              />
+            </button>
+            <button
+              phx-click="toggle_feed_item_boost"
+              phx-value-id={item.feed_item.id}
+              class="btn btn-ghost btn-xs"
+              aria-label={
+                if MapSet.member?(@feed_item_boosted_ids, item.feed_item.id),
+                  do: gettext("Unboost"),
+                  else: gettext("Boost")
+              }
+            >
+              <.icon
+                name={
+                  if MapSet.member?(@feed_item_boosted_ids, item.feed_item.id),
+                    do: "hero-arrow-path-rounded-square-solid",
+                    else: "hero-arrow-path-rounded-square"
+                }
+                class={[
+                  "size-4",
+                  MapSet.member?(@feed_item_boosted_ids, item.feed_item.id) && "text-success"
+                ]}
+              />
             </button>
           </div>
 
@@ -273,6 +317,60 @@
               <.icon name="hero-chat-bubble-left-ellipsis" class="size-4" />
               {item.comment_count}
             </.link>
+            <%!-- Like button (not own) --%>
+            <button
+              :if={item.article.user_id != @current_user.id}
+              phx-click="toggle_article_like"
+              phx-value-id={item.article.id}
+              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
+              aria-label={
+                if MapSet.member?(@article_liked_ids, item.article.id),
+                  do: gettext("Unlike"),
+                  else: gettext("Like")
+              }
+            >
+              <.icon
+                name={
+                  if MapSet.member?(@article_liked_ids, item.article.id),
+                    do: "hero-heart-solid",
+                    else: "hero-heart"
+                }
+                class={[
+                  "size-4",
+                  MapSet.member?(@article_liked_ids, item.article.id) && "text-error"
+                ]}
+              />
+              <span :if={Map.get(@article_like_counts, item.article.id, 0) > 0}>
+                {Map.get(@article_like_counts, item.article.id, 0)}
+              </span>
+            </button>
+            <%!-- Boost button (not own) --%>
+            <button
+              :if={item.article.user_id != @current_user.id}
+              phx-click="toggle_article_boost"
+              phx-value-id={item.article.id}
+              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
+              aria-label={
+                if MapSet.member?(@article_boosted_ids, item.article.id),
+                  do: gettext("Unboost"),
+                  else: gettext("Boost")
+              }
+            >
+              <.icon
+                name={
+                  if MapSet.member?(@article_boosted_ids, item.article.id),
+                    do: "hero-arrow-path-rounded-square-solid",
+                    else: "hero-arrow-path-rounded-square"
+                }
+                class={[
+                  "size-4",
+                  MapSet.member?(@article_boosted_ids, item.article.id) && "text-success"
+                ]}
+              />
+              <span :if={Map.get(@article_boost_counts, item.article.id, 0) > 0}>
+                {Map.get(@article_boost_counts, item.article.id, 0)}
+              </span>
+            </button>
           </div>
         </div>
 
@@ -319,6 +417,62 @@
           <p class="text-sm text-base-content/80 line-clamp-3">
             {digest(item.comment.body)}
           </p>
+
+          <div
+            :if={item.comment.user_id != @current_user.id}
+            class="flex items-center gap-3 mt-2"
+          >
+            <button
+              phx-click="toggle_comment_like"
+              phx-value-id={item.comment.id}
+              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
+              aria-label={
+                if MapSet.member?(@comment_liked_ids, item.comment.id),
+                  do: gettext("Unlike"),
+                  else: gettext("Like")
+              }
+            >
+              <.icon
+                name={
+                  if MapSet.member?(@comment_liked_ids, item.comment.id),
+                    do: "hero-heart-solid",
+                    else: "hero-heart"
+                }
+                class={[
+                  "size-4",
+                  MapSet.member?(@comment_liked_ids, item.comment.id) && "text-error"
+                ]}
+              />
+              <span :if={Map.get(@comment_like_counts, item.comment.id, 0) > 0}>
+                {Map.get(@comment_like_counts, item.comment.id, 0)}
+              </span>
+            </button>
+            <button
+              phx-click="toggle_comment_boost"
+              phx-value-id={item.comment.id}
+              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
+              aria-label={
+                if MapSet.member?(@comment_boosted_ids, item.comment.id),
+                  do: gettext("Unboost"),
+                  else: gettext("Boost")
+              }
+            >
+              <.icon
+                name={
+                  if MapSet.member?(@comment_boosted_ids, item.comment.id),
+                    do: "hero-arrow-path-rounded-square-solid",
+                    else: "hero-arrow-path-rounded-square"
+                }
+                class={[
+                  "size-4",
+                  MapSet.member?(@comment_boosted_ids, item.comment.id) && "text-success"
+                ]}
+              />
+              <span :if={Map.get(@comment_boost_counts, item.comment.id, 0) > 0}>
+                {Map.get(@comment_boost_counts, item.comment.id, 0)}
+              </span>
+            </button>
+          </div>
         </div>
 
         <%!-- Comment on user's article or participated thread (remote actor) --%>
@@ -387,6 +541,59 @@
           <p class="text-sm text-base-content/80 line-clamp-3">
             {digest(item.comment.body)}
           </p>
+
+          <div class="flex items-center gap-3 mt-2">
+            <button
+              phx-click="toggle_comment_like"
+              phx-value-id={item.comment.id}
+              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
+              aria-label={
+                if MapSet.member?(@comment_liked_ids, item.comment.id),
+                  do: gettext("Unlike"),
+                  else: gettext("Like")
+              }
+            >
+              <.icon
+                name={
+                  if MapSet.member?(@comment_liked_ids, item.comment.id),
+                    do: "hero-heart-solid",
+                    else: "hero-heart"
+                }
+                class={[
+                  "size-4",
+                  MapSet.member?(@comment_liked_ids, item.comment.id) && "text-error"
+                ]}
+              />
+              <span :if={Map.get(@comment_like_counts, item.comment.id, 0) > 0}>
+                {Map.get(@comment_like_counts, item.comment.id, 0)}
+              </span>
+            </button>
+            <button
+              phx-click="toggle_comment_boost"
+              phx-value-id={item.comment.id}
+              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
+              aria-label={
+                if MapSet.member?(@comment_boosted_ids, item.comment.id),
+                  do: gettext("Unboost"),
+                  else: gettext("Boost")
+              }
+            >
+              <.icon
+                name={
+                  if MapSet.member?(@comment_boosted_ids, item.comment.id),
+                    do: "hero-arrow-path-rounded-square-solid",
+                    else: "hero-arrow-path-rounded-square"
+                }
+                class={[
+                  "size-4",
+                  MapSet.member?(@comment_boosted_ids, item.comment.id) && "text-success"
+                ]}
+              />
+              <span :if={Map.get(@comment_boost_counts, item.comment.id, 0) > 0}>
+                {Map.get(@comment_boost_counts, item.comment.id, 0)}
+              </span>
+            </button>
+          </div>
         </div>
       </article>
     </div>
