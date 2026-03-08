@@ -880,4 +880,260 @@ defmodule Baudrate.Federation.PublisherTest do
       assert hd(jobs).inbox_url == remote.inbox
     end
   end
+
+  describe "build_like_comment/3" do
+    test "builds a Like activity for a comment" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "Test comment",
+          body_html: "<p>Test comment</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      {activity, actor_uri} = Publisher.build_like_comment(user, comment)
+
+      assert activity["type"] == "Like"
+      assert activity["actor"] == actor_uri
+      assert activity["object"] == comment.ap_id
+      assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
+      assert activity["id"] =~ "#comment-like-"
+    end
+
+    test "uses provided like_ap_id when given" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "Test comment",
+          body_html: "<p>Test comment</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      like_ap_id = "https://local.example/users/test#comment-like-42"
+      {activity, _actor_uri} = Publisher.build_like_comment(user, comment, like_ap_id)
+
+      assert activity["id"] == like_ap_id
+    end
+  end
+
+  describe "build_undo_like_comment/3" do
+    test "builds an Undo(Like) activity for a comment" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "Test comment",
+          body_html: "<p>Test comment</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      {activity, actor_uri} = Publisher.build_undo_like_comment(user, comment)
+
+      assert activity["type"] == "Undo"
+      assert activity["actor"] == actor_uri
+      assert activity["object"]["type"] == "Like"
+      assert activity["object"]["actor"] == actor_uri
+      assert activity["object"]["object"] == comment.ap_id
+      assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
+      assert activity["id"] =~ "#undo-comment-like-"
+    end
+  end
+
+  describe "build_user_announce_article/3" do
+    test "builds an Announce activity from a user for an article" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      boost_ap_id = "https://local.example/users/test#announce-1"
+      {activity, actor_uri} = Publisher.build_user_announce_article(user, article, boost_ap_id)
+
+      assert activity["type"] == "Announce"
+      assert activity["actor"] == actor_uri
+      assert activity["id"] == boost_ap_id
+      assert activity["object"] =~ article.slug
+      assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
+      assert "#{actor_uri}/followers" in activity["cc"]
+    end
+
+    test "generates announce ID when boost_ap_id is nil" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {activity, _actor_uri} = Publisher.build_user_announce_article(user, article)
+
+      assert activity["id"] =~ "#announce-"
+    end
+  end
+
+  describe "build_undo_user_announce_article/3" do
+    test "builds an Undo(Announce) activity for an article" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      boost_ap_id = "https://local.example/users/test#announce-1"
+
+      {activity, actor_uri} =
+        Publisher.build_undo_user_announce_article(user, article, boost_ap_id)
+
+      assert activity["type"] == "Undo"
+      assert activity["actor"] == actor_uri
+      assert activity["object"]["type"] == "Announce"
+      assert activity["object"]["id"] == boost_ap_id
+      assert activity["object"]["actor"] == actor_uri
+      assert activity["object"]["object"] =~ article.slug
+      assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
+      assert "#{actor_uri}/followers" in activity["cc"]
+      assert activity["id"] =~ "#undo-announce-"
+    end
+  end
+
+  describe "build_user_announce_comment/3" do
+    test "builds an Announce activity from a user for a comment" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "Test comment",
+          body_html: "<p>Test comment</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      boost_ap_id = "https://local.example/users/test#announce-1"
+      {activity, actor_uri} = Publisher.build_user_announce_comment(user, comment, boost_ap_id)
+
+      assert activity["type"] == "Announce"
+      assert activity["actor"] == actor_uri
+      assert activity["id"] == boost_ap_id
+      assert activity["object"] == comment.ap_id
+      assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
+      assert "#{actor_uri}/followers" in activity["cc"]
+    end
+
+    test "generates announce ID when boost_ap_id is nil" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "Test comment",
+          body_html: "<p>Test comment</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      {activity, _actor_uri} = Publisher.build_user_announce_comment(user, comment)
+
+      assert activity["id"] =~ "#comment-announce-"
+    end
+  end
+
+  describe "build_undo_user_announce_comment/3" do
+    test "builds an Undo(Announce) activity for a comment" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "Test comment",
+          body_html: "<p>Test comment</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      boost_ap_id = "https://local.example/users/test#announce-1"
+
+      {activity, actor_uri} =
+        Publisher.build_undo_user_announce_comment(user, comment, boost_ap_id)
+
+      assert activity["type"] == "Undo"
+      assert activity["actor"] == actor_uri
+      assert activity["object"]["type"] == "Announce"
+      assert activity["object"]["id"] == boost_ap_id
+      assert activity["object"]["actor"] == actor_uri
+      assert activity["object"]["object"] == comment.ap_id
+      assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
+      assert "#{actor_uri}/followers" in activity["cc"]
+      assert activity["id"] =~ "#undo-comment-announce-"
+    end
+  end
+
+  describe "publish_comment_liked/2" do
+    test "creates delivery jobs for comment liked" do
+      user = create_user()
+      board = create_board()
+      remote = create_remote_actor()
+      user_uri = Baudrate.Federation.actor_uri(:user, user.username)
+      create_follower(user_uri, remote)
+
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "Test comment",
+          body_html: "<p>Test comment</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_comment_liked(user.id, comment)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert length(jobs) == 1
+      assert hd(jobs).inbox_url == remote.inbox
+    end
+  end
+
+  describe "publish_article_boosted/2" do
+    test "creates delivery jobs for article boosted" do
+      user = create_user()
+      board = create_board()
+      remote = create_remote_actor()
+      user_uri = Baudrate.Federation.actor_uri(:user, user.username)
+      create_follower(user_uri, remote)
+
+      article = create_article(user, board)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_article_boosted(user.id, article)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert length(jobs) == 1
+      assert hd(jobs).inbox_url == remote.inbox
+    end
+  end
 end

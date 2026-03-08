@@ -197,6 +197,83 @@ defmodule Baudrate.Notification.HooksTest do
     end
   end
 
+  describe "notify_local_article_boosted/2" do
+    test "sends article_boosted to article author", %{article: article, actor: actor} do
+      Hooks.notify_local_article_boosted(article.id, actor.id)
+
+      assert [notif] = list_notifications_for(article.user_id, "article_boosted")
+      assert notif.actor_user_id == actor.id
+      assert notif.article_id == article.id
+    end
+
+    test "skips self-boost (no notification when booster is author)", %{article: article, user: user} do
+      Hooks.notify_local_article_boosted(article.id, user.id)
+
+      assert [] == list_notifications_for(user.id, "article_boosted")
+    end
+  end
+
+  describe "notify_remote_article_boosted/2" do
+    test "sends article_boosted to article author", %{article: article} do
+      remote = create_remote_actor()
+
+      Hooks.notify_remote_article_boosted(article.id, remote.id)
+
+      assert [notif] = list_notifications_for(article.user_id, "article_boosted")
+      assert notif.actor_remote_actor_id == remote.id
+      assert notif.article_id == article.id
+    end
+  end
+
+  describe "notify_local_comment_boosted/2" do
+    test "sends comment_boosted to comment author", %{article: article, actor: actor, user: user} do
+      comment = create_comment(article, user, "A comment to boost")
+
+      Hooks.notify_local_comment_boosted(comment.id, actor.id)
+
+      assert [notif] = list_notifications_for(user.id, "comment_boosted")
+      assert notif.actor_user_id == actor.id
+      assert notif.comment_id == comment.id
+      assert notif.article_id == article.id
+    end
+
+    test "skips self-boost (no notification when booster is author)", %{article: article, user: user} do
+      comment = create_comment(article, user, "My own comment")
+
+      Hooks.notify_local_comment_boosted(comment.id, user.id)
+
+      assert [] == list_notifications_for(user.id, "comment_boosted")
+    end
+  end
+
+  describe "notify_remote_comment_boosted/2" do
+    test "sends comment_boosted to comment author", %{article: article, user: user} do
+      remote = create_remote_actor()
+      comment = create_comment(article, user, "A comment to boost remotely")
+
+      Hooks.notify_remote_comment_boosted(comment.id, remote.id)
+
+      assert [notif] = list_notifications_for(user.id, "comment_boosted")
+      assert notif.actor_remote_actor_id == remote.id
+      assert notif.comment_id == comment.id
+      assert notif.article_id == article.id
+    end
+  end
+
+  describe "notify_remote_comment_liked/2" do
+    test "sends comment_liked to comment author", %{article: article, user: user} do
+      remote = create_remote_actor()
+      comment = create_comment(article, user, "A comment to like remotely")
+
+      Hooks.notify_remote_comment_liked(comment.id, remote.id)
+
+      assert [notif] = list_notifications_for(user.id, "comment_liked")
+      assert notif.actor_remote_actor_id == remote.id
+      assert notif.comment_id == comment.id
+      assert notif.article_id == article.id
+    end
+  end
+
   describe "notify_report_created/1" do
     test "sends moderation_report to all admins" do
       admin = create_admin()

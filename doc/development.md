@@ -67,6 +67,7 @@ lib/
 │   │   ├── board_read.ex        # BoardRead schema (per-user board "mark all read" floor)
 │   │   ├── article_revision.ex  # ArticleRevision schema (edit history snapshots)
 │   │   ├── article_image_storage.ex # Image processing (resize, WebP, strip EXIF)
+│   │   ├── article_boost.ex     # ArticleBoost schema (local + remote boosts/reposts)
 │   │   ├── article_like.ex      # ArticleLike schema (local + remote likes)
 │   │   ├── article_tag.ex        # ArticleTag schema (article ↔ hashtag, extracted from body)
 │   │   ├── board.ex             # Board schema (hierarchical via parent_id, role-based permissions)
@@ -74,6 +75,8 @@ lib/
 │   │   ├── board_article.ex     # Join table: board ↔ article
 │   │   ├── board_moderator.ex   # Join table: board ↔ moderator
 │   │   ├── bookmark.ex          # Bookmark schema (article + comment bookmarks)
+│   │   ├── boosts.ex            # Article and comment boost operations
+│   │   ├── comment_boost.ex     # CommentBoost schema (local + remote boosts on comments)
 │   │   ├── comment_like.ex      # CommentLike schema (local + remote likes on comments)
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
 │   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark + Ammonia NIF + hashtag/mention linkification + mention extraction)
@@ -109,6 +112,8 @@ lib/
 │   │   ├── remote_actor.ex      # RemoteActor schema (cached remote profiles)
 │   │   ├── user_follow.ex       # UserFollow schema (outbound follows: remote actors + local users)
 │   │   ├── feed_item.ex         # FeedItem schema (posts from followed remote actors)
+│   │   ├── feed_item_boost.ex   # FeedItemBoost schema (local boosts on remote feed items)
+│   │   ├── feed_item_like.ex    # FeedItemLike schema (local likes on remote feed items)
 │   │   ├── feed_item_reply.ex   # FeedItemReply schema (local replies to remote feed items)
 │   │   ├── pubsub.ex            # Federation PubSub (user feed events)
 │   │   ├── publisher.ex         # ActivityStreams JSON builders for outgoing activities
@@ -606,6 +611,7 @@ and never need to know about the internal split.
 | `Content.Articles` | Article CRUD (local + remote), cross-posting, revisions, pin/lock |
 | `Content.Comments` | Comment CRUD (local + remote), threaded listing, article activity timestamps |
 | `Content.Likes` | Article and comment likes (local + remote), toggle, counts |
+| `Content.Boosts` | Article and comment boosts (local + remote), toggle, batch queries, federation via AP Announce/Undo(Announce) |
 | `Content.Bookmarks` | Article and comment bookmarks, toggle, paginated listing |
 | `Content.Images` | Article image creation, association, cleanup |
 | `Content.Tags` | Hashtag extraction from article bodies, tag syncing, tag-based browsing |
@@ -637,8 +643,16 @@ Article likes track favorites from local users and remote actors, with
 partial unique indexes enforcing one-like-per-actor-per-article. Comment
 likes follow the same pattern (`comment_likes` table with `CommentLike`
 schema). Local users can toggle likes on articles and comments; self-likes
-are prevented. Article likes are federated outbound (Like/Undo(Like)
-activities); comment likes are local-only.
+are prevented. Article and comment likes are federated outbound
+(Like/Undo(Like) activities).
+
+Article boosts (`article_boosts` table with `ArticleBoost` schema) and
+comment boosts (`comment_boosts` table with `CommentBoost` schema) follow
+the same pattern as likes. Toggle functions (`toggle_article_boost/2`,
+`toggle_comment_boost/2`) prevent self-boosts and boosts on deleted content.
+Batch queries return user boost state as MapSets and boost counts as Maps
+for efficient rendering. Boosts are federated as AP Announce/Undo(Announce)
+activities.
 
 #### Polls
 
@@ -887,6 +901,8 @@ In-app notification system with real-time delivery via PubSub.
 - `new_follower` — someone followed you
 - `article_liked` — someone liked your article
 - `comment_liked` — someone liked your comment
+- `article_boosted` — someone boosted your article
+- `comment_boosted` — someone boosted your comment
 - `article_forwarded` — your article was forwarded to another board
 - `moderation_report` — a new moderation report (admins only)
 - `admin_announcement` — announcement from an admin
@@ -1038,6 +1054,13 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `Publisher.build_create_feed_item_reply/3` — builds the `Create(Note)` activity
 - `Publisher.publish_feed_item_reply/2` — ensures user keypair, delivers to remote actor inbox + user's AP followers
 - Rate limited: 20 feed item replies per 5 minutes per user (`RateLimits.check_feed_reply/1`)
+
+**Feed item likes and boosts**:
+- `feed_item_likes` table — local users can like remote feed items inline
+- `feed_item_boosts` table — local users can boost remote feed items inline
+- `Federation.toggle_feed_item_like/2` — toggles like, schedules AP Like/Undo(Like) delivery to the remote actor
+- `Federation.toggle_feed_item_boost/2` — toggles boost, schedules AP Announce/Undo(Announce) delivery to the remote actor
+- Comment likes and boosts are now federated outbound (Like/Undo(Like) and Announce/Undo(Announce) activities), matching the existing article federation pattern
 
 **Local user follows**:
 - `user_follows.followed_user_id` — nullable FK to `users`, with check constraint (exactly one of `remote_actor_id`/`followed_user_id`)

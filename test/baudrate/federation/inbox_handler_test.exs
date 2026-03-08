@@ -723,6 +723,90 @@ defmodule Baudrate.Federation.InboxHandlerTest do
     end
   end
 
+  describe "Like on comment" do
+    test "creates a comment like for a local comment" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      # Create a local comment with an ap_id
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "A local comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      # The comment should have been stamped with an ap_id
+      comment = Repo.get!(Baudrate.Content.Comment, comment.id)
+      assert comment.ap_id != nil
+
+      activity = %{
+        "id" => "https://remote.example/likes/comment-#{System.unique_integer([:positive])}",
+        "type" => "Like",
+        "actor" => remote_actor.ap_id,
+        "object" => comment.ap_id
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Content.count_comment_likes(comment) == 1
+    end
+  end
+
+  describe "Announce on local article" do
+    test "creates an article boost for a local article" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      article_uri = Federation.actor_uri(:article, article.slug)
+
+      activity = %{
+        "id" =>
+          "https://remote.example/activities/announce-art-#{System.unique_integer([:positive])}",
+        "type" => "Announce",
+        "actor" => remote_actor.ap_id,
+        "object" => article_uri
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Content.count_article_boosts(article) == 1
+    end
+  end
+
+  describe "Announce on local comment" do
+    test "creates a comment boost for a local comment" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      # Create a local comment with an ap_id
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "A comment to boost",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      comment = Repo.get!(Baudrate.Content.Comment, comment.id)
+      assert comment.ap_id != nil
+
+      activity = %{
+        "id" =>
+          "https://remote.example/activities/announce-cmt-#{System.unique_integer([:positive])}",
+        "type" => "Announce",
+        "actor" => remote_actor.ap_id,
+        "object" => comment.ap_id
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Content.count_comment_boosts(comment) == 1
+    end
+  end
+
   describe "Delete(content)" do
     test "soft-deletes a remote article" do
       _user = setup_user_with_role("user")

@@ -258,7 +258,7 @@ defmodule BaudrateWeb.FeedLiveTest do
       refute html =~ "Write a reply..."
 
       # Click Reply to show form
-      html = lv |> element("button[phx-value-id='#{item.id}']") |> render_click()
+      html = lv |> element("button[phx-click='toggle_reply'][phx-value-id='#{item.id}']") |> render_click()
       assert html =~ "Write a reply..."
       assert html =~ "Cancel"
 
@@ -281,7 +281,7 @@ defmodule BaudrateWeb.FeedLiveTest do
       {:ok, lv, _html} = live(conn, "/feed")
 
       # Open reply form
-      lv |> element("button[phx-value-id='#{item.id}']") |> render_click()
+      lv |> element("button[phx-click='toggle_reply'][phx-value-id='#{item.id}']") |> render_click()
 
       # Submit reply
       html =
@@ -308,7 +308,7 @@ defmodule BaudrateWeb.FeedLiveTest do
       Baudrate.Federation.KeyStore.ensure_user_keypair(user)
 
       {:ok, lv, _html} = live(conn, "/feed")
-      lv |> element("button[phx-value-id='#{item.id}']") |> render_click()
+      lv |> element("button[phx-click='toggle_reply'][phx-value-id='#{item.id}']") |> render_click()
 
       lv
       |> form("form[phx-submit='submit_reply']",
@@ -335,7 +335,7 @@ defmodule BaudrateWeb.FeedLiveTest do
       end
 
       {:ok, lv, _html} = live(conn, "/feed")
-      lv |> element("button[phx-value-id='#{item.id}']") |> render_click()
+      lv |> element("button[phx-click='toggle_reply'][phx-value-id='#{item.id}']") |> render_click()
 
       html =
         lv
@@ -497,6 +497,120 @@ defmodule BaudrateWeb.FeedLiveTest do
 
       {:ok, _lv, html} = live(conn, "/feed")
       refute html =~ "Comment from blocked person"
+    end
+  end
+
+  describe "feed item like/boost buttons" do
+    test "like button appears on remote feed items", %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      item = create_feed_item(actor)
+
+      {:ok, _lv, html} = live(conn, "/feed")
+
+      assert html =~
+               ~s(phx-click="toggle_feed_item_like" phx-value-id="#{item.id}")
+
+      assert html =~ "hero-heart"
+    end
+
+    test "boost button appears on remote feed items", %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      item = create_feed_item(actor)
+
+      {:ok, _lv, html} = live(conn, "/feed")
+
+      assert html =~
+               ~s(phx-click="toggle_feed_item_boost" phx-value-id="#{item.id}")
+
+      assert html =~ "hero-arrow-path-rounded-square"
+    end
+
+    test "clicking like toggles feed item like", %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      item = create_feed_item(actor)
+
+      Baudrate.Federation.KeyStore.ensure_user_keypair(user)
+
+      {:ok, lv, html} = live(conn, "/feed")
+
+      # Initially shows "Like" aria-label (not liked)
+      assert html =~ ~s(aria-label="Like")
+      refute html =~ "hero-heart-solid"
+
+      # Click like button
+      html =
+        lv
+        |> element(~s(button[phx-click="toggle_feed_item_like"][phx-value-id="#{item.id}"]))
+        |> render_click()
+
+      # After clicking, should show solid heart with text-error class
+      assert html =~ "hero-heart-solid"
+      assert html =~ "text-error"
+      assert html =~ ~s(aria-label="Unlike")
+    end
+
+    test "clicking boost toggles feed item boost", %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      item = create_feed_item(actor)
+
+      Baudrate.Federation.KeyStore.ensure_user_keypair(user)
+
+      {:ok, lv, html} = live(conn, "/feed")
+
+      # Initially shows "Boost" aria-label (not boosted)
+      assert html =~ ~s(aria-label="Boost")
+      refute html =~ "hero-arrow-path-rounded-square-solid"
+
+      # Click boost button
+      html =
+        lv
+        |> element(~s(button[phx-click="toggle_feed_item_boost"][phx-value-id="#{item.id}"]))
+        |> render_click()
+
+      # After clicking, should show solid icon with text-success class
+      assert html =~ "hero-arrow-path-rounded-square-solid"
+      assert html =~ "text-success"
+      assert html =~ ~s(aria-label="Unboost")
+    end
+
+    test "like/boost buttons appear on local articles from followed users", %{
+      conn: conn,
+      user: user
+    } do
+      followed_user = setup_user("user")
+      {:ok, _} = Federation.create_local_follow(user, followed_user)
+
+      board = create_board()
+      create_article(followed_user, board, %{title: "Followed User Article"})
+
+      {:ok, _lv, html} = live(conn, "/feed")
+
+      assert html =~ "Followed User Article"
+      assert html =~ ~s(phx-click="toggle_article_like")
+      assert html =~ ~s(phx-click="toggle_article_boost")
+    end
+
+    test "like/boost buttons do not appear on own articles", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      # Create own article via the quick-post composer so it appears in the feed
+      lv
+      |> form("form", article: %{title: "My Own Article For Buttons", body: "Own body"})
+      |> render_submit()
+
+      html = render(lv)
+
+      # Own article should be visible in the feed
+      assert html =~ "My Own Article For Buttons"
+
+      # But like/boost buttons should NOT appear for own content
+      # (the template uses :if={item.article.user_id != @current_user.id})
+      refute html =~ ~s(phx-click="toggle_article_like")
+      refute html =~ ~s(phx-click="toggle_article_boost")
     end
   end
 
