@@ -697,6 +697,23 @@ defmodule Baudrate.ContentTest do
       assert "Visible" in titles
       refute "Hidden" in titles
     end
+
+    test "get_article_by_slug! raises for soft-deleted articles" do
+      user = create_user("user")
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Gone", body: "body", slug: "gone-article", user_id: user.id},
+          []
+        )
+
+      assert Content.get_article_by_slug!("gone-article")
+      Content.soft_delete_article(article)
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Content.get_article_by_slug!("gone-article")
+      end
+    end
   end
 
   # --- Comments ---
@@ -2377,6 +2394,38 @@ defmodule Baudrate.ContentTest do
 
       assert {:error, :not_in_board} =
                Content.remove_article_from_board(article, other_board, author)
+    end
+
+    test "forwarded article remains in other board after removal from original" do
+      author = create_user("user")
+      uid = System.unique_integer([:positive])
+      board_a = create_board(%{name: "Board A #{uid}", slug: "board-a-#{uid}"})
+      board_b = create_board(%{name: "Board B #{uid}", slug: "board-b-#{uid}"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Forwarded #{uid}", body: "body", slug: "fwd-#{uid}", user_id: author.id},
+          [board_a.id]
+        )
+
+      {:ok, article} = Content.forward_article_to_board(article, board_b, author)
+      assert length(article.boards) == 2
+
+      {:ok, updated} = Content.remove_article_from_board(article, board_a, author)
+      board_ids = Enum.map(updated.boards, & &1.id)
+      assert board_b.id in board_ids
+      refute board_a.id in board_ids
+
+      # Article still appears in board B listing
+      articles_b = Content.list_articles_for_board(board_b)
+      assert Enum.any?(articles_b, &(&1.id == article.id))
+
+      # Article no longer appears in board A listing
+      articles_a = Content.list_articles_for_board(board_a)
+      refute Enum.any?(articles_a, &(&1.id == article.id))
+
+      # Article still accessible by slug
+      assert Content.get_article_by_slug!("fwd-#{uid}")
     end
   end
 

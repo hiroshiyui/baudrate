@@ -354,6 +354,21 @@
               {gettext("Report")}
             </button>
           </li>
+          <%= if @can_delete && length(@article.boards) > 1 do %>
+            <li :for={board <- @article.boards}>
+              <button
+                phx-click="remove_from_board"
+                phx-value-board-id={board.id}
+                data-confirm={
+                  gettext("Remove this article from %{board}?", board: board.name)
+                }
+                class="text-warning"
+              >
+                <.icon name="hero-minus-circle" class="size-4" />
+                {gettext("Remove from %{board}", board: board.name)}
+              </button>
+            </li>
+          <% end %>
           <li :if={@can_delete}>
             <button
               phx-click="delete_article"

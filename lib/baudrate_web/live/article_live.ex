@@ -150,6 +150,25 @@ defmodule BaudrateWeb.ArticleLive do
   end
 
   @impl true
+  def handle_event("remove_from_board", %{"board-id" => board_id_str}, socket) do
+    article = socket.assigns.article
+    user = socket.assigns.current_user
+
+    with true <- socket.assigns.can_delete,
+         {:ok, board_id} <- parse_id(board_id_str),
+         board when not is_nil(board) <- Enum.find(article.boards, &(&1.id == board_id)),
+         {:ok, updated} <- Content.remove_article_from_board(article, board, user) do
+      {:noreply,
+       socket
+       |> put_flash(:info, gettext("Article removed from %{board}.", board: board.name))
+       |> assign(:article, Baudrate.Repo.preload(updated, [:user, :remote_actor, :link_preview, poll: :options]))}
+    else
+      _ ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to remove article from board."))}
+    end
+  end
+
+  @impl true
   def handle_event("toggle_pin", _params, socket) do
     article = socket.assigns.article
 
