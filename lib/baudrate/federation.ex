@@ -338,7 +338,7 @@ defmodule Baudrate.Federation do
       "software" => %{
         "name" => "baudrate",
         "version" => Application.spec(:baudrate, :vsn) |> to_string(),
-        "repository" => "https://github.com/baudrate-forum/baudrate"
+        "repository" => "https://github.com/hiroshiyui/baudrate"
       },
       "protocols" => ["activitypub"],
       "services" => %{"inbound" => [], "outbound" => []},
