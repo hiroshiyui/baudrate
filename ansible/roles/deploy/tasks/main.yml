@@ -239,8 +239,14 @@
     enabled: true
 
 # ============================================================
-# Phase 8: Database migration
+# Phase 8: Database migration (BEFORE symlink swap)
 # ============================================================
+# Migrations run from the new release directory (not "current")
+# so the DB is ready before the app restarts. Ecto migrations
+# are forward-compatible — the old running code can tolerate
+# new columns/tables (additive migrations). This minimises the
+# restart window: only the symlink swap + service restart
+# remain, which nginx buffers via proxy_next_upstream.
 
 - name: Run database migrations
   ansible.builtin.command:
