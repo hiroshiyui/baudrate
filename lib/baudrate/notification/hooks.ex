@@ -14,6 +14,11 @@ defmodule Baudrate.Notification.Hooks do
     * `notify_remote_article_liked/2` — article_liked (remote actor)
     * `notify_local_article_liked/2` — article_liked (local user)
     * `notify_local_comment_liked/2` — comment_liked (local user)
+    * `notify_local_article_boosted/2` — article_boosted (local user)
+    * `notify_remote_article_boosted/2` — article_boosted (remote actor)
+    * `notify_local_comment_boosted/2` — comment_boosted (local user)
+    * `notify_remote_comment_boosted/2` — comment_boosted (remote actor)
+    * `notify_remote_comment_liked/2` — comment_liked (remote actor)
     * `notify_article_forwarded/2` — article_forwarded
     * `notify_local_follow/2` — new_follower
     * `notify_remote_follow/2` — new_follower (remote actor)
@@ -198,6 +203,89 @@ defmodule Baudrate.Notification.Hooks do
         data: %{"report_id" => report_id}
       })
     end)
+  end
+
+  @doc """
+  Notifies the article author when their article receives a local boost.
+  """
+  def notify_local_article_boosted(article_id, booster_user_id) do
+    article = Repo.get(Article, article_id)
+
+    if article && article.user_id do
+      Notification.create_notification(%{
+        type: "article_boosted",
+        user_id: article.user_id,
+        actor_user_id: booster_user_id,
+        article_id: article.id
+      })
+    end
+  end
+
+  @doc """
+  Notifies the article author when their article receives a remote boost.
+  """
+  def notify_remote_article_boosted(article_id, remote_actor_id) do
+    article = Repo.get(Article, article_id)
+
+    if article && article.user_id do
+      Notification.create_notification(%{
+        type: "article_boosted",
+        user_id: article.user_id,
+        actor_remote_actor_id: remote_actor_id,
+        article_id: article.id
+      })
+    end
+  end
+
+  @doc """
+  Notifies the comment author when their comment receives a local boost.
+  """
+  def notify_local_comment_boosted(comment_id, booster_user_id) do
+    comment = Repo.get(Comment, comment_id)
+
+    if comment && comment.user_id do
+      Notification.create_notification(%{
+        type: "comment_boosted",
+        user_id: comment.user_id,
+        actor_user_id: booster_user_id,
+        article_id: comment.article_id,
+        comment_id: comment.id
+      })
+    end
+  end
+
+  @doc """
+  Notifies the comment author when their comment receives a remote boost.
+  """
+  def notify_remote_comment_boosted(comment_id, remote_actor_id) do
+    comment = Repo.get(Comment, comment_id)
+
+    if comment && comment.user_id do
+      Notification.create_notification(%{
+        type: "comment_boosted",
+        user_id: comment.user_id,
+        actor_remote_actor_id: remote_actor_id,
+        article_id: comment.article_id,
+        comment_id: comment.id
+      })
+    end
+  end
+
+  @doc """
+  Notifies the comment author when their comment receives a remote like.
+  """
+  def notify_remote_comment_liked(comment_id, remote_actor_id) do
+    comment = Repo.get(Comment, comment_id)
+
+    if comment && comment.user_id do
+      Notification.create_notification(%{
+        type: "comment_liked",
+        user_id: comment.user_id,
+        actor_remote_actor_id: remote_actor_id,
+        article_id: comment.article_id,
+        comment_id: comment.id
+      })
+    end
   end
 
   # --- Private helpers ---

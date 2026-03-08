@@ -263,6 +263,8 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("new_follower"), do: gettext("followed you")
   def notification_text("article_liked"), do: gettext("liked your article")
   def notification_text("comment_liked"), do: gettext("liked your comment")
+  def notification_text("article_boosted"), do: gettext("boosted your article")
+  def notification_text("comment_boosted"), do: gettext("boosted your comment")
   def notification_text("article_forwarded"), do: gettext("forwarded your article")
   def notification_text("moderation_report"), do: gettext("submitted a moderation report")
   def notification_text("admin_announcement"), do: gettext("posted an announcement")
@@ -277,6 +279,8 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("new_follower"), do: "hero-user-plus"
   def notification_icon("article_liked"), do: "hero-heart"
   def notification_icon("comment_liked"), do: "hero-heart"
+  def notification_icon("article_boosted"), do: "hero-arrow-path-rounded-square"
+  def notification_icon("comment_boosted"), do: "hero-arrow-path-rounded-square"
   def notification_icon("article_forwarded"), do: "hero-arrow-uturn-right"
   def notification_icon("moderation_report"), do: "hero-flag"
   def notification_icon("admin_announcement"), do: "hero-megaphone"
