@@ -15,6 +15,10 @@ ExecStart={{ deploy_path }}/current/bin/server
 ExecStop={{ deploy_path }}/current/bin/baudrate stop
 Restart=on-failure
 RestartSec=5
+
+# Allow 35s for graceful shutdown — Bandit drains in-flight requests
+# for up to 30s (shutdown_timeout in runtime.exs), plus 5s margin.
+TimeoutStopSec=35
 SyslogIdentifier=baudrate
 
 # Security hardening

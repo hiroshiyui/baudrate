@@ -66,7 +66,11 @@ if config_env() == :prod do
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
       # See the documentation on https://hexdocs.pm/bandit/Bandit.html#t:options/0
       # for details about using IPv6 vs IPv4 and loopback vs public addresses.
-      ip: {0, 0, 0, 0, 0, 0, 0, 0}
+      ip: {0, 0, 0, 0, 0, 0, 0, 0},
+      # Drain in-flight requests for up to 30s on shutdown (SIGTERM).
+      # Works with systemd TimeoutStopSec=35 and nginx proxy_next_upstream
+      # to achieve near-zero downtime deploys.
+      shutdown_timeout: 30_000
     ],
     secret_key_base: secret_key_base
 
