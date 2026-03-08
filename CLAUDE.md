@@ -108,10 +108,11 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 
 When creating a new release:
 
-1. Update `version` in `mix.exs` to match the new tag version
-2. Commit, push, and create the git tag (e.g. `v1.1.21`)
-3. Push the tag (`git push --tags`)
-4. Create the GitHub release via `gh release create`
+1. Update `CHANGELOG.md` with the new version entry (follow [Keep a Changelog](https://keepachangelog.com/) format)
+2. Update `version` in `mix.exs` to match the new tag version
+3. Commit, push, and create the git tag (e.g. `v1.1.21`)
+4. Push the tag (`git push --tags`)
+5. Create the GitHub release via `gh release create`
 
 ### Code Organization
 
