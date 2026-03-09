@@ -11,7 +11,7 @@ msgstr ""
 "Language: zh_TW\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: lib/baudrate_web/components/core_components.ex:467
+#: lib/baudrate_web/components/core_components.ex:469
 #: lib/baudrate_web/live/admin/boards_live.html.heex:211
 #: lib/baudrate_web/live/admin/federation_live.html.heex:38
 #: lib/baudrate_web/live/admin/federation_live.html.heex:98
@@ -434,8 +434,8 @@ msgstr "目前沒有文章。"
 
 #: lib/baudrate_web/components/layouts.ex:108
 #: lib/baudrate_web/components/layouts.ex:259
-#: lib/baudrate_web/live/feed_live.html.heex:609
-#: lib/baudrate_web/live/feed_live.html.heex:647
+#: lib/baudrate_web/live/feed_live.html.heex:801
+#: lib/baudrate_web/live/feed_live.html.heex:839
 #: lib/baudrate_web/live/profile_live.ex:49
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -508,14 +508,14 @@ msgstr "頭像已移除。"
 msgid "Avatar updated successfully."
 msgstr "頭像已成功更新。"
 
-#: lib/baudrate_web/components/core_components.ex:769
+#: lib/baudrate_web/components/core_components.ex:771
 #: lib/baudrate_web/live/admin/boards_live.html.heex:102
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:265
 #: lib/baudrate_web/live/admin/users_live.html.heex:266
 #: lib/baudrate_web/live/admin/users_live.html.heex:312
 #: lib/baudrate_web/live/article_live.ex:772
 #: lib/baudrate_web/live/article_live.html.heex:410
-#: lib/baudrate_web/live/feed_live.html.heex:250
+#: lib/baudrate_web/live/feed_live.html.heex:442
 #: lib/baudrate_web/live/profile_live.html.heex:71
 #, elixir-autogen, elixir-format
 msgid "Cancel"
@@ -627,7 +627,7 @@ msgid "Failed to approve user."
 msgstr "核准使用者失敗。"
 
 #: lib/baudrate_web/live/article_new_live.ex:258
-#: lib/baudrate_web/live/feed_live.ex:338
+#: lib/baudrate_web/live/feed_live.ex:440
 #, elixir-autogen, elixir-format
 msgid "Failed to create article."
 msgstr "建立文章失敗。"
@@ -1248,7 +1248,7 @@ msgid "Comment posted."
 msgstr "留言已發表。"
 
 #: lib/baudrate_web/live/article_live.html.heex:434
-#: lib/baudrate_web/live/feed_live.html.heex:640
+#: lib/baudrate_web/live/feed_live.html.heex:832
 #: lib/baudrate_web/live/search_live.html.heex:202
 #: lib/baudrate_web/live/user_profile_live.html.heex:113
 #, elixir-autogen, elixir-format
@@ -1307,9 +1307,9 @@ msgstr "發表留言"
 
 #: lib/baudrate_web/live/article_live.ex:695
 #: lib/baudrate_web/live/article_live.ex:769
-#: lib/baudrate_web/live/feed_live.html.heex:152
-#: lib/baudrate_web/live/feed_live.html.heex:155
-#: lib/baudrate_web/live/feed_live.html.heex:257
+#: lib/baudrate_web/live/feed_live.html.heex:344
+#: lib/baudrate_web/live/feed_live.html.heex:347
+#: lib/baudrate_web/live/feed_live.html.heex:449
 #, elixir-autogen, elixir-format
 msgid "Reply"
 msgstr "回覆"
@@ -1348,8 +1348,8 @@ msgid "Write a comment..."
 msgstr "撰寫留言..."
 
 #: lib/baudrate_web/live/article_live.ex:759
-#: lib/baudrate_web/live/feed_live.html.heex:241
-#: lib/baudrate_web/live/feed_live.html.heex:242
+#: lib/baudrate_web/live/feed_live.html.heex:433
+#: lib/baudrate_web/live/feed_live.html.heex:434
 #, elixir-autogen, elixir-format
 msgid "Write a reply..."
 msgstr "撰寫回覆..."
@@ -1710,7 +1710,7 @@ msgstr "註冊需要邀請碼。"
 msgid "Approve User"
 msgstr "核准使用者"
 
-#: lib/baudrate_web/live/feed_live.html.heex:633
+#: lib/baudrate_web/live/feed_live.html.heex:825
 #: lib/baudrate_web/live/search_live.html.heex:193
 #: lib/baudrate_web/live/user_profile_live.html.heex:106
 #, elixir-autogen, elixir-format
@@ -2419,12 +2419,14 @@ msgstr "最多 %{count} 張圖片，每張上限 %{size} MB。圖片將顯示在
 
 #: lib/baudrate_web/live/article_edit_live.html.heex:67
 #: lib/baudrate_web/live/article_new_live.html.heex:75
+#: lib/baudrate_web/live/feed_live.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Remove image"
 msgstr "移除圖片"
 
 #: lib/baudrate_web/live/article_edit_live.ex:187
 #: lib/baudrate_web/live/article_new_live.ex:363
+#: lib/baudrate_web/live/feed_live.ex:495
 #, elixir-autogen, elixir-format
 msgid "Some images failed to upload."
 msgstr "部分圖片上傳失敗。"
@@ -2540,12 +2542,14 @@ msgstr "搜尋結果"
 
 #: lib/baudrate_web/live/article_edit_live.html.heex:60
 #: lib/baudrate_web/live/article_new_live.html.heex:68
+#: lib/baudrate_web/live/feed_live.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "Uploaded image"
 msgstr "已上傳的圖片"
 
 #: lib/baudrate_web/live/article_edit_live.html.heex:98
 #: lib/baudrate_web/live/article_new_live.html.heex:106
+#: lib/baudrate_web/live/feed_live.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Cancel upload"
 msgstr "取消上傳"
@@ -2616,7 +2620,7 @@ msgstr "檢視"
 msgid "by %{editor}"
 msgstr "由 %{editor} 編輯"
 
-#: lib/baudrate_web/components/core_components.ex:358
+#: lib/baudrate_web/components/core_components.ex:360
 #, elixir-autogen, elixir-format
 msgid "Markdown preview"
 msgstr "Markdown 預覽"
@@ -2958,8 +2962,8 @@ msgstr "普通"
 msgid "Met:"
 msgstr "已達成："
 
-#: lib/baudrate_web/components/core_components.ex:678
-#: lib/baudrate_web/components/core_components.ex:686
+#: lib/baudrate_web/components/core_components.ex:680
+#: lib/baudrate_web/components/core_components.ex:688
 #, elixir-autogen, elixir-format
 msgid "Next page"
 msgstr "下一頁"
@@ -2983,13 +2987,13 @@ msgstr "下一頁"
 msgid "Not met:"
 msgstr "未達成："
 
-#: lib/baudrate_web/components/core_components.ex:660
-#: lib/baudrate_web/components/core_components.ex:668
+#: lib/baudrate_web/components/core_components.ex:662
+#: lib/baudrate_web/components/core_components.ex:670
 #, elixir-autogen, elixir-format
 msgid "Page %{number}"
 msgstr "第 %{number} 頁"
 
-#: lib/baudrate_web/components/core_components.ex:636
+#: lib/baudrate_web/components/core_components.ex:638
 #, elixir-autogen, elixir-format
 msgid "Pagination"
 msgstr "分頁導覽"
@@ -3001,8 +3005,8 @@ msgstr "分頁導覽"
 msgid "Password strength"
 msgstr "密碼強度"
 
-#: lib/baudrate_web/components/core_components.ex:642
-#: lib/baudrate_web/components/core_components.ex:650
+#: lib/baudrate_web/components/core_components.ex:644
+#: lib/baudrate_web/components/core_components.ex:652
 #, elixir-autogen, elixir-format
 msgid "Previous page"
 msgstr "上一頁"
@@ -3332,7 +3336,7 @@ msgstr "全選使用者"
 msgid "Select report #%{id}"
 msgstr "選取檢舉 #%{id}"
 
-#: lib/baudrate_web/live/feed_live.html.heex:622
+#: lib/baudrate_web/live/feed_live.html.heex:814
 #: lib/baudrate_web/live/user_profile_live.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Member since"
@@ -3415,7 +3419,7 @@ msgid "You are editing too frequently. Please try again later."
 msgstr "編輯過於頻繁，請稍後再試。"
 
 #: lib/baudrate_web/live/article_new_live.ex:217
-#: lib/baudrate_web/live/feed_live.ex:152
+#: lib/baudrate_web/live/feed_live.ex:167
 #, elixir-autogen, elixir-format
 msgid "You are posting too frequently. Please try again later."
 msgstr "發文過於頻繁，請稍後再試。"
@@ -3574,22 +3578,22 @@ msgstr "您還沒有追蹤任何人。"
 
 #: lib/baudrate_web/components/layouts.ex:143
 #: lib/baudrate_web/components/layouts.ex:455
-#: lib/baudrate_web/live/feed_live.ex:39
+#: lib/baudrate_web/live/feed_live.ex:41
 #: lib/baudrate_web/live/feed_live.html.heex:3
 #: lib/baudrate_web/live/feed_live.html.heex:15
-#: lib/baudrate_web/live/feed_live.html.heex:70
+#: lib/baudrate_web/live/feed_live.html.heex:262
 #, elixir-autogen, elixir-format
 msgid "Feed"
 msgstr "動態"
 
 #: lib/baudrate_web/live/board_live.html.heex:160
-#: lib/baudrate_web/live/feed_live.html.heex:143
-#: lib/baudrate_web/live/feed_live.html.heex:144
+#: lib/baudrate_web/live/feed_live.html.heex:335
+#: lib/baudrate_web/live/feed_live.html.heex:336
 #, elixir-autogen, elixir-format
 msgid "View original"
 msgstr "查看原文"
 
-#: lib/baudrate_web/live/feed_live.html.heex:56
+#: lib/baudrate_web/live/feed_live.html.heex:248
 #, elixir-autogen, elixir-format
 msgid "Your feed is empty."
 msgstr "你的動態是空的。"
@@ -3600,7 +3604,7 @@ msgstr "你的動態是空的。"
 msgid "Already following this user."
 msgstr "已追蹤此使用者。"
 
-#: lib/baudrate_web/live/feed_live.html.heex:290
+#: lib/baudrate_web/live/feed_live.html.heex:482
 #, elixir-autogen, elixir-format
 msgid "Article"
 msgstr "文章"
@@ -3628,8 +3632,8 @@ msgstr "追蹤 %{username}"
 msgid "Followed successfully."
 msgstr "已成功追蹤。"
 
-#: lib/baudrate_web/live/feed_live.html.heex:279
-#: lib/baudrate_web/live/feed_live.html.heex:392
+#: lib/baudrate_web/live/feed_live.html.heex:471
+#: lib/baudrate_web/live/feed_live.html.heex:584
 #: lib/baudrate_web/live/following_live.html.heex:43
 #: lib/baudrate_web/live/search_live.html.heex:443
 #, elixir-autogen, elixir-format
@@ -3641,7 +3645,7 @@ msgstr "本站"
 msgid "No users found for \"%{query}\"."
 msgstr "找不到「%{query}」的使用者。"
 
-#: lib/baudrate_web/live/feed_live.html.heex:59
+#: lib/baudrate_web/live/feed_live.html.heex:251
 #: lib/baudrate_web/live/following_live.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "Search for users or remote actors to follow"
@@ -3804,6 +3808,7 @@ msgstr "您沒有管理此看板的權限。"
 
 #: lib/baudrate_web/live/article_edit_live.ex:68
 #: lib/baudrate_web/live/article_new_live.ex:113
+#: lib/baudrate_web/live/feed_live.ex:192
 #, elixir-autogen, elixir-format
 msgid "Image not found."
 msgstr "找不到圖片。"
@@ -3838,12 +3843,12 @@ msgstr "你的顯示名稱（最多 64 個字元）"
 msgid "%{count} items"
 msgstr "%{count} 則項目"
 
-#: lib/baudrate_web/live/feed_live.ex:327
+#: lib/baudrate_web/live/feed_live.ex:415
 #, elixir-autogen, elixir-format
 msgid "Article posted!"
 msgstr "文章已發佈！"
 
-#: lib/baudrate_web/live/feed_live.html.heex:47
+#: lib/baudrate_web/live/feed_live.html.heex:239
 #, elixir-autogen, elixir-format
 msgid "Post"
 msgstr "發佈"
@@ -3855,21 +3860,21 @@ msgid "Oh! I just had a thought!"
 msgstr "啊！我突然有個想法！"
 
 #: lib/baudrate_web/live/board_live.html.heex:180
-#: lib/baudrate_web/live/feed_live.html.heex:315
+#: lib/baudrate_web/live/feed_live.html.heex:507
 #, elixir-autogen, elixir-format
 msgid "1 comment"
 msgid_plural "%{count} comments"
 msgstr[0] "%{count} 則留言"
 
 #: lib/baudrate_web/live/bookmarks_live.html.heex:82
-#: lib/baudrate_web/live/feed_live.html.heex:403
-#: lib/baudrate_web/live/feed_live.html.heex:525
+#: lib/baudrate_web/live/feed_live.html.heex:595
+#: lib/baudrate_web/live/feed_live.html.heex:717
 #, elixir-autogen, elixir-format
 msgid "Comment"
 msgstr "留言"
 
-#: lib/baudrate_web/live/feed_live.html.heex:408
-#: lib/baudrate_web/live/feed_live.html.heex:532
+#: lib/baudrate_web/live/feed_live.html.heex:600
+#: lib/baudrate_web/live/feed_live.html.heex:724
 #, elixir-autogen, elixir-format
 msgid "commented on"
 msgstr "留言於"
@@ -4300,36 +4305,43 @@ msgid_plural "%{count} voters"
 msgstr[0] "%{count} 位投票者"
 
 #: lib/baudrate_web/live/article_new_live.html.heex:212
+#: lib/baudrate_web/live/feed_live.html.heex:220
 #, elixir-autogen, elixir-format
 msgid "1 day"
 msgstr "1 天"
 
 #: lib/baudrate_web/live/article_new_live.html.heex:210
+#: lib/baudrate_web/live/feed_live.html.heex:214
 #, elixir-autogen, elixir-format
 msgid "1 hour"
 msgstr "1 小時"
 
 #: lib/baudrate_web/live/article_new_live.html.heex:213
+#: lib/baudrate_web/live/feed_live.html.heex:223
 #, elixir-autogen, elixir-format
 msgid "3 days"
 msgstr "3 天"
 
 #: lib/baudrate_web/live/article_new_live.html.heex:211
+#: lib/baudrate_web/live/feed_live.html.heex:217
 #, elixir-autogen, elixir-format
 msgid "6 hours"
 msgstr "6 小時"
 
 #: lib/baudrate_web/live/article_new_live.html.heex:214
+#: lib/baudrate_web/live/feed_live.html.heex:226
 #, elixir-autogen, elixir-format
 msgid "7 days"
 msgstr "7 天"
 
 #: lib/baudrate_web/live/article_new_live.html.heex:132
+#: lib/baudrate_web/live/feed_live.html.heex:126
 #, elixir-autogen, elixir-format
 msgid "Add Poll"
 msgstr "新增投票"
 
 #: lib/baudrate_web/live/article_new_live.html.heex:170
+#: lib/baudrate_web/live/feed_live.html.heex:167
 #, elixir-autogen, elixir-format
 msgid "Add option"
 msgstr "新增選項"
@@ -4355,11 +4367,13 @@ msgid "Closes %{time}"
 msgstr "截止於 %{time}"
 
 #: lib/baudrate_web/live/article_new_live.html.heex:206
+#: lib/baudrate_web/live/feed_live.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "Expires (optional)"
 msgstr "期限（選填）"
 
 #: lib/baudrate_web/live/article_new_live.ex:328
+#: lib/baudrate_web/live/feed_live.ex:572
 #, elixir-autogen, elixir-format
 msgid "Failed to create poll."
 msgstr "建立投票失敗。"
@@ -4371,17 +4385,21 @@ msgstr "記錄投票失敗。"
 
 #: lib/baudrate_web/live/article_live.html.heex:92
 #: lib/baudrate_web/live/article_new_live.html.heex:199
+#: lib/baudrate_web/live/feed_live.html.heex:196
 #, elixir-autogen, elixir-format
 msgid "Multiple choice"
 msgstr "複選"
 
 #: lib/baudrate_web/live/article_new_live.html.heex:209
+#: lib/baudrate_web/live/feed_live.html.heex:211
 #, elixir-autogen, elixir-format
 msgid "No expiry"
 msgstr "無期限"
 
 #: lib/baudrate_web/live/article_new_live.html.heex:145
 #: lib/baudrate_web/live/article_new_live.html.heex:147
+#: lib/baudrate_web/live/feed_live.html.heex:142
+#: lib/baudrate_web/live/feed_live.html.heex:144
 #, elixir-autogen, elixir-format
 msgid "Option %{number}"
 msgstr "選項 %{number}"
@@ -4389,33 +4407,40 @@ msgstr "選項 %{number}"
 #: lib/baudrate_web/live/article_live.html.heex:88
 #: lib/baudrate_web/live/article_new_live.html.heex:126
 #: lib/baudrate_web/live/article_new_live.html.heex:137
+#: lib/baudrate_web/live/feed_live.html.heex:131
 #, elixir-autogen, elixir-format
 msgid "Poll"
 msgstr "投票"
 
 #: lib/baudrate_web/live/article_new_live.html.heex:139
+#: lib/baudrate_web/live/feed_live.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "Poll options"
 msgstr "投票選項"
 
 #: lib/baudrate_web/live/article_new_live.ex:322
 #: lib/baudrate_web/live/article_new_live.ex:325
+#: lib/baudrate_web/live/feed_live.ex:566
+#: lib/baudrate_web/live/feed_live.ex:569
 #, elixir-autogen, elixir-format
 msgid "Poll: %{error}"
 msgstr "投票：%{error}"
 
 #: lib/baudrate_web/live/article_new_live.html.heex:132
+#: lib/baudrate_web/live/feed_live.html.heex:126
 #, elixir-autogen, elixir-format
 msgid "Remove Poll"
 msgstr "移除投票"
 
 #: lib/baudrate_web/live/article_new_live.html.heex:156
+#: lib/baudrate_web/live/feed_live.html.heex:153
 #, elixir-autogen, elixir-format
 msgid "Remove option %{number}"
 msgstr "移除選項 %{number}"
 
 #: lib/baudrate_web/live/article_live.html.heex:91
 #: lib/baudrate_web/live/article_new_live.html.heex:187
+#: lib/baudrate_web/live/feed_live.html.heex:184
 #, elixir-autogen, elixir-format
 msgid "Single choice"
 msgstr "單選"
@@ -4606,7 +4631,7 @@ msgid_plural "%{count} Likes"
 msgstr[0] "%{count} 讚"
 
 #: lib/baudrate_web/live/article_live.ex:257
-#: lib/baudrate_web/live/feed_live.ex:273
+#: lib/baudrate_web/live/feed_live.ex:358
 #: lib/baudrate_web/live/interaction_helpers.ex:121
 #: lib/baudrate_web/live/interaction_helpers.ex:143
 #, elixir-autogen, elixir-format
@@ -4616,10 +4641,10 @@ msgstr "切換按讚狀態失敗。"
 #: lib/baudrate_web/live/article_live.ex:826
 #: lib/baudrate_web/live/article_live.html.heex:237
 #: lib/baudrate_web/live/board_live.html.heex:195
-#: lib/baudrate_web/live/feed_live.html.heex:170
-#: lib/baudrate_web/live/feed_live.html.heex:329
-#: lib/baudrate_web/live/feed_live.html.heex:432
-#: lib/baudrate_web/live/feed_live.html.heex:553
+#: lib/baudrate_web/live/feed_live.html.heex:362
+#: lib/baudrate_web/live/feed_live.html.heex:521
+#: lib/baudrate_web/live/feed_live.html.heex:624
+#: lib/baudrate_web/live/feed_live.html.heex:745
 #, elixir-autogen, elixir-format
 msgid "Like"
 msgstr "按讚"
@@ -4627,10 +4652,10 @@ msgstr "按讚"
 #: lib/baudrate_web/live/article_live.ex:826
 #: lib/baudrate_web/live/article_live.html.heex:237
 #: lib/baudrate_web/live/board_live.html.heex:194
-#: lib/baudrate_web/live/feed_live.html.heex:169
-#: lib/baudrate_web/live/feed_live.html.heex:328
-#: lib/baudrate_web/live/feed_live.html.heex:431
-#: lib/baudrate_web/live/feed_live.html.heex:552
+#: lib/baudrate_web/live/feed_live.html.heex:361
+#: lib/baudrate_web/live/feed_live.html.heex:520
+#: lib/baudrate_web/live/feed_live.html.heex:623
+#: lib/baudrate_web/live/feed_live.html.heex:744
 #, elixir-autogen, elixir-format
 msgid "Unlike"
 msgstr "取消按讚"
@@ -4668,7 +4693,7 @@ msgstr "產生中..."
 
 #: lib/baudrate_web/live/article_live.ex:767
 #: lib/baudrate_web/live/article_live.html.heex:472
-#: lib/baudrate_web/live/feed_live.html.heex:45
+#: lib/baudrate_web/live/feed_live.html.heex:237
 #, elixir-autogen, elixir-format
 msgid "Posting..."
 msgstr "發佈中..."
@@ -4687,7 +4712,7 @@ msgid "Searching..."
 msgstr "搜尋中..."
 
 #: lib/baudrate_web/live/conversation_live.html.heex:154
-#: lib/baudrate_web/live/feed_live.html.heex:255
+#: lib/baudrate_web/live/feed_live.html.heex:447
 #, elixir-autogen, elixir-format
 msgid "Sending..."
 msgstr "傳送中..."
@@ -4731,6 +4756,7 @@ msgid "Move %{locale} up"
 msgstr "將 %{locale} 上移"
 
 #: lib/baudrate_web/live/article_new_live.html.heex:176
+#: lib/baudrate_web/live/feed_live.html.heex:173
 #, elixir-autogen, elixir-format
 msgid "Poll voting mode"
 msgstr "投票模式"
@@ -4768,18 +4794,18 @@ msgstr "安裝金鑰"
 msgid "Invalid installation key."
 msgstr "安裝金鑰無效。"
 
-#: lib/baudrate_web/components/core_components.ex:765
+#: lib/baudrate_web/components/core_components.ex:767
 #, elixir-autogen, elixir-format
 msgid "Please describe the issue..."
 msgstr "請描述問題..."
 
-#: lib/baudrate_web/components/core_components.ex:756
+#: lib/baudrate_web/components/core_components.ex:758
 #, elixir-autogen, elixir-format
 msgid "Reason"
 msgstr "原因"
 
-#: lib/baudrate_web/components/core_components.ex:732
-#: lib/baudrate_web/components/core_components.ex:772
+#: lib/baudrate_web/components/core_components.ex:734
+#: lib/baudrate_web/components/core_components.ex:774
 #: lib/baudrate_web/live/article_live.ex:737
 #: lib/baudrate_web/live/article_live.html.heex:354
 #: lib/baudrate_web/live/user_profile_live.html.heex:92
@@ -4787,17 +4813,17 @@ msgstr "原因"
 msgid "Report"
 msgstr "檢舉"
 
-#: lib/baudrate_web/components/core_components.ex:729
+#: lib/baudrate_web/components/core_components.ex:731
 #, elixir-autogen, elixir-format
 msgid "Report Article"
 msgstr "檢舉文章"
 
-#: lib/baudrate_web/components/core_components.ex:730
+#: lib/baudrate_web/components/core_components.ex:732
 #, elixir-autogen, elixir-format
 msgid "Report Comment"
 msgstr "檢舉留言"
 
-#: lib/baudrate_web/components/core_components.ex:731
+#: lib/baudrate_web/components/core_components.ex:733
 #, elixir-autogen, elixir-format
 msgid "Report User"
 msgstr "檢舉使用者"
@@ -4813,7 +4839,7 @@ msgstr "檢舉已提交，感謝您。"
 msgid "Reported User:"
 msgstr "被檢舉的使用者："
 
-#: lib/baudrate_web/components/core_components.ex:771
+#: lib/baudrate_web/components/core_components.ex:773
 #, elixir-autogen, elixir-format
 msgid "Submitting..."
 msgstr "提交中..."
@@ -4882,22 +4908,22 @@ msgstr "在存取管理頁面之前必須設定 TOTP。"
 msgid "Mobile navigation"
 msgstr "行動導覽列"
 
-#: lib/baudrate_web/live/feed_live.html.heex:526
+#: lib/baudrate_web/live/feed_live.html.heex:718
 #, elixir-autogen, elixir-format
 msgid "Fediverse"
 msgstr "聯邦宇宙"
 
-#: lib/baudrate_web/live/feed_live.ex:308
+#: lib/baudrate_web/live/feed_live.ex:393
 #, elixir-autogen, elixir-format
 msgid "Failed to send reply."
 msgstr "回覆傳送失敗。"
 
-#: lib/baudrate_web/live/feed_live.ex:302
+#: lib/baudrate_web/live/feed_live.ex:387
 #, elixir-autogen, elixir-format
 msgid "Reply sent!"
 msgstr "回覆已送出！"
 
-#: lib/baudrate_web/live/feed_live.ex:209
+#: lib/baudrate_web/live/feed_live.ex:294
 #, elixir-autogen, elixir-format
 msgid "You are replying too frequently. Please try again later."
 msgstr "回覆過於頻繁，請稍後再試。"
@@ -4919,6 +4945,7 @@ msgstr "搜尋內容"
 
 #: lib/baudrate_web/live/article_edit_live.html.heex:78
 #: lib/baudrate_web/live/article_new_live.html.heex:86
+#: lib/baudrate_web/live/feed_live.html.heex:73
 #, elixir-autogen, elixir-format
 msgid "Upload images"
 msgstr "上傳圖片"
@@ -4933,12 +4960,12 @@ msgstr "已成功啟用雙因素驗證。"
 msgid "%{articles} articles, %{comments} comments"
 msgstr "%{articles} 篇文章、%{comments} 則留言"
 
-#: lib/baudrate_web/components/core_components.ex:853
+#: lib/baudrate_web/components/core_components.ex:855
 #, elixir-autogen, elixir-format
 msgid "Link preview"
 msgstr "連結預覽"
 
-#: lib/baudrate_web/components/core_components.ex:870
+#: lib/baudrate_web/components/core_components.ex:872
 #, elixir-autogen, elixir-format
 msgid "Link preview: %{title}"
 msgstr "連結預覽：%{title}"
@@ -4954,16 +4981,16 @@ msgstr[1] "%{count} 次轉發"
 #: lib/baudrate_web/live/article_live.ex:865
 #: lib/baudrate_web/live/article_live.html.heex:259
 #: lib/baudrate_web/live/board_live.html.heex:223
-#: lib/baudrate_web/live/feed_live.html.heex:192
-#: lib/baudrate_web/live/feed_live.html.heex:356
-#: lib/baudrate_web/live/feed_live.html.heex:457
-#: lib/baudrate_web/live/feed_live.html.heex:578
+#: lib/baudrate_web/live/feed_live.html.heex:384
+#: lib/baudrate_web/live/feed_live.html.heex:548
+#: lib/baudrate_web/live/feed_live.html.heex:649
+#: lib/baudrate_web/live/feed_live.html.heex:770
 #, elixir-autogen, elixir-format
 msgid "Boost"
 msgstr "轉發"
 
 #: lib/baudrate_web/live/article_live.ex:276
-#: lib/baudrate_web/live/feed_live.ex:283
+#: lib/baudrate_web/live/feed_live.ex:368
 #: lib/baudrate_web/live/interaction_helpers.ex:132
 #: lib/baudrate_web/live/interaction_helpers.ex:154
 #, elixir-autogen, elixir-format
@@ -4973,10 +5000,10 @@ msgstr "轉發切換失敗。"
 #: lib/baudrate_web/live/article_live.ex:865
 #: lib/baudrate_web/live/article_live.html.heex:259
 #: lib/baudrate_web/live/board_live.html.heex:222
-#: lib/baudrate_web/live/feed_live.html.heex:191
-#: lib/baudrate_web/live/feed_live.html.heex:355
-#: lib/baudrate_web/live/feed_live.html.heex:456
-#: lib/baudrate_web/live/feed_live.html.heex:577
+#: lib/baudrate_web/live/feed_live.html.heex:383
+#: lib/baudrate_web/live/feed_live.html.heex:547
+#: lib/baudrate_web/live/feed_live.html.heex:648
+#: lib/baudrate_web/live/feed_live.html.heex:769
 #, elixir-autogen, elixir-format
 msgid "Unboost"
 msgstr "取消轉發"
@@ -5021,3 +5048,13 @@ msgstr "從%{board}移除"
 #, elixir-autogen, elixir-format
 msgid "Remove this article from %{board}?"
 msgstr "確定要從%{board}移除這篇文章？"
+
+#: lib/baudrate_web/components/core_components.ex:318
+#, elixir-autogen, elixir-format
+msgid "Collapse toolbar"
+msgstr "收合工具列"
+
+#: lib/baudrate_web/components/core_components.ex:317
+#, elixir-autogen, elixir-format
+msgid "Expand toolbar"
+msgstr "展開工具列"

@@ -313,7 +313,9 @@ defmodule BaudrateWeb.CoreComponents do
               write: gettext("Write"),
               toolbar_label: gettext("Markdown formatting"),
               nothing_to_preview: gettext("Nothing to preview."),
-              content_too_large: gettext("Content too large to preview.")
+              content_too_large: gettext("Content too large to preview."),
+              expand_toolbar: gettext("Expand toolbar"),
+              collapse_toolbar: gettext("Collapse toolbar")
             })
           }
         >

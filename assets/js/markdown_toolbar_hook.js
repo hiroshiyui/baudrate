@@ -108,6 +108,10 @@ const PREVIEW_ICON = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBo
 
 const WRITE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/></svg>`;
 
+const MD_ICON = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" /></svg>`;
+
+const STORAGE_KEY = "md-toolbar-collapsed";
+
 const SPINNER_HTML = `<span class="loading loading-spinner loading-sm"></span>`;
 
 function getLineRange(text, start, end) {
@@ -213,11 +217,33 @@ const MarkdownToolbarHook = {
       this.i18n.toolbar_label || "Markdown formatting",
     );
 
+    // Collapse/expand toggle button
+    const stored = localStorage.getItem(STORAGE_KEY);
+    this.collapsed = stored === null ? true : stored === "true";
+    this.collapseBtn = document.createElement("button");
+    this.collapseBtn.type = "button";
+    this.collapseBtn.className = "btn btn-ghost btn-sm";
+    this.updateCollapseButton();
+
+    this.collapseBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      this.collapsed = !this.collapsed;
+      localStorage.setItem(STORAGE_KEY, this.collapsed ? "true" : "false");
+      this.updateCollapseButton();
+      this.applyCollapsedState();
+    });
+
+    this.toolbar.appendChild(this.collapseBtn);
+
+    // Wrapper for all formatting buttons (collapsible)
+    this.buttonsWrap = document.createElement("div");
+    this.buttonsWrap.className = "contents";
+
     for (const btn of BUTTONS) {
       if (btn.separator) {
         const sep = document.createElement("div");
         sep.className = "w-px h-5 bg-base-300 mx-0.5";
-        this.toolbar.appendChild(sep);
+        this.buttonsWrap.appendChild(sep);
         continue;
       }
 
@@ -258,8 +284,10 @@ const MarkdownToolbarHook = {
         dispatchInput(this.el);
       });
 
-      this.toolbar.appendChild(button);
+      this.buttonsWrap.appendChild(button);
     }
+
+    this.toolbar.appendChild(this.buttonsWrap);
 
     // Preview toggle button — pushed to the right with ml-auto
     if (this.previewDiv) {
@@ -281,6 +309,38 @@ const MarkdownToolbarHook = {
       });
 
       this.toolbar.appendChild(this.previewBtn);
+    }
+
+    // Apply initial collapsed state
+    this.applyCollapsedState();
+  },
+
+  updateCollapseButton() {
+    this.collapseBtn.innerHTML = MD_ICON;
+    if (this.collapsed) {
+      this.collapseBtn.title =
+        this.i18n.expand_toolbar || "Expand toolbar";
+      this.collapseBtn.setAttribute(
+        "aria-label",
+        this.i18n.expand_toolbar || "Expand toolbar",
+      );
+      this.collapseBtn.setAttribute("aria-expanded", "false");
+      this.collapseBtn.classList.remove("btn-active");
+    } else {
+      this.collapseBtn.title =
+        this.i18n.collapse_toolbar || "Collapse toolbar";
+      this.collapseBtn.setAttribute(
+        "aria-label",
+        this.i18n.collapse_toolbar || "Collapse toolbar",
+      );
+      this.collapseBtn.setAttribute("aria-expanded", "true");
+      this.collapseBtn.classList.add("btn-active");
+    }
+  },
+
+  applyCollapsedState() {
+    if (this.buttonsWrap) {
+      this.buttonsWrap.className = this.collapsed ? "hidden" : "contents";
     }
   },
 
@@ -359,7 +419,10 @@ const MarkdownToolbarHook = {
       this.toolbar.replaceChildren();
     }
     this.isPreview = false;
+    this.collapsed = false;
     this.formatButtons = [];
+    this.collapseBtn = null;
+    this.buttonsWrap = null;
     this.previewBtn = null;
     this.previewDiv = null;
   },
