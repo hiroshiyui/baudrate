@@ -1,3 +1,8 @@
+
+<p align="center">
+  <img src="priv/static/images/icon-192.png" alt="Baudrate" width="192" height="192">
+</p>
+
 # Baudrate: ActivityPub-enabled Bulletin Board System
 
 ## About
