@@ -16,14 +16,14 @@
     <div :if={@can_post} id="quick-post" class="card bg-base-200 shadow-sm">
       <div class="card-body p-4">
         <div class="flex gap-3">
-          <div class="hidden sm:block flex-shrink-0">
+          <div class="hidden sm:block flex-shrink-0 pt-1">
             <.avatar user={@current_user} size={36} />
           </div>
           <.form
             for={@form}
             phx-change="validate_post"
             phx-submit="submit_post"
-            class="flex-1 space-y-2"
+            class="flex-1 space-y-3"
           >
             <.input
               field={@form[:title]}
@@ -36,8 +36,200 @@
               type="textarea"
               placeholder={gettext("Oh! I just had a thought!")}
               aria-label={gettext("Oh! I just had a thought!")}
-              rows={3}
+              rows={6}
+              toolbar
             />
+
+            <%!-- Image Upload Section --%>
+            <div id="feed-images-section">
+              <%!-- Uploaded image thumbnails --%>
+              <div
+                :if={@uploaded_images != []}
+                class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2"
+              >
+                <div :for={img <- @uploaded_images} class="relative group aspect-square">
+                  <img
+                    src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+                    class="w-full h-full object-cover rounded-lg border border-base-300"
+                    loading="lazy"
+                    alt={gettext("Uploaded image")}
+                  />
+                  <button
+                    type="button"
+                    phx-click="remove_image"
+                    phx-value-id={img.id}
+                    class="absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                    aria-label={gettext("Remove image")}
+                  >
+                    <.icon name="hero-x-mark" class="size-4" />
+                  </button>
+                </div>
+              </div>
+
+              <%!-- Upload input --%>
+              <div :if={length(@uploaded_images) < 4}>
+                <div class="space-y-2">
+                  <label class="sr-only" for={@uploads.article_images.ref}>
+                    {gettext("Upload images")}
+                  </label>
+                  <.live_file_input
+                    upload={@uploads.article_images}
+                    class="file-input file-input-bordered file-input-sm w-full"
+                  />
+
+                  <div
+                    :for={entry <- @uploads.article_images.entries}
+                    class="flex items-center gap-2 text-sm"
+                  >
+                    <span class="truncate max-w-48">{entry.client_name}</span>
+                    <progress
+                      value={entry.progress}
+                      max="100"
+                      class="progress progress-primary w-24"
+                    >
+                      {entry.progress}%
+                    </progress>
+                    <button
+                      type="button"
+                      phx-click="cancel_image_upload"
+                      phx-value-ref={entry.ref}
+                      class="btn btn-sm btn-ghost text-error"
+                      aria-label={gettext("Cancel upload")}
+                    >
+                      &times;
+                    </button>
+                  </div>
+
+                  <div
+                    :for={err <- upload_errors(@uploads.article_images)}
+                    class="text-sm text-error"
+                    role="alert"
+                  >
+                    {upload_error_to_string(err)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <%!-- Poll Section --%>
+            <div id="feed-poll-section">
+              <div class="flex items-center gap-2 mb-1">
+                <button
+                  type="button"
+                  phx-click="toggle_poll"
+                  class={[
+                    "btn btn-sm",
+                    (@poll_enabled && "btn-error btn-outline") || "btn-ghost"
+                  ]}
+                >
+                  <.icon name="hero-chart-bar" class="size-4" />
+                  {if @poll_enabled, do: gettext("Remove Poll"), else: gettext("Add Poll")}
+                </button>
+              </div>
+
+              <fieldset :if={@poll_enabled} class="space-y-3" phx-change="validate_poll">
+                <legend class="sr-only">{gettext("Poll")}</legend>
+
+                <div role="group" aria-label={gettext("Poll options")} class="space-y-2">
+                  <div
+                    :for={{opt, idx} <- Enum.with_index(@poll_options)}
+                    class="flex items-center gap-2"
+                  >
+                    <input
+                      type="text"
+                      name={"poll_options[#{idx}]"}
+                      value={opt}
+                      placeholder={gettext("Option %{number}", number: idx + 1)}
+                      class="input input-bordered input-sm w-full"
+                      aria-label={gettext("Option %{number}", number: idx + 1)}
+                      maxlength="200"
+                    />
+                    <button
+                      :if={length(@poll_options) > 2}
+                      type="button"
+                      phx-click="remove_poll_option"
+                      phx-value-index={idx}
+                      class="btn btn-sm btn-ghost text-error"
+                      aria-label={gettext("Remove option %{number}", number: idx + 1)}
+                    >
+                      <.icon name="hero-x-mark" class="size-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  :if={length(@poll_options) < 4}
+                  type="button"
+                  phx-click="add_poll_option"
+                  class="btn btn-sm btn-ghost"
+                >
+                  <.icon name="hero-plus" class="size-4" />
+                  {gettext("Add option")}
+                </button>
+
+                <div
+                  class="flex flex-wrap gap-4"
+                  role="radiogroup"
+                  aria-label={gettext("Poll voting mode")}
+                >
+                  <div class="form-control">
+                    <label class="label cursor-pointer gap-2">
+                      <input
+                        type="radio"
+                        name="poll_mode"
+                        value="single"
+                        checked={@poll_mode == "single"}
+                        class="radio radio-sm"
+                      />
+                      <span class="label-text">{gettext("Single choice")}</span>
+                    </label>
+                  </div>
+                  <div class="form-control">
+                    <label class="label cursor-pointer gap-2">
+                      <input
+                        type="radio"
+                        name="poll_mode"
+                        value="multiple"
+                        checked={@poll_mode == "multiple"}
+                        class="radio radio-sm"
+                      />
+                      <span class="label-text">{gettext("Multiple choice")}</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-control w-full max-w-xs">
+                  <label class="label" for="feed-poll-expires">
+                    <span class="label-text">{gettext("Expires (optional)")}</span>
+                  </label>
+                  <select
+                    id="feed-poll-expires"
+                    name="poll_expires"
+                    class="select select-bordered select-sm"
+                  >
+                    <option value="" selected={@poll_expires == ""}>
+                      {gettext("No expiry")}
+                    </option>
+                    <option value="1h" selected={@poll_expires == "1h"}>
+                      {gettext("1 hour")}
+                    </option>
+                    <option value="6h" selected={@poll_expires == "6h"}>
+                      {gettext("6 hours")}
+                    </option>
+                    <option value="1d" selected={@poll_expires == "1d"}>
+                      {gettext("1 day")}
+                    </option>
+                    <option value="3d" selected={@poll_expires == "3d"}>
+                      {gettext("3 days")}
+                    </option>
+                    <option value="7d" selected={@poll_expires == "7d"}>
+                      {gettext("7 days")}
+                    </option>
+                  </select>
+                </div>
+              </fieldset>
+            </div>
+
             <div class="flex justify-end">
               <button
                 type="submit"

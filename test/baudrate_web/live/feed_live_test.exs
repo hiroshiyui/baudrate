@@ -361,6 +361,95 @@ defmodule BaudrateWeb.FeedLiveTest do
     end
   end
 
+  describe "quick-post markdown toolbar" do
+    test "composer textarea has markdown toolbar", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/feed")
+      assert html =~ "MarkdownToolbarHook"
+    end
+  end
+
+  describe "quick-post poll" do
+    test "poll toggle button renders", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/feed")
+      assert html =~ "Add Poll"
+    end
+
+    test "toggling poll shows poll options", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      html =
+        lv
+        |> element("#feed-poll-section button[phx-click='toggle_poll']")
+        |> render_click()
+
+      assert html =~ "Option 1"
+      assert html =~ "Option 2"
+      assert html =~ "Single choice"
+      assert html =~ "Multiple choice"
+      assert html =~ "Remove Poll"
+    end
+
+    test "can add and remove poll options", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      lv
+      |> element("#feed-poll-section button[phx-click='toggle_poll']")
+      |> render_click()
+
+      # Add a third option
+      html =
+        lv
+        |> element("button[phx-click='add_poll_option']")
+        |> render_click()
+
+      assert html =~ "Option 3"
+
+      # Remove the third option
+      html =
+        lv
+        |> element("button[phx-click='remove_poll_option'][phx-value-index='2']")
+        |> render_click()
+
+      refute html =~ "Option 3"
+    end
+
+    test "creates article with poll", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      # Enable poll
+      lv
+      |> element("#feed-poll-section button[phx-click='toggle_poll']")
+      |> render_click()
+
+      # Submit with poll options
+      html =
+        lv
+        |> form("form[phx-submit='submit_post']",
+          article: %{title: "Poll Post", body: "Vote on this!"},
+          poll_options: %{"0" => "Yes", "1" => "No"},
+          poll_mode: "single",
+          poll_expires: ""
+        )
+        |> render_submit()
+
+      assert html =~ "Article posted!"
+
+      article = Baudrate.Repo.get_by(Baudrate.Content.Article, title: "Poll Post")
+      assert article
+      poll = Baudrate.Content.Polls.get_poll_for_article(article.id)
+      assert poll
+      assert poll.mode == "single"
+      assert length(poll.options) == 2
+    end
+  end
+
+  describe "quick-post image upload" do
+    test "image upload input renders", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/feed")
+      assert html =~ "feed-images-section"
+    end
+  end
+
   describe "requires authentication" do
     test "redirects unauthenticated user to login" do
       conn = build_conn()
