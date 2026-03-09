@@ -1,9 +1,10 @@
 defmodule Baudrate.Content.Comments do
   @moduledoc """
-  Comment CRUD, listing, and activity timestamp management.
+  Comment CRUD, listing, activity timestamp management, and discussion participant search.
 
   Manages comment creation (local and remote), soft-deletion, threaded
-  listing with pagination, and article activity timestamp updates.
+  listing with pagination, article activity timestamp updates, and
+  searching remote actors who participated in article discussions.
   """
 
   import Ecto.Query
@@ -319,6 +320,61 @@ defmodule Baudrate.Content.Comments do
   end
 
   defp stamp_local_ap_id(comment), do: comment
+
+  @doc """
+  Searches remote actors who participated in an article's discussion thread.
+
+  Returns remote actors who either authored the article or commented on it,
+  matching the given username prefix. Excludes actors whose `actor_type` is
+  not "Person". Results are deduplicated and limited.
+  """
+  @spec search_discussion_remote_actors(integer(), String.t(), keyword()) :: [
+          Baudrate.Federation.RemoteActor.t()
+        ]
+  def search_discussion_remote_actors(article_id, term, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 10)
+    sanitized = Repo.sanitize_like(term)
+
+    article = Repo.get!(Article, article_id)
+
+    # Remote actors who commented on this article
+    commenter_query =
+      from(ra in Baudrate.Federation.RemoteActor,
+        join: c in Comment,
+        on: c.remote_actor_id == ra.id,
+        where:
+          c.article_id == ^article_id and is_nil(c.deleted_at) and
+            ra.actor_type == "Person" and
+            ilike(ra.username, ^"%#{sanitized}%"),
+        select: ra
+      )
+
+    # If the article itself is by a remote actor, include them
+    author_query =
+      if article.remote_actor_id do
+        from(ra in Baudrate.Federation.RemoteActor,
+          where:
+            ra.id == ^article.remote_actor_id and
+              ra.actor_type == "Person" and
+              ilike(ra.username, ^"%#{sanitized}%"),
+          select: ra
+        )
+      else
+        nil
+      end
+
+    actors =
+      if author_query do
+        Repo.all(union(commenter_query, ^author_query))
+      else
+        Repo.all(commenter_query)
+      end
+
+    actors
+    |> Enum.uniq_by(& &1.id)
+    |> Enum.sort_by(& &1.username)
+    |> Enum.take(limit)
+  end
 
   defp schedule_federation_task(fun), do: Baudrate.Federation.schedule_federation_task(fun)
 end

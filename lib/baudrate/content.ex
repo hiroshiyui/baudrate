@@ -139,6 +139,7 @@ defmodule Baudrate.Content do
   defdelegate soft_delete_comment(comment), to: Comments
   defdelegate update_remote_comment(comment, attrs), to: Comments
   defdelegate count_comments_for_article(article), to: Comments
+  defdelegate search_discussion_remote_actors(article_id, term, opts \\ []), to: Comments
 
   def change_comment(comment \\ %Baudrate.Content.Comment{}, attrs \\ %{}),
     do: Comments.change_comment(comment, attrs)
