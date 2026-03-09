@@ -167,7 +167,7 @@
         </span>
         <a
           :if={article.ap_id}
-          href={article.ap_id}
+          href={article.url || article.ap_id}
           target="_blank"
           rel="nofollow noopener noreferrer"
           class="link link-hover relative z-10"

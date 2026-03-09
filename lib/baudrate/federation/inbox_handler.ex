@@ -1069,12 +1069,15 @@ defmodule Baudrate.Federation.InboxHandler do
         slug = Content.generate_slug(title)
         poll_opts = extract_poll_from_object(object, ap_id)
 
+        url = extract_url(object)
+
         case Content.create_remote_article(
                %{
                  title: title,
                  body: body,
                  slug: slug,
                  ap_id: ap_id,
+                 url: url,
                  remote_actor_id: remote_actor.id
                },
                [board.id],
@@ -1117,6 +1120,7 @@ defmodule Baudrate.Federation.InboxHandler do
             slug = Content.generate_slug(title)
             board_ids = Enum.map(boards, & &1.id)
             poll_opts = extract_poll_from_object(object, ap_id)
+            url = extract_url(object)
 
             case Content.create_remote_article(
                    %{
@@ -1124,6 +1128,7 @@ defmodule Baudrate.Federation.InboxHandler do
                      body: body,
                      slug: slug,
                      ap_id: ap_id,
+                     url: url,
                      remote_actor_id: remote_actor.id
                    },
                    board_ids,
@@ -1432,6 +1437,27 @@ defmodule Baudrate.Federation.InboxHandler do
   end
 
   defp maybe_handle_poll_vote(_object, _remote_actor), do: :not_a_vote
+
+  # Extracts the human-readable URL from an AP object.
+  # The `url` field can be a string or a list of link objects; we pick the
+  # first `text/html` link or the first string entry.
+  defp extract_url(%{"url" => url}) when is_binary(url), do: url
+
+  defp extract_url(%{"url" => [first | _] = urls}) when is_list(urls) do
+    html_link =
+      Enum.find(urls, fn
+        %{"mediaType" => mt, "href" => _} -> mt == "text/html"
+        _ -> false
+      end)
+
+    case html_link do
+      %{"href" => href} -> href
+      nil when is_binary(first) -> first
+      nil -> Map.get(List.first(urls) || %{}, "href")
+    end
+  end
+
+  defp extract_url(_), do: nil
 
   # Extracts poll data from a Question object or an Article with a Question attachment.
   defp extract_poll_from_object(object, ap_id) do

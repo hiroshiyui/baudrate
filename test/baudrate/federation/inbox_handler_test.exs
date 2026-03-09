@@ -439,6 +439,38 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert hd(remote_articles).title == "Remote Article Title"
     end
 
+    test "stores human-readable url from AP object" do
+      _user = setup_user_with_role("user")
+      board = create_board()
+      remote_actor = create_remote_actor()
+
+      board_uri = Federation.actor_uri(:board, board.slug)
+      uid = System.unique_integer([:positive])
+
+      activity = %{
+        "id" => "https://remote.example/activities/create-url-#{uid}",
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/ap/articles/#{uid}",
+          "type" => "Article",
+          "name" => "Article With URL",
+          "content" => "<p>Body</p>",
+          "url" => "https://remote.example/@user/#{uid}",
+          "attributedTo" => remote_actor.ap_id,
+          "audience" => [board_uri],
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      articles = Content.list_articles_for_board(board)
+      article = Enum.find(articles, &(&1.remote_actor_id == remote_actor.id))
+      assert article.url == "https://remote.example/@user/#{uid}"
+      assert article.ap_id == "https://remote.example/ap/articles/#{uid}"
+    end
+
     test "silently drops article with no matching board when no followers" do
       remote_actor = create_remote_actor()
 
