@@ -265,6 +265,343 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
     end
   end
 
+  describe "Announce feed item" do
+    test "creates feed item when followed actor boosts content", %{user: user, actor: actor} do
+      create_accepted_follow(user, actor)
+      Baudrate.Federation.KeyStore.ensure_site_keypair()
+
+      content_author = create_remote_actor(%{display_name: "Content Author"})
+      uid = System.unique_integer([:positive])
+      object_uri = "https://remote.example/notes/boosted-#{uid}"
+      announce_ap_id = "https://remote.example/activities/announce-#{uid}"
+
+      # Stub HTTP client to return the boosted object
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/activity+json")
+        |> Plug.Conn.send_resp(200, Jason.encode!(%{
+          "type" => "Note",
+          "id" => object_uri,
+          "content" => "<p>Boosted content</p>",
+          "attributedTo" => content_author.ap_id,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "published" => DateTime.to_iso8601(DateTime.utc_now()),
+          "url" => "https://remote.example/@author/#{uid}"
+        }))
+      end)
+
+      announce_activity = %{
+        "id" => announce_ap_id,
+        "type" => "Announce",
+        "actor" => actor.ap_id,
+        "object" => object_uri
+      }
+
+      assert :ok = InboxHandler.handle(announce_activity, actor, :shared)
+
+      # Should create both announce record and feed item
+      assert Federation.count_announces(object_uri) == 1
+      item = Federation.get_feed_item_by_ap_id(announce_ap_id)
+      assert item != nil
+      assert item.activity_type == "Announce"
+      assert item.boosted_by_actor_id == actor.id
+      assert item.remote_actor_id == content_author.id
+      assert item.source_url == "https://remote.example/@author/#{uid}"
+    end
+
+    test "extracts image attachments from boosted content", %{user: user, actor: actor} do
+      create_accepted_follow(user, actor)
+
+      content_author = create_remote_actor()
+      uid = System.unique_integer([:positive])
+      object_id = "https://remote.example/notes/with-images-#{uid}"
+      announce_ap_id = "https://remote.example/activities/announce-img-#{uid}"
+
+      announce_activity = %{
+        "id" => announce_ap_id,
+        "type" => "Announce",
+        "actor" => actor.ap_id,
+        "object" => %{
+          "type" => "Note",
+          "id" => object_id,
+          "content" => "<p>Check out these photos</p>",
+          "attributedTo" => content_author.ap_id,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "published" => DateTime.to_iso8601(DateTime.utc_now()),
+          "attachment" => [
+            %{
+              "type" => "Document",
+              "mediaType" => "image/jpeg",
+              "url" => "https://remote.example/media/photo1.jpg",
+              "name" => "A nice photo"
+            },
+            %{
+              "type" => "Document",
+              "mediaType" => "image/png",
+              "url" => "https://remote.example/media/photo2.png",
+              "name" => ""
+            }
+          ]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(announce_activity, actor, :shared)
+
+      item = Federation.get_feed_item_by_ap_id(announce_ap_id)
+      assert item != nil
+      assert length(item.attachments) == 2
+      assert Enum.at(item.attachments, 0)["url"] == "https://remote.example/media/photo1.jpg"
+      assert Enum.at(item.attachments, 0)["name"] == "A nice photo"
+      assert Enum.at(item.attachments, 1)["url"] == "https://remote.example/media/photo2.png"
+    end
+
+    test "extracts image attachments from Create feed items", %{user: user, actor: actor} do
+      create_accepted_follow(user, actor)
+
+      activity = note_activity(actor, %{
+        "attachment" => [
+          %{
+            "type" => "Document",
+            "mediaType" => "image/webp",
+            "url" => "https://remote.example/media/img.webp",
+            "name" => "WebP image"
+          },
+          %{
+            "type" => "Document",
+            "mediaType" => "video/mp4",
+            "url" => "https://remote.example/media/video.mp4",
+            "name" => "A video"
+          }
+        ]
+      })
+
+      assert :ok = InboxHandler.handle(activity, actor, :shared)
+
+      item = Federation.get_feed_item_by_ap_id(activity["object"]["id"])
+      assert item != nil
+      # Only images, not video
+      assert length(item.attachments) == 1
+      assert Enum.at(item.attachments, 0)["url"] == "https://remote.example/media/img.webp"
+    end
+
+    test "does not create feed item when booster is not followed", %{actor: actor} do
+      announce_ap_id = "https://remote.example/activities/announce-#{System.unique_integer([:positive])}"
+      object_uri = "https://remote.example/notes/some-post"
+
+      announce_activity = %{
+        "id" => announce_ap_id,
+        "type" => "Announce",
+        "actor" => actor.ap_id,
+        "object" => object_uri
+      }
+
+      assert :ok = InboxHandler.handle(announce_activity, actor, :shared)
+
+      # Announce record created but no feed item (no followers)
+      assert Federation.count_announces(object_uri) == 1
+      assert Federation.get_feed_item_by_ap_id(announce_ap_id) == nil
+    end
+
+    test "creates feed item from embedded Announce object (Lemmy interop)", %{
+      user: user,
+      actor: actor
+    } do
+      create_accepted_follow(user, actor)
+
+      content_author = create_remote_actor()
+      uid = System.unique_integer([:positive])
+      object_id = "https://remote.example/notes/embedded-#{uid}"
+      announce_ap_id = "https://remote.example/activities/announce-embedded-#{uid}"
+
+      announce_activity = %{
+        "id" => announce_ap_id,
+        "type" => "Announce",
+        "actor" => actor.ap_id,
+        "object" => %{
+          "type" => "Note",
+          "id" => object_id,
+          "content" => "<p>Embedded boosted content</p>",
+          "attributedTo" => content_author.ap_id,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "published" => DateTime.to_iso8601(DateTime.utc_now())
+        }
+      }
+
+      assert :ok = InboxHandler.handle(announce_activity, actor, :shared)
+
+      # Should create a feed item with Announce type
+      item = Federation.get_feed_item_by_ap_id(announce_ap_id)
+      assert item != nil
+      assert item.activity_type == "Announce"
+      assert item.boosted_by_actor_id == actor.id
+      assert item.remote_actor_id == content_author.id
+    end
+
+    test "Announce feed item appears in user's feed", %{user: user, actor: actor} do
+      create_accepted_follow(user, actor)
+
+      content_author = create_remote_actor()
+      uid = System.unique_integer([:positive])
+      announce_ap_id = "https://remote.example/activities/announce-feed-#{uid}"
+
+      # Directly create an Announce feed item
+      {:ok, _feed_item} =
+        Federation.create_feed_item(%{
+          remote_actor_id: content_author.id,
+          boosted_by_actor_id: actor.id,
+          activity_type: "Announce",
+          object_type: "Note",
+          ap_id: announce_ap_id,
+          title: nil,
+          body: "Boosted content",
+          body_html: "<p>Boosted content</p>",
+          source_url: "https://remote.example/notes/#{uid}",
+          published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      result = Federation.list_feed_items(user)
+      assert Enum.any?(result.items, fn item ->
+        item.source == :remote and item.feed_item.ap_id == announce_ap_id
+      end)
+
+      # Verify boost attribution is preloaded
+      boost_item =
+        Enum.find(result.items, fn item ->
+          item.source == :remote and item.feed_item.ap_id == announce_ap_id
+        end)
+
+      assert boost_item.feed_item.boosted_by_actor != nil
+      assert boost_item.feed_item.boosted_by_actor.id == actor.id
+    end
+  end
+
+  describe "Announce board routing" do
+    test "routes boosted Article to boards following the booster", %{actor: actor} do
+      board = create_board(%{ap_enabled: true, min_role_to_view: "guest"})
+
+      # Board follows the booster actor
+      {:ok, follow} = Federation.create_board_follow(board, actor)
+      {:ok, _} = Federation.accept_board_follow(follow.ap_id)
+
+      content_author = create_remote_actor()
+      uid = System.unique_integer([:positive])
+      object_id = "https://remote.example/articles/boosted-#{uid}"
+      announce_ap_id = "https://remote.example/activities/announce-board-#{uid}"
+
+      announce_activity = %{
+        "id" => announce_ap_id,
+        "type" => "Announce",
+        "actor" => actor.ap_id,
+        "object" => %{
+          "type" => "Article",
+          "id" => object_id,
+          "name" => "Boosted Article #{uid}",
+          "content" => "<p>Boosted article content</p>",
+          "attributedTo" => content_author.ap_id,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "published" => DateTime.to_iso8601(DateTime.utc_now()),
+          "url" => "https://remote.example/@author/articles/#{uid}"
+        }
+      }
+
+      assert :ok = InboxHandler.handle(announce_activity, actor, :shared)
+
+      # Article should be created and linked to the board
+      article = Baudrate.Content.get_article_by_ap_id(object_id)
+      assert article != nil
+      assert article.remote_actor_id == content_author.id
+      assert article.url == "https://remote.example/@author/articles/#{uid}"
+
+      # Article should be in the board
+      board_articles = Baudrate.Content.list_articles_for_board(board)
+      assert Enum.any?(board_articles, &(&1.id == article.id))
+    end
+
+    test "does not route boosted Note to boards (Notes are feed-only)", %{actor: actor} do
+      board = create_board(%{ap_enabled: true, min_role_to_view: "guest"})
+
+      {:ok, follow} = Federation.create_board_follow(board, actor)
+      {:ok, _} = Federation.accept_board_follow(follow.ap_id)
+
+      content_author = create_remote_actor()
+      uid = System.unique_integer([:positive])
+      object_id = "https://remote.example/notes/boosted-note-#{uid}"
+      announce_ap_id = "https://remote.example/activities/announce-note-#{uid}"
+
+      announce_activity = %{
+        "id" => announce_ap_id,
+        "type" => "Announce",
+        "actor" => actor.ap_id,
+        "object" => %{
+          "type" => "Note",
+          "id" => object_id,
+          "content" => "<p>Boosted note</p>",
+          "attributedTo" => content_author.ap_id,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "published" => DateTime.to_iso8601(DateTime.utc_now())
+        }
+      }
+
+      assert :ok = InboxHandler.handle(announce_activity, actor, :shared)
+
+      # Note should NOT become a board article
+      assert Baudrate.Content.get_article_by_ap_id(object_id) == nil
+    end
+
+    test "deduplicates — does not create duplicate article from repeated boost", %{actor: actor} do
+      board = create_board(%{ap_enabled: true, min_role_to_view: "guest"})
+
+      {:ok, follow} = Federation.create_board_follow(board, actor)
+      {:ok, _} = Federation.accept_board_follow(follow.ap_id)
+
+      # Create a second booster also followed by the board
+      booster2 = create_remote_actor()
+      {:ok, follow2} = Federation.create_board_follow(board, booster2)
+      {:ok, _} = Federation.accept_board_follow(follow2.ap_id)
+
+      content_author = create_remote_actor()
+      uid = System.unique_integer([:positive])
+      object_id = "https://remote.example/articles/dedup-#{uid}"
+
+      embedded_article = %{
+        "type" => "Article",
+        "id" => object_id,
+        "name" => "Dedup Article",
+        "content" => "<p>Content</p>",
+        "attributedTo" => content_author.ap_id,
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "published" => DateTime.to_iso8601(DateTime.utc_now())
+      }
+
+      # First boost
+      announce1 = %{
+        "id" => "https://remote.example/activities/announce-dedup1-#{uid}",
+        "type" => "Announce",
+        "actor" => actor.ap_id,
+        "object" => embedded_article
+      }
+
+      assert :ok = InboxHandler.handle(announce1, actor, :shared)
+      article = Baudrate.Content.get_article_by_ap_id(object_id)
+      assert article != nil
+
+      # Second boost of the same article by different actor
+      announce2 = %{
+        "id" => "https://remote.example/activities/announce-dedup2-#{uid}",
+        "type" => "Announce",
+        "actor" => booster2.ap_id,
+        "object" => embedded_article
+      }
+
+      assert :ok = InboxHandler.handle(announce2, booster2, :shared)
+
+      # Should still be the same single article (not duplicated)
+      import Ecto.Query
+      count = Repo.aggregate(from(a in Baudrate.Content.Article, where: a.ap_id == ^object_id), :count)
+      assert count == 1
+    end
+  end
+
   defp create_board(attrs \\ %{}) do
     uid = System.unique_integer([:positive])
 

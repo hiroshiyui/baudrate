@@ -126,6 +126,33 @@ defmodule Baudrate.Federation.FeedItemTest do
       assert errors_on(changeset)[:ap_id]
     end
 
+    test "accepts Announce activity_type with boosted_by_actor_id", %{actor: actor} do
+      {:ok, booster} =
+        %RemoteActor{}
+        |> RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/booster-#{System.unique_integer([:positive])}",
+          username: "booster_#{System.unique_integer([:positive])}",
+          domain: "remote.example",
+          public_key_pem: "-----BEGIN PUBLIC KEY-----\nfake\n-----END PUBLIC KEY-----",
+          inbox: "https://remote.example/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert()
+
+      attrs = %{
+        remote_actor_id: actor.id,
+        boosted_by_actor_id: booster.id,
+        activity_type: "Announce",
+        object_type: "Note",
+        ap_id: "https://remote.example/activities/announce-1",
+        published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      }
+
+      changeset = FeedItem.changeset(%FeedItem{}, attrs)
+      assert changeset.valid?
+    end
+
     test "accepts Page object_type", %{actor: actor} do
       attrs = %{
         remote_actor_id: actor.id,

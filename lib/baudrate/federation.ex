@@ -1396,10 +1396,14 @@ defmodule Baudrate.Federation do
     {hidden_user_ids, hidden_ap_ids} = Auth.hidden_ids(user)
 
     # Remote feed items from followed remote actors
+    # For Create items: join on remote_actor_id (the content author)
+    # For Announce items: join on boosted_by_actor_id (the booster we follow)
     remote_query =
       from(fi in FeedItem,
         join: uf in UserFollow,
-        on: uf.remote_actor_id == fi.remote_actor_id,
+        on:
+          (fi.activity_type == "Create" and uf.remote_actor_id == fi.remote_actor_id) or
+            (fi.activity_type == "Announce" and uf.remote_actor_id == fi.boosted_by_actor_id),
         join: ra in RemoteActor,
         on: ra.id == fi.remote_actor_id,
         where: uf.user_id == ^user.id and uf.state == @state_accepted,
@@ -1465,7 +1469,7 @@ defmodule Baudrate.Federation do
       from([fi, _uf, ra] in remote_query,
         order_by: [desc: fi.published_at],
         limit: ^(offset + per_page),
-        preload: [:remote_actor]
+        preload: [:remote_actor, :boosted_by_actor]
       )
       |> Repo.all()
       |> Enum.map(fn fi ->
@@ -1547,7 +1551,10 @@ defmodule Baudrate.Federation do
         """
         SELECT
           (SELECT count(*) FROM feed_items fi
-             JOIN user_follows uf ON uf.remote_actor_id = fi.remote_actor_id
+             JOIN user_follows uf ON (
+               (fi.activity_type = 'Create' AND uf.remote_actor_id = fi.remote_actor_id) OR
+               (fi.activity_type = 'Announce' AND uf.remote_actor_id = fi.boosted_by_actor_id)
+             )
              JOIN remote_actors ra ON ra.id = fi.remote_actor_id
              WHERE uf.user_id = $1 AND uf.state = 'accepted'
                AND fi.deleted_at IS NULL

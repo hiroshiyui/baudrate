@@ -278,6 +278,24 @@
       <article :for={item <- @items} class="feed-item card bg-base-200 shadow-sm">
         <%!-- Remote feed item --%>
         <div :if={item.source == :remote} class="card-body p-4">
+          <%!-- Boost attribution --%>
+          <div
+            :if={item.feed_item.activity_type == "Announce" && item.feed_item.boosted_by_actor}
+            class="flex items-center gap-1.5 text-xs text-base-content/60 mb-2"
+          >
+            <.icon name="hero-arrow-path-rounded-square" class="size-3.5" />
+            <a
+              href={remote_actor_profile_url(item.feed_item.boosted_by_actor)}
+              target="_blank"
+              rel="nofollow noopener noreferrer"
+              class="link link-hover font-semibold"
+            >
+              {item.feed_item.boosted_by_actor.display_name ||
+                item.feed_item.boosted_by_actor.username}
+            </a>
+            {gettext("boosted")}
+          </div>
+
           <div class="flex items-center gap-3 mb-2">
             <div class="avatar">
               <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center">
@@ -337,6 +355,25 @@
           <p class="text-sm text-base-content/80 line-clamp-3">
             {digest(item.feed_item.body_html)}
           </p>
+
+          <div
+            :if={item.feed_item.attachments != []}
+            class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"
+          >
+            <a
+              :for={att <- item.feed_item.attachments}
+              href={att["url"]}
+              target="_blank"
+              rel="nofollow noopener noreferrer"
+            >
+              <img
+                src={att["url"]}
+                alt={att["name"] || gettext("Image attachment")}
+                class="w-full aspect-square object-cover rounded-lg border border-base-300"
+                loading="lazy"
+              />
+            </a>
+          </div>
 
           <div class="flex items-center gap-1 mt-2">
             <a

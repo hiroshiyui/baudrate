@@ -14,7 +14,11 @@ defmodule Baudrate.Federation.InboxHandler do
     * `Create(Article)` — store as remote article in target board
     * `Create(Page)` — treat as `Create(Article)` (Lemmy interop)
     * `Like` — create article like for target article
-    * `Announce` — record boost/share (bare URI or embedded object map)
+    * `Announce` — record boost/share (bare URI or embedded object map);
+      when the booster is followed by boards, routes Article/Page content to
+      those boards; when followed by local users, creates a feed item with
+      `activity_type: "Announce"` and boost attribution. No outbound re-announce
+      is triggered (loop-safe).
     * `Update(Article/Note/Page)` — update remote content with authorship check
     * `Update(Person/Group)` — refresh cached RemoteActor
     * `Delete(actor)` — remove all follower records and soft-delete all content
@@ -265,6 +269,9 @@ defmodule Baudrate.Federation.InboxHandler do
     # Also create article/comment boost if target is local content
     maybe_create_local_boost(object_uri, ap_id, remote_actor)
 
+    # Route boosted content to boards and/or personal feeds
+    handle_announce_content(ap_id, object_uri, remote_actor)
+
     :ok
   end
 
@@ -272,7 +279,7 @@ defmodule Baudrate.Federation.InboxHandler do
   # Lemmy sends the full object as a map instead of a bare URI string.
 
   defp dispatch(
-         %{"type" => "Announce", "object" => %{"id" => object_id}} = activity,
+         %{"type" => "Announce", "object" => %{"id" => object_id} = embedded_object} = activity,
          remote_actor,
          _target
        )
@@ -294,11 +301,15 @@ defmodule Baudrate.Federation.InboxHandler do
            }) do
         {:ok, _announce} ->
           Logger.info("federation.activity: type=Announce(embedded) ap_id=#{ap_id}")
-          :ok
 
         {:error, %Ecto.Changeset{} = changeset} ->
           if has_unique_error?(changeset), do: :ok, else: {:error, :announce_failed}
       end
+
+      # Route boosted content using the embedded object directly
+      handle_announce_content(ap_id, object_id, remote_actor, embedded_object)
+
+      :ok
     end
   end
 
@@ -771,6 +782,7 @@ defmodule Baudrate.Federation.InboxHandler do
                      body: body,
                      body_html: body_html,
                      source_url: source_url,
+                     attachments: extract_image_attachments(object),
                      published_at: published_at
                    }) do
                 {:ok, _feed_item} ->
@@ -790,6 +802,220 @@ defmodule Baudrate.Federation.InboxHandler do
         end
     end
   end
+
+  # --- Announce content routing ---
+
+  # Routes boosted content to boards (if the booster is followed by a board)
+  # and/or to personal feeds (if the booster is followed by local users).
+  # Fetches the boosted object via signed GET to extract content metadata.
+  #
+  # Loop prevention: `create_remote_article` does NOT trigger outbound
+  # federation (no `publish_article_created` call), so no re-announce
+  # storm can occur.
+  defp handle_announce_content(announce_ap_id, object_uri, booster_actor) do
+    has_board_followers = Federation.boards_following_actor(booster_actor.id) != []
+    has_user_followers = Federation.local_followers_of_remote_actor(booster_actor.id) != []
+
+    if has_board_followers or has_user_followers do
+      fetch_and_handle_announce_object(announce_ap_id, object_uri, booster_actor)
+    else
+      :ok
+    end
+  end
+
+  # Variant with embedded object (Lemmy interop) — skips remote fetch
+  defp handle_announce_content(announce_ap_id, _object_uri, booster_actor, embedded_object) do
+    handle_announce_object(announce_ap_id, embedded_object, booster_actor)
+  end
+
+  defp fetch_and_handle_announce_object(announce_ap_id, object_uri, booster_actor) do
+    alias Baudrate.Federation.{HTTPClient, KeyStore, Validator}
+
+    if not Validator.valid_https_url?(object_uri) or Validator.local_actor?(object_uri) do
+      :ok
+    else
+      with {:ok, _} <- KeyStore.ensure_site_keypair(),
+           {:ok, private_key} <- KeyStore.decrypt_site_private_key() do
+        site_uri = Federation.actor_uri(:site, nil)
+        key_id = "#{site_uri}#main-key"
+
+        case HTTPClient.signed_get(object_uri, private_key, key_id) do
+          {:ok, %{body: body}} ->
+            case Jason.decode(body) do
+              {:ok, object} ->
+                handle_announce_object(announce_ap_id, object, booster_actor)
+
+              {:error, _} ->
+                Logger.warning(
+                  "federation.announce: invalid JSON from #{object_uri}"
+                )
+
+                :ok
+            end
+
+          {:error, reason} ->
+            Logger.warning(
+              "federation.announce: fetch failed for #{object_uri}: #{inspect(reason)}"
+            )
+
+            :ok
+        end
+      else
+        _ -> :ok
+      end
+    end
+  end
+
+  defp handle_announce_object(announce_ap_id, object, booster_actor) do
+    object_type = object["type"]
+
+    unless object_type in ["Note", "Article", "Page"] do
+      :ok
+    else
+      # Route to boards that follow the booster
+      maybe_route_announce_to_boards(object, booster_actor, object_type)
+
+      # Create feed item for users that follow the booster
+      maybe_create_announce_feed_item(announce_ap_id, object, booster_actor, object_type)
+    end
+  end
+
+  # Routes boosted Article/Page content to boards that follow the booster.
+  # Notes are not routed to boards (they become feed items only).
+  defp maybe_route_announce_to_boards(object, booster_actor, object_type)
+       when object_type in ["Article", "Page"] do
+    case Federation.boards_following_actor(booster_actor.id) do
+      [] ->
+        :ok
+
+      boards ->
+        with {:ok, ap_id} <- Validator.validate_object_id(object),
+             {:ok, body, _body_html} <- sanitize_content(object) do
+          existing = Content.get_article_by_ap_id(ap_id)
+
+          if existing do
+            # Article already exists — link to all following boards
+            Enum.each(boards, fn board ->
+              Content.add_article_to_board(existing, board.id)
+            end)
+
+            :ok
+          else
+            # Resolve the original author
+            author_uri = resolve_attributed_to(object)
+
+            author_actor_id =
+              case if(author_uri, do: ActorResolver.resolve(author_uri)) do
+                {:ok, actor} -> actor.id
+                _ -> booster_actor.id
+              end
+
+            title = derive_title(object, body)
+            slug = Content.generate_slug(title)
+            board_ids = Enum.map(boards, & &1.id)
+            poll_opts = extract_poll_from_object(object, ap_id)
+            url = extract_url(object)
+
+            case Content.create_remote_article(
+                   %{
+                     title: title,
+                     body: body,
+                     slug: slug,
+                     ap_id: ap_id,
+                     url: url,
+                     remote_actor_id: author_actor_id
+                   },
+                   board_ids,
+                   poll_opts
+                 ) do
+              {:ok, _multi} ->
+                Logger.info(
+                  "federation.activity: type=Announce(#{object_type}) ap_id=#{ap_id} routed_to=#{length(boards)}"
+                )
+
+                :ok
+
+              {:error, :article, %Ecto.Changeset{} = changeset, _} ->
+                if has_unique_error?(changeset), do: :ok, else: {:error, :create_article_failed}
+
+              {:error, _step, _reason, _changes} ->
+                {:error, :create_article_failed}
+            end
+          end
+        end
+    end
+  end
+
+  defp maybe_route_announce_to_boards(_object, _booster_actor, _object_type), do: :ok
+
+  defp maybe_create_announce_feed_item(announce_ap_id, object, booster_actor, object_type) do
+    case Federation.local_followers_of_remote_actor(booster_actor.id) do
+      [] ->
+        :ok
+
+      _followers ->
+        if Federation.get_feed_item_by_ap_id(announce_ap_id) do
+          :ok
+        else
+          with {:ok, body, body_html} <- sanitize_content(object) do
+            # Resolve the original author
+            author_uri = resolve_attributed_to(object)
+
+            content_actor_id =
+              case if(author_uri, do: ActorResolver.resolve(author_uri)) do
+                {:ok, actor} -> actor.id
+                _ -> booster_actor.id
+              end
+
+            published_at = parse_published(object["published"])
+            title = if object_type in ["Article", "Page"], do: object["name"]
+            source_url = extract_url(object) || object["id"]
+
+            case Federation.create_feed_item(%{
+                   remote_actor_id: content_actor_id,
+                   boosted_by_actor_id: booster_actor.id,
+                   activity_type: "Announce",
+                   object_type: object_type,
+                   ap_id: announce_ap_id,
+                   title: title,
+                   body: body,
+                   body_html: body_html,
+                   source_url: source_url,
+                   attachments: extract_image_attachments(object),
+                   published_at: published_at
+                 }) do
+              {:ok, _feed_item} ->
+                Logger.info(
+                  "federation.activity: type=Announce(#{object_type}/FeedItem) ap_id=#{announce_ap_id}"
+                )
+
+                :ok
+
+              {:error, %Ecto.Changeset{} = changeset} ->
+                if has_unique_error?(changeset),
+                  do: :ok,
+                  else: {:error, :create_feed_item_failed}
+            end
+          else
+            _ -> :ok
+          end
+        end
+    end
+  end
+
+  defp resolve_attributed_to(%{"attributedTo" => attributed_to}) when is_binary(attributed_to) do
+    attributed_to
+  end
+
+  defp resolve_attributed_to(%{"attributedTo" => [first | _]}) when is_binary(first) do
+    first
+  end
+
+  defp resolve_attributed_to(%{"attributedTo" => [%{"id" => id} | _]}) when is_binary(id) do
+    id
+  end
+
+  defp resolve_attributed_to(_), do: nil
 
   defp parse_published(nil), do: DateTime.utc_now() |> DateTime.truncate(:second)
 
@@ -1461,6 +1687,41 @@ defmodule Baudrate.Federation.InboxHandler do
   end
 
   defp extract_url(_), do: nil
+
+  # Extracts image attachments from an AP object's `attachment` array.
+  # Mastodon sends `Document` with `mediaType` starting with "image/";
+  # some implementations use `Image` type. Returns a list of maps with
+  # `url`, `media_type`, and optional `name` (alt text).
+  defp extract_image_attachments(%{"attachment" => attachments}) when is_list(attachments) do
+    attachments
+    |> Enum.filter(fn
+      %{"type" => type, "mediaType" => mt} when type in ["Document", "Image"] ->
+        String.starts_with?(mt, "image/")
+
+      %{"type" => "Image"} ->
+        true
+
+      _ ->
+        false
+    end)
+    |> Enum.map(fn att ->
+      url = att["url"]
+
+      url =
+        cond do
+          is_binary(url) -> url
+          is_list(url) -> List.first(url)
+          is_map(url) -> url["href"]
+          true -> nil
+        end
+
+      %{"url" => url, "media_type" => att["mediaType"], "name" => att["name"]}
+    end)
+    |> Enum.filter(&is_binary(&1["url"]))
+    |> Enum.take(4)
+  end
+
+  defp extract_image_attachments(_), do: []
 
   # Extracts poll data from a Question object or an Article with a Question attachment.
   defp extract_poll_from_object(object, ap_id) do
