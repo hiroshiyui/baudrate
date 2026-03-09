@@ -259,6 +259,59 @@ defmodule BaudrateWeb.CoreComponentsTest do
     end
   end
 
+  describe "extract_youtube_video_id/1" do
+    test "extracts from standard watch URL" do
+      assert CoreComponents.extract_youtube_video_id("https://www.youtube.com/watch?v=dQw4w9WgXcQ") ==
+               "dQw4w9WgXcQ"
+    end
+
+    test "extracts from short youtu.be URL" do
+      assert CoreComponents.extract_youtube_video_id("https://youtu.be/dQw4w9WgXcQ") ==
+               "dQw4w9WgXcQ"
+    end
+
+    test "extracts from embed URL" do
+      assert CoreComponents.extract_youtube_video_id(
+               "https://www.youtube.com/embed/dQw4w9WgXcQ"
+             ) == "dQw4w9WgXcQ"
+    end
+
+    test "extracts from shorts URL" do
+      assert CoreComponents.extract_youtube_video_id(
+               "https://www.youtube.com/shorts/dQw4w9WgXcQ"
+             ) == "dQw4w9WgXcQ"
+    end
+
+    test "extracts from mobile URL" do
+      assert CoreComponents.extract_youtube_video_id(
+               "https://m.youtube.com/watch?v=dQw4w9WgXcQ"
+             ) == "dQw4w9WgXcQ"
+    end
+
+    test "extracts with extra query params" do
+      assert CoreComponents.extract_youtube_video_id(
+               "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42s"
+             ) == "dQw4w9WgXcQ"
+    end
+
+    test "extracts from HTTP URL" do
+      assert CoreComponents.extract_youtube_video_id("http://www.youtube.com/watch?v=dQw4w9WgXcQ") ==
+               "dQw4w9WgXcQ"
+    end
+
+    test "returns nil for non-YouTube URL" do
+      assert CoreComponents.extract_youtube_video_id("https://example.com/video") == nil
+    end
+
+    test "returns nil for nil input" do
+      assert CoreComponents.extract_youtube_video_id(nil) == nil
+    end
+
+    test "returns nil for YouTube channel URL" do
+      assert CoreComponents.extract_youtube_video_id("https://www.youtube.com/@channel") == nil
+    end
+  end
+
   describe "show/2 and hide/2" do
     test "show returns a JS struct" do
       js = CoreComponents.show("#modal")

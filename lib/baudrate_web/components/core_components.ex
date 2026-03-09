@@ -836,8 +836,9 @@ defmodule BaudrateWeb.CoreComponents do
   Renders a link preview card for Open Graph metadata.
 
   Displays a card with the preview image (if available), title, description,
-  and domain. For failed previews, shows a minimal card with just the URL and
-  domain.
+  and domain. For YouTube URLs, renders an embedded video player using the
+  privacy-enhanced `youtube-nocookie.com` domain. For failed previews, shows
+  a minimal card with just the URL and domain.
 
   ## Attributes
 
@@ -845,7 +846,47 @@ defmodule BaudrateWeb.CoreComponents do
   """
   attr :preview, :map, required: true
 
-  def link_preview(%{preview: %{status: "failed"}} = assigns) do
+  def link_preview(%{preview: %{status: status, url: url}} = assigns)
+      when status in ["fetched", "failed"] do
+    case extract_youtube_video_id(url) do
+      nil -> link_preview_card(assigns)
+      video_id -> link_preview_youtube(assign(assigns, :video_id, video_id))
+    end
+  end
+
+  def link_preview(assigns), do: ~H""
+
+  defp link_preview_youtube(assigns) do
+    ~H"""
+    <div class="not-prose mt-3 max-w-lg">
+      <div class="aspect-video rounded-lg overflow-hidden border border-base-300">
+        <iframe
+          src={"https://www.youtube-nocookie.com/embed/#{@video_id}"}
+          title={@preview.title || gettext("YouTube video")}
+          class="w-full h-full"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+          loading="lazy"
+          referrerpolicy="no-referrer"
+        >
+        </iframe>
+      </div>
+      <div :if={@preview.title && @preview.status == "fetched"} class="mt-1.5">
+        <a
+          href={@preview.url}
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+          class="text-sm font-medium link link-hover line-clamp-1"
+        >
+          {@preview.title}
+        </a>
+      </div>
+    </div>
+    """
+  end
+
+  defp link_preview_card(%{preview: %{status: "failed"}} = assigns) do
     ~H"""
     <a
       href={@preview.url}
@@ -862,7 +903,7 @@ defmodule BaudrateWeb.CoreComponents do
     """
   end
 
-  def link_preview(%{preview: %{status: "fetched"}} = assigns) do
+  defp link_preview_card(%{preview: %{status: "fetched"}} = assigns) do
     ~H"""
     <a
       href={@preview.url}
@@ -891,5 +932,17 @@ defmodule BaudrateWeb.CoreComponents do
     """
   end
 
-  def link_preview(assigns), do: ~H""
+  defp link_preview_card(assigns), do: ~H""
+
+  @youtube_url_pattern ~r/^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/watch\?.*v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/
+
+  @doc false
+  def extract_youtube_video_id(url) when is_binary(url) do
+    case Regex.run(@youtube_url_pattern, url) do
+      [_, video_id] -> video_id
+      _ -> nil
+    end
+  end
+
+  def extract_youtube_video_id(_), do: nil
 end

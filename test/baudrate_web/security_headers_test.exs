@@ -41,6 +41,12 @@ defmodule BaudrateWeb.SecurityHeadersTest do
       refute csp =~ "script-src 'self' 'unsafe-inline'"
     end
 
+    test "allows YouTube embeds in frame-src", %{conn: conn} do
+      conn = get(conn, "/login")
+      [csp] = get_resp_header(conn, "content-security-policy")
+      assert csp =~ "frame-src https://www.youtube-nocookie.com"
+    end
+
     test "denies frame embedding", %{conn: conn} do
       conn = get(conn, "/login")
       [csp] = get_resp_header(conn, "content-security-policy")
