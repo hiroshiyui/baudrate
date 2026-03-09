@@ -616,7 +616,8 @@ timer. Verify renewal works: `sudo certbot renew --dry-run`.
   destroys polyglots)
 - **CSP** — restrictive Content-Security-Policy: no eval, `img-src 'self' https: data: blob:`
   (`https:` is required for federated remote actor avatars), `object-src 'none'`
-  (blocks plugins entirely), `frame-ancestors 'none'`
+  (blocks plugins entirely), `frame-src https://www.youtube-nocookie.com`
+  (YouTube embeds only, privacy-enhanced domain), `frame-ancestors 'none'`
 - **Referrer-Policy** — `strict-origin-when-cross-origin` prevents leaking full
   URL paths to external sites
 - **X-Frame-Options** — DENY

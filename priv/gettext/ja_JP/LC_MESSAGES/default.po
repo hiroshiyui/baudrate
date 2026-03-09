@@ -4945,12 +4945,12 @@ msgstr "二要素認証が正常に有効化されました。"
 msgid "%{articles} articles, %{comments} comments"
 msgstr "記事 %{articles} 件、コメント %{comments} 件"
 
-#: lib/baudrate_web/components/core_components.ex:855
+#: lib/baudrate_web/components/core_components.ex:896
 #, elixir-autogen, elixir-format
 msgid "Link preview"
 msgstr "リンクプレビュー"
 
-#: lib/baudrate_web/components/core_components.ex:872
+#: lib/baudrate_web/components/core_components.ex:913
 #, elixir-autogen, elixir-format
 msgid "Link preview: %{title}"
 msgstr "リンクプレビュー：%{title}"
@@ -5069,3 +5069,8 @@ msgstr "ブーストしました"
 #, elixir-autogen, elixir-format
 msgid "Image attachment"
 msgstr "画像添付"
+
+#: lib/baudrate_web/components/core_components.ex:865
+#, elixir-autogen, elixir-format
+msgid "YouTube video"
+msgstr "YouTube 動画"

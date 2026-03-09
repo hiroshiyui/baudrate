@@ -4945,12 +4945,12 @@ msgstr "已成功啟用雙因素驗證。"
 msgid "%{articles} articles, %{comments} comments"
 msgstr "%{articles} 篇文章、%{comments} 則留言"
 
-#: lib/baudrate_web/components/core_components.ex:855
+#: lib/baudrate_web/components/core_components.ex:896
 #, elixir-autogen, elixir-format
 msgid "Link preview"
 msgstr "連結預覽"
 
-#: lib/baudrate_web/components/core_components.ex:872
+#: lib/baudrate_web/components/core_components.ex:913
 #, elixir-autogen, elixir-format
 msgid "Link preview: %{title}"
 msgstr "連結預覽：%{title}"
@@ -5069,3 +5069,8 @@ msgstr "轉發了"
 #, elixir-autogen, elixir-format
 msgid "Image attachment"
 msgstr "圖片附件"
+
+#: lib/baudrate_web/components/core_components.ex:865
+#, elixir-autogen, elixir-format
+msgid "YouTube video"
+msgstr "YouTube 影片"

@@ -4959,12 +4959,12 @@ msgstr ""
 msgid "%{articles} articles, %{comments} comments"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:855
+#: lib/baudrate_web/components/core_components.ex:896
 #, elixir-autogen, elixir-format
 msgid "Link preview"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:872
+#: lib/baudrate_web/components/core_components.ex:913
 #, elixir-autogen, elixir-format
 msgid "Link preview: %{title}"
 msgstr ""
@@ -5082,4 +5082,9 @@ msgstr ""
 #: lib/baudrate_web/live/feed_live.html.heex:371
 #, elixir-autogen, elixir-format
 msgid "Image attachment"
+msgstr ""
+
+#: lib/baudrate_web/components/core_components.ex:865
+#, elixir-autogen, elixir-format
+msgid "YouTube video"
 msgstr ""
