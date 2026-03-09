@@ -38,7 +38,12 @@ const HashtagAutocompleteHook = {
 
     this.handleEvent("mention_suggestions", ({ users }) => {
       if (this.activeType !== "mention") return
-      this.suggestions = users.map(u => ({ type: "mention", value: u.username, display: "@" + u.username }))
+      this.suggestions = users.map(u => {
+        if (u.type === "remote") {
+          return { type: "mention", value: u.username + "@" + u.domain, display: "@" + u.username + "@" + u.domain }
+        }
+        return { type: "mention", value: u.username, display: "@" + u.username }
+      })
       this.selectedIndex = -1
       if (this.suggestions.length > 0) {
         this.showDropdown()

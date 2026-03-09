@@ -795,4 +795,64 @@ defmodule BaudrateWeb.ArticleLiveTest do
       assert html =~ "Failed to submit report"
     end
   end
+
+  describe "mention autocomplete" do
+    test "mention_suggest returns local users", %{conn: conn, article: article} do
+      other = setup_user("user")
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      render_hook(lv, "mention_suggest", %{"prefix" => String.slice(other.username, 0, 4)})
+
+      assert_push_event(lv, "mention_suggestions", %{users: users})
+      usernames = Enum.map(users, & &1.username)
+      assert other.username in usernames
+    end
+
+    test "mention_suggest includes remote commenters", %{conn: conn, article: article} do
+      remote_actor =
+        %Baudrate.Federation.RemoteActor{}
+        |> Baudrate.Federation.RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/alice",
+          username: "alice",
+          domain: "remote.example",
+          display_name: "Alice",
+          public_key_pem:
+            "-----BEGIN PUBLIC KEY-----\nfake\n-----END PUBLIC KEY-----",
+          inbox: "https://remote.example/users/alice/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now()
+        })
+        |> Repo.insert!()
+
+      # Create a remote comment on this article
+      %Baudrate.Content.Comment{}
+      |> Baudrate.Content.Comment.remote_changeset(%{
+        body: "Hello from the fediverse!",
+        article_id: article.id,
+        remote_actor_id: remote_actor.id,
+        ap_id: "https://remote.example/notes/1"
+      })
+      |> Repo.insert!()
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      render_hook(lv, "mention_suggest", %{"prefix" => "ali"})
+
+      assert_push_event(lv, "mention_suggestions", %{users: users})
+
+      remote_users = Enum.filter(users, &(&1.type == "remote"))
+      assert length(remote_users) > 0
+      assert Enum.any?(remote_users, &(&1.username == "alice" and &1.domain == "remote.example"))
+    end
+
+    test "mention_suggest excludes current user", %{conn: conn, user: user, article: article} do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      render_hook(lv, "mention_suggest", %{"prefix" => String.slice(user.username, 0, 4)})
+
+      assert_push_event(lv, "mention_suggestions", %{users: users})
+      usernames = Enum.map(users, & &1.username)
+      refute user.username in usernames
+    end
+  end
 end

@@ -127,6 +127,31 @@ defmodule BaudrateWeb.ArticleLive do
   end
 
   @impl true
+  def handle_event("hashtag_suggest", %{"prefix" => prefix}, socket) do
+    tags = Content.search_tags(prefix, limit: 10)
+    {:noreply, push_event(socket, "hashtag_suggestions", %{tags: tags})}
+  end
+
+  @impl true
+  def handle_event("mention_suggest", %{"prefix" => prefix}, socket) do
+    current_user = socket.assigns.current_user
+    article = socket.assigns.article
+
+    local_users =
+      Baudrate.Auth.search_users(prefix,
+        limit: 10,
+        exclude_id: if(current_user, do: current_user.id)
+      )
+      |> Enum.map(&%{username: &1.username, type: "local"})
+
+    remote_actors =
+      Content.search_discussion_remote_actors(article.id, prefix, limit: 10)
+      |> Enum.map(&%{username: &1.username, domain: &1.domain, type: "remote"})
+
+    {:noreply, push_event(socket, "mention_suggestions", %{users: local_users ++ remote_actors})}
+  end
+
+  @impl true
   def handle_event("delete_article", _params, socket) do
     article = socket.assigns.article
     user = socket.assigns.current_user

@@ -96,7 +96,7 @@ defmodule BaudrateWeb.ArticleNewLive do
         limit: 10,
         exclude_id: socket.assigns.current_user.id
       )
-      |> Enum.map(&%{username: &1.username})
+      |> Enum.map(&%{username: &1.username, type: "local"})
 
     {:noreply, push_event(socket, "mention_suggestions", %{users: users})}
   end
