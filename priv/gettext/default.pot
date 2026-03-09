@@ -434,8 +434,8 @@ msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:108
 #: lib/baudrate_web/components/layouts.ex:259
-#: lib/baudrate_web/live/feed_live.html.heex:829
-#: lib/baudrate_web/live/feed_live.html.heex:867
+#: lib/baudrate_web/live/feed_live.html.heex:866
+#: lib/baudrate_web/live/feed_live.html.heex:904
 #: lib/baudrate_web/live/profile_live.ex:49
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -513,9 +513,9 @@ msgstr ""
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:265
 #: lib/baudrate_web/live/admin/users_live.html.heex:266
 #: lib/baudrate_web/live/admin/users_live.html.heex:312
-#: lib/baudrate_web/live/article_live.ex:772
-#: lib/baudrate_web/live/article_live.html.heex:410
-#: lib/baudrate_web/live/feed_live.html.heex:455
+#: lib/baudrate_web/live/article_live.ex:815
+#: lib/baudrate_web/live/article_live.html.heex:422
+#: lib/baudrate_web/live/feed_live.html.heex:492
 #: lib/baudrate_web/live/profile_live.html.heex:71
 #, elixir-autogen, elixir-format
 msgid "Cancel"
@@ -577,7 +577,7 @@ msgstr ""
 msgid "Approve"
 msgstr ""
 
-#: lib/baudrate_web/live/article_new_live.ex:242
+#: lib/baudrate_web/live/article_new_live.ex:254
 #, elixir-autogen, elixir-format
 msgid "Article created successfully."
 msgstr ""
@@ -626,8 +626,8 @@ msgstr ""
 msgid "Failed to approve user."
 msgstr ""
 
-#: lib/baudrate_web/live/article_new_live.ex:258
-#: lib/baudrate_web/live/feed_live.ex:440
+#: lib/baudrate_web/live/article_new_live.ex:270
+#: lib/baudrate_web/live/feed_live.ex:451
 #, elixir-autogen, elixir-format
 msgid "Failed to create article."
 msgstr ""
@@ -655,12 +655,12 @@ msgstr ""
 msgid "Pinned"
 msgstr ""
 
-#: lib/baudrate_web/live/article_new_live.ex:204
+#: lib/baudrate_web/live/article_new_live.ex:216
 #, elixir-autogen, elixir-format
 msgid "Please select at least one board."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:65
+#: lib/baudrate_web/live/article_live.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "Posted in"
 msgstr ""
@@ -832,7 +832,7 @@ msgid "Allowlist (allow only specific domains)"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:260
-#: lib/baudrate_web/live/article_live.ex:902
+#: lib/baudrate_web/live/article_live.ex:945
 #, elixir-autogen, elixir-format
 msgid "Article deleted."
 msgstr ""
@@ -883,7 +883,7 @@ msgid "Comma-separated list of domains to block from federation."
 msgstr ""
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:284
-#: lib/baudrate_web/live/article_live.ex:932
+#: lib/baudrate_web/live/article_live.ex:975
 #, elixir-autogen, elixir-format
 msgid "Comment deleted."
 msgstr ""
@@ -974,13 +974,13 @@ msgid "Failed"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:264
-#: lib/baudrate_web/live/article_live.ex:906
+#: lib/baudrate_web/live/article_live.ex:949
 #, elixir-autogen, elixir-format
 msgid "Failed to delete article."
 msgstr ""
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:288
-#: lib/baudrate_web/live/article_live.ex:935
+#: lib/baudrate_web/live/article_live.ex:978
 #, elixir-autogen, elixir-format
 msgid "Failed to delete comment."
 msgstr ""
@@ -1227,12 +1227,12 @@ msgid_plural "%{count} results"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/baudrate_web/live/article_live.html.heex:375
+#: lib/baudrate_web/live/article_live.html.heex:387
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this article?"
 msgstr ""
 
-#: lib/baudrate_web/live/article_edit_live.ex:134
+#: lib/baudrate_web/live/article_edit_live.ex:152
 #, elixir-autogen, elixir-format
 msgid "Article updated successfully."
 msgstr ""
@@ -1243,13 +1243,13 @@ msgstr ""
 msgid "Back to article"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:965
+#: lib/baudrate_web/live/article_live.ex:1008
 #, elixir-autogen, elixir-format
 msgid "Comment posted."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:434
-#: lib/baudrate_web/live/feed_live.html.heex:860
+#: lib/baudrate_web/live/article_live.html.heex:446
+#: lib/baudrate_web/live/feed_live.html.heex:897
 #: lib/baudrate_web/live/search_live.html.heex:202
 #: lib/baudrate_web/live/user_profile_live.html.heex:113
 #, elixir-autogen, elixir-format
@@ -1257,14 +1257,14 @@ msgid "Comments"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:262
-#: lib/baudrate_web/live/article_live.html.heex:379
+#: lib/baudrate_web/live/article_live.html.heex:391
 #: lib/baudrate_web/live/conversation_live.html.heex:132
 #, elixir-autogen, elixir-format
 msgid "Delete"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:244
-#: lib/baudrate_web/live/article_live.html.heex:307
+#: lib/baudrate_web/live/article_live.html.heex:319
 #, elixir-autogen, elixir-format
 msgid "Edit"
 msgstr ""
@@ -1285,32 +1285,32 @@ msgstr ""
 msgid "No articles found for \"%{query}\"."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:488
+#: lib/baudrate_web/live/article_live.html.heex:500
 #: lib/baudrate_web/live/user_content_live.html.heex:93
 #, elixir-autogen, elixir-format
 msgid "No comments yet."
 msgstr ""
 
-#: lib/baudrate_web/live/article_edit_live.ex:100
-#: lib/baudrate_web/live/article_live.ex:148
-#: lib/baudrate_web/live/article_live.ex:192
-#: lib/baudrate_web/live/article_live.ex:223
-#: lib/baudrate_web/live/article_live.ex:437
-#: lib/baudrate_web/live/article_live.ex:938
+#: lib/baudrate_web/live/article_edit_live.ex:118
+#: lib/baudrate_web/live/article_live.ex:173
+#: lib/baudrate_web/live/article_live.ex:217
+#: lib/baudrate_web/live/article_live.ex:248
+#: lib/baudrate_web/live/article_live.ex:462
+#: lib/baudrate_web/live/article_live.ex:981
 #, elixir-autogen, elixir-format
 msgid "Not authorized."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:474
+#: lib/baudrate_web/live/article_live.html.heex:486
 #, elixir-autogen, elixir-format
 msgid "Post Comment"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:695
-#: lib/baudrate_web/live/article_live.ex:769
-#: lib/baudrate_web/live/feed_live.html.heex:357
-#: lib/baudrate_web/live/feed_live.html.heex:360
-#: lib/baudrate_web/live/feed_live.html.heex:462
+#: lib/baudrate_web/live/article_live.ex:738
+#: lib/baudrate_web/live/article_live.ex:812
+#: lib/baudrate_web/live/feed_live.html.heex:394
+#: lib/baudrate_web/live/feed_live.html.heex:397
+#: lib/baudrate_web/live/feed_live.html.heex:499
 #, elixir-autogen, elixir-format
 msgid "Reply"
 msgstr ""
@@ -1343,14 +1343,14 @@ msgstr ""
 msgid "Upload error"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:464
+#: lib/baudrate_web/live/article_live.html.heex:476
 #, elixir-autogen, elixir-format
 msgid "Write a comment..."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:759
-#: lib/baudrate_web/live/feed_live.html.heex:446
-#: lib/baudrate_web/live/feed_live.html.heex:447
+#: lib/baudrate_web/live/article_live.ex:802
+#: lib/baudrate_web/live/feed_live.html.heex:483
+#: lib/baudrate_web/live/feed_live.html.heex:484
 #, elixir-autogen, elixir-format
 msgid "Write a reply..."
 msgstr ""
@@ -1711,7 +1711,7 @@ msgstr ""
 msgid "Approve User"
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.html.heex:853
+#: lib/baudrate_web/live/feed_live.html.heex:890
 #: lib/baudrate_web/live/search_live.html.heex:193
 #: lib/baudrate_web/live/user_profile_live.html.heex:106
 #, elixir-autogen, elixir-format
@@ -1948,8 +1948,8 @@ msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:25
 #: lib/baudrate_web/live/article_live.html.heex:35
-#: lib/baudrate_web/live/board_live.html.heex:119
-#: lib/baudrate_web/live/board_live.html.heex:130
+#: lib/baudrate_web/live/board_live.html.heex:133
+#: lib/baudrate_web/live/board_live.html.heex:144
 #: lib/baudrate_web/live/bookmarks_live.html.heex:36
 #: lib/baudrate_web/live/bookmarks_live.html.heex:39
 #: lib/baudrate_web/live/bookmarks_live.html.heex:89
@@ -2074,7 +2074,7 @@ msgstr ""
 msgid "Save these recovery codes now!"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:218
+#: lib/baudrate_web/live/article_live.html.heex:230
 #: lib/baudrate_web/live/profile_live.html.heex:157
 #: lib/baudrate_web/live/user_profile_live.html.heex:139
 #, elixir-autogen, elixir-format
@@ -2113,7 +2113,7 @@ msgstr ""
 msgid "Add Moderator"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:653
+#: lib/baudrate_web/live/article_live.ex:696
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this comment?"
 msgstr ""
@@ -2128,8 +2128,8 @@ msgstr ""
 msgid "Failed to add moderator."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:189
-#: lib/baudrate_web/live/article_live.ex:220
+#: lib/baudrate_web/live/article_live.ex:214
+#: lib/baudrate_web/live/article_live.ex:245
 #, elixir-autogen, elixir-format
 msgid "Failed to update article."
 msgstr ""
@@ -2139,7 +2139,7 @@ msgstr ""
 msgid "Guest (public)"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:338
+#: lib/baudrate_web/live/article_live.html.heex:350
 #, elixir-autogen, elixir-format
 msgid "Lock"
 msgstr ""
@@ -2175,7 +2175,7 @@ msgstr ""
 msgid "No moderators assigned."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:329
+#: lib/baudrate_web/live/article_live.html.heex:341
 #, elixir-autogen, elixir-format
 msgid "Pin"
 msgstr ""
@@ -2197,17 +2197,17 @@ msgstr ""
 msgid "Select a user..."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:443
+#: lib/baudrate_web/live/article_live.html.heex:455
 #, elixir-autogen, elixir-format
 msgid "This thread is locked. No new comments can be posted."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:338
+#: lib/baudrate_web/live/article_live.html.heex:350
 #, elixir-autogen, elixir-format
 msgid "Unlock"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:329
+#: lib/baudrate_web/live/article_live.html.heex:341
 #, elixir-autogen, elixir-format
 msgid "Unpin"
 msgstr ""
@@ -2228,7 +2228,7 @@ msgstr ""
 msgid "No comments found for \"%{query}\"."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:588
+#: lib/baudrate_web/live/article_live.ex:613
 #, elixir-autogen, elixir-format
 msgid "This article has been deleted."
 msgstr ""
@@ -2546,7 +2546,7 @@ msgstr ""
 msgid "Cancel upload"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:655
+#: lib/baudrate_web/live/article_live.ex:698
 #, elixir-autogen, elixir-format
 msgid "Delete comment"
 msgstr ""
@@ -2571,7 +2571,7 @@ msgstr ""
 msgid "Editor"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:313
+#: lib/baudrate_web/live/article_live.html.heex:325
 #, elixir-autogen, elixir-format
 msgid "History"
 msgstr ""
@@ -3336,7 +3336,7 @@ msgstr ""
 msgid "Select report #%{id}"
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.html.heex:842
+#: lib/baudrate_web/live/feed_live.html.heex:879
 #: lib/baudrate_web/live/user_profile_live.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Member since"
@@ -3395,9 +3395,9 @@ msgstr ""
 msgid "Your account is too new to generate invite codes."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:139
-#: lib/baudrate_web/live/article_live.ex:319
-#: lib/baudrate_web/live/article_live.ex:423
+#: lib/baudrate_web/live/article_live.ex:164
+#: lib/baudrate_web/live/article_live.ex:344
+#: lib/baudrate_web/live/article_live.ex:448
 #: lib/baudrate_web/live/user_profile_live.ex:145
 #, elixir-autogen, elixir-format
 msgid "Too many actions. Please try again later."
@@ -3408,17 +3408,17 @@ msgstr ""
 msgid "Too many searches. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:350
+#: lib/baudrate_web/live/article_live.ex:375
 #, elixir-autogen, elixir-format
 msgid "You are commenting too frequently. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/article_edit_live.ex:123
+#: lib/baudrate_web/live/article_edit_live.ex:141
 #, elixir-autogen, elixir-format
 msgid "You are editing too frequently. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/article_new_live.ex:217
+#: lib/baudrate_web/live/article_new_live.ex:229
 #: lib/baudrate_web/live/feed_live.ex:167
 #, elixir-autogen, elixir-format
 msgid "You are posting too frequently. Please try again later."
@@ -3587,9 +3587,11 @@ msgstr ""
 msgid "Feed"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:160
-#: lib/baudrate_web/live/feed_live.html.heex:348
-#: lib/baudrate_web/live/feed_live.html.heex:349
+#: lib/baudrate_web/live/article_live.ex:676
+#: lib/baudrate_web/live/article_live.html.heex:65
+#: lib/baudrate_web/live/board_live.html.heex:174
+#: lib/baudrate_web/live/feed_live.html.heex:385
+#: lib/baudrate_web/live/feed_live.html.heex:386
 #, elixir-autogen, elixir-format
 msgid "View original"
 msgstr ""
@@ -3605,7 +3607,7 @@ msgstr ""
 msgid "Already following this user."
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.html.heex:495
+#: lib/baudrate_web/live/feed_live.html.heex:532
 #, elixir-autogen, elixir-format
 msgid "Article"
 msgstr ""
@@ -3633,8 +3635,8 @@ msgstr ""
 msgid "Followed successfully."
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.html.heex:484
-#: lib/baudrate_web/live/feed_live.html.heex:612
+#: lib/baudrate_web/live/feed_live.html.heex:521
+#: lib/baudrate_web/live/feed_live.html.heex:649
 #: lib/baudrate_web/live/following_live.html.heex:43
 #: lib/baudrate_web/live/search_live.html.heex:443
 #, elixir-autogen, elixir-format
@@ -3807,14 +3809,14 @@ msgstr ""
 msgid "You don't have permission to manage this board."
 msgstr ""
 
-#: lib/baudrate_web/live/article_edit_live.ex:67
-#: lib/baudrate_web/live/article_new_live.ex:113
-#: lib/baudrate_web/live/feed_live.ex:192
+#: lib/baudrate_web/live/article_edit_live.ex:85
+#: lib/baudrate_web/live/article_new_live.ex:125
+#: lib/baudrate_web/live/feed_live.ex:203
 #, elixir-autogen, elixir-format
 msgid "Image not found."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:205
+#: lib/baudrate_web/live/article_live.html.heex:217
 #, elixir-autogen, elixir-format
 msgid "Image %{number}"
 msgstr ""
@@ -3844,7 +3846,7 @@ msgstr ""
 msgid "%{count} items"
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.ex:415
+#: lib/baudrate_web/live/feed_live.ex:426
 #, elixir-autogen, elixir-format
 msgid "Article posted!"
 msgstr ""
@@ -3860,8 +3862,8 @@ msgstr ""
 msgid "Oh! I just had a thought!"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:180
-#: lib/baudrate_web/live/feed_live.html.heex:535
+#: lib/baudrate_web/live/board_live.html.heex:194
+#: lib/baudrate_web/live/feed_live.html.heex:572
 #, elixir-autogen, elixir-format
 msgid "1 comment"
 msgid_plural "%{count} comments"
@@ -3869,14 +3871,14 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: lib/baudrate_web/live/bookmarks_live.html.heex:82
-#: lib/baudrate_web/live/feed_live.html.heex:623
-#: lib/baudrate_web/live/feed_live.html.heex:745
+#: lib/baudrate_web/live/feed_live.html.heex:660
+#: lib/baudrate_web/live/feed_live.html.heex:782
 #, elixir-autogen, elixir-format
 msgid "Comment"
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.html.heex:628
-#: lib/baudrate_web/live/feed_live.html.heex:752
+#: lib/baudrate_web/live/feed_live.html.heex:665
+#: lib/baudrate_web/live/feed_live.html.heex:789
 #, elixir-autogen, elixir-format
 msgid "commented on"
 msgstr ""
@@ -3892,7 +3894,7 @@ msgid "Article not found."
 msgstr ""
 
 #: lib/baudrate_web/live/admin/moderation_live.ex:272
-#: lib/baudrate_web/live/article_live.ex:915
+#: lib/baudrate_web/live/article_live.ex:958
 #, elixir-autogen, elixir-format
 msgid "Comment not found."
 msgstr ""
@@ -3902,32 +3904,32 @@ msgstr ""
 msgid "Too many requests. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:419
+#: lib/baudrate_web/live/article_live.ex:444
 #, elixir-autogen, elixir-format
 msgid "Article forwarded to board."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:440
+#: lib/baudrate_web/live/article_live.ex:465
 #, elixir-autogen, elixir-format
 msgid "Failed to forward article."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:320
+#: lib/baudrate_web/live/article_live.html.heex:332
 #, elixir-autogen, elixir-format
 msgid "Forward to Board"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:401
+#: lib/baudrate_web/live/article_live.html.heex:413
 #, elixir-autogen, elixir-format
 msgid "Search boards"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:397
+#: lib/baudrate_web/live/article_live.html.heex:409
 #, elixir-autogen, elixir-format
 msgid "Search boards..."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:433
+#: lib/baudrate_web/live/article_live.ex:458
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to post in this board."
 msgstr ""
@@ -4153,8 +4155,8 @@ msgstr ""
 msgid "Web Push Notifications (VAPID)"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:275
-#: lib/baudrate_web/live/article_live.html.heex:281
+#: lib/baudrate_web/live/article_live.html.heex:287
+#: lib/baudrate_web/live/article_live.html.heex:293
 #, elixir-autogen, elixir-format
 msgid "Bookmark"
 msgstr ""
@@ -4164,7 +4166,7 @@ msgstr ""
 msgid "Bookmark removed."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:281
+#: lib/baudrate_web/live/article_live.html.heex:293
 #, elixir-autogen, elixir-format
 msgid "Bookmarked"
 msgstr ""
@@ -4182,7 +4184,7 @@ msgstr ""
 msgid "No bookmarks yet."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:275
+#: lib/baudrate_web/live/article_live.html.heex:287
 #: lib/baudrate_web/live/bookmarks_live.html.heex:128
 #: lib/baudrate_web/live/bookmarks_live.html.heex:129
 #, elixir-autogen, elixir-format
@@ -4207,12 +4209,12 @@ msgstr ""
 msgid "Allow forwarding"
 msgstr ""
 
-#: lib/baudrate_web/live/article_edit_live.ex:97
+#: lib/baudrate_web/live/article_edit_live.ex:115
 #, elixir-autogen, elixir-format
 msgid "Article removed from board."
 msgstr ""
 
-#: lib/baudrate_web/live/article_edit_live.ex:103
+#: lib/baudrate_web/live/article_edit_live.ex:121
 #, elixir-autogen, elixir-format
 msgid "Failed to remove from board."
 msgstr ""
@@ -4222,7 +4224,7 @@ msgstr ""
 msgid "Remove from board"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:426
+#: lib/baudrate_web/live/article_live.ex:451
 #, elixir-autogen, elixir-format
 msgid "This article cannot be forwarded."
 msgstr ""
@@ -4283,14 +4285,14 @@ msgid "Search... (try author:, board:, tag:)"
 msgstr ""
 
 #: lib/baudrate_web/live/article_edit_live.html.heex:23
-#: lib/baudrate_web/live/article_live.html.heex:458
+#: lib/baudrate_web/live/article_live.html.heex:470
 #: lib/baudrate_web/live/article_new_live.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "Draft restored"
 msgstr ""
 
 #: lib/baudrate_web/live/article_edit_live.html.heex:22
-#: lib/baudrate_web/live/article_live.html.heex:457
+#: lib/baudrate_web/live/article_live.html.heex:469
 #: lib/baudrate_web/live/article_new_live.html.heex:30
 #, elixir-autogen, elixir-format
 msgid "Draft saved"
@@ -4301,7 +4303,7 @@ msgstr ""
 msgid "Board moderators"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:102
+#: lib/baudrate_web/live/article_live.html.heex:114
 #, elixir-autogen, elixir-format
 msgid "%{count} voter"
 msgid_plural "%{count} voters"
@@ -4350,22 +4352,22 @@ msgstr ""
 msgid "Add option"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:450
+#: lib/baudrate_web/live/article_live.ex:475
 #, elixir-autogen, elixir-format
 msgid "Cannot vote on this poll."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:172
+#: lib/baudrate_web/live/article_live.html.heex:184
 #, elixir-autogen, elixir-format
 msgid "Change vote"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:97
+#: lib/baudrate_web/live/article_live.html.heex:109
 #, elixir-autogen, elixir-format
 msgid "Closed"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:99
+#: lib/baudrate_web/live/article_live.html.heex:111
 #, elixir-autogen, elixir-format
 msgid "Closes %{time}"
 msgstr ""
@@ -4376,18 +4378,18 @@ msgstr ""
 msgid "Expires (optional)"
 msgstr ""
 
-#: lib/baudrate_web/live/article_new_live.ex:328
-#: lib/baudrate_web/live/feed_live.ex:561
+#: lib/baudrate_web/live/article_new_live.ex:340
+#: lib/baudrate_web/live/feed_live.ex:572
 #, elixir-autogen, elixir-format
 msgid "Failed to create poll."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:474
+#: lib/baudrate_web/live/article_live.ex:499
 #, elixir-autogen, elixir-format
 msgid "Failed to record vote."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:92
+#: lib/baudrate_web/live/article_live.html.heex:104
 #: lib/baudrate_web/live/article_new_live.html.heex:204
 #: lib/baudrate_web/live/feed_live.html.heex:209
 #, elixir-autogen, elixir-format
@@ -4408,7 +4410,7 @@ msgstr ""
 msgid "Option %{number}"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:88
+#: lib/baudrate_web/live/article_live.html.heex:100
 #: lib/baudrate_web/live/article_new_live.html.heex:142
 #: lib/baudrate_web/live/feed_live.html.heex:144
 #, elixir-autogen, elixir-format
@@ -4421,10 +4423,10 @@ msgstr ""
 msgid "Poll options"
 msgstr ""
 
-#: lib/baudrate_web/live/article_new_live.ex:322
-#: lib/baudrate_web/live/article_new_live.ex:325
-#: lib/baudrate_web/live/feed_live.ex:555
-#: lib/baudrate_web/live/feed_live.ex:558
+#: lib/baudrate_web/live/article_new_live.ex:334
+#: lib/baudrate_web/live/article_new_live.ex:337
+#: lib/baudrate_web/live/feed_live.ex:566
+#: lib/baudrate_web/live/feed_live.ex:569
 #, elixir-autogen, elixir-format
 msgid "Poll: %{error}"
 msgstr ""
@@ -4441,24 +4443,24 @@ msgstr ""
 msgid "Remove option %{number}"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:91
+#: lib/baudrate_web/live/article_live.html.heex:103
 #: lib/baudrate_web/live/article_new_live.html.heex:192
 #: lib/baudrate_web/live/feed_live.html.heex:197
 #, elixir-autogen, elixir-format
 msgid "Single choice"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:471
+#: lib/baudrate_web/live/article_live.ex:496
 #, elixir-autogen, elixir-format
 msgid "This poll has closed."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:138
+#: lib/baudrate_web/live/article_live.html.heex:150
 #, elixir-autogen, elixir-format
 msgid "Vote"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:465
+#: lib/baudrate_web/live/article_live.ex:490
 #, elixir-autogen, elixir-format
 msgid "Vote recorded."
 msgstr ""
@@ -4579,7 +4581,7 @@ msgstr ""
 msgid "Failed to update avatar."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:238
+#: lib/baudrate_web/live/article_live.ex:263
 #, elixir-autogen, elixir-format
 msgid "Failed to toggle bookmark."
 msgstr ""
@@ -4625,46 +4627,46 @@ msgstr ""
 msgid "TOTP verification help"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:231
-#: lib/baudrate_web/live/article_live.html.heex:244
-#: lib/baudrate_web/live/article_live.html.heex:245
+#: lib/baudrate_web/live/article_live.html.heex:243
+#: lib/baudrate_web/live/article_live.html.heex:256
+#: lib/baudrate_web/live/article_live.html.heex:257
 #, elixir-autogen, elixir-format
 msgid "%{count} Like"
 msgid_plural "%{count} Likes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/baudrate_web/live/article_live.ex:257
-#: lib/baudrate_web/live/feed_live.ex:358
+#: lib/baudrate_web/live/article_live.ex:282
+#: lib/baudrate_web/live/feed_live.ex:369
 #: lib/baudrate_web/live/interaction_helpers.ex:121
 #: lib/baudrate_web/live/interaction_helpers.ex:143
 #, elixir-autogen, elixir-format
 msgid "Failed to toggle like."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:826
-#: lib/baudrate_web/live/article_live.html.heex:237
-#: lib/baudrate_web/live/board_live.html.heex:195
-#: lib/baudrate_web/live/feed_live.html.heex:375
-#: lib/baudrate_web/live/feed_live.html.heex:549
-#: lib/baudrate_web/live/feed_live.html.heex:652
-#: lib/baudrate_web/live/feed_live.html.heex:773
+#: lib/baudrate_web/live/article_live.ex:869
+#: lib/baudrate_web/live/article_live.html.heex:249
+#: lib/baudrate_web/live/board_live.html.heex:209
+#: lib/baudrate_web/live/feed_live.html.heex:412
+#: lib/baudrate_web/live/feed_live.html.heex:586
+#: lib/baudrate_web/live/feed_live.html.heex:689
+#: lib/baudrate_web/live/feed_live.html.heex:810
 #, elixir-autogen, elixir-format
 msgid "Like"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:826
-#: lib/baudrate_web/live/article_live.html.heex:237
-#: lib/baudrate_web/live/board_live.html.heex:194
-#: lib/baudrate_web/live/feed_live.html.heex:374
-#: lib/baudrate_web/live/feed_live.html.heex:548
-#: lib/baudrate_web/live/feed_live.html.heex:651
-#: lib/baudrate_web/live/feed_live.html.heex:772
+#: lib/baudrate_web/live/article_live.ex:869
+#: lib/baudrate_web/live/article_live.html.heex:249
+#: lib/baudrate_web/live/board_live.html.heex:208
+#: lib/baudrate_web/live/feed_live.html.heex:411
+#: lib/baudrate_web/live/feed_live.html.heex:585
+#: lib/baudrate_web/live/feed_live.html.heex:688
+#: lib/baudrate_web/live/feed_live.html.heex:809
 #, elixir-autogen, elixir-format
 msgid "Unlike"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:254
+#: lib/baudrate_web/live/article_live.ex:279
 #: lib/baudrate_web/live/interaction_helpers.ex:120
 #, elixir-autogen, elixir-format
 msgid "You cannot like your own article."
@@ -4695,8 +4697,8 @@ msgstr ""
 msgid "Generating..."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:767
-#: lib/baudrate_web/live/article_live.html.heex:472
+#: lib/baudrate_web/live/article_live.ex:810
+#: lib/baudrate_web/live/article_live.html.heex:484
 #: lib/baudrate_web/live/feed_live.html.heex:250
 #, elixir-autogen, elixir-format
 msgid "Posting..."
@@ -4716,7 +4718,7 @@ msgid "Searching..."
 msgstr ""
 
 #: lib/baudrate_web/live/conversation_live.html.heex:154
-#: lib/baudrate_web/live/feed_live.html.heex:460
+#: lib/baudrate_web/live/feed_live.html.heex:497
 #, elixir-autogen, elixir-format
 msgid "Sending..."
 msgstr ""
@@ -4739,12 +4741,12 @@ msgstr ""
 msgid "Verifying..."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:136
+#: lib/baudrate_web/live/article_live.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "Voting..."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:193
+#: lib/baudrate_web/live/article_live.html.heex:205
 #, elixir-autogen, elixir-format
 msgid "Image %{number} (opens in new tab)"
 msgstr ""
@@ -4765,7 +4767,7 @@ msgstr ""
 msgid "Poll voting mode"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:690
+#: lib/baudrate_web/live/article_live.ex:733
 #, elixir-autogen, elixir-format
 msgid "Reply to %{author}"
 msgstr ""
@@ -4780,8 +4782,8 @@ msgstr ""
 msgid "Enter the installation key to proceed with setup."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:523
-#: lib/baudrate_web/live/article_live.ex:542
+#: lib/baudrate_web/live/article_live.ex:548
+#: lib/baudrate_web/live/article_live.ex:567
 #: lib/baudrate_web/live/user_profile_live.ex:237
 #, elixir-autogen, elixir-format
 msgid "Failed to submit report."
@@ -4810,8 +4812,8 @@ msgstr ""
 
 #: lib/baudrate_web/components/core_components.ex:734
 #: lib/baudrate_web/components/core_components.ex:774
-#: lib/baudrate_web/live/article_live.ex:737
-#: lib/baudrate_web/live/article_live.html.heex:354
+#: lib/baudrate_web/live/article_live.ex:780
+#: lib/baudrate_web/live/article_live.html.heex:366
 #: lib/baudrate_web/live/user_profile_live.html.heex:92
 #, elixir-autogen, elixir-format
 msgid "Report"
@@ -4832,7 +4834,7 @@ msgstr ""
 msgid "Report User"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:539
+#: lib/baudrate_web/live/article_live.ex:564
 #: lib/baudrate_web/live/user_profile_live.ex:234
 #, elixir-autogen, elixir-format
 msgid "Report submitted. Thank you."
@@ -4853,7 +4855,7 @@ msgstr ""
 msgid "Too many attempts. Please wait before trying again."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:515
+#: lib/baudrate_web/live/article_live.ex:540
 #: lib/baudrate_web/live/user_profile_live.ex:216
 #, elixir-autogen, elixir-format
 msgid "Too many reports. Please try again later."
@@ -4864,14 +4866,14 @@ msgstr ""
 msgid "Verification"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:529
+#: lib/baudrate_web/live/article_live.ex:554
 #: lib/baudrate_web/live/user_profile_live.ex:225
 #, elixir-autogen, elixir-format
 msgid "You have already reported this."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:721
-#: lib/baudrate_web/live/article_live.html.heex:296
+#: lib/baudrate_web/live/article_live.ex:764
+#: lib/baudrate_web/live/article_live.html.heex:308
 #: lib/baudrate_web/live/user_profile_live.html.heex:76
 #, elixir-autogen, elixir-format
 msgid "More actions"
@@ -4912,22 +4914,22 @@ msgstr ""
 msgid "Mobile navigation"
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.html.heex:746
+#: lib/baudrate_web/live/feed_live.html.heex:783
 #, elixir-autogen, elixir-format
 msgid "Fediverse"
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.ex:393
+#: lib/baudrate_web/live/feed_live.ex:404
 #, elixir-autogen, elixir-format
 msgid "Failed to send reply."
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.ex:387
+#: lib/baudrate_web/live/feed_live.ex:398
 #, elixir-autogen, elixir-format
 msgid "Reply sent!"
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.ex:294
+#: lib/baudrate_web/live/feed_live.ex:305
 #, elixir-autogen, elixir-format
 msgid "You are replying too frequently. Please try again later."
 msgstr ""
@@ -4967,45 +4969,45 @@ msgstr ""
 msgid "Link preview: %{title}"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:253
-#: lib/baudrate_web/live/article_live.html.heex:269
+#: lib/baudrate_web/live/article_live.html.heex:265
+#: lib/baudrate_web/live/article_live.html.heex:281
 #, elixir-autogen, elixir-format
 msgid "%{count} Boost"
 msgid_plural "%{count} Boosts"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/baudrate_web/live/article_live.ex:865
-#: lib/baudrate_web/live/article_live.html.heex:259
-#: lib/baudrate_web/live/board_live.html.heex:223
-#: lib/baudrate_web/live/feed_live.html.heex:397
-#: lib/baudrate_web/live/feed_live.html.heex:576
-#: lib/baudrate_web/live/feed_live.html.heex:677
-#: lib/baudrate_web/live/feed_live.html.heex:798
+#: lib/baudrate_web/live/article_live.ex:908
+#: lib/baudrate_web/live/article_live.html.heex:271
+#: lib/baudrate_web/live/board_live.html.heex:237
+#: lib/baudrate_web/live/feed_live.html.heex:434
+#: lib/baudrate_web/live/feed_live.html.heex:613
+#: lib/baudrate_web/live/feed_live.html.heex:714
+#: lib/baudrate_web/live/feed_live.html.heex:835
 #, elixir-autogen, elixir-format
 msgid "Boost"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:276
-#: lib/baudrate_web/live/feed_live.ex:368
+#: lib/baudrate_web/live/article_live.ex:301
+#: lib/baudrate_web/live/feed_live.ex:379
 #: lib/baudrate_web/live/interaction_helpers.ex:132
 #: lib/baudrate_web/live/interaction_helpers.ex:154
 #, elixir-autogen, elixir-format
 msgid "Failed to toggle boost."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:865
-#: lib/baudrate_web/live/article_live.html.heex:259
-#: lib/baudrate_web/live/board_live.html.heex:222
-#: lib/baudrate_web/live/feed_live.html.heex:396
-#: lib/baudrate_web/live/feed_live.html.heex:575
-#: lib/baudrate_web/live/feed_live.html.heex:676
-#: lib/baudrate_web/live/feed_live.html.heex:797
+#: lib/baudrate_web/live/article_live.ex:908
+#: lib/baudrate_web/live/article_live.html.heex:271
+#: lib/baudrate_web/live/board_live.html.heex:236
+#: lib/baudrate_web/live/feed_live.html.heex:433
+#: lib/baudrate_web/live/feed_live.html.heex:612
+#: lib/baudrate_web/live/feed_live.html.heex:713
+#: lib/baudrate_web/live/feed_live.html.heex:834
 #, elixir-autogen, elixir-format
 msgid "Unboost"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:273
+#: lib/baudrate_web/live/article_live.ex:298
 #: lib/baudrate_web/live/interaction_helpers.ex:131
 #, elixir-autogen, elixir-format
 msgid "You cannot boost your own article."
@@ -5026,22 +5028,22 @@ msgstr ""
 msgid "boosted your comment"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:163
+#: lib/baudrate_web/live/article_live.ex:188
 #, elixir-autogen, elixir-format
 msgid "Article removed from %{board}."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:167
+#: lib/baudrate_web/live/article_live.ex:192
 #, elixir-autogen, elixir-format
 msgid "Failed to remove article from board."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:368
+#: lib/baudrate_web/live/article_live.html.heex:380
 #, elixir-autogen, elixir-format
 msgid "Remove from %{board}"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.html.heex:363
+#: lib/baudrate_web/live/article_live.html.heex:375
 #, elixir-autogen, elixir-format
 msgid "Remove this article from %{board}?"
 msgstr ""
@@ -5066,7 +5068,18 @@ msgstr ""
 msgid "Add Images"
 msgstr ""
 
-#: lib/baudrate_web/live/feed_live.html.heex:521
+#: lib/baudrate_web/live/board_live.html.heex:128
+#: lib/baudrate_web/live/feed_live.html.heex:558
 #, elixir-autogen, elixir-format
 msgid "Article image"
+msgstr ""
+
+#: lib/baudrate_web/live/feed_live.html.heex:296
+#, elixir-autogen, elixir-format
+msgid "boosted"
+msgstr ""
+
+#: lib/baudrate_web/live/feed_live.html.heex:371
+#, elixir-autogen, elixir-format
+msgid "Image attachment"
 msgstr ""

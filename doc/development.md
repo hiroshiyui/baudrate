@@ -994,7 +994,7 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `Create(Note)` — stored as threaded comments on local articles (with remote reply chain walking up to 10 hops to resolve intermediate replies), or as DMs if privately addressed (no `as:Public`, no followers collection)
 - `Create(Article)` / `Create(Page)` — stored as remote articles in target boards (Page for Lemmy interop)
 - `Like` / `Undo(Like)` — article favorites
-- `Announce` / `Undo(Announce)` — boosts/shares (bare URI or embedded object map)
+- `Announce` / `Undo(Announce)` — boosts/shares (bare URI or embedded object map); routes boosted Article/Page to boards following the booster, creates feed items for user followers with boost attribution (loop-safe)
 - `Update(Note/Article/Page)` — content updates with authorship check
 - `Update(Person/Group)` — actor profile refresh
 - `Delete(content)` — soft-delete with authorship verification
@@ -1046,6 +1046,7 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `Federation.create_feed_item/1` — insert + broadcast to followers via `Federation.PubSub`
 - `Federation.list_feed_items/2` — paginated union query: remote feed items + local articles from followed users + comments on articles the user authored or participated in
 - Inbox handler fallback: Create(Note) without reply target, Create(Article/Page) without board → feed item
+- Announce → feed item: when a followed actor boosts content, the boosted object is fetched and stored as a feed item with `activity_type: "Announce"` and `boosted_by_actor_id` pointing to the booster. Original author is resolved via `attributedTo`. Board routing: if the booster is followed by a board, boosted Article/Page content is also routed to that board (loop-safe: `create_remote_article` does not trigger outbound federation).
 - Delete propagation: soft-deletes feed items on content or actor deletion
 - `Federation.migrate_user_follows/2` — Move activity support (migrate + deduplicate)
 - `/feed` LiveView — paginated personal timeline with real-time PubSub updates
