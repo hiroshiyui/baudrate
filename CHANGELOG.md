@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.7] — 2026-03-09
+
+### Added
+
+- **Article images in ActivityPub payload** — federated articles now include
+  uploaded images as Document attachments, visible on remote instances
+- **Article images in feed and board views** — article image thumbnails are
+  displayed in the feed timeline and board article listings
+- **Add Images icon button** — replaced the file input widget with a compact
+  icon button; "Add Images" and "Add Poll" now share a single toolbar row
+
+### Fixed
+
+- **Multi-image upload stalling** — fixed parallel uploads silently failing by
+  consuming each upload entry individually as it completes
+- **Oversized file upload errors not shown** — per-entry upload errors (e.g.
+  file too large) are now displayed to the user
+
 ## [1.3.6] — 2026-03-09
 
 ### Added
