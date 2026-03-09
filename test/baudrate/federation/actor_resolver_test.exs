@@ -52,16 +52,18 @@ defmodule Baudrate.Federation.ActorResolverTest do
 
     test "stale actor triggers refetch" do
       {public_pem, _private_pem} = KeyStore.generate_keypair()
+      uid = System.unique_integer([:positive])
+      ap_id = "https://remote.example/users/stale-#{uid}"
 
       # Insert with a very old fetched_at to ensure staleness
       {:ok, _actor} =
         %RemoteActor{}
         |> RemoteActor.changeset(%{
-          ap_id: "https://remote.example/users/stale",
-          username: "stale",
+          ap_id: ap_id,
+          username: "stale-#{uid}",
           domain: "remote.example",
           public_key_pem: public_pem,
-          inbox: "https://remote.example/users/stale/inbox",
+          inbox: "https://remote.example/users/stale-#{uid}/inbox",
           actor_type: "Person",
           fetched_at: ~U[2020-01-01 00:00:00Z]
         })
@@ -72,7 +74,7 @@ defmodule Baudrate.Federation.ActorResolverTest do
         Plug.Conn.send_resp(conn, 500, "")
       end)
 
-      assert {:error, _reason} = ActorResolver.resolve("https://remote.example/users/stale")
+      assert {:error, _reason} = ActorResolver.resolve(ap_id)
     end
   end
 
