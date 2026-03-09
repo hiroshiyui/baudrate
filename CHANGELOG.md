@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.10] — 2026-03-09
+
+### Added
+
+- **YouTube video embeds** — link previews for YouTube URLs now render an
+  embedded video player (via privacy-enhanced `youtube-nocookie.com`) instead
+  of a static Open Graph card; supports watch, youtu.be, embed, and shorts URLs
+- **Boosted content in personal feed** — articles boosted (Announced) by
+  followed remote accounts now appear in the user's personal feed with
+  boost attribution; supports both bare-URI and embedded-object Announce formats
+  (Mastodon and Lemmy interop)
+- **Board routing for boosts** — boosted Article/Page content is routed to
+  boards following the booster, with deduplication by `ap_id` to prevent
+  duplicates when multiple actors boost the same content; Notes remain feed-only
+- **Remote image attachments** — image attachments from remote ActivityPub
+  objects are displayed in the feed timeline (up to 4 images per item)
+
+### Fixed
+
+- **Flaky federation tests** — `ValidatorTest` no longer relies on
+  `Application.get_env` which could return `nil` during concurrent test runs;
+  `ActorResolverTest` uses unique `ap_id` values to prevent race conditions
+
+### Security
+
+- **CSP frame-src** — added `frame-src https://www.youtube-nocookie.com` to
+  Content Security Policy; only YouTube embeds are allowed, no other iframes
+
 ## [1.3.9] — 2026-03-09
 
 ### Fixed
