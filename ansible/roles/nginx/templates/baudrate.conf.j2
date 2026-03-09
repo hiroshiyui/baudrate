@@ -84,6 +84,34 @@ server {
         application/atom+xml
         image/svg+xml;
 
+    # --- Bot / scanner blocking ---
+    # Drop connections from known vulnerability scanners and exploit probes.
+    # 444 is an nginx-specific code that closes the connection with no response,
+    # wasting less server resources than returning an error page.
+
+    # Block common exploit paths (PHP, ASP, Java, config files, VCS)
+    location ~* \.(php|asp|aspx|jsp|cgi|env|git|svn|bak|sql|ini)$ {
+        return 444;
+    }
+
+    # Block WordPress / CMS probes
+    location ~* ^/(wp-|wordpress|xmlrpc|administrator|joomla|drupal|magento) {
+        return 444;
+    }
+
+    # Block common scanner paths
+    location ~* ^/(cgi-bin|\.aws|\.kube|\.docker|\.ssh|vendor|node_modules|\.git) {
+        return 444;
+    }
+
+    # Block empty or known-malicious user agents
+    if ($http_user_agent = "") {
+        return 444;
+    }
+    if ($http_user_agent ~* (zgrab|masscan|nuclei|sqlmap|nikto|nmap|dirbuster|gobuster|wpscan|acunetix|nessus|openvas|w3af|arachni|skipfish|whatweb|httpie)) {
+        return 444;
+    }
+
     # --- Request limits ---
     client_max_body_size 20m;
 

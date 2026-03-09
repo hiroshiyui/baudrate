@@ -622,6 +622,31 @@ timer. Verify renewal works: `sudo certbot renew --dry-run`.
   URL paths to external sites
 - **X-Frame-Options** — DENY
 
+### Bot & Scanner Blocking (Nginx)
+
+The nginx configuration includes rules to silently drop connections from
+automated vulnerability scanners and exploit probes before they reach Phoenix.
+These rules use nginx status code `444` (close connection with no response),
+which wastes fewer server resources than returning an error page.
+
+**What is blocked:**
+
+| Category | Examples |
+|----------|----------|
+| Exploit paths | `.php`, `.asp`, `.env`, `.git`, `.sql`, `.ini` |
+| CMS probes | `/wp-admin`, `/xmlrpc.php`, `/administrator`, `/drupal` |
+| Scanner paths | `/cgi-bin`, `/.aws`, `/.kube`, `/.docker`, `/vendor` |
+| Malicious user agents | zgrab, masscan, nuclei, sqlmap, nikto, nmap, wpscan |
+| Empty user agents | Bots that send no `User-Agent` header |
+
+These rules are defined in the `server` block of the nginx config template
+(`ansible/roles/nginx/templates/baudrate.conf.j2`) and the example config
+(`doc/examples/nginx.conf.example`). They are placed before static asset
+locations to ensure early matching.
+
+**Customising:** Add additional patterns to the `location` or `if` directives
+as needed. Restart nginx after changes: `nginx -t && systemctl reload nginx`.
+
 ### Clock Synchronization
 
 HTTP Signatures validate the `Date` header within ±30 seconds. If the server
