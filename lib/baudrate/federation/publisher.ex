@@ -140,6 +140,7 @@ defmodule Baudrate.Federation.Publisher do
     actor_uri = Federation.actor_uri(:user, comment.user.username)
     article_uri = Federation.actor_uri(:article, article.slug)
     note_uri = comment.ap_id || "#{actor_uri}#note-#{comment.id}"
+    note_url = comment.url || "#{Federation.base_url()}/articles/#{article.slug}#comment-#{comment.id}"
 
     activity = %{
       "@context" => @ap_context,
@@ -152,6 +153,7 @@ defmodule Baudrate.Federation.Publisher do
       "object" => %{
         "id" => note_uri,
         "type" => "Note",
+        "url" => note_url,
         "content" => comment.body_html || comment.body,
         "attributedTo" => actor_uri,
         "inReplyTo" => article_uri,

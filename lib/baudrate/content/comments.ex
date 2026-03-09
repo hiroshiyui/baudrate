@@ -307,15 +307,18 @@ defmodule Baudrate.Content.Comments do
     )
   end
 
-  # Stamps a local comment with its canonical AP ID so that remote replies
-  # (whose `inReplyTo` points here) can be resolved back to this comment.
+  # Stamps a local comment with its canonical AP ID and browsable URL so that
+  # remote replies (whose `inReplyTo` points here) can be resolved back to
+  # this comment, and remote instances can link to the original.
   defp stamp_local_ap_id(%Comment{ap_id: nil, user_id: user_id} = comment)
        when is_integer(user_id) do
     user = Repo.get!(Baudrate.Setup.User, user_id)
     ap_id = Baudrate.Federation.actor_uri(:user, user.username) <> "#note-#{comment.id}"
+    article = Repo.get!(Article, comment.article_id)
+    url = "#{Baudrate.Federation.base_url()}/articles/#{article.slug}#comment-#{comment.id}"
 
     comment
-    |> Ecto.Changeset.change(ap_id: ap_id)
+    |> Ecto.Changeset.change(ap_id: ap_id, url: url)
     |> Repo.update!()
   end
 

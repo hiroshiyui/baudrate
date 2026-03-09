@@ -668,7 +668,7 @@ defmodule BaudrateWeb.ArticleLive do
           </a>
           <span>&middot;</span>
           <a
-            :if={@comment.remote_actor && (@comment.url || @comment.ap_id)}
+            :if={@comment.remote_actor}
             href={@comment.url || @comment.ap_id}
             target="_blank"
             rel="nofollow noopener noreferrer"
@@ -679,9 +679,15 @@ defmodule BaudrateWeb.ArticleLive do
               {format_datetime(@comment.inserted_at)}
             </time>
           </a>
-          <time :if={!@comment.remote_actor} datetime={datetime_attr(@comment.inserted_at)}>
-            {format_datetime(@comment.inserted_at)}
-          </time>
+          <a
+            :if={!@comment.remote_actor}
+            href={"#comment-#{@comment.id}"}
+            class="link link-hover"
+          >
+            <time datetime={datetime_attr(@comment.inserted_at)}>
+              {format_datetime(@comment.inserted_at)}
+            </time>
+          </a>
 
           <button
             :if={@can_delete}

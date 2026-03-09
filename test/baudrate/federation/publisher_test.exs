@@ -184,6 +184,27 @@ defmodule Baudrate.Federation.PublisherTest do
       assert "https://www.w3.org/ns/activitystreams#Public" in note["to"]
       assert "#{actor_uri}/followers" in note["cc"]
     end
+
+    test "Note object includes url pointing to browsable comment" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "With URL",
+          body_html: "<p>With URL</p>",
+          article_id: article.id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      {activity, _actor_uri} = Publisher.build_create_comment(comment, article)
+
+      note = activity["object"]
+      assert note["url"] =~ "/articles/#{article.slug}#comment-#{comment.id}"
+    end
   end
 
   describe "build_block/2" do
