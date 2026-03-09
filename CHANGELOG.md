@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.11] — 2026-03-09
+
+### Fixed
+
+- **DM input not clearing after send** — message compose input now clears
+  after sending by using a dynamic form ID that forces DOM recreation
+- **Send button icon disappearing** — removed `phx-disable-with` that was
+  stripping the paper airplane icon and not restoring it after re-enable
+
 ## [1.3.10] — 2026-03-09
 
 ### Added
@@ -194,6 +203,7 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - AP ID URL format validation on remote boost changesets
 - Reject federation activities targeting non-federated content
 
+[1.3.11]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.11
 [1.3.10]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.10
 [1.3.9]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.9
 [1.3.8]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.8
