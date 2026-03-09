@@ -379,7 +379,7 @@ defmodule BaudrateWeb.FeedLiveTest do
 
       html =
         lv
-        |> element("#feed-poll-section button[phx-click='toggle_poll']")
+        |> element("button[phx-click='toggle_poll']")
         |> render_click()
 
       assert html =~ "Option 1"
@@ -393,7 +393,7 @@ defmodule BaudrateWeb.FeedLiveTest do
       {:ok, lv, _html} = live(conn, "/feed")
 
       lv
-      |> element("#feed-poll-section button[phx-click='toggle_poll']")
+      |> element("button[phx-click='toggle_poll']")
       |> render_click()
 
       # Add a third option
@@ -418,7 +418,7 @@ defmodule BaudrateWeb.FeedLiveTest do
 
       # Enable poll
       lv
-      |> element("#feed-poll-section button[phx-click='toggle_poll']")
+      |> element("button[phx-click='toggle_poll']")
       |> render_click()
 
       # Submit with poll options
