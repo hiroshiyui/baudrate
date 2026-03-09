@@ -178,6 +178,17 @@ defmodule BaudrateWeb.FeedLive do
     {:noreply, push_event(socket, "hashtag_suggestions", %{tags: tags})}
   end
 
+  def handle_event("mention_suggest", %{"prefix" => prefix}, socket) do
+    users =
+      Baudrate.Auth.search_users(prefix,
+        limit: 10,
+        exclude_id: socket.assigns.current_user.id
+      )
+      |> Enum.map(&%{username: &1.username})
+
+    {:noreply, push_event(socket, "mention_suggestions", %{users: users})}
+  end
+
   def handle_event("remove_image", %{"id" => id}, socket) do
     uploaded_ids = Enum.map(socket.assigns.uploaded_images, & &1.id)
 

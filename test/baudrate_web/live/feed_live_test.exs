@@ -443,6 +443,29 @@ defmodule BaudrateWeb.FeedLiveTest do
     end
   end
 
+  describe "mention autocomplete" do
+    test "mention_suggest returns matching users", %{conn: conn, user: _user} do
+      other = setup_user("user")
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      render_hook(lv, "mention_suggest", %{"prefix" => String.slice(other.username, 0, 4)})
+
+      assert_push_event(lv, "mention_suggestions", %{users: users})
+      usernames = Enum.map(users, & &1.username)
+      assert other.username in usernames
+    end
+
+    test "mention_suggest excludes current user", %{conn: conn, user: user} do
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      render_hook(lv, "mention_suggest", %{"prefix" => String.slice(user.username, 0, 4)})
+
+      assert_push_event(lv, "mention_suggestions", %{users: users})
+      usernames = Enum.map(users, & &1.username)
+      refute user.username in usernames
+    end
+  end
+
   describe "quick-post image upload" do
     test "image upload input renders", %{conn: conn} do
       {:ok, _lv, html} = live(conn, "/feed")

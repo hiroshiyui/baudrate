@@ -90,6 +90,18 @@ defmodule BaudrateWeb.ArticleNewLive do
   end
 
   @impl true
+  def handle_event("mention_suggest", %{"prefix" => prefix}, socket) do
+    users =
+      Baudrate.Auth.search_users(prefix,
+        limit: 10,
+        exclude_id: socket.assigns.current_user.id
+      )
+      |> Enum.map(&%{username: &1.username})
+
+    {:noreply, push_event(socket, "mention_suggestions", %{users: users})}
+  end
+
+  @impl true
   def handle_event("validate", %{"article" => params}, socket) do
     changeset =
       Content.change_article(%Baudrate.Content.Article{}, params)
