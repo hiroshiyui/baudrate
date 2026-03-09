@@ -74,13 +74,15 @@
       <%!-- Upload input (only show if under max) --%>
       <div :if={length(@article_images) < 4}>
         <div class="space-y-2">
-          <label class="sr-only" for={@uploads.article_images.ref}>
-            {gettext("Upload images")}
+          <.live_file_input upload={@uploads.article_images} class="hidden" />
+          <label
+            for={@uploads.article_images.ref}
+            class="btn btn-sm btn-ghost gap-1 cursor-pointer"
+            aria-label={gettext("Add Images")}
+          >
+            <.icon name="hero-photo" class="size-5" />
+            {gettext("Add Images")}
           </label>
-          <.live_file_input
-            upload={@uploads.article_images}
-            class="file-input file-input-bordered file-input-sm w-full"
-          />
 
           <div
             :for={entry <- @uploads.article_images.entries}
@@ -107,6 +109,19 @@
             role="alert"
           >
             {upload_error_to_string(err)}
+          </div>
+
+          <div
+            :for={entry <- @uploads.article_images.entries}
+            :if={upload_errors(@uploads.article_images, entry) != []}
+          >
+            <div
+              :for={err <- upload_errors(@uploads.article_images, entry)}
+              class="text-sm text-error"
+              role="alert"
+            >
+              {upload_error_to_string(err)}
+            </div>
           </div>
         </div>
       </div>
