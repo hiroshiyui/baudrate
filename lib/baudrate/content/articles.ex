@@ -78,7 +78,7 @@ defmodule Baudrate.Content.Articles do
         order_by: [desc: q.pinned, desc: q.last_activity_at, desc: q.id],
         offset: ^offset,
         limit: ^per_page,
-        preload: [:user, :remote_actor]
+        preload: [:user, :remote_actor, :article_images]
       )
       |> Repo.all()
 

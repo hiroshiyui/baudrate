@@ -507,6 +507,21 @@
             {digest(item.article.body)}
           </p>
 
+          <div
+            :if={item.article.article_images != []}
+            class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"
+          >
+            <img
+              :for={img <- item.article.article_images}
+              src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+              width={img.width}
+              height={img.height}
+              class="w-full aspect-square object-cover rounded-lg border border-base-300"
+              loading="lazy"
+              alt={gettext("Article image")}
+            />
+          </div>
+
           <div class="flex items-center gap-3 mt-2">
             <div :if={item.article.boards != []} class="flex gap-1">
               <span :for={board <- item.article.boards} class="badge badge-outline badge-sm">

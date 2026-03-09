@@ -114,6 +114,20 @@
       <p :if={article.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
         {digest(article.body)}
       </p>
+      <div
+        :if={article.article_images != []}
+        class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"
+      >
+        <img
+          :for={img <- article.article_images}
+          src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+          width={img.width}
+          height={img.height}
+          class="w-full aspect-square object-cover rounded-lg border border-base-300"
+          loading="lazy"
+          alt={gettext("Article image")}
+        />
+      </div>
       <div class="flex flex-wrap items-center gap-1 text-sm text-base-content/70 mt-1">
         <span :if={article.user} class="inline-flex items-center gap-1">
           {gettext("by")}
