@@ -136,7 +136,12 @@
       </div>
 
       <div id="conversation-compose" class="border-t border-base-300 p-4">
-        <.form for={@message_form} phx-submit="send_message" class="flex gap-2">
+        <.form
+          for={@message_form}
+          id={"message-form-#{length(@messages)}"}
+          phx-submit="send_message"
+          class="flex gap-2"
+        >
           <input
             type="text"
             name="message[body]"
@@ -147,12 +152,7 @@
             maxlength="65536"
             aria-label={gettext("Message")}
           />
-          <button
-            type="submit"
-            class="btn btn-primary"
-            aria-label={gettext("Send")}
-            phx-disable-with={gettext("Sending...")}
-          >
+          <button type="submit" class="btn btn-primary" aria-label={gettext("Send")}>
             <.icon name="hero-paper-airplane" class="size-5" />
           </button>
         </.form>
