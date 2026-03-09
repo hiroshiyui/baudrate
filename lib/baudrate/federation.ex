@@ -1476,7 +1476,7 @@ defmodule Baudrate.Federation do
       from(a in local_query,
         order_by: [desc: a.inserted_at],
         limit: ^(offset + per_page),
-        preload: [:user, boards: []]
+        preload: [:user, :article_images, boards: []]
       )
       |> Repo.all()
 
@@ -1823,7 +1823,7 @@ defmodule Baudrate.Federation do
   Returns an Article JSON-LD map for the given article.
   """
   def article_object(article) do
-    article = Repo.preload(article, [:boards, :user, :link_preview, poll: :options])
+    article = Repo.preload(article, [:boards, :user, :link_preview, :article_images, poll: :options])
 
     board_uris =
       Enum.map(article.boards, fn board ->
@@ -1862,10 +1862,30 @@ defmodule Baudrate.Federation do
 
     map =
       map
+      |> maybe_embed_images(article.article_images)
       |> maybe_embed_poll(article.poll)
       |> maybe_embed_link_preview(article)
 
     map
+  end
+
+  defp maybe_embed_images(map, []), do: map
+  defp maybe_embed_images(map, nil), do: map
+
+  defp maybe_embed_images(map, images) do
+    attachments =
+      Enum.map(images, fn img ->
+        %{
+          "type" => "Document",
+          "mediaType" => "image/webp",
+          "url" => "#{base_url()}#{Content.ArticleImageStorage.image_url(img.filename)}",
+          "width" => img.width,
+          "height" => img.height
+        }
+      end)
+
+    existing = Map.get(map, "attachment", [])
+    Map.put(map, "attachment", existing ++ attachments)
   end
 
   defp maybe_embed_poll(map, nil), do: map

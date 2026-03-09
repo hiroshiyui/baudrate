@@ -374,6 +374,42 @@ defmodule Baudrate.Federation.PublisherTest do
       refute "#hidden_in_code" in names
       refute "#inline_hidden" in names
     end
+
+    test "Article with images includes Document attachments" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, img} =
+        Content.create_article_image(%{
+          filename: "test_image.webp",
+          storage_path: "/tmp/test_image.webp",
+          width: 800,
+          height: 600,
+          article_id: article.id,
+          user_id: user.id
+        })
+
+      object = Baudrate.Federation.article_object(article)
+      attachments = object["attachment"]
+      assert is_list(attachments)
+
+      image_doc = Enum.find(attachments, &(&1["mediaType"] == "image/webp"))
+      assert image_doc
+      assert image_doc["type"] == "Document"
+      assert image_doc["url"] =~ img.filename
+      assert image_doc["width"] == 800
+      assert image_doc["height"] == 600
+    end
+
+    test "Article without images has no attachment key" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      object = Baudrate.Federation.article_object(article)
+      refute Map.has_key?(object, "attachment")
+    end
   end
 
   defp create_remote_actor(attrs \\ %{}) do
