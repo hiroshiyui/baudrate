@@ -4,8 +4,9 @@ defmodule Baudrate.Content.Comment do
 
   Comments support threading via `parent_id` (self-referential). A comment
   can be authored by a local user (`user_id`) or a remote actor
-  (`remote_actor_id`) from the Fediverse. Soft-delete is handled via
-  `deleted_at` rather than physical row removal.
+  (`remote_actor_id`) from the Fediverse. Remote comments store a `url`
+  field with the human-readable permalink (distinct from `ap_id`).
+  Soft-delete is handled via `deleted_at` rather than physical row removal.
   """
 
   use Ecto.Schema
@@ -18,6 +19,7 @@ defmodule Baudrate.Content.Comment do
     field :body, :string
     field :body_html, :string
     field :ap_id, :string
+    field :url, :string
     field :deleted_at, :utc_datetime
 
     belongs_to :article, Article
@@ -47,7 +49,7 @@ defmodule Baudrate.Content.Comment do
   @doc "Changeset for remote comments received via ActivityPub."
   def remote_changeset(comment, attrs) do
     comment
-    |> cast(attrs, [:body, :body_html, :ap_id, :article_id, :parent_id, :remote_actor_id])
+    |> cast(attrs, [:body, :body_html, :ap_id, :url, :article_id, :parent_id, :remote_actor_id])
     |> validate_required([:body, :ap_id, :article_id, :remote_actor_id])
     |> foreign_key_constraint(:article_id)
     |> foreign_key_constraint(:parent_id)

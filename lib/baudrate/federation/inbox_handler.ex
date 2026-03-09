@@ -631,10 +631,13 @@ defmodule Baudrate.Federation.InboxHandler do
       if Content.get_comment_by_ap_id(ap_id) do
         :ok
       else
+        url = extract_url(object)
+
         case Content.create_remote_comment(%{
                body: body,
                body_html: body_html,
                ap_id: ap_id,
+               url: url,
                article_id: article.id,
                parent_id: parent_id,
                remote_actor_id: remote_actor.id

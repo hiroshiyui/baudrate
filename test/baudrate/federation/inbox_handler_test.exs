@@ -206,6 +206,37 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert hd(comments).remote_actor_id == remote_actor.id
     end
 
+    test "stores human-readable url from AP object on comment" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      article_uri = Federation.actor_uri(:article, article.slug)
+      uid = System.unique_integer([:positive])
+
+      activity = %{
+        "id" => "https://remote.example/activities/create-url-#{uid}",
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/ap/notes/#{uid}",
+          "type" => "Note",
+          "content" => "<p>Comment with URL</p>",
+          "url" => "https://remote.example/@user/#{uid}",
+          "attributedTo" => remote_actor.ap_id,
+          "inReplyTo" => article_uri
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      comments = Content.list_comments_for_article(article)
+      comment = hd(comments)
+      assert comment.url == "https://remote.example/@user/#{uid}"
+      assert comment.ap_id == "https://remote.example/ap/notes/#{uid}"
+    end
+
     test "creates a threaded reply to an existing comment" do
       user = setup_user_with_role("user")
       board = create_board()

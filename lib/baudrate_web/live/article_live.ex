@@ -667,7 +667,19 @@ defmodule BaudrateWeb.ArticleLive do
             {display_name(@comment.remote_actor)}@{@comment.remote_actor.domain}
           </a>
           <span>&middot;</span>
-          <time datetime={datetime_attr(@comment.inserted_at)}>
+          <a
+            :if={@comment.remote_actor && (@comment.url || @comment.ap_id)}
+            href={@comment.url || @comment.ap_id}
+            target="_blank"
+            rel="nofollow noopener noreferrer"
+            class="link link-hover"
+            title={gettext("View original")}
+          >
+            <time datetime={datetime_attr(@comment.inserted_at)}>
+              {format_datetime(@comment.inserted_at)}
+            </time>
+          </a>
+          <time :if={!@comment.remote_actor} datetime={datetime_attr(@comment.inserted_at)}>
             {format_datetime(@comment.inserted_at)}
           </time>
 
