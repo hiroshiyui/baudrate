@@ -462,42 +462,31 @@ defmodule BaudrateWeb.FeedLive do
   end
 
   defp handle_progress(:article_images, entry, socket) do
-    if entry.done? do
+    max = Baudrate.Content.ArticleImage.max_images_per_article()
+
+    if entry.done? and length(socket.assigns.uploaded_images) < max do
       user = socket.assigns.current_user
-      max = Baudrate.Content.ArticleImage.max_images_per_article()
-      existing_count = length(socket.assigns.uploaded_images)
 
-      uploaded =
-        consume_uploaded_entries(socket, :article_images, fn %{path: path}, _entry ->
-          if existing_count >= max do
-            {:postpone, :max_reached}
-          else
-            case ArticleImageStorage.process_upload(path) do
-              {:ok, file_info} ->
-                attrs = Map.merge(file_info, %{user_id: user.id})
+      case consume_uploaded_entry(socket, entry, fn %{path: path} ->
+             case ArticleImageStorage.process_upload(path) do
+               {:ok, file_info} ->
+                 attrs = Map.merge(file_info, %{user_id: user.id})
 
-                case Content.create_article_image(attrs) do
-                  {:ok, image} -> {:ok, image}
-                  {:error, _} -> {:postpone, :error}
-                end
+                 case Content.create_article_image(attrs) do
+                   {:ok, image} -> {:ok, image}
+                   {:error, _} -> {:ok, :error}
+                 end
 
-              {:error, _} ->
-                {:postpone, :error}
-            end
-          end
-        end)
+               {:error, _} ->
+                 {:ok, :error}
+             end
+           end) do
+        :error ->
+          {:noreply, socket}
 
-      new_images = Enum.reject(uploaded, &(&1 == :error || &1 == :max_reached))
-      all_images = socket.assigns.uploaded_images ++ new_images
-
-      socket =
-        if Enum.any?(uploaded, &(&1 == :error)) do
-          put_flash(socket, :error, gettext("Some images failed to upload."))
-        else
-          socket
-        end
-
-      {:noreply, assign(socket, :uploaded_images, all_images)}
+        image ->
+          {:noreply, assign(socket, :uploaded_images, socket.assigns.uploaded_images ++ [image])}
+      end
     else
       {:noreply, socket}
     end

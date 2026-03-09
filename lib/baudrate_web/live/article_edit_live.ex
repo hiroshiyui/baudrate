@@ -21,7 +21,6 @@ defmodule BaudrateWeb.ArticleEditLive do
     if Content.can_edit_article?(user, article) do
       changeset = Content.change_article_for_edit(article)
       existing_images = Content.list_article_images(article.id)
-      max_new = Baudrate.Content.ArticleImage.max_images_per_article() - length(existing_images)
 
       {:ok,
        socket
@@ -31,7 +30,7 @@ defmodule BaudrateWeb.ArticleEditLive do
        |> assign(:page_title, gettext("Edit Article"))
        |> allow_upload(:article_images,
          accept: ~w(.jpg .jpeg .png .webp .gif),
-         max_entries: max(max_new, 0),
+         max_entries: 4,
          max_file_size: 5_000_000,
          auto_upload: true,
          progress: &handle_progress/3
@@ -70,19 +69,8 @@ defmodule BaudrateWeb.ArticleEditLive do
       Content.delete_article_image(image)
 
       updated = Enum.reject(socket.assigns.article_images, &(&1.id == image.id))
-      max = Baudrate.Content.ArticleImage.max_images_per_article()
-      max_new = max(max - length(updated), 0)
 
-      {:noreply,
-       socket
-       |> assign(:article_images, updated)
-       |> allow_upload(:article_images,
-         accept: ~w(.jpg .jpeg .png .webp .gif),
-         max_entries: max_new,
-         max_file_size: 5_000_000,
-         auto_upload: true,
-         progress: &handle_progress/3
-       )}
+      {:noreply, assign(socket, :article_images, updated)}
     end
   end
 
@@ -152,53 +140,33 @@ defmodule BaudrateWeb.ArticleEditLive do
   end
 
   defp handle_progress(:article_images, entry, socket) do
-    if entry.done? do
+    max = Baudrate.Content.ArticleImage.max_images_per_article()
+    total = length(socket.assigns.article_images)
+
+    if entry.done? and total < max do
       article = socket.assigns.article
       user = socket.assigns.current_user
-      max = Baudrate.Content.ArticleImage.max_images_per_article()
-      existing_count = length(socket.assigns.article_images)
 
-      uploaded =
-        consume_uploaded_entries(socket, :article_images, fn %{path: path}, _entry ->
-          if existing_count >= max do
-            {:postpone, :max_reached}
-          else
-            case ArticleImageStorage.process_upload(path) do
-              {:ok, file_info} ->
-                attrs = Map.merge(file_info, %{user_id: user.id, article_id: article.id})
+      case consume_uploaded_entry(socket, entry, fn %{path: path} ->
+             case ArticleImageStorage.process_upload(path) do
+               {:ok, file_info} ->
+                 attrs = Map.merge(file_info, %{user_id: user.id, article_id: article.id})
 
-                case Content.create_article_image(attrs) do
-                  {:ok, image} -> {:ok, image}
-                  {:error, _} -> {:postpone, :error}
-                end
+                 case Content.create_article_image(attrs) do
+                   {:ok, image} -> {:ok, image}
+                   {:error, _} -> {:ok, :error}
+                 end
 
-              {:error, _} ->
-                {:postpone, :error}
-            end
-          end
-        end)
+               {:error, _} ->
+                 {:ok, :error}
+             end
+           end) do
+        :error ->
+          {:noreply, socket}
 
-      new_images = Enum.reject(uploaded, &(&1 == :error || &1 == :max_reached))
-      all_images = socket.assigns.article_images ++ new_images
-      max_new = max(max - length(all_images), 0)
-
-      socket =
-        if Enum.any?(uploaded, &(&1 == :error)) do
-          put_flash(socket, :error, gettext("Some images failed to upload."))
-        else
-          socket
-        end
-
-      {:noreply,
-       socket
-       |> assign(:article_images, all_images)
-       |> allow_upload(:article_images,
-         accept: ~w(.jpg .jpeg .png .webp .gif),
-         max_entries: max_new,
-         max_file_size: 5_000_000,
-         auto_upload: true,
-         progress: &handle_progress/3
-       )}
+        image ->
+          {:noreply, assign(socket, :article_images, socket.assigns.article_images ++ [image])}
+      end
     else
       {:noreply, socket}
     end
