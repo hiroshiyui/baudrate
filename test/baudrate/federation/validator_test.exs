@@ -42,13 +42,13 @@ defmodule Baudrate.Federation.ValidatorTest do
     end
 
     test "at exact limit returns :ok" do
-      max = Application.get_env(:baudrate, Baudrate.Federation)[:max_payload_size]
+      max = 262_144
       body = String.duplicate("x", max)
       assert :ok = Validator.validate_payload_size(body)
     end
 
     test "over limit returns error" do
-      max = Application.get_env(:baudrate, Baudrate.Federation)[:max_payload_size]
+      max = 262_144
       body = String.duplicate("x", max + 1)
       assert {:error, :payload_too_large} = Validator.validate_payload_size(body)
     end
@@ -61,7 +61,7 @@ defmodule Baudrate.Federation.ValidatorTest do
     end
 
     test "over limit returns error" do
-      max = Application.get_env(:baudrate, Baudrate.Federation)[:max_content_size]
+      max = 65_536
       content = String.duplicate("x", max + 1)
       assert {:error, :content_too_large} = Validator.validate_content_size(content)
     end

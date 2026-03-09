@@ -124,8 +124,10 @@ defmodule Baudrate.Federation.Validator do
 
   def valid_attribution?(_), do: true
 
+  @config_defaults %{max_payload_size: 262_144, max_content_size: 65_536}
+
   defp config(key) do
     Application.get_env(:baudrate, Baudrate.Federation, [])
-    |> Keyword.get(key)
+    |> Keyword.get(key, Map.get(@config_defaults, key))
   end
 end
