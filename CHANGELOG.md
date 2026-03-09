@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.9] — 2026-03-09
+
+### Fixed
+
+- **Remote article "View original" links** — links now point to the
+  human-readable URL (e.g. `https://instance/@user/123`) instead of the
+  canonical AP ID (e.g. `https://instance/ap/users/.../statuses/...`);
+  a new `url` field on articles stores the browsable permalink from
+  incoming ActivityPub objects
+
+### Added
+
+- **"View original" link on article page** — remote articles now show a
+  "View original" link on the full article detail page
+
 ## [1.3.8] — 2026-03-09
 
 ### Added
