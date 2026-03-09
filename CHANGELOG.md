@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.6] — 2026-03-09
+
+### Added
+
+- **Full-featured feed post composer** — the feed quick-post form now includes
+  a markdown formatting toolbar, image uploads (up to 4 images), and optional
+  polls, matching the article creation page
+- **Collapsible markdown toolbar** — all markdown toolbars now have a pencil
+  icon toggle to collapse/expand formatting buttons; collapsed by default,
+  state persisted in localStorage
+
 ## [1.3.5] — 2026-03-08
 
 ### Fixed
