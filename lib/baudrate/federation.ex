@@ -274,6 +274,33 @@ defmodule Baudrate.Federation do
     end
   end
 
+  @doc """
+  Fetches a remote ActivityPub object for preview without storing it.
+
+  Returns `{:ok, preview_map}` with title, body, author, visibility, etc.,
+  or `{:ok, :existing, article}` if already stored locally.
+  """
+  @spec fetch_remote_object(String.t()) ::
+          {:ok, map()} | {:ok, :existing, Baudrate.Content.Article.t()} | {:error, term()}
+  def fetch_remote_object(url) when is_binary(url) do
+    alias Baudrate.Federation.ObjectResolver
+    ObjectResolver.fetch(url)
+  end
+
+  @doc """
+  Materializes a remote ActivityPub object as a local article for interaction.
+
+  Fetches, validates, resolves the author, and stores as a remote article.
+  Returns `{:ok, %Article{}}` or `{:error, reason}`. Deduplicates by `ap_id`.
+
+  **Loop-safe:** does not trigger any outbound federation.
+  """
+  @spec lookup_remote_object(String.t()) :: {:ok, Baudrate.Content.Article.t()} | {:error, term()}
+  def lookup_remote_object(url) when is_binary(url) do
+    alias Baudrate.Federation.ObjectResolver
+    ObjectResolver.resolve(url)
+  end
+
   defp webfinger_lookup(user, domain) do
     alias Baudrate.Federation.{ActorResolver, HTTPClient}
 
@@ -1830,7 +1857,8 @@ defmodule Baudrate.Federation do
   Returns an Article JSON-LD map for the given article.
   """
   def article_object(article) do
-    article = Repo.preload(article, [:boards, :user, :link_preview, :article_images, poll: :options])
+    article =
+      Repo.preload(article, [:boards, :user, :link_preview, :article_images, poll: :options])
 
     board_uris =
       Enum.map(article.boards, fn board ->

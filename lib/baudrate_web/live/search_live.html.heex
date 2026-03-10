@@ -177,6 +177,179 @@
     </div>
   </div>
 
+  <%!-- Remote object loading indicator --%>
+  <div
+    :if={@remote_object_loading}
+    class="card bg-base-200 shadow-sm mb-4"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  >
+    <div class="card-body p-4 flex flex-row items-center gap-3">
+      <span class="loading loading-spinner loading-sm"></span>
+      <span class="text-base-content/70">{gettext("Looking up remote post...")}</span>
+    </div>
+  </div>
+
+  <%!-- Remote object: already stored locally --%>
+  <%= if match?({:existing, _}, @remote_object) && !@remote_object_loading do %>
+    <% {:existing, article} = @remote_object %>
+    <div
+      class="card bg-base-200 shadow-sm mb-4"
+      role="region"
+      aria-label={gettext("Remote post")}
+    >
+      <div class="card-body p-4">
+        <div class="flex items-start gap-3">
+          <div :if={article.remote_actor} class="flex-shrink-0">
+            <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center">
+              <img
+                :if={article.remote_actor.avatar_url}
+                src={article.remote_actor.avatar_url}
+                alt={display_name(article.remote_actor)}
+                class="w-10 h-10 rounded-full"
+              />
+              <.icon
+                :if={!article.remote_actor.avatar_url}
+                name="hero-user-circle"
+                class="size-7 opacity-50"
+              />
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div :if={article.remote_actor} class="text-sm text-base-content/70 mb-1">
+              <a
+                href={remote_actor_profile_url(article.remote_actor)}
+                target="_blank"
+                rel="nofollow noopener noreferrer"
+                class="font-semibold text-base-content link link-hover"
+              >
+                {display_name(article.remote_actor)}
+              </a>
+              <span class="text-base-content/50">
+                @{article.remote_actor.username}@{article.remote_actor.domain}
+              </span>
+            </div>
+            <.link
+              navigate={~p"/articles/#{article.slug}"}
+              class="font-bold text-base link link-hover"
+            >
+              {article.title}
+            </.link>
+            <p class="text-sm mt-1 line-clamp-3">{String.slice(article.body || "", 0..300)}</p>
+            <div class="flex items-center gap-2 mt-2 text-xs text-base-content/70">
+              <span class="badge badge-outline badge-xs">{gettext("Remote post")}</span>
+              <span class="badge badge-outline badge-xs">{article.visibility}</span>
+              <time :if={article.inserted_at} datetime={datetime_attr(article.inserted_at)}>
+                {format_datetime(article.inserted_at)}
+              </time>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-base-300">
+          <.link
+            navigate={~p"/articles/#{article.slug}"}
+            class="btn btn-sm btn-primary"
+          >
+            <.icon name="hero-arrow-top-right-on-square" class="size-4" />
+            {gettext("View article")}
+          </.link>
+          <a
+            :if={article.url}
+            href={article.url}
+            target="_blank"
+            rel="nofollow noopener noreferrer"
+            class="btn btn-sm btn-ghost"
+          >
+            <.icon name="hero-globe-alt" class="size-4" />
+            {gettext("View original")}
+          </a>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <%!-- Remote object: preview (not yet stored) --%>
+  <%= if match?({:preview, _}, @remote_object) && !@remote_object_loading do %>
+    <% {:preview, preview} = @remote_object %>
+    <div
+      class="card bg-base-200 shadow-sm mb-4"
+      role="region"
+      aria-label={gettext("Remote post")}
+    >
+      <div class="card-body p-4">
+        <div class="flex items-start gap-3">
+          <div :if={preview.remote_actor} class="flex-shrink-0">
+            <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center">
+              <img
+                :if={preview.remote_actor.avatar_url}
+                src={preview.remote_actor.avatar_url}
+                alt={display_name(preview.remote_actor)}
+                class="w-10 h-10 rounded-full"
+              />
+              <.icon
+                :if={!preview.remote_actor.avatar_url}
+                name="hero-user-circle"
+                class="size-7 opacity-50"
+              />
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div :if={preview.remote_actor} class="text-sm text-base-content/70 mb-1">
+              <a
+                href={remote_actor_profile_url(preview.remote_actor)}
+                target="_blank"
+                rel="nofollow noopener noreferrer"
+                class="font-semibold text-base-content link link-hover"
+              >
+                {display_name(preview.remote_actor)}
+              </a>
+              <span class="text-base-content/50">
+                @{preview.remote_actor.username}@{preview.remote_actor.domain}
+              </span>
+            </div>
+            <h3 class="font-bold text-base">{preview.title}</h3>
+            <p class="text-sm mt-1 line-clamp-3">{String.slice(preview.body || "", 0..300)}</p>
+            <div class="flex items-center gap-2 mt-2 text-xs text-base-content/70">
+              <span class="badge badge-outline badge-xs">{gettext("Remote post")}</span>
+              <span class="badge badge-outline badge-xs">{preview.visibility}</span>
+              <time :if={preview.published_at} datetime={datetime_attr(preview.published_at)}>
+                {format_datetime(preview.published_at)}
+              </time>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-base-300">
+          <%= if @current_user do %>
+            <button
+              phx-click="import_remote_object"
+              phx-value-url={preview.ap_id}
+              class="btn btn-sm btn-primary"
+              phx-disable-with={gettext("Importing...")}
+            >
+              <.icon name="hero-arrow-down-tray" class="size-4" />
+              {gettext("Import & interact")}
+            </button>
+          <% else %>
+            <.link navigate="/login" class="btn btn-sm btn-outline">
+              {gettext("Sign in to interact")}
+            </.link>
+          <% end %>
+          <a
+            :if={preview.url}
+            href={preview.url}
+            target="_blank"
+            rel="nofollow noopener noreferrer"
+            class="btn btn-sm btn-ghost"
+          >
+            <.icon name="hero-globe-alt" class="size-4" />
+            {gettext("View original")}
+          </a>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
   <div
     :if={@query != ""}
     role="tablist"

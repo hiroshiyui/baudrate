@@ -87,7 +87,16 @@ defmodule Baudrate.Content.Article do
   @doc "Changeset for remote articles received via ActivityPub."
   def remote_changeset(article, attrs) do
     article
-    |> cast(attrs, [:title, :body, :slug, :ap_id, :url, :remote_actor_id, :visibility])
+    |> cast(attrs, [
+      :title,
+      :body,
+      :slug,
+      :ap_id,
+      :url,
+      :remote_actor_id,
+      :visibility,
+      :forwardable
+    ])
     |> validate_required([:title, :body, :slug, :ap_id, :remote_actor_id])
     |> validate_length(:body, max: @max_body_length)
     |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))

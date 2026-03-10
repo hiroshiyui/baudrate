@@ -47,6 +47,8 @@ defmodule BaudrateWeb.SearchLive do
      |> assign(:remote_actor, nil)
      |> assign(:remote_actor_loading, false)
      |> assign(:follow_state, nil)
+     |> assign(:remote_object, nil)
+     |> assign(:remote_object_loading, false)
      |> assign(:page_title, gettext("Search"))}
   end
 
@@ -66,6 +68,8 @@ defmodule BaudrateWeb.SearchLive do
       |> assign(:remote_actor, nil)
       |> assign(:remote_actor_loading, false)
       |> assign(:follow_state, nil)
+      |> assign(:remote_object, nil)
+      |> assign(:remote_object_loading, false)
 
     if query != "" do
       case check_search_rate(socket) do
@@ -114,6 +118,15 @@ defmodule BaudrateWeb.SearchLive do
             if remote_actor_query?(query) && connected?(socket) do
               send(self(), {:lookup_remote_actor, query})
               assign(socket, :remote_actor_loading, true)
+            else
+              socket
+            end
+
+          # Trigger async remote object lookup for https:// URLs
+          socket =
+            if remote_object_query?(query) && connected?(socket) do
+              send(self(), {:lookup_remote_object, query})
+              assign(socket, :remote_object_loading, true)
             else
               socket
             end
@@ -274,6 +287,23 @@ defmodule BaudrateWeb.SearchLive do
   end
 
   @impl true
+  def handle_event("import_remote_object", %{"url" => url}, socket) do
+    case socket.assigns.current_user do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("You are not signed in."))}
+
+      _user ->
+        case Federation.lookup_remote_object(url) do
+          {:ok, article} ->
+            {:noreply, push_navigate(socket, to: ~p"/articles/#{article.slug}")}
+
+          {:error, _reason} ->
+            {:noreply, put_flash(socket, :error, gettext("Could not import remote post."))}
+        end
+    end
+  end
+
+  @impl true
   def handle_info({:lookup_remote_actor, query}, socket) do
     case Federation.lookup_remote_actor(query) do
       {:ok, remote_actor} ->
@@ -303,6 +333,29 @@ defmodule BaudrateWeb.SearchLive do
     end
   end
 
+  @impl true
+  def handle_info({:lookup_remote_object, url}, socket) do
+    case Federation.fetch_remote_object(url) do
+      {:ok, :existing, article} ->
+        {:noreply,
+         socket
+         |> assign(:remote_object, {:existing, article})
+         |> assign(:remote_object_loading, false)}
+
+      {:ok, preview} ->
+        {:noreply,
+         socket
+         |> assign(:remote_object, {:preview, preview})
+         |> assign(:remote_object_loading, false)}
+
+      {:error, _} ->
+        {:noreply,
+         socket
+         |> assign(:remote_object, nil)
+         |> assign(:remote_object_loading, false)}
+    end
+  end
+
   defp remote_actor_query?(query) do
     # Match @user@domain or user@domain (without /) or https:// actor URLs
     cond do
@@ -310,6 +363,10 @@ defmodule BaudrateWeb.SearchLive do
       String.contains?(query, "@") && !String.contains?(query, "/") -> true
       true -> false
     end
+  end
+
+  defp remote_object_query?(query) do
+    String.starts_with?(query, "https://")
   end
 
   defp check_search_rate(socket) do
