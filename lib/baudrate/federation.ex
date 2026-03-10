@@ -1881,7 +1881,6 @@ defmodule Baudrate.Federation do
       },
       "attributedTo" => actor_uri(:user, article.user.username),
       "published" => DateTime.to_iso8601(article.inserted_at),
-      "updated" => DateTime.to_iso8601(article.updated_at),
       "to" => [@as_public],
       "cc" => board_uris,
       "audience" => board_uris,
@@ -1892,6 +1891,16 @@ defmodule Baudrate.Federation do
       "baudrate:commentCount" => Content.count_comments_for_article(article),
       "baudrate:likeCount" => Content.count_article_likes(article)
     }
+
+    # Only include "updated" if the article was genuinely edited (not just
+    # post-insert housekeeping like ap_id stamping or body_html rendering).
+    # Mastodon shows "edited" whenever updated != published.
+    map =
+      if DateTime.diff(article.updated_at, article.inserted_at) > 5 do
+        Map.put(map, "updated", DateTime.to_iso8601(article.updated_at))
+      else
+        map
+      end
 
     map = if tags == [], do: map, else: Map.put(map, "tag", tags)
 
