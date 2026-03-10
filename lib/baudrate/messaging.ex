@@ -376,7 +376,7 @@ defmodule Baudrate.Messaging do
       from(dm in DirectMessage,
         where: dm.conversation_id == ^conversation_id,
         where: is_nil(dm.deleted_at),
-        order_by: [asc: dm.inserted_at],
+        order_by: [asc: dm.inserted_at, asc: dm.id],
         limit: ^limit,
         preload: [:sender_user, :sender_remote_actor, :link_preview]
       )

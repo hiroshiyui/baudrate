@@ -606,7 +606,7 @@ defmodule Baudrate.Federation do
       on: b.id == ba.board_id,
       where: a.user_id == ^user_id and is_nil(a.deleted_at) and b.min_role_to_view == "guest",
       distinct: a.id,
-      order_by: [desc: a.inserted_at],
+      order_by: [desc: a.inserted_at, desc: a.id],
       offset: ^offset,
       limit: ^@items_per_page,
       preload: [:boards, :user]
@@ -636,7 +636,7 @@ defmodule Baudrate.Federation do
         follower_uris =
           from(f in Follower,
             where: f.actor_uri == ^actor_uri,
-            order_by: [desc: f.inserted_at],
+            order_by: [desc: f.inserted_at, desc: f.id],
             offset: ^offset,
             limit: ^@items_per_page,
             select: f.follower_uri
@@ -749,7 +749,7 @@ defmodule Baudrate.Federation do
       from(bf in BoardFollow,
         where: bf.board_id == ^board.id and bf.state == @state_accepted,
         join: ra in assoc(bf, :remote_actor),
-        order_by: [desc: bf.inserted_at],
+        order_by: [desc: bf.inserted_at, desc: bf.id],
         offset: ^offset,
         limit: ^@items_per_page,
         select: ra.ap_id
@@ -995,7 +995,7 @@ defmodule Baudrate.Federation do
     from(f in Follower,
       where: f.actor_uri == ^actor_uri,
       preload: [:remote_actor],
-      order_by: [desc: f.inserted_at]
+      order_by: [desc: f.inserted_at, desc: f.id]
     )
     |> Repo.all()
   end
@@ -1162,7 +1162,7 @@ defmodule Baudrate.Federation do
     query =
       from(uf in UserFollow,
         where: uf.user_id == ^user_id,
-        order_by: [desc: uf.inserted_at],
+        order_by: [desc: uf.inserted_at, desc: uf.id],
         preload: [:remote_actor, followed_user: :role]
       )
 
@@ -1348,7 +1348,7 @@ defmodule Baudrate.Federation do
     query =
       from(bf in BoardFollow,
         where: bf.board_id == ^board_id,
-        order_by: [desc: bf.inserted_at],
+        order_by: [desc: bf.inserted_at, desc: bf.id],
         preload: [:remote_actor]
       )
 
@@ -1505,7 +1505,7 @@ defmodule Baudrate.Federation do
 
     local_articles =
       from(a in local_query,
-        order_by: [desc: a.inserted_at],
+        order_by: [desc: a.inserted_at, desc: a.id],
         limit: ^(offset + per_page),
         preload: [:user, :article_images, boards: []]
       )
@@ -1539,7 +1539,7 @@ defmodule Baudrate.Federation do
 
     comment_items =
       from([c, _a] in comment_query,
-        order_by: [desc: c.inserted_at],
+        order_by: [desc: c.inserted_at, desc: c.id],
         limit: ^(offset + per_page),
         preload: [:user, :remote_actor, article: :user]
       )
@@ -1685,7 +1685,7 @@ defmodule Baudrate.Federation do
   def list_feed_item_replies(feed_item_id) do
     from(r in FeedItemReply,
       where: r.feed_item_id == ^feed_item_id,
-      order_by: [asc: r.inserted_at],
+      order_by: [asc: r.inserted_at, asc: r.id],
       preload: [user: :role]
     )
     |> Repo.all()

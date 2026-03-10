@@ -461,7 +461,7 @@ defmodule Baudrate.Auth do
   def list_pending_users do
     from(u in User,
       where: u.status == "pending",
-      order_by: [asc: u.inserted_at],
+      order_by: [asc: u.inserted_at, asc: u.id],
       preload: :role
     )
     |> Repo.all()
@@ -557,7 +557,7 @@ defmodule Baudrate.Auth do
   end
 
   defp users_base_query(opts) do
-    from(u in users_filter_query(opts), order_by: [desc: u.inserted_at], preload: :role)
+    from(u in users_filter_query(opts), order_by: [desc: u.inserted_at, desc: u.id], preload: :role)
   end
 
   defp users_filter_query(opts) do
@@ -797,7 +797,7 @@ defmodule Baudrate.Auth do
   def list_user_invite_codes(%User{id: user_id}) do
     from(i in InviteCode,
       where: i.created_by_id == ^user_id,
-      order_by: [desc: i.inserted_at],
+      order_by: [desc: i.inserted_at, desc: i.id],
       preload: [:used_by]
     )
     |> Repo.all()
@@ -958,7 +958,7 @@ defmodule Baudrate.Auth do
   """
   def list_all_invite_codes do
     from(i in InviteCode,
-      order_by: [desc: i.inserted_at],
+      order_by: [desc: i.inserted_at, desc: i.id],
       preload: [:created_by, :used_by]
     )
     |> Repo.all()
@@ -1483,7 +1483,7 @@ defmodule Baudrate.Auth do
   def list_blocks(%User{id: user_id}) do
     from(b in UserBlock,
       where: b.user_id == ^user_id,
-      order_by: [desc: b.inserted_at],
+      order_by: [desc: b.inserted_at, desc: b.id],
       preload: [:blocked_user]
     )
     |> Repo.all()
@@ -1580,7 +1580,7 @@ defmodule Baudrate.Auth do
   def list_mutes(%User{id: user_id}) do
     from(m in UserMute,
       where: m.user_id == ^user_id,
-      order_by: [desc: m.inserted_at],
+      order_by: [desc: m.inserted_at, desc: m.id],
       preload: [:muted_user]
     )
     |> Repo.all()

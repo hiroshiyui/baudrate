@@ -39,7 +39,7 @@ defmodule Baudrate.Content.Feed do
           not is_nil(a.user_id) and
           b.min_role_to_view == "guest",
       distinct: a.id,
-      order_by: [desc: a.inserted_at],
+      order_by: [desc: a.inserted_at, desc: a.id],
       limit: ^limit,
       preload: [:user, :boards]
     )
@@ -64,7 +64,7 @@ defmodule Baudrate.Content.Feed do
             ba.board_id == ^board.id and
               is_nil(a.deleted_at) and
               not is_nil(a.user_id),
-          order_by: [desc: a.inserted_at],
+          order_by: [desc: a.inserted_at, desc: a.id],
           limit: ^limit,
           preload: [:user, :boards]
         )
@@ -91,7 +91,7 @@ defmodule Baudrate.Content.Feed do
           is_nil(a.deleted_at) and
           b.min_role_to_view == "guest",
       distinct: a.id,
-      order_by: [desc: a.inserted_at],
+      order_by: [desc: a.inserted_at, desc: a.id],
       limit: ^limit,
       preload: [:user, :boards]
     )
@@ -106,7 +106,7 @@ defmodule Baudrate.Content.Feed do
   def list_recent_articles_by_user(user_id, limit \\ 10) do
     from(a in Article,
       where: a.user_id == ^user_id and is_nil(a.deleted_at),
-      order_by: [desc: a.inserted_at],
+      order_by: [desc: a.inserted_at, desc: a.id],
       limit: ^limit,
       preload: :boards
     )

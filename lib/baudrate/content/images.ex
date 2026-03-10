@@ -24,7 +24,7 @@ defmodule Baudrate.Content.Images do
   def list_article_images(article_id) do
     from(ai in ArticleImage,
       where: ai.article_id == ^article_id,
-      order_by: [asc: ai.inserted_at]
+      order_by: [asc: ai.inserted_at, asc: ai.id]
     )
     |> Repo.all()
   end
@@ -35,7 +35,7 @@ defmodule Baudrate.Content.Images do
   def list_orphan_article_images(user_id) do
     from(ai in ArticleImage,
       where: ai.user_id == ^user_id and is_nil(ai.article_id),
-      order_by: [asc: ai.inserted_at]
+      order_by: [asc: ai.inserted_at, asc: ai.id]
     )
     |> Repo.all()
   end

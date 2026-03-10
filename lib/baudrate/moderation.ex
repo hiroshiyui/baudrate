@@ -73,7 +73,7 @@ defmodule Baudrate.Moderation do
 
     from(r in Report,
       where: r.status == ^status,
-      order_by: [desc: r.inserted_at],
+      order_by: [desc: r.inserted_at, desc: r.id],
       preload: [:reporter, :article, :comment, :remote_actor, :reported_user, :resolved_by]
     )
     |> Repo.all()

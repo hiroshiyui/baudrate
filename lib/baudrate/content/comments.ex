@@ -123,7 +123,7 @@ defmodule Baudrate.Content.Comments do
   def list_comments_for_article(%Article{id: article_id}, nil) do
     from(c in Comment,
       where: c.article_id == ^article_id and is_nil(c.deleted_at),
-      order_by: [asc: c.inserted_at],
+      order_by: [asc: c.inserted_at, asc: c.id],
       preload: [:user, :remote_actor, :link_preview]
     )
     |> Repo.all()
@@ -134,7 +134,7 @@ defmodule Baudrate.Content.Comments do
 
     from(c in Comment,
       where: c.article_id == ^article_id and is_nil(c.deleted_at),
-      order_by: [asc: c.inserted_at],
+      order_by: [asc: c.inserted_at, asc: c.id],
       preload: [:user, :remote_actor, :link_preview]
     )
     |> Filters.apply_hidden_filters(hidden_uids, hidden_ap_ids)
@@ -177,7 +177,7 @@ defmodule Baudrate.Content.Comments do
     root_query =
       from(c in Comment,
         where: c.article_id == ^article_id and is_nil(c.deleted_at) and is_nil(c.parent_id),
-        order_by: [asc: c.inserted_at],
+        order_by: [asc: c.inserted_at, asc: c.id],
         offset: ^offset,
         limit: ^per_page,
         preload: [:user, :remote_actor, :link_preview]
@@ -211,7 +211,7 @@ defmodule Baudrate.Content.Comments do
         where:
           c.article_id == ^article_id and is_nil(c.deleted_at) and
             c.parent_id in ^parent_ids,
-        order_by: [asc: c.inserted_at],
+        order_by: [asc: c.inserted_at, asc: c.id],
         preload: [:user, :remote_actor, :link_preview]
       )
       |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)

@@ -70,7 +70,7 @@ defmodule Baudrate.Federation.DeliveryWorker do
         where:
           (j.status == "pending" and is_nil(j.next_retry_at)) or
             (j.status in ["pending", "failed"] and j.next_retry_at <= ^now),
-        order_by: [asc: j.inserted_at],
+        order_by: [asc: j.inserted_at, asc: j.id],
         limit: ^batch_size
       )
       |> Repo.all()
