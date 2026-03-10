@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.19] — 2026-03-10
+
+### Changed
+
+- **Draft save indicator** — replaced "Draft saved" text with a loading dots
+  animation during debounce and a cloud-arrow-up Heroicon when saved;
+  indicator is now inline after the submit button in all forms
+
 ## [1.3.18] — 2026-03-10
 
 ### Fixed
@@ -299,6 +307,7 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - AP ID URL format validation on remote boost changesets
 - Reject federation activities targeting non-federated content
 
+[1.3.19]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.19
 [1.3.18]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.18
 [1.3.17]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.17
 [1.3.16]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.16
