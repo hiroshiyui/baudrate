@@ -17,7 +17,9 @@ defmodule Baudrate.Content.TitleDeriver do
   Returns `"Untitled"` when both the name and body are empty.
   """
   @spec derive_title(map(), String.t() | nil) :: String.t()
-  def derive_title(%{"name" => name}, _body) when is_binary(name) and name != "", do: name
+  def derive_title(%{"name" => name}, _body) when is_binary(name) and name != "" do
+    truncate_title(name, 255)
+  end
 
   def derive_title(_object, body) when is_binary(body) and body != "" do
     body

@@ -58,6 +58,7 @@ defmodule Baudrate.Content.Article do
     timestamps(type: :utc_datetime)
   end
 
+  @max_title_length 255
   @max_body_length 65_536
 
   @doc "Changeset for creating a local article with title, body, slug, and author."
@@ -65,6 +66,7 @@ defmodule Baudrate.Content.Article do
     article
     |> cast(attrs, [:title, :body, :slug, :ap_id, :user_id, :forwardable, :visibility])
     |> validate_required([:title, :body, :slug])
+    |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
     |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
@@ -80,6 +82,7 @@ defmodule Baudrate.Content.Article do
     article
     |> cast(attrs, [:title, :body, :forwardable, :visibility])
     |> validate_required([:title, :body])
+    |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
     |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
   end
@@ -98,6 +101,7 @@ defmodule Baudrate.Content.Article do
       :forwardable
     ])
     |> validate_required([:title, :body, :slug, :ap_id, :remote_actor_id])
+    |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
     |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
@@ -113,6 +117,7 @@ defmodule Baudrate.Content.Article do
     article
     |> cast(attrs, [:title, :body])
     |> validate_required([:title, :body])
+    |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
   end
 
