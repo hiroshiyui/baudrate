@@ -145,26 +145,24 @@
       </div>
     </div>
 
-    <.input
-      field={@form[:visibility]}
-      type="select"
-      label={gettext("Visibility")}
-      label_class="text-lg font-semibold"
-      options={[
-        {gettext("Public"), "public"},
-        {gettext("Unlisted"), "unlisted"},
-        {gettext("Followers only"), "followers_only"},
-        {gettext("Direct"), "direct"}
-      ]}
-    />
-    <.input
-      field={@form[:forwardable]}
-      type="checkbox"
-      label={gettext("Allow forwarding")}
-      label_class="text-lg font-semibold"
-    />
-
-    <div class="flex items-center gap-3">
+    <div class="flex flex-wrap items-center gap-3 [&>.fieldset]:mb-0">
+      <.input
+        field={@form[:forwardable]}
+        type="checkbox"
+        label={gettext("Allow forwarding")}
+        label_class="text-base"
+      />
+      <.input
+        field={@form[:visibility]}
+        type="select"
+        aria-label={gettext("Visibility")}
+        options={[
+          {gettext("Public"), "public"},
+          {gettext("Unlisted"), "unlisted"},
+          {gettext("Followers only"), "followers_only"},
+          {gettext("Direct"), "direct"}
+        ]}
+      />
       <button type="submit" class="btn btn-primary" phx-disable-with={gettext("Saving...")}>
         {gettext("Save Changes")}
       </button>
