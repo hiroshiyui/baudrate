@@ -43,9 +43,6 @@ config :phoenix,
 # sandbox transaction, avoiding cross-test interference via shared ETS state.
 config :baudrate, settings_cache_enabled: false
 
-# Disable sitemap generation on boot in tests
-config :baudrate, sitemap_enabled: false
-
 # Run federation delivery synchronously in tests to avoid sandbox ownership
 # errors from fire-and-forget Tasks that outlive the test process.
 config :baudrate, federation_async: false

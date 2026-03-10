@@ -148,16 +148,6 @@ server {
         access_log off;
     }
 
-    # --- Sitemap (generated daily, writable shared directory) ---
-    location = /sitemap.xml {
-        alias /path/to/baudrate/shared/sitemap.xml;
-        expires 1d;
-        add_header Cache-Control "public";
-        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
-        add_header X-Content-Type-Options "nosniff" always;
-        access_log off;
-    }
-
     # --- Non-fingerprinted static files (short cache) ---
     # Phoenix `~p` may resolve to digest-stamped filenames (e.g.
     # favicon-abc123.svg), so patterns use [^/]* to match both

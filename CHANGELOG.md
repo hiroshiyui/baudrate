@@ -7,31 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
-## [1.3.15] — 2026-03-10
-
-### Fixed
-
-- **Sitemap generation fails in production releases** — OTP release
-  `priv/static` is read-only; sitemap output path is now configurable via
-  `SITEMAP_OUTPUT_PATH` env var, writing to the writable `shared/` directory;
-  nginx serves it via a dedicated `location = /sitemap.xml` with `alias`
-
-## [1.3.14] — 2026-03-10
-
-### Fixed
-
-- **Ansible nginx template missing sitemap** — added `sitemap.xml` to the
-  static file location pattern in `baudrate.conf.j2` (missed in v1.3.13)
-
 ## [1.3.13] — 2026-03-10
-
-### Added
-
-- **Sitemap generation** — daily sitemap.xml generated at midnight UTC by a
-  supervised GenServer; includes homepage, public boards, and public articles;
-  user profiles excluded for privacy; served directly by Nginx as a static file
-- **robots.txt sitemap declaration** — search engines can now discover the
-  sitemap URL via robots.txt
 
 ### Fixed
 
@@ -39,6 +15,12 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   longer unconditionally include the `"updated"` field; it is now only emitted
   when the article was genuinely edited (>5s after creation), preventing
   Mastodon from showing an "edited" badge on unedited articles
+
+### Reverted
+
+- **Sitemap generation** — reverted v1.3.13–v1.3.15 sitemap feature due to
+  OTP release read-only filesystem constraints; will revisit with a different
+  approach
 
 ## [1.3.12] — 2026-03-10
 
@@ -277,8 +259,6 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - AP ID URL format validation on remote boost changesets
 - Reject federation activities targeting non-federated content
 
-[1.3.15]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.15
-[1.3.14]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.14
 [1.3.13]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.13
 [1.3.12]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.12
 [1.3.11]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.11
