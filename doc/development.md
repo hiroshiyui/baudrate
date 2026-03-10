@@ -540,8 +540,17 @@ Gallery layout adapts by image count: 1 = full width, 2 = side-by-side,
 Key modules:
 - `Content.ArticleImage` — schema (`article_images` table)
 - `Content.ArticleImageStorage` — image processing and storage
-- `Content` — CRUD functions (`create_article_image/1`, `list_article_images/1`,
-  `associate_article_images/3`, `delete_article_image/1`, `delete_orphan_article_images/1`)
+- `Content.Images` — CRUD functions (`create_article_image/1`, `list_article_images/1`,
+  `associate_article_images/3`, `delete_article_image/1`, `delete_orphan_article_images/1`,
+  `fetch_and_store_remote_images/2`)
+- `Federation.AttachmentExtractor` — extracts image attachment metadata from AP objects
+
+**Remote article images:** When a remote article is imported (via federation inbox
+or `/search`), image attachments from the AP object's `attachment` array are
+extracted by `AttachmentExtractor` and fetched asynchronously via
+`Images.fetch_and_store_remote_images/2`. Remote images go through the same
+security pipeline (magic byte validation, re-encode to WebP, EXIF strip, max
+1024px) and are stored locally as `ArticleImage` records with `user_id = NULL`.
 
 **OTP release note:** Same as the avatar system — upload directory paths must
 use runtime `Application.app_dir/2` calls, not compile-time module attributes.
