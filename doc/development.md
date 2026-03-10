@@ -1182,6 +1182,26 @@ batched (50 per cycle) and skips when federation is disabled.
 
 > See the [SysOp Guide](sysop.md#stale-actor-cleanup) for configuration.
 
+**Remote Object Resolution (`ObjectResolver`):**
+
+The `ObjectResolver` module resolves remote ActivityPub objects (Notes, Articles, Pages) by URL.
+It uses a two-phase approach:
+
+1. `fetch/1` — fetches and parses a remote object for preview display without any database write.
+   Returns a map with `ap_id`, `title`, `body`, `body_html`, `visibility`, `url`, `published_at`,
+   `remote_actor`, and the raw `object` JSON. If the object already exists locally (by `ap_id`),
+   returns `{:ok, :existing, article}` instead.
+
+2. `resolve/1` — fetches + materializes as a local remote article for interaction (like, boost,
+   forward). Deduplicates by `ap_id`. Uses `Content.create_remote_article/2` with empty `board_ids`,
+   which does NOT trigger outbound federation publishing (loop-safe).
+
+The search page uses `fetch/1` for preview when a user pastes a remote post URL, and only
+materializes via `resolve/1` when the user explicitly clicks "Import & interact".
+
+Exposed via `Federation.fetch_remote_object/1` (preview) and `Federation.lookup_remote_object/1`
+(materialize).
+
 **Security:**
 - HTTP Signature signing (outbound) — `hs2019` algorithm (RSA PKCS1v15 + SHA-256), signed headers: `(request-target)`, `host`, `date`, `digest`; key ID format: `{actor_uri}#main-key`. The `host` header is managed by `HTTPClient` (not returned by `HTTPSignature.sign/5`) to avoid duplication with DNS-pinned connections
 - HTTP Signature verification on all inbox requests
