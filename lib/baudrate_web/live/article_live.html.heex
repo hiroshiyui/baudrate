@@ -476,13 +476,6 @@
           rows="6"
         />
         <div class="flex flex-wrap items-center gap-3 [&>.fieldset]:mb-0 [&>.fieldset]:p-0 [&_.label]:py-0">
-          <span
-            id="draft-indicator-comment"
-            class="text-sm text-base-content/70 transition-opacity duration-300 opacity-0"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-          </span>
           <.input
             field={@comment_form[:visibility]}
             type="select"
@@ -503,6 +496,13 @@
             {gettext("Post Comment")}
           </button>
         </div>
+        <span
+          id="draft-indicator-comment"
+          class="text-sm text-base-content/70 transition-opacity duration-300 opacity-0"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+        </span>
       </.form>
     </div>
 
