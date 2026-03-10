@@ -54,7 +54,7 @@
     - name: Warn if deploying older version
       when:
         - deployed_tag is defined
-        - release_tag is version(deployed_tag, '<')
+        - (release_tag | regex_replace('^v', '')) is version((deployed_tag | regex_replace('^v', '')), '<')
       block:
         - name: Display version warning
           ansible.builtin.debug:
