@@ -42,7 +42,7 @@ defmodule Baudrate.Federation.InboxHandler do
 
   alias Baudrate.Content
   alias Baudrate.Federation
-  alias Baudrate.Federation.{ActorResolver, Delivery, Sanitizer, Validator, Visibility}
+  alias Baudrate.Federation.{ActorResolver, AttachmentExtractor, Delivery, Sanitizer, Validator, Visibility}
   alias Baudrate.Messaging
 
   @doc """
@@ -1265,6 +1265,7 @@ defmodule Baudrate.Federation.InboxHandler do
         title = derive_title(object, body)
         slug = Content.generate_slug(title)
         poll_opts = extract_poll_from_object(object, ap_id)
+        image_attachments = AttachmentExtractor.extract_image_attachments(object)
 
         url = extract_url(object)
         visibility = Visibility.from_addressing(object)
@@ -1280,7 +1281,7 @@ defmodule Baudrate.Federation.InboxHandler do
                  visibility: visibility
                },
                [board.id],
-               poll_opts
+               poll_opts ++ [image_attachments: image_attachments]
              ) do
           {:ok, _multi} ->
             Logger.info("federation.activity: type=Create(#{type}) ap_id=#{ap_id}")
@@ -1319,6 +1320,7 @@ defmodule Baudrate.Federation.InboxHandler do
             slug = Content.generate_slug(title)
             board_ids = Enum.map(boards, & &1.id)
             poll_opts = extract_poll_from_object(object, ap_id)
+            image_attachments = AttachmentExtractor.extract_image_attachments(object)
             url = extract_url(object)
             visibility = Visibility.from_addressing(object)
 
@@ -1333,7 +1335,7 @@ defmodule Baudrate.Federation.InboxHandler do
                      visibility: visibility
                    },
                    board_ids,
-                   poll_opts
+                   poll_opts ++ [image_attachments: image_attachments]
                  ) do
               {:ok, _multi} ->
                 Logger.info(
@@ -1660,40 +1662,8 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp extract_url(_), do: nil
 
-  # Extracts image attachments from an AP object's `attachment` array.
-  # Mastodon sends `Document` with `mediaType` starting with "image/";
-  # some implementations use `Image` type. Returns a list of maps with
-  # `url`, `media_type`, and optional `name` (alt text).
-  defp extract_image_attachments(%{"attachment" => attachments}) when is_list(attachments) do
-    attachments
-    |> Enum.filter(fn
-      %{"type" => type, "mediaType" => mt} when type in ["Document", "Image"] ->
-        String.starts_with?(mt, "image/")
-
-      %{"type" => "Image"} ->
-        true
-
-      _ ->
-        false
-    end)
-    |> Enum.map(fn att ->
-      url = att["url"]
-
-      url =
-        cond do
-          is_binary(url) -> url
-          is_list(url) -> List.first(url)
-          is_map(url) -> url["href"]
-          true -> nil
-        end
-
-      %{"url" => url, "media_type" => att["mediaType"], "name" => att["name"]}
-    end)
-    |> Enum.filter(&is_binary(&1["url"]))
-    |> Enum.take(4)
-  end
-
-  defp extract_image_attachments(_), do: []
+  defp extract_image_attachments(object),
+    do: AttachmentExtractor.extract_image_attachments(object)
 
   # Extracts poll data from a Question object or an Article with a Question attachment.
   defp extract_poll_from_object(object, ap_id) do

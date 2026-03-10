@@ -21,6 +21,7 @@ defmodule Baudrate.Federation.ObjectResolver do
 
   alias Baudrate.Federation.{
     ActorResolver,
+    AttachmentExtractor,
     HTTPClient,
     KeyStore,
     Sanitizer,
@@ -58,6 +59,7 @@ defmodule Baudrate.Federation.ObjectResolver do
          {:ok, body, body_html} <- sanitize_content(object) do
       title = TitleDeriver.derive_title(object, body)
       visibility = Visibility.from_addressing(object)
+      image_attachments = AttachmentExtractor.extract_image_attachments(object)
 
       {:ok,
        %{
@@ -69,6 +71,7 @@ defmodule Baudrate.Federation.ObjectResolver do
          url: extract_source_url(object),
          published_at: parse_published(object),
          remote_actor: remote_actor,
+         image_attachments: image_attachments,
          object: object
        }}
     else
@@ -179,6 +182,7 @@ defmodule Baudrate.Federation.ObjectResolver do
       slug = Content.generate_slug(title)
       visibility = Visibility.from_addressing(object)
       source_url = extract_source_url(object)
+      image_attachments = AttachmentExtractor.extract_image_attachments(object)
 
       attrs = %{
         title: title,
@@ -192,7 +196,7 @@ defmodule Baudrate.Federation.ObjectResolver do
       }
 
       # Empty board_ids = no board routing = loop-safe
-      case Content.create_remote_article(attrs, []) do
+      case Content.create_remote_article(attrs, [], image_attachments: image_attachments) do
         {:ok, %{article: article}} -> {:ok, article}
         {:error, _} = error -> error
       end
