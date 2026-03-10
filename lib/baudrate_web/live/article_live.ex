@@ -942,7 +942,7 @@ defmodule BaudrateWeb.ArticleLive do
               toolbar
               rows="6"
             />
-            <div class="flex flex-wrap items-center gap-2 [&>.fieldset]:mb-0">
+            <div class="flex flex-wrap items-center gap-2 [&>.fieldset]:mb-0 [&>.fieldset]:p-0 [&_.label]:py-0">
               <.input
                 field={@comment_form[:visibility]}
                 type="select"
