@@ -7,14 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
-## [1.3.16] — 2026-03-10
+## [1.3.17] — 2026-03-10
 
 ### Fixed
 
+- **Inline form controls vertical alignment** — stripped DaisyUI fieldset
+  and label padding in all inline form control rows (article new/edit,
+  comment, reply, feed quick-post) for proper vertical centering
 - **Comment and reply form controls left-aligned** — visibility selector
-  and Post/Reply button in comment and reply forms are now left-aligned
-  with flex-wrap for mobile responsiveness, consistent with article and
-  feed forms
+  and Post/Reply button are now left-aligned with flex-wrap for mobile
+  responsiveness, consistent with article and feed forms
+- **Search operators card readability** — bumped title and table text size
+  for better readability
+- **Ansible version comparison** — stripped `v` prefix before semver
+  comparison to prevent false "deploying older version" warnings
 
 ## [1.3.15] — 2026-03-10
 
@@ -290,6 +296,7 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - AP ID URL format validation on remote boost changesets
 - Reject federation activities targeting non-federated content
 
+[1.3.17]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.17
 [1.3.16]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.16
 [1.3.15]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.15
 [1.3.14]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.14
