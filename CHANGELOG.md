@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.13] — 2026-03-10
+
+### Added
+
+- **Sitemap generation** — daily sitemap.xml generated at midnight UTC by a
+  supervised GenServer; includes homepage, public boards, and public articles;
+  user profiles excluded for privacy; served directly by Nginx as a static file
+- **robots.txt sitemap declaration** — search engines can now discover the
+  sitemap URL via robots.txt
+
+### Fixed
+
+- **False "edited" indicator on Mastodon** — ActivityPub article objects no
+  longer unconditionally include the `"updated"` field; it is now only emitted
+  when the article was genuinely edited (>5s after creation), preventing
+  Mastodon from showing an "edited" badge on unedited articles
+
 ## [1.3.12] — 2026-03-10
 
 ### Added
@@ -244,6 +261,8 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - AP ID URL format validation on remote boost changesets
 - Reject federation activities targeting non-federated content
 
+[1.3.13]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.13
+[1.3.12]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.12
 [1.3.11]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.11
 [1.3.10]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.10
 [1.3.9]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.9
