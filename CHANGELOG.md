@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.14] — 2026-03-10
+
+### Fixed
+
+- **Comment visibility selector layout** — moved the visibility selector
+  before the Post/Reply button in comment and reply forms; fixed vertical
+  misalignment caused by DaisyUI fieldset margin
+
 ## [1.3.13] — 2026-03-10
 
 ### Fixed
@@ -259,6 +267,7 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - AP ID URL format validation on remote boost changesets
 - Reject federation activities targeting non-federated content
 
+[1.3.14]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.14
 [1.3.13]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.13
 [1.3.12]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.12
 [1.3.11]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.11
