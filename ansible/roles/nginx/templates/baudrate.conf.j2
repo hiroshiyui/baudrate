@@ -142,7 +142,7 @@ server {
     # Phoenix `~p` may resolve to digest-stamped filenames (e.g.
     # favicon-abc123.svg), so patterns use [^/]* to match both
     # original and digested variants.
-    location ~ ^/(fonts|images|favicon[^/]*\.(ico|svg)|robots[^/]*\.txt|service_worker[^/]*\.js|site[^/]*\.webmanifest) {
+    location ~ ^/(fonts|images|favicon[^/]*\.(ico|svg)|robots[^/]*\.txt|sitemap[^/]*\.xml|service_worker[^/]*\.js|site[^/]*\.webmanifest) {
         root {{ static_path }};
         expires 1h;
         add_header Cache-Control "public";
