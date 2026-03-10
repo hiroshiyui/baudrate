@@ -32,7 +32,8 @@ defmodule Baudrate.Content.Comments do
   """
   @spec create_comment(map()) :: {:ok, %Comment{}} | {:error, Ecto.Changeset.t()}
   def create_comment(attrs) do
-    body_html = Baudrate.Content.Markdown.to_html(attrs["body"] || attrs[:body] || "")
+    attrs = attrs |> Map.new(fn {k, v} -> {to_string(k), v} end)
+    body_html = Baudrate.Content.Markdown.to_html(attrs["body"] || "")
 
     result =
       %Comment{}
