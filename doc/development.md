@@ -499,14 +499,23 @@ can create articles. Two entry points:
 
 Articles are assigned a URL-safe slug generated from the title with a random
 suffix to avoid collisions. Articles can be cross-posted to multiple boards.
-Board-less articles (created via feed without selecting a board) can be
-forwarded to a board by the author or an admin via the "Forward to Board"
-autocomplete on the article detail page. Articles already in boards can be
-cross-forwarded to additional boards by any authenticated user, provided the
-article's `forwardable` flag is `true` (the default). Authors control this
-via the "Allow forwarding" checkbox on the create/edit forms. Authors and
-admins can also remove an article from specific boards via the edit form,
-potentially making it boardless again.
+Any authenticated user can forward a public or unlisted article to a board
+via the "Forward to Board" autocomplete on the article detail page, provided
+the article's `forwardable` flag is `true` (the default). Authors and admins
+can forward regardless of visibility or the forwardable flag. Authors control
+forwarding via the "Allow forwarding" checkbox on the create/edit forms.
+Authors and admins can also remove an article from specific boards via the
+edit form, potentially making it boardless again.
+
+The `visibility` field on articles, comments, and feed items records the
+ActivityPub visibility derived from `to`/`cc` addressing:
+- `public` — `as:Public` in `to` (default for local content)
+- `unlisted` — `as:Public` in `cc` only
+- `followers_only` — addressed to followers collection, no public
+- `direct` — addressed to specific actors only
+
+Visibility is derived on ingest by `Federation.Visibility.from_addressing/1`
+and respected in outbound activities by the Publisher.
 
 ### Article Images
 
@@ -1042,7 +1051,8 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 
 **Personal feed**:
 - `feed_items` table — stores incoming posts from followed actors that don't land in boards/comments/DMs
-- One row per activity (keyed by `ap_id`), visibility via JOIN with `user_follows` at query time
+- One row per activity (keyed by `ap_id`), feed membership via JOIN with `user_follows` at query time
+- `visibility` field records AP visibility (`public`, `unlisted`, `followers_only`, `direct`) derived from `to`/`cc` addressing on ingest
 - `Federation.create_feed_item/1` — insert + broadcast to followers via `Federation.PubSub`
 - `Federation.list_feed_items/2` — paginated union query: remote feed items + local articles from followed users + comments on articles the user authored or participated in
 - Inbox handler fallback: Create(Note) without reply target, Create(Article/Page) without board → feed item
@@ -1096,8 +1106,8 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - Lemmy `Page` objects treated identically to `Article` (Create and Update)
 - Lemmy `Announce` with embedded object maps — extracts inner `id`
 - `<span>` tags with safe classes (`h-card`, `hashtag`, `mention`, `invisible`) preserved by sanitizer
-- Outbound Note objects include `to`/`cc` addressing (required by Mastodon for visibility)
-- Outbound Article objects include `cc` with board actor URIs (improves discoverability)
+- Outbound activities use visibility-aware `to`/`cc` addressing (respects stored `visibility` field; `Federation.Visibility` derives visibility from AP addressing on ingest)
+- Outbound Article objects include board actor URIs merged into `cc` (improves discoverability)
 - Outbound Article objects include plain-text `summary` (≤ 500 chars) for Mastodon preview display
 - Outbound Article objects include `tag` array with `Hashtag` objects (extracted from body, code blocks excluded)
 - Cross-post deduplication: same remote article arriving via multiple board inboxes links to all boards
