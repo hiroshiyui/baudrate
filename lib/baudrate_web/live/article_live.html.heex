@@ -485,6 +485,18 @@
           >
             {gettext("Post Comment")}
           </button>
+          <.input
+            field={@comment_form[:visibility]}
+            type="select"
+            options={[
+              {gettext("Public"), "public"},
+              {gettext("Unlisted"), "unlisted"},
+              {gettext("Followers only"), "followers_only"},
+              {gettext("Direct"), "direct"}
+            ]}
+            class="select select-sm"
+            aria-label={gettext("Visibility")}
+          />
           <span
             id="draft-indicator-comment"
             class="text-sm text-base-content/70 transition-opacity duration-300 opacity-0"

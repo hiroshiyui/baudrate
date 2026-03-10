@@ -939,7 +939,7 @@ defmodule BaudrateWeb.ArticleLive do
               toolbar
               rows="6"
             />
-            <div class="flex gap-2">
+            <div class="flex items-center gap-2">
               <button
                 type="submit"
                 class="btn btn-sm btn-primary"
@@ -947,6 +947,18 @@ defmodule BaudrateWeb.ArticleLive do
               >
                 {gettext("Reply")}
               </button>
+              <.input
+                field={@comment_form[:visibility]}
+                type="select"
+                options={[
+                  {gettext("Public"), "public"},
+                  {gettext("Unlisted"), "unlisted"},
+                  {gettext("Followers only"), "followers_only"},
+                  {gettext("Direct"), "direct"}
+                ]}
+                class="select select-sm"
+                aria-label={gettext("Visibility")}
+              />
               <button type="button" phx-click="cancel_reply" class="btn btn-sm btn-ghost">
                 {gettext("Cancel")}
               </button>
