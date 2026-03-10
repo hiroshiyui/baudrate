@@ -5,9 +5,13 @@ defmodule Baudrate.Content.Images do
   Handles creation, listing, association, and cleanup of article images.
   """
 
+  require Logger
+
   import Ecto.Query
   alias Baudrate.Repo
   alias Baudrate.Content.ArticleImage
+  alias Baudrate.Content.ArticleImageStorage
+  alias Baudrate.Federation.HTTPClient
 
   @doc """
   Creates an article image record.
@@ -101,5 +105,77 @@ defmodule Baudrate.Content.Images do
     |> Repo.delete_all()
 
     paths
+  end
+
+  @max_image_size 5 * 1024 * 1024
+
+  @doc """
+  Fetches remote image attachments from AP objects and stores them as article images.
+
+  Each attachment map should have `"url"` (required), `"media_type"`, and `"name"`.
+  Images are fetched via SSRF-safe HTTP client, validated, re-encoded to WebP,
+  and stored locally. Best-effort: failures are logged and skipped.
+
+  Returns `:ok`.
+  """
+  def fetch_and_store_remote_images(article_id, attachments) when is_list(attachments) do
+    File.mkdir_p!(ArticleImageStorage.upload_dir())
+
+    attachments
+    |> Enum.take(ArticleImage.max_images_per_article())
+    |> Enum.each(fn att ->
+      url = att["url"]
+
+      case fetch_and_store_one(article_id, url) do
+        {:ok, _image} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning(
+            "images.remote_fetch_failed: article_id=#{article_id} url=#{url} reason=#{inspect(reason)}"
+          )
+      end
+    end)
+
+    :ok
+  end
+
+  def fetch_and_store_remote_images(_article_id, _), do: :ok
+
+  defp fetch_and_store_one(article_id, url) when is_binary(url) do
+    with :ok <- HTTPClient.validate_url(url),
+         {:ok, %{body: body}} <-
+           HTTPClient.get_html(url, headers: [{"accept", "image/*"}], max_size: @max_image_size),
+         :ok <- validate_image_size(body),
+         {:ok, result} <- process_image_binary(body) do
+      %ArticleImage{}
+      |> ArticleImage.remote_changeset(%{
+        filename: result.filename,
+        storage_path: result.storage_path,
+        width: result.width,
+        height: result.height,
+        article_id: article_id
+      })
+      |> Repo.insert()
+    end
+  end
+
+  defp fetch_and_store_one(_article_id, _url), do: {:error, :invalid_url}
+
+  defp validate_image_size(body) when byte_size(body) > @max_image_size,
+    do: {:error, :image_too_large}
+
+  defp validate_image_size(_body), do: :ok
+
+  defp process_image_binary(body) do
+    # Write to temp file for ArticleImageStorage-compatible processing
+    tmp_path = Path.join(System.tmp_dir!(), "remote_img_#{:crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)}")
+
+    try do
+      File.write!(tmp_path, body)
+      ArticleImageStorage.process_upload(tmp_path)
+    after
+      File.rm(tmp_path)
+    end
   end
 end

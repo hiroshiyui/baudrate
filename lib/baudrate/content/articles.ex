@@ -576,6 +576,7 @@ defmodule Baudrate.Content.Articles do
   """
   def create_remote_article(attrs, board_ids, opts \\ []) when is_list(board_ids) do
     poll_attrs = Keyword.get(opts, :poll)
+    image_attachments = Keyword.get(opts, :image_attachments, [])
 
     result =
       Ecto.Multi.new()
@@ -602,6 +603,13 @@ defmodule Baudrate.Content.Articles do
     with {:ok, %{article: article}} <- result do
       for board_id <- board_ids do
         ContentPubSub.broadcast_to_board(board_id, :article_created, %{article_id: article.id})
+      end
+
+      # Fetch remote image attachments asynchronously (best-effort)
+      if image_attachments != [] do
+        Baudrate.Federation.schedule_federation_task(fn ->
+          Images.fetch_and_store_remote_images(article.id, image_attachments)
+        end)
       end
 
       body_html = Baudrate.Content.Markdown.to_html(article.body || "")
