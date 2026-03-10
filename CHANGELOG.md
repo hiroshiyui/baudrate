@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.15] — 2026-03-10
+
+### Changed
+
+- **Article form controls consolidated** — visibility selector, "Allow
+  forwarding" checkbox, and Create/Save button now share a single inline
+  row on article create and edit pages; visibility label removed (kept as
+  `aria-label` for accessibility)
+- **Markdown toolbar repositioned** — formatting toolbar now appears below
+  the textarea instead of above it
+- **Feed quick-post controls left-aligned** — visibility selector and Post
+  button in the feed composer are now left-aligned with flex-wrap for
+  mobile responsiveness
+
 ## [1.3.14] — 2026-03-10
 
 ### Fixed
@@ -267,6 +281,7 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - AP ID URL format validation on remote boost changesets
 - Reject federation activities targeting non-federated content
 
+[1.3.15]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.15
 [1.3.14]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.14
 [1.3.13]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.13
 [1.3.12]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.12
