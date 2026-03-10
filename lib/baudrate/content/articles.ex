@@ -291,13 +291,12 @@ defmodule Baudrate.Content.Articles do
   @doc """
   Forwards an article to a board.
 
-  Boardless articles can only be forwarded by the author or an admin.
-  Articles already in boards can be cross-forwarded by any authenticated user,
-  provided the article's `forwardable` flag is `true`.
+  Admins and authors can always forward. Other authenticated users can
+  forward articles with `forwardable: true` and `public` or `unlisted`
+  visibility.
 
   Returns `{:ok, article}` (silently) if the article is already in the target board,
-  `{:error, :unauthorized}` if the user cannot forward a boardless article,
-  `{:error, :not_forwardable}` if the article disallows forwarding,
+  `{:error, :unauthorized}` if the user cannot forward the article,
   and `{:error, :cannot_post}` if the user cannot post in the target board.
   """
   def forward_article_to_board(%Article{} = article, %Board{} = board, user) do
@@ -308,13 +307,9 @@ defmodule Baudrate.Content.Articles do
       Enum.any?(article.boards, &(&1.id == board.id)) ->
         {:ok, article}
 
-      # Boardless: existing author/admin-only logic
-      article.boards == [] and not Permissions.can_forward_article?(user, article) ->
+      # Permission check (covers forwardable flag + visibility)
+      not Permissions.can_forward_article?(user, article) ->
         {:error, :unauthorized}
-
-      # Non-forwardable articles with boards
-      article.boards != [] and not article.forwardable ->
-        {:error, :not_forwardable}
 
       # Must be able to post in target board
       not Permissions.can_post_in_board?(board, user) ->
@@ -340,6 +335,201 @@ defmodule Baudrate.Content.Articles do
           {:error, _} = err ->
             err
         end
+    end
+  end
+
+  @doc """
+  Forwards a feed item to a board by materializing it as a remote article.
+
+  If an article with the same `ap_id` already exists, links it to the
+  target board instead of creating a duplicate. Requires the user to
+  have posting permission in the target board and the feed item to have
+  `public` or `unlisted` visibility (or user is admin).
+
+  Returns `{:ok, article}` on success, or `{:error, reason}`.
+  """
+  def forward_feed_item_to_board(
+        %Baudrate.Federation.FeedItem{} = feed_item,
+        %Board{} = board,
+        user
+      ) do
+    alias Baudrate.Content.TitleDeriver
+
+    cond do
+      not Permissions.can_forward_feed_item?(user, feed_item) ->
+        {:error, :unauthorized}
+
+      not Permissions.can_post_in_board?(board, user) ->
+        {:error, :cannot_post}
+
+      true ->
+        # Check if an article with the same ap_id already exists
+        existing = Repo.get_by(Article, ap_id: feed_item.ap_id)
+
+        if existing do
+          existing = Permissions.ensure_boards_loaded(existing)
+
+          if Enum.any?(existing.boards, &(&1.id == board.id)) do
+            {:ok, existing}
+          else
+            case add_article_to_board(existing, board.id) do
+              {:ok, _} ->
+                existing = Repo.preload(existing, :boards, force: true)
+
+                ContentPubSub.broadcast_to_board(board.id, :article_created, %{
+                  article_id: existing.id
+                })
+
+                {:ok, existing}
+
+              {:error, _} = err ->
+                err
+            end
+          end
+        else
+          title = TitleDeriver.derive_title_from_body(feed_item.body)
+          slug = Baudrate.Content.generate_slug(title)
+
+          attrs = %{
+            title: title,
+            body: feed_item.body || "",
+            slug: slug,
+            ap_id: feed_item.ap_id,
+            url: feed_item.source_url,
+            remote_actor_id: feed_item.remote_actor_id,
+            visibility: feed_item.visibility || "public"
+          }
+
+          case create_remote_article(attrs, [board.id]) do
+            {:ok, %{article: article}} ->
+              schedule_federation_task(fn ->
+                Baudrate.Federation.Publisher.publish_article_forwarded(article, board)
+              end)
+
+              {:ok, article}
+
+            {:error, :article, %Ecto.Changeset{} = changeset, _} ->
+              {:error, changeset}
+
+            {:error, _, reason, _} ->
+              {:error, reason}
+          end
+        end
+    end
+  end
+
+  @doc """
+  Forwards a comment to a board by materializing it as an article.
+
+  For remote comments, creates a remote article. For local comments,
+  creates a regular article attributed to the comment author. The
+  comment body becomes the article body and the title is derived from
+  the first line.
+
+  Returns `{:ok, article}` on success, or `{:error, reason}`.
+  """
+  def forward_comment_to_board(%Comment{} = comment, %Board{} = board, user) do
+    alias Baudrate.Content.TitleDeriver
+
+    comment = Repo.preload(comment, [:user, :remote_actor])
+
+    cond do
+      not Permissions.can_forward_comment?(user, comment) ->
+        {:error, :unauthorized}
+
+      not Permissions.can_post_in_board?(board, user) ->
+        {:error, :cannot_post}
+
+      true ->
+        # Check if already materialized
+        if comment.ap_id do
+          existing = Repo.get_by(Article, ap_id: comment.ap_id)
+
+          if existing do
+            existing = Permissions.ensure_boards_loaded(existing)
+
+            if Enum.any?(existing.boards, &(&1.id == board.id)) do
+              {:ok, existing}
+            else
+              case add_article_to_board(existing, board.id) do
+                {:ok, _} ->
+                  existing = Repo.preload(existing, :boards, force: true)
+
+                  ContentPubSub.broadcast_to_board(board.id, :article_created, %{
+                    article_id: existing.id
+                  })
+
+                  {:ok, existing}
+
+                {:error, _} = err ->
+                  err
+              end
+            end
+          else
+            do_materialize_comment(comment, board)
+          end
+        else
+          do_materialize_comment(comment, board)
+        end
+    end
+  end
+
+  defp do_materialize_comment(comment, board) do
+    alias Baudrate.Content.TitleDeriver
+
+    title = TitleDeriver.derive_title_from_body(comment.body)
+    slug = Baudrate.Content.generate_slug(title)
+
+    if comment.remote_actor_id do
+      # Remote comment → remote article
+      attrs = %{
+        title: title,
+        body: comment.body || "",
+        slug: slug,
+        ap_id: comment.ap_id,
+        url: comment.url,
+        remote_actor_id: comment.remote_actor_id,
+        visibility: comment.visibility || "public"
+      }
+
+      case create_remote_article(attrs, [board.id]) do
+        {:ok, %{article: article}} ->
+          schedule_federation_task(fn ->
+            Baudrate.Federation.Publisher.publish_article_forwarded(article, board)
+          end)
+
+          {:ok, article}
+
+        {:error, :article, %Ecto.Changeset{} = changeset, _} ->
+          {:error, changeset}
+
+        {:error, _, reason, _} ->
+          {:error, reason}
+      end
+    else
+      # Local comment → local article
+      attrs = %{
+        title: title,
+        body: comment.body || "",
+        slug: slug,
+        user_id: comment.user_id,
+        visibility: comment.visibility || "public"
+      }
+
+      case Baudrate.Content.create_article(attrs, [board.id]) do
+        {:ok, %{article: article}} ->
+          schedule_federation_task(fn ->
+            Baudrate.Federation.Publisher.publish_article_forwarded(article, board)
+          end)
+
+          {:ok, article}
+
+        {:error, :article, %Ecto.Changeset{} = changeset, _} ->
+          {:error, changeset}
+
+        {:error, _, reason, _} ->
+          {:error, reason}
+      end
     end
   end
 

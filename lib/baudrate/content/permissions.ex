@@ -179,17 +179,43 @@ defmodule Baudrate.Content.Permissions do
   @doc """
   Returns true if the user can forward an article.
 
-  For boardless articles, only the author or an admin can forward.
-  For articles already in boards, any authenticated user can forward
-  provided the article's `forwardable` flag is `true`.
+  Admins and authors can always forward. For other authenticated users,
+  the article must have `forwardable: true` and visibility must be
+  `public` or `unlisted`.
   """
   def can_forward_article?(nil, _article), do: false
   def can_forward_article?(%{role: %{name: "admin"}}, _article), do: true
   def can_forward_article?(%{id: uid}, %{user_id: uid}), do: true
 
   def can_forward_article?(_user, article) do
-    article = ensure_boards_loaded(article)
-    article.boards != [] and article.forwardable
+    article.forwardable and article.visibility in ["public", "unlisted"]
+  end
+
+  @doc """
+  Returns true if the user can forward a feed item to a board.
+
+  Admins can always forward. Other authenticated users can forward
+  feed items with `public` or `unlisted` visibility.
+  """
+  def can_forward_feed_item?(nil, _feed_item), do: false
+  def can_forward_feed_item?(%{role: %{name: "admin"}}, _feed_item), do: true
+
+  def can_forward_feed_item?(_user, feed_item) do
+    feed_item.visibility in ["public", "unlisted"]
+  end
+
+  @doc """
+  Returns true if the user can forward a comment to a board.
+
+  Admins and comment authors can always forward. Other authenticated
+  users can forward comments with `public` or `unlisted` visibility.
+  """
+  def can_forward_comment?(nil, _comment), do: false
+  def can_forward_comment?(%{role: %{name: "admin"}}, _comment), do: true
+  def can_forward_comment?(%{id: uid}, %{user_id: uid}), do: true
+
+  def can_forward_comment?(_user, comment) do
+    comment.visibility in ["public", "unlisted"]
   end
 
   @doc """

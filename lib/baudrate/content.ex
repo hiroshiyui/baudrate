@@ -87,6 +87,8 @@ defmodule Baudrate.Content do
   defdelegate can_lock_article?(user, article), to: Permissions
   defdelegate can_delete_comment?(user, comment, article), to: Permissions
   defdelegate can_forward_article?(user, article), to: Permissions
+  defdelegate can_forward_feed_item?(user, feed_item), to: Permissions
+  defdelegate can_forward_comment?(user, comment), to: Permissions
   defdelegate generate_slug(title), to: Permissions
 
   # --- Articles ---
@@ -96,6 +98,8 @@ defmodule Baudrate.Content do
   defdelegate create_article(attrs, board_ids, opts), to: Articles
   defdelegate add_article_to_board(article, board_id), to: Articles
   defdelegate forward_article_to_board(article, board, user), to: Articles
+  defdelegate forward_feed_item_to_board(feed_item, board, user), to: Articles
+  defdelegate forward_comment_to_board(comment, board, user), to: Articles
   defdelegate remove_article_from_board(article, board, user), to: Articles
   defdelegate create_remote_article(attrs, board_ids, opts), to: Articles
   defdelegate get_article(id), to: Articles
