@@ -446,6 +446,72 @@
                 ]}
               />
             </button>
+            <button
+              :if={item.feed_item.visibility in ["public", "unlisted"]}
+              phx-click="toggle_forward_search"
+              phx-value-id={item.feed_item.id}
+              phx-value-type="feed_item"
+              class="btn btn-ghost btn-xs"
+              aria-label={gettext("Forward to Board")}
+              title={gettext("Forward to Board")}
+            >
+              <.icon name="hero-arrow-uturn-right" class="size-4" />
+            </button>
+          </div>
+
+          <%!-- Forward search panel --%>
+          <div
+            :if={
+              @forwarding_item_id == item.feed_item.id and @forwarding_item_type == "feed_item"
+            }
+            id={"forward-search-#{item.feed_item.id}"}
+            class="flex items-center gap-2 text-sm mt-2"
+          >
+            <div class="w-full max-w-md">
+              <.form
+                for={%{}}
+                phx-change="search_forward_board"
+                class="flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  name="query"
+                  value={@forward_search_query}
+                  placeholder={gettext("Search boards...")}
+                  phx-debounce="300"
+                  autocomplete="off"
+                  class="input input-sm input-bordered w-full"
+                  aria-label={gettext("Search boards")}
+                  aria-expanded={to_string(@forward_search_results != [])}
+                  role="combobox"
+                  aria-controls={"forward-board-results-#{item.feed_item.id}"}
+                />
+                <button
+                  type="button"
+                  phx-click="cancel_forward_search"
+                  class="btn btn-sm btn-ghost"
+                  aria-label={gettext("Cancel")}
+                >
+                  <.icon name="hero-x-mark" class="size-4" />
+                </button>
+              </.form>
+              <ul
+                :if={@forward_search_results != []}
+                id={"forward-board-results-#{item.feed_item.id}"}
+                role="listbox"
+                class="menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+              >
+                <li :for={board <- @forward_search_results}>
+                  <button
+                    phx-click="forward_to_board"
+                    phx-value-board-id={board.id}
+                    role="option"
+                  >
+                    {board.name}
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <%!-- Inline reply form --%>
@@ -729,6 +795,68 @@
                 {Map.get(@comment_boost_counts, item.comment.id, 0)}
               </span>
             </button>
+            <button
+              :if={item.comment.visibility in ["public", "unlisted"]}
+              phx-click="toggle_forward_search"
+              phx-value-id={item.comment.id}
+              phx-value-type="comment"
+              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-primary cursor-pointer"
+              aria-label={gettext("Forward to Board")}
+              title={gettext("Forward to Board")}
+            >
+              <.icon name="hero-arrow-uturn-right" class="size-4" />
+            </button>
+          </div>
+
+          <%!-- Comment forward search panel --%>
+          <div
+            :if={@forwarding_item_id == item.comment.id and @forwarding_item_type == "comment"}
+            id={"forward-search-comment-#{item.comment.id}"}
+            class="flex items-center gap-2 text-sm mt-2"
+          >
+            <div class="w-full max-w-md">
+              <.form
+                for={%{}}
+                phx-change="search_forward_board"
+                class="flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  name="query"
+                  value={@forward_search_query}
+                  placeholder={gettext("Search boards...")}
+                  phx-debounce="300"
+                  autocomplete="off"
+                  class="input input-sm input-bordered w-full"
+                  aria-label={gettext("Search boards")}
+                  role="combobox"
+                />
+                <button
+                  type="button"
+                  phx-click="cancel_forward_search"
+                  class="btn btn-sm btn-ghost"
+                  aria-label={gettext("Cancel")}
+                >
+                  <.icon name="hero-x-mark" class="size-4" />
+                </button>
+              </.form>
+              <ul
+                :if={@forward_search_results != []}
+                id={"forward-board-results-comment-#{item.comment.id}"}
+                role="listbox"
+                class="menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+              >
+                <li :for={board <- @forward_search_results}>
+                  <button
+                    phx-click="forward_to_board"
+                    phx-value-board-id={board.id}
+                    role="option"
+                  >
+                    {board.name}
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -850,6 +978,68 @@
                 {Map.get(@comment_boost_counts, item.comment.id, 0)}
               </span>
             </button>
+            <button
+              :if={item.comment.visibility in ["public", "unlisted"]}
+              phx-click="toggle_forward_search"
+              phx-value-id={item.comment.id}
+              phx-value-type="comment"
+              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-primary cursor-pointer"
+              aria-label={gettext("Forward to Board")}
+              title={gettext("Forward to Board")}
+            >
+              <.icon name="hero-arrow-uturn-right" class="size-4" />
+            </button>
+          </div>
+
+          <%!-- Comment forward search panel (remote) --%>
+          <div
+            :if={@forwarding_item_id == item.comment.id and @forwarding_item_type == "comment"}
+            id={"forward-search-rcomment-#{item.comment.id}"}
+            class="flex items-center gap-2 text-sm mt-2"
+          >
+            <div class="w-full max-w-md">
+              <.form
+                for={%{}}
+                phx-change="search_forward_board"
+                class="flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  name="query"
+                  value={@forward_search_query}
+                  placeholder={gettext("Search boards...")}
+                  phx-debounce="300"
+                  autocomplete="off"
+                  class="input input-sm input-bordered w-full"
+                  aria-label={gettext("Search boards")}
+                  role="combobox"
+                />
+                <button
+                  type="button"
+                  phx-click="cancel_forward_search"
+                  class="btn btn-sm btn-ghost"
+                  aria-label={gettext("Cancel")}
+                >
+                  <.icon name="hero-x-mark" class="size-4" />
+                </button>
+              </.form>
+              <ul
+                :if={@forward_search_results != []}
+                id={"forward-board-results-rcomment-#{item.comment.id}"}
+                role="listbox"
+                class="menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+              >
+                <li :for={board <- @forward_search_results}>
+                  <button
+                    phx-click="forward_to_board"
+                    phx-value-board-id={board.id}
+                    role="option"
+                  >
+                    {board.name}
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </article>

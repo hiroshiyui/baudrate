@@ -74,6 +74,9 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:forward_search_open, false)
         |> assign(:forward_search_results, [])
         |> assign(:forward_search_query, "")
+        |> assign(:forwarding_comment_id, nil)
+        |> assign(:comment_forward_search_results, [])
+        |> assign(:comment_forward_search_query, "")
         |> assign(:show_report_modal, false)
         |> assign(:report_target_type, nil)
         |> assign(:report_target_id, nil)
@@ -447,9 +450,6 @@ defmodule BaudrateWeb.ArticleLive do
         {:noreply,
          put_flash(socket, :error, gettext("Too many actions. Please try again later."))}
 
-      {:error, :not_forwardable} ->
-        {:noreply, put_flash(socket, :error, gettext("This article cannot be forwarded."))}
-
       {:error, :cannot_post} ->
         {:noreply,
          put_flash(
@@ -463,6 +463,76 @@ defmodule BaudrateWeb.ArticleLive do
 
       _ ->
         {:noreply, put_flash(socket, :error, gettext("Failed to forward article."))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_comment_forward", %{"id" => id_str}, socket) do
+    case parse_id(id_str) do
+      {:ok, id} ->
+        if socket.assigns.forwarding_comment_id == id do
+          {:noreply,
+           socket
+           |> assign(:forwarding_comment_id, nil)
+           |> assign(:comment_forward_search_results, [])
+           |> assign(:comment_forward_search_query, "")}
+        else
+          {:noreply,
+           socket
+           |> assign(:forwarding_comment_id, id)
+           |> assign(:comment_forward_search_results, [])
+           |> assign(:comment_forward_search_query, "")}
+        end
+
+      :error ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("search_comment_forward_board", %{"query" => query}, socket) do
+    results =
+      if String.length(String.trim(query)) >= 2 do
+        Content.search_boards(query, socket.assigns.current_user)
+      else
+        []
+      end
+
+    {:noreply,
+     socket
+     |> assign(:comment_forward_search_query, query)
+     |> assign(:comment_forward_search_results, results)}
+  end
+
+  @impl true
+  def handle_event("forward_comment_to_board", %{"board-id" => board_id_str}, socket) do
+    user = socket.assigns.current_user
+    comment_id = socket.assigns.forwarding_comment_id
+
+    with {:ok, board_id} <- parse_id(board_id_str),
+         {:ok, board} <- Content.get_board(board_id),
+         comment <- Baudrate.Repo.get!(Baudrate.Content.Comment, comment_id),
+         {:ok, _article} <- Content.forward_comment_to_board(comment, board, user) do
+      {:noreply,
+       socket
+       |> assign(:forwarding_comment_id, nil)
+       |> assign(:comment_forward_search_results, [])
+       |> assign(:comment_forward_search_query, "")
+       |> put_flash(:info, gettext("Comment forwarded to board."))}
+    else
+      {:error, :unauthorized} ->
+        {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
+
+      {:error, :cannot_post} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("You do not have permission to post in this board.")
+         )}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to forward comment."))}
     end
   end
 
@@ -638,6 +708,9 @@ defmodule BaudrateWeb.ArticleLive do
   attr :comment_like_counts, :any, default: nil
   attr :comment_boosted_ids, :any, default: nil
   attr :comment_boost_counts, :any, default: nil
+  attr :forwarding_comment_id, :any, default: nil
+  attr :comment_forward_search_results, :list, default: []
+  attr :comment_forward_search_query, :string, default: ""
 
   def comment_node(assigns) do
     assigns = assign(assigns, :children, Map.get(assigns.children_map, assigns.comment.id, []))
@@ -751,6 +824,17 @@ defmodule BaudrateWeb.ArticleLive do
             comment_boosted_ids={@comment_boosted_ids}
             comment_boost_counts={@comment_boost_counts}
           />
+          <%!-- Forward comment to board --%>
+          <button
+            :if={@current_user && @comment.visibility in ["public", "unlisted"]}
+            phx-click="toggle_comment_forward"
+            phx-value-id={@comment.id}
+            class="btn btn-ghost btn-xs"
+            aria-label={gettext("Forward to Board")}
+            title={gettext("Forward to Board")}
+          >
+            <.icon name="hero-arrow-uturn-right" class="size-3" />
+          </button>
           <%!-- Report comment menu --%>
           <div
             :if={@current_user && @comment.user_id != @current_user.id}
@@ -778,6 +862,58 @@ defmodule BaudrateWeb.ArticleLive do
                 >
                   <.icon name="hero-flag" class="size-3" />
                   {gettext("Report")}
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <%!-- Comment forward search panel --%>
+        <div
+          :if={@forwarding_comment_id == @comment.id}
+          id={"comment-forward-search-#{@comment.id}"}
+          class="flex items-center gap-2 text-sm mt-2"
+        >
+          <div class="w-full max-w-md">
+            <.form
+              for={%{}}
+              phx-change="search_comment_forward_board"
+              class="flex items-center gap-2"
+            >
+              <input
+                type="text"
+                name="query"
+                value={@comment_forward_search_query}
+                placeholder={gettext("Search boards...")}
+                phx-debounce="300"
+                autocomplete="off"
+                class="input input-sm input-bordered w-full"
+                aria-label={gettext("Search boards")}
+                role="combobox"
+              />
+              <button
+                type="button"
+                phx-click="toggle_comment_forward"
+                phx-value-id={@comment.id}
+                class="btn btn-sm btn-ghost"
+                aria-label={gettext("Cancel")}
+              >
+                <.icon name="hero-x-mark" class="size-4" />
+              </button>
+            </.form>
+            <ul
+              :if={@comment_forward_search_results != []}
+              id={"comment-forward-results-#{@comment.id}"}
+              role="listbox"
+              class="menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+            >
+              <li :for={board <- @comment_forward_search_results}>
+                <button
+                  phx-click="forward_comment_to_board"
+                  phx-value-board-id={board.id}
+                  role="option"
+                >
+                  {board.name}
                 </button>
               </li>
             </ul>
@@ -834,6 +970,9 @@ defmodule BaudrateWeb.ArticleLive do
           comment_like_counts={@comment_like_counts}
           comment_boosted_ids={@comment_boosted_ids}
           comment_boost_counts={@comment_boost_counts}
+          forwarding_comment_id={@forwarding_comment_id}
+          comment_forward_search_results={@comment_forward_search_results}
+          comment_forward_search_query={@comment_forward_search_query}
         />
       <% end %>
     </div>

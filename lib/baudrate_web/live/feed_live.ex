@@ -46,7 +46,11 @@ defmodule BaudrateWeb.FeedLive do
         replying_to: nil,
         reply_form: to_form(FeedItemReply.changeset(%FeedItemReply{}, %{}), as: :reply),
         reply_counts: %{},
-        replies: %{}
+        replies: %{},
+        forwarding_item_id: nil,
+        forwarding_item_type: nil,
+        forward_search_results: [],
+        forward_search_query: ""
       )
       |> then(fn s ->
         if can_post do
@@ -385,6 +389,107 @@ defmodule BaudrateWeb.FeedLive do
      socket
      |> assign(:replying_to, nil)
      |> assign(:replies, %{})}
+  end
+
+  def handle_event(
+        "toggle_forward_search",
+        %{"id" => id_str, "type" => type},
+        socket
+      ) do
+    case parse_id(id_str) do
+      {:ok, id} ->
+        if socket.assigns.forwarding_item_id == id and socket.assigns.forwarding_item_type == type do
+          {:noreply,
+           socket
+           |> assign(:forwarding_item_id, nil)
+           |> assign(:forwarding_item_type, nil)
+           |> assign(:forward_search_results, [])
+           |> assign(:forward_search_query, "")}
+        else
+          {:noreply,
+           socket
+           |> assign(:forwarding_item_id, id)
+           |> assign(:forwarding_item_type, type)
+           |> assign(:forward_search_results, [])
+           |> assign(:forward_search_query, "")}
+        end
+
+      :error ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("cancel_forward_search", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:forwarding_item_id, nil)
+     |> assign(:forwarding_item_type, nil)
+     |> assign(:forward_search_results, [])
+     |> assign(:forward_search_query, "")}
+  end
+
+  def handle_event("search_forward_board", %{"query" => query}, socket) do
+    results =
+      if String.length(String.trim(query)) >= 2 do
+        Content.search_boards(query, socket.assigns.current_user)
+      else
+        []
+      end
+
+    {:noreply,
+     socket
+     |> assign(:forward_search_query, query)
+     |> assign(:forward_search_results, results)}
+  end
+
+  def handle_event("forward_to_board", %{"board-id" => board_id_str}, socket) do
+    user = socket.assigns.current_user
+    item_id = socket.assigns.forwarding_item_id
+    item_type = socket.assigns.forwarding_item_type
+
+    with {:ok, board_id} <- parse_id(board_id_str),
+         {:ok, board} <- Content.get_board(board_id) do
+      result =
+        case item_type do
+          "feed_item" ->
+            feed_item = Baudrate.Repo.get!(Federation.FeedItem, item_id)
+            Content.forward_feed_item_to_board(feed_item, board, user)
+
+          "comment" ->
+            comment = Baudrate.Repo.get!(Baudrate.Content.Comment, item_id)
+            Content.forward_comment_to_board(comment, board, user)
+
+          _ ->
+            {:error, :unknown_type}
+        end
+
+      case result do
+        {:ok, _article} ->
+          {:noreply,
+           socket
+           |> assign(:forwarding_item_id, nil)
+           |> assign(:forwarding_item_type, nil)
+           |> assign(:forward_search_results, [])
+           |> assign(:forward_search_query, "")
+           |> put_flash(:info, gettext("Forwarded to board."))}
+
+        {:error, :unauthorized} ->
+          {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
+
+        {:error, :cannot_post} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("You do not have permission to post in this board.")
+           )}
+
+        _ ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to forward."))}
+      end
+    else
+      _ -> {:noreply, put_flash(socket, :error, gettext("Board not found."))}
+    end
   end
 
   defp do_create_reply(socket, feed_item, user, body) do
