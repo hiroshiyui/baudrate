@@ -40,6 +40,14 @@ defmodule Baudrate.Content.ArticleImage do
     |> foreign_key_constraint(:user_id)
   end
 
+  @doc "Casts and validates fields for creating a remote article image (no local user)."
+  def remote_changeset(image, attrs) do
+    image
+    |> cast(attrs, [:filename, :storage_path, :width, :height, :article_id])
+    |> validate_required([:filename, :storage_path, :width, :height, :article_id])
+    |> foreign_key_constraint(:article_id)
+  end
+
   @doc "Returns the maximum number of images allowed per article."
   def max_images_per_article, do: @max_images_per_article
 end
