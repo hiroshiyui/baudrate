@@ -21,6 +21,7 @@ const INDICATOR_FADE_MS = 2000
 const DraftSaveHook = {
   mounted() {
     this._debounceTimer = null
+    this._fadeTimer = null
     this._fieldNames = (this.el.dataset.draftFields || "").split(",").filter(Boolean)
 
     this._onInput = () => this._scheduleSave()
@@ -34,6 +35,7 @@ const DraftSaveHook = {
 
   destroyed() {
     if (this._debounceTimer) clearTimeout(this._debounceTimer)
+    if (this._fadeTimer) clearTimeout(this._fadeTimer)
     this.el.removeEventListener("input", this._onInput)
     this.el.removeEventListener("submit", this._onSubmit)
   },
@@ -44,6 +46,7 @@ const DraftSaveHook = {
 
   _scheduleSave() {
     if (this._debounceTimer) clearTimeout(this._debounceTimer)
+    this._showLoading()
     this._debounceTimer = setTimeout(() => this._saveDraft(), DEBOUNCE_MS)
   },
 
@@ -66,7 +69,7 @@ const DraftSaveHook = {
       if (hasContent) {
         data._ts = Date.now()
         localStorage.setItem(key, JSON.stringify(data))
-        this._showIndicator(this.el.dataset.draftSavedText || "Draft saved")
+        this._showIndicator()
       } else {
         localStorage.removeItem(key)
       }
@@ -124,18 +127,32 @@ const DraftSaveHook = {
     }
   },
 
-  _showIndicator(text) {
+  _showLoading() {
     const selector = this.el.dataset.draftIndicator
     if (!selector) return
 
     const indicator = document.querySelector(selector)
     if (!indicator) return
 
-    indicator.textContent = text
+    if (this._fadeTimer) clearTimeout(this._fadeTimer)
+    indicator.innerHTML = '<span class="loading loading-dots loading-xs"></span>'
+    indicator.classList.remove("opacity-0")
+    indicator.classList.add("opacity-100")
+  },
+
+  _showIndicator() {
+    const selector = this.el.dataset.draftIndicator
+    if (!selector) return
+
+    const indicator = document.querySelector(selector)
+    if (!indicator) return
+
+    if (this._fadeTimer) clearTimeout(this._fadeTimer)
+    indicator.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" class="size-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z"/></svg>'
     indicator.classList.remove("opacity-0")
     indicator.classList.add("opacity-100")
 
-    setTimeout(() => {
+    this._fadeTimer = setTimeout(() => {
       indicator.classList.remove("opacity-100")
       indicator.classList.add("opacity-0")
     }, INDICATOR_FADE_MS)
