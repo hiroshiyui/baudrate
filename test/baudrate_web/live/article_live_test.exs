@@ -455,7 +455,7 @@ defmodule BaudrateWeb.ArticleLiveTest do
       refute html =~ "Forward to Board"
     end
 
-    test "does not show forward button for other user's board-less articles", %{user: user} do
+    test "shows forward button for other user's public board-less articles", %{user: user} do
       {:ok, %{article: boardless}} =
         Content.create_article(
           %{
@@ -474,6 +474,29 @@ defmodule BaudrateWeb.ArticleLiveTest do
         |> log_in_user(other)
 
       {:ok, _lv, html} = live(other_conn, "/articles/#{boardless.slug}")
+      assert html =~ "Forward to Board"
+    end
+
+    test "does not show forward button for followers_only articles", %{user: user} do
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "FO Article",
+            body: "Private content",
+            slug: "fo-article-live",
+            user_id: user.id,
+            visibility: "followers_only"
+          },
+          []
+        )
+
+      other = setup_user("user")
+
+      other_conn =
+        Phoenix.ConnTest.build_conn()
+        |> log_in_user(other)
+
+      {:ok, _lv, html} = live(other_conn, "/articles/#{article.slug}")
       refute html =~ "Forward to Board"
     end
 

@@ -448,6 +448,47 @@ defmodule Baudrate.ContentTest do
       assert {:ok, %{article: article}} = Content.create_article(attrs, [board.id])
       assert article.forwardable == false
     end
+
+    test "visibility defaults to public" do
+      user = create_user("user")
+
+      attrs = %{
+        title: "Default Visibility",
+        body: "body",
+        slug: "vis-default-#{System.unique_integer([:positive])}",
+        user_id: user.id
+      }
+
+      assert {:ok, %{article: article}} = Content.create_article(attrs, [])
+      assert article.visibility == "public"
+    end
+
+    test "visibility can be set to unlisted" do
+      user = create_user("user")
+
+      attrs = %{
+        title: "Unlisted",
+        body: "body",
+        slug: "vis-unlisted-#{System.unique_integer([:positive])}",
+        user_id: user.id,
+        visibility: "unlisted"
+      }
+
+      assert {:ok, %{article: article}} = Content.create_article(attrs, [])
+      assert article.visibility == "unlisted"
+    end
+
+    test "visibility rejects invalid values" do
+      changeset =
+        Baudrate.Content.Article.changeset(%Baudrate.Content.Article{}, %{
+          title: "Bad Vis",
+          body: "body",
+          slug: "bad-vis",
+          visibility: "invalid"
+        })
+
+      assert %{visibility: ["is invalid"]} = errors_on(changeset)
+    end
   end
 
   describe "list_articles_for_board/1" do
@@ -2294,16 +2335,48 @@ defmodule Baudrate.ContentTest do
         create_board(%{name: "Board NF", slug: "board-nf-#{System.unique_integer([:positive])}"})
 
       other = create_user("user")
-      assert {:error, :not_forwardable} = Content.forward_article_to_board(posted, board2, other)
+      assert {:error, :unauthorized} = Content.forward_article_to_board(posted, board2, other)
     end
 
-    test "returns error when user is not authorized", %{
+    test "returns error when article visibility is followers_only", %{author: author} do
+      board =
+        create_board(%{
+          name: "Vis Board",
+          slug: "vis-board-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Followers Only",
+            body: "body",
+            slug: "fo-fwd-#{System.unique_integer([:positive])}",
+            user_id: author.id,
+            visibility: "followers_only"
+          },
+          [board.id]
+        )
+
+      other = create_user("user")
+
+      board2 =
+        create_board(%{
+          name: "Board FO",
+          slug: "board-fo-#{System.unique_integer([:positive])}"
+        })
+
+      assert {:error, :unauthorized} = Content.forward_article_to_board(article, board2, other)
+    end
+
+    test "any user can forward public boardless article", %{
       other: other,
       board: board,
       article: article
     } do
-      assert {:error, :unauthorized} =
+      assert {:ok, updated} =
                Content.forward_article_to_board(article, board, other)
+
+      assert length(updated.boards) == 1
     end
 
     test "returns error when user cannot post in board", %{author: author, article: article} do
@@ -2312,6 +2385,270 @@ defmodule Baudrate.ContentTest do
 
       assert {:error, :cannot_post} =
                Content.forward_article_to_board(article, restricted, author)
+    end
+  end
+
+  # --- Forward Feed Item to Board ---
+
+  describe "forward_feed_item_to_board/3" do
+    setup do
+      user = create_user("user")
+      board = create_board(%{name: "Target", slug: "fi-target-#{System.unique_integer([:positive])}"})
+
+      remote_actor =
+        %Baudrate.Federation.RemoteActor{}
+        |> Baudrate.Federation.RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/fi-author-#{System.unique_integer([:positive])}",
+          username: "fi_author_#{System.unique_integer([:positive])}",
+          domain: "remote.example",
+          inbox: "https://remote.example/inbox",
+          public_key_pem: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0\n-----END PUBLIC KEY-----",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now()
+        })
+        |> Baudrate.Repo.insert!()
+
+      {:ok, feed_item} =
+        Baudrate.Federation.create_feed_item(%{
+          remote_actor_id: remote_actor.id,
+          activity_type: "Create",
+          object_type: "Note",
+          ap_id: "https://remote.example/notes/#{System.unique_integer([:positive])}",
+          body: "Hello from the fediverse!",
+          body_html: "<p>Hello from the fediverse!</p>",
+          source_url: "https://remote.example/notes/1",
+          visibility: "public",
+          published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      %{user: user, board: board, feed_item: feed_item, remote_actor: remote_actor}
+    end
+
+    test "materializes feed item as article in board", %{
+      user: user,
+      board: board,
+      feed_item: feed_item
+    } do
+      assert {:ok, article} = Content.forward_feed_item_to_board(feed_item, board, user)
+      assert article.ap_id == feed_item.ap_id
+      assert article.remote_actor_id == feed_item.remote_actor_id
+      assert article.visibility == "public"
+
+      article = Baudrate.Repo.preload(article, :boards)
+      assert length(article.boards) == 1
+      assert hd(article.boards).id == board.id
+    end
+
+    test "links existing article to board on duplicate ap_id", %{
+      user: user,
+      board: board,
+      feed_item: feed_item,
+      remote_actor: remote_actor
+    } do
+      # Pre-create article with same ap_id
+      board2 =
+        create_board(%{
+          name: "Other",
+          slug: "fi-other-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, _} =
+        Content.create_remote_article(
+          %{
+            title: "Existing",
+            body: "body",
+            slug: "existing-fi-#{System.unique_integer([:positive])}",
+            ap_id: feed_item.ap_id,
+            remote_actor_id: remote_actor.id
+          },
+          [board2.id]
+        )
+
+      assert {:ok, article} = Content.forward_feed_item_to_board(feed_item, board, user)
+      article = Baudrate.Repo.preload(article, :boards)
+      board_ids = Enum.map(article.boards, & &1.id) |> Enum.sort()
+      assert board.id in board_ids
+    end
+
+    test "rejects followers_only feed item for non-admin", %{user: user, board: board} do
+      remote_actor =
+        %Baudrate.Federation.RemoteActor{}
+        |> Baudrate.Federation.RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/fo-author-#{System.unique_integer([:positive])}",
+          username: "fo_author_#{System.unique_integer([:positive])}",
+          domain: "remote.example",
+          inbox: "https://remote.example/inbox",
+          public_key_pem: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0\n-----END PUBLIC KEY-----",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now()
+        })
+        |> Baudrate.Repo.insert!()
+
+      {:ok, fo_item} =
+        Baudrate.Federation.create_feed_item(%{
+          remote_actor_id: remote_actor.id,
+          activity_type: "Create",
+          object_type: "Note",
+          ap_id: "https://remote.example/notes/fo-#{System.unique_integer([:positive])}",
+          body: "Followers only",
+          visibility: "followers_only",
+          published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      assert {:error, :unauthorized} =
+               Content.forward_feed_item_to_board(fo_item, board, user)
+    end
+
+    test "admin can forward followers_only feed item", %{board: board} do
+      admin = create_user("admin")
+
+      remote_actor =
+        %Baudrate.Federation.RemoteActor{}
+        |> Baudrate.Federation.RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/admin-fo-#{System.unique_integer([:positive])}",
+          username: "admin_fo_#{System.unique_integer([:positive])}",
+          domain: "remote.example",
+          inbox: "https://remote.example/inbox",
+          public_key_pem: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0\n-----END PUBLIC KEY-----",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now()
+        })
+        |> Baudrate.Repo.insert!()
+
+      {:ok, fo_item} =
+        Baudrate.Federation.create_feed_item(%{
+          remote_actor_id: remote_actor.id,
+          activity_type: "Create",
+          object_type: "Note",
+          ap_id: "https://remote.example/notes/admin-fo-#{System.unique_integer([:positive])}",
+          body: "Admin can forward this",
+          visibility: "followers_only",
+          published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      assert {:ok, _article} = Content.forward_feed_item_to_board(fo_item, board, admin)
+    end
+  end
+
+  # --- Forward Comment to Board ---
+
+  describe "forward_comment_to_board/3" do
+    setup do
+      user = create_user("user")
+      board = create_board(%{name: "Comment Target", slug: "ct-#{System.unique_integer([:positive])}"})
+
+      %{user: user, board: board}
+    end
+
+    test "materializes local comment as article", %{user: user, board: board} do
+      author = create_user("user")
+
+      article_board =
+        create_board(%{
+          name: "AB",
+          slug: "ab-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Parent Article",
+            body: "body",
+            slug: "parent-ct-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [article_board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          body: "This is an insightful comment",
+          article_id: article.id,
+          user_id: author.id
+        })
+
+      assert {:ok, new_article} = Content.forward_comment_to_board(comment, board, user)
+      assert new_article.user_id == author.id
+      assert new_article.visibility == "public"
+
+      new_article = Baudrate.Repo.preload(new_article, :boards)
+      assert hd(new_article.boards).id == board.id
+    end
+
+    test "materializes remote comment as remote article", %{user: user, board: board} do
+      remote_actor =
+        %Baudrate.Federation.RemoteActor{}
+        |> Baudrate.Federation.RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/rc-#{System.unique_integer([:positive])}",
+          username: "rc_#{System.unique_integer([:positive])}",
+          domain: "remote.example",
+          inbox: "https://remote.example/inbox",
+          public_key_pem: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0\n-----END PUBLIC KEY-----",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now()
+        })
+        |> Baudrate.Repo.insert!()
+
+      article_board =
+        create_board(%{
+          name: "RC Board",
+          slug: "rc-board-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Remote Parent",
+            body: "body",
+            slug: "remote-parent-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [article_board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_remote_comment(%{
+          body: "Remote comment text",
+          ap_id: "https://remote.example/notes/rc-#{System.unique_integer([:positive])}",
+          article_id: article.id,
+          remote_actor_id: remote_actor.id,
+          visibility: "public"
+        })
+
+      assert {:ok, new_article} = Content.forward_comment_to_board(comment, board, user)
+      assert new_article.remote_actor_id == remote_actor.id
+      assert new_article.ap_id == comment.ap_id
+    end
+
+    test "rejects followers_only comment for non-admin", %{user: user, board: board} do
+      author = create_user("user")
+
+      article_board =
+        create_board(%{
+          name: "FO Board",
+          slug: "fo-cb-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "FO Parent",
+            body: "body",
+            slug: "fo-parent-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [article_board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          body: "Followers only comment",
+          article_id: article.id,
+          user_id: author.id,
+          visibility: "followers_only"
+        })
+
+      assert {:error, :unauthorized} = Content.forward_comment_to_board(comment, board, user)
     end
   end
 
@@ -2467,7 +2804,7 @@ defmodule Baudrate.ContentTest do
       assert Content.can_forward_article?(admin, article)
     end
 
-    test "other user cannot forward boardless article" do
+    test "any user can forward public boardless article" do
       author = create_user("user")
       other = create_user("user")
 
@@ -2478,6 +2815,25 @@ defmodule Baudrate.ContentTest do
             body: "body",
             slug: "other-fwd-#{System.unique_integer([:positive])}",
             user_id: author.id
+          },
+          []
+        )
+
+      assert Content.can_forward_article?(other, article)
+    end
+
+    test "other user cannot forward followers_only article" do
+      author = create_user("user")
+      other = create_user("user")
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "FO Article",
+            body: "body",
+            slug: "fo-art-#{System.unique_integer([:positive])}",
+            user_id: author.id,
+            visibility: "followers_only"
           },
           []
         )
@@ -2552,6 +2908,129 @@ defmodule Baudrate.ContentTest do
         )
 
       refute Content.can_forward_article?(other, article)
+    end
+
+    test "unlisted article can be forwarded by other user" do
+      author = create_user("user")
+      other = create_user("user")
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Unlisted FWD",
+            body: "body",
+            slug: "unlisted-fwd-#{System.unique_integer([:positive])}",
+            user_id: author.id,
+            visibility: "unlisted"
+          },
+          []
+        )
+
+      assert Content.can_forward_article?(other, article)
+    end
+
+    test "direct article cannot be forwarded by other user" do
+      author = create_user("user")
+      other = create_user("user")
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Direct FWD",
+            body: "body",
+            slug: "direct-fwd-#{System.unique_integer([:positive])}",
+            user_id: author.id,
+            visibility: "direct"
+          },
+          []
+        )
+
+      refute Content.can_forward_article?(other, article)
+    end
+
+    test "admin can forward direct article" do
+      author = create_user("user")
+      admin = create_user("admin")
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Admin Direct FWD",
+            body: "body",
+            slug: "admin-direct-fwd-#{System.unique_integer([:positive])}",
+            user_id: author.id,
+            visibility: "direct"
+          },
+          []
+        )
+
+      assert Content.can_forward_article?(admin, article)
+    end
+  end
+
+  # --- can_forward_comment?/2 ---
+
+  describe "can_forward_comment?/2" do
+    test "nil user cannot forward" do
+      refute Content.can_forward_comment?(nil, %{visibility: "public"})
+    end
+
+    test "admin can forward any comment" do
+      admin = create_user("admin")
+      assert Content.can_forward_comment?(admin, %{visibility: "direct"})
+    end
+
+    test "author can forward own comment" do
+      user = create_user("user")
+      assert Content.can_forward_comment?(user, %{user_id: user.id, visibility: "followers_only"})
+    end
+
+    test "other user can forward public comment" do
+      user = create_user("user")
+      assert Content.can_forward_comment?(user, %{user_id: 0, visibility: "public"})
+    end
+
+    test "other user can forward unlisted comment" do
+      user = create_user("user")
+      assert Content.can_forward_comment?(user, %{user_id: 0, visibility: "unlisted"})
+    end
+
+    test "other user cannot forward followers_only comment" do
+      user = create_user("user")
+      refute Content.can_forward_comment?(user, %{user_id: 0, visibility: "followers_only"})
+    end
+  end
+
+  # --- can_forward_feed_item?/2 ---
+
+  describe "can_forward_feed_item?/2" do
+    test "nil user cannot forward" do
+      refute Content.can_forward_feed_item?(nil, %{visibility: "public"})
+    end
+
+    test "admin can forward any feed item" do
+      admin = create_user("admin")
+      assert Content.can_forward_feed_item?(admin, %{visibility: "direct"})
+    end
+
+    test "user can forward public feed item" do
+      user = create_user("user")
+      assert Content.can_forward_feed_item?(user, %{visibility: "public"})
+    end
+
+    test "user can forward unlisted feed item" do
+      user = create_user("user")
+      assert Content.can_forward_feed_item?(user, %{visibility: "unlisted"})
+    end
+
+    test "user cannot forward followers_only feed item" do
+      user = create_user("user")
+      refute Content.can_forward_feed_item?(user, %{visibility: "followers_only"})
+    end
+
+    test "user cannot forward direct feed item" do
+      user = create_user("user")
+      refute Content.can_forward_feed_item?(user, %{visibility: "direct"})
     end
   end
 
