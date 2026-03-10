@@ -475,14 +475,7 @@
           toolbar
           rows="6"
         />
-        <div class="flex items-center gap-3">
-          <button
-            type="submit"
-            class="btn btn-sm btn-primary"
-            phx-disable-with={gettext("Posting...")}
-          >
-            {gettext("Post Comment")}
-          </button>
+        <div class="flex items-center gap-3 [&>.fieldset]:mb-0">
           <.input
             field={@comment_form[:visibility]}
             type="select"
@@ -495,6 +488,13 @@
             class="select select-sm"
             aria-label={gettext("Visibility")}
           />
+          <button
+            type="submit"
+            class="btn btn-sm btn-primary"
+            phx-disable-with={gettext("Posting...")}
+          >
+            {gettext("Post Comment")}
+          </button>
           <span
             id="draft-indicator-comment"
             class="text-sm text-base-content/70 transition-opacity duration-300 opacity-0"
