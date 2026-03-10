@@ -371,9 +371,7 @@
               <button
                 phx-click="remove_from_board"
                 phx-value-board-id={board.id}
-                data-confirm={
-                  gettext("Remove this article from %{board}?", board: board.name)
-                }
+                data-confirm={gettext("Remove this article from %{board}?", board: board.name)}
                 class="text-warning"
               >
                 <.icon name="hero-minus-circle" class="size-4" />

@@ -850,9 +850,7 @@ defmodule Baudrate.Federation.InboxHandler do
                 handle_announce_object(announce_ap_id, object, booster_actor)
 
               {:error, _} ->
-                Logger.warning(
-                  "federation.announce: invalid JSON from #{object_uri}"
-                )
+                Logger.warning("federation.announce: invalid JSON from #{object_uri}")
 
                 :ok
             end

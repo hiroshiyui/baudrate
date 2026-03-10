@@ -261,7 +261,9 @@ defmodule BaudrateWeb.CoreComponentsTest do
 
   describe "extract_youtube_video_id/1" do
     test "extracts from standard watch URL" do
-      assert CoreComponents.extract_youtube_video_id("https://www.youtube.com/watch?v=dQw4w9WgXcQ") ==
+      assert CoreComponents.extract_youtube_video_id(
+               "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+             ) ==
                "dQw4w9WgXcQ"
     end
 
@@ -271,21 +273,18 @@ defmodule BaudrateWeb.CoreComponentsTest do
     end
 
     test "extracts from embed URL" do
-      assert CoreComponents.extract_youtube_video_id(
-               "https://www.youtube.com/embed/dQw4w9WgXcQ"
-             ) == "dQw4w9WgXcQ"
+      assert CoreComponents.extract_youtube_video_id("https://www.youtube.com/embed/dQw4w9WgXcQ") ==
+               "dQw4w9WgXcQ"
     end
 
     test "extracts from shorts URL" do
-      assert CoreComponents.extract_youtube_video_id(
-               "https://www.youtube.com/shorts/dQw4w9WgXcQ"
-             ) == "dQw4w9WgXcQ"
+      assert CoreComponents.extract_youtube_video_id("https://www.youtube.com/shorts/dQw4w9WgXcQ") ==
+               "dQw4w9WgXcQ"
     end
 
     test "extracts from mobile URL" do
-      assert CoreComponents.extract_youtube_video_id(
-               "https://m.youtube.com/watch?v=dQw4w9WgXcQ"
-             ) == "dQw4w9WgXcQ"
+      assert CoreComponents.extract_youtube_video_id("https://m.youtube.com/watch?v=dQw4w9WgXcQ") ==
+               "dQw4w9WgXcQ"
     end
 
     test "extracts with extra query params" do

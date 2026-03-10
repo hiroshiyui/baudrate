@@ -839,8 +839,7 @@ defmodule BaudrateWeb.ArticleLiveTest do
           username: "alice",
           domain: "remote.example",
           display_name: "Alice",
-          public_key_pem:
-            "-----BEGIN PUBLIC KEY-----\nfake\n-----END PUBLIC KEY-----",
+          public_key_pem: "-----BEGIN PUBLIC KEY-----\nfake\n-----END PUBLIC KEY-----",
           inbox: "https://remote.example/users/alice/inbox",
           actor_type: "Person",
           fetched_at: DateTime.utc_now()

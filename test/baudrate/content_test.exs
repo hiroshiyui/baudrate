@@ -2393,7 +2393,9 @@ defmodule Baudrate.ContentTest do
   describe "forward_feed_item_to_board/3" do
     setup do
       user = create_user("user")
-      board = create_board(%{name: "Target", slug: "fi-target-#{System.unique_integer([:positive])}"})
+
+      board =
+        create_board(%{name: "Target", slug: "fi-target-#{System.unique_integer([:positive])}"})
 
       remote_actor =
         %Baudrate.Federation.RemoteActor{}
@@ -2402,7 +2404,8 @@ defmodule Baudrate.ContentTest do
           username: "fi_author_#{System.unique_integer([:positive])}",
           domain: "remote.example",
           inbox: "https://remote.example/inbox",
-          public_key_pem: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0\n-----END PUBLIC KEY-----",
+          public_key_pem:
+            "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0\n-----END PUBLIC KEY-----",
           actor_type: "Person",
           fetched_at: DateTime.utc_now()
         })
@@ -2478,7 +2481,8 @@ defmodule Baudrate.ContentTest do
           username: "fo_author_#{System.unique_integer([:positive])}",
           domain: "remote.example",
           inbox: "https://remote.example/inbox",
-          public_key_pem: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0\n-----END PUBLIC KEY-----",
+          public_key_pem:
+            "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0\n-----END PUBLIC KEY-----",
           actor_type: "Person",
           fetched_at: DateTime.utc_now()
         })
@@ -2509,7 +2513,8 @@ defmodule Baudrate.ContentTest do
           username: "admin_fo_#{System.unique_integer([:positive])}",
           domain: "remote.example",
           inbox: "https://remote.example/inbox",
-          public_key_pem: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0\n-----END PUBLIC KEY-----",
+          public_key_pem:
+            "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0\n-----END PUBLIC KEY-----",
           actor_type: "Person",
           fetched_at: DateTime.utc_now()
         })
@@ -2535,7 +2540,9 @@ defmodule Baudrate.ContentTest do
   describe "forward_comment_to_board/3" do
     setup do
       user = create_user("user")
-      board = create_board(%{name: "Comment Target", slug: "ct-#{System.unique_integer([:positive])}"})
+
+      board =
+        create_board(%{name: "Comment Target", slug: "ct-#{System.unique_integer([:positive])}"})
 
       %{user: user, board: board}
     end
@@ -2583,7 +2590,8 @@ defmodule Baudrate.ContentTest do
           username: "rc_#{System.unique_integer([:positive])}",
           domain: "remote.example",
           inbox: "https://remote.example/inbox",
-          public_key_pem: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0\n-----END PUBLIC KEY-----",
+          public_key_pem:
+            "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0\n-----END PUBLIC KEY-----",
           actor_type: "Person",
           fetched_at: DateTime.utc_now()
         })

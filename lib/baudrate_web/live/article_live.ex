@@ -189,7 +189,10 @@ defmodule BaudrateWeb.ArticleLive do
       {:noreply,
        socket
        |> put_flash(:info, gettext("Article removed from %{board}.", board: board.name))
-       |> assign(:article, Baudrate.Repo.preload(updated, [:user, :remote_actor, :link_preview, poll: :options]))}
+       |> assign(
+         :article,
+         Baudrate.Repo.preload(updated, [:user, :remote_actor, :link_preview, poll: :options])
+       )}
     else
       _ ->
         {:noreply, put_flash(socket, :error, gettext("Failed to remove article from board."))}

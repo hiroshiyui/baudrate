@@ -279,15 +279,18 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
         conn
         |> Plug.Conn.put_resp_content_type("application/activity+json")
-        |> Plug.Conn.send_resp(200, Jason.encode!(%{
-          "type" => "Note",
-          "id" => object_uri,
-          "content" => "<p>Boosted content</p>",
-          "attributedTo" => content_author.ap_id,
-          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
-          "published" => DateTime.to_iso8601(DateTime.utc_now()),
-          "url" => "https://remote.example/@author/#{uid}"
-        }))
+        |> Plug.Conn.send_resp(
+          200,
+          Jason.encode!(%{
+            "type" => "Note",
+            "id" => object_uri,
+            "content" => "<p>Boosted content</p>",
+            "attributedTo" => content_author.ap_id,
+            "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+            "published" => DateTime.to_iso8601(DateTime.utc_now()),
+            "url" => "https://remote.example/@author/#{uid}"
+          })
+        )
       end)
 
       announce_activity = %{
@@ -358,22 +361,23 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
     test "extracts image attachments from Create feed items", %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
 
-      activity = note_activity(actor, %{
-        "attachment" => [
-          %{
-            "type" => "Document",
-            "mediaType" => "image/webp",
-            "url" => "https://remote.example/media/img.webp",
-            "name" => "WebP image"
-          },
-          %{
-            "type" => "Document",
-            "mediaType" => "video/mp4",
-            "url" => "https://remote.example/media/video.mp4",
-            "name" => "A video"
-          }
-        ]
-      })
+      activity =
+        note_activity(actor, %{
+          "attachment" => [
+            %{
+              "type" => "Document",
+              "mediaType" => "image/webp",
+              "url" => "https://remote.example/media/img.webp",
+              "name" => "WebP image"
+            },
+            %{
+              "type" => "Document",
+              "mediaType" => "video/mp4",
+              "url" => "https://remote.example/media/video.mp4",
+              "name" => "A video"
+            }
+          ]
+        })
 
       assert :ok = InboxHandler.handle(activity, actor, :shared)
 
@@ -385,7 +389,9 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
     end
 
     test "does not create feed item when booster is not followed", %{actor: actor} do
-      announce_ap_id = "https://remote.example/activities/announce-#{System.unique_integer([:positive])}"
+      announce_ap_id =
+        "https://remote.example/activities/announce-#{System.unique_integer([:positive])}"
+
       object_uri = "https://remote.example/notes/some-post"
 
       announce_activity = %{
@@ -460,9 +466,10 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
         })
 
       result = Federation.list_feed_items(user)
+
       assert Enum.any?(result.items, fn item ->
-        item.source == :remote and item.feed_item.ap_id == announce_ap_id
-      end)
+               item.source == :remote and item.feed_item.ap_id == announce_ap_id
+             end)
 
       # Verify boost attribution is preloaded
       boost_item =
@@ -597,7 +604,10 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
 
       # Should still be the same single article (not duplicated)
       import Ecto.Query
-      count = Repo.aggregate(from(a in Baudrate.Content.Article, where: a.ap_id == ^object_id), :count)
+
+      count =
+        Repo.aggregate(from(a in Baudrate.Content.Article, where: a.ap_id == ^object_id), :count)
+
       assert count == 1
     end
   end
