@@ -138,11 +138,21 @@ server {
         access_log off;
     }
 
+    # --- Sitemap (generated daily, writable shared directory) ---
+    location = /sitemap.xml {
+        alias {{ deploy_path }}/shared/sitemap.xml;
+        expires 1d;
+        add_header Cache-Control "public";
+        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        access_log off;
+    }
+
     # --- Non-fingerprinted static files (short cache) ---
     # Phoenix `~p` may resolve to digest-stamped filenames (e.g.
     # favicon-abc123.svg), so patterns use [^/]* to match both
     # original and digested variants.
-    location ~ ^/(fonts|images|favicon[^/]*\.(ico|svg)|robots[^/]*\.txt|sitemap[^/]*\.xml|service_worker[^/]*\.js|site[^/]*\.webmanifest) {
+    location ~ ^/(fonts|images|favicon[^/]*\.(ico|svg)|robots[^/]*\.txt|service_worker[^/]*\.js|site[^/]*\.webmanifest) {
         root {{ static_path }};
         expires 1h;
         add_header Cache-Control "public";
