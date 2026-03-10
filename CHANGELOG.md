@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.12] — 2026-03-10
+
+### Added
+
+- **Visibility selector** — article create/edit forms, comment forms, and feed
+  quick post now include a visibility selector (Public, Unlisted, Followers-only,
+  Direct) with full i18n support (en, zh_TW, ja_JP)
+- **Remote object resolution via search** — paste a remote Fediverse post URL
+  into search to preview it without storing; click "Import & interact" to
+  materialize locally for liking, boosting, or forwarding (two-phase
+  `ObjectResolver.fetch/1` + `resolve/1`, loop-safe)
+- **Feed item and comment forwarding to boards** — users can forward feed items
+  and comments to boards they have posting access to, with federation publishing
+- **Forwarding UI** — forward buttons on feed items and comments with board
+  selector modal
+- **Nginx bot/scanner blocking rules** — example configuration for blocking
+  common vulnerability scanners and malicious bots
+
+### Fixed
+
+- **Article title length validation** — all article changesets now enforce
+  max 255 characters; `TitleDeriver` truncates remote AP object names to
+  prevent oversized titles from malicious servers
+- **Deterministic query ordering** — added `id` tiebreakers to all `order_by`
+  queries across auth, content, federation, messaging, and moderation contexts
+  to prevent nondeterministic results when timestamps collide
+- **Comment creation mixed map keys** — normalized all keys to strings before
+  merging `body_html` to prevent `Ecto.CastError` under concurrent execution
+- **Visibility selector alignment** — fixed DaisyUI fieldset margin causing
+  misalignment with Post button in feed quick post
+- **Fuzzy gettext auto-matches** — cleared all incorrect fuzzy translations
+  (e.g., "Public" → "Public Key") across en, zh_TW, ja_JP locales
+- **Remote article forwardable flag** — added `:forwardable` to remote article
+  changeset so visibility-based forwardability is persisted
+
+### Changed
+
+- **TitleDeriver extracted** — title derivation logic moved to shared
+  `Content.TitleDeriver` module for reuse across inbox handler and
+  ObjectResolver
+
 ## [1.3.11] — 2026-03-09
 
 ### Fixed
