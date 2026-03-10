@@ -29,6 +29,29 @@ defmodule Baudrate.Federation.Publisher do
   @ap_context [@as_context, @security_context]
   @as_public "https://www.w3.org/ns/activitystreams#Public"
 
+  # --- Visibility-aware addressing ---
+
+  defp visibility_addressing(visibility, followers_uri) do
+    case visibility do
+      "unlisted" -> {[followers_uri], [@as_public]}
+      "followers_only" -> {[followers_uri], []}
+      "direct" -> {[], []}
+      # "public" or default
+      _ -> {[@as_public], [followers_uri]}
+    end
+  end
+
+  # Builds `{to, cc}` for article activities, merging board URIs into `cc`.
+  defp article_addressing(article, actor_uri) do
+    {to, cc} = visibility_addressing(article.visibility, "#{actor_uri}/followers")
+
+    board_uris =
+      article.boards
+      |> Enum.map(&Federation.actor_uri(:board, &1.slug))
+
+    {to, Enum.uniq(cc ++ board_uris)}
+  end
+
   # --- Activity Builders ---
 
   @doc """
@@ -40,6 +63,7 @@ defmodule Baudrate.Federation.Publisher do
     article = Repo.preload(article, [:boards, :user])
     actor_uri = Federation.actor_uri(:user, article.user.username)
     object = Federation.article_object(article)
+    {to, cc} = article_addressing(article, actor_uri)
 
     activity = %{
       "@context" => @ap_context,
@@ -47,9 +71,9 @@ defmodule Baudrate.Federation.Publisher do
       "type" => "Create",
       "actor" => actor_uri,
       "published" => DateTime.to_iso8601(article.inserted_at),
-      "to" => [@as_public],
-      "cc" => ["#{actor_uri}/followers"],
-      "object" => object
+      "to" => to,
+      "cc" => cc,
+      "object" => Map.merge(object, %{"to" => to, "cc" => cc})
     }
 
     {activity, actor_uri}
@@ -114,6 +138,7 @@ defmodule Baudrate.Federation.Publisher do
     article = Repo.preload(article, [:boards, :user])
     actor_uri = Federation.actor_uri(:user, article.user.username)
     object = Federation.article_object(article)
+    {to, cc} = article_addressing(article, actor_uri)
 
     activity = %{
       "@context" => @ap_context,
@@ -121,9 +146,9 @@ defmodule Baudrate.Federation.Publisher do
       "type" => "Update",
       "actor" => actor_uri,
       "published" => DateTime.to_iso8601(article.updated_at),
-      "to" => [@as_public],
-      "cc" => ["#{actor_uri}/followers"],
-      "object" => object
+      "to" => to,
+      "cc" => cc,
+      "object" => Map.merge(object, %{"to" => to, "cc" => cc})
     }
 
     {activity, actor_uri}
@@ -140,7 +165,12 @@ defmodule Baudrate.Federation.Publisher do
     actor_uri = Federation.actor_uri(:user, comment.user.username)
     article_uri = Federation.actor_uri(:article, article.slug)
     note_uri = comment.ap_id || "#{actor_uri}#note-#{comment.id}"
-    note_url = comment.url || "#{Federation.base_url()}/articles/#{article.slug}#comment-#{comment.id}"
+
+    note_url =
+      comment.url ||
+        "#{Federation.base_url()}/articles/#{article.slug}#comment-#{comment.id}"
+
+    {to, cc} = visibility_addressing(comment.visibility, "#{actor_uri}/followers")
 
     activity = %{
       "@context" => @ap_context,
@@ -148,8 +178,8 @@ defmodule Baudrate.Federation.Publisher do
       "type" => "Create",
       "actor" => actor_uri,
       "published" => DateTime.to_iso8601(comment.inserted_at),
-      "to" => [@as_public],
-      "cc" => ["#{actor_uri}/followers"],
+      "to" => to,
+      "cc" => cc,
       "object" => %{
         "id" => note_uri,
         "type" => "Note",
@@ -158,8 +188,8 @@ defmodule Baudrate.Federation.Publisher do
         "attributedTo" => actor_uri,
         "inReplyTo" => article_uri,
         "published" => DateTime.to_iso8601(comment.inserted_at),
-        "to" => [@as_public],
-        "cc" => ["#{actor_uri}/followers"]
+        "to" => to,
+        "cc" => cc
       }
     }
 
@@ -420,11 +450,14 @@ defmodule Baudrate.Federation.Publisher do
     article = Repo.preload(article, [:boards, :user])
 
     if Board.federated?(board) do
-      # Create(Article) from user → board followers
-      {activity, actor_uri} = build_create_article(article)
-      board_uri = Federation.actor_uri(:board, board.slug)
-      board_inboxes = Delivery.resolve_follower_inboxes(board_uri)
-      if board_inboxes != [], do: Delivery.enqueue(activity, actor_uri, board_inboxes)
+      # For local articles, send Create(Article) from user → board followers
+      # For remote articles, skip Create — the original already exists on the origin server
+      if article.user_id do
+        {activity, actor_uri} = build_create_article(article)
+        board_uri = Federation.actor_uri(:board, board.slug)
+        board_inboxes = Delivery.resolve_follower_inboxes(board_uri)
+        if board_inboxes != [], do: Delivery.enqueue(activity, actor_uri, board_inboxes)
+      end
 
       # Announce from board → board's followers
       {announce, board_actor_uri} = build_announce_article(article, board)

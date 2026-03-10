@@ -4,8 +4,10 @@ defmodule Baudrate.Federation.FeedItem do
 
   Feed items capture `Create` and `Announce` activities that don't land in a
   local board, article comment thread, or DM conversation. They are keyed by
-  `ap_id` (one row per activity) and visibility is determined at query time by
-  JOINing with `user_follows`.
+  `ap_id` (one row per activity) and feed membership is determined at query
+  time by JOINing with `user_follows`. The `visibility` field records the
+  ActivityPub visibility derived from `to`/`cc` addressing (`public`,
+  `unlisted`, `followers_only`, or `direct`).
 
   For `Announce` (boost) activities, `remote_actor_id` is the original content
   author and `boosted_by_actor_id` is the actor who boosted it (and whom a
@@ -35,6 +37,7 @@ defmodule Baudrate.Federation.FeedItem do
     field :body_html, :string
     field :source_url, :string
     field :attachments, {:array, :map}, default: []
+    field :visibility, :string, default: "public"
     field :published_at, :utc_datetime
     field :deleted_at, :utc_datetime
 
@@ -42,7 +45,7 @@ defmodule Baudrate.Federation.FeedItem do
   end
 
   @required_fields ~w(remote_actor_id activity_type object_type ap_id published_at)a
-  @optional_fields ~w(title body body_html source_url attachments deleted_at boosted_by_actor_id)a
+  @optional_fields ~w(title body body_html source_url attachments visibility deleted_at boosted_by_actor_id)a
 
   @doc """
   Builds a changeset for a feed item.
@@ -53,6 +56,7 @@ defmodule Baudrate.Federation.FeedItem do
     |> validate_required(@required_fields)
     |> validate_inclusion(:activity_type, ~w(Create Announce))
     |> validate_inclusion(:object_type, ~w(Note Article Page))
+    |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
     |> validate_length(:body, max: @max_body_length)
     |> foreign_key_constraint(:remote_actor_id)
     |> unique_constraint(:ap_id)

@@ -42,7 +42,7 @@ defmodule Baudrate.Federation.InboxHandler do
 
   alias Baudrate.Content
   alias Baudrate.Federation
-  alias Baudrate.Federation.{ActorResolver, Delivery, Sanitizer, Validator}
+  alias Baudrate.Federation.{ActorResolver, Delivery, Sanitizer, Validator, Visibility}
   alias Baudrate.Messaging
 
   @doc """
@@ -643,6 +643,7 @@ defmodule Baudrate.Federation.InboxHandler do
         :ok
       else
         url = extract_url(object)
+        visibility = Visibility.from_addressing(object)
 
         case Content.create_remote_comment(%{
                body: body,
@@ -651,7 +652,8 @@ defmodule Baudrate.Federation.InboxHandler do
                url: url,
                article_id: article.id,
                parent_id: parent_id,
-               remote_actor_id: remote_actor.id
+               remote_actor_id: remote_actor.id,
+               visibility: visibility
              }) do
           {:ok, _comment} ->
             Logger.info("federation.activity: type=Create(Note) ap_id=#{ap_id}")
@@ -772,6 +774,7 @@ defmodule Baudrate.Federation.InboxHandler do
               published_at = parse_published(object["published"])
               title = if object_type in ["Article", "Page"], do: object["name"]
               source_url = object["url"] || object["id"]
+              visibility = Visibility.from_addressing(object)
 
               case Federation.create_feed_item(%{
                      remote_actor_id: remote_actor.id,
@@ -783,6 +786,7 @@ defmodule Baudrate.Federation.InboxHandler do
                      body_html: body_html,
                      source_url: source_url,
                      attachments: extract_image_attachments(object),
+                     visibility: visibility,
                      published_at: published_at
                    }) do
                 {:ok, _feed_item} ->
@@ -915,6 +919,7 @@ defmodule Baudrate.Federation.InboxHandler do
             board_ids = Enum.map(boards, & &1.id)
             poll_opts = extract_poll_from_object(object, ap_id)
             url = extract_url(object)
+            visibility = Visibility.from_addressing(object)
 
             case Content.create_remote_article(
                    %{
@@ -923,7 +928,8 @@ defmodule Baudrate.Federation.InboxHandler do
                      slug: slug,
                      ap_id: ap_id,
                      url: url,
-                     remote_actor_id: author_actor_id
+                     remote_actor_id: author_actor_id,
+                     visibility: visibility
                    },
                    board_ids,
                    poll_opts
@@ -970,6 +976,7 @@ defmodule Baudrate.Federation.InboxHandler do
             published_at = parse_published(object["published"])
             title = if object_type in ["Article", "Page"], do: object["name"]
             source_url = extract_url(object) || object["id"]
+            visibility = Visibility.from_addressing(object)
 
             case Federation.create_feed_item(%{
                    remote_actor_id: content_actor_id,
@@ -982,6 +989,7 @@ defmodule Baudrate.Federation.InboxHandler do
                    body_html: body_html,
                    source_url: source_url,
                    attachments: extract_image_attachments(object),
+                   visibility: visibility,
                    published_at: published_at
                  }) do
               {:ok, _feed_item} ->
@@ -1089,46 +1097,8 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp prepend_content_warning(body, _object), do: body
 
-  # Derive article title from the AP object.
-  # Article/Page objects use "name"; for Notes (no "name"), extract from body text.
-  defp derive_title(%{"name" => name}, _body) when is_binary(name) and name != "", do: name
-
-  defp derive_title(_object, body) when is_binary(body) and body != "" do
-    body
-    |> String.split(~r/\n/, parts: 2)
-    |> hd()
-    |> String.trim()
-    |> truncate_title(80)
-    |> case do
-      "" -> "Untitled"
-      title -> title
-    end
-  end
-
-  defp derive_title(_object, _body), do: "Untitled"
-
-  # Truncate a title to roughly `max_len` graphemes. For CJK text (no spaces),
-  # cuts at `max_len` and appends "…". For space-separated text, breaks at the
-  # last word boundary before `max_len` to avoid mid-word cuts.
-  defp truncate_title(text, max_len) when is_binary(text) do
-    if String.length(text) <= max_len do
-      text
-    else
-      chunk = String.slice(text, 0, max_len)
-
-      case String.contains?(chunk, " ") do
-        true ->
-          # Break at last space to avoid mid-word truncation
-          chunk
-          |> String.replace(~r/\s+\S*$/, "")
-          |> Kernel.<>("…")
-
-        false ->
-          # CJK or single long token — cut at max_len
-          chunk <> "…"
-      end
-    end
-  end
+  defp derive_title(object, body),
+    do: Baudrate.Content.TitleDeriver.derive_title(object, body)
 
   defp strip_html(html) when is_binary(html) do
     html
@@ -1299,6 +1269,7 @@ defmodule Baudrate.Federation.InboxHandler do
         poll_opts = extract_poll_from_object(object, ap_id)
 
         url = extract_url(object)
+        visibility = Visibility.from_addressing(object)
 
         case Content.create_remote_article(
                %{
@@ -1307,7 +1278,8 @@ defmodule Baudrate.Federation.InboxHandler do
                  slug: slug,
                  ap_id: ap_id,
                  url: url,
-                 remote_actor_id: remote_actor.id
+                 remote_actor_id: remote_actor.id,
+                 visibility: visibility
                },
                [board.id],
                poll_opts
@@ -1350,6 +1322,7 @@ defmodule Baudrate.Federation.InboxHandler do
             board_ids = Enum.map(boards, & &1.id)
             poll_opts = extract_poll_from_object(object, ap_id)
             url = extract_url(object)
+            visibility = Visibility.from_addressing(object)
 
             case Content.create_remote_article(
                    %{
@@ -1358,7 +1331,8 @@ defmodule Baudrate.Federation.InboxHandler do
                      slug: slug,
                      ap_id: ap_id,
                      url: url,
-                     remote_actor_id: remote_actor.id
+                     remote_actor_id: remote_actor.id,
+                     visibility: visibility
                    },
                    board_ids,
                    poll_opts

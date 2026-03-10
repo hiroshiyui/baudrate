@@ -8,7 +8,10 @@ defmodule Baudrate.Content.Article do
   the `url` field stores the human-readable permalink (distinct from `ap_id`).
   Soft-delete is handled via `deleted_at`. The `forwardable` flag
   controls whether other users can cross-forward the article to
-  additional boards (default: `true`).
+  additional boards (default: `true`). The `visibility` field records
+  the ActivityPub visibility derived from `to`/`cc` addressing
+  (`public`, `unlisted`, `followers_only`, or `direct`); defaults to
+  `public` for local articles.
   """
 
   use Ecto.Schema
@@ -34,6 +37,7 @@ defmodule Baudrate.Content.Article do
     field :pinned, :boolean, default: false
     field :locked, :boolean, default: false
     field :forwardable, :boolean, default: true
+    field :visibility, :string, default: "public"
     field :ap_id, :string
     field :url, :string
     field :deleted_at, :utc_datetime
@@ -59,9 +63,10 @@ defmodule Baudrate.Content.Article do
   @doc "Changeset for creating a local article with title, body, slug, and author."
   def changeset(article, attrs) do
     article
-    |> cast(attrs, [:title, :body, :slug, :ap_id, :user_id, :forwardable])
+    |> cast(attrs, [:title, :body, :slug, :ap_id, :user_id, :forwardable, :visibility])
     |> validate_required([:title, :body, :slug])
     |> validate_length(:body, max: @max_body_length)
+    |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
       message: "must be lowercase alphanumeric with hyphens"
     )
@@ -73,17 +78,19 @@ defmodule Baudrate.Content.Article do
   @doc "Changeset for updating a local article (title and body only, slug stays fixed)."
   def update_changeset(article, attrs) do
     article
-    |> cast(attrs, [:title, :body, :forwardable])
+    |> cast(attrs, [:title, :body, :forwardable, :visibility])
     |> validate_required([:title, :body])
     |> validate_length(:body, max: @max_body_length)
+    |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
   end
 
   @doc "Changeset for remote articles received via ActivityPub."
   def remote_changeset(article, attrs) do
     article
-    |> cast(attrs, [:title, :body, :slug, :ap_id, :url, :remote_actor_id])
+    |> cast(attrs, [:title, :body, :slug, :ap_id, :url, :remote_actor_id, :visibility])
     |> validate_required([:title, :body, :slug, :ap_id, :remote_actor_id])
     |> validate_length(:body, max: @max_body_length)
+    |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
       message: "must be lowercase alphanumeric with hyphens"
     )
