@@ -145,6 +145,7 @@ mix ecto.reset  # Drop, recreate, re-migrate
 | `DATABASE_SSL` | `"true"` | Set to `"false"` for non-SSL local databases |
 | `INSTALLATION_KEY` | unset | Gates the setup wizard; remove after setup (see [Installation Key](#installation-key)) |
 | `DNS_CLUSTER_QUERY` | unset | DNS SRV record for Erlang clustering |
+| `SITEMAP_OUTPUT_PATH` | `priv/static/sitemap.xml` | Writable path for generated sitemap (release `priv/static` is read-only) |
 
 ### SECRET_KEY_BASE — critical warning
 
@@ -874,6 +875,7 @@ Replace `20260101000000` with the migration version to roll back to.
 | `SessionCleaner` | 1 hour | Purge expired sessions, old login attempts (>7 days), orphan images (>24h) |
 | `DeliveryWorker` | 60 seconds | Poll and deliver pending federation jobs (50 per cycle) |
 | `StaleActorCleaner` | 24 hours | Refresh or delete stale remote actors (>30 days) |
+| `Sitemap.Generator` | Daily (midnight UTC) | Regenerate `sitemap.xml` for search engines |
 
 In multi-node clusters, these run independently on each node. Operations are
 idempotent (safe but slightly redundant).

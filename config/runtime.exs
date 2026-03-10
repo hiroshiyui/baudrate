@@ -59,6 +59,10 @@ if config_env() == :prod do
 
   config :baudrate, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
+  if sitemap_path = System.get_env("SITEMAP_OUTPUT_PATH") do
+    config :baudrate, :sitemap_output_path, sitemap_path
+  end
+
   config :baudrate, BaudrateWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [

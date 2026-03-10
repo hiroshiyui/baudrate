@@ -9,8 +9,12 @@ defmodule Baudrate.Sitemap do
 
   User profiles are intentionally excluded for privacy.
 
-  The generated file is written to `priv/static/sitemap.xml` and served
-  directly by Nginx as a static file.
+  The generated file is written to the path configured by
+  `:sitemap_output_path` (env `SITEMAP_OUTPUT_PATH`), falling back to
+  `priv/static/sitemap.xml`. In production releases the release's
+  `priv/static` is read-only, so the env var must point to a writable
+  location (e.g. the deploy's `static/` symlink). Served directly by
+  Nginx as a static file.
   """
 
   import Ecto.Query
@@ -120,6 +124,9 @@ defmodule Baudrate.Sitemap do
   end
 
   defp output_path do
-    Application.app_dir(:baudrate, Path.join(["priv", "static", "sitemap.xml"]))
+    case Application.get_env(:baudrate, :sitemap_output_path) do
+      nil -> Application.app_dir(:baudrate, Path.join(["priv", "static", "sitemap.xml"]))
+      path -> path
+    end
   end
 end
