@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.20] — 2026-03-11
+
+### Fixed
+
+- **Remote article images** — articles imported via federation (inbox delivery,
+  auto-routing to boards, and `/search` import) now fetch and store image
+  attachments from the AP object's `attachment` array. Images go through the
+  same security pipeline as local uploads (magic byte validation, WebP
+  re-encoding, EXIF strip, max 1024px)
+
 ## [1.3.19] — 2026-03-10
 
 ### Changed
