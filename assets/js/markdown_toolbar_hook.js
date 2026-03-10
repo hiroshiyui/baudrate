@@ -210,7 +210,7 @@ const MarkdownToolbarHook = {
       this.i18n = {};
     }
 
-    this.toolbar.className = "flex flex-wrap items-center gap-0.5 mb-1";
+    this.toolbar.className = "flex flex-wrap items-center gap-0.5 mt-1";
     this.toolbar.setAttribute("role", "toolbar");
     this.toolbar.setAttribute(
       "aria-label",

@@ -293,6 +293,34 @@ defmodule BaudrateWeb.CoreComponents do
         <span :if={@label} class={["label mb-1", @label_class]}>{@label}</span>
         <div
           :if={@toolbar}
+          id={"#{@id}-hashtag-wrap"}
+          phx-hook="HashtagAutocompleteHook"
+          class="relative"
+        >
+          <textarea
+            id={@id}
+            name={@name}
+            phx-hook="MarkdownToolbarHook"
+            class={[
+              @class || "w-full textarea",
+              @errors != [] && (@error_class || "textarea-error")
+            ]}
+            aria-invalid={@errors != [] && "true"}
+            aria-describedby={@errors != [] && "#{@id}-error"}
+            {@rest}
+          >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
+        </div>
+        <div
+          :if={@toolbar}
+          id={"#{@id}-md-preview"}
+          class="hidden w-full prose prose-sm max-w-none border border-base-300 rounded-lg p-3 min-h-[6rem] bg-base-100"
+          phx-update="ignore"
+          role="region"
+          aria-label={gettext("Markdown preview")}
+        >
+        </div>
+        <div
+          :if={@toolbar}
           id={"#{@id}-md-toolbar"}
           phx-update="ignore"
           data-i18n={
@@ -320,25 +348,6 @@ defmodule BaudrateWeb.CoreComponents do
           }
         >
         </div>
-        <div
-          :if={@toolbar}
-          id={"#{@id}-hashtag-wrap"}
-          phx-hook="HashtagAutocompleteHook"
-          class="relative"
-        >
-          <textarea
-            id={@id}
-            name={@name}
-            phx-hook="MarkdownToolbarHook"
-            class={[
-              @class || "w-full textarea",
-              @errors != [] && (@error_class || "textarea-error")
-            ]}
-            aria-invalid={@errors != [] && "true"}
-            aria-describedby={@errors != [] && "#{@id}-error"}
-            {@rest}
-          >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
-        </div>
         <textarea
           :if={!@toolbar}
           id={@id}
@@ -351,15 +360,6 @@ defmodule BaudrateWeb.CoreComponents do
           aria-describedby={@errors != [] && "#{@id}-error"}
           {@rest}
         >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
-        <div
-          :if={@toolbar}
-          id={"#{@id}-md-preview"}
-          class="hidden w-full prose prose-sm max-w-none border border-base-300 rounded-lg p-3 min-h-[6rem] bg-base-100"
-          phx-update="ignore"
-          role="region"
-          aria-label={gettext("Markdown preview")}
-        >
-        </div>
       </label>
       <div :if={@errors != []} id={"#{@id}-error"} role="alert">
         <.error :for={msg <- @errors}>{msg}</.error>
