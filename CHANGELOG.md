@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
-## [1.3.17] — 2026-03-10
+## [1.3.18] — 2026-03-10
 
 ### Fixed
 
+- **Draft indicator layout shift** — moved "Draft saved" indicator outside
+  the inline controls row in article new, edit, and comment forms so it no
+  longer pushes the visibility selector and submit button when appearing
 - **Inline form controls vertical alignment** — stripped DaisyUI fieldset
   and label padding in all inline form control rows (article new/edit,
   comment, reply, feed quick-post) for proper vertical centering
@@ -296,6 +299,7 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - AP ID URL format validation on remote boost changesets
 - Reject federation activities targeting non-federated content
 
+[1.3.18]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.18
 [1.3.17]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.17
 [1.3.16]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.16
 [1.3.15]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.3.15
