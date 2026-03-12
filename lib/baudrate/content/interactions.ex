@@ -73,12 +73,18 @@ defmodule Baudrate.Content.Interactions do
   """
   def stamp_ap_id(%{ap_id: nil, user_id: user_id} = record, fragment)
       when is_integer(user_id) do
-    user = Repo.get!(Baudrate.Setup.User, user_id)
-    ap_id = Baudrate.Federation.actor_uri(:user, user.username) <> "##{fragment}-#{record.id}"
+    case Repo.get(Baudrate.Setup.User, user_id) do
+      nil ->
+        record
 
-    record
-    |> Ecto.Changeset.change(ap_id: ap_id)
-    |> Repo.update!()
+      user ->
+        ap_id =
+          Baudrate.Federation.actor_uri(:user, user.username) <> "##{fragment}-#{record.id}"
+
+        record
+        |> Ecto.Changeset.change(ap_id: ap_id)
+        |> Repo.update!()
+    end
   end
 
   def stamp_ap_id(record, _fragment), do: record

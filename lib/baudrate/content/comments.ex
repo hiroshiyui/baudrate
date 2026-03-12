@@ -313,14 +313,17 @@ defmodule Baudrate.Content.Comments do
   # this comment, and remote instances can link to the original.
   defp stamp_local_ap_id(%Comment{ap_id: nil, user_id: user_id} = comment)
        when is_integer(user_id) do
-    user = Repo.get!(Baudrate.Setup.User, user_id)
-    ap_id = Baudrate.Federation.actor_uri(:user, user.username) <> "#note-#{comment.id}"
-    article = Repo.get!(Article, comment.article_id)
-    url = "#{Baudrate.Federation.base_url()}/articles/#{article.slug}#comment-#{comment.id}"
+    with %{} = user <- Repo.get(Baudrate.Setup.User, user_id),
+         %{} = article <- Repo.get(Article, comment.article_id) do
+      ap_id = Baudrate.Federation.actor_uri(:user, user.username) <> "#note-#{comment.id}"
+      url = "#{Baudrate.Federation.base_url()}/articles/#{article.slug}#comment-#{comment.id}"
 
-    comment
-    |> Ecto.Changeset.change(ap_id: ap_id, url: url)
-    |> Repo.update!()
+      comment
+      |> Ecto.Changeset.change(ap_id: ap_id, url: url)
+      |> Repo.update!()
+    else
+      nil -> comment
+    end
   end
 
   defp stamp_local_ap_id(comment), do: comment
