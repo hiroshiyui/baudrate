@@ -3,8 +3,9 @@ defmodule BaudrateWeb.UserProfileLive do
   LiveView for public user profile pages.
 
   Displays a user's avatar, role, join date, content stats,
-  and recent articles. Redirects if the user doesn't exist or is banned.
-  Authenticated users can follow/unfollow and mute/unmute other users.
+  recent articles & comments, and boosted articles & comments. Redirects if
+  the user doesn't exist or is banned. Authenticated users can follow/unfollow
+  and mute/unmute other users.
   """
 
   use BaudrateWeb, :live_view
@@ -17,6 +18,8 @@ defmodule BaudrateWeb.UserProfileLive do
   alias BaudrateWeb.OpenGraph
   alias BaudrateWeb.RateLimits
   import BaudrateWeb.Helpers, only: [translate_role: 1]
+
+  @per_page 10
 
   @impl true
   def mount(%{"username" => username}, _session, socket) do
@@ -34,7 +37,6 @@ defmodule BaudrateWeb.UserProfileLive do
          |> redirect(to: ~p"/")}
 
       user ->
-        recent_articles = Content.list_recent_articles_by_user(user.id)
         article_count = Content.count_articles_by_user(user.id)
         comment_count = Content.count_comments_by_user(user.id)
         current_user = socket.assigns.current_user
@@ -57,9 +59,9 @@ defmodule BaudrateWeb.UserProfileLive do
         dc_meta = LinkedData.dublin_core_meta(:user, user)
 
         {:ok,
-         assign(socket,
+         socket
+         |> assign(
            profile_user: user,
-           recent_articles: recent_articles,
            article_count: article_count,
            comment_count: comment_count,
            is_muted: is_muted,
@@ -71,8 +73,12 @@ defmodule BaudrateWeb.UserProfileLive do
            show_report_modal: false,
            report_target_type: nil,
            report_target_id: nil,
-           report_target_label: nil
-         )}
+           report_target_label: nil,
+           activity_limit: @per_page,
+           boosted_limit: @per_page
+         )
+         |> load_activity(user.id, @per_page)
+         |> load_boosted(user.id, @per_page)}
     end
   end
 
@@ -182,6 +188,28 @@ defmodule BaudrateWeb.UserProfileLive do
   end
 
   @impl true
+  def handle_event("load_more_activity", _params, socket) do
+    new_limit = socket.assigns.activity_limit + @per_page
+    user_id = socket.assigns.profile_user.id
+
+    {:noreply,
+     socket
+     |> assign(:activity_limit, new_limit)
+     |> load_activity(user_id, new_limit)}
+  end
+
+  @impl true
+  def handle_event("load_more_boosted", _params, socket) do
+    new_limit = socket.assigns.boosted_limit + @per_page
+    user_id = socket.assigns.profile_user.id
+
+    {:noreply,
+     socket
+     |> assign(:boosted_limit, new_limit)
+     |> load_boosted(user_id, new_limit)}
+  end
+
+  @impl true
   def handle_event("open_report_modal", %{"type" => type, "id" => id} = params, socket) do
     label = params["label"]
 
@@ -237,6 +265,42 @@ defmodule BaudrateWeb.UserProfileLive do
               {:noreply, put_flash(socket, :error, gettext("Failed to submit report."))}
           end
         end
+    end
+  end
+
+  defp load_activity(socket, user_id, limit) do
+    results = Content.list_recent_activity_by_user(user_id, limit + 1)
+    has_more = length(results) > limit
+
+    assign(socket,
+      recent_activity: Enum.take(results, limit),
+      has_more_activity: has_more
+    )
+  end
+
+  defp load_boosted(socket, user_id, limit) do
+    results = Content.list_recent_boosted_by_user(user_id, limit + 1)
+    has_more = length(results) > limit
+
+    assign(socket,
+      boosted_activity: Enum.take(results, limit),
+      has_more_boosted: has_more
+    )
+  end
+
+  defp digest(nil), do: ""
+
+  defp digest(text) do
+    plain =
+      text
+      |> Baudrate.Sanitizer.Native.strip_tags()
+      |> String.replace(~r/\s+/, " ")
+      |> String.trim()
+
+    if String.length(plain) > 200 do
+      String.slice(plain, 0, 200) <> "…"
+    else
+      plain
     end
   end
 end

@@ -284,6 +284,21 @@ defmodule Baudrate.Content do
   def list_recent_articles_by_user(user_id, limit \\ 10),
     do: Feed.list_recent_articles_by_user(user_id, limit)
 
+  def list_recent_comments_by_user(user_id, limit \\ 10),
+    do: Feed.list_recent_comments_by_user(user_id, limit)
+
+  def list_recent_activity_by_user(user_id, limit \\ 10),
+    do: Feed.list_recent_activity_by_user(user_id, limit)
+
+  def list_recent_boosted_articles_by_user(user_id, limit \\ 10),
+    do: Feed.list_recent_boosted_articles_by_user(user_id, limit)
+
+  def list_recent_boosted_comments_by_user(user_id, limit \\ 10),
+    do: Feed.list_recent_boosted_comments_by_user(user_id, limit)
+
+  def list_recent_boosted_by_user(user_id, limit \\ 10),
+    do: Feed.list_recent_boosted_by_user(user_id, limit)
+
   defdelegate count_user_content_stats(user_id), to: Feed
   defdelegate count_articles_by_user(user_id), to: Feed
   defdelegate count_comments_by_user(user_id), to: Feed

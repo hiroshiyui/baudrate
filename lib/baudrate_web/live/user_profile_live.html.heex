@@ -142,46 +142,235 @@
     </div>
   </section>
 
-  <section
-    :if={@recent_articles != []}
-    id="recent-articles-section"
-    aria-labelledby="recent-articles-heading"
+  <div
+    :if={@recent_activity != [] || @boosted_activity != []}
+    id="profile-articles-columns"
+    class="grid grid-cols-1 md:grid-cols-2 gap-6"
   >
-    <h2 id="recent-articles-heading" class="text-lg font-semibold mb-3">
-      {gettext("Recent Articles")}
-    </h2>
-    <div id="recent-articles" class="space-y-2" aria-live="polite" data-focus-target>
-      <article
-        :for={article <- @recent_articles}
-        id={"article-#{article.slug}"}
-        class="article card bg-base-200 shadow-sm"
-      >
-        <div class="card-body p-4">
-          <.link
-            navigate={~p"/articles/#{article.slug}"}
-            class="card-title text-base link link-hover"
-          >
-            {article.title}
-          </.link>
-          <div class="text-sm text-base-content/70">
-            <time datetime={datetime_attr(article.inserted_at)}>
-              {format_datetime(article.inserted_at)}
-            </time>
-            <span :if={article.boards != []}>
-              &middot;
-              <span :for={board <- article.boards}>
-                <.link navigate={~p"/boards/#{board.slug}"} class="link link-hover">
-                  {board.name}
-                </.link>
-              </span>
-            </span>
-          </div>
-        </div>
-      </article>
-    </div>
-  </section>
+    <section
+      :if={@recent_activity != []}
+      id="recent-activity-section"
+      aria-labelledby="recent-activity-heading"
+    >
+      <h2 id="recent-activity-heading" class="text-lg font-semibold mb-3">
+        {gettext("Recent Articles & Comments")}
+      </h2>
+      <div id="recent-activity" class="space-y-2" aria-live="polite" data-focus-target>
+        <%= for entry <- @recent_activity do %>
+          <%= case entry do %>
+            <% {:article, article} -> %>
+              <article
+                id={"article-#{article.slug}"}
+                class="article card bg-base-200 shadow-sm"
+              >
+                <div class="card-body p-4">
+                  <.link
+                    navigate={~p"/articles/#{article.slug}"}
+                    class="card-title text-base link link-hover"
+                  >
+                    {article.title}
+                  </.link>
+                  <p :if={article.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
+                    {digest(article.body)}
+                  </p>
+                  <div
+                    :if={article.article_images != []}
+                    class="grid grid-cols-2 gap-2 mt-2"
+                  >
+                    <img
+                      :for={img <- article.article_images}
+                      src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+                      width={img.width}
+                      height={img.height}
+                      class="w-full aspect-square object-cover rounded-lg border border-base-300"
+                      loading="lazy"
+                      alt={gettext("Article image")}
+                    />
+                  </div>
+                  <div class="text-sm text-base-content/70">
+                    <time datetime={datetime_attr(article.inserted_at)}>
+                      {format_datetime(article.inserted_at)}
+                    </time>
+                    <span :if={article.boards != []}>
+                      &middot;
+                      <span :for={board <- article.boards}>
+                        <.link navigate={~p"/boards/#{board.slug}"} class="link link-hover">
+                          {board.name}
+                        </.link>
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              </article>
+            <% {:comment, comment} -> %>
+              <article
+                id={"comment-#{comment.id}"}
+                class="article card bg-base-200 shadow-sm"
+              >
+                <div class="card-body p-4">
+                  <div class="flex items-center gap-2">
+                    <span class="badge badge-sm badge-outline gap-1">
+                      <.icon name="hero-chat-bubble-left" class="size-3" />
+                      {gettext("Comment")}
+                    </span>
+                    <.link
+                      :if={comment.article}
+                      navigate={~p"/articles/#{comment.article.slug}"}
+                      class="card-title text-base link link-hover"
+                    >
+                      {comment.article.title}
+                    </.link>
+                  </div>
+                  <p :if={comment.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
+                    {digest(comment.body)}
+                  </p>
+                  <div class="text-sm text-base-content/70">
+                    <time datetime={datetime_attr(comment.inserted_at)}>
+                      {format_datetime(comment.inserted_at)}
+                    </time>
+                    <span :if={comment.article && comment.article.boards != []}>
+                      &middot;
+                      <span :for={board <- comment.article.boards}>
+                        <.link navigate={~p"/boards/#{board.slug}"} class="link link-hover">
+                          {board.name}
+                        </.link>
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              </article>
+          <% end %>
+        <% end %>
+      </div>
+      <div :if={@has_more_activity} class="mt-3 text-center">
+        <button
+          type="button"
+          class="btn btn-sm btn-outline"
+          phx-click="load_more_activity"
+        >
+          {gettext("Load more")}
+        </button>
+      </div>
+    </section>
 
-  <div :if={@recent_articles == []} class="text-base-content/70 text-center py-4">
+    <section
+      :if={@boosted_activity != []}
+      id="boosted-activity-section"
+      aria-labelledby="boosted-activity-heading"
+    >
+      <h2 id="boosted-activity-heading" class="text-lg font-semibold mb-3">
+        {gettext("Boosted Articles & Comments")}
+      </h2>
+      <div id="boosted-activity" class="space-y-2">
+        <%= for entry <- @boosted_activity do %>
+          <%= case entry do %>
+            <% {:article, boosted_at, article} -> %>
+              <article
+                id={"boosted-article-#{article.id}"}
+                class="article card bg-base-200 shadow-sm"
+              >
+                <div class="card-body p-4">
+                  <div class="flex items-center gap-2">
+                    <span class="badge badge-sm badge-outline gap-1">
+                      <.icon name="hero-arrow-path" class="size-3" />
+                      {gettext("Boosted")}
+                    </span>
+                    <.link
+                      navigate={~p"/articles/#{article.slug}"}
+                      class="card-title text-base link link-hover"
+                    >
+                      {article.title}
+                    </.link>
+                  </div>
+                  <p :if={article.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
+                    {digest(article.body)}
+                  </p>
+                  <div
+                    :if={article.article_images != []}
+                    class="grid grid-cols-2 gap-2 mt-2"
+                  >
+                    <img
+                      :for={img <- article.article_images}
+                      src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+                      width={img.width}
+                      height={img.height}
+                      class="w-full aspect-square object-cover rounded-lg border border-base-300"
+                      loading="lazy"
+                      alt={gettext("Article image")}
+                    />
+                  </div>
+                  <div class="text-sm text-base-content/70">
+                    <time datetime={datetime_attr(boosted_at)}>
+                      {format_datetime(boosted_at)}
+                    </time>
+                    <span :if={article.boards != []}>
+                      &middot;
+                      <span :for={board <- article.boards}>
+                        <.link navigate={~p"/boards/#{board.slug}"} class="link link-hover">
+                          {board.name}
+                        </.link>
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              </article>
+            <% {:comment, boosted_at, comment} -> %>
+              <article
+                id={"boosted-comment-#{comment.id}"}
+                class="article card bg-base-200 shadow-sm"
+              >
+                <div class="card-body p-4">
+                  <div class="flex items-center gap-2">
+                    <span class="badge badge-sm badge-outline gap-1">
+                      <.icon name="hero-arrow-path" class="size-3" />
+                      {gettext("Boosted")}
+                    </span>
+                    <span class="badge badge-sm badge-outline gap-1">
+                      <.icon name="hero-chat-bubble-left" class="size-3" />
+                      {gettext("Comment")}
+                    </span>
+                    <.link
+                      :if={comment.article}
+                      navigate={~p"/articles/#{comment.article.slug}"}
+                      class="card-title text-base link link-hover"
+                    >
+                      {comment.article.title}
+                    </.link>
+                  </div>
+                  <p :if={comment.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
+                    {digest(comment.body)}
+                  </p>
+                  <div class="text-sm text-base-content/70">
+                    <time datetime={datetime_attr(boosted_at)}>
+                      {format_datetime(boosted_at)}
+                    </time>
+                    <span :if={comment.article && comment.article.boards != []}>
+                      &middot;
+                      <span :for={board <- comment.article.boards}>
+                        <.link navigate={~p"/boards/#{board.slug}"} class="link link-hover">
+                          {board.name}
+                        </.link>
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              </article>
+          <% end %>
+        <% end %>
+      </div>
+      <div :if={@has_more_boosted} class="mt-3 text-center">
+        <button
+          type="button"
+          class="btn btn-sm btn-outline"
+          phx-click="load_more_boosted"
+        >
+          {gettext("Load more")}
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div :if={@recent_activity == [] && @boosted_activity == []} class="text-base-content/70 text-center py-4">
     {gettext("No articles yet.")}
   </div>
 </div>

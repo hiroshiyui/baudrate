@@ -123,6 +123,158 @@ defmodule Baudrate.Content.FeedQueriesTest do
     end
   end
 
+  describe "list_recent_activity_by_user/2" do
+    test "returns both articles and comments", %{user: user, public_board: board} do
+      {:ok, %{article: article}} = insert_article(user, board, "activity-art")
+
+      {:ok, _comment} =
+        Content.create_comment(%{
+          body: "activity comment",
+          article_id: article.id,
+          user_id: user.id
+        })
+
+      result = Content.list_recent_activity_by_user(user.id)
+      types = Enum.map(result, fn {type, _} -> type end)
+      assert :article in types
+      assert :comment in types
+    end
+
+    test "sorts by newest first", %{user: user, public_board: board} do
+      {:ok, %{article: a1}} = insert_article(user, board, "activity-older")
+      {:ok, %{article: a2}} = insert_article(user, board, "activity-newer")
+
+      # Force distinct timestamps
+      import Ecto.Query
+      Repo.update_all(
+        from(a in Baudrate.Content.Article, where: a.id == ^a1.id),
+        set: [inserted_at: ~U[2025-01-01 00:00:00Z]]
+      )
+
+      result = Content.list_recent_activity_by_user(user.id)
+      ids = Enum.map(result, fn {:article, a} -> a.id end)
+      assert ids == [a2.id, a1.id]
+    end
+
+    test "respects limit", %{user: user, public_board: board} do
+      for i <- 1..5, do: insert_article(user, board, "activity-limit-#{i}")
+
+      assert length(Content.list_recent_activity_by_user(user.id, 3)) == 3
+    end
+
+    test "returns empty list when user has no activity", %{user: _user} do
+      other_user = setup_user("user")
+      assert Content.list_recent_activity_by_user(other_user.id) == []
+    end
+  end
+
+  describe "list_recent_boosted_articles_by_user/2" do
+    test "returns articles boosted by the user", %{user: user, public_board: board} do
+      other_user = setup_user("user")
+      {:ok, %{article: article}} = insert_article(other_user, board, "boosted-by-user")
+      {:ok, _boost} = Content.boost_article(user.id, article.id)
+
+      result = Content.list_recent_boosted_articles_by_user(user.id)
+      assert length(result) == 1
+      [{_boosted_at, boosted_article}] = result
+      assert boosted_article.id == article.id
+    end
+
+    test "returns empty list when user has no boosts", %{user: user} do
+      assert Content.list_recent_boosted_articles_by_user(user.id) == []
+    end
+
+    test "excludes soft-deleted articles", %{user: user, public_board: board} do
+      other_user = setup_user("user")
+      {:ok, %{article: article}} = insert_article(other_user, board, "boosted-deleted")
+      {:ok, _boost} = Content.boost_article(user.id, article.id)
+      Content.soft_delete_article(article)
+
+      assert Content.list_recent_boosted_articles_by_user(user.id) == []
+    end
+
+    test "preloads boards and article_images", %{user: user, public_board: board} do
+      other_user = setup_user("user")
+      {:ok, %{article: article}} = insert_article(other_user, board, "boosted-preload")
+      {:ok, _boost} = Content.boost_article(user.id, article.id)
+
+      [{_boosted_at, boosted_article}] = Content.list_recent_boosted_articles_by_user(user.id)
+      assert [%Board{} | _] = boosted_article.boards
+      assert is_list(boosted_article.article_images)
+    end
+
+    test "respects limit", %{user: user, public_board: board} do
+      other_user = setup_user("user")
+
+      for i <- 1..5 do
+        {:ok, %{article: article}} = insert_article(other_user, board, "boosted-limit-#{i}")
+        {:ok, _boost} = Content.boost_article(user.id, article.id)
+      end
+
+      assert length(Content.list_recent_boosted_articles_by_user(user.id, 3)) == 3
+    end
+
+    test "orders by boost time, newest first", %{user: user, public_board: board} do
+      other_user = setup_user("user")
+      {:ok, %{article: a1}} = insert_article(other_user, board, "boost-order-1")
+      {:ok, %{article: a2}} = insert_article(other_user, board, "boost-order-2")
+
+      {:ok, _} = Content.boost_article(user.id, a1.id)
+      {:ok, _} = Content.boost_article(user.id, a2.id)
+
+      result = Content.list_recent_boosted_articles_by_user(user.id)
+      ids = Enum.map(result, fn {_, a} -> a.id end)
+      # a2 boosted last, should appear first
+      assert ids == [a2.id, a1.id]
+    end
+  end
+
+  describe "list_recent_boosted_by_user/2" do
+    test "returns both boosted articles and comments", %{user: user, public_board: board} do
+      other_user = setup_user("user")
+      {:ok, %{article: article}} = insert_article(other_user, board, "boosted-mixed-art")
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          body: "comment to boost",
+          article_id: article.id,
+          user_id: other_user.id
+        })
+
+      {:ok, _} = Content.boost_article(user.id, article.id)
+      {:ok, _} = Content.boost_comment(user.id, comment.id)
+
+      result = Content.list_recent_boosted_by_user(user.id)
+      types = Enum.map(result, fn {type, _, _} -> type end)
+      assert :article in types
+      assert :comment in types
+    end
+
+    test "returns empty list when no boosts", %{user: user} do
+      assert Content.list_recent_boosted_by_user(user.id) == []
+    end
+
+    test "excludes soft-deleted content", %{user: user, public_board: board} do
+      other_user = setup_user("user")
+      {:ok, %{article: article}} = insert_article(other_user, board, "boosted-del")
+      {:ok, _} = Content.boost_article(user.id, article.id)
+      Content.soft_delete_article(article)
+
+      assert Content.list_recent_boosted_by_user(user.id) == []
+    end
+
+    test "respects limit", %{user: user, public_board: board} do
+      other_user = setup_user("user")
+
+      for i <- 1..5 do
+        {:ok, %{article: article}} = insert_article(other_user, board, "boosted-lim-#{i}")
+        {:ok, _} = Content.boost_article(user.id, article.id)
+      end
+
+      assert length(Content.list_recent_boosted_by_user(user.id, 3)) == 3
+    end
+  end
+
   # --- Helpers ---
 
   defp setup_user(role_name) do
