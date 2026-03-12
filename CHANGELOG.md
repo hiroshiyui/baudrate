@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.22] — 2026-03-12
+
+### Fixed
+
+- **Federation delivery crash on remote article like/boost** — liking or
+  boosting a remote article (no local user) crashed `enqueue_for_article`
+  with `BadMapError` when accessing `article.user.username`. Now skips user
+  follower inbox resolution for remote articles
+
 ## [1.3.21] — 2026-03-12
 
 ### Added
