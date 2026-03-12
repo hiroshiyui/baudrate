@@ -65,8 +65,10 @@ defmodule Baudrate.Federation.ActorResolver do
         {:ok, %{body: body}} ->
           parse_and_upsert(body, actor_ap_id)
 
-        {:error, {:http_error, 401, _}} ->
-          # Remote requires authorized fetch — retry with signed request
+        {:error, {:http_error, status, _}} when status in [401, 403, 404] ->
+          # Remote requires authorized fetch — retry with signed request.
+          # Some instances (e.g. Threads.net) return 404 instead of 401
+          # for unsigned requests.
           signed_fetch(actor_ap_id)
 
         {:error, reason} = err ->
