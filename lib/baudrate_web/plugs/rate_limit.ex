@@ -16,6 +16,7 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     * `:activity_pub` — 120 requests per minute per IP
     * `:feeds` — 30 requests per minute per IP
     * `:push_subscription` — 10 requests per minute per IP
+    * `:share_target` — 10 requests per minute per IP
 
   ## Bucket Naming
 
@@ -37,7 +38,8 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     register: {3_600_000, 5},
     activity_pub: {60_000, 120},
     feeds: {60_000, 30},
-    push_subscription: {60_000, 10}
+    push_subscription: {60_000, 10},
+    share_target: {60_000, 10}
   }
 
   @impl true

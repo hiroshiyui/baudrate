@@ -121,6 +121,7 @@ defmodule BaudrateWeb.Router do
       "x-frame-options" => "DENY"
     }
 
+    plug BaudrateWeb.Plugs.RateLimit, action: :share_target
     plug BaudrateWeb.Plugs.SetLocale
     plug BaudrateWeb.Plugs.EnsureSetup
     plug BaudrateWeb.Plugs.SetTheme
