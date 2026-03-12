@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.23] — 2026-03-12
+
+### Fixed
+
+- **Actor discovery on Threads.net and similar instances** — expanded the
+  signed fetch fallback to also trigger on 403 and 404 HTTP responses, not
+  just 401. Threads.net returns 404 for unsigned actor profile requests,
+  which previously prevented discovering and following accounts there
+
 ## [1.3.22] — 2026-03-12
 
 ### Fixed
