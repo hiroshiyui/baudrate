@@ -45,7 +45,7 @@
           label={gettext("Blocked Domains (federation)")}
           placeholder="spam.example, bad-actor.example"
         />
-        <p class="text-sm opacity-60">
+        <p class="text-sm opacity-70">
           {gettext("Comma-separated list of domains to block from federation.")}
         </p>
         <.input
@@ -54,7 +54,7 @@
           label={gettext("Allowed Domains (federation)")}
           placeholder="trusted.example, friend.example"
         />
-        <p class="text-sm opacity-60">
+        <p class="text-sm opacity-70">
           {gettext(
             "Comma-separated list of domains to allow. Only used in allowlist mode. When empty, all domains are blocked."
           )}
@@ -68,7 +68,7 @@
             {gettext("Enabled (require HTTP signatures on GETs)"), "true"}
           ]}
         />
-        <p class="text-sm opacity-60">
+        <p class="text-sm opacity-70">
           {gettext(
             "When enabled, unsigned GET requests to ActivityPub endpoints return 401. WebFinger and NodeInfo remain public."
           )}
@@ -79,7 +79,7 @@
           label={gettext("Blocklist Audit URL")}
           placeholder="https://example.com/blocklist.csv"
         />
-        <p class="text-sm opacity-60">
+        <p class="text-sm opacity-70">
           {gettext(
             "URL to an external domain blocklist (CSV or JSON). Used by the federation dashboard audit feature."
           )}

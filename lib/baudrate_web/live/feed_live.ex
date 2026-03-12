@@ -573,6 +573,35 @@ defmodule BaudrateWeb.FeedLive do
     end
   end
 
+  defp feed_item_label(item) do
+    actor_name =
+      case item.source do
+        :remote ->
+          item.feed_item.remote_actor.display_name || item.feed_item.remote_actor.username
+
+        :local ->
+          item.article.user && item.article.user.username
+
+        :local_comment ->
+          cond do
+            item.comment.user -> item.comment.user.username
+            item.comment.remote_actor -> item.comment.remote_actor.display_name || item.comment.remote_actor.username
+            true -> nil
+          end
+      end
+
+    title =
+      case item.source do
+        :remote -> item.feed_item.title
+        :local -> item.article.title
+        :local_comment -> item.comment.article && item.comment.article.title
+      end
+
+    [actor_name, title]
+    |> Enum.reject(&is_nil/1)
+    |> Enum.join(" — ")
+  end
+
   defp reply_count(assigns, feed_item_id) do
     Map.get(assigns.reply_counts, feed_item_id, 0)
   end

@@ -915,7 +915,7 @@ defmodule BaudrateWeb.CoreComponents do
       <figure :if={@preview.image_path} class="w-32 shrink-0">
         <img
           src={@preview.image_path}
-          alt=""
+          alt={gettext("Preview image for %{title}", title: @preview.title || @preview.url)}
           class="object-cover h-full w-full"
           loading="lazy"
           referrerpolicy="no-referrer"

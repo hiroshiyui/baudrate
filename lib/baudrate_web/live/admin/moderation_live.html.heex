@@ -76,7 +76,7 @@
 
   <%!-- Reports --%>
   <div id="moderation-reports" aria-live="polite" class="space-y-4">
-    <div :if={@reports == []} class="text-center py-8 opacity-60">
+    <div :if={@reports == []} class="text-center py-8 opacity-70">
       {gettext("No reports with status \"%{status}\".", status: @status_filter)}
     </div>
 

@@ -286,7 +286,11 @@
       aria-label={gettext("Feed")}
       data-focus-target
     >
-      <article :for={item <- @items} class="feed-item card bg-base-200 shadow-sm">
+      <article
+        :for={item <- @items}
+        class="feed-item card bg-base-200 shadow-sm"
+        aria-label={feed_item_label(item)}
+      >
         <%!-- Remote feed item --%>
         <div :if={item.source == :remote} class="card-body p-4">
           <%!-- Boost attribution --%>
