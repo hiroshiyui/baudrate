@@ -238,9 +238,14 @@ defmodule Baudrate.Federation.Delivery do
   def enqueue_for_article(activity_json, actor_uri, article) do
     article = Repo.preload(article, [:boards, :user])
 
-    # Collect inboxes from user followers
-    user_uri = Federation.actor_uri(:user, article.user.username)
-    user_inboxes = resolve_follower_inboxes(user_uri)
+    # Collect inboxes from user followers (skip for remote articles with no local user)
+    user_inboxes =
+      if article.user do
+        user_uri = Federation.actor_uri(:user, article.user.username)
+        resolve_follower_inboxes(user_uri)
+      else
+        []
+      end
 
     # Collect inboxes from board followers (public boards only)
     board_inboxes =
