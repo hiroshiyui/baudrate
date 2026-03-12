@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.21] — 2026-03-12
+
+### Added
+
+- **User profile: boosted articles & comments** — user profile pages now show
+  a two-column layout with recent articles & comments on the left and boosted
+  articles & comments on the right, with content digests, image previews, and
+  load-more pagination
+- **Profile username link** — username on the profile settings page is now a
+  clickable link to the public profile, with a copy-to-clipboard button for
+  the full profile URL
+
+### Fixed
+
+- **Rate limiting gap** — the PWA Web Share Target endpoint (`POST /share`)
+  now has rate limiting (10 req/min per IP)
+- **Accessibility** — link preview images now have descriptive `alt` text,
+  article elements have `aria-labelledby`/`aria-label` attributes, admin panel
+  text opacity raised from 60% to 70% for WCAG AA contrast compliance
+- **Defensive `Repo.get!` calls** — `stamp_local_ap_id` and `stamp_ap_id` now
+  use `Repo.get` with graceful nil handling instead of raising on deleted
+  records
+
+### Tests
+
+- Added 27 dedicated tests for `ArticleImageStorage` (image processing, edge
+  cases, invalid inputs)
+- Added 26 dedicated tests for `Content.Interactions` (visibility checks, role
+  access, AP ID stamping)
+
 ## [1.3.20] — 2026-03-11
 
 ### Fixed
