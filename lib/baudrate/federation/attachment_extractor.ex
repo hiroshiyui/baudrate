@@ -22,7 +22,7 @@ defmodule Baudrate.Federation.AttachmentExtractor do
       %{"type" => type, "mediaType" => mt} when type in ["Document", "Image"] ->
         String.starts_with?(mt, "image/")
 
-      %{"type" => "Image"} ->
+      %{"type" => "Image", "url" => url} when is_binary(url) ->
         true
 
       _ ->

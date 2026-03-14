@@ -552,6 +552,13 @@ extracted by `AttachmentExtractor` and fetched asynchronously via
 security pipeline (magic byte validation, re-encode to WebP, EXIF strip, max
 1024px) and are stored locally as `ArticleImage` records with `user_id = NULL`.
 
+**Remote comment/DM images:** Image attachments on incoming Note objects (comments
+and DMs) are appended as `<img>` tags to `body_html` during ingestion. Only HTTPS
+URLs are allowed. Unlike article images, these are not fetched and re-encoded
+server-side — they render as remote images in the browser. The `AttachmentExtractor`
+extracts the attachment metadata and `InboxHandler.append_attachment_images/2`
+builds the sanitized HTML.
+
 **OTP release note:** Same as the avatar system — upload directory paths must
 use runtime `Application.app_dir/2` calls, not compile-time module attributes.
 

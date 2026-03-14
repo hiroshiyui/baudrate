@@ -437,6 +437,84 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       # Should not hang — falls through after max depth
       assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
     end
+
+    test "appends image attachments to comment body_html" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      article_uri = Federation.actor_uri(:article, article.slug)
+      uid = System.unique_integer([:positive])
+
+      activity = %{
+        "id" => "https://remote.example/activities/create-img-#{uid}",
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/notes/img-#{uid}",
+          "type" => "Note",
+          "content" => "<p>Check out this image!</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "inReplyTo" => article_uri,
+          "attachment" => [
+            %{
+              "type" => "Document",
+              "mediaType" => "image/png",
+              "url" => "https://remote.example/media/photo.png",
+              "name" => "A cool photo"
+            }
+          ]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      comments = Content.list_comments_for_article(article)
+      comment = hd(comments)
+      assert comment.body_html =~ "Check out this image!"
+      assert comment.body_html =~ ~s(src="https://remote.example/media/photo.png")
+      assert comment.body_html =~ ~s(alt="A cool photo")
+      assert comment.body_html =~ "loading=\"lazy\""
+    end
+
+    test "skips non-HTTPS image attachments in comments" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      article_uri = Federation.actor_uri(:article, article.slug)
+      uid = System.unique_integer([:positive])
+
+      activity = %{
+        "id" => "https://remote.example/activities/create-http-img-#{uid}",
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/notes/http-img-#{uid}",
+          "type" => "Note",
+          "content" => "<p>HTTP image</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "inReplyTo" => article_uri,
+          "attachment" => [
+            %{
+              "type" => "Document",
+              "mediaType" => "image/png",
+              "url" => "http://insecure.example/media/photo.png",
+              "name" => "Insecure image"
+            }
+          ]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      comments = Content.list_comments_for_article(article)
+      comment = hd(comments)
+      assert comment.body_html =~ "HTTP image"
+      refute comment.body_html =~ "insecure.example"
+    end
   end
 
   describe "Create(Article) — remote article" do

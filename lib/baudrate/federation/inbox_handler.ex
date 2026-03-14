@@ -537,6 +537,7 @@ defmodule Baudrate.Federation.InboxHandler do
       case Content.get_comment_by_ap_id(ap_id) do
         %{remote_actor_id: actor_id} = comment when actor_id == remote_actor.id ->
           {:ok, body, body_html} = sanitize_content(object)
+          body_html = append_attachment_images(body_html, object)
 
           case Content.update_remote_comment(comment, %{body: body, body_html: body_html}) do
             {:ok, _} ->
@@ -644,6 +645,7 @@ defmodule Baudrate.Federation.InboxHandler do
       else
         url = extract_url(object)
         visibility = Visibility.from_addressing(object)
+        body_html = append_attachment_images(body_html, object)
 
         case Content.create_remote_comment(%{
                body: body,
@@ -706,6 +708,8 @@ defmodule Baudrate.Federation.InboxHandler do
       if Messaging.get_message_by_ap_id(ap_id) do
         :ok
       else
+        body_html = append_attachment_images(body_html, object)
+
         case Messaging.receive_remote_dm(local_user, remote_actor, %{
                body: body,
                body_html: body_html,
@@ -916,6 +920,7 @@ defmodule Baudrate.Federation.InboxHandler do
             slug = Content.generate_slug(title)
             board_ids = Enum.map(boards, & &1.id)
             poll_opts = extract_poll_from_object(object, ap_id)
+            image_attachments = AttachmentExtractor.extract_image_attachments(object)
             url = extract_url(object)
             visibility = Visibility.from_addressing(object)
 
@@ -930,7 +935,7 @@ defmodule Baudrate.Federation.InboxHandler do
                      visibility: visibility
                    },
                    board_ids,
-                   poll_opts
+                   poll_opts ++ [image_attachments: image_attachments]
                  ) do
               {:ok, _multi} ->
                 Logger.info(
@@ -1664,6 +1669,42 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp extract_image_attachments(object),
     do: AttachmentExtractor.extract_image_attachments(object)
+
+  # Appends image attachment tags to body_html for AP objects with image attachments.
+  # This ensures remote comment images (sent as AP attachments, not inline HTML) are displayed.
+  defp append_attachment_images(body_html, object) do
+    case extract_image_attachments(object) do
+      [] ->
+        body_html
+
+      attachments ->
+        img_tags =
+          attachments
+          |> Enum.filter(fn att -> https_url?(att["url"]) end)
+          |> Enum.map_join("", fn att ->
+            url = att["url"]
+            alt = Baudrate.Sanitizer.Native.strip_tags(att["name"] || "")
+
+            ~s(<p><img src="#{escape_attr(url)}" alt="#{escape_attr(alt)}" loading="lazy" /></p>)
+          end)
+
+        if img_tags == "", do: body_html, else: (body_html || "") <> img_tags
+    end
+  end
+
+  defp https_url?(url) when is_binary(url), do: String.starts_with?(url, "https://")
+  defp https_url?(_), do: false
+
+  defp escape_attr(value) when is_binary(value) do
+    value
+    |> String.replace(~r/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/, "")
+    |> String.replace("&", "&amp;")
+    |> String.replace("\"", "&quot;")
+    |> String.replace("<", "&lt;")
+    |> String.replace(">", "&gt;")
+  end
+
+  defp escape_attr(_), do: ""
 
   # Extracts poll data from a Question object or an Article with a Question attachment.
   defp extract_poll_from_object(object, ap_id) do
