@@ -54,7 +54,7 @@ defmodule Baudrate.Federation.ActorResolver do
   end
 
   defp stale?(%RemoteActor{fetched_at: fetched_at}) do
-    ttl = config(:actor_cache_ttl)
+    ttl = config(:actor_cache_ttl) || 0
     age = DateTime.diff(DateTime.utc_now(), fetched_at, :second)
     age > ttl
   end
