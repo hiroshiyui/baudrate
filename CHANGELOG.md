@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.25] — 2026-03-14
+
+### Added
+
+- **Remote comment/DM image attachments** — image attachments on incoming
+  federated comments and DMs are now displayed as `<img>` tags in the
+  rendered body (HTTPS only). Previously, images sent as AP attachments
+  on Note objects were silently stripped by the sanitizer.
+- **Test coverage** — added 55 tests for `Content.Search`, `Content.ReadTracking`,
+  and `InteractionHelpers` modules
+
+### Fixed
+
+- **Announce-to-boards missing images** — articles routed via Announce
+  (boost) to boards now correctly extract and store image attachments
+- **Actor resolver nil TTL** — `stale?()` no longer returns false when
+  `actor_cache_ttl` config is nil (Elixir term ordering edge case),
+  preventing stale actors from being served without refetch
+- **AttachmentExtractor** — `Image` type attachments without a URL are
+  now correctly rejected
+
 ## [1.3.24] — 2026-03-14
 
 ### Improved
