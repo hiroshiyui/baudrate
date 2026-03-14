@@ -4410,7 +4410,7 @@ msgid "Expires (optional)"
 msgstr ""
 
 #: lib/baudrate_web/live/article_new_live.ex:340
-#: lib/baudrate_web/live/feed_live.ex:698
+#: lib/baudrate_web/live/feed_live.ex:706
 #, elixir-autogen, elixir-format
 msgid "Failed to create poll."
 msgstr ""
@@ -4456,8 +4456,8 @@ msgstr ""
 
 #: lib/baudrate_web/live/article_new_live.ex:334
 #: lib/baudrate_web/live/article_new_live.ex:337
-#: lib/baudrate_web/live/feed_live.ex:692
-#: lib/baudrate_web/live/feed_live.ex:695
+#: lib/baudrate_web/live/feed_live.ex:700
+#: lib/baudrate_web/live/feed_live.ex:703
 #, elixir-autogen, elixir-format
 msgid "Poll: %{error}"
 msgstr ""
