@@ -23,12 +23,15 @@ defmodule Baudrate.Content.Search do
   @per_page 20
 
   @doc """
-  Searches boards by name (ILIKE), filtered to boards the user can post in.
+  Searches boards by name or slug (ILIKE), filtered to boards the user can post in.
   """
   def search_boards(query, user) when is_binary(query) do
     sanitized = "%" <> Filters.sanitize_like(query) <> "%"
 
-    from(b in Board, where: ilike(b.name, ^sanitized), order_by: [asc: b.position, asc: b.name])
+    from(b in Board,
+      where: ilike(b.name, ^sanitized) or ilike(b.slug, ^sanitized),
+      order_by: [asc: b.position, asc: b.name]
+    )
     |> Repo.all()
     |> Enum.filter(&Permissions.can_post_in_board?(&1, user))
   end

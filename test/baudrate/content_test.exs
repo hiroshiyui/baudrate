@@ -2136,6 +2136,16 @@ defmodule Baudrate.ContentTest do
       refute "admin-only" in slugs
     end
 
+    test "matches by slug" do
+      user = create_user("user")
+      create_board(%{name: "Elixir Discussion", slug: "elixir-disc"})
+      create_board(%{name: "Rust Talk", slug: "rust-talk"})
+
+      results = Content.search_boards("rust-talk", user)
+      assert length(results) == 1
+      assert hd(results).slug == "rust-talk"
+    end
+
     test "returns empty list when no match" do
       user = create_user("user")
       create_board(%{name: "General", slug: "general-search"})
