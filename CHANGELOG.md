@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.24] — 2026-03-14
+
+### Improved
+
+- **Board search in article forwarding** — the forward-to-board search now
+  matches against board slugs in addition to board names, making it easier
+  to find boards by their URL identifier
+
 ## [1.3.23] — 2026-03-12
 
 ### Fixed
