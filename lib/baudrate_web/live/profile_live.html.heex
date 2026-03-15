@@ -6,7 +6,7 @@
       <%!-- Avatar section --%>
       <div id="profile-avatar-section" class="flex flex-wrap items-center gap-4">
         <.avatar user={@current_user} size={120} />
-        <div :if={@is_active} class="flex gap-2">
+        <div :if={@can_upload_avatar} class="flex gap-2">
           <button
             type="button"
             class="btn btn-sm btn-primary"
@@ -26,11 +26,12 @@
         </div>
         <span :if={!@is_active} class="text-sm text-base-content/70">
           {gettext("Your account is pending approval.")}
+          {gettext("You can update your profile while you wait.")}
         </span>
       </div>
 
       <%!-- Hidden file input for avatar upload --%>
-      <form :if={@is_active} id="avatar-upload-form" phx-change="validate_avatar" class="hidden">
+      <form :if={@can_upload_avatar} id="avatar-upload-form" phx-change="validate_avatar" class="hidden">
         <.live_file_input upload={@uploads.avatar} />
       </form>
 

@@ -25,8 +25,9 @@ defmodule Baudrate.Setup.User do
   ## Status
 
     * `"active"` — fully functional account (default)
-    * `"pending"` — awaiting admin approval; can log in and browse,
-      but cannot create articles or upload avatars
+    * `"pending"` — awaiting admin approval; can log in, browse,
+      and update profile (avatar, bio, signature, display name),
+      but cannot create articles or comments
     * `"banned"` — account suspended by an admin; cannot log in
 
   ## Ban Fields

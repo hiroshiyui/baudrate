@@ -104,7 +104,7 @@ defmodule BaudrateWeb.RegisterLive do
 
             _ ->
               gettext(
-                "Your account has been created and is pending admin approval. You can sign in, but posting and avatar upload are restricted until approved."
+                "Your account has been created and is pending admin approval. You can sign in and update your profile, but posting is restricted until approved."
               )
           end
 

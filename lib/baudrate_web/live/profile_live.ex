@@ -25,6 +25,7 @@ defmodule BaudrateWeb.ProfileLive do
     user = socket.assigns.current_user
     policy = Auth.totp_policy(user.role.name)
     is_active = Auth.user_active?(user)
+    can_upload_avatar = Auth.can_upload_avatar?(user)
 
     display_name_changeset = Baudrate.Setup.User.display_name_changeset(user, %{})
     bio_changeset = Baudrate.Setup.User.bio_changeset(user, %{})
@@ -35,6 +36,7 @@ defmodule BaudrateWeb.ProfileLive do
       socket
       |> assign(:totp_policy, policy)
       |> assign(:is_active, is_active)
+      |> assign(:can_upload_avatar, can_upload_avatar)
       |> assign(:show_crop_modal, false)
       |> assign(:preferred_locales, user.preferred_locales || [])
       |> assign(:available_locales, Locale.available_locales())
