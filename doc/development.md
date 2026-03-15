@@ -35,16 +35,23 @@ lib/
 │   ├── application.ex           # Supervision tree
 │   ├── repo.ex                  # Ecto repository + sanitize_like/1 helper
 │   ├── pagination.ex            # Shared pagination (paginate_opts/3, paginate_query/3)
-│   ├── auth.ex                  # Auth context: login, registration, TOTP, sessions, avatars, invite codes (quota), password reset, user blocks, user mutes
+│   ├── auth.ex                  # Auth context facade: defdelegate to focused sub-modules
 │   ├── auth/
 │   │   ├── invite_code.ex       # InviteCode schema (invite-only registration)
+│   │   ├── invites.ex           # Invite code generation, revocation, and quota logic
 │   │   ├── login_attempt.ex     # LoginAttempt schema (per-account brute-force tracking)
+│   │   ├── moderation.ex        # User-level moderation: ban, unban, role changes
+│   │   ├── passwords.ex         # Password hashing, validation, and reset logic
+│   │   ├── profiles.ex          # User profile updates: display name, bio, signature
 │   │   ├── recovery_code.ex     # Ecto schema for one-time recovery codes
+│   │   ├── second_factor.ex     # TOTP enrollment, verification, and recovery
 │   │   ├── session_cleaner.ex   # GenServer: hourly cleanup (sessions, login attempts, orphan images)
+│   │   ├── sessions.ex          # Session lifecycle: creation, rotation, eviction
 │   │   ├── totp_vault.ex        # AES-256-GCM encryption for TOTP secrets
 │   │   ├── user_block.ex        # UserBlock schema (local + remote actor blocks)
 │   │   ├── user_mute.ex         # UserMute schema (local-only soft-mute/ignore)
-│   │   └── user_session.ex      # Ecto schema for server-side sessions
+│   │   ├── user_session.ex      # Ecto schema for server-side sessions
+│   │   └── users.ex             # User CRUD, lookup, and registration
 │   ├── avatar.ex                # Avatar image processing (crop, resize, WebP)
 │   ├── content.ex               # Content context facade: defdelegate to focused sub-modules
 │   ├── content/
@@ -93,34 +100,44 @@ lib/
 │   │   ├── conversation_read_cursor.ex # Per-user read position tracking
 │   │   ├── direct_message.ex    # DirectMessage schema (local + remote, soft-delete)
 │   │   └── pubsub.ex            # PubSub helpers for real-time DM updates
-│   ├── federation.ex            # Federation context: actors, outbox, followers, announces, key rotation
+│   ├── federation.ex            # Federation context facade: defdelegate to focused sub-modules
 │   ├── federation/
+│   │   ├── actor_renderer.ex    # JSON-LD rendering for Person/Group/Organization actors
 │   │   ├── actor_resolver.ex    # Remote actor fetching and caching (24h TTL, signed fetch fallback)
 │   │   ├── announce.ex          # Announce (boost) schema
+│   │   ├── attachment_extractor.ex # Extracts media attachments from AP objects
 │   │   ├── blocklist_audit.ex   # Audit local blocklist against external known-bad-actor lists
+│   │   ├── board_follow.ex      # BoardFollow schema (outbound board follows)
+│   │   ├── collections.ex       # ActivityPub collection builders (Outbox, Followers, Following)
 │   │   ├── delivery.ex          # Outgoing activity delivery (Accept, queue, retry, block delivery)
 │   │   ├── delivery_job.ex      # DeliveryJob schema (delivery queue records)
+│   │   ├── delivery_stats.ex    # Delivery queue stats and admin management
 │   │   ├── delivery_worker.ex   # GenServer: polls delivery queue, retries failed jobs
+│   │   ├── discovery.ex         # WebFinger and NodeInfo responses
 │   │   ├── domain_block_cache.ex # ETS-backed cache for domain blocking decisions
-│   │   ├── stale_actor_cleaner.ex # GenServer: daily stale remote actor cleanup
-│   │   ├── follower.ex          # Follower schema (remote → local follows)
-│   │   ├── http_client.ex       # SSRF-safe HTTP client for remote fetches (unsigned + signed GET)
-│   │   ├── http_signature.ex    # HTTP Signature signing and verification (POST + GET)
-│   │   ├── inbox_handler.ex     # Incoming activity dispatch (Follow, Create, Like, Block, etc.)
-│   │   ├── key_store.ex         # RSA-2048 keypair management for actors (generate, ensure, rotate)
-│   │   ├── key_vault.ex         # AES-256-GCM encryption for private keys at rest
-│   │   ├── remote_actor.ex      # RemoteActor schema (cached remote profiles)
-│   │   ├── user_follow.ex       # UserFollow schema (outbound follows: remote actors + local users)
+│   │   ├── feed.ex              # Personal feed logic: Create(Note/Article) routing, boost handling
 │   │   ├── feed_item.ex         # FeedItem schema (posts from followed remote actors)
 │   │   ├── feed_item_boost.ex   # FeedItemBoost schema (local boosts on remote feed items)
 │   │   ├── feed_item_like.ex    # FeedItemLike schema (local likes on remote feed items)
 │   │   ├── feed_item_reply.ex   # FeedItemReply schema (local replies to remote feed items)
-│   │   ├── pubsub.ex            # Federation PubSub (user feed events)
-│   │   ├── publisher.ex         # ActivityStreams JSON builders for outgoing activities
-│   │   ├── sanitizer.ex         # HTML sanitizer for federated content (Ammonia NIF)
-│   │   ├── delivery_stats.ex    # Delivery queue stats and admin management
+│   │   ├── follower.ex          # Follower schema (remote → local follows)
+│   │   ├── follows.ex           # Local/remote follow logic, acceptance, and migration
+│   │   ├── http_client.ex       # SSRF-safe HTTP client for remote fetches (unsigned + signed GET)
+│   │   ├── http_signature.ex    # HTTP Signature signing and verification (POST + GET)
+│   │   ├── inbox_handler.ex     # Incoming activity dispatch (Follow, Create, Like, Block, etc.)
 │   │   ├── instance_stats.ex    # Per-domain instance statistics
-│   │   └── validator.ex         # AP input validation (URLs, sizes, attribution, allowlist/blocklist)
+│   │   ├── key_store.ex         # RSA-2048 keypair management for actors (generate, ensure, rotate)
+│   │   ├── key_vault.ex         # AES-256-GCM encryption for private keys at rest
+│   │   ├── object_builder.ex    # ActivityStreams JSON builders for articles, comments, polls
+│   │   ├── object_resolver.ex   # Two-phase remote object resolution (fetch/resolve)
+│   │   ├── publisher.ex         # High-level activity publishing API
+│   │   ├── pubsub.ex            # Federation PubSub (user feed events)
+│   │   ├── remote_actor.ex      # RemoteActor schema (cached remote profiles)
+│   │   ├── sanitizer.ex         # HTML sanitizer for federated content (Ammonia NIF)
+│   │   ├── stale_actor_cleaner.ex # GenServer: daily stale remote actor cleanup
+│   │   ├── user_follow.ex       # UserFollow schema (outbound follows: remote actors + local users)
+│   │   ├── validator.ex         # AP input validation (URLs, sizes, attribution, allowlist/blocklist)
+│   │   └── visibility.ex        # ActivityPub visibility derivation from addressing
 │   ├── moderation.ex            # Moderation context: reports, resolve/dismiss, audit log
 │   ├── moderation/
 │   │   ├── log.ex               # ModerationLog schema (audit trail of moderation actions)
@@ -157,6 +174,7 @@ lib/
 │       └── selenium_setup.ex    # mix selenium.setup — download Selenium + GeckoDriver
 ├── baudrate_web/                # Web layer
 │   ├── components/
+│   │   ├── comment_components.ex # Focused components for rendering comment threads
 │   │   ├── core_components.ex   # Shared UI components (avatar, flash, input, etc.)
 │   │   └── layouts.ex           # App and setup layouts with nav, theme toggle, footer
 │   ├── controllers/
@@ -187,6 +205,7 @@ lib/
 │   │   │   ├── settings_live.ex       # Admin site settings (name, timezone, registration, federation)
 │   │   │   └── users_live.ex          # Admin user management (paginated, filterable, ban, unban, role change)
 │   │   ├── article_edit_live.ex  # Article editing form
+│   │   ├── article_helpers.ex   # Pure helper logic extracted from ArticleLive
 │   │   ├── article_history_live.ex # Article edit history with inline diffs
 │   │   ├── article_live.ex      # Single article view with paginated comments
 │   │   ├── article_new_live.ex  # Article creation form
@@ -246,6 +265,23 @@ lib/
 │   ├── router.ex                # Route scopes and pipelines
 │   └── telemetry.ex             # Telemetry metrics configuration
 ```
+
+### Auth Architecture
+
+The `Baudrate.Auth` module is a **facade** — it delegates all calls to
+focused sub-modules under `Baudrate.Auth.*`. External callers (LiveViews,
+controllers, federation handlers, tests) always call `Auth.function_name`
+and never need to know about the internal split.
+
+| Sub-Module | Responsibility |
+|---|---|
+| `Auth.Users` | User CRUD, lookup (by ID, username, session), registration, admin approval, role updates, and capability checks |
+| `Auth.Passwords` | Password hashing (bcrypt), verification, and recovery code-based resets |
+| `Auth.Sessions` | Session lifecycle (dual-token rotation), server-side session storage, and login attempt throttling/monitoring |
+| `Auth.SecondFactor` | TOTP enrollment, encryption/decryption of secrets, QR code generation, and recovery code management |
+| `Auth.Invites` | Invite-only registration logic, quota management, and admin-issued invites |
+| `Auth.Profiles` | User preference updates: display name, bio, signature, avatar association, and notification settings |
+| `Auth.Moderation` | Local user moderation: banning, blocking remote actors/users, and muting interactions |
 
 ### Authentication Flow
 
@@ -965,6 +1001,30 @@ federated).
 **Files:**
 - `lib/baudrate/content/bookmark.ex` — schema with validation
 - `lib/baudrate_web/live/bookmarks_live.ex` — paginated bookmarks page at `/bookmarks`
+
+### Federation Architecture
+
+The `Baudrate.Federation` module is a **facade** — it delegates all calls to
+focused sub-modules under `Baudrate.Federation.*`. External callers (LiveViews,
+controllers, inbox handlers, tests) always call `Federation.function_name`
+and never need to know about the internal split.
+
+| Sub-Module | Responsibility |
+|---|---|
+| `Federation.Discovery` | Remote actor lookup, WebFinger, and NodeInfo discovery |
+| `Federation.ActorRenderer` | JSON-LD representation of local actors (Person, Group, Organization) |
+| `Federation.ObjectBuilder` | ActivityStreams JSON-LD serialization for articles, comments, and polls |
+| `Federation.Collections` | Paginated OrderedCollection endpoints (Outbox, Followers, Boards) |
+| `Federation.Follows` | Inbound follower management and outbound user/board follow lifecycle |
+| `Federation.Feed` | Inbound activity routing to personal user feeds, feed item interactions (likes, boosts) |
+| `Federation.InboxHandler` | Dispatches incoming Activities (Follow, Create, Like, Delete, etc.) to sub-modules |
+| `Federation.Publisher` | High-level API for publishing activities (Create, Update, Delete, Announce, Like, Undo, Move, PollVote) |
+| `Federation.Delivery` | DB-backed delivery queue, background workers, and exponential backoff retry logic |
+| `Federation.ActorResolver` | Fetches, caches, and verifies remote actor profiles (24h TTL, signed fetch fallback) |
+| `Federation.HTTPSignature` | HTTP Signature signing (outgoing) and cryptographic verification (incoming POSTs) |
+| `Federation.KeyStore` | RSA-2048 keypair management for actors: generation, persistence, and rotation |
+| `Federation.Validator` | AP payload validation: size limits, attribution checks, and domain allowlist/blocklist |
+| `Federation.Visibility` | Derives ActivityPub visibility (`public`, `unlisted`, `followers_only`, `direct`) from addressing fields |
 
 ### ActivityPub Federation
 
