@@ -42,7 +42,16 @@ defmodule Baudrate.Federation.InboxHandler do
 
   alias Baudrate.Content
   alias Baudrate.Federation
-  alias Baudrate.Federation.{ActorResolver, AttachmentExtractor, Delivery, Sanitizer, Validator, Visibility}
+
+  alias Baudrate.Federation.{
+    ActorResolver,
+    AttachmentExtractor,
+    Delivery,
+    Sanitizer,
+    Validator,
+    Visibility
+  }
+
   alias Baudrate.Messaging
 
   @doc """

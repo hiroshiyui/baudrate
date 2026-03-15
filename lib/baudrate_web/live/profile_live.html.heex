@@ -31,7 +31,12 @@
       </div>
 
       <%!-- Hidden file input for avatar upload --%>
-      <form :if={@can_upload_avatar} id="avatar-upload-form" phx-change="validate_avatar" class="hidden">
+      <form
+        :if={@can_upload_avatar}
+        id="avatar-upload-form"
+        phx-change="validate_avatar"
+        class="hidden"
+      >
         <.live_file_input upload={@uploads.avatar} />
       </form>
 

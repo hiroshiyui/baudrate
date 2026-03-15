@@ -146,6 +146,7 @@ defmodule Baudrate.Content.FeedQueriesTest do
 
       # Force distinct timestamps
       import Ecto.Query
+
       Repo.update_all(
         from(a in Baudrate.Content.Article, where: a.id == ^a1.id),
         set: [inserted_at: ~U[2025-01-01 00:00:00Z]]
@@ -302,7 +303,7 @@ defmodule Baudrate.Content.FeedQueriesTest do
     Repo.preload(user, :role)
   end
 
-  defp insert_board(slug, opts \\ []) do
+  defp insert_board(slug, opts) do
     {:ok, board} =
       %Board{}
       |> Board.changeset(%{

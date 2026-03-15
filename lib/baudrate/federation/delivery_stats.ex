@@ -105,7 +105,7 @@ defmodule Baudrate.Federation.DeliveryStats do
   """
   @spec error_rate_24h() :: float()
   def error_rate_24h do
-    cutoff = DateTime.utc_now() |> DateTime.add(-86400, :second)
+    cutoff = DateTime.utc_now() |> DateTime.add(-86_400, :second)
 
     counts =
       from(j in DeliveryJob,

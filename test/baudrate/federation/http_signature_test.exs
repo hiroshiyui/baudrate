@@ -208,7 +208,7 @@ defmodule Baudrate.Federation.HTTPSignatureTest do
       required = ["(request-target)", "host", "date", "digest"]
       missing = required -- signed
 
-      assert length(missing) > 0
+      refute missing == []
       assert "(request-target)" in missing
       assert "host" in missing
       assert "digest" in missing

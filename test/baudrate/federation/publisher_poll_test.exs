@@ -112,7 +112,7 @@ defmodule Baudrate.Federation.PublisherPollTest do
       user = create_user()
       board = create_board()
       slug = "timed-poll-#{System.unique_integer([:positive])}"
-      future = DateTime.utc_now() |> DateTime.add(86400, :second) |> DateTime.truncate(:second)
+      future = DateTime.utc_now() |> DateTime.add(86_400, :second) |> DateTime.truncate(:second)
 
       {:ok, %{article: article}} =
         Content.create_article(

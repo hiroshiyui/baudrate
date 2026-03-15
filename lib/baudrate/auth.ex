@@ -24,7 +24,14 @@ defmodule Baudrate.Auth do
   # --- Passwords & Core Auth ---
   defdelegate authenticate_by_password(username, password), to: Passwords
   defdelegate verify_password(user, password), to: Passwords
-  defdelegate reset_password_with_recovery_code(username, recovery_code, new_password, new_password_confirmation), to: Passwords
+
+  defdelegate reset_password_with_recovery_code(
+                username,
+                recovery_code,
+                new_password,
+                new_password_confirmation
+              ),
+              to: Passwords
 
   # --- Users ---
   defdelegate get_user(id), to: Users

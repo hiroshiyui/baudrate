@@ -97,7 +97,7 @@ defmodule Baudrate.Federation.ValidatorTest do
     end
 
     test "rejects object map with non-string id" do
-      assert {:error, :invalid_object_id} = Validator.validate_object_id(%{"id" => 12345})
+      assert {:error, :invalid_object_id} = Validator.validate_object_id(%{"id" => 12_345})
     end
 
     test "rejects nil" do
@@ -201,7 +201,7 @@ defmodule Baudrate.Federation.ValidatorTest do
 
     test "non-string id returns error" do
       activity = %{
-        "id" => 12345,
+        "id" => 12_345,
         "type" => "Follow",
         "actor" => "https://remote.example/users/alice",
         "object" => "https://local.example/ap/users/bob"

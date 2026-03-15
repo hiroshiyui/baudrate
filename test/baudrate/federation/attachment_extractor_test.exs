@@ -45,8 +45,16 @@ defmodule Baudrate.Federation.AttachmentExtractorTest do
     test "filters out non-image attachments" do
       object = %{
         "attachment" => [
-          %{"type" => "Document", "mediaType" => "video/mp4", "url" => "https://example.com/video.mp4"},
-          %{"type" => "Document", "mediaType" => "image/jpeg", "url" => "https://example.com/photo.jpg"},
+          %{
+            "type" => "Document",
+            "mediaType" => "video/mp4",
+            "url" => "https://example.com/video.mp4"
+          },
+          %{
+            "type" => "Document",
+            "mediaType" => "image/jpeg",
+            "url" => "https://example.com/photo.jpg"
+          },
           %{"type" => "Link", "href" => "https://example.com"}
         ]
       }

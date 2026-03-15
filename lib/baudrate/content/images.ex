@@ -169,7 +169,11 @@ defmodule Baudrate.Content.Images do
 
   defp process_image_binary(body) do
     # Write to temp file for ArticleImageStorage-compatible processing
-    tmp_path = Path.join(System.tmp_dir!(), "remote_img_#{:crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)}")
+    tmp_path =
+      Path.join(
+        System.tmp_dir!(),
+        "remote_img_#{:crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)}"
+      )
 
     try do
       File.write!(tmp_path, body)

@@ -169,7 +169,9 @@ defmodule Baudrate.Content.SearchTest do
     test "finds articles by English full-text search" do
       user = create_user()
       board = create_board()
-      article = create_article(user, board, %{title: "Phoenix framework guide", body: "Learn Phoenix"})
+
+      article =
+        create_article(user, board, %{title: "Phoenix framework guide", body: "Learn Phoenix"})
 
       result = Content.search_articles("Phoenix framework", user: user)
       assert Enum.any?(result.articles, &(&1.id == article.id))
@@ -197,7 +199,12 @@ defmodule Baudrate.Content.SearchTest do
     test "excludes soft-deleted articles" do
       user = create_user()
       board = create_board()
-      article = create_article(user, board, %{title: "Deletable post about Erlang", body: "Erlang content"})
+
+      article =
+        create_article(user, board, %{
+          title: "Deletable post about Erlang",
+          body: "Erlang content"
+        })
 
       Content.soft_delete_article(article)
 
@@ -208,7 +215,12 @@ defmodule Baudrate.Content.SearchTest do
     test "respects board visibility for guests" do
       user = create_user()
       restricted_board = create_board(%{min_role_to_view: "moderator"})
-      article = create_article(user, restricted_board, %{title: "Hidden moderator content", body: "Secret stuff"})
+
+      article =
+        create_article(user, restricted_board, %{
+          title: "Hidden moderator content",
+          body: "Secret stuff"
+        })
 
       result = Content.search_articles("moderator content", user: nil)
       refute Enum.any?(result.articles, &(&1.id == article.id))
@@ -227,10 +239,14 @@ defmodule Baudrate.Content.SearchTest do
     test "author: operator filters by username" do
       user = create_user()
       board = create_board()
-      article = create_article(user, board, %{title: "Author filtered post", body: "Content here"})
+
+      article =
+        create_article(user, board, %{title: "Author filtered post", body: "Content here"})
 
       other_user = create_user()
-      _other_article = create_article(other_user, board, %{title: "Other author post", body: "Other content"})
+
+      _other_article =
+        create_article(other_user, board, %{title: "Other author post", body: "Other content"})
 
       result = Content.search_articles("author:#{user.username}", user: user)
       assert Enum.any?(result.articles, &(&1.id == article.id))
@@ -262,7 +278,9 @@ defmodule Baudrate.Content.SearchTest do
     test "before: operator filters articles before a date" do
       user = create_user()
       board = create_board()
-      article = create_article(user, board, %{title: "Old article about Haskell", body: "Haskell content"})
+
+      article =
+        create_article(user, board, %{title: "Old article about Haskell", body: "Haskell content"})
 
       # Set article inserted_at to a past date
       past_date = ~U[2025-01-01 00:00:00Z]
@@ -280,7 +298,9 @@ defmodule Baudrate.Content.SearchTest do
     test "after: operator filters articles after a date" do
       user = create_user()
       board = create_board()
-      article = create_article(user, board, %{title: "Recent article about Rust", body: "Rust content"})
+
+      article =
+        create_article(user, board, %{title: "Recent article about Rust", body: "Rust content"})
 
       future_date = ~U[2026-06-01 00:00:00Z]
 

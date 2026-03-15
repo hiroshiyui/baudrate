@@ -90,7 +90,7 @@ defmodule Baudrate.Notification.VapidVaultTest do
     end
 
     test "returns :error for non-binary input" do
-      assert :error = VapidVault.decrypt(12345)
+      assert :error = VapidVault.decrypt(12_345)
     end
   end
 end

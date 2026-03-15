@@ -370,7 +370,10 @@
     </section>
   </div>
 
-  <div :if={@recent_activity == [] && @boosted_activity == []} class="text-base-content/70 text-center py-4">
+  <div
+    :if={@recent_activity == [] && @boosted_activity == []}
+    class="text-base-content/70 text-center py-4"
+  >
     {gettext("No articles yet.")}
   </div>
 </div>

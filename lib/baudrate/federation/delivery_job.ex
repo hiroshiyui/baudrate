@@ -62,7 +62,7 @@ defmodule Baudrate.Federation.DeliveryJob do
   """
   def mark_failed(job, error_message) do
     config = Application.get_env(:baudrate, Baudrate.Federation, [])
-    backoff_schedule = config[:delivery_backoff_schedule] || [60, 300, 1800, 7200, 43200, 86400]
+    backoff_schedule = config[:delivery_backoff_schedule] || [60, 300, 1800, 7200, 43_200, 86_400]
     max_attempts = config[:delivery_max_attempts] || 6
 
     new_attempts = job.attempts + 1

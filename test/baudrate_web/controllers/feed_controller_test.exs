@@ -246,7 +246,7 @@ defmodule BaudrateWeb.FeedControllerTest do
 
   # --- Helpers ---
 
-  defp insert_board(slug, opts \\ []) do
+  defp insert_board(slug, opts) do
     {:ok, board} =
       %Board{}
       |> Board.changeset(%{

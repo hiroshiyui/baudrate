@@ -44,7 +44,7 @@ defmodule BaudrateWeb.LocaleTest do
     test "returns a list of {code, display_name} tuples" do
       locales = Locale.available_locales()
       assert is_list(locales)
-      assert length(locales) > 0
+      assert locales != []
 
       for {code, name} <- locales do
         assert is_binary(code)

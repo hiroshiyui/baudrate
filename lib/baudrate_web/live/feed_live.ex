@@ -584,9 +584,14 @@ defmodule BaudrateWeb.FeedLive do
 
         :local_comment ->
           cond do
-            item.comment.user -> item.comment.user.username
-            item.comment.remote_actor -> item.comment.remote_actor.display_name || item.comment.remote_actor.username
-            true -> nil
+            item.comment.user ->
+              item.comment.user.username
+
+            item.comment.remote_actor ->
+              item.comment.remote_actor.display_name || item.comment.remote_actor.username
+
+            true ->
+              nil
           end
       end
 

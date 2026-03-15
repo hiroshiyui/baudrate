@@ -89,7 +89,7 @@ defmodule Baudrate.Federation.InboxHandlerPollTest do
             %{"type" => "Note", "name" => "Dogs", "replies" => %{"totalItems" => 3}}
           ],
           "votersCount" => 8,
-          "endTime" => DateTime.to_iso8601(DateTime.add(DateTime.utc_now(), 86400, :second))
+          "endTime" => DateTime.to_iso8601(DateTime.add(DateTime.utc_now(), 86_400, :second))
         }
       }
 

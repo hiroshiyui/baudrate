@@ -256,7 +256,10 @@ defmodule Baudrate.Auth.Users do
   end
 
   defp users_base_query(opts) do
-    from(u in users_filter_query(opts), order_by: [desc: u.inserted_at, desc: u.id], preload: :role)
+    from(u in users_filter_query(opts),
+      order_by: [desc: u.inserted_at, desc: u.id],
+      preload: :role
+    )
   end
 
   defp users_filter_query(opts) do

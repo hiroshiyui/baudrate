@@ -70,6 +70,12 @@ jobs:
         restore-keys: ${{ runner.os }}-mix-
     - name: Install dependencies
       run: mix deps.get
+    - name: Check formatting
+      run: mix format --check-formatted
+    - name: Compile with warnings-as-errors
+      run: mix compile --warnings-as-errors
+    - name: Run linter
+      run: mix lint
     - name: Run tests
       run: mix test --partitions 4 --seed 9527
       env:

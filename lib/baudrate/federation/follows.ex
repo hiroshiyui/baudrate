@@ -600,5 +600,4 @@ defmodule Baudrate.Federation.Follows do
 
     {migrated, deleted}
   end
-
 end

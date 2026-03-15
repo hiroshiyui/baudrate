@@ -97,7 +97,10 @@ defmodule BaudrateWeb.UserProfileLiveTest do
 
       board =
         %Board{}
-        |> Board.changeset(%{name: "Activity Board", slug: "activity-board-#{System.unique_integer([:positive])}"})
+        |> Board.changeset(%{
+          name: "Activity Board",
+          slug: "activity-board-#{System.unique_integer([:positive])}"
+        })
         |> Repo.insert!()
 
       {:ok, _} =
@@ -121,7 +124,10 @@ defmodule BaudrateWeb.UserProfileLiveTest do
 
       board =
         %Board{}
-        |> Board.changeset(%{name: "Comment Board", slug: "comment-board-#{System.unique_integer([:positive])}"})
+        |> Board.changeset(%{
+          name: "Comment Board",
+          slug: "comment-board-#{System.unique_integer([:positive])}"
+        })
         |> Repo.insert!()
 
       {:ok, %{article: article}} =
@@ -160,7 +166,10 @@ defmodule BaudrateWeb.UserProfileLiveTest do
 
       board =
         %Board{}
-        |> Board.changeset(%{name: "Load More Board", slug: "load-more-board-#{System.unique_integer([:positive])}"})
+        |> Board.changeset(%{
+          name: "Load More Board",
+          slug: "load-more-board-#{System.unique_integer([:positive])}"
+        })
         |> Repo.insert!()
 
       for i <- 1..11 do
@@ -188,7 +197,10 @@ defmodule BaudrateWeb.UserProfileLiveTest do
 
       board =
         %Board{}
-        |> Board.changeset(%{name: "Few Board", slug: "few-board-#{System.unique_integer([:positive])}"})
+        |> Board.changeset(%{
+          name: "Few Board",
+          slug: "few-board-#{System.unique_integer([:positive])}"
+        })
         |> Repo.insert!()
 
       for i <- 1..5 do
@@ -215,7 +227,10 @@ defmodule BaudrateWeb.UserProfileLiveTest do
 
       board =
         %Board{}
-        |> Board.changeset(%{name: "Test Board", slug: "test-boost-board-#{System.unique_integer([:positive])}"})
+        |> Board.changeset(%{
+          name: "Test Board",
+          slug: "test-boost-board-#{System.unique_integer([:positive])}"
+        })
         |> Repo.insert!()
 
       {:ok, %{article: article}} =
@@ -243,7 +258,10 @@ defmodule BaudrateWeb.UserProfileLiveTest do
 
       board =
         %Board{}
-        |> Board.changeset(%{name: "Boost Comment Board", slug: "boost-comment-board-#{System.unique_integer([:positive])}"})
+        |> Board.changeset(%{
+          name: "Boost Comment Board",
+          slug: "boost-comment-board-#{System.unique_integer([:positive])}"
+        })
         |> Repo.insert!()
 
       {:ok, %{article: article}} =
@@ -285,7 +303,10 @@ defmodule BaudrateWeb.UserProfileLiveTest do
 
       board =
         %Board{}
-        |> Board.changeset(%{name: "Boost Board", slug: "boost-board-#{System.unique_integer([:positive])}"})
+        |> Board.changeset(%{
+          name: "Boost Board",
+          slug: "boost-board-#{System.unique_integer([:positive])}"
+        })
         |> Repo.insert!()
 
       {:ok, %{article: article}} =
@@ -311,7 +332,10 @@ defmodule BaudrateWeb.UserProfileLiveTest do
 
       board =
         %Board{}
-        |> Board.changeset(%{name: "Boost Load Board", slug: "boost-load-#{System.unique_integer([:positive])}"})
+        |> Board.changeset(%{
+          name: "Boost Load Board",
+          slug: "boost-load-#{System.unique_integer([:positive])}"
+        })
         |> Repo.insert!()
 
       for i <- 1..11 do

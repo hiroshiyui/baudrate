@@ -23,7 +23,8 @@ defmodule Baudrate.Auth.Invites do
     1. Admin role → `{:ok, :unlimited}` (bypasses all limits)
     2. Quota remaining > 0 within rolling #{@invite_quota_window_days}-day window
   """
-  @spec can_generate_invite?(User.t()) :: {:ok, integer() | :unlimited} | {:error, :invite_quota_exceeded}
+  @spec can_generate_invite?(User.t()) ::
+          {:ok, integer() | :unlimited} | {:error, :invite_quota_exceeded}
   def can_generate_invite?(%User{} = user) do
     cond do
       user.role.name == "admin" ->

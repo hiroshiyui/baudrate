@@ -863,7 +863,7 @@ defmodule BaudrateWeb.ArticleLiveTest do
       assert_push_event(lv, "mention_suggestions", %{users: users})
 
       remote_users = Enum.filter(users, &(&1.type == "remote"))
-      assert length(remote_users) > 0
+      refute remote_users == []
       assert Enum.any?(remote_users, &(&1.username == "alice" and &1.domain == "remote.example"))
     end
 

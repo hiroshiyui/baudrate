@@ -290,7 +290,7 @@ defmodule Baudrate.Federation.PublisherTest do
 
       object = activity["object"]
       assert is_list(object["cc"])
-      assert length(object["cc"]) > 0
+      refute object["cc"] == []
 
       board_uri = Baudrate.Federation.actor_uri(:board, board.slug)
       assert board_uri in object["cc"]
@@ -901,7 +901,7 @@ defmodule Baudrate.Federation.PublisherTest do
       Publisher.publish_feed_item_reply(reply, feed_item)
 
       jobs = Repo.all(Baudrate.Federation.DeliveryJob)
-      assert length(jobs) >= 1
+      refute jobs == []
 
       inboxes = Enum.map(jobs, & &1.inbox_url)
       assert remote.inbox in inboxes

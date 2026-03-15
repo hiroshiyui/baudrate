@@ -73,7 +73,8 @@ defmodule Baudrate.MixProject do
       {:earmark, "~> 1.4"},
       {:rustler, "~> 0.36", runtime: false},
       {:tz, "~> 0.28"},
-      {:wallaby, "~> 0.30", runtime: false, only: :test}
+      {:wallaby, "~> 0.30", runtime: false, only: :test},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -102,7 +103,14 @@ defmodule Baudrate.MixProject do
         "esbuild service_worker --minify",
         "phx.digest"
       ],
-      precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]
+      lint: ["credo --strict"],
+      precommit: [
+        "compile --warnings-as-errors",
+        "deps.unlock --unused",
+        "format --check-formatted",
+        "lint",
+        "test"
+      ]
     ]
   end
 end

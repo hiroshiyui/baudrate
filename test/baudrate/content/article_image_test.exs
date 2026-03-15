@@ -45,7 +45,7 @@ defmodule Baudrate.Content.ArticleImageTest do
     |> Repo.insert!()
   end
 
-  defp create_image(user, article_id \\ nil, img_path) do
+  defp create_image(user, article_id, img_path) do
     {:ok, file_info} = ArticleImageStorage.process_upload(img_path)
     attrs = Map.merge(file_info, %{user_id: user.id, article_id: article_id})
     {:ok, image} = Content.create_article_image(attrs)

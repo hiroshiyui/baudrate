@@ -27,7 +27,9 @@ defmodule BaudrateWeb.ProfilePendingCapabilitiesTest do
     {:ok, lv, _html} = live(conn, "/profile")
 
     lv
-    |> form("#profile-signature-section form", signature: %{signature: "My new pending signature"})
+    |> form("#profile-signature-section form",
+      signature: %{signature: "My new pending signature"}
+    )
     |> render_submit()
 
     assert Repo.get(Baudrate.Setup.User, user.id).signature == "My new pending signature"

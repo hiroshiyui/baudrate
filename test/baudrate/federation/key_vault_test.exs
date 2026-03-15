@@ -90,7 +90,7 @@ defmodule Baudrate.Federation.KeyVaultTest do
     end
 
     test "returns :error for non-binary input" do
-      assert :error = KeyVault.decrypt(12345)
+      assert :error = KeyVault.decrypt(12_345)
     end
   end
 end
