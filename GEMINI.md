@@ -40,10 +40,10 @@ mix test --include feature --seed 9527
 - **Baudrate.Content** (`lib/baudrate/content.ex`): **Facade module** for all content logic. Delegates to focused sub-modules:
   - `Articles`, `Boards`, `Comments`, `Polls`, `Search`, `LinkPreview`, `ReadTracking`, `Tags`, `Images`, `Permissions`, `Boosts`, `Likes`.
   - **`Content.Interactions`**: Shared logic for likes/boosts, including visibility checks and transactional AP ID stamping.
-- **Baudrate.Federation** (`lib/baudrate/federation.ex`): ActivityPub implementation (Actors, Inboxes, Outbox, Delivery, Signatures).
+- **Baudrate.Federation** (`lib/baudrate/federation.ex`): **Facade module** for ActivityPub logic (Actors, Inboxes, Outbox, Delivery, Signatures).
   - **`Federation.ObjectResolver`**: Two-phase resolution: `fetch/1` (preview) and `resolve/1` (materialize). Loop-safe and deduplicated.
   - **`Federation.Visibility`**: Derives visibility (`public`, `unlisted`, `followers_only`, `direct`) from AP addressing.
-- **Baudrate.Auth** (`lib/baudrate/auth.ex`): RBAC, Session management (dual tokens, rotation), TOTP, blocks, mutes, invite codes.
+- **Baudrate.Auth** (`lib/baudrate/auth.ex`): **Facade module** for RBAC, Session management (dual tokens, rotation), TOTP, blocks, mutes, invite codes.
 - **Baudrate.Messaging** (`lib/baudrate/messaging.ex`): 1-on-1 federated DMs and read cursors.
 - **Baudrate.Moderation** (`lib/baudrate/moderation.ex`): Content reports and audit logs.
 - **Baudrate.Notification** (`lib/baudrate/notification.ex`): Real-time in-app notifications and Web Push.
@@ -64,7 +64,7 @@ mix test --include feature --seed 9527
 ## Development Conventions
 
 ### While Coding
-- **Business Logic:** Always use the `Baudrate.Content` facade. Avoid calling sub-modules like `Content.Articles` directly from the web layer.
+- **Business Logic:** Always use the context facades (`Baudrate.Content`, `Baudrate.Auth`, `Baudrate.Federation`). Avoid calling sub-modules directly from the web layer.
 - **Internationalization (i18n):** Never use bare English strings for UI text. Wrap in `gettext()`. Shared helpers belong in `BaudrateWeb.Helpers`.
 - **Semantic HTML:** Use `<section>`, `<article>`, `<aside>`, and `<nav>`. Use `data-focus-target` for post-navigation focus management.
 - **Accessibility:** Follow WAI-ARIA specs. Assign semantic `id` attributes to content containers.
