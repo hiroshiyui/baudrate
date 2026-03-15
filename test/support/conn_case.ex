@@ -47,7 +47,7 @@ defmodule BaudrateWeb.ConnCase do
   Seeds roles/permissions if needed and creates a user with the given role.
   Returns the user with role preloaded.
   """
-  def setup_user(role_name) do
+  def setup_user(role_name, attrs \\ %{}) do
     import Ecto.Query
     alias Baudrate.Repo
     alias Baudrate.Setup
@@ -68,25 +68,10 @@ defmodule BaudrateWeb.ConnCase do
         "password_confirmation" => "Password123!x",
         "role_id" => role.id
       })
+      |> Ecto.Changeset.cast(attrs, [:status, :display_name, :bio, :signature])
       |> Repo.insert()
 
     Repo.preload(user, :role)
-  end
-
-  @doc """
-  Backdates a user's `inserted_at` to simulate an older account.
-  Returns the user with the updated timestamp.
-  """
-  def backdate_user(user, days) do
-    import Ecto.Query
-    alias Baudrate.Repo
-    alias Baudrate.Setup.User
-
-    past =
-      DateTime.utc_now() |> DateTime.add(-days * 86_400, :second) |> DateTime.truncate(:second)
-
-    Repo.update_all(from(u in User, where: u.id == ^user.id), set: [inserted_at: past])
-    %{user | inserted_at: past}
   end
 
   @doc """

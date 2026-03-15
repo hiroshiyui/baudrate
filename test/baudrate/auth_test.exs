@@ -790,28 +790,14 @@ defmodule Baudrate.AuthTest do
       assert invite.created_by_id == target.id
     end
 
-    test "bypasses account age restriction for new user" do
-      admin = create_user("admin")
-      # Target user was just created (age < 7 days)
-      target = create_user("user")
-
-      # Confirm the target can't generate codes themselves
-      assert {:error, :account_too_new} = Auth.generate_invite_code(target)
-
-      # But admin can generate for them
-      assert {:ok, invite} = Auth.admin_generate_invite_code_for_user(admin, target)
-      assert invite.created_by_id == target.id
+    test "newly created user can generate invite code" do
+      user = create_user("user")
+      assert {:ok, _invite} = Auth.generate_invite_code(user)
     end
 
     test "enforces rolling 30-day quota" do
       admin = create_user("admin")
       target = create_user("user")
-      # Backdate user so they pass age check for quota testing
-      Repo.update_all(
-        from(u in User, where: u.id == ^target.id),
-        set: [inserted_at: DateTime.add(DateTime.utc_now(), -30 * 86_400, :second)]
-      )
-
       target = Repo.preload(Repo.get!(User, target.id), :role)
 
       # Generate 5 codes (max quota)

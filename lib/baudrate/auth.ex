@@ -71,7 +71,6 @@ defmodule Baudrate.Auth do
 
   @invite_quota_limit 5
   @invite_quota_window_days 30
-  @invite_min_account_age_days 7
   @invite_default_expiry_days 7
 
   @doc """
@@ -485,6 +484,17 @@ defmodule Baudrate.Auth do
   end
 
   @doc """
+  Returns `true` if the user can upload an avatar.
+
+  Authenticated users (including pending) are allowed to upload
+  avatars to personalize their profile.
+  """
+  @spec can_upload_avatar?(User.t()) :: boolean()
+  def can_upload_avatar?(user) do
+    user.status in ["active", "pending"]
+  end
+
+  @doc """
   Searches active users by partial username match.
 
   Used for recipient selection in DMs and other user pickers.
@@ -737,17 +747,12 @@ defmodule Baudrate.Auth do
   ## Checks
 
     1. Admin role → `{:ok, :unlimited}` (bypasses all limits)
-    2. Account age >= #{@invite_min_account_age_days} days
-    3. Quota remaining > 0 within rolling #{@invite_quota_window_days}-day window
+    2. Quota remaining > 0 within rolling #{@invite_quota_window_days}-day window
   """
   def can_generate_invite?(%User{} = user) do
     cond do
       user.role.name == "admin" ->
         {:ok, :unlimited}
-
-      DateTime.diff(DateTime.utc_now(), user.inserted_at, :second) / 86_400 <
-          @invite_min_account_age_days ->
-        {:error, :account_too_new}
 
       true ->
         remaining = invite_quota_remaining(user)

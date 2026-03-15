@@ -6,7 +6,7 @@ defmodule Baudrate.Auth.InviteSystemTest do
   alias Baudrate.Repo
 
   setup do
-    admin = setup_user("admin", days_old: 8)
+    admin = setup_user("admin")
     {:ok, admin: admin}
   end
 
@@ -96,7 +96,7 @@ defmodule Baudrate.Auth.InviteSystemTest do
 
   describe "invite code quota" do
     test "non-admin can generate up to 5 codes" do
-      user = setup_user("user", days_old: 8)
+      user = setup_user("user")
 
       for _ <- 1..5 do
         assert {:ok, _invite} = Auth.generate_invite_code(user)
@@ -104,7 +104,7 @@ defmodule Baudrate.Auth.InviteSystemTest do
     end
 
     test "6th code returns :invite_quota_exceeded for non-admin" do
-      user = setup_user("user", days_old: 8)
+      user = setup_user("user")
 
       for _ <- 1..5 do
         assert {:ok, _} = Auth.generate_invite_code(user)
@@ -121,7 +121,7 @@ defmodule Baudrate.Auth.InviteSystemTest do
 
     test "codes older than 30 days don't count towards quota" do
       import Ecto.Query
-      user = setup_user("user", days_old: 60)
+      user = setup_user("user")
 
       # Generate 5 codes and backdate them to 31 days ago
       for _ <- 1..5 do
@@ -140,7 +140,7 @@ defmodule Baudrate.Auth.InviteSystemTest do
     end
 
     test "invite_quota_remaining/1 returns correct count" do
-      user = setup_user("user", days_old: 8)
+      user = setup_user("user")
       assert Auth.invite_quota_remaining(user) == 5
 
       {:ok, _} = Auth.generate_invite_code(user)
@@ -150,13 +150,13 @@ defmodule Baudrate.Auth.InviteSystemTest do
       assert Auth.invite_quota_remaining(user) == 3
     end
 
-    test "account younger than 7 days returns :account_too_new" do
-      user = setup_user("user", days_old: 3)
-      assert {:error, :account_too_new} = Auth.generate_invite_code(user)
+    test "newly registered user can immediately generate invites" do
+      user = setup_user("user")
+      assert {:ok, _invite} = Auth.generate_invite_code(user)
     end
 
     test "non-admin codes auto-expire after 7 days" do
-      user = setup_user("user", days_old: 8)
+      user = setup_user("user")
       {:ok, invite} = Auth.generate_invite_code(user)
 
       assert invite.expires_at != nil
@@ -174,7 +174,7 @@ defmodule Baudrate.Auth.InviteSystemTest do
 
   describe "list_user_invite_codes/1" do
     test "returns only codes for the given user", %{admin: admin} do
-      user = setup_user("user", days_old: 8)
+      user = setup_user("user")
 
       {:ok, _} = Auth.generate_invite_code(admin)
       {:ok, _} = Auth.generate_invite_code(admin)
@@ -190,8 +190,8 @@ defmodule Baudrate.Auth.InviteSystemTest do
 
   describe "revoke on ban" do
     test "banning a user revokes their active invite codes" do
-      user = setup_user("user", days_old: 8)
-      admin = setup_user("admin", days_old: 8)
+      user = setup_user("user")
+      admin = setup_user("admin")
 
       {:ok, code1} = Auth.generate_invite_code(user)
       {:ok, code2} = Auth.generate_invite_code(user)
@@ -209,8 +209,8 @@ defmodule Baudrate.Auth.InviteSystemTest do
     end
 
     test "already-revoked/expired/fully-used codes are not affected" do
-      user = setup_user("user", days_old: 8)
-      admin = setup_user("admin", days_old: 8)
+      user = setup_user("user")
+      admin = setup_user("admin")
 
       # Already revoked
       {:ok, revoked_code} = Auth.generate_invite_code(user)
@@ -258,7 +258,7 @@ defmodule Baudrate.Auth.InviteSystemTest do
     end
   end
 
-  defp setup_user(role_name, opts \\ []) do
+  defp setup_user(role_name) do
     import Ecto.Query
     alias Baudrate.Setup
     alias Baudrate.Setup.{Role, User}
@@ -279,17 +279,6 @@ defmodule Baudrate.Auth.InviteSystemTest do
       })
       |> Repo.insert()
 
-    # Backdate account creation if requested (to satisfy account age checks)
-    if days_old = Keyword.get(opts, :days_old) do
-      past =
-        DateTime.utc_now()
-        |> DateTime.add(-days_old * 86_400, :second)
-        |> DateTime.truncate(:second)
-
-      Repo.update_all(from(u in User, where: u.id == ^user.id), set: [inserted_at: past])
-      %{user | inserted_at: past} |> Repo.preload(:role)
-    else
-      Repo.preload(user, :role)
-    end
+    Repo.preload(user, :role)
   end
 end

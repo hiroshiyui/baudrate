@@ -14,7 +14,7 @@ defmodule BaudrateWeb.UserInvitesLiveTest do
   end
 
   test "authenticated user can access /invites", %{conn: conn} do
-    user = setup_user("user") |> backdate_user(8)
+    user = setup_user("user")
     conn = log_in_user(conn, user)
 
     {:ok, _lv, html} = live(conn, "/invites")
@@ -26,7 +26,7 @@ defmodule BaudrateWeb.UserInvitesLiveTest do
   end
 
   test "user sees quota info", %{conn: conn} do
-    user = setup_user("user") |> backdate_user(8)
+    user = setup_user("user")
     conn = log_in_user(conn, user)
 
     {:ok, _lv, html} = live(conn, "/invites")
@@ -34,7 +34,7 @@ defmodule BaudrateWeb.UserInvitesLiveTest do
   end
 
   test "user can generate an invite code", %{conn: conn} do
-    user = setup_user("user") |> backdate_user(8)
+    user = setup_user("user")
     conn = log_in_user(conn, user)
 
     {:ok, lv, _html} = live(conn, "/invites")
@@ -45,7 +45,7 @@ defmodule BaudrateWeb.UserInvitesLiveTest do
   end
 
   test "user can revoke their own code", %{conn: conn} do
-    user = setup_user("user") |> backdate_user(8)
+    user = setup_user("user")
     conn = log_in_user(conn, user)
 
     {:ok, invite} = Auth.generate_invite_code(user)
@@ -61,7 +61,7 @@ defmodule BaudrateWeb.UserInvitesLiveTest do
   end
 
   test "quota-exceeded user sees disabled generate button", %{conn: conn} do
-    user = setup_user("user") |> backdate_user(8)
+    user = setup_user("user")
 
     for _ <- 1..5 do
       {:ok, _} = Auth.generate_invite_code(user)
@@ -74,16 +74,8 @@ defmodule BaudrateWeb.UserInvitesLiveTest do
     assert html =~ "disabled"
   end
 
-  test "new account sees disabled generate button", %{conn: conn} do
-    user = setup_user("user")
-    conn = log_in_user(conn, user)
-
-    {:ok, _lv, html} = live(conn, "/invites")
-    assert html =~ "disabled"
-  end
-
   test "active codes show copy and QR buttons", %{conn: conn} do
-    user = setup_user("user") |> backdate_user(8)
+    user = setup_user("user")
     {:ok, invite} = Auth.generate_invite_code(user)
 
     conn = log_in_user(conn, user)
