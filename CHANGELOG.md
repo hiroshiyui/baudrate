@@ -17,6 +17,8 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 ### Changed
 
 - **Auth Context Refactor** — Major architectural cleanup of the `Baudrate.Auth` module. Logic has been extracted into specialized sub-modules (`Invites`, `Sessions`, `SecondFactor`, `Moderation`, `Users`, `Profiles`, `Passwords`) while maintaining a clean facade.
+- **Federation Context Refactor** — Architectural cleanup of the `Baudrate.Federation` module. Logic has been extracted into focused sub-modules (`Follows`, `Feed`, `Discovery`, `Collections`, `ObjectBuilder`, `ActorRenderer`) to improve maintainability and testability.
+- **ArticleLive Refactor** — Simplified the main `ArticleLive` module by extracting pure helper logic into `ArticleHelpers` and moving comment tree rendering into `CommentComponents`.
 - **Invite Quota Relaxation** — Removed the 7-day account age requirement for generating invite codes, allowing new users to invite others immediately after registration.
 
 ### Fixed
