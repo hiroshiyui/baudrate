@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.26] — 2026-03-15
+
+### Added
+
+- **CI/CD Hardening** — Integrated `credo` linting, enforced `mix format` checks, and enabled `warnings-as-errors` in the GitHub CI pipeline to ensure long-term code quality.
+- **Pending User Profiles** — Users awaiting administrative approval can now personalize their profile by uploading an avatar and updating their bio and display name.
+
+### Changed
+
+- **Auth Context Refactor** — Major architectural cleanup of the `Baudrate.Auth` module. Logic has been extracted into specialized sub-modules (`Invites`, `Sessions`, `SecondFactor`, `Moderation`, `Users`, `Profiles`, `Passwords`) while maintaining a clean facade.
+- **Invite Quota Relaxation** — Removed the 7-day account age requirement for generating invite codes, allowing new users to invite others immediately after registration.
+
+### Fixed
+
+- **Compiler Warnings** — Cleaned up unused default values in test helpers (`insert_board/2`, `create_image/3`).
+- **Code Hygiene** — Fixed multiple linting issues including large number formatting and expensive list length checks.
+
 ## [1.3.25] — 2026-03-14
 
 ### Added
