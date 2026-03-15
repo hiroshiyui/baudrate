@@ -97,4 +97,4 @@ mix test --include feature --seed 9527
 - `doc/troubleshooting.md`: Common issues and debug steps.
 
 ## Gemini CLI Specifics
-- **Commit Co-Author:** Always include `Co-authored-by: Gemini <gemini@google.com>` at the end of every commit message.
+- **Commit Co-Author:** Always include `Co-authored-by: Gemini <gemini@google.com>` at the end of every Git commit message.
