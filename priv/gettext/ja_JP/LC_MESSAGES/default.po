@@ -3754,6 +3754,11 @@ msgstr "掲示板が見つかりません。"
 msgid "Could not find remote actor."
 msgstr "リモートアクターが見つかりません。"
 
+#: lib/baudrate_web/live/board_follows_live.ex
+#, elixir-autogen, elixir-format
+msgid "This is a local user. To have a bot post to this board, configure the bot's target boards in Admin → Bots."
+msgstr "これはローカルユーザーです。ボットをこの掲示板に投稿させるには、管理画面 → ボット でターゲット掲示板を設定してください。"
+
 #: lib/baudrate_web/live/board_follows_live.html.heex:136
 #, elixir-autogen, elixir-format
 msgid "Current Follows"

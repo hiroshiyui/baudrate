@@ -3754,6 +3754,11 @@ msgstr "找不到看板。"
 msgid "Could not find remote actor."
 msgstr "找不到遠端使用者。"
 
+#: lib/baudrate_web/live/board_follows_live.ex
+#, elixir-autogen, elixir-format
+msgid "This is a local user. To have a bot post to this board, configure the bot's target boards in Admin → Bots."
+msgstr "這是本站使用者。若要讓機器人發文到此看板，請至管理後台 → 機器人 設定目標看板。"
+
 #: lib/baudrate_web/live/board_follows_live.html.heex:136
 #, elixir-autogen, elixir-format
 msgid "Current Follows"

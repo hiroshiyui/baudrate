@@ -84,22 +84,37 @@ defmodule BaudrateWeb.BoardFollowsLive do
   def handle_event("search", %{"query" => query}, socket) do
     query = String.trim(query)
 
-    if remote_actor_query?(query) do
-      send(self(), {:lookup_remote_actor, query})
+    cond do
+      local_actor_query?(query) ->
+        {:noreply,
+         socket
+         |> assign(:search_query, query)
+         |> assign(:search_loading, false)
+         |> assign(:search_result, nil)
+         |> assign(
+           :search_error,
+           gettext(
+             "This is a local user. To have a bot post to this board, configure the bot's target boards in Admin → Bots."
+           )
+         )}
 
-      {:noreply,
-       socket
-       |> assign(:search_query, query)
-       |> assign(:search_loading, true)
-       |> assign(:search_result, nil)
-       |> assign(:search_error, nil)}
-    else
-      {:noreply,
-       socket
-       |> assign(:search_query, query)
-       |> assign(:search_loading, false)
-       |> assign(:search_result, nil)
-       |> assign(:search_error, nil)}
+      remote_actor_query?(query) ->
+        send(self(), {:lookup_remote_actor, query})
+
+        {:noreply,
+         socket
+         |> assign(:search_query, query)
+         |> assign(:search_loading, true)
+         |> assign(:search_result, nil)
+         |> assign(:search_error, nil)}
+
+      true ->
+        {:noreply,
+         socket
+         |> assign(:search_query, query)
+         |> assign(:search_loading, false)
+         |> assign(:search_result, nil)
+         |> assign(:search_error, nil)}
     end
   end
 
@@ -182,6 +197,27 @@ defmodule BaudrateWeb.BoardFollowsLive do
   defp remote_actor_query?(query) do
     String.starts_with?(query, "https://") ||
       (String.contains?(query, "@") && !String.contains?(query, "/"))
+  end
+
+  # Returns true when the query refers to a local user account:
+  # - bare "@username" with no domain component
+  # - "@username@<local_host>" where local_host matches this instance
+  defp local_actor_query?(query) do
+    local_host = URI.parse(BaudrateWeb.Endpoint.url()).host
+
+    cond do
+      # "@username" — no domain at all
+      Regex.match?(~r/^@[a-zA-Z0-9_]+$/, query) ->
+        true
+
+      # "@username@local_host"
+      Regex.match?(~r/^@[a-zA-Z0-9_]+@.+$/, query) ->
+        [_username, domain] = query |> String.trim_leading("@") |> String.split("@", parts: 2)
+        domain == local_host
+
+      true ->
+        false
+    end
   end
 
   defp already_following?(follows, remote_actor_id) do
