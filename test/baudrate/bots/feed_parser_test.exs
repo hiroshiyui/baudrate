@@ -101,6 +101,50 @@ defmodule Baudrate.Bots.FeedParserTest do
     end
   end
 
+  describe "parse/1 with HTML-in-title RSS feed (Drupal-style)" do
+    @drupal_rss_feed """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <rss version="2.0">
+      <channel>
+        <title>Drupal Feed</title>
+        <link>https://example.com</link>
+        <item>
+          <title><a href="/news/123" hreflang="zh-hant">Some Article Title</a></title>
+          <link>https://example.com/news/123</link>
+          <guid>https://example.com/news/123</guid>
+          <description><![CDATA[<p>Article body text here.</p>]]></description>
+          <pubDate>Mon, 01 Jan 2024 12:00:00 +0000</pubDate>
+        </item>
+        <item>
+          <title><a href="/news/456">Title with &amp; ampersand</a></title>
+          <link>https://example.com/news/456</link>
+          <guid>https://example.com/news/456</guid>
+          <description><![CDATA[<p>Second article.</p>]]></description>
+          <pubDate>Tue, 02 Jan 2024 12:00:00 +0000</pubDate>
+        </item>
+      </channel>
+    </rss>
+    """
+
+    test "extracts title from nested <a> tag without CDATA" do
+      {:ok, entries} = FeedParser.parse(@drupal_rss_feed)
+      first = Enum.find(entries, &(&1.guid == "https://example.com/news/123"))
+      assert first.title == "Some Article Title"
+    end
+
+    test "preserves XML entities in title text" do
+      {:ok, entries} = FeedParser.parse(@drupal_rss_feed)
+      second = Enum.find(entries, &(&1.guid == "https://example.com/news/456"))
+      assert second.title == "Title with & ampersand"
+    end
+
+    test "still extracts CDATA body correctly" do
+      {:ok, entries} = FeedParser.parse(@drupal_rss_feed)
+      first = Enum.find(entries, &(&1.guid == "https://example.com/news/123"))
+      assert first.body =~ "Article body text here."
+    end
+  end
+
   describe "parse/1 error handling" do
     test "returns error for invalid XML" do
       assert {:error, _reason} = FeedParser.parse("this is not xml")

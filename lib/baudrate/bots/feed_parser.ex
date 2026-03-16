@@ -27,6 +27,12 @@ defmodule Baudrate.Bots.FeedParser do
   """
   @spec parse(binary()) :: {:ok, [map()]} | {:error, term()}
   def parse(xml) when is_binary(xml) do
+    # Some feeds (e.g. Drupal) embed raw HTML in <title> without CDATA:
+    # <title><a href="...">text</a></title>
+    # Saxy parses <a> as a nested element, so fiet captures "" for the title.
+    # Normalize to plain text before handing off to fiet.
+    xml = normalize_title_elements(xml)
+
     case Fiet.RSS2.parse(xml) do
       {:ok, channel} ->
         entries =
@@ -51,6 +57,48 @@ defmodule Baudrate.Bots.FeedParser do
             {:error, reason}
         end
     end
+  end
+
+  # Strips nested HTML elements from <title> blocks that contain raw markup
+  # without a CDATA wrapper. CDATA-wrapped titles are left untouched because
+  # Saxy already emits CDATA content as plain characters for fiet to capture.
+  #
+  # Uses a plain regex (not Ammonia) to strip tags so that XML entity references
+  # in the content (e.g. &amp;) are preserved verbatim and correctly decoded by
+  # the XML parser. The stripped text is re-wrapped in CDATA so no xml_escape
+  # step is needed.
+  defp normalize_title_elements(xml) do
+    Regex.replace(~r{<title>(.*?)</title>}s, xml, fn full, content ->
+      trimmed = String.trim_leading(content)
+
+      if String.contains?(content, "<") and not String.starts_with?(trimmed, "<![CDATA[") do
+        plain =
+          content
+          |> (&Regex.replace(~r{<[^>]+>}, &1, "")).()
+          |> String.trim()
+          # CDATA sections may not contain "]]>" — escape any occurrence.
+          |> String.replace("]]>", "]]]]><![CDATA[>")
+
+        "<title><![CDATA[#{plain}]]></title>"
+      else
+        full
+      end
+    end)
+  end
+
+  # Decodes the five standard XML/HTML entities that Ammonia re-encodes when
+  # serializing strip_tags output. Titles must be stored as plain text so that
+  # Phoenix HEEx's auto-escaping renders them correctly in the browser.
+  defp decode_html_entities(str) do
+    Regex.replace(~r/&(amp|lt|gt|quot|apos|#39);/, str, fn _, name ->
+      case name do
+        "amp" -> "&"
+        "lt" -> "<"
+        "gt" -> ">"
+        "quot" -> "\""
+        _ -> "'"
+      end
+    end)
   end
 
   # --- RSS 2.0 normalization ---
@@ -82,6 +130,7 @@ defmodule Baudrate.Bots.FeedParser do
 
     raw
     |> Baudrate.Sanitizer.Native.strip_tags()
+    |> decode_html_entities()
     |> String.trim()
     |> String.slice(0, @max_title_length)
   end
@@ -150,6 +199,7 @@ defmodule Baudrate.Bots.FeedParser do
 
     raw
     |> Baudrate.Sanitizer.Native.strip_tags()
+    |> decode_html_entities()
     |> String.trim()
     |> String.slice(0, @max_title_length)
   end
