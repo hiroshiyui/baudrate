@@ -29,6 +29,10 @@ defmodule Baudrate.Bots.FeedParser do
   """
   @spec parse(binary()) :: {:ok, [map()]} | {:error, term()}
   def parse(xml) when is_binary(xml) do
+    # Strip UTF-8 BOM (EF BB BF) if present — some feeds (e.g. ltn.com.tw)
+    # prepend a BOM which causes Saxy to reject the leading `<` in `<?xml`.
+    xml = strip_bom(xml)
+
     # Some feeds (e.g. Drupal) embed raw HTML in <title> without CDATA:
     # <title><a href="...">text</a></title>
     # Saxy parses <a> as a nested element, so fiet captures "" for the title.
@@ -60,6 +64,9 @@ defmodule Baudrate.Bots.FeedParser do
         end
     end
   end
+
+  defp strip_bom(<<0xEF, 0xBB, 0xBF, rest::binary>>), do: rest
+  defp strip_bom(xml), do: xml
 
   # Strips nested HTML elements from <title> blocks that contain raw markup
   # without a CDATA wrapper. CDATA-wrapped titles are left untouched because

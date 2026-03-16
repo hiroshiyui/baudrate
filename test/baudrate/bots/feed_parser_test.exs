@@ -225,6 +225,33 @@ defmodule Baudrate.Bots.FeedParserTest do
     end
   end
 
+  describe "parse/1 with UTF-8 BOM prefix" do
+    test "strips BOM and parses RSS 2.0 feed successfully" do
+      bom = <<0xEF, 0xBB, 0xBF>>
+
+      feed =
+        bom <>
+          """
+          <?xml version="1.0" encoding="UTF-8"?>
+          <rss version="2.0">
+            <channel>
+              <title>BOM Feed</title>
+              <link>https://example.com</link>
+              <item>
+                <title>BOM Article</title>
+                <link>https://example.com/bom</link>
+                <guid>https://example.com/bom</guid>
+                <pubDate>Mon, 01 Jan 2024 12:00:00 +0000</pubDate>
+              </item>
+            </channel>
+          </rss>
+          """
+
+      assert {:ok, [entry]} = FeedParser.parse(feed)
+      assert entry.title == "BOM Article"
+    end
+  end
+
   describe "parse/1 error handling" do
     test "returns error for invalid XML" do
       assert {:error, _reason} = FeedParser.parse("this is not xml")
