@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.36] — 2026-03-16
+
+### Added
+
+- **Wayback Machine favicon fallback** — When all direct favicon fetches fail (e.g. the production server IP is blocked at a CDN/WAF), the favicon fetcher now retries the same candidate list via the Internet Archive Wayback Machine (`web.archive.org/web/2if_/{url}`), which returns the most recently archived raw file. This allows bots to acquire favicons from sites like Bahamut that block non-browser IPs.
+
 ## [1.3.35] — 2026-03-16
 
 ### Added
