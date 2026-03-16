@@ -30,7 +30,12 @@
           <.avatar user={@article.user} size={24} />
           {display_name(@article.user)}
         </.link>
-        <span :if={@article.user.is_bot} class="badge badge-sm badge-ghost ml-1">
+        <span
+          :if={@article.user.is_bot}
+          class="badge badge-sm badge-ghost ml-1"
+          role="img"
+          aria-label={gettext("Bot account")}
+        >
           {gettext("Bot")}
         </span>
       </span>

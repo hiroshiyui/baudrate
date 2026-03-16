@@ -7,7 +7,12 @@
         @{@profile_user.username}
       </div>
       <span class="badge badge-outline">{translate_role(@profile_user.role.name)}</span>
-      <span :if={@profile_user.is_bot} class="badge badge-outline badge-sm ml-1">
+      <span
+        :if={@profile_user.is_bot}
+        class="badge badge-outline badge-sm ml-1"
+        role="img"
+        aria-label={gettext("Bot account")}
+      >
         {gettext("Bot")}
       </span>
       <p class="text-sm text-base-content/70 mt-1">
@@ -77,6 +82,7 @@
             tabindex="0"
             class="btn btn-sm btn-outline"
             aria-haspopup="true"
+            aria-expanded="false"
             aria-label={gettext("More actions")}
           >
             <.icon name="hero-ellipsis-vertical" class="size-4" />
@@ -188,7 +194,7 @@
                       height={img.height}
                       class="w-full aspect-square object-cover rounded-lg border border-base-300"
                       loading="lazy"
-                      alt={gettext("Article image")}
+                      alt={article.title}
                     />
                   </div>
                   <div class="text-sm text-base-content/70">
@@ -300,7 +306,7 @@
                       height={img.height}
                       class="w-full aspect-square object-cover rounded-lg border border-base-300"
                       loading="lazy"
-                      alt={gettext("Article image")}
+                      alt={article.title}
                     />
                   </div>
                   <div class="text-sm text-base-content/70">

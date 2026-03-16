@@ -125,7 +125,7 @@
           height={img.height}
           class="w-full aspect-square object-cover rounded-lg border border-base-300"
           loading="lazy"
-          alt={gettext("Article image")}
+          alt={article.title}
         />
       </div>
       <div class="flex flex-wrap items-center gap-1 text-sm text-base-content/70 mt-1">
@@ -138,7 +138,12 @@
             <.avatar user={article.user} size={24} />
             {display_name(article.user)}
           </.link>
-          <span :if={article.user.is_bot} class="badge badge-sm badge-ghost ml-1">
+          <span
+            :if={article.user.is_bot}
+            class="badge badge-sm badge-ghost ml-1"
+            role="img"
+            aria-label={gettext("Bot account")}
+          >
             {gettext("Bot")}
           </span>
           &middot;
