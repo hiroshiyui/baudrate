@@ -5229,3 +5229,124 @@ msgstr "您可以在等待審核時更新個人資料。"
 #, elixir-autogen, elixir-format
 msgid "Your account has been created and is pending admin approval. You can sign in and update your profile, but posting is restricted until approved."
 msgstr "您的帳號已建立，正在等待管理員審核。您可以登入並更新個人資料，但在核准前無法發表文章。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:28
+#: lib/baudrate_web/live/admin/bots_live.html.heex:3
+#, elixir-autogen, elixir-format
+msgid "Manage Bots"
+msgstr "管理機器人"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "New Bot"
+msgstr "新增機器人"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:15
+#, elixir-autogen, elixir-format
+msgid "Edit Bot"
+msgstr "編輯機器人"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:89
+#, elixir-autogen, elixir-format
+msgid "No bots configured yet."
+msgstr "尚未設定任何機器人。"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Username cannot be changed after creation."
+msgstr "使用者名稱在建立後無法更改。"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:38
+#, elixir-autogen, elixir-format
+msgid "Feed URL"
+msgstr "訂閱來源網址"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "Target Boards"
+msgstr "目標看板"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:60
+#, elixir-autogen, elixir-format
+msgid "Fetch Interval (minutes)"
+msgstr "抓取間隔（分鐘）"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:69
+#, elixir-autogen, elixir-format
+msgid "Create Bot"
+msgstr "建立機器人"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:96
+#, elixir-autogen, elixir-format
+msgid "Bot"
+msgstr "機器人"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:100
+#, elixir-autogen, elixir-format
+msgid "Last Fetched"
+msgstr "上次抓取"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:101
+#, elixir-autogen, elixir-format
+msgid "Errors"
+msgstr "錯誤"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:122
+#, elixir-autogen, elixir-format
+msgid "Inactive"
+msgstr "停用"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:157
+#, elixir-autogen, elixir-format
+msgid "Deactivate"
+msgstr "停用"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:157
+#, elixir-autogen, elixir-format
+msgid "Activate"
+msgstr "啟用"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:163
+#, elixir-autogen, elixir-format
+msgid "Delete this bot and its user account? This cannot be undone."
+msgstr "刪除此機器人及其使用者帳號？此操作無法撤銷。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:87
+#, elixir-autogen, elixir-format
+msgid "Bot activated."
+msgstr "機器人已啟用。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:87
+#, elixir-autogen, elixir-format
+msgid "Bot deactivated."
+msgstr "機器人已停用。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:91
+#, elixir-autogen, elixir-format
+msgid "Failed to update bot."
+msgstr "更新機器人失敗。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:112
+#, elixir-autogen, elixir-format
+msgid "Bot deleted successfully."
+msgstr "機器人已成功刪除。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:116
+#, elixir-autogen, elixir-format
+msgid "Failed to delete bot."
+msgstr "刪除機器人失敗。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:133
+#, elixir-autogen, elixir-format
+msgid "Bot created successfully."
+msgstr "機器人已成功建立。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:137
+#, elixir-autogen, elixir-format
+msgid "User role not found. Please run setup first."
+msgstr "找不到使用者角色。請先執行初始設定。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:156
+#, elixir-autogen, elixir-format
+msgid "Bot updated successfully."
+msgstr "機器人已成功更新。"

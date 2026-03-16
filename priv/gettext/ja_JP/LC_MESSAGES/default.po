@@ -5229,3 +5229,124 @@ msgstr "承認を待つ間にプロフィールを更新できます。"
 #, elixir-autogen, elixir-format
 msgid "Your account has been created and is pending admin approval. You can sign in and update your profile, but posting is restricted until approved."
 msgstr "アカウントが作成され、管理者の承認待ちです。ログインしてプロフィールを更新することは可能ですが、承認されるまで投稿は制限されます。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:28
+#: lib/baudrate_web/live/admin/bots_live.html.heex:3
+#, elixir-autogen, elixir-format
+msgid "Manage Bots"
+msgstr "ボット管理"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "New Bot"
+msgstr "新しいボット"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:15
+#, elixir-autogen, elixir-format
+msgid "Edit Bot"
+msgstr "ボットを編集"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:89
+#, elixir-autogen, elixir-format
+msgid "No bots configured yet."
+msgstr "まだボットが設定されていません。"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:20
+#, elixir-autogen, elixir-format
+msgid "Username cannot be changed after creation."
+msgstr "作成後はユーザー名を変更できません。"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:38
+#, elixir-autogen, elixir-format
+msgid "Feed URL"
+msgstr "フィードURL"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "Target Boards"
+msgstr "投稿先掲示板"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:60
+#, elixir-autogen, elixir-format
+msgid "Fetch Interval (minutes)"
+msgstr "取得間隔（分）"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:69
+#, elixir-autogen, elixir-format
+msgid "Create Bot"
+msgstr "ボットを作成"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:96
+#, elixir-autogen, elixir-format
+msgid "Bot"
+msgstr "ボット"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:100
+#, elixir-autogen, elixir-format
+msgid "Last Fetched"
+msgstr "最終取得"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:101
+#, elixir-autogen, elixir-format
+msgid "Errors"
+msgstr "エラー"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:122
+#, elixir-autogen, elixir-format
+msgid "Inactive"
+msgstr "無効"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:150
+#, elixir-autogen, elixir-format
+msgid "Deactivate"
+msgstr "無効化"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:157
+#, elixir-autogen, elixir-format
+msgid "Activate"
+msgstr "有効化"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex:163
+#, elixir-autogen, elixir-format
+msgid "Delete this bot and its user account? This cannot be undone."
+msgstr "このボットとそのユーザーアカウントを削除しますか？この操作は取り消せません。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:87
+#, elixir-autogen, elixir-format
+msgid "Bot activated."
+msgstr "ボットを有効化しました。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:87
+#, elixir-autogen, elixir-format
+msgid "Bot deactivated."
+msgstr "ボットを無効化しました。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:91
+#, elixir-autogen, elixir-format
+msgid "Failed to update bot."
+msgstr "ボットの更新に失敗しました。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:112
+#, elixir-autogen, elixir-format
+msgid "Bot deleted successfully."
+msgstr "ボットを正常に削除しました。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:116
+#, elixir-autogen, elixir-format
+msgid "Failed to delete bot."
+msgstr "ボットの削除に失敗しました。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:133
+#, elixir-autogen, elixir-format
+msgid "Bot created successfully."
+msgstr "ボットを正常に作成しました。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:137
+#, elixir-autogen, elixir-format
+msgid "User role not found. Please run setup first."
+msgstr "ユーザーロールが見つかりません。先にセットアップを実行してください。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex:156
+#, elixir-autogen, elixir-format
+msgid "Bot updated successfully."
+msgstr "ボットを正常に更新しました。"
