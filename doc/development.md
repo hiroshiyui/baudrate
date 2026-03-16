@@ -53,6 +53,13 @@ lib/
 │   │   ├── user_session.ex      # Ecto schema for server-side sessions
 │   │   └── users.ex             # User CRUD, lookup, and registration
 │   ├── avatar.ex                # Avatar image processing (crop, resize, WebP)
+│   ├── bots.ex                  # Bots context: bot CRUD, feed scheduling, deduplication
+│   ├── bots/
+│   │   ├── bot.ex               # Bot schema (1:1 with User, feed config, fetch state)
+│   │   ├── bot_feed_item.ex     # BotFeedItem schema (posted GUID deduplication)
+│   │   ├── favicon_fetcher.ex   # Fetch site favicon and set as bot avatar (best-effort)
+│   │   ├── feed_parser.ex       # RSS 2.0 / Atom 1.0 parser via fiet (normalizes entries)
+│   │   └── feed_worker.ex       # GenServer: polls due bots every 60s, creates articles
 │   ├── content.ex               # Content context facade: defdelegate to focused sub-modules
 │   ├── content/
 │   │   ├── articles.ex          # Article CRUD, cross-posting, revisions, pin/lock
@@ -1465,6 +1472,7 @@ Baudrate.Supervisor (one_for_one)
 ├── Baudrate.Federation.DomainBlockCache  # ETS cache for domain blocking decisions
 ├── Baudrate.Federation.DeliveryWorker     # Polls delivery queue every 60s
 ├── Baudrate.Federation.StaleActorCleaner # Daily stale remote actor cleanup
+├── Baudrate.Bots.FeedWorker              # Polls RSS/Atom bots every 60s
 └── BaudrateWeb.Endpoint                  # HTTP server
 ```
 

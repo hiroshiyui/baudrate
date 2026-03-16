@@ -52,6 +52,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - **Setup** (`lib/baudrate/setup.ex`) — first-run wizard, RBAC seeding, settings, role level utilities
 - **Moderation** (`lib/baudrate/moderation.ex`) — reports, resolve/dismiss, audit log
 - **Notification** (`lib/baudrate/notification.ex`) — in-app notifications, unread counts, mark read, cleanup, admin announcements
+- **Bots** (`lib/baudrate/bots.ex`) — RSS/Atom feed bot accounts: CRUD, feed scheduling, deduplication, favicon fetcher
 
 ### Key Gotchas
 
