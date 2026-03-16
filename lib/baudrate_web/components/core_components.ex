@@ -52,6 +52,9 @@ defmodule BaudrateWeb.CoreComponents do
   @doc "Formats date only (no time). See `BaudrateWeb.Helpers.format_date/1`."
   defdelegate format_date(datetime), to: BaudrateWeb.Helpers
 
+  @doc "Returns the canonical display timestamp for an article (published_at || inserted_at). See `BaudrateWeb.Helpers.article_datetime/1`."
+  defdelegate article_datetime(article), to: BaudrateWeb.Helpers
+
   @doc """
   Renders flash notices.
 

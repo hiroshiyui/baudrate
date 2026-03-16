@@ -606,9 +606,9 @@
             <div class="flex flex-col items-end flex-shrink-0">
               <time
                 class="text-xs text-base-content/70"
-                datetime={datetime_attr(item.article.inserted_at)}
+                datetime={datetime_attr(article_datetime(item.article))}
               >
-                {format_datetime(item.article.inserted_at)}
+                {format_datetime(article_datetime(item.article))}
               </time>
               <span class="badge badge-xs badge-accent">{gettext("Article")}</span>
             </div>

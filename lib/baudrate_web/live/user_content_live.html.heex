@@ -32,8 +32,8 @@
           {article.title}
         </.link>
         <div class="text-sm text-base-content/70">
-          <time datetime={datetime_attr(article.inserted_at)}>
-            {format_datetime(article.inserted_at)}
+          <time datetime={datetime_attr(article_datetime(article))}>
+            {format_datetime(article_datetime(article))}
           </time>
           <span :if={article.boards != []}>
             &middot;

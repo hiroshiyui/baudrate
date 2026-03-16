@@ -176,6 +176,17 @@ defmodule BaudrateWeb.Helpers do
   def translate_role(other), do: other
 
   @doc """
+  Returns the canonical display timestamp for an article.
+
+  Uses `published_at` when present (bot/federated articles with an original
+  publication date), falling back to `inserted_at` for regular user articles.
+  """
+  def article_datetime(%{published_at: published_at}) when not is_nil(published_at),
+    do: published_at
+
+  def article_datetime(%{inserted_at: inserted_at}), do: inserted_at
+
+  @doc """
   Returns a human-friendly display name for a user or remote actor.
 
   Falls back to `username` when `display_name` is nil or empty.

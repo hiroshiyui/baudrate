@@ -240,8 +240,8 @@
             <div class="flex items-center gap-2 mt-2 text-xs text-base-content/70">
               <span class="badge badge-outline badge-xs">{gettext("Remote post")}</span>
               <span class="badge badge-outline badge-xs">{article.visibility}</span>
-              <time :if={article.inserted_at} datetime={datetime_attr(article.inserted_at)}>
-                {format_datetime(article.inserted_at)}
+              <time :if={article.inserted_at} datetime={datetime_attr(article_datetime(article))}>
+                {format_datetime(article_datetime(article))}
               </time>
             </div>
           </div>
@@ -488,8 +488,8 @@
             </a>
             &middot;
           </span>
-          <time datetime={datetime_attr(article.inserted_at)}>
-            {format_datetime(article.inserted_at)}
+          <time datetime={datetime_attr(article_datetime(article))}>
+            {format_datetime(article_datetime(article))}
           </time>
           <span :if={article.boards != []}>&middot;</span>
           <span :for={board <- article.boards} class="badge badge-outline badge-sm ml-1">

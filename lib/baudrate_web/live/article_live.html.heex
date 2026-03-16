@@ -72,12 +72,12 @@
         class="link link-hover"
         title={gettext("View original")}
       >
-        <time datetime={datetime_attr(@article.inserted_at)}>
-          {format_datetime(@article.inserted_at)}
+        <time datetime={datetime_attr(article_datetime(@article))}>
+          {format_datetime(article_datetime(@article))}
         </time>
       </a>
-      <time :if={!@article.ap_id} datetime={datetime_attr(@article.inserted_at)}>
-        {format_datetime(@article.inserted_at)}
+      <time :if={!@article.ap_id} datetime={datetime_attr(article_datetime(@article))}>
+        {format_datetime(article_datetime(@article))}
       </time>
     </div>
 
