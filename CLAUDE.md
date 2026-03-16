@@ -36,6 +36,7 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 | HTML sanitization | Ammonia (Rust NIF via Rustler) — requires Rust toolchain |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
 | Timezone data | tz |
+| Feed parsing | fiet — RSS 2.0 and Atom 1.0 parsing |
 | i18n | Gettext — zh_TW and ja_JP locales |
 
 ## Architecture
@@ -79,6 +80,8 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - Boards are cached in ETS via `Baudrate.Content.BoardCache`; board mutations in `Content` (`create_board`, `update_board`, `delete_board`, `toggle_board_federation`) auto-refresh the cache. Settings cache is disabled in tests via `settings_cache_enabled: false`; board cache runs normally in tests.
 - Link previews: async fetch of OG metadata after content save (first URL only). Images are proxied server-side (re-encoded to WebP via libvips). The `link_previews` table is shared/deduplicated by URL hash. Preview cards render via `<.link_preview>` component in `core_components.ex`. Stale previews (>7 days) are refreshed hourly by `SessionCleaner`; orphans (>30 days, no FK refs) are purged.
 - AP visibility: articles, comments, and feed items have a `visibility` field (`public`, `unlisted`, `followers_only`, `direct`) derived from `to`/`cc` addressing on ingest via `Federation.Visibility.from_addressing/1`. Local content defaults to `public`. Forwarding permissions respect visibility: only `public`/`unlisted` content is forwardable by non-author/non-admin users.
+- Bot accounts: users with `is_bot: true` cannot log in — `authenticate_by_password/2` rejects them. Bot users have `dm_access: "nobody"` and a locked random password. Managed exclusively via `Baudrate.Bots` context and the `/admin/bots` admin UI.
+- `published_at` on articles: stores the original publication timestamp from RSS/Atom feed entries (via bot posting). Nil for locally-created articles. Used to preserve original feed entry dates when bots create articles.
 
 ## Project Conventions
 
@@ -162,6 +165,7 @@ When creating a new release:
 | `lib/baudrate/setup.ex` | Setup context: roles, settings, role level utilities |
 | `lib/baudrate/moderation.ex` | Moderation context: reports, audit log |
 | `lib/baudrate/notification.ex` | Notification context: in-app notifications, PubSub |
+| `lib/baudrate/bots.ex` | Bots context: RSS/Atom feed bot CRUD, fetch scheduling, deduplication |
 | `lib/baudrate_web/live/auth_hooks.ex` | LiveView auth on_mount hooks |
 | `lib/baudrate_web/components/core_components.ex` | Shared UI components |
 | `doc/development.md` | Full architecture & project structure |

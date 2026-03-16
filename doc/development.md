@@ -18,6 +18,7 @@ visibility. Design decisions should reflect this philosophy.
 | HTML parsing | html5ever (Rust NIF via Rustler) |
 | HTML sanitization | Ammonia (Rust NIF via Rustler) |
 | Rate limiting | Hammer |
+| Feed parsing | fiet — RSS 2.0 and Atom 1.0 |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
 
 ## Architecture
@@ -166,7 +167,7 @@ lib/
 │       ├── role_permission.ex   # Join table: role ↔ permission
 │       ├── setting.ex           # Key-value settings (site_name, timezone, setup_completed, etc.)
 │       ├── settings_cache.ex    # ETS-backed cache for settings (GenServer + :ets.lookup)
-│       └── user.ex              # User schema with password, TOTP, avatar, display_name, status, signature fields
+│       └── user.ex              # User schema with password, TOTP, avatar, display_name, status, signature, is_bot fields
 ├── mix/
 │   └── tasks/
 │       ├── backup.ex            # mix backup — full instance backup (DB + files)
@@ -208,6 +209,7 @@ lib/
 │   │   │   ├── login_attempts_live.ex # Admin login attempts viewer (paginated, filterable)
 │   │   │   ├── moderation_live.ex     # Moderation queue (reports)
 │   │   │   ├── moderation_log_live.ex # Moderation audit log (filterable, paginated)
+│   │   │   ├── bots_live.ex           # Admin bot management (create, edit, delete RSS/Atom feed bots)
 │   │   │   ├── pending_users_live.ex  # Admin approval of pending registrations
 │   │   │   ├── settings_live.ex       # Admin site settings (name, timezone, registration, federation)
 │   │   │   └── users_live.ex          # Admin user management (paginated, filterable, ban, unban, role change)
@@ -1008,6 +1010,86 @@ federated).
 **Files:**
 - `lib/baudrate/content/bookmark.ex` — schema with validation
 - `lib/baudrate_web/live/bookmarks_live.ex` — paginated bookmarks page at `/bookmarks`
+
+### Bots (RSS/Atom Feed Aggregation)
+
+Baudrate supports administrator-managed bot accounts that periodically fetch
+RSS 2.0 and Atom 1.0 feeds and post entries as articles. Bots are managed via
+the `/admin/bots` admin UI.
+
+**Architecture:**
+
+Each bot consists of:
+
+1. A `User` account with `is_bot: true`, `dm_access: "nobody"`, and a locked
+   random password. Bot accounts cannot be logged into — `authenticate_by_password/2`
+   rejects any user with `is_bot: true`.
+2. A `Bot` record linking the user to feed configuration (URL, target boards,
+   fetch interval).
+3. `BotFeedItem` records tracking posted entry GUIDs for deduplication.
+
+**Workflow (FeedWorker → FeedParser → FaviconFetcher):**
+
+1. `Baudrate.Bots.FeedWorker` (GenServer) polls `Bots.list_due_bots/0` every
+   60 seconds (±10% jitter). Up to 5 bots are processed concurrently via
+   `Task.Supervisor.async_stream_nolink/3` (120s per-bot timeout).
+2. For each due bot, the worker optionally triggers `FaviconFetcher.fetch_and_set/1`
+   (best-effort, in a separate Task) to refresh the bot's avatar from the site favicon.
+3. The feed URL is validated (SSRF-safe via `HTTPClient.validate_url/1`) and
+   fetched (max 5 MB). The raw XML is parsed by `FeedParser.parse/1`.
+4. `FeedParser` tries RSS 2.0 first (via `Fiet.RSS2`), then falls back to Atom
+   1.0 (via `Fiet.Atom`). Each entry is normalized to `%{guid, title, body, link, tags, published_at}`.
+   HTML content is sanitized via `Baudrate.Sanitizer.Native.sanitize_markdown/1`.
+   `published_at` is clamped: dates more than 10 years in the past or in the
+   future are set to `nil`.
+5. For each new entry (not yet in `bot_feed_items`), the worker calls
+   `Content.create_article/2` with the bot user as author. The `published_at`
+   field on the article records the original feed entry publication date.
+6. On success, `Bots.mark_fetch_success/1` schedules the next fetch. On failure,
+   `Bots.mark_fetch_error/1` applies exponential backoff (5 min → 10 min → 20 min,
+   capped at 24 hours).
+
+**FaviconFetcher:** Scans the site HTML for `<link rel="apple-touch-icon">` and
+`<link rel="icon">` tags, downloads the best candidate, and processes it through
+the avatar pipeline (magic bytes validation, libvips re-encode to WebP, EXIF
+strip). Avatar refreshes run at most once every 7 days per bot.
+
+**Database tables:**
+
+| Table | Purpose |
+|-------|---------|
+| `bots` | Bot config: `user_id`, `feed_url`, `board_ids` (int array), `fetch_interval_minutes`, `active`, `last_fetched_at`, `next_fetch_at`, `error_count`, `last_error`, `avatar_refreshed_at` |
+| `bot_feed_items` | GUID deduplication: `bot_id`, `guid`, `article_id` (nullable on permanent failure) |
+
+**Key functions in `Bots`:**
+
+- `list_bots/0` / `get_bot!/1` — listing and lookup
+- `create_bot/1` — creates bot user + bot record in a transaction, ensures RSA keypair
+- `update_bot/2` / `delete_bot/1` — update/delete bot and its user account
+- `list_due_bots/0` — bots with `next_fetch_at` nil or in the past
+- `already_posted?/2` — GUID dedup check
+- `record_feed_item/3` — records a posted entry
+- `mark_fetch_success/1` / `mark_fetch_error/1` — update fetch state with backoff
+- `avatar_needs_refresh?/1` / `mark_avatar_refreshed/1` — favicon refresh tracking
+
+**Security:**
+
+- Feed URLs are validated via `HTTPClient.validate_url/1` (SSRF-safe: rejects
+  private/loopback IPs, HTTPS only)
+- Feed content is fetched with a 5 MB size limit
+- Parsed content is sanitized via Ammonia NIF before article creation
+- Bot users cannot log in (`is_bot: true` check in `authenticate_by_password/2`)
+- Bot creation requires admin privileges (`/admin/bots` is in the `:admin` live_session)
+
+**Files:**
+
+- `lib/baudrate/bots.ex` — context (CRUD, scheduling, dedup)
+- `lib/baudrate/bots/bot.ex` — Bot schema
+- `lib/baudrate/bots/bot_feed_item.ex` — BotFeedItem schema (GUID dedup)
+- `lib/baudrate/bots/feed_worker.ex` — GenServer poller
+- `lib/baudrate/bots/feed_parser.ex` — RSS 2.0 / Atom 1.0 parser
+- `lib/baudrate/bots/favicon_fetcher.ex` — site favicon → bot avatar
+- `lib/baudrate_web/live/admin/bots_live.ex` — admin UI
 
 ### Federation Architecture
 
