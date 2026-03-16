@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.30] — 2026-03-16
+
+### Fixed
+
+- **Bot favicon WAF bypass** — The favicon fetcher now uses a browser-like Firefox User-Agent for all favicon HTTP requests (homepage fetch + candidate downloads). Sites that block bot user-agents at the CDN/WAF layer (e.g. gnn.gamer.com.tw / Bahamut) now return the correct responses.
+- **`HTTPClient.get_html/2`** — Added a `:user_agent` option to allow callers to override the default generic User-Agent string.
+
 ## [1.3.29] — 2026-03-16
 
 ### Fixed
