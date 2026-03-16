@@ -1176,21 +1176,146 @@ defmodule Baudrate.Federation.PublisherTest do
   end
 
   describe "publish_article_boosted/2" do
-    test "creates delivery jobs for article boosted" do
-      user = create_user()
+    test "delivers Announce to the booster's followers, not the article author's followers" do
+      author = create_user()
+      booster = create_user()
       board = create_board()
-      remote = create_remote_actor()
-      user_uri = Baudrate.Federation.actor_uri(:user, user.username)
-      create_follower(user_uri, remote)
 
-      article = create_article(user, board)
+      author_remote = create_remote_actor()
+      booster_remote = create_remote_actor()
+
+      author_uri = Baudrate.Federation.actor_uri(:user, author.username)
+      booster_uri = Baudrate.Federation.actor_uri(:user, booster.username)
+
+      create_follower(author_uri, author_remote)
+      create_follower(booster_uri, booster_remote)
+
+      article = create_article(author, board)
+      {:ok, _boost} = Baudrate.Content.Boosts.boost_article(booster.id, article.id)
       Repo.delete_all(Baudrate.Federation.DeliveryJob)
 
-      Publisher.publish_article_boosted(user.id, article)
+      Publisher.publish_article_boosted(booster.id, article)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      inbox_urls = Enum.map(jobs, & &1.inbox_url)
+
+      assert booster_remote.inbox in inbox_urls
+      refute author_remote.inbox in inbox_urls
+    end
+
+    test "delivers nothing when booster has no followers" do
+      author = create_user()
+      booster = create_user()
+      board = create_board()
+
+      article = create_article(author, board)
+      {:ok, _boost} = Baudrate.Content.Boosts.boost_article(booster.id, article.id)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      {:ok, count} = Publisher.publish_article_boosted(booster.id, article)
+
+      assert count == 0
+    end
+  end
+
+  describe "publish_article_unboosted/3" do
+    test "delivers Undo(Announce) to the booster's followers" do
+      author = create_user()
+      booster = create_user()
+      board = create_board()
+
+      booster_remote = create_remote_actor()
+      booster_uri = Baudrate.Federation.actor_uri(:user, booster.username)
+      create_follower(booster_uri, booster_remote)
+
+      article = create_article(author, board)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_article_unboosted(booster.id, article)
 
       jobs = Repo.all(Baudrate.Federation.DeliveryJob)
       assert length(jobs) == 1
-      assert hd(jobs).inbox_url == remote.inbox
+      assert hd(jobs).inbox_url == booster_remote.inbox
+
+      body = Jason.decode!(hd(jobs).activity_json)
+      assert body["type"] == "Undo"
+      assert body["object"]["type"] == "Announce"
+    end
+  end
+
+  describe "publish_comment_boosted/2" do
+    test "delivers Announce to the booster's followers, not the article author's followers" do
+      author = create_user()
+      booster = create_user()
+      board = create_board()
+
+      author_remote = create_remote_actor()
+      booster_remote = create_remote_actor()
+
+      author_uri = Baudrate.Federation.actor_uri(:user, author.username)
+      booster_uri = Baudrate.Federation.actor_uri(:user, booster.username)
+
+      create_follower(author_uri, author_remote)
+      create_follower(booster_uri, booster_remote)
+
+      article = create_article(author, board)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "Test comment",
+          body_html: "<p>Test comment</p>",
+          article_id: article.id,
+          user_id: author.id
+        })
+        |> Repo.insert()
+
+      {:ok, _boost} = Baudrate.Content.Boosts.boost_comment(booster.id, comment.id)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_comment_boosted(booster.id, comment)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      inbox_urls = Enum.map(jobs, & &1.inbox_url)
+
+      assert booster_remote.inbox in inbox_urls
+      refute author_remote.inbox in inbox_urls
+    end
+  end
+
+  describe "publish_comment_unboosted/3" do
+    test "delivers Undo(Announce) to the booster's followers" do
+      author = create_user()
+      booster = create_user()
+      board = create_board()
+
+      booster_remote = create_remote_actor()
+      booster_uri = Baudrate.Federation.actor_uri(:user, booster.username)
+      create_follower(booster_uri, booster_remote)
+
+      article = create_article(author, board)
+
+      {:ok, comment} =
+        %Comment{}
+        |> Comment.changeset(%{
+          body: "Test comment",
+          body_html: "<p>Test comment</p>",
+          article_id: article.id,
+          user_id: author.id
+        })
+        |> Repo.insert()
+
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      Publisher.publish_comment_unboosted(booster.id, comment)
+
+      jobs = Repo.all(Baudrate.Federation.DeliveryJob)
+      assert length(jobs) == 1
+      assert hd(jobs).inbox_url == booster_remote.inbox
+
+      body = Jason.decode!(hd(jobs).activity_json)
+      assert body["type"] == "Undo"
+      assert body["object"]["type"] == "Announce"
     end
   end
 end

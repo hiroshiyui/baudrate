@@ -4,8 +4,12 @@ defmodule Baudrate.Federation.Publisher do
   them for delivery to remote followers.
 
   Each `build_*` function returns a `{activity_map, actor_uri}` tuple.
-  The `publish_*` convenience functions build the activity and call
-  `Delivery.enqueue_for_article/2` to fan out to follower inboxes.
+  The `publish_*` convenience functions build the activity and call the
+  appropriate `Delivery` function to fan out to follower inboxes:
+  `enqueue_for_article/3` for article-scoped activities (Create, Update,
+  Delete, Like) and `enqueue_for_followers/2` for actor-scoped activities
+  (user Announce/Undo(Announce) boosts, where delivery targets the booster's
+  followers rather than the article author's followers).
 
   All activities include both the ActivityStreams and W3ID Security
   vocabularies in `@context` for JSON-LD compatibility (`publicKey`
@@ -710,6 +714,9 @@ defmodule Baudrate.Federation.Publisher do
 
   @doc """
   Publishes an `Announce` activity for a local user boosting an article.
+
+  Delivers to the booster's followers (not the article author's followers),
+  since the Announce originates from the booster's actor.
   """
   def publish_article_boosted(user_id, article) do
     user = Repo.get!(Baudrate.Setup.User, user_id)
@@ -721,17 +728,19 @@ defmodule Baudrate.Federation.Publisher do
     boost_ap_id = boost && boost.ap_id
 
     {activity, actor_uri} = build_user_announce_article(user, article, boost_ap_id)
-    Delivery.enqueue_for_article(activity, actor_uri, article)
+    Delivery.enqueue_for_followers(activity, actor_uri)
   end
 
   @doc """
   Publishes an `Undo(Announce)` activity for a local user unboosting an article.
+
+  Delivers to the booster's followers.
   """
   def publish_article_unboosted(user_id, article, boost_ap_id \\ nil) do
     user = Repo.get!(Baudrate.Setup.User, user_id)
     article = Repo.preload(article, [:boards, :user])
     {activity, actor_uri} = build_undo_user_announce_article(user, article, boost_ap_id)
-    Delivery.enqueue_for_article(activity, actor_uri, article)
+    Delivery.enqueue_for_followers(activity, actor_uri)
   end
 
   # --- Comment Boost (User Announce) ---
@@ -793,6 +802,8 @@ defmodule Baudrate.Federation.Publisher do
 
   @doc """
   Publishes an `Announce` activity for a local user boosting a comment.
+
+  Delivers to the booster's followers.
   """
   def publish_comment_boosted(user_id, comment) do
     user = Repo.get!(Baudrate.Setup.User, user_id)
@@ -804,17 +815,19 @@ defmodule Baudrate.Federation.Publisher do
     boost_ap_id = boost && boost.ap_id
 
     {activity, actor_uri} = build_user_announce_comment(user, comment, boost_ap_id)
-    Delivery.enqueue_for_article(activity, actor_uri, comment.article)
+    Delivery.enqueue_for_followers(activity, actor_uri)
   end
 
   @doc """
   Publishes an `Undo(Announce)` activity for a local user unboosting a comment.
+
+  Delivers to the booster's followers.
   """
   def publish_comment_unboosted(user_id, comment, boost_ap_id \\ nil) do
     user = Repo.get!(Baudrate.Setup.User, user_id)
     comment = Repo.preload(comment, article: [:boards, :user])
     {activity, actor_uri} = build_undo_user_announce_comment(user, comment, boost_ap_id)
-    Delivery.enqueue_for_article(activity, actor_uri, comment.article)
+    Delivery.enqueue_for_followers(activity, actor_uri)
   end
 
   # --- Feed Item Like/Boost ---
