@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.33] — 2026-03-16
+
+### Added
+
+- **RSS 1.0 (RDF) feed support** — Feed bots can now subscribe to RSS 1.0/RDF feeds (e.g. Impress Watch). These use a flat `<rdf:RDF>` root with `<item>` siblings rather than nesting inside a `<channel>`. Parsed directly via `Saxy.SimpleForm` as a third fallback after RSS 2.0 and Atom 1.0. Supports `dc:date`, `content:encoded`, `rdf:about` as GUID, and standard `title`/`link` fields.
+
 ## [1.3.32] — 2026-03-16
 
 ### Fixed
