@@ -1651,6 +1651,6 @@ Enum.each(users_data, fn {username, display_name, bio, posts} ->
 end)
 
 IO.puts("\n==> Seeds complete!")
-IO.puts("    Admin login: admin / Password123!x")
 IO.puts("    Sample users: alice_dev, bob_sysadmin, chen_wei, marta_writes, kaito_tanaka")
-IO.puts("    All passwords: Password123!x")
+IO.puts("    Sample user password: Password123!x")
+IO.puts("    (Admin credentials depend on your local setup)")
