@@ -7,6 +7,9 @@
         @{@profile_user.username}
       </div>
       <span class="badge badge-outline">{translate_role(@profile_user.role.name)}</span>
+      <span :if={@profile_user.is_bot} class="badge badge-outline badge-sm ml-1">
+        {gettext("Bot")}
+      </span>
       <p class="text-sm text-base-content/70 mt-1">
         {gettext("Member since")}
         <time datetime={format_date(@profile_user.inserted_at)}>
@@ -19,6 +22,7 @@
         class="flex gap-2 mt-2"
       >
         <.link
+          :if={!@profile_user.is_bot}
           navigate={~p"/messages/new?to=#{@profile_user.username}"}
           class="btn btn-sm btn-outline"
         >

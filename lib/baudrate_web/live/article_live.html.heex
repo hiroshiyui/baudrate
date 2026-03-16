@@ -30,6 +30,9 @@
           <.avatar user={@article.user} size={24} />
           {display_name(@article.user)}
         </.link>
+        <span :if={@article.user.is_bot} class="badge badge-sm badge-ghost ml-1">
+          {gettext("Bot")}
+        </span>
       </span>
       <span :if={@article.remote_actor} class="inline-flex items-center gap-1">
         {gettext("by")}
