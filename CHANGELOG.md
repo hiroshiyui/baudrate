@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.37] — 2026-03-16
+
+### Fixed
+
+- **Bot favicon wrong site for feed proxies** — Feed proxy services (e.g. FeedBurner at `feeds.feedburner.com`) and CDN feed subdomains (e.g. `feeds.bbci.co.uk`) serve feeds from a different host than the actual website, so the favicon was never found. The fetcher now reads the feed XML first and extracts the channel `<link>` element (the actual website URL) to use as the favicon base, falling back to the feed URL's origin if extraction fails.
+
 ## [1.3.36] — 2026-03-16
 
 ### Added
