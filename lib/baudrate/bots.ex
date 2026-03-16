@@ -153,7 +153,7 @@ defmodule Baudrate.Bots do
       :article_id
     ])
     |> Ecto.Changeset.validate_required([:bot_id, :guid])
-    |> Repo.insert()
+    |> Repo.insert(on_conflict: :nothing, conflict_target: [:bot_id, :guid])
   end
 
   @doc "Marks a successful fetch: resets error count and schedules the next fetch."
