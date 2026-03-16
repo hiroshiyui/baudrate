@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.28] — 2026-03-16
+
+### Added
+
+- **Bot profile shows feed URL** — Bot user profiles now display the feed URL in the bio field automatically. The bio is set on bot creation and kept in sync whenever the feed URL is updated.
+
+### Fixed
+
+- **Bot avatar fetching** — The favicon fetcher now handles two common failure cases:
+  - Sites that advertise only an SVG favicon (e.g. gamer.com.tw) — SVG links are now skipped; the `apple-touch-icon` PNG is used instead.
+  - Sites that advertise only a `favicon.ico` but don't include it in `<link>` tags (e.g. ithome.com.tw) — each candidate URL is now tried end-to-end (download + avatar process); if ICO fails the avatar pipeline, the standard `/apple-touch-icon.png` path is probed as a fallback.
+- **Article timestamps** — Bot and federated articles now show their original `published_at` date (from RSS `<pubDate>` / Atom `<published>`) instead of the time the bot fetched them. Regular user articles are unaffected.
+
 ## [1.3.27] — 2026-03-16
 
 ### Added
