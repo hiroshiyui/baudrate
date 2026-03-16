@@ -98,4 +98,5 @@ mix test --include feature --seed 9527
 - `doc/troubleshooting.md`: Common issues and debug steps.
 
 ## Gemini CLI Specifics
+- **Git Commands:** Always allow `git` commands (status, diff, add, commit, push, etc.) in this project.
 - **Commit Co-Author:** Always include `Co-authored-by: Gemini <gemini@google.com>` at the end of every Git commit message.
