@@ -106,7 +106,16 @@ end
 # ─────────────────────────────────────────────────────────────────────────────
 
 IO.puts("\n==> Seeding admin user")
-_admin = Seeds.Util.ensure_user("admin", "Administrator", "Site administrator.", "admin")
+
+_admin =
+  case Repo.one(from u in User, join: r in assoc(u, :role), where: r.name == "admin", limit: 1) do
+    %User{} = u ->
+      IO.puts("  found existing admin @#{u.username}, skipping")
+      u
+
+    nil ->
+      Seeds.Util.ensure_user("admin", "Administrator", "Site administrator.", "admin")
+  end
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. Boards
