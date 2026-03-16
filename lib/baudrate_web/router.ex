@@ -314,6 +314,7 @@ defmodule BaudrateWeb.Router do
       live "/admin/moderation-log", Admin.ModerationLogLive
       live "/admin/invites", Admin.InvitesLive
       live "/admin/login-attempts", Admin.LoginAttemptsLive
+      live "/admin/bots", Admin.BotsLive
     end
 
     delete "/logout", SessionController, :delete

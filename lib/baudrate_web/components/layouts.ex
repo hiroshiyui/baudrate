@@ -92,6 +92,9 @@ defmodule BaudrateWeb.Layouts do
                     <li :if={@current_user.role.name == "admin"}>
                       <.link navigate="/admin/login-attempts">{gettext("Login Attempts")}</.link>
                     </li>
+                    <li :if={@current_user.role.name == "admin"}>
+                      <.link navigate="/admin/bots">{gettext("Manage Bots")}</.link>
+                    </li>
                   </ul>
                 </details>
               </li>
@@ -248,6 +251,9 @@ defmodule BaudrateWeb.Layouts do
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
                       <.link navigate="/admin/login-attempts">{gettext("Login Attempts")}</.link>
+                    </li>
+                    <li :if={@current_user.role.name == "admin"}>
+                      <.link navigate="/admin/bots">{gettext("Manage Bots")}</.link>
                     </li>
                   </ul>
                 </details>

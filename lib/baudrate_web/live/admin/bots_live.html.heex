@@ -1,0 +1,191 @@
+<div id="admin-bots-page" class="admin-bots-page space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 id="bots-heading" class="text-2xl font-bold">{gettext("Manage Bots")}</h1>
+    <button :if={!@show_form} phx-click="new" class="btn btn-primary btn-sm">
+      {gettext("New Bot")}
+    </button>
+  </div>
+
+  <%!-- Bot form (create / edit) --%>
+  <div :if={@show_form} id="bot-form-card" class="card bg-base-200 shadow-md">
+    <div class="card-body">
+      <h2 class="card-title">
+        {if @editing_bot, do: gettext("Edit Bot"), else: gettext("New Bot")}
+      </h2>
+
+      <.form for={@form} phx-change="validate" phx-submit="save">
+        <%= if @editing_bot do %>
+          <div class="fieldset mb-2">
+            <label>
+              <span class="label mb-1">{gettext("Username")}</span>
+              <input
+                type="text"
+                value={@editing_bot.user.username}
+                class="w-full input"
+                disabled
+              />
+            </label>
+            <p class="text-sm opacity-70 mt-1">
+              {gettext("Username cannot be changed after creation.")}
+            </p>
+          </div>
+        <% else %>
+          <.input field={@form[:username]} type="text" label={gettext("Username")} required />
+          <.input field={@form[:display_name]} type="text" label={gettext("Display Name")} />
+        <% end %>
+
+        <.input
+          field={@form[:feed_url]}
+          type="url"
+          label={gettext("Feed URL")}
+          placeholder="https://example.com/feed.xml"
+          required
+        />
+
+        <div class="fieldset mb-2">
+          <label class="label mb-1">{gettext("Target Boards")}</label>
+          <div class="flex flex-wrap gap-2">
+            <%= for board <- @boards do %>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="bot[board_ids][]"
+                  value={board.id}
+                  checked={board.id in (@form[:board_ids].value || [])}
+                  class="checkbox checkbox-sm"
+                />
+                <span class="text-sm">{board.name}</span>
+              </label>
+            <% end %>
+          </div>
+        </div>
+
+        <.input
+          field={@form[:fetch_interval_minutes]}
+          type="number"
+          label={gettext("Fetch Interval (minutes)")}
+          min="1"
+          max="1440"
+        />
+
+        <div class="flex gap-2 mt-4">
+          <button type="submit" class="btn btn-primary btn-sm">
+            {if @editing_bot, do: gettext("Save Changes"), else: gettext("Create Bot")}
+          </button>
+          <button type="button" phx-click="cancel" class="btn btn-ghost btn-sm">
+            {gettext("Cancel")}
+          </button>
+        </div>
+      </.form>
+    </div>
+  </div>
+
+  <%!-- Bots table --%>
+  <section id="bots-section" aria-labelledby="bots-heading">
+    <div :if={@bots == []} class="text-base-content/70 text-sm">
+      {gettext("No bots configured yet.")}
+    </div>
+
+    <div :if={@bots != []} class="overflow-x-auto">
+      <table class="table table-zebra w-full">
+        <thead>
+          <tr>
+            <th>{gettext("Bot")}</th>
+            <th>{gettext("Feed URL")}</th>
+            <th>{gettext("Boards")}</th>
+            <th>{gettext("Status")}</th>
+            <th>{gettext("Last Fetched")}</th>
+            <th>{gettext("Errors")}</th>
+            <th>{gettext("Actions")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr :for={bot <- @bots} id={"bot-#{bot.id}"} class="bot-row">
+            <td>
+              <div class="flex items-center gap-2">
+                <.avatar user={bot.user} size={36} />
+                <div>
+                  <div class="font-semibold">{display_name(bot.user)}</div>
+                  <div class="text-xs text-base-content/60">@{bot.user.username}</div>
+                  <span class="badge badge-sm badge-ghost">{gettext("Bot")}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <a
+                href={bot.feed_url}
+                target="_blank"
+                rel="nofollow noopener noreferrer"
+                class="link link-hover text-sm truncate max-w-xs block"
+                title={bot.feed_url}
+              >
+                {String.slice(bot.feed_url, 0, 60)}{if String.length(bot.feed_url) > 60,
+                  do: "…",
+                  else: ""}
+              </a>
+            </td>
+            <td>
+              <div class="flex flex-wrap gap-1">
+                <%= for board <- Enum.filter(@boards, &(&1.id in bot.board_ids)) do %>
+                  <span class="badge badge-sm badge-outline">{board.name}</span>
+                <% end %>
+              </div>
+            </td>
+            <td>
+              <span class={[
+                "badge badge-sm",
+                if(bot.active, do: "badge-success", else: "badge-warning")
+              ]}>
+                {if bot.active, do: gettext("Active"), else: gettext("Inactive")}
+              </span>
+            </td>
+            <td class="text-sm text-base-content/70">
+              <%= if bot.last_fetched_at do %>
+                <time datetime={DateTime.to_iso8601(bot.last_fetched_at)}>
+                  {format_datetime(bot.last_fetched_at)}
+                </time>
+              <% else %>
+                {gettext("Never")}
+              <% end %>
+            </td>
+            <td>
+              <%= if bot.error_count > 0 do %>
+                <span class="badge badge-sm badge-error" title={bot.last_error}>
+                  {bot.error_count}
+                </span>
+              <% else %>
+                <span class="text-base-content/40">—</span>
+              <% end %>
+            </td>
+            <td>
+              <div class="flex gap-1">
+                <button
+                  phx-click="edit"
+                  phx-value-id={bot.id}
+                  class="btn btn-xs btn-ghost"
+                >
+                  {gettext("Edit")}
+                </button>
+                <button
+                  phx-click="toggle_active"
+                  phx-value-id={bot.id}
+                  class="btn btn-xs btn-ghost"
+                >
+                  {if bot.active, do: gettext("Deactivate"), else: gettext("Activate")}
+                </button>
+                <button
+                  phx-click="delete"
+                  phx-value-id={bot.id}
+                  data-confirm={gettext("Delete this bot and its user account? This cannot be undone.")}
+                  class="btn btn-xs btn-error btn-outline"
+                >
+                  {gettext("Delete")}
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
