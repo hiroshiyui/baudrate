@@ -102,15 +102,17 @@ defmodule Baudrate.Federation.HTTPClient do
 
     * `:headers` — extra request headers
     * `:max_size` — override maximum response size (default: federation config)
+    * `:user_agent` — override the default User-Agent string
   """
   def get_html(url, opts \\ []) do
     config = federation_config()
     extra_headers = Keyword.get(opts, :headers, [])
     max_size = Keyword.get(opts, :max_size, config[:max_payload_size])
+    ua = Keyword.get(opts, :user_agent, generic_user_agent())
     config = Keyword.put(config, :max_payload_size, max_size)
 
     all_headers = [
-      {"user-agent", generic_user_agent()},
+      {"user-agent", ua},
       {"accept", "text/html, application/xhtml+xml"}
       | extra_headers
     ]

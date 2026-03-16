@@ -27,6 +27,13 @@ defmodule Baudrate.Bots.FaviconFetcher do
 
   @max_favicon_size 2 * 1024 * 1024
 
+  # Browser-like User-Agent used for all favicon HTTP requests.
+  # Some sites block bot user-agents (including Baudrate's own UA) at the
+  # CDN/WAF layer, which would cause both homepage and favicon fetches to fail.
+  # Feed readers and aggregators conventionally use browser UAs for favicon
+  # discovery — this is the same approach taken by most RSS clients.
+  @browser_ua "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0"
+
   @doc """
   Fetches the favicon for the bot's feed URL and sets it as the bot user's avatar.
 
@@ -88,7 +95,7 @@ defmodule Baudrate.Bots.FaviconFetcher do
   # 2. Standard well-known paths
   defp build_favicon_candidates(site_url) do
     html_candidates =
-      case HTTPClient.get_html(site_url) do
+      case HTTPClient.get_html(site_url, user_agent: @browser_ua) do
         {:ok, %{body: body}} -> extract_raster_icon_urls(body, site_url)
         {:error, _} -> []
       end
@@ -189,6 +196,7 @@ defmodule Baudrate.Bots.FaviconFetcher do
   defp download_favicon(url, referer) do
     case HTTPClient.get_html(url,
            max_size: @max_favicon_size,
+           user_agent: @browser_ua,
            headers: [{"referer", referer}]
          ) do
       {:ok, %{body: body}} when byte_size(body) > 0 ->
