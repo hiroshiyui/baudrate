@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.38] — 2026-03-16
+
+### Fixed
+
+- **User boosts not delivered to booster's followers** — When a local user boosted an article or comment, the `Announce` activity was incorrectly delivered to the *article author's* followers instead of the *booster's* followers, making the boost invisible to anyone following the booster on remote instances. The delivery now uses `enqueue_for_followers/2` with the booster's actor URI.
+
 ## [1.3.37] — 2026-03-16
 
 ### Fixed
