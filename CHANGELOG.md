@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.35] — 2026-03-16
+
+### Added
+
+- **Bot "Reset & Retry" button** — The admin bots page now shows a "Reset & Retry" button on any bot with errors. Clicking it clears the error count and last error message, resets `next_fetch_at` to now (bypassing exponential backoff), and immediately triggers a re-fetch without waiting for the next scheduled poll cycle.
+
 ## [1.3.34] — 2026-03-16
 
 ### Fixed
