@@ -1181,14 +1181,15 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 **Outbound delivery** (via `Publisher` + `Delivery` + `DeliveryWorker`):
 - `Create(Article)` — automatically enqueued when a local user publishes an article
 - `Delete` with `Tombstone` (includes `formerType`) — enqueued when an article is soft-deleted
-- `Announce` — board actor announces articles to board followers
+- `Announce` (board actor) — board announces articles to board followers
+- `Announce` / `Undo(Announce)` (user actor) — enqueued when a local user boosts/unboosts an article or comment; delivered to the **booster's** followers (not the article author's followers)
 - `Update(Article)` — enqueued when a local article is edited
 - `Create(Note)` — DM to remote actor, delivered to personal inbox (not shared inbox) for privacy
 - `Delete(Tombstone)` — DM deletion, delivered to remote recipient's personal inbox
 - `Block` / `Undo(Block)` — delivered to the blocked actor's inbox when a user blocks/unblocks a remote actor
 - `Follow` / `Undo(Follow)` — sent when a local user follows/unfollows a remote actor
 - `Update(Person/Group/Organization)` — distributed to followers on key rotation or profile changes
-- Delivery targets: followers of the article's author + followers of all public boards
+- Delivery targets vary by activity type: `Create`/`Update`/`Delete` go to followers of the article's author + followers of all public boards the article is in; user `Announce`/`Undo(Announce)` (boosts) go to the **booster's** followers via `enqueue_for_followers/2`
 - Shared inbox deduplication: multiple followers at the same instance → one delivery
 - DB-backed queue (`delivery_jobs` table) with `DeliveryWorker` GenServer polling (graceful shutdown via `terminate/2`)
 - Exponential backoff: 1m → 5m → 30m → 2h → 12h → 24h, then abandoned after 6 attempts
@@ -1238,7 +1239,7 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `feed_item_boosts` table — local users can boost remote feed items inline
 - `Federation.toggle_feed_item_like/2` — toggles like, schedules AP Like/Undo(Like) delivery to the remote actor
 - `Federation.toggle_feed_item_boost/2` — toggles boost, schedules AP Announce/Undo(Announce) delivery to the remote actor
-- Comment likes and boosts are now federated outbound (Like/Undo(Like) and Announce/Undo(Announce) activities), matching the existing article federation pattern
+- Comment likes and boosts are federated outbound (Like/Undo(Like) and Announce/Undo(Announce) activities), matching the article federation pattern
 
 **Local user follows**:
 - `user_follows.followed_user_id` — nullable FK to `users`, with check constraint (exactly one of `remote_actor_id`/`followed_user_id`)
