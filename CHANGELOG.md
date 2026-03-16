@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.29] — 2026-03-16
+
+### Fixed
+
+- **Bot favicon CDN hotlink protection** — The favicon fetcher now sends the site's origin URL as the `Referer` header when downloading favicon candidates. CDNs that reject requests without a `Referer` (e.g. Bahamut's `i2.bahamut.com.tw`) now serve the image correctly.
+
 ## [1.3.28] — 2026-03-16
 
 ### Added
