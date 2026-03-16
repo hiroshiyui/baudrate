@@ -98,4 +98,36 @@ defmodule BaudrateWeb.LoginLiveTest do
     assert length(attempts) == 1
     assert hd(attempts).success == true
   end
+
+  test "shows invalid credentials error when logging in as a bot account", %{conn: conn} do
+    # ensure the "user" role exists (required by create_bot)
+    setup_user("user")
+    {:ok, bot} = Baudrate.Bots.create_bot(%{"username" => "testbot_login", "feed_url" => "https://example.com/feed.xml", "board_ids" => []})
+
+    {:ok, lv, _html} = live(conn, "/login")
+
+    html =
+      lv
+      |> form("form[phx-submit]", login: %{username: bot.user.username, password: "Password123!x"})
+      |> render_submit()
+
+    assert html =~ "Invalid username or password"
+    refute html =~ ~s(phx-trigger-action="true")
+  end
+
+  test "records failed login attempt when logging in as a bot account", %{conn: conn} do
+    # ensure the "user" role exists (required by create_bot)
+    setup_user("user")
+    {:ok, bot} = Baudrate.Bots.create_bot(%{"username" => "testbot_attempt", "feed_url" => "https://example.com/feed.xml", "board_ids" => []})
+
+    {:ok, lv, _html} = live(conn, "/login")
+
+    lv
+    |> form("form[phx-submit]", login: %{username: bot.user.username, password: "Password123!x"})
+    |> render_submit()
+
+    attempts = Repo.all(from a in LoginAttempt, where: a.username == ^bot.user.username)
+    assert length(attempts) == 1
+    assert hd(attempts).success == false
+  end
 end

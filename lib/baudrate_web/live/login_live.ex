@@ -95,9 +95,16 @@ defmodule BaudrateWeb.LoginLive do
 
             {:noreply, socket}
 
-          {:error, reason} when reason in [:banned, :invalid_credentials] ->
+          {:error, reason} when reason in [:banned, :invalid_credentials, :bot_account] ->
             Auth.record_login_attempt(username, ip, false)
-            log_tag = if reason == :banned, do: "auth.banned_login", else: "auth.login_failure"
+
+            log_tag =
+              case reason do
+                :banned -> "auth.banned_login"
+                :bot_account -> "auth.bot_login_attempt"
+                _ -> "auth.login_failure"
+              end
+
             Logger.warning("#{log_tag}: username=#{username} ip=#{ip}")
 
             socket =
