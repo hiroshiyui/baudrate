@@ -77,6 +77,7 @@ defmodule Baudrate.Bots do
 
         with {:ok, user} <- Repo.insert(changeset),
              user = if(display_name, do: set_display_name(user, display_name), else: user),
+             user = set_bio(user, feed_url),
              :ok <- ensure_keypair(user) do
           bot_attrs = %{
             user_id: user.id,
@@ -100,9 +101,20 @@ defmodule Baudrate.Bots do
   @doc "Updates a bot's configuration."
   @spec update_bot(Bot.t(), map()) :: {:ok, Bot.t()} | {:error, Ecto.Changeset.t()}
   def update_bot(bot, attrs) do
-    bot
-    |> Bot.update_changeset(attrs)
-    |> Repo.update()
+    case bot |> Bot.update_changeset(attrs) |> Repo.update() do
+      {:ok, _updated_bot} = ok ->
+        new_feed_url = attrs["feed_url"] || attrs[:feed_url]
+
+        if new_feed_url && new_feed_url != bot.feed_url do
+          bot = Repo.preload(bot, :user)
+          set_bio(bot.user, new_feed_url)
+        end
+
+        ok
+
+      {:error, _} = err ->
+        err
+    end
   end
 
   @doc "Deletes a bot and its associated user account in a transaction."
@@ -233,6 +245,13 @@ defmodule Baudrate.Bots do
 
   defp set_display_name(user, display_name) do
     case Auth.update_display_name(user, display_name) do
+      {:ok, updated} -> updated
+      {:error, _} -> user
+    end
+  end
+
+  defp set_bio(user, bio) do
+    case Auth.update_bio(user, bio) do
       {:ok, updated} -> updated
       {:error, _} -> user
     end
