@@ -78,6 +78,7 @@ mix test --include feature --seed 9527
 - **Login Security:** Use progressive delay (not hard lockout) for brute-force protection to avoid account DoS.
 
 ### Testing Strategy
+- **Parallel Testing:** ALWAYS run the full test suite in parallel using partitions (as shown in Quick Reference) before final validation.
 - **Seed 9527:** Always use seed 9527 for deterministic test execution.
 - **Test Stability:** Ensure tests pass deterministically across parallel partitions. Use explicit timestamps or `Repo.update_all` instead of `Process.sleep`.
 - **Macros:** Use `setup_user("role")`, `log_in_user(conn, user)`, and `log_in_admin(conn, user)` (for TOTP sudo mode).

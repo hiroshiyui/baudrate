@@ -1129,6 +1129,8 @@ defmodule Baudrate.Federation.InboxHandler do
     |> String.replace("&lt;", "<")
     |> String.replace("&gt;", ">")
     |> String.replace("&quot;", "\"")
+    |> String.replace("&nbsp;", " ")
+    |> String.replace("&#160;", " ")
     |> String.replace("&#39;", "'")
     |> String.replace("&#x27;", "'")
     |> String.replace("&apos;", "'")
