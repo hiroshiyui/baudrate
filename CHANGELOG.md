@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.27] — 2026-03-16
+
+### Added
+
+- **RSS/Atom Feed Bot Accounts** — Administrators can now create bot accounts that periodically fetch RSS/Atom feeds and post entries as articles. Bots are full ActivityPub actors — remote users and boards can follow them and receive federated articles. Bots cannot be logged into by humans and cannot receive DMs. A "Bot" badge is shown on profiles and post bylines.
+- **Admin Bot Management UI** — New admin page at `/admin/bots` for creating, editing, toggling, and deleting bot accounts with feed URL, target boards, and fetch interval configuration.
+- **Board Follows discoverability** — Added a "Follows" action link to the admin board management table for federated boards, so admins can reach board follows pages without explicitly being board moderators.
+
+### Fixed
+
+- **Bot login crash (critical)** — Logging in with a bot account username no longer causes a `CaseClauseError` (500 error). The attempt is now rejected with the same generic "Invalid username or password" message and recorded as a failed login attempt.
+- **Feed item deduplication race** — `record_feed_item/3` now uses `on_conflict: :nothing` to safely handle concurrent duplicate GUID inserts without raising a constraint error.
+- **User-Agent version** — The federation HTTP client now reads the version from `Application.spec/2` at runtime instead of hardcoding `0.1.0`, keeping the User-Agent accurate across releases.
+- **Local handle search on board follows page** — Searching for a local user handle (e.g. `@botname`) on the board follows page now shows a helpful error directing the admin to configure bot board targets via Admin → Bots, instead of silently failing.
+
+### Improved
+
+- **Accessibility** — Bot badge spans now carry `role="img"` and `aria-label="Bot account"` for screen reader clarity. Profile page dropdown trigger has `aria-expanded`. Article thumbnail `alt` text now uses the article title instead of the generic "Article image".
+
 ## [1.3.26] — 2026-03-15
 
 ### Added
