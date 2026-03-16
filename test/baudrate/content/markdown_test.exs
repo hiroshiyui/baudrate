@@ -31,6 +31,29 @@ defmodule Baudrate.Content.MarkdownTest do
       assert Markdown.to_html("") == ""
     end
 
+    test "renders all paragraphs from adjacent HTML (bot RSS content)" do
+      # Bot articles store sanitized HTML where <p> tags have no blank lines between them.
+      # Earmark drops blocks after the first unless blank lines are inserted first.
+      html = Markdown.to_html("<p>First paragraph</p><p>Second paragraph</p><p>Third paragraph</p>")
+      assert html =~ "First paragraph"
+      assert html =~ "Second paragraph"
+      assert html =~ "Third paragraph"
+    end
+
+    test "does not convert > lines inside HTML paragraphs to blockquotes" do
+      # Without blank-line normalization, Earmark falls back to Markdown parsing
+      # and converts any line starting with > into a <blockquote>.
+      html = Markdown.to_html("<p>First paragraph</p><p>> this should not be a blockquote</p>")
+      refute html =~ "<blockquote"
+      assert html =~ "this should not be a blockquote"
+    end
+
+    test "trims leading and trailing whitespace from input before rendering" do
+      html = Markdown.to_html("  \n  <p>Content</p>  \n  ")
+      assert html =~ "Content"
+      refute html =~ ~r/\A\s+/
+    end
+
     test "strips script tags and content to prevent XSS" do
       html = Markdown.to_html("<script>alert('xss')</script>")
       refute html =~ "<script>"

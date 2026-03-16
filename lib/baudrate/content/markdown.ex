@@ -4,10 +4,14 @@ defmodule Baudrate.Content.Markdown do
 
   The rendering pipeline is:
 
-  1. **Earmark** — Markdown → raw HTML
-  2. **Ammonia sanitizer** — strips unsafe HTML tags/attributes
-  3. **Hashtag linkification** — converts `#tag` to clickable links
-  4. **Mention linkification** — converts `@username` to clickable profile links
+  1. **Block normalization** — inserts blank lines between consecutive HTML
+     block elements so Earmark treats each as a separate HTML block. Required
+     for bot articles whose bodies are stored as sanitized HTML rather than
+     Markdown (e.g. RSS feed content where paragraphs abut with no blank lines).
+  2. **Earmark** — Markdown → raw HTML
+  3. **Ammonia sanitizer** — strips unsafe HTML tags/attributes
+  4. **Hashtag linkification** — converts `#tag` to clickable links
+  5. **Mention linkification** — converts `@username` to clickable profile links
 
   The sanitizer only allows `href` on `<a>` tags. By running linkification
   *after* sanitization, the injected `<a>` tags are never stripped. Tag names
@@ -37,6 +41,7 @@ defmodule Baudrate.Content.Markdown do
 
   def to_html(text) when is_binary(text) do
     text
+    |> normalize_html_blocks()
     |> Earmark.as_html!()
     |> sanitize_html()
     |> linkify_hashtags()
@@ -45,6 +50,23 @@ defmodule Baudrate.Content.Markdown do
 
   defp sanitize_html(html) do
     Baudrate.Sanitizer.Native.sanitize_markdown(html)
+  end
+
+  # Inserts blank lines between consecutive block-level HTML elements so that
+  # Earmark treats each as a separate HTML block. Without this, HTML content
+  # stored by feed bots (where paragraphs are adjacent with no blank lines)
+  # causes Earmark to drop all paragraphs after the first.
+  defp normalize_html_blocks(text) do
+    text
+    |> String.trim()
+    |> then(
+      &Regex.replace(
+        ~r{</(p|div|blockquote|h[1-6]|ul|ol|li|pre|table|thead|tbody|tr)>},
+        &1,
+        "</\\1>\n\n"
+      )
+    )
+    |> String.trim()
   end
 
   @doc false
