@@ -145,6 +145,86 @@ defmodule Baudrate.Bots.FeedParserTest do
     end
   end
 
+  describe "parse/1 with RSS 1.0 (RDF) feed" do
+    @rss1_feed """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <rdf:RDF xmlns="http://purl.org/rss/1.0/"
+             xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+             xmlns:dc="http://purl.org/dc/elements/1.1/"
+             xmlns:content="http://purl.org/rss/1.0/modules/content/"
+             xml:lang="ja">
+      <channel rdf:about="https://example.com/feed.rdf">
+        <title>RSS 1.0 Test Feed</title>
+        <link>https://example.com</link>
+      </channel>
+      <item rdf:about="https://example.com/articles/1">
+        <title>First RSS 1.0 Article</title>
+        <link>https://example.com/articles/1</link>
+        <dc:date>2024-03-01T10:00:00+09:00</dc:date>
+        <description><![CDATA[<p>Article body text.</p>]]></description>
+      </item>
+      <item rdf:about="https://example.com/articles/2">
+        <title>Second Article with &amp; ampersand</title>
+        <link>https://example.com/articles/2</link>
+        <dc:date>2024-03-02T10:00:00+09:00</dc:date>
+        <content:encoded><![CDATA[<p>Full content body.</p>]]></content:encoded>
+        <description><![CDATA[<p>Summary only.</p>]]></description>
+      </item>
+    </rdf:RDF>
+    """
+
+    test "parses entries successfully" do
+      assert {:ok, entries} = FeedParser.parse(@rss1_feed)
+      assert length(entries) == 2
+    end
+
+    test "uses rdf:about as guid" do
+      {:ok, entries} = FeedParser.parse(@rss1_feed)
+      first = Enum.find(entries, &(&1.guid == "https://example.com/articles/1"))
+      assert first != nil
+    end
+
+    test "extracts title as plain text" do
+      {:ok, entries} = FeedParser.parse(@rss1_feed)
+      first = Enum.find(entries, &(&1.guid == "https://example.com/articles/1"))
+      assert first.title == "First RSS 1.0 Article"
+    end
+
+    test "decodes XML entities in title" do
+      {:ok, entries} = FeedParser.parse(@rss1_feed)
+      second = Enum.find(entries, &(&1.guid == "https://example.com/articles/2"))
+      assert second.title == "Second Article with & ampersand"
+    end
+
+    test "extracts link" do
+      {:ok, entries} = FeedParser.parse(@rss1_feed)
+      first = Enum.find(entries, &(&1.guid == "https://example.com/articles/1"))
+      assert first.link == "https://example.com/articles/1"
+    end
+
+    test "prefers content:encoded over description for body" do
+      {:ok, entries} = FeedParser.parse(@rss1_feed)
+      second = Enum.find(entries, &(&1.guid == "https://example.com/articles/2"))
+      assert second.body =~ "Full content body."
+      refute second.body =~ "Summary only."
+    end
+
+    test "falls back to description when content:encoded is absent" do
+      {:ok, entries} = FeedParser.parse(@rss1_feed)
+      first = Enum.find(entries, &(&1.guid == "https://example.com/articles/1"))
+      assert first.body =~ "Article body text."
+    end
+
+    test "parses dc:date as ISO 8601" do
+      {:ok, entries} = FeedParser.parse(@rss1_feed)
+      first = Enum.find(entries, &(&1.guid == "https://example.com/articles/1"))
+      assert %DateTime{} = first.published_at
+      assert first.published_at.year == 2024
+      assert first.published_at.month == 3
+      assert first.published_at.day == 1
+    end
+  end
+
   describe "parse/1 error handling" do
     test "returns error for invalid XML" do
       assert {:error, _reason} = FeedParser.parse("this is not xml")

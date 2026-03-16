@@ -1,11 +1,13 @@
 defmodule Baudrate.Bots.FeedParser do
   @moduledoc """
-  Parses RSS 2.0 and Atom 1.0 feeds using the `fiet` library.
+  Parses RSS 2.0, Atom 1.0, and RSS 1.0 (RDF) feeds.
 
-  Normalizes feed entries into a consistent map format suitable for
-  creating articles. HTML content is sanitized via `Baudrate.Sanitizer.Native`.
+  RSS 2.0 and Atom 1.0 are handled by the `fiet` library. RSS 1.0 is parsed
+  directly via `Saxy.SimpleForm`. Normalizes feed entries into a consistent
+  map format suitable for creating articles. HTML content is sanitized via
+  `Baudrate.Sanitizer.Native`.
 
-  Tries RSS 2.0 parsing first; falls back to Atom 1.0 if RSS fails.
+  Tries RSS 2.0 first; falls back to Atom 1.0; then to RSS 1.0 (RDF).
   """
 
   require Logger
@@ -53,8 +55,8 @@ defmodule Baudrate.Bots.FeedParser do
 
             {:ok, entries}
 
-          {:error, reason} ->
-            {:error, reason}
+          {:error, _} ->
+            parse_rss1(xml)
         end
     end
   end
@@ -230,6 +232,81 @@ defmodule Baudrate.Bots.FeedParser do
     end)
     |> Enum.filter(& &1)
     |> Enum.uniq()
+  end
+
+  # --- RSS 1.0 (RDF) normalization ---
+
+  # RSS 1.0 feeds use a flat <rdf:RDF> root with <item> siblings rather than
+  # nesting items inside a <channel>. fiet does not support this format, so we
+  # parse it directly with Saxy.SimpleForm.
+  #
+  # Relevant namespaces:
+  #   xmlns="http://purl.org/rss/1.0/"        — core elements (title, link, description)
+  #   xmlns:dc="http://purl.org/dc/elements/1.1/" — dc:date, dc:creator
+  #   xmlns:content="http://purl.org/rss/1.0/modules/content/" — content:encoded
+  #
+  # The rdf:about attribute on <item> is used as the GUID.
+  defp parse_rss1(xml) do
+    case Saxy.SimpleForm.parse_string(xml) do
+      {:ok, {_tag, _attrs, children}} ->
+        entries =
+          children
+          |> Enum.filter(fn
+            {"item", _, _} -> true
+            _ -> false
+          end)
+          |> Enum.map(&normalize_rss1_item/1)
+          |> Enum.filter(& &1)
+
+        {:ok, entries}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp normalize_rss1_item({"item", attrs, children}) do
+    guid = find_attr(attrs, "rdf:about")
+    link = find_child_text(children, "link") || guid
+    raw_title = find_child_text(children, "title") || ""
+    description = find_child_text(children, "description") || ""
+    content = find_child_text(children, "content:encoded") || description
+    dc_date = find_child_text(children, "dc:date")
+
+    title =
+      (if raw_title == "", do: "(untitled)", else: raw_title)
+      |> Baudrate.Sanitizer.Native.strip_tags()
+      |> decode_html_entities()
+      |> String.trim()
+      |> String.slice(0, @max_title_length)
+
+    body = Baudrate.Sanitizer.Native.sanitize_markdown(content)
+    published_at = clamp_published_at(dc_date)
+
+    if is_nil(guid) or guid == "" do
+      nil
+    else
+      %{guid: guid, title: title, body: body, link: link, tags: [], published_at: published_at}
+    end
+  end
+
+  defp find_attr(attrs, name) do
+    Enum.find_value(attrs, fn
+      {^name, v} -> v
+      _ -> nil
+    end)
+  end
+
+  # Saxy.SimpleForm emits text nodes (including CDATA) as plain binaries.
+  defp find_child_text(children, tag) do
+    Enum.find_value(children, fn
+      {^tag, _, content} ->
+        text = content |> Enum.filter(&is_binary/1) |> Enum.join()
+        if text != "", do: String.trim(text), else: nil
+
+      _ ->
+        nil
+    end)
   end
 
   # --- Date parsing ---
