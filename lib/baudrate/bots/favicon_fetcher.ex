@@ -74,7 +74,7 @@ defmodule Baudrate.Bots.FaviconFetcher do
     candidates = build_favicon_candidates(site_url)
 
     Enum.reduce_while(candidates, {:error, :no_usable_favicon}, fn url, _acc ->
-      with {:ok, data} <- download_favicon(url),
+      with {:ok, data} <- download_favicon(url, site_url),
            {:ok, avatar_id} <- process_favicon(data) do
         {:halt, {:ok, url, avatar_id}}
       else
@@ -186,8 +186,11 @@ defmodule Baudrate.Bots.FaviconFetcher do
     end
   end
 
-  defp download_favicon(url) do
-    case HTTPClient.get_html(url, max_size: @max_favicon_size) do
+  defp download_favicon(url, referer) do
+    case HTTPClient.get_html(url,
+           max_size: @max_favicon_size,
+           headers: [{"referer", referer}]
+         ) do
       {:ok, %{body: body}} when byte_size(body) > 0 ->
         {:ok, body}
 
