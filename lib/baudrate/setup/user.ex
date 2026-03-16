@@ -92,6 +92,7 @@ defmodule Baudrate.Setup.User do
     field :bio, :string
     field :dm_access, :string, default: "anyone"
     field :notification_preferences, :map, default: %{}
+    field :is_bot, :boolean, default: false
 
     belongs_to :role, Baudrate.Setup.Role
     belongs_to :invited_by, __MODULE__
@@ -314,6 +315,25 @@ defmodule Baudrate.Setup.User do
         [notification_preferences: "contains unknown types: #{Enum.join(invalid_types, ", ")}"]
       end
     end)
+  end
+
+  @doc """
+  Changeset for creating a bot user account.
+
+  Sets `is_bot: true`, `dm_access: "nobody"`, `status: "active"`, and a
+  locked password. The bot account cannot be logged into by humans; the
+  `authenticate_by_password/2` function rejects bot accounts.
+  """
+  def bot_registration_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:username, :password, :password_confirmation, :role_id])
+    |> validate_username()
+    |> validate_password()
+    |> assoc_constraint(:role)
+    |> hash_password()
+    |> put_change(:is_bot, true)
+    |> put_change(:dm_access, "nobody")
+    |> put_change(:status, "active")
   end
 
   defp hash_password(changeset) do
