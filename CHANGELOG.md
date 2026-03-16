@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.34] — 2026-03-16
+
+### Fixed
+
+- **Feed parser rejects BOM-prefixed feeds** — Some feeds (e.g. news.ltn.com.tw) prepend a UTF-8 BOM (`EF BB BF`) which caused Saxy to fail with a parse error on the leading `<` of `<?xml`. The BOM is now stripped before any parsing.
+
 ## [1.3.33] — 2026-03-16
 
 ### Added
