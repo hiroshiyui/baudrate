@@ -13,6 +13,7 @@ defmodule BaudrateWeb.Admin.BotsLive do
 
   alias Baudrate.Bots
   alias Baudrate.Bots.Bot
+  alias Baudrate.Bots.FaviconFetcher
   alias Baudrate.Content
   alias Baudrate.Moderation
   import BaudrateWeb.Helpers, only: [parse_id: 1]
@@ -108,6 +109,40 @@ defmodule BaudrateWeb.Admin.BotsLive do
 
           {:error, _} ->
             {:noreply, put_flash(socket, :error, gettext("Failed to update bot."))}
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("refresh_favicon", %{"id" => id}, socket) do
+    case parse_id(id) do
+      :error ->
+        {:noreply, socket}
+
+      {:ok, bot_id} ->
+        bot = Bots.get_bot!(bot_id)
+        old_avatar_id = bot.user.avatar_id
+
+        FaviconFetcher.fetch_and_set(bot)
+
+        Moderation.log_action(socket.assigns.current_user.id, "refresh_bot_favicon",
+          target_type: "bot",
+          target_id: bot_id,
+          details: %{"username" => bot.user.username}
+        )
+
+        updated_bot = Bots.get_bot!(bot_id)
+
+        if updated_bot.user.avatar_id != nil and updated_bot.user.avatar_id != old_avatar_id do
+          {:noreply,
+           socket
+           |> put_flash(:info, gettext("Bot favicon updated."))
+           |> reload_bots()}
+        else
+          {:noreply,
+           socket
+           |> put_flash(:error, gettext("Could not fetch favicon. Check server logs for details."))
+           |> reload_bots()}
         end
     end
   end

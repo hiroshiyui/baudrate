@@ -5360,3 +5360,23 @@ msgstr "找不到使用者角色。請先執行初始設定。"
 #, elixir-autogen, elixir-format
 msgid "Bot updated successfully."
 msgstr "機器人已成功更新。"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Re-fetch favicon from the feed site and set it as the bot avatar"
+msgstr "從 Feed 網站重新抓取 favicon 並設為機器人頭像"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Refresh Favicon"
+msgstr "重新抓取 Favicon"
+
+#: lib/baudrate_web/live/admin/bots_live.ex
+#, elixir-autogen, elixir-format
+msgid "Bot favicon updated."
+msgstr "機器人頭像已更新。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex
+#, elixir-autogen, elixir-format
+msgid "Could not fetch favicon. Check server logs for details."
+msgstr "無法抓取 favicon，請查閱伺服器日誌以了解詳情。"

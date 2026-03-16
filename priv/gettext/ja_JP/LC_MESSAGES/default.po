@@ -5360,3 +5360,23 @@ msgstr "ユーザーロールが見つかりません。先にセットアップ
 #, elixir-autogen, elixir-format
 msgid "Bot updated successfully."
 msgstr "ボットを正常に更新しました。"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Re-fetch favicon from the feed site and set it as the bot avatar"
+msgstr "フィードサイトからファビコンを再取得してボットのアバターに設定します"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Refresh Favicon"
+msgstr "Faviconを再取得"
+
+#: lib/baudrate_web/live/admin/bots_live.ex
+#, elixir-autogen, elixir-format
+msgid "Bot favicon updated."
+msgstr "ボットのアバターを更新しました。"
+
+#: lib/baudrate_web/live/admin/bots_live.ex
+#, elixir-autogen, elixir-format
+msgid "Could not fetch favicon. Check server logs for details."
+msgstr "Faviconを取得できませんでした。サーバーログをご確認ください。"

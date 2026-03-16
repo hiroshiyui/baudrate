@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.31] — 2026-03-16
+
+### Added
+
+- **Bot favicon manual refresh** — Added a "Refresh Favicon" button to the admin bots page (`/admin/bots`). Clicking it immediately re-fetches the favicon from the feed site and sets it as the bot's avatar, without waiting for the next scheduled feed cycle. The action is logged to the moderation audit log.
+
 ## [1.3.30] — 2026-03-16
 
 ### Fixed
