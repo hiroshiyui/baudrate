@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.32] — 2026-03-16
+
+### Fixed
+
+- **Bot article titles "(untitled)"** — RSS feeds that embed raw HTML in `<title>` without CDATA wrapping (e.g. Drupal-style `<title><a href="...">text</a></title>`) caused fiet/Saxy to see nested XML elements and return an empty title, falling back to "(untitled)". The feed parser now pre-processes such title elements by stripping tags and re-wrapping the text in CDATA before parsing. HTML entities (e.g. `&amp;`) are also decoded so titles are stored as plain text.
+- **Bot article bodies missing paragraphs / rendered as blockquotes** — Bot articles store sanitized HTML in the body field. `Markdown.to_html/1` runs input through Earmark, which requires blank lines between block-level elements to recognize them as HTML blocks. Without them, Earmark dropped all paragraphs after the first, and lines starting with `>` were misinterpreted as Markdown blockquotes. A normalization step now inserts `\n\n` after block-level closing tags and trims leading/trailing whitespace before handing text to Earmark. Fixes rendering for all existing bot articles without any DB migration.
+
 ## [1.3.31] — 2026-03-16
 
 ### Added
