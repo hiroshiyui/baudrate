@@ -19,6 +19,7 @@ defmodule Baudrate.Application do
       Baudrate.Federation.DomainBlockCache,
       Baudrate.Federation.DeliveryWorker,
       Baudrate.Federation.StaleActorCleaner,
+      Baudrate.Bots.FeedWorker,
       # Start to serve requests, typically the last entry
       BaudrateWeb.Endpoint
     ]
