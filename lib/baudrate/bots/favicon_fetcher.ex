@@ -14,6 +14,13 @@ defmodule Baudrate.Bots.FaviconFetcher do
   succeeds but the image format is unsupported (e.g. ICO when only SVG
   and ICO are advertised in HTML), the next candidate is attempted.
 
+  **Site URL resolution**: the feed is fetched first to extract the channel
+  `<link>` element (the actual website URL). This is essential for feed
+  proxy services (e.g. FeedBurner at `feeds.feedburner.com`) and CDN feed
+  subdomains (e.g. `feeds.bbci.co.uk`) where the favicon lives on the main
+  site, not the feed host. Falls back to the feed URL's origin if extraction
+  fails.
+
   If all direct fetches fail (e.g. the server blocks the request by IP or
   User-Agent at the CDN/WAF layer), the same candidate list is retried via
   the Internet Archive Wayback Machine (`web.archive.org/web/2if_/{url}`),
@@ -83,7 +90,7 @@ defmodule Baudrate.Bots.FaviconFetcher do
   # pipeline (JPEG/PNG/WebP). Moves to the next candidate on any failure.
   # Falls back to Wayback Machine if all direct fetches fail.
   defp try_favicon_candidates(feed_url) do
-    site_url = extract_site_url(feed_url)
+    site_url = resolve_site_url(feed_url)
     candidates = build_favicon_candidates(site_url)
 
     case try_direct(candidates, site_url) do
@@ -96,6 +103,62 @@ defmodule Baudrate.Bots.FaviconFetcher do
         )
 
         try_wayback(candidates)
+    end
+  end
+
+  # Fetches the feed XML and extracts the channel's website link, using its
+  # origin as the favicon base URL. Feed proxy services (FeedBurner, BBC CDN
+  # feeds) host the favicon on the main site, not the feed subdomain. Falls
+  # back to the feed URL's own origin if the channel link cannot be extracted.
+  defp resolve_site_url(feed_url) do
+    feed_origin = extract_site_url(feed_url)
+
+    with {:ok, %{body: body}} <-
+           HTTPClient.get_html(feed_url, user_agent: @browser_ua, max_size: 512 * 1024),
+         site_url when is_binary(site_url) <- parse_channel_link(body),
+         true <- site_url != feed_origin do
+      Logger.debug(
+        "bots.favicon_fetcher: resolved site URL #{site_url} from channel link (feed: #{feed_url})"
+      )
+
+      site_url
+    else
+      _ -> feed_origin
+    end
+  end
+
+  # Extracts the channel/feed website URL from RSS 2.0, RSS 1.0, or Atom XML.
+  # Returns the origin (scheme + host) of the found URL, or nil.
+  #
+  # RSS 2.0 / RSS 1.0: first plain <link> inside <channel>
+  # Atom: <link rel="alternate" href="..."/> (attribute order varies)
+  defp parse_channel_link(xml) do
+    rss =
+      case Regex.run(~r{<channel[^>]*>.*?<link>([^<]+)</link>}s, xml) do
+        [_, url] -> String.trim(url)
+        _ -> nil
+      end
+
+    atom =
+      if is_nil(rss) do
+        case Regex.run(
+               ~r{<link\b[^>]*\brel=["']alternate["'][^>]*\bhref=["']([^"']+)["']},
+               xml
+             ) ||
+               Regex.run(
+                 ~r{<link\b[^>]*\bhref=["']([^"']+)["'][^>]*\brel=["']alternate["']},
+                 xml
+               ) do
+          [_, url] -> url
+          _ -> nil
+        end
+      end
+
+    site_url = rss || atom
+
+    if site_url do
+      uri = URI.parse(site_url)
+      if uri.host, do: extract_site_url(site_url), else: nil
     end
   end
 
