@@ -18,15 +18,15 @@ defmodule Baudrate.Auth.Passwords do
   user enumeration.
   """
   @spec authenticate_by_password(String.t(), String.t()) ::
-          {:ok, User.t()} | {:error, :invalid_credentials | :banned}
+          {:ok, User.t()} | {:error, :invalid_credentials | :banned | :bot_account}
   def authenticate_by_password(username, password) do
     user = Repo.one(from u in User, where: u.username == ^username, preload: :role)
 
     if user && Bcrypt.verify_pass(password, user.hashed_password) do
-      if user.status == "banned" do
-        {:error, :banned}
-      else
-        {:ok, user}
+      cond do
+        user.is_bot -> {:error, :bot_account}
+        user.status == "banned" -> {:error, :banned}
+        true -> {:ok, user}
       end
     else
       Bcrypt.no_user_verify()
