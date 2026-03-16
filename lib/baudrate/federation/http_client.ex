@@ -351,11 +351,13 @@ defmodule Baudrate.Federation.HTTPClient do
   defp truncate_body(body), do: body |> inspect() |> String.slice(0, 4096)
 
   defp user_agent do
-    "Baudrate/0.1.0 (+#{BaudrateWeb.Endpoint.url()})"
+    version = Application.spec(:baudrate, :vsn) |> to_string()
+    "Baudrate/#{version} (+#{BaudrateWeb.Endpoint.url()})"
   end
 
   defp generic_user_agent do
-    "Baudrate/0.1.0"
+    version = Application.spec(:baudrate, :vsn) |> to_string()
+    "Baudrate/#{version}"
   end
 
   defp federation_config do
