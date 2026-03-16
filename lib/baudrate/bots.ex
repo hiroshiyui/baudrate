@@ -212,6 +212,22 @@ defmodule Baudrate.Bots do
     |> Repo.update()
   end
 
+  @doc "Resets error state and schedules an immediate re-fetch for a bot."
+  @spec reset_bot_errors(Bot.t()) :: :ok
+  def reset_bot_errors(bot) do
+    Repo.update_all(
+      from(b in Bot, where: b.id == ^bot.id),
+      set: [
+        error_count: 0,
+        last_error: nil,
+        next_fetch_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      ]
+    )
+
+    send(Baudrate.Bots.FeedWorker, :poll)
+    :ok
+  end
+
   @doc "Returns true if the bot's avatar needs to be refreshed (nil or older than 7 days)."
   @spec avatar_needs_refresh?(Bot.t()) :: boolean()
   def avatar_needs_refresh?(%Bot{avatar_refreshed_at: nil}), do: true

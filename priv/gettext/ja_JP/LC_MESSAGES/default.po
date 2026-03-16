@@ -5380,3 +5380,18 @@ msgstr "ボットのアバターを更新しました。"
 #, elixir-autogen, elixir-format
 msgid "Could not fetch favicon. Check server logs for details."
 msgstr "Faviconを取得できませんでした。サーバーログをご確認ください。"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Reset & Retry"
+msgstr "リセットして再試行"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Reset error count and trigger an immediate re-fetch"
+msgstr "エラーカウントをリセットして即時再取得する"
+
+#: lib/baudrate_web/live/admin/bots_live.ex
+#, elixir-autogen, elixir-format
+msgid "Bot error state reset. Re-fetch triggered."
+msgstr "ボットのエラー状態をリセットしました。再取得をトリガーしました。"

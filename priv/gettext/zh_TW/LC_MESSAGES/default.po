@@ -5380,3 +5380,18 @@ msgstr "機器人頭像已更新。"
 #, elixir-autogen, elixir-format
 msgid "Could not fetch favicon. Check server logs for details."
 msgstr "無法抓取 favicon，請查閱伺服器日誌以了解詳情。"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Reset & Retry"
+msgstr "重設並重試"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Reset error count and trigger an immediate re-fetch"
+msgstr "重設錯誤計數並立即重新抓取"
+
+#: lib/baudrate_web/live/admin/bots_live.ex
+#, elixir-autogen, elixir-format
+msgid "Bot error state reset. Re-fetch triggered."
+msgstr "機器人錯誤狀態已重設，已觸發重新抓取。"

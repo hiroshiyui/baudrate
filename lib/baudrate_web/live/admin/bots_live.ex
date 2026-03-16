@@ -114,6 +114,29 @@ defmodule BaudrateWeb.Admin.BotsLive do
   end
 
   @impl true
+  def handle_event("reset_errors", %{"id" => id}, socket) do
+    case parse_id(id) do
+      :error ->
+        {:noreply, socket}
+
+      {:ok, bot_id} ->
+        bot = Bots.get_bot!(bot_id)
+        Bots.reset_bot_errors(bot)
+
+        Moderation.log_action(socket.assigns.current_user.id, "reset_bot_errors",
+          target_type: "bot",
+          target_id: bot_id,
+          details: %{"username" => bot.user.username}
+        )
+
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Bot error state reset. Re-fetch triggered."))
+         |> reload_bots()}
+    end
+  end
+
+  @impl true
   def handle_event("refresh_favicon", %{"id" => id}, socket) do
     case parse_id(id) do
       :error ->
