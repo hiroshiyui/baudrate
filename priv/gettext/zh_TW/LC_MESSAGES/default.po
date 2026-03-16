@@ -1005,6 +1005,11 @@ msgstr "處理檢舉失敗。"
 msgid "Federation"
 msgstr "聯邦"
 
+#: lib/baudrate_web/live/admin/boards_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Follows"
+msgstr "追蹤管理"
+
 #: lib/baudrate_web/live/admin/federation_live.ex:207
 #, elixir-autogen, elixir-format
 msgid "Federation %{action} for %{board}."

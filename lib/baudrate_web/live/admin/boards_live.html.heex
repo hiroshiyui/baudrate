@@ -239,7 +239,7 @@
               {if board.ap_enabled, do: gettext("On"), else: gettext("Off")}
             </span>
           </td>
-          <td class="flex gap-1">
+          <td class="flex gap-1 flex-wrap">
             <button phx-click="edit" phx-value-id={board.id} class="btn btn-sm btn-ghost">
               {gettext("Edit")}
             </button>
@@ -253,6 +253,13 @@
             >
               {gettext("Moderators")}
             </button>
+            <.link
+              :if={Board.federated?(board)}
+              navigate={~p"/boards/#{board.slug}/follows"}
+              class="btn btn-sm btn-ghost"
+            >
+              {gettext("Follows")}
+            </.link>
             <button
               phx-click="delete"
               phx-value-id={board.id}

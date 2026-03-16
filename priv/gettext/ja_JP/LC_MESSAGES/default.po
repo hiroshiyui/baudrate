@@ -1005,6 +1005,11 @@ msgstr "通報の対処に失敗しました。"
 msgid "Federation"
 msgstr "連合"
 
+#: lib/baudrate_web/live/admin/boards_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Follows"
+msgstr "フォロー管理"
+
 #: lib/baudrate_web/live/admin/federation_live.ex:207
 #, elixir-autogen, elixir-format
 msgid "Federation %{action} for %{board}."
