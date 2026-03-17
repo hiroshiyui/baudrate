@@ -57,6 +57,10 @@ if config_env() == :prod do
 
   config :baudrate, :installation_key, System.get_env("INSTALLATION_KEY")
 
+  config :wax_,
+    origin: "https://#{host}",
+    rp_id: host
+
   config :baudrate, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :baudrate, BaudrateWeb.Endpoint,

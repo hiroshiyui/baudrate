@@ -61,6 +61,11 @@ config :baudrate, allow_http_localhost: true
 config :baudrate, :bypass_ssrf_check, true
 config :baudrate, :req_test_options, plug: {Req.Test, Baudrate.Federation.HTTPClient}
 
+# WebAuthn — test server runs on http://localhost:#{4002 + partition}
+config :wax_,
+  origin: "http://localhost:#{4002 + partition}",
+  rp_id: "localhost"
+
 # Wallaby browser testing (Firefox via Selenium)
 config :wallaby,
   driver: Wallaby.Selenium,

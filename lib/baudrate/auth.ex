@@ -18,7 +18,8 @@ defmodule Baudrate.Auth do
     Profiles,
     SecondFactor,
     Sessions,
-    Users
+    Users,
+    WebAuthn
   }
 
   # --- Passwords & Core Auth ---
@@ -122,4 +123,26 @@ defmodule Baudrate.Auth do
   defdelegate update_bio(user, bio), to: Profiles
   defdelegate update_dm_access(user, value), to: Profiles
   defdelegate update_notification_preferences(user, prefs), to: Profiles
+
+  # --- WebAuthn ---
+  defdelegate list_webauthn_credentials(user), to: WebAuthn
+  defdelegate webauthn_enabled?(user), to: WebAuthn
+  defdelegate create_webauthn_credential(user, attrs), to: WebAuthn
+  defdelegate delete_webauthn_credential(user, id), to: WebAuthn
+  defdelegate begin_registration(user), to: WebAuthn
+
+  defdelegate finish_registration(user, attestation_object, client_data_json, challenge),
+    to: WebAuthn
+
+  defdelegate begin_authentication(user), to: WebAuthn
+
+  defdelegate finish_authentication(
+                user,
+                credential_id,
+                authenticator_data,
+                client_data_json,
+                signature,
+                challenge
+              ),
+              to: WebAuthn
 end

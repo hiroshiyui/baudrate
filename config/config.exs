@@ -80,6 +80,13 @@ config :baudrate, Baudrate.Federation,
   # 30 days in seconds (matches actor_cache_ttl convention)
   stale_actor_max_age: 2_592_000
 
+# WebAuthn / FIDO2 — base configuration (attestation policy and flags).
+# origin and rp_id are environment-specific; set in dev.exs, test.exs, and runtime.exs.
+config :wax_,
+  attestation: :none,
+  user_presence: true,
+  user_verification: :preferred
+
 config :elixir, :time_zone_database, Tz.TimeZoneDatabase
 
 config :gettext, default_locale: "en"
