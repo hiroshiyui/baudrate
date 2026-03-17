@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.43] — 2026-03-17
+
+### Fixed
+
+- **WebAuthn admin sudo verification always failing with `:unknown_credential`** — Two bugs:
+  1. `Wax.new_authentication_challenge/1` was passed `allow_credentials` as a list of raw credential ID binaries, but wax_ expects `[{credential_id, cose_key}]` tuples. When `allow_credentials` is non-empty, wax_ uses it (not the `cred_map` passed to `Wax.authenticate/6`) for key lookup, so verification always failed. Fixed by omitting `allow_credentials` from the challenge, causing wax_ to fall back to the `credentials` map passed directly to `Wax.authenticate/6`.
+  2. The `WebAuthnAuthenticate` hook set hidden form inputs then pushed `webauthn_credential_received` to trigger `phx-trigger-action`. When LiveView sent back the diff, morphdom patched the DOM before form submission, resetting the JS-set `credential_id`/`signature`/etc. fields to empty. Fixed by calling `requestSubmit()` directly from JS (same as `WebAuthnRegister`), removing the `phx-trigger-action` approach for this form.
+
 ## [1.3.42] — 2026-03-17
 
 ### Fixed
