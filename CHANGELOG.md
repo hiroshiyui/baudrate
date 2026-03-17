@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.46] — 2026-03-17
+
+### Changed
+
+- **Article image upload limit raised to 8 MB** — The maximum file size for article image uploads (new and edit) has been increased from 5 MB to 8 MB, both client-side (`allow_upload`) and server-side (`Content.Images`).
+
 ## [1.3.45] — 2026-03-17
 
 ### Added
