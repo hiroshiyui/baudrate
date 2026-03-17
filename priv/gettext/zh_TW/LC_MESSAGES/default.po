@@ -5395,3 +5395,114 @@ msgstr "重設錯誤計數並立即重新抓取"
 #, elixir-autogen, elixir-format
 msgid "Bot error state reset. Re-fetch triggered."
 msgstr "機器人錯誤狀態已重設，已觸發重新抓取。"
+
+#: lib/baudrate_web/live/profile_live.html.heex lib/baudrate_web/live/admin_totp_verify_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Security Keys"
+msgstr "安全金鑰"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Register a hardware security key or platform authenticator (e.g. Touch ID, Windows Hello) as a second factor."
+msgstr "註冊硬體安全金鑰或平台驗證器（如 Touch ID、Windows Hello）作為第二重驗證。"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "No security keys registered."
+msgstr "尚未註冊安全金鑰。"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Unnamed Key"
+msgstr "未命名金鑰"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Added %{date}"
+msgstr "新增於 %{date}"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Last used %{date}"
+msgstr "最後使用於 %{date}"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Remove security key %{label}"
+msgstr "移除安全金鑰 %{label}"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Remove this security key?"
+msgstr "確定要移除此安全金鑰嗎？"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Register a new security key"
+msgstr "註冊新的安全金鑰"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Register New Key"
+msgstr "註冊新金鑰"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Security Key"
+msgstr "安全金鑰"
+
+#: lib/baudrate_web/live/profile_live.ex
+#, elixir-autogen, elixir-format
+msgid "Security key registration was cancelled or timed out."
+msgstr "安全金鑰註冊已取消或逾時。"
+
+#: lib/baudrate_web/live/profile_live.ex lib/baudrate_web/live/admin_totp_verify_live.ex
+#, elixir-autogen, elixir-format
+msgid "WebAuthn is not supported by this browser."
+msgstr "此瀏覽器不支援 WebAuthn。"
+
+#: lib/baudrate_web/live/profile_live.ex
+#: lib/baudrate_web/controllers/session_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Security key registration failed. Please try again."
+msgstr "安全金鑰註冊失敗，請再試一次。"
+
+#: lib/baudrate_web/live/profile_live.ex
+#, elixir-autogen, elixir-format
+msgid "Security key removed."
+msgstr "安全金鑰已移除。"
+
+#: lib/baudrate_web/live/profile_live.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to remove security key."
+msgstr "無法移除安全金鑰。"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Use a registered security key instead."
+msgstr "改用已註冊的安全金鑰進行驗證。"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Verify with security key"
+msgstr "以安全金鑰驗證"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Use Security Key"
+msgstr "使用安全金鑰"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.ex
+#, elixir-autogen, elixir-format
+msgid "Security key verification was cancelled or timed out."
+msgstr "安全金鑰驗證已取消或逾時。"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.ex
+#, elixir-autogen, elixir-format
+msgid "Security key verification failed. Please try again."
+msgstr "安全金鑰驗證失敗，請再試一次。"
+
+#: lib/baudrate_web/controllers/session_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Security key registered successfully."
+msgstr "安全金鑰已成功註冊。"

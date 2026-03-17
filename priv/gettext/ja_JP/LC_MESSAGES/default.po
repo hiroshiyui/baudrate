@@ -5395,3 +5395,114 @@ msgstr "エラーカウントをリセットして即時再取得する"
 #, elixir-autogen, elixir-format
 msgid "Bot error state reset. Re-fetch triggered."
 msgstr "ボットのエラー状態をリセットしました。再取得をトリガーしました。"
+
+#: lib/baudrate_web/live/profile_live.html.heex lib/baudrate_web/live/admin_totp_verify_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Security Keys"
+msgstr "セキュリティキー"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Register a hardware security key or platform authenticator (e.g. Touch ID, Windows Hello) as a second factor."
+msgstr "ハードウェアセキュリティキーまたはプラットフォーム認証器（Touch ID、Windows Hello など）を第二要素として登録します。"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "No security keys registered."
+msgstr "登録されたセキュリティキーはありません。"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Unnamed Key"
+msgstr "名前未設定のキー"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Added %{date}"
+msgstr "%{date} に追加"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Last used %{date}"
+msgstr "最終使用日: %{date}"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Remove security key %{label}"
+msgstr "セキュリティキー %{label} を削除"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Remove this security key?"
+msgstr "このセキュリティキーを削除しますか？"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Register a new security key"
+msgstr "新しいセキュリティキーを登録"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Register New Key"
+msgstr "新しいキーを登録"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Security Key"
+msgstr "セキュリティキー"
+
+#: lib/baudrate_web/live/profile_live.ex
+#, elixir-autogen, elixir-format
+msgid "Security key registration was cancelled or timed out."
+msgstr "セキュリティキーの登録がキャンセルされたかタイムアウトしました。"
+
+#: lib/baudrate_web/live/profile_live.ex lib/baudrate_web/live/admin_totp_verify_live.ex
+#, elixir-autogen, elixir-format
+msgid "WebAuthn is not supported by this browser."
+msgstr "このブラウザは WebAuthn に対応していません。"
+
+#: lib/baudrate_web/live/profile_live.ex
+#: lib/baudrate_web/controllers/session_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Security key registration failed. Please try again."
+msgstr "セキュリティキーの登録に失敗しました。もう一度お試しください。"
+
+#: lib/baudrate_web/live/profile_live.ex
+#, elixir-autogen, elixir-format
+msgid "Security key removed."
+msgstr "セキュリティキーを削除しました。"
+
+#: lib/baudrate_web/live/profile_live.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to remove security key."
+msgstr "セキュリティキーの削除に失敗しました。"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Use a registered security key instead."
+msgstr "代わりに登録済みのセキュリティキーを使用します。"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Verify with security key"
+msgstr "セキュリティキーで確認"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Use Security Key"
+msgstr "セキュリティキーを使用"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.ex
+#, elixir-autogen, elixir-format
+msgid "Security key verification was cancelled or timed out."
+msgstr "セキュリティキーの確認がキャンセルされたかタイムアウトしました。"
+
+#: lib/baudrate_web/live/admin_totp_verify_live.ex
+#, elixir-autogen, elixir-format
+msgid "Security key verification failed. Please try again."
+msgstr "セキュリティキーの確認に失敗しました。もう一度お試しください。"
+
+#: lib/baudrate_web/controllers/session_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Security key registered successfully."
+msgstr "セキュリティキーが正常に登録されました。"
