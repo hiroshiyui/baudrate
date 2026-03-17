@@ -278,6 +278,41 @@ recovery codes when displayed. Each code can only be used once.
 - If `SECRET_KEY_BASE` changes, all TOTP secrets become unrecoverable — users
   must use recovery codes and re-enroll
 
+### WebAuthn / FIDO2 Hardware Security Keys
+
+Users can register FIDO2-compatible hardware security keys (e.g. YubiKey,
+Passkey, Touch ID) as an additional second factor at `/profile`.
+
+- **Registration** — at `/profile` → "Security Keys" section → "Register New Key"
+- **Admin sudo mode** — at `/admin/verify` admins can choose TOTP or a registered
+  security key; both grant the same 10-minute sudo window
+- **Multiple keys** — users may register as many keys as they like; each has a
+  user-defined label, last-used timestamp, and sign count (clone detection)
+- **Credential storage** — credential ID and public key are stored in the
+  `webauthn_credentials` table; credentials are deleted with the user (cascade)
+- **Challenges** — single-use, 60-second ETS-backed challenge store
+  (`WebAuthnChallenges` GenServer); challenges are consumed atomically
+- **Sign count** — incremented on each successful authentication to detect
+  cloned authenticators (a lower count than expected triggers an error)
+- **No user-verification enforcement** — `user_verification: :preferred`; the
+  relying party does not mandate PIN/biometric, but the authenticator may require it
+
+#### Configuration (wax_)
+
+`config :wax_` values must match your deployment:
+
+| Key | Value |
+|-----|-------|
+| `origin` | Full origin including scheme and port, e.g. `"https://forum.example.com"` |
+| `rp_id` | eTLD+1 of your domain, e.g. `"example.com"` |
+| `attestation` | `:none` (no attestation verification required) |
+| `user_presence` | `true` |
+| `user_verification` | `:preferred` |
+
+`origin` and `rp_id` are read from `runtime.exs` and default to the value of
+`PHX_HOST`. They must match `window.location.origin` as seen by the browser —
+a mismatch causes all WebAuthn operations to fail with a client-side error.
+
 ---
 
 ## Board Management

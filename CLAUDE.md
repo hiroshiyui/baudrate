@@ -31,7 +31,7 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 | CSS | Tailwind CSS + DaisyUI |
 | HTTP client | Req (never use HTTPoison, Tesla, or httpc) |
 | Markdown | Earmark |
-| 2FA | NimbleTOTP + EQRCode |
+| 2FA / WebAuthn | NimbleTOTP + EQRCode + wax_ (FIDO2/WebAuthn relying party) |
 | HTML parsing | html5ever (Rust NIF via Rustler) |
 | HTML sanitization | Ammonia (Rust NIF via Rustler) — requires Rust toolchain |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
@@ -46,7 +46,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 
 ### Contexts
 
-- **Auth** (`lib/baudrate/auth.ex`) — authentication (login, registration, TOTP, sessions, password reset), user management (avatars, invite codes, blocks, mutes)
+- **Auth** (`lib/baudrate/auth.ex`) — authentication (login, registration, TOTP, WebAuthn/FIDO2 security keys, sessions, password reset), user management (avatars, invite codes, blocks, mutes)
 - **Content** (`lib/baudrate/content.ex`) — boards, articles, comments, likes, boosts, polls, permissions, board moderators, search, link previews
 - **Federation** (`lib/baudrate/federation.ex`) — AP actors, outbox, followers, announces, delivery, user outbound follows, feed item replies, feed item likes/boosts
 - **Messaging** (`lib/baudrate/messaging.ex`) — 1-on-1 direct messages, conversations, DM access control, federation
@@ -69,7 +69,9 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - Board WebFinger subject must use bare slug (no `!` prefix) matching `preferredUsername` — Mastodon derives WebFinger queries from `preferredUsername` and rejects subject mismatches with 422. The `properties` field with `type: "Group"` disambiguates boards from users (Lemmy convention).
 - Focus management: Add `data-focus-target` to the primary content container in list/browse pages. Do not add to form pages or pages with `autofocus`. JS in `app.js` auto-focuses the first interactive element after LiveView navigation. Links get a `focus-visible` inset box-shadow highlight via `app.css`.
 - Poll votes are anonymous — DB tracks voters for dedup but UI never reveals individual votes. Polls use denormalized counters (`voters_count`, `votes_count`) updated transactionally via `Ecto.Multi` with `FOR UPDATE` locking.
-- Auth hooks: `:require_admin` (admin only), `:require_admin_or_moderator` (admin + moderator), `:require_admin_totp` (admin TOTP re-verification, 10-min sudo mode — skips non-admin users), `:require_auth` (any authenticated user), `:optional_auth` (load user if present), `:require_password_auth` (password-verified session), `:redirect_if_authenticated` (guest-only pages), `:rate_limit_mount` (WebSocket mount rate limit)
+- Auth hooks: `:require_admin` (admin only), `:require_admin_or_moderator` (admin + moderator), `:require_admin_totp` (admin re-verification, 10-min sudo mode — accepts TOTP or WebAuthn; skips non-admin users), `:require_auth` (any authenticated user), `:optional_auth` (load user if present), `:require_password_auth` (password-verified session), `:redirect_if_authenticated` (guest-only pages), `:rate_limit_mount` (WebSocket mount rate limit)
+- WebAuthn challenges: `WebAuthnChallenges.put/2` stores the full `Wax.Challenge` struct (not a plain map) in ETS — Wax needs `challenge.issued_at` and other fields during `Wax.register/3` and `Wax.authenticate/6`. ETS match specs use Erlang atom `:"=<"` (not Elixir `:<=`) for the TTL sweep.
+- `wax_` config: `origin` must match `window.location.origin` exactly (scheme + host + port). Set in `runtime.exs` for production, `dev.exs` for dev, `test.exs` for tests (uses per-partition port). A mismatch causes all WebAuthn operations to fail with a client-side `NotAllowedError`.
 - Pagination: use `Baudrate.Pagination` for cross-context paginated queries (`paginate_opts/3` + `paginate_query/3`)
 - LIKE sanitization: use `Repo.sanitize_like/1` to escape `%`, `_`, `\` in user input for ILIKE queries
 - OTP release paths: Never use `:code.priv_dir/1` in module attributes (`@var`) — it resolves to the build directory at compile time, not the release directory. Use `Application.app_dir(:baudrate, "priv/...")` in a function for runtime resolution.

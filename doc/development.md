@@ -14,7 +14,7 @@ visibility. Design decisions should reflect this philosophy.
 | CSS | Tailwind CSS + DaisyUI |
 | JS bundler | esbuild |
 | Image processing | image (libvips NIF) |
-| 2FA | NimbleTOTP + EQRCode |
+| 2FA / WebAuthn | NimbleTOTP + EQRCode + wax_ (FIDO2/WebAuthn relying party) |
 | HTML parsing | html5ever (Rust NIF via Rustler) |
 | HTML sanitization | Ammonia (Rust NIF via Rustler) |
 | Rate limiting | Hammer |
@@ -52,7 +52,10 @@ lib/
 │   │   ├── user_block.ex        # UserBlock schema (local + remote actor blocks)
 │   │   ├── user_mute.ex         # UserMute schema (local-only soft-mute/ignore)
 │   │   ├── user_session.ex      # Ecto schema for server-side sessions
-│   │   └── users.ex             # User CRUD, lookup, and registration
+│   │   ├── users.ex             # User CRUD, lookup, and registration
+│   │   ├── webauthn.ex          # WebAuthn context: registration, authentication, credential CRUD
+│   │   ├── webauthn_challenges.ex # ETS-backed challenge store (60s TTL, single-use, GenServer)
+│   │   └── webauthn_credential.ex # WebAuthnCredential schema (credential_id, public_key_cbor, sign_count)
 │   ├── avatar.ex                # Avatar image processing (crop, resize, WebP)
 │   ├── bots.ex                  # Bots context: bot CRUD, feed scheduling, deduplication
 │   ├── bots/
@@ -230,7 +233,7 @@ lib/
 │   │   ├── login_live.ex        # Login form (phx-trigger-action pattern)
 │   │   ├── notifications_live.ex # Notification center (paginated, mark read, real-time)
 │   │   ├── password_reset_live.ex  # Password reset via recovery codes
-│   │   ├── profile_live.ex      # User profile with avatar upload/crop, locale prefs, signature
+│   │   ├── profile_live.ex      # User profile with avatar upload/crop, locale prefs, signature, WebAuthn security key management
 │   │   ├── recovery_code_verify_live.ex  # Recovery code login
 │   │   ├── recovery_codes_live.ex        # Recovery codes display
 │   │   ├── register_live.ex     # Public user registration (supports invite-only mode, terms notice, recovery codes)
@@ -243,7 +246,7 @@ lib/
 │   │   ├── totp_reset_live.ex   # Self-service TOTP reset/enable
 │   │   ├── totp_setup_live.ex   # TOTP enrollment with QR code
 │   │   ├── totp_verify_live.ex  # TOTP code verification
-│   │   ├── admin_totp_verify_live.ex       # Admin TOTP re-verification for sudo mode
+│   │   ├── admin_totp_verify_live.ex       # Admin re-verification for sudo mode (TOTP or WebAuthn security key)
 │   │   ├── markdown_preview_hook.ex       # LiveView hook for markdown preview toggling
 │   │   ├── sandbox_hook.ex                # Ecto sandbox hook for feature tests
 │   │   ├── unread_dm_count_hook.ex         # Real-time @unread_dm_count via PubSub
@@ -288,6 +291,7 @@ and never need to know about the internal split.
 | `Auth.Passwords` | Password hashing (bcrypt), verification, and recovery code-based resets |
 | `Auth.Sessions` | Session lifecycle (dual-token rotation), server-side session storage, and login attempt throttling/monitoring |
 | `Auth.SecondFactor` | TOTP enrollment, encryption/decryption of secrets, QR code generation, and recovery code management |
+| `Auth.WebAuthn` | FIDO2/WebAuthn credential registration and authentication (hardware security keys); ETS-backed challenge lifecycle |
 | `Auth.Invites` | Invite-only registration logic, quota management, and admin-issued invites |
 | `Auth.Profiles` | User preference updates: display name, bio, signature, avatar association, and notification settings |
 | `Auth.Moderation` | Local user moderation: banning, blocking remote actors/users, and muting interactions |
@@ -360,15 +364,20 @@ Key functions in `Auth`:
 
 ### Admin Sudo Mode
 
-Admin routes (`/admin/*`) require periodic TOTP re-verification — similar to
-Unix `sudo`. When an admin navigates to any admin page, the
-`:require_admin_totp` hook checks the `admin_totp_verified_at` timestamp in
-the cookie session. If missing or older than 10 minutes, the admin is
-redirected to `/admin/verify` for TOTP re-verification.
+Admin routes (`/admin/*`) require periodic re-verification — similar to Unix
+`sudo`. When an admin navigates to any admin page, the `:require_admin_totp`
+hook checks the `admin_totp_verified_at` timestamp in the cookie session. If
+missing or older than 10 minutes, the admin is redirected to `/admin/verify`
+for re-verification.
+
+Admins can verify using either **TOTP** (time-based one-time password) or a
+registered **WebAuthn hardware security key** (FIDO2). Both methods set the
+same `admin_totp_verified_at` session key on success.
 
 | Aspect | Detail |
 |--------|--------|
 | Timeout | 10 minutes (`@admin_totp_timeout_seconds 600`) |
+| Methods | TOTP code (NimbleTOTP) or WebAuthn hardware security key (wax_) |
 | Live session | Admin routes use `:admin` live_session (separate from `:authenticated`) |
 | Moderators | Pass through without re-verification (hook skips non-admin users) |
 | Lockout | 5 failed attempts lock admin out of admin pages (session NOT dropped) |
@@ -1468,7 +1477,7 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 | `:require_auth` | Requires valid session; redirects to `/login` if unauthenticated or banned |
 | `:require_admin` | Requires admin role; redirects non-admins to `/` with access denied flash. Must be used after `:require_auth` (needs `@current_user`) |
 | `:require_admin_or_moderator` | Requires admin or moderator role; redirects others to `/` with access denied flash |
-| `:require_admin_totp` | Admin TOTP re-verification (10-min sudo mode); non-admin users (e.g. moderators) pass through. Admins without TOTP are redirected to `/profile`; admins with expired verification are redirected to `/admin/verify` |
+| `:require_admin_totp` | Admin re-verification (10-min sudo mode); non-admin users (e.g. moderators) pass through. Admins without TOTP are redirected to `/profile`; admins with expired verification are redirected to `/admin/verify` (supports both TOTP and WebAuthn) |
 | `:optional_auth` | Loads user if session exists; assigns `nil` for guests or banned users (no redirect) |
 | `:require_password_auth` | Requires password-level auth (for TOTP flow); redirects banned users to `/login` |
 | `:redirect_if_authenticated` | Redirects authenticated users to `/` (for login/register pages); allows banned users through |
