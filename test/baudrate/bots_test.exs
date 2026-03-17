@@ -242,5 +242,64 @@ defmodule Baudrate.BotsTest do
       bot = %Bot{avatar_refreshed_at: recent_time}
       refute Bots.avatar_needs_refresh?(bot)
     end
+
+    test "returns false when favicon_fail_count has reached 3, regardless of age" do
+      bot = %Bot{avatar_refreshed_at: nil, favicon_fail_count: 3}
+      refute Bots.avatar_needs_refresh?(bot)
+    end
+
+    test "returns false when favicon_fail_count exceeds 3" do
+      old_time = DateTime.add(DateTime.utc_now(), -8 * 24 * 3600, :second)
+      bot = %Bot{avatar_refreshed_at: old_time, favicon_fail_count: 5}
+      refute Bots.avatar_needs_refresh?(bot)
+    end
+
+    test "returns true when favicon_fail_count is below 3 and avatar is stale" do
+      old_time = DateTime.add(DateTime.utc_now(), -8 * 24 * 3600, :second)
+      bot = %Bot{avatar_refreshed_at: old_time, favicon_fail_count: 2}
+      assert Bots.avatar_needs_refresh?(bot)
+    end
+  end
+
+  describe "increment_favicon_fail_count/1" do
+    test "increments favicon_fail_count by 1 each call" do
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => "testbot_#{System.unique_integer([:positive])}",
+          "feed_url" => "https://example.com/feed.xml",
+          "board_ids" => [],
+          "fetch_interval_minutes" => 60
+        })
+
+      assert bot.favicon_fail_count == 0
+
+      Bots.increment_favicon_fail_count(bot)
+      assert Repo.get!(Bot, bot.id).favicon_fail_count == 1
+
+      Bots.increment_favicon_fail_count(bot)
+      assert Repo.get!(Bot, bot.id).favicon_fail_count == 2
+    end
+  end
+
+  describe "mark_avatar_refreshed/1" do
+    test "resets favicon_fail_count to 0 on success" do
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => "testbot_#{System.unique_integer([:positive])}",
+          "feed_url" => "https://example.com/feed.xml",
+          "board_ids" => [],
+          "fetch_interval_minutes" => 60
+        })
+
+      # Simulate prior failures
+      Bots.increment_favicon_fail_count(bot)
+      Bots.increment_favicon_fail_count(bot)
+      assert Repo.get!(Bot, bot.id).favicon_fail_count == 2
+
+      Bots.mark_avatar_refreshed(bot)
+      updated = Repo.get!(Bot, bot.id)
+      assert updated.favicon_fail_count == 0
+      assert updated.avatar_refreshed_at != nil
+    end
   end
 end
