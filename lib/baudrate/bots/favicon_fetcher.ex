@@ -75,6 +75,8 @@ defmodule Baudrate.Bots.FaviconFetcher do
         end
 
       {:error, reason} ->
+        Bots.increment_favicon_fail_count(bot)
+
         Logger.info(
           "bots.favicon_fetcher: skipping favicon for bot #{bot.id}: #{inspect(reason)}"
         )

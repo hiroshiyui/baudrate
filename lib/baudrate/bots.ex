@@ -228,8 +228,16 @@ defmodule Baudrate.Bots do
     :ok
   end
 
-  @doc "Returns true if the bot's avatar needs to be refreshed (nil or older than 7 days)."
+  @doc """
+  Returns true if the bot's avatar should be automatically refreshed.
+
+  Returns false when `favicon_fail_count` has reached 3 consecutive failures —
+  auto-fetch is paused to avoid hammering unreachable sites. The admin
+  "Refresh Favicon" button bypasses this check and resets the counter on
+  success, re-enabling automatic fetches.
+  """
   @spec avatar_needs_refresh?(Bot.t()) :: boolean()
+  def avatar_needs_refresh?(%Bot{favicon_fail_count: count}) when count >= 3, do: false
   def avatar_needs_refresh?(%Bot{avatar_refreshed_at: nil}), do: true
 
   def avatar_needs_refresh?(%Bot{avatar_refreshed_at: refreshed_at}) do
@@ -237,14 +245,28 @@ defmodule Baudrate.Bots do
     DateTime.compare(refreshed_at, cutoff) == :lt
   end
 
-  @doc "Updates avatar_refreshed_at to the current time."
-  @spec mark_avatar_refreshed(Bot.t()) :: {:ok, Bot.t()} | {:error, Ecto.Changeset.t()}
+  @doc "Updates avatar_refreshed_at to the current time and resets favicon_fail_count to 0."
+  @spec mark_avatar_refreshed(Bot.t()) :: :ok
   def mark_avatar_refreshed(bot) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    bot
-    |> Ecto.Changeset.cast(%{avatar_refreshed_at: now}, [:avatar_refreshed_at])
-    |> Repo.update()
+    Repo.update_all(
+      from(b in Bot, where: b.id == ^bot.id),
+      set: [avatar_refreshed_at: now, favicon_fail_count: 0]
+    )
+
+    :ok
+  end
+
+  @doc "Increments favicon_fail_count by 1. Called after each automatic or manual fetch failure."
+  @spec increment_favicon_fail_count(Bot.t()) :: :ok
+  def increment_favicon_fail_count(bot) do
+    Repo.update_all(
+      from(b in Bot, where: b.id == ^bot.id),
+      inc: [favicon_fail_count: 1]
+    )
+
+    :ok
   end
 
   # --- Private helpers ---
