@@ -31,6 +31,7 @@ defmodule BaudrateWeb.ProfileLive do
     bio_changeset = Baudrate.Setup.User.bio_changeset(user, %{})
     signature_changeset = Baudrate.Setup.User.signature_changeset(user, %{})
     mutes = Auth.list_mutes(user)
+    webauthn_credentials = Auth.list_webauthn_credentials(user)
 
     socket =
       socket
@@ -48,6 +49,9 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:notification_preferences, user.notification_preferences || %{})
       |> assign(:push_supported, false)
       |> assign(:push_subscribed, false)
+      |> assign(:webauthn_credentials, webauthn_credentials)
+      |> assign(:webauthn_challenge_token, nil)
+      |> assign(:trigger_webauthn_register, false)
       |> assign(:page_title, gettext("Profile"))
       |> allow_upload(:avatar,
         accept: ~w(.jpg .jpeg .png .webp),
@@ -356,6 +360,50 @@ defmodule BaudrateWeb.ProfileLive do
       {:error, _changeset} ->
         {:noreply,
          put_flash(socket, :error, gettext("Failed to update notification preferences."))}
+    end
+  end
+
+  @impl true
+  def handle_event("begin_registration", _params, socket) do
+    user = socket.assigns.current_user
+    {challenge_token, options_json} = Auth.begin_registration(user)
+
+    socket =
+      socket
+      |> assign(:webauthn_challenge_token, challenge_token)
+      |> assign(:trigger_webauthn_register, false)
+      |> push_event("webauthn_register", %{options: options_json})
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("webauthn_error", %{"reason" => reason}, socket) do
+    message =
+      case reason do
+        "NotAllowedError" -> gettext("Security key registration was cancelled or timed out.")
+        "not_supported" -> gettext("WebAuthn is not supported by this browser.")
+        _ -> gettext("Security key registration failed. Please try again.")
+      end
+
+    {:noreply, put_flash(socket, :error, message)}
+  end
+
+  @impl true
+  def handle_event("delete_webauthn_credential", %{"id" => id}, socket) do
+    user = socket.assigns.current_user
+
+    case Auth.delete_webauthn_credential(user, String.to_integer(id)) do
+      {:ok, _} ->
+        credentials = Auth.list_webauthn_credentials(user)
+
+        {:noreply,
+         socket
+         |> assign(:webauthn_credentials, credentials)
+         |> put_flash(:info, gettext("Security key removed."))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to remove security key."))}
     end
   end
 

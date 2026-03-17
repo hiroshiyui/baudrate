@@ -55,6 +55,52 @@
     <input type="hidden" name="return_to" value={@return_to} />
   </form>
 
+  <%!-- WebAuthn security key option --%>
+  <div
+    :if={@webauthn_enabled}
+    id="admin-webauthn-section"
+    phx-hook="WebAuthnAuthenticate"
+    class="mt-6"
+    role="region"
+    aria-labelledby="admin-webauthn-heading"
+  >
+    <div class="divider">{gettext("or")}</div>
+
+    <p id="admin-webauthn-heading" class="text-center text-sm text-base-content/70 mb-4">
+      {gettext("Use a registered security key instead.")}
+    </p>
+
+    <button
+      type="button"
+      class="btn btn-outline w-full"
+      phx-click="begin_webauthn"
+      aria-label={gettext("Verify with security key")}
+    >
+      <.icon name="hero-key" class="w-5 h-5 mr-2" />
+      {gettext("Use Security Key")}
+    </button>
+
+    <form
+      id="webauthn-verify-form"
+      action="/auth/admin-webauthn-verify"
+      method="post"
+      phx-trigger-action={@trigger_webauthn}
+    >
+      <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+      <input type="hidden" name="return_to" value={@return_to} />
+      <input type="hidden" id="wa_authenticator_data" name="authenticator_data" />
+      <input type="hidden" id="wa_client_data_json" name="client_data_json" />
+      <input type="hidden" id="wa_signature" name="signature" />
+      <input type="hidden" id="wa_credential_id" name="credential_id" />
+      <input
+        type="hidden"
+        id="wa_challenge_token"
+        name="challenge_token"
+        value={@webauthn_challenge_token}
+      />
+    </form>
+  </div>
+
   <nav
     id="admin-verify-nav"
     class="text-center mt-4"

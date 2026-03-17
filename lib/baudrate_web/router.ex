@@ -24,7 +24,8 @@ defmodule BaudrateWeb.Router do
 
     3. **Session controller** (`/auth/*`) — POST-only endpoints for session
        mutations. Split into two scopes with separate rate-limit pipelines
-       (`:rate_limit_login` for `/auth/session`, `:rate_limit_totp` for TOTP).
+       (`:rate_limit_login` for `/auth/session`, `:rate_limit_totp` for TOTP
+       and WebAuthn).
 
     4. **Authenticated** (`/articles/new`, `/profile`, `/admin/verify`) —
        `live_session :authenticated` with `:rate_limit_mount` and
@@ -263,6 +264,8 @@ defmodule BaudrateWeb.Router do
     post "/recovery-verify", SessionController, :recovery_verify
     post "/ack-recovery-codes", SessionController, :ack_recovery_codes
     post "/admin-totp-verify", SessionController, :admin_totp_verify
+    post "/webauthn-register", SessionController, :webauthn_register
+    post "/admin-webauthn-verify", SessionController, :admin_webauthn_verify
   end
 
   # Authenticated routes (defined before public_browsable to ensure literal

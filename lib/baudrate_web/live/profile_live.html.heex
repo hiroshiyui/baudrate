@@ -224,6 +224,88 @@
         </div>
       </div>
 
+      <%!-- Security Keys (WebAuthn) section --%>
+      <section
+        id="profile-security-keys"
+        aria-labelledby="security-keys-heading"
+        phx-hook="WebAuthnRegister"
+      >
+        <h2 id="security-keys-heading" class="text-sm text-base-content/70 mb-2">
+          {gettext("Security Keys")}
+        </h2>
+        <p class="text-sm text-base-content/70 mb-3">
+          {gettext(
+            "Register a hardware security key or platform authenticator (e.g. Touch ID, Windows Hello) as a second factor."
+          )}
+        </p>
+
+        <div :if={@webauthn_credentials != []} class="space-y-2 mb-4" aria-live="polite">
+          <article
+            :for={cred <- @webauthn_credentials}
+            id={"security-key-#{cred.id}"}
+            class="security-key flex items-center gap-3 p-2 bg-base-200 rounded-lg"
+          >
+            <.icon name="hero-key" class="w-5 h-5 text-base-content/60 shrink-0" />
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-sm truncate">
+                {if cred.label != "", do: cred.label, else: gettext("Unnamed Key")}
+              </div>
+              <div class="text-xs text-base-content/60">
+                {gettext("Added %{date}",
+                  date: Calendar.strftime(cred.inserted_at, "%Y-%m-%d")
+                )}
+                <%= if cred.last_used_at do %>
+                  &middot; {gettext("Last used %{date}",
+                    date: Calendar.strftime(cred.last_used_at, "%Y-%m-%d")
+                  )}
+                <% end %>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn btn-sm btn-ghost btn-error"
+              phx-click="delete_webauthn_credential"
+              phx-value-id={cred.id}
+              data-confirm={gettext("Remove this security key?")}
+              aria-label={gettext("Remove security key %{label}", label: cred.label)}
+            >
+              {gettext("Remove")}
+            </button>
+          </article>
+        </div>
+
+        <div :if={@webauthn_credentials == []} class="text-sm text-base-content/70 italic mb-4">
+          {gettext("No security keys registered.")}
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-sm btn-outline"
+          phx-click="begin_registration"
+          aria-label={gettext("Register a new security key")}
+        >
+          <.icon name="hero-plus" class="w-4 h-4 mr-1" />
+          {gettext("Register New Key")}
+        </button>
+
+        <form
+          id="webauthn-register-form"
+          action="/auth/webauthn-register"
+          method="post"
+          class="hidden"
+        >
+          <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+          <input
+            type="hidden"
+            name="challenge_token"
+            value={@webauthn_challenge_token}
+          />
+          <input type="hidden" id="attestation_object" name="attestation_object" />
+          <input type="hidden" id="client_data_json" name="client_data_json" />
+          <input type="hidden" name="label" value={gettext("Security Key")} />
+        </form>
+      </section>
+
       <div id="profile-member-since">
         <div class="text-sm text-base-content/70">{gettext("Member Since")}</div>
         <div class="text-lg font-semibold">

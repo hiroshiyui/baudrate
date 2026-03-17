@@ -32,13 +32,14 @@ import HashtagAutocompleteHook from "./hashtag_autocomplete_hook"
 import PushManagerHook from "./push_manager_hook"
 import DraftSaveHook from "./draft_save_hook"
 import FocusTrapHook from "./focus_trap_hook"
+import {WebAuthnRegister, WebAuthnAuthenticate} from "./hooks/webauthn"
 import "./emoji_autocomplete"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, AvatarCropHook, MarkdownToolbarHook, ScrollBottomHook, CopyToClipboardHook, HashtagAutocompleteHook, PushManagerHook, DraftSaveHook, FocusTrapHook},
+  hooks: {...colocatedHooks, AvatarCropHook, MarkdownToolbarHook, ScrollBottomHook, CopyToClipboardHook, HashtagAutocompleteHook, PushManagerHook, DraftSaveHook, FocusTrapHook, WebAuthnRegister, WebAuthnAuthenticate},
 })
 
 // Theme switcher: resolve user preference (light/dark/system) to admin-configured DaisyUI theme

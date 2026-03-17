@@ -41,6 +41,17 @@ defmodule BaudrateWeb.SessionController do
   On success, `admin_totp_verified_at` (Unix timestamp) is set in the
   cookie session, granting admin access for 10 minutes.
 
+  `admin_webauthn_verify/2` is the WebAuthn equivalent for admins who have
+  enrolled security keys. On success it sets the same `admin_totp_verified_at`
+  key so the existing `:require_admin_totp` hook needs no changes.
+
+  ## WebAuthn Registration
+
+  `webauthn_register/2` handles security key enrollment from `/profile`. The
+  LiveView begins the ceremony, the browser completes
+  `navigator.credentials.create()`, and the attestation response is POSTed
+  here for verification by `wax_` before persistence.
+
   ## Security Logging
 
   All auth events are logged with structured prefixes (`auth.login_success`,
@@ -346,6 +357,153 @@ defmodule BaudrateWeb.SessionController do
             |> put_session(:admin_totp_attempts, attempts + 1)
             |> put_flash(:error, gettext("Invalid verification code. Please try again."))
             |> redirect(to: "/admin/verify?return_to=#{URI.encode_www_form(return_to)}")
+        end
+
+      {:ok, _non_admin} ->
+        conn
+        |> put_flash(:error, gettext("Access denied."))
+        |> redirect(to: "/")
+
+      _ ->
+        conn
+        |> put_flash(:error, gettext("Session expired. Please log in again."))
+        |> redirect(to: "/login")
+    end
+  end
+
+  @doc """
+  Registers a WebAuthn security key for the currently authenticated user.
+
+  Called via form POST from `ProfileLive` after the browser completes the
+  `navigator.credentials.create()` ceremony. Verifies the attestation via
+  `Auth.finish_registration/4`, persists the credential, and redirects to
+  `/profile` with a flash message.
+  """
+  def webauthn_register(conn, params) do
+    %{
+      "attestation_object" => att_obj_b64,
+      "client_data_json" => cdj_b64,
+      "challenge_token" => token,
+      "label" => label
+    } = params
+
+    session_token = get_session(conn, :session_token)
+
+    case session_token && Auth.get_user_by_session_token(session_token) do
+      {:ok, user} ->
+        with {:ok, challenge} <- Baudrate.Auth.WebAuthnChallenges.pop(token, user.id),
+             {:ok, credential_attrs} <-
+               Auth.finish_registration(user, att_obj_b64, cdj_b64, challenge),
+             {:ok, _credential} <-
+               Auth.create_webauthn_credential(user, Map.put(credential_attrs, :label, label)) do
+          Logger.info("auth.webauthn_register_success: user_id=#{user.id} ip=#{remote_ip(conn)}")
+
+          conn
+          |> put_flash(:info, gettext("Security key registered successfully."))
+          |> redirect(to: "/profile")
+        else
+          _ ->
+            Logger.warning(
+              "auth.webauthn_register_failed: user_id=#{user.id} ip=#{remote_ip(conn)}"
+            )
+
+            conn
+            |> put_flash(:error, gettext("Security key registration failed. Please try again."))
+            |> redirect(to: "/profile")
+        end
+
+      _ ->
+        conn
+        |> put_flash(:error, gettext("Session expired. Please log in again."))
+        |> redirect(to: "/login")
+    end
+  end
+
+  @doc """
+  Verifies a WebAuthn assertion for admin sudo-mode re-authentication.
+
+  Mirrors `admin_totp_verify/2` in structure. On success, sets
+  `admin_totp_verified_at` (Unix timestamp) in the cookie session and redirects
+  to the validated `return_to` path. On failure, increments
+  `admin_webauthn_attempts` and redirects back to `/admin/verify`. Locks out
+  after 5 failed attempts without dropping the session.
+  """
+  def admin_webauthn_verify(conn, params) do
+    %{
+      "authenticator_data" => ad_b64,
+      "client_data_json" => cdj_b64,
+      "signature" => sig_b64,
+      "credential_id" => cid_b64,
+      "challenge_token" => token,
+      "return_to" => return_to
+    } = params
+
+    return_to = sanitize_admin_return_to(return_to)
+    session_token = get_session(conn, :session_token)
+
+    case session_token && Auth.get_user_by_session_token(session_token) do
+      {:ok, user} when user.role.name == "admin" ->
+        attempts = get_session(conn, :admin_webauthn_attempts) || 0
+
+        cond do
+          attempts >= @max_totp_attempts ->
+            Logger.warning(
+              "auth.admin_webauthn_lockout: user_id=#{user.id} ip=#{remote_ip(conn)}"
+            )
+
+            conn
+            |> delete_session(:admin_webauthn_attempts)
+            |> put_flash(:error, gettext("Too many failed attempts. Please try again later."))
+            |> redirect(to: "/")
+
+          true ->
+            case Baudrate.Auth.WebAuthnChallenges.pop(token, user.id) do
+              {:ok, challenge} ->
+                case Auth.finish_authentication(
+                       user,
+                       cid_b64,
+                       ad_b64,
+                       cdj_b64,
+                       sig_b64,
+                       challenge
+                     ) do
+                  {:ok, _credential} ->
+                    Logger.info(
+                      "auth.admin_webauthn_verify_success: user_id=#{user.id} ip=#{remote_ip(conn)}"
+                    )
+
+                    conn
+                    |> delete_session(:admin_webauthn_attempts)
+                    |> put_session(:admin_totp_verified_at, System.system_time(:second))
+                    |> redirect(to: return_to)
+
+                  {:error, reason} ->
+                    Logger.warning(
+                      "auth.admin_webauthn_verify_failure: user_id=#{user.id} attempt=#{attempts + 1} reason=#{inspect(reason)} ip=#{remote_ip(conn)}"
+                    )
+
+                    conn
+                    |> put_session(:admin_webauthn_attempts, attempts + 1)
+                    |> put_flash(
+                      :error,
+                      gettext("Security key verification failed. Please try again.")
+                    )
+                    |> redirect(to: "/admin/verify?return_to=#{URI.encode_www_form(return_to)}")
+                end
+
+              {:error, :not_found} ->
+                Logger.warning(
+                  "auth.admin_webauthn_invalid_challenge: user_id=#{user.id} ip=#{remote_ip(conn)}"
+                )
+
+                conn
+                |> put_session(:admin_webauthn_attempts, attempts + 1)
+                |> put_flash(
+                  :error,
+                  gettext("Security key verification failed. Please try again.")
+                )
+                |> redirect(to: "/admin/verify?return_to=#{URI.encode_www_form(return_to)}")
+            end
         end
 
       {:ok, _non_admin} ->
