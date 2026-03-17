@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.40] — 2026-03-17
+
+### Fixed
+
+- **WebAuthn registration failure reason now logged** — The `else` clause in the registration controller was discarding the actual error, making production failures impossible to diagnose. The error is now included in the warning log line.
+
 ## [1.3.39] — 2026-03-17
 
 ### Added
