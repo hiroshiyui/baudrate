@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.44] — 2026-03-17
+
+### Fixed
+
+- **WebAuthn admin sudo verification — 500 error on `Wax.authenticate/6`** — The argument order was wrong: `challenge` and `credentials` were swapped (positions 5 and 6). Additionally, `credentials` must be a `[{credential_id, cose_key}]` tuple list, not a map, and the sign count is not part of the credentials list. The return value is `{:ok, Wax.AuthenticatorData.t()}` — the new sign count is read from `auth_data.sign_count`.
+
 ## [1.3.43] — 2026-03-17
 
 ### Fixed
