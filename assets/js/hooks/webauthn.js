@@ -109,7 +109,7 @@ export const WebAuthnAuthenticate = {
         )
         document.getElementById("wa_credential_id").value = encodeBase64url(assertion.rawId)
 
-        this.pushEvent("webauthn_credential_received", {})
+        document.getElementById("webauthn-verify-form").requestSubmit()
       } catch (err) {
         console.error("WebAuthn authentication error:", err)
         this.pushEvent("webauthn_error", { reason: err.name || "unknown" })

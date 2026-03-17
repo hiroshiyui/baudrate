@@ -84,7 +84,6 @@
       id="webauthn-verify-form"
       action="/auth/admin-webauthn-verify"
       method="post"
-      phx-trigger-action={@trigger_webauthn}
     >
       <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
       <input type="hidden" name="return_to" value={@return_to} />

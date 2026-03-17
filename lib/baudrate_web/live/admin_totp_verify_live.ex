@@ -12,8 +12,9 @@ defmodule BaudrateWeb.AdminTotpVerifyLive do
 
   2. **WebAuthn** — if the admin has security keys enrolled, a "Use security
      key" button triggers the browser WebAuthn API via `WebAuthnAuthenticate`
-     hook, then uses `phx-trigger-action` to POST the assertion to
-     `SessionController.admin_webauthn_verify/2`.
+     hook, which calls `requestSubmit()` directly (bypassing `phx-trigger-action`
+     to ensure JS-set hidden input values are not reset by morphdom before submit)
+     to POST the assertion to `SessionController.admin_webauthn_verify/2`.
 
   The `return_to` parameter is read from URL query params and validated
   (must start with `/admin/`, no path traversal). On successful
@@ -37,7 +38,6 @@ defmodule BaudrateWeb.AdminTotpVerifyLive do
       |> assign(:trigger_action, false)
       |> assign(:webauthn_enabled, webauthn_enabled)
       |> assign(:webauthn_challenge_token, nil)
-      |> assign(:trigger_webauthn, false)
       |> assign(:page_title, gettext("Admin Verification"))
 
     {:ok, socket}
@@ -87,11 +87,6 @@ defmodule BaudrateWeb.AdminTotpVerifyLive do
       |> push_event("webauthn_authenticate", %{options: options_json})
 
     {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("webauthn_credential_received", _params, socket) do
-    {:noreply, assign(socket, :trigger_webauthn, true)}
   end
 
   @impl true

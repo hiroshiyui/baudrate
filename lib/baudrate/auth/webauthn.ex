@@ -159,11 +159,8 @@ defmodule Baudrate.Auth.WebAuthn do
   def begin_authentication(%User{} = user) do
     credentials = list_webauthn_credentials(user)
 
-    allow_credentials = Enum.map(credentials, & &1.credential_id)
-
     challenge =
       Wax.new_authentication_challenge(
-        allow_credentials: allow_credentials,
         origin: origin(),
         rp_id: rp_id()
       )
