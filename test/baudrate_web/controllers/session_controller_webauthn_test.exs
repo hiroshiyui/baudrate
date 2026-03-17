@@ -117,7 +117,7 @@ defmodule BaudrateWeb.SessionControllerWebAuthnTest do
       user = setup_user("user")
       conn = log_in_user(conn, user)
 
-      challenge = %{bytes: :crypto.strong_rand_bytes(32)}
+      challenge = Wax.new_authentication_challenge([])
       token = WebAuthnChallenges.put(user.id, challenge)
 
       conn =
@@ -154,7 +154,7 @@ defmodule BaudrateWeb.SessionControllerWebAuthnTest do
     test "increments attempt counter on failed verification", %{conn: conn, admin: admin} do
       conn = log_in_user(conn, admin)
 
-      challenge = %{bytes: :crypto.strong_rand_bytes(32)}
+      challenge = Wax.new_authentication_challenge([])
       token = WebAuthnChallenges.put(admin.id, challenge)
 
       # Challenge exists but Wax rejects the garbage payload
@@ -180,7 +180,7 @@ defmodule BaudrateWeb.SessionControllerWebAuthnTest do
         |> log_in_user(admin)
         |> put_session(:admin_webauthn_attempts, 5)
 
-      challenge = %{bytes: :crypto.strong_rand_bytes(32)}
+      challenge = Wax.new_authentication_challenge([])
       token = WebAuthnChallenges.put(admin.id, challenge)
 
       conn =
@@ -203,7 +203,7 @@ defmodule BaudrateWeb.SessionControllerWebAuthnTest do
     test "sanitizes invalid return_to path", %{conn: conn, admin: admin} do
       conn = log_in_user(conn, admin)
 
-      challenge = %{bytes: :crypto.strong_rand_bytes(32)}
+      challenge = Wax.new_authentication_challenge([])
       token = WebAuthnChallenges.put(admin.id, challenge)
 
       conn =
