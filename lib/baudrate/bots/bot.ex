@@ -17,6 +17,9 @@ defmodule Baudrate.Bots.Bot do
     * `error_count` — consecutive error counter; drives backoff
     * `last_error` — description of the most recent error
     * `avatar_refreshed_at` — when the site favicon was last fetched
+    * `favicon_fail_count` — consecutive automatic favicon fetch failure counter;
+      auto-fetch is paused when this reaches 3 (manual "Refresh Favicon" always works
+      and resets the counter on success)
   """
 
   use Ecto.Schema
@@ -34,6 +37,7 @@ defmodule Baudrate.Bots.Bot do
     field :error_count, :integer, default: 0
     field :last_error, :string
     field :avatar_refreshed_at, :utc_datetime
+    field :favicon_fail_count, :integer, default: 0
 
     belongs_to :user, User
 
