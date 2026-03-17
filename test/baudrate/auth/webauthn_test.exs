@@ -39,7 +39,7 @@ defmodule Baudrate.Auth.WebAuthnTest do
   defp build_credential_attrs do
     %{
       credential_id: :crypto.strong_rand_bytes(32),
-      public_key_cbor: :crypto.strong_rand_bytes(77),
+      public_key_cbor: CBOR.encode(%{1 => 2, -2 => :crypto.strong_rand_bytes(32)}),
       sign_count: 0,
       label: "Test Key"
     }
@@ -148,6 +148,166 @@ defmodule Baudrate.Auth.WebAuthnTest do
       other_user = create_user()
       {:ok, cred} = Auth.create_webauthn_credential(other_user, build_credential_attrs())
       assert {:error, :not_found} = Auth.delete_webauthn_credential(user, cred.id)
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # begin_registration/1
+  # ---------------------------------------------------------------------------
+
+  describe "begin_registration/1" do
+    test "returns a token and JSON creation options" do
+      user = create_user()
+      {token, json} = Auth.begin_registration(user)
+
+      assert is_binary(token) and byte_size(token) > 0
+      options = Jason.decode!(json)
+      assert is_binary(options["challenge"])
+      assert options["rp"]["id"] == "localhost"
+      assert options["rp"]["name"] == "Baudrate"
+      assert options["user"]["name"] == user.username
+      assert is_list(options["pubKeyCredParams"])
+      assert options["attestation"] == "none"
+    end
+
+    test "stores the Wax.Challenge in ETS under the returned token" do
+      user = create_user()
+      {token, _json} = Auth.begin_registration(user)
+
+      assert {:ok, %Wax.Challenge{type: :attestation}} = WebAuthnChallenges.pop(token, user.id)
+    end
+
+    test "challenge token is single-use" do
+      user = create_user()
+      {token, _json} = Auth.begin_registration(user)
+
+      assert {:ok, _} = WebAuthnChallenges.pop(token, user.id)
+      assert {:error, :not_found} = WebAuthnChallenges.pop(token, user.id)
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # begin_authentication/1
+  # ---------------------------------------------------------------------------
+
+  describe "begin_authentication/1" do
+    test "returns a token and JSON request options" do
+      user = create_user()
+      {token, json} = Auth.begin_authentication(user)
+
+      assert is_binary(token) and byte_size(token) > 0
+      options = Jason.decode!(json)
+      assert is_binary(options["challenge"])
+      assert options["rpId"] == "localhost"
+      assert is_list(options["allowCredentials"])
+      assert options["userVerification"] == "preferred"
+    end
+
+    test "allowCredentials is empty when no keys enrolled" do
+      user = create_user()
+      {_token, json} = Auth.begin_authentication(user)
+
+      options = Jason.decode!(json)
+      assert options["allowCredentials"] == []
+    end
+
+    test "allowCredentials lists enrolled credential IDs" do
+      user = create_user()
+      attrs = build_credential_attrs()
+      {:ok, cred} = Auth.create_webauthn_credential(user, attrs)
+
+      {_token, json} = Auth.begin_authentication(user)
+      options = Jason.decode!(json)
+
+      credential_ids = Enum.map(options["allowCredentials"], & &1["id"])
+      expected_id = Base.url_encode64(cred.credential_id, padding: false)
+      assert expected_id in credential_ids
+    end
+
+    test "stores an authentication Wax.Challenge in ETS" do
+      user = create_user()
+      {token, _json} = Auth.begin_authentication(user)
+
+      assert {:ok, %Wax.Challenge{type: :authentication}} = WebAuthnChallenges.pop(token, user.id)
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # finish_registration/4
+  # ---------------------------------------------------------------------------
+
+  describe "finish_registration/4" do
+    test "returns error for invalid base64 attestation_object" do
+      user = create_user()
+      challenge = Wax.new_registration_challenge(origin: "http://localhost", rp_id: "localhost")
+
+      assert {:error, :invalid_base64} =
+               Auth.finish_registration(user, "not!!valid!!base64", "dGVzdA", challenge)
+    end
+
+    test "returns error for invalid base64 client_data_json" do
+      user = create_user()
+      challenge = Wax.new_registration_challenge(origin: "http://localhost", rp_id: "localhost")
+
+      assert {:error, :invalid_base64} =
+               Auth.finish_registration(user, "dGVzdA", "not!!valid!!base64", challenge)
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # finish_authentication/6
+  # ---------------------------------------------------------------------------
+
+  describe "finish_authentication/6" do
+    test "returns :unknown_credential when credential not in DB" do
+      user = create_user()
+      challenge = Wax.new_authentication_challenge(origin: "http://localhost", rp_id: "localhost")
+
+      cid_b64 = Base.url_encode64(:crypto.strong_rand_bytes(32), padding: false)
+
+      assert {:error, :unknown_credential} =
+               Auth.finish_authentication(
+                 user,
+                 cid_b64,
+                 Base.url_encode64("auth_data", padding: false),
+                 Base.url_encode64("client_data", padding: false),
+                 Base.url_encode64("signature", padding: false),
+                 challenge
+               )
+    end
+
+    test "returns :unknown_credential for another user's enrolled credential" do
+      user = create_user()
+      other_user = create_user()
+      {:ok, cred} = Auth.create_webauthn_credential(other_user, build_credential_attrs())
+
+      challenge = Wax.new_authentication_challenge(origin: "http://localhost", rp_id: "localhost")
+      cid_b64 = Base.url_encode64(cred.credential_id, padding: false)
+
+      assert {:error, :unknown_credential} =
+               Auth.finish_authentication(
+                 user,
+                 cid_b64,
+                 Base.url_encode64("auth_data", padding: false),
+                 Base.url_encode64("client_data", padding: false),
+                 Base.url_encode64("signature", padding: false),
+                 challenge
+               )
+    end
+
+    test "returns error for invalid base64 credential_id" do
+      user = create_user()
+      challenge = Wax.new_authentication_challenge(origin: "http://localhost", rp_id: "localhost")
+
+      assert {:error, :invalid_base64} =
+               Auth.finish_authentication(
+                 user,
+                 "not!!valid!!base64",
+                 "dGVzdA",
+                 "dGVzdA",
+                 "dGVzdA",
+                 challenge
+               )
     end
   end
 
