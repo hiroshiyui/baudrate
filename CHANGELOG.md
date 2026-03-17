@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.39] — 2026-03-17
+
+### Added
+
+- **WebAuthn / FIDO2 hardware security key support** — Users can register FIDO2-compatible hardware security keys (YubiKey, passkeys, Touch ID, etc.) at `/profile` → "Security Keys". Registered keys can be used as an alternative to TOTP when completing admin sudo-mode re-verification at `/admin/verify`. Multiple keys per user are supported; each has a user-defined label, a last-used timestamp, and a sign count for clone detection.
+
 ## [1.3.38] — 2026-03-16
 
 ### Fixed
