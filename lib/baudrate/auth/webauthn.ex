@@ -90,10 +90,7 @@ defmodule Baudrate.Auth.WebAuthn do
     challenge =
       Wax.new_registration_challenge(
         origin: origin(),
-        rp_id: rp_id(),
-        attestation: :none,
-        user_presence: true,
-        user_verification: :preferred
+        rp_id: rp_id()
       )
 
     token = WebAuthnChallenges.put(user.id, challenge)
@@ -167,9 +164,7 @@ defmodule Baudrate.Auth.WebAuthn do
       Wax.new_authentication_challenge(
         allow_credentials: allow_credentials,
         origin: origin(),
-        rp_id: rp_id(),
-        user_presence: true,
-        user_verification: :preferred
+        rp_id: rp_id()
       )
 
     token = WebAuthnChallenges.put(user.id, challenge)

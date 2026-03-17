@@ -82,10 +82,7 @@ config :baudrate, Baudrate.Federation,
 
 # WebAuthn / FIDO2 — base configuration (attestation policy and flags).
 # origin and rp_id are environment-specific; set in dev.exs, test.exs, and runtime.exs.
-config :wax_,
-  attestation: :none,
-  user_presence: true,
-  user_verification: :preferred
+# attestation and user_verification default to "none" and "preferred" (strings) in Wax.Challenge.
 
 config :elixir, :time_zone_database, Tz.TimeZoneDatabase
 
