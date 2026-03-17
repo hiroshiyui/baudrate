@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.45] — 2026-03-17
+
+### Added
+
+- **RSS bot favicon fetch retry limit** — Automatic favicon fetching is now paused after 3 consecutive failures per bot, preventing repeated requests to unreachable or bot-blocking sites. A new `favicon_fail_count` column on the `bots` table tracks consecutive failures; the counter resets to 0 on any successful fetch. The admin "Refresh Favicon" button bypasses the gate and always attempts a fetch, re-enabling automatic fetches on success.
+
+### Tests
+
+- Added essential WebAuthn unit tests: `begin_registration/1` (token+JSON structure, ETS storage, single-use), `begin_authentication/1` (token+JSON, empty/populated `allowCredentials`, challenge type), `finish_registration/4` (invalid base64 inputs), `finish_authentication/6` (`:unknown_credential` for missing, cross-user, and invalid base64 credential ID).
+- Updated WebAuthn controller tests to use `Wax.new_authentication_challenge/1` instead of plain map challenges.
+- Added tests for `favicon_fail_count` gate logic, `increment_favicon_fail_count/1`, and `mark_avatar_refreshed/1` counter reset.
+
 ## [1.3.44] — 2026-03-17
 
 ### Fixed
