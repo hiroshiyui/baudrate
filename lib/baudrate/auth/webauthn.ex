@@ -206,22 +206,22 @@ defmodule Baudrate.Auth.WebAuthn do
           {:error, :unknown_credential}
 
         credential ->
-          cred_map = %{credential_id => {decode_public_key(credential.public_key_cbor), credential.sign_count}}
+          credentials = [{credential_id, decode_public_key(credential.public_key_cbor)}]
 
           case Wax.authenticate(
                  credential_id,
                  authenticator_data,
                  signature,
                  client_data_json,
-                 cred_map,
-                 challenge
+                 challenge,
+                 credentials
                ) do
-            {:ok, new_sign_count} ->
+            {:ok, auth_data} ->
               now = DateTime.utc_now() |> DateTime.truncate(:second)
 
               credential
               |> WebAuthnCredential.update_changeset(%{
-                sign_count: new_sign_count,
+                sign_count: auth_data.sign_count,
                 last_used_at: now
               })
               |> Repo.update()
