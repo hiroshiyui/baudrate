@@ -58,7 +58,8 @@ defmodule Seeds.Util do
             "password_confirmation" => "Password123!x",
             "role_id" => role.id
           })
-          |> Ecto.Changeset.cast(%{status: "active", display_name: display_name, bio: bio},
+          |> Ecto.Changeset.cast(
+            %{status: "active", display_name: display_name, bio: bio},
             [:status, :display_name, :bio]
           )
           |> Repo.insert()
@@ -261,8 +262,7 @@ admin = Repo.one!(from u in User, where: u.username == "admin")
 
 admin_articles = [
   # technology
-  {"technology",
-   "The Rise of RISC-V: Open Hardware Architecture",
+  {"technology", "The Rise of RISC-V: Open Hardware Architecture",
    """
    RISC-V is an open standard instruction set architecture (ISA) gaining significant momentum.
    Unlike proprietary ISAs such as x86 or ARM, RISC-V is freely available for anyone to implement.
@@ -277,8 +277,7 @@ admin_articles = [
    - Strong community support
    - Growing software ecosystem
    """},
-  {"technology",
-   "USB4 vs Thunderbolt 5: What's the Difference?",
+  {"technology", "USB4 vs Thunderbolt 5: What's the Difference?",
    """
    Both USB4 Version 2.0 and Thunderbolt 5 offer up to 120 Gbps bandwidth, but there are key differences.
 
@@ -289,8 +288,7 @@ admin_articles = [
    For most users the practical difference is minimal, but professionals working with external GPUs
    or high-resolution video capture will notice Thunderbolt 5's consistency advantages.
    """},
-  {"technology",
-   "AI Chips: Beyond GPUs",
+  {"technology", "AI Chips: Beyond GPUs",
    """
    The AI hardware landscape is evolving rapidly beyond traditional GPU-centric approaches.
    While NVIDIA's H100 remains dominant, purpose-built AI accelerators are emerging.
@@ -302,8 +300,7 @@ admin_articles = [
    The trend toward heterogeneous computing — combining CPUs, GPUs, and specialized accelerators —
    seems inevitable for next-generation AI workloads.
    """},
-  {"technology",
-   "Edge Computing: Bringing Data Processing Closer",
+  {"technology", "Edge Computing: Bringing Data Processing Closer",
    """
    Edge computing represents a fundamental shift in how we process and analyze data. Rather than sending
    everything to centralized cloud data centers, edge computing pushes computation to the network's
@@ -312,8 +309,7 @@ admin_articles = [
    This is critical for applications requiring low latency: autonomous vehicles, industrial automation,
    AR/VR, and smart city infrastructure. 5G expansion is accelerating edge computing adoption.
    """},
-  {"technology",
-   "The State of PC Gaming Hardware in 2026",
+  {"technology", "The State of PC Gaming Hardware in 2026",
    """
    The PC gaming hardware market has undergone significant changes. Both AMD and NVIDIA have released
    new GPU generations, while Intel continues pushing into discrete graphics with Arc.
@@ -325,8 +321,7 @@ admin_articles = [
    from 2022-era hardware?
    """},
   # programming
-  {"programming",
-   "Functional vs Object-Oriented: A Pragmatic Comparison",
+  {"programming", "Functional vs Object-Oriented: A Pragmatic Comparison",
    """
    The debate between functional and object-oriented programming often generates more heat than light.
    In practice, modern languages increasingly blend both paradigms.
@@ -337,8 +332,7 @@ admin_articles = [
    Languages like Scala, Rust, and modern Java incorporate both.
    The most effective programmers treat these as tools, not religions.
    """},
-  {"programming",
-   "Why I Switched from Python to Elixir for Backend Services",
+  {"programming", "Why I Switched from Python to Elixir for Backend Services",
    """
    After five years of Python backend development, I migrated our team's primary services to Elixir.
 
@@ -349,8 +343,7 @@ admin_articles = [
    For high-concurrency services, the performance characteristics are simply in a different league.
    Per-instance memory usage dropped 60% after migration.
    """},
-  {"programming",
-   "Understanding Memory Ownership in Rust",
+  {"programming", "Understanding Memory Ownership in Rust",
    """
    Rust's ownership system eliminates entire classes of bugs at compile time.
 
@@ -362,8 +355,7 @@ admin_articles = [
    The borrow checker enforces these rules, making use-after-free, double-free, and data races
    impossible in safe Rust code.
    """},
-  {"programming",
-   "Writing Maintainable SQL: Patterns and Anti-Patterns",
+  {"programming", "Writing Maintainable SQL: Patterns and Anti-Patterns",
    """
    **Embrace:**
    - CTEs for complex queries — readable and often optimized by modern query planners
@@ -378,8 +370,7 @@ admin_articles = [
 
    Good SQL is boring SQL. The goal is clarity, not cleverness.
    """},
-  {"programming",
-   "The Hidden Costs of Microservices",
+  {"programming", "The Hidden Costs of Microservices",
    """
    Microservices solve certain organizational problems while introducing significant operational complexity.
 
@@ -393,8 +384,7 @@ admin_articles = [
    better velocity. Consider microservices when you have genuine team autonomy requirements.
    """},
   # open-source
-  {"open-source",
-   "The Economics of Open Source Sustainability",
+  {"open-source", "The Economics of Open Source Sustainability",
    """
    **Dual licensing** (MySQL, Qt): commercial license fees fund development.
    **Open core** (GitLab): core is free; advanced features require paid subscriptions.
@@ -404,8 +394,7 @@ admin_articles = [
    The most dangerous position: a widely-used project maintained by a single unpaid developer.
    `left-pad` and `log4j` taught us how that ends.
    """},
-  {"open-source",
-   "Contributing to Your First Open Source Project",
+  {"open-source", "Contributing to Your First Open Source Project",
    """
    **Start small:**
    - Fix typos in documentation
@@ -420,8 +409,7 @@ admin_articles = [
    The goal of your first contribution isn't to write perfect code — it's to understand the
    contribution workflow and build a relationship with maintainers.
    """},
-  {"open-source",
-   "Licensing Demystified: MIT, Apache, GPL, and Beyond",
+  {"open-source", "Licensing Demystified: MIT, Apache, GPL, and Beyond",
    """
    **Permissive licenses** (MIT, BSD, Apache 2.0): allow use in proprietary software.
    Apache 2.0 adds patent grant protection. Best for libraries you want widely adopted.
@@ -432,8 +420,7 @@ admin_articles = [
    **Important:** License compatibility matters when combining projects.
    GPL and Apache 2.0 are technically incompatible without explicit exceptions.
    """},
-  {"open-source",
-   "The Rise of Permissive Relicensing",
+  {"open-source", "The Rise of Permissive Relicensing",
    """
    A concerning trend: established open source projects relicensing to more restrictive terms.
    HashiCorp moved Terraform from MPL to BUSL. Elasticsearch moved from Apache to SSPL.
@@ -444,8 +431,7 @@ admin_articles = [
    The community response has been equally consistent: forks. OpenTF became OpenTofu.
    OpenSearch forked from Elasticsearch.
    """},
-  {"open-source",
-   "Package Manager Security: Lessons from Supply Chain Attacks",
+  {"open-source", "Package Manager Security: Lessons from Supply Chain Attacks",
    """
    The `xz-utils` backdoor was a watershed moment for supply chain security. A sophisticated attacker
    spent two years building trust as a contributor before inserting a backdoor.
@@ -459,8 +445,7 @@ admin_articles = [
    dependency auditing tooling.
    """},
   # linux-unix
-  {"linux-unix",
-   "Systemd vs OpenRC: A Fair Comparison",
+  {"linux-unix", "Systemd vs OpenRC: A Fair Comparison",
    """
    **Systemd strengths:** deep desktop integration, parallel service startup, widespread support.
    **OpenRC strengths:** simpler mental model, easier to debug, works on non-Linux systems.
@@ -468,8 +453,7 @@ admin_articles = [
    For server workloads where you want minimal complexity, OpenRC or runit are legitimate choices.
    For modern desktop Linux, systemd's ecosystem advantages are significant.
    """},
-  {"linux-unix",
-   "Understanding the Linux Virtual Memory System",
+  {"linux-unix", "Understanding the Linux Virtual Memory System",
    """
    **Key concepts:**
    - **Page cache:** filesystem reads cached in RAM; writes buffered as dirty pages
@@ -480,8 +464,7 @@ admin_articles = [
    The `vm.swappiness` parameter (0–200) controls swap tendency vs page cache reclaim —
    tuning this is often more impactful than people expect.
    """},
-  {"linux-unix",
-   "NixOS: Reproducible System Configuration",
+  {"linux-unix", "NixOS: Reproducible System Configuration",
    """
    NixOS describes the entire OS state declaratively in a configuration file; changes are applied atomically.
 
@@ -491,8 +474,7 @@ admin_articles = [
    For server management and development environments, the reproducibility guarantees are
    genuinely compelling.
    """},
-  {"linux-unix",
-   "Shell Scripting Best Practices in 2026",
+  {"linux-unix", "Shell Scripting Best Practices in 2026",
    """
    **Always start with:**
    ```
@@ -508,8 +490,7 @@ admin_articles = [
 
    When your script exceeds ~200 lines, seriously consider Python or another language.
    """},
-  {"linux-unix",
-   "ZFS on Linux: A Practical Guide",
+  {"linux-unix", "ZFS on Linux: A Practical Guide",
    """
    **Key ZFS features:** copy-on-write, built-in RAID (RAID-Z1/2/3), dataset snapshots,
    data integrity via checksumming, inline compression (lz4, zstd).
@@ -521,8 +502,7 @@ admin_articles = [
    - Regular `zpool scrub` to detect and correct bit rot
    """},
   # security
-  {"security",
-   "Zero Trust Architecture: Principles and Implementation",
+  {"security", "Zero Trust Architecture: Principles and Implementation",
    """
    Zero Trust rejects the perimeter security model in favor of "never trust, always verify."
 
@@ -533,8 +513,7 @@ admin_articles = [
 
    Zero Trust is a journey, not a product.
    """},
-  {"security",
-   "Understanding Modern TLS: What's Changed in TLS 1.3",
+  {"security", "Understanding Modern TLS: What's Changed in TLS 1.3",
    """
    TLS 1.3 (RFC 8446) is the most significant overhaul of the TLS protocol in decades.
 
@@ -545,8 +524,7 @@ admin_articles = [
 
    TLS 1.3 traffic cannot be decrypted later even if the server's private key is compromised.
    """},
-  {"security",
-   "Password Managers: Threat Model and Operational Security",
+  {"security", "Password Managers: Threat Model and Operational Security",
    """
    **What password managers protect against:**
    - Password reuse across sites
@@ -558,8 +536,7 @@ admin_articles = [
    - Treat your master password as irreplaceable — memorize it
    - Review emergency access procedures
    """},
-  {"security",
-   "SQL Injection in 2026: Still Relevant?",
+  {"security", "SQL Injection in 2026: Still Relevant?",
    """
    SQL injection was first documented in the late 1990s and remains in every OWASP Top 10.
 
@@ -571,8 +548,7 @@ admin_articles = [
 
    **Defense:** Parameterized queries, always. No exceptions.
    """},
-  {"security",
-   "Incident Response: The First 24 Hours",
+  {"security", "Incident Response: The First 24 Hours",
    """
    **Immediate priorities:**
    1. **Contain** — isolate affected systems without destroying evidence
@@ -588,8 +564,7 @@ admin_articles = [
    Practice your incident response plan with tabletop exercises before you need it.
    """},
   # science
-  {"science",
-   "Quantum Computing: Where We Actually Are",
+  {"science", "Quantum Computing: Where We Actually Are",
    """
    **What we have:** NISQ devices with 100–1000+ qubits; demonstrations of quantum advantage
    in narrow benchmarks; no practical quantum advantage for real-world problems yet.
@@ -602,8 +577,7 @@ admin_articles = [
 
    Cryptographically relevant quantum computers remain decades away, if achievable at all.
    """},
-  {"science",
-   "CRISPR Beyond the Hype: Clinical Applications",
+  {"science", "CRISPR Beyond the Hype: Clinical Applications",
    """
    **Approved therapies:** Casgevy (Vertex/CRISPR Therapeutics) for sickle cell disease and
    beta-thalassemia — the first approved CRISPR therapy.
@@ -614,8 +588,7 @@ admin_articles = [
    **Ethically:** Germline editing (heritable changes) remains legally restricted in most
    jurisdictions following the He Jiankui incident.
    """},
-  {"science",
-   "The James Webb Space Telescope: Two Years of Discoveries",
+  {"science", "The James Webb Space Telescope: Two Years of Discoveries",
    """
    **Galaxy formation:** JWST revealed massive, well-formed galaxies far earlier than standard
    cosmological models predicted, prompting significant theoretical revision.
@@ -626,8 +599,7 @@ admin_articles = [
    **Star formation:** Unprecedented views of stellar nurseries revealing protoplanetary disk
    formation in detail previously impossible to observe.
    """},
-  {"science",
-   "Fusion Energy: Is This Time Different?",
+  {"science", "Fusion Energy: Is This Time Different?",
    """
    **What changed:**
    - NIF achieved ignition (energy gain > 1 from laser energy) in 2022
@@ -641,8 +613,7 @@ admin_articles = [
 
    Cautious optimism is warranted. Commercial fusion by 2040 is plausible, not guaranteed.
    """},
-  {"science",
-   "Microbiome Research: What the Science Actually Shows",
+  {"science", "Microbiome Research: What the Science Actually Shows",
    """
    **Well-established:**
    - Gut microbiome influences immune system development
@@ -658,8 +629,7 @@ admin_articles = [
    The field is exciting; the commercial ecosystem has outrun the science.
    """},
   # mathematics
-  {"mathematics",
-   "The Riemann Hypothesis: Why It Matters",
+  {"mathematics", "The Riemann Hypothesis: Why It Matters",
    """
    The Riemann Hypothesis (1859) remains unproven and is arguably the most important unsolved
    problem in mathematics.
@@ -670,8 +640,7 @@ admin_articles = [
    Roughly 1000 mathematical theorems begin with "assuming RH..." — the hypothesis has been verified
    computationally for the first 10^13 zeros, all on the critical line. Verification is not proof.
    """},
-  {"mathematics",
-   "Graph Theory in Everyday Infrastructure",
+  {"mathematics", "Graph Theory in Everyday Infrastructure",
    """
    Graph theory underlies infrastructure we use daily:
 
@@ -683,8 +652,7 @@ admin_articles = [
    The four color theorem (any planar map needs ≤4 colors) was the first major theorem proved
    with computer assistance (1976).
    """},
-  {"mathematics",
-   "An Introduction to Category Theory",
+  {"mathematics", "An Introduction to Category Theory",
    """
    Category theory provides a unifying language for mathematics by focusing on relationships
    between structures rather than the structures themselves.
@@ -696,8 +664,7 @@ admin_articles = [
    **Why programmers care:** Monads are monoids in the category of endofunctors.
    Category theory gives a precise language for discussing abstraction over computation.
    """},
-  {"mathematics",
-   "Gödel's Incompleteness Theorems: What They Do and Don't Say",
+  {"mathematics", "Gödel's Incompleteness Theorems: What They Do and Don't Say",
    """
    **First incompleteness theorem:** Any consistent formal system sufficiently powerful to express
    basic arithmetic contains statements that are true but unprovable within that system.
@@ -711,8 +678,7 @@ admin_articles = [
 
    The theorems apply to formal systems, not to mathematical truth itself.
    """},
-  {"mathematics",
-   "The Mathematics of Voting Systems",
+  {"mathematics", "The Mathematics of Voting Systems",
    """
    Arrow's Impossibility Theorem (1951) proved that no ranked voting system can simultaneously
    satisfy all of a small set of reasonable fairness criteria when there are ≥3 candidates.
@@ -730,8 +696,7 @@ admin_articles = [
    There is no perfect voting system.
    """},
   # philosophy
-  {"philosophy",
-   "Free Will and Determinism in the Age of Neuroscience",
+  {"philosophy", "Free Will and Determinism in the Age of Neuroscience",
    """
    Modern neuroscience has reignited the ancient debate. The Libet experiments show unconscious
    brain activity precedes conscious awareness of decisions.
@@ -743,8 +708,7 @@ admin_articles = [
 
    The compatibilist position (Hume, Kant, Dennett) argues the neuroscience debate attacks a strawman.
    """},
-  {"philosophy",
-   "The Ethics of Artificial Intelligence: A Philosophical Survey",
+  {"philosophy", "The Ethics of Artificial Intelligence: A Philosophical Survey",
    """
    **Consequentialist approaches:** Evaluate AI by outcomes — utility maximization.
    **Deontological approaches:** Rules-based constraints regardless of consequences; prohibitions
@@ -758,8 +722,7 @@ admin_articles = [
 
    No single framework is adequate.
    """},
-  {"philosophy",
-   "Epistemology for the Information Age",
+  {"philosophy", "Epistemology for the Information Age",
    """
    Traditional epistemology asked: what is knowledge? How do we justify belief?
    These questions have new urgency in an environment of information overload and algorithmic curation.
@@ -772,8 +735,7 @@ admin_articles = [
    Virtue epistemology — focusing on epistemic character traits (intellectual humility, open-mindedness)
    rather than just true beliefs — offers useful resources.
    """},
-  {"philosophy",
-   "Stoicism in the 21st Century: Philosophy as Practice",
+  {"philosophy", "Stoicism in the 21st Century: Philosophy as Practice",
    """
    **Core Stoic claims:**
    - Some things are "up to us" (judgments, intentions); most things are not
@@ -785,8 +747,7 @@ admin_articles = [
 
    **What it often misses:** Stoicism is a complete ethical system, not a stress management technique.
    """},
-  {"philosophy",
-   "Personal Identity: The Ship of Theseus Problem for Persons",
+  {"philosophy", "Personal Identity: The Ship of Theseus Problem for Persons",
    """
    Applied to persons: we are constituted by constantly changing matter. What persists?
 
@@ -801,8 +762,7 @@ admin_articles = [
    for how we think about death, desert, and future obligations.
    """},
   # history
-  {"history",
-   "The Bronze Age Collapse: History's Most Mysterious Catastrophe",
+  {"history", "The Bronze Age Collapse: History's Most Mysterious Catastrophe",
    """
    Around 1200 BCE, Bronze Age Mediterranean civilizations collapsed within decades of each other.
 
@@ -815,8 +775,7 @@ admin_articles = [
    The "systems collapse" model argues no single cause is sufficient — the interaction of multiple
    stressors was catastrophic. A lesson in civilizational fragility.
    """},
-  {"history",
-   "The Printing Press and Information Revolutions",
+  {"history", "The Printing Press and Information Revolutions",
    """
    Gutenberg's printing press (c. 1440) caused: standardization of language; explosion of literacy
    (gradually); the Protestant Reformation; the Scientific Revolution; a century of religious warfare.
@@ -828,8 +787,7 @@ admin_articles = [
 
    The Reformation's parallels to contemporary political polarization aren't coincidental.
    """},
-  {"history",
-   "Ancient Rome's Infrastructure Legacy",
+  {"history", "Ancient Rome's Infrastructure Legacy",
    """
    **Roads:** The Roman road network (400,000+ km) established routes that became medieval trade
    paths, which became modern highways.
@@ -840,8 +798,7 @@ admin_articles = [
    **Concrete:** Roman concrete using volcanic ash pozzolan remains partially intact in marine
    environments 2000 years later. Modern concrete in seawater degrades in decades.
    """},
-  {"history",
-   "The Columbian Exchange: Biological Globalization",
+  {"history", "The Columbian Exchange: Biological Globalization",
    """
    **From Americas to Old World:** Potatoes, maize, tomatoes, peppers, chocolate, tobacco.
 
@@ -851,8 +808,7 @@ admin_articles = [
    The death toll from introduced diseases — estimated 50–90 million people in the Americas —
    makes the Columbian Exchange history's deadliest biological event, far exceeding any war.
    """},
-  {"history",
-   "The History of Cryptography: From Caesar to Quantum",
+  {"history", "The History of Cryptography: From Caesar to Quantum",
    """
    **Ancient to Renaissance:** Caesar cipher, Vigenère cipher, Enigma machine — each defeated by pattern analysis.
 
@@ -865,8 +821,7 @@ admin_articles = [
    **Post-quantum:** NIST finalized post-quantum standards in 2024. Migration is now urgent infrastructure.
    """},
   # books
-  {"books",
-   "Reading Against the Algorithm: Rediscovering Long-form Attention",
+  {"books", "Reading Against the Algorithm: Rediscovering Long-form Attention",
    """
    The attention economy has made sustained reading genuinely difficult for many people.
 
@@ -881,8 +836,7 @@ admin_articles = [
 
    The ability to follow a sustained argument or narrative is trainable.
    """},
-  {"books",
-   "Science Fiction That Predicted the Present",
+  {"books", "Science Fiction That Predicted the Present",
    """
    SF's power isn't prediction but extrapolation — following implications of present conditions
    to logical conclusions.
@@ -893,8 +847,7 @@ admin_articles = [
 
    The best SF doesn't predict specific technologies but captures how technologies reshape social relations.
    """},
-  {"books",
-   "Non-Fiction Worth Reading: Overlooked Gems",
+  {"books", "Non-Fiction Worth Reading: Overlooked Gems",
    """
    **History:** *Longitude* (Sobel); *The Worst Hard Time* (Egan) — the Dust Bowl through survivors.
    **Science:** *The Particle at the End of the Universe* (Carroll); *Entangled Life* (Sheldrake) — fungi.
@@ -903,8 +856,7 @@ admin_articles = [
 
    What underloved books have shaped your thinking?
    """},
-  {"books",
-   "The Art of the Literary Essay",
+  {"books", "The Art of the Literary Essay",
    """
    Montaigne invented the essay form in 1580 as honest self-examination.
    "Every man carries the entire form of the human condition within himself."
@@ -918,8 +870,7 @@ admin_articles = [
    The essay form has migrated to the internet in degraded form (the "hot take"), but genuine
    examples thrive in literary magazines.
    """},
-  {"books",
-   "Translating Literature: The Invisible Art",
+  {"books", "Translating Literature: The Invisible Art",
    """
    Every translated book is at minimum two books: the original and the translation.
    The "same" novel translated by different hands can be radically different reading experiences.
@@ -932,8 +883,7 @@ admin_articles = [
    When you read a translated book, you're reading the translator as much as the author.
    """},
   # music
-  {"music",
-   "How Streaming Changed What Music Gets Made",
+  {"music", "How Streaming Changed What Music Gets Made",
    """
    Streaming platforms pay per stream, creating economic incentives that have measurably changed music.
 
@@ -945,8 +895,7 @@ admin_articles = [
    A 1-minute song earns proportionally more per album play than a 6-minute song.
    Some artists explicitly game this.
    """},
-  {"music",
-   "Music Theory: The Circle of Fifths Explained",
+  {"music", "Music Theory: The Circle of Fifths Explained",
    """
    Starting from C, moving clockwise adds one sharp per key; counterclockwise adds one flat.
 
@@ -958,8 +907,7 @@ admin_articles = [
 
    The circle encodes centuries of Western harmonic practice.
    """},
-  {"music",
-   "The History of Electronic Music",
+  {"music", "The History of Electronic Music",
    """
    Electronic music is over a century old.
 
@@ -972,8 +920,7 @@ admin_articles = [
 
    **Personal computers:** MIDI standardization (1983) connected synthesizers to computers.
    """},
-  {"music",
-   "What Makes Jazz Improvisation Work",
+  {"music", "What Makes Jazz Improvisation Work",
    """
    Jazz improvisation is more structured than it appears.
 
@@ -986,8 +933,7 @@ admin_articles = [
    Charlie Parker could play the same standard 50 times and never repeat himself —
    not through randomness but through inexhaustible melodic imagination.
    """},
-  {"music",
-   "Listening Deeply: Building a Music Appreciation Practice",
+  {"music", "Listening Deeply: Building a Music Appreciation Practice",
    """
    Most of us hear music; few of us listen to it.
 
@@ -1001,8 +947,7 @@ admin_articles = [
    Appreciation is a skill, not a preference. It's built through directed attention over time.
    """},
   # gaming
-  {"gaming",
-   "The Design Philosophy Behind FromSoftware Games",
+  {"gaming", "The Design Philosophy Behind FromSoftware Games",
    """
    FromSoftware's games are often framed as "difficult" — that framing misses what's distinctive.
 
@@ -1014,8 +959,7 @@ admin_articles = [
 
    A sense of earned accomplishment unavailable when content is scaled to the player.
    """},
-  {"gaming",
-   "Indie Games That Redefined Their Genres",
+  {"gaming", "Indie Games That Redefined Their Genres",
    """
    Indie games have repeatedly shown that small teams with clear vision outperform major studios
    constrained by development risk.
@@ -1027,8 +971,7 @@ admin_articles = [
 
    The pattern: clear design vision, willingness to let mechanics carry meaning.
    """},
-  {"gaming",
-   "Game Preservation: The Medium That Forgets Itself",
+  {"gaming", "Game Preservation: The Medium That Forgets Itself",
    """
    More than 87% of classic video games are out of print and unavailable through legitimate channels.
 
@@ -1041,8 +984,7 @@ admin_articles = [
    Games represent a significant cultural and artistic form.
    Losing them is equivalent to losing films or books — and we're losing them at massive scale.
    """},
-  {"gaming",
-   "Speedrunning: Games as Athletic Pursuit",
+  {"gaming", "Speedrunning: Games as Athletic Pursuit",
    """
    Speedrunning — completing games as fast as possible — has grown from niche hobby to major cultural
    phenomenon with Games Done Quick raising millions for charity annually.
@@ -1054,8 +996,7 @@ admin_articles = [
    Games are systems. Speedrunning is the practice of understanding those systems thoroughly enough
    to exploit every property. It's a form of close reading.
    """},
-  {"gaming",
-   "The Future of Game AI: Beyond Chess Engines",
+  {"gaming", "The Future of Game AI: Beyond Chess Engines",
    """
    DeepMind's AlphaStar (StarCraft II) and OpenAI Five (Dota 2) demonstrated that real-time
    strategy games yield to reinforcement learning.
@@ -1070,8 +1011,7 @@ admin_articles = [
    Does AI-generated content produce experiences players find meaningful?
    """},
   # off-topic
-  {"off-topic",
-   "The Case for Boredom",
+  {"off-topic", "The Case for Boredom",
    """
    Boredom has been pathologized. Modern environments treat it as a problem to be solved — there's
    always a screen available to fill empty time. This may be a mistake.
@@ -1082,8 +1022,7 @@ admin_articles = [
    **A modest proposal:** Take one 20-minute walk per day without headphones or a phone.
    Resist the urge to fill the silence. The discomfort is the point.
    """},
-  {"off-topic",
-   "Why Does Coffee Taste Better When Someone Else Makes It?",
+  {"off-topic", "Why Does Coffee Taste Better When Someone Else Makes It?",
    """
    **The expectation effect:** Anticipation shapes taste experience. Novelty enhances flavor.
 
@@ -1096,8 +1035,7 @@ admin_articles = [
    **The actual chemistry:** If the coffee genuinely tastes better, the maker may be more skilled,
    use better equipment, or simply extract at a different ratio than you would for yourself.
    """},
-  {"off-topic",
-   "The Surprising History of Ordinary Objects",
+  {"off-topic", "The Surprising History of Ordinary Objects",
    """
    **The pencil:** The graphite deposit found in Borrowdale (1560s) was so pure it could write
    without burning. Modern pencils contain no lead.
@@ -1110,8 +1048,7 @@ admin_articles = [
 
    What objects in your daily life do you know the actual history of?
    """},
-  {"off-topic",
-   "Learning New Skills as an Adult: What Actually Works",
+  {"off-topic", "Learning New Skills as an Adult: What Actually Works",
    """
    **What actually works:**
    - Spaced repetition for declarative knowledge
@@ -1124,8 +1061,7 @@ admin_articles = [
 
    Neuroplasticity doesn't stop in adulthood — it changes character.
    """},
-  {"off-topic",
-   "Night Owls vs Early Birds: What Research Shows",
+  {"off-topic", "Night Owls vs Early Birds: What Research Shows",
    """
    Circadian preference is substantially heritable — being a "night owl" isn't laziness, it's partly biology.
 
@@ -1139,8 +1075,7 @@ admin_articles = [
    Extreme owls shifting to extreme larks is not supported by evidence.
    """},
   # meta
-  {"meta",
-   "What Makes an Online Community Work?",
+  {"meta", "What Makes an Online Community Work?",
    """
    **Factors that predict success:**
    - Clear purpose: specific, defined focus maintains coherence
@@ -1154,8 +1089,7 @@ admin_articles = [
    - Platform changes that alter incentive structures
    - Successful growth exceeding capacity to socialize newcomers
    """},
-  {"meta",
-   "On Writing for the Internet",
+  {"meta", "On Writing for the Internet",
    """
    **The skim assumption:** Online readers scan. Effective online writing compensates: clear headers,
    strong opening sentences, concise paragraphs.
@@ -1168,8 +1102,7 @@ admin_articles = [
 
    Good writing remains: clear argument, honest engagement, genuine interest in your subject.
    """},
-  {"meta",
-   "Why BBS Culture Matters in 2026",
+  {"meta", "Why BBS Culture Matters in 2026",
    """
    Bulletin Board Systems predated the web. Before HTTP, people called into local BBSs via modem
    and exchanged ideas in threaded text discussions.
@@ -1182,8 +1115,7 @@ admin_articles = [
    Smaller, intentional communities with genuine moderation may be more valuable than the global
    social-media-as-public-square experiment, which has largely failed.
    """},
-  {"meta",
-   "Feedback as a Feature, Not a Bug",
+  {"meta", "Feedback as a Feature, Not a Bug",
    """
    **What good feedback includes:**
    - Specificity: "the third paragraph loses me" not "confusing"
@@ -1197,8 +1129,7 @@ admin_articles = [
 
    In online contexts: err toward explicit kindness in framing. Assume good faith until demonstrated otherwise.
    """},
-  {"meta",
-   "Community Guidelines: Principles Over Rules",
+  {"meta", "Community Guidelines: Principles Over Rules",
    """
    Most online community guidelines fail because they're lists of prohibited behaviors
    rather than statements of shared values.
@@ -1233,8 +1164,7 @@ users_data = [
     "Full-stack developer who loves Elixir and distributed systems. " <>
       "Occasional contributor to open source projects on weekends.",
     [
-      {"technology",
-       "The Ergonomic Keyboard Rabbit Hole",
+      {"technology", "The Ergonomic Keyboard Rabbit Hole",
        """
        I fell into the ergonomic keyboard rabbit hole six months ago and I'm not sure I've found the bottom yet.
 
@@ -1247,8 +1177,7 @@ users_data = [
 
        Is it worth it? My wrists say yes. My colleagues say the keyboard looks like something from a sci-fi prop department.
        """},
-      {"programming",
-       "Lessons from Rewriting a Rails App in Phoenix",
+      {"programming", "Lessons from Rewriting a Rails App in Phoenix",
        """
        After four years maintaining a mid-sized Rails application, our team made the decision to rewrite in Phoenix/Elixir.
        Here's an honest retrospective 18 months later.
@@ -1262,8 +1191,7 @@ users_data = [
        **The hard part:** Hiring. The Phoenix talent pool is smaller. We've compensated by hiring strong Elixir
        generalists and cross-training rather than seeking Phoenix specialists.
        """},
-      {"open-source",
-       "My First Hex Package: A Retrospective",
+      {"open-source", "My First Hex Package: A Retrospective",
        """
        I published my first Hex package eight months ago — a small library for parsing and validating IETF language tags (BCP 47).
        Nobody asked for it; I needed it for a project and nothing adequate existed.
@@ -1276,8 +1204,7 @@ users_data = [
        Eight months in: 340 downloads/week, three external contributors, two bugs reported and fixed.
        Small but useful. That's enough.
        """},
-      {"linux-unix",
-       "Three Years Running NixOS as My Daily Driver",
+      {"linux-unix", "Three Years Running NixOS as My Daily Driver",
        """
        Three years ago I switched my primary workstation from Arch Linux to NixOS. People ask if I regret it.
 
@@ -1292,8 +1219,7 @@ users_data = [
 
        Would I recommend it? For someone comfortable with Linux and willing to invest learning time: yes, absolutely.
        """},
-      {"meta",
-       "How I Use This Forum: A Personal Workflow",
+      {"meta", "How I Use This Forum: A Personal Workflow",
        """
        I've been on various forums and community platforms over the years. Here's how I've learned to use this one well.
 
@@ -1314,8 +1240,7 @@ users_data = [
     "Linux sysadmin by day, amateur radio operator by night (KD9XYZ). " <>
       "Obsessed with reliability engineering and home lab experiments.",
     [
-      {"linux-unix",
-       "My Home Lab Setup: Lessons Learned",
+      {"linux-unix", "My Home Lab Setup: Lessons Learned",
        """
        I've been running a home lab for six years. What started as a single repurposed desktop has grown into a
        12-node setup consuming more electricity than I'd like to admit.
@@ -1331,8 +1256,7 @@ users_data = [
        3. Monitoring matters. I run Prometheus + Grafana + Alertmanager.
        4. Power costs accumulate. Old server hardware is cheap to buy and expensive to run.
        """},
-      {"security",
-       "Why I Moved My Home Network to VLANs",
+      {"security", "Why I Moved My Home Network to VLANs",
        """
        Six months ago I segmented my home network into VLANs. Here's what prompted it and what I learned.
 
@@ -1348,8 +1272,7 @@ users_data = [
        **Required hardware:** A VLAN-capable managed switch and a router that supports 802.1Q.
        I use a Mikrotik hAP ax3 + cheap managed switch. pfSense handles firewall rules between VLANs.
        """},
-      {"technology",
-       "The Case for Boring Technology",
+      {"technology", "The Case for Boring Technology",
        """
        Dan McKinley's "Choose Boring Technology" essay is one of the most useful things written about software engineering.
 
@@ -1361,8 +1284,7 @@ users_data = [
 
        The most reliable systems I've operated are also, almost without exception, the most boring ones.
        """},
-      {"science",
-       "Amateur Radio and Ionospheric Propagation",
+      {"science", "Amateur Radio and Ionospheric Propagation",
        """
        One thing amateur radio teaches you that you can't get from textbooks alone: real respect for atmospheric physics.
 
@@ -1375,8 +1297,7 @@ users_data = [
        **What this teaches:** The gap between theory and practice. You understand physics differently when
        you're using it to make something work.
        """},
-      {"off-topic",
-       "The Satisfaction of Fixing Old Hardware",
+      {"off-topic", "The Satisfaction of Fixing Old Hardware",
        """
        I have a problem: I cannot throw away old hardware without trying to fix it first.
 
@@ -1397,8 +1318,7 @@ users_data = [
     "Researcher in computational biology. Interested in the intersection of mathematics, " <>
       "information theory, and living systems.",
     [
-      {"science",
-       "What Entropy Actually Means in Biology",
+      {"science", "What Entropy Actually Means in Biology",
        """
        Entropy is one of the most misused concepts in popular science writing. Let me be precise.
 
@@ -1412,8 +1332,7 @@ users_data = [
        **The confusion:** Popular accounts often conflate these, leading to claims like "life decreases entropy"
        (locally true, globally false).
        """},
-      {"mathematics",
-       "Bayesian vs Frequentist: Why the Debate Still Matters",
+      {"mathematics", "Bayesian vs Frequentist: Why the Debate Still Matters",
        """
        The choice between Bayesian and frequentist inference has practical consequences.
 
@@ -1428,8 +1347,7 @@ users_data = [
 
        Neither framework is universally superior. Understanding both makes you a better analyst.
        """},
-      {"mathematics",
-       "The Unreasonable Effectiveness of Linear Algebra",
+      {"mathematics", "The Unreasonable Effectiveness of Linear Algebra",
        """
        Linear algebra shows up everywhere with particular force.
 
@@ -1441,8 +1359,7 @@ users_data = [
        The concept of eigenvalues and eigenvectors alone underlies Google's PageRank, principal component
        analysis, and quantum mechanical measurement.
        """},
-      {"philosophy",
-       "Scientific Realism vs Anti-Realism: A Practical Difference",
+      {"philosophy", "Scientific Realism vs Anti-Realism: A Practical Difference",
        """
        **Scientific realism:** Successful theories are approximately true descriptions of reality,
        including unobservable entities (dark matter is probably real).
@@ -1456,8 +1373,7 @@ users_data = [
        **Structural realism:** What science gets right is the mathematical structure of the world,
        not necessarily the nature of entities.
        """},
-      {"books",
-       "Reading Gödel, Escher, Bach in 2026",
+      {"books", "Reading Gödel, Escher, Bach in 2026",
        """
        Hofstadter's *Gödel, Escher, Bach* was published in 1979. Reading it in 2026 is a strange experience.
 
@@ -1478,8 +1394,7 @@ users_data = [
     "Writer and editor. Interested in online communities, digital culture, " <>
       "media history, and the occasional philosophy rabbit hole.",
     [
-      {"books",
-       "Against Goodreads Ratings",
+      {"books", "Against Goodreads Ratings",
        """
        Goodreads has reduced literary evaluation to a 5-star rating system, and I think it's made us worse readers.
 
@@ -1493,8 +1408,7 @@ users_data = [
 
        I still use Goodreads for the shelving. I've stopped looking at the ratings.
        """},
-      {"philosophy",
-       "On Being Wrong and Updating Beliefs",
+      {"philosophy", "On Being Wrong and Updating Beliefs",
        """
        I've been wrong about a lot of things I was confident about.
 
@@ -1507,8 +1421,7 @@ users_data = [
        **The useful question:** What evidence would change my mind? If I can't answer, I'm not reasoning —
        I'm rationalizing.
        """},
-      {"history",
-       "The History of the Editorial Letter",
+      {"history", "The History of the Editorial Letter",
        """
        The editorial letter — the feedback document editors send to authors during manuscript development —
        has a surprisingly interesting history that mirrors the history of publishing.
@@ -1522,8 +1435,7 @@ users_data = [
 
        The irony: as writing tools have improved, editorial feedback quality has, in many houses, declined.
        """},
-      {"meta",
-       "What Good Moderation Looks Like",
+      {"meta", "What Good Moderation Looks Like",
        """
        The variable that most reliably predicts community health is moderation quality.
 
@@ -1536,8 +1448,7 @@ users_data = [
        **What makes it hard:** Moderators absorb the community's negativity. Burnout is endemic.
        The best communities treat moderation as a collective responsibility, not a delegated task.
        """},
-      {"music",
-       "On Silence in Music",
+      {"music", "On Silence in Music",
        """
        Miles Davis: "It takes a long time to play like yourself."
        John Cage: "I have nothing to say, and I am saying it."
@@ -1559,8 +1470,7 @@ users_data = [
     "Software engineer and independent game developer. " <>
       "Making small games in Godot on weekends. Likes strategy games and retrocomputing.",
     [
-      {"gaming",
-       "Why I Make Small Games Instead of Big Ones",
+      {"gaming", "Why I Make Small Games Instead of Big Ones",
        """
        I've been making games independently for four years. My games are small. Deliberately, obstinately small.
 
@@ -1573,8 +1483,7 @@ users_data = [
        **The counterintuitive truth:** Small, finished games get played.
        Large, unfinished games don't exist.
        """},
-      {"programming",
-       "Godot 4's Type System: What It Gets Right",
+      {"programming", "Godot 4's Type System: What It Gets Right",
        """
        Godot 4 introduced typed GDScript as a first-class feature. After working with it for a year:
 
@@ -1589,8 +1498,7 @@ users_data = [
        **My recommendation:** Use types. The friction of adding type annotations is far lower than
        the friction of debugging type errors in untyped GDScript.
        """},
-      {"history",
-       "The History of Arcade Game Design",
+      {"history", "The History of Arcade Game Design",
        """
        Arcade games were designed under unique constraints that shaped design philosophy in ways
        that still influence games today.
@@ -1606,8 +1514,7 @@ users_data = [
        Pac-Man's ghost behavior is still taught in game design programs because it creates perceived
        intelligence through simple rules.
        """},
-      {"technology",
-       "Retrocomputing as a Learning Practice",
+      {"technology", "Retrocomputing as a Learning Practice",
        """
        I bought a working Apple IIe last year. This is what I've learned from it.
 
@@ -1620,8 +1527,7 @@ users_data = [
        **The humbling part:** Game developers shipped playable, beautiful games in 16KB.
        The resource constraint forced creativity in a way that unlimited RAM and cycles don't.
        """},
-      {"gaming",
-       "What Tactics Ogre Taught Me About Game Narrative",
+      {"gaming", "What Tactics Ogre Taught Me About Game Narrative",
        """
        Tactics Ogre: Let Us Cling Together (1995, remade 2022) contains the most sophisticated political
        narrative in any strategy game.

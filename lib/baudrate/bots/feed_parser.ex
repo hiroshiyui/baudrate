@@ -281,7 +281,7 @@ defmodule Baudrate.Bots.FeedParser do
     dc_date = find_child_text(children, "dc:date")
 
     title =
-      (if raw_title == "", do: "(untitled)", else: raw_title)
+      if(raw_title == "", do: "(untitled)", else: raw_title)
       |> Baudrate.Sanitizer.Native.strip_tags()
       |> decode_html_entities()
       |> String.trim()

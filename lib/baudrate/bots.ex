@@ -194,7 +194,7 @@ defmodule Baudrate.Bots do
     new_error_count = bot.error_count + 1
     # Exponential backoff: 5min, 10min, 20min, 40min, 80min, ... capped at 24h
     backoff_minutes =
-      min(5 * :math.pow(2, new_error_count - 1) |> round(), 1440)
+      min((5 * :math.pow(2, new_error_count - 1)) |> round(), 1440)
 
     next_fetch =
       DateTime.add(DateTime.utc_now(), backoff_minutes * 60, :second)

@@ -34,7 +34,9 @@ defmodule Baudrate.Content.MarkdownTest do
     test "renders all paragraphs from adjacent HTML (bot RSS content)" do
       # Bot articles store sanitized HTML where <p> tags have no blank lines between them.
       # Earmark drops blocks after the first unless blank lines are inserted first.
-      html = Markdown.to_html("<p>First paragraph</p><p>Second paragraph</p><p>Third paragraph</p>")
+      html =
+        Markdown.to_html("<p>First paragraph</p><p>Second paragraph</p><p>Third paragraph</p>")
+
       assert html =~ "First paragraph"
       assert html =~ "Second paragraph"
       assert html =~ "Third paragraph"

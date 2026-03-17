@@ -38,7 +38,9 @@ defmodule BaudrateWeb.Admin.BotsLive do
   @impl true
   def handle_event("new", _params, socket) do
     changeset = Bot.create_changeset(%Bot{}, %{})
-    {:noreply, assign(socket, show_form: true, editing_bot: nil, form: to_form(changeset, as: :bot))}
+
+    {:noreply,
+     assign(socket, show_form: true, editing_bot: nil, form: to_form(changeset, as: :bot))}
   end
 
   @impl true
@@ -47,7 +49,9 @@ defmodule BaudrateWeb.Admin.BotsLive do
       {:ok, bot_id} ->
         bot = Bots.get_bot!(bot_id)
         changeset = Bot.update_changeset(bot, %{})
-        {:noreply, assign(socket, show_form: true, editing_bot: bot, form: to_form(changeset, as: :bot))}
+
+        {:noreply,
+         assign(socket, show_form: true, editing_bot: bot, form: to_form(changeset, as: :bot))}
 
       :error ->
         {:noreply, socket}
@@ -164,7 +168,10 @@ defmodule BaudrateWeb.Admin.BotsLive do
         else
           {:noreply,
            socket
-           |> put_flash(:error, gettext("Could not fetch favicon. Check server logs for details."))
+           |> put_flash(
+             :error,
+             gettext("Could not fetch favicon. Check server logs for details.")
+           )
            |> reload_bots()}
         end
     end

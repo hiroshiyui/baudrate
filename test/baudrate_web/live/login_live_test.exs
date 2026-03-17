@@ -102,13 +102,21 @@ defmodule BaudrateWeb.LoginLiveTest do
   test "shows invalid credentials error when logging in as a bot account", %{conn: conn} do
     # ensure the "user" role exists (required by create_bot)
     setup_user("user")
-    {:ok, bot} = Baudrate.Bots.create_bot(%{"username" => "testbot_login", "feed_url" => "https://example.com/feed.xml", "board_ids" => []})
+
+    {:ok, bot} =
+      Baudrate.Bots.create_bot(%{
+        "username" => "testbot_login",
+        "feed_url" => "https://example.com/feed.xml",
+        "board_ids" => []
+      })
 
     {:ok, lv, _html} = live(conn, "/login")
 
     html =
       lv
-      |> form("form[phx-submit]", login: %{username: bot.user.username, password: "Password123!x"})
+      |> form("form[phx-submit]",
+        login: %{username: bot.user.username, password: "Password123!x"}
+      )
       |> render_submit()
 
     assert html =~ "Invalid username or password"
@@ -118,7 +126,13 @@ defmodule BaudrateWeb.LoginLiveTest do
   test "records failed login attempt when logging in as a bot account", %{conn: conn} do
     # ensure the "user" role exists (required by create_bot)
     setup_user("user")
-    {:ok, bot} = Baudrate.Bots.create_bot(%{"username" => "testbot_attempt", "feed_url" => "https://example.com/feed.xml", "board_ids" => []})
+
+    {:ok, bot} =
+      Baudrate.Bots.create_bot(%{
+        "username" => "testbot_attempt",
+        "feed_url" => "https://example.com/feed.xml",
+        "board_ids" => []
+      })
 
     {:ok, lv, _html} = live(conn, "/login")
 

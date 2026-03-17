@@ -64,9 +64,7 @@ defmodule Baudrate.Bots.FaviconFetcher do
             Avatar.delete_avatar(old_avatar_id)
             Bots.mark_avatar_refreshed(bot)
 
-            Logger.info(
-              "bots.favicon_fetcher: set avatar for bot #{bot.id} from #{favicon_url}"
-            )
+            Logger.info("bots.favicon_fetcher: set avatar for bot #{bot.id} from #{favicon_url}")
 
           {:error, reason} ->
             Avatar.delete_avatar(avatar_id)
