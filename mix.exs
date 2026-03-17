@@ -76,6 +76,7 @@ defmodule Baudrate.MixProject do
       {:wallaby, "~> 0.30", runtime: false, only: :test},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:fiet, "~> 0.3.0"},
+      {:cbor, "~> 1.0"},
       {:wax_, "~> 0.7"}
     ]
   end

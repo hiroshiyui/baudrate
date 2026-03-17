@@ -133,7 +133,8 @@ defmodule Baudrate.Auth.WebAuthn do
           {:ok,
            %{
              credential_id: authenticator_data.attested_credential_data.credential_id,
-             public_key_cbor: authenticator_data.attested_credential_data.credential_public_key,
+             public_key_cbor:
+               CBOR.encode(authenticator_data.attested_credential_data.credential_public_key),
              aaguid: authenticator_data.attested_credential_data.aaguid,
              sign_count: authenticator_data.sign_count
            }}
@@ -208,7 +209,7 @@ defmodule Baudrate.Auth.WebAuthn do
           {:error, :unknown_credential}
 
         credential ->
-          cred_map = %{credential_id => {credential.public_key_cbor, credential.sign_count}}
+          cred_map = %{credential_id => {decode_public_key(credential.public_key_cbor), credential.sign_count}}
 
           case Wax.authenticate(
                  credential_id,
@@ -245,6 +246,23 @@ defmodule Baudrate.Auth.WebAuthn do
 
   defp rp_id, do: Application.get_env(:wax_, :rp_id, "localhost")
   defp origin, do: Application.get_env(:wax_, :origin, "https://localhost:4001")
+
+  # Decodes a CBOR-encoded public key back to a Wax.CoseKey.t() map.
+  # CBOR byte strings decode to %CBOR.Tag{tag: :bytes, value: <<...>>}; we
+  # unwrap those to plain binaries so the map matches the format Wax expects.
+  defp decode_public_key(cbor) do
+    {:ok, decoded, _rest} = CBOR.decode(cbor)
+    reduce_cbor_binaries(decoded)
+  end
+
+  defp reduce_cbor_binaries(%CBOR.Tag{tag: :bytes, value: bytes}), do: bytes
+
+  defp reduce_cbor_binaries(%{} = map) do
+    Map.new(map, fn {k, v} -> {k, reduce_cbor_binaries(v)} end)
+  end
+
+  defp reduce_cbor_binaries([_ | _] = list), do: Enum.map(list, &reduce_cbor_binaries/1)
+  defp reduce_cbor_binaries(v), do: v
 
   defp url_decode64(b64) when is_binary(b64) do
     case Base.url_decode64(b64, padding: false) do
