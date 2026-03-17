@@ -31,7 +31,7 @@ defmodule BaudrateWeb.ArticleEditLive do
        |> allow_upload(:article_images,
          accept: ~w(.jpg .jpeg .png .webp .gif),
          max_entries: 4,
-         max_file_size: 5_000_000,
+         max_file_size: 8_000_000,
          auto_upload: true,
          progress: &handle_progress/3
        )}
@@ -191,5 +191,5 @@ defmodule BaudrateWeb.ArticleEditLive do
   end
 
   defp upload_error_to_string(err),
-    do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "5 MB", max_files: 4)
+    do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "8 MB", max_files: 4)
 end

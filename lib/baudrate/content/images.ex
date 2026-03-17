@@ -107,7 +107,7 @@ defmodule Baudrate.Content.Images do
     paths
   end
 
-  @max_image_size 5 * 1024 * 1024
+  @max_image_size 8 * 1024 * 1024
 
   @doc """
   Fetches remote image attachments from AP objects and stores them as article images.

@@ -6,7 +6,7 @@ defmodule BaudrateWeb.ArticleNewLive do
   shown) and as a standalone route at `/articles/new` where the user picks
   boards from a multi-select.
 
-  Supports uploading up to 4 images (max 5 MB each) that are displayed as a
+  Supports uploading up to 4 images (max 8 MB each) that are displayed as a
   media gallery at the end of the article. Images are processed to WebP,
   downscaled to max 1024px, and stripped of metadata.
 
@@ -76,7 +76,7 @@ defmodule BaudrateWeb.ArticleNewLive do
        |> allow_upload(:article_images,
          accept: ~w(.jpg .jpeg .png .webp .gif),
          max_entries: 4,
-         max_file_size: 5_000_000,
+         max_file_size: 8_000_000,
          auto_upload: true,
          progress: &handle_progress/3
        )}
@@ -373,7 +373,7 @@ defmodule BaudrateWeb.ArticleNewLive do
   end
 
   defp upload_error_to_string(err),
-    do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "5 MB", max_files: 4)
+    do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "8 MB", max_files: 4)
 
   defp compose_share_body("", ""), do: ""
   defp compose_share_body(text, ""), do: text
