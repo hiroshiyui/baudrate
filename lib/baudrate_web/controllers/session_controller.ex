@@ -402,9 +402,9 @@ defmodule BaudrateWeb.SessionController do
           |> put_flash(:info, gettext("Security key registered successfully."))
           |> redirect(to: "/profile")
         else
-          _ ->
+          error ->
             Logger.warning(
-              "auth.webauthn_register_failed: user_id=#{user.id} ip=#{remote_ip(conn)}"
+              "auth.webauthn_register_failed: user_id=#{user.id} ip=#{remote_ip(conn)} error=#{inspect(error)}"
             )
 
             conn
