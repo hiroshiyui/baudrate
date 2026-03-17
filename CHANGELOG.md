@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.42] — 2026-03-17
+
+### Fixed
+
+- **WebAuthn registration — public key cast error** — `Wax.register/3` returns the credential public key as a decoded COSE key map (`Wax.CoseKey.t()`), not raw bytes. Storing it directly into a `:binary` schema field caused an Ecto cast error on every registration. The key is now CBOR-encoded before storage and decoded back (with `CBOR.Tag` byte-string unwrapping) before being passed to `Wax.authenticate/6`. Added `{:cbor, "~> 1.0"}` as an explicit dependency.
+
 ## [1.3.41] — 2026-03-17
 
 ### Fixed
