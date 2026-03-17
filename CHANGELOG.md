@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.41] — 2026-03-17
+
+### Fixed
+
+- **WebAuthn registration always failing** — `Wax.Challenge` stores `attestation` and `user_verification` as strings (`"none"`, `"preferred"`), but the challenge options were passing atoms (`:none`, `:preferred`). The atom overwrote the string default, causing `AttestationStatementFormat.None.verify/4` to never match its `%Wax.Challenge{attestation: "none"}` clause and rejecting every registration attempt with `invalid_attestation_conveyance_preference`. The incorrect options are now removed from both challenge calls and the config, letting the correct string defaults take effect. `user_presence: true` (not a recognized `Wax.Challenge` option) was also removed.
+
 ## [1.3.40] — 2026-03-17
 
 ### Fixed
