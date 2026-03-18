@@ -59,7 +59,7 @@
             <p class="text-sm opacity-70 mb-2">
               {gettext("Add up to 4 custom fields (e.g. disclaimer, website).")}
             </p>
-            <div class="space-y-2">
+            <div id="bot-profile-fields" class="space-y-2" phx-update="ignore">
               <div
                 :for={{field, i} <- Enum.with_index(@editing_bot_profile_fields)}
                 class="flex flex-wrap gap-2"
