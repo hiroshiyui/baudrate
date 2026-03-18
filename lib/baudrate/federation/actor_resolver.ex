@@ -144,6 +144,7 @@ defmodule Baudrate.Federation.ActorResolver do
          avatar_url: extract_avatar(json),
          url: extract_url(json),
          summary: sanitize_summary(json["summary"]),
+         profile_fields: extract_profile_fields(json),
          public_key_pem: public_key_pem,
          inbox: inbox,
          shared_inbox: get_in(json, ["endpoints", "sharedInbox"]),
@@ -178,6 +179,29 @@ defmodule Baudrate.Federation.ActorResolver do
     summary
     |> Sanitizer.sanitize()
     |> String.slice(0, 5000)
+  end
+
+  defp extract_profile_fields(%{"attachment" => attachments}) when is_list(attachments) do
+    attachments
+    |> Enum.filter(&(&1["type"] == "PropertyValue"))
+    |> Enum.take(4)
+    |> Enum.map(fn field ->
+      %{
+        "name" => sanitize_field_name(field["name"]),
+        "value" => Sanitizer.sanitize(field["value"] || "")
+      }
+    end)
+    |> Enum.reject(fn %{"name" => name} -> is_nil(name) or name == "" end)
+  end
+
+  defp extract_profile_fields(_), do: []
+
+  defp sanitize_field_name(nil), do: nil
+
+  defp sanitize_field_name(name) when is_binary(name) do
+    name
+    |> Sanitizer.sanitize_display_name()
+    |> String.slice(0, 255)
   end
 
   defp extract_username_from_id(ap_id) do

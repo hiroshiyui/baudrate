@@ -14,6 +14,11 @@ defmodule Baudrate.Federation.ActorRenderer do
 
   @as_context "https://www.w3.org/ns/activitystreams"
   @security_context "https://w3id.org/security/v1"
+  @schema_context %{
+    "schema" => "http://schema.org/",
+    "PropertyValue" => "schema:PropertyValue",
+    "value" => "schema:value"
+  }
 
   @doc """
   Returns a Person JSON-LD map for the given user.
@@ -22,7 +27,7 @@ defmodule Baudrate.Federation.ActorRenderer do
     uri = actor_uri(:user, user.username)
 
     %{
-      "@context" => [@as_context, @security_context],
+      "@context" => [@as_context, @security_context, @schema_context],
       "id" => uri,
       "type" => "Person",
       "preferredUsername" => user.username,
@@ -42,6 +47,7 @@ defmodule Baudrate.Federation.ActorRenderer do
     |> put_if("name", user.display_name)
     |> put_if("summary", render_bio_html(user.bio))
     |> put_if("icon", user_avatar_icon(user))
+    |> put_if("attachment", render_profile_fields(user.profile_fields))
   end
 
   @doc """
@@ -127,6 +133,27 @@ defmodule Baudrate.Federation.ActorRenderer do
   end
 
   # --- Private ---
+
+  defp render_profile_fields(nil), do: nil
+  defp render_profile_fields([]), do: nil
+
+  defp render_profile_fields(fields) when is_list(fields) do
+    rendered =
+      fields
+      |> Enum.filter(fn
+        %{"name" => name, "value" => value} -> name != "" and value != ""
+        _ -> false
+      end)
+      |> Enum.map(fn %{"name" => name, "value" => value} ->
+        %{
+          "type" => "PropertyValue",
+          "name" => name,
+          "value" => Phoenix.HTML.html_escape(value) |> Phoenix.HTML.safe_to_string()
+        }
+      end)
+
+    if rendered == [], do: nil, else: rendered
+  end
 
   defp user_avatar_icon(%{avatar_id: nil}), do: nil
 
