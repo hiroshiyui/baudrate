@@ -116,7 +116,7 @@ defmodule Baudrate.Bots.FeedWorker do
 
   defp post_entries(bot, entries) do
     Enum.each(entries, fn entry ->
-      if not Bots.already_posted?(bot, entry.guid) do
+      if not Bots.already_posted?(bot, entry.guid, entry.link) do
         post_entry(bot, entry)
       end
     end)

@@ -5,6 +5,7 @@ defmodule Baudrate.BotsTest do
 
   alias Baudrate.Bots
   alias Baudrate.Bots.Bot
+  alias Baudrate.Content
   alias Baudrate.Repo
   alias Baudrate.Setup
   alias Baudrate.Setup.Role
@@ -130,8 +131,8 @@ defmodule Baudrate.BotsTest do
     end
   end
 
-  describe "already_posted?/2" do
-    test "returns false when guid not seen" do
+  describe "already_posted?/3" do
+    test "returns false when neither guid nor url has been seen" do
       {:ok, bot} =
         Bots.create_bot(%{
           "username" => "seenbot_#{System.unique_integer([:positive])}",
@@ -139,10 +140,10 @@ defmodule Baudrate.BotsTest do
           "board_ids" => []
         })
 
-      refute Bots.already_posted?(bot, "https://example.com/item/1")
+      refute Bots.already_posted?(bot, "https://example.com/item/1", nil)
     end
 
-    test "returns true after recording feed item" do
+    test "returns true when guid matches a recorded feed item" do
       {:ok, bot} =
         Bots.create_bot(%{
           "username" => "seenbot2_#{System.unique_integer([:positive])}",
@@ -152,7 +153,63 @@ defmodule Baudrate.BotsTest do
 
       guid = "https://example.com/item/#{System.unique_integer([:positive])}"
       {:ok, _} = Bots.record_feed_item(bot, guid, nil)
-      assert Bots.already_posted?(bot, guid)
+      assert Bots.already_posted?(bot, guid, nil)
+    end
+
+    test "returns true when url matches an existing bot article even with a different guid" do
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => "seenbot3_#{System.unique_integer([:positive])}",
+          "feed_url" => "https://example.com/feed.xml",
+          "board_ids" => []
+        })
+
+      url = "https://example.com/articles/#{System.unique_integer([:positive])}"
+
+      {:ok, %{article: _article}} =
+        Content.create_article(
+          %{
+            title: "Some Article",
+            body: "body",
+            slug: "some-article-#{System.unique_integer([:positive])}",
+            user_id: bot.user.id,
+            url: url,
+            visibility: "public",
+            forwardable: true
+          },
+          []
+        )
+
+      # Different GUID, same URL — should be detected as duplicate
+      assert Bots.already_posted?(bot, "different-guid-entirely", url)
+    end
+
+    test "does not count a soft-deleted article as already posted" do
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => "seenbot4_#{System.unique_integer([:positive])}",
+          "feed_url" => "https://example.com/feed.xml",
+          "board_ids" => []
+        })
+
+      url = "https://example.com/articles/#{System.unique_integer([:positive])}"
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Deleted Article",
+            body: "body",
+            slug: "deleted-article-#{System.unique_integer([:positive])}",
+            user_id: bot.user.id,
+            url: url,
+            visibility: "public",
+            forwardable: true
+          },
+          []
+        )
+
+      {:ok, _} = Content.soft_delete_article(article)
+      refute Bots.already_posted?(bot, "some-new-guid", url)
     end
   end
 

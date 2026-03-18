@@ -12,6 +12,7 @@ defmodule Baudrate.Bots do
 
   alias Baudrate.Repo
   alias Baudrate.Bots.{Bot, BotFeedItem}
+  alias Baudrate.Content.Article
   alias Baudrate.Setup.{Role, User}
   alias Baudrate.Auth
   alias Baudrate.Federation.KeyStore
@@ -159,10 +160,27 @@ defmodule Baudrate.Bots do
     |> Repo.all()
   end
 
-  @doc "Returns true if the bot has already posted the given feed item GUID."
-  @spec already_posted?(Bot.t(), String.t()) :: boolean()
-  def already_posted?(%Bot{id: bot_id}, guid) do
-    Repo.exists?(from fi in BotFeedItem, where: fi.bot_id == ^bot_id and fi.guid == ^guid)
+  @doc """
+  Returns true if the bot has already posted a feed item matching `guid` or `url`.
+
+  Checks both:
+  - `bot_feed_items` by `(bot_id, guid)` — primary dedup key
+  - `articles` by `(user_id, url)` — catches the same source article re-appearing
+    with a different GUID (e.g. after a feed publisher changes their `<guid>`)
+  """
+  @spec already_posted?(Bot.t(), String.t(), String.t() | nil) :: boolean()
+  def already_posted?(%Bot{id: bot_id, user: %{id: user_id}}, guid, url) do
+    guid_seen? =
+      Repo.exists?(from fi in BotFeedItem, where: fi.bot_id == ^bot_id and fi.guid == ^guid)
+
+    url_seen? =
+      is_binary(url) and url != "" and
+        Repo.exists?(
+          from a in Article,
+            where: a.user_id == ^user_id and a.url == ^url and is_nil(a.deleted_at)
+        )
+
+    guid_seen? or url_seen?
   end
 
   @doc "Records that a feed item was posted (or attempted)."
