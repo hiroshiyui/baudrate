@@ -5506,3 +5506,43 @@ msgstr "安全金鑰驗證失敗，請再試一次。"
 #, elixir-autogen, elixir-format
 msgid "Security key registered successfully."
 msgstr "安全金鑰已成功註冊。"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Profile Fields"
+msgstr "自由欄位"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Add up to 4 custom fields to your profile (e.g. website, location)."
+msgstr "新增最多 4 個自訂欄位至個人資料（例如：網站、所在地）。"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Label"
+msgstr "標籤"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Field %{n} label"
+msgstr "欄位 %{n} 標籤"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Field %{n} content"
+msgstr "欄位 %{n} 內容"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Save Fields"
+msgstr "儲存欄位"
+
+#: lib/baudrate_web/live/profile_live.ex
+#, elixir-autogen, elixir-format
+msgid "Profile fields updated."
+msgstr "自由欄位已更新。"
+
+#: lib/baudrate_web/live/profile_live.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to update profile fields."
+msgstr "更新自由欄位失敗。"

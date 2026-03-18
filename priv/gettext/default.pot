@@ -5243,3 +5243,43 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Your account has been created and is pending admin approval. You can sign in and update your profile, but posting is restricted until approved."
 msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Profile Fields"
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Add up to 4 custom fields to your profile (e.g. website, location)."
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Label"
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Field %{n} label"
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Field %{n} content"
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Save Fields"
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.ex
+#, elixir-autogen, elixir-format
+msgid "Profile fields updated."
+msgstr ""
+
+#: lib/baudrate_web/live/profile_live.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to update profile fields."
+msgstr ""

@@ -166,6 +166,48 @@
         </.form>
       </div>
 
+      <%!-- Profile Fields section --%>
+      <div id="profile-fields-section">
+        <div class="text-sm text-base-content/70 mb-2">{gettext("Profile Fields")}</div>
+        <p class="text-sm text-base-content/70 mb-3">
+          {gettext("Add up to 4 custom fields to your profile (e.g. website, location).")}
+        </p>
+        <form phx-submit="save_profile_fields" class="space-y-3">
+          <div class="space-y-2">
+            <div
+              :for={{field, i} <- Enum.with_index(@profile_fields)}
+              class="flex flex-wrap gap-2"
+            >
+              <input
+                type="text"
+                name={"profile_fields[#{i}][name]"}
+                value={field["name"]}
+                placeholder={gettext("Label")}
+                maxlength="255"
+                class="input input-bordered input-sm w-36"
+                aria-label={gettext("Field %{n} label", n: i + 1)}
+              />
+              <input
+                type="text"
+                name={"profile_fields[#{i}][value]"}
+                value={field["value"]}
+                placeholder={gettext("Content")}
+                maxlength="2048"
+                class="input input-bordered input-sm flex-1"
+                aria-label={gettext("Field %{n} content", n: i + 1)}
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            class="btn btn-sm btn-primary"
+            phx-disable-with={gettext("Saving...")}
+          >
+            {gettext("Save Fields")}
+          </button>
+        </form>
+      </div>
+
       <%!-- Signature section --%>
       <div id="profile-signature-section">
         <div class="text-sm text-base-content/70 mb-2">{gettext("Signature")}</div>

@@ -5506,3 +5506,43 @@ msgstr "セキュリティキーの確認に失敗しました。もう一度お
 #, elixir-autogen, elixir-format
 msgid "Security key registered successfully."
 msgstr "セキュリティキーが正常に登録されました。"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Profile Fields"
+msgstr "プロフィールフィールド"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Add up to 4 custom fields to your profile (e.g. website, location)."
+msgstr "プロフィールにカスタムフィールドを最大4つ追加できます（例：ウェブサイト、所在地）。"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Label"
+msgstr "ラベル"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Field %{n} label"
+msgstr "フィールド %{n} のラベル"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Field %{n} content"
+msgstr "フィールド %{n} の内容"
+
+#: lib/baudrate_web/live/profile_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Save Fields"
+msgstr "フィールドを保存"
+
+#: lib/baudrate_web/live/profile_live.ex
+#, elixir-autogen, elixir-format
+msgid "Profile fields updated."
+msgstr "プロフィールフィールドを更新しました。"
+
+#: lib/baudrate_web/live/profile_live.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to update profile fields."
+msgstr "プロフィールフィールドの更新に失敗しました。"

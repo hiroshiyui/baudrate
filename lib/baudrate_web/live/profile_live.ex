@@ -11,6 +11,14 @@ defmodule BaudrateWeb.ProfileLive do
   Users can add, remove, and reorder preferred locales. Changes are persisted
   to the database and take effect immediately via `Gettext.put_locale/1`.
   The locale is also stored in the cookie session on next login.
+
+  ## Profile Fields
+
+  Users can set up to 4 custom key-value fields (e.g. website, location).
+  These are published as `attachment` entries of type `PropertyValue` on the
+  ActivityPub actor, matching the Mastodon convention for profile metadata.
+  The `@profile_fields` assign is always a list of exactly 4 maps (padded
+  with empty entries) for predictable template rendering.
   """
 
   use BaudrateWeb, :live_view
@@ -47,6 +55,7 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:signature_preview, Baudrate.Content.Markdown.to_html(user.signature))
       |> assign(:mutes, mutes)
       |> assign(:notification_preferences, user.notification_preferences || %{})
+      |> assign(:profile_fields, pad_profile_fields(user.profile_fields))
       |> assign(:push_supported, false)
       |> assign(:push_subscribed, false)
       |> assign(:webauthn_credentials, webauthn_credentials)
@@ -233,6 +242,25 @@ defmodule BaudrateWeb.ProfileLive do
 
       {:error, changeset} ->
         {:noreply, assign(socket, :signature_form, to_form(changeset, as: :signature))}
+    end
+  end
+
+  @impl true
+  def handle_event("save_profile_fields", params, socket) do
+    user = socket.assigns.current_user
+    raw = Map.get(params, "profile_fields", %{})
+    fields = parse_raw_profile_fields(raw)
+
+    case Auth.update_profile_fields(user, fields) do
+      {:ok, updated_user} ->
+        {:noreply,
+         socket
+         |> assign(:current_user, updated_user)
+         |> assign(:profile_fields, pad_profile_fields(updated_user.profile_fields))
+         |> put_flash(:info, gettext("Profile fields updated."))}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update profile fields."))}
     end
   end
 
@@ -526,4 +554,25 @@ defmodule BaudrateWeb.ProfileLive do
     |> List.replace_at(i, Enum.at(list, j))
     |> List.replace_at(j, Enum.at(list, i))
   end
+
+  defp pad_profile_fields(nil), do: List.duplicate(%{"name" => "", "value" => ""}, 4)
+
+  defp pad_profile_fields(fields) when is_list(fields) do
+    empty = %{"name" => "", "value" => ""}
+    padded = fields ++ List.duplicate(empty, 4)
+    Enum.take(padded, 4)
+  end
+
+  defp parse_raw_profile_fields(raw) when is_map(raw) do
+    raw
+    |> Enum.sort_by(fn {k, _} -> String.to_integer(k) end)
+    |> Enum.map(fn {_, field} ->
+      name = Map.get(field, "name", "") |> String.trim()
+      value = Map.get(field, "value", "") |> String.trim()
+      %{"name" => name, "value" => value}
+    end)
+    |> Enum.reject(fn %{"name" => name} -> name == "" end)
+  end
+
+  defp parse_raw_profile_fields(_), do: []
 end
