@@ -45,6 +45,7 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
 - **Bookmarks** -- bookmark articles and comments for later reference
 - **Emoji autocomplete** -- type `:shortcode` in any textarea for instant emoji suggestions
 - **Markdown toolbar** -- toolbar with formatting shortcuts for article and comment editing
+- **RSS/Atom bot accounts** -- admin-managed feed bots that periodically fetch RSS 0.9x/2.0, RSS 1.0 (RDF), Atom, and JSON Feed sources and post articles to target boards; configurable fetch interval, per-bot bio and profile fields, automatic favicon avatar fetching, error tracking with exponential backoff, and manual reset-and-retry
 - **User blocking and muting** -- block users to prevent interaction; mute to hide content locally
 - **Push notifications** -- PWA with Web Push support and service worker
 - **Internationalization** -- Gettext with zh_TW and ja_JP locales and Accept-Language auto-detection
@@ -117,5 +118,6 @@ Built with these excellent open-source projects:
 - [Req](https://hexdocs.pm/req/) (HTTP client for federation)
 - [html5ever](https://github.com/servo/html5ever) (Rust HTML parser NIF for link preview extraction)
 - [Ammonia](https://crates.io/crates/ammonia) (Rust HTML sanitizer)
+- [feedparser-rs](https://crates.io/crates/feedparser-rs) (Rust feed parser NIF for RSS/Atom/JSON Feed)
 - [Rustler](https://crates.io/crates/rustler) (Rust NIF bindings for Erlang/Elixir)
 - [regex](https://crates.io/crates/regex) (Rust regular expressions)
