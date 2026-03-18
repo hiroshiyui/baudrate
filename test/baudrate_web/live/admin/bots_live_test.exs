@@ -207,4 +207,229 @@ defmodule BaudrateWeb.Admin.BotsLiveTest do
     {:ok, _lv, html} = live(conn, "/admin/bots")
     assert html =~ "Bot"
   end
+
+  describe "bot bio editing" do
+    test "create bot with custom bio sets user bio", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+      lv |> element("button[phx-click=\"new\"]") |> render_click()
+
+      username = "biobot_#{System.unique_integer([:positive])}"
+
+      lv
+      |> form("form",
+        bot: %{
+          username: username,
+          feed_url: "https://example.com/feed.xml",
+          bio: "This is an unofficial feed aggregator bot.",
+          fetch_interval_minutes: 60
+        }
+      )
+      |> render_submit()
+
+      bot = Bots.list_bots() |> Enum.find(&(&1.user.username == username))
+      assert bot.user.bio == "This is an unofficial feed aggregator bot."
+    end
+
+    test "create bot defaults bio to feed URL when bio is empty", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+      lv |> element("button[phx-click=\"new\"]") |> render_click()
+
+      username = "nobiobot_#{System.unique_integer([:positive])}"
+      feed_url = "https://example.com/feed.xml"
+
+      lv
+      |> form("form",
+        bot: %{username: username, feed_url: feed_url, fetch_interval_minutes: 60}
+      )
+      |> render_submit()
+
+      bot = Bots.list_bots() |> Enum.find(&(&1.user.username == username))
+      assert bot.user.bio == feed_url
+    end
+
+    test "edit bot bio field is pre-filled with current bio", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => "prebiobot_#{System.unique_integer([:positive])}",
+          "feed_url" => "https://example.com/feed.xml",
+          "bio" => "Existing bio text.",
+          "board_ids" => []
+        })
+
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+
+      html =
+        lv
+        |> element("button[phx-click=\"edit\"][phx-value-id=\"#{bot.id}\"]")
+        |> render_click()
+
+      assert html =~ "Existing bio text."
+    end
+
+    test "edit bot updates bio", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => "updatebiobot_#{System.unique_integer([:positive])}",
+          "feed_url" => "https://example.com/feed.xml",
+          "board_ids" => []
+        })
+
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+
+      lv
+      |> element("button[phx-click=\"edit\"][phx-value-id=\"#{bot.id}\"]")
+      |> render_click()
+
+      lv
+      |> form("form",
+        bot: %{
+          feed_url: "https://example.com/feed.xml",
+          bio: "Unofficial — not affiliated with the source."
+        }
+      )
+      |> render_submit()
+
+      updated_bot = Bots.get_bot!(bot.id)
+      assert updated_bot.user.bio == "Unofficial — not affiliated with the source."
+    end
+
+    test "edit bot bio does not change when feed_url changes without explicit bio submission",
+         %{conn: _conn} do
+      # seed roles
+      setup_user("user")
+
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => "feedchangebot_#{System.unique_integer([:positive])}",
+          "feed_url" => "https://example.com/old.xml",
+          "bio" => "Custom disclaimer.",
+          "board_ids" => []
+        })
+
+      # Simulate programmatic update without bio key — legacy auto-update should fire
+      Bots.update_bot(bot, %{"feed_url" => "https://example.com/new.xml"})
+
+      updated_bot = Bots.get_bot!(bot.id)
+      assert updated_bot.user.bio == "https://example.com/new.xml"
+    end
+
+    test "edit bot with explicit bio prevents auto-update from feed_url change",
+         %{conn: _conn} do
+      # seed roles
+      setup_user("user")
+
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => "explicitbiobot_#{System.unique_integer([:positive])}",
+          "feed_url" => "https://example.com/old.xml",
+          "board_ids" => []
+        })
+
+      Bots.update_bot(bot, %{
+        "feed_url" => "https://example.com/new.xml",
+        "bio" => "Custom disclaimer."
+      })
+
+      updated_bot = Bots.get_bot!(bot.id)
+      assert updated_bot.user.bio == "Custom disclaimer."
+    end
+  end
+
+  describe "bot profile fields editing" do
+    test "edit form shows profile fields section", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => "pfbot_#{System.unique_integer([:positive])}",
+          "feed_url" => "https://example.com/feed.xml",
+          "board_ids" => []
+        })
+
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+
+      html =
+        lv
+        |> element("button[phx-click=\"edit\"][phx-value-id=\"#{bot.id}\"]")
+        |> render_click()
+
+      assert html =~ "Profile Fields"
+    end
+
+    test "edit bot saves profile fields", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => "savefields_#{System.unique_integer([:positive])}",
+          "feed_url" => "https://example.com/feed.xml",
+          "board_ids" => []
+        })
+
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+
+      lv
+      |> element("button[phx-click=\"edit\"][phx-value-id=\"#{bot.id}\"]")
+      |> render_click()
+
+      render_submit(lv, "save", %{
+        "bot" => %{
+          "feed_url" => "https://example.com/feed.xml",
+          "bio" => "Unofficial bot.",
+          "profile_fields" => %{
+            "0" => %{"name" => "Notice", "value" => "Not affiliated with the source."},
+            "1" => %{"name" => "", "value" => ""},
+            "2" => %{"name" => "", "value" => ""},
+            "3" => %{"name" => "", "value" => ""}
+          }
+        }
+      })
+
+      updated_bot = Bots.get_bot!(bot.id)
+
+      assert updated_bot.user.profile_fields == [
+               %{"name" => "Notice", "value" => "Not affiliated with the source."}
+             ]
+    end
+
+    test "edit bot pre-fills existing profile fields", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => "existfields_#{System.unique_integer([:positive])}",
+          "feed_url" => "https://example.com/feed.xml",
+          "board_ids" => []
+        })
+
+      Baudrate.Auth.update_profile_fields(bot.user, [
+        %{"name" => "Notice", "value" => "Unofficial feed."}
+      ])
+
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+
+      html =
+        lv
+        |> element("button[phx-click=\"edit\"][phx-value-id=\"#{bot.id}\"]")
+        |> render_click()
+
+      assert html =~ "Notice"
+      assert html =~ "Unofficial feed."
+    end
+  end
 end
