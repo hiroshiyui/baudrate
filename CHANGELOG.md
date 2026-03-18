@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.50] — 2026-03-18
+
+### Fixed
+
+- **Bot profile field inputs reset on every keystroke** — In the `/admin/bots` edit form, plain HTML `<input>` elements for profile fields (Label / Content) had their `value` bound to `@editing_bot_profile_fields`, which is only populated when the edit button is clicked and never updated during `phx-change="validate"`. Every keystroke triggered a LiveView re-render that reset the inputs to their original server-side values. Fixed by adding `phx-update="ignore"` to the profile fields container div, preventing LiveView from patching those DOM nodes after the initial mount. The `:if={@editing_bot}` wrapper ensures a fresh mount with correctly pre-filled values each time a bot's edit form is opened.
+
 ## [1.3.49] — 2026-03-18
 
 ### Changed
