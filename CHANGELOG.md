@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.51] — 2026-03-18
+
+### Fixed
+
+- **Bot feed deduplication now checks source URL in addition to GUID** — Previously, `already_posted?` only compared the feed entry GUID against `bot_feed_items`. If a feed publisher changed a `<guid>` between fetch cycles (e.g. switching from a relative path to a canonical URL), the same article would slip through and be posted twice. `already_posted?/3` now also queries `articles(user_id, url)` for any non-deleted article posted by the bot with the same source URL. A partial index on `articles(user_id, url) WHERE url IS NOT NULL` keeps the lookup efficient.
+
 ## [1.3.50] — 2026-03-18
 
 ### Fixed
