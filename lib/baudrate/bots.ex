@@ -44,6 +44,7 @@ defmodule Baudrate.Bots do
     * `:username` — bot's username
     * `:display_name` — bot's display name (optional)
     * `:feed_url` — RSS/Atom feed URL
+    * `:bio` — bot bio/description (optional; defaults to the feed URL)
     * `:board_ids` — list of target board IDs
     * `:fetch_interval_minutes` — poll interval (default 60)
 
@@ -55,6 +56,7 @@ defmodule Baudrate.Bots do
     username = attrs["username"] || attrs[:username]
     display_name = attrs["display_name"] || attrs[:display_name]
     feed_url = attrs["feed_url"] || attrs[:feed_url]
+    bio = attrs["bio"] || attrs[:bio]
     board_ids = attrs["board_ids"] || attrs[:board_ids] || []
     fetch_interval = attrs["fetch_interval_minutes"] || attrs[:fetch_interval_minutes] || 60
 
@@ -77,7 +79,7 @@ defmodule Baudrate.Bots do
 
         with {:ok, user} <- Repo.insert(changeset),
              user = if(display_name, do: set_display_name(user, display_name), else: user),
-             user = set_bio(user, feed_url),
+             user = set_bio(user, if(bio && bio != "", do: bio, else: feed_url)),
              :ok <- ensure_keypair(user) do
           bot_attrs = %{
             user_id: user.id,
@@ -98,18 +100,27 @@ defmodule Baudrate.Bots do
     end
   end
 
-  @doc "Updates a bot's configuration."
+  @doc """
+  Updates a bot's configuration and optionally its user profile.
+
+  In addition to the standard bot fields (`feed_url`, `board_ids`,
+  `fetch_interval_minutes`, `active`), the following user-profile attrs
+  are handled when present:
+
+    * `:bio` — explicit bio text; takes precedence over the auto-bio-from-feed_url
+      fallback. Pass an empty string to clear the bio.
+    * `:profile_fields` — list of `%{"name" => …, "value" => …}` maps (up to 4).
+      When omitted the profile fields are left unchanged.
+
+  When `:bio` is not present and the feed URL changed, the bio is automatically
+  updated to the new feed URL (legacy behaviour).
+  """
   @spec update_bot(Bot.t(), map()) :: {:ok, Bot.t()} | {:error, Ecto.Changeset.t()}
   def update_bot(bot, attrs) do
     case bot |> Bot.update_changeset(attrs) |> Repo.update() do
       {:ok, _updated_bot} = ok ->
-        new_feed_url = attrs["feed_url"] || attrs[:feed_url]
-
-        if new_feed_url && new_feed_url != bot.feed_url do
-          bot = Repo.preload(bot, :user)
-          set_bio(bot.user, new_feed_url)
-        end
-
+        bot = Repo.preload(bot, :user)
+        update_bot_user_profile(bot, attrs)
         ok
 
       {:error, _} = err ->
@@ -281,6 +292,29 @@ defmodule Baudrate.Bots do
     "Aa1!" <> random_part
   end
 
+  defp update_bot_user_profile(bot, attrs) do
+    new_feed_url = attrs["feed_url"] || attrs[:feed_url]
+    profile_fields = attrs["profile_fields"] || attrs[:profile_fields]
+
+    cond do
+      # Explicit bio takes priority over auto-update
+      Map.has_key?(attrs, "bio") or Map.has_key?(attrs, :bio) ->
+        bio = attrs["bio"] || attrs[:bio] || ""
+        set_bio(bot.user, bio)
+
+      # Legacy: auto-update bio when feed_url changes and no explicit bio
+      new_feed_url && new_feed_url != bot.feed_url ->
+        set_bio(bot.user, new_feed_url)
+
+      true ->
+        :ok
+    end
+
+    if is_list(profile_fields) do
+      set_profile_fields(bot.user, profile_fields)
+    end
+  end
+
   defp set_display_name(user, display_name) do
     case Auth.update_display_name(user, display_name) do
       {:ok, updated} -> updated
@@ -292,6 +326,13 @@ defmodule Baudrate.Bots do
     case Auth.update_bio(user, bio) do
       {:ok, updated} -> updated
       {:error, _} -> user
+    end
+  end
+
+  defp set_profile_fields(user, fields) do
+    case Auth.update_profile_fields(user, fields) do
+      {:ok, _} -> :ok
+      {:error, _} -> :ok
     end
   end
 
