@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.49] — 2026-03-18
+
+### Changed
+
+- **Feed parser replaced with feedparser-rs Rustler NIF** — The Elixir `fiet` and `saxy` libraries have been replaced by a new `baudrate_feed_parser` Rustler NIF backed by the [`feedparser-rs`](https://github.com/bug-ops/feedparser-rs) Rust crate. The new parser supports RSS 0.9x/2.0, RSS 1.0 (RDF), Atom 0.3/1.0, and JSON Feed natively in a single pass with no per-format fallback logic. Dates are returned as RFC 3339 strings and parsed by `DateTime.from_iso8601/1` on the Elixir side. HTML sanitization remains in Elixir via the existing `baudrate_sanitizer` NIF.
+
+### Removed
+
+- **`fiet` and `saxy` dependencies** — Both packages are no longer needed and have been removed from `mix.exs` and unlocked from `mix.lock`.
+
+## [1.3.48] — 2026-03-18
+
+### Added
+
+- **Bot bio editing in admin UI** — The `/admin/bots` edit and create forms now include a `Bio` textarea. On creation, the bio defaults to the feed URL when left blank. On edit, the current bio is pre-filled and submitted explicitly, bypassing the legacy auto-bio-from-feed_url fallback. Admins can use this to add disclaimer text such as "Unofficial — not affiliated with the source."
+- **Bot profile fields in admin UI** — The `/admin/bots` edit form now exposes 4 profile field rows (label + content) that are stored on the bot's user account and federated as `PropertyValue` attachments on the bot's AP actor, following the Mastodon convention. Admins can use these to add structured metadata such as a notice of non-affiliation with the feed source.
+
+## [1.3.47] — 2026-03-18
+
+### Added
+
+- **User profile fields (Mastodon-compatible)** — Users can now add up to 4 custom profile fields (name + value pairs, e.g. "Website", "Location") at `/profile`. Fields are stored as a `jsonb[]` column on the `users` table, validated (name ≤ 255 chars, value ≤ 2048 chars, max 4 fields), and displayed on public profile pages. For ActivityPub federation, fields are published as `PropertyValue` attachments on the Person actor with the schema.org context (`schema:PropertyValue`, `schema:value`), ensuring compatibility with Mastodon and other AP clients that render profile metadata.
+- **Remote actor profile fields** — Incoming AP actors' `attachment` arrays are parsed for `PropertyValue` entries (up to 4), stored in a new `profile_fields` column on `remote_actors`, and displayed on the remote user's local profile page.
+
+### Database
+
+- New `profile_fields jsonb[] NOT NULL DEFAULT '{}'` column on both `users` and `remote_actors` tables (migration `20260318000000_add_profile_fields_to_users_and_remote_actors`).
+
 ## [1.3.46] — 2026-03-17
 
 ### Changed

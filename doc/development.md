@@ -18,7 +18,7 @@ visibility. Design decisions should reflect this philosophy.
 | HTML parsing | html5ever (Rust NIF via Rustler) |
 | HTML sanitization | Ammonia (Rust NIF via Rustler) |
 | Rate limiting | Hammer |
-| Feed parsing | fiet — RSS 2.0 and Atom 1.0 |
+| Feed parsing | feedparser-rs (Rust NIF via Rustler) — RSS 0.9x/2.0, RSS 1.0 (RDF), Atom 0.3/1.0, JSON Feed |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
 
 ## Architecture
@@ -27,10 +27,18 @@ visibility. Design decisions should reflect this philosophy.
 
 ```
 native/
-└── baudrate_sanitizer/          # Rust NIF crate (Ammonia HTML sanitizer)
-    ├── Cargo.toml               # Crate manifest (ammonia, rustler, regex)
+├── baudrate_sanitizer/          # Rust NIF crate (Ammonia HTML sanitizer)
+│   ├── Cargo.toml               # Crate manifest (ammonia, rustler, regex)
+│   └── src/
+│       └── lib.rs               # NIF functions: sanitize_federation, sanitize_markdown, strip_tags
+├── baudrate_html_parser/        # Rust NIF crate (html5ever / scraper)
+│   ├── Cargo.toml               # Crate manifest (scraper, rustler)
+│   └── src/
+│       └── lib.rs               # NIF functions: parse_og_metadata, extract_first_url
+└── baudrate_feed_parser/        # Rust NIF crate (feedparser-rs)
+    ├── Cargo.toml               # Crate manifest (feedparser-rs, rustler)
     └── src/
-        └── lib.rs               # NIF functions: sanitize_federation, sanitize_markdown, strip_tags
+        └── lib.rs               # NIF function: parse_feed (RSS/Atom/JSON Feed → NifEntry list)
 lib/
 ├── baudrate/                    # Business logic (contexts)
 │   ├── application.ex           # Supervision tree
@@ -43,7 +51,7 @@ lib/
 │   │   ├── login_attempt.ex     # LoginAttempt schema (per-account brute-force tracking)
 │   │   ├── moderation.ex        # User-level moderation: ban, unban, role changes
 │   │   ├── passwords.ex         # Password hashing, validation, and reset logic
-│   │   ├── profiles.ex          # User profile updates: display name, bio, signature
+│   │   ├── profiles.ex          # User profile updates: display name, bio, signature, profile_fields
 │   │   ├── recovery_code.ex     # Ecto schema for one-time recovery codes
 │   │   ├── second_factor.ex     # TOTP enrollment, verification, and recovery
 │   │   ├── session_cleaner.ex   # GenServer: hourly cleanup (sessions, login attempts, orphan images)
@@ -62,7 +70,8 @@ lib/
 │   │   ├── bot.ex               # Bot schema (1:1 with User, feed config, fetch state)
 │   │   ├── bot_feed_item.ex     # BotFeedItem schema (posted GUID deduplication)
 │   │   ├── favicon_fetcher.ex   # Fetch site favicon and set as bot avatar (best-effort)
-│   │   ├── feed_parser.ex       # RSS 2.0 / Atom 1.0 parser via fiet (normalizes entries)
+│   │   ├── feed_parser.ex       # Feed parser facade: delegates to NIF, normalizes entries
+│   │   ├── feed_parser_native.ex # Rustler NIF binding (baudrate_feed_parser crate)
 │   │   └── feed_worker.ex       # GenServer: polls due bots every 60s, creates articles
 │   ├── content.ex               # Content context facade: defdelegate to focused sub-modules
 │   ├── content/
@@ -170,7 +179,7 @@ lib/
 │       ├── role_permission.ex   # Join table: role ↔ permission
 │       ├── setting.ex           # Key-value settings (site_name, timezone, setup_completed, etc.)
 │       ├── settings_cache.ex    # ETS-backed cache for settings (GenServer + :ets.lookup)
-│       └── user.ex              # User schema with password, TOTP, avatar, display_name, status, signature, is_bot fields
+│       └── user.ex              # User schema with password, TOTP, avatar, display_name, status, signature, is_bot, profile_fields
 ├── mix/
 │   └── tasks/
 │       ├── backup.ex            # mix backup — full instance backup (DB + files)
@@ -293,7 +302,7 @@ and never need to know about the internal split.
 | `Auth.SecondFactor` | TOTP enrollment, encryption/decryption of secrets, QR code generation, and recovery code management |
 | `Auth.WebAuthn` | FIDO2/WebAuthn credential registration and authentication (hardware security keys); ETS-backed challenge lifecycle |
 | `Auth.Invites` | Invite-only registration logic, quota management, and admin-issued invites |
-| `Auth.Profiles` | User preference updates: display name, bio, signature, avatar association, and notification settings |
+| `Auth.Profiles` | User preference updates: display name, bio, signature, profile fields, avatar association, and notification settings |
 | `Auth.Moderation` | Local user moderation: banning, blocking remote actors/users, and muting interactions |
 
 ### Authentication Flow
@@ -535,6 +544,40 @@ profile at `/profile`. The bio supports hashtag linkification via
 page at `/users/:username`. For ActivityPub federation, the bio is HTML-escaped,
 newlines converted to `<br>`, and hashtags linkified to produce the `summary`
 field on the Person actor.
+
+### User Profile Fields
+
+Users can add up to 4 custom profile fields (name + value pairs, e.g. "Website",
+"Location", "Affiliation") in their profile at `/profile`. Fields are stored as a
+`jsonb[]` column (`profile_fields`) on the `users` table. Each field has a `name`
+(max 255 characters) and a `value` (max 2048 characters). Empty-name fields are
+silently discarded.
+
+For ActivityPub federation, profile fields are published as `PropertyValue`
+attachments on the Person actor following the Mastodon convention:
+
+```json
+"attachment": [
+  {"type": "PropertyValue", "name": "Website", "value": "https://example.com"}
+]
+```
+
+The `@context` includes `schema:PropertyValue` and `schema:value` from
+`http://schema.org/` to ensure Mastodon and compatible clients render the fields
+correctly. Values are HTML-escaped before publishing.
+
+Incoming remote actors' `attachment` arrays are parsed by `ActorResolver` —
+entries with `type: "PropertyValue"` are extracted (up to 4), stored in the
+`profile_fields` column on `RemoteActor`, and displayed on the user's local
+profile page.
+
+**Files:**
+- `lib/baudrate/setup/user.ex` — `profile_fields_changeset/2` with validation
+- `lib/baudrate/auth/profiles.ex` — `update_profile_fields/2`
+- `lib/baudrate/federation/actor_renderer.ex` — `render_profile_fields/1`
+- `lib/baudrate/federation/actor_resolver.ex` — `extract_profile_fields/1`
+- `lib/baudrate_web/live/profile_live.ex` — `save_profile_fields` event
+- `lib/baudrate_web/live/user_profile_live.html.heex` — `<dl>` display
 
 ### User Signatures
 
@@ -1023,8 +1066,8 @@ federated).
 ### Bots (RSS/Atom Feed Aggregation)
 
 Baudrate supports administrator-managed bot accounts that periodically fetch
-RSS 2.0 and Atom 1.0 feeds and post entries as articles. Bots are managed via
-the `/admin/bots` admin UI.
+RSS 2.0, RSS 1.0 (RDF), Atom 1.0, and JSON Feed documents and post entries as
+articles. Bots are managed via the `/admin/bots` admin UI.
 
 **Architecture:**
 
@@ -1045,9 +1088,11 @@ Each bot consists of:
 2. For each due bot, the worker optionally triggers `FaviconFetcher.fetch_and_set/1`
    (best-effort, in a separate Task) to refresh the bot's avatar from the site favicon.
 3. The feed URL is validated (SSRF-safe via `HTTPClient.validate_url/1`) and
-   fetched (max 5 MB). The raw XML is parsed by `FeedParser.parse/1`.
-4. `FeedParser` tries RSS 2.0 first (via `Fiet.RSS2`), then falls back to Atom
-   1.0 (via `Fiet.Atom`). Each entry is normalized to `%{guid, title, body, link, tags, published_at}`.
+   fetched (max 5 MB). The raw bytes are parsed by `FeedParser.parse/1`.
+4. `FeedParser` delegates to the `baudrate_feed_parser` Rustler NIF (backed by
+   the `feedparser-rs` Rust crate), which natively supports RSS 0.9x/2.0,
+   RSS 1.0 (RDF), Atom 0.3/1.0, and JSON Feed in a single pass. Each entry is
+   normalized to `%{guid, title, body, link, tags, published_at}`.
    HTML content is sanitized via `Baudrate.Sanitizer.Native.sanitize_markdown/1`.
    `published_at` is clamped: dates more than 10 years in the past or in the
    future are set to `nil`.
@@ -1061,13 +1106,25 @@ Each bot consists of:
 **FaviconFetcher:** Scans the site HTML for `<link rel="apple-touch-icon">` and
 `<link rel="icon">` tags, downloads the best candidate, and processes it through
 the avatar pipeline (magic bytes validation, libvips re-encode to WebP, EXIF
-strip). Avatar refreshes run at most once every 7 days per bot.
+strip). Avatar refreshes run at most once every 7 days per bot. After 3
+consecutive favicon fetch failures, automatic refreshes are paused
+(`favicon_fail_count >= 3`); the admin "Refresh Favicon" button bypasses this
+gate and resets the counter on success.
+
+**Bot bio and profile fields:** Admins can set a custom bio and up to 4 profile
+fields (e.g. "Notice: Unofficial — not affiliated with source") on each bot via
+the `/admin/bots` edit form. On creation the bio defaults to the feed URL when
+left blank. When `update_bot/2` receives an explicit `"bio"` key it takes
+priority over the legacy auto-bio-from-feed_url behaviour; omitting `"bio"`
+preserves the legacy fallback for programmatic callers. Profile fields are stored
+on the bot's `User` record and federated as `PropertyValue` attachments (same as
+regular user profile fields).
 
 **Database tables:**
 
 | Table | Purpose |
 |-------|---------|
-| `bots` | Bot config: `user_id`, `feed_url`, `board_ids` (int array), `fetch_interval_minutes`, `active`, `last_fetched_at`, `next_fetch_at`, `error_count`, `last_error`, `avatar_refreshed_at` |
+| `bots` | Bot config: `user_id`, `feed_url`, `board_ids` (int array), `fetch_interval_minutes`, `active`, `last_fetched_at`, `next_fetch_at`, `error_count`, `last_error`, `avatar_refreshed_at`, `favicon_fail_count` |
 | `bot_feed_items` | GUID deduplication: `bot_id`, `guid`, `article_id` (nullable on permanent failure) |
 
 **Key functions in `Bots`:**
@@ -1079,7 +1136,8 @@ strip). Avatar refreshes run at most once every 7 days per bot.
 - `already_posted?/2` — GUID dedup check
 - `record_feed_item/3` — records a posted entry
 - `mark_fetch_success/1` / `mark_fetch_error/1` — update fetch state with backoff
-- `avatar_needs_refresh?/1` / `mark_avatar_refreshed/1` — favicon refresh tracking
+- `avatar_needs_refresh?/1` / `mark_avatar_refreshed/1` — favicon refresh tracking (gate + 7-day cooldown)
+- `increment_favicon_fail_count/1` — increments consecutive failure counter
 
 **Security:**
 
@@ -1096,7 +1154,8 @@ strip). Avatar refreshes run at most once every 7 days per bot.
 - `lib/baudrate/bots/bot.ex` — Bot schema
 - `lib/baudrate/bots/bot_feed_item.ex` — BotFeedItem schema (GUID dedup)
 - `lib/baudrate/bots/feed_worker.ex` — GenServer poller
-- `lib/baudrate/bots/feed_parser.ex` — RSS 2.0 / Atom 1.0 parser
+- `lib/baudrate/bots/feed_parser.ex` — feed parser facade (normalizes NIF output)
+- `lib/baudrate/bots/feed_parser_native.ex` — Rustler NIF bindings to `baudrate_feed_parser`
 - `lib/baudrate/bots/favicon_fetcher.ex` — site favicon → bot avatar
 - `lib/baudrate_web/live/admin/bots_live.ex` — admin UI
 
@@ -1409,7 +1468,7 @@ See [`doc/api.md`](api.md) for the full AP endpoint reference.
 - **Pagination** — outbox, followers, and search collections use AP-spec `OrderedCollectionPage` pagination with `?page=N` (20 items/page). Without `?page`, the root `OrderedCollection` contains `totalItems` and a `first` link.
 - **Rate limiting** — 120 requests/min per IP; 429 responses are JSON (`{"error": "Too Many Requests"}`).
 - **`baudrate:*` extensions** — Article objects include `baudrate:pinned`, `baudrate:locked`, `baudrate:commentCount`, `baudrate:likeCount`. Board actors include `baudrate:parentBoard` and `baudrate:subBoards`.
-- **Enriched actors** — User actors include `published`, `summary` (user bio, plaintext with hashtag linkification), and `icon` (avatar as WebP, 48px size). Board actors include parent/sub-board links.
+- **Enriched actors** — User actors include `published`, `summary` (user bio, plaintext with hashtag linkification), `icon` (avatar as WebP, 48px size), and `attachment` (profile fields as `PropertyValue` entries, schema.org context). Board actors include parent/sub-board links.
 
 ### Layout System
 

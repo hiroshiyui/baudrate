@@ -36,7 +36,7 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 | HTML sanitization | Ammonia (Rust NIF via Rustler) — requires Rust toolchain |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
 | Timezone data | tz |
-| Feed parsing | fiet — RSS 2.0 and Atom 1.0 parsing |
+| Feed parsing | feedparser-rs (Rust NIF via Rustler) — RSS 0.9x/2.0, RSS 1.0 (RDF), Atom 0.3/1.0, JSON Feed |
 | i18n | Gettext — zh_TW and ja_JP locales |
 
 ## Architecture
