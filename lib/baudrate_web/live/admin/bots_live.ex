@@ -5,6 +5,19 @@ defmodule BaudrateWeb.Admin.BotsLive do
   Only accessible to users with the `"admin"` role. Provides CRUD
   operations for RSS/Atom feed bot accounts: create, edit, delete,
   and toggle active state.
+
+  ## Bot Profile Editing
+
+  Both the create and edit forms include a `bio` field. On creation,
+  the bio defaults to the feed URL when left blank. On edit, the
+  current bio is pre-filled and always submitted explicitly — the
+  auto-bio-from-feed_url fallback only fires when no explicit bio is
+  provided (i.e. from non-UI callers).
+
+  The edit form also exposes 4 profile field rows (name + value) that
+  are published as `PropertyValue` attachments on the AP actor,
+  following the Mastodon convention. Admins can use these to add
+  disclaimers such as "Unofficial — not affiliated with the source."
   """
 
   use BaudrateWeb, :live_view
@@ -28,6 +41,7 @@ defmodule BaudrateWeb.Admin.BotsLive do
        bots: bots,
        boards: boards,
        editing_bot: nil,
+       editing_bot_profile_fields: [],
        form: nil,
        show_form: false,
        wide_layout: true,
@@ -51,7 +65,12 @@ defmodule BaudrateWeb.Admin.BotsLive do
         changeset = Bot.update_changeset(bot, %{})
 
         {:noreply,
-         assign(socket, show_form: true, editing_bot: bot, form: to_form(changeset, as: :bot))}
+         assign(socket,
+           show_form: true,
+           editing_bot: bot,
+           editing_bot_profile_fields: pad_profile_fields(bot.user.profile_fields),
+           form: to_form(changeset, as: :bot)
+         )}
 
       :error ->
         {:noreply, socket}
@@ -60,7 +79,8 @@ defmodule BaudrateWeb.Admin.BotsLive do
 
   @impl true
   def handle_event("cancel", _params, socket) do
-    {:noreply, assign(socket, show_form: false, editing_bot: nil, form: nil)}
+    {:noreply,
+     assign(socket, show_form: false, editing_bot: nil, editing_bot_profile_fields: [], form: nil)}
   end
 
   @impl true
@@ -235,7 +255,12 @@ defmodule BaudrateWeb.Admin.BotsLive do
   defp save_edit(socket, params) do
     bot = Bots.get_bot!(socket.assigns.editing_bot.id)
     board_ids = parse_board_ids(params["board_ids"])
-    attrs = Map.put(params, "board_ids", board_ids)
+    profile_fields = parse_bot_profile_fields(Map.get(params, "profile_fields", %{}))
+
+    attrs =
+      params
+      |> Map.put("board_ids", board_ids)
+      |> Map.put("profile_fields", profile_fields)
 
     case Bots.update_bot(bot, attrs) do
       {:ok, updated_bot} ->
@@ -247,7 +272,7 @@ defmodule BaudrateWeb.Admin.BotsLive do
 
         {:noreply,
          socket
-         |> assign(show_form: false, editing_bot: nil, form: nil)
+         |> assign(show_form: false, editing_bot: nil, editing_bot_profile_fields: [], form: nil)
          |> put_flash(:info, gettext("Bot updated successfully."))
          |> reload_bots()}
 
@@ -277,4 +302,25 @@ defmodule BaudrateWeb.Admin.BotsLive do
   defp reload_bots(socket) do
     assign(socket, :bots, Bots.list_bots())
   end
+
+  defp pad_profile_fields(nil), do: List.duplicate(%{"name" => "", "value" => ""}, 4)
+
+  defp pad_profile_fields(fields) when is_list(fields) do
+    empty = %{"name" => "", "value" => ""}
+    padded = fields ++ List.duplicate(empty, 4)
+    Enum.take(padded, 4)
+  end
+
+  defp parse_bot_profile_fields(raw) when is_map(raw) do
+    raw
+    |> Enum.sort_by(fn {k, _} -> String.to_integer(k) end)
+    |> Enum.map(fn {_, field} ->
+      name = Map.get(field, "name", "") |> String.trim()
+      value = Map.get(field, "value", "") |> String.trim()
+      %{"name" => name, "value" => value}
+    end)
+    |> Enum.reject(fn %{"name" => name} -> name == "" end)
+  end
+
+  defp parse_bot_profile_fields(_), do: []
 end

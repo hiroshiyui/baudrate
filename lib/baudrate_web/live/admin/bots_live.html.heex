@@ -34,6 +34,59 @@
           <.input field={@form[:display_name]} type="text" label={gettext("Display Name")} />
         <% end %>
 
+        <%!-- Bio --%>
+        <div class="fieldset mb-2">
+          <label>
+            <span class="label mb-1">{gettext("Bio")}</span>
+            <textarea
+              name="bot[bio]"
+              class="textarea textarea-bordered w-full"
+              rows="3"
+              maxlength="500"
+              placeholder={gettext("Bot description or disclaimer (max 500 characters)")}
+              aria-label={gettext("Bio")}
+            >{if @editing_bot, do: (@editing_bot.user.bio || ""), else: ""}</textarea>
+          </label>
+          <p class="text-sm opacity-70 mt-1">
+            {gettext("Defaults to the feed URL if left empty.")}
+          </p>
+        </div>
+
+        <%!-- Profile Fields (edit only) --%>
+        <%= if @editing_bot do %>
+          <div class="fieldset mb-2">
+            <span class="label mb-1">{gettext("Profile Fields")}</span>
+            <p class="text-sm opacity-70 mb-2">
+              {gettext("Add up to 4 custom fields (e.g. disclaimer, website).")}
+            </p>
+            <div class="space-y-2">
+              <div
+                :for={{field, i} <- Enum.with_index(@editing_bot_profile_fields)}
+                class="flex flex-wrap gap-2"
+              >
+                <input
+                  type="text"
+                  name={"bot[profile_fields][#{i}][name]"}
+                  value={field["name"]}
+                  placeholder={gettext("Label")}
+                  maxlength="255"
+                  class="input input-bordered input-sm w-36"
+                  aria-label={gettext("Field %{n} label", n: i + 1)}
+                />
+                <input
+                  type="text"
+                  name={"bot[profile_fields][#{i}][value]"}
+                  value={field["value"]}
+                  placeholder={gettext("Content")}
+                  maxlength="2048"
+                  class="input input-bordered input-sm flex-1"
+                  aria-label={gettext("Field %{n} content", n: i + 1)}
+                />
+              </div>
+            </div>
+          </div>
+        <% end %>
+
         <.input
           field={@form[:feed_url]}
           type="url"

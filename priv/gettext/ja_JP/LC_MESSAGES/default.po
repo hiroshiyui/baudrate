@@ -5546,3 +5546,18 @@ msgstr "プロフィールフィールドを更新しました。"
 #, elixir-autogen, elixir-format
 msgid "Failed to update profile fields."
 msgstr "プロフィールフィールドの更新に失敗しました。"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Bot description or disclaimer (max 500 characters)"
+msgstr "ボットの説明または免責事項（最大500文字）"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Defaults to the feed URL if left empty."
+msgstr "空白の場合、フィードURLが使用されます。"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Add up to 4 custom fields (e.g. disclaimer, website)."
+msgstr "カスタムフィールドを最大4つ追加できます（例：免責事項、ウェブサイト）。"

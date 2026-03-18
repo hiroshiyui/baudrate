@@ -5546,3 +5546,18 @@ msgstr "自由欄位已更新。"
 #, elixir-autogen, elixir-format
 msgid "Failed to update profile fields."
 msgstr "更新自由欄位失敗。"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Bot description or disclaimer (max 500 characters)"
+msgstr "機器人說明或免責聲明（最多 500 字元）"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Defaults to the feed URL if left empty."
+msgstr "若留空，預設使用訂閱來源網址。"
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Add up to 4 custom fields (e.g. disclaimer, website)."
+msgstr "新增最多 4 個自訂欄位（例如：免責聲明、網站）。"

@@ -5283,3 +5283,18 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Failed to update profile fields."
 msgstr ""
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Bot description or disclaimer (max 500 characters)"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Defaults to the feed URL if left empty."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/bots_live.html.heex
+#, elixir-autogen, elixir-format
+msgid "Add up to 4 custom fields (e.g. disclaimer, website)."
+msgstr ""
