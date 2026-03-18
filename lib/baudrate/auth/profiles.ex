@@ -87,4 +87,17 @@ defmodule Baudrate.Auth.Profiles do
     |> User.notification_preferences_changeset(%{notification_preferences: prefs})
     |> Repo.update()
   end
+
+  @doc """
+  Updates a user's profile fields (custom metadata key-value pairs).
+
+  Accepts a list of up to 4 maps, each with `"name"` and `"value"` string keys.
+  Empty-name entries should be filtered out by the caller before passing.
+  Returns `{:ok, user}` or `{:error, changeset}`.
+  """
+  def update_profile_fields(user, fields) when is_list(fields) do
+    user
+    |> User.profile_fields_changeset(%{profile_fields: fields})
+    |> Repo.update()
+  end
 end

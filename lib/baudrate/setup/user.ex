@@ -66,6 +66,14 @@ defmodule Baudrate.Setup.User do
       with boolean flags like `%{"in_app" => false}`. Missing types default
       to enabled (`in_app: true`). Validated by `notification_preferences_changeset/2`.
 
+  ## Profile Fields
+
+    * `profile_fields` — list of up to 4 custom key-value metadata pairs
+      (e.g. website, location). Each entry is a map with `"name"` (max 255 chars)
+      and `"value"` (max 2048 chars) string keys. Stored as a JSONB array.
+      Published as `attachment` entries of type `PropertyValue` on the AP actor.
+      Validated by `profile_fields_changeset/2`.
+
   ## Invite Chain Tracking
 
     * `invited_by_id` — references the user who generated the invite code used
@@ -93,6 +101,7 @@ defmodule Baudrate.Setup.User do
     field :dm_access, :string, default: "anyone"
     field :notification_preferences, :map, default: %{}
     field :is_bot, :boolean, default: false
+    field :profile_fields, {:array, :map}, default: []
 
     belongs_to :role, Baudrate.Setup.Role
     belongs_to :invited_by, __MODULE__
@@ -316,6 +325,44 @@ defmodule Baudrate.Setup.User do
       end
     end)
   end
+
+  @max_profile_fields 4
+  @max_profile_field_name_length 255
+  @max_profile_field_value_length 2048
+
+  @doc """
+  Changeset for updating a user's profile fields (custom metadata key-value pairs).
+
+  Accepts a list of up to #{@max_profile_fields} maps, each with `"name"` (max
+  #{@max_profile_field_name_length} chars) and `"value"` (max
+  #{@max_profile_field_value_length} chars) string keys. Empty-name entries are
+  filtered out before saving via `Baudrate.Auth.Profiles.update_profile_fields/2`.
+  Published as `attachment` entries with type `PropertyValue` on the AP actor.
+  """
+  def profile_fields_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:profile_fields])
+    |> validate_change(:profile_fields, fn :profile_fields, fields ->
+      cond do
+        length(fields) > @max_profile_fields ->
+          [profile_fields: "cannot have more than #{@max_profile_fields} fields"]
+
+        not Enum.all?(fields, &valid_profile_field?/1) ->
+          [profile_fields: "contains invalid fields"]
+
+        true ->
+          []
+      end
+    end)
+  end
+
+  defp valid_profile_field?(%{"name" => name, "value" => value})
+       when is_binary(name) and is_binary(value) do
+    String.length(name) <= @max_profile_field_name_length and
+      String.length(value) <= @max_profile_field_value_length
+  end
+
+  defp valid_profile_field?(_), do: false
 
   @doc """
   Changeset for creating a bot user account.

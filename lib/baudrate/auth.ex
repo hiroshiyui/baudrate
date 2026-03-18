@@ -123,6 +123,7 @@ defmodule Baudrate.Auth do
   defdelegate update_bio(user, bio), to: Profiles
   defdelegate update_dm_access(user, value), to: Profiles
   defdelegate update_notification_preferences(user, prefs), to: Profiles
+  defdelegate update_profile_fields(user, fields), to: Profiles
 
   # --- WebAuthn ---
   defdelegate list_webauthn_credentials(user), to: WebAuthn
