@@ -10,6 +10,7 @@ defmodule BaudrateWeb.HomeLive do
   use BaudrateWeb, :live_view
 
   alias Baudrate.Content
+  alias Baudrate.Content.PubSub, as: ContentPubSub
   alias Baudrate.Setup
   alias BaudrateWeb.LinkedData
   alias BaudrateWeb.OpenGraph
@@ -24,9 +25,14 @@ defmodule BaudrateWeb.HomeLive do
     board_ids = Enum.map(boards, & &1.id)
     unread_board_ids = Content.unread_board_ids(current_user, board_ids)
 
+    if connected?(socket) && current_user != nil do
+      Enum.each(board_ids, &ContentPubSub.subscribe_board/1)
+    end
+
     {:ok,
      assign(socket,
        boards: boards,
+       board_ids: board_ids,
        unread_board_ids: unread_board_ids,
        page_title: gettext("Boards"),
        feed_site: true,
@@ -34,4 +40,14 @@ defmodule BaudrateWeb.HomeLive do
        og_meta: OpenGraph.home_tags(site_name)
      )}
   end
+
+  @impl true
+  def handle_info({:article_created, _payload}, socket) do
+    unread_board_ids =
+      Content.unread_board_ids(socket.assigns.current_user, socket.assigns.board_ids)
+
+    {:noreply, assign(socket, unread_board_ids: unread_board_ids)}
+  end
+
+  def handle_info(_event, socket), do: {:noreply, socket}
 end

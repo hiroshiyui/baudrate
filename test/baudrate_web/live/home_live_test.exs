@@ -1,8 +1,11 @@
 defmodule BaudrateWeb.HomeLiveTest do
   use BaudrateWeb.ConnCase
 
+  import Ecto.Query
   import Phoenix.LiveViewTest
 
+  alias Baudrate.Content
+  alias Baudrate.Content.PubSub, as: ContentPubSub
   alias Baudrate.Repo
   alias Baudrate.Content.Board
   alias Baudrate.Setup.Setting
@@ -55,6 +58,51 @@ defmodule BaudrateWeb.HomeLiveTest do
 
       assert html =~ "Welcome to Baudrate"
       refute html =~ "You are signed in as"
+    end
+  end
+
+  describe "unread indicators" do
+    test "refreshes unread board indicator in real-time when article is created", %{conn: conn} do
+      user = setup_user("user")
+      conn = log_in_user(conn, user)
+
+      board =
+        %Board{}
+        |> Board.changeset(%{
+          name: "Live Board",
+          slug: "live-board-#{System.unique_integer([:positive])}",
+          min_role_to_view: "user"
+        })
+        |> Repo.insert!()
+
+      # Move user registration to the past so articles are newer
+      past = DateTime.add(DateTime.utc_now(), -3600, :second)
+
+      Repo.update_all(
+        from(u in Baudrate.Setup.User, where: u.id == ^user.id),
+        set: [inserted_at: past]
+      )
+
+      {:ok, lv, html} = live(conn, "/")
+      refute html =~ "rounded-full bg-primary"
+
+      # Create article (triggers PubSub broadcast)
+      {:ok, _} =
+        Content.create_article(
+          %{title: "Breaking News", body: "body", slug: "breaking-#{System.unique_integer([:positive])}", user_id: user.id},
+          [board.id]
+        )
+
+      # Trigger PubSub manually to simulate the broadcast
+      ContentPubSub.broadcast_to_board(board.id, :article_created, %{article_id: 0})
+
+      html = render(lv)
+      assert html =~ "rounded-full bg-primary"
+    end
+
+    test "guests do not subscribe and see no unread indicators", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/")
+      refute html =~ "rounded-full bg-primary"
     end
   end
 
