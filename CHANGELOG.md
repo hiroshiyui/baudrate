@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.52] — 2026-03-19
+
+### Added
+
+- **Real-time unread board indicators on the home page** — The boards listing now subscribes to `board:<id>` PubSub topics on mount (authenticated users only) and re-computes `unread_board_ids` whenever an `:article_created` event is received. The unread dot appears immediately without requiring a manual page reload.
+
 ## [1.3.51] — 2026-03-18
 
 ### Fixed
