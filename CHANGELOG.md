@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.55] — 2026-03-20
+
+### Fixed
+
+- **Username/board-slug WebFinger conflict prevented** — A username whose lowercase form matched an existing board slug would shadow that board in WebFinger resolution (users are checked before boards), making the board undiscoverable from Mastodon and other federation clients. Added `validate_username_not_board_slug/1` to `User` changeset and `validate_slug_not_username/1` to `Board` changeset so the conflict is caught at creation time with a clear error message on both sides.
+
 ## [1.3.54] — 2026-03-20
 
 ### Added
