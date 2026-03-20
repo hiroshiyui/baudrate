@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.56] — 2026-03-20
+
+### Added
+
+- **Handle reservation on deletion (anti-fraud)** — When a bot account or board is deleted, its username/slug is permanently recorded in a new `reserved_handles` table. Subsequent attempts to register a username or create a board with a reserved handle are rejected with a clear error message, preventing impersonation of well-known identities after deletion. Reservation happens inside the deletion transaction so no handle leaks on rollback. Both the `User` and `Board` changeset validators now check this table in addition to the existing cross-type conflict check.
+
 ## [1.3.55] — 2026-03-20
 
 ### Fixed
