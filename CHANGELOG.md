@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.57] — 2026-03-20
+
+### Changed
+
+- **Fediverse handle icon size increased** — The `hero-identification` icon next to the fediverse handle on user profile and board pages is now `size-6` (24 px) for better visual prominence.
+
 ## [1.3.56] — 2026-03-20
 
 ### Added
