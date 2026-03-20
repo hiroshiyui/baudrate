@@ -149,7 +149,8 @@ defmodule Baudrate.Setup.User do
     |> validate_username_not_board_slug()
   end
 
-  # Prevents a username from shadowing a board in WebFinger resolution.
+  # Prevents a username from shadowing a board in WebFinger resolution, and
+  # prevents re-registration of handles freed by deletion (anti-fraud).
   # WebFinger resolves users before boards for bare-slug queries, so a username
   # that matches a board slug (case-insensitively) would make the board
   # undiscoverable via federation.
@@ -157,10 +158,15 @@ defmodule Baudrate.Setup.User do
     validate_change(changeset, :username, fn :username, username ->
       slug = String.downcase(username)
 
-      if Baudrate.Repo.exists?(from b in "boards", where: b.slug == ^slug) do
-        [username: "is already used by a board on this instance"]
-      else
-        []
+      cond do
+        Baudrate.Repo.exists?(from b in "boards", where: b.slug == ^slug) ->
+          [username: "is already used by a board on this instance"]
+
+        Baudrate.Repo.exists?(from r in "reserved_handles", where: r.handle == ^slug) ->
+          [username: "has been reserved and is no longer available"]
+
+        true ->
+          []
       end
     end)
   end

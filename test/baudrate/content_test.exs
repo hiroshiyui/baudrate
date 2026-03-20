@@ -2097,6 +2097,54 @@ defmodule Baudrate.ContentTest do
     end
   end
 
+  describe "delete_board/1 handle reservation" do
+    test "reserves the board slug after deletion" do
+      slug = "reserveme#{System.unique_integer([:positive])}"
+      board = create_board(%{name: "Reserve Me", slug: slug})
+      assert {:ok, _} = Content.delete_board(board)
+
+      assert Repo.exists?(
+               from r in "reserved_handles",
+                 where: r.handle == ^slug and r.handle_type == "board"
+             )
+    end
+
+    test "prevents creating a new board with a deleted board's slug" do
+      slug = "recycled#{System.unique_integer([:positive])}"
+      board = create_board(%{name: "Recycled", slug: slug})
+      assert {:ok, _} = Content.delete_board(board)
+
+      changeset =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{name: "New Board", slug: slug})
+
+      refute changeset.valid?
+      assert %{slug: [msg]} = errors_on(changeset)
+      assert msg =~ "reserved"
+    end
+
+    test "prevents registering a username matching a deleted board's slug" do
+      slug = "claimme#{System.unique_integer([:positive])}"
+      board = create_board(%{name: "Claim Me", slug: slug})
+      assert {:ok, _} = Content.delete_board(board)
+
+      role = Repo.one!(from r in Baudrate.Setup.Role, where: r.name == "user")
+
+      changeset =
+        %Baudrate.Setup.User{}
+        |> Baudrate.Setup.User.registration_changeset(%{
+          "username" => slug,
+          "password" => "Password123!x",
+          "password_confirmation" => "Password123!x",
+          "role_id" => role.id
+        })
+
+      refute changeset.valid?
+      assert %{username: [msg]} = errors_on(changeset)
+      assert msg =~ "reserved"
+    end
+  end
+
   describe "seed_sysop_board/1" do
     test "creates sysop board and assigns moderator" do
       user = create_user("admin")

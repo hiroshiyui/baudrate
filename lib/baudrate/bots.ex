@@ -11,6 +11,7 @@ defmodule Baudrate.Bots do
   require Logger
 
   alias Baudrate.Repo
+  alias Baudrate.Auth.ReservedHandle
   alias Baudrate.Bots.{Bot, BotFeedItem}
   alias Baudrate.Content.Article
   alias Baudrate.Setup.{Role, User}
@@ -138,8 +139,21 @@ defmodule Baudrate.Bots do
       case Repo.delete(bot) do
         {:ok, deleted_bot} ->
           case Repo.delete(bot.user) do
-            {:ok, _} -> deleted_bot
-            {:error, changeset} -> Repo.rollback(changeset)
+            {:ok, deleted_user} ->
+              now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+              %ReservedHandle{}
+              |> ReservedHandle.changeset(%{
+                handle: deleted_user.username,
+                handle_type: "user",
+                reserved_at: now
+              })
+              |> Repo.insert!(on_conflict: :nothing)
+
+              deleted_bot
+
+            {:error, changeset} ->
+              Repo.rollback(changeset)
           end
 
         {:error, changeset} ->

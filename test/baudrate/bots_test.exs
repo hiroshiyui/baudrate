@@ -129,6 +129,52 @@ defmodule Baudrate.BotsTest do
       assert is_nil(Repo.get(Baudrate.Setup.User, user_id))
       assert is_nil(Repo.get(Bot, bot.id))
     end
+
+    test "reserves the bot username after deletion" do
+      username = "reservebot_#{System.unique_integer([:positive])}"
+
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => username,
+          "feed_url" => "https://example.com/feed.xml",
+          "board_ids" => []
+        })
+
+      assert {:ok, _} = Bots.delete_bot(bot)
+
+      assert Repo.exists?(
+               from r in "reserved_handles",
+                 where: r.handle == ^username and r.handle_type == "user"
+             )
+    end
+
+    test "prevents re-registration of a deleted bot username" do
+      alias Baudrate.Setup.User
+      username = "reusebot_#{System.unique_integer([:positive])}"
+
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => username,
+          "feed_url" => "https://example.com/feed.xml",
+          "board_ids" => []
+        })
+
+      role = Repo.one!(from r in Role, where: r.name == "user")
+      assert {:ok, _} = Bots.delete_bot(bot)
+
+      changeset =
+        %User{}
+        |> User.registration_changeset(%{
+          "username" => username,
+          "password" => "Password123!x",
+          "password_confirmation" => "Password123!x",
+          "role_id" => role.id
+        })
+
+      refute changeset.valid?
+      assert %{username: [msg]} = errors_on(changeset)
+      assert msg =~ "reserved"
+    end
   end
 
   describe "already_posted?/3" do

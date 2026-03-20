@@ -85,17 +85,23 @@ defmodule Baudrate.Content.Board do
   end
 
   # Prevents a board slug from shadowing (or being shadowed by) a user account in
-  # WebFinger resolution. WebFinger resolves users before boards for bare-slug
-  # queries, so a board slug that matches an existing username would be
-  # undiscoverable via federation.
+  # WebFinger resolution, and prevents re-use of handles freed by deletion
+  # (anti-fraud). WebFinger resolves users before boards for bare-slug queries,
+  # so a board slug that matches an existing username would be undiscoverable via
+  # federation.
   defp validate_slug_not_username(changeset) do
     validate_change(changeset, :slug, fn :slug, slug ->
-      if Baudrate.Repo.exists?(
-           from u in "users", where: fragment("lower(?)", u.username) == ^slug
-         ) do
-        [slug: "is already used by a user account on this instance"]
-      else
-        []
+      cond do
+        Baudrate.Repo.exists?(
+          from u in "users", where: fragment("lower(?)", u.username) == ^slug
+        ) ->
+          [slug: "is already used by a user account on this instance"]
+
+        Baudrate.Repo.exists?(from r in "reserved_handles", where: r.handle == ^slug) ->
+          [slug: "has been reserved and is no longer available"]
+
+        true ->
+          []
       end
     end)
   end

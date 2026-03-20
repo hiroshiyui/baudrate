@@ -10,6 +10,8 @@ defmodule Baudrate.Content.Boards do
   alias Baudrate.Repo
   alias Baudrate.Setup
 
+  alias Baudrate.Auth.ReservedHandle
+
   alias Baudrate.Content.{
     Board,
     BoardArticle,
@@ -194,7 +196,26 @@ defmodule Baudrate.Content.Boards do
         {:error, :has_children}
 
       true ->
-        result = Repo.delete(board)
+        result =
+          Repo.transaction(fn ->
+            case Repo.delete(board) do
+              {:ok, deleted_board} ->
+                now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+                %ReservedHandle{}
+                |> ReservedHandle.changeset(%{
+                  handle: deleted_board.slug,
+                  handle_type: "board",
+                  reserved_at: now
+                })
+                |> Repo.insert!(on_conflict: :nothing)
+
+                deleted_board
+
+              {:error, changeset} ->
+                Repo.rollback(changeset)
+            end
+          end)
 
         with {:ok, _} <- result, true <- board_cache_enabled?() do
           BoardCache.refresh()
