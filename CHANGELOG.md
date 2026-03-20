@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.53] — 2026-03-20
+
+### Fixed
+
+- **PWA draft content cleared on return from background** — When a user switched away from the app and came back, LiveView reconnected and re-rendered the page with empty server state, wiping any in-progress draft. Added a `reconnected()` callback to `DraftSaveHook` that restores saved draft content from `localStorage` via `requestAnimationFrame` after LiveView finishes patching the DOM.
+
 ## [1.3.52] — 2026-03-19
 
 ### Added
