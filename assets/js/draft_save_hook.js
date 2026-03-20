@@ -33,6 +33,12 @@ const DraftSaveHook = {
     this._restoreDraft()
   },
 
+  reconnected() {
+    // LiveView re-renders with server state on reconnect, overwriting
+    // any user-typed content. Restore from localStorage after the patch.
+    requestAnimationFrame(() => this._restoreDraft())
+  },
+
   destroyed() {
     if (this._debounceTimer) clearTimeout(this._debounceTimer)
     if (this._fadeTimer) clearTimeout(this._fadeTimer)
