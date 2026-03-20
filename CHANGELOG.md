@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.54] — 2026-03-20
+
+### Added
+
+- **Fediverse handle on user profiles and board pages** — Registered users and federated boards now display their fediverse handle (e.g. `@hiroshiyui@baudrate.tw`) with a heroicon identification icon. The handle is always shown on user profile pages; on board pages it appears only when `ap_enabled` is true. Added `fediverse_handle/1` helper in `BaudrateWeb.Helpers` (delegated via `core_components.ex`). Translations added for zh_TW (`聯邦宇宙帳號`) and ja_JP (`Fediverseハンドル`).
+
 ## [1.3.53] — 2026-03-20
 
 ### Fixed
