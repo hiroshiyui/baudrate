@@ -228,6 +228,28 @@ defmodule BaudrateWeb.Helpers do
   def participant_name(_), do: "?"
 
   @doc """
+  Returns the fediverse handle for a local user or board.
+
+  ## Examples
+
+      iex> fediverse_handle(%User{username: "alice"})
+      "@alice@baudrate.tw"
+
+      iex> fediverse_handle(%Board{slug: "sysop"})
+      "@sysop@baudrate.tw"
+
+  """
+  def fediverse_handle(%Baudrate.Setup.User{username: username}) do
+    host = URI.parse(BaudrateWeb.Endpoint.url()).host
+    "@#{username}@#{host}"
+  end
+
+  def fediverse_handle(%Baudrate.Content.Board{slug: slug}) do
+    host = URI.parse(BaudrateWeb.Endpoint.url()).host
+    "@#{slug}@#{host}"
+  end
+
+  @doc """
   Translates a user status to a localized display string.
   """
   def translate_status("active"), do: gettext("active")

@@ -55,6 +55,9 @@ defmodule BaudrateWeb.CoreComponents do
   @doc "Returns the canonical display timestamp for an article (published_at || inserted_at). See `BaudrateWeb.Helpers.article_datetime/1`."
   defdelegate article_datetime(article), to: BaudrateWeb.Helpers
 
+  @doc "Returns the fediverse handle for a local user or board. See `BaudrateWeb.Helpers.fediverse_handle/1`."
+  defdelegate fediverse_handle(entity), to: BaudrateWeb.Helpers
+
   @doc """
   Renders flash notices.
 

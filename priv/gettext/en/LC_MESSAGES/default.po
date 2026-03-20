@@ -4944,6 +4944,12 @@ msgstr ""
 msgid "Fediverse"
 msgstr ""
 
+#: lib/baudrate_web/live/board_live.html.heex:17
+#: lib/baudrate_web/live/user_profile_live.html.heex:7
+#, elixir-autogen, elixir-format
+msgid "Fediverse handle"
+msgstr ""
+
 #: lib/baudrate_web/live/feed_live.ex:509
 #, elixir-autogen, elixir-format
 msgid "Failed to send reply."
