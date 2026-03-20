@@ -65,9 +65,11 @@ defmodule Baudrate.FederationTest do
       assert jrd["properties"]["https://www.w3.org/ns/activitystreams#type"] == "Group"
     end
 
-    test "bare name resolves user before board" do
-      # Use a name valid as both username and board slug (no underscores, no hyphens)
-      shared_name = "sharedname#{System.unique_integer([:positive])}"
+    test "bare name resolves user (no same-name board allowed)" do
+      # The conflict between a username and a board slug is now prevented by
+      # changeset validation. This test verifies that a user-only handle resolves
+      # correctly as a Person actor via WebFinger.
+      username = "onlyuser#{System.unique_integer([:positive])}"
 
       alias Baudrate.Setup
       alias Baudrate.Setup.{Role, User}
@@ -81,19 +83,76 @@ defmodule Baudrate.FederationTest do
       {:ok, _user} =
         %User{}
         |> User.registration_changeset(%{
-          "username" => shared_name,
+          "username" => username,
           "password" => "Password123!x",
           "password_confirmation" => "Password123!x",
           "role_id" => role.id
         })
         |> Repo.insert()
 
-      setup_board(shared_name)
       host = URI.parse(Federation.base_url()).host
 
-      {:ok, jrd} = Federation.webfinger("acct:#{shared_name}@#{host}")
+      {:ok, jrd} = Federation.webfinger("acct:#{username}@#{host}")
       assert [%{"href" => href}] = jrd["links"]
-      assert href =~ "/ap/users/#{shared_name}"
+      assert href =~ "/ap/users/#{username}"
+    end
+
+    test "username registration rejected when board slug conflicts" do
+      alias Baudrate.Setup
+      alias Baudrate.Setup.{Role, User}
+
+      unless Repo.exists?(from(r in Role, where: r.name == "admin")) do
+        Setup.seed_roles_and_permissions()
+      end
+
+      role = Repo.one!(from(r in Role, where: r.name == "user"))
+      slug = "conflictslug#{System.unique_integer([:positive])}"
+      setup_board(slug)
+
+      changeset =
+        %User{}
+        |> User.registration_changeset(%{
+          "username" => slug,
+          "password" => "Password123!x",
+          "password_confirmation" => "Password123!x",
+          "role_id" => role.id
+        })
+
+      refute changeset.valid?
+      assert %{username: [msg]} = errors_on(changeset)
+      assert msg =~ "already used by a board"
+    end
+
+    test "board creation rejected when username conflicts" do
+      alias Baudrate.Setup
+      alias Baudrate.Setup.{Role, User}
+      alias Baudrate.Content.Board
+
+      unless Repo.exists?(from(r in Role, where: r.name == "admin")) do
+        Setup.seed_roles_and_permissions()
+      end
+
+      role = Repo.one!(from(r in Role, where: r.name == "user"))
+      # username is lowercase-only so it matches a board slug after downcasing
+      username = "conflictuser#{System.unique_integer([:positive])}"
+
+      {:ok, _user} =
+        %User{}
+        |> User.registration_changeset(%{
+          "username" => username,
+          "password" => "Password123!x",
+          "password_confirmation" => "Password123!x",
+          "role_id" => role.id
+        })
+        |> Repo.insert()
+
+      changeset =
+        %Board{}
+        |> Board.changeset(%{name: "Conflict Board", slug: username})
+
+      refute changeset.valid?
+      assert %{slug: [msg]} = errors_on(changeset)
+      assert msg =~ "already used by a user account"
     end
 
     test "resolves site (instance actor) by acct URI" do

@@ -68,9 +68,11 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       assert body["properties"]["https://www.w3.org/ns/activitystreams#type"] == "Group"
     end
 
-    test "bare name resolves user before board", %{conn: conn} do
-      # Use a name valid as both username and board slug (no underscores, no hyphens)
-      shared_name = "sharedname#{System.unique_integer([:positive])}"
+    test "bare name resolves user (no same-name board allowed)", %{conn: conn} do
+      # Conflicts between usernames and board slugs are now prevented by changeset
+      # validation. This test verifies that a user-only handle resolves correctly
+      # as a Person actor via the WebFinger HTTP endpoint.
+      username = "onlyuser#{System.unique_integer([:positive])}"
       host = URI.parse(BaudrateWeb.Endpoint.url()).host
 
       alias Baudrate.Setup
@@ -85,25 +87,22 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       {:ok, _user} =
         %User{}
         |> User.registration_changeset(%{
-          "username" => shared_name,
+          "username" => username,
           "password" => "Password123!x",
           "password_confirmation" => "Password123!x",
           "role_id" => role.id
         })
         |> Repo.insert()
 
-      setup_board(%{slug: shared_name})
-
       conn =
         conn
         |> json_conn()
-        |> get("/.well-known/webfinger?resource=acct:#{shared_name}@#{host}")
+        |> get("/.well-known/webfinger?resource=acct:#{username}@#{host}")
 
       body = json_response(conn, 200)
 
-      # Should resolve as user, not board
       assert [%{"href" => href}] = body["links"]
-      assert href =~ "/ap/users/#{shared_name}"
+      assert href =~ "/ap/users/#{username}"
     end
 
     test "resolves site (instance actor) acct resource", %{conn: conn} do

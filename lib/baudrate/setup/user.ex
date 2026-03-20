@@ -82,6 +82,7 @@ defmodule Baudrate.Setup.User do
 
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query, only: [from: 2]
 
   schema "users" do
     field :username, :string
@@ -145,6 +146,23 @@ defmodule Baudrate.Setup.User do
       message: "only allows letters, numbers, and underscores"
     )
     |> unique_constraint(:username)
+    |> validate_username_not_board_slug()
+  end
+
+  # Prevents a username from shadowing a board in WebFinger resolution.
+  # WebFinger resolves users before boards for bare-slug queries, so a username
+  # that matches a board slug (case-insensitively) would make the board
+  # undiscoverable via federation.
+  defp validate_username_not_board_slug(changeset) do
+    validate_change(changeset, :username, fn :username, username ->
+      slug = String.downcase(username)
+
+      if Baudrate.Repo.exists?(from b in "boards", where: b.slug == ^slug) do
+        [username: "is already used by a board on this instance"]
+      else
+        []
+      end
+    end)
   end
 
   defp validate_password(changeset) do

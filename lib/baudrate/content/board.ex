@@ -16,6 +16,7 @@ defmodule Baudrate.Content.Board do
 
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query, only: [from: 2]
 
   alias Baudrate.Content.{Article, BoardArticle, BoardModerator}
 
@@ -80,6 +81,23 @@ defmodule Baudrate.Content.Board do
     )
     |> assoc_constraint(:parent)
     |> unique_constraint(:slug)
+    |> validate_slug_not_username()
+  end
+
+  # Prevents a board slug from shadowing (or being shadowed by) a user account in
+  # WebFinger resolution. WebFinger resolves users before boards for bare-slug
+  # queries, so a board slug that matches an existing username would be
+  # undiscoverable via federation.
+  defp validate_slug_not_username(changeset) do
+    validate_change(changeset, :slug, fn :slug, slug ->
+      if Baudrate.Repo.exists?(
+           from u in "users", where: fragment("lower(?)", u.username) == ^slug
+         ) do
+        [slug: "is already used by a user account on this instance"]
+      else
+        []
+      end
+    end)
   end
 
   @doc """
