@@ -4,7 +4,7 @@
     <div>
       <h1 id="user-profile-heading" class="text-2xl font-bold">{display_name(@profile_user)}</h1>
       <div class="text-sm text-base-content/70 flex items-center gap-1">
-        <.icon name="hero-identification" class="size-4 shrink-0" />
+        <.icon name="hero-identification" class="size-6 shrink-0" />
         <span title={gettext("Fediverse handle")}>{fediverse_handle(@profile_user)}</span>
       </div>
       <span class="badge badge-outline">{translate_role(@profile_user.role.name)}</span>

@@ -14,7 +14,7 @@
 <h1 id="board-heading" class="text-2xl font-bold mb-2">{@board.name}</h1>
 <p :if={@board.description} class="text-base-content/70 mb-2">{@board.description}</p>
 <div :if={@board.ap_enabled} class="text-sm text-base-content/70 flex items-center gap-1 mb-4">
-  <.icon name="hero-identification" class="size-4 shrink-0" />
+  <.icon name="hero-identification" class="size-6 shrink-0" />
   <span title={gettext("Fediverse handle")}>{fediverse_handle(@board)}</span>
 </div>
 
