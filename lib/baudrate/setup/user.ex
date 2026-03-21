@@ -299,6 +299,7 @@ defmodule Baudrate.Setup.User do
     result =
       name
       |> Baudrate.Sanitizer.Native.strip_tags()
+      |> Baudrate.Sanitizer.Native.decode_html_entities()
       # Remove control characters
       |> String.replace(~r/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/, "")
       # Remove Unicode bidi override characters

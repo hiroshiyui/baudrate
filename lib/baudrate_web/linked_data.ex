@@ -311,6 +311,7 @@ defmodule BaudrateWeb.LinkedData do
   def excerpt(text) do
     text
     |> Sanitizer.strip_tags()
+    |> Sanitizer.decode_html_entities()
     |> String.replace(~r/\s+/, " ")
     |> String.trim()
     |> then(fn plain ->

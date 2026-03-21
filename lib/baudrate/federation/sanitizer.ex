@@ -43,6 +43,7 @@ defmodule Baudrate.Federation.Sanitizer do
   def sanitize_display_name(name) when is_binary(name) do
     name
     |> Baudrate.Sanitizer.Native.strip_tags()
+    |> Baudrate.Sanitizer.Native.decode_html_entities()
     |> String.replace(~r/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/, "")
     |> String.trim()
     |> truncate_display_name(100)

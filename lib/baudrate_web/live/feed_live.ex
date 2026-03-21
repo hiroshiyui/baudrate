@@ -563,6 +563,7 @@ defmodule BaudrateWeb.FeedLive do
     plain =
       text
       |> Baudrate.Sanitizer.Native.strip_tags()
+      |> Baudrate.Sanitizer.Native.decode_html_entities()
       |> String.replace(~r/\s+/, " ")
       |> String.trim()
 

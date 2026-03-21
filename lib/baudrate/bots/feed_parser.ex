@@ -78,18 +78,19 @@ defmodule Baudrate.Bots.FeedParser do
     trimmed = String.trim(raw)
     text = if trimmed == "", do: "(untitled)", else: trimmed
 
-    # feedparser-rs already decodes XML entities (e.g. &amp; → &), so titles
-    # are typically plain text.  Passing plain text with bare `&` through Ammonia
-    # would mangle it (Ammonia may interpret bare `&` as the start of an entity
-    # reference).  Only invoke strip_tags when the title actually contains markup.
+    # Strip HTML tags if present (Ammonia's strip_tags re-encodes entities, so
+    # decode them afterwards).  Also decode entities on plain-text titles —
+    # feedparser-rs decodes XML entities for most feeds, but some feeds supply
+    # HTML-encoded titles (e.g. "Rust &amp; Ruby") without any markup, so the
+    # entity decode must always run.
     text =
       if String.contains?(text, "<") do
         text
         |> Baudrate.Sanitizer.Native.strip_tags()
-        |> decode_html_entities()
       else
         text
       end
+      |> Baudrate.Sanitizer.Native.decode_html_entities()
 
     text
     |> String.trim()
@@ -136,18 +137,4 @@ defmodule Baudrate.Bots.FeedParser do
     end
   end
 
-  # Decodes the five standard XML/HTML entities that Ammonia re-encodes when
-  # serializing strip_tags output.  Titles must be plain text so that Phoenix
-  # HEEx auto-escaping renders them correctly in the browser.
-  defp decode_html_entities(str) do
-    Regex.replace(~r/&(amp|lt|gt|quot|apos|#39);/, str, fn _, name ->
-      case name do
-        "amp" -> "&"
-        "lt" -> "<"
-        "gt" -> ">"
-        "quot" -> "\""
-        _ -> "'"
-      end
-    end)
-  end
 end
