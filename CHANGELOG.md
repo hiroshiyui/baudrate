@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.3.58] — 2026-03-22
+
+### Fixed
+
+- **HTML entity double-encoding in article digests and display names** — `strip_tags` (Ammonia) re-encodes special characters as HTML entities (e.g. `&` → `&amp;`). When the output was interpolated into a HEEx template, Phoenix would escape it again (`&amp;amp;`), causing browsers to render literal `&amp;` instead of `&`. Added a public `decode_html_entities/1` helper to `Baudrate.Sanitizer.Native` and applied it after every `strip_tags` call whose result is used as plain text: `digest/1` in board, feed, and user-profile live views; `excerpt/1` in `linked_data.ex`; `sanitize_display_name/1` in `Federation.Sanitizer` and `Setup.User`; and `normalize_title/1` in the RSS/Atom feed parser.
+
 ## [1.3.57] — 2026-03-20
 
 ### Changed
