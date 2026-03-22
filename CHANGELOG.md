@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.4.0] — 2026-03-22
+
+### Added
+
+- **Image attachments for comments** — Users can now attach up to 4 images (JPEG, PNG, WebP, GIF, max 8 MB each) when posting a comment or inline reply on an article page. Images are processed to WebP with EXIF stripped and dimensions capped at 1024 px, displayed as a gallery below the comment body. Attached images are included as `attachment` entries in federated `Create(Note)` ActivityPub activities so remote instances can display them. Orphaned uploads (never submitted) are cleaned up after 24 hours by `SessionCleaner`.
+- **Image attachments for feed replies** — The same upload capability is available when replying to a remote actor's post on the `/feed` page. Up to 4 images per reply; images are sent as AP attachments to the remote actor's inbox and the replying user's AP follower inboxes. Previously sent reply images are shown in the local reply list.
+- **`CommentImage` and `FeedItemReplyImage` schemas** — New DB tables (`comment_images`, `feed_item_reply_images`) with nullable FK columns supporting the upload-before-save pattern; cascade-deleted with their parent records.
+
 ## [1.3.58] — 2026-03-22
 
 ### Fixed
