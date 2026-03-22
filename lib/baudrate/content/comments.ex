@@ -29,11 +29,18 @@ defmodule Baudrate.Content.Comments do
 
   Renders the body to HTML via `Markdown.to_html/1` and publishes a
   `Create(Note)` activity to federation.
+
+  ## Options
+
+    * `:image_ids` — list of `CommentImage` IDs (integers) to associate with
+      the comment after insertion. Only orphan images owned by the comment
+      author are associated.
   """
-  @spec create_comment(map()) :: {:ok, %Comment{}} | {:error, Ecto.Changeset.t()}
-  def create_comment(attrs) do
+  @spec create_comment(map(), keyword()) :: {:ok, %Comment{}} | {:error, Ecto.Changeset.t()}
+  def create_comment(attrs, opts \\ []) do
     attrs = attrs |> Map.new(fn {k, v} -> {to_string(k), v} end)
     body_html = Baudrate.Content.Markdown.to_html(attrs["body"] || "")
+    image_ids = Keyword.get(opts, :image_ids, [])
 
     result =
       %Comment{}
@@ -41,6 +48,11 @@ defmodule Baudrate.Content.Comments do
       |> Repo.insert()
 
     with {:ok, comment} <- result do
+      # Associate uploaded images with the comment
+      if image_ids != [] and comment.user_id do
+        Baudrate.Content.Images.associate_comment_images(comment.id, image_ids, comment.user_id)
+      end
+
       # Stamp the local AP ID so remote replies can resolve back to this comment
       comment = stamp_local_ap_id(comment)
 
@@ -54,7 +66,7 @@ defmodule Baudrate.Content.Comments do
         Baudrate.Notification.Hooks.notify_comment_created(comment)
 
         schedule_federation_task(fn ->
-          comment = Repo.preload(comment, [:user])
+          comment = Repo.preload(comment, [:user, :images])
           article = Repo.get!(Article, comment.article_id) |> Repo.preload([:boards, :user])
           Baudrate.Federation.Publisher.publish_comment_created(comment, article)
         end)
@@ -124,7 +136,7 @@ defmodule Baudrate.Content.Comments do
     from(c in Comment,
       where: c.article_id == ^article_id and is_nil(c.deleted_at),
       order_by: [asc: c.inserted_at, asc: c.id],
-      preload: [:user, :remote_actor, :link_preview]
+      preload: [:user, :remote_actor, :link_preview, :images]
     )
     |> Repo.all()
   end
@@ -135,7 +147,7 @@ defmodule Baudrate.Content.Comments do
     from(c in Comment,
       where: c.article_id == ^article_id and is_nil(c.deleted_at),
       order_by: [asc: c.inserted_at, asc: c.id],
-      preload: [:user, :remote_actor, :link_preview]
+      preload: [:user, :remote_actor, :link_preview, :images]
     )
     |> Filters.apply_hidden_filters(hidden_uids, hidden_ap_ids)
     |> Repo.all()
@@ -180,7 +192,7 @@ defmodule Baudrate.Content.Comments do
         order_by: [asc: c.inserted_at, asc: c.id],
         offset: ^offset,
         limit: ^per_page,
-        preload: [:user, :remote_actor, :link_preview]
+        preload: [:user, :remote_actor, :link_preview, :images]
       )
       |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
 
@@ -212,7 +224,7 @@ defmodule Baudrate.Content.Comments do
           c.article_id == ^article_id and is_nil(c.deleted_at) and
             c.parent_id in ^parent_ids,
         order_by: [asc: c.inserted_at, asc: c.id],
-        preload: [:user, :remote_actor, :link_preview]
+        preload: [:user, :remote_actor, :link_preview, :images]
       )
       |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
 

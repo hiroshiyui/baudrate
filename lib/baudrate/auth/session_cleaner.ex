@@ -11,6 +11,10 @@ defmodule Baudrate.Auth.SessionCleaner do
     * `Auth.purge_old_login_attempts/0` — removes login attempts older than 7 days
     * Orphan article images — deletes images uploaded during article composition
       but never associated with an article (older than 24 hours)
+    * Orphan comment images — deletes images uploaded during comment composition
+      but never associated with a comment (older than 24 hours)
+    * Orphan reply images — deletes images uploaded during feed reply composition
+      but never associated with a reply (older than 24 hours)
     * Delivery jobs — purges delivered jobs older than 7 days and abandoned
       jobs older than 30 days
 
@@ -39,6 +43,8 @@ defmodule Baudrate.Auth.SessionCleaner do
     Baudrate.Auth.purge_expired_sessions()
     Baudrate.Auth.purge_old_login_attempts()
     cleanup_orphan_article_images()
+    cleanup_orphan_comment_images()
+    cleanup_orphan_reply_images()
     cleanup_delivery_jobs()
     refresh_stale_link_previews()
     purge_orphan_link_previews()
@@ -90,6 +96,34 @@ defmodule Baudrate.Auth.SessionCleaner do
         :ok -> :ok
         {:error, :enoent} -> :ok
         {:error, reason} -> Logger.warning("Failed to delete orphan image #{path}: #{reason}")
+      end
+    end
+  end
+
+  defp cleanup_orphan_comment_images do
+    cutoff = DateTime.utc_now() |> DateTime.add(-24, :hour)
+    paths = Baudrate.Content.delete_orphan_comment_images(cutoff)
+
+    for path <- paths do
+      case File.rm(path) do
+        :ok -> :ok
+        {:error, :enoent} -> :ok
+        {:error, reason} ->
+          Logger.warning("Failed to delete orphan comment image #{path}: #{reason}")
+      end
+    end
+  end
+
+  defp cleanup_orphan_reply_images do
+    cutoff = DateTime.utc_now() |> DateTime.add(-24, :hour)
+    paths = Baudrate.Federation.delete_orphan_reply_images(cutoff)
+
+    for path <- paths do
+      case File.rm(path) do
+        :ok -> :ok
+        {:error, :enoent} -> :ok
+        {:error, reason} ->
+          Logger.warning("Failed to delete orphan reply image #{path}: #{reason}")
       end
     end
   end

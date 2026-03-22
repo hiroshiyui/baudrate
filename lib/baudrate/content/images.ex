@@ -1,8 +1,9 @@
 defmodule Baudrate.Content.Images do
   @moduledoc """
-  Article image management.
+  Article and comment image management.
 
-  Handles creation, listing, association, and cleanup of article images.
+  Handles creation, listing, association, and cleanup of article images
+  and comment images.
   """
 
   require Logger
@@ -11,6 +12,7 @@ defmodule Baudrate.Content.Images do
   alias Baudrate.Repo
   alias Baudrate.Content.ArticleImage
   alias Baudrate.Content.ArticleImageStorage
+  alias Baudrate.Content.CommentImage
   alias Baudrate.Federation.HTTPClient
 
   @doc """
@@ -101,6 +103,102 @@ defmodule Baudrate.Content.Images do
 
     from(ai in ArticleImage,
       where: is_nil(ai.article_id) and ai.inserted_at < ^cutoff
+    )
+    |> Repo.delete_all()
+
+    paths
+  end
+
+  # --- Comment Images ---
+
+  @doc """
+  Creates a comment image record.
+  """
+  def create_comment_image(attrs) do
+    %CommentImage{}
+    |> CommentImage.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Lists images for a comment, ordered by insertion time.
+  """
+  def list_comment_images(comment_id) do
+    from(ci in CommentImage,
+      where: ci.comment_id == ^comment_id,
+      order_by: [asc: ci.inserted_at, asc: ci.id]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists orphan images (no comment) for a user, for use during comment composition.
+  """
+  def list_orphan_comment_images(user_id) do
+    from(ci in CommentImage,
+      where: ci.user_id == ^user_id and is_nil(ci.comment_id),
+      order_by: [asc: ci.inserted_at, asc: ci.id]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Deletes a comment image record and its file on disk.
+  """
+  def delete_comment_image(%CommentImage{} = image) do
+    ArticleImageStorage.delete_image(image)
+    Repo.delete(image)
+  end
+
+  @doc """
+  Associates orphan comment images with a comment by setting their `comment_id`.
+  Only updates images owned by the given user that currently have no comment.
+  """
+  def associate_comment_images(comment_id, image_ids, user_id) when is_list(image_ids) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    from(ci in CommentImage,
+      where:
+        ci.id in ^image_ids and
+          ci.user_id == ^user_id and
+          is_nil(ci.comment_id)
+    )
+    |> Repo.update_all(set: [comment_id: comment_id, updated_at: now])
+  end
+
+  @doc """
+  Fetches a comment image by ID.
+  """
+  def get_comment_image!(id), do: Repo.get!(CommentImage, id)
+
+  @doc """
+  Returns the count of images for a comment.
+  """
+  def count_comment_images(comment_id) do
+    Repo.one(
+      from(ci in CommentImage,
+        where: ci.comment_id == ^comment_id,
+        select: count(ci.id)
+      )
+    ) || 0
+  end
+
+  @doc """
+  Deletes orphan comment images older than the given cutoff.
+  Returns the list of storage paths that were deleted from the database
+  (caller should delete the files from disk).
+  """
+  def delete_orphan_comment_images(cutoff) do
+    query =
+      from(ci in CommentImage,
+        where: is_nil(ci.comment_id) and ci.inserted_at < ^cutoff,
+        select: ci.storage_path
+      )
+
+    paths = Repo.all(query)
+
+    from(ci in CommentImage,
+      where: is_nil(ci.comment_id) and ci.inserted_at < ^cutoff
     )
     |> Repo.delete_all()
 

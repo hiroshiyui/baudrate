@@ -6,6 +6,10 @@ defmodule Baudrate.Federation.FeedItemReply do
   body (Markdown source + rendered HTML) is stored here alongside the
   generated ActivityPub ID. The corresponding `Create(Note)` activity is
   delivered to the remote actor's inbox and the replying user's AP followers.
+
+  Replies may include up to 4 attached images (see `FeedItemReplyImage`).
+  Images are displayed in the local reply list and included as `attachment`
+  entries in federated `Create(Note)` activities.
   """
 
   use Ecto.Schema
@@ -13,6 +17,7 @@ defmodule Baudrate.Federation.FeedItemReply do
 
   alias Baudrate.Content.LinkPreview
   alias Baudrate.Federation.FeedItem
+  alias Baudrate.Federation.FeedItemReplyImage
   alias Baudrate.Setup.User
 
   schema "feed_item_replies" do
@@ -23,6 +28,8 @@ defmodule Baudrate.Federation.FeedItemReply do
     field :body, :string
     field :body_html, :string
     field :ap_id, :string
+
+    has_many :images, FeedItemReplyImage, foreign_key: :reply_id
 
     timestamps(type: :utc_datetime)
   end

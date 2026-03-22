@@ -136,7 +136,7 @@ defmodule Baudrate.Content do
 
   # --- Comments ---
 
-  defdelegate create_comment(attrs), to: Comments
+  defdelegate create_comment(attrs, opts \\ []), to: Comments
   defdelegate create_remote_comment(attrs), to: Comments
   defdelegate get_comment(id), to: Comments
   defdelegate get_comment_by_ap_id(ap_id), to: Comments
@@ -245,6 +245,17 @@ defmodule Baudrate.Content do
   defdelegate get_article_image!(id), to: Images
   defdelegate count_article_images(article_id), to: Images
   defdelegate delete_orphan_article_images(cutoff), to: Images
+
+  # --- Comment Images ---
+
+  defdelegate create_comment_image(attrs), to: Images
+  defdelegate list_comment_images(comment_id), to: Images
+  defdelegate list_orphan_comment_images(user_id), to: Images
+  defdelegate delete_comment_image(image), to: Images
+  defdelegate associate_comment_images(comment_id, image_ids, user_id), to: Images
+  defdelegate get_comment_image!(id), to: Images
+  defdelegate count_comment_images(comment_id), to: Images
+  defdelegate delete_orphan_comment_images(cutoff), to: Images
 
   # --- Article Tags ---
 

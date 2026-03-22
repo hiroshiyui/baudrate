@@ -90,7 +90,8 @@ defmodule Baudrate.Federation do
     Discovery,
     Feed,
     Follows,
-    ObjectBuilder
+    ObjectBuilder,
+    ReplyImages
   }
 
   # --- URI Utilities ---
@@ -207,9 +208,16 @@ defmodule Baudrate.Federation do
   defdelegate get_feed_item_by_ap_id(ap_id), to: Feed
   defdelegate soft_delete_feed_item_by_ap_id(ap_id, remote_actor_id), to: Feed
   defdelegate cleanup_feed_items_for_actor(remote_actor_id), to: Feed
-  defdelegate create_feed_item_reply(feed_item, user, body), to: Feed
+  defdelegate create_feed_item_reply(feed_item, user, body, opts \\ []), to: Feed
   defdelegate list_feed_item_replies(feed_item_id), to: Feed
   defdelegate count_feed_item_replies(feed_item_ids), to: Feed
+
+  # --- Reply Images ---
+
+  defdelegate create_reply_image(attrs), to: ReplyImages
+  defdelegate delete_reply_image(image), to: ReplyImages
+  defdelegate get_reply_image!(id), to: ReplyImages
+  defdelegate delete_orphan_reply_images(cutoff), to: ReplyImages
   defdelegate toggle_feed_item_like(user, feed_item_id), to: Feed
   defdelegate feed_item_likes_by_user(user_id, feed_item_ids), to: Feed
   defdelegate toggle_feed_item_boost(user, feed_item_id), to: Feed

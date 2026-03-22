@@ -547,6 +547,41 @@
                     {format_datetime(reply.inserted_at)}
                   </span>
                   <p class="text-sm text-base-content/80 mt-0.5">{digest(reply.body_html)}</p>
+                  <%!-- Reply image gallery --%>
+                  <div
+                    :if={is_list(reply.images) && reply.images != []}
+                    class={[
+                      "grid gap-1 mt-1",
+                      length(reply.images) == 1 && "grid-cols-1",
+                      length(reply.images) >= 2 && "grid-cols-2"
+                    ]}
+                  >
+                    <a
+                      :for={img <- reply.images}
+                      href={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+                      target="_blank"
+                      rel="noopener"
+                      class="block overflow-hidden rounded-md"
+                      aria-label={
+                        gettext("Image %{number} (opens in new tab)",
+                          number: Enum.find_index(reply.images, &(&1.id == img.id)) + 1
+                        )
+                      }
+                    >
+                      <img
+                        src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+                        width={img.width}
+                        height={img.height}
+                        loading="lazy"
+                        class="w-full h-auto rounded-md border border-base-300"
+                        alt={
+                          gettext("Image %{number}",
+                            number: Enum.find_index(reply.images, &(&1.id == img.id)) + 1
+                          )
+                        }
+                      />
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -555,6 +590,7 @@
               for={@reply_form}
               phx-change="validate_reply"
               phx-submit="submit_reply"
+              class="space-y-2"
             >
               <input type="hidden" name="feed_item_id" value={item.feed_item.id} />
               <.input
@@ -563,6 +599,11 @@
                 rows={6}
                 placeholder={gettext("Write a reply...")}
                 aria-label={gettext("Write a reply...")}
+              />
+              <%!-- Image upload for reply --%>
+              <BaudrateWeb.CommentComponents.reply_image_upload_area
+                uploads={@uploads}
+                uploaded_images={@uploaded_reply_images}
               />
               <div class="flex justify-end gap-2 mt-2">
                 <button

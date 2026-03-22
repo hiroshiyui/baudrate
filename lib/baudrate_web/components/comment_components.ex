@@ -24,6 +24,8 @@ defmodule BaudrateWeb.CommentComponents do
   attr :forwarding_comment_id, :any, default: nil
   attr :comment_forward_search_results, :list, default: []
   attr :comment_forward_search_query, :string, default: ""
+  attr :uploads, :any, default: nil
+  attr :uploaded_comment_images, :list, default: []
 
   def comment_node(assigns) do
     assigns = assign(assigns, :children, Map.get(assigns.children_map, assigns.comment.id, []))
@@ -98,6 +100,42 @@ defmodule BaudrateWeb.CommentComponents do
           :if={@comment.link_preview && @comment.link_preview.status in ["fetched", "failed"]}
           preview={@comment.link_preview}
         />
+
+        <%!-- Comment image gallery --%>
+        <div
+          :if={is_list(@comment.images) && @comment.images != []}
+          class={[
+            "grid gap-2 mt-2",
+            length(@comment.images) == 1 && "grid-cols-1",
+            length(@comment.images) >= 2 && "grid-cols-2"
+          ]}
+        >
+          <a
+            :for={img <- @comment.images}
+            href={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+            target="_blank"
+            rel="noopener"
+            class="block overflow-hidden rounded-lg"
+            aria-label={
+              gettext("Image %{number} (opens in new tab)",
+                number: Enum.find_index(@comment.images, &(&1.id == img.id)) + 1
+              )
+            }
+          >
+            <img
+              src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+              width={img.width}
+              height={img.height}
+              loading="lazy"
+              class="w-full h-auto object-cover rounded-lg border border-base-300 hover:scale-[1.02] transition-transform duration-200"
+              alt={
+                gettext("Image %{number}",
+                  number: Enum.find_index(@comment.images, &(&1.id == img.id)) + 1
+                )
+              }
+            />
+          </a>
+        </div>
 
         <div
           :if={@comment.user && @comment.user.signature && @comment.user.signature != ""}
@@ -252,6 +290,12 @@ defmodule BaudrateWeb.CommentComponents do
               toolbar
               rows="6"
             />
+            <%!-- Image upload for reply --%>
+            <.comment_image_upload_area
+              :if={@uploads}
+              uploads={@uploads}
+              uploaded_images={@uploaded_comment_images}
+            />
             <div class="flex flex-wrap items-center gap-2 [&>.fieldset]:mb-0 [&>.fieldset]:p-0 [&_.label]:py-0">
               <.input
                 field={@comment_form[:visibility]}
@@ -298,11 +342,193 @@ defmodule BaudrateWeb.CommentComponents do
           forwarding_comment_id={@forwarding_comment_id}
           comment_forward_search_results={@comment_forward_search_results}
           comment_forward_search_query={@comment_forward_search_query}
+          uploads={@uploads}
+          uploaded_comment_images={@uploaded_comment_images}
         />
       <% end %>
     </div>
     """
   end
+
+  @doc """
+  Renders the image upload area for a comment or reply form.
+
+  Shows an add-images button, uploaded image thumbnails with remove buttons,
+  upload progress indicators, and error messages.
+  """
+  attr :uploads, :any, required: true
+  attr :uploaded_images, :list, default: []
+
+  def comment_image_upload_area(assigns) do
+    ~H"""
+    <div class="comment-image-upload">
+      <%!-- Add images button (hidden file input + label) --%>
+      <div :if={length(@uploaded_images) < 4} class="flex items-center gap-1 mb-2">
+        <.live_file_input upload={@uploads.comment_images} class="hidden" />
+        <label
+          for={@uploads.comment_images.ref}
+          class="btn btn-sm btn-ghost gap-1 cursor-pointer"
+          aria-label={gettext("Add Images")}
+        >
+          <.icon name="hero-photo" class="size-4" />
+          {gettext("Add Images")}
+        </label>
+      </div>
+
+      <%!-- Uploaded thumbnails --%>
+      <div :if={@uploaded_images != []} class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+        <div :for={img <- @uploaded_images} class="relative group aspect-square">
+          <img
+            src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+            class="w-full h-full object-cover rounded-lg border border-base-300"
+            loading="lazy"
+            alt={gettext("Uploaded image")}
+          />
+          <button
+            type="button"
+            phx-click="remove_comment_image"
+            phx-value-id={img.id}
+            class="absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+            aria-label={gettext("Remove image")}
+          >
+            <.icon name="hero-x-mark" class="size-4" />
+          </button>
+        </div>
+      </div>
+
+      <%!-- Upload progress --%>
+      <div
+        :for={entry <- @uploads.comment_images.entries}
+        class="flex items-center gap-2 text-sm mb-1"
+      >
+        <span class="truncate max-w-48">{entry.client_name}</span>
+        <progress value={entry.progress} max="100" class="progress progress-primary w-24">
+          {entry.progress}%
+        </progress>
+        <button
+          type="button"
+          phx-click="cancel_comment_image_upload"
+          phx-value-ref={entry.ref}
+          class="btn btn-sm btn-ghost text-error"
+          aria-label={gettext("Cancel upload")}
+        >
+          &times;
+        </button>
+      </div>
+
+      <%!-- Upload errors --%>
+      <div
+        :for={err <- upload_errors(@uploads.comment_images)}
+        class="text-sm text-error"
+        role="alert"
+      >
+        {upload_error_to_string(err)}
+      </div>
+      <div
+        :for={entry <- @uploads.comment_images.entries}
+        :if={upload_errors(@uploads.comment_images, entry) != []}
+      >
+        <div
+          :for={err <- upload_errors(@uploads.comment_images, entry)}
+          class="text-sm text-error"
+          role="alert"
+        >
+          {upload_error_to_string(err)}
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders the image upload area for a feed item reply form.
+
+  Identical layout to `comment_image_upload_area/1` but targets the
+  `:reply_images` upload channel and `remove_reply_image` / `cancel_reply_image_upload`
+  events.
+  """
+  attr :uploads, :any, required: true
+  attr :uploaded_images, :list, default: []
+
+  def reply_image_upload_area(assigns) do
+    ~H"""
+    <div class="reply-image-upload">
+      <div :if={length(@uploaded_images) < 4} class="flex items-center gap-1 mb-2">
+        <.live_file_input upload={@uploads.reply_images} class="hidden" />
+        <label
+          for={@uploads.reply_images.ref}
+          class="btn btn-sm btn-ghost gap-1 cursor-pointer"
+          aria-label={gettext("Add Images")}
+        >
+          <.icon name="hero-photo" class="size-4" />
+          {gettext("Add Images")}
+        </label>
+      </div>
+
+      <div :if={@uploaded_images != []} class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+        <div :for={img <- @uploaded_images} class="relative group aspect-square">
+          <img
+            src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
+            class="w-full h-full object-cover rounded-lg border border-base-300"
+            loading="lazy"
+            alt={gettext("Uploaded image")}
+          />
+          <button
+            type="button"
+            phx-click="remove_reply_image"
+            phx-value-id={img.id}
+            class="absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+            aria-label={gettext("Remove image")}
+          >
+            <.icon name="hero-x-mark" class="size-4" />
+          </button>
+        </div>
+      </div>
+
+      <div
+        :for={entry <- @uploads.reply_images.entries}
+        class="flex items-center gap-2 text-sm mb-1"
+      >
+        <span class="truncate max-w-48">{entry.client_name}</span>
+        <progress value={entry.progress} max="100" class="progress progress-primary w-24">
+          {entry.progress}%
+        </progress>
+        <button
+          type="button"
+          phx-click="cancel_reply_image_upload"
+          phx-value-ref={entry.ref}
+          class="btn btn-sm btn-ghost text-error"
+          aria-label={gettext("Cancel upload")}
+        >
+          &times;
+        </button>
+      </div>
+
+      <div
+        :for={err <- upload_errors(@uploads.reply_images)}
+        class="text-sm text-error"
+        role="alert"
+      >
+        {upload_error_to_string(err)}
+      </div>
+      <div
+        :for={entry <- @uploads.reply_images.entries}
+        :if={upload_errors(@uploads.reply_images, entry) != []}
+      >
+        <div
+          :for={err <- upload_errors(@uploads.reply_images, entry)}
+          class="text-sm text-error"
+          role="alert"
+        >
+          {upload_error_to_string(err)}
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  defp upload_error_to_string(err),
+    do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "8 MB", max_files: 4)
 
   attr :comment, :map, required: true
   attr :current_user, :any, default: nil

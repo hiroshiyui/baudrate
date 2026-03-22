@@ -13,6 +13,7 @@ defmodule BaudrateWeb.ArticleLive do
   import BaudrateWeb.ArticleHelpers
 
   alias Baudrate.Content
+  alias Baudrate.Content.ArticleImageStorage
   alias Baudrate.Content.PubSub, as: ContentPubSub
   alias Baudrate.Moderation
   alias BaudrateWeb.LinkedData
@@ -80,6 +81,7 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:forwarding_comment_id, nil)
         |> assign(:comment_forward_search_results, [])
         |> assign(:comment_forward_search_query, "")
+        |> assign(:uploaded_comment_images, [])
         |> assign(:show_report_modal, false)
         |> assign(:report_target_type, nil)
         |> assign(:report_target_id, nil)
@@ -112,6 +114,19 @@ defmodule BaudrateWeb.ArticleLive do
           )
         )
         |> assign_poll_data(article, current_user)
+
+      socket =
+        if can_comment do
+          allow_upload(socket, :comment_images,
+            accept: ~w(.jpg .jpeg .png .webp .gif),
+            max_entries: 4,
+            max_file_size: 8_000_000,
+            auto_upload: true,
+            progress: &handle_comment_image_progress/3
+          )
+        else
+          socket
+        end
 
       if connected?(socket) do
         ContentPubSub.subscribe_article(article.id)
@@ -395,14 +410,40 @@ defmodule BaudrateWeb.ArticleLive do
   @impl true
   def handle_event("reply_to", %{"id" => comment_id}, socket) do
     case parse_id(comment_id) do
-      {:ok, id} -> {:noreply, assign(socket, :replying_to, id)}
-      :error -> {:noreply, socket}
+      {:ok, id} ->
+        socket = clear_uploaded_comment_images(socket)
+        {:noreply, assign(socket, :replying_to, id)}
+
+      :error ->
+        {:noreply, socket}
     end
   end
 
   @impl true
   def handle_event("cancel_reply", _params, socket) do
+    socket = clear_uploaded_comment_images(socket)
     {:noreply, assign(socket, :replying_to, nil)}
+  end
+
+  @impl true
+  def handle_event("remove_comment_image", %{"id" => id}, socket) do
+    uploaded_ids = Enum.map(socket.assigns.uploaded_comment_images, & &1.id)
+
+    with {:ok, image_id} <- parse_id(id),
+         true <- image_id in uploaded_ids do
+      image = Content.get_comment_image!(image_id)
+      Content.delete_comment_image(image)
+
+      updated = Enum.reject(socket.assigns.uploaded_comment_images, &(&1.id == image_id))
+      {:noreply, assign(socket, :uploaded_comment_images, updated)}
+    else
+      _ -> {:noreply, put_flash(socket, :error, gettext("Image not found."))}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_comment_image_upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :comment_images, ref)}
   end
 
   @impl true
@@ -760,6 +801,7 @@ defmodule BaudrateWeb.ArticleLive do
 
   defp do_create_comment(socket, user, params) do
     article = socket.assigns.article
+    image_ids = Enum.map(socket.assigns.uploaded_comment_images, & &1.id)
 
     attrs =
       params
@@ -773,18 +815,59 @@ defmodule BaudrateWeb.ArticleLive do
         attrs
       end
 
-    case Content.create_comment(attrs) do
+    case Content.create_comment(attrs, image_ids: image_ids) do
       {:ok, _comment} ->
         {:noreply,
          socket
          |> load_comments(socket.assigns.comment_page)
          |> assign(:comment_form, to_form(Content.change_comment(), as: :comment))
          |> assign(:replying_to, nil)
+         |> assign(:uploaded_comment_images, [])
          |> put_flash(:info, gettext("Comment posted."))}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :comment_form, to_form(changeset, as: :comment))}
     end
+  end
+
+  defp handle_comment_image_progress(:comment_images, entry, socket) do
+    max = Baudrate.Content.CommentImage.max_images_per_comment()
+
+    if entry.done? and length(socket.assigns.uploaded_comment_images) < max do
+      user = socket.assigns.current_user
+
+      case consume_uploaded_entry(socket, entry, fn %{path: path} ->
+             case ArticleImageStorage.process_upload(path) do
+               {:ok, file_info} ->
+                 attrs = Map.merge(file_info, %{user_id: user.id})
+
+                 case Content.create_comment_image(attrs) do
+                   {:ok, image} -> {:ok, image}
+                   {:error, _} -> {:ok, :error}
+                 end
+
+               {:error, _} ->
+                 {:ok, :error}
+             end
+           end) do
+        :error ->
+          {:noreply, socket}
+
+        image ->
+          {:noreply,
+           assign(socket, :uploaded_comment_images, socket.assigns.uploaded_comment_images ++ [image])}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp clear_uploaded_comment_images(socket) do
+    for image <- socket.assigns.uploaded_comment_images do
+      Content.delete_comment_image(image)
+    end
+
+    assign(socket, :uploaded_comment_images, [])
   end
 
   defp load_comments(socket, page) do

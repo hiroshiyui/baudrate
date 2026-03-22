@@ -26,6 +26,7 @@ defmodule Baudrate.Federation.Feed do
     Follows,
     Publisher,
     RemoteActor,
+    ReplyImages,
     UserFollow
   }
 
@@ -258,11 +259,12 @@ defmodule Baudrate.Federation.Feed do
 
   Returns `{:ok, %FeedItemReply{}}` or `{:error, changeset}`.
   """
-  def create_feed_item_reply(feed_item, user, body) do
+  def create_feed_item_reply(feed_item, user, body, opts \\ []) do
     ap_id =
       "#{Baudrate.Federation.actor_uri(:user, user.username)}#feed-reply-#{System.unique_integer([:positive])}"
 
     body_html = Markdown.to_html(body)
+    image_ids = Keyword.get(opts, :image_ids, [])
 
     attrs = %{
       feed_item_id: feed_item.id,
@@ -274,7 +276,12 @@ defmodule Baudrate.Federation.Feed do
 
     case %FeedItemReply{} |> FeedItemReply.changeset(attrs) |> Repo.insert() do
       {:ok, reply} ->
+        if image_ids != [] do
+          ReplyImages.associate_reply_images(reply.id, image_ids, user.id)
+        end
+
         Baudrate.Federation.schedule_federation_task(fn ->
+          reply = Repo.preload(reply, :images)
           Publisher.publish_feed_item_reply(reply, feed_item)
         end)
 
@@ -294,7 +301,7 @@ defmodule Baudrate.Federation.Feed do
     from(r in FeedItemReply,
       where: r.feed_item_id == ^feed_item_id,
       order_by: [asc: r.inserted_at, asc: r.id],
-      preload: [user: :role]
+      preload: [:images, user: :role]
     )
     |> Repo.all()
   end

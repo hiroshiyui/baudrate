@@ -164,7 +164,7 @@ defmodule Baudrate.Federation.Publisher do
   Returns `{activity_map, actor_uri}`.
   """
   def build_create_comment(comment, article) do
-    comment = Repo.preload(comment, [:user])
+    comment = Repo.preload(comment, [:user, :images])
     article = Repo.preload(article, [:user])
     actor_uri = Federation.actor_uri(:user, comment.user.username)
     article_uri = Federation.actor_uri(:article, article.slug)
@@ -176,15 +176,8 @@ defmodule Baudrate.Federation.Publisher do
 
     {to, cc} = visibility_addressing(comment.visibility, "#{actor_uri}/followers")
 
-    activity = %{
-      "@context" => @ap_context,
-      "id" => "#{actor_uri}#create-#{System.unique_integer([:positive])}",
-      "type" => "Create",
-      "actor" => actor_uri,
-      "published" => DateTime.to_iso8601(comment.inserted_at),
-      "to" => to,
-      "cc" => cc,
-      "object" => %{
+    note_object =
+      %{
         "id" => note_uri,
         "type" => "Note",
         "url" => note_url,
@@ -195,6 +188,17 @@ defmodule Baudrate.Federation.Publisher do
         "to" => to,
         "cc" => cc
       }
+      |> maybe_put_comment_attachments(comment)
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#create-#{System.unique_integer([:positive])}",
+      "type" => "Create",
+      "actor" => actor_uri,
+      "published" => DateTime.to_iso8601(comment.inserted_at),
+      "to" => to,
+      "cc" => cc,
+      "object" => note_object
     }
 
     {activity, actor_uri}
@@ -1060,17 +1064,11 @@ defmodule Baudrate.Federation.Publisher do
   Returns `{activity_map, actor_uri}`.
   """
   def build_create_feed_item_reply(reply, feed_item, user) do
+    reply = Repo.preload(reply, :images)
     actor_uri = Federation.actor_uri(:user, user.username)
 
-    activity = %{
-      "@context" => @ap_context,
-      "id" => "#{actor_uri}#create-#{System.unique_integer([:positive])}",
-      "type" => "Create",
-      "actor" => actor_uri,
-      "published" => DateTime.to_iso8601(reply.inserted_at),
-      "to" => [@as_public],
-      "cc" => ["#{actor_uri}/followers"],
-      "object" => %{
+    note_object =
+      %{
         "id" => reply.ap_id,
         "type" => "Note",
         "content" => reply.body_html || reply.body,
@@ -1080,6 +1078,17 @@ defmodule Baudrate.Federation.Publisher do
         "to" => [@as_public],
         "cc" => ["#{actor_uri}/followers"]
       }
+      |> maybe_put_reply_attachments(reply)
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#create-#{System.unique_integer([:positive])}",
+      "type" => "Create",
+      "actor" => actor_uri,
+      "published" => DateTime.to_iso8601(reply.inserted_at),
+      "to" => [@as_public],
+      "cc" => ["#{actor_uri}/followers"],
+      "object" => note_object
     }
 
     {activity, actor_uri}
@@ -1275,4 +1284,31 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   defp maybe_add_in_reply_to(object, _message), do: object
+
+  defp maybe_put_comment_attachments(note_object, %{images: images})
+       when is_list(images) and images != [] do
+    Map.put(note_object, "attachment", build_image_attachments(images))
+  end
+
+  defp maybe_put_comment_attachments(note_object, _comment), do: note_object
+
+  defp maybe_put_reply_attachments(note_object, %{images: images})
+       when is_list(images) and images != [] do
+    Map.put(note_object, "attachment", build_image_attachments(images))
+  end
+
+  defp maybe_put_reply_attachments(note_object, _reply), do: note_object
+
+  defp build_image_attachments(images) do
+    Enum.map(images, fn img ->
+      %{
+        "type" => "Image",
+        "mediaType" => "image/webp",
+        "url" =>
+          "#{Federation.base_url()}#{Baudrate.Content.ArticleImageStorage.image_url(img.filename)}",
+        "width" => img.width,
+        "height" => img.height
+      }
+    end)
+  end
 end

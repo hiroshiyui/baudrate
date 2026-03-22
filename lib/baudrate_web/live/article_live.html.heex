@@ -483,6 +483,11 @@
           toolbar
           rows="6"
         />
+        <%!-- Image upload for new comment --%>
+        <BaudrateWeb.CommentComponents.comment_image_upload_area
+          uploads={@uploads}
+          uploaded_images={@uploaded_comment_images}
+        />
         <div class="flex flex-wrap items-center gap-3 [&>.fieldset]:mb-0 [&>.fieldset]:p-0 [&_.label]:py-0">
           <.input
             field={@comment_form[:visibility]}
@@ -537,6 +542,8 @@
           forwarding_comment_id={@forwarding_comment_id}
           comment_forward_search_results={@comment_forward_search_results}
           comment_forward_search_query={@comment_forward_search_query}
+          uploads={if @can_comment, do: @uploads, else: nil}
+          uploaded_comment_images={@uploaded_comment_images}
         />
       <% end %>
     </div>

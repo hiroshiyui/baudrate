@@ -10,12 +10,16 @@ defmodule Baudrate.Content.Comment do
   The `visibility` field records the ActivityPub visibility derived from
   `to`/`cc` addressing (`public`, `unlisted`, `followers_only`, or `direct`);
   defaults to `public` for local comments.
+
+  Comments may have up to 4 attached images (see `CommentImage`). Images are
+  displayed as a gallery below the comment body and included as `attachment`
+  entries in federated `Create(Note)` activities.
   """
 
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Baudrate.Content.{Article, LinkPreview}
+  alias Baudrate.Content.{Article, CommentImage, LinkPreview}
   alias Baudrate.Federation.RemoteActor
 
   schema "comments" do
@@ -35,6 +39,7 @@ defmodule Baudrate.Content.Comment do
     has_many :replies, __MODULE__, foreign_key: :parent_id
     has_many :likes, Baudrate.Content.CommentLike
     has_many :boosts, Baudrate.Content.CommentBoost
+    has_many :images, CommentImage
 
     timestamps(type: :utc_datetime)
   end

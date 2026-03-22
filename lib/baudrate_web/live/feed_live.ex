@@ -50,7 +50,8 @@ defmodule BaudrateWeb.FeedLive do
         forwarding_item_id: nil,
         forwarding_item_type: nil,
         forward_search_results: [],
-        forward_search_query: ""
+        forward_search_query: "",
+        uploaded_reply_images: []
       )
       |> then(fn s ->
         if can_post do
@@ -72,6 +73,13 @@ defmodule BaudrateWeb.FeedLive do
           s
         end
       end)
+      |> allow_upload(:reply_images,
+        accept: ~w(.jpg .jpeg .png .webp .gif),
+        max_entries: 4,
+        max_file_size: 8_000_000,
+        auto_upload: true,
+        progress: &handle_reply_image_progress/3
+      )
 
     {:ok, socket}
   end
@@ -265,11 +273,14 @@ defmodule BaudrateWeb.FeedLive do
 
       {:ok, feed_item_id} ->
         if socket.assigns.replying_to == feed_item_id do
+          socket = clear_uploaded_reply_images(socket)
+
           {:noreply,
            socket
            |> assign(:replying_to, nil)
            |> assign(:replies, %{})}
         else
+          socket = clear_uploaded_reply_images(socket)
           replies = Federation.list_feed_item_replies(feed_item_id)
 
           {:noreply,
@@ -311,7 +322,9 @@ defmodule BaudrateWeb.FeedLive do
 
           :ok ->
             feed_item = Baudrate.Repo.get!(Federation.FeedItem, feed_item_id)
-            do_create_reply(socket, feed_item, user, params["body"] || "")
+            do_create_reply(socket, feed_item, user, params["body"] || "",
+              image_ids: Enum.map(socket.assigns.uploaded_reply_images, & &1.id)
+            )
         end
     end
   end
@@ -385,10 +398,31 @@ defmodule BaudrateWeb.FeedLive do
   end
 
   def handle_event("cancel_reply", _params, socket) do
+    socket = clear_uploaded_reply_images(socket)
+
     {:noreply,
      socket
      |> assign(:replying_to, nil)
      |> assign(:replies, %{})}
+  end
+
+  def handle_event("remove_reply_image", %{"id" => id}, socket) do
+    uploaded_ids = Enum.map(socket.assigns.uploaded_reply_images, & &1.id)
+
+    with {:ok, image_id} <- parse_id(id),
+         true <- image_id in uploaded_ids do
+      image = Federation.get_reply_image!(image_id)
+      Federation.delete_reply_image(image)
+
+      updated = Enum.reject(socket.assigns.uploaded_reply_images, &(&1.id == image_id))
+      {:noreply, assign(socket, :uploaded_reply_images, updated)}
+    else
+      _ -> {:noreply, put_flash(socket, :error, gettext("Image not found."))}
+    end
+  end
+
+  def handle_event("cancel_reply_image_upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :reply_images, ref)}
   end
 
   def handle_event(
@@ -492,8 +526,8 @@ defmodule BaudrateWeb.FeedLive do
     end
   end
 
-  defp do_create_reply(socket, feed_item, user, body) do
-    case Federation.create_feed_item_reply(feed_item, user, body) do
+  defp do_create_reply(socket, feed_item, user, body, opts) do
+    case Federation.create_feed_item_reply(feed_item, user, body, opts) do
       {:ok, _reply} ->
         replies = Federation.list_feed_item_replies(feed_item.id)
         count = length(replies)
@@ -503,6 +537,7 @@ defmodule BaudrateWeb.FeedLive do
          |> put_flash(:info, gettext("Reply sent!"))
          |> assign(:replying_to, nil)
          |> assign(:replies, %{})
+         |> assign(:uploaded_reply_images, [])
          |> update(:reply_counts, &Map.put(&1, feed_item.id, count))}
 
       {:error, _changeset} ->
@@ -610,6 +645,46 @@ defmodule BaudrateWeb.FeedLive do
 
   defp reply_count(assigns, feed_item_id) do
     Map.get(assigns.reply_counts, feed_item_id, 0)
+  end
+
+  defp handle_reply_image_progress(:reply_images, entry, socket) do
+    max = Baudrate.Federation.FeedItemReplyImage.max_images_per_reply()
+
+    if entry.done? and length(socket.assigns.uploaded_reply_images) < max do
+      user = socket.assigns.current_user
+
+      case consume_uploaded_entry(socket, entry, fn %{path: path} ->
+             case ArticleImageStorage.process_upload(path) do
+               {:ok, file_info} ->
+                 attrs = Map.merge(file_info, %{user_id: user.id})
+
+                 case Federation.create_reply_image(attrs) do
+                   {:ok, image} -> {:ok, image}
+                   {:error, _} -> {:ok, :error}
+                 end
+
+               {:error, _} ->
+                 {:ok, :error}
+             end
+           end) do
+        :error ->
+          {:noreply, socket}
+
+        image ->
+          {:noreply,
+           assign(socket, :uploaded_reply_images, socket.assigns.uploaded_reply_images ++ [image])}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp clear_uploaded_reply_images(socket) do
+    for image <- socket.assigns.uploaded_reply_images do
+      Federation.delete_reply_image(image)
+    end
+
+    assign(socket, :uploaded_reply_images, [])
   end
 
   defp handle_progress(:article_images, entry, socket) do
