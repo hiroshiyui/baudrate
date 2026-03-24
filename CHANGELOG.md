@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.5.0] — 2026-03-24
+
+### Added
+
+- **Scroll-to-top FAB** — A floating action button (56 px, primary colour) appears after the user scrolls past the header and returns to the top of the page on click. Animated with a spring pop-in/out effect (cubic-bezier 0.34, 1.56, 0.64, 1). Positioned above the mobile bottom dock on small screens.
+
+### Fixed
+
+- **`&nbsp;` in article digests** — Leading and trailing `&nbsp;` entities are now trimmed inside the Rust `strip_tags` NIF (Ammonia); interior `&nbsp;` are decoded to regular spaces by `decode_html_entities/1`. Digest text on board, feed, and user-profile pages no longer contains stray non-breaking spaces.
+- **Pagination scroll position** — Clicking a pagination link on a board page now scrolls the first article into view, offset by the sticky header height, instead of leaving the viewport anchored at the bottom of the previous page.
+
 ## [1.4.0] — 2026-03-22
 
 ### Added
