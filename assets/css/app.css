@@ -212,4 +212,19 @@ a.card:active,
   z-index: 1;
 }
 
+/* Scroll-to-top FAB: hidden at top of page, pops in after scrolling past the header.
+   Spring easing gives a "splash" entrance; shrinks back out on dismiss. */
+#scroll-to-top-btn {
+  opacity: 0;
+  transform: scale(0.5);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#scroll-to-top-btn.visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
 /* This file is for your main application CSS */

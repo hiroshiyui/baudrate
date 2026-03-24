@@ -219,6 +219,35 @@ window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
   })
 })()
 
+// Scroll-to-top FAB: shown after scrolling past the header (~64px), hidden near top.
+// Must be initialised after DOM is ready — the script tag is in <head> with no defer,
+// so getElementById("scroll-to-top-btn") returns null if called at parse time.
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("scroll-to-top-btn")
+  if (!btn) return
+
+  btn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  })
+
+  function update() {
+    btn.classList.toggle("visible", window.scrollY > 64)
+  }
+
+  window.addEventListener("scroll", update, { passive: true })
+  window.addEventListener("phx:page-loading-stop", update)
+  update()
+})
+
+// Scroll to the first content item when the server signals a pagination navigation.
+// Fired before phx:page-loading-stop, so the focus handler runs after without
+// fighting the scroll position.
+window.addEventListener("phx:scroll-to-top", () => {
+  const main = document.getElementById("main-content")
+  const target = main?.querySelector("[data-focus-target]")
+  target?.scrollIntoView({ behavior: "instant", block: "start" })
+})
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 

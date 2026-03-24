@@ -302,6 +302,14 @@ defmodule BaudrateWeb.Layouts do
     />
 
     <.flash_group flash={@flash} />
+
+    <button
+      id="scroll-to-top-btn"
+      aria-label={gettext("Scroll to top")}
+      class="fixed bottom-20 right-4 lg:bottom-10 lg:right-10 z-40 btn btn-circle btn-primary size-14 shadow-2xl"
+    >
+      <.icon name="hero-arrow-up-solid" class="size-6" />
+    </button>
     """
   end
 
