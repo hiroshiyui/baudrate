@@ -365,4 +365,64 @@ defmodule Baudrate.Sanitizer.NativeTest do
       assert result == "a&nbsp;b"
     end
   end
+
+  # --- normalize_feed_html/1 ---
+
+  describe "normalize_feed_html/1" do
+    test "sanitizes HTML with the markdown allowlist" do
+      html = "<p><strong>bold</strong> <em>italic</em></p>"
+      result = Native.normalize_feed_html(html)
+      assert result =~ "<strong>"
+      assert result =~ "<em>"
+    end
+
+    test "strips disallowed tags like sanitize_markdown" do
+      html = "<div><p>content</p></div><script>evil()</script>"
+      result = Native.normalize_feed_html(html)
+      refute result =~ "div"
+      refute result =~ "script"
+      assert result =~ "content"
+    end
+
+    test "removes empty <p> elements" do
+      html = "<p>text</p><p></p><p>more</p>"
+      result = Native.normalize_feed_html(html)
+      assert result == "<p>text</p><p>more</p>"
+    end
+
+    test "removes whitespace-only <p> elements" do
+      html = "<p>text</p><p>   </p><p>more</p>"
+      result = Native.normalize_feed_html(html)
+      assert result == "<p>text</p><p>more</p>"
+    end
+
+    test "removes &nbsp;-only <p> elements" do
+      html = "<p>text</p><p>&nbsp;</p><p>more</p>"
+      result = Native.normalize_feed_html(html)
+      assert result == "<p>text</p><p>more</p>"
+    end
+
+    test "collapses 3+ consecutive <br> to 2" do
+      html = "<p>a</p><br><br><br><br><p>b</p>"
+      result = Native.normalize_feed_html(html)
+      assert result =~ "<br><br>"
+      refute result =~ "<br><br><br>"
+    end
+
+    test "preserves exactly 2 consecutive <br>" do
+      html = "<p>a</p><br><br><p>b</p>"
+      result = Native.normalize_feed_html(html)
+      assert result =~ "<br><br>"
+    end
+
+    test "trims leading and trailing whitespace from result" do
+      html = "  <p>hello</p>  "
+      result = Native.normalize_feed_html(html)
+      assert result == "<p>hello</p>"
+    end
+
+    test "handles empty string" do
+      assert "" == Native.normalize_feed_html("")
+    end
+  end
 end

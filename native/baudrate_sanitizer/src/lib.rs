@@ -5,12 +5,27 @@ use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 
 static LANGUAGE_CLASS_RE: OnceLock<Regex> = OnceLock::new();
+// Matches <p> elements whose content is entirely whitespace and/or &nbsp; entities —
+// these are common artefacts left behind when surrounding <div>/<span> wrappers are
+// stripped by Ammonia.
+static EMPTY_PARA_RE: OnceLock<Regex> = OnceLock::new();
+// Matches runs of three or more consecutive <br> elements, including any
+// whitespace / &nbsp; between them.
+static EXCESS_BR_RE: OnceLock<Regex> = OnceLock::new();
 
 const SAFE_SPAN_CLASSES: &[&str] = &["h-card", "hashtag", "mention", "invisible"];
 const SAFE_ANCHOR_CLASSES: &[&str] = &["hashtag", "mention", "u-url"];
 
 fn language_class_regex() -> &'static Regex {
     LANGUAGE_CLASS_RE.get_or_init(|| Regex::new(r"^language-[a-zA-Z0-9_+\-]+$").unwrap())
+}
+
+fn empty_para_regex() -> &'static Regex {
+    EMPTY_PARA_RE.get_or_init(|| Regex::new(r"<p>(\s|&nbsp;)*</p>").unwrap())
+}
+
+fn excess_br_regex() -> &'static Regex {
+    EXCESS_BR_RE.get_or_init(|| Regex::new(r"(<br\s*/?>(\s|&nbsp;)*){3,}").unwrap())
 }
 
 fn federation_tags() -> HashSet<&'static str> {
@@ -78,8 +93,7 @@ fn sanitize_federation(html: &str) -> String {
         .to_string()
 }
 
-#[rustler::nif]
-fn sanitize_markdown(html: &str) -> String {
+fn sanitize_with_markdown_rules(html: &str) -> String {
     let mut tags = federation_tags();
     for tag in ["table", "thead", "tbody", "tr", "th", "td", "img"] {
         tags.insert(tag);
@@ -116,6 +130,11 @@ fn sanitize_markdown(html: &str) -> String {
         .to_string()
 }
 
+#[rustler::nif]
+fn sanitize_markdown(html: &str) -> String {
+    sanitize_with_markdown_rules(html)
+}
+
 const NBSP: &str = "&nbsp;";
 
 #[rustler::nif]
@@ -132,6 +151,22 @@ fn strip_tags(html: &str) -> String {
         s = rest;
     }
     s.to_string()
+}
+
+#[rustler::nif]
+fn normalize_feed_html(html: &str) -> String {
+    // Sanitize with the same allowlist as sanitize_markdown, then clean up
+    // common RSS/Atom artefacts produced by stripping disallowed elements.
+    let sanitized = sanitize_with_markdown_rules(html);
+
+    // Remove empty <p> elements (e.g. left over from stripped <div> wrappers).
+    let cleaned = empty_para_regex().replace_all(&sanitized, "");
+
+    // Collapse runs of 3+ <br> down to two — a common pattern in feed HTML
+    // converted from word-processor output or old-style blog generators.
+    let cleaned = excess_br_regex().replace_all(&cleaned, "<br><br>");
+
+    cleaned.trim().to_string()
 }
 
 rustler::init!("Elixir.Baudrate.Sanitizer.Native");

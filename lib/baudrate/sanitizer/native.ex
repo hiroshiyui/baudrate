@@ -2,12 +2,14 @@ defmodule Baudrate.Sanitizer.Native do
   @moduledoc """
   Rustler NIF bindings to the `baudrate_sanitizer` Rust crate.
 
-  Provides three HTML sanitization functions backed by
+  Provides HTML sanitization functions backed by
   [Ammonia](https://github.com/rust-ammonia/ammonia) (html5ever parser):
 
     * `sanitize_federation/1` — allowlist for incoming AP content
     * `sanitize_markdown/1` — allowlist for local Markdown rendering
     * `strip_tags/1` — strip all HTML tags, preserving text content
+    * `normalize_feed_html/1` — sanitize RSS/Atom body HTML and remove
+      common feed artefacts (empty paragraphs, excessive line breaks)
 
   Also provides a pure-Elixir helper:
 
@@ -37,6 +39,23 @@ defmodule Baudrate.Sanitizer.Native do
   """
   @spec strip_tags(String.t()) :: String.t()
   def strip_tags(_html), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc """
+  Sanitize and normalize HTML from an RSS/Atom feed body.
+
+  Applies the same allowlist as `sanitize_markdown/1` (html5ever via Ammonia),
+  then removes common feed artefacts that remain after stripping disallowed
+  elements:
+
+  - Empty `<p>` elements (whitespace / `&nbsp;` only) — produced when
+    surrounding `<div>` or `<span>` wrappers are stripped by Ammonia.
+  - Runs of three or more consecutive `<br>` elements — a hallmark of
+    word-processor-generated or old-style blog feed HTML.
+
+  Use this instead of `sanitize_markdown/1` when processing feed content.
+  """
+  @spec normalize_feed_html(String.t()) :: String.t()
+  def normalize_feed_html(_html), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc """
   Decodes common HTML entities in `strip_tags/1` output.

@@ -8,8 +8,10 @@ defmodule Baudrate.Bots.FeedParser do
 
   - Titles: HTML stripped via `Baudrate.Sanitizer.Native.strip_tags/1`, HTML
     entities decoded, whitespace trimmed, truncated to 255 characters.
-  - Body: full `content` block preferred over `summary`; sanitized for safe
-    rendering via `Baudrate.Sanitizer.Native.sanitize_markdown/1`.
+  - Body: full `content` block preferred over `summary`; sanitized and
+    normalized via `Baudrate.Sanitizer.Native.normalize_feed_html/1`
+    (removes empty paragraphs and excessive line-break runs after
+    Ammonia strips disallowed elements).
   - Tags: de-duplicated list of plain-text category strings.
   - Publication date: parsed from RFC 3339 string; clamped to the range
     (10 years ago, now]; dates outside this window are discarded.
@@ -105,7 +107,7 @@ defmodule Baudrate.Bots.FeedParser do
         true -> ""
       end
 
-    Baudrate.Sanitizer.Native.sanitize_markdown(raw)
+    Baudrate.Sanitizer.Native.normalize_feed_html(raw)
   end
 
   defp normalize_tags(tags) when is_list(tags) do
