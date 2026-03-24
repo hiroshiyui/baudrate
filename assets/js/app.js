@@ -245,7 +245,10 @@ document.addEventListener("DOMContentLoaded", () => {
 window.addEventListener("phx:scroll-to-top", () => {
   const main = document.getElementById("main-content")
   const target = main?.querySelector("[data-focus-target]")
-  target?.scrollIntoView({ behavior: "instant", block: "start" })
+  if (!target) return
+  const headerHeight = document.getElementById("site-header")?.offsetHeight ?? 0
+  const top = target.getBoundingClientRect().top + window.scrollY - headerHeight
+  window.scrollTo({ top, behavior: "instant" })
 })
 
 // connect if there are any LiveViews on the page
