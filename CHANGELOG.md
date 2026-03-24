@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.5.2] — 2026-03-24
+
+### Removed
+
+- **Wayback Machine fallback in favicon fetcher** — The `web.archive.org` fallback that was attempted when all direct favicon candidates failed has been removed. It added latency and rarely produced usable results; direct candidate resolution (HTML `<link>` tags + standard well-known paths) is now the final step.
+
 ## [1.5.1] — 2026-03-24
 
 ### Added
