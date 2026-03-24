@@ -221,35 +221,26 @@ window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
 // Scroll-to-top FAB: shown after scrolling past the header (~64px), hidden near top.
 //
-// Initialisation runs on both DOMContentLoaded (full page loads) and
-// phx:page-loading-stop (LiveView client-side navigations), because
-// DOMContentLoaded fires only once per hard load — subsequent LiveView
-// navigations never retrigger it.  A flag prevents double-registration of
-// the click and scroll listeners across navigations.
+// Looks up the button by ID on every update rather than caching the reference,
+// so stale element references after LiveView morphdom patches are never an issue.
+// Click is handled via event delegation on document for the same reason.
 ;(() => {
-  let initialised = false
-
-  function initFab() {
+  function updateFab() {
     const btn = document.getElementById("scroll-to-top-btn")
     if (!btn) return
-
-    function update() {
-      btn.classList.toggle("visible", window.scrollY > 64)
-    }
-
-    if (!initialised) {
-      btn.addEventListener("click", () => {
-        window.scrollTo({ top: 0, behavior: "smooth" })
-      })
-      window.addEventListener("scroll", update, { passive: true })
-      initialised = true
-    }
-
-    update()
+    btn.classList.toggle("visible", window.scrollY > 64)
   }
 
-  document.addEventListener("DOMContentLoaded", initFab)
-  window.addEventListener("phx:page-loading-stop", initFab)
+  // Click via delegation — works regardless of whether the element was patched.
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("#scroll-to-top-btn")) {
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    }
+  })
+
+  window.addEventListener("scroll", updateFab, { passive: true })
+  window.addEventListener("phx:page-loading-stop", updateFab)
+  document.addEventListener("DOMContentLoaded", updateFab)
 })()
 
 // Scroll to the first content item when the server signals a pagination navigation.
