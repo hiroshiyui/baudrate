@@ -116,12 +116,22 @@ fn sanitize_markdown(html: &str) -> String {
         .to_string()
 }
 
+const NBSP: &str = "&nbsp;";
+
 #[rustler::nif]
 fn strip_tags(html: &str) -> String {
-    Builder::empty()
+    let text = Builder::empty()
         .strip_comments(true)
         .clean(html)
-        .to_string()
+        .to_string();
+    let mut s = text.as_str();
+    while let Some(rest) = s.strip_prefix(NBSP) {
+        s = rest;
+    }
+    while let Some(rest) = s.strip_suffix(NBSP) {
+        s = rest;
+    }
+    s.to_string()
 }
 
 rustler::init!("Elixir.Baudrate.Sanitizer.Native");

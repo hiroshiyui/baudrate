@@ -286,6 +286,31 @@ defmodule Baudrate.Sanitizer.NativeTest do
     end
   end
 
+  # --- decode_html_entities/1 ---
+
+  describe "decode_html_entities/1" do
+    test "decodes the five XML entities" do
+      assert "& < > \" '" ==
+               Native.decode_html_entities("&amp; &lt; &gt; &quot; &apos;")
+    end
+
+    test "decodes &#39; as apostrophe" do
+      assert "it's" == Native.decode_html_entities("it&#39;s")
+    end
+
+    test "decodes &nbsp; as a regular space" do
+      assert "hello world" == Native.decode_html_entities("hello&nbsp;world")
+    end
+
+    test "handles string with no entities unchanged" do
+      assert "plain text" == Native.decode_html_entities("plain text")
+    end
+
+    test "handles empty string" do
+      assert "" == Native.decode_html_entities("")
+    end
+  end
+
   # --- strip_tags/1 ---
 
   describe "strip_tags/1" do
@@ -322,6 +347,22 @@ defmodule Baudrate.Sanitizer.NativeTest do
       assert result =~ "&lt;"
       assert result =~ "&amp;"
       assert result =~ "&gt;"
+    end
+
+    test "trims leading and trailing &nbsp; entities" do
+      html = "<p>&nbsp;Hello World&nbsp;</p>"
+      assert "Hello World" == Native.strip_tags(html)
+    end
+
+    test "trims multiple consecutive leading and trailing &nbsp; entities" do
+      html = "<p>&nbsp;&nbsp;Hello World&nbsp;&nbsp;</p>"
+      assert "Hello World" == Native.strip_tags(html)
+    end
+
+    test "does not trim interior &nbsp; entities" do
+      html = "<p>&nbsp;a&nbsp;b&nbsp;</p>"
+      result = Native.strip_tags(html)
+      assert result == "a&nbsp;b"
     end
   end
 end

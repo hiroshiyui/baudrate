@@ -11,10 +11,11 @@ defmodule Baudrate.Sanitizer.Native do
 
   Also provides a pure-Elixir helper:
 
-    * `decode_html_entities/1` — decode the five standard XML/HTML entities
-      that Ammonia re-encodes when serializing `strip_tags/1` output.
-      Call this after `strip_tags/1` to produce plain text safe for Phoenix
-      HEEx templates (which apply their own HTML escaping).
+    * `decode_html_entities/1` — decode the XML/HTML entities that Ammonia
+      preserves in `strip_tags/1` output (`&amp;`, `&lt;`, `&gt;`, `&quot;`,
+      `&apos;`/`&#39;`, `&nbsp;`). Call this after `strip_tags/1` to produce
+      plain text safe for Phoenix HEEx templates (which apply their own HTML
+      escaping).
   """
 
   use Rustler, otp_app: :baudrate, crate: "baudrate_sanitizer"
@@ -27,29 +28,40 @@ defmodule Baudrate.Sanitizer.Native do
   @spec sanitize_markdown(String.t()) :: String.t()
   def sanitize_markdown(_html), do: :erlang.nif_error(:nif_not_loaded)
 
-  @doc "Strip all HTML tags, preserving only text content."
+  @doc """
+  Strip all HTML tags, preserving only text content.
+
+  Leading and trailing `&nbsp;` entities are trimmed from the result.
+  Interior `&nbsp;` entities remain (as literal `&nbsp;` strings) and can be
+  decoded to spaces by `decode_html_entities/1`.
+  """
   @spec strip_tags(String.t()) :: String.t()
   def strip_tags(_html), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc """
-  Decodes the five standard XML/HTML entities that Ammonia re-encodes when
-  serializing `strip_tags/1` output.
+  Decodes common HTML entities in `strip_tags/1` output.
 
-  Ammonia (via html5ever) encodes `&`, `<`, `>`, `"`, and `'` as HTML
-  entities even in plain-text content. Call this after `strip_tags/1` so
-  the result is plain text that Phoenix HEEx templates can escape correctly
-  (without double-encoding `&` into `&amp;amp;`).
+  Handles:
+  - The five XML entities that Ammonia re-encodes when serializing plain-text
+    output (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;`/`&#39;`)
+  - `&nbsp;` — decoded as a regular space (Ammonia preserves `&nbsp;` as a
+    literal entity in `strip_tags/1` output; leading/trailing ones are already
+    trimmed by `strip_tags/1` itself)
+
+  Call this after `strip_tags/1` so the result is plain text that Phoenix HEEx
+  templates can escape correctly (without double-encoding `&` into `&amp;amp;`).
   """
+  @entity_pattern ~r/&(amp|lt|gt|quot|apos|#39|nbsp);/
+
   @spec decode_html_entities(String.t()) :: String.t()
   def decode_html_entities(str) when is_binary(str) do
-    Regex.replace(~r/&(amp|lt|gt|quot|apos|#39);/, str, fn _, name ->
-      case name do
-        "amp" -> "&"
-        "lt" -> "<"
-        "gt" -> ">"
-        "quot" -> "\""
-        _ -> "'"
-      end
+    Regex.replace(@entity_pattern, str, fn
+      _, "amp" -> "&"
+      _, "lt" -> "<"
+      _, "gt" -> ">"
+      _, "quot" -> "\""
+      _, "nbsp" -> " "
+      _, _ -> "'"
     end)
   end
 end
