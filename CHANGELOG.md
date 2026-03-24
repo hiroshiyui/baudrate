@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.5.3] — 2026-03-24
+
+### Fixed
+
+- **Images lost when forwarding a feed item to a board** — `forward_feed_item_to_board` was not passing `image_attachments` to `create_remote_article`, so AP attachment images stored on the feed item were never fetched and stored as article images. They are now correctly carried over and downloaded asynchronously when a feed item is materialised into a board article.
+
 ## [1.5.2] — 2026-03-24
 
 ### Removed
