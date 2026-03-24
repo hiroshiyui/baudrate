@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.5.1] — 2026-03-24
+
+### Added
+
+- **RSS/Atom feed HTML normalizer** — `normalize_feed_html/1` Rust NIF applies the markdown sanitization allowlist via Ammonia/html5ever, then removes common feed artefacts: empty `<p>` elements left behind when `<div>`/`<span>` wrappers are stripped, and runs of 3+ consecutive `<br>` collapsed to `<br><br>`. Used in `feed_parser.ex` for all bot feed body content.
+
+### Fixed
+
+- **Scroll-to-top FAB not appearing after LiveView navigation** — Cached DOM element references became stale when LiveView's morphdom patched the layout during navigation. Switched to looking up `#scroll-to-top-btn` by ID on every scroll/navigation event and handling clicks via `document` event delegation, so the FAB works correctly after any client-side navigation without a manual page refresh.
+
 ## [1.5.0] — 2026-03-24
 
 ### Added
