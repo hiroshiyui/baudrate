@@ -220,24 +220,37 @@ window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 })()
 
 // Scroll-to-top FAB: shown after scrolling past the header (~64px), hidden near top.
-// Must be initialised after DOM is ready — the script tag is in <head> with no defer,
-// so getElementById("scroll-to-top-btn") returns null if called at parse time.
-document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("scroll-to-top-btn")
-  if (!btn) return
+//
+// Initialisation runs on both DOMContentLoaded (full page loads) and
+// phx:page-loading-stop (LiveView client-side navigations), because
+// DOMContentLoaded fires only once per hard load — subsequent LiveView
+// navigations never retrigger it.  A flag prevents double-registration of
+// the click and scroll listeners across navigations.
+;(() => {
+  let initialised = false
 
-  btn.addEventListener("click", () => {
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  })
+  function initFab() {
+    const btn = document.getElementById("scroll-to-top-btn")
+    if (!btn) return
 
-  function update() {
-    btn.classList.toggle("visible", window.scrollY > 64)
+    function update() {
+      btn.classList.toggle("visible", window.scrollY > 64)
+    }
+
+    if (!initialised) {
+      btn.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" })
+      })
+      window.addEventListener("scroll", update, { passive: true })
+      initialised = true
+    }
+
+    update()
   }
 
-  window.addEventListener("scroll", update, { passive: true })
-  window.addEventListener("phx:page-loading-stop", update)
-  update()
-})
+  document.addEventListener("DOMContentLoaded", initFab)
+  window.addEventListener("phx:page-loading-stop", initFab)
+})()
 
 // Scroll to the first content item when the server signals a pagination navigation.
 // Fired before phx:page-loading-stop, so the focus handler runs after without
