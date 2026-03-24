@@ -21,11 +21,6 @@ defmodule Baudrate.Bots.FaviconFetcher do
   site, not the feed host. Falls back to the feed URL's origin if extraction
   fails.
 
-  If all direct fetches fail (e.g. the server blocks the request by IP or
-  User-Agent at the CDN/WAF layer), the same candidate list is retried via
-  the Internet Archive Wayback Machine (`web.archive.org/web/2if_/{url}`),
-  which returns the most recently archived raw file.
-
   All operations are best-effort — failures are logged but never
   propagate to callers.
   """
@@ -88,22 +83,10 @@ defmodule Baudrate.Bots.FaviconFetcher do
   # Tries each candidate URL in priority order, returning the first that
   # both downloads successfully AND can be processed through the avatar
   # pipeline (JPEG/PNG/WebP). Moves to the next candidate on any failure.
-  # Falls back to Wayback Machine if all direct fetches fail.
   defp try_favicon_candidates(feed_url) do
     site_url = resolve_site_url(feed_url)
     candidates = build_favicon_candidates(site_url)
-
-    case try_direct(candidates, site_url) do
-      {:ok, _, _} = ok ->
-        ok
-
-      {:error, _} ->
-        Logger.info(
-          "bots.favicon_fetcher: direct fetch failed for #{site_url}, trying Wayback Machine"
-        )
-
-        try_wayback(candidates)
-    end
+    try_direct(candidates, site_url)
   end
 
   # Fetches the feed XML and extracts the channel's website link, using its
@@ -167,19 +150,6 @@ defmodule Baudrate.Bots.FaviconFetcher do
       with {:ok, data} <- download_favicon(url, site_url),
            {:ok, avatar_id} <- process_favicon(data) do
         {:halt, {:ok, url, avatar_id}}
-      else
-        {:error, _} -> {:cont, {:error, :no_usable_favicon}}
-      end
-    end)
-  end
-
-  defp try_wayback(candidates) do
-    Enum.reduce_while(candidates, {:error, :no_usable_favicon}, fn url, _acc ->
-      wayback = "https://web.archive.org/web/2if_/#{url}"
-
-      with {:ok, data} <- download_favicon(wayback, "https://web.archive.org"),
-           {:ok, avatar_id} <- process_favicon(data) do
-        {:halt, {:ok, wayback, avatar_id}}
       else
         {:error, _} -> {:cont, {:error, :no_usable_favicon}}
       end
