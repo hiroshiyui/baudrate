@@ -50,6 +50,19 @@ defmodule Baudrate.Content.LinkPreview.Worker do
             Logger.debug(
               "link_preview.fetch_failed: type=#{content_type} id=#{content_id} reason=#{inspect(reason)}"
             )
+
+            # Even on failure, attach the recorded preview so embed fallbacks
+            # (e.g. YouTube) can still render using only the stored URL.
+            url_hash = LinkPreview.hash_url(url)
+
+            case Repo.one(from(lp in LinkPreview, where: lp.url_hash == ^url_hash)) do
+              %LinkPreview{id: preview_id} ->
+                update_content_preview(content_type, content_id, preview_id)
+                broadcast_preview_fetched(content_type, content_id)
+
+              nil ->
+                :ok
+            end
         end
 
       :none ->

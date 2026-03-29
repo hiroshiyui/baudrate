@@ -54,8 +54,8 @@ defmodule Baudrate.Content.LinkPreview.Fetcher do
         {:error, :changeset_error}
 
       {:error, reason} ->
-        # Record the failure
-        upsert_failed(url, url_hash, domain, to_string(reason))
+        # Record the failure; use inspect/1 since reason may be a tuple
+        upsert_failed(url, url_hash, domain, inspect(reason))
         {:error, reason}
     end
   end
