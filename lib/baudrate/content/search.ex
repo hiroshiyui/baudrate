@@ -112,18 +112,25 @@ defmodule Baudrate.Content.Search do
       if text_query == "" do
         {dynamic([a], true), [desc: dynamic([a], a.inserted_at), desc: dynamic([a], a.id)]}
       else
-        article_search_clauses(text_query)
+        {where, _} = article_search_clauses(text_query)
+        {where, [desc: dynamic([a], a.inserted_at), desc: dynamic([a], a.id)]}
       end
 
     base_query =
       from(a in Article,
-        join: ba in BoardArticle,
-        on: ba.article_id == a.id,
-        join: b in Board,
-        on: b.id == ba.board_id,
-        where: is_nil(a.deleted_at) and b.min_role_to_view in ^allowed_roles,
+        as: :article,
+        where: is_nil(a.deleted_at),
         where: ^where_clause,
-        distinct: a.id
+        where:
+          exists(
+            from(ba in BoardArticle,
+              join: b in Board,
+              on: b.id == ba.board_id,
+              where:
+                ba.article_id == parent_as(:article).id and
+                  b.min_role_to_view in ^allowed_roles
+            )
+          )
       )
       |> apply_search_operators(operators)
       |> Filters.apply_hidden_filters(hidden_uids, hidden_ap_ids)
@@ -227,7 +234,16 @@ defmodule Baudrate.Content.Search do
   defp apply_board_filter(query, []), do: query
 
   defp apply_board_filter(query, slugs) do
-    from([a, ba, b] in query, where: b.slug in ^slugs)
+    from(a in query,
+      where:
+        exists(
+          from(ba in BoardArticle,
+            join: b in Board,
+            on: b.id == ba.board_id,
+            where: ba.article_id == parent_as(:article).id and b.slug in ^slugs
+          )
+        )
+    )
   end
 
   defp apply_tag_filter(query, []), do: query
