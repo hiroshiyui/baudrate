@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.5.4] — 2026-03-30
+
+### Fixed
+
+- **YouTube (and large-page) link preview embeds never rendering** — Two bugs prevented the YouTube iframe embed from appearing even when the article contained a YouTube URL. First, `fetch_or_get` used `to_string/1` on the error reason, which crashes on tuple errors like `{:http_error, 403, …}` before `upsert_failed` could write the failure record; changed to `inspect/1`. Second, the link preview worker only set `link_preview_id` on success — on failure it logged and moved on, so the article had no preview attached. The worker now looks up the recorded (failed) `LinkPreview` by URL hash after a fetch error and still attaches it to the article, allowing the component to render the YouTube embed using only the stored URL (no metadata needed). Root cause for YouTube: HTML pages are ~500 KB–1 MB and exceed the 256 KB `max_payload_size`.
+- **Non-deterministic ordering in conversations, remote feed, and session eviction** — Three queries lacked a secondary sort by `id`, causing unpredictable row order when timestamps collide: `list_conversations` (`last_message_at`), remote feed items (`published_at`), and `evict_excess_sessions` (`refreshed_at`). Added `id` as a tiebreaker to all three.
+- **Missing translations for "Bot account" and "or"** — Both strings had empty `msgstr` in zh_TW and ja_JP locale files. Translated as `Bot 帳號` / `Bot アカウント` and `或` / `または` respectively.
+- **Bare placeholder strings not wrapped in `gettext()`** — Six placeholder attributes in admin settings, bot edit form, recovery code, and password reset templates were plain string literals. Wrapped in `gettext()` and extracted into the locale catalogue.
+
 ## [1.5.3] — 2026-03-24
 
 ### Fixed
