@@ -874,7 +874,7 @@ defmodule BaudrateWeb.CoreComponents do
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen
           loading="lazy"
-          referrerpolicy="no-referrer"
+          referrerpolicy="strict-origin"
         >
         </iframe>
       </div>
