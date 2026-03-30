@@ -242,6 +242,17 @@
     </div>
 
     <div id="article-actions" class="flex gap-2 flex-wrap justify-end mt-4">
+      <%!-- View original link for remote articles (ActivityPub / RSS feed) --%>
+      <a
+        :if={@article.url || @article.remote_actor}
+        href={@article.url || @article.ap_id}
+        target="_blank"
+        rel="nofollow noopener noreferrer"
+        class="btn btn-sm btn-ghost"
+      >
+        <.icon name="hero-link" class="size-4" />
+        {gettext("View original")}
+      </a>
       <%!-- Like count (visible to all) + toggle (for non-authors) --%>
       <span
         :if={!@current_user || @article.user_id == @current_user.id}

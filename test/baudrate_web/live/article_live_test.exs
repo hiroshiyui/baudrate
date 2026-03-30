@@ -819,6 +819,74 @@ defmodule BaudrateWeb.ArticleLiveTest do
     end
   end
 
+  describe "view original link" do
+    test "is absent for local articles", %{conn: conn, article: article} do
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+      # The article-actions "View original" link renders a hero-link icon;
+      # the title-attribute-only link above the article body does not.
+      refute html =~ "hero-link"
+    end
+
+    test "is shown for bot articles with a source URL", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "RSS Feed Article",
+            body: "<p>From RSS</p>",
+            slug: "rss-feed-article",
+            user_id: user.id,
+            url: "https://example.com/original-post"
+          },
+          [board.id]
+        )
+
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+      assert html =~ "hero-link"
+      assert html =~ "https://example.com/original-post"
+    end
+
+    test "is shown for AP remote articles", %{conn: conn, board: board} do
+      remote_actor =
+        %Baudrate.Federation.RemoteActor{}
+        |> Baudrate.Federation.RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/bob",
+          username: "bob",
+          domain: "remote.example",
+          display_name: "Bob",
+          public_key_pem: "-----BEGIN PUBLIC KEY-----\nfake\n-----END PUBLIC KEY-----",
+          inbox: "https://remote.example/users/bob/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now()
+        })
+        |> Repo.insert!()
+
+      remote_article =
+        %Baudrate.Content.Article{}
+        |> Baudrate.Content.Article.remote_changeset(%{
+          title: "Remote Article",
+          body: "<p>Remote body</p>",
+          slug: "remote-article-test",
+          ap_id: "https://remote.example/articles/42",
+          url: "https://remote.example/articles/42",
+          remote_actor_id: remote_actor.id
+        })
+        |> Repo.insert!()
+
+      Repo.insert!(%Baudrate.Content.BoardArticle{
+        article_id: remote_article.id,
+        board_id: board.id
+      })
+
+      {:ok, _lv, html} = live(conn, "/articles/#{remote_article.slug}")
+      assert html =~ "hero-link"
+      assert html =~ "https://remote.example/articles/42"
+    end
+  end
+
   describe "mention autocomplete" do
     test "mention_suggest returns local users", %{conn: conn, article: article} do
       other = setup_user("user")

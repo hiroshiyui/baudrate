@@ -521,7 +521,7 @@ msgstr "アバターを更新しました。"
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:265
 #: lib/baudrate_web/live/admin/users_live.html.heex:266
 #: lib/baudrate_web/live/admin/users_live.html.heex:312
-#: lib/baudrate_web/live/article_live.html.heex:428
+#: lib/baudrate_web/live/article_live.html.heex:436
 #: lib/baudrate_web/live/feed_live.html.heex:508
 #: lib/baudrate_web/live/feed_live.html.heex:614
 #: lib/baudrate_web/live/feed_live.html.heex:894
@@ -1197,7 +1197,7 @@ msgstr "ステータス"
 #: lib/baudrate_web/components/comment_components.ex:310
 #: lib/baudrate_web/live/admin/federation_live.html.heex:212
 #: lib/baudrate_web/live/article_edit_live.html.heex:158
-#: lib/baudrate_web/live/article_live.html.heex:502
+#: lib/baudrate_web/live/article_live.html.heex:510
 #: lib/baudrate_web/live/article_new_live.html.heex:253
 #: lib/baudrate_web/live/feed_live.html.heex:256
 #, elixir-autogen, elixir-format
@@ -1241,7 +1241,7 @@ msgid "1 result"
 msgid_plural "%{count} results"
 msgstr[0] "%{count} 件の結果"
 
-#: lib/baudrate_web/live/article_live.html.heex:393
+#: lib/baudrate_web/live/article_live.html.heex:401
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this article?"
 msgstr "この記事を削除してもよろしいですか？"
@@ -1262,7 +1262,7 @@ msgstr "記事に戻る"
 msgid "Comment posted."
 msgstr "コメントを投稿しました。"
 
-#: lib/baudrate_web/live/article_live.html.heex:452
+#: lib/baudrate_web/live/article_live.html.heex:460
 #: lib/baudrate_web/live/feed_live.html.heex:1143
 #: lib/baudrate_web/live/search_live.html.heex:375
 #: lib/baudrate_web/live/user_profile_live.html.heex:124
@@ -1272,7 +1272,7 @@ msgstr "コメント"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:269
 #: lib/baudrate_web/live/admin/bots_live.html.heex:256
-#: lib/baudrate_web/live/article_live.html.heex:397
+#: lib/baudrate_web/live/article_live.html.heex:405
 #: lib/baudrate_web/live/conversation_live.html.heex:132
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -1280,7 +1280,7 @@ msgstr "削除"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:244
 #: lib/baudrate_web/live/admin/bots_live.html.heex:220
-#: lib/baudrate_web/live/article_live.html.heex:327
+#: lib/baudrate_web/live/article_live.html.heex:335
 #, elixir-autogen, elixir-format
 msgid "Edit"
 msgstr "編集"
@@ -1301,7 +1301,7 @@ msgstr "対応していないファイル形式です"
 msgid "No articles found for \"%{query}\"."
 msgstr "「%{query}」に一致する記事が見つかりません。"
 
-#: lib/baudrate_web/live/article_live.html.heex:523
+#: lib/baudrate_web/live/article_live.html.heex:531
 #: lib/baudrate_web/live/user_content_live.html.heex:93
 #, elixir-autogen, elixir-format
 msgid "No comments yet."
@@ -1319,7 +1319,7 @@ msgstr "まだコメントはありません。"
 msgid "Not authorized."
 msgstr "権限がありません。"
 
-#: lib/baudrate_web/live/article_live.html.heex:509
+#: lib/baudrate_web/live/article_live.html.heex:517
 #, elixir-autogen, elixir-format
 msgid "Post Comment"
 msgstr "コメントを投稿"
@@ -1362,7 +1362,7 @@ msgstr "検索..."
 msgid "Upload error"
 msgstr "アップロードエラー"
 
-#: lib/baudrate_web/live/article_live.html.heex:482
+#: lib/baudrate_web/live/article_live.html.heex:490
 #, elixir-autogen, elixir-format
 msgid "Write a comment..."
 msgstr "コメントを書く..."
@@ -2156,7 +2156,7 @@ msgstr "記事の更新に失敗しました。"
 msgid "Guest (public)"
 msgstr "ゲスト（公開）"
 
-#: lib/baudrate_web/live/article_live.html.heex:358
+#: lib/baudrate_web/live/article_live.html.heex:366
 #, elixir-autogen, elixir-format
 msgid "Lock"
 msgstr "ロック"
@@ -2192,7 +2192,7 @@ msgstr "モデレーター"
 msgid "No moderators assigned."
 msgstr "モデレーターが指定されていません。"
 
-#: lib/baudrate_web/live/article_live.html.heex:349
+#: lib/baudrate_web/live/article_live.html.heex:357
 #, elixir-autogen, elixir-format
 msgid "Pin"
 msgstr "ピン留め"
@@ -2215,17 +2215,17 @@ msgstr "このモデレーターを削除しますか？"
 msgid "Select a user..."
 msgstr "ユーザーを選択..."
 
-#: lib/baudrate_web/live/article_live.html.heex:461
+#: lib/baudrate_web/live/article_live.html.heex:469
 #, elixir-autogen, elixir-format
 msgid "This thread is locked. No new comments can be posted."
 msgstr "このスレッドはロックされています。新しいコメントは投稿できません。"
 
-#: lib/baudrate_web/live/article_live.html.heex:358
+#: lib/baudrate_web/live/article_live.html.heex:366
 #, elixir-autogen, elixir-format
 msgid "Unlock"
 msgstr "ロック解除"
 
-#: lib/baudrate_web/live/article_live.html.heex:349
+#: lib/baudrate_web/live/article_live.html.heex:357
 #, elixir-autogen, elixir-format
 msgid "Unpin"
 msgstr "ピン解除"
@@ -2595,7 +2595,7 @@ msgstr "編集履歴 — %{title}"
 msgid "Editor"
 msgstr "編集者"
 
-#: lib/baudrate_web/live/article_live.html.heex:333
+#: lib/baudrate_web/live/article_live.html.heex:341
 #, elixir-autogen, elixir-format
 msgid "History"
 msgstr "履歴"
@@ -2709,7 +2709,7 @@ msgstr "DM アクセス設定の更新に失敗しました。"
 #: lib/baudrate_web/components/comment_components.ex:306
 #: lib/baudrate_web/live/admin/boards_live.html.heex:96
 #: lib/baudrate_web/live/article_edit_live.html.heex:162
-#: lib/baudrate_web/live/article_live.html.heex:498
+#: lib/baudrate_web/live/article_live.html.heex:506
 #: lib/baudrate_web/live/article_new_live.html.heex:257
 #: lib/baudrate_web/live/board_follows_live.html.heex:36
 #: lib/baudrate_web/live/feed_live.html.heex:252
@@ -3613,6 +3613,7 @@ msgstr "フィード"
 
 #: lib/baudrate_web/components/comment_components.ex:64
 #: lib/baudrate_web/live/article_live.html.heex:73
+#: lib/baudrate_web/live/article_live.html.heex:252
 #: lib/baudrate_web/live/board_live.html.heex:186
 #: lib/baudrate_web/live/feed_live.html.heex:400
 #: lib/baudrate_web/live/feed_live.html.heex:401
@@ -3951,7 +3952,7 @@ msgstr "記事の転送に失敗しました。"
 
 #: lib/baudrate_web/components/comment_components.ex:184
 #: lib/baudrate_web/components/comment_components.ex:185
-#: lib/baudrate_web/live/article_live.html.heex:340
+#: lib/baudrate_web/live/article_live.html.heex:348
 #: lib/baudrate_web/live/feed_live.html.heex:470
 #: lib/baudrate_web/live/feed_live.html.heex:471
 #: lib/baudrate_web/live/feed_live.html.heex:860
@@ -3963,7 +3964,7 @@ msgid "Forward to Board"
 msgstr "板に転送"
 
 #: lib/baudrate_web/components/comment_components.ex:242
-#: lib/baudrate_web/live/article_live.html.heex:419
+#: lib/baudrate_web/live/article_live.html.heex:427
 #: lib/baudrate_web/live/feed_live.html.heex:499
 #: lib/baudrate_web/live/feed_live.html.heex:887
 #: lib/baudrate_web/live/feed_live.html.heex:1070
@@ -3972,7 +3973,7 @@ msgid "Search boards"
 msgstr "板を検索"
 
 #: lib/baudrate_web/components/comment_components.ex:238
-#: lib/baudrate_web/live/article_live.html.heex:415
+#: lib/baudrate_web/live/article_live.html.heex:423
 #: lib/baudrate_web/live/feed_live.html.heex:495
 #: lib/baudrate_web/live/feed_live.html.heex:883
 #: lib/baudrate_web/live/feed_live.html.heex:1066
@@ -4207,8 +4208,8 @@ msgstr "VAPID鍵の生成に成功しました。"
 msgid "Web Push Notifications (VAPID)"
 msgstr "Webプッシュ通知 (VAPID)"
 
-#: lib/baudrate_web/live/article_live.html.heex:295
-#: lib/baudrate_web/live/article_live.html.heex:301
+#: lib/baudrate_web/live/article_live.html.heex:303
+#: lib/baudrate_web/live/article_live.html.heex:309
 #, elixir-autogen, elixir-format
 msgid "Bookmark"
 msgstr "ブックマークする"
@@ -4218,7 +4219,7 @@ msgstr "ブックマークする"
 msgid "Bookmark removed."
 msgstr "ブックマークを解除しました。"
 
-#: lib/baudrate_web/live/article_live.html.heex:301
+#: lib/baudrate_web/live/article_live.html.heex:309
 #, elixir-autogen, elixir-format
 msgid "Bookmarked"
 msgstr "ブックマーク済み"
@@ -4236,7 +4237,7 @@ msgstr "ブックマーク"
 msgid "No bookmarks yet."
 msgstr "ブックマークはまだありません。"
 
-#: lib/baudrate_web/live/article_live.html.heex:295
+#: lib/baudrate_web/live/article_live.html.heex:303
 #: lib/baudrate_web/live/bookmarks_live.html.heex:128
 #: lib/baudrate_web/live/bookmarks_live.html.heex:129
 #, elixir-autogen, elixir-format
@@ -4332,14 +4333,14 @@ msgid "Search... (try author:, board:, tag:)"
 msgstr "検索…（author:、board:、tag: をお試しください）"
 
 #: lib/baudrate_web/live/article_edit_live.html.heex:23
-#: lib/baudrate_web/live/article_live.html.heex:476
+#: lib/baudrate_web/live/article_live.html.heex:484
 #: lib/baudrate_web/live/article_new_live.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "Draft restored"
 msgstr "下書きを復元しました"
 
 #: lib/baudrate_web/live/article_edit_live.html.heex:22
-#: lib/baudrate_web/live/article_live.html.heex:475
+#: lib/baudrate_web/live/article_live.html.heex:483
 #: lib/baudrate_web/live/article_new_live.html.heex:30
 #, elixir-autogen, elixir-format
 msgid "Draft saved"
@@ -4673,9 +4674,9 @@ msgstr "TOTPリセットヘルプ"
 msgid "TOTP verification help"
 msgstr "TOTP認証ヘルプ"
 
-#: lib/baudrate_web/live/article_live.html.heex:251
-#: lib/baudrate_web/live/article_live.html.heex:264
-#: lib/baudrate_web/live/article_live.html.heex:265
+#: lib/baudrate_web/live/article_live.html.heex:259
+#: lib/baudrate_web/live/article_live.html.heex:272
+#: lib/baudrate_web/live/article_live.html.heex:273
 #, elixir-autogen, elixir-format
 msgid "%{count} Like"
 msgid_plural "%{count} Likes"
@@ -4690,7 +4691,7 @@ msgid "Failed to toggle like."
 msgstr "いいねの切り替えに失敗しました。"
 
 #: lib/baudrate_web/components/comment_components.ex:559
-#: lib/baudrate_web/live/article_live.html.heex:257
+#: lib/baudrate_web/live/article_live.html.heex:265
 #: lib/baudrate_web/live/board_live.html.heex:221
 #: lib/baudrate_web/live/feed_live.html.heex:427
 #: lib/baudrate_web/live/feed_live.html.heex:708
@@ -4701,7 +4702,7 @@ msgid "Like"
 msgstr "いいね"
 
 #: lib/baudrate_web/components/comment_components.ex:559
-#: lib/baudrate_web/live/article_live.html.heex:257
+#: lib/baudrate_web/live/article_live.html.heex:265
 #: lib/baudrate_web/live/board_live.html.heex:220
 #: lib/baudrate_web/live/feed_live.html.heex:426
 #: lib/baudrate_web/live/feed_live.html.heex:707
@@ -4743,7 +4744,7 @@ msgid "Generating..."
 msgstr "生成中..."
 
 #: lib/baudrate_web/components/comment_components.ex:315
-#: lib/baudrate_web/live/article_live.html.heex:507
+#: lib/baudrate_web/live/article_live.html.heex:515
 #: lib/baudrate_web/live/feed_live.html.heex:261
 #, elixir-autogen, elixir-format
 msgid "Posting..."
@@ -4859,7 +4860,7 @@ msgstr "理由"
 #: lib/baudrate_web/components/comment_components.ex:215
 #: lib/baudrate_web/components/core_components.ex:740
 #: lib/baudrate_web/components/core_components.ex:780
-#: lib/baudrate_web/live/article_live.html.heex:374
+#: lib/baudrate_web/live/article_live.html.heex:382
 #: lib/baudrate_web/live/user_profile_live.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Report"
@@ -4919,7 +4920,7 @@ msgid "You have already reported this."
 msgstr "すでに通報済みです。"
 
 #: lib/baudrate_web/components/comment_components.ex:199
-#: lib/baudrate_web/live/article_live.html.heex:316
+#: lib/baudrate_web/live/article_live.html.heex:324
 #: lib/baudrate_web/live/user_profile_live.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "More actions"
@@ -5021,8 +5022,8 @@ msgstr "リンクプレビュー"
 msgid "Link preview: %{title}"
 msgstr "リンクプレビュー：%{title}"
 
-#: lib/baudrate_web/live/article_live.html.heex:273
-#: lib/baudrate_web/live/article_live.html.heex:289
+#: lib/baudrate_web/live/article_live.html.heex:281
+#: lib/baudrate_web/live/article_live.html.heex:297
 #, elixir-autogen, elixir-format
 msgid "%{count} Boost"
 msgid_plural "%{count} Boosts"
@@ -5030,7 +5031,7 @@ msgstr[0] "%{count} ブースト"
 msgstr[1] "%{count} ブースト"
 
 #: lib/baudrate_web/components/comment_components.ex:598
-#: lib/baudrate_web/live/article_live.html.heex:279
+#: lib/baudrate_web/live/article_live.html.heex:287
 #: lib/baudrate_web/live/board_live.html.heex:249
 #: lib/baudrate_web/live/feed_live.html.heex:449
 #: lib/baudrate_web/live/feed_live.html.heex:735
@@ -5049,7 +5050,7 @@ msgid "Failed to toggle boost."
 msgstr "ブーストの切り替えに失敗しました。"
 
 #: lib/baudrate_web/components/comment_components.ex:598
-#: lib/baudrate_web/live/article_live.html.heex:279
+#: lib/baudrate_web/live/article_live.html.heex:287
 #: lib/baudrate_web/live/board_live.html.heex:248
 #: lib/baudrate_web/live/feed_live.html.heex:448
 #: lib/baudrate_web/live/feed_live.html.heex:734
@@ -5090,12 +5091,12 @@ msgstr "記事を%{board}から削除しました。"
 msgid "Failed to remove article from board."
 msgstr "掲示板からの記事削除に失敗しました。"
 
-#: lib/baudrate_web/live/article_live.html.heex:386
+#: lib/baudrate_web/live/article_live.html.heex:394
 #, elixir-autogen, elixir-format
 msgid "Remove from %{board}"
 msgstr "%{board}から削除"
 
-#: lib/baudrate_web/live/article_live.html.heex:382
+#: lib/baudrate_web/live/article_live.html.heex:390
 #, elixir-autogen, elixir-format
 msgid "Remove this article from %{board}?"
 msgstr "この記事を%{board}から削除しますか？"
@@ -5161,7 +5162,7 @@ msgstr "掲示板に転送しました。"
 
 #: lib/baudrate_web/components/comment_components.ex:307
 #: lib/baudrate_web/live/article_edit_live.html.heex:163
-#: lib/baudrate_web/live/article_live.html.heex:499
+#: lib/baudrate_web/live/article_live.html.heex:507
 #: lib/baudrate_web/live/article_new_live.html.heex:258
 #: lib/baudrate_web/live/feed_live.html.heex:253
 #, elixir-autogen, elixir-format
@@ -5170,7 +5171,7 @@ msgstr "ダイレクト"
 
 #: lib/baudrate_web/components/comment_components.ex:304
 #: lib/baudrate_web/live/article_edit_live.html.heex:160
-#: lib/baudrate_web/live/article_live.html.heex:496
+#: lib/baudrate_web/live/article_live.html.heex:504
 #: lib/baudrate_web/live/article_new_live.html.heex:255
 #: lib/baudrate_web/live/feed_live.html.heex:250
 #, elixir-autogen, elixir-format
@@ -5179,7 +5180,7 @@ msgstr "公開"
 
 #: lib/baudrate_web/components/comment_components.ex:305
 #: lib/baudrate_web/live/article_edit_live.html.heex:161
-#: lib/baudrate_web/live/article_live.html.heex:497
+#: lib/baudrate_web/live/article_live.html.heex:505
 #: lib/baudrate_web/live/article_new_live.html.heex:256
 #: lib/baudrate_web/live/feed_live.html.heex:251
 #, elixir-autogen, elixir-format
