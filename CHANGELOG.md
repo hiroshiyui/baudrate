@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.5.5] — 2026-03-30
+
+### Fixed
+
+- **YouTube embed Error 153 (player configuration error)** — The `<iframe>` used `referrerpolicy="no-referrer"`, which suppressed the `Referer` header entirely. YouTube's embed player requires the embedding origin in the `Referer` header to verify that the domain is permitted to embed the video; without it, playback fails with Error 153. Changed to `referrerpolicy="strict-origin"`, which sends only the scheme and host (no URL path) to YouTube — preserving user privacy while satisfying YouTube's origin check.
+
 ## [1.5.4] — 2026-03-30
 
 ### Fixed
