@@ -166,6 +166,13 @@ fn normalize_feed_html(html: &str) -> String {
     // converted from word-processor output or old-style blog generators.
     let cleaned = excess_br_regex().replace_all(&cleaned, "<br><br>");
 
+    // Replace &nbsp; entities with regular spaces.  When the stored HTML is later
+    // rendered through Earmark (Markdown.to_html/1), any &nbsp; that appears
+    // outside a block-level element is treated as inline Markdown text and its
+    // ampersand is HTML-escaped to &amp;, producing the literal string "&nbsp;"
+    // in the browser.  Converting to a plain space before storage prevents this.
+    let cleaned = cleaned.replace("&nbsp;", " ");
+
     cleaned.trim().to_string()
 }
 

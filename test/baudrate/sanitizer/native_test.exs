@@ -424,5 +424,25 @@ defmodule Baudrate.Sanitizer.NativeTest do
     test "handles empty string" do
       assert "" == Native.normalize_feed_html("")
     end
+
+    test "replaces &nbsp; in text content with regular space" do
+      html = "<p>word&nbsp;word</p>"
+      result = Native.normalize_feed_html(html)
+      assert result == "<p>word word</p>"
+    end
+
+    test "replaces standalone &nbsp; between block elements with regular space" do
+      html = "<p>first</p>&nbsp;<p>second</p>"
+      result = Native.normalize_feed_html(html)
+      refute result =~ "&nbsp;"
+      assert result =~ "first"
+      assert result =~ "second"
+    end
+
+    test "replaces multiple &nbsp; entities with spaces" do
+      html = "<p>a&nbsp;&nbsp;b</p>"
+      result = Native.normalize_feed_html(html)
+      assert result == "<p>a  b</p>"
+    end
   end
 end
