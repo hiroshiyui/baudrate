@@ -89,7 +89,7 @@ defmodule Baudrate.Auth.Sessions do
     sessions =
       from(s in UserSession,
         where: s.user_id == ^user_id,
-        order_by: [asc: s.refreshed_at],
+        order_by: [asc: s.refreshed_at, asc: s.id],
         select: s.id
       )
       |> Repo.all()

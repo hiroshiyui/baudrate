@@ -144,7 +144,7 @@ defmodule Baudrate.Federation.Feed do
 
     remote_items =
       from([fi, _uf, ra] in remote_query,
-        order_by: [desc: fi.published_at],
+        order_by: [desc: fi.published_at, desc: fi.id],
         limit: ^(offset + per_page),
         preload: [:remote_actor, :boosted_by_actor]
       )

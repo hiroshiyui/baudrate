@@ -43,7 +43,7 @@
           field={@form[:ap_domain_blocklist]}
           type="textarea"
           label={gettext("Blocked Domains (federation)")}
-          placeholder="spam.example, bad-actor.example"
+          placeholder={gettext("spam.example, bad-actor.example")}
         />
         <p class="text-sm opacity-70">
           {gettext("Comma-separated list of domains to block from federation.")}
@@ -52,7 +52,7 @@
           field={@form[:ap_domain_allowlist]}
           type="textarea"
           label={gettext("Allowed Domains (federation)")}
-          placeholder="trusted.example, friend.example"
+          placeholder={gettext("trusted.example, friend.example")}
         />
         <p class="text-sm opacity-70">
           {gettext(
@@ -77,7 +77,7 @@
           field={@form[:ap_blocklist_audit_url]}
           type="text"
           label={gettext("Blocklist Audit URL")}
-          placeholder="https://example.com/blocklist.csv"
+          placeholder={gettext("https://example.com/blocklist.csv")}
         />
         <p class="text-sm opacity-70">
           {gettext(

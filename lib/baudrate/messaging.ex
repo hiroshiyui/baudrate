@@ -169,7 +169,7 @@ defmodule Baudrate.Messaging do
     from(c in Conversation,
       where: c.user_a_id == ^user_id or c.user_b_id == ^user_id,
       where: not is_nil(c.last_message_at),
-      order_by: [desc: c.last_message_at],
+      order_by: [desc: c.last_message_at, desc: c.id],
       limit: ^limit,
       preload: [:user_a, :user_b, :remote_actor_a, :remote_actor_b]
     )
