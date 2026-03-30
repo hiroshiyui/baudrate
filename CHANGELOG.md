@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.5.6] — 2026-03-30
+
+### Fixed
+
+- **Article search results not sorted by date** — Search results were always ordered by article ID regardless of the intended `inserted_at DESC` ordering. The base query used `distinct: a.id`, which PostgreSQL translates to `DISTINCT ON (a.id)` and silently prepends `a.id` to `ORDER BY`, overriding any other sort. Fixed by replacing the JOIN + DISTINCT pattern with a correlated `EXISTS` subquery for board visibility, eliminating the need for `DISTINCT` entirely. Additionally, the English full-text path had `ts_rank` as its primary sort key; all article searches now sort uniformly by `inserted_at DESC, id DESC` (most recent first).
+
 ## [1.5.5] — 2026-03-30
 
 ### Fixed
