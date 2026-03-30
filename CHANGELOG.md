@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.5.7] — 2026-03-31
+
+### Added
+
+- **"View original" link in article actions for remote articles** — Articles sourced from RSS/Atom feed bots or received via ActivityPub now show a "View original" link (with a link icon) as the first item in the article actions bar, before the like and boost buttons. The link opens the canonical source URL in a new tab. Hidden for locally-authored articles.
+
+### Fixed
+
+- **`&nbsp;` entities rendered as literal text in RSS bot articles** — Feed HTML stored by bots was later re-processed through Earmark at render time. Any `&nbsp;` appearing outside a block-level element was treated as inline Markdown text, causing Earmark to HTML-escape the ampersand (`&` → `&amp;`), producing the visible string `&nbsp;` in the browser. `normalize_feed_html/1` now replaces `&nbsp;` with regular spaces before storage.
+
 ## [1.5.6] — 2026-03-30
 
 ### Fixed
