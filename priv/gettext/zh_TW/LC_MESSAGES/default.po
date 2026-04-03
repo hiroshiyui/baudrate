@@ -5630,7 +5630,7 @@ msgstr "或"
 #: lib/baudrate_web/components/layouts.ex:308
 #, elixir-autogen, elixir-format
 msgid "Scroll to top"
-msgstr ""
+msgstr "回到頂部"
 
 #: lib/baudrate_web/live/password_reset_live.html.heex:42
 #: lib/baudrate_web/live/recovery_code_verify_live.html.heex:26

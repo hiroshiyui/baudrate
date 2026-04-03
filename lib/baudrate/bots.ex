@@ -22,7 +22,7 @@ defmodule Baudrate.Bots do
   @spec list_bots() :: [Bot.t()]
   def list_bots do
     Bot
-    |> order_by([b], asc: b.inserted_at)
+    |> order_by([b], asc: b.inserted_at, asc: b.id)
     |> preload(:user)
     |> Repo.all()
   end

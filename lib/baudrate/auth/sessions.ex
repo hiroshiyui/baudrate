@@ -295,7 +295,7 @@ defmodule Baudrate.Auth.Sessions do
     login_attempts_filter_query(opts)
     |> Pagination.paginate_query(pagination,
       result_key: :attempts,
-      order_by: [desc: dynamic([a], a.inserted_at)],
+      order_by: [desc: dynamic([a], a.inserted_at), desc: dynamic([a], a.id)],
       preloads: []
     )
   end

@@ -40,7 +40,7 @@ defmodule Baudrate.Auth.WebAuthn do
     Repo.all(
       from c in WebAuthnCredential,
         where: c.user_id == ^user.id,
-        order_by: [asc: :inserted_at]
+        order_by: [asc: :inserted_at, asc: :id]
     )
   end
 

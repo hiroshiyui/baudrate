@@ -250,7 +250,7 @@ defmodule Baudrate.Auth.Users do
     users_filter_query(opts)
     |> Pagination.paginate_query(pagination,
       result_key: :users,
-      order_by: [desc: dynamic([u], u.inserted_at)],
+      order_by: [desc: dynamic([u], u.inserted_at), desc: dynamic([u], u.id)],
       preloads: [:role]
     )
   end

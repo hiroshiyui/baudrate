@@ -343,7 +343,7 @@ defmodule Baudrate.Content.Search do
 
     Pagination.paginate_query(base_query, pagination,
       result_key: :comments,
-      order_by: [desc: dynamic([q], q.inserted_at)],
+      order_by: [desc: dynamic([q], q.inserted_at), desc: dynamic([q], q.id)],
       preloads: [:user, :remote_actor, article: :boards]
     )
   end

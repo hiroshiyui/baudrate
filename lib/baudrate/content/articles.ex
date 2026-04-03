@@ -40,7 +40,7 @@ defmodule Baudrate.Content.Articles do
       join: ba in BoardArticle,
       on: ba.article_id == a.id,
       where: ba.board_id == ^board_id and is_nil(a.deleted_at),
-      order_by: [desc: a.pinned, desc: a.inserted_at],
+      order_by: [desc: a.pinned, desc: a.inserted_at, desc: a.id],
       preload: :user
     )
     |> Repo.all()

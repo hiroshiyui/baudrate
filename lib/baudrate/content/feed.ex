@@ -280,7 +280,7 @@ defmodule Baudrate.Content.Feed do
 
     Pagination.paginate_query(base_query, pagination,
       result_key: :articles,
-      order_by: [desc: dynamic([q], q.inserted_at)],
+      order_by: [desc: dynamic([q], q.inserted_at), desc: dynamic([q], q.id)],
       preloads: [:user, :boards]
     )
   end
@@ -299,7 +299,7 @@ defmodule Baudrate.Content.Feed do
 
     Pagination.paginate_query(base_query, pagination,
       result_key: :comments,
-      order_by: [desc: dynamic([q], q.inserted_at)],
+      order_by: [desc: dynamic([q], q.inserted_at), desc: dynamic([q], q.id)],
       preloads: [:user, article: :boards]
     )
   end
