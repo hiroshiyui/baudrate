@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.5.8] — 2026-04-04
+
+### Fixed
+
+- **Non-deterministic ordering in 8 queries lacking an `id` tiebreaker** — Queries in article listing, comment search, tag articles, user profile feed, admin user list, login attempts, WebAuthn credential list, and bot list were ordered solely by `inserted_at` (or `updated_at`). When multiple records share the same timestamp — common in tests and rapid sequential inserts — PostgreSQL returns rows in an arbitrary order. Added `id` as a secondary sort key to all affected queries for stable, reproducible ordering.
+- **Missing "Scroll to top" translations** — The `aria-label` on the scroll-to-top button was untranslated in zh_TW and ja_JP. Translated as `回到頂部` and `トップへ戻る` respectively.
+
 ## [1.5.7] — 2026-03-31
 
 ### Added
