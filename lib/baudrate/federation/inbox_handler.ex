@@ -73,19 +73,28 @@ defmodule Baudrate.Federation.InboxHandler do
     actor_uri = resolve_target_uri(activity, target)
 
     if actor_uri do
-      case Federation.create_follower(actor_uri, remote_actor, activity["id"]) do
-        {:ok, _follower} ->
-          send_accept_async(activity, actor_uri, remote_actor)
-          notify_follow_target(target, remote_actor)
-          :ok
-
-        {:error, %Ecto.Changeset{} = changeset} ->
-          if has_unique_error?(changeset) do
+      # Reject follows targeting non-federated board actors (ap_enabled: false).
+      # Board federation controls whether remote actors may follow the board.
+      # This guard is needed for the shared inbox path where the controller
+      # cannot pre-filter by ap_enabled.
+      if non_federated_board_actor?(actor_uri, target) do
+        send_reject_async(activity, actor_uri, remote_actor)
+        :ok
+      else
+        case Federation.create_follower(actor_uri, remote_actor, activity["id"]) do
+          {:ok, _follower} ->
             send_accept_async(activity, actor_uri, remote_actor)
+            notify_follow_target(target, remote_actor)
             :ok
-          else
-            {:error, :follow_failed}
-          end
+
+          {:error, %Ecto.Changeset{} = changeset} ->
+            if has_unique_error?(changeset) do
+              send_accept_async(activity, actor_uri, remote_actor)
+              :ok
+            else
+              {:error, :follow_failed}
+            end
+        end
       end
     else
       {:error, :not_found}
@@ -1418,6 +1427,42 @@ defmodule Baudrate.Federation.InboxHandler do
     Baudrate.Federation.schedule_federation_task(fun)
   end
 
+  defp send_reject_async(follow_activity, actor_uri, remote_actor) do
+    fun = fn ->
+      case Delivery.send_reject(follow_activity, actor_uri, remote_actor) do
+        {:ok, _} ->
+          Logger.info("federation.reject_sent: to=#{remote_actor.inbox}")
+
+        {:error, reason} ->
+          Logger.warning(
+            "federation.reject_failed: to=#{remote_actor.inbox} reason=#{inspect(reason)}"
+          )
+      end
+    end
+
+    Baudrate.Federation.schedule_federation_task(fun)
+  end
+
+  # Returns true when the URI is a local board actor for a non-federated board
+  # (ap_enabled: false or min_role_to_view != "guest"). Only used on the shared
+  # inbox path where the controller cannot pre-filter by board federation.
+  defp non_federated_board_actor?(actor_uri, :shared) do
+    board_prefix = "#{Federation.base_url()}/ap/boards/"
+
+    case actor_uri do
+      <<^board_prefix::binary, slug::binary>> ->
+        case Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug) do
+          nil -> false
+          board -> not Baudrate.Content.Board.federated?(board)
+        end
+
+      _ ->
+        false
+    end
+  end
+
+  defp non_federated_board_actor?(_, _), do: false
+
   # --- Validation helpers ---
 
   defp validate_actor_match(%{"actor" => actor_uri}, %{ap_id: signer_ap_id})
@@ -1489,7 +1534,15 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
-  # Returns true if the article is in at least one public, AP-enabled board.
+  # Returns true if the article can participate in federation.
+  # Remote articles (received via federation) always qualify regardless of which
+  # boards they reside in — they already exist on the fediverse and remote actors
+  # should be able to Like, Boost, or Reply to them even if the board has
+  # ap_enabled: false.
+  # Local articles qualify only if they are in at least one public, AP-enabled board.
+  defp article_federated?(%{remote_actor_id: remote_actor_id}) when not is_nil(remote_actor_id),
+    do: true
+
   defp article_federated?(article) do
     import Ecto.Query
 

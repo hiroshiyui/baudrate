@@ -131,6 +131,60 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       # Still exactly 1 follower
       assert Federation.count_followers(actor_uri) == 1
     end
+
+    test "rejects Follow for non-federated board via shared inbox" do
+      board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Private Board",
+          slug: "private-#{System.unique_integer([:positive])}",
+          ap_enabled: false,
+          ap_accept_policy: "open"
+        })
+        |> Repo.insert!()
+
+      {:ok, board} = Baudrate.Federation.KeyStore.ensure_board_keypair(board)
+      remote_actor = create_remote_actor()
+      board_uri = Federation.actor_uri(:board, board.slug)
+
+      activity = %{
+        "id" => "https://remote.example/activities/follow-#{System.unique_integer([:positive])}",
+        "type" => "Follow",
+        "actor" => remote_actor.ap_id,
+        "object" => board_uri
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      # No follower record should have been created
+      refute Federation.follower_exists?(board_uri, remote_actor.ap_id)
+    end
+
+    test "accepts Follow for federated board via shared inbox" do
+      board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Public Board",
+          slug: "pub-#{System.unique_integer([:positive])}",
+          ap_enabled: true,
+          ap_accept_policy: "open"
+        })
+        |> Repo.insert!()
+
+      {:ok, board} = Baudrate.Federation.KeyStore.ensure_board_keypair(board)
+      remote_actor = create_remote_actor()
+      board_uri = Federation.actor_uri(:board, board.slug)
+
+      activity = %{
+        "id" => "https://remote.example/activities/follow-#{System.unique_integer([:positive])}",
+        "type" => "Follow",
+        "actor" => remote_actor.ap_id,
+        "object" => board_uri
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Federation.follower_exists?(board_uri, remote_actor.ap_id)
+    end
   end
 
   describe "Undo(Follow)" do
@@ -753,6 +807,77 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
     end
+
+    test "accepts like for remote article in non-federated board" do
+      # Remote articles already exist on the fediverse, so interactions should
+      # be accepted even if the board has ap_enabled: false.
+      non_fed_board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Non-Fed Board",
+          slug: "nonfed-like-#{System.unique_integer([:positive])}",
+          ap_enabled: false,
+          ap_accept_policy: "open"
+        })
+        |> Repo.insert!()
+
+      author = create_remote_actor()
+      liker = create_remote_actor()
+
+      uid = System.unique_integer([:positive])
+      article_ap_id = "https://remote.example/articles/#{uid}"
+
+      {:ok, %{article: article}} =
+        Content.create_remote_article(
+          %{
+            title: "Remote Post",
+            body: "<p>body</p>",
+            slug: "remote-post-#{uid}",
+            ap_id: article_ap_id,
+            remote_actor_id: author.id,
+            visibility: "public"
+          },
+          [non_fed_board.id]
+        )
+
+      activity = %{
+        "id" => "https://remote.example/likes/#{System.unique_integer([:positive])}",
+        "type" => "Like",
+        "actor" => liker.ap_id,
+        "object" => article_ap_id
+      }
+
+      assert :ok = InboxHandler.handle(activity, liker, :shared)
+      assert Content.count_article_likes(article) == 1
+    end
+
+    test "ignores like for local article in non-federated board" do
+      user = setup_user_with_role("user")
+      remote_actor = create_remote_actor()
+
+      non_fed_board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Non-Fed Board",
+          slug: "nonfed-like-local-#{System.unique_integer([:positive])}",
+          ap_enabled: false,
+          ap_accept_policy: "open"
+        })
+        |> Repo.insert!()
+
+      article = create_article_for_board(user, non_fed_board)
+      article_uri = Federation.actor_uri(:article, article.slug)
+
+      activity = %{
+        "id" => "https://remote.example/likes/#{System.unique_integer([:positive])}",
+        "type" => "Like",
+        "actor" => remote_actor.ap_id,
+        "object" => article_uri
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Content.count_article_likes(article) == 0
+    end
   end
 
   describe "Announce" do
@@ -913,6 +1038,48 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       }
 
       assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Content.count_article_boosts(article) == 1
+    end
+
+    test "accepts boost for remote article in non-federated board" do
+      non_fed_board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Non-Fed Board",
+          slug: "nonfed-boost-#{System.unique_integer([:positive])}",
+          ap_enabled: false,
+          ap_accept_policy: "open"
+        })
+        |> Repo.insert!()
+
+      author = create_remote_actor()
+      booster = create_remote_actor()
+
+      uid = System.unique_integer([:positive])
+      article_ap_id = "https://remote.example/articles/#{uid}"
+
+      {:ok, %{article: article}} =
+        Content.create_remote_article(
+          %{
+            title: "Remote Boost Post",
+            body: "<p>body</p>",
+            slug: "remote-boost-post-#{uid}",
+            ap_id: article_ap_id,
+            remote_actor_id: author.id,
+            visibility: "public"
+          },
+          [non_fed_board.id]
+        )
+
+      activity = %{
+        "id" =>
+          "https://remote.example/activities/announce-art-#{System.unique_integer([:positive])}",
+        "type" => "Announce",
+        "actor" => booster.ap_id,
+        "object" => article_ap_id
+      }
+
+      assert :ok = InboxHandler.handle(activity, booster, :shared)
       assert Content.count_article_boosts(article) == 1
     end
   end

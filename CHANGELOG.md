@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.5.9] — 2026-04-06
+
+### Fixed
+
+- **Remote articles in non-federated boards can now receive federation activities** — `article_federated?` was previously returning `false` for any article in a board with `ap_enabled: false`, silently dropping incoming Like, Announce (Boost), and Create/Reply activities even for articles that originated from the fediverse and already carry an `ap_id`. Remote articles (`remote_actor_id` non-nil) now always qualify to receive federation interactions regardless of the board's `ap_enabled` setting. Local articles in non-federated boards remain non-federated.
+- **Non-federated boards incorrectly accepted Follow activities via the shared inbox** — The board inbox controller already rejected Follows for non-federated boards (returning 404), but the shared inbox had no such guard. A remote actor could send a Follow targeting a board actor URI directly to `/ap/inbox` and receive an `Accept`, creating a spurious follower record. The shared inbox Follow handler now checks whether the targeted actor is a non-federated board and sends a `Reject(Follow)` instead.
+- **`Delivery.get_private_key/1` could panic on deleted local actors** — `Repo.get_by!` was used to look up users and boards by URI prefix, raising `Ecto.NoResultsError` if the actor was deleted after a delivery job was created. This caused the Task to die without updating the job status, leaving it permanently in `"pending"` and triggering endless retry loops. Changed to `Repo.get_by` with a `nil` guard that returns `{:error, :unknown_actor}` and lets the job be marked as failed.
+- **Dead code clause in `do_deliver/1`** — The `:error ->` match arm (line 217) was unreachable because `get_private_key/1` never returns a bare `:error` atom; the tuple `{:error, :unknown_actor}` was already caught by the `{:error, _}` clause below it. Removed the dead branch.
+
 ## [1.5.8] — 2026-04-04
 
 ### Fixed

@@ -4,7 +4,7 @@ defmodule Baudrate.MixProject do
   def project do
     [
       app: :baudrate,
-      version: "1.5.8",
+      version: "1.5.9",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,

@@ -507,5 +507,85 @@ defmodule Baudrate.Federation.DeliveryTest do
     test "returns error for unknown actor" do
       assert {:error, :unknown_actor} = Delivery.get_private_key("https://unknown.example/actor")
     end
+
+    test "returns error for local user URI with non-existent username" do
+      # Ensures no panic (Ecto.NoResultsError) when a user is deleted after a
+      # delivery job is created — should gracefully return :unknown_actor.
+      actor_uri = Federation.actor_uri(:user, "deleted_user_#{System.unique_integer([:positive])}")
+      assert {:error, :unknown_actor} = Delivery.get_private_key(actor_uri)
+    end
+
+    test "returns error for local board URI with non-existent slug" do
+      actor_uri = Federation.actor_uri(:board, "deleted-board-#{System.unique_integer([:positive])}")
+      assert {:error, :unknown_actor} = Delivery.get_private_key(actor_uri)
+    end
+  end
+
+  describe "send_accept/3" do
+    setup do
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 202, "Accepted")
+      end)
+
+      :ok
+    end
+
+    test "sends Accept(Follow) signed POST to remote actor inbox" do
+      user = create_user()
+      remote = create_remote_actor()
+      actor_uri = Federation.actor_uri(:user, user.username)
+
+      follow_activity = %{
+        "type" => "Follow",
+        "id" => "https://remote.example/activities/follow-#{System.unique_integer([:positive])}",
+        "actor" => remote.ap_id,
+        "object" => actor_uri
+      }
+
+      assert {:ok, _} = Delivery.send_accept(follow_activity, actor_uri, remote)
+    end
+
+    test "returns error when actor has no keypair" do
+      remote = create_remote_actor()
+      actor_uri = Federation.actor_uri(:user, "nonexistent_#{System.unique_integer([:positive])}")
+
+      follow_activity = %{"type" => "Follow", "id" => "https://remote.example/f/1"}
+
+      assert {:error, :unknown_actor} = Delivery.send_accept(follow_activity, actor_uri, remote)
+    end
+  end
+
+  describe "send_reject/3" do
+    setup do
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 202, "Accepted")
+      end)
+
+      :ok
+    end
+
+    test "sends Reject(Follow) signed POST to remote actor inbox" do
+      user = create_user()
+      remote = create_remote_actor()
+      actor_uri = Federation.actor_uri(:user, user.username)
+
+      follow_activity = %{
+        "type" => "Follow",
+        "id" => "https://remote.example/activities/follow-#{System.unique_integer([:positive])}",
+        "actor" => remote.ap_id,
+        "object" => actor_uri
+      }
+
+      assert {:ok, _} = Delivery.send_reject(follow_activity, actor_uri, remote)
+    end
+
+    test "returns error when actor has no keypair" do
+      remote = create_remote_actor()
+      actor_uri = Federation.actor_uri(:board, "nonexistent-#{System.unique_integer([:positive])}")
+
+      follow_activity = %{"type" => "Follow", "id" => "https://remote.example/f/1"}
+
+      assert {:error, :unknown_actor} = Delivery.send_reject(follow_activity, actor_uri, remote)
+    end
   end
 end

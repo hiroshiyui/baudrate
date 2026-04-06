@@ -66,6 +66,33 @@ defmodule Baudrate.Federation.Delivery do
     }
   end
 
+  @doc """
+  Sends a Reject(Follow) activity to the remote actor's inbox.
+
+  Used when a Follow targets a non-federated board actor so the remote
+  actor learns the follow was declined rather than silently timing out.
+  """
+  def send_reject(follow_activity, local_actor_uri, remote_actor) do
+    reject = build_reject(follow_activity, local_actor_uri)
+    body = Jason.encode!(reject)
+
+    with {:ok, private_key_pem} <- get_private_key(local_actor_uri),
+         key_id = "#{local_actor_uri}#main-key",
+         headers = HTTPSignature.sign(:post, remote_actor.inbox, body, private_key_pem, key_id) do
+      HTTPClient.post(remote_actor.inbox, body, Map.to_list(headers))
+    end
+  end
+
+  defp build_reject(follow_activity, local_actor_uri) do
+    %{
+      "@context" => @as_context,
+      "id" => "#{local_actor_uri}#reject-#{System.unique_integer([:positive])}",
+      "type" => "Reject",
+      "actor" => local_actor_uri,
+      "object" => follow_activity
+    }
+  end
+
   # --- Queued Delivery ---
 
   @doc """
@@ -186,9 +213,6 @@ defmodule Baudrate.Federation.Delivery do
           HTTPSignature.sign(:post, job.inbox_url, job.activity_json, private_key_pem, key_id)
 
         HTTPClient.post(job.inbox_url, job.activity_json, Map.to_list(headers))
-
-      :error ->
-        {:error, :unknown_actor}
 
       {:error, _} = err ->
         err
@@ -318,13 +342,19 @@ defmodule Baudrate.Federation.Delivery do
     cond do
       String.starts_with?(actor_uri, "#{base}/ap/users/") ->
         username = actor_uri |> String.replace_prefix("#{base}/ap/users/", "")
-        user = Baudrate.Repo.get_by!(Baudrate.Setup.User, username: username)
-        KeyStore.decrypt_private_key(user)
+
+        case Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
+          nil -> {:error, :unknown_actor}
+          user -> KeyStore.decrypt_private_key(user)
+        end
 
       String.starts_with?(actor_uri, "#{base}/ap/boards/") ->
         slug = actor_uri |> String.replace_prefix("#{base}/ap/boards/", "")
-        board = Baudrate.Repo.get_by!(Baudrate.Content.Board, slug: slug)
-        KeyStore.decrypt_private_key(board)
+
+        case Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug) do
+          nil -> {:error, :unknown_actor}
+          board -> KeyStore.decrypt_private_key(board)
+        end
 
       String.starts_with?(actor_uri, "#{base}/ap/site") ->
         KeyStore.decrypt_site_private_key()
