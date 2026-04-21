@@ -335,6 +335,7 @@ abandoned jobs from the admin federation dashboard (`/admin/federation`).
 - Domain is blocked by the remote instance
 - DNS resolution failure
 - Board follow 422 errors — check delivery job `last_error` for the response body (includes remote server's rejection reason since v1.1.17)
+- Jobs with `last_error: ":unknown_actor"` — the local user or board referenced by `actor_uri` was deleted after the job was queued. Since v1.5.9 these jobs are marked `failed` (and eventually `abandoned` via the normal retry schedule) rather than causing Task crashes that left the job stuck in `pending` forever.
 
 ### Federation kill switch
 

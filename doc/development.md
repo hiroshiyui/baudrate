@@ -1232,11 +1232,11 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `/ap/boards/:slug/inbox` — board inbox
 
 **Incoming activities handled** (via `InboxHandler`):
-- `Follow` / `Undo(Follow)` — follower management with auto-accept
+- `Follow` / `Undo(Follow)` — follower management with auto-accept. Follow activities targeting a non-federated board actor (`ap_enabled: false`) are answered with `Reject(Follow)` — the board inbox controller already returns 404 for such boards, but the shared inbox path also applies the guard so that a Follow addressed directly to a board actor URI cannot create a spurious follower record.
 - `Create(Note)` — stored as threaded comments on local articles (with remote reply chain walking up to 10 hops to resolve intermediate replies), or as DMs if privately addressed (no `as:Public`, no followers collection)
 - `Create(Article)` / `Create(Page)` — stored as remote articles in target boards (Page for Lemmy interop)
-- `Like` / `Undo(Like)` — article favorites
-- `Announce` / `Undo(Announce)` — boosts/shares (bare URI or embedded object map); routes boosted Article/Page to boards following the booster, creates feed items for user followers with boost attribution (loop-safe)
+- `Like` / `Undo(Like)` — article favorites. Remote articles (`remote_actor_id` set) always accept likes regardless of their board's `ap_enabled`; local articles require membership in at least one public, AP-enabled board (enforced by `article_federated?/1` in `InboxHandler`).
+- `Announce` / `Undo(Announce)` — boosts/shares (bare URI or embedded object map); routes boosted Article/Page to boards following the booster, creates feed items for user followers with boost attribution (loop-safe). Article-target boosts follow the same remote-vs-local federation rule as Likes.
 - `Update(Note/Article/Page)` — content updates with authorship check
 - `Update(Person/Group)` — actor profile refresh
 - `Delete(content)` — soft-delete with authorship verification
