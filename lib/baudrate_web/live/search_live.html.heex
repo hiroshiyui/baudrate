@@ -431,10 +431,20 @@
   </div>
 
   <div
-    :if={@query != "" && @total > 0 && @tab != "users"}
+    :if={@query != "" && @total > 0}
     class="text-sm text-base-content/70 mb-4"
+    aria-live="polite"
+    role="status"
   >
-    {ngettext("1 result", "%{count} results", @total)}
+    <%= if @total_pages > 1 do %>
+      {gettext("Page %{page} of %{total_pages} — %{count} results total",
+        page: @page,
+        total_pages: @total_pages,
+        count: @total
+      )}
+    <% else %>
+      {ngettext("%{count} result", "%{count} results", @total, count: @total)}
+    <% end %>
   </div>
 
   <div

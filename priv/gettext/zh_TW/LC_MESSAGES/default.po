@@ -726,8 +726,8 @@ msgstr "您的帳號正在等待管理員審核。"
 msgid "Your account is pending approval."
 msgstr "您的帳號尚待審核。"
 
-#: lib/baudrate_web/live/search_live.html.heex:464
-#: lib/baudrate_web/live/search_live.html.heex:526
+#: lib/baudrate_web/live/search_live.html.heex:474
+#: lib/baudrate_web/live/search_live.html.heex:536
 #: lib/baudrate_web/live/tag_live.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "by %{author}"
@@ -1234,7 +1234,6 @@ msgstr "登入"
 msgid "to participate."
 msgstr "來參與。"
 
-#: lib/baudrate_web/live/search_live.html.heex:437
 #: lib/baudrate_web/live/tag_live.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "1 result"
@@ -1971,7 +1970,7 @@ msgstr "使用次數"
 #: lib/baudrate_web/live/bookmarks_live.html.heex:39
 #: lib/baudrate_web/live/bookmarks_live.html.heex:89
 #: lib/baudrate_web/live/bookmarks_live.html.heex:92
-#: lib/baudrate_web/live/search_live.html.heex:467
+#: lib/baudrate_web/live/search_live.html.heex:477
 #: lib/baudrate_web/live/tag_live.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "by"
@@ -2575,7 +2574,7 @@ msgstr "取消上傳"
 msgid "Delete comment"
 msgstr "刪除留言"
 
-#: lib/baudrate_web/components/layouts/root.html.heex:69
+#: lib/baudrate_web/components/layouts/root.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Skip to main content"
 msgstr "跳至主要內容"
@@ -3513,7 +3512,7 @@ msgstr "無法取消追蹤此使用者。"
 #: lib/baudrate_web/live/board_follows_live.html.heex:125
 #: lib/baudrate_web/live/search_live.html.heex:165
 #: lib/baudrate_web/live/search_live.html.heex:173
-#: lib/baudrate_web/live/search_live.html.heex:640
+#: lib/baudrate_web/live/search_live.html.heex:650
 #: lib/baudrate_web/live/user_profile_live.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "Follow"
@@ -3556,7 +3555,7 @@ msgid "Remote actor"
 msgstr "遠端使用者"
 
 #: lib/baudrate_web/live/search_live.html.heex:140
-#: lib/baudrate_web/live/search_live.html.heex:623
+#: lib/baudrate_web/live/search_live.html.heex:633
 #, elixir-autogen, elixir-format
 msgid "Sign in to follow"
 msgstr "登入以追蹤"
@@ -3565,7 +3564,7 @@ msgstr "登入以追蹤"
 #: lib/baudrate_web/live/following_live.html.heex:54
 #: lib/baudrate_web/live/following_live.html.heex:115
 #: lib/baudrate_web/live/search_live.html.heex:157
-#: lib/baudrate_web/live/search_live.html.heex:632
+#: lib/baudrate_web/live/search_live.html.heex:642
 #: lib/baudrate_web/live/user_profile_live.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Unfollow"
@@ -3665,7 +3664,7 @@ msgstr "已成功追蹤。"
 #: lib/baudrate_web/live/feed_live.html.heex:713
 #: lib/baudrate_web/live/feed_live.html.heex:841
 #: lib/baudrate_web/live/following_live.html.heex:43
-#: lib/baudrate_web/live/search_live.html.heex:616
+#: lib/baudrate_web/live/search_live.html.heex:626
 #, elixir-autogen, elixir-format
 msgid "Local"
 msgstr "本站"
@@ -3687,7 +3686,7 @@ msgid "Unfollow %{username}"
 msgstr "取消追蹤 %{username}"
 
 #: lib/baudrate_web/live/following_live.html.heex:51
-#: lib/baudrate_web/live/search_live.html.heex:629
+#: lib/baudrate_web/live/search_live.html.heex:639
 #: lib/baudrate_web/live/user_profile_live.html.heex:53
 #, elixir-autogen, elixir-format
 msgid "Unfollow this user?"
@@ -5718,3 +5717,14 @@ msgstr "您要找的頁面不存在,或者已被移至他處。"
 #, elixir-autogen, elixir-format
 msgid "The server ran into an unexpected problem. Our team has been notified; please try again in a few moments."
 msgstr "伺服器發生了預料之外的錯誤,站長已收到通知,請稍後再試。"
+
+#: lib/baudrate_web/live/search_live.html.heex:446
+#, elixir-autogen, elixir-format
+msgid "%{count} result"
+msgid_plural "%{count} results"
+msgstr[0] "共 %{count} 筆結果"
+
+#: lib/baudrate_web/live/search_live.html.heex:440
+#, elixir-autogen, elixir-format
+msgid "Page %{page} of %{total_pages} — %{count} results total"
+msgstr "第 %{page} / %{total_pages} 頁 — 共 %{count} 筆結果"

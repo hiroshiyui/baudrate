@@ -726,8 +726,8 @@ msgstr ""
 msgid "Your account is pending approval."
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:464
-#: lib/baudrate_web/live/search_live.html.heex:526
+#: lib/baudrate_web/live/search_live.html.heex:474
+#: lib/baudrate_web/live/search_live.html.heex:536
 #: lib/baudrate_web/live/tag_live.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "by %{author}"
@@ -1234,7 +1234,6 @@ msgstr ""
 msgid "to participate."
 msgstr ""
 
-#: lib/baudrate_web/live/search_live.html.heex:437
 #: lib/baudrate_web/live/tag_live.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "1 result"
@@ -1972,7 +1971,7 @@ msgstr ""
 #: lib/baudrate_web/live/bookmarks_live.html.heex:39
 #: lib/baudrate_web/live/bookmarks_live.html.heex:89
 #: lib/baudrate_web/live/bookmarks_live.html.heex:92
-#: lib/baudrate_web/live/search_live.html.heex:467
+#: lib/baudrate_web/live/search_live.html.heex:477
 #: lib/baudrate_web/live/tag_live.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "by"
@@ -2576,7 +2575,7 @@ msgstr ""
 msgid "Delete comment"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts/root.html.heex:69
+#: lib/baudrate_web/components/layouts/root.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Skip to main content"
 msgstr ""
@@ -3523,7 +3522,7 @@ msgstr "Could not unfollow actor."
 #: lib/baudrate_web/live/board_follows_live.html.heex:125
 #: lib/baudrate_web/live/search_live.html.heex:165
 #: lib/baudrate_web/live/search_live.html.heex:173
-#: lib/baudrate_web/live/search_live.html.heex:640
+#: lib/baudrate_web/live/search_live.html.heex:650
 #: lib/baudrate_web/live/user_profile_live.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "Follow"
@@ -3566,7 +3565,7 @@ msgid "Remote actor"
 msgstr "Remote actor"
 
 #: lib/baudrate_web/live/search_live.html.heex:140
-#: lib/baudrate_web/live/search_live.html.heex:623
+#: lib/baudrate_web/live/search_live.html.heex:633
 #, elixir-autogen, elixir-format
 msgid "Sign in to follow"
 msgstr "Sign in to follow"
@@ -3575,7 +3574,7 @@ msgstr "Sign in to follow"
 #: lib/baudrate_web/live/following_live.html.heex:54
 #: lib/baudrate_web/live/following_live.html.heex:115
 #: lib/baudrate_web/live/search_live.html.heex:157
-#: lib/baudrate_web/live/search_live.html.heex:632
+#: lib/baudrate_web/live/search_live.html.heex:642
 #: lib/baudrate_web/live/user_profile_live.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Unfollow"
@@ -3675,7 +3674,7 @@ msgstr "Followed successfully."
 #: lib/baudrate_web/live/feed_live.html.heex:713
 #: lib/baudrate_web/live/feed_live.html.heex:841
 #: lib/baudrate_web/live/following_live.html.heex:43
-#: lib/baudrate_web/live/search_live.html.heex:616
+#: lib/baudrate_web/live/search_live.html.heex:626
 #, elixir-autogen, elixir-format
 msgid "Local"
 msgstr ""
@@ -3697,7 +3696,7 @@ msgid "Unfollow %{username}"
 msgstr ""
 
 #: lib/baudrate_web/live/following_live.html.heex:51
-#: lib/baudrate_web/live/search_live.html.heex:629
+#: lib/baudrate_web/live/search_live.html.heex:639
 #: lib/baudrate_web/live/user_profile_live.html.heex:53
 #, elixir-autogen, elixir-format
 msgid "Unfollow this user?"
@@ -5731,4 +5730,16 @@ msgstr ""
 #: lib/baudrate_web/controllers/error_html/500.html.heex:12
 #, elixir-autogen, elixir-format
 msgid "The server ran into an unexpected problem. Our team has been notified; please try again in a few moments."
+msgstr ""
+
+#: lib/baudrate_web/live/search_live.html.heex:446
+#, elixir-autogen, elixir-format
+msgid "%{count} result"
+msgid_plural "%{count} results"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/baudrate_web/live/search_live.html.heex:440
+#, elixir-autogen, elixir-format
+msgid "Page %{page} of %{total_pages} — %{count} results total"
 msgstr ""
