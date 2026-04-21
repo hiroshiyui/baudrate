@@ -356,6 +356,25 @@ defmodule BaudrateWeb.FeedLiveTest do
 
       refute html =~ hidden_board.name
     end
+
+    test "add_post_board rejects a board the user cannot post in even if sent directly",
+         %{conn: conn} do
+      # A client could skip the search and send add_post_board directly with
+      # an arbitrary board id. The server must refuse via can_post_in_board?.
+      hidden_board =
+        create_search_board(%{
+          name: "CraftedAdd-#{System.unique_integer([:positive])}",
+          slug: "crafted-add-#{System.unique_integer([:positive])}",
+          min_role_to_post: "moderator"
+        })
+
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      html = render_hook(lv, "add_post_board", %{"board-id" => "#{hidden_board.id}"})
+
+      refute html =~ hidden_board.name
+      refute html =~ ~s(id="selected-post-boards")
+    end
   end
 
   describe "feed item replies" do

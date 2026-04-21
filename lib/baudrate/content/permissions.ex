@@ -43,6 +43,42 @@ defmodule Baudrate.Content.Permissions do
   end
 
   @doc """
+  Authorizes a user to post into every board in `board_ids`.
+
+  Loads the boards by ID and verifies that each one passes
+  `can_post_in_board?/2`. Returns `{:ok, boards}` preserving the input
+  order when every board is postable, `{:error, :not_found}` if any ID
+  does not resolve to an existing board, or `{:error, :forbidden}` if
+  the user lacks permission on at least one board.
+
+  Callers that accept `board_ids` from untrusted input (form submissions,
+  API requests) **must** run this check before passing the IDs to
+  `Content.create_article/3` — the create function itself does not
+  enforce per-board authorization.
+  """
+  @spec authorize_post_in_boards(map() | nil, [integer()]) ::
+          {:ok, [%Board{}]} | {:error, :not_found | :forbidden}
+  def authorize_post_in_boards(_user, []), do: {:ok, []}
+
+  def authorize_post_in_boards(user, board_ids) when is_list(board_ids) do
+    ids = Enum.uniq(board_ids)
+
+    boards = Repo.all(from(b in Board, where: b.id in ^ids))
+
+    cond do
+      length(boards) != length(ids) ->
+        {:error, :not_found}
+
+      Enum.all?(boards, &can_post_in_board?(&1, user)) ->
+        by_id = Map.new(boards, &{&1.id, &1})
+        {:ok, Enum.map(board_ids, &Map.fetch!(by_id, &1))}
+
+      true ->
+        {:error, :forbidden}
+    end
+  end
+
+  @doc """
   Returns true if the user is a board moderator (assigned, global moderator, or admin).
   """
   @spec board_moderator?(%Board{}, map() | nil) :: boolean()

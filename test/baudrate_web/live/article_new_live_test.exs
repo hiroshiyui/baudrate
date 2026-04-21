@@ -222,6 +222,35 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
 
       refute html =~ mod_only_board.name
     end
+
+    test "submit rejects a forged board_ids[] for a board the user cannot post in",
+         %{conn: conn} do
+      # Simulates a DevTools-crafted submission where the client injects a
+      # hidden input for a moderator-only board that was never surfaced by
+      # the search UI. Server-side Content.authorize_post_in_boards/2 must
+      # reject the submission before any article row is inserted.
+      mod_only_board =
+        %Board{}
+        |> Board.changeset(%{
+          name: "PrivateBoard-#{System.unique_integer([:positive])}",
+          slug: "private-#{System.unique_integer([:positive])}",
+          min_role_to_post: "moderator"
+        })
+        |> Repo.insert!()
+
+      {:ok, lv, _html} = live(conn, "/articles/new")
+
+      html =
+        lv
+        |> form("#article-new-form",
+          article: %{title: "Forged Attempt", body: "Bypass via DevTools"}
+        )
+        |> render_submit(%{"board_ids" => ["#{mod_only_board.id}"]})
+
+      assert html =~ "not allowed to post in one or more of the selected boards"
+
+      refute Baudrate.Repo.get_by(Baudrate.Content.Article, title: "Forged Attempt")
+    end
   end
 
   test "redirects pending user away from article creation", %{conn: _conn} do

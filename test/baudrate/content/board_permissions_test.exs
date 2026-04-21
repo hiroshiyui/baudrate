@@ -194,6 +194,48 @@ defmodule Baudrate.Content.BoardPermissionsTest do
     end
   end
 
+  describe "authorize_post_in_boards/2" do
+    test "empty list authorizes trivially", %{user: user} do
+      assert {:ok, []} = Content.authorize_post_in_boards(user, [])
+    end
+
+    test "returns :ok with boards preserving input order when all are postable", %{user: user} do
+      {:ok, a} =
+        Content.create_board(%{name: "Alpha", slug: "alpha-#{System.unique_integer([:positive])}"})
+
+      {:ok, b} =
+        Content.create_board(%{name: "Beta", slug: "beta-#{System.unique_integer([:positive])}"})
+
+      assert {:ok, [^b, ^a]} = Content.authorize_post_in_boards(user, [b.id, a.id])
+    end
+
+    test "rejects when any board requires a higher role than the user has", %{user: user} do
+      {:ok, open_board} =
+        Content.create_board(%{name: "Open", slug: "open-#{System.unique_integer([:positive])}"})
+
+      {:ok, mod_board} =
+        Content.create_board(%{
+          name: "Mod",
+          slug: "mod-#{System.unique_integer([:positive])}",
+          min_role_to_post: "moderator"
+        })
+
+      assert {:error, :forbidden} =
+               Content.authorize_post_in_boards(user, [open_board.id, mod_board.id])
+    end
+
+    test "rejects a nil user even for public boards" do
+      {:ok, board} =
+        Content.create_board(%{name: "Open", slug: "open-#{System.unique_integer([:positive])}"})
+
+      assert {:error, :forbidden} = Content.authorize_post_in_boards(nil, [board.id])
+    end
+
+    test "returns :not_found for ids that do not resolve to boards", %{user: user} do
+      assert {:error, :not_found} = Content.authorize_post_in_boards(user, [999_999_999])
+    end
+  end
+
   describe "board_moderator?/2" do
     test "admin is always board mod", %{admin: admin} do
       {:ok, board} =

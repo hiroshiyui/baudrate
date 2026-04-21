@@ -78,6 +78,7 @@ defmodule Baudrate.Content do
 
   defdelegate can_view_board?(board, user), to: Permissions
   defdelegate can_post_in_board?(board, user), to: Permissions
+  defdelegate authorize_post_in_boards(user, board_ids), to: Permissions
   defdelegate board_moderator?(board, user), to: Permissions
   defdelegate can_moderate_article?(user, article), to: Permissions
   defdelegate can_comment_on_article?(user, article), to: Permissions

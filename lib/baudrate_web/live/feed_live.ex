@@ -600,6 +600,32 @@ defmodule BaudrateWeb.FeedLive do
   end
 
   defp do_create_post(socket, user, params, all_params) do
+    board_ids = Enum.map(socket.assigns.selected_post_boards, & &1.id)
+
+    # Re-authorize every selected board server-side at submit time. The
+    # search+add flow already checks permissions, but a permission could
+    # have been revoked between selection and submission, and this guard
+    # also protects future refactors that might accept client-submitted
+    # board IDs directly.
+    case Content.authorize_post_in_boards(user, board_ids) do
+      {:ok, _boards} ->
+        finish_create_post(socket, user, params, board_ids, all_params)
+
+      {:error, :forbidden} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("You are not allowed to post in one or more of the selected boards.")
+         )}
+
+      {:error, :not_found} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("One of the selected boards no longer exists."))}
+    end
+  end
+
+  defp finish_create_post(socket, user, params, board_ids, all_params) do
     slug = Content.generate_slug(params["title"] || "")
 
     attrs =
@@ -609,7 +635,6 @@ defmodule BaudrateWeb.FeedLive do
 
     image_ids = Enum.map(socket.assigns.uploaded_images, & &1.id)
     poll_opts = build_poll_opts(socket, all_params)
-    board_ids = Enum.map(socket.assigns.selected_post_boards, & &1.id)
 
     case Content.create_article(attrs, board_ids, [image_ids: image_ids] ++ poll_opts) do
       {:ok, %{article: _article}} ->

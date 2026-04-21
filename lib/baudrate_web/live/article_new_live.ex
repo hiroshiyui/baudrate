@@ -264,26 +264,47 @@ defmodule BaudrateWeb.ArticleNewLive do
   end
 
   defp do_create_with_boards(socket, params, board_ids, all_params) do
-    if board_ids == [] and not socket.assigns.from_share do
-      {:noreply, put_flash(socket, :error, gettext("Please select at least one board."))}
-    else
-      user = socket.assigns.current_user
+    cond do
+      board_ids == [] and not socket.assigns.from_share ->
+        {:noreply, put_flash(socket, :error, gettext("Please select at least one board."))}
 
-      if user.role.name == "admin" do
-        do_create_article(socket, user, params, board_ids, all_params)
-      else
-        case RateLimits.check_create_article(user.id) do
-          {:error, :rate_limited} ->
+      true ->
+        user = socket.assigns.current_user
+
+        # Re-authorize every board server-side. The form's board_ids[] could
+        # have been forged by the client (e.g., via DevTools) with IDs of
+        # boards the user cannot post in, and Content.create_article/3 does
+        # not enforce per-board permissions on its own.
+        case Content.authorize_post_in_boards(user, board_ids) do
+          {:ok, _boards} ->
+            run_create_with_rate_limit(socket, user, params, board_ids, all_params)
+
+          {:error, _} ->
             {:noreply,
              put_flash(
                socket,
                :error,
-               gettext("You are posting too frequently. Please try again later.")
+               gettext("You are not allowed to post in one or more of the selected boards.")
              )}
-
-          :ok ->
-            do_create_article(socket, user, params, board_ids, all_params)
         end
+    end
+  end
+
+  defp run_create_with_rate_limit(socket, user, params, board_ids, all_params) do
+    if user.role.name == "admin" do
+      do_create_article(socket, user, params, board_ids, all_params)
+    else
+      case RateLimits.check_create_article(user.id) do
+        {:error, :rate_limited} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("You are posting too frequently. Please try again later.")
+           )}
+
+        :ok ->
+          do_create_article(socket, user, params, board_ids, all_params)
       end
     end
   end
