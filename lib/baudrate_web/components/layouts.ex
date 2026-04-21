@@ -164,7 +164,7 @@ defmodule BaudrateWeb.Layouts do
                     )
                   }
                 >
-                  {@unread_dm_count}
+                  {display_badge_count(@unread_dm_count)}
                 </span>
               </.link>
             </li>
@@ -183,7 +183,7 @@ defmodule BaudrateWeb.Layouts do
                     )
                   }
                 >
-                  {@unread_notification_count}
+                  {display_badge_count(@unread_notification_count)}
                 </span>
               </.link>
             </li>
@@ -453,7 +453,7 @@ defmodule BaudrateWeb.Layouts do
     <nav
       id="mobile-bottom-nav"
       aria-label={gettext("Mobile navigation")}
-      class="dock lg:hidden z-50 bg-base-200 border-t-2 border-base-300"
+      class="dock lg:hidden z-50 bg-base-200 border-t-2 border-base-300 pb-[env(safe-area-inset-bottom)]"
     >
       <%= if @current_user do %>
         <.link
@@ -499,7 +499,7 @@ defmodule BaudrateWeb.Layouts do
                 )
               }
             >
-              {@unread_dm_count}
+              {display_badge_count(@unread_dm_count)}
             </span>
             <.icon name="hero-chat-bubble-left-right" class="size-[1.2em]" />
           </span>
@@ -523,7 +523,7 @@ defmodule BaudrateWeb.Layouts do
                 )
               }
             >
-              {@unread_notification_count}
+              {display_badge_count(@unread_notification_count)}
             </span>
             <.icon name="hero-bell" class="size-[1.2em]" />
           </span>
@@ -565,6 +565,11 @@ defmodule BaudrateWeb.Layouts do
     </nav>
     """
   end
+
+  # Caps a badge count at 99+ so narrow phone screens and header chips
+  # don't have the number overflow the badge pill.
+  defp display_badge_count(count) when is_integer(count) and count > 99, do: "99+"
+  defp display_badge_count(count), do: count
 
   defp active_nav?(current_path, "/"), do: current_path == "/"
 
