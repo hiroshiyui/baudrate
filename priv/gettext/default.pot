@@ -5706,3 +5706,29 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to post in one or more of the selected boards."
 msgstr ""
+
+#: lib/baudrate_web/controllers/error_html/404.html.heex:17
+#: lib/baudrate_web/controllers/error_html/500.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "Back to home"
+msgstr ""
+
+#: lib/baudrate_web/controllers/error_html/404.html.heex:9
+#, elixir-autogen, elixir-format
+msgid "Page not found"
+msgstr ""
+
+#: lib/baudrate_web/controllers/error_html/500.html.heex:9
+#, elixir-autogen, elixir-format
+msgid "Something went wrong"
+msgstr ""
+
+#: lib/baudrate_web/controllers/error_html/404.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "The page you're looking for doesn't exist or has been moved."
+msgstr ""
+
+#: lib/baudrate_web/controllers/error_html/500.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "The server ran into an unexpected problem. Our team has been notified; please try again in a few moments."
+msgstr ""

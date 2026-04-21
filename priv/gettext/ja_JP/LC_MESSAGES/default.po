@@ -5692,3 +5692,29 @@ msgstr "アップロード進捗：%{percent}%"
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to post in one or more of the selected boards."
 msgstr "選択された掲示板のいずれかに投稿する権限がありません。"
+
+#: lib/baudrate_web/controllers/error_html/404.html.heex:17
+#: lib/baudrate_web/controllers/error_html/500.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "Back to home"
+msgstr "ホームへ戻る"
+
+#: lib/baudrate_web/controllers/error_html/404.html.heex:9
+#, elixir-autogen, elixir-format
+msgid "Page not found"
+msgstr "ページが見つかりません"
+
+#: lib/baudrate_web/controllers/error_html/500.html.heex:9
+#, elixir-autogen, elixir-format
+msgid "Something went wrong"
+msgstr "エラーが発生しました"
+
+#: lib/baudrate_web/controllers/error_html/404.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "The page you're looking for doesn't exist or has been moved."
+msgstr "お探しのページは存在しないか、別の場所に移動しました。"
+
+#: lib/baudrate_web/controllers/error_html/500.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "The server ran into an unexpected problem. Our team has been notified; please try again in a few moments."
+msgstr "サーバーで予期しないエラーが発生しました。管理者に通知済みですので、しばらくしてから再度お試しください。"

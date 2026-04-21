@@ -1,0 +1,24 @@
+<main id="main-content" class="min-h-[60vh] flex items-center justify-center px-4 py-10">
+  <section
+    aria-labelledby="error-500-heading"
+    class="card bg-base-200 shadow-sm max-w-lg w-full"
+  >
+    <div class="card-body items-center text-center gap-3">
+      <.icon name="hero-exclamation-triangle" class="size-12 text-error" />
+      <h1 id="error-500-heading" class="card-title text-2xl">
+        {gettext("Something went wrong")}
+      </h1>
+      <p class="text-base-content/70">
+        {gettext(
+          "The server ran into an unexpected problem. Our team has been notified; please try again in a few moments."
+        )}
+      </p>
+      <div class="card-actions">
+        <.link navigate="/" class="btn btn-primary">
+          <.icon name="hero-home" class="size-4" />
+          {gettext("Back to home")}
+        </.link>
+      </div>
+    </div>
+  </section>
+</main>

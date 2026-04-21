@@ -17,7 +17,7 @@ config :baudrate, BaudrateWeb.Endpoint,
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
     formats: [html: BaudrateWeb.ErrorHTML, json: BaudrateWeb.ErrorJSON],
-    layout: false
+    layout: {BaudrateWeb.Layouts, :root}
   ],
   pubsub_server: Baudrate.PubSub,
   live_view: [signing_salt: "nvvyKHu9"]

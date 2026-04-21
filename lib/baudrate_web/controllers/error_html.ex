@@ -1,24 +1,16 @@
 defmodule BaudrateWeb.ErrorHTML do
   @moduledoc """
-  This module is invoked by your endpoint in case of errors on HTML requests.
+  Renders HTML error pages.
 
-  See config/config.exs.
+  Templates in `error_html/` are embedded for common status codes
+  (404, 500). Any unmatched template falls back to the Phoenix
+  plain-text message so new status codes still render something.
   """
   use BaudrateWeb, :html
 
-  # If you want to customize your error pages,
-  # uncomment the embed_templates/1 call below
-  # and add pages to the error directory:
-  #
-  #   * lib/baudrate_web/controllers/error_html/404.html.heex
-  #   * lib/baudrate_web/controllers/error_html/500.html.heex
-  #
-  # embed_templates "error_html/*"
+  embed_templates "error_html/*"
 
-  # The default is to render a plain text page based on
-  # the template name. For example, "404.html" becomes
-  # "Not Found".
-  @doc "Renders a plain-text error page derived from the HTTP status code in the template name."
+  @doc "Renders a plain-text error page for templates without a dedicated HEEx file."
   def render(template, _assigns) do
     Phoenix.Controller.status_message_from_template(template)
   end

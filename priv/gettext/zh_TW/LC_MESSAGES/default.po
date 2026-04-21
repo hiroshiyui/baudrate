@@ -5692,3 +5692,29 @@ msgstr "上傳進度：%{percent}%"
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to post in one or more of the selected boards."
 msgstr "您沒有在所選看板之中發文的權限。"
+
+#: lib/baudrate_web/controllers/error_html/404.html.heex:17
+#: lib/baudrate_web/controllers/error_html/500.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "Back to home"
+msgstr "回到首頁"
+
+#: lib/baudrate_web/controllers/error_html/404.html.heex:9
+#, elixir-autogen, elixir-format
+msgid "Page not found"
+msgstr "找不到頁面"
+
+#: lib/baudrate_web/controllers/error_html/500.html.heex:9
+#, elixir-autogen, elixir-format
+msgid "Something went wrong"
+msgstr "發生錯誤"
+
+#: lib/baudrate_web/controllers/error_html/404.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "The page you're looking for doesn't exist or has been moved."
+msgstr "您要找的頁面不存在,或者已被移至他處。"
+
+#: lib/baudrate_web/controllers/error_html/500.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "The server ran into an unexpected problem. Our team has been notified; please try again in a few moments."
+msgstr "伺服器發生了預料之外的錯誤,站長已收到通知,請稍後再試。"
