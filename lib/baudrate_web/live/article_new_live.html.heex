@@ -99,7 +99,15 @@
         class="flex items-center gap-2 text-sm"
       >
         <span class="truncate max-w-48">{entry.client_name}</span>
-        <progress value={entry.progress} max="100" class="progress progress-primary w-24">
+        <progress
+          value={entry.progress}
+          max="100"
+          class="progress progress-primary w-24"
+          aria-label={gettext("Upload progress: %{percent}%", percent: entry.progress)}
+          aria-valuenow={entry.progress}
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
           {entry.progress}%
         </progress>
         <button

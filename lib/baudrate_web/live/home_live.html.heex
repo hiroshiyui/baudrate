@@ -32,8 +32,10 @@
           <span
             :if={@current_user && MapSet.member?(@unread_board_ids, board.id)}
             class="inline-block w-2 h-2 flex-shrink-0 rounded-full bg-primary"
+            role="img"
             aria-label={gettext("Unread")}
           >
+            <span class="sr-only">{gettext("Unread")}</span>
           </span>
         </h3>
         <p :if={board.description} class="text-sm text-base-content/70">{board.description}</p>

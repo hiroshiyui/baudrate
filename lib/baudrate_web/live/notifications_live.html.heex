@@ -3,6 +3,7 @@
     <h1 id="notifications-heading" class="text-2xl font-bold">{gettext("Notifications")}</h1>
     <button
       :if={@notifications != [] && Enum.any?(@notifications, &(!&1.read))}
+      type="button"
       phx-click="mark_all_read"
       class="btn btn-ghost btn-sm"
     >

@@ -35,6 +35,7 @@
   </.link>
   <button
     :if={@current_user && MapSet.size(@unread_article_ids) > 0}
+    type="button"
     phx-click="mark_all_read"
     class="btn btn-sm btn-ghost"
   >
@@ -111,8 +112,10 @@
         <span
           :if={@current_user && MapSet.member?(@unread_article_ids, article.id)}
           class="inline-block w-2 h-2 flex-shrink-0 rounded-full bg-primary"
+          role="img"
           aria-label={gettext("Unread")}
         >
+          <span class="sr-only">{gettext("Unread")}</span>
         </span>
       </.link>
       <p :if={article.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
