@@ -62,6 +62,9 @@ defmodule BaudrateWeb.FeedLive do
           |> assign(:poll_options, ["", ""])
           |> assign(:poll_mode, "single")
           |> assign(:poll_expires, "")
+          |> assign(:selected_post_boards, [])
+          |> assign(:post_board_search_query, "")
+          |> assign(:post_board_search_results, [])
           |> allow_upload(:article_images,
             accept: ~w(.jpg .jpeg .png .webp .gif),
             max_entries: 4,
@@ -182,6 +185,54 @@ defmodule BaudrateWeb.FeedLive do
         :ok ->
           do_create_post(socket, user, params, all_params)
       end
+    end
+  end
+
+  def handle_event("search_post_boards", %{"value" => query}, socket) do
+    selected_ids = MapSet.new(socket.assigns.selected_post_boards, & &1.id)
+
+    results =
+      if String.length(String.trim(query)) >= 2 do
+        Content.search_boards(query, socket.assigns.current_user)
+        |> Enum.reject(&MapSet.member?(selected_ids, &1.id))
+      else
+        []
+      end
+
+    {:noreply,
+     socket
+     |> assign(:post_board_search_query, query)
+     |> assign(:post_board_search_results, results)}
+  end
+
+  def handle_event("add_post_board", %{"board-id" => board_id}, socket) do
+    with {:ok, id} <- parse_id(board_id),
+         %Baudrate.Content.Board{} = board <-
+           Enum.find(socket.assigns.post_board_search_results, &(&1.id == id)),
+         true <- Content.can_post_in_board?(board, socket.assigns.current_user) do
+      selected = socket.assigns.selected_post_boards
+      already? = Enum.any?(selected, &(&1.id == board.id))
+
+      new_selected = if already?, do: selected, else: selected ++ [board]
+
+      {:noreply,
+       socket
+       |> assign(:selected_post_boards, new_selected)
+       |> assign(:post_board_search_query, "")
+       |> assign(:post_board_search_results, [])}
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("remove_post_board", %{"board-id" => board_id}, socket) do
+    case parse_id(board_id) do
+      {:ok, id} ->
+        selected = Enum.reject(socket.assigns.selected_post_boards, &(&1.id == id))
+        {:noreply, assign(socket, :selected_post_boards, selected)}
+
+      :error ->
+        {:noreply, socket}
     end
   end
 
@@ -555,8 +606,9 @@ defmodule BaudrateWeb.FeedLive do
 
     image_ids = Enum.map(socket.assigns.uploaded_images, & &1.id)
     poll_opts = build_poll_opts(socket, all_params)
+    board_ids = Enum.map(socket.assigns.selected_post_boards, & &1.id)
 
-    case Content.create_article(attrs, [], [image_ids: image_ids] ++ poll_opts) do
+    case Content.create_article(attrs, board_ids, [image_ids: image_ids] ++ poll_opts) do
       {:ok, %{article: _article}} ->
         page = socket.assigns.page
         result = Federation.list_feed_items(user, page: page)
@@ -570,6 +622,9 @@ defmodule BaudrateWeb.FeedLive do
          |> assign(:poll_options, ["", ""])
          |> assign(:poll_mode, "single")
          |> assign(:poll_expires, "")
+         |> assign(:selected_post_boards, [])
+         |> assign(:post_board_search_query, "")
+         |> assign(:post_board_search_results, [])
          |> assign(:items, result.items)
          |> assign(:total_pages, result.total_pages)
          |> assign(:total, result.total)

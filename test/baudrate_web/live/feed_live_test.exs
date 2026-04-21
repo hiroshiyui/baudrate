@@ -1,6 +1,7 @@
 defmodule BaudrateWeb.FeedLiveTest do
   use BaudrateWeb.ConnCase, async: false
 
+  import Ecto.Query
   import Phoenix.LiveViewTest
 
   alias Baudrate.Repo
@@ -235,6 +236,125 @@ defmodule BaudrateWeb.FeedLiveTest do
       conn = build_conn()
       {:error, {:redirect, %{to: to}}} = live(conn, "/feed")
       assert to =~ "/login"
+    end
+  end
+
+  describe "quick-post board search" do
+    defp create_search_board(attrs) do
+      defaults = %{
+        name: "Board-#{System.unique_integer([:positive])}",
+        slug: "board-#{System.unique_integer([:positive])}"
+      }
+
+      %Baudrate.Content.Board{}
+      |> Baudrate.Content.Board.changeset(Map.merge(defaults, attrs))
+      |> Repo.insert!()
+    end
+
+    test "short query does not show result list", %{conn: conn} do
+      _board = create_search_board(%{name: "FeedSearch"})
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      html =
+        lv
+        |> element(~s|#quick-post-boards input[name="post_board_search_query"]|)
+        |> render_keyup(%{"value" => "F"})
+
+      refute html =~ ~s(id="post-board-search-results")
+    end
+
+    test "matching boards show up as clickable results", %{conn: conn} do
+      board = create_search_board(%{name: "FeedSearchMatch-#{System.unique_integer([:positive])}"})
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      html =
+        lv
+        |> element(~s|#quick-post-boards input[name="post_board_search_query"]|)
+        |> render_keyup(%{"value" => "FeedSearchMatch"})
+
+      assert html =~ ~s(id="post-board-search-results")
+      assert html =~ board.name
+    end
+
+    test "selecting a board adds a chip and clears results", %{conn: conn} do
+      board = create_search_board(%{name: "SelectMe-#{System.unique_integer([:positive])}"})
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      lv
+      |> element(~s|#quick-post-boards input[name="post_board_search_query"]|)
+      |> render_keyup(%{"value" => "SelectMe"})
+
+      html =
+        lv
+        |> element(~s|#post-board-search-results button|, board.name)
+        |> render_click()
+
+      assert html =~ ~s(id="selected-post-boards")
+      assert html =~ board.name
+      refute html =~ ~s(id="post-board-search-results")
+    end
+
+    test "removing a selected board removes the chip", %{conn: conn} do
+      board = create_search_board(%{name: "DropMe-#{System.unique_integer([:positive])}"})
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      lv
+      |> element(~s|#quick-post-boards input[name="post_board_search_query"]|)
+      |> render_keyup(%{"value" => "DropMe"})
+
+      lv |> element(~s|#post-board-search-results button|, board.name) |> render_click()
+
+      html =
+        lv
+        |> element(~s|button[phx-click="remove_post_board"][phx-value-board-id="#{board.id}"]|)
+        |> render_click()
+
+      refute html =~ ~s(id="selected-post-boards")
+    end
+
+    test "submitting with a selected board creates article attached to that board", %{conn: conn} do
+      board = create_search_board(%{name: "PostHere-#{System.unique_integer([:positive])}"})
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      lv
+      |> element(~s|#quick-post-boards input[name="post_board_search_query"]|)
+      |> render_keyup(%{"value" => "PostHere"})
+
+      lv |> element(~s|#post-board-search-results button|, board.name) |> render_click()
+
+      lv
+      |> form("form[phx-submit='submit_post']",
+        article: %{title: "Board Scoped Post", body: "Body"}
+      )
+      |> render_submit()
+
+      article =
+        Repo.one!(
+          from(a in Baudrate.Content.Article,
+            where: a.title == "Board Scoped Post",
+            preload: :boards
+          )
+        )
+
+      assert Enum.any?(article.boards, &(&1.id == board.id))
+    end
+
+    test "search excludes boards the user cannot post in", %{conn: conn} do
+      hidden_board =
+        create_search_board(%{
+          name: "ModOnly-#{System.unique_integer([:positive])}",
+          slug: "mod-only-feed-#{System.unique_integer([:positive])}",
+          min_role_to_post: "moderator"
+        })
+
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      html =
+        lv
+        |> element(~s|#quick-post-boards input[name="post_board_search_query"]|)
+        |> render_keyup(%{"value" => "ModOnly"})
+
+      refute html =~ hidden_board.name
     end
   end
 

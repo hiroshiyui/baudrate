@@ -242,6 +242,68 @@
               </fieldset>
             </div>
 
+            <%!-- Board selection (search-based) --%>
+            <div id="quick-post-boards" class="fieldset">
+              <span class="label label-text text-sm">{gettext("Board (optional)")}</span>
+
+              <ul
+                :if={@selected_post_boards != []}
+                id="selected-post-boards"
+                class="flex flex-wrap gap-2 mb-2"
+                aria-label={gettext("Selected boards")}
+              >
+                <li
+                  :for={board <- @selected_post_boards}
+                  class="selected-post-board badge badge-primary badge-sm gap-1"
+                >
+                  <span>{board.name}</span>
+                  <button
+                    type="button"
+                    phx-click="remove_post_board"
+                    phx-value-board-id={board.id}
+                    class="btn btn-ghost btn-xs btn-circle"
+                    aria-label={gettext("Remove %{name}", name: board.name)}
+                  >
+                    <.icon name="hero-x-mark" class="size-3" />
+                  </button>
+                </li>
+              </ul>
+
+              <div class="w-full">
+                <input
+                  type="text"
+                  name="post_board_search_query"
+                  value={@post_board_search_query}
+                  placeholder={gettext("Search boards...")}
+                  phx-keyup="search_post_boards"
+                  phx-debounce="300"
+                  autocomplete="off"
+                  class="input input-sm input-bordered w-full"
+                  aria-label={gettext("Search boards")}
+                  aria-expanded={to_string(@post_board_search_results != [])}
+                  role="combobox"
+                  aria-controls="post-board-search-results"
+                />
+                <ul
+                  :if={@post_board_search_results != []}
+                  id="post-board-search-results"
+                  role="listbox"
+                  class="menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+                >
+                  <li :for={board <- @post_board_search_results}>
+                    <button
+                      type="button"
+                      phx-click="add_post_board"
+                      phx-value-board-id={board.id}
+                      role="option"
+                    >
+                      {board.name}
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
             <div class="flex flex-wrap items-center gap-2 [&>.fieldset]:mb-0 [&>.fieldset]:p-0 [&_.label]:py-0">
               <.input
                 field={@form[:visibility]}

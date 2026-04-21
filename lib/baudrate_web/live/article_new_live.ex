@@ -38,16 +38,10 @@ defmodule BaudrateWeb.ArticleNewLive do
        |> put_flash(:error, gettext("Your account is pending approval."))
        |> redirect(to: ~p"/")}
     else
-      {fixed_board, boards} =
+      fixed_board =
         case params do
-          %{"slug" => slug} ->
-            {Content.get_board_by_slug!(slug), []}
-
-          _ ->
-            boards =
-              Content.list_top_boards() |> Enum.filter(&Content.can_post_in_board?(&1, user))
-
-            {nil, boards}
+          %{"slug" => slug} -> Content.get_board_by_slug!(slug)
+          _ -> nil
         end
 
       # Pre-fill from PWA Web Share Target query params
@@ -64,8 +58,10 @@ defmodule BaudrateWeb.ArticleNewLive do
        socket
        |> assign(:form, to_form(changeset, as: :article))
        |> assign(:fixed_board, fixed_board)
-       |> assign(:boards, boards)
        |> assign(:board_slug, params["slug"])
+       |> assign(:selected_boards, [])
+       |> assign(:board_search_query, "")
+       |> assign(:board_search_results, [])
        |> assign(:from_share, from_share)
        |> assign(:uploaded_images, [])
        |> assign(:page_title, gettext("Create Article"))
@@ -99,6 +95,57 @@ defmodule BaudrateWeb.ArticleNewLive do
       |> Enum.map(&%{username: &1.username, type: "local"})
 
     {:noreply, push_event(socket, "mention_suggestions", %{users: users})}
+  end
+
+  @impl true
+  def handle_event("search_boards", %{"value" => query}, socket) do
+    selected_ids = MapSet.new(socket.assigns.selected_boards, & &1.id)
+
+    results =
+      if String.length(String.trim(query)) >= 2 do
+        Content.search_boards(query, socket.assigns.current_user)
+        |> Enum.reject(&MapSet.member?(selected_ids, &1.id))
+      else
+        []
+      end
+
+    {:noreply,
+     socket
+     |> assign(:board_search_query, query)
+     |> assign(:board_search_results, results)}
+  end
+
+  @impl true
+  def handle_event("add_board", %{"board-id" => board_id}, socket) do
+    with {:ok, id} <- parse_id(board_id),
+         %Baudrate.Content.Board{} = board <- find_result_board(socket, id),
+         true <- Content.can_post_in_board?(board, socket.assigns.current_user) do
+      selected = socket.assigns.selected_boards
+
+      already_selected? = Enum.any?(selected, &(&1.id == board.id))
+
+      new_selected = if already_selected?, do: selected, else: selected ++ [board]
+
+      {:noreply,
+       socket
+       |> assign(:selected_boards, new_selected)
+       |> assign(:board_search_query, "")
+       |> assign(:board_search_results, [])}
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("remove_board", %{"board-id" => board_id}, socket) do
+    case parse_id(board_id) do
+      {:ok, id} ->
+        selected = Enum.reject(socket.assigns.selected_boards, &(&1.id == id))
+        {:noreply, assign(socket, :selected_boards, selected)}
+
+      :error ->
+        {:noreply, socket}
+    end
   end
 
   @impl true
@@ -374,6 +421,10 @@ defmodule BaudrateWeb.ArticleNewLive do
 
   defp upload_error_to_string(err),
     do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "8 MB", max_files: 4)
+
+  defp find_result_board(socket, id) do
+    Enum.find(socket.assigns.board_search_results, &(&1.id == id))
+  end
 
   defp compose_share_body("", ""), do: ""
   defp compose_share_body(text, ""), do: text

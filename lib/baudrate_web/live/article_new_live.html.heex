@@ -222,19 +222,67 @@
     </div>
 
     <input :if={@fixed_board} type="hidden" name="board_ids[]" value={@fixed_board.id} />
-    <div :if={!@fixed_board} class="fieldset mb-2">
+    <div :if={!@fixed_board} id="article-new-boards" class="fieldset mb-2">
       <span class="label mb-1 text-lg font-semibold">{gettext("Board")}</span>
-      <div class="space-y-2" role="group" aria-label={gettext("Select boards")}>
-        <label :for={board <- @boards} class="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            name="board_ids[]"
-            value={board.id}
-            class="checkbox checkbox-sm"
-          />
+
+      <ul
+        :if={@selected_boards != []}
+        id="selected-boards"
+        class="flex flex-wrap gap-2 mb-2"
+        aria-label={gettext("Selected boards")}
+      >
+        <li
+          :for={board <- @selected_boards}
+          class="selected-board badge badge-primary badge-lg gap-2"
+        >
+          <input type="hidden" name="board_ids[]" value={board.id} />
           <span>{board.name}</span>
-        </label>
+          <button
+            type="button"
+            phx-click="remove_board"
+            phx-value-board-id={board.id}
+            class="btn btn-ghost btn-xs btn-circle"
+            aria-label={gettext("Remove %{name}", name: board.name)}
+          >
+            <.icon name="hero-x-mark" class="size-3" />
+          </button>
+        </li>
+      </ul>
+
+      <div class="w-full max-w-md">
+        <input
+          type="text"
+          name="board_search_query"
+          value={@board_search_query}
+          placeholder={gettext("Search boards...")}
+          phx-keyup="search_boards"
+          phx-debounce="300"
+          autocomplete="off"
+          class="input input-sm input-bordered w-full"
+          aria-label={gettext("Search boards")}
+          aria-expanded={to_string(@board_search_results != [])}
+          role="combobox"
+          aria-controls="board-search-results"
+        />
+        <ul
+          :if={@board_search_results != []}
+          id="board-search-results"
+          role="listbox"
+          class="menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+        >
+          <li :for={board <- @board_search_results}>
+            <button
+              type="button"
+              phx-click="add_board"
+              phx-value-board-id={board.id}
+              role="option"
+            >
+              {board.name}
+            </button>
+          </li>
+        </ul>
       </div>
+
       <p :if={@from_share} class="text-sm text-base-content/70 mt-2">
         {gettext("No board selected — this will be a personal article.")}
       </p>

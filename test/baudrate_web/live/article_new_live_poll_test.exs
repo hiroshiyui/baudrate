@@ -97,6 +97,13 @@ defmodule BaudrateWeb.ArticleNewLivePollTest do
     test "creates article with poll", %{conn: conn, user: _user, board: board} do
       {:ok, lv, _html} = live(conn, ~p"/articles/new")
 
+      # Select the board via the search flow
+      lv
+      |> element(~s|#article-new-boards input[name="board_search_query"]|)
+      |> render_keyup(%{"value" => board.name})
+
+      lv |> element("#board-search-results button", board.name) |> render_click()
+
       # Enable poll
       lv |> element("button", "Add Poll") |> render_click()
 
@@ -104,7 +111,6 @@ defmodule BaudrateWeb.ArticleNewLivePollTest do
       lv
       |> form("#article-new-form", %{
         "article" => %{"title" => "Poll Test Article", "body" => "Has a poll"},
-        "board_ids" => [to_string(board.id)],
         "poll_options" => %{"0" => "Yes", "1" => "No"},
         "poll_mode" => "single",
         "poll_expires" => ""
@@ -123,12 +129,17 @@ defmodule BaudrateWeb.ArticleNewLivePollTest do
     test "creates article with poll expiry", %{conn: conn, board: board} do
       {:ok, lv, _html} = live(conn, ~p"/articles/new")
 
+      lv
+      |> element(~s|#article-new-boards input[name="board_search_query"]|)
+      |> render_keyup(%{"value" => board.name})
+
+      lv |> element("#board-search-results button", board.name) |> render_click()
+
       lv |> element("button", "Add Poll") |> render_click()
 
       lv
       |> form("#article-new-form", %{
         "article" => %{"title" => "Expiry Poll", "body" => "Expiring poll"},
-        "board_ids" => [to_string(board.id)],
         "poll_options" => %{"0" => "Alpha", "1" => "Beta"},
         "poll_mode" => "multiple",
         "poll_expires" => "1d"
