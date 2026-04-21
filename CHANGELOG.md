@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.6.0] — 2026-04-22
+
+### Added
+
+- **Search-based multi-board picker on article creation forms** — Both `/articles/new` and the `/feed` quick-post composer now select destination boards through a debounced search input with removable chip selections, replacing the old top-category checkbox list (which hid sub-boards entirely) on `/articles/new` and adding board cross-posting to the feed composer (previously boardless-only). The search respects `Content.can_post_in_board?/2`.
+- **Styled 404 and 500 error pages** — `BaudrateWeb.ErrorHTML` now embeds dedicated HEEx templates instead of returning plain-text status messages. Each page renders a DaisyUI card with a Heroicon, a translated description, and a "Back to home" CTA inside the standard site shell. Translated in en / zh_TW / ja_JP.
+- **Search result count on every tab** — `/search` now shows a pluralized "%{count} results" label on all four tabs (previously the users tab had none) and upgrades to "Page X of Y — N results total" when pagination is active. The count element uses `aria-live="polite"` + `role="status"` so screen readers hear the update when a tab or query changes.
+
+### Security
+
+- **Reject forged `board_ids[]` on article creation (OWASP A01: Broken Access Control)** — `Content.create_article/3` accepted board IDs as raw input without per-board authorization, and both the `ArticleNewLive` and `FeedLive` quick-post submit handlers trusted the client-provided list. A logged-in user could open DevTools, inject a hidden `<input name="board_ids[]">` referencing a moderator-only (or otherwise-restricted) board, and cross-post into it. Introduced `Content.authorize_post_in_boards/2` in `Content.Permissions` that loads each board once and rejects the submission with `{:error, :forbidden}` when any board fails `can_post_in_board?/2` (or `{:error, :not_found}` if an ID does not resolve), and wired it into both submit handlers before `create_article/3`.
+
+### Fixed
+
+- **Bottom mobile dock no longer clipped on notched devices** — Added `pb-[env(safe-area-inset-bottom)]` to `#mobile-bottom-nav`. The viewport meta already sets `viewport-fit=cover`, so iOS (home indicator) and Android (gesture bar) now sit below the dock instead of over it.
+- **Unread / notification badge numbers cap at "99+"** — A new `display_badge_count/1` helper keeps the badge pill from stretching or overflowing on narrow phones. Applied at all four badge call sites (navbar DM / notification, mobile dock DM / notification).
+- **Theme and font-size FOUC on hard reload** — A minimal inline `<script>` in the `<head>`, running before the stylesheet is parsed, reads `phx:theme` / `phx:font-size` from `localStorage` (respecting the `prefers-color-scheme` media query when the user's choice is `system`) and applies them to `<html>` so the first paint uses the correct DaisyUI variables. Runtime toggling still lives in `app.js`; the inline script only covers the pre-hydration window.
+- **"Mark all as read" buttons use `type="button"`** — On `/boards/:slug` and `/notifications`, the action was missing an explicit button type, so any future ancestor `<form>` would cause it to implicitly submit. Added `type="button"` to both.
+- **Image upload progress announced to assistive tech** — The `<progress>` elements in `ArticleNewLive` and the `FeedLive` quick-post composer now carry `aria-label`, `aria-valuenow`, `aria-valuemin`, and `aria-valuemax` so screen readers announce live upload progress.
+- **Unread indicator dots on home / board pages paired with visually-hidden text** — Adds `role="img"` + an `sr-only` "Unread" label to the small coloured dots on the boards index (`/`) and the board article list. Colour alone is no longer the only signal to colour-blind or screen-reader users.
+- **Remote-actor avatar placeholders in the feed expose the actor's display name** — Wrapped the inline remote avatar containers in `FeedLive` with `role="img"` + `aria-label={display_name}`, and set `alt=""` on the adjacent image so screen readers announce the actor name exactly once.
+
 ## [1.5.9] — 2026-04-06
 
 ### Fixed
