@@ -6,9 +6,12 @@ defmodule BaudrateWeb.FeedLive do
   from followed users, and comments (both local and from remote actors) on
   articles the user authored or previously commented on. Includes a personal
   info sidebar, a full-featured post composer (markdown toolbar, image uploads
-  up to 4 images, and optional polls) for creating board-less articles, and
-  inline reply forms for responding to remote feed items via ActivityPub.
-  Subscribes to `Federation.PubSub` for real-time updates.
+  up to 4 images, optional polls, and a search-based multi-board picker
+  backed by `Content.search_boards/2`) that can either cross-post to one or
+  more boards or, when no board is selected, create a board-less personal
+  article. Also provides inline reply forms for responding to remote feed
+  items via ActivityPub. Subscribes to `Federation.PubSub` for real-time
+  updates.
   """
 
   use BaudrateWeb, :live_view

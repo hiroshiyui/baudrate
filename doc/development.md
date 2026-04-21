@@ -591,8 +591,10 @@ their public profile page at `/users/:username`.
 Authenticated users with active status and `user.create_content` permission
 can create articles. Two entry points:
 
-- `/boards/:slug/articles/new` — pre-selects the board
-- `/articles/new` — user picks board(s) from a multi-select
+- `/boards/:slug/articles/new` — pre-selects the board via a fixed hidden input (no picker shown)
+- `/articles/new` — user picks one or more boards via a debounced search input backed by `Content.search_boards/2`. Selected boards render as removable chips with hidden `board_ids[]` inputs so the form submission carries the full selection. Both the search query and the add-board handler go through `can_post_in_board?/2`.
+
+The `/feed` quick-post composer uses the same search-and-chip pattern for its optional board selection. Leaving the picker empty creates a board-less personal article (the composer's default behavior); adding boards cross-posts the article to them.
 
 Articles are assigned a URL-safe slug generated from the title with a random
 suffix to avoid collisions. Articles can be cross-posted to multiple boards.

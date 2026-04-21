@@ -2,9 +2,14 @@ defmodule BaudrateWeb.ArticleNewLive do
   @moduledoc """
   LiveView for creating new articles.
 
-  Accessible from both board pages (uses the board from the URL, no picker
-  shown) and as a standalone route at `/articles/new` where the user picks
-  boards from a multi-select.
+  Accessible from both board pages (uses the board from the URL via a fixed
+  hidden input, no picker shown) and as a standalone route at `/articles/new`
+  where the user picks one or more boards via a debounced search input backed
+  by `Content.search_boards/2`. Selected boards appear as removable chips
+  above the search input; each chip renders a hidden `board_ids[]` input so
+  the form submission carries the full selection. The search filter respects
+  `can_post_in_board?/2`, and the add-board handler re-checks the permission
+  server-side.
 
   Supports uploading up to 4 images (max 8 MB each) that are displayed as a
   media gallery at the end of the article. Images are processed to WebP,
