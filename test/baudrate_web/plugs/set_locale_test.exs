@@ -91,4 +91,26 @@ defmodule BaudrateWeb.Plugs.SetLocaleTest do
 
     assert conn.assigns[:locale] == "zh_TW"
   end
+
+  test "stores resolved locale in session for LiveView mount to consume", %{conn: conn} do
+    conn =
+      conn
+      |> with_session()
+      |> put_req_header("accept-language", "ja,en;q=0.5")
+      |> call_plug()
+
+    assert conn.assigns[:locale] == "ja_JP"
+    assert Plug.Conn.get_session(conn, :locale) == "ja_JP"
+  end
+
+  test "session locale is updated when resolved locale changes", %{conn: conn} do
+    conn =
+      conn
+      |> Plug.Test.init_test_session(%{locale: "en"})
+      |> put_req_header("accept-language", "zh-TW")
+      |> call_plug()
+
+    assert Plug.Conn.get_session(conn, :locale) == "zh_TW"
+  end
+
 end

@@ -49,6 +49,7 @@ defmodule BaudrateWeb.AuthHooks do
   import BaudrateWeb.Helpers, only: [extract_peer_ip: 1]
 
   def on_mount(:require_auth, _params, session, socket) do
+    apply_session_locale(session)
     session_token = session["session_token"]
 
     if session_token do
@@ -85,13 +86,14 @@ defmodule BaudrateWeb.AuthHooks do
   end
 
   def on_mount(:optional_auth, _params, session, socket) do
+    locale = apply_session_locale(session)
     session_token = session["session_token"]
 
     if session_token do
       case Auth.get_user_by_session_token(session_token) do
         {:ok, user} ->
           if user.status == "banned" do
-            {:cont, assign(socket, :current_user, nil)}
+            {:cont, socket |> assign(:current_user, nil) |> assign(:locale, locale)}
           else
             locale = resolve_user_locale(user)
 
@@ -113,6 +115,7 @@ defmodule BaudrateWeb.AuthHooks do
           {:cont,
            socket
            |> assign(:current_user, nil)
+           |> assign(:locale, locale)
            |> MarkdownPreviewHook.attach()
            |> attach_current_path_hook()}
       end
@@ -120,12 +123,14 @@ defmodule BaudrateWeb.AuthHooks do
       {:cont,
        socket
        |> assign(:current_user, nil)
+       |> assign(:locale, locale)
        |> MarkdownPreviewHook.attach()
        |> attach_current_path_hook()}
     end
   end
 
   def on_mount(:require_password_auth, _params, session, socket) do
+    apply_session_locale(session)
     user_id = session["user_id"]
 
     if user_id do
@@ -150,6 +155,7 @@ defmodule BaudrateWeb.AuthHooks do
   end
 
   def on_mount(:redirect_if_authenticated, _params, session, socket) do
+    apply_session_locale(session)
     session_token = session["session_token"]
 
     if session_token do
@@ -262,6 +268,21 @@ defmodule BaudrateWeb.AuthHooks do
   end
 
   defp attach_current_path_hook(socket), do: socket
+
+  # Applies the locale stored in the session by `BaudrateWeb.Plugs.SetLocale`
+  # to the current LiveView process. Without this, anonymous LV mounts run
+  # with the default Gettext locale ("en") and cause a visible locale flip
+  # after the dead render.
+  defp apply_session_locale(session) do
+    case session["locale"] do
+      locale when is_binary(locale) ->
+        Gettext.put_locale(locale)
+        locale
+
+      _ ->
+        Gettext.get_locale()
+    end
+  end
 
   defp resolve_user_locale(user) do
     case BaudrateWeb.Locale.resolve_from_preferences(user.preferred_locales) do

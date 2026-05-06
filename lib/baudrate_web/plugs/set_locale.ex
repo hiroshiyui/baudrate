@@ -27,6 +27,19 @@ defmodule BaudrateWeb.Plugs.SetLocale do
 
     conn
     |> assign(:locale, locale)
+    |> maybe_put_session_locale(locale)
+  end
+
+  defp maybe_put_session_locale(conn, locale) do
+    if Map.get(conn.private, :plug_session_fetch) == :done do
+      if Plug.Conn.get_session(conn, :locale) == locale do
+        conn
+      else
+        Plug.Conn.put_session(conn, :locale, locale)
+      end
+    else
+      conn
+    end
   end
 
   defp detect_locale(conn) do

@@ -203,4 +203,66 @@ defmodule BaudrateWeb.AuthHooksTest do
                AuthHooks.on_mount(:redirect_if_authenticated, %{}, session, socket)
     end
   end
+
+  describe "session locale propagation" do
+    setup do
+      previous = Gettext.get_locale()
+      on_exit(fn -> Gettext.put_locale(previous) end)
+      Gettext.put_locale("en")
+      :ok
+    end
+
+    test "optional_auth applies session locale and assigns it for anonymous visitor" do
+      socket = %Phoenix.LiveView.Socket{}
+      session = %{"locale" => "ja_JP"}
+
+      assert {:cont, socket} = AuthHooks.on_mount(:optional_auth, %{}, session, socket)
+      assert socket.assigns.current_user == nil
+      assert socket.assigns.locale == "ja_JP"
+      assert Gettext.get_locale() == "ja_JP"
+    end
+
+    test "optional_auth keeps default locale when session has none" do
+      socket = %Phoenix.LiveView.Socket{}
+      session = %{}
+
+      assert {:cont, socket} = AuthHooks.on_mount(:optional_auth, %{}, session, socket)
+      assert socket.assigns.current_user == nil
+      assert socket.assigns.locale == "en"
+      assert Gettext.get_locale() == "en"
+    end
+
+    test "optional_auth assigns session locale when stale session_token resolves to no user" do
+      socket = %Phoenix.LiveView.Socket{}
+      session = %{"session_token" => "invalid_token", "locale" => "zh_TW"}
+
+      assert {:cont, socket} = AuthHooks.on_mount(:optional_auth, %{}, session, socket)
+      assert socket.assigns.current_user == nil
+      assert socket.assigns.locale == "zh_TW"
+      assert Gettext.get_locale() == "zh_TW"
+    end
+
+    test "redirect_if_authenticated applies session locale before rendering login page" do
+      socket = %Phoenix.LiveView.Socket{}
+      session = %{"locale" => "ja_JP"}
+
+      assert {:cont, _socket} =
+               AuthHooks.on_mount(:redirect_if_authenticated, %{}, session, socket)
+
+      assert Gettext.get_locale() == "ja_JP"
+    end
+
+    test "user preferred_locales override the session locale", %{user: user} do
+      {:ok, user} = Baudrate.Auth.update_preferred_locales(user, ["zh_TW"])
+      {:ok, session_token, _refresh} = Baudrate.Auth.create_user_session(user.id)
+      socket = %Phoenix.LiveView.Socket{}
+      # Session locale was "ja_JP" (e.g. set by Accept-Language plug for an
+      # earlier anonymous request) — user preference must win after login.
+      session = %{"session_token" => session_token, "locale" => "ja_JP"}
+
+      assert {:cont, socket} = AuthHooks.on_mount(:optional_auth, %{}, session, socket)
+      assert socket.assigns.locale == "zh_TW"
+      assert Gettext.get_locale() == "zh_TW"
+    end
+  end
 end
