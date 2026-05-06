@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.7.0] — 2026-05-06
+
+### Added
+
+- **Web Share button for PWA / smartphone sharing** — A new "Share this page" button in the site header invokes the browser's Web Share API to surface the OS-level share sheet, letting users on smartphones (and installed PWAs) forward the current page to other apps such as Messages, Mail, or Mastodon. Hidden on platforms where `navigator.share` is unavailable (most desktop browsers) so it only appears where the share sheet can fulfill the request. Defaults to `document.title` and `location.href`, with per-page overrides via `data-share-title`, `data-share-text`, and `data-share-url` attributes. Translated in en / zh_TW / ja_JP.
+
 ## [1.6.0] — 2026-04-22
 
 ### Added
