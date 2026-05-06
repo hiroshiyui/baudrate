@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.7.1] — 2026-05-06
+
+### Fixed
+
+- **Locale flip from browser language to English on LiveView reconnect** — Anonymous visitors whose browser preferred a non-English locale (e.g. Japanese via `Accept-Language: ja`) saw the HTTP dead-render in the correct language, then a sudden flip to English the moment the LiveView WebSocket connected. The `SetLocale` plug applied `Gettext.put_locale` only to the dead-render process; the LV mount ran in a fresh process where Gettext defaulted back to `"en"`, and the `on_mount` hooks only re-applied a locale for *logged-in* users. The plug now also persists the resolved locale into the session cookie, and every relevant `on_mount` hook (`:require_auth`, `:optional_auth`, `:require_password_auth`, `:redirect_if_authenticated`) re-applies it to the LV process. This also fixes the registration flow — a Japanese new user now sees Japanese validation errors and flash messages throughout `/register`.
+
 ## [1.7.0] — 2026-05-06
 
 ### Added
