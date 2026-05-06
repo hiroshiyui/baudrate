@@ -57,6 +57,37 @@ defmodule BaudrateWeb.LayoutsTest do
     end
   end
 
+  describe "share button" do
+    test "renders share button with WebShareHook in navbar", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/profile")
+      assert html =~ ~s(id="web-share-button")
+      assert html =~ ~s(phx-hook="WebShareHook")
+      assert html =~ "hero-share"
+    end
+
+    test "share button is hidden by default (revealed by JS hook on supported platforms)",
+         %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/profile")
+      # Both the HTML5 `hidden` attribute and the Tailwind `hidden` class are
+      # present so the button is invisible until the hook removes them.
+      assert html =~ ~r/id="web-share-button"[^>]*\shidden=""/
+      assert html =~ ~r/id="web-share-button"[^>]*class="[^"]*\bhidden\b/
+    end
+
+    test "share button has accessible label", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/profile")
+      assert html =~ ~s(aria-label="Share this page")
+      assert html =~ ~s(title="Share this page")
+    end
+
+    test "share button is also rendered for guests", %{conn: _conn} do
+      conn = Phoenix.ConnTest.build_conn()
+      {:ok, _lv, html} = live(conn, "/")
+      assert html =~ ~s(id="web-share-button")
+      assert html =~ ~s(phx-hook="WebShareHook")
+    end
+  end
+
   describe "mobile bottom nav (authenticated)" do
     test "renders bottom nav with all 5 items", %{conn: conn} do
       {:ok, _lv, html} = live(conn, "/profile")

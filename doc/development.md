@@ -1816,6 +1816,30 @@ share text from other apps directly into Baudrate when installed as a PWA.
     redirects to the pre-filled article form.
 - **Limits**: title truncated to 200 chars, text to 64 KB, url to 2048 chars
 
+#### Outbound Web Share
+
+The header renders a "Share this page" button (`share_button/1` in
+`BaudrateWeb.Layouts`) that invokes the browser's [Web Share API] to surface
+the OS-level share sheet — useful on smartphones and installed PWAs for
+forwarding the current page to other apps (Messages, Mail, Mastodon, etc.).
+
+- **Component**: `share_button/1` in `lib/baudrate_web/components/layouts.ex`
+  renders a `<button>` with `id="web-share-button"`, the `hero-share` icon,
+  and `aria-label="Share this page"`. The button is rendered with both the
+  HTML5 `hidden` attribute and the Tailwind `hidden` class so it stays
+  invisible by default.
+- **Hook**: `WebShareHook` in `assets/js/web_share_hook.js` checks
+  `navigator.share` on mount; if unavailable (most desktop browsers) the
+  button stays hidden, otherwise it's revealed and the click handler calls
+  `navigator.share({title, text, url})`.
+- **Default payload**: `document.title` and `location.href`. Per-page
+  overrides are supported via `data-share-title`, `data-share-text`, and
+  `data-share-url` attributes on the button element.
+- **AbortError** (user dismissed the share sheet) is silently ignored;
+  other errors are logged via `console.warn`.
+
+[Web Share API]: https://developer.mozilla.org/en-US/docs/Web/API/Navigator/share
+
 ### Syndication Feeds (RSS / Atom)
 
 RSS 2.0 and Atom 1.0 feeds are available at three scopes:

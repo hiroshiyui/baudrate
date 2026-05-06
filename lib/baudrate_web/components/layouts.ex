@@ -195,6 +195,7 @@ defmodule BaudrateWeb.Layouts do
       <div id="header-controls" class="flex-none flex items-center gap-2 ml-auto">
         <.font_size_controls />
         <.theme_toggle />
+        <.share_button />
 
         <%!-- Guest auth links (desktop only — mobile uses hamburger menu) --%>
         <div :if={!@current_user} id="guest-auth-links" class="hidden lg:flex items-center gap-2">
@@ -396,6 +397,30 @@ defmodule BaudrateWeb.Layouts do
         <.icon name="hero-plus-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>
     </div>
+    """
+  end
+
+  @doc """
+  Renders a share button that invokes the browser's Web Share API
+  (smartphone / PWA "Share to..." sheet).
+
+  Hidden on platforms where `navigator.share` is unavailable; the
+  `WebShareHook` JS hook in `assets/js/web_share_hook.js` toggles
+  visibility on mount and dispatches the share request.
+  """
+  def share_button(assigns) do
+    ~H"""
+    <button
+      id="web-share-button"
+      type="button"
+      phx-hook="WebShareHook"
+      hidden
+      class="hidden btn btn-ghost btn-circle btn-sm"
+      aria-label={gettext("Share this page")}
+      title={gettext("Share this page")}
+    >
+      <.icon name="hero-share" class="size-5" />
+    </button>
     """
   end
 
