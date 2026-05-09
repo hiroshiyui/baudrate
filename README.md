@@ -105,7 +105,7 @@ variables are needed for encryption.
 
 This project is licensed under the [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.html) (AGPL-3.0).
 
-## Acknowledges
+## Acknowledgements
 
 Built with these excellent open-source projects:
 

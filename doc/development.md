@@ -8,17 +8,22 @@ visibility. Design decisions should reflect this philosophy.
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Elixir 1.15+ |
+| Language | Elixir 1.15+ / OTP 26+ |
 | Web framework | Phoenix 1.8 / LiveView 1.1 |
+| HTTP server | Bandit |
+| HTTP client | Req (never HTTPoison, Tesla, or httpc) |
 | Database | PostgreSQL (via Ecto) |
 | CSS | Tailwind CSS + DaisyUI |
 | JS bundler | esbuild |
 | Image processing | image (libvips NIF) |
+| Markdown | Earmark |
 | 2FA / WebAuthn | NimbleTOTP + EQRCode + wax_ (FIDO2/WebAuthn relying party) |
 | HTML parsing | html5ever (Rust NIF via Rustler) |
 | HTML sanitization | Ammonia (Rust NIF via Rustler) |
 | Rate limiting | Hammer |
+| Timezone data | tz (`Baudrate.Timezone`) |
 | Feed parsing | feedparser-rs (Rust NIF via Rustler) — RSS 0.9x/2.0, RSS 1.0 (RDF), Atom 0.3/1.0, JSON Feed |
+| i18n | Gettext (en, zh_TW, ja_JP) |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
 
 ## Architecture
