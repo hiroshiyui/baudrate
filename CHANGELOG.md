@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.8.4] — 2026-05-09
+
+### Fixed
+
+- **Inbound `Like` / `Announce` on local articles in non-federated boards are now accepted when the article author has remote followers** — user-actor federation publishes articles to follower inboxes (e.g. `mastodon.social/users/them` follows `@author@baudrate.tw`) regardless of board AP status, so the published article exists on remote instances with a resolvable `ap_id`. Remote favourites and boosts addressed at that `ap_id` were silently dropped because `Federation.InboxHandler.article_federated?/1` only allowed local articles to participate in federation when they belonged to a board with `ap_enabled: true`. Result: `announces` rows accumulated (the general tracker runs *before* the gate) but `article_boosts` / `article_likes` stayed empty, no `article_liked` / `article_forwarded` notifications fired, and the LiveView counters never moved. The gate now also returns true if the article's author has at least one row in `followers` — matching the outbound publish path. Local articles whose author has no remote followers continue to reject inbound activities, preserving the non-federated-board contract for purely-local content.
+
+### Tests
+
+- Two new tests in `test/baudrate/federation/inbox_handler_test.exs` covering the new branch: one for `Like` and one for `Announce`, both placing the article in an `ap_enabled: false` board with a single remote follower of the author, and asserting the `article_likes` / `article_boosts` row is created. The pre-existing "ignores Like for local article in non-federated board" test (no follower scenario) still passes.
+
 ## [1.8.3] — 2026-05-09
 
 ### Fixed
@@ -831,6 +841,7 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - AP ID URL format validation on remote boost changesets
 - Reject federation activities targeting non-federated content
 
+[1.8.4]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.8.4
 [1.8.3]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.8.3
 [1.8.2]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.8.2
 [1.8.1]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.8.1
