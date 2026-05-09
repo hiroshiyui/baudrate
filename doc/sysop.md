@@ -906,18 +906,39 @@ process or DB connection died between commit and stamp, the article
 (and any poll or comment) was durably persisted with `ap_id = nil`.
 Stamping is now part of the same `Ecto.Multi` as the insert, so new
 rows are always consistent — but instances that ran an earlier version
-may still have orphan rows. To heal them:
+may still have orphan rows.
+
+The task can be invoked two ways. Both are equivalent; pick whichever
+fits your operational comfort:
+
+**Against the running production node (recommended)** — `rpc` executes
+the function inside the live VM, so the repo and config are already
+running. No env file to source, no port collision:
 
 ```bash
 # Inspect what would be stamped, without writing
-bin/baudrate eval "Baudrate.Release.backfill_ap_ids(dry_run: true)"
+bin/baudrate rpc "Baudrate.Release.backfill_ap_ids(dry_run: true)"
 
 # Apply the backfill
+bin/baudrate rpc "Baudrate.Release.backfill_ap_ids()"
+```
+
+Logs land in the production node's stdout (`journalctl -u baudrate.service`).
+
+**In a one-shot eval VM** — `eval` boots a fresh VM, so it needs the
+`DATABASE_URL` and friends from the systemd EnvironmentFile to be
+present in the shell. The task uses `Ecto.Migrator.with_repo/2` so it
+starts only the repo (not the endpoint), avoiding the port-4000
+collision with the live node:
+
+```bash
+set -a; . /opt/baudrate/env/baudrate.env; set +a
+bin/baudrate eval "Baudrate.Release.backfill_ap_ids(dry_run: true)"
 bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"
 ```
 
-The task is idempotent and skips remote rows (`remote_actor_id`
-non-nil), so it is safe to re-run. Both forms log a per-row line plus a
+Either form is idempotent and skips remote rows (`remote_actor_id`
+non-nil), so it is safe to re-run. Both log a per-row line plus a
 final summary (`articles=N/N polls=N/N comments=N/N`). Locally during
 development you can use `mix backfill_ap_ids` (with `--dry-run`) — same
 underlying logic.

@@ -4,12 +4,20 @@ defmodule Baudrate.Release do
   maintenance in production.
 
   Mix tasks aren't available inside an OTP release; invoke these via
-  `bin/baudrate eval` or `bin/baudrate rpc`:
+  `bin/baudrate eval` (boots only the bits each task needs — repo for
+  data tasks, migrator for schema tasks — so it never collides with the
+  running production node) or `bin/baudrate rpc` (executes inside the
+  already-running production node, useful when you'd prefer to reuse
+  the live application's state):
 
       bin/baudrate eval "Baudrate.Release.migrate"
       bin/baudrate eval "Baudrate.Release.rollback(Baudrate.Repo, 20240101000000)"
       bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"
       bin/baudrate eval "Baudrate.Release.backfill_ap_ids(dry_run: true)"
+
+      # Or against the already-running node — same function, no port collision
+      # because no second VM boots:
+      bin/baudrate rpc "Baudrate.Release.backfill_ap_ids(dry_run: true)"
   """
 
   import Ecto.Query
@@ -17,7 +25,6 @@ defmodule Baudrate.Release do
   require Logger
 
   alias Baudrate.Content.{Article, Comment, Poll}
-  alias Baudrate.Federation
   alias Baudrate.Repo
   alias Baudrate.Setup.User
 
@@ -64,6 +71,16 @@ defmodule Baudrate.Release do
 
   Returns a map with `:articles`, `:polls`, and `:comments` keys, each a
   `{found, stamped}` tuple.
+
+  ## Implementation note
+
+  When invoked through `bin/baudrate eval`, this function uses
+  `Ecto.Migrator.with_repo/2` to start *only* the repo for the duration
+  of the task. It does NOT call `Application.ensure_all_started/1`,
+  which would boot the full supervision tree (including
+  `BaudrateWeb.Endpoint`) and collide with the running production node.
+  Through `bin/baudrate rpc` the repo is already running, so
+  `with_repo` short-circuits gracefully.
   """
   @spec backfill_ap_ids(keyword()) :: %{
           articles: {non_neg_integer(), non_neg_integer()},
@@ -72,32 +89,43 @@ defmodule Baudrate.Release do
         }
   def backfill_ap_ids(opts \\ []) do
     load_app()
-    Application.ensure_all_started(@app)
-
     dry_run = Keyword.get(opts, :dry_run, false)
 
     if dry_run do
       Logger.info("backfill_ap_ids: dry run — no changes will be written")
     end
 
-    articles = backfill_articles(dry_run)
-    polls = backfill_polls(dry_run)
-    comments = backfill_comments(dry_run)
+    [repo] = repos()
 
-    {a_total, a_stamped} = articles
-    {p_total, p_stamped} = polls
-    {c_total, c_stamped} = comments
+    {:ok, result, _} =
+      Ecto.Migrator.with_repo(repo, fn _repo ->
+        run_backfill(dry_run)
+      end)
+
+    {a_total, a_stamped} = result.articles
+    {p_total, p_stamped} = result.polls
+    {c_total, c_stamped} = result.comments
 
     Logger.info(
       "backfill_ap_ids: complete — articles=#{a_stamped}/#{a_total} polls=#{p_stamped}/#{p_total} comments=#{c_stamped}/#{c_total}"
     )
 
-    %{articles: articles, polls: polls, comments: comments}
+    result
   end
 
-  # --- Articles ---
+  # --- Implementation ---
 
-  defp backfill_articles(dry_run) do
+  defp run_backfill(dry_run) do
+    base = base_url_from_config()
+
+    %{
+      articles: backfill_articles(dry_run, base),
+      polls: backfill_polls(dry_run, base),
+      comments: backfill_comments(dry_run, base)
+    }
+  end
+
+  defp backfill_articles(dry_run, base) do
     rows =
       from(a in Article,
         where: is_nil(a.ap_id) and is_nil(a.remote_actor_id) and not is_nil(a.slug),
@@ -109,16 +137,14 @@ defmodule Baudrate.Release do
 
     stamped =
       Enum.reduce(rows, 0, fn %{id: id, slug: slug}, acc ->
-        ap_id = Federation.actor_uri(:article, slug)
+        ap_id = "#{base}/ap/articles/#{slug}"
         stamp_row(Article, id, [ap_id: ap_id], "article", dry_run, acc)
       end)
 
     {length(rows), stamped}
   end
 
-  # --- Polls ---
-
-  defp backfill_polls(dry_run) do
+  defp backfill_polls(dry_run, base) do
     rows =
       from(p in Poll,
         join: a in Article,
@@ -132,7 +158,7 @@ defmodule Baudrate.Release do
 
     stamped =
       Enum.reduce(rows, 0, fn %{id: id, article_ap_id: article_ap_id, slug: slug}, acc ->
-        article_uri = article_ap_id || Federation.actor_uri(:article, slug)
+        article_uri = article_ap_id || "#{base}/ap/articles/#{slug}"
         ap_id = "#{article_uri}#poll"
         stamp_row(Poll, id, [ap_id: ap_id], "poll", dry_run, acc)
       end)
@@ -140,9 +166,7 @@ defmodule Baudrate.Release do
     {length(rows), stamped}
   end
 
-  # --- Comments ---
-
-  defp backfill_comments(dry_run) do
+  defp backfill_comments(dry_run, base) do
     rows =
       from(c in Comment,
         join: a in Article,
@@ -158,15 +182,13 @@ defmodule Baudrate.Release do
 
     stamped =
       Enum.reduce(rows, 0, fn %{id: id, username: username, slug: slug}, acc ->
-        ap_id = "#{Federation.actor_uri(:user, username)}#note-#{id}"
-        url = "#{Federation.base_url()}/articles/#{slug}#comment-#{id}"
+        ap_id = "#{base}/ap/users/#{username}#note-#{id}"
+        url = "#{base}/articles/#{slug}#comment-#{id}"
         stamp_row(Comment, id, [ap_id: ap_id, url: url], "comment", dry_run, acc)
       end)
 
     {length(rows), stamped}
   end
-
-  # --- Stamp helper ---
 
   defp stamp_row(_schema, id, changes, label, true = _dry_run, acc) do
     Logger.info("backfill_ap_ids: [dry] #{label} ##{id} would set #{inspect(changes)}")
@@ -197,10 +219,31 @@ defmodule Baudrate.Release do
     end
   end
 
+  # Builds the canonical site origin from `BaudrateWeb.Endpoint`'s `:url`
+  # config without starting the endpoint. `Federation.base_url/0` calls
+  # `Endpoint.url/0`, which reads from the endpoint's `:persistent_term`
+  # cache that is only populated once the endpoint is started — so we
+  # read the static config here directly.
+  defp base_url_from_config do
+    config = Application.get_env(@app, BaudrateWeb.Endpoint, [])
+    url = Keyword.get(config, :url, [])
+    scheme = Keyword.get(url, :scheme, "https")
+    host = Keyword.get(url, :host, "localhost")
+    port = Keyword.get(url, :port)
+
+    cond do
+      is_nil(port) -> "#{scheme}://#{host}"
+      scheme == "https" and port == 443 -> "#{scheme}://#{host}"
+      scheme == "http" and port == 80 -> "#{scheme}://#{host}"
+      true -> "#{scheme}://#{host}:#{port}"
+    end
+  end
+
   defp repos, do: Application.fetch_env!(@app, :ecto_repos)
 
   defp load_app do
     Application.ensure_all_started(:ssl)
-    Application.ensure_loaded(@app)
+    Application.ensure_all_started(:logger)
+    Application.load(@app)
   end
 end
