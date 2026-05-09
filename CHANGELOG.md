@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.8.2] — 2026-05-09
+
+### Fixed
+
+- **`ap_id` stamping is now transactional** — `Articles.create_article/3` and `Comments.create_comment/2` previously inserted their rows inside an `Ecto.Multi`, then ran a *separate* post-commit `Repo.update!/1` to stamp the canonical ActivityPub `ap_id` (article: `<base>/ap/articles/<slug>`, poll: `<article-ap-id>#poll`, comment: `<author-actor>#note-<id>`). If the BEAM process or the DB connection died between commit and stamp, the row was durably persisted with `ap_id = nil`, breaking inbox resolution and forcing every publisher to fall back to slug-derived URIs (and polls had no fallback at all). Stamping now happens inside the same `Ecto.Multi` as the insert, so a row is either fully consistent or fully rolled back. The `:article` and `:poll` keys in the success map are preserved so existing callers don't break, and `Comments.create_comment/2` keeps its legacy `{:ok, comment} | {:error, changeset}` return shape.
+
+### Added
+
+- **`Baudrate.Release.backfill_ap_ids/1` heal task** — for instances upgrading from a version that ran the old non-transactional code path, this task scans local rows (`remote_actor_id` is nil) with `ap_id = nil` across articles, polls, and comments and stamps them in place using the same canonical-URI scheme `create_article` and `create_comment` apply at write time. Idempotent, supports `dry_run: true`. Production invocation:
+
+  ```bash
+  bin/baudrate eval "Baudrate.Release.backfill_ap_ids(dry_run: true)"
+  bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"
+  ```
+
+  `mix backfill_ap_ids` is a thin dev/test wrapper around the same function. Documented in `doc/sysop.md`.
+
+### Documentation
+
+- `doc/development.md` Tech Stack table now lists Bandit, Req (with the "never HTTPoison/Tesla/httpc" rule), Earmark, tz (cross-linking `Baudrate.Timezone`), and the Gettext locale set — matching `CLAUDE.md`. Elixir line aligned to `1.15+ / OTP 26+`.
+- `README.md` heading "Acknowledges" → "Acknowledgements".
+- `CHANGELOG.md` link references backfilled for releases 1.3.20 → 1.8.1 (53 entries, skipping 1.3.47 / 1.3.48 which have entries but no git tags) so version anchors at the top of the file all resolve.
+
+### Tests
+
+- New `test/baudrate/bots/bot_test.exs` (18 tests) — direct field-by-field coverage of `Bot.create_changeset/2` (URL validation, `file://` rejection, length cap, fetch-interval bounds, schema defaults), `Bot.update_changeset/2` (verifies `user_id` is dropped from cast and validation still fires), and `Bot.deactivate_changeset/1` (idempotent).
+- New `test/baudrate/bots/feed_worker_test.exs` (11 tests) — pins `FeedWorker.build_slug/2`: determinism, hash-suffix collision avoidance under shared titles, CJK / empty / punctuation-only fallback, 60-character title cap, and conformance to the regex `Article.changeset` enforces. Function exposed with `@doc false`.
+- Four new tests under `Baudrate.ContentTest` `describe "transactional ap_id stamping"` — pin returned-struct vs DB-row consistency for article, article+poll, comment, and prove a board FK violation rolls back the article row.
+
 ## [1.8.1] — 2026-05-09
 
 ### Fixed
@@ -796,6 +825,7 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - AP ID URL format validation on remote boost changesets
 - Reject federation activities targeting non-federated content
 
+[1.8.2]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.8.2
 [1.8.1]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.8.1
 [1.8.0]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.8.0
 [1.7.1]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.7.1
