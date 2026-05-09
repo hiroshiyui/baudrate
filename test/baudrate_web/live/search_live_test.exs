@@ -247,4 +247,74 @@ defmodule BaudrateWeb.SearchLiveTest do
     {:ok, _lv, html} = live(conn, "/search?q=test&tab=users")
     refute html =~ "Search operators"
   end
+
+  describe "scroll-to-top on pagination" do
+    test "initial mount does not push scroll-to-top", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/search?q=anything")
+      refute_push_event(lv, "scroll-to-top", %{})
+      # Sanity: lv is alive and quiet
+      assert render(lv) =~ "Search"
+    end
+
+    test "navigating to a new page pushes scroll-to-top", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      # Seed enough articles to populate page 2 deterministically
+      for i <- 1..30 do
+        {:ok, _} =
+          Content.create_article(
+            %{
+              title: "Pagewise scroll #{i}",
+              body: "body #{i}",
+              slug: "pagewise-scroll-#{i}",
+              user_id: user.id
+            },
+            [board.id]
+          )
+      end
+
+      {:ok, lv, _html} = live(conn, "/search?q=Pagewise")
+      refute_push_event(lv, "scroll-to-top", %{})
+
+      assert render_patch(lv, "/search?q=Pagewise&page=2")
+      assert_push_event(lv, "scroll-to-top", %{})
+    end
+
+    test "switching tab on the same page does not push scroll-to-top", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/search?q=test")
+      refute_push_event(lv, "scroll-to-top", %{})
+
+      assert render_patch(lv, "/search?q=test&tab=comments")
+      refute_push_event(lv, "scroll-to-top", %{})
+    end
+
+    test "returning to page 1 from a deeper page also pushes scroll-to-top", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      for i <- 1..30 do
+        {:ok, _} =
+          Content.create_article(
+            %{
+              title: "Backscroll #{i}",
+              body: "body #{i}",
+              slug: "backscroll-#{i}",
+              user_id: user.id
+            },
+            [board.id]
+          )
+      end
+
+      {:ok, lv, _html} = live(conn, "/search?q=Backscroll&page=2")
+      # Mount→handle_params on page 2 transitions from assigned default page=1 → 2,
+      # so the very first render does fire the event. Drain it.
+      assert_push_event(lv, "scroll-to-top", %{})
+
+      assert render_patch(lv, "/search?q=Backscroll&page=1")
+      assert_push_event(lv, "scroll-to-top", %{})
+    end
+  end
 end
