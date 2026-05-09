@@ -602,6 +602,59 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert hd(remote_articles).title == "Remote Article Title"
     end
 
+    test "rejects cross-post linking by an actor who is not the article's owner" do
+      # When a Create(Article) targets a board for an ap_id that already exists
+      # locally, only the original author may link the article to additional
+      # boards. Otherwise any verified remote actor could attach another
+      # author's article to boards they don't control.
+      _user = setup_user_with_role("user")
+      board_a = create_board()
+      board_b = create_board()
+      author = create_remote_actor()
+      impostor = create_remote_actor()
+
+      board_a_uri = Federation.actor_uri(:board, board_a.slug)
+      board_b_uri = Federation.actor_uri(:board, board_b.slug)
+      ap_id = "https://remote.example/articles/#{System.unique_integer([:positive])}"
+
+      original = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => author.ap_id,
+        "object" => %{
+          "id" => ap_id,
+          "type" => "Article",
+          "name" => "Owned Article",
+          "content" => "<p>Body</p>",
+          "attributedTo" => author.ap_id,
+          "audience" => [board_a_uri],
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(original, author, :shared)
+
+      hijack = %{
+        "id" => "https://remote.example/activities/create-#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => impostor.ap_id,
+        "object" => %{
+          "id" => ap_id,
+          "type" => "Article",
+          "name" => "Owned Article",
+          "content" => "<p>Body</p>",
+          "attributedTo" => impostor.ap_id,
+          "audience" => [board_b_uri],
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
+        }
+      }
+
+      assert :ok = InboxHandler.handle(hijack, impostor, :shared)
+
+      assert Enum.any?(Content.list_articles_for_board(board_a), &(&1.ap_id == ap_id))
+      refute Enum.any?(Content.list_articles_for_board(board_b), &(&1.ap_id == ap_id))
+    end
+
     test "stores human-readable url from AP object" do
       _user = setup_user_with_role("user")
       board = create_board()

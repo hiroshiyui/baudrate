@@ -341,6 +341,7 @@ defmodule Baudrate.Content.Boards do
         updated_at: now
       })
 
+      BoardCache.refresh()
       {:ok, board}
     end
   end

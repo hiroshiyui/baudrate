@@ -91,7 +91,7 @@ defmodule Baudrate.Federation.Publisher do
   def build_delete_article(article) do
     article = Repo.preload(article, [:user])
     actor_uri = Federation.actor_uri(:user, article.user.username)
-    article_uri = Federation.actor_uri(:article, article.slug)
+    article_uri = article.ap_id || Federation.actor_uri(:article, article.slug)
 
     activity = %{
       "@context" => @ap_context,
@@ -117,7 +117,7 @@ defmodule Baudrate.Federation.Publisher do
   """
   def build_announce_article(article, board) do
     board_uri = Federation.actor_uri(:board, board.slug)
-    article_uri = Federation.actor_uri(:article, article.slug)
+    article_uri = article.ap_id || Federation.actor_uri(:article, article.slug)
 
     activity = %{
       "@context" => @ap_context,
@@ -167,7 +167,7 @@ defmodule Baudrate.Federation.Publisher do
     comment = Repo.preload(comment, [:user, :images])
     article = Repo.preload(article, [:user])
     actor_uri = Federation.actor_uri(:user, comment.user.username)
-    article_uri = Federation.actor_uri(:article, article.slug)
+    article_uri = article.ap_id || Federation.actor_uri(:article, article.slug)
     note_uri = comment.ap_id || "#{actor_uri}#note-#{comment.id}"
 
     note_url =
@@ -595,7 +595,7 @@ defmodule Baudrate.Federation.Publisher do
   """
   def build_like_comment(user, comment, like_ap_id \\ nil) do
     actor_uri = Federation.actor_uri(:user, user.username)
-    comment_uri = comment.ap_id
+    comment_uri = comment_ap_id_or_derive(comment)
     like_id = like_ap_id || "#{actor_uri}#comment-like-#{System.unique_integer([:positive])}"
 
     activity = %{
@@ -617,7 +617,7 @@ defmodule Baudrate.Federation.Publisher do
   """
   def build_undo_like_comment(user, comment, like_ap_id \\ nil) do
     actor_uri = Federation.actor_uri(:user, user.username)
-    comment_uri = comment.ap_id
+    comment_uri = comment_ap_id_or_derive(comment)
     like_id = like_ap_id || "#{actor_uri}#comment-like-#{System.unique_integer([:positive])}"
 
     activity = %{
@@ -756,7 +756,7 @@ defmodule Baudrate.Federation.Publisher do
   """
   def build_user_announce_comment(user, comment, boost_ap_id \\ nil) do
     actor_uri = Federation.actor_uri(:user, user.username)
-    comment_uri = comment.ap_id
+    comment_uri = comment_ap_id_or_derive(comment)
 
     announce_id =
       boost_ap_id || "#{actor_uri}#comment-announce-#{System.unique_integer([:positive])}"
@@ -781,7 +781,7 @@ defmodule Baudrate.Federation.Publisher do
   """
   def build_undo_user_announce_comment(user, comment, boost_ap_id \\ nil) do
     actor_uri = Federation.actor_uri(:user, user.username)
-    comment_uri = comment.ap_id
+    comment_uri = comment_ap_id_or_derive(comment)
 
     announce_id =
       boost_ap_id || "#{actor_uri}#comment-announce-#{System.unique_integer([:positive])}"
@@ -1004,7 +1004,7 @@ defmodule Baudrate.Federation.Publisher do
   def build_create_vote(user, article, voted_options) do
     article = Repo.preload(article, [:user])
     actor_uri = Federation.actor_uri(:user, user.username)
-    article_uri = Federation.actor_uri(:article, article.slug)
+    article_uri = article.ap_id || Federation.actor_uri(:article, article.slug)
 
     Enum.map(voted_options, fn option ->
       activity = %{
@@ -1298,6 +1298,21 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   defp maybe_put_reply_attachments(note_object, _reply), do: note_object
+
+  # Returns the comment's stored AP ID, or derives one from its author's
+  # actor URI + `#note-{id}` (matching `Content.Comments.stamp_local_ap_id/1`)
+  # when the stored value is missing. Defends against publishers emitting
+  # `"object" => null` if post-insert stamping ever fails or for legacy rows.
+  defp comment_ap_id_or_derive(%{ap_id: ap_id}) when is_binary(ap_id) and ap_id != "", do: ap_id
+
+  defp comment_ap_id_or_derive(%{user_id: user_id, id: id}) when is_integer(user_id) do
+    case Repo.get(Baudrate.Setup.User, user_id) do
+      %{username: username} -> "#{Federation.actor_uri(:user, username)}#note-#{id}"
+      _ -> nil
+    end
+  end
+
+  defp comment_ap_id_or_derive(_), do: nil
 
   defp build_image_attachments(images) do
     Enum.map(images, fn img ->

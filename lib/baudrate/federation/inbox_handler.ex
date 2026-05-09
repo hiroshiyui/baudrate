@@ -1293,8 +1293,14 @@ defmodule Baudrate.Federation.InboxHandler do
       existing = Content.get_article_by_ap_id(ap_id)
 
       if existing do
-        # Cross-post: link to additional board if not already linked
-        Content.add_article_to_board(existing, board.id)
+        # Cross-post: link to additional board if not already linked.
+        # Only the article's original author (matched by remote_actor_id)
+        # may add it to additional boards — otherwise any verified actor
+        # could spuriously link another author's article elsewhere.
+        if existing.remote_actor_id == remote_actor.id do
+          Content.add_article_to_board(existing, board.id)
+        end
+
         :ok
       else
         title = derive_title(object, body)
@@ -1344,10 +1350,14 @@ defmodule Baudrate.Federation.InboxHandler do
           existing = Content.get_article_by_ap_id(ap_id)
 
           if existing do
-            # Link to all following boards
-            Enum.each(boards, fn board ->
-              Content.add_article_to_board(existing, board.id)
-            end)
+            # Link to all following boards — only when the verified signer
+            # owns the existing article. Otherwise any verified actor could
+            # cross-post another author's article to boards following them.
+            if existing.remote_actor_id == remote_actor.id do
+              Enum.each(boards, fn board ->
+                Content.add_article_to_board(existing, board.id)
+              end)
+            end
 
             :ok
           else
