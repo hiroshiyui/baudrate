@@ -36,25 +36,27 @@ defmodule Baudrate.Content.Comments do
       the comment after insertion. Only orphan images owned by the comment
       author are associated.
   """
-  @spec create_comment(map(), keyword()) :: {:ok, %Comment{}} | {:error, Ecto.Changeset.t()}
+  @spec create_comment(map(), keyword()) ::
+          {:ok, %Comment{}} | {:error, Ecto.Changeset.t() | term()}
   def create_comment(attrs, opts \\ []) do
     attrs = attrs |> Map.new(fn {k, v} -> {to_string(k), v} end)
     body_html = Baudrate.Content.Markdown.to_html(attrs["body"] || "")
     image_ids = Keyword.get(opts, :image_ids, [])
 
-    result =
-      %Comment{}
-      |> Comment.changeset(Map.put(attrs, "body_html", body_html))
-      |> Repo.insert()
+    multi_result =
+      Ecto.Multi.new()
+      |> Ecto.Multi.insert(
+        :comment,
+        Comment.changeset(%Comment{}, Map.put(attrs, "body_html", body_html))
+      )
+      |> Ecto.Multi.update(:comment_with_ap_id, &comment_ap_id_changeset(&1.comment))
+      |> Repo.transaction()
 
-    with {:ok, comment} <- result do
+    with {:ok, %{comment_with_ap_id: comment}} <- multi_result |> flatten_create_comment_result() do
       # Associate uploaded images with the comment
       if image_ids != [] and comment.user_id do
         Baudrate.Content.Images.associate_comment_images(comment.id, image_ids, comment.user_id)
       end
-
-      # Stamp the local AP ID so remote replies can resolve back to this comment
-      comment = stamp_local_ap_id(comment)
 
       touch_article_activity(comment.article_id)
 
@@ -320,25 +322,40 @@ defmodule Baudrate.Content.Comments do
     )
   end
 
-  # Stamps a local comment with its canonical AP ID and browsable URL so that
-  # remote replies (whose `inReplyTo` points here) can be resolved back to
-  # this comment, and remote instances can link to the original.
-  defp stamp_local_ap_id(%Comment{ap_id: nil, user_id: user_id} = comment)
+  # Builds an Ecto changeset that stamps the comment's canonical AP ID and
+  # human-readable URL inside the same transaction that inserts the comment.
+  # Idempotent: returns an unchanged changeset when the ap_id is already set
+  # (defensive — reserved for backfill / mirrored rows). When the author or
+  # parent article cannot be loaded the comment is returned untouched, so
+  # callers see the same `:ok` they did before AP-ID stamping became
+  # transactional.
+  defp comment_ap_id_changeset(%Comment{ap_id: ap_id} = comment)
+       when is_binary(ap_id) and ap_id != "",
+       do: Ecto.Changeset.change(comment)
+
+  defp comment_ap_id_changeset(%Comment{user_id: user_id} = comment)
        when is_integer(user_id) do
     with %{} = user <- Repo.get(Baudrate.Setup.User, user_id),
          %{} = article <- Repo.get(Article, comment.article_id) do
       ap_id = Baudrate.Federation.actor_uri(:user, user.username) <> "#note-#{comment.id}"
       url = "#{Baudrate.Federation.base_url()}/articles/#{article.slug}#comment-#{comment.id}"
 
-      comment
-      |> Ecto.Changeset.change(ap_id: ap_id, url: url)
-      |> Repo.update!()
+      Ecto.Changeset.change(comment, ap_id: ap_id, url: url)
     else
-      nil -> comment
+      _ -> Ecto.Changeset.change(comment)
     end
   end
 
-  defp stamp_local_ap_id(comment), do: comment
+  defp comment_ap_id_changeset(%Comment{} = comment), do: Ecto.Changeset.change(comment)
+
+  # Normalises `Repo.transaction/1` output so the surrounding `with` clause
+  # keeps its pre-Multi `{:ok, comment} | {:error, changeset}` shape.
+  defp flatten_create_comment_result({:ok, _} = ok), do: ok
+
+  defp flatten_create_comment_result({:error, _step, %Ecto.Changeset{} = changeset, _changes}),
+    do: {:error, changeset}
+
+  defp flatten_create_comment_result({:error, _step, reason, _changes}), do: {:error, reason}
 
   @doc """
   Searches remote actors who participated in an article's discussion thread.

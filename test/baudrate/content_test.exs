@@ -3821,4 +3821,91 @@ defmodule Baudrate.ContentTest do
       assert MapSet.equal?(unread, MapSet.new())
     end
   end
+
+  describe "transactional ap_id stamping" do
+    setup do
+      user = create_user("user")
+      board = create_board(%{name: "AP Stamp Board", slug: "ap-stamp-board"})
+      %{user: user, board: board}
+    end
+
+    test "create_article persists a non-nil ap_id atomically", %{user: user, board: board} do
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Stamped", body: "b", slug: "stamped-1", user_id: user.id},
+          [board.id]
+        )
+
+      # Returned struct carries the ap_id
+      assert is_binary(article.ap_id)
+      assert article.ap_id =~ "/ap/articles/stamped-1"
+
+      # And the DB row matches — proves the stamp was committed in the same
+      # transaction as the insert, not via a separate post-commit update.
+      assert Repo.get!(Article, article.id).ap_id == article.ap_id
+    end
+
+    test "create_article with a poll stamps both article and poll inside the tx", %{
+      user: user,
+      board: board
+    } do
+      poll_attrs = %{
+        question: "Q?",
+        mode: "single",
+        options: [%{text: "yes", position: 0}, %{text: "no", position: 1}]
+      }
+
+      {:ok, %{article: article, poll: poll}} =
+        Content.create_article(
+          %{title: "Polled", body: "b", slug: "polled-1", user_id: user.id},
+          [board.id],
+          poll: poll_attrs
+        )
+
+      assert is_binary(article.ap_id)
+      assert poll.ap_id == "#{article.ap_id}#poll"
+
+      # DB row reflects the same ap_id
+      assert Repo.get!(Baudrate.Content.Poll, poll.id).ap_id == poll.ap_id
+    end
+
+    test "create_article rolls back the article when board linking fails", %{user: user} do
+      # Non-existent board id triggers FK violation in `:board_articles`,
+      # so the article must NOT be persisted with a nil ap_id (or at all).
+      bogus_board_id = -1
+
+      assert_raise Postgrex.Error, fn ->
+        Content.create_article(
+          %{title: "Rolledback", body: "b", slug: "rolledback-1", user_id: user.id},
+          [bogus_board_id]
+        )
+      end
+
+      # No half-committed row left behind
+      refute Repo.get_by(Article, slug: "rolledback-1")
+    end
+
+    test "create_comment persists a non-nil ap_id atomically", %{user: user, board: board} do
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "For Comment", body: "b", slug: "for-comment-1", user_id: user.id},
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          body: "hello",
+          article_id: article.id,
+          user_id: user.id
+        })
+
+      assert is_binary(comment.ap_id)
+      assert comment.ap_id =~ "#note-#{comment.id}"
+      assert is_binary(comment.url)
+      assert comment.url =~ "#comment-#{comment.id}"
+
+      # DB row matches
+      assert Repo.get!(Baudrate.Content.Comment, comment.id).ap_id == comment.ap_id
+    end
+  end
 end

@@ -898,6 +898,30 @@ bin/baudrate eval "Baudrate.Release.rollback(Baudrate.Repo, 20260101000000)"
 
 Replace `20260101000000` with the migration version to roll back to.
 
+### One-Shot Data Repair: `ap_id` Backfill
+
+Until v1.8.2, ActivityPub canonical IDs were stamped with a separate
+`Repo.update!/1` *after* the creation transaction committed. If the BEAM
+process or DB connection died between commit and stamp, the article
+(and any poll or comment) was durably persisted with `ap_id = nil`.
+Stamping is now part of the same `Ecto.Multi` as the insert, so new
+rows are always consistent — but instances that ran an earlier version
+may still have orphan rows. To heal them:
+
+```bash
+# Inspect what would be stamped, without writing
+bin/baudrate eval "Baudrate.Release.backfill_ap_ids(dry_run: true)"
+
+# Apply the backfill
+bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"
+```
+
+The task is idempotent and skips remote rows (`remote_actor_id`
+non-nil), so it is safe to re-run. Both forms log a per-row line plus a
+final summary (`articles=N/N polls=N/N comments=N/N`). Locally during
+development you can use `mix backfill_ap_ids` (with `--dry-run`) — same
+underlying logic.
+
 ---
 
 ## Maintenance

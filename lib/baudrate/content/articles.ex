@@ -142,7 +142,8 @@ defmodule Baudrate.Content.Articles do
     result =
       Ecto.Multi.new()
       |> Ecto.Multi.insert(:article, Article.changeset(%Article{}, attrs))
-      |> Ecto.Multi.run(:board_articles, fn repo, %{article: article} ->
+      |> Ecto.Multi.update(:article_with_ap_id, &article_ap_id_changeset(&1.article))
+      |> Ecto.Multi.run(:board_articles, fn repo, %{article_with_ap_id: article} ->
         now = DateTime.utc_now() |> DateTime.truncate(:second)
 
         entries =
@@ -158,7 +159,7 @@ defmodule Baudrate.Content.Articles do
           {:error, :board_articles_insert_mismatch}
         end
       end)
-      |> Ecto.Multi.run(:article_images, fn _repo, %{article: article} ->
+      |> Ecto.Multi.run(:article_images, fn _repo, %{article_with_ap_id: article} ->
         if image_ids != [] do
           user_id = attrs["user_id"] || attrs[:user_id]
           Images.associate_article_images(article.id, image_ids, user_id)
@@ -167,12 +168,15 @@ defmodule Baudrate.Content.Articles do
         {:ok, :done}
       end)
       |> Polls.maybe_insert_poll(poll_attrs)
+      |> stamp_poll_ap_id_step(poll_attrs)
       |> Repo.transaction()
 
-    with {:ok, %{article: article} = multi_result} <- result do
-      # Stamp canonical AP IDs so remote instances can reference these objects
-      article = stamp_article_ap_id(article)
-      multi_result = maybe_stamp_poll_ap_id(multi_result, article)
+    with {:ok, multi_result} <- result do
+      # `article_with_ap_id` is the durably-stamped row; surface it as `:article`
+      # for callers that destructure on that key.
+      article = multi_result.article_with_ap_id
+      multi_result = Map.put(multi_result, :article, article)
+      multi_result = maybe_promote_stamped_poll(multi_result)
 
       Tags.sync_article_tags(article)
 
@@ -810,28 +814,49 @@ defmodule Baudrate.Content.Articles do
     end
   end
 
-  defp maybe_stamp_poll_ap_id(%{poll: %{ap_id: nil} = poll} = multi_result, article) do
-    ap_id = (article.ap_id || Baudrate.Federation.actor_uri(:article, article.slug)) <> "#poll"
-
-    poll =
-      poll
-      |> Ecto.Changeset.change(ap_id: ap_id)
-      |> Repo.update!()
-
-    %{multi_result | poll: poll}
+  # Builds a changeset that stamps the article's canonical AP ID inside the
+  # creation transaction. Idempotent: returns an unchanged changeset when the
+  # article already has an `ap_id` (e.g. mirrored via `create_remote_article`
+  # or backfilled by a prior run), so this step is safe to chain unconditionally.
+  defp article_ap_id_changeset(%Article{ap_id: nil, slug: slug} = article)
+       when is_binary(slug) do
+    Ecto.Changeset.change(article, ap_id: Baudrate.Federation.actor_uri(:article, slug))
   end
 
-  defp maybe_stamp_poll_ap_id(multi_result, _article), do: multi_result
+  defp article_ap_id_changeset(%Article{} = article), do: Ecto.Changeset.change(article)
 
-  defp stamp_article_ap_id(%Article{ap_id: nil, slug: slug} = article) when is_binary(slug) do
-    ap_id = Baudrate.Federation.actor_uri(:article, slug)
+  # Adds a Multi step that stamps the just-inserted poll with `<article-ap-id>#poll`.
+  # No-op when no poll was inserted, so callers can chain unconditionally.
+  defp stamp_poll_ap_id_step(multi, nil), do: multi
 
-    article
-    |> Ecto.Changeset.change(ap_id: ap_id)
-    |> Repo.update!()
+  defp stamp_poll_ap_id_step(multi, _poll_attrs) do
+    Ecto.Multi.update(multi, :poll_with_ap_id, fn changes ->
+      poll = changes.poll
+      article = changes.article_with_ap_id
+
+      cond do
+        is_nil(poll) ->
+          # `maybe_insert_poll` is unconditional once `poll_attrs` is non-nil,
+          # but defensively handle a nil result rather than crashing the tx.
+          Ecto.Changeset.change(%Baudrate.Content.Poll{})
+
+        is_binary(poll.ap_id) and poll.ap_id != "" ->
+          Ecto.Changeset.change(poll)
+
+        true ->
+          Ecto.Changeset.change(poll, ap_id: "#{article.ap_id}#poll")
+      end
+    end)
   end
 
-  defp stamp_article_ap_id(article), do: article
+  # When the poll-stamping step ran, surface the stamped poll under the
+  # `:poll` key callers expect.
+  defp maybe_promote_stamped_poll(%{poll_with_ap_id: poll} = multi_result)
+       when not is_nil(poll) do
+    Map.put(multi_result, :poll, poll)
+  end
+
+  defp maybe_promote_stamped_poll(multi_result), do: multi_result
 
   defp schedule_federation_task(fun), do: Baudrate.Federation.schedule_federation_task(fun)
 end
