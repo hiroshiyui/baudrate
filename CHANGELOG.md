@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.8.1] — 2026-05-09
+
+### Fixed
+
+- **`/search` pagination didn't actually scroll to top** — v1.8.0 wired up the `scroll-to-top` push event on `/search` but the JS handler in `assets/js/app.js` bails out unless it can find a `[data-focus-target]` element inside `#main-content`, and the search result containers never had that attribute. The event fired but the page stayed put. Added `data-focus-target` to all four result containers (articles / comments / boards / users tabs) so navigation now scrolls back to the top, matching `/boards`. Regression test covers the rendered articles tab.
+
 ## [1.8.0] — 2026-05-09
 
 ### Added
