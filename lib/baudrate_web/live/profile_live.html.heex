@@ -243,7 +243,7 @@
 
       <div id="profile-role">
         <div class="text-sm text-base-content/70">{gettext("Role")}</div>
-        <div class="text-lg font-semibold">{@current_user.role.name}</div>
+        <div class="text-lg font-semibold">{translate_role(@current_user.role.name)}</div>
         <div class="text-sm text-base-content/70">{@current_user.role.description}</div>
       </div>
 
@@ -281,7 +281,7 @@
           )}
         </p>
 
-        <div :if={@webauthn_credentials != []} class="space-y-2 mb-4" aria-live="polite">
+        <div :if={@webauthn_credentials != []} class="space-y-2 mb-4">
           <article
             :for={cred <- @webauthn_credentials}
             id={"security-key-#{cred.id}"}
@@ -559,7 +559,7 @@
         <div :if={@mutes == []} class="text-sm text-base-content/70 italic">
           {gettext("No muted users.")}
         </div>
-        <div :if={@mutes != []} class="space-y-2" aria-live="polite">
+        <div :if={@mutes != []} class="space-y-2">
           <div :for={mute <- @mutes} class="flex items-center gap-3">
             <%= if mute.muted_user do %>
               <.avatar user={mute.muted_user} size={36} />

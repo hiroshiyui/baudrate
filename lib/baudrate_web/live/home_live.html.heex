@@ -3,7 +3,7 @@
     {gettext("Welcome, %{username}!", username: display_name(@current_user))}
   </h1>
   <p class="text-base-content/70 mb-8">
-    {gettext("You are signed in as %{role}.", role: @current_user.role.name)}
+    {gettext("You are signed in as %{role}.", role: translate_role(@current_user.role.name))}
   </p>
 </div>
 

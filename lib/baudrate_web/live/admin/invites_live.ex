@@ -16,7 +16,7 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
   alias Baudrate.Auth
-  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1, invite_url: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1, invite_url: 1, translate_role: 1]
 
   @impl true
   def mount(_params, _session, socket) do

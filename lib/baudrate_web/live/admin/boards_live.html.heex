@@ -140,7 +140,7 @@
         >
           <div class="flex items-center gap-2">
             <span class="font-medium">{bm.user.username}</span>
-            <span class="badge badge-sm badge-ghost">{bm.user.role.name}</span>
+            <span class="badge badge-sm badge-ghost">{translate_role(bm.user.role.name)}</span>
           </div>
           <button
             phx-click="remove_moderator"
@@ -178,7 +178,7 @@
             <option value="">{gettext("Select a user...")}</option>
             <%= for user <- @active_users,
                     not Enum.any?(@board_moderators, &(&1.user.id == user.id)) do %>
-              <option value={user.id}>{user.username} ({user.role.name})</option>
+              <option value={user.id}>{user.username} ({translate_role(user.role.name)})</option>
             <% end %>
           </select>
           <button

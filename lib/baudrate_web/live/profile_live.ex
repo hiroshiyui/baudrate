@@ -28,6 +28,8 @@ defmodule BaudrateWeb.ProfileLive do
   alias BaudrateWeb.Locale
   alias BaudrateWeb.RateLimits
 
+  import BaudrateWeb.Helpers, only: [translate_role: 1]
+
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user

@@ -15,6 +15,8 @@ defmodule BaudrateWeb.HomeLive do
   alias BaudrateWeb.LinkedData
   alias BaudrateWeb.OpenGraph
 
+  import BaudrateWeb.Helpers, only: [translate_role: 1]
+
   @impl true
   def mount(_params, _session, socket) do
     current_user = socket.assigns.current_user

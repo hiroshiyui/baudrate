@@ -94,7 +94,7 @@
   {gettext("No articles yet.")}
 </div>
 
-<div :if={@articles != []} id="articles" class="space-y-2" aria-live="polite" data-focus-target>
+<div :if={@articles != []} id="articles" class="space-y-2" data-focus-target>
   <article
     :for={article <- @articles}
     id={"article-#{article.slug}"}

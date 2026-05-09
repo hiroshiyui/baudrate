@@ -18,7 +18,7 @@
     <p class="text-sm">{gettext("Start a conversation from a user's profile page.")}</p>
   </div>
 
-  <div :if={@conversations != []} id="conversations" class="space-y-2" aria-live="polite">
+  <div :if={@conversations != []} id="conversations" class="space-y-2">
     <.link
       :for={conv <- @conversations}
       id={"conversation-#{conv.id}"}

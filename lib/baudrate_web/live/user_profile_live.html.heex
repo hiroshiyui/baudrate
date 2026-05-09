@@ -182,7 +182,7 @@
       <h2 id="recent-activity-heading" class="text-lg font-semibold mb-3">
         {gettext("Recent Articles & Comments")}
       </h2>
-      <div id="recent-activity" class="space-y-2" aria-live="polite" data-focus-target>
+      <div id="recent-activity" class="space-y-2" data-focus-target>
         <%= for entry <- @recent_activity do %>
           <%= case entry do %>
             <% {:article, article} -> %>
