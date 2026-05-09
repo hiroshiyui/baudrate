@@ -203,6 +203,19 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
 
       assert body["type"] == "Article"
     end
+
+    test "AP Accept on public article URL returns AS2 JSON", %{conn: conn} do
+      user = setup_user("user")
+      board = setup_board()
+      article = setup_article(user, board)
+
+      conn = conn |> ap_conn() |> get("/articles/#{article.slug}")
+      body = json_response(conn, 200)
+
+      assert body["type"] == "Article"
+      assert body["id"] =~ "/ap/articles/#{article.slug}"
+      assert "Accept" in get_resp_header(conn, "vary")
+    end
   end
 
   # --- CORS ---

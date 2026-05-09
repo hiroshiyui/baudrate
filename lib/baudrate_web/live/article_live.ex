@@ -14,7 +14,9 @@ defmodule BaudrateWeb.ArticleLive do
 
   alias Baudrate.Content
   alias Baudrate.Content.ArticleImageStorage
+  alias Baudrate.Content.Board
   alias Baudrate.Content.PubSub, as: ContentPubSub
+  alias Baudrate.Federation
   alias Baudrate.Moderation
   alias BaudrateWeb.LinkedData
   alias BaudrateWeb.OpenGraph
@@ -74,6 +76,7 @@ defmodule BaudrateWeb.ArticleLive do
         )
         |> assign(:dc_meta, LinkedData.dublin_core_meta(:article, article))
         |> assign(:og_meta, OpenGraph.article_tags(article, article_images))
+        |> assign(:ap_alternate_url, ap_alternate_url(article))
         |> assign(:can_forward, Content.can_forward_article?(current_user, article))
         |> assign(:forward_search_open, false)
         |> assign(:forward_search_results, [])
@@ -909,5 +912,17 @@ defmodule BaudrateWeb.ArticleLive do
       comment_boosted_ids: comment_boosted_ids,
       comment_boost_counts: comment_boost_counts
     )
+  end
+
+  # Returns the ActivityPub `id` for the article when it lives in at least one
+  # federated board (public + ap_enabled), so the layout can advertise it via
+  # `<link rel="alternate" type="application/activity+json">`. Remote
+  # implementations use this to discover the AP object from the human URL.
+  defp ap_alternate_url(article) do
+    boards = article.boards || []
+
+    if Enum.any?(boards, &Board.federated?/1) do
+      article.ap_id || Federation.actor_uri(:article, article.slug)
+    end
   end
 end

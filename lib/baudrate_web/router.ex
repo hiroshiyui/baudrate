@@ -333,7 +333,7 @@ defmodule BaudrateWeb.Router do
 
   # Public browsable routes (accessible to guests and authenticated users)
   scope "/", BaudrateWeb do
-    pipe_through :browser
+    pipe_through [BaudrateWeb.Plugs.ArticleApContentNeg, :browser]
 
     live_session :public_browsable,
       layout: {BaudrateWeb.Layouts, :app},

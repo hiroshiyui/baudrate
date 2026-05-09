@@ -44,6 +44,9 @@
         href={~p"/feeds/boards/#{assigns[:feed_board_slug]}/atom"}
       />
     <% end %>
+    <%= if assigns[:ap_alternate_url] do %>
+      <link rel="alternate" type="application/activity+json" href={@ap_alternate_url} />
+    <% end %>
     <%= if assigns[:linked_data_json] do %>
       {raw("<script type=\"application/ld+json\">" <> @linked_data_json <> "</script>")}
     <% end %>

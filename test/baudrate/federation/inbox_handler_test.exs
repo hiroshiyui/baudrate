@@ -808,6 +808,27 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
     end
 
+    test "resolves Like targeting public article URL (without /ap prefix)" do
+      # Remote implementations that discovered the article via its human URL
+      # may address Like activities at that URL — accept those too.
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      public_url = "#{Federation.base_url()}/articles/#{article.slug}"
+
+      activity = %{
+        "id" => "https://remote.example/likes/#{System.unique_integer([:positive])}",
+        "type" => "Like",
+        "actor" => remote_actor.ap_id,
+        "object" => public_url
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Content.count_article_likes(article) == 1
+    end
+
     test "accepts like for remote article in non-federated board" do
       # Remote articles already exist on the fediverse, so interactions should
       # be accepted even if the board has ap_enabled: false.

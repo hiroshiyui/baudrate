@@ -1248,18 +1248,28 @@ defmodule Baudrate.Federation.InboxHandler do
         article
 
       nil ->
-        # Try matching against /ap/articles/:slug pattern
+        # Try matching either the canonical AP URI (`/ap/articles/:slug`) or
+        # the public human URL (`/articles/:slug`). Remote implementations
+        # that discovered the article via its human URL may address Like /
+        # Announce / Create activities at that URL, so we resolve both.
         base = Federation.base_url()
-        prefix = "#{base}/ap/articles/"
+        ap_prefix = "#{base}/ap/articles/"
+        web_prefix = "#{base}/articles/"
 
-        case uri do
-          <<^prefix::binary, slug::binary>> ->
-            if Regex.match?(~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/, slug) do
-              Baudrate.Repo.get_by(Baudrate.Content.Article, slug: slug)
-            end
+        slug =
+          cond do
+            String.starts_with?(uri, ap_prefix) ->
+              String.replace_prefix(uri, ap_prefix, "")
 
-          _ ->
-            nil
+            String.starts_with?(uri, web_prefix) ->
+              String.replace_prefix(uri, web_prefix, "")
+
+            true ->
+              nil
+          end
+
+        if is_binary(slug) and Regex.match?(~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/, slug) do
+          Baudrate.Repo.get_by(Baudrate.Content.Article, slug: slug)
         end
     end
   end

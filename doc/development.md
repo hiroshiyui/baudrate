@@ -1222,6 +1222,7 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `/ap/boards/:slug` — Group actor with sub-board/parent-board links
 - `/ap/site` — Organization actor (instance actor, discoverable as `acct:site@host`)
 - `/ap/articles/:slug` — Article object with replies link and `baudrate:*` extensions
+- `/articles/:slug` — content-negotiated: AP `Accept` headers (`application/activity+json`, `application/ld+json`, `application/json`) are forwarded to the AS2 article endpoint by `BaudrateWeb.Plugs.ArticleApContentNeg`; browser requests fall through to `ArticleLive`. The article LiveView also emits `<link rel="alternate" type="application/activity+json" href="…/ap/articles/:slug">` for federated articles, so remote implementations can discover the AP `id` from the human URL when content negotiation isn't attempted
 - `/ap/users/:username/outbox` — paginated `OrderedCollection` of `Create(Article)`
 - `/ap/boards/:slug/outbox` — paginated `OrderedCollection` of `Announce(Article)`
 - `/ap/boards` — `OrderedCollection` of all public AP-enabled boards

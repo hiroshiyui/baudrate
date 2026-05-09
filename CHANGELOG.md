@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [Unreleased]
+
+### Fixed
+
+- **Federation discovery from public article URL** — Remote ActivityPub implementations (Mastodon, etc.) could not discover, like, or boost a Baudrate article when its public URL `https://host/articles/<slug>` was pasted into a search field, because the canonical AP `id` lives at `/ap/articles/<slug>` and the public URL had no link back. Articles whose `Create` activity was never pushed to a remote follower (e.g. boards with no remote followers at posting time) became effectively un-interactive from the Fediverse, while articles that *had* been pushed kept receiving activities — making the bug look intermittent. The new `BaudrateWeb.Plugs.ArticleApContentNeg` plug content-negotiates `/articles/:slug` and forwards AS2 `Accept` headers to the existing AS2 endpoint, the article LiveView now advertises `<link rel="alternate" type="application/activity+json">` for federated articles, and `Federation.InboxHandler.resolve_local_article_by_ap_or_uri/1` accepts both `/ap/articles/<slug>` and `/articles/<slug>` so inbound `Like` / `Announce` / `Create` activities addressed at the human URL no longer get silently dropped.
+
 ## [1.7.1] — 2026-05-06
 
 ### Fixed
