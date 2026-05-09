@@ -7,11 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
-## [Unreleased]
+## [1.8.0] — 2026-05-09
+
+### Added
+
+- **Scroll to top on `/search` pagination** — Clicking a page link in `/search` now smoothly scrolls back to the top of the results, matching the long-standing behaviour on `/boards`. The trigger is page-change-only, so switching tabs or refining the query while still on page 1 doesn't disturb scroll position. Implemented via a `scroll-to-top` push event picked up by the existing `phx:scroll-to-top` listener in `assets/js/app.js`.
 
 ### Fixed
 
 - **Federation discovery from public article URL** — Remote ActivityPub implementations (Mastodon, etc.) could not discover, like, or boost a Baudrate article when its public URL `https://host/articles/<slug>` was pasted into a search field, because the canonical AP `id` lives at `/ap/articles/<slug>` and the public URL had no link back. Articles whose `Create` activity was never pushed to a remote follower (e.g. boards with no remote followers at posting time) became effectively un-interactive from the Fediverse, while articles that *had* been pushed kept receiving activities — making the bug look intermittent. The new `BaudrateWeb.Plugs.ArticleApContentNeg` plug content-negotiates `/articles/:slug` and forwards AS2 `Accept` headers to the existing AS2 endpoint, the article LiveView now advertises `<link rel="alternate" type="application/activity+json">` for federated articles, and `Federation.InboxHandler.resolve_local_article_by_ap_or_uri/1` accepts both `/ap/articles/<slug>` and `/articles/<slug>` so inbound `Like` / `Announce` / `Create` activities addressed at the human URL no longer get silently dropped.
+- **Federation publishers and inbox cross-post path** — Comment Like / Boost / Undo activities emitted `"object" => null` whenever `comment.ap_id` was missing (legacy rows or a transient post-insert stamping failure), which remote instances reject. Article Delete / Announce / Update / vote builders ignored the stored `article.ap_id` and re-derived from `slug`, breaking parity with the documented "stored ap_id with fallback" contract. Both surfaces now derive a stable canonical URI when the stored value is absent. `Content.Boards.seed_sysop_board/1` was missing `BoardCache.refresh()`, so a SysOp board created by the setup wizard would be invisible until the next boot.
+- **Cross-post attribution spoofing** — When `Create(Article)` arrived for an `ap_id` that already existed locally, `InboxHandler.create_article_in_board/5` and `maybe_auto_route_to_boards/3` linked the article to additional boards without checking that the verified signer was the article's original author — any other verified actor could spuriously cross-post someone else's article. Both call sites now require `existing.remote_actor_id == remote_actor.id`.
+- **Stop overusing `aria-live="polite"` on list/table containers** — ~18 list and table wrappers across `/`, `/boards`, `/search`, `/notifications`, `/messages`, `/users/:username`, `/admin/*`, and similar pages carried `aria-live="polite"` on the container, so screen-reader users heard the entire list read out on initial render. Removed where the list is not a true push stream; kept on the article comments thread, conversation message stream, and search-result `role="status"` summaries that legitimately update after a user action.
+- **Bare English role names rendered to non-English UIs** — Five templates (`/`, `/profile`, `/admin/invites`, two sites in `/admin/boards`) leaked the raw role string ("admin", "moderator", "user") into zh_TW and ja_JP UIs. All sites now route through the existing `translate_role/1` helper.
+
+### Security
+
+- **Web Push endpoint URL is now SSRF-validated** — `PushSubscription.endpoint` is a user-supplied URL that the server then POSTs to. The schema only checked the HTTPS scheme, and `Notification.WebPush.send_push/2` ran the request through bare `Req.post/1`, so an authenticated client could submit a private endpoint (`http://127.0.0.1:5432`, `http://169.254.169.254/...`, etc.) and have the server emit blind POSTs with VAPID auth headers toward internal services. Both layers now route the URL through `Federation.HTTPClient.validate_url/1`, which rejects non-HTTPS URLs and resolves the host against the existing private/loopback IP range list. Validation runs at storage and at every send (mitigating DNS-rebinding TOCTOU between subscribe and delivery).
+
+### Documentation
+
+- Refreshed the `doc/development.md` Project Structure tree to add six modules that exist on disk but were missing from the listing (`auth/reserved_handle.ex`, `content/comment_image.ex`, `content/interactions.ex`, `content/title_deriver.ex`, `federation/feed_item_reply_image.ex`, `federation/reply_images.ex`).
+- Reworded the `doc/api.md` opening to clarify that the AP and `/.well-known` endpoints documented there are the federation surface, with non-AP HTTP endpoints (RSS/Atom feeds, push subscriptions, Web Share Target, `/@:handle` redirect, health probe) intentionally not covered. Added the `Mastodon / Lemmy Compatibility` and `CORS Preflight` H2s to the table of contents.
 
 ## [1.7.1] — 2026-05-06
 
