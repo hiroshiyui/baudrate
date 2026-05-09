@@ -55,3 +55,6 @@ ansible/*.retry
 npm-debug.log
 /assets/node_modules/
 
+# Claude Code session-local state (e.g., scheduled-task lock).
+/.claude/scheduled_tasks.lock
+
