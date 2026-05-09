@@ -1,9 +1,16 @@
 # ActivityPub API Reference
 
 Baudrate exposes an ActivityPub-compatible API for federation and programmatic
-access. All endpoints live under `/ap/` (objects and actors) or
-`/.well-known/` (discovery). No separate REST API exists — the AP endpoints
-**are** the public API.
+access. All endpoints documented here live under `/ap/` (objects and actors) or
+`/.well-known/` (discovery) — these form the federation surface.
+
+A handful of additional first-party HTTP endpoints (RSS/Atom feeds at
+`/feeds/{rss,atom}` and per-board/user variants, the Web Push subscription
+endpoints `POST/DELETE /api/push-subscriptions`, the PWA Web Share Target at
+`POST /share`, the Mastodon-style `GET /@:handle` redirect, and the health
+probe `GET /health`) are intended for browser, PWA, or sysop use rather than
+federation; they are wired up in `lib/baudrate_web/router.ex` and not
+documented as part of the AP surface.
 
 **Base URL:** `https://<your-instance>`
 
@@ -42,6 +49,8 @@ access. All endpoints live under `/ap/` (objects and actors) or
 - [Error Responses](#error-responses)
 - [Rate Limits](#rate-limits)
 - [Baudrate Extensions](#baudrate-extensions)
+- [Mastodon / Lemmy Compatibility](#mastodon--lemmy-compatibility)
+- [CORS Preflight](#cors-preflight)
 
 ---
 

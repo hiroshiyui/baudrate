@@ -53,6 +53,7 @@ lib/
 │   │   ├── passwords.ex         # Password hashing, validation, and reset logic
 │   │   ├── profiles.ex          # User profile updates: display name, bio, signature, profile_fields
 │   │   ├── recovery_code.ex     # Ecto schema for one-time recovery codes
+│   │   ├── reserved_handle.ex   # Reserved username/handle list (system, sysop, admin, etc.)
 │   │   ├── second_factor.ex     # TOTP enrollment, verification, and recovery
 │   │   ├── session_cleaner.ex   # GenServer: hourly cleanup (sessions, login attempts, orphan images)
 │   │   ├── sessions.ex          # Session lifecycle: creation, rotation, eviction
@@ -106,6 +107,9 @@ lib/
 │   │   ├── comment_boost.ex     # CommentBoost schema (local + remote boosts on comments)
 │   │   ├── comment_like.ex      # CommentLike schema (local + remote likes on comments)
 │   │   ├── comment.ex           # Comment schema (threaded, local + remote, soft-delete)
+│   │   ├── comment_image.ex     # CommentImage schema (image attachments on comments)
+│   │   ├── interactions.ex      # Shared like/boost/bookmark interaction helpers
+│   │   ├── title_deriver.ex     # Title derivation for federation-imported articles
 │   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark + Ammonia NIF + hashtag/mention linkification + mention extraction)
 │   │   ├── pagination.ex        # Content-specific paginated query helpers
 │   │   ├── poll.ex              # Poll schema (inline polls attached to articles, single/multiple choice)
@@ -140,6 +144,8 @@ lib/
 │   │   ├── feed_item_boost.ex   # FeedItemBoost schema (local boosts on remote feed items)
 │   │   ├── feed_item_like.ex    # FeedItemLike schema (local likes on remote feed items)
 │   │   ├── feed_item_reply.ex   # FeedItemReply schema (local replies to remote feed items)
+│   │   ├── feed_item_reply_image.ex # FeedItemReplyImage schema (image attachments on feed item replies)
+│   │   ├── reply_images.ex      # Helper for feed item reply images
 │   │   ├── follower.ex          # Follower schema (remote → local follows)
 │   │   ├── follows.ex           # Local/remote follow logic, acceptance, and migration
 │   │   ├── http_client.ex       # SSRF-safe HTTP client for remote fetches (unsigned + signed GET)
