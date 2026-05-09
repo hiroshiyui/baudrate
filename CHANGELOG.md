@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.8.3] — 2026-05-09
+
+### Fixed
+
+- **`Baudrate.Release.backfill_ap_ids/1` no longer collides with the running production node** — v1.8.2 introduced the backfill task but it called `Application.ensure_all_started(:baudrate)`, which boots the full supervision tree including `BaudrateWeb.Endpoint`. Run via `bin/baudrate eval` against a server with the production node already running, the second VM crashed on `:eaddrinuse` (port 4000), the app shut down (taking the repo with it), and the backfill query then failed with `Ecto.Repo.Registry`'s "repo not started". The task now uses `Ecto.Migrator.with_repo/2` (mirroring `migrate/0` and `rollback/2` in the same module), so it starts only the repo for the duration of the function and never collides with the live endpoint. Canonical URI building also moved off `Federation.actor_uri/2` (which reads from the endpoint's `:persistent_term` cache that's only populated after the endpoint starts) onto a private helper that reads `:scheme` / `:host` / `:port` straight from the static endpoint config. `doc/sysop.md` now documents both `bin/baudrate rpc` (recommended — runs inside the live VM, no env-file sourcing required) and `bin/baudrate eval` (one-shot VM, needs the EnvironmentFile sourced first).
+
 ## [1.8.2] — 2026-05-09
 
 ### Fixed
@@ -825,6 +831,7 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 - AP ID URL format validation on remote boost changesets
 - Reject federation activities targeting non-federated content
 
+[1.8.3]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.8.3
 [1.8.2]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.8.2
 [1.8.1]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.8.1
 [1.8.0]: https://github.com/hiroshiyui/baudrate/releases/tag/v1.8.0
