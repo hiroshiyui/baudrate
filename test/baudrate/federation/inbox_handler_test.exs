@@ -952,6 +952,41 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
       assert Content.count_article_likes(article) == 0
     end
+
+    test "accepts like for local article in non-federated board when author has remote followers" do
+      user = setup_user_with_role("user")
+      remote_actor = create_remote_actor()
+
+      non_fed_board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Non-Fed Board",
+          slug: "nonfed-like-with-followers-#{System.unique_integer([:positive])}",
+          ap_enabled: false,
+          ap_accept_policy: "open"
+        })
+        |> Repo.insert!()
+
+      article = create_article_for_board(user, non_fed_board)
+      article_uri = Federation.actor_uri(:article, article.slug)
+
+      {:ok, _} =
+        Federation.create_follower(
+          Federation.actor_uri(:user, user.username),
+          remote_actor,
+          "https://remote.example/follows/#{System.unique_integer([:positive])}"
+        )
+
+      activity = %{
+        "id" => "https://remote.example/likes/#{System.unique_integer([:positive])}",
+        "type" => "Like",
+        "actor" => remote_actor.ap_id,
+        "object" => article_uri
+      }
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Content.count_article_likes(article) == 1
+    end
   end
 
   describe "Announce" do
@@ -1151,6 +1186,43 @@ defmodule Baudrate.Federation.InboxHandlerTest do
         "type" => "Announce",
         "actor" => booster.ap_id,
         "object" => article_ap_id
+      }
+
+      assert :ok = InboxHandler.handle(activity, booster, :shared)
+      assert Content.count_article_boosts(article) == 1
+    end
+
+    test "accepts boost for local article in non-federated board when author has remote followers" do
+      user = setup_user_with_role("user")
+      booster = create_remote_actor()
+      follower_actor = create_remote_actor()
+
+      non_fed_board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Non-Fed Board",
+          slug: "nonfed-boost-with-followers-#{System.unique_integer([:positive])}",
+          ap_enabled: false,
+          ap_accept_policy: "open"
+        })
+        |> Repo.insert!()
+
+      article = create_article_for_board(user, non_fed_board)
+      article_uri = Federation.actor_uri(:article, article.slug)
+
+      {:ok, _} =
+        Federation.create_follower(
+          Federation.actor_uri(:user, user.username),
+          follower_actor,
+          "https://remote.example/follows/#{System.unique_integer([:positive])}"
+        )
+
+      activity = %{
+        "id" =>
+          "https://remote.example/activities/announce-art-#{System.unique_integer([:positive])}",
+        "type" => "Announce",
+        "actor" => booster.ap_id,
+        "object" => article_uri
       }
 
       assert :ok = InboxHandler.handle(activity, booster, :shared)

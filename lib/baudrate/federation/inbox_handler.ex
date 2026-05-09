@@ -1559,11 +1559,19 @@ defmodule Baudrate.Federation.InboxHandler do
   # boards they reside in — they already exist on the fediverse and remote actors
   # should be able to Like, Boost, or Reply to them even if the board has
   # ap_enabled: false.
-  # Local articles qualify only if they are in at least one public, AP-enabled board.
+  # Local articles qualify if either:
+  #   (a) they are in at least one public, AP-enabled board, or
+  #   (b) their author has remote followers — user-actor federation may have
+  #       already published the article via follower fan-out, so inbound
+  #       interactions on it must be honored regardless of board AP status.
   defp article_federated?(%{remote_actor_id: remote_actor_id}) when not is_nil(remote_actor_id),
     do: true
 
   defp article_federated?(article) do
+    article_in_federated_board?(article) or author_has_remote_followers?(article)
+  end
+
+  defp article_in_federated_board?(article) do
     import Ecto.Query
 
     Baudrate.Repo.exists?(
@@ -1577,6 +1585,24 @@ defmodule Baudrate.Federation.InboxHandler do
       )
     )
   end
+
+  defp author_has_remote_followers?(%{user_id: user_id}) when is_integer(user_id) do
+    import Ecto.Query
+
+    case Baudrate.Repo.get(Baudrate.Setup.User, user_id) do
+      %{username: username} when is_binary(username) ->
+        actor_uri = Federation.actor_uri(:user, username)
+
+        Baudrate.Repo.exists?(
+          from(f in Baudrate.Federation.Follower, where: f.actor_uri == ^actor_uri)
+        )
+
+      _ ->
+        false
+    end
+  end
+
+  defp author_has_remote_followers?(_), do: false
 
   # --- Follow helpers (Accept/Reject) ---
 
