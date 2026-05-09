@@ -151,7 +151,12 @@ defmodule Baudrate.Bots.FeedWorker do
     end
   end
 
-  defp build_slug(title, guid) do
+  @doc false
+  # Public for unit testing — see test/baudrate/bots/feed_worker_test.exs.
+  # Builds a deterministic, URL-safe slug from a feed entry's title and GUID:
+  # the title is lowercased and stripped to `[a-z0-9-]`, then suffixed with
+  # an 8-char SHA-256 hash of the GUID for uniqueness.
+  def build_slug(title, guid) do
     # Slugify title: lowercase, replace non-alphanumeric with hyphens
     base =
       title
