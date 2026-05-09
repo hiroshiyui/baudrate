@@ -39,8 +39,12 @@ defmodule Baudrate.Notification.PushSubscription do
 
   defp validate_endpoint_url(changeset) do
     validate_change(changeset, :endpoint, fn :endpoint, endpoint ->
-      case URI.parse(endpoint) do
-        %URI{scheme: "https", host: host} when is_binary(host) and host != "" -> []
+      with %URI{scheme: "https", host: host} when is_binary(host) and host != "" <-
+             URI.parse(endpoint),
+           :ok <- Baudrate.Federation.HTTPClient.validate_url(endpoint) do
+        []
+      else
+        {:error, _reason} -> [endpoint: "must resolve to a public HTTPS endpoint"]
         _ -> [endpoint: "must be a valid HTTPS URL"]
       end
     end)

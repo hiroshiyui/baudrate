@@ -99,7 +99,8 @@ defmodule Baudrate.Notification.WebPush do
   - `{:error, :vapid_not_configured}` if VAPID keys are not set up
   """
   def send_push(%PushSubscription{} = subscription, payload) when is_binary(payload) do
-    with {:ok, public_key_b64, private_key} <- load_vapid_keys() do
+    with :ok <- Baudrate.Federation.HTTPClient.validate_url(subscription.endpoint),
+         {:ok, public_key_b64, private_key} <- load_vapid_keys() do
       p256dh = subscription.p256dh
       auth = subscription.auth
 
