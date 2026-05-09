@@ -453,6 +453,7 @@
     role="tabpanel"
     aria-labelledby="tab-articles"
     class="space-y-2"
+    data-focus-target
   >
     <article
       :for={article <- @articles}
@@ -515,6 +516,7 @@
     role="tabpanel"
     aria-labelledby="tab-comments"
     class="space-y-2"
+    data-focus-target
   >
     <div
       :for={comment <- @comments}
@@ -570,6 +572,7 @@
     role="tabpanel"
     aria-labelledby="tab-boards"
     class="space-y-2"
+    data-focus-target
   >
     <div
       :for={board <- @boards}
@@ -599,6 +602,7 @@
     role="tabpanel"
     aria-labelledby="tab-users"
     class="space-y-2"
+    data-focus-target
   >
     <div
       :for={user <- @local_users}

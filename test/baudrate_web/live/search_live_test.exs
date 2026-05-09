@@ -316,5 +316,30 @@ defmodule BaudrateWeb.SearchLiveTest do
       assert render_patch(lv, "/search?q=Backscroll&page=1")
       assert_push_event(lv, "scroll-to-top", %{})
     end
+
+    test "result containers carry data-focus-target so the JS handler can scroll", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      # The phx:scroll-to-top JS handler in app.js bails out unless it can find
+      # a `[data-focus-target]` inside `#main-content`. Without this attribute
+      # on the visible result container the event fires but nothing scrolls.
+
+      {:ok, _} =
+        Content.create_article(
+          %{
+            title: "Focus target probe",
+            body: "body",
+            slug: "focus-target-probe",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, _lv, html} = live(conn, "/search?q=Focus")
+      assert html =~ ~s(id="search-results-articles")
+      assert html =~ ~s(data-focus-target)
+    end
   end
 end
