@@ -805,15 +805,44 @@ defmodule BaudrateWeb.ArticleLive do
   defp do_create_comment(socket, user, params) do
     article = socket.assigns.article
     image_ids = Enum.map(socket.assigns.uploaded_comment_images, & &1.id)
+    replying_to = socket.assigns.replying_to
 
+    cond do
+      not Content.can_comment_on_article?(user, article) ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("You are not allowed to comment on this article.")
+         )}
+
+      replying_to && not parent_comment_belongs_to_article?(replying_to, article.id) ->
+        {:noreply,
+         socket
+         |> assign(:replying_to, nil)
+         |> put_flash(:error, gettext("Invalid reply target."))}
+
+      true ->
+        do_create_comment_unchecked(socket, user, params, article, image_ids, replying_to)
+    end
+  end
+
+  defp parent_comment_belongs_to_article?(parent_id, article_id) do
+    case Content.get_comment(parent_id) do
+      %{article_id: ^article_id} -> true
+      _ -> false
+    end
+  end
+
+  defp do_create_comment_unchecked(socket, user, params, article, image_ids, replying_to) do
     attrs =
       params
       |> Map.put("article_id", article.id)
       |> Map.put("user_id", user.id)
 
     attrs =
-      if socket.assigns.replying_to do
-        Map.put(attrs, "parent_id", socket.assigns.replying_to)
+      if replying_to do
+        Map.put(attrs, "parent_id", replying_to)
       else
         attrs
       end

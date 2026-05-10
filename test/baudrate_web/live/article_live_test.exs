@@ -233,6 +233,70 @@ defmodule BaudrateWeb.ArticleLiveTest do
     end
   end
 
+  describe "submit_comment authorization" do
+    test "rejects forged submit when article is locked", %{conn: conn, article: article} do
+      article
+      |> Ecto.Changeset.change(locked: true)
+      |> Repo.update!()
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      html =
+        render_hook(lv, "submit_comment", %{
+          "comment" => %{"body" => "Sneaking past the lock"}
+        })
+
+      assert html =~ "not allowed to comment"
+      refute html =~ "Sneaking past the lock"
+
+      assert Repo.aggregate(
+               from(c in Baudrate.Content.Comment, where: c.article_id == ^article.id),
+               :count,
+               :id
+             ) == 0
+    end
+
+    test "rejects forged reply when parent_id belongs to a different article",
+         %{conn: conn, user: user, article: article} do
+      {:ok, %{article: other_article}} =
+        Content.create_article(
+          %{
+            title: "Other Article",
+            body: "x",
+            slug: "other-article-parent-mismatch",
+            user_id: user.id
+          },
+          []
+        )
+
+      {:ok, foreign_parent} =
+        Content.create_comment(%{
+          "body" => "Foreign parent",
+          "article_id" => other_article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      render_hook(lv, "reply_to", %{"id" => Integer.to_string(foreign_parent.id)})
+
+      html =
+        render_hook(lv, "submit_comment", %{
+          "comment" => %{"body" => "Cross-article forged reply"}
+        })
+
+      assert html =~ "Invalid reply target"
+
+      assert Repo.aggregate(
+               from(c in Baudrate.Content.Comment,
+                 where: c.article_id == ^article.id and c.parent_id == ^foreign_parent.id
+               ),
+               :count,
+               :id
+             ) == 0
+    end
+  end
+
   describe "delete_comment" do
     test "admin can delete a comment", %{user: user, article: article} do
       {:ok, comment} =
