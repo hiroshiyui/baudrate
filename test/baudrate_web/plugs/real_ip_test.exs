@@ -71,6 +71,68 @@ defmodule BaudrateWeb.Plugs.RealIpTest do
     end
   end
 
+  describe "trusted_proxies allow-list" do
+    setup do
+      on_exit(fn -> Application.delete_env(:baudrate, RealIp) end)
+    end
+
+    test "ignores header when peer is not in trusted_proxies" do
+      Application.put_env(:baudrate, RealIp,
+        header: "x-forwarded-for",
+        trusted_proxies: ["127.0.0.1"]
+      )
+
+      conn =
+        conn_with_ip({203, 0, 113, 99})
+        |> put_header("x-forwarded-for", "1.2.3.4")
+
+      result = RealIp.call(conn, RealIp.init([]))
+      assert result.remote_ip == {203, 0, 113, 99}
+    end
+
+    test "honors header when peer matches an exact trusted_proxy entry" do
+      Application.put_env(:baudrate, RealIp,
+        header: "x-forwarded-for",
+        trusted_proxies: ["127.0.0.1", "::1"]
+      )
+
+      conn =
+        conn_with_ip({127, 0, 0, 1})
+        |> put_header("x-forwarded-for", "1.2.3.4")
+
+      result = RealIp.call(conn, RealIp.init([]))
+      assert result.remote_ip == {1, 2, 3, 4}
+    end
+
+    test "honors header when peer is inside a trusted CIDR" do
+      Application.put_env(:baudrate, RealIp,
+        header: "x-forwarded-for",
+        trusted_proxies: ["10.0.0.0/8"]
+      )
+
+      conn =
+        conn_with_ip({10, 5, 6, 7})
+        |> put_header("x-forwarded-for", "1.2.3.4")
+
+      result = RealIp.call(conn, RealIp.init([]))
+      assert result.remote_ip == {1, 2, 3, 4}
+    end
+
+    test "ignores header when peer is outside the trusted CIDR" do
+      Application.put_env(:baudrate, RealIp,
+        header: "x-forwarded-for",
+        trusted_proxies: ["10.0.0.0/8"]
+      )
+
+      conn =
+        conn_with_ip({172, 16, 0, 1})
+        |> put_header("x-forwarded-for", "1.2.3.4")
+
+      result = RealIp.call(conn, RealIp.init([]))
+      assert result.remote_ip == {172, 16, 0, 1}
+    end
+  end
+
   describe "extract_peer_ip/1 (shared LiveView helper)" do
     defp fake_socket(connect_info) do
       %Phoenix.LiveView.Socket{private: %{connect_info: connect_info}}

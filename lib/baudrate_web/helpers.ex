@@ -342,10 +342,16 @@ defmodule BaudrateWeb.Helpers do
       Application.get_env(:baudrate, BaudrateWeb.Plugs.RealIp, [])
       |> Keyword.get(:header)
 
+    peer_ip_str =
+      case Phoenix.LiveView.get_connect_info(socket, :peer_data) do
+        %{address: addr} -> addr |> :inet.ntoa() |> to_string()
+        _ -> nil
+      end
+
     x_headers = Phoenix.LiveView.get_connect_info(socket, :x_headers) || []
 
     ip_from_header =
-      if header do
+      if header && BaudrateWeb.Plugs.RealIp.peer_trusted?(peer_ip_str) do
         case List.keyfind(x_headers, header, 0) do
           {_, value} ->
             value |> String.split(",") |> List.first() |> String.trim()
@@ -355,14 +361,7 @@ defmodule BaudrateWeb.Helpers do
         end
       end
 
-    if ip_from_header do
-      ip_from_header
-    else
-      case Phoenix.LiveView.get_connect_info(socket, :peer_data) do
-        %{address: addr} -> addr |> :inet.ntoa() |> to_string()
-        _ -> "unknown"
-      end
-    end
+    ip_from_header || peer_ip_str || "unknown"
   end
 
   @doc """

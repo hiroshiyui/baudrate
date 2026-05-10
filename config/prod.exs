@@ -22,7 +22,15 @@ config :baudrate, BaudrateWeb.Endpoint,
 # Extract real client IP from X-Forwarded-For header set by the reverse proxy.
 # Your reverse proxy MUST set (not append to) this header for security.
 # Without this, all requests share the proxy's IP for rate limiting.
-config :baudrate, BaudrateWeb.Plugs.RealIp, header: "x-forwarded-for"
+#
+# `trusted_proxies` is an allow-list of immediate peer addresses (exact IPs or
+# CIDR ranges). The header is honored only when the connection arrives from a
+# listed peer; direct connections from other addresses cannot spoof the IP.
+# Override via runtime.exs (e.g. BAUDRATE_TRUSTED_PROXIES) when the proxy
+# does not run on the same host.
+config :baudrate, BaudrateWeb.Plugs.RealIp,
+  header: "x-forwarded-for",
+  trusted_proxies: ["127.0.0.1", "::1"]
 
 # Do not print debug messages in production
 config :logger, level: :info
