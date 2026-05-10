@@ -776,6 +776,9 @@ defmodule BaudrateWeb.ArticleLive do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("Comment not found."))}
 
+      %{article_id: cid} when cid != article.id ->
+        {:noreply, put_flash(socket, :error, gettext("Comment not found."))}
+
       comment ->
         if Content.can_delete_comment?(user, comment, article) do
           case Content.soft_delete_comment(comment) do

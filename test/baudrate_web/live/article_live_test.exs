@@ -297,6 +297,44 @@ defmodule BaudrateWeb.ArticleLiveTest do
     end
   end
 
+  describe "delete_comment cross-article guard" do
+    test "rejects forged delete of a comment from another article",
+         %{user: user, article: article} do
+      {:ok, %{article: other_article}} =
+        Content.create_article(
+          %{
+            title: "Other Article 2",
+            body: "y",
+            slug: "other-article-cross-delete",
+            user_id: user.id
+          },
+          []
+        )
+
+      {:ok, foreign_comment} =
+        Content.create_comment(%{
+          "body" => "Should not be deletable from another article",
+          "article_id" => other_article.id,
+          "user_id" => user.id
+        })
+
+      admin = setup_user("admin")
+
+      admin_conn =
+        Phoenix.ConnTest.build_conn()
+        |> log_in_user(admin)
+
+      {:ok, lv, _html} = live(admin_conn, "/articles/#{article.slug}")
+
+      html =
+        render_hook(lv, "delete_comment", %{"id" => Integer.to_string(foreign_comment.id)})
+
+      assert html =~ "Comment not found"
+
+      assert Repo.get!(Baudrate.Content.Comment, foreign_comment.id).deleted_at == nil
+    end
+  end
+
   describe "delete_comment" do
     test "admin can delete a comment", %{user: user, article: article} do
       {:ok, comment} =
