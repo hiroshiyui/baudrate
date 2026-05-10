@@ -79,16 +79,15 @@ defmodule BaudrateWeb.ArticleEditLive do
   @impl true
   def handle_event("remove_image", %{"id" => id}, socket) do
     article = socket.assigns.article
-    image = Content.get_article_image!(id)
 
-    if image.article_id != article.id do
-      {:noreply, put_flash(socket, :error, gettext("Image not found."))}
-    else
-      Content.delete_article_image(image)
+    case Content.get_article_image(id) do
+      %{article_id: aid} = image when aid == article.id ->
+        Content.delete_article_image(image)
+        updated = Enum.reject(socket.assigns.article_images, &(&1.id == image.id))
+        {:noreply, assign(socket, :article_images, updated)}
 
-      updated = Enum.reject(socket.assigns.article_images, &(&1.id == image.id))
-
-      {:noreply, assign(socket, :article_images, updated)}
+      _ ->
+        {:noreply, put_flash(socket, :error, gettext("Image not found."))}
     end
   end
 

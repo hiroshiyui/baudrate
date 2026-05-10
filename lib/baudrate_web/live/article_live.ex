@@ -561,7 +561,8 @@ defmodule BaudrateWeb.ArticleLive do
 
     with {:ok, board_id} <- parse_id(board_id_str),
          {:ok, board} <- Content.get_board(board_id),
-         comment <- Baudrate.Repo.get!(Baudrate.Content.Comment, comment_id),
+         %Baudrate.Content.Comment{} = comment <-
+           Baudrate.Repo.get(Baudrate.Content.Comment, comment_id) || {:error, :not_found},
          {:ok, _article} <- Content.forward_comment_to_board(comment, board, user) do
       {:noreply,
        socket

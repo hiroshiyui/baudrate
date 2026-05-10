@@ -375,10 +375,15 @@ defmodule BaudrateWeb.FeedLive do
              )}
 
           :ok ->
-            feed_item = Baudrate.Repo.get!(Federation.FeedItem, feed_item_id)
-            do_create_reply(socket, feed_item, user, params["body"] || "",
-              image_ids: Enum.map(socket.assigns.uploaded_reply_images, & &1.id)
-            )
+            case Baudrate.Repo.get(Federation.FeedItem, feed_item_id) do
+              nil ->
+                {:noreply, put_flash(socket, :error, gettext("Feed item not found."))}
+
+              feed_item ->
+                do_create_reply(socket, feed_item, user, params["body"] || "",
+                  image_ids: Enum.map(socket.assigns.uploaded_reply_images, & &1.id)
+                )
+            end
         end
     end
   end
@@ -540,12 +545,16 @@ defmodule BaudrateWeb.FeedLive do
       result =
         case item_type do
           "feed_item" ->
-            feed_item = Baudrate.Repo.get!(Federation.FeedItem, item_id)
-            Content.forward_feed_item_to_board(feed_item, board, user)
+            case Baudrate.Repo.get(Federation.FeedItem, item_id) do
+              nil -> {:error, :not_found}
+              feed_item -> Content.forward_feed_item_to_board(feed_item, board, user)
+            end
 
           "comment" ->
-            comment = Baudrate.Repo.get!(Baudrate.Content.Comment, item_id)
-            Content.forward_comment_to_board(comment, board, user)
+            case Baudrate.Repo.get(Baudrate.Content.Comment, item_id) do
+              nil -> {:error, :not_found}
+              comment -> Content.forward_comment_to_board(comment, board, user)
+            end
 
           _ ->
             {:error, :unknown_type}

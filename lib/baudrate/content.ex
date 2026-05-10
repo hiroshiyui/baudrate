@@ -244,6 +244,7 @@ defmodule Baudrate.Content do
   defdelegate delete_article_image(image), to: Images
   defdelegate associate_article_images(article_id, image_ids, user_id), to: Images
   defdelegate get_article_image!(id), to: Images
+  defdelegate get_article_image(id), to: Images
   defdelegate count_article_images(article_id), to: Images
   defdelegate delete_orphan_article_images(cutoff), to: Images
 

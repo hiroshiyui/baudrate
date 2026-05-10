@@ -76,6 +76,16 @@ defmodule Baudrate.Content.Images do
   def get_article_image!(id), do: Repo.get!(ArticleImage, id)
 
   @doc """
+  Fetches an article image by ID, returning `nil` if not found or `id` is invalid.
+  """
+  def get_article_image(id) do
+    case BaudrateWeb.Helpers.parse_id(id) do
+      {:ok, int_id} -> Repo.get(ArticleImage, int_id)
+      :error -> nil
+    end
+  end
+
+  @doc """
   Returns the count of images for an article.
   """
   def count_article_images(article_id) do
