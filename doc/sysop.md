@@ -613,6 +613,21 @@ nginx -t && systemctl reload nginx
 - **`X-Forwarded-For` must be SET, not appended.** Using `$proxy_add_x_forwarded_for`
   allows clients to spoof their IP by sending a fake `X-Forwarded-For` header,
   breaking rate limiting and IP-based security logging.
+- **`trusted_proxies` allow-list.** `BaudrateWeb.Plugs.RealIp` now honors the
+  configured forwarded-IP header **only** when the immediate peer matches an
+  entry in `trusted_proxies` (exact IPs or CIDR ranges). The default in
+  `config/prod.exs` is `["127.0.0.1", "::1"]` — sufficient when Nginx and
+  Phoenix run on the same host. If the proxy is on a different host or in a
+  private subnet, override via runtime config, e.g.:
+
+  ```elixir
+  config :baudrate, BaudrateWeb.Plugs.RealIp,
+    header: "x-forwarded-for",
+    trusted_proxies: ["127.0.0.1", "::1", "10.0.0.0/8"]
+  ```
+
+  Requests from peers outside the allow-list keep their real `remote_ip` and
+  cannot spoof rate-limit / audit IPs through the header.
 - **Bind Phoenix to localhost only** if Nginx and Phoenix run on the same
   machine. In `runtime.exs`, change `ip: {0, 0, 0, 0, 0, 0, 0, 0}` to
   `ip: {127, 0, 0, 1}` (IPv4) or `ip: {0, 0, 0, 0, 0, 0, 0, 1}` (IPv6

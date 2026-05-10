@@ -1461,7 +1461,7 @@ Exposed via `Federation.fetch_remote_object/1` (preview) and `Federation.lookup_
 - Domain blocklist (configurable via admin settings)
 - SSRF-safe remote fetches — DNS-pinned connections prevent DNS rebinding; manual redirect following with IP validation at each hop; reject private/loopback IPs including IPv6 `::` and `::1`; HTTPS only
 - Per-domain rate limiting (60 req/min per remote domain)
-- Real client IP extraction — `RealIp` plug reads from configurable proxy header (e.g., `x-forwarded-for`) for accurate per-IP rate limiting behind reverse proxies
+- Real client IP extraction — `RealIp` plug reads from configurable proxy header (e.g., `x-forwarded-for`) for accurate per-IP rate limiting behind reverse proxies; honored only when the immediate peer matches the `trusted_proxies` allow-list (exact IPs or CIDR ranges) so untrusted peers cannot spoof their IP
 - Private keys encrypted at rest with AES-256-GCM
 - Recovery codes verified atomically via `Repo.update_all` to prevent TOCTOU race conditions
 - Non-guest boards (`min_role_to_view != "guest"`) hidden from all AP endpoints (actor, outbox, inbox, WebFinger, audience resolution)

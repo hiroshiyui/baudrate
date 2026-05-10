@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [Unreleased]
+
+### Security
+
+- **Server-side authorization on comment submission** — `BaudrateWeb.ArticleLive` now calls `Content.can_comment_on_article?/2` inside `submit_comment` before stamping `article_id` / `user_id`. Previously the handler relied on the client-side hiding of the comment form, so a forged LiveView event could comment on locked articles or boards where the user could view but not post. The same handler also now rejects forged `parent_id` values whose parent comment belongs to a different article, preventing orphaned/cross-article reply chains.
+- **Cross-article moderator delete guard** — `delete_comment` now refuses to soft-delete a comment whose `article_id` does not match `socket.assigns.article.id`. Board moderators (and admins acting via forged events) can no longer reach into other boards by guessing comment IDs while viewing an article they moderate.
+- **Trusted-proxy boundary for `X-Forwarded-For`** — `BaudrateWeb.Plugs.RealIp` and `BaudrateWeb.Helpers.extract_peer_ip/1` now honor the configured forwarded-IP header **only** when the immediate peer matches an entry in `trusted_proxies` (exact IPs or CIDR ranges). `config/prod.exs` defaults to `["127.0.0.1", "::1"]`. If the application is reachable directly, or if the proxy appends rather than replaces the header, untrusted peers can no longer spoof their IP for rate-limiting or audit logging. When `trusted_proxies` is unset the legacy "trust everything" behavior is preserved.
+- **Hardened LiveView event handlers against forged IDs** — `feed_live` reply submission and forward-to-board, `article_live` comment forwarding, and `article_edit_live` image removal switched their record lookups from `Repo.get!/2` to safe variants (`Repo.get/2` plus a new `Content.get_article_image/1`). Forged or stale IDs now produce a flash message instead of crashing the LiveView process.
+
+### Tests
+
+- New tests in `test/baudrate_web/live/article_live_test.exs` covering forged comment submission on a locked article, forged reply with a cross-article `parent_id`, and forged delete of a foreign comment.
+- New tests in `test/baudrate_web/plugs/real_ip_test.exs` covering trusted/untrusted peers with both exact-IP and CIDR entries.
+
 ## [1.8.4] — 2026-05-09
 
 ### Fixed
