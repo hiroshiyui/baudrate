@@ -1793,7 +1793,11 @@ beyond OTP `:crypto`.
 3. `PushManagerHook` registers service worker and subscribes to push
 4. Browser sends `PushSubscription` (endpoint, p256dh, auth) to server
 5. On notification creation, `maybe_send_push/1` checks user preferences
-6. `WebPush.deliver_notification/1` encrypts payload and POSTs to push service
+6. `WebPush.deliver_notification/1` encrypts the payload and POSTs to the
+   push service via `Federation.HTTPClient.post_raw/3` — the same SSRF
+   guard and DNS-pinned transport used for federation delivery, so a
+   subscription endpoint that resolves to a private/loopback IP (or
+   rebinds to one between validation and connect) is rejected
 7. Service worker receives push event and displays native notification
 
 **Service worker:** `assets/js/service_worker.js` — handles `push` (show

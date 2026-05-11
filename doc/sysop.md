@@ -660,7 +660,9 @@ timer. Verify renewal works: `sudo certbot renew --dry-run`.
 - **HTML sanitization** — all federated content sanitized via Ammonia (Rust NIF,
   allowlist-based) before database storage
 - **SSRF protection** — DNS-pinned connections, reject private/loopback IPs,
-  HTTPS-only for remote fetches
+  HTTPS-only for remote fetches. Applies to ActivityPub federation, link-preview
+  fetches, and Web Push delivery (push endpoints are validated and DNS-pinned
+  on every send, closing the rebinding gap between validation and connect)
 - **Content size limits** — 256 KB AP payload, 64 KB content body
 - **File uploads** — magic byte validation, re-encoding as WebP (strips EXIF,
   destroys polyglots)
