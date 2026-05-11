@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.8.6] — 2026-05-11
+
+### Security
+
+- **Web Push delivery now goes through the SSRF-validated, DNS-pinned HTTP client** — `Baudrate.Notification.WebPush` previously validated the subscription endpoint with `Federation.HTTPClient` but then issued the actual `Req.post` against the raw URL, leaving a DNS-rebinding window where a hostname could resolve to a public IP at validation time and to a private/loopback IP at request time. A new `HTTPClient.post_raw/3` reuses the existing SSRF guard and pinned-host transport so push delivery cannot be redirected to internal addresses.
+
+### Fixed
+
+- **`DomainBlockCache` no longer leaks state across concurrent tests** — the cache stored federation mode and domain sets in a process-wide ETS table that survived Ecto sandbox rollback, so tests setting an allowlist could intermittently make `Messaging.can_receive_remote_dm?/2` and other federation guards reject valid remote actors in unrelated tests. When `:settings_cache_enabled` is `false` (test env) the cache now reads domain settings from the caller's sandboxed DB instead of the shared ETS table.
+- **`DeliveryWorkerTest` no longer clobbers global Federation config** — the test replaced `:baudrate, Baudrate.Federation` with just `delivery_poll_interval` and reset it to `[]` on exit, dropping `max_payload_size` and other entries for any later test. It now saves and restores the original config.
+
+### Changed
+
+- **`mix format` applied across pre-existing drift** in `lib/baudrate/auth/session_cleaner.ex`, `lib/baudrate/bots/feed_parser.ex`, `lib/baudrate/content/articles.ex`, `lib/baudrate/content/board.ex`, `lib/baudrate_web/components/layouts/root.html.heex`, `lib/baudrate_web/live/article_live.ex`, and several tests so `mix precommit` passes its `--check-formatted` gate.
+
 ## [1.8.5] — 2026-05-11
 
 ### Security
