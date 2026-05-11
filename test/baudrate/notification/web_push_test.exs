@@ -118,7 +118,7 @@ defmodule Baudrate.Notification.WebPushTest do
     test "returns :ok on successful delivery (201)", %{user: user} do
       sub = create_subscription(user)
 
-      Req.Test.stub(Baudrate.Notification.WebPush, fn conn ->
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
         Req.Test.json(conn, %{"status" => "ok"})
       end)
 
@@ -128,7 +128,7 @@ defmodule Baudrate.Notification.WebPushTest do
     test "deletes subscription and returns {:error, :gone} on 410", %{user: user} do
       sub = create_subscription(user)
 
-      Req.Test.stub(Baudrate.Notification.WebPush, fn conn ->
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
         Plug.Conn.send_resp(conn, 410, "Gone")
       end)
 
@@ -141,7 +141,7 @@ defmodule Baudrate.Notification.WebPushTest do
     test "returns {:error, {:http_error, status}} on 500", %{user: user} do
       sub = create_subscription(user)
 
-      Req.Test.stub(Baudrate.Notification.WebPush, fn conn ->
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
         Plug.Conn.send_resp(conn, 500, "Server Error")
       end)
 
@@ -156,7 +156,7 @@ defmodule Baudrate.Notification.WebPushTest do
 
       notification = create_notification(user, actor)
 
-      Req.Test.stub(Baudrate.Notification.WebPush, fn conn ->
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
         Req.Test.json(conn, %{"status" => "ok"})
       end)
 
@@ -185,7 +185,7 @@ defmodule Baudrate.Notification.WebPushTest do
         set: [deleted_at: now]
       )
 
-      Req.Test.stub(Baudrate.Notification.WebPush, fn conn ->
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
         Req.Test.json(conn, %{"status" => "ok"})
       end)
 

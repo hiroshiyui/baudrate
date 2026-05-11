@@ -191,6 +191,34 @@ defmodule Baudrate.Federation.HTTPClient do
   end
 
   @doc """
+  Performs a POST request with caller-supplied headers and SSRF protection.
+
+  This is for non-ActivityPub POSTs, such as Web Push delivery, where callers
+  must control the content type and authentication headers. The destination is
+  still validated and DNS-pinned before the request is made.
+  """
+  def post_raw(url, body, headers \\ [], _opts \\ []) do
+    with {:ok, resolved} <- validate_and_resolve(url) do
+      config = federation_config()
+
+      req_opts =
+        build_pinned_opts(resolved, headers, config)
+        |> Keyword.put(:body, body)
+
+      case Req.post(req_opts) do
+        {:ok, %Req.Response{status: status, body: resp_body}} when status in 200..299 ->
+          {:ok, %{status: status, body: resp_body}}
+
+        {:ok, %Req.Response{status: status, body: resp_body}} ->
+          {:error, {:http_error, status, truncate_body(resp_body)}}
+
+        {:error, reason} ->
+          {:error, {:request_failed, reason}}
+      end
+    end
+  end
+
+  @doc """
   Performs a signed GET request with HTTP Signature headers.
 
   Uses the given private key and key ID to sign the request.

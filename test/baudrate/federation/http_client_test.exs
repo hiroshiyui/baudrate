@@ -191,6 +191,30 @@ defmodule Baudrate.Federation.HTTPClientTest do
     end
   end
 
+  describe "post_raw/3" do
+    test "returns body on 201 with caller-supplied headers" do
+      Req.Test.stub(HTTPClient, fn conn ->
+        assert {"content-type", "application/octet-stream"} in conn.req_headers
+        refute {"content-type", "application/activity+json"} in conn.req_headers
+        Plug.Conn.send_resp(conn, 201, "Created")
+      end)
+
+      assert {:ok, %{status: 201, body: "Created"}} =
+               HTTPClient.post_raw("https://remote.example/push", "payload", [
+                 {"content-type", "application/octet-stream"}
+               ])
+    end
+
+    test "returns http_error on 410" do
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 410, "Gone")
+      end)
+
+      assert {:error, {:http_error, 410, "Gone"}} =
+               HTTPClient.post_raw("https://remote.example/push", "payload")
+    end
+  end
+
   describe "private_ip?/1" do
     test "127.x.x.x is private" do
       assert HTTPClient.private_ip?({127, 0, 0, 1})

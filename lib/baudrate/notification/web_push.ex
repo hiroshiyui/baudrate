@@ -17,8 +17,9 @@ defmodule Baudrate.Notification.WebPush do
 
   ## Delivery
 
-  Uses `Req` for HTTP POST to push service endpoints with VAPID headers.
-  Stale subscriptions (410/404 responses) are automatically cleaned up.
+  Uses the federation HTTP client for DNS-pinned, SSRF-safe HTTP POSTs to push
+  service endpoints with VAPID headers. Stale subscriptions (410/404 responses)
+  are automatically cleaned up.
   """
 
   require Logger
@@ -30,8 +31,6 @@ defmodule Baudrate.Notification.WebPush do
   alias Baudrate.Notification.VapidVault
   alias Baudrate.Repo
   alias Baudrate.Setup
-
-  @req_test_options Application.compile_env(:baudrate, :req_web_push_test_options, [])
 
   # --- Public API ---
 
@@ -99,8 +98,7 @@ defmodule Baudrate.Notification.WebPush do
   - `{:error, :vapid_not_configured}` if VAPID keys are not set up
   """
   def send_push(%PushSubscription{} = subscription, payload) when is_binary(payload) do
-    with :ok <- Baudrate.Federation.HTTPClient.validate_url(subscription.endpoint),
-         {:ok, public_key_b64, private_key} <- load_vapid_keys() do
+    with {:ok, public_key_b64, private_key} <- load_vapid_keys() do
       p256dh = subscription.p256dh
       auth = subscription.auth
 
@@ -117,25 +115,15 @@ defmodule Baudrate.Notification.WebPush do
             {"content-length", Integer.to_string(byte_size(encrypted))}
           ]
 
-      req_opts =
-        [
-          url: subscription.endpoint,
-          headers: headers,
-          body: encrypted,
-          max_retries: 0,
-          decode_body: false
-        ]
-        |> Keyword.merge(@req_test_options)
-
-      case Req.post(req_opts) do
-        {:ok, %Req.Response{status: status}} when status in 200..299 ->
+      case Baudrate.Federation.HTTPClient.post_raw(subscription.endpoint, encrypted, headers) do
+        {:ok, %{status: status}} when status in 200..299 ->
           :ok
 
-        {:ok, %Req.Response{status: status}} when status in [404, 410] ->
+        {:error, {:http_error, status, _body}} when status in [404, 410] ->
           Repo.delete(subscription)
           {:error, :gone}
 
-        {:ok, %Req.Response{status: status}} ->
+        {:error, {:http_error, status, _body}} ->
           Logger.warning("Web push delivery failed: HTTP #{status} for #{subscription.endpoint}")
           {:error, {:http_error, status}}
 
