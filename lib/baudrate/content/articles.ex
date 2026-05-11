@@ -404,9 +404,7 @@ defmodule Baudrate.Content.Articles do
             visibility: feed_item.visibility || "public"
           }
 
-          case create_remote_article(attrs, [board.id],
-                 image_attachments: feed_item.attachments
-               ) do
+          case create_remote_article(attrs, [board.id], image_attachments: feed_item.attachments) do
             {:ok, %{article: article}} ->
               schedule_federation_task(fn ->
                 Baudrate.Federation.Publisher.publish_article_forwarded(article, board)

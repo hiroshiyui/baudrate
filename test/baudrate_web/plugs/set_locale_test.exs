@@ -112,5 +112,4 @@ defmodule BaudrateWeb.Plugs.SetLocaleTest do
 
     assert Plug.Conn.get_session(conn, :locale) == "zh_TW"
   end
-
 end

@@ -89,7 +89,12 @@ defmodule BaudrateWeb.HomeLiveTest do
       # Create article (triggers PubSub broadcast)
       {:ok, _} =
         Content.create_article(
-          %{title: "Breaking News", body: "body", slug: "breaking-#{System.unique_integer([:positive])}", user_id: user.id},
+          %{
+            title: "Breaking News",
+            body: "body",
+            slug: "breaking-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
           [board.id]
         )
 

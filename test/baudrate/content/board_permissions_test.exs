@@ -201,7 +201,10 @@ defmodule Baudrate.Content.BoardPermissionsTest do
 
     test "returns :ok with boards preserving input order when all are postable", %{user: user} do
       {:ok, a} =
-        Content.create_board(%{name: "Alpha", slug: "alpha-#{System.unique_integer([:positive])}"})
+        Content.create_board(%{
+          name: "Alpha",
+          slug: "alpha-#{System.unique_integer([:positive])}"
+        })
 
       {:ok, b} =
         Content.create_board(%{name: "Beta", slug: "beta-#{System.unique_integer([:positive])}"})

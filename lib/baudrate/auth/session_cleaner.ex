@@ -106,8 +106,12 @@ defmodule Baudrate.Auth.SessionCleaner do
 
     for path <- paths do
       case File.rm(path) do
-        :ok -> :ok
-        {:error, :enoent} -> :ok
+        :ok ->
+          :ok
+
+        {:error, :enoent} ->
+          :ok
+
         {:error, reason} ->
           Logger.warning("Failed to delete orphan comment image #{path}: #{reason}")
       end
@@ -120,8 +124,12 @@ defmodule Baudrate.Auth.SessionCleaner do
 
     for path <- paths do
       case File.rm(path) do
-        :ok -> :ok
-        {:error, :enoent} -> :ok
+        :ok ->
+          :ok
+
+        {:error, :enoent} ->
+          :ok
+
         {:error, reason} ->
           Logger.warning("Failed to delete orphan reply image #{path}: #{reason}")
       end

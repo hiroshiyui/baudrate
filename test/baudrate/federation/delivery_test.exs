@@ -511,12 +511,16 @@ defmodule Baudrate.Federation.DeliveryTest do
     test "returns error for local user URI with non-existent username" do
       # Ensures no panic (Ecto.NoResultsError) when a user is deleted after a
       # delivery job is created — should gracefully return :unknown_actor.
-      actor_uri = Federation.actor_uri(:user, "deleted_user_#{System.unique_integer([:positive])}")
+      actor_uri =
+        Federation.actor_uri(:user, "deleted_user_#{System.unique_integer([:positive])}")
+
       assert {:error, :unknown_actor} = Delivery.get_private_key(actor_uri)
     end
 
     test "returns error for local board URI with non-existent slug" do
-      actor_uri = Federation.actor_uri(:board, "deleted-board-#{System.unique_integer([:positive])}")
+      actor_uri =
+        Federation.actor_uri(:board, "deleted-board-#{System.unique_integer([:positive])}")
+
       assert {:error, :unknown_actor} = Delivery.get_private_key(actor_uri)
     end
   end
@@ -581,7 +585,9 @@ defmodule Baudrate.Federation.DeliveryTest do
 
     test "returns error when actor has no keypair" do
       remote = create_remote_actor()
-      actor_uri = Federation.actor_uri(:board, "nonexistent-#{System.unique_integer([:positive])}")
+
+      actor_uri =
+        Federation.actor_uri(:board, "nonexistent-#{System.unique_integer([:positive])}")
 
       follow_activity = %{"type" => "Follow", "id" => "https://remote.example/f/1"}
 

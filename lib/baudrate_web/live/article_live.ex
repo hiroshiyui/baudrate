@@ -891,7 +891,11 @@ defmodule BaudrateWeb.ArticleLive do
 
         image ->
           {:noreply,
-           assign(socket, :uploaded_comment_images, socket.assigns.uploaded_comment_images ++ [image])}
+           assign(
+             socket,
+             :uploaded_comment_images,
+             socket.assigns.uploaded_comment_images ++ [image]
+           )}
       end
     else
       {:noreply, socket}

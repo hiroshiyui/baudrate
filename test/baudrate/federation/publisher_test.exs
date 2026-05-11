@@ -959,9 +959,11 @@ defmodule Baudrate.Federation.PublisherTest do
 
       assert activity["type"] == "Like"
       assert activity["actor"] == actor_uri
+
       assert activity["object"] ==
                (comment.ap_id ||
                   "#{Federation.actor_uri(:user, user.username)}#note-#{comment.id}")
+
       assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
       assert activity["id"] =~ "#comment-like-"
     end
@@ -1010,9 +1012,11 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["actor"] == actor_uri
       assert activity["object"]["type"] == "Like"
       assert activity["object"]["actor"] == actor_uri
+
       assert activity["object"]["object"] ==
                (comment.ap_id ||
                   "#{Federation.actor_uri(:user, user.username)}#note-#{comment.id}")
+
       assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
       assert activity["id"] =~ "#undo-comment-like-"
     end
@@ -1091,9 +1095,11 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["type"] == "Announce"
       assert activity["actor"] == actor_uri
       assert activity["id"] == boost_ap_id
+
       assert activity["object"] ==
                (comment.ap_id ||
                   "#{Federation.actor_uri(:user, user.username)}#note-#{comment.id}")
+
       assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
       assert "#{actor_uri}/followers" in activity["cc"]
     end
@@ -1145,9 +1151,11 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["object"]["type"] == "Announce"
       assert activity["object"]["id"] == boost_ap_id
       assert activity["object"]["actor"] == actor_uri
+
       assert activity["object"]["object"] ==
                (comment.ap_id ||
                   "#{Federation.actor_uri(:user, user.username)}#note-#{comment.id}")
+
       assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
       assert "#{actor_uri}/followers" in activity["cc"]
       assert activity["id"] =~ "#undo-comment-announce-"

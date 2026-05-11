@@ -138,5 +138,4 @@ defmodule Baudrate.Bots.FeedParser do
         nil
     end
   end
-
 end

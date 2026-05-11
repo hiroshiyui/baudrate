@@ -264,7 +264,9 @@ defmodule BaudrateWeb.FeedLiveTest do
     end
 
     test "matching boards show up as clickable results", %{conn: conn} do
-      board = create_search_board(%{name: "FeedSearchMatch-#{System.unique_integer([:positive])}"})
+      board =
+        create_search_board(%{name: "FeedSearchMatch-#{System.unique_integer([:positive])}"})
+
       {:ok, lv, _html} = live(conn, "/feed")
 
       html =

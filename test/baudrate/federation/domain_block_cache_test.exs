@@ -4,6 +4,11 @@ defmodule Baudrate.Federation.DomainBlockCacheTest do
   alias Baudrate.Federation.DomainBlockCache
   alias Baudrate.Setup
 
+  setup do
+    DomainBlockCache.refresh()
+    :ok
+  end
+
   describe "domain_blocked?/1 with blocklist mode" do
     test "returns false when domain is not in blocklist" do
       refute DomainBlockCache.domain_blocked?("example.com")
