@@ -14,10 +14,11 @@ defmodule Baudrate.Federation.DeliveryWorkerTest do
   describe "schedule_poll/0 jitter" do
     test "sends :poll message within expected jitter range" do
       # Use a short interval for testing
+      original = Application.get_env(:baudrate, Baudrate.Federation, [])
       Application.put_env(:baudrate, Baudrate.Federation, delivery_poll_interval: 1000)
 
       on_exit(fn ->
-        Application.put_env(:baudrate, Baudrate.Federation, [])
+        Application.put_env(:baudrate, Baudrate.Federation, original)
       end)
 
       # Trigger a poll to schedule the next one

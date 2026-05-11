@@ -25,21 +25,25 @@ defmodule Baudrate.Federation.DomainBlockCache do
   Returns true if the domain is blocked based on the cached federation mode.
 
   Reads directly from ETS (no GenServer call), so it's safe to call from
-  any process at high frequency.
+  any process at high frequency. In tests, when settings caching is disabled,
+  reads from the caller's database sandbox instead of the shared ETS table so
+  concurrent tests cannot leak blocklist state into each other.
   """
   def domain_blocked?(domain) when is_binary(domain) do
     domain = String.downcase(domain)
 
-    case :ets.lookup(@table, @key) do
-      [{@key, :allowlist, allowed}] ->
-        allowed == MapSet.new() or not MapSet.member?(allowed, domain)
+    if cache_enabled?() do
+      case :ets.lookup(@table, @key) do
+        [{@key, mode, domain_set}] ->
+          blocked_in_mode?(mode, domain_set, domain)
 
-      [{@key, :blocklist, blocked}] ->
-        MapSet.member?(blocked, domain)
-
-      [] ->
-        # Cache not yet loaded — fall back to not blocked
-        false
+        [] ->
+          # Cache not yet loaded — fall back to not blocked
+          false
+      end
+    else
+      {mode, domain_set} = read_from_db()
+      blocked_in_mode?(mode, domain_set, domain)
     end
   end
 
@@ -85,6 +89,18 @@ defmodule Baudrate.Federation.DomainBlockCache do
 
   defp write_to_ets({mode, domain_set}) do
     :ets.insert(@table, {@key, mode, domain_set})
+  end
+
+  defp blocked_in_mode?(:allowlist, allowed, domain) do
+    allowed == MapSet.new() or not MapSet.member?(allowed, domain)
+  end
+
+  defp blocked_in_mode?(:blocklist, blocked, domain) do
+    MapSet.member?(blocked, domain)
+  end
+
+  defp cache_enabled? do
+    Application.get_env(:baudrate, :settings_cache_enabled, true)
   end
 
   defp parse_domain_list(str) do
