@@ -11,6 +11,7 @@ When conflicts exist, `CLAUDE.md` takes precedence.
 - Tailwind CSS v3 configuration is used (NOT v4 import syntax)
 - Use `Req` for all HTTP requests — never use `:httpoison`, `:tesla`, or `:httpc`
 - Use `mix precommit` after all changes to run compile, format, and test checks
+- Use `/bin/zsh` for shell commands when running tools
 
 ## Elixir Conventions
 
