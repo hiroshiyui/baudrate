@@ -801,6 +801,9 @@ verification.
 | `Flag` | array of URIs | Creates a moderation report |
 | `Block` | actor URI | Logged for informational purposes |
 | `Undo` | `Block` | Logged for informational purposes |
+| `Accept` | `Follow` | Marks a pending outbound user follow as accepted |
+| `Reject` | `Follow` | Marks a pending outbound user follow as rejected |
+| `Move` | actor URI (`target`) | Migrates local users' follows to the target actor. Authorized only when the signer is the Move `actor` **and** the target's `alsoKnownAs` claims the moving actor; otherwise rejected |
 
 **Unrecognized activity types** are logged and ignored (no error returned).
 

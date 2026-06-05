@@ -962,13 +962,17 @@ Users set `dm_access` on their profile (`/profile`):
 | `nobody` | DMs are disabled entirely |
 
 Bidirectional blocks (via `Auth.blocked?/2`) are always enforced regardless of
-the `dm_access` setting.
+the `dm_access` setting. Authorization is re-checked on **every** message in
+`create_message/3` (the context boundary), not only when a conversation is
+first started — so a recipient who blocks the sender or switches `dm_access`
+to `nobody`/`followers` after an existing conversation began cannot be messaged
+further (`{:error, :not_allowed}`).
 
 **Key functions in `Messaging`:**
 
-- `can_send_dm?/2` — checks dm_access, blocks, status
+- `can_send_dm?/2` — checks dm_access, blocks, status (local recipient)
 - `find_or_create_conversation/2` — canonical ordering prevents duplicates
-- `create_message/3` — creates message, broadcasts PubSub, schedules federation
+- `create_message/3` — authorizes the send, creates the message, broadcasts PubSub, schedules federation
 - `receive_remote_dm/3` — handles incoming federated DMs
 - `list_conversations/1` — ordered by `last_message_at` desc
 - `unread_count/1` — counts unread across all conversations
@@ -1190,7 +1194,7 @@ and never need to know about the internal split.
 | `Federation.InboxHandler` | Dispatches incoming Activities (Follow, Create, Like, Delete, etc.) to sub-modules |
 | `Federation.Publisher` | High-level API for publishing activities (Create, Update, Delete, Announce, Like, Undo, Move, PollVote) |
 | `Federation.Delivery` | DB-backed delivery queue, background workers, and exponential backoff retry logic |
-| `Federation.ActorResolver` | Fetches, caches, and verifies remote actor profiles (24h TTL, signed fetch fallback) |
+| `Federation.ActorResolver` | Fetches, caches, and verifies remote actor profiles (24h TTL, signed fetch fallback). Rejects a fetched document whose `id` host differs from the URL it was fetched from (`:actor_id_origin_mismatch`), preventing cross-origin actor forgery and cache poisoning during signature verification |
 | `Federation.HTTPSignature` | HTTP Signature signing (outgoing) and cryptographic verification (incoming POSTs) |
 | `Federation.KeyStore` | RSA-2048 keypair management for actors: generation, persistence, and rotation |
 | `Federation.Validator` | AP payload validation: size limits, attribution checks, and domain allowlist/blocklist |
@@ -1258,7 +1262,7 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `Flag` — incoming reports stored in local moderation queue
 - `Block` / `Undo(Block)` — remote actor blocks (logged for informational purposes)
 - `Accept(Follow)` / `Reject(Follow)` — mark outbound user follows as accepted/rejected
-- `Move` — stub handler (future: account migration)
+- `Move` — migrates local users' outbound follows from the old actor to the target actor (with deduplication via `migrate_user_follows/2`). Authorized only when the signer matches the Move `actor` **and** the target actor's `alsoKnownAs` claims the moving actor as an alias — the handler force-refreshes the target (`ActorResolver.refresh/1`) and rejects with `{:error, :move_not_authorized}` otherwise, so a remote actor cannot redirect its local followers onto a non-consenting target. (Feed-item migration and follower notification remain future work — see `doc/TODOs.md` Phase 2.)
 
 **Outbound delivery** (via `Publisher` + `Delivery` + `DeliveryWorker`):
 - `Create(Article)` — automatically enqueued when a local user publishes an article

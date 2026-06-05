@@ -239,15 +239,20 @@ New section (below Account Aliases):
 5. Send Move activity to all followers
 6. Display post-migration status banner
 
-### 2.7 Fix inbound Move handler — add `alsoKnownAs` verification
+### 2.7 Fix inbound Move handler — add `alsoKnownAs` verification ✅ DONE
 
-File: `lib/baudrate/federation/inbox_handler.ex` — existing Move handler
+Implemented in `lib/baudrate/federation/inbox_handler.ex`. The Move handler now
+force-refreshes the target (`ActorResolver.refresh/1`) and requires the moving
+actor to appear in the target's `alsoKnownAs`, rejecting with
+`{:error, :move_not_authorized}` otherwise — preventing a remote actor from
+redirecting its local followers onto a non-consenting target. Aliases are
+captured into `remote_actors.also_known_as` by `ActorResolver`
+(migration `20260605000000_add_also_known_as_to_remote_actors`). Covered by
+`test/baudrate/federation/inbox_handler_move_test.exs`.
 
-Current code trusts the Move activity without verification. Security fix:
-- After resolving target actor via `ActorResolver`, fetch its `alsoKnownAs` field
-- Verify that `alsoKnownAs` contains the old actor's AP URI
-- Reject Move if verification fails (log warning)
-- This prevents unauthorized actor hijacking
+Note: this added `also_known_as` to **`remote_actors`** (cached remote actors).
+Item 2.1 still needs the column on the local **`users`** table for the outbound
+migration side.
 
 ### 2.8 Migrate feed items on inbound Move
 

@@ -336,6 +336,7 @@ abandoned jobs from the admin federation dashboard (`/admin/federation`).
 - DNS resolution failure
 - Board follow 422 errors — check delivery job `last_error` for the response body (includes remote server's rejection reason since v1.1.17)
 - Jobs with `last_error: ":unknown_actor"` — the local user or board referenced by `actor_uri` was deleted after the job was queued. Since v1.5.9 these jobs are marked `failed` (and eventually `abandoned` via the normal retry schedule) rather than causing Task crashes that left the job stuck in `pending` forever.
+- Jobs that previously crash-looped with a `CaseClauseError` from `Delivery.do_deliver/1` — caused by a local actor that existed but had no RSA keypair (e.g. a new user whose user-signed Like was delivered to a *board's* remote followers before their own actor was ever fetched). `Delivery.get_private_key/1` now self-heals: it lazily generates the keypair at signing time and normalizes the missing-key case to `{:error, :no_private_key}`, so such jobs deliver on the next worker pass instead of crashing.
 
 ### Federation kill switch
 
