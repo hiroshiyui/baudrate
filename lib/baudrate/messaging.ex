@@ -36,6 +36,7 @@ defmodule Baudrate.Messaging do
   alias Baudrate.Auth
   alias Baudrate.Content.Markdown
   alias Baudrate.Federation
+  alias Baudrate.Federation.RemoteActor
   alias Baudrate.Messaging.{Conversation, ConversationReadCursor, DirectMessage, PubSub}
   alias Baudrate.Repo
   alias Baudrate.Setup.User
@@ -245,13 +246,49 @@ defmodule Baudrate.Messaging do
   @doc """
   Creates a new message in a conversation from a local user.
 
+  Authorization is enforced here at the context boundary (not only when a
+  conversation is first started): the recipient's block / `dm_access` settings
+  are re-checked on every send, so a participant who blocks the sender or
+  switches `dm_access` to `"nobody"`/`"followers"` after an existing
+  conversation began cannot be messaged further. Returns `{:error, :not_allowed}`
+  when the send is not permitted.
+
   Renders markdown to HTML, inserts the message, updates `last_message_at`,
   broadcasts PubSub events, and schedules federation delivery if the other
   participant is a remote actor.
   """
   @spec create_message(Conversation.t(), User.t(), map()) ::
-          {:ok, DirectMessage.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, DirectMessage.t()} | {:error, :not_allowed | Ecto.Changeset.t()}
   def create_message(%Conversation{} = conversation, %User{} = sender, attrs) do
+    case authorize_send(conversation, sender) do
+      :ok -> do_create_message(conversation, sender, attrs)
+      {:error, :not_allowed} = err -> err
+    end
+  end
+
+  # Re-checks send permission against the *current* recipient state on every
+  # message, closing the gap where authorization was only verified when a new
+  # conversation was started.
+  defp authorize_send(%Conversation{} = conversation, %User{} = sender) do
+    case other_participant(conversation, sender) do
+      %User{} = other ->
+        if can_send_dm?(sender, other), do: :ok, else: {:error, :not_allowed}
+
+      %RemoteActor{} = remote ->
+        if can_send_dm_to_remote?(sender, remote), do: :ok, else: {:error, :not_allowed}
+
+      nil ->
+        {:error, :not_allowed}
+    end
+  end
+
+  defp can_send_dm_to_remote?(%User{} = sender, %RemoteActor{} = remote) do
+    sender.status == "active" &&
+      !Federation.Validator.domain_blocked?(remote.domain) &&
+      !Auth.blocked?(sender, remote.ap_id)
+  end
+
+  defp do_create_message(%Conversation{} = conversation, %User{} = sender, attrs) do
     body = attrs[:body] || attrs["body"] || ""
     body_html = Markdown.to_html(body)
 

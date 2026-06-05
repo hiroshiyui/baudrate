@@ -122,6 +122,10 @@ defmodule BaudrateWeb.ConversationLive do
                |> assign(:messages, messages)
                |> assign(:message_form, to_form(%{"body" => ""}, as: :message))}
 
+            {:error, :not_allowed} ->
+              {:noreply,
+               put_flash(socket, :error, gettext("You cannot send messages to this user."))}
+
             {:error, _changeset} ->
               {:noreply, put_flash(socket, :error, gettext("Failed to send message."))}
           end

@@ -328,6 +328,30 @@ defmodule Baudrate.MessagingTest do
       expected = Baudrate.Federation.actor_uri(:user, user_a.username) <> "#dm-#{msg.id}"
       assert msg.ap_id == expected
     end
+
+    test "rejects sending into an existing conversation after the recipient blocks the sender" do
+      sender = create_user("user")
+      recipient = create_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(sender, recipient)
+
+      # Conversation already exists; recipient then blocks the sender.
+      Baudrate.Auth.block_user(recipient, sender)
+
+      assert {:error, :not_allowed} =
+               Messaging.create_message(conv, sender, %{body: "still here"})
+    end
+
+    test "rejects sending after the recipient switches dm_access to nobody" do
+      sender = create_user("user")
+      recipient = create_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(sender, recipient)
+
+      recipient
+      |> Setup.User.dm_access_changeset(%{dm_access: "nobody"})
+      |> Repo.update!()
+
+      assert {:error, :not_allowed} = Messaging.create_message(conv, sender, %{body: "hello?"})
+    end
   end
 
   # --- list_conversations ---
