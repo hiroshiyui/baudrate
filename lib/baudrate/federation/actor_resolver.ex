@@ -83,7 +83,8 @@ defmodule Baudrate.Federation.ActorResolver do
 
   defp parse_and_upsert(body, actor_ap_id) do
     with {:ok, json} <- Jason.decode(body),
-         {:ok, attrs} <- extract_actor_attrs(json) do
+         {:ok, attrs} <- extract_actor_attrs(json),
+         :ok <- validate_same_origin(attrs.ap_id, actor_ap_id) do
       upsert_actor(attrs)
     else
       {:error, reason} = err ->
@@ -92,6 +93,23 @@ defmodule Baudrate.Federation.ActorResolver do
         )
 
         err
+    end
+  end
+
+  # Binds the actor document's declared `id` to the origin we actually fetched
+  # from. During signature verification the fetched URL is derived from the
+  # request's `keyId`, so without this check a host controlling any HTTPS
+  # endpoint could serve a document whose `id` claims a victim actor on another
+  # domain (with the attacker's public key), forging the victim and poisoning
+  # the cached `remote_actors` row keyed by `ap_id`. Requiring the `id` host to
+  # match the fetched host closes that key-confusion / actor-forgery hole.
+  defp validate_same_origin(doc_id, fetched_url) do
+    with %URI{host: doc_host} when is_binary(doc_host) <- URI.parse(doc_id),
+         %URI{host: fetched_host} when is_binary(fetched_host) <- URI.parse(fetched_url),
+         true <- String.downcase(doc_host) == String.downcase(fetched_host) do
+      :ok
+    else
+      _ -> {:error, :actor_id_origin_mismatch}
     end
   end
 
@@ -149,10 +167,20 @@ defmodule Baudrate.Federation.ActorResolver do
          inbox: inbox,
          shared_inbox: get_in(json, ["endpoints", "sharedInbox"]),
          actor_type: actor_type,
+         also_known_as: extract_also_known_as(json),
          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
        }}
     end
   end
+
+  # `alsoKnownAs` may be a single URI string or a list of URI strings. Used to
+  # verify inbound `Move` activities (the target actor must claim the moving
+  # actor as an alias before its followers are migrated).
+  defp extract_also_known_as(%{"alsoKnownAs" => aka}) when is_list(aka),
+    do: Enum.filter(aka, &is_binary/1)
+
+  defp extract_also_known_as(%{"alsoKnownAs" => aka}) when is_binary(aka), do: [aka]
+  defp extract_also_known_as(_), do: []
 
   defp extract_public_key(%{"publicKey" => %{"publicKeyPem" => pem}}) when is_binary(pem) do
     {:ok, pem}

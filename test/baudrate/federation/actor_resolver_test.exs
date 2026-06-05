@@ -311,4 +311,90 @@ defmodule Baudrate.Federation.ActorResolverTest do
                ActorResolver.resolve("https://remote.example/users/no-keys")
     end
   end
+
+  describe "actor id / fetch-origin binding (anti-forgery)" do
+    test "rejects a document whose id is on a different host than the fetched URL" do
+      {attacker_pem, _} = KeyStore.generate_keypair()
+
+      # Document served from attacker.example but claiming a victim id elsewhere,
+      # carrying the attacker's public key (key-confusion / actor-forgery attempt).
+      forged_json =
+        Jason.encode!(%{
+          "id" => "https://victim.example/users/victim",
+          "type" => "Person",
+          "preferredUsername" => "victim",
+          "inbox" => "https://victim.example/users/victim/inbox",
+          "publicKey" => %{
+            "id" => "https://attacker.example/users/x#main-key",
+            "publicKeyPem" => attacker_pem
+          }
+        })
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 200, forged_json)
+      end)
+
+      assert {:error, :actor_id_origin_mismatch} =
+               ActorResolver.resolve("https://attacker.example/users/x")
+    end
+
+    test "does not poison an existing victim actor's cached key" do
+      {victim_pem, _} = KeyStore.generate_keypair()
+      {attacker_pem, _} = KeyStore.generate_keypair()
+
+      {:ok, _victim} =
+        %RemoteActor{}
+        |> RemoteActor.changeset(%{
+          ap_id: "https://victim.example/users/victim",
+          username: "victim",
+          domain: "victim.example",
+          public_key_pem: victim_pem,
+          inbox: "https://victim.example/users/victim/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert()
+
+      forged_json =
+        Jason.encode!(%{
+          "id" => "https://victim.example/users/victim",
+          "type" => "Person",
+          "preferredUsername" => "victim",
+          "inbox" => "https://victim.example/users/victim/inbox",
+          "publicKey" => %{"publicKeyPem" => attacker_pem}
+        })
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 200, forged_json)
+      end)
+
+      assert {:error, :actor_id_origin_mismatch} =
+               ActorResolver.resolve_by_key_id("https://attacker.example/users/x#main-key")
+
+      # The genuine victim row is untouched — its key was not overwritten.
+      reloaded = Repo.get_by(RemoteActor, ap_id: "https://victim.example/users/victim")
+      assert reloaded.public_key_pem == victim_pem
+    end
+
+    test "accepts a same-host id (normal path) and stores alsoKnownAs" do
+      {public_pem, _} = KeyStore.generate_keypair()
+
+      actor_json =
+        Jason.encode!(%{
+          "id" => "https://remote.example/users/aka",
+          "type" => "Person",
+          "preferredUsername" => "aka",
+          "inbox" => "https://remote.example/users/aka/inbox",
+          "alsoKnownAs" => ["https://old.example/users/aka"],
+          "publicKey" => %{"publicKeyPem" => public_pem}
+        })
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 200, actor_json)
+      end)
+
+      assert {:ok, actor} = ActorResolver.resolve("https://remote.example/users/aka")
+      assert actor.also_known_as == ["https://old.example/users/aka"]
+    end
+  end
 end
