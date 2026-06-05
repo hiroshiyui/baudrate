@@ -134,7 +134,7 @@ defmodule Baudrate.Content.Articles do
   """
   @spec create_article(map(), [term()], keyword()) ::
           {:ok, %{article: %Article{}, board_articles: non_neg_integer()}}
-          | {:error, atom() | Ecto.Changeset.t()}
+          | {:error, Ecto.Multi.name(), any(), map()}
   def create_article(attrs, board_ids, opts \\ []) when is_list(board_ids) do
     image_ids = Keyword.get(opts, :image_ids, [])
     poll_attrs = Keyword.get(opts, :poll)

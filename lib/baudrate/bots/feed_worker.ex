@@ -122,7 +122,12 @@ defmodule Baudrate.Bots.FeedWorker do
     end)
   end
 
-  defp post_entry(bot, entry) do
+  @doc false
+  # Public for unit testing — see test/baudrate/bots/feed_worker_test.exs.
+  # Creates an article for a single feed entry and records the feed item.
+  # A failed insert (e.g. a slug `unique_constraint` collision) must record
+  # the item and return normally rather than crash the bot's poll loop.
+  def post_entry(bot, entry) do
     slug = build_slug(entry.title, entry.guid)
 
     attrs = %{
@@ -141,7 +146,19 @@ defmodule Baudrate.Bots.FeedWorker do
         Bots.record_feed_item(bot, entry.guid, article.id)
         Logger.debug("bots.feed_worker: posted article #{article.id} for bot #{bot.id}")
 
-      {:error, reason} ->
+      error ->
+        # `create_article/3` surfaces failures from its `Ecto.Multi` as a 4-tuple
+        # `{:error, failed_op, value, changes}` (e.g. a slug `unique_constraint`
+        # collision). Match any error shape so a failed insert records the item
+        # and moves on instead of crashing the bot with a `CaseClauseError` and
+        # looping it forever.
+        reason =
+          case error do
+            {:error, _op, value, _changes} -> value
+            {:error, value} -> value
+            other -> other
+          end
+
         Logger.warning(
           "bots.feed_worker: failed to post entry #{inspect(entry.guid)} for bot #{bot.id}: #{inspect(reason)}"
         )
