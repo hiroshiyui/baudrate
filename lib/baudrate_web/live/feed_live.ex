@@ -162,6 +162,10 @@ defmodule BaudrateWeb.FeedLive do
      |> assign(:reply_counts, reply_counts)}
   end
 
+  # Defensive catch-all so an unexpected message (e.g. a late task reply or
+  # monitor :DOWN) never crashes the LiveView.
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
   def handle_event("validate_post", %{"article" => params}, socket) do
     changeset =
       Content.change_article(%Article{}, params)

@@ -359,6 +359,10 @@ defmodule Baudrate.Federation.HTTPClient do
   def private_ip?({192, 168, _, _}), do: true
   def private_ip?({169, 254, _, _}), do: true
   def private_ip?({0, _, _, _}), do: true
+  # 100.64.0.0/10 — CGNAT / shared address space (RFC 6598)
+  def private_ip?({100, b, _, _}) when b >= 64 and b <= 127, do: true
+  # 224.0.0.0/4 multicast and 240.0.0.0/4 reserved (covers 255.255.255.255)
+  def private_ip?({a, _, _, _}) when a >= 224, do: true
   # IPv6 unspecified address ::
   def private_ip?({0, 0, 0, 0, 0, 0, 0, 0}), do: true
   # IPv6 loopback ::1

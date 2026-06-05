@@ -31,7 +31,7 @@ defmodule Baudrate.Federation.DeliveryStats do
   def list_actionable_jobs(limit \\ 50) do
     from(j in DeliveryJob,
       where: j.status in ["failed", "pending"],
-      order_by: [desc: j.updated_at],
+      order_by: [desc: j.updated_at, desc: j.id],
       limit: ^limit
     )
     |> Repo.all()
