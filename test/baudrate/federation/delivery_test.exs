@@ -523,6 +523,93 @@ defmodule Baudrate.Federation.DeliveryTest do
 
       assert {:error, :unknown_actor} = Delivery.get_private_key(actor_uri)
     end
+
+    test "lazily generates a keypair for a local user that lacks one" do
+      role = Repo.one!(from(r in Baudrate.Setup.Role, where: r.name == "user"))
+
+      {:ok, user} =
+        %Baudrate.Setup.User{}
+        |> Baudrate.Setup.User.registration_changeset(%{
+          "username" => "nokey_#{System.unique_integer([:positive])}",
+          "password" => "Password123!x",
+          "password_confirmation" => "Password123!x",
+          "role_id" => role.id
+        })
+        |> Repo.insert()
+
+      refute user.ap_public_key
+      actor_uri = Federation.actor_uri(:user, user.username)
+
+      assert {:ok, pem} = Delivery.get_private_key(actor_uri)
+      assert pem =~ "BEGIN RSA PRIVATE KEY"
+
+      # Keypair is persisted so the actor endpoint serves the matching public key.
+      assert Repo.get!(Baudrate.Setup.User, user.id).ap_public_key
+    end
+
+    test "lazily generates a keypair for a local board that lacks one" do
+      board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "No Key Board",
+          slug: "nokey-#{System.unique_integer([:positive])}"
+        })
+        |> Repo.insert!()
+
+      refute board.ap_public_key
+      actor_uri = Federation.actor_uri(:board, board.slug)
+
+      assert {:ok, pem} = Delivery.get_private_key(actor_uri)
+      assert pem =~ "BEGIN RSA PRIVATE KEY"
+      assert Repo.get!(Baudrate.Content.Board, board.id).ap_public_key
+    end
+  end
+
+  describe "deliver_one/1 with a keyless local actor" do
+    setup do
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 202, "Accepted")
+      end)
+
+      :ok
+    end
+
+    test "delivers (generating the keypair) instead of crashing" do
+      # Regression: a user-signed Like delivered to a board's remote followers
+      # could be enqueued before the user's actor was ever fetched, leaving the
+      # user without a keypair. do_deliver/1 then hit a bare `:error` and crashed
+      # with CaseClauseError, looping the job forever. The keypair is now
+      # materialized at signing time so delivery proceeds.
+      role = Repo.one!(from(r in Baudrate.Setup.Role, where: r.name == "user"))
+
+      {:ok, user} =
+        %Baudrate.Setup.User{}
+        |> Baudrate.Setup.User.registration_changeset(%{
+          "username" => "nokey_#{System.unique_integer([:positive])}",
+          "password" => "Password123!x",
+          "password_confirmation" => "Password123!x",
+          "role_id" => role.id
+        })
+        |> Repo.insert()
+
+      refute user.ap_public_key
+      actor_uri = Federation.actor_uri(:user, user.username)
+
+      job =
+        %DeliveryJob{}
+        |> DeliveryJob.create_changeset(%{
+          activity_json: ~s({"type":"Like","actor":"#{actor_uri}"}),
+          inbox_url: "https://remote.example/inbox",
+          actor_uri: actor_uri
+        })
+        |> Repo.insert!()
+
+      # Should not raise CaseClauseError. Delivery itself will fail (no real
+      # remote), but the job is gracefully marked failed rather than crashing.
+      assert {:ok, %DeliveryJob{} = updated} = Delivery.deliver_one(job)
+      assert updated.status in ["failed", "delivered"]
+      assert Repo.get!(Baudrate.Setup.User, user.id).ap_public_key
+    end
   end
 
   describe "send_accept/3" do

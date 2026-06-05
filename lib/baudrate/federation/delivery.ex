@@ -335,6 +335,11 @@ defmodule Baudrate.Federation.Delivery do
   - `/ap/users/:username` → user's encrypted private key
   - `/ap/boards/:slug` → board's encrypted private key
   - `/ap/site` → site-level private key
+
+  For an existing local actor that does not yet have a keypair, one is
+  generated lazily (matching the lazy generation at the actor endpoint).
+  Returns `{:ok, pem}`, `{:error, :unknown_actor}` when no such local actor
+  exists, or `{:error, :no_private_key}` when the key cannot be materialized.
   """
   def get_private_key(actor_uri) do
     base = Federation.base_url()
@@ -345,7 +350,7 @@ defmodule Baudrate.Federation.Delivery do
 
         case Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
           nil -> {:error, :unknown_actor}
-          user -> KeyStore.decrypt_private_key(user)
+          user -> ensure_local_key(KeyStore.ensure_user_keypair(user))
         end
 
       String.starts_with?(actor_uri, "#{base}/ap/boards/") ->
@@ -353,16 +358,31 @@ defmodule Baudrate.Federation.Delivery do
 
         case Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug) do
           nil -> {:error, :unknown_actor}
-          board -> KeyStore.decrypt_private_key(board)
+          board -> ensure_local_key(KeyStore.ensure_board_keypair(board))
         end
 
       String.starts_with?(actor_uri, "#{base}/ap/site") ->
-        KeyStore.decrypt_site_private_key()
+        case KeyStore.ensure_site_keypair() do
+          {:ok, _} -> normalize_key(KeyStore.decrypt_site_private_key())
+          _ -> {:error, :no_private_key}
+        end
 
       true ->
         {:error, :unknown_actor}
     end
   end
+
+  # Lazily generates a keypair for a local actor that lacks one, then decrypts
+  # it. New users whose user-signed activities (e.g. a Like on an article in a
+  # federated board) are delivered to board followers may never have had their
+  # actor fetched, so this is the point where their keypair is first created.
+  # Normalizes the bare `:error` that `KeyStore.decrypt_private_key/1` returns
+  # so the signing path never crashes with a `CaseClauseError`.
+  defp ensure_local_key({:ok, entity}), do: normalize_key(KeyStore.decrypt_private_key(entity))
+  defp ensure_local_key(_), do: {:error, :no_private_key}
+
+  defp normalize_key({:ok, _pem} = ok), do: ok
+  defp normalize_key(_), do: {:error, :no_private_key}
 
   @doc """
   Purges old completed and abandoned delivery jobs.
