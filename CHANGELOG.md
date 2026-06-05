@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.8.7] — 2026-06-05
+
+### Security
+
+- **Actor key-confusion / forgery and cache poisoning closed** — `Federation.ActorResolver` took the cached `ap_id` blindly from a fetched actor document's `id`. Because HTTP-Signature verification fetches the actor from the request's `keyId` host, a host controlling any HTTPS endpoint could serve a document whose `id` claimed a victim actor on another domain (with the attacker's own public key) — forging the victim **and** overwriting the genuine cached `remote_actors` row's key (an instance-wide hijack until the next TTL refresh). The resolver now rejects a document whose `id` host differs from the URL it was fetched from (`{:error, :actor_id_origin_mismatch}`) before any upsert.
+- **Inbound `Move` now requires `alsoKnownAs` authorization** — the Move handler verified only the signer, so any remote actor could redirect its local followers onto an arbitrary, non-consenting target account. It now force-refreshes the target (`ActorResolver.refresh/1`) and migrates follows only when the target's `alsoKnownAs` claims the moving actor, rejecting with `{:error, :move_not_authorized}` otherwise. A new `also_known_as` column on `remote_actors` (migration `20260605000000`) stores the captured aliases.
+- **Direct-message authorization is enforced on every send** — `Messaging.create_message/3` previously performed no authorization; `can_send_dm?` was only checked when *starting* a conversation, so a user could keep messaging into an existing conversation after being blocked or after the recipient set `dm_access` to `nobody`/`followers`. The check now runs at the context boundary on every message (local recipient → `can_send_dm?`; remote → block/domain-block check), returning `{:error, :not_allowed}`.
+- **Expanded SSRF deny-set** — `Federation.HTTPClient.private_ip?/1` now also rejects CGNAT/shared address space (`100.64.0.0/10`, RFC 6598) and multicast/reserved ranges (`224.0.0.0/4`, `240.0.0.0/4`) in addition to the existing private/loopback/link-local ranges.
+
+### Fixed
+
+- **Federation delivery no longer crash-loops on a keyless local actor** — a user-signed activity (e.g. a Like on an article in a federated board) is delivered to the *board's* remote followers, who never fetched the user's actor, so a new user's keypair was never lazily generated. `Delivery.do_deliver/1` then hit the bare `:error` from `KeyStore.decrypt_private_key/1`, which its `case` did not match, crashing the delivery `Task` with `CaseClauseError` and re-running the stuck `pending` job every worker cycle. `Delivery.get_private_key/1` (the signing chokepoint for `send_accept`/`send_reject`/queued delivery) now lazily generates a keypair for any existing local user/board/site actor that lacks one and normalizes the missing-key case to `{:error, :no_private_key}`.
+- **RSS/Atom bots no longer crash-loop on article-slug collisions** — `Content.create_article/3` surfaces `Ecto.Multi` failures as a 4-tuple `{:error, op, value, changes}`, but `Bots.FeedWorker.post_entry/2` only matched the 2-tuple, raising `CaseClauseError` on a slug `unique_constraint` collision. The crash skipped `record_feed_item` and the fetch cursor, so the bot was re-selected and crashed again every poll. `post_entry/2` now normalizes any error shape, records the item, and continues; the misleading `create_article/3` `@spec` is corrected.
+- **`FeedLive` gained a defensive catch-all `handle_info/2`** so an unexpected message (late task reply, monitor `:DOWN`) cannot crash the LiveView.
+- **Deterministic ordering for the federation delivery dashboard** — `DeliveryStats.list_actionable_jobs/1` now includes a `desc: id` tiebreaker.
+
 ## [1.8.6] — 2026-05-11
 
 ### Security
