@@ -521,15 +521,28 @@ defmodule Baudrate.Federation.InboxHandler do
     else
       Logger.info("federation.activity: type=Move from=#{actor_uri} to=#{target_uri}")
 
-      case ActorResolver.resolve(target_uri) do
+      # Force-refresh the target so the alsoKnownAs check reflects its current
+      # state (a stale cache could pre-date the alias being set).
+      case ActorResolver.refresh(target_uri) do
         {:ok, new_actor} ->
-          {migrated, deleted} = Federation.migrate_user_follows(remote_actor.id, new_actor.id)
+          if actor_uri in (new_actor.also_known_as || []) do
+            {migrated, deleted} = Federation.migrate_user_follows(remote_actor.id, new_actor.id)
 
-          Logger.info(
-            "federation.move_complete: from=#{actor_uri} to=#{target_uri} migrated=#{migrated} deduped=#{deleted}"
-          )
+            Logger.info(
+              "federation.move_complete: from=#{actor_uri} to=#{target_uri} migrated=#{migrated} deduped=#{deleted}"
+            )
 
-          :ok
+            :ok
+          else
+            # The target has not claimed the moving actor as an alias, so the
+            # Move is unauthorized. Without this check any remote actor could
+            # redirect its local followers onto an arbitrary target account.
+            Logger.warning(
+              "federation.move_rejected: from=#{actor_uri} to=#{target_uri} reason=alias_not_claimed"
+            )
+
+            {:error, :move_not_authorized}
+          end
 
         {:error, reason} ->
           Logger.warning(

@@ -73,11 +73,8 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
   end
 
   describe "Move activity" do
-    test "migrates follows to new actor", %{user: user, actor: actor} do
-      create_accepted_follow(user, actor)
-      new_actor = create_remote_actor(%{domain: "new.example"})
-
-      # Stub HTTP for actor resolution
+    # Stubs the target actor document, claiming `aliases` in its alsoKnownAs.
+    defp stub_target_actor(new_actor, aliases) do
       Req.Test.stub(HTTPClient, fn conn ->
         body =
           Jason.encode!(%{
@@ -85,6 +82,7 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
             "type" => "Person",
             "preferredUsername" => new_actor.username,
             "inbox" => new_actor.inbox,
+            "alsoKnownAs" => aliases,
             "publicKey" => %{
               "id" => "#{new_actor.ap_id}#main-key",
               "publicKeyPem" => new_actor.public_key_pem
@@ -95,6 +93,14 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
         |> Plug.Conn.put_resp_content_type("application/activity+json")
         |> Plug.Conn.send_resp(200, body)
       end)
+    end
+
+    test "migrates follows to new actor", %{user: user, actor: actor} do
+      create_accepted_follow(user, actor)
+      new_actor = create_remote_actor(%{domain: "new.example"})
+
+      # Target claims the moving actor as an alias — authorizes the Move.
+      stub_target_actor(new_actor, [actor.ap_id])
 
       activity = move_activity(actor, new_actor.ap_id)
       assert :ok = InboxHandler.handle(activity, actor, :shared)
@@ -108,23 +114,7 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
       new_actor = create_remote_actor(%{domain: "new.example"})
       create_accepted_follow(user, new_actor)
 
-      Req.Test.stub(HTTPClient, fn conn ->
-        body =
-          Jason.encode!(%{
-            "id" => new_actor.ap_id,
-            "type" => "Person",
-            "preferredUsername" => new_actor.username,
-            "inbox" => new_actor.inbox,
-            "publicKey" => %{
-              "id" => "#{new_actor.ap_id}#main-key",
-              "publicKeyPem" => new_actor.public_key_pem
-            }
-          })
-
-        conn
-        |> Plug.Conn.put_resp_content_type("application/activity+json")
-        |> Plug.Conn.send_resp(200, body)
-      end)
+      stub_target_actor(new_actor, [actor.ap_id])
 
       activity = move_activity(actor, new_actor.ap_id)
       assert :ok = InboxHandler.handle(activity, actor, :shared)
@@ -132,6 +122,22 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
       # Still follows new actor, old follow removed
       assert Federation.user_follows?(user.id, new_actor.id)
       refute Federation.user_follows?(user.id, actor.id)
+    end
+
+    test "rejects Move when target does not claim the mover as an alias",
+         %{user: user, actor: actor} do
+      create_accepted_follow(user, actor)
+      new_actor = create_remote_actor(%{domain: "new.example"})
+
+      # Target's alsoKnownAs does NOT include the moving actor — unauthorized.
+      stub_target_actor(new_actor, ["https://someone-else.example/users/x"])
+
+      activity = move_activity(actor, new_actor.ap_id)
+      assert {:error, :move_not_authorized} = InboxHandler.handle(activity, actor, :shared)
+
+      # Follows are left untouched — no forced redirect onto an unconsenting target.
+      assert Federation.user_follows?(user.id, actor.id)
+      refute Federation.user_follows?(user.id, new_actor.id)
     end
 
     test "logs warning when target is unresolvable", %{user: user, actor: actor} do

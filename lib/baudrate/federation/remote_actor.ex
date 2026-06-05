@@ -17,6 +17,10 @@ defmodule Baudrate.Federation.RemoteActor do
   `PropertyValue` from the remote actor's AP representation. Each entry is a
   map with `"name"` and `"value"` keys. Values are sanitized HTML (run through
   `Baudrate.Federation.Sanitizer.sanitize/1` on ingest).
+
+  The `also_known_as` field stores the actor's `alsoKnownAs` URIs (aliases).
+  It is used to authorize inbound `Move` activities: a target actor must claim
+  the moving actor as an alias before its local followers are migrated.
   """
 
   use Ecto.Schema
@@ -36,6 +40,7 @@ defmodule Baudrate.Federation.RemoteActor do
     field :actor_type, :string, default: "Person"
     field :fetched_at, :utc_datetime
     field :profile_fields, {:array, :map}, default: []
+    field :also_known_as, {:array, :string}, default: []
 
     has_many :followers, Baudrate.Federation.Follower
 
@@ -43,7 +48,7 @@ defmodule Baudrate.Federation.RemoteActor do
   end
 
   @required_fields ~w(ap_id username domain public_key_pem inbox actor_type fetched_at)a
-  @optional_fields ~w(display_name avatar_url summary shared_inbox url profile_fields)a
+  @optional_fields ~w(display_name avatar_url summary shared_inbox url profile_fields also_known_as)a
 
   @doc "Casts and validates fields for creating or updating a remote actor cache entry."
   def changeset(remote_actor, attrs) do
