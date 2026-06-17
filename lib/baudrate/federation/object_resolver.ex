@@ -198,6 +198,9 @@ defmodule Baudrate.Federation.ObjectResolver do
       # Empty board_ids = no board routing = loop-safe
       case Content.create_remote_article(attrs, [], image_attachments: image_attachments) do
         {:ok, %{article: article}} -> {:ok, article}
+        # create_remote_article surfaces failures as a raw Ecto.Multi 4-tuple
+        # (e.g. ap_id/slug unique_constraint collision); normalize to {:error, reason}.
+        {:error, _op, reason, _changes} -> {:error, reason}
         {:error, _} = error -> error
       end
     end
