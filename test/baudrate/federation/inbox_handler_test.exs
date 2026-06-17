@@ -260,6 +260,34 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert hd(comments).remote_actor_id == remote_actor.id
     end
 
+    test "rejects a comment whose content exceeds the 64 KB cap" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      article_uri = Federation.actor_uri(:article, article.slug)
+      oversized = String.duplicate("a", 65_537)
+
+      activity = %{
+        "id" => "https://remote.example/activities/create-big-#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/notes/#{System.unique_integer([:positive])}",
+          "type" => "Note",
+          "content" => oversized,
+          "attributedTo" => remote_actor.ap_id,
+          "inReplyTo" => article_uri
+        }
+      }
+
+      assert {:error, :content_too_large} =
+               InboxHandler.handle(activity, remote_actor, :shared)
+
+      assert Content.list_comments_for_article(article) == []
+    end
+
     test "stores human-readable url from AP object on comment" do
       user = setup_user_with_role("user")
       board = create_board()

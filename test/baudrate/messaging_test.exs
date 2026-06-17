@@ -266,6 +266,30 @@ defmodule Baudrate.MessagingTest do
       Baudrate.Auth.block_user(sender, recipient)
       refute Messaging.can_send_dm?(sender, recipient)
     end
+
+    test "denies DM with dm_access=followers when sender is not a follower" do
+      sender = create_user("user")
+      recipient = create_user("user", dm_access: "followers")
+      refute Messaging.can_send_dm?(sender, recipient)
+    end
+
+    test "allows DM with dm_access=followers when sender follows the recipient" do
+      sender = create_user("user")
+      recipient = create_user("user", dm_access: "followers")
+
+      # follower_exists?/2 matches the recipient (actor) and sender (follower) URIs.
+      ra = create_remote_actor()
+
+      Repo.insert!(%Baudrate.Federation.Follower{
+        actor_uri: Baudrate.Federation.actor_uri(:user, recipient.username),
+        follower_uri: Baudrate.Federation.actor_uri(:user, sender.username),
+        remote_actor_id: ra.id,
+        activity_id: "https://remote.example/activities/#{System.unique_integer([:positive])}",
+        accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+
+      assert Messaging.can_send_dm?(sender, recipient)
+    end
   end
 
   # --- find_or_create_conversation ---
@@ -351,6 +375,27 @@ defmodule Baudrate.MessagingTest do
       |> Repo.update!()
 
       assert {:error, :not_allowed} = Messaging.create_message(conv, sender, %{body: "hello?"})
+    end
+
+    test "rejects sending to a remote actor on a blocked domain" do
+      sender = create_user("user")
+      remote = create_remote_actor(%{domain: "bad.example"})
+      {:ok, conv} = Messaging.find_or_create_remote_conversation(sender, remote)
+
+      Setup.set_setting("ap_domain_blocklist", "bad.example")
+      Baudrate.Federation.DomainBlockCache.refresh()
+
+      assert {:error, :not_allowed} = Messaging.create_message(conv, sender, %{body: "hi remote"})
+    end
+
+    test "rejects sending to a remote actor when the sender is inactive" do
+      sender = create_user("user")
+      remote = create_remote_actor()
+      {:ok, conv} = Messaging.find_or_create_remote_conversation(sender, remote)
+
+      sender = Repo.update!(Ecto.Changeset.change(sender, status: "banned"))
+
+      assert {:error, :not_allowed} = Messaging.create_message(conv, sender, %{body: "hi remote"})
     end
   end
 

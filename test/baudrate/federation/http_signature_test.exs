@@ -162,12 +162,52 @@ defmodule Baudrate.Federation.HTTPSignatureTest do
         ])
         |> Plug.Conn.assign(:raw_body, body)
 
-      # verify/1 would call validate_date internally, but we test it by
-      # calling parse_signature_header then checking the date validation fails
-      # We can't call verify/1 directly since it also resolves the actor via HTTP.
-      # Instead, test the date header is parsed and rejected:
-      assert [_old_date] = Plug.Conn.get_req_header(conn, "date")
-      # The date is well in the past, so it should be rejected
+      # validate_date runs before the HTTP actor resolution step in verify/1,
+      # so an expired date short-circuits with no network access.
+      assert {:error, :signature_expired} = HTTPSignature.verify(conn)
+    end
+
+    test "rejects a missing date header" do
+      {_public_pem, private_pem} = KeyStore.generate_keypair()
+      key_id = "https://remote.example/users/alice#main-key"
+      body = "{}"
+
+      headers =
+        HTTPSignature.sign(:post, "https://local.example/ap/inbox", body, private_pem, key_id)
+
+      conn =
+        Plug.Test.conn(:post, "/ap/inbox", body)
+        |> Map.put(:req_headers, [
+          {"host", "local.example"},
+          {"digest", headers["digest"]},
+          {"signature", headers["signature"]},
+          {"content-type", "application/activity+json"}
+        ])
+        |> Plug.Conn.assign(:raw_body, body)
+
+      assert {:error, :missing_date} = HTTPSignature.verify(conn)
+    end
+
+    test "rejects an unparseable date header" do
+      {_public_pem, private_pem} = KeyStore.generate_keypair()
+      key_id = "https://remote.example/users/alice#main-key"
+      body = "{}"
+
+      headers =
+        HTTPSignature.sign(:post, "https://local.example/ap/inbox", body, private_pem, key_id)
+
+      conn =
+        Plug.Test.conn(:post, "/ap/inbox", body)
+        |> Map.put(:req_headers, [
+          {"host", "local.example"},
+          {"date", "not-a-real-date"},
+          {"digest", headers["digest"]},
+          {"signature", headers["signature"]},
+          {"content-type", "application/activity+json"}
+        ])
+        |> Plug.Conn.assign(:raw_body, body)
+
+      assert {:error, :invalid_date} = HTTPSignature.verify(conn)
     end
 
     test "rejects bad digest (body modified after signing)" do

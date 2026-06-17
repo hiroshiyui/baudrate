@@ -29,18 +29,30 @@ defmodule BaudrateWeb.Plugs.CacheBodyTest do
   end
 
   describe "call/2 oversized body (413)" do
-    test "rejects body over 262,144 bytes with 413" do
-      # Default max is 262,144 bytes. Plug.Test sends the body at once,
-      # so we need to exceed the limit. Plug.Parsers/read_body returns
-      # {:more, ...} when body exceeds the length option.
-      # In test mode with Plug.Test.conn, read_body returns {:ok, ...}
-      # regardless of size (body is already buffered). We test the custom
-      # config path instead to verify the 413 behavior.
-      # See "call/2 with custom config" tests below.
+    test "rejects a pre-cached raw_body over the limit with 413" do
+      # CacheBodyReader path: the body is already in conn.assigns.raw_body.
+      oversized = String.duplicate("x", 262_145)
+
+      conn =
+        Plug.Test.conn(:post, "/ap/inbox", "")
+        |> Plug.Conn.assign(:raw_body, oversized)
+        |> call_plug()
+
+      assert conn.halted
+      assert conn.status == 413
     end
 
-    test "response is JSON with error message when oversized" do
-      # Tested via custom config below since Plug.Test buffers fully
+    test "413 response is JSON with an error message" do
+      oversized = String.duplicate("x", 262_145)
+
+      conn =
+        Plug.Test.conn(:post, "/ap/inbox", "")
+        |> Plug.Conn.assign(:raw_body, oversized)
+        |> call_plug()
+
+      assert conn.status == 413
+      assert {"content-type", "application/json; charset=utf-8"} in conn.resp_headers
+      assert Jason.decode!(conn.resp_body) == %{"error" => "Payload too large"}
     end
   end
 
@@ -78,6 +90,19 @@ defmodule BaudrateWeb.Plugs.CacheBodyTest do
 
       refute conn.halted
       assert conn.assigns.raw_body == body
+    end
+
+    test "rejects a streamed body exceeding the configured limit with 413" do
+      # No pre-cached raw_body: the read_body path returns {:more, ...} when the
+      # body exceeds the length option, which must halt with 413.
+      Application.put_env(:baudrate, Baudrate.Federation, max_payload_size: 100)
+
+      body = String.duplicate("x", 500)
+      conn = Plug.Test.conn(:post, "/ap/inbox", body) |> call_plug()
+
+      assert conn.halted
+      assert conn.status == 413
+      assert Jason.decode!(conn.resp_body) == %{"error" => "Payload too large"}
     end
   end
 end

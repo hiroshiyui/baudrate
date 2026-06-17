@@ -47,6 +47,27 @@ defmodule Baudrate.AuthTest do
       assert {:error, :invalid_credentials} =
                Auth.authenticate_by_password("nobody", "WrongPass1!!")
     end
+
+    test "rejects bot accounts even when the password is valid" do
+      # Bots cannot log in even with correct credentials (CLAUDE.md invariant).
+      # Bots normally have a random locked password; force a known hash so we
+      # exercise the is_bot guard branch (not just the wrong-password path).
+      {:ok, bot} =
+        Baudrate.Bots.create_bot(%{
+          "username" => "loginbot_#{System.unique_integer([:positive])}",
+          "feed_url" => "https://example.com/feed.xml",
+          "board_ids" => []
+        })
+
+      assert bot.user.is_bot == true
+
+      bot.user
+      |> Ecto.Changeset.change(hashed_password: Bcrypt.hash_pwd_salt("BotPassword1!x"))
+      |> Repo.update!()
+
+      assert {:error, :bot_account} =
+               Auth.authenticate_by_password(bot.user.username, "BotPassword1!x")
+    end
   end
 
   describe "totp_policy/1" do
