@@ -29,7 +29,10 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 | HTTP server | Bandit |
 | Database | PostgreSQL (Ecto) |
 | CSS | Tailwind CSS + DaisyUI |
+| Asset bundler | esbuild (JS) + Tailwind CLI |
 | HTTP client | Req (never use HTTPoison, Tesla, or httpc) |
+| Image processing | libvips (via `image`) — avatar/upload re-encode to WebP, EXIF strip |
+| Rate limiting | Hammer |
 | Markdown | Earmark |
 | 2FA / WebAuthn | NimbleTOTP + EQRCode + wax_ (FIDO2/WebAuthn relying party) |
 | HTML parsing | html5ever (Rust NIF via Rustler) |
@@ -60,6 +63,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 - Layout receives `@inner_content` (NOT `@inner_block`) — use `{@inner_content}`
 - Do NOT wrap templates with `<Layouts.app>` — causes duplicate flash IDs
 - LiveView uses `phx-trigger-action` for session writes (POST to `SessionController`)
+- Every authenticated LiveView (mounted under `:require_auth` / `:optional_auth`) MUST end its `handle_info/2` with a catch-all `def handle_info(_msg, socket), do: {:noreply, socket}`. `UnreadDmCountHook` / `UnreadNotificationCountHook` subscribe the user to their DM/notification topics and return `{:cont, socket}`, forwarding `:dm_received` / `:dm_read` / `:notification_created` / `:notification_read` / `:notifications_all_read` into the underlying LiveView. A LiveView with only guarded clauses crashes with `FunctionClauseError` for any logged-in user who receives a DM/notification while on that page.
 - Soft-delete uses `deleted_at` timestamps (not hard delete) for articles and comments
 - Federation delivery runs in async `Task` in production but synchronously in tests (`federation_async: false` in `config/test.exs`) to avoid sandbox ownership errors
 - All local AP objects (articles, comments, likes, boosts, polls, DMs) are stamped with a canonical `ap_id` on creation (post-insert, since the URI includes the DB-assigned ID). Publisher functions use the stored `ap_id` with fallback to `Federation.actor_uri/2`. The inbox handler walks remote reply chains (up to 10 hops) to resolve intermediate replies that aren't stored locally.
