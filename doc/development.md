@@ -1463,7 +1463,7 @@ Exposed via `Federation.fetch_remote_object/1` (preview) and `Federation.lookup_
 - Attribution validation prevents impersonation
 - Content size limits (256 KB AP payload, 64 KB article body enforced in all changesets)
 - Domain blocklist (configurable via admin settings)
-- SSRF-safe remote fetches — DNS-pinned connections prevent DNS rebinding; manual redirect following with IP validation at each hop; reject private/loopback IPs including IPv6 `::` and `::1`; HTTPS only
+- SSRF-safe remote fetches — DNS-pinned connections prevent DNS rebinding; manual redirect following with IP validation at each hop; reject private/loopback/CGNAT/link-local/multicast IPs across IPv4 and IPv6 (including `::`, `::1`, `fc00::/7`, `fe80::/10`), and decode embedded IPv4 in IPv4-mapped (`::ffff:0:0/96`), NAT64 (`64:ff9b::/96`), and IPv4-compatible (`::a.b.c.d`) addresses before re-checking; HTTPS only
 - Per-domain rate limiting (60 req/min per remote domain)
 - Real client IP extraction — `RealIp` plug reads from configurable proxy header (e.g., `x-forwarded-for`) for accurate per-IP rate limiting behind reverse proxies; honored only when the immediate peer matches the `trusted_proxies` allow-list (exact IPs or CIDR ranges) so untrusted peers cannot spoof their IP
 - Private keys encrypted at rest with AES-256-GCM
