@@ -301,5 +301,25 @@ defmodule Baudrate.Federation.HTTPClientTest do
     test "IPv4-mapped IPv6 ::ffff:8.8.8.8 is public" do
       refute HTTPClient.private_ip?({0, 0, 0, 0, 0, 0xFFFF, 0x0808, 0x0808})
     end
+
+    test "NAT64 64:ff9b::127.0.0.1 is private" do
+      assert HTTPClient.private_ip?({0x64, 0xFF9B, 0, 0, 0, 0, 0x7F00, 0x0001})
+    end
+
+    test "NAT64 64:ff9b::192.168.1.1 is private" do
+      assert HTTPClient.private_ip?({0x64, 0xFF9B, 0, 0, 0, 0, 0xC0A8, 0x0101})
+    end
+
+    test "NAT64 64:ff9b::8.8.8.8 (public embedded IPv4) is public" do
+      refute HTTPClient.private_ip?({0x64, 0xFF9B, 0, 0, 0, 0, 0x0808, 0x0808})
+    end
+
+    test "IPv4-compatible IPv6 ::127.0.0.1 is private" do
+      assert HTTPClient.private_ip?({0, 0, 0, 0, 0, 0, 0x7F00, 0x0001})
+    end
+
+    test "IPv4-compatible IPv6 ::169.254.0.1 (link-local) is private" do
+      assert HTTPClient.private_ip?({0, 0, 0, 0, 0, 0, 0xA9FE, 0x0001})
+    end
   end
 end

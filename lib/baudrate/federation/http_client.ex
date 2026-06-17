@@ -379,6 +379,20 @@ defmodule Baudrate.Federation.HTTPClient do
     private_ip?({hi >>> 8, hi &&& 0xFF, lo >>> 8, lo &&& 0xFF})
   end
 
+  # NAT64 (64:ff9b::/96, RFC 6052) — extract embedded IPv4 and re-check, so a
+  # host resolving to e.g. 64:ff9b::7f00:1 cannot reach 127.0.0.1 via a NAT64 gateway.
+  def private_ip?({0x64, 0xFF9B, 0, 0, 0, 0, hi, lo}) do
+    import Bitwise
+    private_ip?({hi >>> 8, hi &&& 0xFF, lo >>> 8, lo &&& 0xFF})
+  end
+
+  # IPv4-compatible IPv6 (::a.b.c.d, deprecated) — extract embedded IPv4 and re-check.
+  # Placed after the explicit :: / ::1 clauses so those keep their exact match.
+  def private_ip?({0, 0, 0, 0, 0, 0, hi, lo}) do
+    import Bitwise
+    private_ip?({hi >>> 8, hi &&& 0xFF, lo >>> 8, lo &&& 0xFF})
+  end
+
   def private_ip?(_), do: false
 
   defp truncate_body(body) when is_binary(body), do: String.slice(body, 0, 4096)
