@@ -203,7 +203,7 @@ GET /nodeinfo/2.1
   "version": "2.1",
   "software": {
     "name": "baudrate",
-    "version": "0.1.0",
+    "version": "1.8.7",
     "repository": "https://github.com/hiroshiyui/baudrate"
   },
   "protocols": ["activitypub"],
@@ -217,6 +217,10 @@ GET /nodeinfo/2.1
   }
 }
 ```
+
+`software.version` reflects the running release (the `:baudrate` app version),
+`openRegistrations` mirrors the current registration mode, and `usage` /
+`metadata.nodeName` are computed live — the values above are illustrative.
 
 ---
 
