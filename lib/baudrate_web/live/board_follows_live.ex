@@ -194,6 +194,10 @@ defmodule BaudrateWeb.BoardFollowsLive do
     end
   end
 
+  # Ignore PubSub messages forwarded by the unread DM / notification count
+  # hooks (e.g. :dm_received, :notification_created) for logged-in viewers.
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
   defp remote_actor_query?(query) do
     String.starts_with?(query, "https://") ||
       (String.contains?(query, "@") && !String.contains?(query, "/"))

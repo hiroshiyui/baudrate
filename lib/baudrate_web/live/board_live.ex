@@ -200,6 +200,10 @@ defmodule BaudrateWeb.BoardLive do
      )}
   end
 
+  # Ignore PubSub messages forwarded by the unread DM / notification count
+  # hooks (e.g. :dm_received, :notification_created) for logged-in viewers.
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
   defp digest(nil), do: ""
 
   defp digest(text) do

@@ -746,6 +746,10 @@ defmodule BaudrateWeb.ArticleLive do
      |> assign_poll_data(article, socket.assigns.current_user)}
   end
 
+  # Ignore PubSub messages forwarded by the unread DM / notification count
+  # hooks (e.g. :dm_received, :notification_created) for logged-in viewers.
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
   defp do_delete_article(socket, article, user) do
     case Content.soft_delete_article(article) do
       {:ok, _} ->

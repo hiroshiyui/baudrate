@@ -1047,4 +1047,22 @@ defmodule BaudrateWeb.ArticleLiveTest do
       refute user.username in usernames
     end
   end
+
+  describe "forwarded PubSub messages from count hooks" do
+    test "survives a DM event broadcast to the logged-in viewer", %{
+      conn: conn,
+      user: user,
+      article: article
+    } do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      # The unread DM/notification count hooks forward these events to the
+      # underlying LiveView; without a catch-all handle_info the view crashes.
+      Baudrate.Messaging.PubSub.broadcast_to_user(user.id, :dm_received, %{conversation_id: 1})
+      Baudrate.Notification.PubSub.broadcast_to_user(user.id, :notification_created, %{id: 1})
+
+      # Process is still alive and rendering — no FunctionClauseError.
+      assert render(lv) =~ "Test Article"
+    end
+  end
 end
