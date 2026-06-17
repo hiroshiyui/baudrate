@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.8.8] — 2026-06-18
+
+### Security
+
+- **SSRF deny-set now decodes NAT64 and IPv4-compatible IPv6** — `Federation.HTTPClient.private_ip?/1` rejected IPv4-mapped IPv6 (`::ffff:x.y.z.w`) but not the NAT64 prefix (`64:ff9b::/96`, RFC 6052) nor the deprecated IPv4-compatible form (`::a.b.c.d`). On a host with a NAT64 gateway, a name resolving to e.g. `64:ff9b::7f00:1` could reach `127.0.0.1`. Both forms now extract and re-check the embedded IPv4 before allowing the fetch.
+
+### Fixed
+
+- **Authenticated LiveViews no longer crash when a DM or notification arrives** — `article_live`, `board_live`, `search_live`, and `board_follows_live` defined only guarded `handle_info/2` clauses. The unread DM/notification count hooks (attached on `:require_auth`/`:optional_auth`) forward `:dm_received`/`:notification_created`/etc. into the underlying LiveView via `{:cont, socket}`, so an arriving DM or notification raised `FunctionClauseError` and crashed the view (remount, lost state) for any logged-in user on those pages. Each now has a catch-all `handle_info/2`.
+- **Federation reply-chain ingest no longer crashes on a remote-article insert failure** — `Federation.ObjectResolver` matched only `{:error, _}` from `Content.create_remote_article/3`, but that function surfaces failures as a raw `Ecto.Multi` 4-tuple (e.g. an `ap_id`/slug `unique_constraint` collision), raising `CaseClauseError`. The 4-tuple is now normalized to `{:error, reason}`.
+- **Long unbreakable content no longer breaks page width** — feed and user-profile layouts used arbitrary CSS grid tracks with a bare `1fr` (= `minmax(auto, 1fr)`, min `min-content`), so a long URL/token in real federated/RSS content forced the track past its container and broke the page width (not reproducible with short dev content). Tracks now use `minmax(0,1fr)` with `min-w-0`, and feed titles/bodies, DM plain-text bodies, and moderation report reasons wrap via `break-words`.
+
+### Added
+
+- **zh_TW and ja_JP translations** for three flash messages that were wrapped in `gettext()` but never extracted (`"Feed item not found."`, `"You are not allowed to comment on this article."`, `"Invalid reply target."`), which previously rendered as raw English.
+- **Negative-path test coverage** for several security invariants that were enforced but unasserted: bot-account login rejection, oversized-payload (413) handling, expired/missing/malformed HTTP-Signature dates, `dm_access: "followers"` and remote block/domain-block paths in `create_message/3`, the 64 KB inbound content cap, and the new IPv6 SSRF deny-set entries.
+
 ## [1.8.7] — 2026-06-05
 
 ### Security
