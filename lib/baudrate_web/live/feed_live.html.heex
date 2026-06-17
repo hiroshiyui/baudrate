@@ -11,8 +11,8 @@
   </h1>
 </div>
 
-<div class="lg:grid lg:grid-cols-[1fr_16rem] lg:gap-6 lg:items-start">
-  <div class="space-y-6" aria-label={gettext("Feed")}>
+<div class="lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-6 lg:items-start">
+  <div class="space-y-6 min-w-0" aria-label={gettext("Feed")}>
     <div :if={@can_post} id="quick-post" class="card bg-base-200 shadow-sm">
       <div class="card-body p-4">
         <div class="flex gap-3">
@@ -369,7 +369,7 @@
               href={remote_actor_profile_url(item.feed_item.boosted_by_actor)}
               target="_blank"
               rel="nofollow noopener noreferrer"
-              class="link link-hover font-semibold"
+              class="link link-hover font-semibold break-words"
             >
               {item.feed_item.boosted_by_actor.display_name ||
                 item.feed_item.boosted_by_actor.username}
@@ -433,11 +433,11 @@
             </div>
           </div>
 
-          <h2 :if={item.feed_item.title} class="font-semibold text-lg mb-1">
+          <h2 :if={item.feed_item.title} class="font-semibold text-lg mb-1 break-words">
             {item.feed_item.title}
           </h2>
 
-          <p class="text-sm text-base-content/80 line-clamp-3">
+          <p class="text-sm text-base-content/80 line-clamp-3 break-words">
             {digest(item.feed_item.body_html)}
           </p>
 
@@ -727,12 +727,12 @@
 
           <.link
             navigate={~p"/articles/#{item.article.slug}"}
-            class="font-semibold text-lg mb-1 link link-hover"
+            class="font-semibold text-lg mb-1 link link-hover break-words"
           >
             {item.article.title}
           </.link>
 
-          <p class="text-sm text-base-content/80 line-clamp-3">
+          <p class="text-sm text-base-content/80 line-clamp-3 break-words">
             {digest(item.article.body)}
           </p>
 
@@ -857,13 +857,13 @@
             {gettext("commented on")}
             <.link
               navigate={~p"/articles/#{item.comment.article.slug}"}
-              class="link link-hover font-semibold"
+              class="link link-hover font-semibold break-words"
             >
               {item.comment.article.title}
             </.link>
           </div>
 
-          <p class="text-sm text-base-content/80 line-clamp-3">
+          <p class="text-sm text-base-content/80 line-clamp-3 break-words">
             {digest(item.comment.body)}
           </p>
 
@@ -1047,13 +1047,13 @@
             {gettext("commented on")}
             <.link
               navigate={~p"/articles/#{item.comment.article.slug}"}
-              class="link link-hover font-semibold"
+              class="link link-hover font-semibold break-words"
             >
               {item.comment.article.title}
             </.link>
           </div>
 
-          <p class="text-sm text-base-content/80 line-clamp-3">
+          <p class="text-sm text-base-content/80 line-clamp-3 break-words">
             {digest(item.comment.body)}
           </p>
 
