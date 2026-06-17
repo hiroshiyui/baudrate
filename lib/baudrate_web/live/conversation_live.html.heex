@@ -114,7 +114,7 @@
             <%= if msg.body_html do %>
               <div class="prose prose-sm max-w-none">{raw(msg.body_html)}</div>
             <% else %>
-              {msg.body}
+              <p class="whitespace-pre-wrap break-words">{msg.body}</p>
             <% end %>
             <.link_preview
               :if={msg.link_preview && msg.link_preview.status in ["fetched", "failed"]}
