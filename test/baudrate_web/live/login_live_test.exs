@@ -10,7 +10,7 @@ defmodule BaudrateWeb.LoginLiveTest do
 
   setup %{conn: conn} do
     Repo.insert!(%Setting{key: "setup_completed", value: "true"})
-    Hammer.delete_buckets("login:unknown")
+    BaudrateWeb.RateLimit.reset_all()
     {:ok, conn: conn}
   end
 

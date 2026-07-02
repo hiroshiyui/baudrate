@@ -70,7 +70,7 @@ defmodule BaudrateWeb.RegisterLive do
   def handle_event("submit", %{"user" => params}, socket) do
     ip = socket.assigns.peer_ip
 
-    case Hammer.check_rate("register:#{ip}", 3_600_000, 5) do
+    case BaudrateWeb.RateLimiter.check_rate("register:#{ip}", 3_600_000, 5) do
       {:deny, _limit} ->
         Logger.warning("rate_limit.denied: action=register ip=#{ip}")
 

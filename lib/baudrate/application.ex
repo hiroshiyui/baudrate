@@ -16,6 +16,7 @@ defmodule Baudrate.Application do
       Baudrate.Auth.WebAuthnChallenges,
       Baudrate.Setup.SettingsCache,
       Baudrate.Content.BoardCache,
+      {BaudrateWeb.RateLimit, [clean_period: :timer.minutes(5)]},
       {Task.Supervisor, name: Baudrate.Federation.TaskSupervisor},
       Baudrate.Federation.DomainBlockCache,
       Baudrate.Federation.DeliveryWorker,

@@ -38,7 +38,7 @@ defmodule BaudrateWeb.PasswordResetLive do
   def handle_event("submit", %{"reset" => params}, socket) do
     ip = socket.assigns.peer_ip
 
-    case Hammer.check_rate("password_reset:#{ip}", 3_600_000, 5) do
+    case BaudrateWeb.RateLimiter.check_rate("password_reset:#{ip}", 3_600_000, 5) do
       {:deny, _limit} ->
         Logger.warning("rate_limit.denied: action=password_reset ip=#{ip}")
 

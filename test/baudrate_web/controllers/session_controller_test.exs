@@ -7,8 +7,7 @@ defmodule BaudrateWeb.SessionControllerTest do
 
   setup %{conn: conn} do
     Repo.insert!(%Setting{key: "setup_completed", value: "true"})
-    Hammer.delete_buckets("login:127.0.0.1")
-    Hammer.delete_buckets("totp:127.0.0.1")
+    BaudrateWeb.RateLimit.reset_all()
     {:ok, conn: conn}
   end
 

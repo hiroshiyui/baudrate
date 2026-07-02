@@ -10,7 +10,7 @@ defmodule BaudrateWeb.FeedControllerTest do
   setup %{conn: conn} do
     Repo.insert!(%Setting{key: "setup_completed", value: "true"})
     Repo.insert!(%Setting{key: "site_name", value: "Test Forum"})
-    Hammer.delete_buckets("feeds:127.0.0.1")
+    BaudrateWeb.RateLimit.reset_all()
 
     user = setup_user("user")
     public_board = insert_board("public-board", min_role_to_view: "guest")

@@ -9,7 +9,7 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
   setup %{conn: conn} do
     Repo.insert!(%Setting{key: "setup_completed", value: "true"})
     Repo.insert!(%Setting{key: "site_name", value: "Test Forum"})
-    Hammer.delete_buckets("activity_pub:127.0.0.1")
+    BaudrateWeb.RateLimit.reset_all()
 
     {:ok, conn: conn}
   end

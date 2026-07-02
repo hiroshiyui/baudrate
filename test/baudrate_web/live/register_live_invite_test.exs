@@ -14,8 +14,7 @@ defmodule BaudrateWeb.RegisterLiveInviteTest do
     # Seed roles so register_user can find the "user" role
     Baudrate.Setup.seed_roles_and_permissions()
     # Clear shared rate limit buckets to avoid cross-test interference
-    Hammer.delete_buckets("register:unknown")
-    Hammer.delete_buckets("register:127.0.0.1")
+    BaudrateWeb.RateLimit.reset_all()
     {:ok, conn: conn}
   end
 

@@ -10,8 +10,7 @@ defmodule BaudrateWeb.PasswordResetLiveTest do
   setup %{conn: conn} do
     Repo.insert!(%Setting{key: "setup_completed", value: "true"})
     Baudrate.Setup.seed_roles_and_permissions()
-    Hammer.delete_buckets("password_reset:unknown")
-    Hammer.delete_buckets("password_reset:127.0.0.1")
+    BaudrateWeb.RateLimit.reset_all()
     {:ok, conn: conn}
   end
 
@@ -119,6 +118,11 @@ defmodule BaudrateWeb.PasswordResetLiveTest do
   end
 
   test "rate limits after too many attempts", %{conn: conn} do
+    # Exercise the real Hammer store (the LiveView inherits this stub via
+    # $callers) instead of ConnCase's default allow-all sandbox, so the
+    # 5-per-hour limit actually denies the 6th attempt.
+    BaudrateWeb.RateLimiter.Sandbox.set_fun(&BaudrateWeb.RateLimiter.Hammer.check_rate/3)
+
     {:ok, lv, _html} = live(conn, "/password-reset")
 
     # Exhaust the rate limit (5 attempts per hour) via submitting
