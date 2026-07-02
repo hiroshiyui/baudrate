@@ -11,14 +11,14 @@ defmodule BaudrateWeb.Features.SearchTest do
     session
     |> visit("/search")
     |> fill_in(Query.css("input[name=q]"), with: "Concurrency")
-    |> click(Query.button("", count: :any))
+    |> click(Query.css("form button[type=submit]"))
     |> assert_has(Query.text("Elixir Concurrency Guide"))
   end
 
   feature "search shows no results message for unmatched query", %{session: session} do
     session
     |> visit("/search?q=zzzznonexistent999")
-    |> assert_has(Query.text("No results"))
+    |> assert_has(Query.text("No articles found"))
   end
 
   feature "search by author operator", %{session: session} do

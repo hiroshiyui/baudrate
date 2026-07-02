@@ -11,7 +11,7 @@ defmodule BaudrateWeb.Features.ArticleEditingTest do
     session
     |> log_in_via_browser(user)
     |> visit("/articles/#{article.slug}/edit")
-    |> fill_in(Query.css("#article-title"), with: "Updated Title")
+    |> fill_in(Query.css("#article_title"), with: "Updated Title")
     |> click(Query.button("Save"))
     |> assert_has(Query.css("h1", text: "Updated Title"))
   end

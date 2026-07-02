@@ -11,7 +11,7 @@ defmodule BaudrateWeb.Features.CommentsTest do
     session
     |> log_in_via_browser(user)
     |> visit("/articles/#{article.slug}")
-    |> fill_in(Query.css("#comment-body"), with: "This is a test comment.")
+    |> fill_in(Query.css("#comment_body"), with: "This is a test comment.")
     |> click(Query.button("Post Comment"))
     |> assert_has(Query.text("This is a test comment."))
   end
@@ -24,6 +24,6 @@ defmodule BaudrateWeb.Features.CommentsTest do
     session
     |> visit("/articles/#{article.slug}")
     |> assert_has(Query.css("h2", text: "Comments"))
-    |> refute_has(Query.css("#comment-body"))
+    |> refute_has(Query.css("#comment_body"))
   end
 end
