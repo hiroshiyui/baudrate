@@ -6,7 +6,7 @@
       {gettext("Enable Two-Factor Authentication")}
     <% end %>
   </h1>
-  <p class="text-center text-base-content/70 mb-8">
+  <p id="totp-reset-subtitle" class="totp-reset-subtitle text-center text-base-content/70 mb-8">
     <%= if @mode == :reset do %>
       {gettext("Enter your password and current TOTP code to reset your authenticator.")}
     <% else %>
@@ -22,7 +22,11 @@
     class="space-y-4"
   >
     <div class="form-control">
-      <label class="label" for="totp_reset_password">
+      <label
+        id="totp-reset-password-label"
+        class="totp-reset-field-label label"
+        for="totp_reset_password"
+      >
         <span class="label-text">{gettext("Password")}</span>
       </label>
       <input
@@ -30,7 +34,7 @@
         id="totp_reset_password"
         name="totp_reset[password]"
         value={@form[:password].value}
-        class="input input-bordered w-full"
+        class="totp-reset-password-input input input-bordered w-full"
         autocomplete="current-password"
         autofocus
         required
@@ -39,7 +43,11 @@
 
     <%= if @mode == :reset do %>
       <div class="form-control">
-        <label class="label" for="totp_reset_code">
+        <label
+          id="totp-reset-code-label"
+          class="totp-reset-field-label label"
+          for="totp_reset_code"
+        >
           <span class="label-text">{gettext("Current TOTP Code")}</span>
         </label>
         <input
@@ -47,7 +55,7 @@
           id="totp_reset_code"
           name="totp_reset[code]"
           value={@form[:code].value}
-          class="input input-bordered w-full text-center text-2xl tracking-widest"
+          class="totp-reset-code-input input input-bordered w-full text-center text-2xl tracking-widest"
           inputmode="numeric"
           pattern="[0-9]{6}"
           maxlength="6"
@@ -58,8 +66,9 @@
     <% end %>
 
     <button
+      id="totp-reset-submit"
       type="submit"
-      class="btn btn-primary w-full"
+      class="totp-reset-submit btn btn-primary w-full"
       phx-disable-with={gettext("Resetting...")}
     >
       <%= if @mode == :reset do %>
@@ -81,7 +90,11 @@
   </form>
 
   <nav id="totp-reset-nav" class="text-center mt-4" aria-label={gettext("TOTP reset help")}>
-    <.link navigate="/profile" class="link link-hover text-sm">
+    <.link
+      id="totp-reset-profile-link"
+      navigate="/profile"
+      class="totp-reset-profile-link link link-hover text-sm"
+    >
       {gettext("Back to Profile")}
     </.link>
   </nav>

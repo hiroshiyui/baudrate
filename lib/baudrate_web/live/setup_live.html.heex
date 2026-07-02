@@ -8,27 +8,46 @@
   <ul id="setup-steps" class="steps steps-horizontal w-full">
     <li
       :if={@key_required}
+      id="setup-step-indicator-verification"
       class={[
-        "step",
+        "setup-step-indicator step",
         @step in [:verify_key, :database, :site_name, :admin_account, :recovery_codes] &&
           "step-primary"
       ]}
     >
       {gettext("Verification")}
     </li>
-    <li class={[
-      "step",
-      @step in [:database, :site_name, :admin_account, :recovery_codes] && "step-primary"
-    ]}>
+    <li
+      id="setup-step-indicator-database"
+      class={[
+        "setup-step-indicator step",
+        @step in [:database, :site_name, :admin_account, :recovery_codes] && "step-primary"
+      ]}
+    >
       {gettext("Database")}
     </li>
-    <li class={["step", @step in [:site_name, :admin_account, :recovery_codes] && "step-primary"]}>
+    <li
+      id="setup-step-indicator-site-name"
+      class={[
+        "setup-step-indicator step",
+        @step in [:site_name, :admin_account, :recovery_codes] && "step-primary"
+      ]}
+    >
       {gettext("Site Name")}
     </li>
-    <li class={["step", @step in [:admin_account, :recovery_codes] && "step-primary"]}>
+    <li
+      id="setup-step-indicator-admin-account"
+      class={[
+        "setup-step-indicator step",
+        @step in [:admin_account, :recovery_codes] && "step-primary"
+      ]}
+    >
       {gettext("Admin Account")}
     </li>
-    <li class={["step", @step == :recovery_codes && "step-primary"]}>
+    <li
+      id="setup-step-indicator-recovery-codes"
+      class={["setup-step-indicator step", @step == :recovery_codes && "step-primary"]}
+    >
       {gettext("Recovery Codes")}
     </li>
   </ul>
@@ -37,7 +56,9 @@
   <div :if={@step == :verify_key} id="setup-step-verify-key" class="space-y-6">
     <div class="card bg-base-200">
       <div class="card-body">
-        <h2 class="card-title">{gettext("Installation Key")}</h2>
+        <h2 id="setup-verify-key-title" class="setup-card-title card-title">
+          {gettext("Installation Key")}
+        </h2>
         <p class="text-sm text-base-content/70">
           {gettext("Enter the installation key to proceed with setup.")}
         </p>
@@ -50,7 +71,7 @@
             required
             autocomplete="off"
           />
-          <div :if={@key_error} class="mt-2">
+          <div :if={@key_error} id="setup-key-error" class="setup-key-error mt-2">
             <p class="text-sm text-error">{@key_error}</p>
           </div>
           <div class="flex justify-end mt-4">
@@ -72,22 +93,40 @@
   <div :if={@step == :database} id="setup-step-database" class="space-y-6">
     <div class="card bg-base-200">
       <div class="card-body">
-        <h2 class="card-title">{gettext("Database Connection")}</h2>
+        <h2 id="setup-database-connection-title" class="setup-card-title card-title">
+          {gettext("Database Connection")}
+        </h2>
         <div class="flex items-center gap-2">
-          <span :if={match?({:ok, _}, @db_status)} class="badge badge-success gap-1">
+          <span
+            :if={match?({:ok, _}, @db_status)}
+            id="setup-db-status-connected"
+            class="setup-db-status badge badge-success gap-1"
+          >
             <.icon name="hero-check-circle-mini" class="size-4" />
             {gettext("Connected")}
           </span>
-          <span :if={match?({:error, _}, @db_status)} class="badge badge-error gap-1">
+          <span
+            :if={match?({:error, _}, @db_status)}
+            id="setup-db-status-disconnected"
+            class="setup-db-status badge badge-error gap-1"
+          >
             <.icon name="hero-x-circle-mini" class="size-4" />
             {gettext("Disconnected")}
           </span>
         </div>
-        <div :if={match?({:ok, _info}, @db_status)} class="text-sm text-base-content/70">
+        <div
+          :if={match?({:ok, _info}, @db_status)}
+          id="setup-db-info"
+          class="setup-db-info text-sm text-base-content/70"
+        >
           <% {:ok, info} = @db_status %>
           <p>{gettext("Database: %{name}", name: info.database)}</p>
         </div>
-        <div :if={match?({:error, _reason}, @db_status)} class="text-sm text-error">
+        <div
+          :if={match?({:error, _reason}, @db_status)}
+          id="setup-db-error"
+          class="setup-db-error text-sm text-error"
+        >
           <p>{gettext("Unable to connect to database. Check your configuration.")}</p>
         </div>
       </div>
@@ -95,14 +134,24 @@
 
     <div class="card bg-base-200">
       <div class="card-body">
-        <h2 class="card-title">{gettext("Migrations")}</h2>
+        <h2 id="setup-migrations-title" class="setup-card-title card-title">
+          {gettext("Migrations")}
+        </h2>
         <div class="flex items-center gap-2">
-          <span :if={match?({:ok, _}, @migrations_status)} class="badge badge-success gap-1">
+          <span
+            :if={match?({:ok, _}, @migrations_status)}
+            id="setup-migrations-status-applied"
+            class="setup-migrations-status badge badge-success gap-1"
+          >
             <.icon name="hero-check-circle-mini" class="size-4" />
             <% {:ok, count} = @migrations_status %>
             {gettext("%{count} migration(s) applied", count: count)}
           </span>
-          <span :if={match?({:error, _}, @migrations_status)} class="badge badge-error gap-1">
+          <span
+            :if={match?({:error, _}, @migrations_status)}
+            id="setup-migrations-status-pending"
+            class="setup-migrations-status badge badge-error gap-1"
+          >
             <.icon name="hero-x-circle-mini" class="size-4" />
             {gettext("Pending migrations")}
           </span>
@@ -130,7 +179,9 @@
   <div :if={@step == :site_name} id="setup-step-site-name" class="space-y-6">
     <div class="card bg-base-200">
       <div class="card-body">
-        <h2 class="card-title">{gettext("Site Name")}</h2>
+        <h2 id="setup-site-name-title" class="setup-card-title card-title">
+          {gettext("Site Name")}
+        </h2>
         <p class="text-sm text-base-content/70">
           {gettext("Choose a name for your application.")}
         </p>
@@ -155,7 +206,9 @@
   <div :if={@step == :admin_account} id="setup-step-admin-account" class="space-y-6">
     <div class="card bg-base-200">
       <div class="card-body">
-        <h2 class="card-title">{gettext("Admin Account")}</h2>
+        <h2 id="setup-admin-account-title" class="setup-card-title card-title">
+          {gettext("Admin Account")}
+        </h2>
         <p class="text-sm text-base-content/70">{gettext("Create the administrator account.")}</p>
         <.form for={@admin_form} phx-change="validate_admin" phx-submit="complete_setup">
           <.input
@@ -296,8 +349,7 @@
                   true -> gettext("Strong")
                 end
               }
-            >
-            </progress>
+            ></progress>
           </div>
 
           <div class="flex justify-between mt-4">
@@ -319,7 +371,9 @@
   <div :if={@step == :recovery_codes} id="setup-step-recovery-codes" class="space-y-6">
     <div class="card bg-base-200">
       <div class="card-body space-y-4">
-        <h2 class="card-title">{gettext("Recovery Codes")}</h2>
+        <h2 id="setup-recovery-codes-title" class="setup-card-title card-title">
+          {gettext("Recovery Codes")}
+        </h2>
 
         <div class="alert alert-warning">
           <.icon name="hero-exclamation-triangle" class="size-5" />
@@ -333,13 +387,21 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2 font-mono text-sm">
-          <div :for={code <- @recovery_codes} class="bg-base-300 rounded px-3 py-1.5 text-center">
+        <div id="setup-recovery-codes-grid" class="grid grid-cols-2 gap-2 font-mono text-sm">
+          <div
+            :for={code <- @recovery_codes}
+            id={"setup-recovery-code-#{code}"}
+            class="setup-recovery-code bg-base-300 rounded px-3 py-1.5 text-center"
+          >
             {code}
           </div>
         </div>
 
-        <button phx-click="ack_codes" class="btn btn-primary w-full">
+        <button
+          id="setup-ack-codes"
+          phx-click="ack_codes"
+          class="setup-ack-codes btn btn-primary w-full"
+        >
           {gettext("I have saved my recovery codes")}
         </button>
       </div>

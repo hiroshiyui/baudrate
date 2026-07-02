@@ -1,16 +1,25 @@
 <div id="conversation-page" class="conversation-page space-y-4">
-  <div id="conversation-header" class="flex items-center gap-3">
+  <div id="conversation-header" class="conversation-header flex items-center gap-3">
     <.link
+      id="conversation-back-link"
       navigate="/messages"
-      class="btn btn-ghost btn-sm"
+      class="conversation-back-link btn btn-ghost btn-sm"
       aria-label={gettext("Back to messages")}
     >
       <.icon name="hero-arrow-left" class="size-4" />
     </.link>
-    <h1 :if={@mode == :select_recipient} id="conversation-heading" class="text-xl font-bold">
+    <h1
+      :if={@mode == :select_recipient}
+      id="conversation-heading"
+      class="conversation-heading text-xl font-bold"
+    >
       {gettext("New Message")}
     </h1>
-    <h1 :if={@mode != :select_recipient} id="conversation-heading" class="text-xl font-bold">
+    <h1
+      :if={@mode != :select_recipient}
+      id="conversation-heading"
+      class="conversation-heading text-xl font-bold"
+    >
       {participant_name(@other_participant)}
     </h1>
   </div>
@@ -21,15 +30,17 @@
         <.form
           for={%{}}
           as={:search}
+          id="conversation-recipient-form"
           phx-change="search_recipient"
           phx-submit="search_recipient"
         >
           <input
             type="text"
             name="search[query]"
+            id="conversation-recipient-search"
             value={@search_query}
             placeholder={gettext("Search by username...")}
-            class="input input-bordered w-full"
+            class="conversation-recipient-search input input-bordered w-full"
             autocomplete="off"
             phx-debounce="300"
             autofocus
@@ -39,37 +50,48 @@
 
         <div
           :if={@search_results != []}
-          class="space-y-1"
+          id="conversation-search-results"
+          class="conversation-search-results space-y-1"
           role="listbox"
           aria-label={gettext("Search results")}
         >
           <button
             :for={user <- @search_results}
+            id={"conversation-search-result-#{user.id}"}
             type="button"
-            class="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-base-300 transition-colors cursor-pointer"
+            class="conversation-search-result flex items-center gap-3 w-full p-2 rounded-lg hover:bg-base-300 transition-colors cursor-pointer"
             phx-click="select_recipient"
             phx-value-username={user.username}
             role="option"
           >
             <.avatar user={user} size={36} />
-            <span class="font-medium">{user.username}</span>
+            <span class="conversation-search-result-name font-medium">{user.username}</span>
           </button>
         </div>
 
         <div
           :if={@search_results == [] && String.length(@search_query) >= 2}
-          class="text-center py-4 text-base-content/70"
+          id="conversation-no-results"
+          class="conversation-no-results text-center py-4 text-base-content/70"
         >
           {gettext("No users found.")}
         </div>
 
-        <div :if={@search_query == ""} class="text-center py-4 text-base-content/70">
+        <div
+          :if={@search_query == ""}
+          id="conversation-search-hint"
+          class="conversation-search-hint text-center py-4 text-base-content/70"
+        >
           {gettext("Type a username to search.")}
         </div>
       </div>
     </div>
   <% else %>
-    <div role="alert" class="alert alert-warning text-sm">
+    <div
+      id="conversation-encryption-notice"
+      role="alert"
+      class="conversation-encryption-notice alert alert-warning text-sm"
+    >
       <.icon name="hero-shield-exclamation" class="size-4" />
       <span>
         {gettext(
@@ -80,12 +102,16 @@
 
     <div class="card bg-base-200 shadow-sm">
       <div
-        class="card-body p-4 space-y-3 max-h-[60vh] overflow-y-auto"
+        class="message-list card-body p-4 space-y-3 max-h-[60vh] overflow-y-auto"
         id="message-list"
         phx-hook="ScrollBottom"
         aria-live="polite"
       >
-        <div :if={@messages == []} class="text-center py-8 text-base-content/70">
+        <div
+          :if={@messages == []}
+          id="conversation-empty"
+          class="conversation-empty text-center py-8 text-base-content/70"
+        >
           {gettext("No messages yet. Send the first one!")}
         </div>
 
@@ -123,8 +149,9 @@
           </div>
           <div :if={msg.sender_user_id == @current_user.id} class="chat-footer">
             <button
+              id={"message-delete-#{msg.id}"}
               type="button"
-              class="btn btn-ghost btn-xs text-error"
+              class="message-delete btn btn-ghost btn-xs text-error"
               phx-click="delete_message"
               phx-value-id={msg.id}
               data-confirm={gettext("Delete this message?")}
@@ -135,24 +162,30 @@
         </div>
       </div>
 
-      <div id="conversation-compose" class="border-t border-base-300 p-4">
+      <div id="conversation-compose" class="conversation-compose border-t border-base-300 p-4">
         <.form
           for={@message_form}
           id={"message-form-#{length(@messages)}"}
           phx-submit="send_message"
-          class="flex gap-2"
+          class="conversation-compose-form flex gap-2"
         >
           <input
             type="text"
             name="message[body]"
+            id="conversation-compose-input"
             value={@message_form[:body].value}
             placeholder={gettext("Type a message...")}
-            class="input input-bordered flex-1"
+            class="conversation-compose-input input input-bordered flex-1"
             autocomplete="off"
             maxlength="65536"
             aria-label={gettext("Message")}
           />
-          <button type="submit" class="btn btn-primary" aria-label={gettext("Send")}>
+          <button
+            id="conversation-compose-send"
+            type="submit"
+            class="conversation-compose-send btn btn-primary"
+            aria-label={gettext("Send")}
+          >
             <.icon name="hero-paper-airplane" class="size-5" />
           </button>
         </.form>

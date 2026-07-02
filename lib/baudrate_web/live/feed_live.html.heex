@@ -1,9 +1,9 @@
 <div class="flex items-center justify-between mb-6">
-  <h1 id="feed-heading" class="text-2xl font-bold">
+  <h1 id="feed-heading" class="feed-heading text-2xl font-bold">
     {gettext("Feed")}
     <span
       :if={@total > 0}
-      class="badge badge-neutral ml-2"
+      class="feed-count badge badge-neutral ml-2"
       aria-label={gettext("%{count} items", count: @total)}
     >
       {@total}
@@ -21,9 +21,10 @@
           </div>
           <.form
             for={@form}
+            id="feed-quick-post-form"
             phx-change="validate_post"
             phx-submit="submit_post"
-            class="flex-1 space-y-3"
+            class="feed-quick-post-form flex-1 space-y-3"
           >
             <.input
               field={@form[:title]}
@@ -45,8 +46,9 @@
               <.live_file_input upload={@uploads.article_images} class="hidden" />
               <label
                 :if={length(@uploaded_images) < 4}
+                id="feed-add-images-label"
                 for={@uploads.article_images.ref}
-                class="btn btn-sm btn-ghost gap-1 cursor-pointer"
+                class="feed-add-images btn btn-sm btn-ghost gap-1 cursor-pointer"
                 aria-label={gettext("Add Images")}
               >
                 <.icon name="hero-photo" class="size-5" />
@@ -54,9 +56,10 @@
               </label>
               <button
                 type="button"
+                id="feed-toggle-poll"
                 phx-click="toggle_poll"
                 class={[
-                  "btn btn-sm",
+                  "feed-toggle-poll btn btn-sm",
                   (@poll_enabled && "btn-error btn-outline") || "btn-ghost"
                 ]}
               >
@@ -323,7 +326,8 @@
               />
               <button
                 type="submit"
-                class="btn btn-primary btn-sm"
+                id="feed-post-submit"
+                class="feed-post-submit btn btn-primary btn-sm"
                 phx-disable-with={gettext("Posting...")}
               >
                 {gettext("Post")}
@@ -334,10 +338,14 @@
       </div>
     </div>
 
-    <div :if={@items == []} class="text-base-content/70 text-center py-8">
+    <div
+      :if={@items == []}
+      id="feed-empty"
+      class="feed-empty text-base-content/70 text-center py-8"
+    >
       {gettext("Your feed is empty.")}
       <div class="mt-2">
-        <.link navigate="/search" class="link link-primary">
+        <.link id="feed-empty-search-link" navigate="/search" class="link link-primary">
           {gettext("Search for users or remote actors to follow")}
         </.link>
       </div>
@@ -354,6 +362,14 @@
     >
       <article
         :for={item <- @items}
+        id={
+          "feed-item-" <>
+            case item.source do
+              :remote -> "fi-#{item.feed_item.id}"
+              :local -> "a-#{item.article.id}"
+              :local_comment -> "c-#{item.comment.id}"
+            end
+        }
         class="feed-item card bg-base-200 shadow-sm"
         aria-label={feed_item_label(item)}
       >
@@ -433,11 +449,14 @@
             </div>
           </div>
 
-          <h2 :if={item.feed_item.title} class="font-semibold text-lg mb-1 break-words">
+          <h2
+            :if={item.feed_item.title}
+            class="feed-item-title font-semibold text-lg mb-1 break-words"
+          >
             {item.feed_item.title}
           </h2>
 
-          <p class="text-sm text-base-content/80 line-clamp-3 break-words">
+          <p class="feed-item-body text-sm text-base-content/80 line-clamp-3 break-words">
             {digest(item.feed_item.body_html)}
           </p>
 
@@ -466,7 +485,7 @@
               href={item.feed_item.source_url}
               target="_blank"
               rel="nofollow noopener noreferrer"
-              class="btn btn-ghost btn-xs"
+              class="feed-item-source-link btn btn-ghost btn-xs"
               title={gettext("View original")}
               aria-label={gettext("View original")}
             >
@@ -475,7 +494,7 @@
             <button
               phx-click="toggle_reply"
               phx-value-id={item.feed_item.id}
-              class="btn btn-ghost btn-xs"
+              class="feed-item-reply btn btn-ghost btn-xs"
               aria-label={gettext("Reply")}
             >
               <.icon name="hero-chat-bubble-left" class="size-4" />
@@ -490,7 +509,7 @@
             <button
               phx-click="toggle_feed_item_like"
               phx-value-id={item.feed_item.id}
-              class="btn btn-ghost btn-xs"
+              class="feed-item-like btn btn-ghost btn-xs"
               aria-label={
                 if MapSet.member?(@feed_item_liked_ids, item.feed_item.id),
                   do: gettext("Unlike"),
@@ -512,7 +531,7 @@
             <button
               phx-click="toggle_feed_item_boost"
               phx-value-id={item.feed_item.id}
-              class="btn btn-ghost btn-xs"
+              class="feed-item-boost btn btn-ghost btn-xs"
               aria-label={
                 if MapSet.member?(@feed_item_boosted_ids, item.feed_item.id),
                   do: gettext("Unboost"),
@@ -536,7 +555,7 @@
               phx-click="toggle_forward_search"
               phx-value-id={item.feed_item.id}
               phx-value-type="feed_item"
-              class="btn btn-ghost btn-xs"
+              class="feed-item-forward btn btn-ghost btn-xs"
               aria-label={gettext("Forward to Board")}
               title={gettext("Forward to Board")}
             >
@@ -660,7 +679,7 @@
               for={@reply_form}
               phx-change="validate_reply"
               phx-submit="submit_reply"
-              class="space-y-2"
+              class="feed-reply-form space-y-2"
             >
               <input type="hidden" name="feed_item_id" value={item.feed_item.id} />
               <.input
@@ -678,14 +697,14 @@
               <div class="flex justify-end gap-2 mt-2">
                 <button
                   type="button"
-                  class="btn btn-ghost btn-sm"
+                  class="feed-reply-cancel btn btn-ghost btn-sm"
                   phx-click="cancel_reply"
                 >
                   {gettext("Cancel")}
                 </button>
                 <button
                   type="submit"
-                  class="btn btn-primary btn-sm"
+                  class="feed-reply-submit btn btn-primary btn-sm"
                   phx-disable-with={gettext("Sending...")}
                 >
                   {gettext("Reply")}
@@ -727,12 +746,12 @@
 
           <.link
             navigate={~p"/articles/#{item.article.slug}"}
-            class="font-semibold text-lg mb-1 link link-hover break-words"
+            class="feed-item-title font-semibold text-lg mb-1 link link-hover break-words"
           >
             {item.article.title}
           </.link>
 
-          <p class="text-sm text-base-content/80 line-clamp-3 break-words">
+          <p class="feed-item-body text-sm text-base-content/80 line-clamp-3 break-words">
             {digest(item.article.body)}
           </p>
 
@@ -760,7 +779,7 @@
             <.link
               :if={item.comment_count > 0}
               navigate={~p"/articles/#{item.article.slug}"}
-              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-base-content"
+              class="feed-item-comments inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-base-content"
               aria-label={ngettext("1 comment", "%{count} comments", item.comment_count)}
             >
               <.icon name="hero-chat-bubble-left-ellipsis" class="size-4" />
@@ -771,7 +790,7 @@
               :if={item.article.user_id != @current_user.id}
               phx-click="toggle_article_like"
               phx-value-id={item.article.id}
-              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
+              class="feed-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
               aria-label={
                 if MapSet.member?(@article_liked_ids, item.article.id),
                   do: gettext("Unlike"),
@@ -798,7 +817,7 @@
               :if={item.article.user_id != @current_user.id}
               phx-click="toggle_article_boost"
               phx-value-id={item.article.id}
-              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
+              class="feed-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
               aria-label={
                 if MapSet.member?(@article_boosted_ids, item.article.id),
                   do: gettext("Unboost"),
@@ -857,13 +876,13 @@
             {gettext("commented on")}
             <.link
               navigate={~p"/articles/#{item.comment.article.slug}"}
-              class="link link-hover font-semibold break-words"
+              class="feed-item-comment-article link link-hover font-semibold break-words"
             >
               {item.comment.article.title}
             </.link>
           </div>
 
-          <p class="text-sm text-base-content/80 line-clamp-3 break-words">
+          <p class="feed-item-body text-sm text-base-content/80 line-clamp-3 break-words">
             {digest(item.comment.body)}
           </p>
 
@@ -874,7 +893,7 @@
             <button
               phx-click="toggle_comment_like"
               phx-value-id={item.comment.id}
-              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
+              class="feed-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
               aria-label={
                 if MapSet.member?(@comment_liked_ids, item.comment.id),
                   do: gettext("Unlike"),
@@ -899,7 +918,7 @@
             <button
               phx-click="toggle_comment_boost"
               phx-value-id={item.comment.id}
-              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
+              class="feed-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
               aria-label={
                 if MapSet.member?(@comment_boosted_ids, item.comment.id),
                   do: gettext("Unboost"),
@@ -926,7 +945,7 @@
               phx-click="toggle_forward_search"
               phx-value-id={item.comment.id}
               phx-value-type="comment"
-              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-primary cursor-pointer"
+              class="feed-item-forward inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-primary cursor-pointer"
               aria-label={gettext("Forward to Board")}
               title={gettext("Forward to Board")}
             >
@@ -1047,13 +1066,13 @@
             {gettext("commented on")}
             <.link
               navigate={~p"/articles/#{item.comment.article.slug}"}
-              class="link link-hover font-semibold break-words"
+              class="feed-item-comment-article link link-hover font-semibold break-words"
             >
               {item.comment.article.title}
             </.link>
           </div>
 
-          <p class="text-sm text-base-content/80 line-clamp-3 break-words">
+          <p class="feed-item-body text-sm text-base-content/80 line-clamp-3 break-words">
             {digest(item.comment.body)}
           </p>
 
@@ -1061,7 +1080,7 @@
             <button
               phx-click="toggle_comment_like"
               phx-value-id={item.comment.id}
-              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
+              class="feed-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
               aria-label={
                 if MapSet.member?(@comment_liked_ids, item.comment.id),
                   do: gettext("Unlike"),
@@ -1086,7 +1105,7 @@
             <button
               phx-click="toggle_comment_boost"
               phx-value-id={item.comment.id}
-              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
+              class="feed-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
               aria-label={
                 if MapSet.member?(@comment_boosted_ids, item.comment.id),
                   do: gettext("Unboost"),
@@ -1113,7 +1132,7 @@
               phx-click="toggle_forward_search"
               phx-value-id={item.comment.id}
               phx-value-type="comment"
-              class="inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-primary cursor-pointer"
+              class="feed-item-forward inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-primary cursor-pointer"
               aria-label={gettext("Forward to Board")}
               title={gettext("Forward to Board")}
             >
@@ -1183,11 +1202,17 @@
     />
   </div>
 
-  <aside id="profile-sidebar" class="hidden lg:block" aria-label={gettext("Profile")}>
+  <aside
+    id="profile-sidebar"
+    class="feed-profile-sidebar hidden lg:block"
+    aria-label={gettext("Profile")}
+  >
     <div class="card bg-base-200 shadow-sm sticky top-24">
       <div class="card-body p-4 items-center text-center">
         <.avatar user={@current_user} size={48} />
-        <h2 class="font-bold truncate max-w-full">{display_name(@current_user)}</h2>
+        <h2 id="feed-profile-name" class="feed-profile-name font-bold truncate max-w-full">
+          {display_name(@current_user)}
+        </h2>
         <div
           :if={@current_user.display_name}
           class="text-sm text-base-content/70 truncate max-w-full"
@@ -1202,24 +1227,30 @@
           </time>
         </p>
 
-        <div class="stats stats-vertical shadow w-full mt-2">
+        <div id="feed-profile-stats" class="stats stats-vertical shadow w-full mt-2">
           <.link
+            id="feed-profile-articles-link"
             navigate={~p"/users/#{@current_user.username}/articles"}
-            class="stat py-2 hover:bg-base-200 transition-colors cursor-pointer"
+            class="feed-profile-stat stat py-2 hover:bg-base-200 transition-colors cursor-pointer"
           >
             <div class="stat-title">{gettext("Articles")}</div>
-            <div class="stat-value text-lg">{@article_count}</div>
+            <div class="feed-profile-article-count stat-value text-lg">{@article_count}</div>
           </.link>
           <.link
+            id="feed-profile-comments-link"
             navigate={~p"/users/#{@current_user.username}/comments"}
-            class="stat py-2 hover:bg-base-200 transition-colors cursor-pointer"
+            class="feed-profile-stat stat py-2 hover:bg-base-200 transition-colors cursor-pointer"
           >
             <div class="stat-title">{gettext("Comments")}</div>
-            <div class="stat-value text-lg">{@comment_count}</div>
+            <div class="feed-profile-comment-count stat-value text-lg">{@comment_count}</div>
           </.link>
         </div>
 
-        <.link navigate={~p"/profile"} class="btn btn-sm btn-outline w-full mt-2">
+        <.link
+          id="feed-profile-link"
+          navigate={~p"/profile"}
+          class="feed-profile-link btn btn-sm btn-outline w-full mt-2"
+        >
           <.icon name="hero-user-circle" class="size-4" />
           {gettext("Profile")}
         </.link>

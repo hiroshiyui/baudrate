@@ -1,4 +1,8 @@
-<nav class="breadcrumbs text-sm mb-4" aria-label={gettext("Breadcrumb")}>
+<nav
+  id="board-breadcrumb"
+  class="board-breadcrumb breadcrumbs text-sm mb-4"
+  aria-label={gettext("Breadcrumb")}
+>
   <ul>
     <li><.link navigate="/">{gettext("Home")}</.link></li>
     <%= for ancestor <- @ancestors do %>
@@ -11,33 +15,41 @@
   </ul>
 </nav>
 
-<h1 id="board-heading" class="text-2xl font-bold mb-2">{@board.name}</h1>
-<p :if={@board.description} class="text-base-content/70 mb-2">{@board.description}</p>
-<div :if={@board.ap_enabled} class="text-sm text-base-content/70 flex items-center gap-1 mb-4">
+<h1 id="board-heading" class="board-heading text-2xl font-bold mb-2">{@board.name}</h1>
+<p :if={@board.description} class="board-description text-base-content/70 mb-2">
+  {@board.description}
+</p>
+<div
+  :if={@board.ap_enabled}
+  class="board-fediverse-handle text-sm text-base-content/70 flex items-center gap-1 mb-4"
+>
   <.icon name="hero-identification" class="size-6 shrink-0" />
   <span title={gettext("Fediverse handle")}>{fediverse_handle(@board)}</span>
 </div>
 
-<div class="flex flex-wrap gap-2 mb-6">
+<div id="board-actions" class="board-actions flex flex-wrap gap-2 mb-6">
   <.link
     :if={@can_create}
+    id="board-new-article"
     navigate={~p"/boards/#{@board.slug}/articles/new"}
-    class="btn btn-sm btn-primary"
+    class="board-action btn btn-sm btn-primary"
   >
     {gettext("New Article")}
   </.link>
   <.link
     :if={@can_manage_follows}
+    id="board-manage-follows"
     navigate={~p"/boards/#{@board.slug}/follows"}
-    class="btn btn-sm btn-ghost"
+    class="board-action btn btn-sm btn-ghost"
   >
     {gettext("Manage Follows")}
   </.link>
   <button
     :if={@current_user && MapSet.size(@unread_article_ids) > 0}
+    id="board-mark-all-read"
     type="button"
     phx-click="mark_all_read"
-    class="btn btn-sm btn-ghost"
+    class="board-action btn btn-sm btn-ghost"
   >
     <.icon name="hero-check" class="size-4" />
     {gettext("Mark all as read")}
@@ -46,14 +58,16 @@
 
 <aside
   :if={@board_moderators != []}
-  class="flex flex-wrap items-center gap-2 text-sm text-base-content/70 mb-6"
+  id="board-moderators"
+  class="board-moderators flex flex-wrap items-center gap-2 text-sm text-base-content/70 mb-6"
   aria-label={gettext("Board moderators")}
 >
   <span>{gettext("Moderated by")}</span>
   <.link
     :for={bm <- @board_moderators}
+    id={"board-moderator-#{bm.user.username}"}
     navigate={~p"/users/#{bm.user.username}"}
-    class="inline-flex items-center gap-1 link link-hover"
+    class="board-moderator inline-flex items-center gap-1 link link-hover"
   >
     <.avatar user={bm.user} size={24} />
     {display_name(bm.user)}
@@ -63,38 +77,41 @@
 <section
   :if={@sub_boards != []}
   id="sub-boards-section"
-  class="mb-6"
+  class="board-sub-boards-section mb-6"
   aria-labelledby="sub-boards-heading"
 >
-  <h2 id="sub-boards-heading" class="text-lg font-semibold mb-3">{gettext("Sub-boards")}</h2>
+  <h2 id="sub-boards-heading" class="board-sub-boards-heading text-lg font-semibold mb-3">
+    {gettext("Sub-boards")}
+  </h2>
   <div id="sub-boards" class="grid grid-cols-1 sm:grid-cols-2 gap-3" data-focus-target>
     <.link
       :for={sub <- @sub_boards}
       id={"sub-board-#{sub.slug}"}
       navigate={~p"/boards/#{sub.slug}"}
-      class="board card bg-base-200 shadow-sm hover:bg-base-300 transition-colors"
+      class="board sub-board card bg-base-200 shadow-sm hover:bg-base-300 transition-colors"
     >
       <div class="card-body p-4">
-        <h3 class="card-title text-base">
+        <h3 class="sub-board-title card-title text-base">
           {sub.name}
           <span
             :if={@current_user && MapSet.member?(@unread_sub_board_ids, sub.id)}
             class="inline-block w-2 h-2 flex-shrink-0 rounded-full bg-primary"
             aria-label={gettext("Unread")}
-          >
-          </span>
+          ></span>
         </h3>
-        <p :if={sub.description} class="text-sm text-base-content/70">{sub.description}</p>
+        <p :if={sub.description} class="sub-board-description text-sm text-base-content/70">
+          {sub.description}
+        </p>
       </div>
     </.link>
   </div>
 </section>
 
-<div :if={@articles == []} class="text-base-content/70 text-center py-8">
+<div :if={@articles == []} class="board-articles-empty text-base-content/70 text-center py-8">
   {gettext("No articles yet.")}
 </div>
 
-<div :if={@articles != []} id="articles" class="space-y-2" data-focus-target>
+<div :if={@articles != []} id="articles" class="board-articles space-y-2" data-focus-target>
   <article
     :for={article <- @articles}
     id={"article-#{article.slug}"}
@@ -105,7 +122,7 @@
       <.link
         navigate={~p"/articles/#{article.slug}"}
         id={"article-title-#{article.slug}"}
-        class="card-title text-base link link-hover stretched-link"
+        class="board-article-title card-title text-base link link-hover stretched-link"
       >
         <span :if={article.pinned} class="badge badge-sm badge-accent">{gettext("Pinned")}</span>
         {article.title}
@@ -118,7 +135,10 @@
           <span class="sr-only">{gettext("Unread")}</span>
         </span>
       </.link>
-      <p :if={article.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
+      <p
+        :if={article.body}
+        class="board-article-digest text-sm text-base-content/80 line-clamp-3 mt-1"
+      >
         {digest(article.body)}
       </p>
       <div
@@ -135,12 +155,12 @@
           alt={article.title}
         />
       </div>
-      <div class="flex flex-wrap items-center gap-1 text-sm text-base-content/70 mt-1">
+      <div class="board-article-meta flex flex-wrap items-center gap-1 text-sm text-base-content/70 mt-1">
         <span :if={article.user} class="inline-flex items-center gap-1">
           {gettext("by")}
           <.link
             navigate={~p"/users/#{article.user.username}"}
-            class="inline-flex items-center gap-1 link link-hover font-semibold relative z-10"
+            class="board-article-author inline-flex items-center gap-1 link link-hover font-semibold relative z-10"
           >
             <.avatar user={article.user} size={24} />
             {display_name(article.user)}
@@ -161,7 +181,7 @@
             href={remote_actor_profile_url(article.remote_actor)}
             target="_blank"
             rel="nofollow noopener noreferrer"
-            class="inline-flex items-center gap-1 font-semibold link link-hover relative z-10"
+            class="board-article-remote-author inline-flex items-center gap-1 font-semibold link link-hover relative z-10"
           >
             <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
               <img
@@ -185,7 +205,7 @@
           href={article.url || article.ap_id}
           target="_blank"
           rel="nofollow noopener noreferrer"
-          class="link link-hover relative z-10"
+          class="board-article-original-link link link-hover relative z-10"
           title={gettext("View original")}
         >
           <time datetime={datetime_attr(article_datetime(article))}>
@@ -195,7 +215,7 @@
         <.link
           :if={!article.ap_id}
           navigate={~p"/articles/#{article.slug}"}
-          class="link link-hover"
+          class="board-article-time-link link link-hover"
         >
           <time datetime={datetime_attr(article_datetime(article))}>
             {format_datetime(article_datetime(article))}
@@ -204,7 +224,7 @@
         <.link
           :if={Map.get(@comment_counts, article.id, 0) > 0}
           navigate={~p"/articles/#{article.slug}"}
-          class="inline-flex items-center gap-1 text-base-content/60 hover:text-base-content"
+          class="board-article-comment-link inline-flex items-center gap-1 text-base-content/60 hover:text-base-content"
           aria-label={
             ngettext("1 comment", "%{count} comments", Map.get(@comment_counts, article.id, 0))
           }
@@ -215,9 +235,10 @@
         <%!-- Like button --%>
         <button
           :if={@current_user && article.user_id != @current_user.id}
+          id={"board-article-like-#{article.id}"}
           phx-click="toggle_article_like"
           phx-value-id={article.id}
-          class="relative z-10 inline-flex items-center gap-1 text-base-content/60 hover:text-error cursor-pointer"
+          class="board-article-like relative z-10 inline-flex items-center gap-1 text-base-content/60 hover:text-error cursor-pointer"
           aria-label={
             if MapSet.member?(@article_liked_ids, article.id),
               do: gettext("Unlike"),
@@ -243,9 +264,10 @@
         <%!-- Boost button --%>
         <button
           :if={@current_user && article.user_id != @current_user.id}
+          id={"board-article-boost-#{article.id}"}
           phx-click="toggle_article_boost"
           phx-value-id={article.id}
-          class="relative z-10 inline-flex items-center gap-1 text-base-content/60 hover:text-success cursor-pointer"
+          class="board-article-boost relative z-10 inline-flex items-center gap-1 text-base-content/60 hover:text-success cursor-pointer"
           aria-label={
             if MapSet.member?(@article_boosted_ids, article.id),
               do: gettext("Unboost"),

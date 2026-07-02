@@ -1,32 +1,42 @@
 <div id="admin-moderation-page" class="admin-moderation-page space-y-6">
-  <h1 id="moderation-heading" class="text-2xl font-bold">{gettext("Moderation Queue")}</h1>
+  <h1 id="admin-moderation-heading" class="admin-moderation-heading text-2xl font-bold">
+    {gettext("Moderation Queue")}
+  </h1>
 
   <%!-- Status Filter Tabs --%>
-  <div class="tabs tabs-boxed" role="tablist" aria-label={gettext("Report status")}>
+  <div
+    id="admin-moderation-status-tabs"
+    class="admin-moderation-status-tabs tabs tabs-boxed"
+    role="tablist"
+    aria-label={gettext("Report status")}
+  >
     <button
+      id="admin-moderation-tab-open"
+      class={["admin-moderation-status-tab tab", @status_filter == "open" && "tab-active"]}
       phx-click="filter"
       phx-value-status="open"
       role="tab"
       aria-selected={to_string(@status_filter == "open")}
-      class={["tab", @status_filter == "open" && "tab-active"]}
     >
       {gettext("Open")}
     </button>
     <button
+      id="admin-moderation-tab-resolved"
+      class={["admin-moderation-status-tab tab", @status_filter == "resolved" && "tab-active"]}
       phx-click="filter"
       phx-value-status="resolved"
       role="tab"
       aria-selected={to_string(@status_filter == "resolved")}
-      class={["tab", @status_filter == "resolved" && "tab-active"]}
     >
       {gettext("Resolved")}
     </button>
     <button
+      id="admin-moderation-tab-dismissed"
+      class={["admin-moderation-status-tab tab", @status_filter == "dismissed" && "tab-active"]}
       phx-click="filter"
       phx-value-status="dismissed"
       role="tab"
       aria-selected={to_string(@status_filter == "dismissed")}
-      class={["tab", @status_filter == "dismissed" && "tab-active"]}
     >
       {gettext("Dismissed")}
     </button>
@@ -35,12 +45,14 @@
   <%!-- Bulk action bar (open reports only) --%>
   <div
     :if={@status_filter == "open" and @reports != []}
-    class="flex items-center gap-3 p-3 bg-base-200 rounded-lg"
+    id="admin-moderation-bulk-bar"
+    class="admin-moderation-bulk-bar flex items-center gap-3 p-3 bg-base-200 rounded-lg"
   >
     <label>
       <input
+        id="admin-moderation-select-all"
+        class="admin-moderation-select-all checkbox checkbox-sm"
         type="checkbox"
-        class="checkbox checkbox-sm"
         phx-click="toggle_select_all_reports"
         checked={
           MapSet.size(@selected_report_ids) > 0 and
@@ -49,7 +61,11 @@
         aria-label={gettext("Select all reports")}
       />
     </label>
-    <span :if={MapSet.size(@selected_report_ids) > 0} class="font-medium">
+    <span
+      :if={MapSet.size(@selected_report_ids) > 0}
+      id="admin-moderation-selected-count"
+      class="admin-moderation-selected-count font-medium"
+    >
       {ngettext(
         "%{count} report selected",
         "%{count} reports selected",
@@ -59,37 +75,47 @@
     </span>
     <button
       :if={MapSet.size(@selected_report_ids) > 0}
+      id="admin-moderation-bulk-resolve"
+      class="admin-moderation-bulk-resolve btn btn-sm btn-success"
       phx-click="show_bulk_resolve_modal"
-      class="btn btn-sm btn-success"
     >
       {gettext("Resolve Selected")}
     </button>
     <button
       :if={MapSet.size(@selected_report_ids) > 0}
+      id="admin-moderation-bulk-dismiss"
+      class="admin-moderation-bulk-dismiss btn btn-sm btn-ghost"
       phx-click="bulk_dismiss"
       data-confirm={gettext("Dismiss all selected reports?")}
-      class="btn btn-sm btn-ghost"
     >
       {gettext("Dismiss Selected")}
     </button>
   </div>
 
   <%!-- Reports --%>
-  <div id="moderation-reports" class="space-y-4">
-    <div :if={@reports == []} class="text-center py-8 opacity-70">
+  <div id="admin-moderation-reports" class="admin-moderation-reports space-y-4">
+    <div
+      :if={@reports == []}
+      id="admin-moderation-empty"
+      class="admin-moderation-empty text-center py-8 opacity-70"
+    >
       {gettext("No reports with status \"%{status}\".", status: @status_filter)}
     </div>
 
     <div
       :for={report <- @reports}
-      id={"report-#{report.id}"}
-      class={["report card bg-base-200 shadow-sm", @status_filter == "open" && "relative pl-12"]}
+      id={"admin-moderation-report-#{report.id}"}
+      class={[
+        "admin-moderation-report report card bg-base-200 shadow-sm",
+        @status_filter == "open" && "relative pl-12"
+      ]}
     >
       <div :if={@status_filter == "open"} class="absolute top-4 left-4">
         <label>
           <input
+            id={"admin-moderation-report-select-#{report.id}"}
+            class="admin-moderation-report-select checkbox checkbox-sm"
             type="checkbox"
-            class="checkbox checkbox-sm"
             phx-click="toggle_select_report"
             phx-value-id={report.id}
             checked={MapSet.member?(@selected_report_ids, report.id)}
@@ -119,43 +145,54 @@
           </div>
         </div>
 
-        <div class="mt-2">
+        <div class="admin-moderation-report-reason mt-2">
           <p class="font-semibold">{gettext("Reason:")}</p>
           <p class="whitespace-pre-wrap break-words">{report.reason}</p>
         </div>
 
         <%!-- Reported Content --%>
-        <div :if={report.article} class="mt-2 p-3 bg-base-300 rounded-lg">
+        <div
+          :if={report.article}
+          class="admin-moderation-report-article mt-2 p-3 bg-base-300 rounded-lg"
+        >
           <p class="text-sm font-semibold">{gettext("Reported Article:")}</p>
           <p>{report.article.title}</p>
           <button
             :if={report.status == "open" and is_nil(report.article.deleted_at)}
+            id={"admin-moderation-delete-article-#{report.id}"}
+            class="admin-moderation-delete-article btn btn-error btn-sm mt-1"
             phx-click="delete_content"
             phx-value-type="article"
             phx-value-id={report.article.id}
             data-confirm={gettext("Delete this article?")}
-            class="btn btn-error btn-sm mt-1"
           >
             {gettext("Delete Article")}
           </button>
         </div>
 
-        <div :if={report.comment} class="mt-2 p-3 bg-base-300 rounded-lg">
+        <div
+          :if={report.comment}
+          class="admin-moderation-report-comment mt-2 p-3 bg-base-300 rounded-lg"
+        >
           <p class="text-sm font-semibold">{gettext("Reported Comment:")}</p>
           <p class="text-sm">{String.slice(report.comment.body || "", 0..200)}</p>
           <button
             :if={report.status == "open" and is_nil(report.comment.deleted_at)}
+            id={"admin-moderation-delete-comment-#{report.id}"}
+            class="admin-moderation-delete-comment btn btn-error btn-sm mt-1"
             phx-click="delete_content"
             phx-value-type="comment"
             phx-value-id={report.comment.id}
             data-confirm={gettext("Delete this comment?")}
-            class="btn btn-error btn-sm mt-1"
           >
             {gettext("Delete Comment")}
           </button>
         </div>
 
-        <div :if={report.remote_actor} class="mt-2 p-3 bg-base-300 rounded-lg">
+        <div
+          :if={report.remote_actor}
+          class="admin-moderation-report-actor mt-2 p-3 bg-base-300 rounded-lg"
+        >
           <p class="text-sm font-semibold">{gettext("Reported Actor:")}</p>
           <p class="font-mono text-sm">{report.remote_actor.ap_id}</p>
           <p class="text-sm opacity-70">
@@ -163,7 +200,10 @@
           </p>
         </div>
 
-        <div :if={report.reported_user} class="mt-2 p-3 bg-base-300 rounded-lg">
+        <div
+          :if={report.reported_user}
+          class="admin-moderation-report-user mt-2 p-3 bg-base-300 rounded-lg"
+        >
           <p class="text-sm font-semibold">{gettext("Reported User:")}</p>
           <p>
             {display_name(report.reported_user)}
@@ -183,12 +223,13 @@
         <%!-- Send Flag to Remote --%>
         <div :if={report.status == "open" and report.remote_actor} class="mt-2">
           <button
+            id={"admin-moderation-send-flag-#{report.id}"}
+            class="admin-moderation-send-flag btn btn-warning btn-sm"
             phx-click="send_flag"
             phx-value-id={report.id}
             data-confirm={
               gettext("Send a Flag report to %{domain}?", domain: report.remote_actor.domain)
             }
-            class="btn btn-warning btn-sm"
           >
             {gettext("Send Flag to %{domain}", domain: report.remote_actor.domain)}
           </button>
@@ -196,27 +237,34 @@
 
         <%!-- Actions --%>
         <div :if={report.status == "open"} class="card-actions justify-end mt-4">
-          <form phx-submit="resolve" class="flex gap-2 items-end">
+          <form
+            id={"admin-moderation-resolve-form-#{report.id}"}
+            class="admin-moderation-resolve-form flex gap-2 items-end"
+            phx-submit="resolve"
+          >
             <input type="hidden" name="report_id" value={report.id} />
             <input
+              id={"admin-moderation-resolve-note-#{report.id}"}
+              class="admin-moderation-resolve-note input input-bordered input-sm w-64"
               type="text"
               name="note"
               placeholder={gettext("Resolution note (optional)")}
-              class="input input-bordered input-sm w-64"
               aria-label={gettext("Resolution note")}
             />
             <button
+              id={"admin-moderation-resolve-submit-#{report.id}"}
+              class="admin-moderation-resolve-submit btn btn-success btn-sm"
               type="submit"
-              class="btn btn-success btn-sm"
               phx-disable-with={gettext("Resolving...")}
             >
               {gettext("Resolve")}
             </button>
           </form>
           <button
+            id={"admin-moderation-dismiss-#{report.id}"}
+            class="admin-moderation-dismiss btn btn-ghost btn-sm"
             phx-click="dismiss"
             phx-value-id={report.id}
-            class="btn btn-ghost btn-sm"
           >
             {gettext("Dismiss")}
           </button>
@@ -230,7 +278,7 @@
 <div
   :if={@show_bulk_resolve_modal}
   id="bulk-resolve-modal"
-  class="modal modal-open"
+  class="admin-moderation-bulk-modal modal modal-open"
   role="dialog"
   aria-modal="true"
   aria-labelledby="bulk-resolve-modal-title"
@@ -248,13 +296,17 @@
       )}
     </h3>
     <div class="py-4">
-      <form phx-change="update_bulk_resolve_note">
+      <form
+        id="admin-moderation-bulk-note-form"
+        class="admin-moderation-bulk-note-form"
+        phx-change="update_bulk_resolve_note"
+      >
         <label for="bulk-resolve-note" class="label">
           <span class="label-text">{gettext("Resolution note (optional)")}</span>
         </label>
         <textarea
           id="bulk-resolve-note"
-          class="textarea textarea-bordered w-full"
+          class="admin-moderation-bulk-note textarea textarea-bordered w-full"
           rows="3"
           name="note"
           phx-debounce="300"
@@ -262,10 +314,15 @@
       </form>
     </div>
     <div class="modal-action">
-      <button phx-click="cancel_bulk_resolve" class="btn">{gettext("Cancel")}</button>
       <button
+        id="admin-moderation-bulk-cancel"
+        phx-click="cancel_bulk_resolve"
+        class="admin-moderation-bulk-cancel btn"
+      >{gettext("Cancel")}</button>
+      <button
+        id="admin-moderation-bulk-confirm"
         phx-click="confirm_bulk_resolve"
-        class="btn btn-success"
+        class="admin-moderation-bulk-confirm btn btn-success"
         phx-disable-with={gettext("Resolving...")}
       >
         {gettext("Confirm Resolve")}

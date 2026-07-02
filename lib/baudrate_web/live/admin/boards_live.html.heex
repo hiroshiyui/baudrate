@@ -1,19 +1,30 @@
 <div id="admin-boards-page" class="admin-boards-page space-y-6">
   <div class="flex items-center justify-between">
-    <h1 id="boards-heading" class="text-2xl font-bold">{gettext("Board Management")}</h1>
-    <button :if={!@show_form} phx-click="new" class="btn btn-primary btn-sm">
+    <h1 id="boards-heading" class="admin-boards-title text-2xl font-bold">
+      {gettext("Board Management")}
+    </h1>
+    <button
+      :if={!@show_form}
+      id="admin-boards-new-btn"
+      phx-click="new"
+      class="admin-boards-new-btn btn btn-primary btn-sm"
+    >
       {gettext("New Board")}
     </button>
   </div>
 
   <%!-- Board form (create / edit) --%>
-  <div :if={@show_form} id="board-form-card" class="card bg-base-200 shadow-md">
+  <div
+    :if={@show_form}
+    id="board-form-card"
+    class="admin-boards-form-card card bg-base-200 shadow-md"
+  >
     <div class="card-body">
-      <h2 class="card-title">
+      <h2 id="admin-boards-form-title" class="admin-boards-form-title card-title">
         {if @editing_board, do: gettext("Edit Board"), else: gettext("New Board")}
       </h2>
 
-      <.form for={@form} phx-change="validate" phx-submit="save">
+      <.form id="admin-boards-form" for={@form} phx-change="validate" phx-submit="save">
         <.input field={@form[:name]} type="text" label={gettext("Name")} required />
 
         <%= if @editing_board do %>
@@ -21,9 +32,10 @@
             <label>
               <span class="label mb-1">{gettext("Slug")}</span>
               <input
+                id="admin-boards-slug-display"
                 type="text"
                 value={@editing_board.slug}
-                class="w-full input"
+                class="admin-boards-slug-display w-full input"
                 disabled
               />
             </label>
@@ -99,8 +111,20 @@
         />
 
         <div class="flex justify-end gap-2 mt-4">
-          <button type="button" phx-click="cancel" class="btn">{gettext("Cancel")}</button>
-          <button type="submit" class="btn btn-primary" phx-disable-with={gettext("Saving...")}>
+          <button
+            id="admin-boards-form-cancel"
+            type="button"
+            phx-click="cancel"
+            class="admin-boards-form-cancel btn"
+          >
+            {gettext("Cancel")}
+          </button>
+          <button
+            id="admin-boards-form-save"
+            type="submit"
+            class="admin-boards-form-save btn btn-primary"
+            phx-disable-with={gettext("Saving...")}
+          >
             {gettext("Save")}
           </button>
         </div>
@@ -112,16 +136,17 @@
   <div
     :if={@managing_moderators_board}
     id="board-moderators-panel"
-    class="card bg-base-200 shadow-md"
+    class="admin-boards-moderators-panel card bg-base-200 shadow-md"
   >
     <div class="card-body">
       <div class="flex items-center justify-between">
-        <h2 class="card-title">
+        <h2 id="admin-boards-moderators-title" class="admin-boards-moderators-title card-title">
           {gettext("Board Moderators")} &mdash; {@managing_moderators_board.name}
         </h2>
         <button
+          id="admin-boards-moderators-close"
           phx-click="close_moderators"
-          class="btn btn-sm btn-ghost"
+          class="admin-boards-moderators-close btn btn-sm btn-ghost"
           aria-label={gettext("Close")}
         >
           <.icon name="hero-x-mark" class="size-4" />
@@ -129,24 +154,29 @@
       </div>
 
       <%!-- Current moderators --%>
-      <div :if={@board_moderators == []} class="text-base-content/70 py-2">
+      <div
+        :if={@board_moderators == []}
+        class="admin-boards-moderators-empty text-base-content/70 py-2"
+      >
         {gettext("No moderators assigned.")}
       </div>
 
       <div :if={@board_moderators != []} class="space-y-2">
         <div
           :for={bm <- @board_moderators}
-          class="flex items-center justify-between bg-base-100 rounded-lg p-3"
+          id={"admin-boards-moderator-#{bm.user.id}"}
+          class="admin-boards-moderator flex items-center justify-between bg-base-100 rounded-lg p-3"
         >
           <div class="flex items-center gap-2">
-            <span class="font-medium">{bm.user.username}</span>
+            <span class="admin-boards-moderator-name font-medium">{bm.user.username}</span>
             <span class="badge badge-sm badge-ghost">{translate_role(bm.user.role.name)}</span>
           </div>
           <button
+            id={"admin-boards-moderator-remove-#{bm.user.id}"}
             phx-click="remove_moderator"
             phx-value-user-id={bm.user.id}
             data-confirm={gettext("Remove this moderator?")}
-            class="btn btn-sm btn-error btn-outline"
+            class="admin-boards-moderator-remove btn btn-sm btn-error btn-outline"
           >
             {gettext("Remove")}
           </button>
@@ -155,23 +185,35 @@
 
       <%!-- Add moderator --%>
       <div class="mt-4">
-        <h3 class="text-sm font-semibold mb-2">{gettext("Add Moderator")}</h3>
-        <form phx-change="search_mod_users" class="mb-2">
+        <h3
+          id="admin-boards-add-moderator-title"
+          class="admin-boards-add-moderator-title text-sm font-semibold mb-2"
+        >
+          {gettext("Add Moderator")}
+        </h3>
+        <form id="admin-boards-mod-search-form" phx-change="search_mod_users" class="mb-2">
           <input
+            id="admin-boards-mod-search-input"
             type="text"
             name="search[query]"
             value={@mod_search_query}
             placeholder={gettext("Search users...")}
-            class="input input-bordered input-sm w-full"
+            class="admin-boards-mod-search-input input input-bordered input-sm w-full"
             autocomplete="off"
             aria-label={gettext("Search users to add as moderator")}
             phx-debounce="300"
           />
         </form>
-        <form :if={@active_users != []} phx-submit="add_moderator" class="flex gap-2">
+        <form
+          :if={@active_users != []}
+          id="admin-boards-add-moderator-form"
+          phx-submit="add_moderator"
+          class="flex gap-2"
+        >
           <select
+            id="admin-boards-add-moderator-select"
             name="user_id"
-            class="select select-bordered select-sm flex-1"
+            class="admin-boards-add-moderator-select select select-bordered select-sm flex-1"
             required
             aria-label={gettext("Select moderator")}
           >
@@ -182,8 +224,9 @@
             <% end %>
           </select>
           <button
+            id="admin-boards-add-moderator-submit"
             type="submit"
-            class="btn btn-sm btn-primary"
+            class="admin-boards-add-moderator-submit btn btn-sm btn-primary"
             phx-disable-with={gettext("Adding...")}
           >
             {gettext("Add")}
@@ -194,12 +237,12 @@
   </div>
 
   <%!-- Boards table --%>
-  <div :if={@boards == []} class="text-base-content/70 text-center py-8">
+  <div :if={@boards == []} class="admin-boards-empty text-base-content/70 text-center py-8">
     {gettext("No boards yet.")}
   </div>
 
   <div :if={@boards != []} class="overflow-x-auto">
-    <table id="boards-table" class="table" aria-labelledby="boards-heading">
+    <table id="boards-table" class="admin-boards-table table" aria-labelledby="boards-heading">
       <thead>
         <tr>
           <th scope="col">{gettext("Name")}</th>
@@ -212,9 +255,9 @@
         </tr>
       </thead>
       <tbody aria-live="polite">
-        <tr :for={board <- @boards} id={"board-#{board.id}"}>
-          <td class="font-medium">{board.name}</td>
-          <td class="font-mono text-sm">{board.slug}</td>
+        <tr :for={board <- @boards} id={"board-#{board.id}"} class="admin-boards-row">
+          <td class="admin-boards-row-name font-medium">{board.name}</td>
+          <td class="admin-boards-row-slug font-mono text-sm">{board.slug}</td>
           <td>{if board.parent, do: board.parent.name, else: gettext("None")}</td>
           <td>
             <span class={[
@@ -239,14 +282,20 @@
               {if board.ap_enabled, do: gettext("On"), else: gettext("Off")}
             </span>
           </td>
-          <td class="flex gap-1 flex-wrap">
-            <button phx-click="edit" phx-value-id={board.id} class="btn btn-sm btn-ghost">
+          <td class="admin-boards-row-actions flex gap-1 flex-wrap">
+            <button
+              id={"admin-boards-edit-#{board.id}"}
+              phx-click="edit"
+              phx-value-id={board.id}
+              class="admin-boards-edit-btn btn btn-sm btn-ghost"
+            >
               {gettext("Edit")}
             </button>
             <button
+              id={"admin-boards-moderators-#{board.id}"}
               phx-click="manage_moderators"
               phx-value-id={board.id}
-              class="btn btn-sm btn-ghost"
+              class="admin-boards-moderators-btn btn btn-sm btn-ghost"
               aria-expanded={
                 to_string(@managing_moderators_board && @managing_moderators_board.id == board.id)
               }
@@ -255,16 +304,18 @@
             </button>
             <.link
               :if={Board.federated?(board)}
+              id={"admin-boards-follows-#{board.id}"}
               navigate={~p"/boards/#{board.slug}/follows"}
-              class="btn btn-sm btn-ghost"
+              class="admin-boards-follows-link btn btn-sm btn-ghost"
             >
               {gettext("Follows")}
             </.link>
             <button
+              id={"admin-boards-delete-#{board.id}"}
               phx-click="delete"
               phx-value-id={board.id}
               data-confirm={gettext("Are you sure you want to delete this board?")}
-              class="btn btn-sm btn-error btn-outline"
+              class="admin-boards-delete-btn btn btn-sm btn-error btn-outline"
             >
               {gettext("Delete")}
             </button>

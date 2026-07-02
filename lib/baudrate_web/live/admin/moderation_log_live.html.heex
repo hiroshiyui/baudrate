@@ -1,38 +1,54 @@
 <div id="admin-moderation-log-page" class="admin-moderation-log-page space-y-6">
-  <h1 id="moderation-log-heading" class="text-2xl font-bold">{gettext("Moderation Log")}</h1>
+  <h1 id="admin-moderation-log-heading" class="admin-moderation-log-heading text-2xl font-bold">
+    {gettext("Moderation Log")}
+  </h1>
 
-  <div class="flex flex-wrap gap-2" role="toolbar" aria-label={gettext("Filter by action")}>
+  <div
+    id="admin-moderation-log-filters"
+    class="admin-moderation-log-filters flex flex-wrap gap-2"
+    role="toolbar"
+    aria-label={gettext("Filter by action")}
+  >
     <button
+      id="admin-moderation-log-filter-all"
+      class={[
+        "admin-moderation-log-filter btn btn-sm",
+        if(is_nil(@action_filter) || @action_filter == "", do: "btn-primary", else: "btn-ghost")
+      ]}
       phx-click="filter"
       phx-value-action=""
       aria-pressed={to_string(is_nil(@action_filter) || @action_filter == "")}
-      class={[
-        "btn btn-sm",
-        if(is_nil(@action_filter) || @action_filter == "", do: "btn-primary", else: "btn-ghost")
-      ]}
     >
       {gettext("All")}
     </button>
     <button
       :for={action <- @valid_actions}
+      id={"admin-moderation-log-filter-#{action}"}
+      class={[
+        "admin-moderation-log-filter btn btn-sm",
+        if(@action_filter == action, do: "btn-primary", else: "btn-ghost")
+      ]}
       phx-click="filter"
       phx-value-action={action}
       aria-pressed={to_string(@action_filter == action)}
-      class={["btn btn-sm", if(@action_filter == action, do: "btn-primary", else: "btn-ghost")]}
     >
       {translate_action(action)}
     </button>
   </div>
 
-  <div :if={@logs == []} class="text-base-content/70 text-center py-8">
+  <div
+    :if={@logs == []}
+    id="admin-moderation-log-empty"
+    class="admin-moderation-log-empty text-base-content/70 text-center py-8"
+  >
     {gettext("No moderation actions recorded.")}
   </div>
 
   <div :if={@logs != []} class="overflow-x-auto">
     <table
-      id="moderation-log-table"
-      class="table table-zebra w-full"
-      aria-labelledby="moderation-log-heading"
+      id="admin-moderation-log-table"
+      class="admin-moderation-log-table table table-zebra w-full"
+      aria-labelledby="admin-moderation-log-heading"
     >
       <thead>
         <tr>
@@ -44,7 +60,11 @@
         </tr>
       </thead>
       <tbody aria-live="polite">
-        <tr :for={log <- @logs} id={"log-#{log.id}"}>
+        <tr
+          :for={log <- @logs}
+          id={"admin-moderation-log-row-#{log.id}"}
+          class="admin-moderation-log-row"
+        >
           <td class="whitespace-nowrap text-sm">
             <time datetime={datetime_attr(log.inserted_at)}>
               {format_datetime(log.inserted_at)}

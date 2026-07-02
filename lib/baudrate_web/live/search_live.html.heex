@@ -1,10 +1,11 @@
-<section aria-labelledby="search-heading" class="mx-auto max-w-2xl">
-  <h1 id="search-heading" class="text-2xl font-bold mb-6">{gettext("Search")}</h1>
+<section id="search-page" aria-labelledby="search-heading" class="search-page mx-auto max-w-2xl">
+  <h1 id="search-heading" class="search-heading text-2xl font-bold mb-6">{gettext("Search")}</h1>
 
-  <form phx-submit="search" class="mb-6">
+  <form id="search-form" phx-submit="search" class="search-form mb-6">
     <div class="join w-full">
       <input
         type="text"
+        id="search-query-input"
         name="q"
         value={@query}
         placeholder={
@@ -12,13 +13,14 @@
             do: gettext("Search... (try author:, board:, tag:)"),
             else: gettext("Search...")
         }
-        class="input input-bordered join-item flex-1"
+        class="search-query-input input input-bordered join-item flex-1"
         aria-label={gettext("Search query")}
         autofocus
       />
       <button
         type="submit"
-        class="btn btn-primary join-item"
+        id="search-submit"
+        class="search-submit btn btn-primary join-item"
         aria-label={gettext("Search")}
         phx-disable-with={gettext("Searching...")}
       >
@@ -27,8 +29,12 @@
     </div>
   </form>
 
-  <details :if={@tab == "articles"} class="collapse collapse-arrow bg-base-200 mb-4">
-    <summary class="collapse-title text-base font-medium">
+  <details
+    :if={@tab == "articles"}
+    id="search-operators"
+    class="search-operators collapse collapse-arrow bg-base-200 mb-4"
+  >
+    <summary class="search-operators-summary collapse-title text-base font-medium">
       {gettext("Search operators")}
     </summary>
     <div class="collapse-content">
@@ -91,7 +97,8 @@
   <%!-- Remote actor result card --%>
   <div
     :if={@remote_actor && !@remote_actor_loading}
-    class="card bg-base-200 shadow-sm mb-4"
+    id="search-remote-actor"
+    class="search-remote-actor card bg-base-200 shadow-sm mb-4"
     role="region"
     aria-label={gettext("Remote actor")}
   >
@@ -113,10 +120,11 @@
       </div>
       <div class="flex-1 min-w-0">
         <a
+          id="search-remote-actor-link"
           href={remote_actor_profile_url(@remote_actor)}
           target="_blank"
           rel="nofollow noopener noreferrer"
-          class="link link-hover"
+          class="search-remote-actor-link link link-hover"
         >
           <div class="font-bold truncate">
             {display_name(@remote_actor)}
@@ -136,39 +144,43 @@
       <div class="flex-none">
         <%= cond do %>
           <% !@current_user -> %>
-            <.link navigate="/login" class="btn btn-sm btn-outline">
+            <.link id="search-actor-signin" navigate="/login" class="btn btn-sm btn-outline">
               {gettext("Sign in to follow")}
             </.link>
           <% @follow_state == "pending" -> %>
             <button
+              id="search-actor-pending"
               phx-click="unfollow"
               phx-value-id={@remote_actor.id}
-              class="btn btn-sm btn-warning btn-outline"
+              class="search-actor-follow-btn btn btn-sm btn-warning btn-outline"
             >
               {gettext("Pending")}
             </button>
           <% @follow_state == "accepted" -> %>
             <button
+              id="search-actor-unfollow"
               phx-click="unfollow"
               phx-value-id={@remote_actor.id}
               data-confirm={gettext("Unfollow this actor?")}
-              class="btn btn-sm btn-outline"
+              class="search-actor-follow-btn btn btn-sm btn-outline"
             >
               {gettext("Unfollow")}
             </button>
           <% @follow_state == "rejected" -> %>
             <button
+              id="search-actor-follow"
               phx-click="follow"
               phx-value-id={@remote_actor.id}
-              class="btn btn-sm btn-primary"
+              class="search-actor-follow-btn btn btn-sm btn-primary"
             >
               {gettext("Follow")}
             </button>
           <% true -> %>
             <button
+              id="search-actor-follow"
               phx-click="follow"
               phx-value-id={@remote_actor.id}
-              class="btn btn-sm btn-primary"
+              class="search-actor-follow-btn btn btn-sm btn-primary"
             >
               {gettext("Follow")}
             </button>
@@ -195,7 +207,8 @@
   <%= if match?({:existing, _}, @remote_object) && !@remote_object_loading do %>
     <% {:existing, article} = @remote_object %>
     <div
-      class="card bg-base-200 shadow-sm mb-4"
+      id="search-remote-object-existing"
+      class="search-remote-object card bg-base-200 shadow-sm mb-4"
       role="region"
       aria-label={gettext("Remote post")}
     >
@@ -231,8 +244,9 @@
               </span>
             </div>
             <.link
+              id="search-remote-object-title"
               navigate={~p"/articles/#{article.slug}"}
-              class="font-bold text-base link link-hover"
+              class="search-remote-object-title font-bold text-base link link-hover"
             >
               {article.title}
             </.link>
@@ -248,18 +262,20 @@
         </div>
         <div class="flex items-center gap-2 mt-3 pt-3 border-t border-base-300">
           <.link
+            id="search-remote-object-view"
             navigate={~p"/articles/#{article.slug}"}
-            class="btn btn-sm btn-primary"
+            class="search-remote-object-view btn btn-sm btn-primary"
           >
             <.icon name="hero-arrow-top-right-on-square" class="size-4" />
             {gettext("View article")}
           </.link>
           <a
             :if={article.url}
+            id="search-remote-object-original"
             href={article.url}
             target="_blank"
             rel="nofollow noopener noreferrer"
-            class="btn btn-sm btn-ghost"
+            class="search-remote-object-original btn btn-sm btn-ghost"
           >
             <.icon name="hero-globe-alt" class="size-4" />
             {gettext("View original")}
@@ -273,7 +289,8 @@
   <%= if match?({:preview, _}, @remote_object) && !@remote_object_loading do %>
     <% {:preview, preview} = @remote_object %>
     <div
-      class="card bg-base-200 shadow-sm mb-4"
+      id="search-remote-object-preview"
+      class="search-remote-object card bg-base-200 shadow-sm mb-4"
       role="region"
       aria-label={gettext("Remote post")}
     >
@@ -308,7 +325,7 @@
                 @{preview.remote_actor.username}@{preview.remote_actor.domain}
               </span>
             </div>
-            <h3 class="font-bold text-base">{preview.title}</h3>
+            <h3 class="search-remote-object-title font-bold text-base">{preview.title}</h3>
             <p class="text-sm mt-1 line-clamp-3">{String.slice(preview.body || "", 0..300)}</p>
             <div class="flex items-center gap-2 mt-2 text-xs text-base-content/70">
               <span class="badge badge-outline badge-xs">{gettext("Remote post")}</span>
@@ -322,25 +339,31 @@
         <div class="flex items-center gap-2 mt-3 pt-3 border-t border-base-300">
           <%= if @current_user do %>
             <button
+              id="search-remote-object-import"
               phx-click="import_remote_object"
               phx-value-url={preview.ap_id}
-              class="btn btn-sm btn-primary"
+              class="search-remote-object-import btn btn-sm btn-primary"
               phx-disable-with={gettext("Importing...")}
             >
               <.icon name="hero-arrow-down-tray" class="size-4" />
               {gettext("Import & interact")}
             </button>
           <% else %>
-            <.link navigate="/login" class="btn btn-sm btn-outline">
+            <.link
+              id="search-remote-object-signin"
+              navigate="/login"
+              class="btn btn-sm btn-outline"
+            >
               {gettext("Sign in to interact")}
             </.link>
           <% end %>
           <a
             :if={preview.url}
+            id="search-remote-object-preview-original"
             href={preview.url}
             target="_blank"
             rel="nofollow noopener noreferrer"
-            class="btn btn-sm btn-ghost"
+            class="search-remote-object-original btn btn-sm btn-ghost"
           >
             <.icon name="hero-globe-alt" class="size-4" />
             {gettext("View original")}
@@ -352,16 +375,17 @@
 
   <div
     :if={@query != ""}
+    id="search-tabs"
     role="tablist"
     aria-label={gettext("Search results")}
-    class="tabs tabs-bordered mb-4"
+    class="search-tabs tabs tabs-bordered mb-4"
   >
     <.link
       id="tab-articles"
       patch={~p"/search?#{%{q: @query, tab: "articles"}}"}
       role="tab"
       aria-selected={to_string(@tab == "articles")}
-      class={"tab #{if @tab == "articles", do: "tab-active"}"}
+      class={"search-tab tab #{if @tab == "articles", do: "tab-active"}"}
     >
       {gettext("Articles")}
     </.link>
@@ -370,7 +394,7 @@
       patch={~p"/search?#{%{q: @query, tab: "comments"}}"}
       role="tab"
       aria-selected={to_string(@tab == "comments")}
-      class={"tab #{if @tab == "comments", do: "tab-active"}"}
+      class={"search-tab tab #{if @tab == "comments", do: "tab-active"}"}
     >
       {gettext("Comments")}
     </.link>
@@ -379,7 +403,7 @@
       patch={~p"/search?#{%{q: @query, tab: "boards"}}"}
       role="tab"
       aria-selected={to_string(@tab == "boards")}
-      class={"tab #{if @tab == "boards", do: "tab-active"}"}
+      class={"search-tab tab #{if @tab == "boards", do: "tab-active"}"}
     >
       {gettext("Boards")}
     </.link>
@@ -388,7 +412,7 @@
       patch={~p"/search?#{%{q: @query, tab: "users"}}"}
       role="tab"
       aria-selected={to_string(@tab == "users")}
-      class={"tab #{if @tab == "users", do: "tab-active"}"}
+      class={"search-tab tab #{if @tab == "users", do: "tab-active"}"}
     >
       {gettext("Users")}
     </.link>
@@ -396,43 +420,48 @@
 
   <div
     :if={@query != "" && @tab == "articles" && @articles == []}
+    id="search-empty-articles"
     role="tabpanel"
     aria-labelledby="tab-articles"
-    class="text-base-content/70 text-center py-8"
+    class="search-empty text-base-content/70 text-center py-8"
   >
     {gettext("No articles found for \"%{query}\".", query: @query)}
   </div>
 
   <div
     :if={@query != "" && @tab == "comments" && @comments == []}
+    id="search-empty-comments"
     role="tabpanel"
     aria-labelledby="tab-comments"
-    class="text-base-content/70 text-center py-8"
+    class="search-empty text-base-content/70 text-center py-8"
   >
     {gettext("No comments found for \"%{query}\".", query: @query)}
   </div>
 
   <div
     :if={@query != "" && @tab == "boards" && @boards == []}
+    id="search-empty-boards"
     role="tabpanel"
     aria-labelledby="tab-boards"
-    class="text-base-content/70 text-center py-8"
+    class="search-empty text-base-content/70 text-center py-8"
   >
     {gettext("No boards found for \"%{query}\".", query: @query)}
   </div>
 
   <div
     :if={@query != "" && @tab == "users" && @local_users == []}
+    id="search-empty-users"
     role="tabpanel"
     aria-labelledby="tab-users"
-    class="text-base-content/70 text-center py-8"
+    class="search-empty text-base-content/70 text-center py-8"
   >
     {gettext("No users found for \"%{query}\".", query: @query)}
   </div>
 
   <div
     :if={@query != "" && @total > 0}
-    class="text-sm text-base-content/70 mb-4"
+    id="search-result-count"
+    class="search-result-count text-sm text-base-content/70 mb-4"
     aria-live="polite"
     role="status"
   >
@@ -465,7 +494,7 @@
         <.link
           navigate={~p"/articles/#{article.slug}"}
           id={"search-article-title-#{article.slug}"}
-          class="card-title text-base link link-hover"
+          class="search-result-title card-title text-base link link-hover"
         >
           {article.title}
         </.link>
@@ -525,8 +554,9 @@
     >
       <div class="card-body p-4">
         <.link
+          id={"search-comment-title-#{comment.id}"}
           navigate={~p"/articles/#{comment.article.slug}"}
-          class="card-title text-base link link-hover"
+          class="search-result-title card-title text-base link link-hover"
         >
           {comment.article.title}
         </.link>
@@ -580,7 +610,11 @@
       class="board card bg-base-200 shadow-sm"
     >
       <div class="card-body p-4">
-        <.link navigate={~p"/boards/#{board.slug}"} class="card-title text-base link link-hover">
+        <.link
+          id={"search-board-title-#{board.slug}"}
+          navigate={~p"/boards/#{board.slug}"}
+          class="search-result-title card-title text-base link link-hover"
+        >
           {board.name}
         </.link>
         <p :if={board.description && board.description != ""} class="text-sm line-clamp-2">
@@ -612,7 +646,11 @@
       <div class="card-body p-4 flex flex-row items-center gap-4">
         <.avatar user={user} size={48} />
         <div class="flex-1 min-w-0">
-          <.link navigate={~p"/users/#{user.username}"} class="font-bold truncate link link-hover">
+          <.link
+            id={"search-user-link-#{user.username}"}
+            navigate={~p"/users/#{user.username}"}
+            class="search-result-title font-bold truncate link link-hover"
+          >
             {display_name(user)}
           </.link>
           <div
@@ -629,23 +667,29 @@
         <div class="flex-none">
           <%= cond do %>
             <% !@current_user -> %>
-              <.link navigate="/login" class="btn btn-sm btn-outline">
+              <.link
+                id={"search-user-signin-#{user.username}"}
+                navigate="/login"
+                class="btn btn-sm btn-outline"
+              >
                 {gettext("Sign in to follow")}
               </.link>
             <% @local_user_follow_states[user.id] == "accepted" -> %>
               <button
+                id={"search-user-unfollow-#{user.username}"}
                 phx-click="unfollow_user"
                 phx-value-id={user.id}
                 data-confirm={gettext("Unfollow this user?")}
-                class="btn btn-sm btn-outline"
+                class="search-user-follow-btn btn btn-sm btn-outline"
               >
                 {gettext("Unfollow")}
               </button>
             <% true -> %>
               <button
+                id={"search-user-follow-#{user.username}"}
                 phx-click="follow_user"
                 phx-value-id={user.id}
-                class="btn btn-sm btn-primary"
+                class="search-user-follow-btn btn btn-sm btn-primary"
               >
                 {gettext("Follow")}
               </button>

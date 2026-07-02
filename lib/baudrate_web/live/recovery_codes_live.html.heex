@@ -2,7 +2,10 @@
   <h1 id="recovery-codes-heading" class="text-2xl font-bold text-center mb-2">
     {gettext("Recovery Codes")}
   </h1>
-  <p class="text-center text-base-content/70 mb-4">
+  <p
+    id="recovery-codes-subtitle"
+    class="recovery-codes-subtitle text-center text-base-content/70 mb-4"
+  >
     {gettext(
       "Save these recovery codes in a safe place. Each code can only be used once. If you lose your authenticator device, you can use one of these codes to log in."
     )}
@@ -29,14 +32,20 @@
   <div class="bg-base-200 rounded-lg p-4 mb-6">
     <div id="recovery-codes-grid" class="grid grid-cols-2 gap-2 font-mono text-center">
       <%= for code <- @codes do %>
-        <div class="bg-base-100 rounded p-2 select-all">{code}</div>
+        <div id={"recovery-code-#{code}"} class="recovery-code bg-base-100 rounded p-2 select-all">
+          {code}
+        </div>
       <% end %>
     </div>
   </div>
 
   <form id="recovery-codes-ack-form" action="/auth/ack-recovery-codes" method="post">
     <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
-    <button type="submit" class="btn btn-primary w-full">
+    <button
+      id="recovery-codes-ack-submit"
+      type="submit"
+      class="recovery-codes-ack-submit btn btn-primary w-full"
+    >
       {gettext("I've saved my recovery codes")}
     </button>
   </form>

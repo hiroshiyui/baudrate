@@ -1,24 +1,38 @@
-<div :if={@current_user} id="welcome-section" class="text-center">
-  <h1 class="text-2xl font-bold mb-4">
+<div :if={@current_user} id="welcome-section" class="home-welcome text-center">
+  <h1 id="home-welcome-heading" class="home-welcome-heading text-2xl font-bold mb-4">
     {gettext("Welcome, %{username}!", username: display_name(@current_user))}
   </h1>
-  <p class="text-base-content/70 mb-8">
+  <p id="home-welcome-role" class="home-welcome-role text-base-content/70 mb-8">
     {gettext("You are signed in as %{role}.", role: translate_role(@current_user.role.name))}
   </p>
 </div>
 
-<div :if={!@current_user} id="welcome-section-guest" class="text-center">
-  <h1 class="text-2xl font-bold mb-4">{gettext("Welcome to Baudrate")}</h1>
-  <p class="text-base-content/70 mb-8">
+<div :if={!@current_user} id="welcome-section-guest" class="home-welcome-guest text-center">
+  <h1 id="home-welcome-guest-heading" class="home-welcome-heading text-2xl font-bold mb-4">
+    {gettext("Welcome to Baudrate")}
+  </h1>
+  <p id="home-welcome-guest-intro" class="home-welcome-intro text-base-content/70 mb-8">
     {gettext("Browse the boards below, or")}
-    <.link navigate="/login" class="link link-primary">{gettext("sign in")}</.link>
-    / <.link navigate="/register" class="link link-primary">{gettext("register")}</.link>
+    <.link id="home-welcome-login-link" navigate="/login" class="link link-primary">
+      {gettext("sign in")}
+    </.link>
+    /
+    <.link id="home-welcome-register-link" navigate="/register" class="link link-primary">
+      {gettext("register")}
+    </.link>
     {gettext("to participate.")}
   </p>
 </div>
 
-<section :if={@boards != []} id="boards-section" aria-labelledby="boards-heading">
-  <h2 id="boards-heading" class="text-xl font-bold mb-4">{gettext("Boards")}</h2>
+<section
+  :if={@boards != []}
+  id="boards-section"
+  class="home-boards-section"
+  aria-labelledby="boards-heading"
+>
+  <h2 id="boards-heading" class="home-boards-heading text-xl font-bold mb-4">
+    {gettext("Boards")}
+  </h2>
   <div id="boards" class="grid grid-cols-1 md:grid-cols-2 gap-2" data-focus-target>
     <.link
       :for={board <- @boards}
@@ -27,7 +41,7 @@
       class="board card bg-base-200 shadow-sm hover:bg-base-300 transition-colors"
     >
       <div class="card-body p-4">
-        <h3 class="card-title text-base">
+        <h3 class="home-board-name card-title text-base">
           {board.name}
           <span
             :if={@current_user && MapSet.member?(@unread_board_ids, board.id)}
@@ -38,7 +52,9 @@
             <span class="sr-only">{gettext("Unread")}</span>
           </span>
         </h3>
-        <p :if={board.description} class="text-sm text-base-content/70">{board.description}</p>
+        <p :if={board.description} class="home-board-description text-sm text-base-content/70">
+          {board.description}
+        </p>
       </div>
     </.link>
   </div>

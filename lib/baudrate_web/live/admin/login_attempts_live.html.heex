@@ -1,40 +1,53 @@
 <div id="admin-login-attempts-page" class="admin-login-attempts-page space-y-6">
-  <h1 id="login-attempts-heading" class="text-2xl font-bold">{gettext("Login Attempts")}</h1>
+  <h1 id="admin-login-attempts-heading" class="admin-login-attempts-heading text-2xl font-bold">
+    {gettext("Login Attempts")}
+  </h1>
 
-  <form phx-submit="search" class="flex gap-2">
+  <form
+    id="admin-login-attempts-search-form"
+    class="admin-login-attempts-search-form flex gap-2"
+    phx-submit="search"
+  >
     <input
+      id="admin-login-attempts-username-input"
+      class="admin-login-attempts-username-input input input-bordered input-sm w-64"
       type="text"
       name="username"
       value={@username_filter}
       placeholder={gettext("Filter by username...")}
-      class="input input-bordered input-sm w-64"
       aria-label={gettext("Filter by username")}
     />
     <button
+      id="admin-login-attempts-search-submit"
+      class="admin-login-attempts-search-submit btn btn-sm btn-primary"
       type="submit"
-      class="btn btn-sm btn-primary"
       phx-disable-with={gettext("Searching...")}
     >
       {gettext("Search")}
     </button>
     <.link
       :if={@username_filter != ""}
+      id="admin-login-attempts-clear-link"
+      class="admin-login-attempts-clear-link btn btn-sm btn-ghost"
       patch={~p"/admin/login-attempts"}
-      class="btn btn-sm btn-ghost"
     >
       {gettext("Clear")}
     </.link>
   </form>
 
-  <div :if={@attempts == []} class="text-base-content/70 text-center py-8">
+  <div
+    :if={@attempts == []}
+    id="admin-login-attempts-empty"
+    class="admin-login-attempts-empty text-base-content/70 text-center py-8"
+  >
     {gettext("No login attempts recorded.")}
   </div>
 
   <div :if={@attempts != []} class="overflow-x-auto">
     <table
-      id="login-attempts-table"
-      class="table table-zebra w-full"
-      aria-labelledby="login-attempts-heading"
+      id="admin-login-attempts-table"
+      class="admin-login-attempts-table table table-zebra w-full"
+      aria-labelledby="admin-login-attempts-heading"
     >
       <thead>
         <tr>
@@ -45,7 +58,11 @@
         </tr>
       </thead>
       <tbody aria-live="polite">
-        <tr :for={attempt <- @attempts} id={"attempt-#{attempt.id}"}>
+        <tr
+          :for={attempt <- @attempts}
+          id={"admin-login-attempts-row-#{attempt.id}"}
+          class="admin-login-attempts-row"
+        >
           <td class="whitespace-nowrap text-sm">
             <time datetime={datetime_attr(attempt.inserted_at)}>
               {format_datetime(attempt.inserted_at, "%Y-%m-%d %H:%M:%S")}

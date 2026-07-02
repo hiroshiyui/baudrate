@@ -8,6 +8,7 @@
         <.avatar user={@current_user} size={120} />
         <div :if={@can_upload_avatar} class="flex gap-2">
           <button
+            id="profile-avatar-change"
             type="button"
             class="btn btn-sm btn-primary"
             phx-click={JS.dispatch("avatar:open-picker", to: "#avatar-crop-hook")}
@@ -16,6 +17,7 @@
           </button>
           <button
             :if={@current_user.avatar_id}
+            id="profile-avatar-remove"
             type="button"
             class="btn btn-sm btn-outline btn-error"
             phx-click="remove_avatar"
@@ -24,7 +26,7 @@
             {gettext("Remove Avatar")}
           </button>
         </div>
-        <span :if={!@is_active} class="text-sm text-base-content/70">
+        <span :if={!@is_active} class="profile-pending-notice text-sm text-base-content/70">
           {gettext("Your account is pending approval.")}
           {gettext("You can update your profile while you wait.")}
         </span>
@@ -93,11 +95,12 @@
       </div>
 
       <div id="profile-username">
-        <div class="text-sm text-base-content/70">{gettext("Username")}</div>
+        <div class="profile-field-label text-sm text-base-content/70">{gettext("Username")}</div>
         <div class="flex items-center gap-1">
           <a
+            id="profile-username-link"
             href={~p"/users/#{@current_user.username}"}
-            class="text-lg font-semibold link link-hover"
+            class="profile-field-value text-lg font-semibold link link-hover"
           >
             {@current_user.username}
           </a>
@@ -117,9 +120,12 @@
 
       <%!-- Display Name section --%>
       <div id="profile-display-name">
-        <div class="text-sm text-base-content/70 mb-2">{gettext("Display Name")}</div>
+        <div class="profile-field-label text-sm text-base-content/70 mb-2">
+          {gettext("Display Name")}
+        </div>
         <.form
           for={@display_name_form}
+          id="profile-display-name-form"
           phx-change="validate_display_name"
           phx-submit="save_display_name"
           class="space-y-3"
@@ -131,6 +137,7 @@
             placeholder={gettext("Your display name (max 64 characters)")}
           />
           <button
+            id="profile-display-name-save"
             type="submit"
             class="btn btn-sm btn-primary"
             phx-disable-with={gettext("Saving...")}
@@ -142,9 +149,10 @@
 
       <%!-- Bio section --%>
       <div id="profile-bio-section">
-        <div class="text-sm text-base-content/70 mb-2">{gettext("Bio")}</div>
+        <div class="profile-field-label text-sm text-base-content/70 mb-2">{gettext("Bio")}</div>
         <.form
           for={@bio_form}
+          id="profile-bio-form"
           phx-change="validate_bio"
           phx-submit="save_bio"
           class="space-y-3"
@@ -157,6 +165,7 @@
             placeholder={gettext("Tell others about yourself (max 500 characters)")}
           />
           <button
+            id="profile-bio-save"
             type="submit"
             class="btn btn-sm btn-primary"
             phx-disable-with={gettext("Saving...")}
@@ -168,37 +177,43 @@
 
       <%!-- Profile Fields section --%>
       <div id="profile-fields-section">
-        <div class="text-sm text-base-content/70 mb-2">{gettext("Profile Fields")}</div>
-        <p class="text-sm text-base-content/70 mb-3">
+        <div class="profile-field-label text-sm text-base-content/70 mb-2">
+          {gettext("Profile Fields")}
+        </div>
+        <p class="profile-field-hint text-sm text-base-content/70 mb-3">
           {gettext("Add up to 4 custom fields to your profile (e.g. website, location).")}
         </p>
-        <form phx-submit="save_profile_fields" class="space-y-3">
+        <form id="profile-fields-form" phx-submit="save_profile_fields" class="space-y-3">
           <div class="space-y-2">
             <div
               :for={{field, i} <- Enum.with_index(@profile_fields)}
-              class="flex flex-wrap gap-2"
+              id={"profile-field-row-#{i}"}
+              class="profile-field-row flex flex-wrap gap-2"
             >
               <input
+                id={"profile-field-name-#{i}"}
                 type="text"
                 name={"profile_fields[#{i}][name]"}
                 value={field["name"]}
                 placeholder={gettext("Label")}
                 maxlength="255"
-                class="input input-bordered input-sm w-36"
+                class="profile-field-name-input input input-bordered input-sm w-36"
                 aria-label={gettext("Field %{n} label", n: i + 1)}
               />
               <input
+                id={"profile-field-value-#{i}"}
                 type="text"
                 name={"profile_fields[#{i}][value]"}
                 value={field["value"]}
                 placeholder={gettext("Content")}
                 maxlength="2048"
-                class="input input-bordered input-sm flex-1"
+                class="profile-field-value-input input input-bordered input-sm flex-1"
                 aria-label={gettext("Field %{n} content", n: i + 1)}
               />
             </div>
           </div>
           <button
+            id="profile-fields-save"
             type="submit"
             class="btn btn-sm btn-primary"
             phx-disable-with={gettext("Saving...")}
@@ -210,9 +225,12 @@
 
       <%!-- Signature section --%>
       <div id="profile-signature-section">
-        <div class="text-sm text-base-content/70 mb-2">{gettext("Signature")}</div>
+        <div class="profile-field-label text-sm text-base-content/70 mb-2">
+          {gettext("Signature")}
+        </div>
         <.form
           for={@signature_form}
+          id="profile-signature-form"
           phx-change="validate_signature"
           phx-submit="save_signature"
           class="space-y-3"
@@ -225,13 +243,14 @@
             toolbar
             placeholder={gettext("Your signature (Markdown supported, max 500 characters)")}
           />
-          <div :if={@signature_preview != ""} class="space-y-1">
-            <p class="text-sm text-base-content/70">{gettext("Preview:")}</p>
-            <div class="prose prose-sm max-w-none bg-base-200 rounded-lg p-3 text-base-content/70">
+          <div :if={@signature_preview != ""} id="profile-signature-preview" class="space-y-1">
+            <p class="profile-field-label text-sm text-base-content/70">{gettext("Preview:")}</p>
+            <div class="profile-signature-preview-body prose prose-sm max-w-none bg-base-200 rounded-lg p-3 text-base-content/70">
               {raw(@signature_preview)}
             </div>
           </div>
           <button
+            id="profile-signature-save"
             type="submit"
             class="btn btn-sm btn-primary"
             phx-disable-with={gettext("Saving...")}
@@ -242,23 +261,37 @@
       </div>
 
       <div id="profile-role">
-        <div class="text-sm text-base-content/70">{gettext("Role")}</div>
-        <div class="text-lg font-semibold">{translate_role(@current_user.role.name)}</div>
-        <div class="text-sm text-base-content/70">{@current_user.role.description}</div>
+        <div class="profile-field-label text-sm text-base-content/70">{gettext("Role")}</div>
+        <div class="profile-field-value text-lg font-semibold">
+          {translate_role(@current_user.role.name)}
+        </div>
+        <div class="profile-role-description text-sm text-base-content/70">
+          {@current_user.role.description}
+        </div>
       </div>
 
       <div id="profile-2fa">
-        <div class="text-sm text-base-content/70">{gettext("Two-Factor Authentication")}</div>
-        <div class="text-lg font-semibold flex items-center gap-2">
+        <div class="profile-field-label text-sm text-base-content/70">
+          {gettext("Two-Factor Authentication")}
+        </div>
+        <div class="profile-field-value text-lg font-semibold flex items-center gap-2">
           <%= if @current_user.totp_enabled do %>
-            <span class="badge badge-success">{gettext("Enabled")}</span>
-            <.link navigate="/profile/totp-reset" class="btn btn-sm btn-outline">
+            <span class="profile-2fa-status badge badge-success">{gettext("Enabled")}</span>
+            <.link
+              id="profile-2fa-reset"
+              navigate="/profile/totp-reset"
+              class="btn btn-sm btn-outline"
+            >
               {gettext("Reset Authenticator")}
             </.link>
           <% else %>
-            <span class="badge badge-warning">{gettext("Disabled")}</span>
+            <span class="profile-2fa-status badge badge-warning">{gettext("Disabled")}</span>
             <%= if @totp_policy == :optional do %>
-              <.link navigate="/profile/totp-reset" class="btn btn-sm btn-primary">
+              <.link
+                id="profile-2fa-enable"
+                navigate="/profile/totp-reset"
+                class="btn btn-sm btn-primary"
+              >
                 {gettext("Enable TOTP")}
               </.link>
             <% end %>
@@ -275,7 +308,7 @@
         <h2 id="security-keys-heading" class="text-sm text-base-content/70 mb-2">
           {gettext("Security Keys")}
         </h2>
-        <p class="text-sm text-base-content/70 mb-3">
+        <p class="profile-field-hint text-sm text-base-content/70 mb-3">
           {gettext(
             "Register a hardware security key or platform authenticator (e.g. Touch ID, Windows Hello) as a second factor."
           )}
@@ -289,10 +322,10 @@
           >
             <.icon name="hero-key" class="w-5 h-5 text-base-content/60 shrink-0" />
             <div class="flex-1 min-w-0">
-              <div class="font-semibold text-sm truncate">
+              <div class="security-key-label font-semibold text-sm truncate">
                 {if cred.label != "", do: cred.label, else: gettext("Unnamed Key")}
               </div>
-              <div class="text-xs text-base-content/60">
+              <div class="security-key-meta text-xs text-base-content/60">
                 {gettext("Added %{date}",
                   date: Calendar.strftime(cred.inserted_at, "%Y-%m-%d")
                 )}
@@ -304,8 +337,9 @@
               </div>
             </div>
             <button
+              id={"security-key-remove-#{cred.id}"}
               type="button"
-              class="btn btn-sm btn-ghost btn-error"
+              class="security-key-remove btn btn-sm btn-ghost btn-error"
               phx-click="delete_webauthn_credential"
               phx-value-id={cred.id}
               data-confirm={gettext("Remove this security key?")}
@@ -316,11 +350,15 @@
           </article>
         </div>
 
-        <div :if={@webauthn_credentials == []} class="text-sm text-base-content/70 italic mb-4">
+        <div
+          :if={@webauthn_credentials == []}
+          class="profile-security-keys-empty text-sm text-base-content/70 italic mb-4"
+        >
           {gettext("No security keys registered.")}
         </div>
 
         <button
+          id="profile-security-key-register"
           type="button"
           class="btn btn-sm btn-outline"
           phx-click="begin_registration"
@@ -349,8 +387,10 @@
       </section>
 
       <div id="profile-member-since">
-        <div class="text-sm text-base-content/70">{gettext("Member Since")}</div>
-        <div class="text-lg font-semibold">
+        <div class="profile-field-label text-sm text-base-content/70">
+          {gettext("Member Since")}
+        </div>
+        <div class="profile-field-value text-lg font-semibold">
           <time datetime={format_date(@current_user.inserted_at)}>
             {format_date(@current_user.inserted_at)}
           </time>
@@ -359,25 +399,31 @@
 
       <%!-- Preferred Languages section --%>
       <div id="profile-languages">
-        <div class="text-sm text-base-content/70 mb-2">{gettext("Preferred Languages")}</div>
+        <div class="profile-field-label text-sm text-base-content/70 mb-2">
+          {gettext("Preferred Languages")}
+        </div>
         <%= if @preferred_locales == [] do %>
-          <div class="text-sm text-base-content/70 italic">
+          <div class="profile-languages-empty text-sm text-base-content/70 italic">
             {gettext("Using browser language settings.")}
           </div>
         <% else %>
           <div class="space-y-1">
             <%= for {locale, idx} <- Enum.with_index(@preferred_locales) do %>
-              <div class="flex items-center gap-2">
-                <span class="badge badge-sm badge-neutral">{idx + 1}</span>
-                <span class="font-semibold">
+              <div
+                id={"profile-locale-#{locale}"}
+                class="profile-locale-row flex items-center gap-2"
+              >
+                <span class="profile-locale-rank badge badge-sm badge-neutral">{idx + 1}</span>
+                <span class="profile-locale-name font-semibold">
                   {BaudrateWeb.Locale.locale_display_name(locale)}
                 </span>
-                <span class="text-sm text-base-content/70">{locale}</span>
+                <span class="profile-locale-code text-sm text-base-content/70">{locale}</span>
                 <div class="ml-auto flex gap-1">
                   <button
                     :if={idx > 0}
+                    id={"profile-locale-up-#{locale}"}
                     type="button"
-                    class="btn btn-sm btn-ghost"
+                    class="profile-locale-up btn btn-sm btn-ghost"
                     phx-click="move_locale_up"
                     phx-value-locale={locale}
                     aria-label={gettext("Move %{locale} up", locale: locale)}
@@ -386,8 +432,9 @@
                   </button>
                   <button
                     :if={idx < length(@preferred_locales) - 1}
+                    id={"profile-locale-down-#{locale}"}
                     type="button"
-                    class="btn btn-sm btn-ghost"
+                    class="profile-locale-down btn btn-sm btn-ghost"
                     phx-click="move_locale_down"
                     phx-value-locale={locale}
                     aria-label={gettext("Move %{locale} down", locale: locale)}
@@ -395,8 +442,9 @@
                     &darr;
                   </button>
                   <button
+                    id={"profile-locale-remove-#{locale}"}
                     type="button"
-                    class="btn btn-sm btn-ghost btn-error"
+                    class="profile-locale-remove btn btn-sm btn-ghost btn-error"
                     phx-click="remove_locale"
                     phx-value-locale={locale}
                     aria-label={gettext("Remove")}
@@ -414,6 +462,7 @@
         <%= if unselected != [] do %>
           <div class="dropdown mt-2">
             <button
+              id="profile-add-language"
               type="button"
               tabindex="0"
               aria-haspopup="true"
@@ -428,7 +477,13 @@
             >
               <%= for {code, name} <- unselected do %>
                 <li>
-                  <button type="button" phx-click="add_locale" phx-value-locale={code}>
+                  <button
+                    id={"profile-add-locale-#{code}"}
+                    class="profile-add-locale"
+                    type="button"
+                    phx-click="add_locale"
+                    phx-value-locale={code}
+                  >
                     {name}
                     <span class="text-sm text-base-content/70">{code}</span>
                   </button>
@@ -441,8 +496,11 @@
 
       <%!-- DM access setting --%>
       <div id="profile-dm-access">
-        <div class="text-sm text-base-content/70 mb-2">{gettext("Direct Messages")}</div>
+        <div class="profile-field-label text-sm text-base-content/70 mb-2">
+          {gettext("Direct Messages")}
+        </div>
         <select
+          id="profile-dm-access-select"
           name="dm_access"
           class="select select-bordered w-full max-w-xs"
           phx-change="update_dm_access"
@@ -458,7 +516,7 @@
             {gettext("Nobody")}
           </option>
         </select>
-        <p class="text-sm text-base-content/70 mt-1">
+        <p class="profile-field-hint text-sm text-base-content/70 mt-1">
           {gettext("Controls who can send you direct messages.")}
         </p>
       </div>
@@ -476,6 +534,7 @@
         <%= if @push_supported do %>
           <%= if @push_subscribed do %>
             <button
+              id="profile-push-disable"
               type="button"
               class="btn btn-sm btn-outline btn-error"
               phx-click={JS.dispatch("push:unsubscribe", to: "#push-manager")}
@@ -484,6 +543,7 @@
             </button>
           <% else %>
             <button
+              id="profile-push-enable"
               type="button"
               class="btn btn-sm btn-primary"
               phx-click={JS.dispatch("push:subscribe", to: "#push-manager")}
@@ -492,7 +552,7 @@
             </button>
           <% end %>
         <% else %>
-          <p class="text-sm text-base-content/70 italic">
+          <p class="profile-push-unsupported text-sm text-base-content/70 italic">
             {gettext("Push notifications are not supported by this browser.")}
           </p>
         <% end %>
@@ -500,12 +560,14 @@
 
       <%!-- Notification Preferences section --%>
       <div id="profile-notification-prefs">
-        <div class="text-sm text-base-content/70 mb-2">{gettext("Notification Preferences")}</div>
-        <p class="text-sm text-base-content/70 mb-3">
+        <div class="profile-field-label text-sm text-base-content/70 mb-2">
+          {gettext("Notification Preferences")}
+        </div>
+        <p class="profile-field-hint text-sm text-base-content/70 mb-3">
           {gettext("Choose which notifications you receive.")}
         </p>
         <div class="overflow-x-auto">
-          <table class="table table-sm">
+          <table id="profile-notification-prefs-table" class="table table-sm">
             <thead>
               <tr>
                 <th>{gettext("Type")}</th>
@@ -514,16 +576,23 @@
               </tr>
             </thead>
             <tbody>
-              <tr :for={
-                type <-
-                  ~w(reply_to_article reply_to_comment mention new_follower article_liked comment_liked article_boosted comment_boosted article_forwarded moderation_report admin_announcement)
-              }>
-                <td class="text-sm">{BaudrateWeb.Helpers.notification_text(type)}</td>
+              <tr
+                :for={
+                  type <-
+                    ~w(reply_to_article reply_to_comment mention new_follower article_liked comment_liked article_boosted comment_boosted article_forwarded moderation_report admin_announcement)
+                }
+                id={"profile-notification-pref-#{type}"}
+                class="profile-notification-pref-row"
+              >
+                <td class="profile-notification-pref-type text-sm">
+                  {BaudrateWeb.Helpers.notification_text(type)}
+                </td>
                 <td class="text-center">
                   <label>
                     <input
+                      id={"profile-notification-in-app-#{type}"}
                       type="checkbox"
-                      class="toggle toggle-sm toggle-primary"
+                      class="profile-notification-in-app-toggle toggle toggle-sm toggle-primary"
                       checked={get_in(@notification_preferences, [type, "in_app"]) != false}
                       phx-click="toggle_notification_pref"
                       phx-value-type={type}
@@ -536,8 +605,9 @@
                 <td :if={@push_subscribed} class="text-center">
                   <label>
                     <input
+                      id={"profile-notification-web-push-#{type}"}
                       type="checkbox"
-                      class="toggle toggle-sm toggle-secondary"
+                      class="profile-notification-web-push-toggle toggle toggle-sm toggle-secondary"
                       checked={get_in(@notification_preferences, [type, "web_push"]) != false}
                       phx-click="toggle_web_push_pref"
                       phx-value-type={type}
@@ -555,15 +625,24 @@
 
       <%!-- Muted Users section --%>
       <div id="profile-muted-users">
-        <div class="text-sm text-base-content/70 mb-2">{gettext("Muted Users")}</div>
-        <div :if={@mutes == []} class="text-sm text-base-content/70 italic">
+        <div class="profile-field-label text-sm text-base-content/70 mb-2">
+          {gettext("Muted Users")}
+        </div>
+        <div
+          :if={@mutes == []}
+          class="profile-muted-users-empty text-sm text-base-content/70 italic"
+        >
           {gettext("No muted users.")}
         </div>
         <div :if={@mutes != []} class="space-y-2">
-          <div :for={mute <- @mutes} class="flex items-center gap-3">
+          <div
+            :for={mute <- @mutes}
+            id={"muted-user-#{mute.id}"}
+            class="muted-user flex items-center gap-3"
+          >
             <%= if mute.muted_user do %>
               <.avatar user={mute.muted_user} size={36} />
-              <span class="font-semibold">{display_name(mute.muted_user)}</span>
+              <span class="muted-user-name font-semibold">{display_name(mute.muted_user)}</span>
             <% else %>
               <div class="avatar avatar-placeholder">
                 <div
@@ -573,11 +652,12 @@
                   <span class="text-xs">@</span>
                 </div>
               </div>
-              <span class="text-sm text-base-content/70">{mute.muted_actor_ap_id}</span>
+              <span class="muted-user-name text-sm text-base-content/70">{mute.muted_actor_ap_id}</span>
             <% end %>
             <button
+              id={"muted-user-unmute-#{mute.id}"}
               type="button"
-              class="btn btn-sm btn-ghost btn-error ml-auto"
+              class="muted-user-unmute btn btn-sm btn-ghost btn-error ml-auto"
               phx-click="unmute"
               phx-value-id={mute.id}
               aria-label={gettext("Unmute")}

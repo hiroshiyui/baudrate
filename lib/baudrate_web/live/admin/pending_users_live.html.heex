@@ -1,12 +1,22 @@
 <div id="admin-pending-users-page" class="admin-pending-users-page space-y-6">
-  <h1 id="pending-users-heading" class="text-2xl font-bold">{gettext("Pending Users")}</h1>
+  <h1 id="admin-pending-users-heading" class="admin-pending-users-heading text-2xl font-bold">
+    {gettext("Pending Users")}
+  </h1>
 
-  <div :if={@pending_users == []} class="text-base-content/70 text-center py-8">
+  <div
+    :if={@pending_users == []}
+    id="admin-pending-users-empty"
+    class="admin-pending-users-empty text-base-content/70 text-center py-8"
+  >
     {gettext("No pending users.")}
   </div>
 
   <div :if={@pending_users != []} class="overflow-x-auto">
-    <table id="pending-users-table" class="table" aria-labelledby="pending-users-heading">
+    <table
+      id="admin-pending-users-table"
+      class="admin-pending-users-table table"
+      aria-labelledby="admin-pending-users-heading"
+    >
       <thead>
         <tr>
           <th scope="col">{gettext("Username")}</th>
@@ -15,7 +25,11 @@
         </tr>
       </thead>
       <tbody>
-        <tr :for={user <- @pending_users} id={"pending-user-#{user.id}"}>
+        <tr
+          :for={user <- @pending_users}
+          id={"admin-pending-users-row-#{user.id}"}
+          class="admin-pending-users-row"
+        >
           <td>{user.username}</td>
           <td>
             <time datetime={datetime_attr(user.inserted_at)}>
@@ -24,9 +38,10 @@
           </td>
           <td>
             <button
+              id={"admin-pending-users-approve-#{user.id}"}
+              class="admin-pending-users-approve btn btn-sm btn-primary"
               phx-click="approve"
               phx-value-id={user.id}
-              class="btn btn-sm btn-primary"
             >
               {gettext("Approve")}
             </button>

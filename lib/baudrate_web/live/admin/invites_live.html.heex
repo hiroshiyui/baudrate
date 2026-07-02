@@ -1,31 +1,51 @@
 <div id="admin-invites-page" class="admin-invites-page space-y-6">
   <div class="flex items-center justify-between">
-    <h1 id="admin-invites-heading" class="text-2xl font-bold">{gettext("Invite Codes")}</h1>
-    <button phx-click="generate" class="btn btn-primary btn-sm">
+    <h1 id="admin-invites-heading" class="admin-invites-title text-2xl font-bold">
+      {gettext("Invite Codes")}
+    </h1>
+    <button
+      id="admin-invites-generate-btn"
+      phx-click="generate"
+      class="admin-invites-generate-btn btn btn-primary btn-sm"
+    >
       {gettext("Generate Code")}
     </button>
   </div>
 
-  <section aria-labelledby="generate-for-user-heading" class="card bg-base-200 p-4">
-    <h2 id="generate-for-user-heading" class="text-lg font-semibold mb-2">
+  <section
+    id="admin-invites-generate-for-user"
+    aria-labelledby="generate-for-user-heading"
+    class="admin-invites-generate-for-user card bg-base-200 p-4"
+  >
+    <h2
+      id="generate-for-user-heading"
+      class="admin-invites-section-title text-lg font-semibold mb-2"
+    >
       {gettext("Generate for User")}
     </h2>
-    <form phx-change="search_users" class="mb-2">
+    <form id="admin-invites-user-search-form" phx-change="search_users" class="mb-2">
       <input
+        id="admin-invites-user-search-input"
         type="text"
         name="search[query]"
         value={@user_search_query}
         placeholder={gettext("Search users...")}
-        class="input input-bordered input-sm w-full"
+        class="admin-invites-user-search-input input input-bordered input-sm w-full"
         autocomplete="off"
         aria-label={gettext("Search users to generate invite code for")}
         phx-debounce="300"
       />
     </form>
-    <form :if={@user_search_results != []} phx-submit="generate_for_user" class="flex gap-2">
+    <form
+      :if={@user_search_results != []}
+      id="admin-invites-generate-for-user-form"
+      phx-submit="generate_for_user"
+      class="flex gap-2"
+    >
       <select
+        id="admin-invites-user-select"
         name="user_id"
-        class="select select-bordered select-sm flex-1"
+        class="admin-invites-user-select select select-bordered select-sm flex-1"
         required
         aria-label={gettext("Select a user")}
       >
@@ -35,8 +55,9 @@
         </option>
       </select>
       <button
+        id="admin-invites-generate-for-user-submit"
         type="submit"
-        class="btn btn-sm btn-primary"
+        class="admin-invites-generate-for-user-submit btn btn-sm btn-primary"
         phx-disable-with={gettext("Generating...")}
       >
         {gettext("Generate for User")}
@@ -44,14 +65,14 @@
     </form>
   </section>
 
-  <div :if={@codes == []} class="text-base-content/70 text-center py-8">
+  <div :if={@codes == []} class="admin-invites-empty text-base-content/70 text-center py-8">
     {gettext("No invite codes yet.")}
   </div>
 
   <div :if={@codes != []} class="overflow-x-auto">
     <table
       id="admin-invite-codes-table"
-      class="table table-zebra w-full"
+      class="admin-invites-table table table-zebra w-full"
       aria-label={gettext("Invite codes")}
     >
       <thead>
@@ -67,8 +88,8 @@
         </tr>
       </thead>
       <tbody aria-live="polite">
-        <tr :for={code <- @codes} id={"invite-#{code.id}"}>
-          <td class="font-mono">{code.code}</td>
+        <tr :for={code <- @codes} id={"invite-#{code.id}"} class="admin-invites-row">
+          <td class="admin-invites-row-code font-mono">{code.code}</td>
           <td>
             <span :if={code.created_by}>{display_name(code.created_by)}</span>
             <span :if={!code.created_by} class="text-base-content/70">
@@ -96,8 +117,9 @@
           <td>
             <span :if={code.used_by}>
               <.link
+                id={"admin-invites-used-by-#{code.id}"}
                 navigate={~p"/admin/users?search=#{code.used_by.username}"}
-                class="link link-primary"
+                class="admin-invites-used-by-link link link-primary"
               >
                 {display_name(code.used_by)}
               </.link>
@@ -118,32 +140,34 @@
             </time>
           </td>
           <td>
-            <div :if={code_status(code) == :active} class="flex gap-1">
+            <div :if={code_status(code) == :active} class="admin-invites-row-actions flex gap-1">
               <button
                 id={"copy-invite-#{code.id}"}
                 phx-hook="CopyToClipboardHook"
                 data-copy-text={invite_url(code.code)}
                 data-copied-label={gettext("Copied!")}
                 title={gettext("Copy invite link")}
-                class="btn btn-sm btn-ghost"
+                class="admin-invites-copy-btn btn btn-sm btn-ghost"
                 aria-label={gettext("Copy invite link")}
               >
                 <.icon name="hero-clipboard-document" class="size-4" />
               </button>
               <button
+                id={"admin-invites-qr-#{code.id}"}
                 phx-click="show_qr_code"
                 phx-value-code={code.code}
-                class="btn btn-sm btn-ghost"
+                class="admin-invites-qr-btn btn btn-sm btn-ghost"
                 title={gettext("Show QR code")}
                 aria-label={gettext("Show QR code")}
               >
                 <.icon name="hero-qr-code" class="size-4" />
               </button>
               <button
+                id={"admin-invites-revoke-#{code.id}"}
                 phx-click="revoke"
                 phx-value-id={code.id}
                 data-confirm={gettext("Revoke this invite code?")}
-                class="btn btn-sm btn-ghost text-error"
+                class="admin-invites-revoke-btn btn btn-sm btn-ghost text-error"
               >
                 {gettext("Revoke")}
               </button>
@@ -160,7 +184,7 @@
   <div
     :if={@qr_modal_code}
     id="qr-modal"
-    class="modal modal-open"
+    class="admin-invites-qr-modal modal modal-open"
     role="dialog"
     aria-modal="true"
     aria-labelledby="qr-modal-title"
@@ -169,17 +193,26 @@
     phx-key="Escape"
   >
     <div class="modal-box flex flex-col items-center">
-      <h3 id="qr-modal-title" class="font-bold text-lg mb-4">{gettext("Invite QR code")}</h3>
+      <h3 id="qr-modal-title" class="admin-invites-qr-modal-title font-bold text-lg mb-4">
+        {gettext("Invite QR code")}
+      </h3>
       <img
+        id="admin-invites-qr-image"
         src={@qr_codes[@qr_modal_code]}
         alt={gettext("Invite QR code")}
-        class="w-64 h-64"
+        class="admin-invites-qr-image w-64 h-64"
       />
-      <p class="text-sm mt-4 break-all text-center max-w-xs">
+      <p class="admin-invites-qr-url text-sm mt-4 break-all text-center max-w-xs">
         {invite_url(@qr_modal_code)}
       </p>
       <div class="modal-action">
-        <button phx-click="close_qr_modal" class="btn">{gettext("Close")}</button>
+        <button
+          id="admin-invites-qr-close"
+          phx-click="close_qr_modal"
+          class="admin-invites-qr-close-btn btn"
+        >
+          {gettext("Close")}
+        </button>
       </div>
     </div>
     <div class="modal-backdrop" phx-click="close_qr_modal"></div>

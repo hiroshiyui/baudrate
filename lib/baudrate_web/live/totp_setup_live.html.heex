@@ -2,7 +2,7 @@
   <h1 id="totp-setup-heading" class="text-2xl font-bold text-center mb-2">
     {gettext("Set Up Two-Factor Authentication")}
   </h1>
-  <p class="text-center text-base-content/70 mb-8">
+  <p id="totp-setup-subtitle" class="totp-setup-subtitle text-center text-base-content/70 mb-8">
     <%= if @policy == :required do %>
       {gettext(
         "Your role requires two-factor authentication. Scan the QR code below with your authenticator app."
@@ -16,7 +16,14 @@
 
   <div id="totp-qr-code" class="flex justify-center mb-6">
     <div class="bg-white p-4 rounded-lg">
-      <img src={@qr_svg} alt={gettext("TOTP QR Code")} width="264" height="264" />
+      <img
+        id="totp-setup-qr-image"
+        class="totp-setup-qr-image"
+        src={@qr_svg}
+        alt={gettext("TOTP QR Code")}
+        width="264"
+        height="264"
+      />
     </div>
   </div>
 
@@ -40,7 +47,7 @@
     class="space-y-4"
   >
     <div class="form-control">
-      <label class="label" for="totp_code">
+      <label id="totp-setup-code-label" class="totp-setup-field-label label" for="totp_code">
         <span class="label-text">{gettext("Verification Code")}</span>
       </label>
       <input
@@ -48,7 +55,7 @@
         id="totp_code"
         name="totp[code]"
         value={@form[:code].value}
-        class="input input-bordered w-full text-center text-2xl tracking-widest"
+        class="totp-setup-code-input input input-bordered w-full text-center text-2xl tracking-widest"
         inputmode="numeric"
         pattern="[0-9]{6}"
         maxlength="6"
@@ -59,8 +66,9 @@
     </div>
 
     <button
+      id="totp-setup-submit"
       type="submit"
-      class="btn btn-primary w-full"
+      class="totp-setup-submit btn btn-primary w-full"
       phx-disable-with={gettext("Verifying...")}
     >
       {gettext("Verify and Enable")}

@@ -1,8 +1,12 @@
 <div id="user-content-page" class="user-content-page space-y-6">
-  <nav class="text-sm breadcrumbs" aria-label={gettext("Breadcrumb")}>
+  <nav
+    id="user-content-breadcrumb"
+    class="user-content-breadcrumb text-sm breadcrumbs"
+    aria-label={gettext("Breadcrumb")}
+  >
     <ul>
       <li>
-        <.link navigate={~p"/users/#{@profile_user.username}"}>
+        <.link id="user-content-back-link" navigate={~p"/users/#{@profile_user.username}"}>
           {gettext("Back to profile")}
         </.link>
       </li>
@@ -26,11 +30,11 @@
       <div class="card-body p-4">
         <.link
           navigate={~p"/articles/#{article.slug}"}
-          class="card-title text-base link link-hover"
+          class="article-title card-title text-base link link-hover"
         >
           {article.title}
         </.link>
-        <div class="text-sm text-base-content/70">
+        <div class="article-meta text-sm text-base-content/70">
           <time datetime={datetime_attr(article_datetime(article))}>
             {format_datetime(article_datetime(article))}
           </time>
@@ -46,7 +50,11 @@
       </div>
     </article>
 
-    <div :if={@articles == []} class="text-base-content/70 text-center py-4">
+    <div
+      :if={@articles == []}
+      id="user-content-articles-empty"
+      class="user-content-empty text-base-content/70 text-center py-4"
+    >
       {gettext("No articles yet.")}
     </div>
   </div>
@@ -63,13 +71,13 @@
       class="comment card bg-base-200 shadow-sm"
     >
       <div class="card-body p-4">
-        <div :if={comment.body_html} class="prose prose-sm max-w-none line-clamp-3">
+        <div :if={comment.body_html} class="comment-body prose prose-sm max-w-none line-clamp-3">
           {raw(comment.body_html)}
         </div>
-        <div :if={!comment.body_html} class="prose prose-sm max-w-none line-clamp-3">
+        <div :if={!comment.body_html} class="comment-body prose prose-sm max-w-none line-clamp-3">
           {raw(Baudrate.Content.Markdown.to_html(comment.body))}
         </div>
-        <div class="text-sm text-base-content/70 mt-1">
+        <div class="comment-meta text-sm text-base-content/70 mt-1">
           <time datetime={datetime_attr(comment.inserted_at)}>
             {format_datetime(comment.inserted_at)}
           </time>
@@ -87,7 +95,11 @@
       </div>
     </div>
 
-    <div :if={@comments == []} class="text-base-content/70 text-center py-4">
+    <div
+      :if={@comments == []}
+      id="user-content-comments-empty"
+      class="user-content-empty text-base-content/70 text-center py-4"
+    >
       {gettext("No comments yet.")}
     </div>
   </div>

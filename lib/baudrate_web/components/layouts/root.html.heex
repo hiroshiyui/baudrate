@@ -72,10 +72,11 @@
     <script phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
   </head>
-  <body class="min-h-screen flex flex-col">
+  <body id="root-body" class="root-body min-h-screen flex flex-col">
     <a
       href="#main-content"
-      class="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:p-4 focus:bg-base-100 focus:text-base-content"
+      id="root-skip-link"
+      class="root-skip-link sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:p-4 focus:bg-base-100 focus:text-base-content"
     >
       {gettext("Skip to main content")}
     </a>

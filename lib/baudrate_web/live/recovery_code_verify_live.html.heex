@@ -2,7 +2,10 @@
   <h1 id="recovery-code-verify-heading" class="text-2xl font-bold text-center mb-2">
     {gettext("Recovery Code")}
   </h1>
-  <p class="text-center text-base-content/70 mb-8">
+  <p
+    id="recovery-code-verify-subtitle"
+    class="recovery-code-verify-subtitle text-center text-base-content/70 mb-8"
+  >
     {gettext("Enter one of your recovery codes to log in.")}
   </p>
 
@@ -14,7 +17,11 @@
     class="space-y-4"
   >
     <div class="form-control">
-      <label class="label" for="recovery_code">
+      <label
+        id="recovery-code-verify-code-label"
+        class="recovery-code-verify-field-label label"
+        for="recovery_code"
+      >
         <span class="label-text">{gettext("Recovery Code")}</span>
       </label>
       <input
@@ -22,7 +29,7 @@
         id="recovery_code"
         name="recovery[code]"
         value={@form[:code].value}
-        class="input input-bordered w-full text-center text-2xl tracking-widest font-mono"
+        class="recovery-code-verify-code-input input input-bordered w-full text-center text-2xl tracking-widest font-mono"
         placeholder={gettext("abcd-ef23")}
         maxlength="9"
         autocomplete="off"
@@ -32,8 +39,9 @@
     </div>
 
     <button
+      id="recovery-code-verify-submit"
       type="submit"
-      class="btn btn-primary w-full"
+      class="recovery-code-verify-submit btn btn-primary w-full"
       phx-disable-with={gettext("Verifying...")}
     >
       {gettext("Verify")}
@@ -51,7 +59,11 @@
   </form>
 
   <nav id="recovery-code-nav" class="text-center mt-4" aria-label={gettext("Recovery code help")}>
-    <.link navigate="/totp/verify" class="link link-hover text-sm">
+    <.link
+      id="recovery-code-verify-totp-link"
+      navigate="/totp/verify"
+      class="recovery-code-verify-totp-link link link-hover text-sm"
+    >
       {gettext("Back to TOTP verification")}
     </.link>
   </nav>

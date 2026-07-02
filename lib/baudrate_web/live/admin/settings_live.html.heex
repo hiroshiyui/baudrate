@@ -1,7 +1,9 @@
 <div id="admin-settings-page" class="admin-settings-page space-y-6">
-  <h1 id="settings-heading" class="text-2xl font-bold">{gettext("Admin Settings")}</h1>
+  <h1 id="admin-settings-heading" class="admin-settings-heading text-2xl font-bold">
+    {gettext("Admin Settings")}
+  </h1>
 
-  <div id="settings-card" class="card bg-base-200 shadow-sm">
+  <div id="settings-card" class="admin-settings-card card bg-base-200 shadow-sm">
     <div class="card-body">
       <.form for={@form} id="settings-form" phx-change="validate" phx-submit="save">
         <.input field={@form[:site_name]} type="text" label={gettext("Site Name")} required />
@@ -84,7 +86,9 @@
             "URL to an external domain blocklist (CSV or JSON). Used by the federation dashboard audit feature."
           )}
         </p>
-        <h2 class="card-title mt-6">{gettext("Theme")}</h2>
+        <h2 id="admin-settings-theme-heading" class="admin-settings-theme-heading card-title mt-6">
+          {gettext("Theme")}
+        </h2>
         <.input
           field={@form[:theme_light]}
           type="select"
@@ -106,26 +110,32 @@
     </div>
   </div>
 
-  <div id="vapid-card" class="card bg-base-200 shadow-sm">
+  <div id="vapid-card" class="admin-settings-card card bg-base-200 shadow-sm">
     <div class="card-body">
-      <h2 class="card-title">{gettext("Web Push Notifications (VAPID)")}</h2>
+      <h2 id="admin-settings-vapid-heading" class="admin-settings-vapid-heading card-title">
+        {gettext("Web Push Notifications (VAPID)")}
+      </h2>
       <p class="text-sm text-base-content/70">
         {gettext("VAPID keys are required for sending browser push notifications.")}
       </p>
       <%= if @vapid_configured do %>
-        <div class="space-y-2">
+        <div id="admin-settings-vapid-status" class="admin-settings-vapid-status space-y-2">
           <div class="flex items-center gap-2">
             <span class="badge badge-success">{gettext("Configured")}</span>
           </div>
           <div>
             <div class="text-sm text-base-content/70">{gettext("Public Key")}</div>
-            <code class="text-xs break-all">{@vapid_public_key}</code>
+            <code
+              id="admin-settings-vapid-public-key"
+              class="admin-settings-vapid-public-key text-xs break-all"
+            >{@vapid_public_key}</code>
           </div>
         </div>
       <% else %>
         <button
+          id="admin-settings-generate-vapid"
+          class="admin-settings-generate-vapid btn btn-primary"
           type="button"
-          class="btn btn-primary"
           phx-click="generate_vapid_keys"
           data-confirm={
             gettext(
@@ -139,9 +149,11 @@
     </div>
   </div>
 
-  <div id="eua-card" class="card bg-base-200 shadow-sm">
+  <div id="eua-card" class="admin-settings-card card bg-base-200 shadow-sm">
     <div class="card-body">
-      <h2 class="card-title">{gettext("End User Agreement")}</h2>
+      <h2 id="admin-settings-eua-heading" class="admin-settings-eua-heading card-title">
+        {gettext("End User Agreement")}
+      </h2>
       <p class="text-sm text-base-content/70">
         {gettext(
           "Optional site-specific terms shown during registration. Supports Markdown formatting."

@@ -1,10 +1,14 @@
 <div id="admin-federation-page" class="admin-federation-page space-y-6">
-  <h1 id="federation-heading" class="text-2xl font-bold">{gettext("Federation Dashboard")}</h1>
+  <h1 id="federation-heading" class="admin-federation-title text-2xl font-bold">
+    {gettext("Federation Dashboard")}
+  </h1>
 
   <%!-- Delivery Queue Stats --%>
-  <div id="delivery-queue-card" class="card bg-base-200 shadow-sm">
+  <div id="delivery-queue-card" class="admin-federation-card card bg-base-200 shadow-sm">
     <div class="card-body">
-      <h2 id="delivery-queue-heading" class="card-title">{gettext("Delivery Queue")}</h2>
+      <h2 id="delivery-queue-heading" class="admin-federation-card-title card-title">
+        {gettext("Delivery Queue")}
+      </h2>
 
       <div class="stats stats-vertical sm:stats-horizontal shadow w-full">
         <div class="stat">
@@ -26,9 +30,17 @@
       </div>
 
       <div :if={@failed_jobs != []} class="mt-4">
-        <h3 class="font-semibold mb-2">{gettext("Actionable Jobs")}</h3>
+        <h3
+          id="admin-federation-jobs-heading"
+          class="admin-federation-subheading font-semibold mb-2"
+        >
+          {gettext("Actionable Jobs")}
+        </h3>
         <div class="overflow-x-auto">
-          <table class="table table-zebra table-sm">
+          <table
+            id="admin-federation-jobs-table"
+            class="admin-federation-jobs-table table table-zebra table-sm"
+          >
             <thead>
               <tr>
                 <th scope="col">{gettext("Inbox")}</th>
@@ -39,7 +51,11 @@
               </tr>
             </thead>
             <tbody>
-              <tr :for={job <- @failed_jobs}>
+              <tr
+                :for={job <- @failed_jobs}
+                id={"admin-federation-job-#{job.id}"}
+                class="admin-federation-job-row"
+              >
                 <td class="font-mono text-sm max-w-xs truncate">{job.inbox_url}</td>
                 <td>
                   <span class={[
@@ -55,16 +71,18 @@
                 <td class="flex gap-1">
                   <button
                     :if={job.status == "failed"}
+                    id={"admin-federation-job-retry-#{job.id}"}
                     phx-click="retry_job"
                     phx-value-id={job.id}
-                    class="btn btn-ghost btn-sm"
+                    class="admin-federation-job-retry-btn btn btn-ghost btn-sm"
                   >
                     {gettext("Retry")}
                   </button>
                   <button
+                    id={"admin-federation-job-abandon-#{job.id}"}
                     phx-click="abandon_job"
                     phx-value-id={job.id}
-                    class="btn btn-ghost btn-sm text-error"
+                    class="admin-federation-job-abandon-btn btn btn-ghost btn-sm text-error"
                   >
                     {gettext("Abandon")}
                   </button>
@@ -78,16 +96,21 @@
   </div>
 
   <%!-- Known Instances --%>
-  <div id="known-instances-card" class="card bg-base-200 shadow-sm">
+  <div id="known-instances-card" class="admin-federation-card card bg-base-200 shadow-sm">
     <div class="card-body">
-      <h2 id="known-instances-heading" class="card-title">{gettext("Known Instances")}</h2>
+      <h2 id="known-instances-heading" class="admin-federation-card-title card-title">
+        {gettext("Known Instances")}
+      </h2>
 
-      <div :if={@instances == []} class="text-center py-8 opacity-70">
+      <div
+        :if={@instances == []}
+        class="admin-federation-instances-empty text-center py-8 opacity-70"
+      >
         {gettext("No remote instances discovered yet.")}
       </div>
 
       <div :if={@instances != []} class="overflow-x-auto">
-        <table id="instances-table" class="table table-zebra">
+        <table id="instances-table" class="admin-federation-instances-table table table-zebra">
           <thead>
             <tr>
               <th scope="col">{gettext("Domain")}</th>
@@ -99,7 +122,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr :for={instance <- @instances}>
+            <tr
+              :for={instance <- @instances}
+              id={"admin-federation-instance-#{instance.domain}"}
+              class="admin-federation-instance-row"
+            >
               <td class="font-mono text-sm">{instance.domain}</td>
               <td>{instance.actor_count}</td>
               <td>{instance.follower_count}</td>
@@ -115,12 +142,13 @@
               </td>
               <td>
                 <button
+                  id={"admin-federation-block-#{instance.domain}"}
                   phx-click="block_domain"
                   phx-value-domain={instance.domain}
                   data-confirm={
                     gettext("Block all federation with %{domain}?", domain: instance.domain)
                   }
-                  class="btn btn-error btn-sm"
+                  class="admin-federation-block-btn btn btn-error btn-sm"
                 >
                   {gettext("Block")}
                 </button>
@@ -133,9 +161,11 @@
   </div>
 
   <%!-- Key Rotation --%>
-  <div id="key-rotation-card" class="card bg-base-200 shadow-sm">
+  <div id="key-rotation-card" class="admin-federation-card card bg-base-200 shadow-sm">
     <div class="card-body">
-      <h2 id="key-rotation-heading" class="card-title">{gettext("Key Rotation")}</h2>
+      <h2 id="key-rotation-heading" class="admin-federation-card-title card-title">
+        {gettext("Key Rotation")}
+      </h2>
       <p class="text-sm opacity-70 mb-4">
         {gettext(
           "Rotate RSA keypairs for federation actors. The new public key will be distributed to followers via an Update activity."
@@ -144,20 +174,29 @@
 
       <div class="flex flex-wrap gap-2">
         <button
+          id="admin-federation-rotate-site-keys"
           phx-click="rotate_keys"
           phx-value-type="site"
           phx-value-id="site"
           data-confirm={gettext("Rotate site keypair? This will invalidate existing signatures.")}
-          class="btn btn-warning btn-sm"
+          class="admin-federation-rotate-site-btn btn btn-warning btn-sm"
         >
           {gettext("Rotate Site Keys")}
         </button>
       </div>
 
       <div :if={@boards != []} class="mt-4">
-        <h3 class="font-semibold mb-2">{gettext("Board Keys")}</h3>
+        <h3
+          id="admin-federation-board-keys-heading"
+          class="admin-federation-subheading font-semibold mb-2"
+        >
+          {gettext("Board Keys")}
+        </h3>
         <div class="overflow-x-auto">
-          <table id="board-keys-table" class="table table-zebra table-sm">
+          <table
+            id="board-keys-table"
+            class="admin-federation-board-keys-table table table-zebra table-sm"
+          >
             <thead>
               <tr>
                 <th scope="col">{gettext("Board")}</th>
@@ -166,7 +205,12 @@
               </tr>
             </thead>
             <tbody>
-              <tr :for={board <- @boards} :if={board.ap_enabled}>
+              <tr
+                :for={board <- @boards}
+                :if={board.ap_enabled}
+                id={"admin-federation-board-key-#{board.id}"}
+                class="admin-federation-board-key-row"
+              >
                 <td>
                   <span :if={board.parent} class="text-base-content/50">
                     {board.parent.name} /
@@ -178,11 +222,12 @@
                 </td>
                 <td>
                   <button
+                    id={"admin-federation-rotate-board-#{board.id}"}
                     phx-click="rotate_keys"
                     phx-value-type="board"
                     phx-value-id={board.id}
                     data-confirm={gettext("Rotate keypair for %{board}?", board: board.name)}
-                    class="btn btn-warning btn-sm"
+                    class="admin-federation-rotate-board-btn btn btn-warning btn-sm"
                   >
                     {gettext("Rotate Keys")}
                   </button>
@@ -196,16 +241,18 @@
   </div>
 
   <%!-- Board Federation --%>
-  <div id="board-federation-card" class="card bg-base-200 shadow-sm">
+  <div id="board-federation-card" class="admin-federation-card card bg-base-200 shadow-sm">
     <div class="card-body">
-      <h2 id="board-federation-heading" class="card-title">{gettext("Board Federation")}</h2>
+      <h2 id="board-federation-heading" class="admin-federation-card-title card-title">
+        {gettext("Board Federation")}
+      </h2>
 
-      <div :if={@boards == []} class="text-center py-8 opacity-70">
+      <div :if={@boards == []} class="admin-federation-boards-empty text-center py-8 opacity-70">
         {gettext("No boards configured.")}
       </div>
 
       <div :if={@boards != []} class="overflow-x-auto">
-        <table id="board-federation-table" class="table table-zebra">
+        <table id="board-federation-table" class="admin-federation-boards-table table table-zebra">
           <thead>
             <tr>
               <th scope="col">{gettext("Board")}</th>
@@ -215,7 +262,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr :for={board <- @boards}>
+            <tr
+              :for={board <- @boards}
+              id={"admin-federation-board-#{board.id}"}
+              class="admin-federation-board-row"
+            >
               <td>
                 <span :if={board.parent} class="text-base-content/50">
                   {board.parent.name} /
@@ -242,10 +293,11 @@
               </td>
               <td>
                 <button
+                  id={"admin-federation-toggle-board-#{board.id}"}
                   phx-click="toggle_board_federation"
                   phx-value-id={board.id}
                   class={[
-                    "btn btn-sm",
+                    "admin-federation-toggle-board-btn btn btn-sm",
                     if(board.ap_enabled, do: "btn-ghost", else: "btn-primary")
                   ]}
                 >
@@ -260,9 +312,11 @@
   </div>
 
   <%!-- Blocklist Audit --%>
-  <div id="blocklist-audit-card" class="card bg-base-200 shadow-sm">
+  <div id="blocklist-audit-card" class="admin-federation-card card bg-base-200 shadow-sm">
     <div class="card-body">
-      <h2 id="blocklist-audit-heading" class="card-title">{gettext("Blocklist Audit")}</h2>
+      <h2 id="blocklist-audit-heading" class="admin-federation-card-title card-title">
+        {gettext("Blocklist Audit")}
+      </h2>
       <p class="text-sm opacity-70 mb-4">
         {gettext(
           "Compare your local domain blocklist against an external known-bad-actor list. Configure the audit URL in Admin Settings."
@@ -270,7 +324,11 @@
       </p>
 
       <div class="flex gap-2">
-        <button phx-click="audit_blocklist" class="btn btn-primary btn-sm">
+        <button
+          id="admin-federation-run-audit"
+          phx-click="audit_blocklist"
+          class="admin-federation-run-audit-btn btn btn-primary btn-sm"
+        >
           {gettext("Run Audit")}
         </button>
       </div>
@@ -297,21 +355,30 @@
 
         <div :if={@audit_result.missing != []} class="space-y-2">
           <div class="flex items-center justify-between">
-            <h3 class="font-semibold">{gettext("Missing from Local Blocklist")}</h3>
+            <h3
+              id="admin-federation-missing-heading"
+              class="admin-federation-subheading font-semibold"
+            >
+              {gettext("Missing from Local Blocklist")}
+            </h3>
             <button
+              id="admin-federation-add-all-missing"
               phx-click="add_all_missing"
               data-confirm={
                 gettext("Add all %{count} missing domains to blocklist?",
                   count: length(@audit_result.missing)
                 )
               }
-              class="btn btn-warning btn-sm"
+              class="admin-federation-add-all-missing-btn btn btn-warning btn-sm"
             >
               {gettext("Add All")}
             </button>
           </div>
           <div class="overflow-x-auto">
-            <table class="table table-zebra table-sm">
+            <table
+              id="admin-federation-missing-table"
+              class="admin-federation-missing-table table table-zebra table-sm"
+            >
               <thead>
                 <tr>
                   <th scope="col">{gettext("Domain")}</th>
@@ -319,13 +386,18 @@
                 </tr>
               </thead>
               <tbody>
-                <tr :for={domain <- @audit_result.missing}>
+                <tr
+                  :for={domain <- @audit_result.missing}
+                  id={"admin-federation-missing-#{domain}"}
+                  class="admin-federation-missing-row"
+                >
                   <td class="font-mono text-sm">{domain}</td>
                   <td>
                     <button
+                      id={"admin-federation-add-missing-#{domain}"}
                       phx-click="add_missing_domain"
                       phx-value-domain={domain}
-                      class="btn btn-warning btn-sm"
+                      class="admin-federation-add-missing-btn btn btn-warning btn-sm"
                     >
                       {gettext("Add")}
                     </button>
@@ -337,19 +409,31 @@
         </div>
 
         <div :if={@audit_result.extra != []} class="space-y-2">
-          <h3 class="font-semibold">{gettext("Extra in Local Blocklist")}</h3>
+          <h3
+            id="admin-federation-extra-heading"
+            class="admin-federation-subheading font-semibold"
+          >
+            {gettext("Extra in Local Blocklist")}
+          </h3>
           <p class="text-sm opacity-70">
             {gettext("Domains you block that are not in the external list (informational only).")}
           </p>
           <div class="overflow-x-auto">
-            <table class="table table-zebra table-sm">
+            <table
+              id="admin-federation-extra-table"
+              class="admin-federation-extra-table table table-zebra table-sm"
+            >
               <thead>
                 <tr>
                   <th scope="col">{gettext("Domain")}</th>
                 </tr>
               </thead>
               <tbody>
-                <tr :for={domain <- @audit_result.extra}>
+                <tr
+                  :for={domain <- @audit_result.extra}
+                  id={"admin-federation-extra-#{domain}"}
+                  class="admin-federation-extra-row"
+                >
                   <td class="font-mono text-sm">{domain}</td>
                 </tr>
               </tbody>

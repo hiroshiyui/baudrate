@@ -1,24 +1,36 @@
 <div id="article-history-page" class="article-history-page mx-auto max-w-2xl">
-  <nav class="mb-4" aria-label={gettext("Breadcrumb")}>
+  <nav
+    id="article-history-breadcrumb"
+    class="article-history-breadcrumb mb-4"
+    aria-label={gettext("Breadcrumb")}
+  >
     <.link
+      id="article-history-back-link"
       navigate={~p"/articles/#{@article.slug}"}
-      class="text-sm text-base-content/70 hover:text-base-content"
+      class="article-history-back-link text-sm text-base-content/70 hover:text-base-content"
     >
       &larr; {gettext("Back to article")}
     </.link>
   </nav>
 
-  <h1 id="article-history-heading" class="text-2xl font-bold mb-1">{gettext("Edit History")}</h1>
-  <p class="text-sm text-base-content/70 mb-6">{@article.title}</p>
+  <h1 id="article-history-heading" class="article-history-heading text-2xl font-bold mb-1">
+    {gettext("Edit History")}
+  </h1>
+  <p class="article-history-title text-sm text-base-content/70 mb-6">{@article.title}</p>
 
-  <div :if={@revisions == []} class="text-base-content/70 text-center py-8">
+  <div :if={@revisions == []} class="article-history-empty text-base-content/70 text-center py-8">
     {gettext("No edit history available.")}
   </div>
 
-  <div :if={@revisions != []} id="article-revisions" class="space-y-6">
+  <div :if={@revisions != []} id="article-revisions" class="article-history-revisions space-y-6">
     <%!-- Revision list --%>
     <div class="overflow-x-auto">
-      <table class="table table-sm" role="grid" aria-label={gettext("Revision list")}>
+      <table
+        id="article-history-table"
+        class="article-history-table table table-sm"
+        role="grid"
+        aria-label={gettext("Revision list")}
+      >
         <thead>
           <tr>
             <th scope="col">{gettext("Version")}</th>
@@ -29,11 +41,17 @@
         </thead>
         <tbody>
           <%= for {revision, index} <- Enum.with_index(@revisions) do %>
-            <tr class={[@selected_index == index && "bg-base-200"]}>
+            <tr
+              id={"article-history-revision-#{revision.id}"}
+              class={["article-history-revision-row", @selected_index == index && "bg-base-200"]}
+            >
               <td>{"##{length(@revisions) - index}"}</td>
               <td>
                 <span :if={revision.editor}>
-                  <.link navigate={~p"/users/#{revision.editor.username}"} class="link link-hover">
+                  <.link
+                    navigate={~p"/users/#{revision.editor.username}"}
+                    class="article-history-editor-link link link-hover"
+                  >
                     {display_name(revision.editor)}
                   </.link>
                 </span>
@@ -48,10 +66,11 @@
               </td>
               <td>
                 <button
+                  id={"article-history-select-#{revision.id}"}
                   phx-click="select_revision"
                   phx-value-index={index}
                   class={[
-                    "btn btn-xs",
+                    "article-history-select btn btn-xs",
                     if(@selected_index == index, do: "btn-primary", else: "btn-ghost")
                   ]}
                 >
@@ -65,11 +84,11 @@
     </div>
 
     <%!-- Diff display --%>
-    <div :if={@selected_index != nil} id="revision-diff" class="space-y-4">
+    <div :if={@selected_index != nil} id="revision-diff" class="article-history-diff space-y-4">
       <% selected = Enum.at(@revisions, @selected_index) %>
       <% previous = get_previous_revision(@revisions, @selected_index) %>
 
-      <h2 class="text-lg font-semibold">
+      <h2 class="article-history-diff-heading text-lg font-semibold">
         {gettext("Version #%{number}", number: length(@revisions) - @selected_index)}
         <span :if={selected.editor} class="font-normal text-sm text-base-content/70">
           {gettext("by %{editor}", editor: display_name(selected.editor))}
@@ -77,7 +96,7 @@
       </h2>
 
       <%!-- Title diff --%>
-      <div>
+      <div id="article-history-title-diff" class="article-history-title-diff">
         <h3 class="text-sm font-semibold mb-1">{gettext("Title")}</h3>
         <div class="bg-base-200 rounded-lg p-3 font-mono text-sm overflow-x-auto">
           <%= if previous do %>
@@ -97,7 +116,7 @@
       </div>
 
       <%!-- Body diff --%>
-      <div>
+      <div id="article-history-body-diff" class="article-history-body-diff">
         <h3 class="text-sm font-semibold mb-1">{gettext("Body")}</h3>
         <div class="bg-base-200 rounded-lg p-3 font-mono text-sm overflow-x-auto whitespace-pre-wrap break-words max-h-96 overflow-y-auto">
           <%= if previous do %>

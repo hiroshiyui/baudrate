@@ -1,9 +1,11 @@
 <section id="bookmarks-page" aria-labelledby="bookmarks-heading" class="bookmarks-page space-y-4">
-  <h1 id="bookmarks-heading" class="text-2xl font-bold">{gettext("Bookmarks")}</h1>
+  <h1 id="bookmarks-heading" class="bookmarks-heading text-2xl font-bold">
+    {gettext("Bookmarks")}
+  </h1>
 
   <div :if={@bookmarks == []} id="bookmarks-empty" class="text-center py-12 text-base-content/70">
     <.icon name="hero-bookmark" class="size-12 mx-auto mb-4 opacity-50" />
-    <p class="text-lg">{gettext("No bookmarks yet.")}</p>
+    <p class="bookmarks-empty-message text-lg">{gettext("No bookmarks yet.")}</p>
   </div>
 
   <div :if={@bookmarks != []} id="bookmarks" class="space-y-2" data-focus-target>
@@ -26,8 +28,9 @@
           <%!-- Article bookmark --%>
           <div :if={bookmark.article}>
             <.link
+              id={"bookmark-article-link-#{bookmark.id}"}
               navigate={bookmark_target_link(bookmark)}
-              class="font-semibold link link-hover"
+              class="bookmark-title font-semibold link link-hover"
             >
               {bookmark.article.title}
             </.link>
@@ -74,8 +77,9 @@
           <div :if={bookmark.comment}>
             <.link
               :if={bookmark_target_link(bookmark)}
+              id={"bookmark-comment-link-#{bookmark.id}"}
               navigate={bookmark_target_link(bookmark)}
-              class="font-semibold link link-hover"
+              class="bookmark-title font-semibold link link-hover"
             >
               {if bookmark.comment.article,
                 do: bookmark.comment.article.title,
@@ -122,9 +126,10 @@
 
         <%!-- Remove button --%>
         <button
+          id={"bookmark-remove-#{bookmark.id}"}
           phx-click="remove_bookmark"
           phx-value-id={bookmark.id}
-          class="btn btn-ghost btn-xs flex-shrink-0"
+          class="bookmark-remove btn btn-ghost btn-xs flex-shrink-0"
           aria-label={gettext("Remove bookmark")}
           title={gettext("Remove bookmark")}
         >

@@ -20,14 +20,22 @@
     <div class="card bg-base-200">
       <div class="card-body">
         <div id="recovery-codes-grid" class="grid grid-cols-2 gap-2 font-mono text-sm">
-          <div :for={code <- @recovery_codes} class="bg-base-300 rounded px-3 py-1.5 text-center">
+          <div
+            :for={code <- @recovery_codes}
+            id={"register-recovery-code-#{code}"}
+            class="register-recovery-code bg-base-300 rounded px-3 py-1.5 text-center"
+          >
             {code}
           </div>
         </div>
       </div>
     </div>
 
-    <button phx-click="ack_codes" class="btn btn-primary w-full">
+    <button
+      id="register-ack-codes"
+      phx-click="ack_codes"
+      class="register-ack-codes btn btn-primary w-full"
+    >
       {gettext("I have saved my recovery codes")}
     </button>
   </div>
@@ -37,7 +45,7 @@
     <h1 id="register-heading" class="text-2xl font-bold text-center mb-2">
       {gettext("Sign Up")}
     </h1>
-    <p class="text-center text-base-content/70 mb-8">
+    <p id="register-subtitle" class="register-subtitle text-center text-base-content/70 mb-8">
       {gettext("Create an account")}
     </p>
 
@@ -196,8 +204,7 @@
               true -> gettext("Strong")
             end
           }
-        >
-        </progress>
+        ></progress>
       </div>
 
       <p :if={@registration_mode == "approval_required"} class="text-sm text-base-content/70">
@@ -233,7 +240,7 @@
       <button
         id="register-submit"
         type="submit"
-        class="btn btn-primary w-full"
+        class="register-submit btn btn-primary w-full"
         phx-disable-with={gettext("Signing up...")}
       >
         {gettext("Sign Up")}
@@ -243,7 +250,13 @@
     <nav id="register-help-nav" aria-label={gettext("Registration help")}>
       <p class="text-center text-sm mt-4">
         {gettext("Already have an account?")}
-        <.link navigate="/login" class="link link-primary">{gettext("Sign In")}</.link>
+        <.link
+          id="register-login-link"
+          navigate="/login"
+          class="register-login-link link link-primary"
+        >
+          {gettext("Sign In")}
+        </.link>
       </p>
     </nav>
   </div>

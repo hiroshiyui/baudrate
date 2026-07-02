@@ -1,8 +1,13 @@
-<section aria-labelledby="notifications-heading" class="space-y-4">
+<section
+  id="notifications-page"
+  aria-labelledby="notifications-heading"
+  class="notifications-page space-y-4"
+>
   <div class="flex items-center justify-between">
     <h1 id="notifications-heading" class="text-2xl font-bold">{gettext("Notifications")}</h1>
     <button
       :if={@notifications != [] && Enum.any?(@notifications, &(!&1.read))}
+      id="notifications-mark-all-read"
       type="button"
       phx-click="mark_all_read"
       class="btn btn-ghost btn-sm"
@@ -12,7 +17,11 @@
     </button>
   </div>
 
-  <div :if={@notifications == []} class="text-center py-12 text-base-content/70">
+  <div
+    :if={@notifications == []}
+    id="notifications-empty"
+    class="notifications-empty text-center py-12 text-base-content/70"
+  >
     <.icon name="hero-bell" class="size-12 mx-auto mb-4 opacity-50" />
     <p class="text-lg">{gettext("No notifications yet.")}</p>
     <p class="text-sm">
@@ -58,15 +67,19 @@
             <p class="text-sm">
               <.link
                 :if={actor_link(notif)}
+                id={"notification-actor-#{notif.id}"}
                 navigate={actor_link(notif)}
-                class="font-semibold link link-hover"
+                class="notification-actor font-semibold link link-hover"
               >
                 {actor_name(notif)}
               </.link>
-              <span :if={!actor_link(notif) && actor_name(notif)} class="font-semibold">
+              <span
+                :if={!actor_link(notif) && actor_name(notif)}
+                class="notification-actor font-semibold"
+              >
                 {actor_name(notif)}
               </span>
-              <span class="text-base-content/70">{notification_text(notif.type)}</span>
+              <span class="notification-text text-base-content/70">{notification_text(notif.type)}</span>
             </p>
             <time
               class="text-xs text-base-content/50 shrink-0 whitespace-nowrap"
@@ -79,14 +92,15 @@
           <%!-- Target link (article title or announcement message) --%>
           <.link
             :if={target_link(notif) && target_title(notif)}
+            id={"notification-target-#{notif.id}"}
             navigate={target_link(notif)}
-            class="text-sm link link-hover text-base-content/80 truncate block mt-1"
+            class="notification-target text-sm link link-hover text-base-content/80 truncate block mt-1"
           >
             {target_title(notif)}
           </.link>
           <p
             :if={!target_link(notif) && target_title(notif)}
-            class="text-sm text-base-content/80 truncate mt-1"
+            class="notification-target text-sm text-base-content/80 truncate mt-1"
           >
             {target_title(notif)}
           </p>
@@ -95,9 +109,10 @@
         <%!-- Mark read button --%>
         <button
           :if={!notif.read}
+          id={"notification-mark-read-#{notif.id}"}
           phx-click="mark_read"
           phx-value-id={notif.id}
-          class="btn btn-ghost btn-xs flex-shrink-0"
+          class="notification-mark-read btn btn-ghost btn-xs flex-shrink-0"
           aria-label={gettext("Mark as read")}
           title={gettext("Mark as read")}
         >

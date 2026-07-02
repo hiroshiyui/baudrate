@@ -5,16 +5,23 @@
   data-focus-target
 >
   <div class="flex items-center justify-between">
-    <h1 id="following-heading" class="text-2xl font-bold">
+    <h1 id="following-heading" class="following-heading text-2xl font-bold">
       {gettext("Following")}
-      <span :if={@follows != []} class="badge badge-neutral ml-2">{length(@follows)}</span>
+      <span
+        :if={@follows != []}
+        class="following-count badge badge-neutral ml-2"
+      >{length(@follows)}</span>
     </h1>
   </div>
 
-  <div :if={@follows == []} class="text-base-content/70 text-center py-8">
+  <div
+    :if={@follows == []}
+    id="following-empty"
+    class="following-empty text-base-content/70 text-center py-8"
+  >
     {gettext("You haven't followed anyone yet.")}
     <div class="mt-2">
-      <.link navigate="/search" class="link link-primary">
+      <.link id="following-empty-search-link" navigate="/search" class="link link-primary">
         {gettext("Search for users or remote actors to follow")}
       </.link>
     </div>
@@ -31,8 +38,9 @@
         <.avatar user={follow.followed_user} size={48} />
         <div class="flex-1 min-w-0">
           <.link
+            id={"follow-user-link-#{follow.id}"}
             navigate={~p"/users/#{follow.followed_user.username}"}
-            class="font-bold truncate link link-hover"
+            class="follow-name font-bold truncate link link-hover"
           >
             {follow.followed_user.username}
           </.link>
@@ -46,10 +54,11 @@
         <div class="flex items-center gap-2">
           <span class="badge badge-sm badge-success">{gettext("Accepted")}</span>
           <button
+            id={"follow-unfollow-user-#{follow.id}"}
             phx-click="unfollow_user"
             phx-value-id={follow.followed_user.id}
             data-confirm={gettext("Unfollow this user?")}
-            class="btn btn-sm btn-ghost text-error"
+            class="follow-unfollow btn btn-sm btn-ghost text-error"
           >
             {gettext("Unfollow")}
           </button>
@@ -74,10 +83,11 @@
         </div>
         <div class="flex-1 min-w-0">
           <a
+            id={"follow-actor-link-#{follow.id}"}
             href={remote_actor_profile_url(follow.remote_actor)}
             target="_blank"
             rel="nofollow noopener noreferrer"
-            class="link link-hover"
+            class="follow-name link link-hover"
           >
             <div class="font-bold truncate">
               {follow.remote_actor.display_name || follow.remote_actor.username}
@@ -107,10 +117,11 @@
             end}
           </span>
           <button
+            id={"follow-unfollow-actor-#{follow.id}"}
             phx-click="unfollow"
             phx-value-id={follow.remote_actor.id}
             data-confirm={gettext("Unfollow this actor?")}
-            class="btn btn-sm btn-ghost text-error"
+            class="follow-unfollow btn btn-sm btn-ghost text-error"
           >
             {gettext("Unfollow")}
           </button>

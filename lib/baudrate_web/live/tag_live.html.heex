@@ -1,33 +1,33 @@
 <div id="tag-page" class="tag-page mx-auto max-w-2xl">
-  <h1 id="tag-heading" class="text-2xl font-bold mb-6">
+  <h1 id="tag-heading" class="tag-heading text-2xl font-bold mb-6">
     <.icon name="hero-hashtag" class="size-6 align-text-bottom" />
     {@tag}
   </h1>
 
-  <div :if={@total > 0} class="text-sm text-base-content/70 mb-4">
+  <div :if={@total > 0} class="tag-result-count text-sm text-base-content/70 mb-4">
     {ngettext("1 result", "%{count} results", @total)}
   </div>
 
-  <div :if={@articles == []} class="text-base-content/70 text-center py-8">
+  <div :if={@articles == []} class="tag-articles-empty text-base-content/70 text-center py-8">
     {gettext("No articles found with tag #%{tag}.", tag: @tag)}
   </div>
 
-  <div :if={@articles != []} id="articles" class="space-y-2" data-focus-target>
+  <div :if={@articles != []} id="articles" class="tag-articles space-y-2" data-focus-target>
     <article
       :for={article <- @articles}
       id={"article-#{article.slug}"}
       aria-labelledby={"tag-article-title-#{article.slug}"}
-      class="article card bg-base-200 shadow-sm"
+      class="article tag-article card bg-base-200 shadow-sm"
     >
       <div class="card-body p-4">
         <.link
           navigate={~p"/articles/#{article.slug}"}
           id={"tag-article-title-#{article.slug}"}
-          class="card-title text-base link link-hover"
+          class="tag-article-title card-title text-base link link-hover"
         >
           {article.title}
         </.link>
-        <div class="text-sm text-base-content/70">
+        <div class="tag-article-meta text-sm text-base-content/70">
           <span :if={article.user}>
             {gettext("by %{author}", author: display_name(article.user))} &middot;
           </span>
@@ -37,7 +37,7 @@
               href={remote_actor_profile_url(article.remote_actor)}
               target="_blank"
               rel="nofollow noopener noreferrer"
-              class="inline-flex items-center gap-1 font-semibold link link-hover"
+              class="tag-article-remote-author inline-flex items-center gap-1 font-semibold link link-hover"
             >
               <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
                 <img
@@ -60,7 +60,10 @@
             {format_datetime(article_datetime(article))}
           </time>
           <span :if={article.boards != []}>&middot;</span>
-          <span :for={board <- article.boards} class="badge badge-outline badge-sm ml-1">
+          <span
+            :for={board <- article.boards}
+            class="tag-article-board badge badge-outline badge-sm ml-1"
+          >
             {board.name}
           </span>
         </div>

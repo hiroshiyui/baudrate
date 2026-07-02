@@ -5,18 +5,20 @@
       <h1 id="user-profile-heading" class="text-2xl font-bold">{display_name(@profile_user)}</h1>
       <div class="text-sm text-base-content/70 flex items-center gap-1">
         <.icon name="hero-identification" class="size-6 shrink-0" />
-        <span title={gettext("Fediverse handle")}>{fediverse_handle(@profile_user)}</span>
+        <span class="user-profile-handle" title={gettext("Fediverse handle")}>{fediverse_handle(
+          @profile_user
+        )}</span>
       </div>
-      <span class="badge badge-outline">{translate_role(@profile_user.role.name)}</span>
+      <span class="user-profile-role badge badge-outline">{translate_role(@profile_user.role.name)}</span>
       <span
         :if={@profile_user.is_bot}
-        class="badge badge-outline badge-sm ml-1"
+        class="user-profile-bot-badge badge badge-outline badge-sm ml-1"
         role="img"
         aria-label={gettext("Bot account")}
       >
         {gettext("Bot")}
       </span>
-      <p class="text-sm text-base-content/70 mt-1">
+      <p class="user-profile-member-since text-sm text-base-content/70 mt-1">
         {gettext("Member since")}
         <time datetime={format_date(@profile_user.inserted_at)}>
           {format_date(@profile_user.inserted_at)}
@@ -29,6 +31,7 @@
       >
         <.link
           :if={!@profile_user.is_bot}
+          id="user-profile-message"
           navigate={~p"/messages/new?to=#{@profile_user.username}"}
           class="btn btn-sm btn-outline"
         >
@@ -37,6 +40,7 @@
         </.link>
         <button
           :if={!@is_following}
+          id="user-profile-follow"
           type="button"
           class="btn btn-sm btn-primary"
           phx-click="follow_user"
@@ -47,6 +51,7 @@
         </button>
         <button
           :if={@is_following}
+          id="user-profile-unfollow"
           type="button"
           class="btn btn-sm btn-outline"
           phx-click="unfollow_user"
@@ -58,6 +63,7 @@
         </button>
         <button
           :if={!@is_muted}
+          id="user-profile-mute"
           type="button"
           class="btn btn-sm btn-outline"
           phx-click="mute_user"
@@ -69,6 +75,7 @@
         </button>
         <button
           :if={@is_muted}
+          id="user-profile-unmute"
           type="button"
           class="btn btn-sm btn-outline btn-warning"
           phx-click="unmute_user"
@@ -79,6 +86,7 @@
         </button>
         <div class="dropdown dropdown-end">
           <button
+            id="user-profile-more-actions"
             type="button"
             tabindex="0"
             class="btn btn-sm btn-outline"
@@ -94,6 +102,7 @@
           >
             <li>
               <button
+                id="user-profile-report"
                 phx-click="open_report_modal"
                 phx-value-type="user"
                 phx-value-id={@profile_user.id}
@@ -111,15 +120,17 @@
 
   <div id="profile-stats" class="stats stats-horizontal shadow">
     <.link
+      id="user-profile-stat-articles"
       navigate={~p"/users/#{@profile_user.username}/articles"}
-      class="stat hover:bg-base-200 transition-colors cursor-pointer"
+      class="user-profile-stat stat hover:bg-base-200 transition-colors cursor-pointer"
     >
       <div class="stat-title">{gettext("Articles")}</div>
       <div class="stat-value text-lg">{@article_count}</div>
     </.link>
     <.link
+      id="user-profile-stat-comments"
       navigate={~p"/users/#{@profile_user.username}/comments"}
-      class="stat hover:bg-base-200 transition-colors cursor-pointer"
+      class="user-profile-stat stat hover:bg-base-200 transition-colors cursor-pointer"
     >
       <div class="stat-title">{gettext("Comments")}</div>
       <div class="stat-value text-lg">{@comment_count}</div>
@@ -151,9 +162,13 @@
       {gettext("Details")}
     </h2>
     <dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 bg-base-200 rounded-lg p-3">
-      <div :for={field <- @profile_user.profile_fields} class="contents">
-        <dt class="text-sm font-semibold text-base-content break-words">{field["name"]}</dt>
-        <dd class="text-sm text-base-content/70 break-all">{field["value"]}</dd>
+      <div :for={field <- @profile_user.profile_fields} class="profile-field contents">
+        <dt class="profile-field-name text-sm font-semibold text-base-content break-words">
+          {field["name"]}
+        </dt>
+        <dd class="profile-field-value text-sm text-base-content/70 break-all">
+          {field["value"]}
+        </dd>
       </div>
     </dl>
   </section>
@@ -193,11 +208,14 @@
                 <div class="card-body p-4">
                   <.link
                     navigate={~p"/articles/#{article.slug}"}
-                    class="card-title text-base link link-hover"
+                    class="article-title card-title text-base link link-hover"
                   >
                     {article.title}
                   </.link>
-                  <p :if={article.body} class="text-sm text-base-content/80 line-clamp-3 mt-1">
+                  <p
+                    :if={article.body}
+                    class="article-digest text-sm text-base-content/80 line-clamp-3 mt-1"
+                  >
                     {digest(article.body)}
                   </p>
                   <div
@@ -271,6 +289,7 @@
       </div>
       <div :if={@has_more_activity} class="mt-3 text-center">
         <button
+          id="user-profile-load-more-activity"
           type="button"
           class="btn btn-sm btn-outline"
           phx-click="load_more_activity"
@@ -387,6 +406,7 @@
       </div>
       <div :if={@has_more_boosted} class="mt-3 text-center">
         <button
+          id="user-profile-load-more-boosted"
           type="button"
           class="btn btn-sm btn-outline"
           phx-click="load_more_boosted"
@@ -399,7 +419,8 @@
 
   <div
     :if={@recent_activity == [] && @boosted_activity == []}
-    class="text-base-content/70 text-center py-4"
+    id="user-profile-empty"
+    class="user-profile-empty text-base-content/70 text-center py-4"
   >
     {gettext("No articles yet.")}
   </div>

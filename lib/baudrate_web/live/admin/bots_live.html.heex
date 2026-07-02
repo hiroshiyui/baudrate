@@ -1,27 +1,35 @@
 <div id="admin-bots-page" class="admin-bots-page space-y-6">
   <div class="flex items-center justify-between">
-    <h1 id="bots-heading" class="text-2xl font-bold">{gettext("Manage Bots")}</h1>
-    <button :if={!@show_form} phx-click="new" class="btn btn-primary btn-sm">
+    <h1 id="bots-heading" class="admin-bots-title text-2xl font-bold">
+      {gettext("Manage Bots")}
+    </h1>
+    <button
+      :if={!@show_form}
+      id="admin-bots-new-btn"
+      phx-click="new"
+      class="admin-bots-new-btn btn btn-primary btn-sm"
+    >
       {gettext("New Bot")}
     </button>
   </div>
 
   <%!-- Bot form (create / edit) --%>
-  <div :if={@show_form} id="bot-form-card" class="card bg-base-200 shadow-md">
+  <div :if={@show_form} id="bot-form-card" class="admin-bots-form-card card bg-base-200 shadow-md">
     <div class="card-body">
-      <h2 class="card-title">
+      <h2 id="admin-bots-form-title" class="admin-bots-form-title card-title">
         {if @editing_bot, do: gettext("Edit Bot"), else: gettext("New Bot")}
       </h2>
 
-      <.form for={@form} phx-change="validate" phx-submit="save">
+      <.form id="admin-bots-form" for={@form} phx-change="validate" phx-submit="save">
         <%= if @editing_bot do %>
           <div class="fieldset mb-2">
             <label>
               <span class="label mb-1">{gettext("Username")}</span>
               <input
+                id="admin-bots-username-display"
                 type="text"
                 value={@editing_bot.user.username}
-                class="w-full input"
+                class="admin-bots-username-display w-full input"
                 disabled
               />
             </label>
@@ -39,8 +47,9 @@
           <label>
             <span class="label mb-1">{gettext("Bio")}</span>
             <textarea
+              id="admin-bots-bio-input"
               name="bot[bio]"
-              class="textarea textarea-bordered w-full"
+              class="admin-bots-bio-input textarea textarea-bordered w-full"
               rows="3"
               maxlength="500"
               placeholder={gettext("Bot description or disclaimer (max 500 characters)")}
@@ -62,24 +71,27 @@
             <div id="bot-profile-fields" class="space-y-2" phx-update="ignore">
               <div
                 :for={{field, i} <- Enum.with_index(@editing_bot_profile_fields)}
-                class="flex flex-wrap gap-2"
+                id={"admin-bots-profile-field-#{i}"}
+                class="admin-bots-profile-field flex flex-wrap gap-2"
               >
                 <input
+                  id={"admin-bots-profile-field-name-#{i}"}
                   type="text"
                   name={"bot[profile_fields][#{i}][name]"}
                   value={field["name"]}
                   placeholder={gettext("Label")}
                   maxlength="255"
-                  class="input input-bordered input-sm w-36"
+                  class="admin-bots-profile-field-name input input-bordered input-sm w-36"
                   aria-label={gettext("Field %{n} label", n: i + 1)}
                 />
                 <input
+                  id={"admin-bots-profile-field-value-#{i}"}
                   type="text"
                   name={"bot[profile_fields][#{i}][value]"}
                   value={field["value"]}
                   placeholder={gettext("Content")}
                   maxlength="2048"
-                  class="input input-bordered input-sm flex-1"
+                  class="admin-bots-profile-field-value input input-bordered input-sm flex-1"
                   aria-label={gettext("Field %{n} content", n: i + 1)}
                 />
               </div>
@@ -99,13 +111,14 @@
           <label class="label mb-1">{gettext("Target Boards")}</label>
           <div class="flex flex-wrap gap-2">
             <%= for board <- @boards do %>
-              <label class="flex items-center gap-2 cursor-pointer">
+              <label class="admin-bots-board-option flex items-center gap-2 cursor-pointer">
                 <input
+                  id={"admin-bots-board-checkbox-#{board.id}"}
                   type="checkbox"
                   name="bot[board_ids][]"
                   value={board.id}
                   checked={board.id in (@form[:board_ids].value || [])}
-                  class="checkbox checkbox-sm"
+                  class="admin-bots-board-checkbox checkbox checkbox-sm"
                 />
                 <span class="text-sm">{board.name}</span>
               </label>
@@ -122,10 +135,19 @@
         />
 
         <div class="flex gap-2 mt-4">
-          <button type="submit" class="btn btn-primary btn-sm">
+          <button
+            id="admin-bots-form-save"
+            type="submit"
+            class="admin-bots-form-save btn btn-primary btn-sm"
+          >
             {if @editing_bot, do: gettext("Save Changes"), else: gettext("Create Bot")}
           </button>
-          <button type="button" phx-click="cancel" class="btn btn-ghost btn-sm">
+          <button
+            id="admin-bots-form-cancel"
+            type="button"
+            phx-click="cancel"
+            class="admin-bots-form-cancel btn btn-ghost btn-sm"
+          >
             {gettext("Cancel")}
           </button>
         </div>
@@ -135,12 +157,12 @@
 
   <%!-- Bots table --%>
   <section id="bots-section" aria-labelledby="bots-heading">
-    <div :if={@bots == []} class="text-base-content/70 text-sm">
+    <div :if={@bots == []} class="admin-bots-empty text-base-content/70 text-sm">
       {gettext("No bots configured yet.")}
     </div>
 
     <div :if={@bots != []} class="overflow-x-auto">
-      <table class="table table-zebra w-full">
+      <table id="admin-bots-table" class="admin-bots-table table table-zebra w-full">
         <thead>
           <tr>
             <th>{gettext("Bot")}</th>
@@ -166,10 +188,11 @@
             </td>
             <td>
               <a
+                id={"admin-bots-feed-url-#{bot.id}"}
                 href={bot.feed_url}
                 target="_blank"
                 rel="nofollow noopener noreferrer"
-                class="link link-hover text-sm truncate max-w-xs block"
+                class="admin-bots-feed-url link link-hover text-sm truncate max-w-xs block"
                 title={bot.feed_url}
               >
                 {String.slice(bot.feed_url, 0, 60)}{if String.length(bot.feed_url) > 60,
@@ -211,34 +234,38 @@
               <% end %>
             </td>
             <td>
-              <div class="flex gap-1">
+              <div class="admin-bots-row-actions flex gap-1">
                 <button
+                  id={"admin-bots-edit-#{bot.id}"}
                   phx-click="edit"
                   phx-value-id={bot.id}
-                  class="btn btn-xs btn-ghost"
+                  class="admin-bots-edit-btn btn btn-xs btn-ghost"
                 >
                   {gettext("Edit")}
                 </button>
                 <button
+                  id={"admin-bots-toggle-active-#{bot.id}"}
                   phx-click="toggle_active"
                   phx-value-id={bot.id}
-                  class="btn btn-xs btn-ghost"
+                  class="admin-bots-toggle-active-btn btn btn-xs btn-ghost"
                 >
                   {if bot.active, do: gettext("Deactivate"), else: gettext("Activate")}
                 </button>
                 <button
                   :if={bot.error_count > 0}
+                  id={"admin-bots-reset-errors-#{bot.id}"}
                   phx-click="reset_errors"
                   phx-value-id={bot.id}
-                  class="btn btn-xs btn-warning btn-outline"
+                  class="admin-bots-reset-errors-btn btn btn-xs btn-warning btn-outline"
                   title={gettext("Reset error count and trigger an immediate re-fetch")}
                 >
                   {gettext("Reset & Retry")}
                 </button>
                 <button
+                  id={"admin-bots-refresh-favicon-#{bot.id}"}
                   phx-click="refresh_favicon"
                   phx-value-id={bot.id}
-                  class="btn btn-xs btn-ghost"
+                  class="admin-bots-refresh-favicon-btn btn btn-xs btn-ghost"
                   title={
                     gettext("Re-fetch favicon from the feed site and set it as the bot avatar")
                   }
@@ -246,12 +273,13 @@
                   {gettext("Refresh Favicon")}
                 </button>
                 <button
+                  id={"admin-bots-delete-#{bot.id}"}
                   phx-click="delete"
                   phx-value-id={bot.id}
                   data-confirm={
                     gettext("Delete this bot and its user account? This cannot be undone.")
                   }
-                  class="btn btn-xs btn-error btn-outline"
+                  class="admin-bots-delete-btn btn btn-xs btn-error btn-outline"
                 >
                   {gettext("Delete")}
                 </button>

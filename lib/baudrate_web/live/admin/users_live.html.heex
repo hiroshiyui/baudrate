@@ -1,29 +1,43 @@
 <div id="admin-users-page" class="admin-users-page space-y-6">
-  <h1 id="users-heading" class="text-2xl font-bold">{gettext("User Management")}</h1>
+  <h1 id="users-heading" class="admin-users-title text-2xl font-bold">
+    {gettext("User Management")}
+  </h1>
 
   <%!-- Stats bar --%>
-  <div id="users-stats" class="stats stats-vertical sm:stats-horizontal shadow w-full">
+  <div
+    id="users-stats"
+    class="admin-users-stats stats stats-vertical sm:stats-horizontal shadow w-full"
+  >
     <div class="stat">
       <div class="stat-title">{gettext("Total")}</div>
-      <div class="stat-value text-lg">
+      <div id="admin-users-stat-total" class="admin-users-stat-value stat-value text-lg">
         {Map.values(@status_counts) |> Enum.sum()}
       </div>
     </div>
     <div class="stat">
       <div class="stat-title">{gettext("Active")}</div>
-      <div class="stat-value text-lg text-success">
+      <div
+        id="admin-users-stat-active"
+        class="admin-users-stat-value stat-value text-lg text-success"
+      >
         {Map.get(@status_counts, "active", 0)}
       </div>
     </div>
     <div class="stat">
       <div class="stat-title">{gettext("Pending")}</div>
-      <div class="stat-value text-lg text-warning">
+      <div
+        id="admin-users-stat-pending"
+        class="admin-users-stat-value stat-value text-lg text-warning"
+      >
         {Map.get(@status_counts, "pending", 0)}
       </div>
     </div>
     <div class="stat">
       <div class="stat-title">{gettext("Banned")}</div>
-      <div class="stat-value text-lg text-error">
+      <div
+        id="admin-users-stat-banned"
+        class="admin-users-stat-value stat-value text-lg text-error"
+      >
         {Map.get(@status_counts, "banned", 0)}
       </div>
     </div>
@@ -36,36 +50,40 @@
   >
     <div role="tablist" aria-label={gettext("Filter by status")} class="tabs tabs-boxed">
       <button
+        id="admin-users-filter-all"
         role="tab"
         aria-selected={to_string(!@status_filter)}
-        class={["tab", !@status_filter && "tab-active"]}
+        class={["admin-users-filter-tab tab", !@status_filter && "tab-active"]}
         phx-click="filter"
         phx-value-status=""
       >
         {gettext("All")}
       </button>
       <button
+        id="admin-users-filter-active"
         role="tab"
         aria-selected={to_string(@status_filter == "active")}
-        class={["tab", @status_filter == "active" && "tab-active"]}
+        class={["admin-users-filter-tab tab", @status_filter == "active" && "tab-active"]}
         phx-click="filter"
         phx-value-status="active"
       >
         {gettext("Active")}
       </button>
       <button
+        id="admin-users-filter-pending"
         role="tab"
         aria-selected={to_string(@status_filter == "pending")}
-        class={["tab", @status_filter == "pending" && "tab-active"]}
+        class={["admin-users-filter-tab tab", @status_filter == "pending" && "tab-active"]}
         phx-click="filter"
         phx-value-status="pending"
       >
         {gettext("Pending")}
       </button>
       <button
+        id="admin-users-filter-banned"
         role="tab"
         aria-selected={to_string(@status_filter == "banned")}
-        class={["tab", @status_filter == "banned" && "tab-active"]}
+        class={["admin-users-filter-tab tab", @status_filter == "banned" && "tab-active"]}
         phx-click="filter"
         phx-value-status="banned"
       >
@@ -73,14 +91,15 @@
       </button>
     </div>
 
-    <form phx-change="search" class="flex-shrink-0">
+    <form id="admin-users-search-form" phx-change="search" class="flex-shrink-0">
       <input
+        id="admin-users-search-input"
         type="text"
         name="search"
         value={@search}
         placeholder={gettext("Search username...")}
         aria-label={gettext("Search users by username")}
-        class="input input-bordered input-sm w-48"
+        class="admin-users-search-input input input-bordered input-sm w-48"
         phx-debounce="300"
       />
     </form>
@@ -89,39 +108,46 @@
   <%!-- Bulk action bar --%>
   <div
     :if={MapSet.size(@selected_ids) > 0}
-    class="flex items-center gap-3 p-3 bg-base-200 rounded-lg"
+    id="admin-users-bulk-actions"
+    class="admin-users-bulk-actions flex items-center gap-3 p-3 bg-base-200 rounded-lg"
   >
-    <span class="font-medium">
+    <span class="admin-users-bulk-count font-medium">
       {ngettext("%{count} user selected", "%{count} users selected", MapSet.size(@selected_ids),
         count: MapSet.size(@selected_ids)
       )}
     </span>
     <button
       :if={@status_filter == "pending"}
+      id="admin-users-bulk-approve"
       phx-click="bulk_approve"
-      class="btn btn-sm btn-primary"
+      class="admin-users-bulk-approve-btn btn btn-sm btn-primary"
     >
       {gettext("Approve Selected")}
     </button>
-    <button phx-click="show_bulk_ban_modal" class="btn btn-sm btn-error btn-outline">
+    <button
+      id="admin-users-bulk-ban"
+      phx-click="show_bulk_ban_modal"
+      class="admin-users-bulk-ban-btn btn btn-sm btn-error btn-outline"
+    >
       {gettext("Ban Selected")}
     </button>
   </div>
 
   <%!-- Users table --%>
-  <div :if={@users == []} class="text-base-content/70 text-center py-8">
+  <div :if={@users == []} class="admin-users-empty text-base-content/70 text-center py-8">
     {gettext("No users found.")}
   </div>
 
   <div :if={@users != []} class="overflow-x-auto">
-    <table id="users-table" class="table" aria-labelledby="users-heading">
+    <table id="users-table" class="admin-users-table table" aria-labelledby="users-heading">
       <thead>
         <tr>
           <th scope="col">
             <label>
               <input
+                id="admin-users-select-all"
                 type="checkbox"
-                class="checkbox checkbox-sm"
+                class="admin-users-select-all checkbox checkbox-sm"
                 phx-click="toggle_select_all"
                 checked={
                   MapSet.size(@selected_ids) > 0 and
@@ -139,12 +165,13 @@
         </tr>
       </thead>
       <tbody>
-        <tr :for={user <- @users} id={"user-#{user.id}"}>
+        <tr :for={user <- @users} id={"user-#{user.id}"} class="admin-users-row">
           <td>
             <label>
               <input
+                id={"admin-users-select-#{user.id}"}
                 type="checkbox"
-                class="checkbox checkbox-sm"
+                class="admin-users-select checkbox checkbox-sm"
                 phx-click="toggle_select"
                 phx-value-id={user.id}
                 checked={MapSet.member?(@selected_ids, user.id)}
@@ -152,15 +179,20 @@
               />
             </label>
           </td>
-          <td class="font-medium">{user.username}</td>
+          <td class="admin-users-row-username font-medium">{user.username}</td>
           <td>
             <%= if user.id == @current_user.id do %>
               <span class="badge badge-ghost">{translate_role(user.role.name)}</span>
             <% else %>
-              <form phx-change="change_role" phx-value-id={user.id}>
+              <form
+                id={"admin-users-role-form-#{user.id}"}
+                phx-change="change_role"
+                phx-value-id={user.id}
+              >
                 <select
+                  id={"admin-users-role-select-#{user.id}"}
                   name="role_id"
-                  class="select select-bordered select-xs"
+                  class="admin-users-role-select select select-bordered select-xs"
                   aria-label={gettext("Change role for %{username}", username: user.username)}
                 >
                   <option
@@ -189,28 +221,31 @@
               {format_datetime(user.inserted_at)}
             </time>
           </td>
-          <td class="flex gap-1">
+          <td class="admin-users-row-actions flex gap-1">
             <button
               :if={user.status == "pending"}
+              id={"admin-users-approve-#{user.id}"}
               phx-click="approve"
               phx-value-id={user.id}
-              class="btn btn-sm btn-primary"
+              class="admin-users-approve-btn btn btn-sm btn-primary"
             >
               {gettext("Approve")}
             </button>
             <button
               :if={user.status != "banned" && user.id != @current_user.id}
+              id={"admin-users-ban-#{user.id}"}
               phx-click="show_ban_modal"
               phx-value-id={user.id}
-              class="btn btn-sm btn-error btn-outline"
+              class="admin-users-ban-btn btn btn-sm btn-error btn-outline"
             >
               {gettext("Ban")}
             </button>
             <button
               :if={user.status == "banned"}
+              id={"admin-users-unban-#{user.id}"}
               phx-click="unban"
               phx-value-id={user.id}
-              class="btn btn-sm btn-success btn-outline"
+              class="admin-users-unban-btn btn btn-sm btn-success btn-outline"
             >
               {gettext("Unban")}
             </button>
@@ -236,7 +271,7 @@
 <div
   :if={@ban_target}
   id="ban-modal"
-  class="modal modal-open"
+  class="admin-users-ban-modal modal modal-open"
   role="dialog"
   aria-modal="true"
   aria-labelledby="ban-modal-title"
@@ -245,17 +280,17 @@
   phx-key="Escape"
 >
   <div class="modal-box">
-    <h3 id="ban-modal-title" class="font-bold text-lg">
+    <h3 id="ban-modal-title" class="admin-users-ban-modal-title font-bold text-lg">
       {gettext("Ban User: %{username}", username: @ban_target_username)}
     </h3>
     <div class="py-4">
-      <form phx-change="update_ban_reason">
+      <form id="admin-users-ban-form" phx-change="update_ban_reason">
         <label for="ban-reason" class="label">
           <span class="label-text">{gettext("Reason (optional)")}</span>
         </label>
         <textarea
           id="ban-reason"
-          class="textarea textarea-bordered w-full"
+          class="admin-users-ban-reason textarea textarea-bordered w-full"
           rows="3"
           name="reason"
           phx-debounce="300"
@@ -263,10 +298,17 @@
       </form>
     </div>
     <div class="modal-action">
-      <button phx-click="cancel_ban" class="btn">{gettext("Cancel")}</button>
       <button
+        id="admin-users-ban-cancel"
+        phx-click="cancel_ban"
+        class="admin-users-ban-cancel-btn btn"
+      >
+        {gettext("Cancel")}
+      </button>
+      <button
+        id="admin-users-ban-confirm"
         phx-click="confirm_ban"
-        class="btn btn-error"
+        class="admin-users-ban-confirm-btn btn btn-error"
         phx-disable-with={gettext("Banning...")}
       >
         {gettext("Confirm Ban")}
@@ -280,7 +322,7 @@
 <div
   :if={@show_bulk_ban_modal}
   id="bulk-ban-modal"
-  class="modal modal-open"
+  class="admin-users-bulk-ban-modal modal modal-open"
   role="dialog"
   aria-modal="true"
   aria-labelledby="bulk-ban-modal-title"
@@ -289,19 +331,19 @@
   phx-key="Escape"
 >
   <div class="modal-box">
-    <h3 id="bulk-ban-modal-title" class="font-bold text-lg">
+    <h3 id="bulk-ban-modal-title" class="admin-users-bulk-ban-modal-title font-bold text-lg">
       {ngettext("Ban %{count} User", "Ban %{count} Users", MapSet.size(@selected_ids),
         count: MapSet.size(@selected_ids)
       )}
     </h3>
     <div class="py-4">
-      <form phx-change="update_bulk_ban_reason">
+      <form id="admin-users-bulk-ban-form" phx-change="update_bulk_ban_reason">
         <label for="bulk-ban-reason" class="label">
           <span class="label-text">{gettext("Reason (optional)")}</span>
         </label>
         <textarea
           id="bulk-ban-reason"
-          class="textarea textarea-bordered w-full"
+          class="admin-users-bulk-ban-reason textarea textarea-bordered w-full"
           rows="3"
           name="reason"
           phx-debounce="300"
@@ -309,10 +351,17 @@
       </form>
     </div>
     <div class="modal-action">
-      <button phx-click="cancel_bulk_ban" class="btn">{gettext("Cancel")}</button>
       <button
+        id="admin-users-bulk-ban-cancel"
+        phx-click="cancel_bulk_ban"
+        class="admin-users-bulk-ban-cancel-btn btn"
+      >
+        {gettext("Cancel")}
+      </button>
+      <button
+        id="admin-users-bulk-ban-confirm"
         phx-click="confirm_bulk_ban"
-        class="btn btn-error"
+        class="admin-users-bulk-ban-confirm-btn btn btn-error"
         phx-disable-with={gettext("Banning...")}
       >
         {gettext("Confirm Ban")}

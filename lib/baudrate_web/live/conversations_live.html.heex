@@ -5,14 +5,24 @@
   data-focus-target
 >
   <div class="flex items-center justify-between">
-    <h1 id="conversations-heading" class="text-2xl font-bold">{gettext("Messages")}</h1>
-    <.link navigate="/messages/new" class="btn btn-primary btn-sm">
+    <h1 id="conversations-heading" class="conversations-heading text-2xl font-bold">
+      {gettext("Messages")}
+    </h1>
+    <.link
+      id="conversations-new-link"
+      navigate="/messages/new"
+      class="conversations-new-link btn btn-primary btn-sm"
+    >
       <.icon name="hero-pencil-square" class="size-4" />
       {gettext("New Message")}
     </.link>
   </div>
 
-  <div :if={@conversations == []} class="text-center py-12 text-base-content/70">
+  <div
+    :if={@conversations == []}
+    id="conversations-empty"
+    class="conversations-empty text-center py-12 text-base-content/70"
+  >
     <.icon name="hero-chat-bubble-left-right" class="size-12 mx-auto mb-4 opacity-50" />
     <p class="text-lg">{gettext("No messages yet.")}</p>
     <p class="text-sm">{gettext("Start a conversation from a user's profile page.")}</p>

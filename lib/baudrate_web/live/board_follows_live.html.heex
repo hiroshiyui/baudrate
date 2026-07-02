@@ -1,5 +1,9 @@
 <div id="board-follows-page" class="board-follows-page space-y-6">
-  <nav class="breadcrumbs text-sm" aria-label={gettext("Breadcrumb")}>
+  <nav
+    id="board-follows-breadcrumb"
+    class="board-follows-breadcrumb breadcrumbs text-sm"
+    aria-label={gettext("Breadcrumb")}
+  >
     <ul>
       <li><.link navigate="/">{gettext("Home")}</.link></li>
       <li><.link navigate={~p"/boards/#{@board.slug}"}>{@board.name}</.link></li>
@@ -7,15 +11,15 @@
     </ul>
   </nav>
 
-  <h1 id="board-follows-heading" class="text-2xl font-bold">
+  <h1 id="board-follows-heading" class="board-follows-heading text-2xl font-bold">
     {gettext("Board Follows")} &mdash; {@board.name}
   </h1>
 
   <%!-- Accept policy section --%>
-  <div id="accept-policy-section" class="card bg-base-200 shadow-sm">
+  <div id="accept-policy-section" class="board-follows-policy-section card bg-base-200 shadow-sm">
     <div class="card-body p-4">
-      <h2 class="card-title text-lg">{gettext("Accept Policy")}</h2>
-      <p class="text-sm text-base-content/70 mb-3">
+      <h2 class="board-follows-policy-heading card-title text-lg">{gettext("Accept Policy")}</h2>
+      <p class="board-follows-policy-description text-sm text-base-content/70 mb-3">
         <%= if @board.ap_accept_policy == "open" do %>
           {gettext("Anyone can post to this board")}
         <% else %>
@@ -24,11 +28,12 @@
       </p>
       <div class="flex gap-2">
         <button
+          id="board-follows-policy-followers-only"
           phx-click="update_policy"
           phx-value-policy="followers_only"
           aria-pressed={to_string(@board.ap_accept_policy == "followers_only")}
           class={[
-            "btn btn-sm",
+            "board-follows-policy-option btn btn-sm",
             @board.ap_accept_policy == "followers_only" && "btn-primary",
             @board.ap_accept_policy != "followers_only" && "btn-ghost"
           ]}
@@ -36,11 +41,12 @@
           {gettext("Followers only")}
         </button>
         <button
+          id="board-follows-policy-open"
           phx-click="update_policy"
           phx-value-policy="open"
           aria-pressed={to_string(@board.ap_accept_policy == "open")}
           class={[
-            "btn btn-sm",
+            "board-follows-policy-option btn btn-sm",
             @board.ap_accept_policy == "open" && "btn-primary",
             @board.ap_accept_policy != "open" && "btn-ghost"
           ]}
@@ -52,22 +58,30 @@
   </div>
 
   <%!-- Search for remote actor --%>
-  <div id="follow-search-section" class="card bg-base-200 shadow-sm">
+  <div id="follow-search-section" class="board-follows-search-section card bg-base-200 shadow-sm">
     <div class="card-body p-4">
-      <h2 class="card-title text-lg">{gettext("Follow Remote Actor")}</h2>
-      <form phx-submit="search" class="flex gap-2">
+      <h2 class="board-follows-search-heading card-title text-lg">
+        {gettext("Follow Remote Actor")}
+      </h2>
+      <form
+        id="board-follows-search-form"
+        phx-submit="search"
+        class="board-follows-search-form flex gap-2"
+      >
         <input
+          id="board-follows-search-input"
           type="text"
           name="query"
           value={@search_query}
           placeholder={gettext("Search for a remote actor to follow (e.g. @user@domain)")}
-          class="input input-bordered flex-1"
+          class="board-follows-search-input input input-bordered flex-1"
           autocomplete="off"
           aria-label={gettext("Search for a remote actor to follow (e.g. @user@domain)")}
         />
         <button
+          id="board-follows-search-submit"
           type="submit"
-          class="btn btn-primary"
+          class="board-follows-search-submit btn btn-primary"
           disabled={@search_loading}
           phx-disable-with={gettext("Searching...")}
         >
@@ -79,11 +93,15 @@
         </button>
       </form>
 
-      <div :if={@search_error} class="text-error text-sm mt-2">
+      <div :if={@search_error} class="board-follows-search-error text-error text-sm mt-2">
         {@search_error}
       </div>
 
-      <div :if={@search_result} class="mt-4 card bg-base-100 shadow-sm">
+      <div
+        :if={@search_result}
+        id="board-follows-search-result"
+        class="board-follows-search-result mt-4 card bg-base-100 shadow-sm"
+      >
         <div class="card-body p-4 flex flex-row items-center gap-4">
           <div class="avatar">
             <div class="w-12 h-12 rounded-full bg-base-300 flex items-center justify-center">
@@ -115,12 +133,15 @@
             </div>
           </div>
           <%= if already_following?(@follows, @search_result.id) do %>
-            <span class="badge badge-ghost">{gettext("Already following")}</span>
+            <span class="board-follows-already-following badge badge-ghost">
+              {gettext("Already following")}
+            </span>
           <% else %>
             <button
+              id="board-follows-follow-submit"
               phx-click="follow"
               phx-value-id={@search_result.id}
-              class="btn btn-sm btn-primary"
+              class="board-follows-follow-submit btn btn-sm btn-primary"
             >
               {gettext("Follow")}
             </button>
@@ -131,18 +152,22 @@
   </div>
 
   <%!-- Current follows list --%>
-  <div id="current-follows-section">
-    <h2 id="current-follows-heading" class="text-lg font-semibold mb-3">
+  <div id="current-follows-section" class="board-follows-list-section">
+    <h2 id="current-follows-heading" class="board-follows-list-heading text-lg font-semibold mb-3">
       {gettext("Current Follows")}
       <span :if={@follows != []} class="badge badge-neutral ml-2">{length(@follows)}</span>
     </h2>
 
-    <div :if={@follows == []} class="text-base-content/70 text-center py-8">
+    <div :if={@follows == []} class="board-follows-empty text-base-content/70 text-center py-8">
       {gettext("No follows yet.")}
     </div>
 
-    <div :if={@follows != []} class="space-y-2">
-      <div :for={follow <- @follows} class="card bg-base-200 shadow-sm">
+    <div :if={@follows != []} id="board-follows-list" class="board-follows-list space-y-2">
+      <div
+        :for={follow <- @follows}
+        id={"board-follow-#{follow.remote_actor.id}"}
+        class="board-follow card bg-base-200 shadow-sm"
+      >
         <div class="card-body p-4 flex flex-row items-center gap-4">
           <div class="avatar">
             <div class="w-12 h-12 rounded-full bg-base-300 flex items-center justify-center">
@@ -164,7 +189,7 @@
               href={remote_actor_profile_url(follow.remote_actor)}
               target="_blank"
               rel="nofollow noopener noreferrer"
-              class="link link-hover"
+              class="board-follow-actor-link link link-hover"
             >
               <div class="font-bold truncate">
                 {follow.remote_actor.display_name || follow.remote_actor.username}
@@ -194,10 +219,11 @@
               end}
             </span>
             <button
+              id={"board-follow-unfollow-#{follow.remote_actor.id}"}
               phx-click="unfollow"
               phx-value-id={follow.remote_actor.id}
               data-confirm={gettext("Unfollow this actor?")}
-              class="btn btn-sm btn-ghost text-error"
+              class="board-follow-unfollow btn btn-sm btn-ghost text-error"
             >
               {gettext("Unfollow")}
             </button>

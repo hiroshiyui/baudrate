@@ -1,14 +1,21 @@
 <div id="article-edit-page" class="article-edit-page mx-auto max-w-4xl">
-  <nav class="mb-4" aria-label={gettext("Breadcrumb")}>
+  <nav
+    id="article-edit-breadcrumb"
+    class="article-edit-breadcrumb mb-4"
+    aria-label={gettext("Breadcrumb")}
+  >
     <.link
+      id="article-edit-back-link"
       navigate={~p"/articles/#{@article.slug}"}
-      class="text-sm text-base-content/70 hover:text-base-content"
+      class="article-edit-back-link text-sm text-base-content/70 hover:text-base-content"
     >
       &larr; {gettext("Back to article")}
     </.link>
   </nav>
 
-  <h1 id="article-edit-heading" class="text-2xl font-bold mb-6">{gettext("Edit Article")}</h1>
+  <h1 id="article-edit-heading" class="article-edit-heading text-2xl font-bold mb-6">
+    {gettext("Edit Article")}
+  </h1>
 
   <.form
     for={@form}
@@ -21,7 +28,7 @@
     data-draft-indicator="#draft-indicator-edit"
     data-draft-saved-text={gettext("Draft saved")}
     data-draft-restored-text={gettext("Draft restored")}
-    class="space-y-6"
+    class="article-edit-form space-y-6"
   >
     <.input
       field={@form[:title]}
@@ -41,9 +48,9 @@
     />
 
     <%!-- Image Upload Section --%>
-    <div id="article-images-section" class="fieldset">
+    <div id="article-images-section" class="article-edit-images-section fieldset">
       <span class="label mb-1 text-lg font-semibold">{gettext("Images")}</span>
-      <p class="text-sm text-base-content/70 mb-2">
+      <p class="article-edit-images-hint text-sm text-base-content/70 mb-2">
         {gettext("Max %{count} images, %{size} MB each. Images displayed at the end of article.",
           count: 4,
           size: 5
@@ -52,7 +59,11 @@
 
       <%!-- Existing + uploaded image thumbnails --%>
       <div :if={@article_images != []} class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-        <div :for={img <- @article_images} class="relative group aspect-square">
+        <div
+          :for={img <- @article_images}
+          id={"article-edit-image-#{img.id}"}
+          class="article-edit-image relative group aspect-square"
+        >
           <img
             src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
             class="w-full h-full object-cover rounded-lg border border-base-300"
@@ -63,7 +74,7 @@
             type="button"
             phx-click="remove_image"
             phx-value-id={img.id}
-            class="absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+            class="article-edit-remove-image absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
             aria-label={gettext("Remove image")}
           >
             <.icon name="hero-x-mark" class="size-4" />
@@ -77,7 +88,7 @@
           <.live_file_input upload={@uploads.article_images} class="hidden" />
           <label
             for={@uploads.article_images.ref}
-            class="btn btn-sm btn-ghost gap-1 cursor-pointer"
+            class="article-edit-add-images btn btn-sm btn-ghost gap-1 cursor-pointer"
             aria-label={gettext("Add Images")}
           >
             <.icon name="hero-photo" class="size-5" />
@@ -96,7 +107,7 @@
               type="button"
               phx-click="cancel_image_upload"
               phx-value-ref={entry.ref}
-              class="btn btn-sm btn-ghost text-error"
+              class="article-edit-cancel-upload btn btn-sm btn-ghost text-error"
               aria-label={gettext("Cancel upload")}
             >
               &times;
@@ -127,16 +138,24 @@
       </div>
     </div>
 
-    <div :if={@article.boards != []} class="fieldset mb-2">
+    <div
+      :if={@article.boards != []}
+      id="article-edit-boards"
+      class="article-edit-boards fieldset mb-2"
+    >
       <span class="label mb-1 text-lg font-semibold">{gettext("Board")}</span>
       <div class="flex flex-wrap gap-2">
-        <span :for={board <- @article.boards} class="badge badge-outline gap-1">
+        <span
+          :for={board <- @article.boards}
+          id={"article-edit-board-#{board.id}"}
+          class="article-edit-board badge badge-outline gap-1"
+        >
           {board.name}
           <button
             type="button"
             phx-click="remove_board"
             phx-value-board-id={board.id}
-            class="btn btn-ghost btn-xs"
+            class="article-edit-remove-board btn btn-ghost btn-xs"
             aria-label={gettext("Remove from board")}
           >
             <.icon name="hero-x-mark" class="size-3" />
@@ -163,7 +182,12 @@
           {gettext("Direct"), "direct"}
         ]}
       />
-      <button type="submit" class="btn btn-primary" phx-disable-with={gettext("Saving...")}>
+      <button
+        id="article-edit-submit"
+        type="submit"
+        class="article-edit-submit btn btn-primary"
+        phx-disable-with={gettext("Saving...")}
+      >
         {gettext("Save Changes")}
       </button>
       <span
@@ -171,8 +195,7 @@
         class="text-sm text-base-content/70 transition-opacity duration-300 opacity-0"
         aria-live="polite"
         aria-atomic="true"
-      >
-      </span>
+      ></span>
     </div>
   </.form>
 </div>
