@@ -212,6 +212,13 @@
   white-space: nowrap;
 }
 
+/* The site name/logo always renders in Roboto Slab (the default themes' body
+   font), even under themes that override `--font-sans` — e.g. the Aqua theme
+   uses the Apple system stack, but the brand should stay consistent. */
+.site-name {
+  font-family: "Roboto Slab", ui-sans-serif, system-ui, sans-serif;
+}
+
 /* Highlight links and anchors on keyboard focus */
 a:focus-visible {
   box-shadow: inset 0 0 0 1px var(--color-primary);

@@ -54,7 +54,7 @@ defmodule BaudrateWeb.Layouts do
               class="menu dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
             >
               <%!-- Site name (visible only on mobile) --%>
-              <li class="menu-title text-base">
+              <li class="menu-title text-base site-name">
                 {Baudrate.Setup.get_setting("site_name") || "Baudrate"}
               </li>
               <%!-- Admin section (collapsible, matches desktop user menu) --%>
@@ -129,7 +129,7 @@ defmodule BaudrateWeb.Layouts do
 
       <%!-- Logo (hidden on mobile — site name moves into hamburger menu) --%>
       <div class="flex-1 hidden lg:block">
-        <.link navigate="/" class="btn btn-ghost text-xl">
+        <.link navigate="/" class="btn btn-ghost text-xl site-name">
           {Baudrate.Setup.get_setting("site_name") || "Baudrate"}
         </.link>
       </div>
