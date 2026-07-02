@@ -118,9 +118,8 @@ Before auditing, map the attack surface:
 
 ---
 
-## Step 10 — Configuration, Dependencies, and Logging
+## Step 10 — Configuration and Logging
 
-- `mix hex.audit` and `mix deps.audit` (if available) for retired/vulnerable packages; check Rust crates in `native/*/Cargo.toml` for known advisories
 - Security headers on all responses: CSP, `x-frame-options`/frame-ancestors, `x-content-type-options`, referrer-policy; HTTPS enforced with HSTS in production
 - Cookies: `secure`, `http_only`, `same_site` set on session cookies
 - Debug/dev routes (`/dev/*`, LiveDashboard) unreachable in production config
@@ -130,7 +129,47 @@ Before auditing, map the attack surface:
 
 ---
 
-## Step 11 — OWASP Top 10 Cross-Check
+## Step 11 — Dependency Vulnerabilities (OWASP A06)
+
+Known-vulnerable dependencies are a first-class part of the audit, not an
+afterthought — a shipped CVE in a transitive package is exploitable even when
+every line of app code is perfect. Scan **every** ecosystem (see the
+`check-updates` skill for the full mechanics):
+
+- **Elixir/Hex — always run `mix hex.audit`.** It reports both *retired* packages
+  and packages with *security advisories* (from the Erlang Ecosystem Foundation /
+  GHSA / OSV feeds). Also run `mix deps.audit` if `mix_audit` is present.
+- **Rust NIF crates** — check each `native/*/Cargo.toml` version against advisories
+  (`cargo audit` / osv.dev). `ammonia` (sanitizer) and `scraper`/`html5ever`
+  (parser) sit on the XSS/federation boundary — treat their advisories as critical.
+- **Frontend** — check the pinned esbuild/Tailwind versions and the vendored
+  daisyUI against npm advisories.
+
+For every advisory, triage on three axes before rating it:
+
+1. **Exposure scope — production vs test-only.** Use `mix deps.tree` to find who
+   pulls it. A HIGH advisory in a `only: :test` dependency (e.g. `hackney`/`tesla`
+   pulled by `wallaby`) is **not shipped** — real, but not production-exploitable.
+   A MEDIUM in a production dependency (e.g. `decimal` via `ecto`) outranks it.
+2. **Fix availability — update vs replace.** Prefer bumping to the patched version.
+   But some advisories have **no fix in the current major line** — the package is
+   unmaintained/retired and must be **replaced**, not updated (this project moved
+   the retired `earmark`, which had an unpatched stored-XSS CVE, to `mdex`). A
+   coupled bump may be required (e.g. `decimal` v3's DoS mitigation only ships via
+   `ecto` 3.14).
+3. **Existing mitigation.** Note any defense-in-depth that already contains the
+   flaw (e.g. all Markdown output passes through the Ammonia allowlist, so a
+   renderer's HTML-injection CVE is contained) — it lowers urgency but does not
+   substitute for the fix.
+
+Report each finding with: package, **current → fixed version** (or "no fix —
+replace with X"), severity, **production vs test-only**, the advisory ID
+(CVE/GHSA/EEF), and any mitigation. A retired-but-unpatched dependency on the
+security boundary is a Critical/Major finding, not a housekeeping note.
+
+---
+
+## Step 12 — OWASP Top 10 Cross-Check
 
 Explicitly close out each category, citing where it was checked:
 
@@ -141,7 +180,7 @@ Explicitly close out each category, citing where it was checked:
 | A03 Injection | 2 |
 | A04 Insecure Design | 1, 4, 9 |
 | A05 Security Misconfiguration | 10 |
-| A06 Vulnerable & Outdated Components | 10 |
+| A06 Vulnerable & Outdated Components | 11 |
 | A07 Identification & Auth Failures | 5 |
 | A08 Software & Data Integrity Failures | 4, 7 |
 | A09 Logging & Monitoring Failures | 10 |
