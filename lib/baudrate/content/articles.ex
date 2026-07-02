@@ -18,6 +18,7 @@ defmodule Baudrate.Content.Articles do
     Comment,
     Filters,
     Images,
+    Interactions,
     Permissions,
     Polls,
     ReadTracking,
@@ -438,6 +439,15 @@ defmodule Baudrate.Content.Articles do
     comment = Repo.preload(comment, [:user, :remote_actor])
 
     cond do
+      # Source-board view gate: the acting user must be able to see the board the
+      # comment lives in before they can materialize it elsewhere. Without this, a
+      # user could guess a comment ID in a private board they cannot view and
+      # forward its body into a public board — exfiltrating restricted content.
+      # `comment.visibility` alone does not capture board-level restrictions
+      # (local comments default to "public" regardless of the board's min role).
+      not Interactions.article_visible_to_user?(comment.article_id, user.id) ->
+        {:error, :unauthorized}
+
       not Permissions.can_forward_comment?(user, comment) ->
         {:error, :unauthorized}
 

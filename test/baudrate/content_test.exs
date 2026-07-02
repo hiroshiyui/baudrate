@@ -2716,6 +2716,46 @@ defmodule Baudrate.ContentTest do
 
       assert {:error, :unauthorized} = Content.forward_comment_to_board(comment, board, user)
     end
+
+    test "rejects forwarding a comment from a board the user cannot view", %{
+      user: user,
+      board: board
+    } do
+      author = create_user("admin")
+
+      # Private board that a plain "user" cannot view.
+      private_board =
+        create_board(%{
+          name: "Private",
+          slug: "priv-cb-#{System.unique_integer([:positive])}",
+          min_role_to_view: "moderator"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Secret Parent",
+            body: "body",
+            slug: "secret-parent-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [private_board.id]
+        )
+
+      # Public-visibility comment living in the private board.
+      {:ok, comment} =
+        Content.create_comment(%{
+          body: "Confidential comment in a private board",
+          article_id: article.id,
+          user_id: author.id,
+          visibility: "public"
+        })
+
+      # Even though the comment's visibility is "public", the source board is not
+      # viewable by this user, so forwarding it out must be refused.
+      assert {:error, :unauthorized} =
+               Content.forward_comment_to_board(comment, board, user)
+    end
   end
 
   # --- Remove Article from Board ---
