@@ -9,6 +9,9 @@ defmodule Baudrate.Federation.HTTPClient do
     * Manual redirect following with IP validation at each hop
     * Configurable timeouts
     * Response body size cap
+    * Response decoding disabled (`decode_body: false`) — the raw body is
+      returned and size-capped, so Req never auto-decompresses an archive
+      response (immune to the decompression-bomb class fixed in Req 0.6)
     * Instance-identifying User-Agent header
 
   ## DNS Pinning
