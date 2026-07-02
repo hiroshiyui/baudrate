@@ -269,13 +269,16 @@ defmodule BaudrateWeb.LinkedData do
   @doc """
   Encodes a JSON-LD map to a JSON string safe for embedding in `<script>`.
 
-  Escapes `</script>` sequences to prevent XSS via script injection.
+  Uses Jason's `:html_safe` mode, which escapes every `<` and `>` (as well as
+  U+2028/U+2029) inside string values. This prevents the classic `</script>`
+  breakout **and** the `<!--<script>` script-data double-escape state, where an
+  attacker-controlled title containing `<!--<script` would otherwise cause the
+  browser to swallow subsequent `<link>`/`<script>` head markup and break the
+  page for all visitors.
   """
   @spec encode_jsonld(map()) :: String.t()
   def encode_jsonld(data) do
-    data
-    |> Jason.encode!()
-    |> String.replace("</", "<\\/")
+    Jason.encode!(data, escape: :html_safe)
   end
 
   # --- Private ---

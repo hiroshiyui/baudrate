@@ -295,8 +295,23 @@ defmodule BaudrateWeb.LinkedDataTest do
       data = %{"content" => "Hello </script> world"}
       json = LinkedData.encode_jsonld(data)
 
+      # html_safe encoding escapes every "<" as <, so the literal
+      # "</script>" breakout sequence cannot appear in the output.
       refute json =~ "</script>"
-      assert json =~ "<\\/script>"
+      assert json =~ "\\u003C"
+      # Round-trips back to the original string.
+      assert {:ok, %{"content" => "Hello </script> world"}} = Jason.decode(json)
+    end
+
+    test "escapes the <!--<script double-escape sequence" do
+      data = %{"content" => "<!--<script>alert(1)</script>"}
+      json = LinkedData.encode_jsonld(data)
+
+      # Neither "<!--" nor "<script" may appear raw — both start the HTML
+      # script-data double-escaped state that would swallow following markup.
+      refute json =~ "<!--"
+      refute json =~ "<script"
+      assert {:ok, _} = Jason.decode(json)
     end
   end
 end
