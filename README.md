@@ -115,7 +115,7 @@ Built with these excellent open-source projects:
 - [Tailwind CSS](https://tailwindcss.com/) + [DaisyUI](https://daisyui.com/)
 - [NimbleTOTP](https://hexdocs.pm/nimble_totp/)
 - [Hammer](https://hexdocs.pm/hammer/)
-- [Earmark](https://hexdocs.pm/earmark/) (Markdown rendering)
+- [MDEx](https://hexdocs.pm/mdex/) (Markdown rendering, CommonMark + GFM via comrak)
 - [Req](https://hexdocs.pm/req/) (HTTP client for federation)
 - [html5ever](https://github.com/servo/html5ever) (Rust HTML parser NIF for link preview extraction)
 - [Ammonia](https://crates.io/crates/ammonia) (Rust HTML sanitizer)

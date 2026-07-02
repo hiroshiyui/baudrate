@@ -33,7 +33,7 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 | HTTP client | Req (never use HTTPoison, Tesla, or httpc) |
 | Image processing | libvips (via `image`) — avatar/upload re-encode to WebP, EXIF strip |
 | Rate limiting | Hammer |
-| Markdown | Earmark |
+| Markdown | MDEx (comrak) |
 | 2FA / WebAuthn | NimbleTOTP + EQRCode + wax_ (FIDO2/WebAuthn relying party) |
 | HTML parsing | html5ever (Rust NIF via Rustler) |
 | HTML sanitization | Ammonia (Rust NIF via Rustler) — requires Rust toolchain |

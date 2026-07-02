@@ -1,22 +1,30 @@
 defmodule Baudrate.Content.Markdown do
   @moduledoc """
-  Converts Markdown text to sanitized HTML using Earmark.
+  Converts Markdown text to sanitized HTML using MDEx.
 
   The rendering pipeline is:
 
   1. **Block normalization** — inserts blank lines between consecutive HTML
-     block elements so Earmark treats each as a separate HTML block. Required
+     block elements so the parser treats each as a separate HTML block. Required
      for bot articles whose bodies are stored as sanitized HTML rather than
      Markdown (e.g. RSS feed content where paragraphs abut with no blank lines).
-  2. **Earmark** — Markdown → raw HTML
+  2. **MDEx** — Markdown → raw HTML (CommonMark + GFM tables/strikethrough/
+     autolink/tasklist, `render: [unsafe: true]` so stored HTML passes through)
   3. **Ammonia sanitizer** — strips unsafe HTML tags/attributes
   4. **Hashtag linkification** — converts `#tag` to clickable links
   5. **Mention linkification** — converts `@username` to clickable profile links
 
-  The sanitizer only allows `href` on `<a>` tags. By running linkification
-  *after* sanitization, the injected `<a>` tags are never stripped. Tag names
-  and usernames are regex-validated so no injection is possible.
+  Raw HTML is rendered unescaped (step 2) *because* step 3 is the security gate:
+  every rendered document is passed through the Ammonia allowlist before it is
+  ever stored or displayed. The sanitizer only allows `href` on `<a>` tags. By
+  running linkification *after* sanitization, the injected `<a>` tags are never
+  stripped. Tag names and usernames are regex-validated so no injection is possible.
   """
+
+  @mdex_opts [
+    extension: [table: true, strikethrough: true, autolink: true, tasklist: true],
+    render: [unsafe: true]
+  ]
 
   @skip_re ~r/<(pre|code|a)[\s>].*?<\/\1>/su
   @hashtag_re ~r/(?:^|(?<=\s|[^\w&]))#(\p{L}[\w]{0,63})/u
@@ -30,7 +38,7 @@ defmodule Baudrate.Content.Markdown do
   ## Examples
 
       iex> Baudrate.Content.Markdown.to_html("**bold**")
-      "<p>\\n<strong>bold</strong></p>\\n"
+      "<p><strong>bold</strong></p>"
 
       iex> Baudrate.Content.Markdown.to_html(nil)
       ""
@@ -42,7 +50,7 @@ defmodule Baudrate.Content.Markdown do
   def to_html(text) when is_binary(text) do
     text
     |> normalize_html_blocks()
-    |> Earmark.as_html!()
+    |> MDEx.to_html!(@mdex_opts)
     |> sanitize_html()
     |> linkify_hashtags()
     |> linkify_mentions()
@@ -53,9 +61,9 @@ defmodule Baudrate.Content.Markdown do
   end
 
   # Inserts blank lines between consecutive block-level HTML elements so that
-  # Earmark treats each as a separate HTML block. Without this, HTML content
-  # stored by feed bots (where paragraphs are adjacent with no blank lines)
-  # causes Earmark to drop all paragraphs after the first.
+  # the Markdown parser treats each as a separate HTML block. Without this, HTML
+  # content stored by feed bots (where paragraphs are adjacent with no blank
+  # lines) causes the parser to drop all paragraphs after the first.
   defp normalize_html_blocks(text) do
     text
     |> String.trim()

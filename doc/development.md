@@ -16,7 +16,7 @@ visibility. Design decisions should reflect this philosophy.
 | CSS | Tailwind CSS + DaisyUI |
 | JS bundler | esbuild |
 | Image processing | image (libvips NIF) |
-| Markdown | Earmark |
+| Markdown | MDEx (comrak) |
 | 2FA / WebAuthn | NimbleTOTP + EQRCode + wax_ (FIDO2/WebAuthn relying party) |
 | HTML parsing | html5ever (Rust NIF via Rustler) |
 | HTML sanitization | Ammonia (Rust NIF via Rustler) |
@@ -115,7 +115,7 @@ lib/
 │   │   ├── comment_image.ex     # CommentImage schema (image attachments on comments)
 │   │   ├── interactions.ex      # Shared like/boost/bookmark interaction helpers
 │   │   ├── title_deriver.ex     # Title derivation for federation-imported articles
-│   │   ├── markdown.ex          # Markdown → HTML rendering (Earmark + Ammonia NIF + hashtag/mention linkification + mention extraction)
+│   │   ├── markdown.ex          # Markdown → HTML rendering (MDEx + Ammonia NIF + hashtag/mention linkification + mention extraction)
 │   │   ├── pagination.ex        # Content-specific paginated query helpers
 │   │   ├── poll.ex              # Poll schema (inline polls attached to articles, single/multiple choice)
 │   │   ├── poll_option.ex       # PollOption schema (poll choices with denormalized votes_count)
@@ -730,7 +730,7 @@ Hashtags (`#tag`) in article bodies are extracted, stored, and linkified:
 
 Key modules:
 - `Content.ArticleTag` — schema (`article_tags` table)
-- `Content.Markdown` — rendering pipeline (Earmark → Ammonia → linkification)
+- `Content.Markdown` — rendering pipeline (MDEx → Ammonia → linkification)
 - `TagLive` — `/tags/:tag` browse page
 
 ### Content Architecture

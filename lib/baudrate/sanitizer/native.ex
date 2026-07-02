@@ -26,7 +26,7 @@ defmodule Baudrate.Sanitizer.Native do
   @spec sanitize_federation(String.t()) :: String.t()
   def sanitize_federation(_html), do: :erlang.nif_error(:nif_not_loaded)
 
-  @doc "Sanitize Earmark-rendered Markdown HTML with a permissive allowlist."
+  @doc "Sanitize MDEx-rendered Markdown HTML with a permissive allowlist."
   @spec sanitize_markdown(String.t()) :: String.t()
   def sanitize_markdown(_html), do: :erlang.nif_error(:nif_not_loaded)
 

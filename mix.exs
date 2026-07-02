@@ -70,7 +70,7 @@ defmodule Baudrate.MixProject do
       {:eqrcode, "~> 0.2.1"},
       {:hammer, "~> 7.0"},
       {:image, "~> 0.54"},
-      {:earmark, "~> 1.4"},
+      {:mdex, "~> 0.13"},
       {:rustler, "~> 0.36", runtime: false},
       {:tz, "~> 0.28"},
       {:wallaby, "~> 0.30", runtime: false, only: :test},
