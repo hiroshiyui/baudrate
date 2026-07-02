@@ -9,4 +9,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 feedparser-rs = "0.4.6"
-rustler = "0.37"
+rustler = "0.38"

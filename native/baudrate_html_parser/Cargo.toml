@@ -9,4 +9,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 scraper = "0.22"
-rustler = "0.37"
+rustler = "0.38"

@@ -9,5 +9,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 ammonia = "4"
-rustler = "0.37"
+rustler = "0.38"
 regex = "1"
