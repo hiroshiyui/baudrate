@@ -355,12 +355,14 @@ a.card:active,
    soft layered shadow (the Aqua floating-panel look). Note: bare .menu and
    .card.rounded-full are EXCLUDED — the horizontal nav bar and the pill-shaped
    toolbar controls (font-size / theme toggle) reuse those classes but must not
-   become floating white panels. */
+   become floating white panels. `.alert` is also EXCLUDED: daisyUI's
+   `.alert-info`/`.alert-error` variants set a light content text color for
+   their own COLORED background, so forcing a white background here would render
+   flash text white-on-white (invisible). Alerts keep their daisyUI styling. */
 [data-theme="aquaosx"] .card:not(.rounded-full),
 [data-theme="aquaosx"] .modal-box,
 [data-theme="aquaosx"] .dropdown-content,
-[data-theme="aquaosx"] .stats,
-[data-theme="aquaosx"] .alert {
+[data-theme="aquaosx"] .stats {
   border: 1px solid var(--aqua-hairline);
   background-color: #ffffff;
   box-shadow:
