@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.10.1] — 2026-07-03
+
+### Fixed
+
+- **Flash messages were invisible in the Mac OS X (Aqua) theme** — the theme's
+  white-window rule included `.alert`, forcing a white background while daisyUI's
+  `.alert-info`/`.alert-error` kept a light content text colour meant for their own
+  coloured background, so flash text rendered white-on-white. `.alert` is now
+  excluded from that rule and keeps daisyUI's properly-contrasted colouring.
+
 ## [1.10.0] — 2026-07-03
 
 This release is a broad dependency-modernization and security pass: every
