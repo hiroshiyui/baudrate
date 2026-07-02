@@ -419,14 +419,21 @@ a.card:active,
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
+/* Any card that has an Aqua title bar uses a consistent 1rem card-body padding,
+   so the full-bleed bar below (margin: -1rem) meets the border flush whether the
+   card uses `p-4` (1rem, e.g. the board cards) or daisyUI's default padding
+   (1.5rem, e.g. the profile card). Without this, default-padding cards leave a
+   0.5rem gap between the bar and the border. */
+[data-theme="aquaosx"] .card > .card-body:has(> .card-title) {
+  padding: 1rem;
+}
+
 /* Card / modal title — full-bleed unified-titlebar gloss, vertically centered.
-   The negative margin matches the board cards' `p-4` (1rem) padding so the bar
-   meets the top/side borders WITHOUT overshoot — an overshoot would let the
+   The negative margin matches the (now normalized) 1rem card-body padding so the
+   bar meets the top/side borders WITHOUT overshoot — an overshoot would let the
    card's `overflow: hidden` clip the bar's top padding and crowd the text
-   against the top. Symmetric vertical padding then centers the title. Cards
-   with the larger default padding (1.5rem) show the bar inset a symmetric
-   0.5rem, which still reads as a title bar. `flex`/`items-center` keeps the
-   text and unread dot centered. */
+   against the top. Symmetric vertical padding then centers the title;
+   `flex`/`items-center` keeps the text and unread dot centered. */
 [data-theme="aquaosx"] .card > .card-body > .card-title,
 [data-theme="aquaosx"] .modal-box > h3:first-child {
   display: flex;
