@@ -457,15 +457,13 @@ a.card:active,
   box-shadow: 0 0 0 3px rgba(10, 100, 214, 0.35);
 }
 
-/* Badges — glossy pills. */
+/* Badges stay FLAT (daisyUI default) — the glossy gel treatment is reserved for
+   interactive controls (buttons, scrollers), so a flat badge reads as a status
+   label rather than a clickable button. Only square the corners to match the
+   Aqua chrome; no gradient/inset highlight. */
 [data-theme="aquaosx"] .badge {
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.5),
-    rgba(255, 255, 255, 0.05)
-  );
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  background-image: none;
+  box-shadow: none;
 }
 
 /* Tabs — rounded segmented control; active tab is the blue gel. */
