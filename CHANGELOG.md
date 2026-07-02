@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.9.0] — 2026-07-02
+
+### Added
+
+- **Mac OS X (Aqua) light theme** — a new selectable light theme (`aquaosx`, labelled "Mac OS X (Aqua)") reproducing the Aqua look: glossy gel buttons, the iconic blue default button with a soft focus glow, hairline white "windows" (cards/modals/dropdowns) with soft drop shadows, a gradient header bar, rounded segmented toolbar pills, and rounded blue-gel WebKit scrollbars. It uses the native Apple UI font stack (no bundled webfont). Select it under *Admin → Settings → Theme (light)*.
+- **Two-column board listing on the home page** — the board list at `/` now renders in two columns on viewports ≥768px (single column below), making better use of horizontal space. Uses `minmax(0,1fr)` grid tracks so long board names/descriptions can't blow out the layout.
+- **`security-audit` project skill** — a dedicated project-wide security-audit workflow (injection, SSRF, federation trust boundaries, auth, secrets, uploads, rate limiting) mapped to the OWASP Top 10, runnable independently of the broader `code-review` skill.
+
+### Security
+
+- **Announced-object authorship bound to its own origin** — a followed remote booster could send an `Announce` whose embedded or fetched object claimed `attributedTo` a victim actor on a *different* instance. The victim resolved legitimately, so attacker-chosen content (with an attacker-chosen `ap_id` able to shadow the victim's future genuine posts) was materialized into boards and feeds attributed to the victim. `InboxHandler` now requires an object's `attributedTo` host to match the object `id` host, and in the fetched path the object `id` host to match the URL it was fetched from; a missing `attributedTo` still falls back to the booster (the verified Announce signer). Legitimate Mastodon/Lemmy boosts are unaffected.
+- **Comment forwarding gated on source-board visibility** — `Content.forward_comment_to_board/3` only checked `comment.visibility`, which defaults to `"public"` for local comments regardless of the source board's `min_role_to_view`. An authenticated user could guess a comment ID in a private board they cannot view and forward its body into a public board, exfiltrating restricted content. Forwarding now rejects when the acting user cannot view the comment's source board.
+- **JSON-LD `<script>` embedding hardened against the double-escape state** — the previous `</` escape stopped the classic `</script>` breakout but not the `<!--<script` script-data double-escaped state, which an attacker-controlled title could use to swallow the page's `<link>`/`<script>` head markup and break rendering for all visitors (page-integrity, not XSS). JSON-LD is now encoded with Jason's `:html_safe` mode, which escapes every `<` and `>`.
+
 ## [1.8.8] — 2026-06-18
 
 ### Security
