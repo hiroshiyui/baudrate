@@ -882,7 +882,20 @@ defmodule Baudrate.Federation.InboxHandler do
           {:ok, %{body: body}} ->
             case Jason.decode(body) do
               {:ok, object} ->
-                handle_announce_object(announce_ap_id, object, booster_actor)
+                # Origin-binding: the fetched document must be served by its own
+                # authoritative host — its `id` host must match the URL we
+                # fetched it from. Without this, a booster could point
+                # `object_uri` at a host that serves a document `id` claiming a
+                # different origin (id/URL confusion).
+                if same_host?(object["id"], object_uri) do
+                  handle_announce_object(announce_ap_id, object, booster_actor)
+                else
+                  Logger.warning(
+                    "federation.announce: object id origin mismatch for #{object_uri}"
+                  )
+
+                  :ok
+                end
 
               {:error, _} ->
                 Logger.warning("federation.announce: invalid JSON from #{object_uri}")
@@ -906,16 +919,54 @@ defmodule Baudrate.Federation.InboxHandler do
   defp handle_announce_object(announce_ap_id, object, booster_actor) do
     object_type = object["type"]
 
-    unless object_type in ["Note", "Article", "Page"] do
-      :ok
-    else
-      # Route to boards that follow the booster
-      maybe_route_announce_to_boards(object, booster_actor, object_type)
+    cond do
+      object_type not in ["Note", "Article", "Page"] ->
+        :ok
 
-      # Create feed item for users that follow the booster
-      maybe_create_announce_feed_item(announce_ap_id, object, booster_actor, object_type)
+      # Authorship origin-binding: an object may only be authored by an actor on
+      # its own domain. If `attributedTo` names an actor on a different host than
+      # the object `id`, the booster (or a hostile object host) is trying to
+      # attribute attacker-chosen content to a victim on another instance —
+      # impersonation + `ap_id` cache poisoning. Drop it rather than fall back to
+      # crediting the booster with foreign content.
+      not announce_attribution_bound?(object) ->
+        Logger.warning(
+          "federation.announce: attributedTo/object origin mismatch ap_id=#{announce_ap_id}"
+        )
+
+        :ok
+
+      true ->
+        # Route to boards that follow the booster
+        maybe_route_announce_to_boards(object, booster_actor, object_type)
+
+        # Create feed item for users that follow the booster
+        maybe_create_announce_feed_item(announce_ap_id, object, booster_actor, object_type)
     end
   end
+
+  # An announced object's author must live on the same host as the object `id`.
+  # A missing `attributedTo` is permitted (authorship falls back to the booster,
+  # who is the verified signer of the Announce); a present one must be same-host.
+  defp announce_attribution_bound?(object) do
+    case resolve_attributed_to(object) do
+      nil -> true
+      author_uri -> same_host?(author_uri, object["id"])
+    end
+  end
+
+  # Case-insensitive host equality for two absolute HTTPS URIs. Returns false if
+  # either is missing or unparseable (fail-closed).
+  defp same_host?(a, b) when is_binary(a) and is_binary(b) do
+    with %URI{host: host_a} when is_binary(host_a) <- URI.parse(a),
+         %URI{host: host_b} when is_binary(host_b) <- URI.parse(b) do
+      String.downcase(host_a) == String.downcase(host_b)
+    else
+      _ -> false
+    end
+  end
+
+  defp same_host?(_, _), do: false
 
   # Routes boosted Article/Page content to boards that follow the booster.
   # Notes are not routed to boards (they become feed items only).

@@ -270,7 +270,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       oversized = String.duplicate("a", 65_537)
 
       activity = %{
-        "id" => "https://remote.example/activities/create-big-#{System.unique_integer([:positive])}",
+        "id" =>
+          "https://remote.example/activities/create-big-#{System.unique_integer([:positive])}",
         "type" => "Create",
         "actor" => remote_actor.ap_id,
         "object" => %{
@@ -1656,6 +1657,111 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
       assert Federation.count_announces(object_id) == 1
+    end
+
+    test "does not attribute a boosted object to a cross-origin actor (impersonation)" do
+      booster = create_remote_actor()
+
+      # Federated board that follows the booster, so announced Article/Page
+      # content is routed to it.
+      board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Federated",
+          slug: "fed-#{System.unique_integer([:positive])}",
+          ap_enabled: true,
+          min_role_to_view: "guest",
+          ap_accept_policy: "open"
+        })
+        |> Repo.insert!()
+
+      {:ok, _follow} =
+        %Baudrate.Federation.BoardFollow{}
+        |> Baudrate.Federation.BoardFollow.changeset(%{
+          board_id: board.id,
+          remote_actor_id: booster.id,
+          state: "accepted",
+          ap_id: "https://remote.example/follows/#{System.unique_integer([:positive])}",
+          accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert()
+
+      # Embedded object hosted on remote.example but claiming authorship by a
+      # victim on a DIFFERENT origin.
+      object_id = "https://remote.example/post/#{System.unique_integer([:positive])}"
+
+      activity = %{
+        "id" =>
+          "https://remote.example/activities/announce-#{System.unique_integer([:positive])}",
+        "type" => "Announce",
+        "actor" => booster.ap_id,
+        "object" => %{
+          "id" => object_id,
+          "type" => "Page",
+          "name" => "Impersonated Post",
+          "content" => "Attacker-authored content",
+          "attributedTo" => "https://victim.example/users/victim"
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, booster, :shared)
+
+      # The cross-origin attribution must be refused: no remote article is
+      # materialized for the boosted object.
+      refute Content.get_article_by_ap_id(object_id)
+    end
+
+    test "routes a boosted object whose attributedTo shares the object origin" do
+      booster = create_remote_actor()
+
+      author =
+        create_remote_actor(%{
+          ap_id: "https://remote.example/users/author-#{System.unique_integer([:positive])}"
+        })
+
+      board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Federated",
+          slug: "fed-#{System.unique_integer([:positive])}",
+          ap_enabled: true,
+          min_role_to_view: "guest",
+          ap_accept_policy: "open"
+        })
+        |> Repo.insert!()
+
+      {:ok, _follow} =
+        %Baudrate.Federation.BoardFollow{}
+        |> Baudrate.Federation.BoardFollow.changeset(%{
+          board_id: board.id,
+          remote_actor_id: booster.id,
+          state: "accepted",
+          ap_id: "https://remote.example/follows/#{System.unique_integer([:positive])}",
+          accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert()
+
+      object_id = "https://remote.example/post/#{System.unique_integer([:positive])}"
+
+      activity = %{
+        "id" =>
+          "https://remote.example/activities/announce-#{System.unique_integer([:positive])}",
+        "type" => "Announce",
+        "actor" => booster.ap_id,
+        "object" => %{
+          "id" => object_id,
+          "type" => "Page",
+          "name" => "Legit Post",
+          "content" => "Author-owned content",
+          "attributedTo" => author.ap_id
+        }
+      }
+
+      assert :ok = InboxHandler.handle(activity, booster, :shared)
+
+      article = Content.get_article_by_ap_id(object_id)
+      assert article
+      assert article.remote_actor_id == author.id
     end
   end
 
