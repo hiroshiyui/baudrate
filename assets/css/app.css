@@ -368,6 +368,13 @@ a.card:active,
     0 10px 28px rgba(0, 0, 0, 0.1);
 }
 
+/* Clip cards/modals to their rounded frame so a full-bleed titlebar meets the
+   window edge (like an Aqua title bar) instead of leaving an inset gap. */
+[data-theme="aquaosx"] .card:not(.rounded-full),
+[data-theme="aquaosx"] .modal-box {
+  overflow: hidden;
+}
+
 /* The header/toolbar itself gets a gentle top-lit gradient (Aqua unified
    titlebar), and the horizontal nav inside it stays transparent so ghost
    buttons sit on that gradient rather than inside a white pill. */
@@ -404,14 +411,23 @@ a.card:active,
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
-/* Card / modal title — subtle unified-titlebar gloss. */
+/* Card / modal title — full-bleed unified-titlebar gloss, vertically centered.
+   The negative margin matches the board cards' `p-4` (1rem) padding so the bar
+   meets the top/side borders WITHOUT overshoot — an overshoot would let the
+   card's `overflow: hidden` clip the bar's top padding and crowd the text
+   against the top. Symmetric vertical padding then centers the title. Cards
+   with the larger default padding (1.5rem) show the bar inset a symmetric
+   0.5rem, which still reads as a title bar. `flex`/`items-center` keeps the
+   text and unread dot centered. */
 [data-theme="aquaosx"] .card > .card-body > .card-title,
 [data-theme="aquaosx"] .modal-box > h3:first-child {
+  display: flex;
+  align-items: center;
   background-image: linear-gradient(to bottom, #fbfcfe, #e4e9f1);
   border-bottom: 1px solid var(--aqua-hairline);
-  border-radius: var(--radius-box) var(--radius-box) 0 0;
-  padding: 0.4rem 0.75rem;
-  margin: -0.5rem -0.5rem 0.6rem -0.5rem;
+  border-radius: 0;
+  padding: 0.55rem 1.1rem;
+  margin: -1rem -1rem 0.7rem -1rem;
 }
 
 /* Inputs — white, rounded, faint inset top-shadow; Aqua-blue focus glow. */
