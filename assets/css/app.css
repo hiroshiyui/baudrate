@@ -206,6 +206,12 @@
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
+/* Badges keep their label on one line — short status/role labels (incl. CJK)
+   should never wrap in narrow table cells (e.g. /admin/boards). */
+.badge {
+  white-space: nowrap;
+}
+
 /* Highlight links and anchors on keyboard focus */
 a:focus-visible {
   box-shadow: inset 0 0 0 1px var(--color-primary);
