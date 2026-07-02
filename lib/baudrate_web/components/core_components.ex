@@ -115,7 +115,7 @@ defmodule BaudrateWeb.CoreComponents do
       <.button phx-click="go" variant="primary">Send!</.button>
       <.button navigate={~p"/"}>Home</.button>
   """
-  attr :rest, :global, include: ~w(href navigate patch method download name value disabled)
+  attr :rest, :global, include: ~w(href navigate patch method download name value disabled type)
   attr :class, :any
   attr :variant, :string, values: ~w(primary)
   slot :inner_block, required: true
@@ -875,8 +875,7 @@ defmodule BaudrateWeb.CoreComponents do
           allowfullscreen
           loading="lazy"
           referrerpolicy="strict-origin"
-        >
-        </iframe>
+        ></iframe>
       </div>
       <div :if={@preview.title && @preview.status == "fetched"} class="mt-1.5">
         <a
