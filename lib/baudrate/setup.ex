@@ -131,6 +131,7 @@ defmodule Baudrate.Setup do
     {"caramellatte", "Caramellatte", :light},
     {"silk", "Silk", :light},
     {"nord", "Nord", :light},
+    {"aquaosx", "Mac OS X (Aqua)", :light},
     # Dark themes
     {"dark", "Dark (Default)", :dark},
     {"synthwave", "Synthwave", :dark},
