@@ -8,5 +8,5 @@ name = "baudrate_html_parser"
 crate-type = ["cdylib"]
 
 [dependencies]
-scraper = "0.22"
+scraper = "0.27"
 rustler = "0.38"

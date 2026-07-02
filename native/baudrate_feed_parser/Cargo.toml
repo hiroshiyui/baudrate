@@ -8,5 +8,5 @@ name = "baudrate_feed_parser"
 crate-type = ["cdylib"]
 
 [dependencies]
-feedparser-rs = "0.4.6"
+feedparser-rs = "0.5"
 rustler = "0.38"
