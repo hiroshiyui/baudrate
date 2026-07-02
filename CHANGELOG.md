@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.10.0] — 2026-07-03
+
+This release is a broad dependency-modernization and security pass: every
+production security advisory reported by `mix hex.audit` is resolved and the
+whole dependency tree (Hex, Rust NIF crates, and the JS/CSS toolchain) is
+current, with the full unit and browser test suites green.
+
+### Security
+
+- **Migrated the Markdown renderer from Earmark to MDEx** — Earmark is retired
+  (unmaintained) and carried an unpatched stored-XSS advisory (EEF-CVE-2026-48591)
+  with no fix in its 1.4.x line. `Content.Markdown.to_html/1` now renders via
+  MDEx (comrak, CommonMark + GFM) with `render: [unsafe: true]` so stored/feed
+  HTML still passes through to the Ammonia sanitizer — the render-then-sanitize
+  security model is unchanged.
+- **Updated Req to 0.6.2** — patches a HIGH `form_multipart` header-injection
+  advisory (EEF-CVE-2026-49755) and a decompression-bomb DoS. Reviewed against
+  the SSRF guard (`Federation.HTTPClient`): unaffected — it uses no multipart and
+  already sets `decode_body: false`, so it was never exposed to either.
+- **Updated Ecto to 3.14 and Decimal to 3.x** — Decimal 2.x carried a MEDIUM
+  unauthenticated-DoS advisory (EEF-CVE-2026-32686, unbounded exponent); Decimal 3
+  makes the mitigation the default. The fix is coupled to Ecto 3.14.
+- **Cleared the remaining test-only advisories** by updating wallaby to 0.31
+  (pulling hackney/tesla to patched majors). These were never shipped (test tooling
+  only). `mix hex.audit` now reports no retired or advisory packages.
+
+### Changed
+
+- **Migrated rate limiting to Hammer 7** — replaced the v6 global backend with a
+  `use Hammer` store (`BaudrateWeb.RateLimit`) started in the supervision tree; all
+  rate checks route through the `BaudrateWeb.RateLimiter` behaviour.
+- **Updated Phoenix to 1.8.8**, and the Rust NIF stack: rustler 0.38 (Elixir + all
+  three native crates, in lockstep), ammonia 4.1.3, scraper 0.27, feedparser-rs 0.5.4,
+  image 0.69.
+- **Updated the frontend toolchain**: Tailwind CLI 4.3.2, daisyUI 5.6.10,
+  esbuild 0.28.1.
+- Routine patch/minor bumps across bandit, postgrex, jason, cbor, tz, credo, and
+  their transitive dependencies.
+
+### Fixed
+
+- **Aqua theme card titlebars** are now full-bleed and vertically centered, meeting
+  the window border like a real Mac OS X title bar instead of leaving an inset gap.
+- **`button/1` component** declares `type` as an allowed global attribute, fixing a
+  Phoenix 1.8.8 `--warnings-as-errors` failure.
+- **Four browser feature tests** (article editing, comments, search ×2) — corrected
+  pre-existing bugs (wrong form-field ids, wrong assertion text, an over-broad button
+  selector). The full feature suite (48) is green.
+
+### Added
+
+- **`check-updates` and expanded `security-audit` skills** — a three-ecosystem
+  dependency update-check workflow, and a dedicated dependency-vulnerability step
+  (OWASP A06) in the security audit.
+
 ## [1.9.0] — 2026-07-02
 
 ### Added
