@@ -1506,6 +1506,12 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 
 **Accessibility (WAI-ARIA):**
 
+- **[TOP PRIORITY] Every meaningful element in every page template carries a stable, semantic `id` and/or `class`** so any element can be located precisely — a first-class accessibility requirement (for assistive tooling, automated testing, and styling), not optional polish. Rules:
+  - *Coverage* — region/section containers, all interactive elements (buttons, links, inputs, selects, textareas, toggles), every loop-rendered list/table/card item, and key content nodes (headings, labels, values, empty states, error/preview blocks). Skip purely presentational layout wrappers (bare `flex`/`grid`/spacer divs) and leaf presentational components (`<.icon>`).
+  - *Naming* — simple kebab-case, page/section-prefixed (no BEM `__`): `id="profile-bio-section"`, `class="profile-bio-label"`, `class="profile-bio-value"`.
+  - *Uniqueness* — `id` unique per rendered page; loop (`:for`) items derive a dynamic id from the record (`id={"muted-user-#{mute.id}"}`) plus a shared stable `class` (`class="muted-user"`).
+  - *Non-destructive* — only ADD `id`/`class`; never remove or reorder existing Tailwind utilities, `phx-*`, `aria-*`, `data-*`, `:if`/`:for`, or `gettext()`. Semantic class first, utilities after.
+  - *Stylesheets target the semantic selectors* — custom CSS in `assets/css/app.css` (theme layers, focus styles, component tweaks) MUST hook onto the semantic `id`/`class` selectors, not fragile structural/positional selectors (`.card > .card-body > .card-title`, `:nth-child`, tag chains). Every custom style rule's selector must correspond to a meaningful element's semantic `id`/`class`; if the target element lacks one, add it first. This keeps styling stable against markup refactors and makes each rule's intent self-documenting.
 - Skip-to-content link (`<a href="#main-content">`) at top of `<body>` in `root.html.heex`
 - `id="main-content"` and `tabindex="-1"` on `<main>` in both app and setup layouts — enables the skip-to-content link to move keyboard focus (not just scroll) to the main content area
 - `aria-haspopup="true"` and `aria-expanded` on all dropdown trigger buttons (mobile hamburger, desktop user menu, language picker); `aria-expanded` is synced dynamically via JS event delegation on `focusin`/`focusout` in `app.js`
@@ -1526,6 +1532,7 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 - Layout provides `<header>`, `<nav>`, `<main>`, `<footer>` — do not duplicate with ARIA roles
 - Every content-listing container should have a semantic `id` (e.g., `id="articles"`, `id="comments"`)
 - Every list item should have a unique `id` (e.g., `id={"article-#{slug}"}`) and a semantic CSS class (e.g., `class="article"`)
+- This extends to **all** meaningful elements, not just list containers/items — see the TOP PRIORITY requirement above. Field labels, values, section wrappers, forms, and every interactive control carry page-prefixed kebab-case `id`/`class` (e.g. `id="profile-bio-save"`, `class="profile-field-label"`)
 
 **Mobile Bottom Navigation:**
 
