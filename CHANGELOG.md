@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [Unreleased]
+
+### Changed
+
+- **Mac OS X (Aqua) theme extracted to a standalone file** — both the `aquaosx`
+  DaisyUI palette registration and the `[data-theme="aquaosx"]` glossy-chrome
+  overrides moved out of `assets/css/app.css` into `assets/css/themes/aquaosx.css`,
+  imported back near the end of `app.css`. Tailwind v4 inlines local `@import`s in
+  place, so the chrome overrides stay late in the cascade exactly as before — the
+  compiled stylesheet is byte-for-byte equivalent (verified against a pre-refactor
+  build). Purely an organizational change; no visual difference.
+
 ## [1.10.2] — 2026-07-03
 
 ### Added

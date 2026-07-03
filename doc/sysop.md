@@ -194,10 +194,12 @@ gel buttons, the iconic blue "default" button with a soft focus glow, hairline
 white "windows" (cards/modals/dropdowns) with soft drop shadows, rounded
 segmented controls, and rounded blue-gel WebKit scrollbars. It uses the native
 Apple UI font stack (no bundled webfont). Select it under *Admin → Settings →
-Theme (light)*. Its palette lives in `assets/css/app.css` (the `aquaosx` DaisyUI
-theme block — named that way because DaisyUI already ships a dark theme called
-`aqua`) and the glossy chrome in the `[data-theme="aquaosx"]` layer in the same
-file.
+Theme (light)*. Both its palette (the `aquaosx` DaisyUI theme block — named that
+way because DaisyUI already ships a dark theme called `aqua`) and its glossy
+chrome (the `[data-theme="aquaosx"]` layer) live in the standalone
+`assets/css/themes/aquaosx.css`, which `assets/css/app.css` pulls in via
+`@import` near the end of the file (Tailwind v4 inlines local imports in place,
+keeping the chrome overrides late in the cascade).
 
 ---
 
