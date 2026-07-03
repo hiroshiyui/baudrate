@@ -19,6 +19,7 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
 - **Role-based access control** -- admin, moderator, user, and guest roles with per-board permission levels
 - **Board moderation** -- board moderators can pin/lock threads and delete articles/comments
 - **TOTP two-factor authentication** -- required for admin/moderator, optional for users, with recovery codes
+- **WebAuthn / FIDO2 security keys** -- register hardware security keys or passkeys (e.g. YubiKey, Touch ID) for second-factor and admin sudo-mode re-verification
 - **ActivityPub federation** -- federate with Mastodon, Lemmy, and the Fediverse
   - WebFinger and NodeInfo discovery
   - Incoming follows, comments, likes, boosts, updates, deletes, and Flag reports
@@ -114,6 +115,7 @@ Built with these excellent open-source projects:
 - [Ecto](https://hexdocs.pm/ecto/)
 - [Tailwind CSS](https://tailwindcss.com/) + [DaisyUI](https://daisyui.com/)
 - [NimbleTOTP](https://hexdocs.pm/nimble_totp/)
+- [wax_](https://hexdocs.pm/wax_/) (WebAuthn / FIDO2 relying party)
 - [Hammer](https://hexdocs.pm/hammer/)
 - [MDEx](https://hexdocs.pm/mdex/) (Markdown rendering, CommonMark + GFM via comrak)
 - [Req](https://hexdocs.pm/req/) (HTTP client for federation)
