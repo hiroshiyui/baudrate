@@ -25,7 +25,7 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 | Layer | Technology |
 |-------|-----------|
 | Language | Elixir 1.15+ / OTP 26+ |
-| Web | Phoenix 1.8 / LiveView 1.1 |
+| Web | Phoenix 1.8 / LiveView 1.2 |
 | HTTP server | Bandit |
 | Database | PostgreSQL (Ecto) |
 | CSS | Tailwind CSS + DaisyUI |

@@ -9,7 +9,7 @@ visibility. Design decisions should reflect this philosophy.
 | Layer | Technology |
 |-------|-----------|
 | Language | Elixir 1.15+ / OTP 26+ |
-| Web framework | Phoenix 1.8 / LiveView 1.1 |
+| Web framework | Phoenix 1.8 / LiveView 1.2 |
 | HTTP server | Bandit |
 | HTTP client | Req (never HTTPoison, Tesla, or httpc) |
 | Database | PostgreSQL (via Ecto) |
