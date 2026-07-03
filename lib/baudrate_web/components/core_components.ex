@@ -83,7 +83,7 @@ defmodule BaudrateWeb.CoreComponents do
       id={@id}
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
       role="alert"
-      class="toast toast-top toast-end z-50"
+      class="flash-message toast toast-top toast-end z-50"
       {@rest}
     >
       <div class={[
@@ -98,7 +98,11 @@ defmodule BaudrateWeb.CoreComponents do
           <p>{msg}</p>
         </div>
         <div class="flex-1" />
-        <button type="button" class="group self-start cursor-pointer" aria-label={gettext("close")}>
+        <button
+          type="button"
+          class="flash-close group self-start cursor-pointer"
+          aria-label={gettext("close")}
+        >
           <.icon name="hero-x-mark" class="size-5 opacity-60 group-hover:opacity-90" />
         </button>
       </div>
@@ -130,13 +134,13 @@ defmodule BaudrateWeb.CoreComponents do
 
     if rest[:href] || rest[:navigate] || rest[:patch] do
       ~H"""
-      <.link class={@class} {@rest}>
+      <.link class={["core-button", @class]} {@rest}>
         {render_slot(@inner_block)}
       </.link>
       """
     else
       ~H"""
-      <button class={@class} {@rest}>
+      <button class={["core-button", @class]} {@rest}>
         {render_slot(@inner_block)}
       </button>
       """
@@ -226,7 +230,7 @@ defmodule BaudrateWeb.CoreComponents do
 
   def input(%{type: "hidden"} = assigns) do
     ~H"""
-    <input type="hidden" id={@id} name={@name} value={@value} {@rest} />
+    <input class="core-input-hidden" type="hidden" id={@id} name={@name} value={@value} {@rest} />
     """
   end
 
@@ -237,7 +241,7 @@ defmodule BaudrateWeb.CoreComponents do
       end)
 
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="core-field core-field-checkbox fieldset mb-2">
       <label>
         <input
           type="hidden"
@@ -253,14 +257,14 @@ defmodule BaudrateWeb.CoreComponents do
             name={@name}
             value="true"
             checked={@checked}
-            class={@class || "checkbox checkbox-sm"}
+            class={["core-checkbox", @class || "checkbox checkbox-sm"]}
             aria-invalid={@errors != [] && "true"}
             aria-describedby={@errors != [] && "#{@id}-error"}
             {@rest}
           />{@label}
         </span>
       </label>
-      <div :if={@errors != []} id={"#{@id}-error"} role="alert">
+      <div :if={@errors != []} class="core-field-error" id={"#{@id}-error"} role="alert">
         <.error :for={msg <- @errors}>{msg}</.error>
       </div>
     </div>
@@ -269,13 +273,17 @@ defmodule BaudrateWeb.CoreComponents do
 
   def input(%{type: "select"} = assigns) do
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="core-field core-field-select fieldset mb-2">
       <label>
         <span :if={@label} class={["label mb-1", @label_class]}>{@label}</span>
         <select
           id={@id}
           name={@name}
-          class={[@class || "w-full select", @errors != [] && (@error_class || "select-error")]}
+          class={[
+            "core-select",
+            @class || "w-full select",
+            @errors != [] && (@error_class || "select-error")
+          ]}
           multiple={@multiple}
           aria-invalid={@errors != [] && "true"}
           aria-describedby={@errors != [] && "#{@id}-error"}
@@ -285,7 +293,7 @@ defmodule BaudrateWeb.CoreComponents do
           {Phoenix.HTML.Form.options_for_select(@options, @value)}
         </select>
       </label>
-      <div :if={@errors != []} id={"#{@id}-error"} role="alert">
+      <div :if={@errors != []} class="core-field-error" id={"#{@id}-error"} role="alert">
         <.error :for={msg <- @errors}>{msg}</.error>
       </div>
     </div>
@@ -294,7 +302,7 @@ defmodule BaudrateWeb.CoreComponents do
 
   def input(%{type: "textarea"} = assigns) do
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="core-field core-field-textarea fieldset mb-2">
       <label>
         <span :if={@label} class={["label mb-1", @label_class]}>{@label}</span>
         <div
@@ -308,6 +316,7 @@ defmodule BaudrateWeb.CoreComponents do
             name={@name}
             phx-hook="MarkdownToolbarHook"
             class={[
+              "core-textarea",
               @class || "w-full textarea",
               @errors != [] && (@error_class || "textarea-error")
             ]}
@@ -359,6 +368,7 @@ defmodule BaudrateWeb.CoreComponents do
           id={@id}
           name={@name}
           class={[
+            "core-textarea",
             @class || "w-full textarea",
             @errors != [] && (@error_class || "textarea-error")
           ]}
@@ -367,7 +377,7 @@ defmodule BaudrateWeb.CoreComponents do
           {@rest}
         >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
       </label>
-      <div :if={@errors != []} id={"#{@id}-error"} role="alert">
+      <div :if={@errors != []} class="core-field-error" id={"#{@id}-error"} role="alert">
         <.error :for={msg <- @errors}>{msg}</.error>
       </div>
     </div>
@@ -377,7 +387,7 @@ defmodule BaudrateWeb.CoreComponents do
   # All other inputs text, datetime-local, url, password, etc. are handled here...
   def input(assigns) do
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="core-field fieldset mb-2">
       <label>
         <span :if={@label} class={["label mb-1", @label_class]}>{@label}</span>
         <input
@@ -386,6 +396,7 @@ defmodule BaudrateWeb.CoreComponents do
           id={@id}
           value={Phoenix.HTML.Form.normalize_value(@type, @value)}
           class={[
+            "core-input",
             @class || "w-full input",
             @errors != [] && (@error_class || "input-error")
           ]}
@@ -394,7 +405,7 @@ defmodule BaudrateWeb.CoreComponents do
           {@rest}
         />
       </label>
-      <div :if={@errors != []} id={"#{@id}-error"} role="alert">
+      <div :if={@errors != []} class="core-field-error" id={"#{@id}-error"} role="alert">
         <.error :for={msg <- @errors}>{msg}</.error>
       </div>
     </div>
@@ -404,7 +415,7 @@ defmodule BaudrateWeb.CoreComponents do
   # Helper used by inputs to generate form errors
   defp error(assigns) do
     ~H"""
-    <p class="mt-1.5 flex gap-2 items-center text-sm text-error">
+    <p class="core-field-error-message mt-1.5 flex gap-2 items-center text-sm text-error">
       <.icon name="hero-exclamation-circle" class="size-5" aria-hidden="true" />
       {render_slot(@inner_block)}
     </p>
@@ -421,16 +432,19 @@ defmodule BaudrateWeb.CoreComponents do
 
   def header(assigns) do
     ~H"""
-    <header id={@id} class={[@actions != [] && "flex items-center justify-between gap-6", "pb-4"]}>
+    <header
+      id={@id}
+      class={["core-header", @actions != [] && "flex items-center justify-between gap-6", "pb-4"]}
+    >
       <div>
-        <h1 class="text-lg font-semibold leading-8">
+        <h1 class="core-header-title text-lg font-semibold leading-8">
           {render_slot(@inner_block)}
         </h1>
-        <p :if={@subtitle != []} class="text-sm text-base-content/80">
+        <p :if={@subtitle != []} class="core-header-subtitle text-sm text-base-content/80">
           {render_slot(@subtitle)}
         </p>
       </div>
-      <div class="flex-none">{render_slot(@actions)}</div>
+      <div class="core-header-actions flex-none">{render_slot(@actions)}</div>
     </header>
     """
   end
@@ -467,7 +481,7 @@ defmodule BaudrateWeb.CoreComponents do
       end
 
     ~H"""
-    <table class="table table-zebra">
+    <table class="core-table table table-zebra">
       <thead>
         <tr>
           <th :for={col <- @col} scope="col">{col[:label]}</th>
@@ -476,8 +490,12 @@ defmodule BaudrateWeb.CoreComponents do
           </th>
         </tr>
       </thead>
-      <tbody id={@id} phx-update={is_struct(@rows, Phoenix.LiveView.LiveStream) && "stream"}>
-        <tr :for={row <- @rows} id={@row_id && @row_id.(row)}>
+      <tbody
+        class="core-table-body"
+        id={@id}
+        phx-update={is_struct(@rows, Phoenix.LiveView.LiveStream) && "stream"}
+      >
+        <tr :for={row <- @rows} class="core-table-row" id={@row_id && @row_id.(row)}>
           <td
             :for={col <- @col}
             phx-click={@row_click && @row_click.(row)}
@@ -516,8 +534,8 @@ defmodule BaudrateWeb.CoreComponents do
 
   def list(assigns) do
     ~H"""
-    <ul id={@id} class="list">
-      <li :for={item <- @item} class="list-row">
+    <ul id={@id} class="core-list list">
+      <li :for={item <- @item} class="core-list-item list-row">
         <div class="list-col-grow">
           <div class="font-bold">{item.title}</div>
           <div>{render_slot(item)}</div>
@@ -576,6 +594,7 @@ defmodule BaudrateWeb.CoreComponents do
 
     ~H"""
     <div class={[
+      "core-avatar",
       "avatar",
       @class
     ]}>
@@ -593,7 +612,7 @@ defmodule BaudrateWeb.CoreComponents do
     ~H"""
     <div
       class={[
-        "avatar avatar-placeholder",
+        "core-avatar avatar avatar-placeholder",
         @class
       ]}
       role="img"
@@ -641,12 +660,16 @@ defmodule BaudrateWeb.CoreComponents do
     assigns = assign(assigns, :page_range, pagination_range(assigns.page, assigns.total_pages))
 
     ~H"""
-    <nav :if={@total_pages > 1} aria-label={gettext("Pagination")} class="flex justify-center mt-6">
+    <nav
+      :if={@total_pages > 1}
+      aria-label={gettext("Pagination")}
+      class="pagination-nav flex justify-center mt-6"
+    >
       <div class="join">
         <.link
           :if={@page > 1}
           patch={"#{@path}?#{URI.encode_query(Map.put(@params, "page", @page - 1))}"}
-          class="join-item btn btn-sm"
+          class="pagination-prev join-item btn btn-sm"
           aria-label={gettext("Previous page")}
         >
           &laquo;
@@ -654,7 +677,7 @@ defmodule BaudrateWeb.CoreComponents do
         <button
           :if={@page <= 1}
           disabled
-          class="join-item btn btn-sm"
+          class="pagination-prev join-item btn btn-sm"
           aria-label={gettext("Previous page")}
         >
           &laquo;
@@ -664,14 +687,14 @@ defmodule BaudrateWeb.CoreComponents do
           <.link
             :if={p != @page}
             patch={"#{@path}?#{URI.encode_query(Map.put(@params, "page", p))}"}
-            class="join-item btn btn-sm"
+            class="pagination-page join-item btn btn-sm"
             aria-label={gettext("Page %{number}", number: p)}
           >
             {p}
           </.link>
           <span
             :if={p == @page}
-            class="join-item btn btn-sm btn-active"
+            class="pagination-current join-item btn btn-sm btn-active"
             aria-current="page"
             aria-label={gettext("Page %{number}", number: p)}
           >
@@ -682,7 +705,7 @@ defmodule BaudrateWeb.CoreComponents do
         <.link
           :if={@page < @total_pages}
           patch={"#{@path}?#{URI.encode_query(Map.put(@params, "page", @page + 1))}"}
-          class="join-item btn btn-sm"
+          class="pagination-next join-item btn btn-sm"
           aria-label={gettext("Next page")}
         >
           &raquo;
@@ -690,7 +713,7 @@ defmodule BaudrateWeb.CoreComponents do
         <button
           :if={@page >= @total_pages}
           disabled
-          class="join-item btn btn-sm"
+          class="pagination-next join-item btn btn-sm"
           aria-label={gettext("Next page")}
         >
           &raquo;
@@ -746,7 +769,7 @@ defmodule BaudrateWeb.CoreComponents do
     <div
       :if={@show}
       id="report-modal"
-      class="modal modal-open"
+      class="report-modal modal modal-open"
       role="dialog"
       aria-modal="true"
       aria-labelledby="report-modal-title"
@@ -754,35 +777,39 @@ defmodule BaudrateWeb.CoreComponents do
       phx-window-keydown={@on_close}
       phx-key="Escape"
     >
-      <div class="modal-box">
-        <h3 id="report-modal-title" class="font-bold text-lg">{@title}</h3>
-        <p :if={@target_label} class="text-sm text-base-content/70 mt-1 truncate">
+      <div class="report-modal-box modal-box">
+        <h3 id="report-modal-title" class="report-modal-title font-bold text-lg">{@title}</h3>
+        <p :if={@target_label} class="report-modal-target text-sm text-base-content/70 mt-1 truncate">
           {@target_label}
         </p>
-        <.form for={%{}} phx-submit={@on_submit} class="mt-4">
+        <.form for={%{}} phx-submit={@on_submit} class="report-modal-form mt-4">
           <label for="report-reason" class="label">
             <span class="label-text">{gettext("Reason")}</span>
           </label>
           <textarea
             id="report-reason"
             name="reason"
-            class="textarea textarea-bordered w-full"
+            class="report-modal-reason textarea textarea-bordered w-full"
             rows="4"
             required
             maxlength="2000"
             placeholder={gettext("Please describe the issue...")}
           ></textarea>
           <div class="modal-action">
-            <button type="button" phx-click={@on_close} class="btn">
+            <button type="button" phx-click={@on_close} class="report-modal-cancel btn">
               {gettext("Cancel")}
             </button>
-            <button type="submit" class="btn btn-error" phx-disable-with={gettext("Submitting...")}>
+            <button
+              type="submit"
+              class="report-modal-submit btn btn-error"
+              phx-disable-with={gettext("Submitting...")}
+            >
               {gettext("Report")}
             </button>
           </div>
         </.form>
       </div>
-      <div class="modal-backdrop" phx-click={@on_close}></div>
+      <div class="report-modal-backdrop modal-backdrop" phx-click={@on_close}></div>
     </div>
     """
   end
@@ -864,12 +891,12 @@ defmodule BaudrateWeb.CoreComponents do
 
   defp link_preview_youtube(assigns) do
     ~H"""
-    <div class="not-prose mt-3 max-w-lg">
+    <div class="link-preview-card link-preview-youtube not-prose mt-3 max-w-lg">
       <div class="aspect-video rounded-lg overflow-hidden border border-base-300">
         <iframe
           src={"https://www.youtube-nocookie.com/embed/#{@video_id}"}
           title={@preview.title || gettext("YouTube video")}
-          class="w-full h-full"
+          class="link-preview-video w-full h-full"
           frameborder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen
@@ -882,7 +909,7 @@ defmodule BaudrateWeb.CoreComponents do
           href={@preview.url}
           target="_blank"
           rel="nofollow noopener noreferrer"
-          class="text-sm font-medium link link-hover line-clamp-1"
+          class="link-preview-title text-sm font-medium link link-hover line-clamp-1"
         >
           {@preview.title}
         </a>
@@ -897,12 +924,12 @@ defmodule BaudrateWeb.CoreComponents do
       href={@preview.url}
       target="_blank"
       rel="nofollow noopener noreferrer"
-      class="card bg-base-200 not-prose overflow-hidden border border-base-300 mt-3 max-w-lg block"
+      class="link-preview-card link-preview-failed card bg-base-200 not-prose overflow-hidden border border-base-300 mt-3 max-w-lg block"
       aria-label={gettext("Link preview")}
     >
       <div class="card-body p-3">
-        <span class="text-sm text-base-content/70 truncate">{@preview.url}</span>
-        <span class="text-xs text-base-content/50">{@preview.domain}</span>
+        <span class="link-preview-url text-sm text-base-content/70 truncate">{@preview.url}</span>
+        <span class="link-preview-domain text-xs text-base-content/50">{@preview.domain}</span>
       </div>
     </a>
     """
@@ -914,24 +941,29 @@ defmodule BaudrateWeb.CoreComponents do
       href={@preview.url}
       target="_blank"
       rel="nofollow noopener noreferrer"
-      class="card card-side bg-base-200 not-prose overflow-hidden border border-base-300 mt-3 max-w-lg"
+      class="link-preview-card link-preview-fetched card card-side bg-base-200 not-prose overflow-hidden border border-base-300 mt-3 max-w-lg"
       aria-label={gettext("Link preview: %{title}", title: @preview.title || @preview.url)}
     >
-      <figure :if={@preview.image_path} class="w-32 shrink-0">
+      <figure :if={@preview.image_path} class="link-preview-figure w-32 shrink-0">
         <img
           src={@preview.image_path}
           alt={gettext("Preview image for %{title}", title: @preview.title || @preview.url)}
-          class="object-cover h-full w-full"
+          class="link-preview-image object-cover h-full w-full"
           loading="lazy"
           referrerpolicy="no-referrer"
         />
       </figure>
       <div class="card-body p-3">
-        <h3 :if={@preview.title} class="card-title text-sm line-clamp-1">{@preview.title}</h3>
-        <p :if={@preview.description} class="text-xs text-base-content/70 line-clamp-2">
+        <h3 :if={@preview.title} class="link-preview-title card-title text-sm line-clamp-1">
+          {@preview.title}
+        </h3>
+        <p
+          :if={@preview.description}
+          class="link-preview-description text-xs text-base-content/70 line-clamp-2"
+        >
           {@preview.description}
         </p>
-        <span class="text-xs text-base-content/50">{@preview.domain}</span>
+        <span class="link-preview-domain text-xs text-base-content/50">{@preview.domain}</span>
       </div>
     </a>
     """

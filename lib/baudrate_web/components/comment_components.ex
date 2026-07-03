@@ -33,14 +33,14 @@ defmodule BaudrateWeb.CommentComponents do
     ~H"""
     <div
       id={"comment-#{@comment.id}"}
-      class={["comment border-l-2 border-base-300 pl-4", @depth > 0 && "ml-4"]}
+      class={["comment-item comment border-l-2 border-base-300 pl-4", @depth > 0 && "ml-4"]}
     >
       <div class="py-2">
-        <div class="flex flex-wrap items-center gap-2 text-sm text-base-content/70 mb-1">
+        <div class="comment-meta flex flex-wrap items-center gap-2 text-sm text-base-content/70 mb-1">
           <.link
             :if={@comment.user}
             navigate={~p"/users/#{@comment.user.username}"}
-            class="inline-flex items-center gap-1 font-semibold text-base-content link link-hover"
+            class="comment-author-link inline-flex items-center gap-1 font-semibold text-base-content link link-hover"
           >
             <.avatar user={@comment.user} size={24} />
             {display_name(@comment.user)}
@@ -50,7 +50,7 @@ defmodule BaudrateWeb.CommentComponents do
             href={remote_actor_profile_url(@comment.remote_actor)}
             target="_blank"
             rel="nofollow noopener noreferrer"
-            class="font-semibold text-base-content link link-hover"
+            class="comment-remote-author-link font-semibold text-base-content link link-hover"
           >
             {display_name(@comment.remote_actor)}@{@comment.remote_actor.domain}
           </a>
@@ -60,7 +60,7 @@ defmodule BaudrateWeb.CommentComponents do
             href={@comment.url || @comment.ap_id}
             target="_blank"
             rel="nofollow noopener noreferrer"
-            class="link link-hover"
+            class="comment-remote-permalink link link-hover"
             title={gettext("View original")}
           >
             <time datetime={datetime_attr(@comment.inserted_at)}>
@@ -70,7 +70,7 @@ defmodule BaudrateWeb.CommentComponents do
           <a
             :if={!@comment.remote_actor}
             href={"#comment-#{@comment.id}"}
-            class="link link-hover"
+            class="comment-permalink link link-hover"
           >
             <time datetime={datetime_attr(@comment.inserted_at)}>
               {format_datetime(@comment.inserted_at)}
@@ -82,17 +82,17 @@ defmodule BaudrateWeb.CommentComponents do
             phx-click="delete_comment"
             phx-value-id={@comment.id}
             data-confirm={gettext("Are you sure you want to delete this comment?")}
-            class="btn btn-sm btn-ghost text-error ml-auto"
+            class="comment-delete-button btn btn-sm btn-ghost text-error ml-auto"
             aria-label={gettext("Delete comment")}
           >
             <.icon name="hero-trash" class="size-3" />
           </button>
         </div>
 
-        <div :if={@comment.body_html} class="prose prose-sm max-w-none">
+        <div :if={@comment.body_html} class="comment-body prose prose-sm max-w-none">
           {raw(@comment.body_html)}
         </div>
-        <div :if={!@comment.body_html} class="prose prose-sm max-w-none">
+        <div :if={!@comment.body_html} class="comment-body prose prose-sm max-w-none">
           {raw(Baudrate.Content.Markdown.to_html(@comment.body))}
         </div>
 
@@ -105,7 +105,7 @@ defmodule BaudrateWeb.CommentComponents do
         <div
           :if={is_list(@comment.images) && @comment.images != []}
           class={[
-            "grid gap-2 mt-2",
+            "comment-image-gallery grid gap-2 mt-2",
             length(@comment.images) == 1 && "grid-cols-1",
             length(@comment.images) >= 2 && "grid-cols-2"
           ]}
@@ -115,7 +115,7 @@ defmodule BaudrateWeb.CommentComponents do
             href={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
             target="_blank"
             rel="noopener"
-            class="block overflow-hidden rounded-lg"
+            class="comment-image-link block overflow-hidden rounded-lg"
             aria-label={
               gettext("Image %{number} (opens in new tab)",
                 number: Enum.find_index(@comment.images, &(&1.id == img.id)) + 1
@@ -139,7 +139,7 @@ defmodule BaudrateWeb.CommentComponents do
 
         <div
           :if={@comment.user && @comment.user.signature && @comment.user.signature != ""}
-          class="mt-1"
+          class="comment-signature mt-1"
         >
           <div class="divider text-sm text-base-content/70 my-1"></div>
           <div class="prose prose-sm max-w-none text-base-content/70">
@@ -147,12 +147,12 @@ defmodule BaudrateWeb.CommentComponents do
           </div>
         </div>
 
-        <div class="flex items-center gap-3 mt-1">
+        <div class="comment-actions flex items-center gap-3 mt-1">
           <button
             :if={@can_comment && @depth < 5 && @replying_to != @comment.id}
             phx-click="reply_to"
             phx-value-id={@comment.id}
-            class="text-sm text-base-content/70 hover:text-base-content cursor-pointer"
+            class="comment-reply-button text-sm text-base-content/70 hover:text-base-content cursor-pointer"
             aria-label={
               gettext("Reply to %{author}",
                 author: display_name(@comment.user || @comment.remote_actor)
@@ -180,7 +180,7 @@ defmodule BaudrateWeb.CommentComponents do
             :if={@current_user && @comment.visibility in ["public", "unlisted"]}
             phx-click="toggle_comment_forward"
             phx-value-id={@comment.id}
-            class="btn btn-ghost btn-xs"
+            class="comment-forward-button btn btn-ghost btn-xs"
             aria-label={gettext("Forward to Board")}
             title={gettext("Forward to Board")}
           >
@@ -189,12 +189,12 @@ defmodule BaudrateWeb.CommentComponents do
           <%!-- Report comment menu --%>
           <div
             :if={@current_user && @comment.user_id != @current_user.id}
-            class="dropdown dropdown-end"
+            class="comment-actions-menu dropdown dropdown-end"
           >
             <button
               type="button"
               tabindex="0"
-              class="btn btn-ghost btn-xs btn-circle"
+              class="comment-actions-menu-toggle btn btn-ghost btn-xs btn-circle"
               aria-haspopup="true"
               aria-label={gettext("More actions")}
             >
@@ -202,7 +202,7 @@ defmodule BaudrateWeb.CommentComponents do
             </button>
             <ul
               tabindex="0"
-              class="dropdown-content menu bg-base-200 rounded-box z-10 w-40 p-2 shadow-sm"
+              class="comment-actions-menu-list dropdown-content menu bg-base-200 rounded-box z-10 w-40 p-2 shadow-sm"
             >
               <li>
                 <button
@@ -210,6 +210,7 @@ defmodule BaudrateWeb.CommentComponents do
                   phx-value-type="comment"
                   phx-value-id={@comment.id}
                   phx-value-label={String.slice(@comment.body || "", 0..100)}
+                  class="comment-report-button"
                 >
                   <.icon name="hero-flag" class="size-3" />
                   {gettext("Report")}
@@ -223,13 +224,13 @@ defmodule BaudrateWeb.CommentComponents do
         <div
           :if={@forwarding_comment_id == @comment.id}
           id={"comment-forward-search-#{@comment.id}"}
-          class="flex items-center gap-2 text-sm mt-2"
+          class="comment-forward-search flex items-center gap-2 text-sm mt-2"
         >
           <div class="w-full max-w-md">
             <.form
               for={%{}}
               phx-change="search_comment_forward_board"
-              class="flex items-center gap-2"
+              class="comment-forward-search-form flex items-center gap-2"
             >
               <input
                 type="text"
@@ -238,7 +239,7 @@ defmodule BaudrateWeb.CommentComponents do
                 placeholder={gettext("Search boards...")}
                 phx-debounce="300"
                 autocomplete="off"
-                class="input input-sm input-bordered w-full"
+                class="comment-forward-search-input input input-sm input-bordered w-full"
                 aria-label={gettext("Search boards")}
                 role="combobox"
               />
@@ -246,7 +247,7 @@ defmodule BaudrateWeb.CommentComponents do
                 type="button"
                 phx-click="toggle_comment_forward"
                 phx-value-id={@comment.id}
-                class="btn btn-sm btn-ghost"
+                class="comment-forward-cancel-button btn btn-sm btn-ghost"
                 aria-label={gettext("Cancel")}
               >
                 <.icon name="hero-x-mark" class="size-4" />
@@ -256,13 +257,14 @@ defmodule BaudrateWeb.CommentComponents do
               :if={@comment_forward_search_results != []}
               id={"comment-forward-results-#{@comment.id}"}
               role="listbox"
-              class="menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+              class="comment-forward-results menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
             >
               <li :for={board <- @comment_forward_search_results}>
                 <button
                   phx-click="forward_comment_to_board"
                   phx-value-board-id={board.id}
                   role="option"
+                  class="comment-forward-result-button"
                 >
                   {board.name}
                 </button>
@@ -272,7 +274,7 @@ defmodule BaudrateWeb.CommentComponents do
         </div>
 
         <%!-- Inline reply form --%>
-        <div :if={@replying_to == @comment.id} class="mt-2">
+        <div :if={@replying_to == @comment.id} class="comment-reply-form-wrap mt-2">
           <.form
             for={@comment_form}
             phx-change="validate_comment"
@@ -281,7 +283,7 @@ defmodule BaudrateWeb.CommentComponents do
             phx-hook="DraftSaveHook"
             data-draft-key={"draft:comment:#{@comment.article_id}:reply:#{@comment.id}"}
             data-draft-fields="comment[body]"
-            class="space-y-2"
+            class="comment-reply-form space-y-2"
           >
             <.input
               field={@comment_form[:body]}
@@ -296,7 +298,7 @@ defmodule BaudrateWeb.CommentComponents do
               uploads={@uploads}
               uploaded_images={@uploaded_comment_images}
             />
-            <div class="flex flex-wrap items-center gap-2 [&>.fieldset]:mb-0 [&>.fieldset]:p-0 [&_.label]:py-0">
+            <div class="comment-reply-form-controls flex flex-wrap items-center gap-2 [&>.fieldset]:mb-0 [&>.fieldset]:p-0 [&_.label]:py-0">
               <.input
                 field={@comment_form[:visibility]}
                 type="select"
@@ -306,17 +308,21 @@ defmodule BaudrateWeb.CommentComponents do
                   {gettext("Followers only"), "followers_only"},
                   {gettext("Direct"), "direct"}
                 ]}
-                class="select select-sm"
+                class="comment-reply-visibility select select-sm"
                 aria-label={gettext("Visibility")}
               />
               <button
                 type="submit"
-                class="btn btn-sm btn-primary"
+                class="comment-reply-submit-button btn btn-sm btn-primary"
                 phx-disable-with={gettext("Posting...")}
               >
                 {gettext("Reply")}
               </button>
-              <button type="button" phx-click="cancel_reply" class="btn btn-sm btn-ghost">
+              <button
+                type="button"
+                phx-click="cancel_reply"
+                class="comment-reply-cancel-button btn btn-sm btn-ghost"
+              >
                 {gettext("Cancel")}
               </button>
             </div>
@@ -367,7 +373,7 @@ defmodule BaudrateWeb.CommentComponents do
         <.live_file_input upload={@uploads.comment_images} class="hidden" />
         <label
           for={@uploads.comment_images.ref}
-          class="btn btn-sm btn-ghost gap-1 cursor-pointer"
+          class="comment-image-add-label btn btn-sm btn-ghost gap-1 cursor-pointer"
           aria-label={gettext("Add Images")}
         >
           <.icon name="hero-photo" class="size-4" />
@@ -376,8 +382,14 @@ defmodule BaudrateWeb.CommentComponents do
       </div>
 
       <%!-- Uploaded thumbnails --%>
-      <div :if={@uploaded_images != []} class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
-        <div :for={img <- @uploaded_images} class="relative group aspect-square">
+      <div
+        :if={@uploaded_images != []}
+        class="comment-image-thumbnails grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2"
+      >
+        <div
+          :for={img <- @uploaded_images}
+          class="comment-image-thumbnail relative group aspect-square"
+        >
           <img
             src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
             class="w-full h-full object-cover rounded-lg border border-base-300"
@@ -388,7 +400,7 @@ defmodule BaudrateWeb.CommentComponents do
             type="button"
             phx-click="remove_comment_image"
             phx-value-id={img.id}
-            class="absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+            class="comment-image-remove-button absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
             aria-label={gettext("Remove image")}
           >
             <.icon name="hero-x-mark" class="size-4" />
@@ -399,7 +411,7 @@ defmodule BaudrateWeb.CommentComponents do
       <%!-- Upload progress --%>
       <div
         :for={entry <- @uploads.comment_images.entries}
-        class="flex items-center gap-2 text-sm mb-1"
+        class="comment-image-progress flex items-center gap-2 text-sm mb-1"
       >
         <span class="truncate max-w-48">{entry.client_name}</span>
         <progress value={entry.progress} max="100" class="progress progress-primary w-24">
@@ -409,7 +421,7 @@ defmodule BaudrateWeb.CommentComponents do
           type="button"
           phx-click="cancel_comment_image_upload"
           phx-value-ref={entry.ref}
-          class="btn btn-sm btn-ghost text-error"
+          class="comment-image-cancel-button btn btn-sm btn-ghost text-error"
           aria-label={gettext("Cancel upload")}
         >
           &times;
@@ -419,7 +431,7 @@ defmodule BaudrateWeb.CommentComponents do
       <%!-- Upload errors --%>
       <div
         :for={err <- upload_errors(@uploads.comment_images)}
-        class="text-sm text-error"
+        class="comment-image-error text-sm text-error"
         role="alert"
       >
         {upload_error_to_string(err)}
@@ -430,7 +442,7 @@ defmodule BaudrateWeb.CommentComponents do
       >
         <div
           :for={err <- upload_errors(@uploads.comment_images, entry)}
-          class="text-sm text-error"
+          class="comment-image-error text-sm text-error"
           role="alert"
         >
           {upload_error_to_string(err)}
@@ -457,7 +469,7 @@ defmodule BaudrateWeb.CommentComponents do
         <.live_file_input upload={@uploads.reply_images} class="hidden" />
         <label
           for={@uploads.reply_images.ref}
-          class="btn btn-sm btn-ghost gap-1 cursor-pointer"
+          class="reply-image-add-label btn btn-sm btn-ghost gap-1 cursor-pointer"
           aria-label={gettext("Add Images")}
         >
           <.icon name="hero-photo" class="size-4" />
@@ -465,8 +477,11 @@ defmodule BaudrateWeb.CommentComponents do
         </label>
       </div>
 
-      <div :if={@uploaded_images != []} class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
-        <div :for={img <- @uploaded_images} class="relative group aspect-square">
+      <div
+        :if={@uploaded_images != []}
+        class="reply-image-thumbnails grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2"
+      >
+        <div :for={img <- @uploaded_images} class="reply-image-thumbnail relative group aspect-square">
           <img
             src={Baudrate.Content.ArticleImageStorage.image_url(img.filename)}
             class="w-full h-full object-cover rounded-lg border border-base-300"
@@ -477,7 +492,7 @@ defmodule BaudrateWeb.CommentComponents do
             type="button"
             phx-click="remove_reply_image"
             phx-value-id={img.id}
-            class="absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+            class="reply-image-remove-button absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
             aria-label={gettext("Remove image")}
           >
             <.icon name="hero-x-mark" class="size-4" />
@@ -487,7 +502,7 @@ defmodule BaudrateWeb.CommentComponents do
 
       <div
         :for={entry <- @uploads.reply_images.entries}
-        class="flex items-center gap-2 text-sm mb-1"
+        class="reply-image-progress flex items-center gap-2 text-sm mb-1"
       >
         <span class="truncate max-w-48">{entry.client_name}</span>
         <progress value={entry.progress} max="100" class="progress progress-primary w-24">
@@ -497,7 +512,7 @@ defmodule BaudrateWeb.CommentComponents do
           type="button"
           phx-click="cancel_reply_image_upload"
           phx-value-ref={entry.ref}
-          class="btn btn-sm btn-ghost text-error"
+          class="reply-image-cancel-button btn btn-sm btn-ghost text-error"
           aria-label={gettext("Cancel upload")}
         >
           &times;
@@ -506,7 +521,7 @@ defmodule BaudrateWeb.CommentComponents do
 
       <div
         :for={err <- upload_errors(@uploads.reply_images)}
-        class="text-sm text-error"
+        class="reply-image-error text-sm text-error"
         role="alert"
       >
         {upload_error_to_string(err)}
@@ -517,7 +532,7 @@ defmodule BaudrateWeb.CommentComponents do
       >
         <div
           :for={err <- upload_errors(@uploads.reply_images, entry)}
-          class="text-sm text-error"
+          class="reply-image-error text-sm text-error"
           role="alert"
         >
           {upload_error_to_string(err)}
@@ -549,13 +564,13 @@ defmodule BaudrateWeb.CommentComponents do
       |> assign(:like_count, like_count)
 
     ~H"""
-    <span class="inline-flex items-center gap-1 text-sm text-base-content/70">
+    <span class="comment-like inline-flex items-center gap-1 text-sm text-base-content/70">
       <button
         :if={@current_user && !@is_own}
         type="button"
         phx-click="toggle_comment_like"
         phx-value-id={@comment.id}
-        class="hover:text-error cursor-pointer"
+        class="comment-like-button hover:text-error cursor-pointer"
         aria-label={if @is_liked, do: gettext("Unlike"), else: gettext("Like")}
       >
         <.icon
@@ -564,7 +579,7 @@ defmodule BaudrateWeb.CommentComponents do
         />
       </button>
       <.icon :if={!@current_user || @is_own} name="hero-heart" class="size-4" />
-      <span :if={@like_count > 0}>{@like_count}</span>
+      <span :if={@like_count > 0} class="comment-like-count">{@like_count}</span>
     </span>
     """
   end
@@ -588,13 +603,13 @@ defmodule BaudrateWeb.CommentComponents do
       |> assign(:boost_count, boost_count)
 
     ~H"""
-    <span class="inline-flex items-center gap-1 text-sm text-base-content/70">
+    <span class="comment-boost inline-flex items-center gap-1 text-sm text-base-content/70">
       <button
         :if={@current_user && !@is_own}
         type="button"
         phx-click="toggle_comment_boost"
         phx-value-id={@comment.id}
-        class="hover:text-success cursor-pointer"
+        class="comment-boost-button hover:text-success cursor-pointer"
         aria-label={if @is_boosted, do: gettext("Unboost"), else: gettext("Boost")}
       >
         <.icon
@@ -611,7 +626,7 @@ defmodule BaudrateWeb.CommentComponents do
         name="hero-arrow-path-rounded-square"
         class="size-4"
       />
-      <span :if={@boost_count > 0}>{@boost_count}</span>
+      <span :if={@boost_count > 0} class="comment-boost-count">{@boost_count}</span>
     </span>
     """
   end

@@ -33,22 +33,23 @@ defmodule BaudrateWeb.Layouts do
     ~H"""
     <header
       id="site-header"
-      class="navbar sticky top-0 z-50 bg-base-200 border-b-2 border-base-300 px-4 sm:px-6 lg:px-8"
+      class="layout-header navbar sticky top-0 z-50 bg-base-200 border-b-2 border-base-300 px-4 sm:px-6 lg:px-8"
     >
       <%!-- Mobile hamburger (shown < lg, authenticated users only — guest nav is in bottom dock) --%>
-      <div :if={@current_user} id="mobile-nav-trigger" class="flex-none lg:hidden">
+      <div :if={@current_user} id="mobile-nav-trigger" class="nav-mobile-trigger flex-none lg:hidden">
         <div class="dropdown">
           <button
+            id="nav-mobile-menu-button"
             type="button"
             tabindex="0"
             aria-label={gettext("Open navigation menu")}
             aria-haspopup="true"
             aria-expanded="false"
-            class="btn btn-ghost"
+            class="nav-menu-button btn btn-ghost"
           >
             <.icon name="hero-bars-3" class="size-5" />
           </button>
-          <nav aria-label={gettext("Main menu")}>
+          <nav id="nav-mobile-menu" class="nav-mobile-menu" aria-label={gettext("Main menu")}>
             <ul
               tabindex="0"
               class="menu dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
@@ -62,38 +63,54 @@ defmodule BaudrateWeb.Layouts do
                 <hr />
               </li>
               <li :if={@current_user && @current_user.role.name in ["admin", "moderator"]}>
-                <details>
+                <details id="nav-mobile-admin" class="nav-admin-section">
                   <summary>{gettext("Admin")}</summary>
                   <ul>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/settings">{gettext("Settings")}</.link>
+                      <.link navigate="/admin/settings" class="nav-admin-link">{gettext("Settings")}</.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/pending-users">{gettext("Pending Users")}</.link>
+                      <.link navigate="/admin/pending-users" class="nav-admin-link">
+                        {gettext("Pending Users")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/federation">{gettext("Federation")}</.link>
+                      <.link navigate="/admin/federation" class="nav-admin-link">
+                        {gettext("Federation")}
+                      </.link>
                     </li>
                     <li>
-                      <.link navigate="/admin/moderation">{gettext("Moderation")}</.link>
+                      <.link navigate="/admin/moderation" class="nav-admin-link">
+                        {gettext("Moderation")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/boards">{gettext("Manage Boards")}</.link>
+                      <.link navigate="/admin/boards" class="nav-admin-link">
+                        {gettext("Manage Boards")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/users">{gettext("Manage Users")}</.link>
+                      <.link navigate="/admin/users" class="nav-admin-link">
+                        {gettext("Manage Users")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/moderation-log">{gettext("Moderation Log")}</.link>
+                      <.link navigate="/admin/moderation-log" class="nav-admin-link">
+                        {gettext("Moderation Log")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/invites">{gettext("Invite Codes")}</.link>
+                      <.link navigate="/admin/invites" class="nav-admin-link">
+                        {gettext("Invite Codes")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/login-attempts">{gettext("Login Attempts")}</.link>
+                      <.link navigate="/admin/login-attempts" class="nav-admin-link">
+                        {gettext("Login Attempts")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/bots">{gettext("Manage Bots")}</.link>
+                      <.link navigate="/admin/bots" class="nav-admin-link">{gettext("Manage Bots")}</.link>
                     </li>
                   </ul>
                 </details>
@@ -108,19 +125,19 @@ defmodule BaudrateWeb.Layouts do
                 ({translate_role(@current_user.role.name)})
               </li>
               <li :if={@current_user}>
-                <.link navigate="/profile">{gettext("Profile")}</.link>
+                <.link navigate="/profile" class="nav-user-link">{gettext("Profile")}</.link>
               </li>
               <li :if={@current_user}>
-                <.link navigate="/bookmarks">{gettext("Bookmarks")}</.link>
+                <.link navigate="/bookmarks" class="nav-user-link">{gettext("Bookmarks")}</.link>
               </li>
               <li :if={@current_user}>
-                <.link navigate="/following">{gettext("Following")}</.link>
+                <.link navigate="/following" class="nav-user-link">{gettext("Following")}</.link>
               </li>
               <li :if={@current_user}>
-                <.link navigate="/invites">{gettext("My Invites")}</.link>
+                <.link navigate="/invites" class="nav-user-link">{gettext("My Invites")}</.link>
               </li>
               <li :if={@current_user}>
-                <.link href="/logout" method="delete">{gettext("Sign Out")}</.link>
+                <.link href="/logout" method="delete" class="nav-user-link">{gettext("Sign Out")}</.link>
               </li>
             </ul>
           </nav>
@@ -129,28 +146,30 @@ defmodule BaudrateWeb.Layouts do
 
       <%!-- Logo (hidden on mobile — site name moves into hamburger menu) --%>
       <div class="flex-1 hidden lg:block">
-        <.link navigate="/" class="btn btn-ghost text-xl site-name">
+        <.link navigate="/" id="nav-logo" class="nav-logo btn btn-ghost text-xl site-name">
           {Baudrate.Setup.get_setting("site_name") || "Baudrate"}
         </.link>
       </div>
 
       <%!-- Desktop nav links (shown >= lg) --%>
-      <div :if={@current_user} id="desktop-nav" class="hidden lg:flex flex-none">
-        <nav aria-label={gettext("Main menu")}>
+      <div :if={@current_user} id="desktop-nav" class="nav-desktop hidden lg:flex flex-none">
+        <nav id="nav-desktop-menu" class="nav-desktop-menu" aria-label={gettext("Main menu")}>
           <ul class="menu menu-horizontal px-1 items-center">
             <li>
-              <.link navigate="/" class="btn btn-ghost">{gettext("Home")}</.link>
+              <.link navigate="/" id="nav-home" class="nav-link btn btn-ghost">{gettext("Home")}</.link>
             </li>
             <li>
-              <.link navigate="/feed" class="btn btn-ghost">
+              <.link navigate="/feed" id="nav-feed" class="nav-link btn btn-ghost">
                 {gettext("Feed")}
               </.link>
             </li>
             <li>
-              <.link navigate="/search" class="btn btn-ghost">{gettext("Search")}</.link>
+              <.link navigate="/search" id="nav-search" class="nav-link btn btn-ghost">
+                {gettext("Search")}
+              </.link>
             </li>
             <li>
-              <.link navigate="/messages" class="btn btn-ghost">
+              <.link navigate="/messages" id="nav-messages" class="nav-link btn btn-ghost">
                 {gettext("Messages")}
                 <span
                   :if={assigns[:unread_dm_count] && @unread_dm_count > 0}
@@ -169,7 +188,7 @@ defmodule BaudrateWeb.Layouts do
               </.link>
             </li>
             <li>
-              <.link navigate="/notifications" class="btn btn-ghost">
+              <.link navigate="/notifications" id="nav-notifications" class="nav-link btn btn-ghost">
                 {gettext("Notifications")}
                 <span
                   :if={assigns[:unread_notification_count] && @unread_notification_count > 0}
@@ -192,69 +211,107 @@ defmodule BaudrateWeb.Layouts do
       </div>
 
       <%!-- Right side: theme toggle + auth links / user dropdown --%>
-      <div id="header-controls" class="flex-none flex items-center gap-2 ml-auto">
+      <div
+        id="header-controls"
+        class="layout-header-controls flex-none flex items-center gap-2 ml-auto"
+      >
         <.font_size_controls />
         <.theme_toggle />
         <.share_button />
 
         <%!-- Guest auth links (desktop only — mobile uses hamburger menu) --%>
-        <div :if={!@current_user} id="guest-auth-links" class="hidden lg:flex items-center gap-2">
-          <.link navigate="/search" class="btn btn-ghost btn-sm">{gettext("Search")}</.link>
-          <.link navigate="/login" class="btn btn-ghost btn-sm">{gettext("Sign In")}</.link>
-          <.link navigate="/register" class="btn btn-primary btn-sm">{gettext("Register")}</.link>
+        <div
+          :if={!@current_user}
+          id="guest-auth-links"
+          class="nav-guest-links hidden lg:flex items-center gap-2"
+        >
+          <.link navigate="/search" id="nav-guest-search" class="nav-guest-link btn btn-ghost btn-sm">
+            {gettext("Search")}
+          </.link>
+          <.link navigate="/login" id="nav-guest-login" class="nav-guest-link btn btn-ghost btn-sm">
+            {gettext("Sign In")}
+          </.link>
+          <.link
+            navigate="/register"
+            id="nav-guest-register"
+            class="nav-guest-link btn btn-primary btn-sm"
+          >
+            {gettext("Register")}
+          </.link>
         </div>
 
         <%!-- Desktop user dropdown (shown >= lg) --%>
-        <div :if={@current_user} id="user-menu-dropdown" class="hidden lg:block dropdown dropdown-end">
+        <div
+          :if={@current_user}
+          id="user-menu-dropdown"
+          class="nav-user-dropdown hidden lg:block dropdown dropdown-end"
+        >
           <button
+            id="nav-user-menu-button"
             type="button"
             tabindex="0"
             aria-haspopup="true"
             aria-expanded="false"
-            class="btn btn-ghost gap-2"
+            class="nav-menu-button btn btn-ghost gap-2"
           >
             <.avatar user={@current_user} size={36} />
             <span class="truncate max-w-[10rem]">{display_name(@current_user)}</span>
             <.icon name="hero-chevron-down-micro" class="size-4" />
           </button>
-          <nav aria-label={gettext("User menu")}>
+          <nav id="nav-user-menu" class="nav-user-menu" aria-label={gettext("User menu")}>
             <ul
               tabindex="0"
               class="menu dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
             >
               <li :if={@current_user.role.name in ["admin", "moderator"]}>
-                <details>
+                <details id="nav-admin" class="nav-admin-section">
                   <summary>{gettext("Admin")}</summary>
                   <ul>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/settings">{gettext("Settings")}</.link>
+                      <.link navigate="/admin/settings" class="nav-admin-link">{gettext("Settings")}</.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/pending-users">{gettext("Pending Users")}</.link>
+                      <.link navigate="/admin/pending-users" class="nav-admin-link">
+                        {gettext("Pending Users")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/federation">{gettext("Federation")}</.link>
+                      <.link navigate="/admin/federation" class="nav-admin-link">
+                        {gettext("Federation")}
+                      </.link>
                     </li>
                     <li>
-                      <.link navigate="/admin/moderation">{gettext("Moderation")}</.link>
+                      <.link navigate="/admin/moderation" class="nav-admin-link">
+                        {gettext("Moderation")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/boards">{gettext("Manage Boards")}</.link>
+                      <.link navigate="/admin/boards" class="nav-admin-link">
+                        {gettext("Manage Boards")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/users">{gettext("Manage Users")}</.link>
+                      <.link navigate="/admin/users" class="nav-admin-link">
+                        {gettext("Manage Users")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/moderation-log">{gettext("Moderation Log")}</.link>
+                      <.link navigate="/admin/moderation-log" class="nav-admin-link">
+                        {gettext("Moderation Log")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/invites">{gettext("Invite Codes")}</.link>
+                      <.link navigate="/admin/invites" class="nav-admin-link">
+                        {gettext("Invite Codes")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/login-attempts">{gettext("Login Attempts")}</.link>
+                      <.link navigate="/admin/login-attempts" class="nav-admin-link">
+                        {gettext("Login Attempts")}
+                      </.link>
                     </li>
                     <li :if={@current_user.role.name == "admin"}>
-                      <.link navigate="/admin/bots">{gettext("Manage Bots")}</.link>
+                      <.link navigate="/admin/bots" class="nav-admin-link">{gettext("Manage Bots")}</.link>
                     </li>
                   </ul>
                 </details>
@@ -263,19 +320,19 @@ defmodule BaudrateWeb.Layouts do
                 <hr />
               </li>
               <li>
-                <.link navigate="/profile">{gettext("Profile")}</.link>
+                <.link navigate="/profile" class="nav-user-link">{gettext("Profile")}</.link>
               </li>
               <li>
-                <.link navigate="/bookmarks">{gettext("Bookmarks")}</.link>
+                <.link navigate="/bookmarks" class="nav-user-link">{gettext("Bookmarks")}</.link>
               </li>
               <li>
-                <.link navigate="/following">{gettext("Following")}</.link>
+                <.link navigate="/following" class="nav-user-link">{gettext("Following")}</.link>
               </li>
               <li>
-                <.link navigate="/invites">{gettext("My Invites")}</.link>
+                <.link navigate="/invites" class="nav-user-link">{gettext("My Invites")}</.link>
               </li>
               <li>
-                <.link href="/logout" method="delete">{gettext("Sign Out")}</.link>
+                <.link href="/logout" method="delete" class="nav-user-link">{gettext("Sign Out")}</.link>
               </li>
             </ul>
           </nav>
@@ -286,14 +343,14 @@ defmodule BaudrateWeb.Layouts do
     <main
       id="main-content"
       tabindex="-1"
-      class="flex-1 px-4 pt-6 pb-24 lg:pt-10 lg:pb-20 sm:px-6 lg:px-8 outline-none"
+      class="layout-main flex-1 px-4 pt-6 pb-24 lg:pt-10 lg:pb-20 sm:px-6 lg:px-8 outline-none"
     >
       <div class={["mx-auto space-y-4", if(assigns[:wide_layout], do: "max-w-7xl", else: "max-w-6xl")]}>
         {@inner_content}
       </div>
     </main>
 
-    <footer id="site-footer" class="py-6"></footer>
+    <footer id="site-footer" class="layout-footer py-6"></footer>
 
     <.mobile_bottom_nav
       current_user={@current_user}
@@ -307,7 +364,7 @@ defmodule BaudrateWeb.Layouts do
     <button
       id="scroll-to-top-btn"
       aria-label={gettext("Scroll to top")}
-      class="fixed bottom-20 right-4 lg:bottom-10 lg:right-10 z-40 btn btn-circle btn-primary size-14 shadow-2xl"
+      class="layout-scroll-top fixed bottom-20 right-4 lg:bottom-10 lg:right-10 z-40 btn btn-circle btn-primary size-14 shadow-2xl"
     >
       <.icon name="hero-arrow-up-solid" class="size-6" />
     </button>
@@ -326,7 +383,7 @@ defmodule BaudrateWeb.Layouts do
 
   def flash_group(assigns) do
     ~H"""
-    <div id={@id} aria-live="polite" aria-atomic="true">
+    <div id={@id} class="flash-group" aria-live="polite" aria-atomic="true">
       <.flash kind={:info} flash={@flash} />
       <.flash kind={:error} flash={@flash} />
 
@@ -358,7 +415,7 @@ defmodule BaudrateWeb.Layouts do
   """
   def setup(assigns) do
     ~H"""
-    <main id="main-content" tabindex="-1" class="px-4 py-10 sm:px-6 lg:px-8 outline-none">
+    <main id="main-content" tabindex="-1" class="layout-main px-4 py-10 sm:px-6 lg:px-8 outline-none">
       <div class="mx-auto max-w-2xl space-y-4">
         {@inner_content}
       </div>
@@ -377,12 +434,14 @@ defmodule BaudrateWeb.Layouts do
   def font_size_controls(assigns) do
     ~H"""
     <div
+      id="font-size-controls"
       role="group"
       aria-label={gettext("Font size")}
-      class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full"
+      class="toolbar-font-size card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full"
     >
       <button
-        class="flex p-2 cursor-pointer"
+        id="font-size-decrease"
+        class="toolbar-font-size-button flex p-2 cursor-pointer"
         phx-click={JS.dispatch("phx:font-size-decrease")}
         aria-label={gettext("Decrease font size")}
       >
@@ -390,7 +449,8 @@ defmodule BaudrateWeb.Layouts do
       </button>
 
       <button
-        class="flex p-2 cursor-pointer"
+        id="font-size-increase"
+        class="toolbar-font-size-button flex p-2 cursor-pointer"
         phx-click={JS.dispatch("phx:font-size-increase")}
         aria-label={gettext("Increase font size")}
       >
@@ -415,7 +475,7 @@ defmodule BaudrateWeb.Layouts do
       type="button"
       phx-hook="WebShareHook"
       hidden
-      class="hidden btn btn-ghost btn-circle btn-sm"
+      class="toolbar-share-button hidden btn btn-ghost btn-circle btn-sm"
       aria-label={gettext("Share this page")}
       title={gettext("Share this page")}
     >
@@ -432,14 +492,16 @@ defmodule BaudrateWeb.Layouts do
   def theme_toggle(assigns) do
     ~H"""
     <div
+      id="theme-toggle"
       role="group"
       aria-label={gettext("Theme")}
-      class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full"
+      class="toolbar-theme card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full"
     >
       <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 transition-[left]" />
 
       <button
-        class="flex p-2 cursor-pointer w-1/3"
+        id="theme-toggle-system"
+        class="theme-option flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="system"
         aria-label={gettext("System theme")}
@@ -448,7 +510,8 @@ defmodule BaudrateWeb.Layouts do
       </button>
 
       <button
-        class="flex p-2 cursor-pointer w-1/3"
+        id="theme-toggle-light"
+        class="theme-option flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="light"
         aria-label={gettext("Light theme")}
@@ -457,7 +520,8 @@ defmodule BaudrateWeb.Layouts do
       </button>
 
       <button
-        class="flex p-2 cursor-pointer w-1/3"
+        id="theme-toggle-dark"
+        class="theme-option flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="dark"
         aria-label={gettext("Dark theme")}
@@ -483,33 +547,37 @@ defmodule BaudrateWeb.Layouts do
       <%= if @current_user do %>
         <.link
           navigate="/"
+          id="dock-home"
           aria-label={gettext("Home")}
           aria-current={if active_nav?(@current_path, "/"), do: "page"}
-          class={if active_nav?(@current_path, "/"), do: "dock-active"}
+          class={["dock-link", if(active_nav?(@current_path, "/"), do: "dock-active")]}
         >
           <.icon name="hero-home" class="size-[1.2em]" />
         </.link>
         <.link
           navigate="/feed"
+          id="dock-feed"
           aria-label={gettext("Feed")}
           aria-current={if active_nav?(@current_path, "/feed"), do: "page"}
-          class={if active_nav?(@current_path, "/feed"), do: "dock-active"}
+          class={["dock-link", if(active_nav?(@current_path, "/feed"), do: "dock-active")]}
         >
           <.icon name="hero-rss" class="size-[1.2em]" />
         </.link>
         <.link
           navigate="/search"
+          id="dock-search"
           aria-label={gettext("Search")}
           aria-current={if active_nav?(@current_path, "/search"), do: "page"}
-          class={if active_nav?(@current_path, "/search"), do: "dock-active"}
+          class={["dock-link", if(active_nav?(@current_path, "/search"), do: "dock-active")]}
         >
           <.icon name="hero-magnifying-glass" class="size-[1.2em]" />
         </.link>
         <.link
           navigate="/messages"
+          id="dock-messages"
           aria-label={gettext("Messages")}
           aria-current={if active_nav?(@current_path, "/messages"), do: "page"}
-          class={if active_nav?(@current_path, "/messages"), do: "dock-active"}
+          class={["dock-link", if(active_nav?(@current_path, "/messages"), do: "dock-active")]}
         >
           <span class="indicator">
             <span
@@ -531,9 +599,10 @@ defmodule BaudrateWeb.Layouts do
         </.link>
         <.link
           navigate="/notifications"
+          id="dock-notifications"
           aria-label={gettext("Notifications")}
           aria-current={if active_nav?(@current_path, "/notifications"), do: "page"}
-          class={if active_nav?(@current_path, "/notifications"), do: "dock-active"}
+          class={["dock-link", if(active_nav?(@current_path, "/notifications"), do: "dock-active")]}
         >
           <span class="indicator">
             <span
@@ -556,33 +625,37 @@ defmodule BaudrateWeb.Layouts do
       <% else %>
         <.link
           navigate="/"
+          id="dock-home"
           aria-label={gettext("Home")}
           aria-current={if active_nav?(@current_path, "/"), do: "page"}
-          class={if active_nav?(@current_path, "/"), do: "dock-active"}
+          class={["dock-link", if(active_nav?(@current_path, "/"), do: "dock-active")]}
         >
           <.icon name="hero-home" class="size-[1.2em]" />
         </.link>
         <.link
           navigate="/search"
+          id="dock-search"
           aria-label={gettext("Search")}
           aria-current={if active_nav?(@current_path, "/search"), do: "page"}
-          class={if active_nav?(@current_path, "/search"), do: "dock-active"}
+          class={["dock-link", if(active_nav?(@current_path, "/search"), do: "dock-active")]}
         >
           <.icon name="hero-magnifying-glass" class="size-[1.2em]" />
         </.link>
         <.link
           navigate="/login"
+          id="dock-login"
           aria-label={gettext("Sign In")}
           aria-current={if active_nav?(@current_path, "/login"), do: "page"}
-          class={if active_nav?(@current_path, "/login"), do: "dock-active"}
+          class={["dock-link", if(active_nav?(@current_path, "/login"), do: "dock-active")]}
         >
           <.icon name="hero-arrow-right-on-rectangle" class="size-[1.2em]" />
         </.link>
         <.link
           navigate="/register"
+          id="dock-register"
           aria-label={gettext("Register")}
           aria-current={if active_nav?(@current_path, "/register"), do: "page"}
-          class={if active_nav?(@current_path, "/register"), do: "dock-active"}
+          class={["dock-link", if(active_nav?(@current_path, "/register"), do: "dock-active")]}
         >
           <.icon name="hero-user-plus" class="size-[1.2em]" />
         </.link>

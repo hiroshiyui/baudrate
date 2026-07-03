@@ -108,7 +108,7 @@ defmodule BaudrateWeb.LayoutsTest do
     test "applies dock-active class and aria-current for current page", %{conn: conn} do
       {:ok, _lv, html} = live(conn, "/search")
       # The search link in the bottom nav should have dock-active and aria-current="page"
-      assert html =~ ~r/href="\/search"[^>]*class="dock-active"/
+      assert html =~ ~r/href="\/search"[^>]*class="[^"]*\bdock-active\b/
       assert html =~ ~r/href="\/search"[^>]*aria-current="page"/
     end
 
