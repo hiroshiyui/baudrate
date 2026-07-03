@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.10.2] — 2026-07-03
+
+### Added
+
+- **Semantic `id`/`class` on every meaningful element** — a top-priority
+  accessibility initiative so any element in any page template is precisely
+  locatable (for assistive tooling, automated testing, and styling). All 43 page
+  templates and the shared UI components (`core_components`, `comment_components`,
+  layout chrome) now carry stable, page-prefixed kebab-case semantic `id`/`class`
+  on region containers, interactive controls, loop-rendered list/table/card items,
+  and key content nodes. Loop items derive a dynamic id from their record plus a
+  shared class (e.g. `id={"muted-user-#{id}"} class="muted-user"`). Changes are
+  purely additive — no existing Tailwind utility, `phx-*`, `aria-*`, `:if`/`:for`,
+  or `gettext` binding was altered. The principle and its full convention (naming,
+  id-uniqueness, and the rule that custom stylesheet selectors must hook onto the
+  semantic id/class rather than fragile structural selectors) are documented in
+  `CLAUDE.md` and `doc/development.md`.
+
+### Changed
+
+- **Site name in the navbar and mobile menu renders in Roboto Slab across all
+  themes** — a `.site-name` class pins the brand to Roboto Slab even under themes
+  (e.g. Aqua) that override `--font-sans` to a different stack, matching how the
+  stock daisyUI themes present it.
+
+### Fixed
+
+- **Aqua title bar was gapped from the border on default-padding cards** (e.g. the
+  profile heading) — the full-bleed title bar's `-1rem` margin only matched `p-4`
+  cards; card bodies carrying a title bar are now normalized to `1rem` padding so
+  the bar meets the border flush regardless of the card's utility padding.
+- **Aqua badges looked like clickable buttons** — the glossy gel treatment is now
+  reserved for interactive controls; badges are flattened (no gradient/inset
+  highlight) so they read as status labels.
+- **Badge labels could wrap onto multiple lines** — badges now use
+  `white-space: nowrap`.
+
 ## [1.10.1] — 2026-07-03
 
 ### Fixed
