@@ -279,6 +279,18 @@
   background-image: linear-gradient(to bottom, #6fb2fb, #1f7ae6);
 }
 
+/* Checked knob: a glossy white dot on the blue track, like a real macOS switch.
+   DaisyUI draws the knob as the .toggle :before pseudo-element and colors it with
+   currentColor (the primary color when checked), which otherwise leaves a blue
+   dot on the blue track. Paint it white with a soft lift shadow instead. */
+[data-theme="aquaosx"] .toggle:checked::before {
+  background-color: #ffffff;
+  background-image: linear-gradient(to bottom, #ffffff, #eef2f7);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
 /* Table — hairline grid with a faint gloss header. */
 [data-theme="aquaosx"] .table th {
   background-image: linear-gradient(to bottom, #f6f8fb, #e4e9f1);
