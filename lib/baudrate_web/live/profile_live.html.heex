@@ -607,7 +607,7 @@
                     <input
                       id={"profile-notification-web-push-#{type}"}
                       type="checkbox"
-                      class="profile-notification-web-push-toggle toggle toggle-sm toggle-secondary"
+                      class="profile-notification-web-push-toggle toggle toggle-sm toggle-primary"
                       checked={get_in(@notification_preferences, [type, "web_push"]) != false}
                       phx-click="toggle_web_push_pref"
                       phx-value-type={type}

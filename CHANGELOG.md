@@ -11,6 +11,10 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ### Changed
 
+- **Notification-preference switches now use a consistent color** — the *Push*
+  column toggles in `/profile` were `toggle-secondary` (gray) while the *In-App*
+  column was `toggle-primary` (blue); both now use `toggle-primary` so the two
+  columns read identically across every theme.
 - **Mac OS X (Aqua) theme extracted to a standalone file** — both the `aquaosx`
   DaisyUI palette registration and the `[data-theme="aquaosx"]` glossy-chrome
   overrides moved out of `assets/css/app.css` into `assets/css/themes/aquaosx.css`,
