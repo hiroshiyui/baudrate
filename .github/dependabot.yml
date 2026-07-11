@@ -1,0 +1,114 @@
+# Dependabot configuration for Baudrate.
+# Routine dependency auditing across every ecosystem the project uses:
+# Elixir/Hex (mix), the Rust NIF crates (cargo), and GitHub Actions.
+# The frontend toolchain (esbuild, tailwind, daisyUI) is Hex-managed, so it
+# is covered by the `mix` ecosystem below — there is no npm manifest.
+#
+# Security is the top priority for this public-facing system, so security
+# updates are ungrouped (one PR each, opened as soon as an advisory lands),
+# while routine version bumps are grouped weekly to keep PR noise low.
+version: 2
+updates:
+  # ---- Elixir / Hex (also covers esbuild/tailwind/daisyUI installers) ----
+  - package-ecosystem: mix
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Taipei
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - elixir
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      hex-minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  # ---- Rust NIF crates (each is a standalone crate with its own Cargo.lock) ----
+  - package-ecosystem: cargo
+    directory: "/native/baudrate_sanitizer"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Taipei
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - rust
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      cargo-minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: cargo
+    directory: "/native/baudrate_html_parser"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Taipei
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - rust
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      cargo-minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: cargo
+    directory: "/native/baudrate_feed_parser"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Taipei
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - rust
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      cargo-minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  # ---- GitHub Actions used by CI workflows ----
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Taipei
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      github-actions:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
