@@ -62,6 +62,33 @@ defmodule BaudrateWeb.Plugs.RateLimitTest do
     end
   end
 
+  describe "429 response body" do
+    test "renders a well-formed HTML document", %{conn: conn} do
+      Sandbox.set_fun(fn _bucket, _scale, _limit -> {:deny, 10} end)
+
+      conn = post(conn, "/auth/session", %{"token" => "any"})
+
+      assert conn.status == 429
+      assert ["text/html; charset=utf-8"] = Plug.Conn.get_resp_header(conn, "content-type")
+      assert conn.resp_body =~ "<!DOCTYPE html>"
+      assert conn.resp_body =~ ~s(id="rate-limit-heading")
+      assert conn.resp_body =~ ~s(id="rate-limit-message")
+    end
+
+    test "is translated for the request locale", %{conn: conn} do
+      Sandbox.set_fun(fn _bucket, _scale, _limit -> {:deny, 10} end)
+
+      conn =
+        conn
+        |> Plug.Conn.put_req_header("accept-language", "zh-TW")
+        |> post("/auth/session", %{"token" => "any"})
+
+      assert conn.status == 429
+      assert conn.resp_body =~ "請求過於頻繁"
+      assert conn.resp_body =~ ~s(lang="zh-TW")
+    end
+  end
+
   describe "error path (fail-open)" do
     test "passes through on backend error", %{conn: conn} do
       user = setup_user("user")

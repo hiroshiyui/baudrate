@@ -122,8 +122,10 @@ defmodule BaudrateWeb.Router do
       "x-frame-options" => "DENY"
     }
 
-    plug BaudrateWeb.Plugs.RateLimit, action: :share_target
+    # SetLocale first so a 429 from the rate limiter is rendered in the
+    # visitor's language.
     plug BaudrateWeb.Plugs.SetLocale
+    plug BaudrateWeb.Plugs.RateLimit, action: :share_target
     plug BaudrateWeb.Plugs.EnsureSetup
     plug BaudrateWeb.Plugs.SetTheme
     plug BaudrateWeb.Plugs.RefreshSession
