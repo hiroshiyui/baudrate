@@ -7,6 +7,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.11.0] — 2026-08-03
+
+### Security
+
+- **Forwarding no longer resurrects deleted content** — `forward_article_to_board/3`,
+  `forward_comment_to_board/3`, and `forward_feed_item_to_board/3` now return
+  `{:error, :not_found}` for a source record with a non-nil `deleted_at`. The
+  LiveView handlers resolve the source from a client-supplied ID via a bare
+  `Repo.get/2`, which does not filter soft deletes, so a comment removed by a
+  moderator or a feed item withdrawn by its remote author via `Delete` could
+  previously be republished as a permanent board article — defeating the
+  moderation or withdrawal decision.
+- **Article forwarding is source-board view-gated** — `forward_article_to_board/3`
+  now checks `Interactions.article_visible_to_user?/2` at the context boundary
+  instead of relying on its caller passing a mount-time view-gated article. Local
+  articles default to `visibility: "public"` regardless of the board's
+  `min_role_to_view`, so the visibility check alone did not stop a user from
+  guessing an article ID in a private board and republishing it publicly. This
+  brings the article path in line with the comment path.
+- **Feed-item interactions are reachability-gated** — `feed_items` rows are global
+  (feed membership is a query-time JOIN on `user_follows`), so every entry point
+  that resolves one from a client-supplied ID must verify reachability.
+  `create_feed_item_reply/4` had no check at all and would federate a
+  `Create(Note)` to an arbitrary remote actor's inbox; `can_forward_feed_item?/2`
+  had none either. Both now go through the shared
+  `Federation.feed_item_accessible?/2` predicate.
+- **Hex dependencies updated for 12 advisories** — Phoenix 1.8.9
+  (CVE-2026-56811 channel-join DoS, CVE-2026-56812), Phoenix LiveView 1.2.8
+  (CVE-2026-58228, `<.link>` scheme-validation bypass leading to XSS), Bandit
+  1.12.4 (CVE-2026-65623, quadratic CPU blow-up on fragmented WebSocket frames),
+  Mint 1.9.3 (CVE-2026-58229, CVE-2026-56810, CVE-2026-59246, CVE-2026-59249),
+  hpax 1.0.4 (CVE-2026-58226, HPACK decoding DoS), Plug 1.20.3 (CVE-2026-56814,
+  CVE-2026-56813), Postgrex 0.22.3 (CVE-2026-58225). No `mix.exs` constraint
+  edits were required — every fix version was already reachable.
+- **Ammonia updated to 4.1.4** (RUSTSEC-2026-0213, mutation XSS via SVG `animate`
+  and `set` tags) in both the sanitizer and feed-parser NIFs. The advisory appears
+  unreachable as configured — `federation_tags/0` is a strict allowlist with no
+  `svg`, and `svg`/`math` are in `clean_content_tags/0` — but the closely related
+  RUSTSEC-2025-0071 was a bug in that removal path itself, so the version is not
+  worth leaning on. Ammonia sits on the federation XSS boundary.
+
+### Changed
+
+- **Replying to or forwarding a feed item now requires following its source
+  actor.** Previously any authenticated user could reply to or forward any feed
+  item in the database, including from actors they do not follow. This aligns
+  those two actions with likes and boosts, which were already scoped this way.
+  Admins keep their existing bypass of the follow requirement when forwarding.
+- **The 429 rate-limit response is localized** — the HTML branch of
+  `Plugs.RateLimit` sent a bare English sentence as a naked `text/html` body. It
+  now renders a minimal valid HTML document with a `gettext`-backed title and
+  message, a `lang` attribute from the active locale, and semantic `id`/`class`
+  hooks; translations are HTML-escaped. `SetLocale` moved ahead of `RateLimit` in
+  the `:share_target` pipeline so that route's 429 is localized too. The JSON
+  branch keeps the untranslated `"Too Many Requests"` status phrase for remote AP
+  instances and the push worker.
+- **Tailwind 4.3.3 and daisyUI 5.7.14** (from 4.3.2 / 5.6.10). Verified against
+  the full Wallaby/Selenium browser suite; the custom `light`/`dark`/`aquaosx`
+  themes are intact.
+- Req 0.7.2 (from 0.6.2), image 0.72.0 (from 0.69.0), MDEx 0.13.5, and
+  feedparser-rs 0.5.6. Req 0.7 carries breaking changes upstream (the
+  `run_finch`/`run_plug` steps became the `Req.Finch`/`Req.Plug` adapter modules,
+  `current_request_steps` was removed, GET with a body now converts to POST);
+  Baudrate is unaffected, as `HTTPClient` uses only `Req.get/1`, `Req.post/1`, and
+  `:connect_options` for DNS pinning.
+
+### Fixed
+
+- **Liking or boosting a boosted feed item silently failed.** The internal
+  reachability predicate always matched on `remote_actor_id`, but for an
+  `Announce` that field holds the *original author* while feed membership comes
+  from `boosted_by_actor_id` (the booster). An item that legitimately appeared in
+  a user's feed via a followed booster was rejected as `:not_found` on like and
+  boost. `Federation.feed_item_accessible?/2` now mirrors the membership
+  conditions of `list_feed_items/2` exactly.
+
+### Removed
+
+- Dead `register` entry from the `Plugs.RateLimit` limit table. No route used it —
+  registration and password reset submit over the LiveView channel and check their
+  own buckets in `RegisterLive` / `PasswordResetLive`. The moduledoc now documents
+  that split instead of implying the plug enforces it.
+
 ## [1.10.3] — 2026-07-03
 
 ### Changed
