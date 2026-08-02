@@ -617,6 +617,31 @@ forwarding via the "Allow forwarding" checkbox on the create/edit forms.
 Authors and admins can also remove an article from specific boards via the
 edit form, potentially making it boardless again.
 
+All three forward paths (`Content.forward_article_to_board/3`,
+`forward_comment_to_board/3`, `forward_feed_item_to_board/3`) enforce two
+invariants at the context boundary rather than relying on their callers:
+
+- **Source-board view gate** — the acting user must be able to view the board
+  the source content lives in (`Interactions.article_visible_to_user?/2`).
+  Local content defaults to `visibility: "public"` regardless of the board's
+  `min_role_to_view`, so the visibility check alone would let a user guess an
+  ID in a private board and republish its body publicly.
+- **Soft-delete gate** — a source record with a non-nil `deleted_at` returns
+  `{:error, :not_found}`. The LiveView handlers resolve the source from a
+  client-supplied ID with a bare `Repo.get/2`, which does not filter
+  `deleted_at`, so a removed comment or a withdrawn feed item could otherwise
+  be resurrected as a permanent board article.
+
+For feed items specifically, a third gate applies. `feed_items` rows are
+global — feed membership is a query-time JOIN on `user_follows`, not a
+per-user column — so `Federation.feed_item_accessible?/2` is the single
+reachability predicate shared by every entry point that resolves a feed item
+from a client-supplied ID: like, boost, reply, and forward-to-board. It
+requires an `accepted` follow on the item's **source** actor — the author for
+`Create`, the **booster** for `Announce` (for a boost, `remote_actor_id` is
+the original author, whom the user need not follow) — and rejects
+soft-deleted items. Admins bypass the follow requirement when forwarding.
+
 The `visibility` field on articles, comments, and feed items records the
 ActivityPub visibility derived from `to`/`cc` addressing:
 - `public` — `as:Public` in `to` (default for local content)

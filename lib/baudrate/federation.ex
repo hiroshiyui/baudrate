@@ -208,6 +208,7 @@ defmodule Baudrate.Federation do
   defdelegate get_feed_item_by_ap_id(ap_id), to: Feed
   defdelegate soft_delete_feed_item_by_ap_id(ap_id, remote_actor_id), to: Feed
   defdelegate cleanup_feed_items_for_actor(remote_actor_id), to: Feed
+  defdelegate feed_item_accessible?(user, feed_item), to: Feed
   defdelegate create_feed_item_reply(feed_item, user, body, opts \\ []), to: Feed
   defdelegate list_feed_item_replies(feed_item_id), to: Feed
   defdelegate count_feed_item_replies(feed_item_ids), to: Feed

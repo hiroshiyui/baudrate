@@ -45,6 +45,23 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
     actor
   end
 
+  # Replying to a feed item requires it to be reachable from the user's feed,
+  # i.e. an accepted follow on the source actor.
+  defp follow!(user, actor) do
+    {:ok, follow} =
+      %Baudrate.Federation.UserFollow{}
+      |> Baudrate.Federation.UserFollow.changeset(%{
+        user_id: user.id,
+        remote_actor_id: actor.id,
+        state: "accepted",
+        ap_id: "https://local.example/follows/#{System.unique_integer([:positive])}",
+        accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+      |> Repo.insert()
+
+    follow
+  end
+
   defp create_feed_item(actor) do
     uid = System.unique_integer([:positive])
 
@@ -138,6 +155,7 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
     test "enforces unique ap_id constraint" do
       user = create_user()
       actor = create_remote_actor()
+      follow!(user, actor)
       feed_item = create_feed_item(actor)
 
       ap_id = "https://example.com/replies/unique-#{System.unique_integer([:positive])}"
@@ -170,6 +188,7 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
     test "creates a reply with generated AP ID and HTML body" do
       user = create_user()
       actor = create_remote_actor()
+      follow!(user, actor)
       feed_item = create_feed_item(actor)
 
       {:ok, reply} = Federation.create_feed_item_reply(feed_item, user, "Nice post!")
@@ -185,11 +204,64 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
     test "returns error for empty body" do
       user = create_user()
       actor = create_remote_actor()
+      follow!(user, actor)
       feed_item = create_feed_item(actor)
 
       {:error, changeset} = Federation.create_feed_item_reply(feed_item, user, "")
 
       assert %{body: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "refuses to reply to a feed item the user does not follow" do
+      user = create_user()
+      actor = create_remote_actor()
+      feed_item = create_feed_item(actor)
+
+      assert {:error, :not_found} =
+               Federation.create_feed_item_reply(feed_item, user, "Uninvited reply")
+
+      assert Federation.list_feed_item_replies(feed_item.id) == []
+    end
+
+    test "refuses to reply to a soft-deleted feed item" do
+      user = create_user()
+      actor = create_remote_actor()
+      follow!(user, actor)
+      feed_item = create_feed_item(actor)
+
+      {:ok, deleted} =
+        feed_item
+        |> Ecto.Changeset.change(%{
+          deleted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.update()
+
+      assert {:error, :not_found} =
+               Federation.create_feed_item_reply(deleted, user, "Reply to withdrawn post")
+    end
+
+    test "allows replying to a boost from a followed booster" do
+      user = create_user()
+      author = create_remote_actor()
+      booster = create_remote_actor()
+      follow!(user, booster)
+
+      {:ok, boost_item} =
+        Federation.create_feed_item(%{
+          remote_actor_id: author.id,
+          boosted_by_actor_id: booster.id,
+          activity_type: "Announce",
+          object_type: "Note",
+          ap_id: "https://remote.example/notes/boost-#{System.unique_integer([:positive])}",
+          body: "Boosted content",
+          body_html: "<p>Boosted content</p>",
+          published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      assert {:ok, reply} =
+               Federation.create_feed_item_reply(boost_item, user, "Seen via the booster")
+
+      assert reply.feed_item_id == boost_item.id
     end
   end
 
@@ -197,6 +269,7 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
     test "returns replies ordered by inserted_at ascending" do
       user = create_user()
       actor = create_remote_actor()
+      follow!(user, actor)
       feed_item = create_feed_item(actor)
 
       {:ok, r1} = Federation.create_feed_item_reply(feed_item, user, "First reply")
@@ -223,6 +296,7 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
     test "preloads user with role" do
       user = create_user()
       actor = create_remote_actor()
+      follow!(user, actor)
       feed_item = create_feed_item(actor)
 
       {:ok, _} = Federation.create_feed_item_reply(feed_item, user, "Test reply")
@@ -244,6 +318,7 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
     test "returns correct counts grouped by feed_item_id" do
       user = create_user()
       actor = create_remote_actor()
+      follow!(user, actor)
       fi1 = create_feed_item(actor)
       fi2 = create_feed_item(actor)
 

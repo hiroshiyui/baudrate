@@ -455,6 +455,23 @@ defmodule Baudrate.Federation.PublisherTest do
     actor
   end
 
+  # Replying to a feed item requires it to be reachable from the user's feed,
+  # i.e. an accepted follow on the source actor.
+  defp follow_remote!(user, actor) do
+    {:ok, follow} =
+      %Baudrate.Federation.UserFollow{}
+      |> Baudrate.Federation.UserFollow.changeset(%{
+        user_id: user.id,
+        remote_actor_id: actor.id,
+        state: "accepted",
+        ap_id: "https://local.example/follows/#{System.unique_integer([:positive])}",
+        accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+      |> Repo.insert()
+
+    follow
+  end
+
   defp create_follower(actor_uri, remote_actor) do
     Baudrate.Federation.create_follower(
       actor_uri,
@@ -841,6 +858,7 @@ defmodule Baudrate.Federation.PublisherTest do
     test "builds a Create(Note) activity with inReplyTo pointing to feed item AP ID" do
       user = create_user()
       remote = create_remote_actor()
+      follow_remote!(user, remote)
 
       {:ok, feed_item} =
         Baudrate.Federation.create_feed_item(%{
@@ -882,6 +900,7 @@ defmodule Baudrate.Federation.PublisherTest do
     test "creates delivery jobs for the remote actor inbox" do
       user = create_user()
       remote = create_remote_actor()
+      follow_remote!(user, remote)
 
       {:ok, feed_item} =
         Baudrate.Federation.create_feed_item(%{

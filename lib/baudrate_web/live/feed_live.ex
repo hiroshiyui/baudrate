@@ -607,6 +607,12 @@ defmodule BaudrateWeb.FeedLive do
          |> assign(:uploaded_reply_images, [])
          |> update(:reply_counts, &Map.put(&1, feed_item.id, count))}
 
+      # The context refuses replies to soft-deleted items and to items outside
+      # the user's feed; both surface as `:not_found` so neither confirms the
+      # existence of an item the user cannot reach.
+      {:error, :not_found} ->
+        {:noreply, put_flash(socket, :error, gettext("Feed item not found."))}
+
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to send reply."))}
     end

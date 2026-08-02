@@ -257,9 +257,24 @@ defmodule Baudrate.Federation.Feed do
   `FeedItemReply` record, and enqueues a `Create(Note)` activity for
   delivery to the remote actor's inbox and the replying user's AP followers.
 
-  Returns `{:ok, %FeedItemReply{}}` or `{:error, changeset}`.
+  The feed item must be reachable from the user's feed
+  (`feed_item_accessible?/2`) — consistent with liking and boosting. Callers
+  resolve the item from a client-supplied ID, so replying to a soft-deleted
+  or non-followed item is refused here at the context boundary rather than
+  federating a `Create(Note)` to an unrelated remote inbox.
+
+  Returns `{:ok, %FeedItemReply{}}`, `{:error, :not_found}`, or
+  `{:error, changeset}`.
   """
   def create_feed_item_reply(feed_item, user, body, opts \\ []) do
+    if feed_item_accessible?(user, feed_item) do
+      do_create_feed_item_reply(feed_item, user, body, opts)
+    else
+      {:error, :not_found}
+    end
+  end
+
+  defp do_create_feed_item_reply(feed_item, user, body, opts) do
     ap_id =
       "#{Baudrate.Federation.actor_uri(:user, user.username)}#feed-reply-#{System.unique_integer([:positive])}"
 
@@ -470,16 +485,40 @@ defmodule Baudrate.Federation.Feed do
     end
   end
 
-  # Returns true if the user follows the remote actor who created the feed item.
-  defp feed_item_accessible?(user, feed_item) do
-    Repo.exists?(
-      from(uf in UserFollow,
-        where:
-          uf.user_id == ^user.id and
-            uf.remote_actor_id == ^feed_item.remote_actor_id and
-            uf.state == "accepted"
+  @doc """
+  Returns true if `feed_item` is reachable from `user`'s feed.
+
+  Mirrors the membership conditions of `list_feed_items/2` exactly: the item
+  must not be soft-deleted, and the user must have an `accepted` follow on
+  the item's **source** actor — the author for `Create` activities, or the
+  booster for `Announce` activities (for a boost, `remote_actor_id` is the
+  original author, whom the user need not follow).
+
+  `feed_items` rows are global — feed membership is a query-time join on
+  `user_follows` — so every entry point that resolves a feed item from a
+  client-supplied ID (like, boost, reply, forward-to-board) must call this
+  before acting on it.
+  """
+  @spec feed_item_accessible?(map(), %FeedItem{}) :: boolean()
+  def feed_item_accessible?(_user, %FeedItem{deleted_at: deleted_at}) when not is_nil(deleted_at),
+    do: false
+
+  def feed_item_accessible?(user, %FeedItem{} = feed_item) do
+    source_actor_id =
+      case feed_item.activity_type do
+        "Announce" -> feed_item.boosted_by_actor_id
+        _ -> feed_item.remote_actor_id
+      end
+
+    not is_nil(source_actor_id) and
+      Repo.exists?(
+        from(uf in UserFollow,
+          where:
+            uf.user_id == ^user.id and
+              uf.remote_actor_id == ^source_actor_id and
+              uf.state == @state_accepted
+        )
       )
-    )
   end
 
   # Counts remote feed items, local articles, and comments in a single SQL

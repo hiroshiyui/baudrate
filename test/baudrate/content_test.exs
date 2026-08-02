@@ -33,6 +33,53 @@ defmodule Baudrate.ContentTest do
     |> Repo.insert!()
   end
 
+  defp create_feed_remote_actor do
+    uid = System.unique_integer([:positive])
+
+    %Baudrate.Federation.RemoteActor{}
+    |> Baudrate.Federation.RemoteActor.changeset(%{
+      ap_id: "https://remote.example/users/fi-actor-#{uid}",
+      username: "fi_actor_#{uid}",
+      domain: "remote.example",
+      inbox: "https://remote.example/inbox",
+      public_key_pem:
+        "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0\n-----END PUBLIC KEY-----",
+      actor_type: "Person",
+      fetched_at: DateTime.utc_now()
+    })
+    |> Repo.insert!()
+  end
+
+  # Feed items are only forwardable/repliable when they are reachable from the
+  # acting user's feed — i.e. an accepted follow on the source actor.
+  defp follow_remote_actor!(user, actor) do
+    %Baudrate.Federation.UserFollow{}
+    |> Baudrate.Federation.UserFollow.changeset(%{
+      user_id: user.id,
+      remote_actor_id: actor.id,
+      state: "accepted",
+      ap_id: "https://local.example/follows/#{System.unique_integer([:positive])}",
+      accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.insert!()
+  end
+
+  defp build_feed_item!(actor, visibility) do
+    {:ok, feed_item} =
+      Baudrate.Federation.create_feed_item(%{
+        remote_actor_id: actor.id,
+        activity_type: "Create",
+        object_type: "Note",
+        ap_id: "https://remote.example/notes/#{System.unique_integer([:positive])}",
+        body: "Feed body",
+        body_html: "<p>Feed body</p>",
+        visibility: visibility,
+        published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+
+    feed_item
+  end
+
   # --- Boards ---
 
   describe "list_top_boards/0" do
@@ -2444,6 +2491,51 @@ defmodule Baudrate.ContentTest do
       assert {:error, :cannot_post} =
                Content.forward_article_to_board(article, restricted, author)
     end
+
+    test "refuses to resurrect a soft-deleted article", %{
+      author: author,
+      board: board,
+      article: article
+    } do
+      {:ok, deleted} = Content.soft_delete_article(article)
+
+      assert {:error, :not_found} =
+               Content.forward_article_to_board(deleted, board, author)
+    end
+
+    test "refuses to forward an article out of a board the user cannot view", %{other: other} do
+      author = create_user("user")
+
+      private_board =
+        create_board(%{
+          name: "Private Src",
+          slug: "private-src-#{System.unique_integer([:positive])}",
+          min_role_to_view: "moderator"
+        })
+
+      target =
+        create_board(%{
+          name: "Public Target",
+          slug: "public-target-#{System.unique_integer([:positive])}"
+        })
+
+      # Local articles default to visibility "public" regardless of the board's
+      # `min_role_to_view`, so the visibility check alone would let a user guess
+      # an article ID in a private board and republish it publicly.
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Confidential",
+            body: "secret body",
+            slug: "confidential-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [private_board.id]
+        )
+
+      assert {:error, :unauthorized} =
+               Content.forward_article_to_board(article, target, other)
+    end
   end
 
   # --- Forward Feed Item to Board ---
@@ -2468,6 +2560,8 @@ defmodule Baudrate.ContentTest do
           fetched_at: DateTime.utc_now()
         })
         |> Baudrate.Repo.insert!()
+
+      follow_remote_actor!(user, remote_actor)
 
       {:ok, feed_item} =
         Baudrate.Federation.create_feed_item(%{
@@ -2590,6 +2684,32 @@ defmodule Baudrate.ContentTest do
         })
 
       assert {:ok, _article} = Content.forward_feed_item_to_board(fo_item, board, admin)
+    end
+
+    test "refuses to forward a feed item from an actor the user does not follow", %{
+      board: board,
+      feed_item: feed_item
+    } do
+      stranger = create_user("user")
+
+      assert {:error, :unauthorized} =
+               Content.forward_feed_item_to_board(feed_item, board, stranger)
+    end
+
+    test "refuses to resurrect a soft-deleted feed item", %{
+      user: user,
+      board: board,
+      feed_item: feed_item
+    } do
+      {:ok, deleted} =
+        feed_item
+        |> Ecto.Changeset.change(%{
+          deleted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Baudrate.Repo.update()
+
+      assert {:error, :not_found} =
+               Content.forward_feed_item_to_board(deleted, board, user)
     end
   end
 
@@ -2755,6 +2875,36 @@ defmodule Baudrate.ContentTest do
       # viewable by this user, so forwarding it out must be refused.
       assert {:error, :unauthorized} =
                Content.forward_comment_to_board(comment, board, user)
+    end
+
+    test "refuses to resurrect a soft-deleted comment", %{user: user, board: board} do
+      author = create_user("user")
+
+      article_board =
+        create_board(%{name: "AB del", slug: "ab-del-#{System.unique_integer([:positive])}"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Parent Article",
+            body: "body",
+            slug: "parent-del-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [article_board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          body: "Abusive comment that a moderator removed",
+          article_id: article.id,
+          user_id: author.id
+        })
+
+      {:ok, deleted} = Content.soft_delete_comment(comment)
+
+      assert {:error, :not_found} =
+               Content.forward_comment_to_board(deleted, board, user)
     end
   end
 
@@ -3110,33 +3260,64 @@ defmodule Baudrate.ContentTest do
   # --- can_forward_feed_item?/2 ---
 
   describe "can_forward_feed_item?/2" do
-    test "nil user cannot forward" do
-      refute Content.can_forward_feed_item?(nil, %{visibility: "public"})
+    setup do
+      user = create_user("user")
+      actor = create_feed_remote_actor()
+      follow_remote_actor!(user, actor)
+
+      %{user: user, actor: actor}
     end
 
-    test "admin can forward any feed item" do
+    test "nil user cannot forward", %{actor: actor} do
+      refute Content.can_forward_feed_item?(nil, build_feed_item!(actor, "public"))
+    end
+
+    test "admin can forward any feed item", %{actor: actor} do
       admin = create_user("admin")
-      assert Content.can_forward_feed_item?(admin, %{visibility: "direct"})
+      assert Content.can_forward_feed_item?(admin, build_feed_item!(actor, "direct"))
     end
 
-    test "user can forward public feed item" do
-      user = create_user("user")
-      assert Content.can_forward_feed_item?(user, %{visibility: "public"})
+    test "user can forward public feed item", %{user: user, actor: actor} do
+      assert Content.can_forward_feed_item?(user, build_feed_item!(actor, "public"))
     end
 
-    test "user can forward unlisted feed item" do
-      user = create_user("user")
-      assert Content.can_forward_feed_item?(user, %{visibility: "unlisted"})
+    test "user can forward unlisted feed item", %{user: user, actor: actor} do
+      assert Content.can_forward_feed_item?(user, build_feed_item!(actor, "unlisted"))
     end
 
-    test "user cannot forward followers_only feed item" do
-      user = create_user("user")
-      refute Content.can_forward_feed_item?(user, %{visibility: "followers_only"})
+    test "user cannot forward followers_only feed item", %{user: user, actor: actor} do
+      refute Content.can_forward_feed_item?(user, build_feed_item!(actor, "followers_only"))
     end
 
-    test "user cannot forward direct feed item" do
-      user = create_user("user")
-      refute Content.can_forward_feed_item?(user, %{visibility: "direct"})
+    test "user cannot forward direct feed item", %{user: user, actor: actor} do
+      refute Content.can_forward_feed_item?(user, build_feed_item!(actor, "direct"))
+    end
+
+    test "user cannot forward a public feed item from an actor they do not follow", %{
+      user: user
+    } do
+      stranger = create_feed_remote_actor()
+
+      refute Content.can_forward_feed_item?(user, build_feed_item!(stranger, "public"))
+    end
+
+    test "user can forward a boost from a followed booster", %{user: user, actor: booster} do
+      author = create_feed_remote_actor()
+
+      {:ok, boost_item} =
+        Baudrate.Federation.create_feed_item(%{
+          remote_actor_id: author.id,
+          boosted_by_actor_id: booster.id,
+          activity_type: "Announce",
+          object_type: "Note",
+          ap_id: "https://remote.example/notes/bst-#{System.unique_integer([:positive])}",
+          body: "Boosted",
+          body_html: "<p>Boosted</p>",
+          visibility: "public",
+          published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      assert Content.can_forward_feed_item?(user, boost_item)
     end
   end
 

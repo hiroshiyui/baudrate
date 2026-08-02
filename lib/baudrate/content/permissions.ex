@@ -230,14 +230,18 @@ defmodule Baudrate.Content.Permissions do
   @doc """
   Returns true if the user can forward a feed item to a board.
 
-  Admins can always forward. Other authenticated users can forward
-  feed items with `public` or `unlisted` visibility.
+  Admins can always forward. Other authenticated users can forward feed items
+  with `public` or `unlisted` visibility that are reachable from their own
+  feed (`Federation.feed_item_accessible?/2`) — `feed_items` rows are global,
+  so without the reachability check any user could forward an item belonging
+  to an actor they do not follow.
   """
   def can_forward_feed_item?(nil, _feed_item), do: false
   def can_forward_feed_item?(%{role: %{name: "admin"}}, _feed_item), do: true
 
-  def can_forward_feed_item?(_user, feed_item) do
-    feed_item.visibility in ["public", "unlisted"]
+  def can_forward_feed_item?(user, feed_item) do
+    feed_item.visibility in ["public", "unlisted"] and
+      Baudrate.Federation.feed_item_accessible?(user, feed_item)
   end
 
   @doc """

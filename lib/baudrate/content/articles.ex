@@ -301,6 +301,7 @@ defmodule Baudrate.Content.Articles do
   visibility.
 
   Returns `{:ok, article}` (silently) if the article is already in the target board,
+  `{:error, :not_found}` if the article is soft-deleted,
   `{:error, :unauthorized}` if the user cannot forward the article,
   and `{:error, :cannot_post}` if the user cannot post in the target board.
   """
@@ -308,9 +309,21 @@ defmodule Baudrate.Content.Articles do
     article = Permissions.ensure_boards_loaded(article)
 
     cond do
+      # A soft-deleted article must not be resurrected into another board.
+      not is_nil(article.deleted_at) ->
+        {:error, :not_found}
+
       # Already in target board -> silently succeed
       Enum.any?(article.boards, &(&1.id == board.id)) ->
         {:ok, article}
+
+      # Source-board view gate: the acting user must be able to see the board
+      # the article lives in before they can republish it elsewhere. Mirrors
+      # `forward_comment_to_board/3` — `article.visibility` alone does not
+      # capture board-level restrictions (local articles default to "public"
+      # regardless of the board's `min_role_to_view`).
+      not Interactions.article_visible_to_user?(article.id, user.id) ->
+        {:error, :unauthorized}
 
       # Permission check (covers forwardable flag + visibility)
       not Permissions.can_forward_article?(user, article) ->
@@ -351,7 +364,8 @@ defmodule Baudrate.Content.Articles do
   have posting permission in the target board and the feed item to have
   `public` or `unlisted` visibility (or user is admin).
 
-  Returns `{:ok, article}` on success, or `{:error, reason}`.
+  Returns `{:ok, article}` on success, `{:error, :not_found}` if the feed
+  item is soft-deleted, or `{:error, reason}`.
   """
   def forward_feed_item_to_board(
         %Baudrate.Federation.FeedItem{} = feed_item,
@@ -361,6 +375,11 @@ defmodule Baudrate.Content.Articles do
     alias Baudrate.Content.TitleDeriver
 
     cond do
+      # A soft-deleted feed item (e.g. withdrawn by its remote author via
+      # `Delete`) must not be resurrected as a board article.
+      not is_nil(feed_item.deleted_at) ->
+        {:error, :not_found}
+
       not Permissions.can_forward_feed_item?(user, feed_item) ->
         {:error, :unauthorized}
 
@@ -431,7 +450,8 @@ defmodule Baudrate.Content.Articles do
   comment body becomes the article body and the title is derived from
   the first line.
 
-  Returns `{:ok, article}` on success, or `{:error, reason}`.
+  Returns `{:ok, article}` on success, `{:error, :not_found}` if the comment
+  is soft-deleted, or `{:error, reason}`.
   """
   def forward_comment_to_board(%Comment{} = comment, %Board{} = board, user) do
     alias Baudrate.Content.TitleDeriver
@@ -439,6 +459,12 @@ defmodule Baudrate.Content.Articles do
     comment = Repo.preload(comment, [:user, :remote_actor])
 
     cond do
+      # A soft-deleted comment must not be resurrected as a board article.
+      # Callers fetch the comment by a client-supplied ID, so the moderation
+      # decision has to be enforced here at the context boundary.
+      not is_nil(comment.deleted_at) ->
+        {:error, :not_found}
+
       # Source-board view gate: the acting user must be able to see the board the
       # comment lives in before they can materialize it elsewhere. Without this, a
       # user could guess a comment ID in a private board they cannot view and
