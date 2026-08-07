@@ -24,7 +24,13 @@ defmodule BaudrateWeb.Plugs.RealIpTest do
 
   describe "call/2 with x-forwarded-for header" do
     setup do
-      Application.put_env(:baudrate, RealIp, header: "x-forwarded-for")
+      # These tests use a peer of 10.0.0.1, so the proxy has to be trusted
+      # explicitly — the default allow-list is loopback only.
+      Application.put_env(:baudrate, RealIp,
+        header: "x-forwarded-for",
+        trusted_proxies: ["10.0.0.0/8"]
+      )
+
       on_exit(fn -> Application.delete_env(:baudrate, RealIp) end)
     end
 
@@ -207,6 +213,70 @@ defmodule BaudrateWeb.Plugs.RealIpTest do
       socket = fake_socket(%{})
 
       assert BaudrateWeb.Helpers.extract_peer_ip(socket) == "unknown"
+    end
+
+    test "does not honor x-forwarded-for from an untrusted peer" do
+      # The LiveView path must reach the same verdict as the plug path.
+      Application.put_env(:baudrate, RealIp, header: "x-forwarded-for")
+
+      socket =
+        fake_socket(%{
+          peer_data: %{address: {203, 0, 113, 9}},
+          x_headers: [{"x-forwarded-for", "1.2.3.4"}]
+        })
+
+      assert BaudrateWeb.Helpers.extract_peer_ip(socket) == "203.0.113.9"
+    end
+  end
+
+  describe "fail-closed default" do
+    setup do
+      on_exit(fn -> Application.delete_env(:baudrate, RealIp) end)
+    end
+
+    test "an unconfigured allow-list does not trust an arbitrary peer" do
+      # Regression test: this used to be a trust-everything branch, letting any
+      # client spoof its IP and defeat every per-IP rate limit.
+      Application.put_env(:baudrate, RealIp, header: "x-forwarded-for")
+
+      conn =
+        conn_with_ip({203, 0, 113, 9})
+        |> put_header("x-forwarded-for", "1.2.3.4")
+
+      result = RealIp.call(conn, RealIp.init([]))
+      assert result.remote_ip == {203, 0, 113, 9}
+    end
+
+    test "an unconfigured allow-list still honors a loopback peer" do
+      Application.put_env(:baudrate, RealIp, header: "x-forwarded-for")
+
+      conn =
+        conn_with_ip({127, 0, 0, 1})
+        |> put_header("x-forwarded-for", "1.2.3.4")
+
+      result = RealIp.call(conn, RealIp.init([]))
+      assert result.remote_ip == {1, 2, 3, 4}
+    end
+
+    test "an empty trusted_proxies list trusts nobody" do
+      # `trusted_proxies: []` means what it says; it used to mean the opposite.
+      Application.put_env(:baudrate, RealIp, header: "x-forwarded-for", trusted_proxies: [])
+
+      conn =
+        conn_with_ip({127, 0, 0, 1})
+        |> put_header("x-forwarded-for", "1.2.3.4")
+
+      result = RealIp.call(conn, RealIp.init([]))
+      assert result.remote_ip == {127, 0, 0, 1}
+    end
+
+    test "peer_trusted?/1 defaults to loopback only" do
+      Application.delete_env(:baudrate, RealIp)
+
+      assert RealIp.peer_trusted?({127, 0, 0, 1})
+      assert RealIp.peer_trusted?({0, 0, 0, 0, 0, 0, 0, 1})
+      refute RealIp.peer_trusted?({10, 0, 0, 1})
+      refute RealIp.peer_trusted?({203, 0, 113, 9})
     end
   end
 end
