@@ -135,8 +135,9 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
     } do
       create_accepted_follow(user, actor)
 
-      # Create a local article
-      board = create_board()
+      # The board must be AP-enabled: inbound replies are gated on the article
+      # participating in federation, the same way Like/Announce are.
+      board = create_board(%{ap_enabled: true})
 
       {:ok, multi} =
         Baudrate.Content.create_article(

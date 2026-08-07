@@ -13,7 +13,15 @@ defmodule Baudrate.Federation.ActorResolver do
 
   alias Baudrate.Repo
   alias Baudrate.Federation
-  alias Baudrate.Federation.{HTTPClient, KeyStore, RemoteActor, Sanitizer, Validator}
+
+  alias Baudrate.Federation.{
+    HTTPClient,
+    HTTPSignature,
+    KeyStore,
+    RemoteActor,
+    Sanitizer,
+    Validator
+  }
 
   @doc """
   Resolves a remote actor by their AP ID.
@@ -182,8 +190,19 @@ defmodule Baudrate.Federation.ActorResolver do
   defp extract_also_known_as(%{"alsoKnownAs" => aka}) when is_binary(aka), do: [aka]
   defp extract_also_known_as(_), do: []
 
+  # Reject a weak or non-RSA key before the actor is cached, so the row never
+  # exists rather than failing every later signature verification. The same
+  # check runs again at verification time to cover rows cached before this
+  # existed.
   defp extract_public_key(%{"publicKey" => %{"publicKeyPem" => pem}}) when is_binary(pem) do
-    {:ok, pem}
+    case HTTPSignature.validate_public_key_pem(pem) do
+      :ok ->
+        {:ok, pem}
+
+      {:error, reason} = error ->
+        Logger.warning("federation.actor_key_rejected: reason=#{inspect(reason)}")
+        error
+    end
   end
 
   defp extract_public_key(_), do: {:error, :missing_public_key}

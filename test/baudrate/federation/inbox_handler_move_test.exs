@@ -2,7 +2,7 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
   use Baudrate.DataCase, async: false
 
   alias Baudrate.Federation
-  alias Baudrate.Federation.{HTTPClient, InboxHandler, RemoteActor}
+  alias Baudrate.Federation.{HTTPClient, InboxHandler, KeyStore, RemoteActor}
   alias Baudrate.Repo
 
   setup do
@@ -37,13 +37,16 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
 
   defp create_remote_actor(attrs \\ %{}) do
     uid = System.unique_integer([:positive])
+    {public_pem, _private_pem} = KeyStore.generate_keypair()
 
     default = %{
       ap_id: "https://remote.example/users/actor-#{uid}",
       username: "actor_#{uid}",
       domain: "remote.example",
       display_name: "Remote Actor #{uid}",
-      public_key_pem: "-----BEGIN PUBLIC KEY-----\nfake\n-----END PUBLIC KEY-----",
+      # A real 2048-bit key: `Move` re-fetches the target actor, and
+      # `ActorResolver` now refuses to cache a key it cannot decode.
+      public_key_pem: public_pem,
       inbox: "https://remote.example/users/actor-#{uid}/inbox",
       actor_type: "Person",
       fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)

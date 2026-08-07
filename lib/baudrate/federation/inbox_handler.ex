@@ -54,6 +54,11 @@ defmodule Baudrate.Federation.InboxHandler do
 
   alias Baudrate.Messaging
 
+  # Reply-chain walking is rate limited (see `walk_remote_reply_chain/2`). The
+  # context → `BaudrateWeb.RateLimits` direction follows the existing precedent
+  # in `Baudrate.Content.LinkPreview.Fetcher`.
+  alias BaudrateWeb.RateLimits
+
   @doc """
   Handles an incoming activity from a verified remote actor.
   Returns `:ok` or `{:error, reason}`.
@@ -669,39 +674,53 @@ defmodule Baudrate.Federation.InboxHandler do
     with :ok <- validate_attribution_match(object, remote_actor),
          {:ok, ap_id} <- Validator.validate_object_id(object),
          {:ok, body, body_html} <- sanitize_content(object),
-         {:ok, article, parent_id} <- resolve_reply_target(object) do
-      # Idempotency: if comment with this ap_id already exists, return :ok
-      if Content.get_comment_by_ap_id(ap_id) do
-        :ok
-      else
-        url = extract_url(object)
-        visibility = Visibility.from_addressing(object)
-        body_html = append_attachment_images(body_html, object)
+         {:ok, article, parent_id} <- resolve_reply_target(object, remote_actor) do
+      cond do
+        # Same gate as Like / Announce: an article that does not participate in
+        # federation must not accept inbound replies either. Without this a
+        # remote actor could guess a slug and inject content (and a
+        # notification) into an article that lives only in a private or
+        # non-AP-enabled board.
+        not article_federated?(article) ->
+          Logger.info(
+            "federation.activity: type=Create(Note) rejected non_federated_article ap_id=#{ap_id}"
+          )
 
-        case Content.create_remote_comment(%{
-               body: body,
-               body_html: body_html,
-               ap_id: ap_id,
-               url: url,
-               article_id: article.id,
-               parent_id: parent_id,
-               remote_actor_id: remote_actor.id,
-               visibility: visibility
-             }) do
-          {:ok, _comment} ->
-            Logger.info("federation.activity: type=Create(Note) ap_id=#{ap_id}")
+          :ok
 
-            Baudrate.Notification.Hooks.notify_remote_comment_created(
-              article.id,
-              parent_id,
-              remote_actor.id
-            )
+        # Idempotency: if comment with this ap_id already exists, return :ok
+        Content.get_comment_by_ap_id(ap_id) ->
+          :ok
 
-            :ok
+        true ->
+          url = extract_url(object)
+          visibility = Visibility.from_addressing(object)
+          body_html = append_attachment_images(body_html, object)
 
-          {:error, %Ecto.Changeset{} = changeset} ->
-            if has_unique_error?(changeset), do: :ok, else: {:error, :create_comment_failed}
-        end
+          case Content.create_remote_comment(%{
+                 body: body,
+                 body_html: body_html,
+                 ap_id: ap_id,
+                 url: url,
+                 article_id: article.id,
+                 parent_id: parent_id,
+                 remote_actor_id: remote_actor.id,
+                 visibility: visibility
+               }) do
+            {:ok, _comment} ->
+              Logger.info("federation.activity: type=Create(Note) ap_id=#{ap_id}")
+
+              Baudrate.Notification.Hooks.notify_remote_comment_created(
+                article.id,
+                parent_id,
+                remote_actor.id
+              )
+
+              :ok
+
+            {:error, %Ecto.Changeset{} = changeset} ->
+              if has_unique_error?(changeset), do: :ok, else: {:error, :create_comment_failed}
+          end
       end
     end
   end
@@ -1211,7 +1230,8 @@ defmodule Baudrate.Federation.InboxHandler do
 
   # --- Reply/target resolution helpers ---
 
-  defp resolve_reply_target(%{"inReplyTo" => in_reply_to}) when is_binary(in_reply_to) do
+  defp resolve_reply_target(%{"inReplyTo" => in_reply_to}, remote_actor)
+       when is_binary(in_reply_to) do
     case resolve_in_reply_to_locally(in_reply_to) do
       {:ok, _article, _parent_id} = ok ->
         ok
@@ -1220,11 +1240,11 @@ defmodule Baudrate.Federation.InboxHandler do
         # The inReplyTo points to a remote object we don't have locally.
         # Walk up the reply chain by fetching remote objects to find a
         # known ancestor (e.g. a stored article or comment).
-        walk_remote_reply_chain(in_reply_to)
+        walk_remote_reply_chain(in_reply_to, remote_actor.domain)
     end
   end
 
-  defp resolve_reply_target(_), do: {:error, :missing_in_reply_to}
+  defp resolve_reply_target(_, _), do: {:error, :missing_in_reply_to}
 
   # Tries to resolve an inReplyTo URI against local data only.
   defp resolve_in_reply_to_locally(uri) do
@@ -1248,39 +1268,90 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
-  @reply_chain_max_depth 10
+  @reply_chain_max_depth 5
+  @reply_chain_max_hosts 3
 
-  # Fetches remote objects following inReplyTo links up the chain until we
-  # find an ancestor that maps to a known local article or comment.
-  defp walk_remote_reply_chain(uri, depth \\ 0)
+  # Fetches remote objects following inReplyTo links up the chain until we find
+  # an ancestor that maps to a known local article or comment.
+  #
+  # Every hop is an outbound request driven entirely by attacker-supplied data
+  # (a fabricated `inReplyTo`), so the walk is bounded four ways: depth, the
+  # number of distinct hosts it may touch, a visited-URI set (a self-referential
+  # chain would otherwise burn the full depth), and two rate limits — one keyed
+  # on the *target* host, so a swarm of hostile domains cannot combine to
+  # amplify against one victim, and one on the sending domain.
+  #
+  # Deliberately no negative cache: it would need a fifth cache process and buys
+  # little once the rate limiter bounds the flow.
+  defp walk_remote_reply_chain(uri, sender_domain) do
+    case RateLimits.check_reply_chain_domain(sender_domain) do
+      :ok ->
+        do_walk_reply_chain(uri, sender_domain, %{
+          depth: 0,
+          hosts: MapSet.new(),
+          seen: MapSet.new()
+        })
 
-  defp walk_remote_reply_chain(_uri, depth) when depth >= @reply_chain_max_depth do
+      {:error, :rate_limited} ->
+        {:error, :article_not_found}
+    end
+  end
+
+  defp do_walk_reply_chain(_uri, _sender_domain, %{depth: depth})
+       when depth >= @reply_chain_max_depth do
     {:error, :article_not_found}
   end
 
-  defp walk_remote_reply_chain(uri, depth) do
+  defp do_walk_reply_chain(uri, sender_domain, state) do
     alias Baudrate.Federation.{HTTPClient, Validator}
 
-    if Validator.local_actor?(uri) do
-      # Already checked locally — give up to avoid infinite loops
-      {:error, :article_not_found}
-    else
-      with {:ok, %{body: body}} when is_binary(body) <-
-             HTTPClient.get(uri, headers: [{"accept", "application/activity+json"}]),
-           {:ok, %{"inReplyTo" => parent_uri}} when is_binary(parent_uri) <-
-             Jason.decode(body) do
-        case resolve_in_reply_to_locally(parent_uri) do
-          {:ok, article, _parent_id} ->
-            # Found a known ancestor — the reply is to this article (no
-            # parent_id since the intermediate comments aren't stored)
-            {:ok, article, nil}
+    host = URI.parse(uri).host
+    hosts = MapSet.put(state.hosts, host)
 
-          {:error, _} ->
-            walk_remote_reply_chain(parent_uri, depth + 1)
+    cond do
+      Validator.local_actor?(uri) ->
+        # Already checked locally — give up to avoid infinite loops
+        {:error, :article_not_found}
+
+      MapSet.member?(state.seen, uri) ->
+        {:error, :article_not_found}
+
+      is_nil(host) ->
+        {:error, :article_not_found}
+
+      MapSet.size(hosts) > @reply_chain_max_hosts ->
+        Logger.info("federation.reply_chain_host_limit: sender=#{sender_domain}")
+        {:error, :article_not_found}
+
+      RateLimits.check_reply_chain_fetch(host) != :ok ->
+        Logger.info("federation.reply_chain_rate_limited: host=#{host} sender=#{sender_domain}")
+
+        {:error, :article_not_found}
+
+      true ->
+        state = %{
+          state
+          | depth: state.depth + 1,
+            hosts: hosts,
+            seen: MapSet.put(state.seen, uri)
+        }
+
+        with {:ok, %{body: body}} when is_binary(body) <-
+               HTTPClient.get(uri, headers: [{"accept", "application/activity+json"}]),
+             {:ok, %{"inReplyTo" => parent_uri}} when is_binary(parent_uri) <-
+               Jason.decode(body) do
+          case resolve_in_reply_to_locally(parent_uri) do
+            {:ok, article, _parent_id} ->
+              # Found a known ancestor — the reply is to this article (no
+              # parent_id since the intermediate comments aren't stored)
+              {:ok, article, nil}
+
+            {:error, _} ->
+              do_walk_reply_chain(parent_uri, sender_domain, state)
+          end
+        else
+          _ -> {:error, :article_not_found}
         end
-      else
-        _ -> {:error, :article_not_found}
-      end
     end
   end
 
@@ -1781,44 +1852,71 @@ defmodule Baudrate.Federation.InboxHandler do
   defp maybe_handle_poll_vote(%{"name" => name, "inReplyTo" => in_reply_to}, remote_actor)
        when is_binary(name) and is_binary(in_reply_to) do
     case resolve_local_article_by_ap_or_uri(in_reply_to) do
-      %{id: article_id} ->
-        case Content.get_poll_for_article(article_id) do
-          nil ->
-            :not_a_vote
-
-          poll ->
-            option = Enum.find(poll.options, &(&1.text == name))
-
-            if option do
-              case Content.create_remote_poll_vote(%{
-                     poll_id: poll.id,
-                     poll_option_id: option.id,
-                     remote_actor_id: remote_actor.id
-                   }) do
-                {:ok, _vote} ->
-                  # Recalc counts
-                  Content.recalc_poll_counts(poll.id)
-
-                  Logger.info(
-                    "federation.activity: type=Create(Note/PollVote) actor=#{remote_actor.ap_id}"
-                  )
-
-                  :ok
-
-                {:error, %Ecto.Changeset{} = changeset} ->
-                  if has_unique_error?(changeset), do: :ok, else: :not_a_vote
-              end
-            else
-              :not_a_vote
-            end
-        end
-
-      nil ->
-        :not_a_vote
+      %{} = article -> handle_poll_vote_for_article(article, name, remote_actor)
+      nil -> :not_a_vote
     end
   end
 
   defp maybe_handle_poll_vote(_object, _remote_actor), do: :not_a_vote
+
+  # Returns `:not_a_vote` only when the Note genuinely is not a poll vote (no
+  # poll on the target, or no option matching `name`), so such Notes can still
+  # be handled as comments or DMs. A Note that *is* a vote but must be refused
+  # returns `:ok` — dropping it silently rather than letting it fall through to
+  # the DM/comment path.
+  defp handle_poll_vote_for_article(article, name, remote_actor) do
+    case Content.get_poll_for_article(article.id) do
+      nil ->
+        :not_a_vote
+
+      poll ->
+        option = Enum.find(poll.options, &(&1.text == name))
+
+        cond do
+          is_nil(option) ->
+            :not_a_vote
+
+          # Same federation gate as Like / Announce / reply: a poll on an
+          # article that does not participate in federation must not accept
+          # remote votes.
+          not article_federated?(article) ->
+            Logger.info(
+              "federation.activity: type=Create(Note/PollVote) rejected non_federated_article"
+            )
+
+            :ok
+
+          # A closed poll's result must not be mutable after the fact. The local
+          # vote path already refuses (`Content.cast_vote/3`); the federated
+          # path must match, otherwise any remote actor can move the numbers on
+          # a finished poll.
+          Baudrate.Content.Poll.closed?(poll) ->
+            Logger.info("federation.activity: type=Create(Note/PollVote) rejected poll_closed")
+
+            :ok
+
+          true ->
+            case Content.create_remote_poll_vote(%{
+                   poll_id: poll.id,
+                   poll_option_id: option.id,
+                   remote_actor_id: remote_actor.id
+                 }) do
+              {:ok, _vote} ->
+                # Recalc counts
+                Content.recalc_poll_counts(poll.id)
+
+                Logger.info(
+                  "federation.activity: type=Create(Note/PollVote) actor=#{remote_actor.ap_id}"
+                )
+
+                :ok
+
+              {:error, %Ecto.Changeset{} = changeset} ->
+                if has_unique_error?(changeset), do: :ok, else: :not_a_vote
+            end
+        end
+    end
+  end
 
   # Extracts the human-readable URL from an AP object.
   # The `url` field can be a string or a list of link objects; we pick the
@@ -1852,11 +1950,21 @@ defmodule Baudrate.Federation.InboxHandler do
         body_html
 
       attachments ->
+        urls =
+          attachments
+          |> Enum.filter(fn att -> https_url?(att["url"]) end)
+          |> Enum.map(& &1["url"])
+
+        # Cache them now so the first viewer does not pay the fetch latency.
+        Baudrate.Media.Warmer.warm_urls(urls)
+
         img_tags =
           attachments
           |> Enum.filter(fn att -> https_url?(att["url"]) end)
           |> Enum.map_join("", fn att ->
-            url = att["url"]
+            # Emit the proxied path, never the remote URL: rendering an
+            # attachment must not disclose the viewer's IP to the origin host.
+            url = Baudrate.Media.Proxy.url(att["url"])
             alt = Baudrate.Sanitizer.Native.strip_tags(att["name"] || "")
 
             ~s(<p><img src="#{escape_attr(url)}" alt="#{escape_attr(alt)}" loading="lazy" /></p>)

@@ -156,6 +156,93 @@ defmodule Baudrate.Federation.InboxHandlerPollTest do
       opt1 = Enum.find(updated_poll.options, &(&1.text == "Option 1"))
       assert opt1.votes_count == 1
     end
+
+    test "ignores a vote on a closed poll" do
+      # `Content.cast_vote/3` refuses local votes after `closes_at`; the
+      # federated path must match, otherwise a remote actor can still move the
+      # numbers on a finished poll.
+      %{article: article, poll: poll, remote_actor: remote_actor, user: user} =
+        vote_fixture()
+
+      from(p in Content.Poll, where: p.id == ^poll.id)
+      |> Repo.update_all(
+        set: [closes_at: DateTime.utc_now() |> DateTime.add(-60) |> DateTime.truncate(:second)]
+      )
+
+      activity = vote_activity(remote_actor, user, article, "Option 1")
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      updated_poll = Content.get_poll_for_article(article.id)
+      assert updated_poll.voters_count == 0
+    end
+
+    test "ignores a vote on a poll in a private board" do
+      %{article: article, remote_actor: remote_actor, user: user} =
+        vote_fixture(min_role_to_view: "user")
+
+      activity = vote_activity(remote_actor, user, article, "Option 1")
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      updated_poll = Content.get_poll_for_article(article.id)
+      assert updated_poll.voters_count == 0
+    end
+  end
+
+  defp vote_fixture(board_attrs \\ []) do
+    user = create_user()
+
+    board =
+      %Board{}
+      |> Board.changeset(
+        Enum.into(board_attrs, %{
+          name: "Vote Gate Board",
+          slug: "vote-gate-#{System.unique_integer([:positive])}",
+          ap_enabled: true,
+          min_role_to_view: "guest",
+          ap_accept_policy: "open"
+        })
+      )
+      |> Repo.insert!()
+
+    remote_actor = create_remote_actor()
+
+    {:ok, %{article: article, poll: poll}} =
+      Content.create_article(
+        %{
+          title: "Vote Gate",
+          body: "Body",
+          slug: "vote-gate-art-#{System.unique_integer([:positive])}",
+          user_id: user.id
+        },
+        [board.id],
+        poll: %{
+          mode: "single",
+          options: [
+            %{text: "Option 1", position: 0},
+            %{text: "Option 2", position: 1}
+          ]
+        }
+      )
+
+    %{user: user, board: board, remote_actor: remote_actor, article: article, poll: poll}
+  end
+
+  defp vote_activity(remote_actor, user, article, option_text) do
+    %{
+      "type" => "Create",
+      "id" => "#{remote_actor.ap_id}#vote-#{System.unique_integer([:positive])}",
+      "actor" => remote_actor.ap_id,
+      "object" => %{
+        "type" => "Note",
+        "id" => "#{remote_actor.ap_id}#vote-note-#{System.unique_integer([:positive])}",
+        "name" => option_text,
+        "inReplyTo" => Federation.actor_uri(:article, article.slug),
+        "attributedTo" => remote_actor.ap_id,
+        "to" => [Federation.actor_uri(:user, user.username)]
+      }
+    }
   end
 
   describe "Update(Question) — poll count refresh" do

@@ -397,4 +397,36 @@ defmodule Baudrate.Federation.ActorResolverTest do
       assert actor.also_known_as == ["https://old.example/users/aka"]
     end
   end
+
+  describe "public key strength at ingest" do
+    test "refuses to cache an actor advertising a 512-bit key" do
+      rsa = :public_key.generate_key({:rsa, 512, 65_537})
+      {:RSAPrivateKey, :"two-prime", n, e, _, _, _, _, _, _, _} = rsa
+
+      weak_pem =
+        :public_key.pem_encode([
+          :public_key.pem_entry_encode(:SubjectPublicKeyInfo, {:RSAPublicKey, n, e})
+        ])
+
+      actor_json =
+        Jason.encode!(%{
+          "id" => "https://remote.example/users/weak",
+          "type" => "Person",
+          "preferredUsername" => "weak",
+          "inbox" => "https://remote.example/users/weak/inbox",
+          "publicKey" => %{"publicKeyPem" => weak_pem}
+        })
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 200, actor_json)
+      end)
+
+      assert {:error, :public_key_too_weak} =
+               ActorResolver.resolve("https://remote.example/users/weak")
+
+      # The weak key must never reach the cache — otherwise every later
+      # signature verification pays the cost of rejecting it.
+      refute Repo.get_by(RemoteActor, ap_id: "https://remote.example/users/weak")
+    end
+  end
 end

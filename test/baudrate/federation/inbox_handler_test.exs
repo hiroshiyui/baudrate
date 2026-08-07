@@ -556,9 +556,17 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       comments = Content.list_comments_for_article(article)
       comment = hd(comments)
       assert comment.body_html =~ "Check out this image!"
-      assert comment.body_html =~ ~s(src="https://remote.example/media/photo.png")
       assert comment.body_html =~ ~s(alt="A cool photo")
       assert comment.body_html =~ "loading=\"lazy\""
+
+      # The attachment is emitted as a signed local proxy path, never the
+      # remote URL: rendering it must not disclose the viewer's IP to the
+      # origin host.
+      refute comment.body_html =~ "remote.example/media/photo.png"
+      assert [_, sig, encoded] = Regex.run(~r{src="/media/([^/]+)/([^"]+)"}, comment.body_html)
+
+      assert {:ok, "https://remote.example/media/photo.png"} =
+               Baudrate.Media.Proxy.verify(sig, encoded)
     end
 
     test "skips non-HTTPS image attachments in comments" do
@@ -597,6 +605,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       comment = hd(comments)
       assert comment.body_html =~ "HTTP image"
       refute comment.body_html =~ "insecure.example"
+      # Base64 would hide the hostname, so assert on the tag itself.
+      refute comment.body_html =~ "<img"
     end
   end
 
@@ -2383,6 +2393,240 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       }
 
       assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+    end
+  end
+
+  describe "Create(Note) reply-chain bounds" do
+    # Each hop is an outbound request driven purely by an attacker-supplied
+    # `inReplyTo`, so the walk must be bounded independently of what the remote
+    # side returns.
+    setup do
+      {:ok, counter} = Agent.start_link(fn -> 0 end)
+      {:ok, counter: counter}
+    end
+
+    defp stub_infinite_chain(counter, host_for_depth) do
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        n = Agent.get_and_update(counter, &{&1, &1 + 1})
+
+        body =
+          Jason.encode!(%{
+            "id" => "https://#{host_for_depth.(n)}/notes/#{n}",
+            "type" => "Note",
+            "inReplyTo" => "https://#{host_for_depth.(n + 1)}/notes/#{n + 1}"
+          })
+
+        conn
+        |> Plug.Conn.put_resp_content_type("application/activity+json")
+        |> Plug.Conn.send_resp(200, body)
+      end)
+    end
+
+    defp chain_activity(remote_actor, in_reply_to) do
+      %{
+        "id" => "https://remote.example/activities/chain-#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/notes/chain-#{System.unique_integer([:positive])}",
+          "type" => "Note",
+          "content" => "<p>Chained</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "inReplyTo" => in_reply_to
+        }
+      }
+    end
+
+    test "stops after the maximum depth", %{counter: counter} do
+      remote_actor = create_remote_actor()
+      stub_infinite_chain(counter, fn _n -> "evil.example" end)
+
+      activity = chain_activity(remote_actor, "https://evil.example/notes/0")
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Agent.get(counter, & &1) == 5
+    end
+
+    test "aborts once the chain spans more than three hosts", %{counter: counter} do
+      remote_actor = create_remote_actor()
+      hosts = ~w(a.example b.example c.example d.example e.example f.example)
+      stub_infinite_chain(counter, fn n -> Enum.at(hosts, n, "z.example") end)
+
+      activity = chain_activity(remote_actor, "https://a.example/notes/0")
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Agent.get(counter, & &1) == 3
+    end
+
+    test "does not refetch a URI already seen in the same walk", %{counter: counter} do
+      remote_actor = create_remote_actor()
+
+      # a -> b -> a: the cycle must break rather than burn the full depth.
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        Agent.update(counter, &(&1 + 1))
+        target = if String.contains?(conn.request_path, "/a"), do: "b", else: "a"
+
+        body =
+          Jason.encode!(%{
+            "id" => "https://cycle.example#{conn.request_path}",
+            "type" => "Note",
+            "inReplyTo" => "https://cycle.example/#{target}"
+          })
+
+        conn
+        |> Plug.Conn.put_resp_content_type("application/activity+json")
+        |> Plug.Conn.send_resp(200, body)
+      end)
+
+      activity = chain_activity(remote_actor, "https://cycle.example/a")
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Agent.get(counter, & &1) == 2
+    end
+
+    test "makes no outbound request when the target host is rate limited", %{counter: counter} do
+      remote_actor = create_remote_actor()
+      stub_infinite_chain(counter, fn _n -> "evil.example" end)
+
+      BaudrateWeb.RateLimiter.Sandbox.set_fun(fn bucket, _scale, _limit ->
+        if String.starts_with?(bucket, "reply_chain:"),
+          do: {:deny, 0},
+          else: {:allow, 1}
+      end)
+
+      activity = chain_activity(remote_actor, "https://evil.example/notes/0")
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Agent.get(counter, & &1) == 0
+    end
+
+    test "makes no outbound request when the sender domain is rate limited", %{counter: counter} do
+      remote_actor = create_remote_actor()
+      stub_infinite_chain(counter, fn _n -> "evil.example" end)
+
+      BaudrateWeb.RateLimiter.Sandbox.set_fun(fn bucket, _scale, _limit ->
+        if String.starts_with?(bucket, "reply_chain_domain:"),
+          do: {:deny, 0},
+          else: {:allow, 1}
+      end)
+
+      activity = chain_activity(remote_actor, "https://evil.example/notes/0")
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Agent.get(counter, & &1) == 0
+    end
+
+    test "still resolves a short chain ending at a local article", %{counter: counter} do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+      article_uri = Federation.actor_uri(:article, article.slug)
+
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        Agent.update(counter, &(&1 + 1))
+
+        body =
+          Jason.encode!(%{
+            "id" => "https://remote.example/notes/mid",
+            "type" => "Note",
+            "inReplyTo" => article_uri
+          })
+
+        conn
+        |> Plug.Conn.put_resp_content_type("application/activity+json")
+        |> Plug.Conn.send_resp(200, body)
+      end)
+
+      activity = chain_activity(remote_actor, "https://remote.example/notes/mid")
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Agent.get(counter, & &1) == 1
+      assert length(Content.list_comments_for_article(article)) == 1
+    end
+  end
+
+  describe "Create(Note) — federation gate on the reply target" do
+    # Replies must honor the same gate as Like / Announce: an article that does
+    # not participate in federation may not be commented on from the outside.
+    # Otherwise a remote actor can guess a slug and inject content plus a
+    # notification into an article that lives only in a private or non-AP board.
+    defp create_gated_board(attrs) do
+      %Baudrate.Content.Board{}
+      |> Baudrate.Content.Board.changeset(
+        Map.merge(
+          %{
+            name: "Gated Board",
+            slug: "gated-#{System.unique_integer([:positive])}",
+            ap_accept_policy: "open"
+          },
+          attrs
+        )
+      )
+      |> Repo.insert!()
+    end
+
+    defp note_reply_activity(remote_actor, article_uri) do
+      %{
+        "id" => "https://remote.example/activities/gate-#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => remote_actor.ap_id,
+        "object" => %{
+          "id" => "https://remote.example/notes/gate-#{System.unique_integer([:positive])}",
+          "type" => "Note",
+          "content" => "<p>Injected</p>",
+          "attributedTo" => remote_actor.ap_id,
+          "inReplyTo" => article_uri
+        }
+      }
+    end
+
+    test "drops a reply to a local article in a private board" do
+      user = setup_user_with_role("user")
+      board = create_gated_board(%{min_role_to_view: "user"})
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      activity =
+        note_reply_activity(remote_actor, Federation.actor_uri(:article, article.slug))
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Content.list_comments_for_article(article) == []
+    end
+
+    test "drops a reply to a local article in an AP-disabled board" do
+      user = setup_user_with_role("user")
+      board = create_gated_board(%{ap_enabled: false})
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      activity =
+        note_reply_activity(remote_actor, Federation.actor_uri(:article, article.slug))
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert Content.list_comments_for_article(article) == []
+    end
+
+    test "still accepts a reply when the author has remote followers" do
+      # Mirrors the documented Like/Announce exception: user-actor fan-out may
+      # already have published the article, so inbound replies must be honored.
+      user = setup_user_with_role("user")
+      board = create_gated_board(%{ap_enabled: false})
+      article = create_article_for_board(user, board)
+      remote_actor = create_remote_actor()
+
+      {:ok, _follower} =
+        Federation.create_follower(
+          Federation.actor_uri(:user, user.username),
+          remote_actor,
+          "https://remote.example/follows/#{System.unique_integer([:positive])}"
+        )
+
+      activity =
+        note_reply_activity(remote_actor, Federation.actor_uri(:article, article.slug))
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert length(Content.list_comments_for_article(article)) == 1
     end
   end
 end

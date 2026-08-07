@@ -12,6 +12,7 @@ defmodule Baudrate.Federation.HTTPSignature do
     3. Validate `Date` within ±300s
     4. Validate `Digest` matches body SHA-256
     5. Resolve remote actor and verify signature with public key
+    6. Reject RSA keys below 2048 bits, and any non-RSA key
 
   **Signing** (outgoing requests):
     1. Build signing string from required headers
@@ -27,6 +28,10 @@ defmodule Baudrate.Federation.HTTPSignature do
 
   @required_signed_headers ["(request-target)", "host", "date", "digest"]
   @signature_max_age_default 300
+
+  # Minimum accepted RSA modulus for a remote actor's public key. 2048 is what
+  # Mastodon generates and what `KeyStore.generate_keypair/0` produces locally.
+  @min_rsa_modulus_bits 2048
 
   # --- Verification ---
 
@@ -290,21 +295,64 @@ defmodule Baudrate.Federation.HTTPSignature do
     end
   end
 
-  defp decode_public_key(pem) do
-    case :public_key.pem_decode(pem) do
-      [entry | _] ->
-        case :public_key.pem_entry_decode(entry) do
-          {:RSAPublicKey, _, _} = key -> {:ok, key}
-          {:SubjectPublicKeyInfo, _, _} -> {:ok, :public_key.pem_entry_decode(entry)}
-          key -> {:ok, key}
-        end
+  @doc """
+  Validates that a PEM-encoded public key is an RSA key of at least
+  #{@min_rsa_modulus_bits} bits.
 
-      _ ->
-        {:error, :invalid_public_key}
+  Used by `Baudrate.Federation.ActorResolver` at ingest time so a weak key is
+  never cached, and by `decode_public_key/1` at verification time so keys cached
+  before this check existed are rejected too.
+
+  Returns `:ok`, `{:error, :public_key_too_weak}`,
+  `{:error, :unsupported_key_type}`, or `{:error, :invalid_public_key}`.
+  """
+  @spec validate_public_key_pem(String.t() | any()) ::
+          :ok | {:error, :public_key_too_weak | :unsupported_key_type | :invalid_public_key}
+  def validate_public_key_pem(pem) when is_binary(pem) do
+    case decode_public_key(pem) do
+      {:ok, _key} -> :ok
+      {:error, _reason} = error -> error
+    end
+  end
+
+  def validate_public_key_pem(_), do: {:error, :invalid_public_key}
+
+  # A remote instance presenting a short RSA modulus makes its own signatures
+  # forgeable by any third party, which would let that third party impersonate
+  # the actor to this instance. `pem_entry_decode/1` already returns an
+  # `{:RSAPublicKey, n, e}` tuple for the `SubjectPublicKeyInfo` PEM that
+  # Mastodon (and `KeyStore.generate_keypair/0`) publish, so there is no
+  # separate SPKI clause to handle.
+  defp decode_public_key(pem) do
+    with [entry | _] <- :public_key.pem_decode(pem),
+         key <- :public_key.pem_entry_decode(entry),
+         :ok <- check_key_strength(key) do
+      {:ok, key}
+    else
+      {:error, _reason} = error -> error
+      _ -> {:error, :invalid_public_key}
     end
   rescue
     _ -> {:error, :invalid_public_key}
   end
+
+  defp check_key_strength({:RSAPublicKey, modulus, _exponent})
+       when is_integer(modulus) and modulus > 0 do
+    if modulus_bits(modulus) >= @min_rsa_modulus_bits do
+      :ok
+    else
+      {:error, :public_key_too_weak}
+    end
+  end
+
+  # Non-RSA keys (Ed25519, EC) could never have verified anyway —
+  # `verify_signature/3` only does RSA/SHA-256 — so reject them explicitly
+  # rather than letting them through as an opaque "some key".
+  defp check_key_strength(_), do: {:error, :unsupported_key_type}
+
+  # Exact bit length. Avoids the float rounding that `:math.log2/1` would
+  # introduce right at the 2048-bit boundary.
+  defp modulus_bits(modulus), do: modulus |> Integer.to_string(2) |> byte_size()
 
   defp decode_private_key(pem) do
     [entry | _] = :public_key.pem_decode(pem)

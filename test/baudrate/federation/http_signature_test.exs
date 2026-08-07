@@ -458,4 +458,118 @@ defmodule Baudrate.Federation.HTTPSignatureTest do
       refute headers["signature"] =~ ~s[algorithm="rsa-sha256"]
     end
   end
+
+  describe "public key strength" do
+    # A remote instance on a short RSA modulus can have its signatures forged by
+    # any third party, which would let that third party impersonate the actor to
+    # this instance. A cryptographically *valid* signature under a weak key must
+    # therefore still be refused.
+    defp keypair(bits) do
+      rsa = :public_key.generate_key({:rsa, bits, 65_537})
+      {:RSAPrivateKey, :"two-prime", n, e, _, _, _, _, _, _, _} = rsa
+
+      private_pem = :public_key.pem_encode([:public_key.pem_entry_encode(:RSAPrivateKey, rsa)])
+
+      public_pem =
+        :public_key.pem_encode([
+          :public_key.pem_entry_encode(:SubjectPublicKeyInfo, {:RSAPublicKey, n, e})
+        ])
+
+      {public_pem, private_pem}
+    end
+
+    defp insert_actor(public_pem, slug) do
+      ap_id = "https://remote.example/users/#{slug}"
+
+      {:ok, actor} =
+        %RemoteActor{}
+        |> RemoteActor.changeset(%{
+          ap_id: ap_id,
+          username: slug,
+          domain: "remote.example",
+          public_key_pem: public_pem,
+          inbox: "#{ap_id}/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert()
+
+      {actor, ap_id}
+    end
+
+    defp signed_conn(private_pem, ap_id) do
+      body = Jason.encode!(%{"type" => "Follow", "actor" => ap_id})
+
+      headers =
+        HTTPSignature.sign(
+          :post,
+          "https://local.example/ap/inbox",
+          body,
+          private_pem,
+          "#{ap_id}#main-key"
+        )
+
+      Plug.Test.conn(:post, "/ap/inbox", body)
+      |> Map.put(:req_headers, [
+        {"host", "local.example"},
+        {"date", headers["date"]},
+        {"digest", headers["digest"]},
+        {"signature", headers["signature"]},
+        {"content-type", "application/activity+json"}
+      ])
+      |> Plug.Conn.assign(:raw_body, body)
+    end
+
+    test "rejects a cached 512-bit RSA key even when the signature itself is valid" do
+      {public_pem, private_pem} = keypair(512)
+      {_actor, ap_id} = insert_actor(public_pem, "weak-512")
+
+      assert {:error, :public_key_too_weak} =
+               HTTPSignature.verify(signed_conn(private_pem, ap_id))
+    end
+
+    test "rejects a cached 1024-bit RSA key" do
+      {public_pem, private_pem} = keypair(1024)
+      {_actor, ap_id} = insert_actor(public_pem, "weak-1024")
+
+      assert {:error, :public_key_too_weak} =
+               HTTPSignature.verify(signed_conn(private_pem, ap_id))
+    end
+
+    test "accepts a 2048-bit RSA key" do
+      {public_pem, private_pem} = KeyStore.generate_keypair()
+      {actor, ap_id} = insert_actor(public_pem, "strong-2048")
+
+      assert {:ok, verified} = HTTPSignature.verify(signed_conn(private_pem, ap_id))
+      assert verified.id == actor.id
+    end
+
+    test "validate_public_key_pem/1 accepts a 2048-bit key" do
+      {public_pem, _private_pem} = KeyStore.generate_keypair()
+      assert :ok = HTTPSignature.validate_public_key_pem(public_pem)
+    end
+
+    test "validate_public_key_pem/1 rejects a 512-bit key" do
+      {public_pem, _private_pem} = keypair(512)
+      assert {:error, :public_key_too_weak} = HTTPSignature.validate_public_key_pem(public_pem)
+    end
+
+    test "validate_public_key_pem/1 rejects a non-RSA key" do
+      # A fixed Ed25519 SubjectPublicKeyInfo. `verify_signature/3` only ever does
+      # RSA/SHA-256, so such a key could never have verified — reject it by name
+      # rather than letting it through as an opaque "some key".
+      pem = """
+      -----BEGIN PUBLIC KEY-----
+      MCowBQYDK2VwAyEAGQsb/fF/reQyzr2w6SkJn4wX0INCV47pDCNf4PpS/uU=
+      -----END PUBLIC KEY-----
+      """
+
+      assert {:error, :unsupported_key_type} = HTTPSignature.validate_public_key_pem(pem)
+    end
+
+    test "validate_public_key_pem/1 rejects garbage and non-binaries" do
+      assert {:error, :invalid_public_key} = HTTPSignature.validate_public_key_pem("not a pem")
+      assert {:error, :invalid_public_key} = HTTPSignature.validate_public_key_pem(nil)
+    end
+  end
 end
