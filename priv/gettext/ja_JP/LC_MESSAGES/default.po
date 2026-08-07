@@ -193,12 +193,12 @@ msgstr "未実行のマイグレーション"
 msgid "Retry"
 msgstr "再試行"
 
-#: lib/baudrate_web/live/setup_live.ex:169
+#: lib/baudrate_web/live/setup_live.ex:202
 #, elixir-autogen, elixir-format
 msgid "Setup completed successfully!"
 msgstr "セットアップが完了しました！"
 
-#: lib/baudrate_web/live/setup_live.ex:161
+#: lib/baudrate_web/live/setup_live.ex:194
 #, elixir-autogen, elixir-format
 msgid "Setup failed. Please try again."
 msgstr "セットアップに失敗しました。もう一度お試しください。"
@@ -1272,7 +1272,7 @@ msgstr "コメント"
 #: lib/baudrate_web/live/admin/boards_live.html.heex:320
 #: lib/baudrate_web/live/admin/bots_live.html.heex:284
 #: lib/baudrate_web/live/article_live.html.heex:435
-#: lib/baudrate_web/live/conversation_live.html.heex:159
+#: lib/baudrate_web/live/conversation_live.html.heex:161
 #, elixir-autogen, elixir-format
 msgid "Delete"
 msgstr "削除"
@@ -2482,7 +2482,7 @@ msgstr "ユーザー管理"
 msgid "Password Reset"
 msgstr "パスワードリセット"
 
-#: lib/baudrate_web/live/setup_live.ex:56
+#: lib/baudrate_web/live/setup_live.ex:77
 #, elixir-autogen, elixir-format
 msgid "Setup"
 msgstr "初期設定"
@@ -2675,7 +2675,7 @@ msgstr "会話が見つかりません。"
 msgid "DM access setting updated."
 msgstr "DM アクセス設定を更新しました。"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:157
+#: lib/baudrate_web/live/conversation_live.html.heex:159
 #, elixir-autogen, elixir-format
 msgid "Delete this message?"
 msgstr "このメッセージを削除しますか？"
@@ -2717,7 +2717,7 @@ msgstr "DM アクセス設定の更新に失敗しました。"
 msgid "Followers only"
 msgstr "フォロワーのみ"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:181
+#: lib/baudrate_web/live/conversation_live.html.heex:183
 #: lib/baudrate_web/live/user_profile_live.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Message"
@@ -2754,7 +2754,7 @@ msgstr "メッセージはまだありません。最初のメッセージを送
 msgid "Nobody"
 msgstr "誰にも許可しない"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:187
+#: lib/baudrate_web/live/conversation_live.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Send"
 msgstr "送信"
@@ -2774,7 +2774,7 @@ msgstr "ユーザーのプロフィールページから会話を始めましょ
 msgid "Too many messages. Please slow down."
 msgstr "メッセージの送信が多すぎます。しばらくお待ちください。"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:177
+#: lib/baudrate_web/live/conversation_live.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "Type a message..."
 msgstr "メッセージを入力…"
@@ -3937,7 +3937,7 @@ msgid "Comment not found."
 msgstr "コメントが見つかりません。"
 
 #: lib/baudrate_web/live/auth_hooks.ex:187
-#: lib/baudrate_web/plugs/rate_limit.ex:96
+#: lib/baudrate_web/plugs/rate_limit.ex:99
 #, elixir-autogen, elixir-format
 msgid "Too many requests. Please try again later."
 msgstr "リクエストが多すぎます。しばらくしてからもう一度お試しください。"
@@ -4845,7 +4845,8 @@ msgstr "通報の送信に失敗しました。"
 msgid "Installation Key"
 msgstr "インストールキー"
 
-#: lib/baudrate_web/live/setup_live.ex:86
+#: lib/baudrate_web/live/setup_live.ex:106
+#: lib/baudrate_web/live/setup_live.ex:177
 #, elixir-autogen, elixir-format
 msgid "Invalid installation key."
 msgstr "インストールキーが無効です。"
@@ -4900,7 +4901,7 @@ msgstr "通報されたユーザー："
 msgid "Submitting..."
 msgstr "送信中..."
 
-#: lib/baudrate_web/live/setup_live.ex:65
+#: lib/baudrate_web/live/setup_live.ex:86
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait before trying again."
 msgstr "試行回数が多すぎます。しばらくしてからもう一度お試しください。"
@@ -5754,7 +5755,12 @@ msgstr "返信先が無効です。"
 msgid "You are not allowed to comment on this article."
 msgstr "この記事にコメントする権限がありません。"
 
-#: lib/baudrate_web/plugs/rate_limit.ex:95
+#: lib/baudrate_web/plugs/rate_limit.ex:98
 #, elixir-autogen, elixir-format
 msgid "Too many requests"
 msgstr "リクエストが多すぎます"
+
+#: lib/baudrate_web/live/setup_live.ex:45
+#, elixir-autogen, elixir-format
+msgid "Setup is locked. Contact the server operator."
+msgstr "セットアップはロックされています。サーバー管理者にお問い合わせください。"

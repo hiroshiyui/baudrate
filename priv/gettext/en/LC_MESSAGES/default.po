@@ -193,12 +193,12 @@ msgstr ""
 msgid "Retry"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.ex:169
+#: lib/baudrate_web/live/setup_live.ex:202
 #, elixir-autogen, elixir-format
 msgid "Setup completed successfully!"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.ex:161
+#: lib/baudrate_web/live/setup_live.ex:194
 #, elixir-autogen, elixir-format
 msgid "Setup failed. Please try again."
 msgstr ""
@@ -1273,7 +1273,7 @@ msgstr ""
 #: lib/baudrate_web/live/admin/boards_live.html.heex:320
 #: lib/baudrate_web/live/admin/bots_live.html.heex:284
 #: lib/baudrate_web/live/article_live.html.heex:435
-#: lib/baudrate_web/live/conversation_live.html.heex:159
+#: lib/baudrate_web/live/conversation_live.html.heex:161
 #, elixir-autogen, elixir-format
 msgid "Delete"
 msgstr ""
@@ -2483,7 +2483,7 @@ msgstr ""
 msgid "Password Reset"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.ex:56
+#: lib/baudrate_web/live/setup_live.ex:77
 #, elixir-autogen, elixir-format
 msgid "Setup"
 msgstr ""
@@ -2676,7 +2676,7 @@ msgstr ""
 msgid "DM access setting updated."
 msgstr ""
 
-#: lib/baudrate_web/live/conversation_live.html.heex:157
+#: lib/baudrate_web/live/conversation_live.html.heex:159
 #, elixir-autogen, elixir-format
 msgid "Delete this message?"
 msgstr ""
@@ -2718,7 +2718,7 @@ msgstr ""
 msgid "Followers only"
 msgstr ""
 
-#: lib/baudrate_web/live/conversation_live.html.heex:181
+#: lib/baudrate_web/live/conversation_live.html.heex:183
 #: lib/baudrate_web/live/user_profile_live.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Message"
@@ -2755,7 +2755,7 @@ msgstr ""
 msgid "Nobody"
 msgstr ""
 
-#: lib/baudrate_web/live/conversation_live.html.heex:187
+#: lib/baudrate_web/live/conversation_live.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Send"
 msgstr ""
@@ -2775,7 +2775,7 @@ msgstr ""
 msgid "Too many messages. Please slow down."
 msgstr ""
 
-#: lib/baudrate_web/live/conversation_live.html.heex:177
+#: lib/baudrate_web/live/conversation_live.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "Type a message..."
 msgstr ""
@@ -3948,7 +3948,7 @@ msgid "Comment not found."
 msgstr ""
 
 #: lib/baudrate_web/live/auth_hooks.ex:187
-#: lib/baudrate_web/plugs/rate_limit.ex:96
+#: lib/baudrate_web/plugs/rate_limit.ex:99
 #, elixir-autogen, elixir-format
 msgid "Too many requests. Please try again later."
 msgstr ""
@@ -4859,7 +4859,8 @@ msgstr ""
 msgid "Installation Key"
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.ex:86
+#: lib/baudrate_web/live/setup_live.ex:106
+#: lib/baudrate_web/live/setup_live.ex:177
 #, elixir-autogen, elixir-format
 msgid "Invalid installation key."
 msgstr ""
@@ -4914,7 +4915,7 @@ msgstr ""
 msgid "Submitting..."
 msgstr ""
 
-#: lib/baudrate_web/live/setup_live.ex:65
+#: lib/baudrate_web/live/setup_live.ex:86
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait before trying again."
 msgstr ""
@@ -5769,7 +5770,12 @@ msgstr ""
 msgid "You are not allowed to comment on this article."
 msgstr ""
 
-#: lib/baudrate_web/plugs/rate_limit.ex:95
+#: lib/baudrate_web/plugs/rate_limit.ex:98
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Too many requests"
+msgstr ""
+
+#: lib/baudrate_web/live/setup_live.ex:45
+#, elixir-autogen, elixir-format
+msgid "Setup is locked. Contact the server operator."
 msgstr ""

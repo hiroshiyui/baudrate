@@ -193,12 +193,12 @@ msgstr "待執行的遷移"
 msgid "Retry"
 msgstr "重試"
 
-#: lib/baudrate_web/live/setup_live.ex:169
+#: lib/baudrate_web/live/setup_live.ex:202
 #, elixir-autogen, elixir-format
 msgid "Setup completed successfully!"
 msgstr "設定已成功完成！"
 
-#: lib/baudrate_web/live/setup_live.ex:161
+#: lib/baudrate_web/live/setup_live.ex:194
 #, elixir-autogen, elixir-format
 msgid "Setup failed. Please try again."
 msgstr "設定失敗，請重試。"
@@ -1272,7 +1272,7 @@ msgstr "留言"
 #: lib/baudrate_web/live/admin/boards_live.html.heex:320
 #: lib/baudrate_web/live/admin/bots_live.html.heex:284
 #: lib/baudrate_web/live/article_live.html.heex:435
-#: lib/baudrate_web/live/conversation_live.html.heex:159
+#: lib/baudrate_web/live/conversation_live.html.heex:161
 #, elixir-autogen, elixir-format
 msgid "Delete"
 msgstr "刪除"
@@ -2482,7 +2482,7 @@ msgstr "管理使用者"
 msgid "Password Reset"
 msgstr "重設密碼"
 
-#: lib/baudrate_web/live/setup_live.ex:56
+#: lib/baudrate_web/live/setup_live.ex:77
 #, elixir-autogen, elixir-format
 msgid "Setup"
 msgstr "初始設定"
@@ -2675,7 +2675,7 @@ msgstr "找不到對話。"
 msgid "DM access setting updated."
 msgstr "私訊權限設定已更新。"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:157
+#: lib/baudrate_web/live/conversation_live.html.heex:159
 #, elixir-autogen, elixir-format
 msgid "Delete this message?"
 msgstr "刪除此訊息？"
@@ -2717,7 +2717,7 @@ msgstr "更新私訊權限設定失敗。"
 msgid "Followers only"
 msgstr "僅追蹤者"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:181
+#: lib/baudrate_web/live/conversation_live.html.heex:183
 #: lib/baudrate_web/live/user_profile_live.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Message"
@@ -2754,7 +2754,7 @@ msgstr "尚無訊息，傳送第一則吧！"
 msgid "Nobody"
 msgstr "不允許任何人"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:187
+#: lib/baudrate_web/live/conversation_live.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Send"
 msgstr "傳送"
@@ -2774,7 +2774,7 @@ msgstr "從使用者的個人頁面開始對話。"
 msgid "Too many messages. Please slow down."
 msgstr "訊息傳送過於頻繁，請稍後再試。"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:177
+#: lib/baudrate_web/live/conversation_live.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "Type a message..."
 msgstr "輸入訊息⋯⋯"
@@ -3937,7 +3937,7 @@ msgid "Comment not found."
 msgstr "找不到留言。"
 
 #: lib/baudrate_web/live/auth_hooks.ex:187
-#: lib/baudrate_web/plugs/rate_limit.ex:96
+#: lib/baudrate_web/plugs/rate_limit.ex:99
 #, elixir-autogen, elixir-format
 msgid "Too many requests. Please try again later."
 msgstr "請求過於頻繁，請稍後再試。"
@@ -4845,7 +4845,8 @@ msgstr "提交檢舉失敗。"
 msgid "Installation Key"
 msgstr "安裝金鑰"
 
-#: lib/baudrate_web/live/setup_live.ex:86
+#: lib/baudrate_web/live/setup_live.ex:106
+#: lib/baudrate_web/live/setup_live.ex:177
 #, elixir-autogen, elixir-format
 msgid "Invalid installation key."
 msgstr "安裝金鑰無效。"
@@ -4900,7 +4901,7 @@ msgstr "被檢舉的使用者："
 msgid "Submitting..."
 msgstr "提交中..."
 
-#: lib/baudrate_web/live/setup_live.ex:65
+#: lib/baudrate_web/live/setup_live.ex:86
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait before trying again."
 msgstr "嘗試次數過多，請稍後再試。"
@@ -5754,7 +5755,12 @@ msgstr "回覆目標無效。"
 msgid "You are not allowed to comment on this article."
 msgstr "您無權在此文章發表留言。"
 
-#: lib/baudrate_web/plugs/rate_limit.ex:95
+#: lib/baudrate_web/plugs/rate_limit.ex:98
 #, elixir-autogen, elixir-format
 msgid "Too many requests"
 msgstr "請求過於頻繁"
+
+#: lib/baudrate_web/live/setup_live.ex:45
+#, elixir-autogen, elixir-format
+msgid "Setup is locked. Contact the server operator."
+msgstr "設定精靈已鎖定。請聯絡伺服器管理員。"

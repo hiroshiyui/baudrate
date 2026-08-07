@@ -15,6 +15,13 @@ defmodule BaudrateWeb.SetupLive do
   constant-time comparison (`Plug.Crypto.secure_compare/2`). After 3 failed
   attempts, the form is locked for 30 seconds to prevent brute-force.
 
+  The key gate is enforced on the **event handler**, not merely on the rendered
+  step: a client speaking the LiveView protocol directly can push any
+  `handle_event/3` message regardless of which step is displayed, so
+  `"complete_setup"` refuses to run unless `@key_verified` is true. Without that
+  check the `INSTALLATION_KEY` could be skipped entirely and any visitor to a
+  freshly deployed instance could claim the admin account.
+
   On completion, `Setup.complete_setup/2` runs all steps in a single transaction.
   Uses `layout: :setup` (minimal layout without navigation bar).
   """
@@ -22,20 +29,33 @@ defmodule BaudrateWeb.SetupLive do
   use BaudrateWeb, :live_view
 
   alias Baudrate.Setup
+  alias Baudrate.Setup.InstallationKey
   import BaudrateWeb.Helpers, only: [password_strength: 1]
 
   @lockout_duration_seconds 30
   @max_key_attempts 3
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(params, session, socket) do
+    # The plug pipeline does not run for the LiveView websocket, so the setup
+    # lock has to be re-checked here as well as in `EnsureSetup`.
+    if InstallationKey.status() == {:error, :missing} do
+      {:ok,
+       socket
+       |> put_flash(:error, gettext("Setup is locked. Contact the server operator."))
+       |> redirect(to: "/")}
+    else
+      do_mount(params, session, socket)
+    end
+  end
+
+  defp do_mount(_params, _session, socket) do
     {db_status, migrations_status} = check_system()
 
     site_name_changeset = Setup.change_site_name(%{site_name: "Baudrate"})
     admin_changeset = Setup.change_user_registration()
 
-    installation_key = Application.get_env(:baudrate, :installation_key)
-    key_required = is_binary(installation_key) and installation_key != ""
+    key_required = not is_nil(InstallationKey.configured_key())
 
     initial_step = if key_required, do: :verify_key, else: :database
 
@@ -43,6 +63,7 @@ defmodule BaudrateWeb.SetupLive do
       socket
       |> assign(:step, initial_step)
       |> assign(:key_required, key_required)
+      |> assign(:key_verified, not key_required)
       |> assign(:key_error, nil)
       |> assign(:key_attempts, 0)
       |> assign(:key_locked_until, nil)
@@ -64,12 +85,11 @@ defmodule BaudrateWeb.SetupLive do
       {:noreply,
        assign(socket, :key_error, gettext("Too many attempts. Please wait before trying again."))}
     else
-      installation_key = Application.get_env(:baudrate, :installation_key)
-
-      if Plug.Crypto.secure_compare(submitted_key, installation_key) do
+      if InstallationKey.verify(submitted_key) do
         {:noreply,
          socket
          |> assign(:step, :database)
+         |> assign(:key_verified, true)
          |> assign(:key_error, nil)}
       else
         attempts = socket.assigns.key_attempts + 1
@@ -89,6 +109,10 @@ defmodule BaudrateWeb.SetupLive do
       end
     end
   end
+
+  # A raw LiveView client can push a malformed payload; without this clause it
+  # crashes the wizard process with a FunctionClauseError.
+  def handle_event("verify_key", _params, socket), do: {:noreply, socket}
 
   @impl true
   def handle_event("check_database", _params, socket) do
@@ -144,6 +168,15 @@ defmodule BaudrateWeb.SetupLive do
   end
 
   @impl true
+  def handle_event("complete_setup", _params, %{assigns: %{key_verified: false}} = socket) do
+    # A LiveView client can push any event regardless of the rendered step, so
+    # the installation-key gate must be re-checked here and not only in the UI.
+    {:noreply,
+     socket
+     |> assign(:step, :verify_key)
+     |> assign(:key_error, gettext("Invalid installation key."))}
+  end
+
   def handle_event("complete_setup", %{"admin" => params}, socket) do
     case Setup.complete_setup(socket.assigns.site_name, params) do
       {:ok, result} ->

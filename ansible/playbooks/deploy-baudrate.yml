@@ -92,8 +92,11 @@
               Add the value:
                 installation_key: "{{ installation_key }}"
 
-              NOTE: This key is only needed for the initial setup wizard.
-              You can remove it from the env file after setup is complete.
+              NOTE: This key is only needed for the initial setup wizard, but
+              it is REQUIRED until that wizard completes — without it the app
+              answers 503 on every browser route instead of serving an
+              unguarded /setup. You can remove it from the env file once
+              setup is complete.
               ============================================================
 
         - name: Confirm installation key has been saved

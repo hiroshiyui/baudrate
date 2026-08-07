@@ -239,5 +239,132 @@ defmodule BaudrateWeb.SetupLiveTest do
       assert html =~ "Too many attempts. Please wait before trying again."
       refute html =~ "Database Connection"
     end
+
+    test "cannot skip the key gate by pushing complete_setup directly", %{conn: conn} do
+      # A LiveView client can push any event regardless of the rendered step,
+      # so the gate must live in the handler. Without it, any visitor to a
+      # freshly deployed instance could claim the admin account without ever
+      # knowing INSTALLATION_KEY.
+      Application.put_env(:baudrate, :installation_key, "correct-key-abc")
+
+      {:ok, view, _html} = live(conn, ~p"/setup")
+
+      html =
+        render_click(view, "complete_setup", %{
+          "admin" => %{
+            "username" => "sneakyadmin",
+            "password" => "Password123!x",
+            "password_confirmation" => "Password123!x"
+          }
+        })
+
+      assert html =~ "Invalid installation key."
+      refute Baudrate.Setup.setup_completed?()
+      refute Baudrate.Repo.get_by(Baudrate.Setup.User, username: "sneakyadmin")
+    end
+
+    test "verify_key does not crash when no key is configured", %{conn: conn} do
+      # `Plug.Crypto.secure_compare/2` is guarded on two binaries, so comparing
+      # against a nil configured key used to raise a FunctionClauseError —
+      # reachable by pushing the event directly over the socket.
+      Application.delete_env(:baudrate, :installation_key)
+
+      {:ok, view, _html} = live(conn, ~p"/setup")
+
+      render_click(view, "verify_key", %{"key" => %{"installation_key" => "anything"}})
+      assert render(view) =~ "Database Connection"
+    end
+
+    test "verify_key ignores a malformed payload", %{conn: conn} do
+      Application.put_env(:baudrate, :installation_key, "correct-key-abc")
+
+      {:ok, view, _html} = live(conn, ~p"/setup")
+
+      render_click(view, "verify_key", %{})
+      assert render(view) =~ "Installation Key"
+    end
+  end
+
+  describe "setup lock (enforced key missing)" do
+    setup do
+      on_exit(fn ->
+        Application.delete_env(:baudrate, :installation_key)
+        Application.delete_env(:baudrate, :installation_key_enforced?)
+      end)
+
+      :ok
+    end
+
+    test "browser routes answer 503 while setup is incomplete and no key is set", %{conn: conn} do
+      Application.delete_env(:baudrate, :installation_key)
+      Application.put_env(:baudrate, :installation_key_enforced?, true)
+
+      for path <- ["/setup", "/", "/login"] do
+        conn = get(Phoenix.ConnTest.build_conn(), path)
+        assert conn.status == 503
+        assert conn.halted
+        assert conn.resp_body =~ "Setup is locked"
+      end
+
+      _ = conn
+    end
+
+    test "the LiveView refuses to mount independently of the plug" do
+      # The plug pipeline does not run for the LiveView websocket, so `mount/3`
+      # carries its own gate. Called directly here because the plug halts the
+      # dead render before `live/2` can reach the LiveView at all.
+      Application.delete_env(:baudrate, :installation_key)
+      Application.put_env(:baudrate, :installation_key_enforced?, true)
+
+      socket = %Phoenix.LiveView.Socket{assigns: %{__changed__: %{}, flash: %{}}}
+
+      assert {:ok, %Phoenix.LiveView.Socket{redirected: {:redirect, %{to: "/"}}}} =
+               BaudrateWeb.SetupLive.mount(%{}, %{}, socket)
+    end
+
+    test "a configured key unlocks the wizard", %{conn: conn} do
+      Application.put_env(:baudrate, :installation_key, "correct-key-abc")
+      Application.put_env(:baudrate, :installation_key_enforced?, true)
+
+      {:ok, _view, html} = live(conn, ~p"/setup")
+      assert html =~ "Installation Key"
+    end
+
+    test "an install that finished setup is unaffected by a removed key", %{conn: conn} do
+      # doc/sysop.md has always told operators to delete the key after setup;
+      # the lock must only cover the pre-setup window.
+      Application.delete_env(:baudrate, :installation_key)
+      Application.put_env(:baudrate, :installation_key_enforced?, true)
+
+      {:ok, _} =
+        Baudrate.Setup.complete_setup("Locked Site", %{
+          "username" => "lockadmin",
+          "password" => "Password123!x",
+          "password_confirmation" => "Password123!x"
+        })
+
+      conn = get(conn, "/")
+      refute conn.status == 503
+    end
+  end
+
+  describe "complete_setup context guard" do
+    test "refuses to run once setup is already completed" do
+      assert {:ok, _} =
+               Baudrate.Setup.complete_setup("First Site", %{
+                 "username" => "firstadmin",
+                 "password" => "Password123!x",
+                 "password_confirmation" => "Password123!x"
+               })
+
+      assert {:error, :setup, :already_completed, _} =
+               Baudrate.Setup.complete_setup("Second Site", %{
+                 "username" => "secondadmin",
+                 "password" => "Password123!x",
+                 "password_confirmation" => "Password123!x"
+               })
+
+      refute Baudrate.Repo.get_by(Baudrate.Setup.User, username: "secondadmin")
+    end
   end
 end

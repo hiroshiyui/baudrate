@@ -457,9 +457,23 @@ defmodule Baudrate.Setup do
     4. Insert `setup_completed = "true"` setting
 
   If any step fails, the entire transaction is rolled back.
+
+  Refuses to run once setup has already been completed, returning
+  `{:error, :setup, :already_completed, %{}}`. This is the context-boundary
+  guard: the `EnsureSetup` plug only covers HTTP requests, so a LiveView
+  session opened during the setup window must not be able to re-run the wizard
+  and mint a second admin account afterwards.
   """
   @spec complete_setup(String.t(), map()) :: {:ok, map()} | {:error, term(), term(), map()}
   def complete_setup(site_name, user_attrs) do
+    if setup_completed?() do
+      {:error, :setup, :already_completed, %{}}
+    else
+      do_complete_setup(site_name, user_attrs)
+    end
+  end
+
+  defp do_complete_setup(site_name, user_attrs) do
     result =
       Ecto.Multi.new()
       |> Ecto.Multi.insert(

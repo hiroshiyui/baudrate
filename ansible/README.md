@@ -98,8 +98,14 @@ auto-generates one and pauses so you can save it.
 If `installation_key` is not defined, the playbook auto-generates a 32-character
 random key and pauses so you can save it. This key is required to complete the
 setup wizard at `/setup` after the first deploy — it prevents unauthorized users
-from running the wizard. The key can be removed from the env file after setup is
-complete.
+from running the wizard. **The instance will refuse to serve any browser page
+(503) until this key is set and setup is finished.** The key can be removed from
+the env file once setup is complete.
+
+Set `trusted_proxies` (a list of IPs or CIDR ranges) if nginx does not run on
+the same host as the app; it is rendered into `BAUDRATE_TRUSTED_PROXIES`.
+Without it the app believes `X-Forwarded-For` only from loopback, so all
+requests would share one rate-limit bucket.
 
 ### What `deploy-baudrate.yml` Does
 

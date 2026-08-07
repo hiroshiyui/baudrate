@@ -55,7 +55,55 @@ if config_env() == :prod do
 
   host = System.get_env("PHX_HOST") || "example.com"
 
-  config :baudrate, :installation_key, System.get_env("INSTALLATION_KEY")
+  # Gates the first-run setup wizard. Deliberately not `raise`d on here:
+  # `runtime.exs` runs before the Repo starts, so it cannot tell whether setup
+  # has already completed, and a raise would brick the node on restart.
+  # Enforcement lives in `Baudrate.Setup.InstallationKey` + `EnsureSetup`, which
+  # answer 503 while setup is incomplete and no key is set.
+  installation_key =
+    case System.get_env("INSTALLATION_KEY") do
+      nil -> nil
+      "" -> nil
+      key -> key
+    end
+
+  config :baudrate, :installation_key, installation_key
+
+  # Reverse proxies whose `x-forwarded-for` may be believed. `RealIp` is fail
+  # closed — an unlisted peer cannot spoof its IP — so a proxy that is not on
+  # loopback must be named here. Raising on a malformed entry is safe: this is
+  # a static configuration error, not a transient condition.
+  trusted_proxies =
+    case System.get_env("BAUDRATE_TRUSTED_PROXIES") do
+      blank when blank in [nil, ""] ->
+        ["127.0.0.1", "::1"]
+
+      raw ->
+        raw
+        |> String.split(",")
+        |> Enum.map(&String.trim/1)
+        |> Enum.reject(&(&1 == ""))
+    end
+
+  for spec <- trusted_proxies do
+    [ip_string | mask] = String.split(spec, "/", parts: 2)
+
+    valid_ip? = match?({:ok, _}, :inet.parse_address(String.to_charlist(ip_string)))
+    valid_mask? = mask == [] or match?({_, ""}, Integer.parse(hd(mask)))
+
+    unless valid_ip? and valid_mask? do
+      raise """
+      BAUDRATE_TRUSTED_PROXIES contains an invalid entry: #{inspect(spec)}
+
+      Expected a comma-separated list of IP addresses or CIDR ranges, e.g.
+          BAUDRATE_TRUSTED_PROXIES="127.0.0.1,::1,10.0.0.0/8"
+      """
+    end
+  end
+
+  config :baudrate, BaudrateWeb.Plugs.RealIp,
+    header: System.get_env("BAUDRATE_REAL_IP_HEADER", "x-forwarded-for"),
+    trusted_proxies: trusted_proxies
 
   config :wax_,
     origin: "https://#{host}",

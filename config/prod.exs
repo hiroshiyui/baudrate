@@ -19,6 +19,12 @@ config :baudrate, BaudrateWeb.Endpoint,
     expires: 63_072_000
   ]
 
+# Require INSTALLATION_KEY until the setup wizard has completed. Without it the
+# app answers 503 on all browser routes rather than serving an unauthenticated
+# wizard that hands out admin rights. Unset (and so false) in dev/test, where
+# the wizard is intentionally ungated.
+config :baudrate, :installation_key_enforced?, true
+
 # Extract real client IP from X-Forwarded-For header set by the reverse proxy.
 # Your reverse proxy MUST set (not append to) this header for security.
 # Without this, all requests share the proxy's IP for rate limiting.
@@ -26,8 +32,9 @@ config :baudrate, BaudrateWeb.Endpoint,
 # `trusted_proxies` is an allow-list of immediate peer addresses (exact IPs or
 # CIDR ranges). The header is honored only when the connection arrives from a
 # listed peer; direct connections from other addresses cannot spoof the IP.
-# Override via runtime.exs (e.g. BAUDRATE_TRUSTED_PROXIES) when the proxy
-# does not run on the same host.
+# This block is the compile-time default; runtime.exs overrides it from
+# BAUDRATE_TRUSTED_PROXIES / BAUDRATE_REAL_IP_HEADER when the proxy does not
+# run on the same host.
 config :baudrate, BaudrateWeb.Plugs.RealIp,
   header: "x-forwarded-for",
   trusted_proxies: ["127.0.0.1", "::1"]
