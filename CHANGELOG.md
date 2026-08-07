@@ -7,7 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
-## [Unreleased]
+## [1.12.0] — 2026-08-08
+
+A security-hardening release closing every finding from a project-wide audit,
+plus a new media proxy that stops federated content from disclosing visitors'
+IP addresses to remote instances.
+
+**Upgrading:** no action is required for a set-up instance behind a loopback
+reverse proxy. Two changes are visible: peers using RSA keys below 2048 bits
+will stop federating (see Security), and a reverse proxy that does *not* run on
+the same host now needs `BAUDRATE_TRUSTED_PROXIES` set.
+
+### Added
+
+- **Media proxy** — remote images are served from a locally re-encoded WebP copy
+  via a signed `/media/:sig/:encoded` route (`Baudrate.Media.Proxy`,
+  `BaudrateWeb.MediaController`) instead of being hotlinked. Fetches go through
+  the SSRF-guarded `Federation.HTTPClient`, are magic-byte validated, and are
+  re-encoded with libvips; SVG is never served. Failures fall back to a
+  same-origin placeholder and are negative-cached for an hour. The cache lives
+  at `uploads/media_cache/`, is bounded by a 30-day TTL and a 2 GB ceiling
+  evicted by `SessionCleaner`, and is safe to delete at any time.
+- **`BAUDRATE_TRUSTED_PROXIES` and `BAUDRATE_REAL_IP_HEADER`** — runtime
+  configuration for reverse proxies that do not run on the application host.
+  Both were referenced in comments but had never been implemented, leaving
+  operators with a non-loopback proxy no way to widen trust without rebuilding.
 
 ### Security
 
@@ -23,45 +47,59 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   browser routes rather than serving an unguarded wizard. Enforcement is in
   `EnsureSetup` and `SetupLive.mount/3`, not a boot-time `raise`, so a transient
   database outage cannot brick a restart. Removing the key after setup remains
-  supported. Also fixes a `FunctionClauseError` reachable by pushing
-  `verify_key` with no key configured or with a malformed payload.
+  supported.
 - **Inbound replies and poll votes now honour the federation gate** — `Like` and
   `Announce` checked `article_federated?/1` but `Create(Note)` replies and
   Mastodon-style poll-vote Notes did not, so a remote actor could guess a slug
   and inject a comment (plus an author notification) or a vote into an article
   living only in a private or AP-disabled board. Federated poll votes are also
   now refused after `closes_at`, matching the local `cast_vote/3` path.
-- **No third-party image hotlinking** — every remote image (federated
-  attachments, remote actor avatars, feed-item attachments, RSS/bot article
-  bodies, user Markdown) is now served through a signed local media proxy at
-  `/media/`, backed by an SSRF-safe fetch and a libvips WebP re-encode. CSP
-  tightened to `img-src 'self' data: blob:`. Previously, viewing federated
-  content disclosed each visitor's IP address, User-Agent, and reading times to
-  every remote instance whose content appeared on the page. The Ammonia
-  markdown allowlist now also drops protocol-relative `<img src="//host/...">`,
-  which `url_relative(PassThrough)` had let through.
+- **No third-party image hotlinking** — previously, viewing federated content
+  disclosed each visitor's IP address, User-Agent, and reading times to every
+  remote instance whose content appeared on the page. Five separate paths
+  emitted third-party `<img>`: user Markdown, RSS/bot article bodies, AP
+  attachment images, feed-item attachments, and remote actor avatars. All now
+  route through the media proxy.
 - **Minimum RSA key size on inbound actor keys** — remote actor public keys must
   be RSA ≥ 2048 bits, enforced both at `ActorResolver` ingest and at signature
   verification (so keys cached before this change are rejected too). A short
   modulus makes an instance's signatures forgeable by a third party, who could
-  then impersonate that actor. Non-RSA keys are rejected explicitly.
-  **Breaking:** a remote instance still on a 1024-bit key will stop federating
-  until it rotates.
+  then impersonate that actor to this instance. Non-RSA keys are rejected
+  explicitly. **A remote instance still using a 1024-bit key will stop
+  federating until it rotates** — see `doc/troubleshooting.md`.
 - **`RealIp` fails closed** — an unconfigured `trusted_proxies` no longer means
-  "trust every peer" (and `[]` no longer means the opposite of what it says); the
-  default is now loopback only. Previously, any client could spoof
-  `x-forwarded-for` and defeat every per-IP rate limit (login, TOTP, AP inbox,
-  feeds, search) while poisoning the persisted `ip_address` audit trail. Adds
-  the `BAUDRATE_TRUSTED_PROXIES` and `BAUDRATE_REAL_IP_HEADER` runtime variables
-  — previously documented but never implemented.
+  "trust every peer", and `[]` no longer means the opposite of what it says; the
+  default is now loopback only. Previously, wherever a header was configured but
+  the allow-list was not, any client could spoof `x-forwarded-for` and defeat
+  every per-IP rate limit (login, TOTP, AP inbox, feeds, search) while poisoning
+  the persisted `ip_address` audit trail.
 - **Reply-chain amplification bounded** — a fabricated `inReplyTo` could drive up
-  to 10 outbound fetches per inbound activity, ~600/min per hostile domain. Now
-  capped at 5 hops across at most 3 distinct hosts, with a visited-URI cycle
-  guard and rate limits keyed on both the target host (10/min, so many hostile
-  domains cannot combine against one victim) and the sending domain (20/min).
+  to 10 outbound fetches per inbound activity, roughly 600/min per hostile
+  domain against a target of the attacker's choosing. Now capped at 5 hops
+  across at most 3 distinct hosts, with a visited-URI cycle guard and rate
+  limits keyed on both the target host (10/min, so many hostile domains cannot
+  combine against one victim) and the sending domain (20/min).
+- **Protocol-relative image sources are stripped** — the Ammonia markdown
+  allowlist now constrains `img[src]`. `url_relative(PassThrough)` treated
+  `<img src="//evil.example/x.png">` as *relative*, so it survived scheme-based
+  filtering and would still have hotlinked under the tightened CSP.
 - **`postgrex` 0.22.3 → 0.22.4** — EEF-CVE-2026-66838 / GHSA-3gww-3f36-2388,
   SQL injection via the `:comment` option in `Postgrex.stream/4`. Not reachable
   from this codebase, but shipped.
+
+### Changed
+
+- CSP `img-src` tightened from `'self' https: data: blob:` to
+  `'self' data: blob:`. No page issues a third-party subresource request any
+  more, so the `https:` allowance for federated avatars is no longer needed.
+- nginx now denies `/uploads/media_cache/` directly, so cached remote images are
+  reachable only through the signed `/media/` route.
+
+### Fixed
+
+- `Plug.Crypto.secure_compare/2` is guarded on two binaries, so pushing the
+  `verify_key` event with no installation key configured — or with a malformed
+  payload — crashed the setup wizard with a `FunctionClauseError`.
 
 ## [1.11.0] — 2026-08-03
 
