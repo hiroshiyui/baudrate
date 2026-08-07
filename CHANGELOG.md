@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [Unreleased]
+
+### Security
+
+- **Setup wizard installation-key bypass (critical)** — `SetupLive`'s
+  `complete_setup` event had no server-side check that the `INSTALLATION_KEY`
+  step had been passed; the gate existed only in which step was *rendered*. A
+  LiveView client can push any event regardless of the displayed step, so any
+  visitor reaching a freshly deployed instance could claim the admin account
+  without ever knowing the key. The handler now requires a verified key, and
+  `Setup.complete_setup/2` refuses to run once setup is complete.
+- **`INSTALLATION_KEY` is now required until setup completes** — in production,
+  an instance with an incomplete setup and no configured key answers 503 on all
+  browser routes rather than serving an unguarded wizard. Enforcement is in
+  `EnsureSetup` and `SetupLive.mount/3`, not a boot-time `raise`, so a transient
+  database outage cannot brick a restart. Removing the key after setup remains
+  supported. Also fixes a `FunctionClauseError` reachable by pushing
+  `verify_key` with no key configured or with a malformed payload.
+- **Inbound replies and poll votes now honour the federation gate** — `Like` and
+  `Announce` checked `article_federated?/1` but `Create(Note)` replies and
+  Mastodon-style poll-vote Notes did not, so a remote actor could guess a slug
+  and inject a comment (plus an author notification) or a vote into an article
+  living only in a private or AP-disabled board. Federated poll votes are also
+  now refused after `closes_at`, matching the local `cast_vote/3` path.
+- **No third-party image hotlinking** — every remote image (federated
+  attachments, remote actor avatars, feed-item attachments, RSS/bot article
+  bodies, user Markdown) is now served through a signed local media proxy at
+  `/media/`, backed by an SSRF-safe fetch and a libvips WebP re-encode. CSP
+  tightened to `img-src 'self' data: blob:`. Previously, viewing federated
+  content disclosed each visitor's IP address, User-Agent, and reading times to
+  every remote instance whose content appeared on the page. The Ammonia
+  markdown allowlist now also drops protocol-relative `<img src="//host/...">`,
+  which `url_relative(PassThrough)` had let through.
+- **Minimum RSA key size on inbound actor keys** — remote actor public keys must
+  be RSA ≥ 2048 bits, enforced both at `ActorResolver` ingest and at signature
+  verification (so keys cached before this change are rejected too). A short
+  modulus makes an instance's signatures forgeable by a third party, who could
+  then impersonate that actor. Non-RSA keys are rejected explicitly.
+  **Breaking:** a remote instance still on a 1024-bit key will stop federating
+  until it rotates.
+- **`RealIp` fails closed** — an unconfigured `trusted_proxies` no longer means
+  "trust every peer" (and `[]` no longer means the opposite of what it says); the
+  default is now loopback only. Previously, any client could spoof
+  `x-forwarded-for` and defeat every per-IP rate limit (login, TOTP, AP inbox,
+  feeds, search) while poisoning the persisted `ip_address` audit trail. Adds
+  the `BAUDRATE_TRUSTED_PROXIES` and `BAUDRATE_REAL_IP_HEADER` runtime variables
+  — previously documented but never implemented.
+- **Reply-chain amplification bounded** — a fabricated `inReplyTo` could drive up
+  to 10 outbound fetches per inbound activity, ~600/min per hostile domain. Now
+  capped at 5 hops across at most 3 distinct hosts, with a visited-URI cycle
+  guard and rate limits keyed on both the target host (10/min, so many hostile
+  domains cannot combine against one victim) and the sending domain (20/min).
+- **`postgrex` 0.22.3 → 0.22.4** — EEF-CVE-2026-66838 / GHSA-3gww-3f36-2388,
+  SQL injection via the `:comment` option in `Postgrex.stream/4`. Not reachable
+  from this codebase, but shipped.
+
 ## [1.11.0] — 2026-08-03
 
 ### Security

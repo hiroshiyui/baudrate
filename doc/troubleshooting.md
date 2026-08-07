@@ -227,6 +227,17 @@ proxy_set_header X-Forwarded-For $remote_addr;
 requests appear from the proxy IP), or attackers can bypass rate limits by
 spoofing the header.
 
+**Symptom: all users still share one rate-limit bucket after setting the
+header.** The plug is fail closed — it believes `X-Forwarded-For` only from a
+peer in the `trusted_proxies` allow-list, which defaults to loopback. If the
+proxy runs on a different host, name it:
+
+```bash
+BAUDRATE_TRUSTED_PROXIES="10.0.0.0/8"
+```
+
+An invalid entry raises at boot with the offending value in the message.
+
 ### X-Forwarded-Proto header
 
 Required for HTTPS detection behind a reverse proxy. Baudrate's `force_ssl`
@@ -287,6 +298,20 @@ rejected with signature verification failures.
 timedatectl status        # Check current time sync
 sudo systemctl enable ntp # Enable NTP
 ```
+
+### Remote instance rejected with `public_key_too_weak`
+
+Baudrate requires inbound actor public keys to be RSA of at least **2048 bits**
+— the size Mastodon and Baudrate itself generate. A remote instance still using
+a 1024-bit (or smaller) key cannot federate: a short modulus makes its
+signatures forgeable by a third party, who could then impersonate that actor to
+this instance.
+
+The check runs both when caching an actor and when verifying a signature, so
+actors cached before this rule existed are rejected too.
+
+**Fix:** the remote operator must rotate to a 2048-bit key. There is no
+configuration to lower the threshold.
 
 ### HTTPS-only enforcement
 

@@ -86,7 +86,7 @@ mix assets.deploy  # Minify CSS/JS + fingerprint for cache busting
 
 On first launch, all requests redirect to `/setup`. The setup wizard:
 
-1. **(Optional) Verifies the installation key** — if `INSTALLATION_KEY` is set
+1. **Verifies the installation key** — required in production until setup completes
 2. Creates the initial **admin account** (with password and optional TOTP)
 3. Seeds **roles and permissions** (guest, user, moderator, admin)
 4. Creates the **SysOp board** (protected system announcements board)
@@ -96,12 +96,25 @@ On first launch, all requests redirect to `/setup`. The setup wizard:
 
 The `INSTALLATION_KEY` environment variable gates access to the setup wizard.
 Without it, anyone who discovers the `/setup` URL can complete setup and become
-admin. **Strongly recommended for production deployments.**
+admin. **It is required in production until setup completes.**
 
+- While setup is incomplete and no key is configured, the app answers **503 on
+  every browser route** rather than serving an unguarded wizard. Set the key and
+  restart to unlock it. (ActivityPub and health endpoints are unaffected.)
+- The check is not a boot-time `raise`: `config/runtime.exs` runs before the
+  database is available, so refusing to start there would let a transient
+  database outage brick the instance on restart. Enforcement lives in
+  `Baudrate.Setup.InstallationKey` and the `EnsureSetup` plug instead.
 - When set, the wizard starts with a verification step before the database check
 - The key is validated with constant-time comparison to prevent timing attacks
 - After 3 failed attempts, the form locks for 30 seconds (brute-force protection)
-- Once setup is complete, the key is no longer needed and can be removed
+- The gate is enforced in the `complete_setup` event handler, not just in the
+  rendered step — a client speaking the LiveView protocol directly cannot skip
+  ahead to admin creation
+- `Setup.complete_setup/2` additionally refuses to run once setup is complete,
+  so a wizard session left open during installation cannot mint a second admin
+- Once setup is complete the lock lifts, so the key is no longer needed and can
+  be removed. Removing it **before** the wizard finishes locks the instance
 
 Set the key in your environment file or generate one during deployment:
 
@@ -143,7 +156,9 @@ mix ecto.reset  # Drop, recreate, re-migrate
 | `POOL_SIZE` | `10` | Database connection pool size |
 | `ECTO_IPV6` | unset | Set to `"true"` for IPv6 database connections |
 | `DATABASE_SSL` | `"true"` | Set to `"false"` for non-SSL local databases |
-| `INSTALLATION_KEY` | unset | Gates the setup wizard; remove after setup (see [Installation Key](#installation-key)) |
+| `INSTALLATION_KEY` | unset | **Required until setup completes** — the app answers 503 without it. Safe to remove afterwards (see [Installation Key](#installation-key)) |
+| `BAUDRATE_TRUSTED_PROXIES` | `127.0.0.1,::1` | Comma-separated IPs/CIDRs whose `x-forwarded-for` is believed. Set this when the reverse proxy is not on the same host — the client IP is otherwise taken from the peer address |
+| `BAUDRATE_REAL_IP_HEADER` | `x-forwarded-for` | Header carrying the real client IP |
 | `DNS_CLUSTER_QUERY` | unset | DNS SRV record for Erlang clustering |
 
 ### SECRET_KEY_BASE — critical warning
@@ -625,18 +640,25 @@ nginx -t && systemctl reload nginx
 - **`X-Forwarded-For` must be SET, not appended.** Using `$proxy_add_x_forwarded_for`
   allows clients to spoof their IP by sending a fake `X-Forwarded-For` header,
   breaking rate limiting and IP-based security logging.
-- **`trusted_proxies` allow-list.** `BaudrateWeb.Plugs.RealIp` now honors the
-  configured forwarded-IP header **only** when the immediate peer matches an
-  entry in `trusted_proxies` (exact IPs or CIDR ranges). The default in
-  `config/prod.exs` is `["127.0.0.1", "::1"]` — sufficient when Nginx and
-  Phoenix run on the same host. If the proxy is on a different host or in a
-  private subnet, override via runtime config, e.g.:
+- **`trusted_proxies` allow-list — fail closed.** `BaudrateWeb.Plugs.RealIp`
+  honors the configured forwarded-IP header **only** when the immediate peer
+  matches an entry in `trusted_proxies` (exact IPs or CIDR ranges). There is no
+  trust-everything mode:
 
-  ```elixir
-  config :baudrate, BaudrateWeb.Plugs.RealIp,
-    header: "x-forwarded-for",
-    trusted_proxies: ["127.0.0.1", "::1", "10.0.0.0/8"]
+  - unconfigured defaults to `["127.0.0.1", "::1"]` — sufficient when Nginx and
+    Phoenix run on the same host;
+  - an explicitly empty list trusts nobody.
+
+  If the proxy is on a different host or in a private subnet, set the runtime
+  environment variable:
+
+  ```bash
+  BAUDRATE_TRUSTED_PROXIES="127.0.0.1,::1,10.0.0.0/8"
   ```
+
+  A malformed entry raises at boot — that is a static configuration error, so
+  failing loudly is safe. The header name is overridable with
+  `BAUDRATE_REAL_IP_HEADER`.
 
   Requests from peers outside the allow-list keep their real `remote_ip` and
   cannot spoof rate-limit / audit IPs through the header.
@@ -680,7 +702,9 @@ timer. Verify renewal works: `sudo certbot renew --dry-run`.
 - **Content size limits** — 256 KB AP payload, 64 KB content body
 - **File uploads** — magic byte validation, re-encoding as WebP (strips EXIF,
   destroys polyglots)
-- **CSP** — restrictive Content-Security-Policy: no eval, `img-src 'self' https: data: blob:`
+- **CSP** — restrictive Content-Security-Policy: no eval, `img-src 'self' data: blob:`
+  (remote images are served through the local media proxy, so no page contacts a
+  third-party host)
   (`https:` is required for federated remote actor avatars), `object-src 'none'`
   (blocks plugins entirely), `frame-src https://www.youtube-nocookie.com`
   (YouTube embeds only, privacy-enhanced domain), `frame-ancestors 'none'`
@@ -866,8 +890,30 @@ BEAM code, the Ammonia NIF `.so`, ERTS, and the overlay convenience scripts
 - The Ansible deploy playbook symlinks the release's `uploads/` directory to
   the shared `shared/uploads/` directory, making uploads persistent across
   deploys
-- Subdirectories (`avatars/`, `article_images/`, `link_preview_images/`) are
-  created automatically on first use via `File.mkdir_p!/1`
+- Subdirectories (`avatars/`, `article_images/`, `link_preview_images/`,
+  `media_cache/`) are created automatically on first use via `File.mkdir_p!/1`
+
+#### Media cache
+
+`uploads/media_cache/` holds locally re-encoded copies of remote images
+(federated attachments, remote actor avatars, images inside RSS articles). It
+exists so that viewing federated content never makes a visitor's browser contact
+a third-party host, which would disclose their IP address and reading habits to
+every instance whose content is on the page.
+
+- It is a **cache**: safe to delete at any time, and excluded from backups
+  without loss. Entries are re-fetched on next view.
+- nginx must **deny** `/uploads/media_cache/` directly (the shipped config does)
+  so the bytes are only reachable through the signed `/media/` route.
+- Growth is bounded by `SessionCleaner`, which hourly evicts entries untouched
+  for 30 days and then oldest-first until the directory fits within 2 GB. Tune
+  with:
+
+  ```elixir
+  config :baudrate, Baudrate.Media,
+    media_cache_ttl_days: 30,
+    media_cache_max_bytes: 2 * 1024 * 1024 * 1024
+  ```
 
 **Important:** Upload directory paths are resolved at **runtime** using
 `Application.app_dir/2` — never as compile-time module attributes. In OTP

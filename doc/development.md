@@ -689,10 +689,54 @@ security pipeline (magic byte validation, re-encode to WebP, EXIF strip, max
 
 **Remote comment/DM images:** Image attachments on incoming Note objects (comments
 and DMs) are appended as `<img>` tags to `body_html` during ingestion. Only HTTPS
-URLs are allowed. Unlike article images, these are not fetched and re-encoded
-server-side — they render as remote images in the browser. The `AttachmentExtractor`
-extracts the attachment metadata and `InboxHandler.append_attachment_images/2`
-builds the sanitized HTML.
+URLs are allowed. The `AttachmentExtractor` extracts the attachment metadata and
+`InboxHandler.append_attachment_images/2` builds the sanitized HTML, emitting the
+**proxied** path rather than the remote URL (see below).
+
+### Media Proxy
+
+No page may emit a subresource pointing at a host we do not control: that would
+disclose every viewer's IP address, User-Agent, and reading times to every remote
+instance whose content appears on the page. CSP enforces it with
+`img-src 'self' data: blob:`.
+
+Remote images are therefore rewritten to `/media/<signature>/<encoded-url>` and
+served by `BaudrateWeb.MediaController` from a local re-encoded copy.
+
+| Module | Role |
+|--------|------|
+| `Media.Proxy` | `url/1` signs a remote URL; `verify/2` checks it |
+| `Media.Cache` | SSRF-safe fetch → magic bytes → libvips WebP → `uploads/media_cache/<sha256>.webp` |
+| `Media.NegativeCache` | 1-hour suppression of retries for URLs that failed |
+| `Media.Rewriter` | `rewrite_img_src/1` over already-sanitized HTML |
+| `Media.Warmer` | opportunistic pre-fetch at ingest (disabled in tests) |
+| `BaudrateWeb.SafeHTML` | `body_html/1` — use instead of `raw/1` for stored HTML |
+
+Design notes:
+
+- **Deterministic signing.** HMAC-SHA256 over the URL alone, never
+  `Phoenix.Token.sign/3` — its embedded timestamp would produce a different
+  `src` on every render, defeating browser caching and generating a LiveView
+  diff for every avatar on every patch.
+- **Not an open proxy.** Only a URL this instance itself signed can be
+  requested, and the fetch still goes through `Federation.HTTPClient`
+  (HTTPS-only, DNS-pinned, private-IP-rejecting, size-capped). SVG is never
+  accepted or served.
+- **Rewrite at render, not ingest.** Applying the rewrite in
+  `Markdown.to_html/1` and `SafeHTML.body_html/1` covers every row written
+  before the proxy existed, so no migration or backfill was needed, and the
+  canonical remote URL is preserved so a failed fetch stays retryable.
+- **Storage location is forced by ops.** The systemd unit grants write access
+  only to `shared/uploads`, and only that directory is symlinked into each
+  release. nginx denies `/uploads/media_cache/` so the signature cannot be
+  bypassed.
+- **Eviction** runs hourly in `SessionCleaner`: entries untouched for 30 days,
+  then oldest-first until under `:media_cache_max_bytes` (2 GB default). Both
+  are configured under `config :baudrate, Baudrate.Media`.
+
+`test/baudrate_web/no_hotlink_test.exs` is the acceptance gate — it seeds each
+historical hotlinking source and asserts no rendered page contains an absolute
+or protocol-relative `<img src>`.
 
 **OTP release note:** Same as the avatar system — upload directory paths must
 use runtime `Application.app_dir/2` calls, not compile-time module attributes.
@@ -1490,14 +1534,14 @@ Exposed via `Federation.fetch_remote_object/1` (preview) and `Federation.lookup_
 - Domain blocklist (configurable via admin settings)
 - SSRF-safe remote fetches — DNS-pinned connections prevent DNS rebinding; manual redirect following with IP validation at each hop; reject private/loopback/CGNAT/link-local/multicast IPs across IPv4 and IPv6 (including `::`, `::1`, `fc00::/7`, `fe80::/10`), and decode embedded IPv4 in IPv4-mapped (`::ffff:0:0/96`), NAT64 (`64:ff9b::/96`), and IPv4-compatible (`::a.b.c.d`) addresses before re-checking; HTTPS only
 - Per-domain rate limiting (60 req/min per remote domain)
-- Real client IP extraction — `RealIp` plug reads from configurable proxy header (e.g., `x-forwarded-for`) for accurate per-IP rate limiting behind reverse proxies; honored only when the immediate peer matches the `trusted_proxies` allow-list (exact IPs or CIDR ranges) so untrusted peers cannot spoof their IP
+- Real client IP extraction — `RealIp` plug reads from configurable proxy header (e.g., `x-forwarded-for`) for accurate per-IP rate limiting behind reverse proxies; honored only when the immediate peer matches the `trusted_proxies` allow-list (exact IPs or CIDR ranges) so untrusted peers cannot spoof their IP. Fail closed: an unconfigured allow-list defaults to loopback only and an empty list trusts nobody, configurable at runtime via `BAUDRATE_TRUSTED_PROXIES`
 - Private keys encrypted at rest with AES-256-GCM
 - Recovery codes verified atomically via `Repo.update_all` to prevent TOCTOU race conditions
 - Non-guest boards (`min_role_to_view != "guest"`) hidden from all AP endpoints (actor, outbox, inbox, WebFinger, audience resolution)
 - Optional authorized fetch mode — require HTTP signatures on GET requests to AP endpoints (exempt: WebFinger, NodeInfo)
 - Signed outbound GET requests — actor resolution falls back to signed GET when remote instances require authorized fetch
 - Session cookie `secure` flag handled by `force_ssl` / `Plug.SSL` in production
-- CSP `img-src` allows `'self' https: data: blob:` — `https:` is required for federated remote actor avatars
+- CSP `img-src` allows only `'self' data: blob:` — remote actor avatars and every other remote image are served through the local media proxy (`Baudrate.Media.Proxy`), so no page issues a third-party subresource request
 
 **Public API:**
 
