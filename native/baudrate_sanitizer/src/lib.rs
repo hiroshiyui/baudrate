@@ -124,6 +124,23 @@ fn sanitize_with_markdown_rules(html: &str) -> String {
                     None
                 }
             }
+            // Narrow img src to the forms the Elixir-side rewriter
+            // (Baudrate.Media.Rewriter) knows how to handle, so its regex pass
+            // is total. In particular this drops PROTOCOL-RELATIVE srcs
+            // (`//evil.example/x.png`): url_relative(PassThrough) treats those
+            // as relative, so they would slip past a scheme-matching rewrite
+            // and still hotlink a third party under a tightened CSP.
+            ("img", "src") => {
+                if value.starts_with("https://")
+                    || value.starts_with("http://")
+                    || value.starts_with("/uploads/")
+                    || value.starts_with("/media/")
+                {
+                    Some(Cow::Borrowed(value))
+                } else {
+                    None
+                }
+            }
             _ => Some(Cow::Borrowed(value)),
         })
         .clean(html)

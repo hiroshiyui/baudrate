@@ -28,6 +28,11 @@ defmodule BaudrateWeb.RateLimits do
   | `check_feed_reply/1`   | `feed_reply:`      | 5 min   | 20    |
   | `check_link_preview_domain/1` | `lp_domain:` | 1 min   | 10    |
   | `check_link_preview_user/1`   | `lp_user:`   | 1 min   | 5     |
+  | `check_reply_chain_fetch/1`   | `reply_chain:` | 1 min | 10    |
+  | `check_reply_chain_domain/1`  | `reply_chain_domain:` | 1 min | 20 |
+  | `check_media_fetch_domain/1`  | `media_domain:` | 1 min | 20   |
+  | `check_media_fetch_ip/1`      | `media_fetch_ip:` | 1 min | 20 |
+  | `check_media_fetch_global/0`  | `media_fetch:global` | 1 min | 600 |
   """
 
   require Logger
@@ -114,6 +119,49 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_link_preview_user(integer()) :: :ok | {:error, :rate_limited}
   def check_link_preview_user(user_id) do
     check("lp_user:#{user_id}", 60_000, 5, :link_preview_user)
+  end
+
+  @doc """
+  Reply-chain fetch against a remote host: 10 per minute per **target** host.
+
+  Keyed on the host being fetched, not the sender, so a swarm of hostile
+  domains all pointing their `inReplyTo` at one victim still cannot exceed
+  10 requests/minute against it.
+  """
+  @spec check_reply_chain_fetch(String.t()) :: :ok | {:error, :rate_limited}
+  def check_reply_chain_fetch(host) do
+    check("reply_chain:#{host}", 60_000, 10, :reply_chain_fetch)
+  end
+
+  @doc """
+  Media proxy fetch against a remote host: 20 per minute per host.
+
+  Only checked on a cache **miss** — cache hits are bounded by the per-IP plug
+  limit instead. Keeps this instance from being used to hammer a third party.
+  """
+  @spec check_media_fetch_domain(String.t() | nil) :: :ok | {:error, :rate_limited}
+  def check_media_fetch_domain(nil), do: {:error, :rate_limited}
+
+  def check_media_fetch_domain(host) do
+    check("media_domain:#{host}", 60_000, 20, :media_fetch_domain)
+  end
+
+  @doc "Media proxy fetch triggered by one client: 20 per minute per IP."
+  @spec check_media_fetch_ip(String.t()) :: :ok | {:error, :rate_limited}
+  def check_media_fetch_ip(ip) do
+    check("media_fetch_ip:#{ip}", 60_000, 20, :media_fetch_ip)
+  end
+
+  @doc "Instance-wide media proxy egress ceiling: 600 fetches per minute."
+  @spec check_media_fetch_global() :: :ok | {:error, :rate_limited}
+  def check_media_fetch_global do
+    check("media_fetch:global", 60_000, 600, :media_fetch_global)
+  end
+
+  @doc "Reply-chain walks initiated by a remote domain: 20 per minute."
+  @spec check_reply_chain_domain(String.t()) :: :ok | {:error, :rate_limited}
+  def check_reply_chain_domain(domain) do
+    check("reply_chain_domain:#{domain}", 60_000, 20, :reply_chain_domain)
   end
 
   defp check(bucket, scale_ms, limit, action) do

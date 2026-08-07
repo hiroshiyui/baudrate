@@ -81,6 +81,10 @@
     - "{{ deploy_path }}/releases"
     - "{{ deploy_path }}/shared/uploads/avatars"
     - "{{ deploy_path }}/shared/uploads/article_images"
+    - "{{ deploy_path }}/shared/uploads/link_preview_images"
+    # Cached copies of remote images, served only through the signed
+    # /media/ route (nginx denies this path directly).
+    - "{{ deploy_path }}/shared/uploads/media_cache"
     - "{{ deploy_path }}/env"
 
 - name: Restrict env directory permissions

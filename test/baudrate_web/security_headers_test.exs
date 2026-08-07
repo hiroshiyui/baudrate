@@ -16,10 +16,14 @@ defmodule BaudrateWeb.SecurityHeadersTest do
       assert csp =~ "default-src"
     end
 
-    test "allows https: in img-src for federated avatars", %{conn: conn} do
+    test "restricts img-src to self, blocking third-party hotlinking", %{conn: conn} do
+      # Remote images and avatars are served through the local media proxy
+      # (`Baudrate.Media.Proxy`), so no page needs to reach a third-party host
+      # and no viewer's IP is disclosed to one.
       conn = get(conn, "/login")
       [csp] = get_resp_header(conn, "content-security-policy")
-      assert csp =~ "img-src 'self' https: data: blob:"
+      assert csp =~ "img-src 'self' data: blob:"
+      refute csp =~ "img-src 'self' https:"
     end
 
     test "blocks plugins with object-src 'none'", %{conn: conn} do

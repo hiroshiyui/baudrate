@@ -11,14 +11,20 @@ defmodule Baudrate.Content.Markdown do
   2. **MDEx** — Markdown → raw HTML (CommonMark + GFM tables/strikethrough/
      autolink/tasklist, `render: [unsafe: true]` so stored HTML passes through)
   3. **Ammonia sanitizer** — strips unsafe HTML tags/attributes
-  4. **Hashtag linkification** — converts `#tag` to clickable links
-  5. **Mention linkification** — converts `@username` to clickable profile links
+  4. **Media rewriting** — rewrites remote `<img src>` to the local media proxy
+     so rendering never discloses the viewer's IP to a third-party host
+  5. **Hashtag linkification** — converts `#tag` to clickable links
+  6. **Mention linkification** — converts `@username` to clickable profile links
 
   Raw HTML is rendered unescaped (step 2) *because* step 3 is the security gate:
   every rendered document is passed through the Ammonia allowlist before it is
   ever stored or displayed. The sanitizer only allows `href` on `<a>` tags. By
   running linkification *after* sanitization, the injected `<a>` tags are never
   stripped. Tag names and usernames are regex-validated so no injection is possible.
+
+  Step 4 likewise runs *after* sanitization, because it relies on Ammonia having
+  already narrowed `img[src]` to a closed set of forms (see
+  `Baudrate.Media.Rewriter`).
   """
 
   @mdex_opts [
@@ -52,6 +58,7 @@ defmodule Baudrate.Content.Markdown do
     |> normalize_html_blocks()
     |> MDEx.to_html!(@mdex_opts)
     |> sanitize_html()
+    |> Baudrate.Media.Rewriter.rewrite_img_src()
     |> linkify_hashtags()
     |> linkify_mentions()
   end

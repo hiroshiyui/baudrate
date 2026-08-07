@@ -107,7 +107,7 @@
         <div class="w-12 h-12 rounded-full bg-base-300 flex items-center justify-center">
           <img
             :if={@remote_actor.avatar_url}
-            src={@remote_actor.avatar_url}
+            src={Baudrate.Media.Proxy.url(@remote_actor.avatar_url)}
             alt={@remote_actor.display_name || @remote_actor.username}
             class="rounded-full"
           />
@@ -218,7 +218,7 @@
             <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center">
               <img
                 :if={article.remote_actor.avatar_url}
-                src={article.remote_actor.avatar_url}
+                src={Baudrate.Media.Proxy.url(article.remote_actor.avatar_url)}
                 alt={display_name(article.remote_actor)}
                 class="w-10 h-10 rounded-full"
               />
@@ -300,7 +300,7 @@
             <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center">
               <img
                 :if={preview.remote_actor.avatar_url}
-                src={preview.remote_actor.avatar_url}
+                src={Baudrate.Media.Proxy.url(preview.remote_actor.avatar_url)}
                 alt={display_name(preview.remote_actor)}
                 class="w-10 h-10 rounded-full"
               />
@@ -513,7 +513,7 @@
               <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
                 <img
                   :if={article.remote_actor.avatar_url}
-                  src={article.remote_actor.avatar_url}
+                  src={Baudrate.Media.Proxy.url(article.remote_actor.avatar_url)}
                   alt={display_name(article.remote_actor)}
                   class="w-6 h-6 rounded-full"
                 />
@@ -575,7 +575,7 @@
             <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
               <img
                 :if={comment.remote_actor.avatar_url}
-                src={comment.remote_actor.avatar_url}
+                src={Baudrate.Media.Proxy.url(comment.remote_actor.avatar_url)}
                 alt={display_name(comment.remote_actor)}
                 class="w-6 h-6 rounded-full"
               />

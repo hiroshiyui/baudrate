@@ -15,7 +15,16 @@ defmodule Baudrate.Application do
       Baudrate.Auth.SessionCleaner,
       Baudrate.Auth.WebAuthnChallenges,
       Baudrate.Setup.SettingsCache,
+      # Logs a banner when the setup wizard is locked by a missing
+      # INSTALLATION_KEY. Logging only — never raises, so a database blip
+      # cannot turn a warning into a failed boot.
+      Supervisor.child_spec(
+        {Task, &Baudrate.Setup.InstallationKey.log_boot_status/0},
+        id: :installation_key_check,
+        restart: :temporary
+      ),
       Baudrate.Content.BoardCache,
+      Baudrate.Media.NegativeCache,
       {BaudrateWeb.RateLimit, [clean_period: :timer.minutes(5)]},
       {Task.Supervisor, name: Baudrate.Federation.TaskSupervisor},
       Baudrate.Federation.DomainBlockCache,

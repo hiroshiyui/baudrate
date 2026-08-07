@@ -230,6 +230,34 @@ defmodule Baudrate.Sanitizer.NativeTest do
       refute result =~ "evil"
     end
 
+    test "drops a protocol-relative img src" do
+      # `url_relative(PassThrough)` treats `//host/path` as relative, so without
+      # an explicit src filter it survives and still hotlinks a third party —
+      # slipping past both the media rewriter and a tightened CSP.
+      html = ~s[<img src="//evil.example/track.png" alt="x">]
+      result = Native.sanitize_markdown(html)
+
+      refute result =~ "evil.example"
+      refute result =~ "src="
+    end
+
+    test "drops a bare relative img src" do
+      html = ~s[<img src="x" alt="x">]
+      refute Native.sanitize_markdown(html) =~ ~s(src="x")
+    end
+
+    test "drops a data: img src" do
+      html = ~s[<img src="data:image/svg+xml;base64,AAAA" alt="x">]
+      refute Native.sanitize_markdown(html) =~ "data:"
+    end
+
+    test "preserves local upload and media-proxy img srcs" do
+      for src <- ["/uploads/article_images/a.webp", "/media/sig/encoded"] do
+        result = Native.sanitize_markdown(~s[<img src="#{src}" alt="x">])
+        assert result =~ ~s(src="#{src}")
+      end
+    end
+
     test "preserves code[class] matching language pattern" do
       html = ~s[<code class="language-elixir">code</code>]
       result = Native.sanitize_markdown(html)

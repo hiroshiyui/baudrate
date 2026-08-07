@@ -70,7 +70,7 @@
           <div class="w-12 h-12 rounded-full bg-base-300 flex items-center justify-center">
             <img
               :if={follow.remote_actor.avatar_url}
-              src={follow.remote_actor.avatar_url}
+              src={Baudrate.Media.Proxy.url(follow.remote_actor.avatar_url)}
               alt={follow.remote_actor.display_name || follow.remote_actor.username}
               class="rounded-full"
             />

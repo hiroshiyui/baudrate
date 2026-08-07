@@ -15,6 +15,7 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     * `:feeds` — 30 requests per minute per IP
     * `:push_subscription` — 10 requests per minute per IP
     * `:share_target` — 10 requests per minute per IP
+    * `:media` — 300 requests per minute per IP (media proxy, cache hits included)
 
   Registration and password reset are **not** listed here: those flows submit
   over the LiveView channel rather than a plug-routed request, so they check
@@ -42,7 +43,8 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     activity_pub: {60_000, 120},
     feeds: {60_000, 30},
     push_subscription: {60_000, 10},
-    share_target: {60_000, 10}
+    share_target: {60_000, 10},
+    media: {60_000, 300}
   }
 
   @impl true
@@ -62,9 +64,10 @@ defmodule BaudrateWeb.Plugs.RateLimit do
       {:deny, _limit} ->
         Logger.warning("rate_limit.denied: action=#{action} ip=#{ip}")
 
-        if action in [:activity_pub, :push_subscription] do
+        if action in [:activity_pub, :push_subscription, :media] do
           # Machine-readable clients (remote AP instances, the push service
-          # worker) get the untranslated HTTP status phrase, not UI copy.
+          # worker, an <img> element) get the untranslated HTTP status phrase,
+          # not a full HTML page.
           conn
           |> put_resp_content_type("application/json")
           |> send_resp(429, Jason.encode!(%{error: "Too Many Requests"}))

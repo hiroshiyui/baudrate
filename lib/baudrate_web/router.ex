@@ -71,7 +71,7 @@ defmodule BaudrateWeb.Router do
     # replacing the CSS framework.
     plug :put_secure_browser_headers, %{
       "content-security-policy" =>
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self' blob: ws: wss:; worker-src 'self'; frame-src https://www.youtube-nocookie.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: ws: wss:; worker-src 'self'; frame-src https://www.youtube-nocookie.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
       "permissions-policy" => "geolocation=(), microphone=(), camera=()",
       "referrer-policy" => "strict-origin-when-cross-origin",
       "x-frame-options" => "DENY"
@@ -116,7 +116,7 @@ defmodule BaudrateWeb.Router do
 
     plug :put_secure_browser_headers, %{
       "content-security-policy" =>
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self' blob: ws: wss:; worker-src 'self'; frame-src https://www.youtube-nocookie.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: ws: wss:; worker-src 'self'; frame-src https://www.youtube-nocookie.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
       "permissions-policy" => "geolocation=(), microphone=(), camera=()",
       "referrer-policy" => "strict-origin-when-cross-origin",
       "x-frame-options" => "DENY"
@@ -135,6 +135,20 @@ defmodule BaudrateWeb.Router do
   scope "/", BaudrateWeb do
     pipe_through :share_target
     post "/share", ShareTargetController, :create
+  end
+
+  pipeline :rate_limit_media do
+    plug BaudrateWeb.Plugs.RateLimit, action: :media
+  end
+
+  # Media proxy — serves remote images from a local re-encoded copy so no
+  # viewer's browser ever contacts a third-party host. Public (guests must be
+  # able to render pages) but only reachable with a valid HMAC signature over a
+  # URL this instance itself emitted. See `Baudrate.Media.Proxy`.
+  scope "/media", BaudrateWeb do
+    pipe_through [:rate_limit_media]
+
+    get "/:sig/:encoded", MediaController, :show
   end
 
   pipeline :activity_pub do

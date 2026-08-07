@@ -405,7 +405,7 @@
               <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center">
                 <img
                   :if={item.feed_item.remote_actor.avatar_url}
-                  src={item.feed_item.remote_actor.avatar_url}
+                  src={Baudrate.Media.Proxy.url(item.feed_item.remote_actor.avatar_url)}
                   alt=""
                   class="rounded-full"
                 />
@@ -471,7 +471,7 @@
               rel="nofollow noopener noreferrer"
             >
               <img
-                src={att["url"]}
+                src={Baudrate.Media.Proxy.url(att["url"])}
                 alt={att["name"] || gettext("Image attachment")}
                 class="w-full aspect-square object-cover rounded-lg border border-base-300"
                 loading="lazy"
@@ -1022,7 +1022,7 @@
               <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center">
                 <img
                   :if={item.comment.remote_actor.avatar_url}
-                  src={item.comment.remote_actor.avatar_url}
+                  src={Baudrate.Media.Proxy.url(item.comment.remote_actor.avatar_url)}
                   alt=""
                   class="rounded-full"
                 />

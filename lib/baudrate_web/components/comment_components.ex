@@ -90,7 +90,7 @@ defmodule BaudrateWeb.CommentComponents do
         </div>
 
         <div :if={@comment.body_html} class="comment-body prose prose-sm max-w-none">
-          {raw(@comment.body_html)}
+          {BaudrateWeb.SafeHTML.body_html(@comment.body_html)}
         </div>
         <div :if={!@comment.body_html} class="comment-body prose prose-sm max-w-none">
           {raw(Baudrate.Content.Markdown.to_html(@comment.body))}

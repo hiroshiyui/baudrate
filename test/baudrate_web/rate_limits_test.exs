@@ -124,6 +124,38 @@ defmodule BaudrateWeb.RateLimitsTest do
     end
   end
 
+  describe "reply chain limits" do
+    test "check_reply_chain_fetch/1 buckets on the target host at 10/min" do
+      test_pid = self()
+
+      Sandbox.set_fun(fn bucket, scale, limit ->
+        send(test_pid, {:checked, bucket, scale, limit})
+        {:allow, 1}
+      end)
+
+      assert :ok = RateLimits.check_reply_chain_fetch("victim.example")
+      assert_received {:checked, "reply_chain:victim.example", 60_000, 10}
+    end
+
+    test "check_reply_chain_domain/1 buckets on the sending domain at 20/min" do
+      test_pid = self()
+
+      Sandbox.set_fun(fn bucket, scale, limit ->
+        send(test_pid, {:checked, bucket, scale, limit})
+        {:allow, 1}
+      end)
+
+      assert :ok = RateLimits.check_reply_chain_domain("hostile.example")
+      assert_received {:checked, "reply_chain_domain:hostile.example", 60_000, 20}
+    end
+
+    test "denies over the limit" do
+      Sandbox.set_fun(fn _b, _s, _l -> {:deny, 10} end)
+      assert {:error, :rate_limited} = RateLimits.check_reply_chain_fetch("victim.example")
+      assert {:error, :rate_limited} = RateLimits.check_reply_chain_domain("hostile.example")
+    end
+  end
+
   describe "error path (fail-open)" do
     test "returns :ok on backend error" do
       Sandbox.set_fun(fn _b, _s, _l ->

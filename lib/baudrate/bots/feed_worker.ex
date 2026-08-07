@@ -143,6 +143,9 @@ defmodule Baudrate.Bots.FeedWorker do
 
     case Content.create_article(attrs, bot.board_ids) do
       {:ok, %{article: article}} ->
+        # Feed bodies are the highest-volume source of remote images; warm the
+        # media cache so the first reader does not wait on the publisher's CDN.
+        Baudrate.Media.Warmer.warm_html(entry.body)
         Bots.record_feed_item(bot, entry.guid, article.id)
         Logger.debug("bots.feed_worker: posted article #{article.id} for bot #{bot.id}")
 

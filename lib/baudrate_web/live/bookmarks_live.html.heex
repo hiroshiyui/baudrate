@@ -49,7 +49,7 @@
                   <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
                     <img
                       :if={bookmark.article.remote_actor.avatar_url}
-                      src={bookmark.article.remote_actor.avatar_url}
+                      src={Baudrate.Media.Proxy.url(bookmark.article.remote_actor.avatar_url)}
                       alt={display_name(bookmark.article.remote_actor)}
                       class="w-6 h-6 rounded-full"
                     />
@@ -103,7 +103,7 @@
                   <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
                     <img
                       :if={bookmark.comment.remote_actor.avatar_url}
-                      src={bookmark.comment.remote_actor.avatar_url}
+                      src={Baudrate.Media.Proxy.url(bookmark.comment.remote_actor.avatar_url)}
                       alt={display_name(bookmark.comment.remote_actor)}
                       class="w-6 h-6 rounded-full"
                     />

@@ -79,6 +79,14 @@ config :baudrate, Baudrate.Federation,
   # 30 days in seconds (matches actor_cache_ttl convention)
   stale_actor_max_age: 2_592_000
 
+# Media proxy — local cache of remote images, so no viewer's browser ever
+# contacts a third-party host. See `Baudrate.Media.Proxy`.
+config :baudrate, Baudrate.Media,
+  # Entries untouched for this long are evicted by SessionCleaner.
+  media_cache_ttl_days: 30,
+  # Hard ceiling; oldest-first eviction kicks in above this.
+  media_cache_max_bytes: 2 * 1024 * 1024 * 1024
+
 # WebAuthn / FIDO2 — base configuration (attestation policy and flags).
 # origin and rp_id are environment-specific; set in dev.exs, test.exs, and runtime.exs.
 # attestation and user_verification default to "none" and "preferred" (strings) in Wax.Challenge.

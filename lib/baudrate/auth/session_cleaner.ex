@@ -17,6 +17,8 @@ defmodule Baudrate.Auth.SessionCleaner do
       but never associated with a reply (older than 24 hours)
     * Delivery jobs — purges delivered jobs older than 7 days and abandoned
       jobs older than 30 days
+    * Media cache — evicts proxied remote images untouched for 30 days, then
+      oldest-first until under the configured size ceiling
 
   The first cleanup is scheduled on `init/1`, so it runs one interval after
   the application boots — not immediately — to avoid slowing startup.
@@ -48,12 +50,23 @@ defmodule Baudrate.Auth.SessionCleaner do
     cleanup_delivery_jobs()
     refresh_stale_link_previews()
     purge_orphan_link_previews()
+    purge_stale_media_cache()
     schedule_cleanup()
     {:noreply, state}
   end
 
   defp schedule_cleanup do
     Process.send_after(self(), :cleanup, @interval)
+  end
+
+  # Eviction is non-destructive: an evicted image is simply re-fetched the next
+  # time someone views it.
+  defp purge_stale_media_cache do
+    count = Baudrate.Media.Cache.purge_stale()
+
+    if count > 0 do
+      Logger.info("session_cleaner.media_cache_purged: count=#{count}")
+    end
   end
 
   defp cleanup_delivery_jobs do

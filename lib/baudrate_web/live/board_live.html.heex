@@ -186,7 +186,7 @@
             <span class="w-6 h-6 rounded-full bg-base-300 inline-flex items-center justify-center shrink-0">
               <img
                 :if={article.remote_actor.avatar_url}
-                src={article.remote_actor.avatar_url}
+                src={Baudrate.Media.Proxy.url(article.remote_actor.avatar_url)}
                 alt={display_name(article.remote_actor)}
                 class="w-6 h-6 rounded-full"
               />

@@ -138,7 +138,9 @@
             if(msg.sender_user_id == @current_user.id, do: "chat-bubble-primary", else: "")
           ]}>
             <%= if msg.body_html do %>
-              <div class="prose prose-sm max-w-none">{raw(msg.body_html)}</div>
+              <div class="prose prose-sm max-w-none">
+                {BaudrateWeb.SafeHTML.body_html(msg.body_html)}
+              </div>
             <% else %>
               <p class="whitespace-pre-wrap break-words">{msg.body}</p>
             <% end %>

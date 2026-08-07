@@ -82,3 +82,7 @@ config :wallaby,
   ],
   screenshot_on_failure: true,
   screenshot_dir: "tmp/wallaby_screenshots"
+
+# Media cache warming is opportunistic; disable it in tests so an incidental
+# outbound fetch does not make unrelated tests depend on the HTTP stub.
+config :baudrate, :media_warm_enabled, false
