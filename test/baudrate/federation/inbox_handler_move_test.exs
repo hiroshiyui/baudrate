@@ -157,6 +157,83 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
       assert Federation.user_follows?(user.id, actor.id)
     end
 
+    test "keeps the moved actor's feed history visible and interactable",
+         %{user: user, actor: actor} do
+      create_accepted_follow(user, actor)
+      new_actor = create_remote_actor(%{domain: "new.example"})
+
+      {:ok, authored} =
+        Federation.create_feed_item(%{
+          remote_actor_id: actor.id,
+          activity_type: "Create",
+          object_type: "Note",
+          ap_id: "https://remote.example/notes/pre-move-#{System.unique_integer([:positive])}",
+          body: "posted before the move",
+          published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      # An Announce keys feed membership on the booster, not the author.
+      author = create_remote_actor(%{domain: "third.example"})
+
+      {:ok, boosted} =
+        Federation.create_feed_item(%{
+          remote_actor_id: author.id,
+          boosted_by_actor_id: actor.id,
+          activity_type: "Announce",
+          object_type: "Note",
+          ap_id: "https://remote.example/announce-#{System.unique_integer([:positive])}",
+          body: "boosted before the move",
+          published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      assert Federation.feed_item_accessible?(user, authored)
+      assert Federation.feed_item_accessible?(user, boosted)
+
+      stub_target_actor(new_actor, [actor.ap_id])
+      assert :ok = InboxHandler.handle(move_activity(actor, new_actor.ap_id), actor, :shared)
+
+      # The follow moved to the new actor, so items still pointing at the old
+      # one would fail the accessibility join and vanish from the feed.
+      authored = Repo.get!(Baudrate.Federation.FeedItem, authored.id)
+      boosted = Repo.get!(Baudrate.Federation.FeedItem, boosted.id)
+
+      assert authored.remote_actor_id == new_actor.id
+      assert boosted.boosted_by_actor_id == new_actor.id
+      # The original author of a boosted item is untouched.
+      assert boosted.remote_actor_id == author.id
+
+      assert Federation.feed_item_accessible?(user, authored)
+      assert Federation.feed_item_accessible?(user, boosted)
+
+      ids = Enum.map(Federation.list_feed_items(user).items, & &1.feed_item.id)
+      assert authored.id in ids
+      assert boosted.id in ids
+    end
+
+    test "an unauthorized Move leaves feed items where they are",
+         %{user: user, actor: actor} do
+      create_accepted_follow(user, actor)
+      new_actor = create_remote_actor(%{domain: "new.example"})
+
+      {:ok, item} =
+        Federation.create_feed_item(%{
+          remote_actor_id: actor.id,
+          activity_type: "Create",
+          object_type: "Note",
+          ap_id: "https://remote.example/notes/unauth-#{System.unique_integer([:positive])}",
+          body: "stays put",
+          published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      stub_target_actor(new_actor, ["https://someone-else.example/users/x"])
+
+      assert {:error, :move_not_authorized} =
+               InboxHandler.handle(move_activity(actor, new_actor.ap_id), actor, :shared)
+
+      assert Repo.get!(Baudrate.Federation.FeedItem, item.id).remote_actor_id == actor.id
+      assert Federation.feed_item_accessible?(user, item)
+    end
+
     test "rejects Move with actor mismatch", %{actor: actor} do
       other_actor = create_remote_actor()
 

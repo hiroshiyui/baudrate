@@ -1346,7 +1346,7 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `Flag` — incoming reports stored in local moderation queue
 - `Block` / `Undo(Block)` — remote actor blocks (logged for informational purposes)
 - `Accept(Follow)` / `Reject(Follow)` — mark outbound user follows as accepted/rejected
-- `Move` — migrates local users' outbound follows from the old actor to the target actor (with deduplication via `migrate_user_follows/2`). Authorized only when the signer matches the Move `actor` **and** the target actor's `alsoKnownAs` claims the moving actor as an alias — the handler force-refreshes the target (`ActorResolver.refresh/1`) and rejects with `{:error, :move_not_authorized}` otherwise, so a remote actor cannot redirect its local followers onto a non-consenting target. (Feed-item migration and follower notification remain future work — see `doc/TODOs.md` Phase 2.)
+- `Move` — migrates local users' outbound follows from the old actor to the target actor (with deduplication via `migrate_user_follows/2`). Authorized only when the signer matches the Move `actor` **and** the target actor's `alsoKnownAs` claims the moving actor as an alias — the handler force-refreshes the target (`ActorResolver.refresh/1`) and rejects with `{:error, :move_not_authorized}` otherwise, so a remote actor cannot redirect its local followers onto a non-consenting target. An authorized Move also repoints the actor's feed items (`migrate_feed_items/2`, both `remote_actor_id` and `boosted_by_actor_id`) — feed membership is a query-time join on `user_follows`, so moving the follow without the items would erase the actor's history from its followers' feeds and make those items fail `feed_item_accessible?/2`. Articles and comments keep their original `remote_actor_id`: they are board content with their own permalinks and remain published under the old actor upstream. (Outbound Move and follower notification remain future work — see `doc/TODOs.md` Phase 2.)
 
 **Outbound delivery** (via `Publisher` + `Delivery` + `DeliveryWorker`):
 - `Create(Article)` — automatically enqueued when a local user publishes an article
@@ -1395,6 +1395,7 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - Announce → feed item: when a followed actor boosts content, the boosted object is fetched and stored as a feed item with `activity_type: "Announce"` and `boosted_by_actor_id` pointing to the booster. Original author is resolved via `attributedTo`. Board routing: if the booster is followed by a board, boosted Article/Page content is also routed to that board (loop-safe: `create_remote_article` does not trigger outbound federation).
 - Delete propagation: soft-deletes feed items on content or actor deletion
 - `Federation.migrate_user_follows/2` — Move activity support (migrate + deduplicate)
+- `Federation.migrate_feed_items/2` — Move activity support (repoint feed items to the new actor)
 - `/feed` LiveView — paginated personal timeline with real-time PubSub updates
 
 **Feed item replies**:

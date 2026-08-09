@@ -533,8 +533,17 @@ defmodule Baudrate.Federation.InboxHandler do
           if actor_uri in (new_actor.also_known_as || []) do
             {migrated, deleted} = Federation.migrate_user_follows(remote_actor.id, new_actor.id)
 
+            # Feed membership is a query-time join on `user_follows`, so the
+            # follow and the items it makes visible have to move together.
+            # Migrating only the follow silently empties every follower's feed
+            # of that actor's history and makes those items fail
+            # `feed_item_accessible?/2`.
+            {authored, boosted} = Federation.migrate_feed_items(remote_actor.id, new_actor.id)
+
             Logger.info(
-              "federation.move_complete: from=#{actor_uri} to=#{target_uri} migrated=#{migrated} deduped=#{deleted}"
+              "federation.move_complete: from=#{actor_uri} to=#{target_uri} " <>
+                "migrated=#{migrated} deduped=#{deleted} " <>
+                "feed_items_authored=#{authored} feed_items_boosted=#{boosted}"
             )
 
             :ok

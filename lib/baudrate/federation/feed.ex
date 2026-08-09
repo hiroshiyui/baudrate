@@ -251,6 +251,40 @@ defmodule Baudrate.Federation.Feed do
   end
 
   @doc """
+  Repoints feed items from a migrated remote actor to its new identity.
+
+  Called after a verified inbound `Move`. Feed membership is a query-time join
+  on `user_follows`, so migrating the follow without migrating the items would
+  make every item the actor had already published vanish from its followers'
+  feeds — and, because `feed_item_accessible?/2` resolves the same source
+  actor, become un-likeable, un-boostable, un-repliable, and un-forwardable.
+
+  Both roles are repointed: `remote_actor_id` (the author of a `Create`, or the
+  original author of an `Announce`) and `boosted_by_actor_id` (the booster,
+  which is what `Announce` feed membership keys on).
+
+  Only feed items move. Articles and comments keep their original
+  `remote_actor_id`: they are board content with their own permalinks and
+  `ap_id`s, and rewriting their authorship would retroactively reattribute
+  posts that remain published under the old actor on its own instance.
+
+  Returns `{create_count, announce_count}`.
+  """
+  @spec migrate_feed_items(integer(), integer()) :: {non_neg_integer(), non_neg_integer()}
+  def migrate_feed_items(old_actor_id, new_actor_id)
+      when is_integer(old_actor_id) and is_integer(new_actor_id) do
+    {authored, _} =
+      from(fi in FeedItem, where: fi.remote_actor_id == ^old_actor_id)
+      |> Repo.update_all(set: [remote_actor_id: new_actor_id])
+
+    {boosted, _} =
+      from(fi in FeedItem, where: fi.boosted_by_actor_id == ^old_actor_id)
+      |> Repo.update_all(set: [boosted_by_actor_id: new_actor_id])
+
+    {authored, boosted}
+  end
+
+  @doc """
   Creates a reply to a remote feed item and schedules federation delivery.
 
   Renders the body as Markdown → HTML, generates an AP ID, inserts the

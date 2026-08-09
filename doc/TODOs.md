@@ -245,15 +245,17 @@ New section (below Account Aliases):
 > `remote_actors.also_known_as`. The *outbound* side still needs `also_known_as`
 > on the local **`users`** table — see 2.1.
 
-### 2.8 Migrate feed items on inbound Move
-
-File: `lib/baudrate/federation/inbox_handler.ex` or `federation.ex`
-
-When processing a verified inbound Move from old_actor to new_actor:
-- Update `feed_items.remote_actor_id` from old_actor.id to new_actor.id
-- Update `feed_items.boosted_by_actor_id` where applicable
-- Update `feed_item_replies.remote_actor_id`
-- This ensures the user's feed shows content under the new identity
+> **2.8 (migrate feed items on inbound Move) — ✅ completed and shipped.**
+> `Federation.migrate_feed_items/2` repoints both `feed_items.remote_actor_id`
+> and `feed_items.boosted_by_actor_id`, and the Move handler calls it alongside
+> `migrate_user_follows/2`. This was not cosmetic: feed membership is a
+> query-time join on `user_follows`, so migrating only the follow made the
+> actor's entire published history disappear from its followers' feeds and fail
+> `feed_item_accessible?/2` (no like, boost, reply, or forward). The
+> `feed_item_replies.remote_actor_id` bullet was mistaken — that table has only
+> a local `user_id`. Articles and comments are deliberately *not* repointed:
+> they are board content with their own permalinks and `ap_id`s, and remain
+> published under the old actor on its own instance.
 
 ### 2.9 Notify local followers on inbound Move
 

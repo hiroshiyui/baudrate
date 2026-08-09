@@ -17,6 +17,14 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ### Fixed
 
+- **An inbound `Move` no longer erases the moved actor's feed history.** Feed
+  membership is a query-time join on `user_follows`, and the Move handler
+  migrated the follow but left `feed_items` pointing at the old actor — so every
+  item that actor had already published vanished from its followers' feeds and
+  failed `feed_item_accessible?/2`, becoming impossible to like, boost, reply
+  to, or forward. `Federation.migrate_feed_items/2` now repoints both
+  `remote_actor_id` and `boosted_by_actor_id` alongside the follow. Articles and
+  comments deliberately keep their original attribution.
 - **Long CJK titles no longer drop inbound articles.**
   `Content.TitleDeriver.truncate_title/2` appended its ellipsis *on top of*
   `max_len`, so a 255-grapheme CJK title became 256 characters and failed the
