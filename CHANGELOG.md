@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [Unreleased]
+
+### Added
+
+- **Bookmark comments from the thread** — comment bookmarking existed in the
+  context and rendered on `/bookmarks`, but no UI could create one. Each comment
+  now carries a bookmark toggle in its action row.
+
+### Fixed
+
+- **Long CJK titles no longer drop inbound articles.**
+  `Content.TitleDeriver.truncate_title/2` appended its ellipsis *on top of*
+  `max_len`, so a 255-grapheme CJK title became 256 characters and failed the
+  `:title` length validation — silently discarding the federated object.
+  `max_len` is now a hard ceiling.
+- LiveView forms with `phx-change` but no `id` (article/comment/feed
+  forward-to-board search, feed reply, both setup wizard steps) could not
+  perform form recovery after a reconnect. All now carry stable, semantic ids.
+- `/articles/:slug/history` gained the `data-focus-target` marker so keyboard
+  and screen-reader users land on the revision list after navigation.
+
+### Security
+
+- **Remote `preferredUsername` is now sanitized.** The username is the actor's
+  identity anchor — the UI renders it as `@username@domain` and falls back to it
+  as the display name when the actor publishes no `name` — but it was stored
+  verbatim from the actor document. A hostile instance could embed Unicode
+  bidirectional overrides to make one handle render as another's, or park an
+  unbounded string in the column. `Federation.Sanitizer.sanitize_username/1`
+  strips tags, control characters, and bidi overrides, and truncates to 64
+  characters; `ActorResolver` falls back to deriving the handle from the actor
+  `id` when nothing survives.
+- Display-name sanitization now also strips Unicode bidirectional overrides and
+  zero-width spaces (U+200B/FEFF), which the previous C0/C1 control-character
+  pass let through. Zero-width joiners are deliberately preserved — they are
+  load-bearing in emoji sequences and in Indic and Persian scripts.
+- **Bounded the remaining unbounded remote strings.** A feed item's `title` is
+  the remote object's `name` verbatim and, unlike `content`, never passes
+  through `Validator.validate_content_size/1` — a remote actor could store a
+  payload-sized string and have it rendered on every follower's `/feed`. Titles
+  are now truncated at ingest with a 255-character `validate_length` backstop on
+  `Federation.FeedItem`. Remote actor profile-field values are capped at 1000
+  characters and `alsoKnownAs` at 20 entries.
+- **Bookmarking is authorized at the context boundary.**
+  `Content.toggle_article_bookmark/2` and `toggle_comment_bookmark/2` take a
+  client-supplied ID and now require the target to exist, not be soft-deleted,
+  and be visible to the user. Without the check a user could bookmark a guessed
+  ID in a board they cannot view and read its title and body excerpt back off
+  `/bookmarks`. Removing an existing bookmark is always permitted, so raising a
+  board's `min_role_to_view` cannot strand a row on someone's list.
+
 ## [1.12.0] — 2026-08-08
 
 A security-hardening release closing every finding from a project-wide audit,

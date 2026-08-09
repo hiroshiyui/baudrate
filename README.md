@@ -60,7 +60,7 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
 - Erlang/OTP 26+
 - PostgreSQL 15+
 - libvips (for image processing)
-- Rust toolchain (for html5ever and Ammonia NIF compilation)
+- Rust toolchain (to compile the html5ever, Ammonia, and feedparser-rs NIFs)
 
 ### Installation
 

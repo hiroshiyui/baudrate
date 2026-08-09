@@ -7,10 +7,11 @@ access. All endpoints documented here live under `/ap/` (objects and actors) or
 A handful of additional first-party HTTP endpoints (RSS/Atom feeds at
 `/feeds/{rss,atom}` and per-board/user variants, the Web Push subscription
 endpoints `POST/DELETE /api/push-subscriptions`, the PWA Web Share Target at
-`POST /share`, the Mastodon-style `GET /@:handle` redirect, and the health
-probe `GET /health`) are intended for browser, PWA, or sysop use rather than
-federation; they are wired up in `lib/baudrate_web/router.ex` and not
-documented as part of the AP surface.
+`POST /share`, the Mastodon-style `GET /@:handle` redirect, the signed media
+proxy `GET /media/:sig/:encoded`, and the health probe `GET /health`) are
+intended for browser, PWA, or sysop use rather than federation; they are wired
+up in `lib/baudrate_web/router.ex` and not documented as part of the AP
+surface.
 
 **Base URL:** `https://<your-instance>`
 
