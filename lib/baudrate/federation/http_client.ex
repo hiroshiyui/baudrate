@@ -364,6 +364,15 @@ defmodule Baudrate.Federation.HTTPClient do
   def private_ip?({0, _, _, _}), do: true
   # 100.64.0.0/10 — CGNAT / shared address space (RFC 6598)
   def private_ip?({100, b, _, _}) when b >= 64 and b <= 127, do: true
+  # 192.0.0.0/24 — IETF protocol assignments (RFC 6890), e.g. the DNS64 and
+  # NAT64 well-known addresses. Not globally routable.
+  def private_ip?({192, 0, 0, _}), do: true
+  # 192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24 — TEST-NET-1/2/3 (RFC 5737)
+  def private_ip?({192, 0, 2, _}), do: true
+  def private_ip?({198, 51, 100, _}), do: true
+  def private_ip?({203, 0, 113, _}), do: true
+  # 198.18.0.0/15 — benchmarking (RFC 2544); routed to lab gear on some networks
+  def private_ip?({198, b, _, _}) when b in 18..19, do: true
   # 224.0.0.0/4 multicast and 240.0.0.0/4 reserved (covers 255.255.255.255)
   def private_ip?({a, _, _, _}) when a >= 224, do: true
   # IPv6 unspecified address ::
@@ -388,6 +397,24 @@ defmodule Baudrate.Federation.HTTPClient do
     import Bitwise
     private_ip?({hi >>> 8, hi &&& 0xFF, lo >>> 8, lo &&& 0xFF})
   end
+
+  # 6to4 (2002::/16, RFC 3056) — the second and third groups carry the embedded
+  # IPv4, so 2002:7f00:1:: reaches 127.0.0.1 through a 6to4 relay. Same class of
+  # bypass as NAT64 and ::ffff:, so it gets the same treatment.
+  def private_ip?({0x2002, hi, lo, _, _, _, _, _}) do
+    import Bitwise
+    private_ip?({hi >>> 8, hi &&& 0xFF, lo >>> 8, lo &&& 0xFF})
+  end
+
+  # Teredo (2001::/32, RFC 4380) — another IPv4-over-IPv6 tunnel. The embedded
+  # client address is obfuscated (bitwise complement of the last group pair)
+  # rather than plain, so the prefix is refused outright: an ActivityPub peer
+  # has no business being reachable only through a Teredo relay.
+  def private_ip?({0x2001, 0, _, _, _, _, _, _}), do: true
+  # 2001:db8::/32 — documentation (RFC 3849)
+  def private_ip?({0x2001, 0x0DB8, _, _, _, _, _, _}), do: true
+  # 100::/64 — discard-only prefix (RFC 6666)
+  def private_ip?({0x0100, 0, 0, 0, _, _, _, _}), do: true
 
   # IPv4-compatible IPv6 (::a.b.c.d, deprecated) — extract embedded IPv4 and re-check.
   # Placed after the explicit :: / ::1 clauses so those keep their exact match.

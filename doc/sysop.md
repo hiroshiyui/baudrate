@@ -694,8 +694,11 @@ timer. Verify renewal works: `sudo certbot renew --dry-run`.
 - **HTML sanitization** — all federated content sanitized via Ammonia (Rust NIF,
   allowlist-based) before database storage
 - **SSRF protection** — DNS-pinned connections, reject private/loopback/link-local
-  IPs plus CGNAT (`100.64.0.0/10`) and multicast/reserved (`224.0.0.0/4`,
-  `240.0.0.0/4`) ranges, HTTPS-only for remote fetches. Applies to ActivityPub
+  IPs plus CGNAT (`100.64.0.0/10`), multicast/reserved (`224.0.0.0/4`,
+  `240.0.0.0/4`), IETF/TEST-NET/benchmarking ranges (`192.0.0.0/24`,
+  `192.0.2.0/24`, `198.18.0.0/15`, `198.51.100.0/24`, `203.0.113.0/24`), and
+  IPv4-over-IPv6 tunnel prefixes (`::ffff:0:0/96`, `64:ff9b::/96`, `2002::/16`,
+  `2001::/32`), HTTPS-only for remote fetches. Applies to ActivityPub
   federation, link-preview fetches, and Web Push delivery (push endpoints are
   validated and DNS-pinned on every send, closing the rebinding gap between
   validation and connect)

@@ -1547,7 +1547,11 @@ Exposed via `Federation.fetch_remote_object/1` (preview) and `Federation.lookup_
 - Attribution validation prevents impersonation
 - Content size limits (256 KB AP payload, 64 KB article body enforced in all changesets)
 - Domain blocklist (configurable via admin settings)
-- SSRF-safe remote fetches — DNS-pinned connections prevent DNS rebinding; manual redirect following with IP validation at each hop; reject private/loopback/CGNAT/link-local/multicast IPs across IPv4 and IPv6 (including `::`, `::1`, `fc00::/7`, `fe80::/10`), and decode embedded IPv4 in IPv4-mapped (`::ffff:0:0/96`), NAT64 (`64:ff9b::/96`), and IPv4-compatible (`::a.b.c.d`) addresses before re-checking; HTTPS only
+- SSRF-safe remote fetches — DNS-pinned connections prevent DNS rebinding; manual redirect following with IP validation at each hop; HTTPS only. `HTTPClient.private_ip?/1` rejects, across IPv4 and IPv6:
+  - private, loopback, CGNAT, link-local, multicast and reserved space (`10/8`, `172.16/12`, `192.168/16`, `127/8`, `0/8`, `100.64/10`, `169.254/16`, `224/4` and above)
+  - IPv4 special-purpose ranges that are not globally routable: IETF protocol assignments (`192.0.0/24`), TEST-NET-1/2/3 (`192.0.2/24`, `198.51.100/24`, `203.0.113/24`), and benchmarking (`198.18/15`, which is routed to lab equipment on some networks)
+  - IPv6 `::`, `::1`, `fc00::/7`, `fe80::/10`, `ff00::/8`, the documentation prefix `2001:db8::/32`, and the discard-only prefix `100::/64`
+  - **tunnelled IPv4**, by decoding the embedded address and re-checking it: IPv4-mapped (`::ffff:0:0/96`), NAT64 (`64:ff9b::/96`), IPv4-compatible (`::a.b.c.d`), and 6to4 (`2002::/16`). Teredo (`2001::/32`) obfuscates its embedded address rather than carrying it plainly, so the prefix is refused outright — an ActivityPub peer has no business being reachable only through a Teredo relay.
 - Per-domain rate limiting (60 req/min per remote domain)
 - Real client IP extraction — `RealIp` plug reads from configurable proxy header (e.g., `x-forwarded-for`) for accurate per-IP rate limiting behind reverse proxies; honored only when the immediate peer matches the `trusted_proxies` allow-list (exact IPs or CIDR ranges) so untrusted peers cannot spoof their IP. Fail closed: an unconfigured allow-list defaults to loopback only and an empty list trusts nobody, configurable at runtime via `BAUDRATE_TRUSTED_PROXIES`
 - Private keys encrypted at rest with AES-256-GCM

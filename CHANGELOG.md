@@ -50,6 +50,15 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   are now truncated at ingest with a 255-character `validate_length` backstop on
   `Federation.FeedItem`. Remote actor profile-field values are capped at 1000
   characters and `alsoKnownAs` at 20 entries.
+- **Widened the SSRF deny-list.** `HTTPClient.private_ip?/1` decoded the embedded
+  IPv4 of IPv4-mapped, NAT64, and IPv4-compatible addresses but not of 6to4
+  (`2002::/16`), so `2002:7f00:1::` could reach `127.0.0.1` through a 6to4 relay.
+  6to4 now decodes and re-checks like the others, and Teredo (`2001::/32`) —
+  which obfuscates its embedded address rather than carrying it plainly — is
+  refused outright. Also added the non-routable IPv4 special-purpose ranges
+  (`192.0.0.0/24`, `192.0.2.0/24`, `198.18.0.0/15`, `198.51.100.0/24`,
+  `203.0.113.0/24`) and the IPv6 documentation and discard prefixes
+  (`2001:db8::/32`, `100::/64`).
 - **Bookmarking is authorized at the context boundary.**
   `Content.toggle_article_bookmark/2` and `toggle_comment_bookmark/2` take a
   client-supplied ID and now require the target to exist, not be soft-deleted,

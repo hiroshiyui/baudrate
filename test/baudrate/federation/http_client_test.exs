@@ -282,8 +282,10 @@ defmodule Baudrate.Federation.HTTPClientTest do
     end
 
     test "public IPv6 addresses return false" do
-      refute HTTPClient.private_ip?({0x2001, 0x0DB8, 0, 0, 0, 0, 0, 1})
       refute HTTPClient.private_ip?({0x2606, 0x4700, 0, 0, 0, 0, 0, 1})
+      refute HTTPClient.private_ip?({0x2A00, 0x1450, 0, 0, 0, 0, 0, 1})
+      # 2001::/32 is Teredo, but the rest of 2001::/16 is ordinary global unicast.
+      refute HTTPClient.private_ip?({0x2001, 0x4860, 0, 0, 0, 0, 0, 0x8888})
     end
 
     test "IPv4-mapped IPv6 ::ffff:127.0.0.1 is private" do
@@ -320,6 +322,49 @@ defmodule Baudrate.Federation.HTTPClientTest do
 
     test "IPv4-compatible IPv6 ::169.254.0.1 (link-local) is private" do
       assert HTTPClient.private_ip?({0, 0, 0, 0, 0, 0, 0xA9FE, 0x0001})
+    end
+
+    test "6to4 2002::/16 re-checks the embedded IPv4" do
+      # 2002:7f00:1:: is 127.0.0.1 behind a 6to4 relay — the same tunnelled
+      # bypass as NAT64 and ::ffff:, one prefix further out.
+      assert HTTPClient.private_ip?({0x2002, 0x7F00, 0x0001, 0, 0, 0, 0, 0})
+      assert HTTPClient.private_ip?({0x2002, 0xC0A8, 0x0101, 0, 0, 0, 0, 0})
+      assert HTTPClient.private_ip?({0x2002, 0x0A00, 0x0001, 0, 0, 0, 0, 0})
+      # A 6to4 address wrapping a genuinely public IPv4 stays reachable.
+      refute HTTPClient.private_ip?({0x2002, 0x0808, 0x0808, 0, 0, 0, 0, 0})
+    end
+
+    test "Teredo 2001::/32 is refused outright" do
+      # The embedded client IPv4 is the bitwise complement of the last group
+      # pair rather than a plain copy, so the prefix is rejected wholesale.
+      assert HTTPClient.private_ip?({0x2001, 0, 0, 0, 0, 0, 0, 1})
+      assert HTTPClient.private_ip?({0x2001, 0, 0x4136, 0xE378, 0x8000, 0, 0, 0})
+    end
+
+    test "IPv6 documentation and discard prefixes are private" do
+      assert HTTPClient.private_ip?({0x2001, 0x0DB8, 0, 0, 0, 0, 0, 1})
+      assert HTTPClient.private_ip?({0x0100, 0, 0, 0, 0, 0, 0, 1})
+    end
+
+    test "IPv4 special-purpose ranges are private" do
+      # RFC 6890 IETF protocol assignments, RFC 5737 TEST-NET-1/2/3,
+      # RFC 2544 benchmarking. None is globally routable, and the benchmarking
+      # range is routed to lab equipment on some networks.
+      assert HTTPClient.private_ip?({192, 0, 0, 170})
+      assert HTTPClient.private_ip?({192, 0, 2, 1})
+      assert HTTPClient.private_ip?({198, 51, 100, 1})
+      assert HTTPClient.private_ip?({203, 0, 113, 1})
+      assert HTTPClient.private_ip?({198, 18, 0, 1})
+      assert HTTPClient.private_ip?({198, 19, 255, 255})
+    end
+
+    test "addresses adjacent to the new IPv4 ranges stay public" do
+      refute HTTPClient.private_ip?({192, 0, 1, 1})
+      refute HTTPClient.private_ip?({192, 0, 3, 1})
+      refute HTTPClient.private_ip?({198, 17, 255, 255})
+      refute HTTPClient.private_ip?({198, 20, 0, 1})
+      refute HTTPClient.private_ip?({198, 51, 101, 1})
+      refute HTTPClient.private_ip?({203, 0, 114, 1})
     end
   end
 end

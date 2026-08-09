@@ -168,7 +168,7 @@ When creating a new release:
 - Never put user input in file paths
 - Validate at system boundaries (user input, external APIs, federation)
 - All federation content is HTML-sanitized before storage
-- SSRF-safe remote fetches (reject private/loopback IPs, HTTPS only)
+- SSRF-safe remote fetches (HTTPS only, DNS-pinned, redirects revalidated per hop). `HTTPClient.private_ip?/1` is the single deny-list: private/loopback/CGNAT/link-local/multicast/reserved, the non-routable IPv4 special-purpose ranges (`192.0.0.0/24`, `192.0.2.0/24`, `198.18.0.0/15`, `198.51.100.0/24`, `203.0.113.0/24`), and the IPv6 documentation/discard prefixes. **Every IPv4-over-IPv6 tunnel prefix decodes its embedded address and re-checks it** — `::ffff:0:0/96`, `64:ff9b::/96`, `::a.b.c.d`, and `2002::/16` (6to4). Teredo (`2001::/32`) obfuscates the embedded address instead of carrying it plainly, so the prefix is refused outright rather than decoded. When adding a range, add it here and nowhere else.
 - Rate limit all public endpoints
 - File uploads: validate magic bytes; avatars are re-encoded as WebP (EXIF stripped)
 - Federation private keys encrypted at rest (AES-256-GCM via `KeyVault`)
