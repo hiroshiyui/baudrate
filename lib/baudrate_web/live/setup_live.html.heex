@@ -185,7 +185,12 @@
         <p class="text-sm text-base-content/70">
           {gettext("Choose a name for your application.")}
         </p>
-        <.form for={@site_name_form} phx-change="validate_site_name" phx-submit="save_site_name">
+        <.form
+          for={@site_name_form}
+          id="setup-site-name-form"
+          phx-change="validate_site_name"
+          phx-submit="save_site_name"
+        >
           <.input field={@site_name_form[:site_name]} label={gettext("Site Name")} required />
           <div class="flex justify-between mt-4">
             <.button type="button" phx-click="back_to_database">
@@ -210,7 +215,12 @@
           {gettext("Admin Account")}
         </h2>
         <p class="text-sm text-base-content/70">{gettext("Create the administrator account.")}</p>
-        <.form for={@admin_form} phx-change="validate_admin" phx-submit="complete_setup">
+        <.form
+          for={@admin_form}
+          id="setup-admin-form"
+          phx-change="validate_admin"
+          phx-submit="complete_setup"
+        >
           <.input
             field={@admin_form[:username]}
             label={gettext("Username")}

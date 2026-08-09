@@ -574,6 +574,7 @@
             <div class="w-full max-w-md">
               <.form
                 for={%{}}
+                id={"feed-forward-form-#{item.feed_item.id}"}
                 phx-change="search_forward_board"
                 class="flex items-center gap-2"
               >
@@ -677,6 +678,7 @@
 
             <.form
               for={@reply_form}
+              id={"feed-reply-form-#{item.feed_item.id}"}
               phx-change="validate_reply"
               phx-submit="submit_reply"
               class="feed-reply-form space-y-2"
@@ -962,6 +964,7 @@
             <div class="w-full max-w-md">
               <.form
                 for={%{}}
+                id={"feed-comment-forward-form-#{item.comment.id}"}
                 phx-change="search_forward_board"
                 class="flex items-center gap-2"
               >
@@ -1149,6 +1152,7 @@
             <div class="w-full max-w-md">
               <.form
                 for={%{}}
+                id={"feed-rcomment-forward-form-#{item.comment.id}"}
                 phx-change="search_forward_board"
                 class="flex items-center gap-2"
               >

@@ -22,7 +22,12 @@
     {gettext("No edit history available.")}
   </div>
 
-  <div :if={@revisions != []} id="article-revisions" class="article-history-revisions space-y-6">
+  <div
+    :if={@revisions != []}
+    id="article-revisions"
+    class="article-history-revisions space-y-6"
+    data-focus-target
+  >
     <%!-- Revision list --%>
     <div class="overflow-x-auto">
       <table
