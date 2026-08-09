@@ -2025,6 +2025,7 @@ in `mount/3`; the root layout renders them with the correct attribute
 
 ## Further Reading
 
+- [Architecture Decision Records](adr/README.md) — *why* the architecture is the way it is: rationale, rejected alternatives, and the consequences we live with. This guide documents *what* the system does; the ADRs document why.
 - [SysOp Guide](sysop.md) — installation, configuration, and maintenance for system operators
 - [AP Endpoint API Reference](api.md) — external-facing documentation for all ActivityPub and public API endpoints
 - [Troubleshooting Guide](troubleshooting.md) — common issues and solutions for operators and developers

@@ -47,6 +47,13 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 See [`doc/development.md`](doc/development.md) for full architecture documentation
 (contexts, auth flow, sessions, RBAC, layout system, federation, etc.).
 
+See [`doc/adr/`](doc/adr/README.md) for the Architecture Decision Records — the
+*why* behind the load-bearing constraints below (federation gate, media proxy,
+fail-closed proxy trust, context-boundary authorization, …), including the
+alternatives that were rejected. Before "simplifying" any gotcha in this file,
+check whether an ADR explains what it defends. New architectural decisions get a
+new ADR; accepted ADRs are superseded, never rewritten.
+
 ### Contexts
 
 - **Auth** (`lib/baudrate/auth.ex`) — authentication (login, registration, TOTP, WebAuthn/FIDO2 security keys, sessions, password reset), user management (avatars, invite codes, blocks, mutes)
@@ -130,6 +137,9 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 ### After Every Change
 
 1. Update all relevant documentation (`doc/`, README, `@moduledoc` and `@doc`)
+   — and add an ADR in `doc/adr/` when the change makes an architectural
+   decision that is expensive to reverse, constrains future work, or encodes a
+   security/privacy invariant
 2. Add essential but missing tests to improve test coverage and ensure code quality
 3. check if there is any missing or incomplete test
 4. check if there is any missing or incomplete locale translations

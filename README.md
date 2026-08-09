@@ -99,6 +99,7 @@ variables are needed for encryption.
 
 - [SysOp Guide](doc/sysop.md) — installation, configuration, and maintenance for system operators
 - [Development Guide](doc/development.md) — architecture, project structure, and development notes
+- [Architecture Decision Records](doc/adr/README.md) — why the architecture is the way it is: rationale, alternatives, and trade-offs
 - [AP API Reference](doc/api.md) — ActivityPub and public API endpoint documentation
 - [Troubleshooting](doc/troubleshooting.md) — common issues and solutions
 
