@@ -109,6 +109,7 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:comment_like_counts, %{})
         |> assign(:comment_boosted_ids, MapSet.new())
         |> assign(:comment_boost_counts, %{})
+        |> assign(:comment_bookmarked_ids, MapSet.new())
         |> assign(
           :bookmarked,
           if(current_user,
@@ -288,6 +289,27 @@ defmodule BaudrateWeb.ArticleLive do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to toggle bookmark."))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_comment_bookmark", %{"id" => id}, socket) do
+    user = socket.assigns.current_user
+
+    with {:ok, comment_id} <- parse_id(id),
+         {:ok, _} <- Content.toggle_comment_bookmark(user.id, comment_id) do
+      bookmarked = Content.comment_bookmarked?(user.id, comment_id)
+
+      ids =
+        if bookmarked do
+          MapSet.put(socket.assigns.comment_bookmarked_ids, comment_id)
+        else
+          MapSet.delete(socket.assigns.comment_bookmarked_ids, comment_id)
+        end
+
+      {:noreply, assign(socket, :comment_bookmarked_ids, ids)}
+    else
+      _ -> {:noreply, put_flash(socket, :error, gettext("Failed to toggle bookmark."))}
     end
   end
 
@@ -943,6 +965,13 @@ defmodule BaudrateWeb.ArticleLive do
 
     comment_boost_counts = Content.comment_boost_counts(all_comment_ids)
 
+    comment_bookmarked_ids =
+      if current_user do
+        Content.comment_bookmarks_by_user(current_user.id, all_comment_ids)
+      else
+        MapSet.new()
+      end
+
     assign(socket,
       comment_roots: roots,
       children_map: children_map,
@@ -951,7 +980,8 @@ defmodule BaudrateWeb.ArticleLive do
       comment_liked_ids: comment_liked_ids,
       comment_like_counts: comment_like_counts,
       comment_boosted_ids: comment_boosted_ids,
-      comment_boost_counts: comment_boost_counts
+      comment_boost_counts: comment_boost_counts,
+      comment_bookmarked_ids: comment_bookmarked_ids
     )
   end
 

@@ -447,6 +447,7 @@
       <div class="w-full max-w-md">
         <.form
           for={%{}}
+          id="article-forward-form"
           phx-change="search_forward_board"
           class="article-forward-form flex items-center gap-2"
         >
@@ -605,6 +606,7 @@
           comment_like_counts={@comment_like_counts}
           comment_boosted_ids={@comment_boosted_ids}
           comment_boost_counts={@comment_boost_counts}
+          comment_bookmarked_ids={@comment_bookmarked_ids}
           forwarding_comment_id={@forwarding_comment_id}
           comment_forward_search_results={@comment_forward_search_results}
           comment_forward_search_query={@comment_forward_search_query}

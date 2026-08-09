@@ -736,6 +736,42 @@ defmodule BaudrateWeb.ArticleLiveTest do
       {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
       refute html =~ "toggle_bookmark"
     end
+
+    test "toggle comment bookmark button", %{conn: conn, user: user, article: article} do
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "A bookmarkable comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, lv, html} = live(conn, "/articles/#{article.slug}")
+      assert html =~ ~s|phx-click="toggle_comment_bookmark"|
+      refute Content.comment_bookmarked?(user.id, comment.id)
+
+      selector =
+        ~s|button[phx-click="toggle_comment_bookmark"][phx-value-id="#{comment.id}"]|
+
+      html = lv |> element(selector) |> render_click()
+      assert html =~ "hero-bookmark-solid"
+      assert Content.comment_bookmarked?(user.id, comment.id)
+
+      lv |> element(selector) |> render_click()
+      refute Content.comment_bookmarked?(user.id, comment.id)
+    end
+
+    test "guest does not see the comment bookmark button", %{user: user, article: article} do
+      {:ok, _comment} =
+        Content.create_comment(%{
+          "body" => "A comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      conn = Phoenix.ConnTest.build_conn()
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
+      refute html =~ "toggle_comment_bookmark"
+    end
   end
 
   describe "article like" do

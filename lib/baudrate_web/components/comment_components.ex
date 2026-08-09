@@ -21,6 +21,7 @@ defmodule BaudrateWeb.CommentComponents do
   attr :comment_like_counts, :any, default: nil
   attr :comment_boosted_ids, :any, default: nil
   attr :comment_boost_counts, :any, default: nil
+  attr :comment_bookmarked_ids, :any, default: nil
   attr :forwarding_comment_id, :any, default: nil
   attr :comment_forward_search_results, :list, default: []
   attr :comment_forward_search_query, :string, default: ""
@@ -175,6 +176,36 @@ defmodule BaudrateWeb.CommentComponents do
             comment_boosted_ids={@comment_boosted_ids}
             comment_boost_counts={@comment_boost_counts}
           />
+          <%!-- Bookmark comment --%>
+          <button
+            :if={@current_user}
+            type="button"
+            phx-click="toggle_comment_bookmark"
+            phx-value-id={@comment.id}
+            class="comment-bookmark-button btn btn-ghost btn-xs"
+            aria-pressed={
+              to_string(MapSet.member?(@comment_bookmarked_ids || MapSet.new(), @comment.id))
+            }
+            aria-label={
+              if MapSet.member?(@comment_bookmarked_ids || MapSet.new(), @comment.id),
+                do: gettext("Remove bookmark"),
+                else: gettext("Bookmark")
+            }
+            title={
+              if MapSet.member?(@comment_bookmarked_ids || MapSet.new(), @comment.id),
+                do: gettext("Remove bookmark"),
+                else: gettext("Bookmark")
+            }
+          >
+            <.icon
+              name={
+                if MapSet.member?(@comment_bookmarked_ids || MapSet.new(), @comment.id),
+                  do: "hero-bookmark-solid",
+                  else: "hero-bookmark"
+              }
+              class="size-3"
+            />
+          </button>
           <%!-- Forward comment to board --%>
           <button
             :if={@current_user && @comment.visibility in ["public", "unlisted"]}
@@ -229,6 +260,7 @@ defmodule BaudrateWeb.CommentComponents do
           <div class="w-full max-w-md">
             <.form
               for={%{}}
+              id={"comment-forward-search-form-#{@comment.id}"}
               phx-change="search_comment_forward_board"
               class="comment-forward-search-form flex items-center gap-2"
             >
@@ -345,6 +377,7 @@ defmodule BaudrateWeb.CommentComponents do
           comment_like_counts={@comment_like_counts}
           comment_boosted_ids={@comment_boosted_ids}
           comment_boost_counts={@comment_boost_counts}
+          comment_bookmarked_ids={@comment_bookmarked_ids}
           forwarding_comment_id={@forwarding_comment_id}
           comment_forward_search_results={@comment_forward_search_results}
           comment_forward_search_query={@comment_forward_search_query}

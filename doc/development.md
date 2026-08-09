@@ -1143,10 +1143,25 @@ federated).
 - Each bookmark targets exactly one of article or comment, enforced by a database check constraint
 - Unique constraints prevent duplicate bookmarks per user/article and user/comment
 - Toggle functions (`toggle_article_bookmark/2`, `toggle_comment_bookmark/2`) handle insert-or-delete atomically
+- Both toggles authorize at the context boundary: the target must exist, not be
+  soft-deleted, and be visible to the user (`Interactions.article_visible_to_user?/2`).
+  The IDs are client-supplied, so without this a user could bookmark a guessed
+  article or comment ID in a board they cannot view and read its title and body
+  excerpt back off `/bookmarks`. An **already-bookmarked** target skips the check
+  so a board whose `min_role_to_view` was raised afterwards cannot strand a row
+  on the user's list. See [ADR 0016](adr/0016-authorization-at-the-context-boundary.md).
+- `comment_bookmarks_by_user/2` returns the bookmarked subset of a comment-ID list
+  as a `MapSet`, so a thread renders its bookmark state in one query
 - `list_bookmarks/2` returns a paginated mixed list (articles + comments) ordered by bookmark creation time
+
+**UI:**
+- Articles: the bookmark toggle in the article action bar (`toggle_bookmark`)
+- Comments: a bookmark button in each comment's action row (`toggle_comment_bookmark`),
+  rendered by `BaudrateWeb.CommentComponents.comment_node/1`
 
 **Files:**
 - `lib/baudrate/content/bookmark.ex` — schema with validation
+- `lib/baudrate/content/bookmarks.ex` — context module: toggles, authorization, listing
 - `lib/baudrate_web/live/bookmarks_live.ex` — paginated bookmarks page at `/bookmarks`
 
 ### Bots (RSS/Atom Feed Aggregation)
