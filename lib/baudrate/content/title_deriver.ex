@@ -44,18 +44,24 @@ defmodule Baudrate.Content.TitleDeriver do
   def derive_title_from_body(body), do: derive_title(%{}, body)
 
   @doc """
-  Truncates a title to roughly `max_len` graphemes.
+  Truncates a title to at most `max_len` graphemes, ellipsis included.
 
-  For CJK text (no spaces), cuts at `max_len` and appends "…".
+  For CJK text (no spaces), cuts at `max_len - 1` and appends "…".
   For space-separated text, breaks at the last word boundary before
   `max_len` to avoid mid-word cuts.
+
+  `max_len` is a hard ceiling, not an approximation: the result feeds
+  `Article.remote_changeset/2` and `Federation.FeedItem.changeset/2`, both of
+  which cap `:title` at 255. Counting the ellipsis on top of `max_len` would
+  make a 255-grapheme CJK title fail validation and silently drop the inbound
+  article.
   """
   @spec truncate_title(String.t(), pos_integer()) :: String.t()
   def truncate_title(text, max_len) when is_binary(text) do
     if String.length(text) <= max_len do
       text
     else
-      chunk = String.slice(text, 0, max_len)
+      chunk = String.slice(text, 0, max_len - 1)
 
       case String.contains?(chunk, " ") do
         true ->

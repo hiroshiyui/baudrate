@@ -300,5 +300,55 @@ defmodule Baudrate.Federation.SanitizerTest do
       assert Sanitizer.sanitize_display_name("アリス") == "アリス"
       assert Sanitizer.sanitize_display_name("Ålice Böb") == "Ålice Böb"
     end
+
+    test "strips bidirectional overrides used to disguise a name" do
+      # U+202E (RIGHT-TO-LEFT OVERRIDE) flips the rendering of everything that
+      # follows it, which is enough to make one handle display as another.
+      assert Sanitizer.sanitize_display_name("Alice\u{202E}bob") == "Alicebob"
+      assert Sanitizer.sanitize_display_name("\u{202A}Alice\u{202C}") == "Alice"
+      assert Sanitizer.sanitize_display_name("A\u{2066}l\u{2069}ice") == "Alice"
+      assert Sanitizer.sanitize_display_name("Ali\u{200B}ce") == "Alice"
+      assert Sanitizer.sanitize_display_name("\u{FEFF}Alice") == "Alice"
+    end
+
+    test "keeps zero-width joiners, which are load-bearing in emoji and Indic scripts" do
+      zwj = "\u{200D}"
+
+      assert Sanitizer.sanitize_display_name("\u{1F468}" <> zwj <> "\u{1F4BB}") ==
+               "\u{1F468}" <> zwj <> "\u{1F4BB}"
+
+      assert Sanitizer.sanitize_display_name("\u{915}" <> zwj <> "\u{937}") ==
+               "\u{915}" <> zwj <> "\u{937}"
+    end
+  end
+
+  describe "sanitize_username/1" do
+    test "passes through a normal preferredUsername unchanged" do
+      assert Sanitizer.sanitize_username("alice") == "alice"
+      assert Sanitizer.sanitize_username("alice_bob.1-2") == "alice_bob.1-2"
+    end
+
+    test "returns nil for non-binaries and for input that sanitizes to nothing" do
+      assert Sanitizer.sanitize_username(nil) == nil
+      assert Sanitizer.sanitize_username(%{"a" => 1}) == nil
+      assert Sanitizer.sanitize_username(["alice"]) == nil
+      assert Sanitizer.sanitize_username("") == nil
+      assert Sanitizer.sanitize_username("   ") == nil
+      assert Sanitizer.sanitize_username("<script>x</script>") == nil
+    end
+
+    test "strips tags, control characters, and bidi overrides" do
+      assert Sanitizer.sanitize_username("<b>alice</b>") == "alice"
+      assert Sanitizer.sanitize_username("alice\x00bob") == "alicebob"
+      assert Sanitizer.sanitize_username("alice\u{202E}bob") == "alicebob"
+    end
+
+    test "removes internal whitespace, which a real preferredUsername never has" do
+      assert Sanitizer.sanitize_username("  alice bob\n") == "alicebob"
+    end
+
+    test "truncates to 64 characters" do
+      assert String.length(Sanitizer.sanitize_username(String.duplicate("a", 500))) == 64
+    end
   end
 end

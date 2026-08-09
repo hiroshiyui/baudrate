@@ -196,6 +196,20 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       assert item.title =~ "Test Article"
     end
 
+    test "truncates an oversized name instead of dropping the item", %{user: user, actor: actor} do
+      # `name` never passes through the content-size validator, so without a
+      # bound a remote actor could park a payload-sized string in the title
+      # column and have it rendered on every follower's /feed.
+      create_accepted_follow(user, actor)
+      activity = article_activity(actor, %{"name" => String.duplicate("漢", 10_000)})
+      ap_id = activity["object"]["id"]
+
+      assert :ok = InboxHandler.handle(activity, actor, :shared)
+      assert item = Federation.get_feed_item_by_ap_id(ap_id)
+      assert String.length(item.title) <= 255
+      assert String.ends_with?(item.title, "…")
+    end
+
     test "article addressed to local board goes to board, not feed", %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
       board = create_board(%{ap_enabled: true, min_role_to_view: "guest"})

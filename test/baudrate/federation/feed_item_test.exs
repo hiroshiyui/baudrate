@@ -110,6 +110,26 @@ defmodule Baudrate.Federation.FeedItemTest do
       assert errors_on(changeset)[:body]
     end
 
+    test "title length validation", %{actor: actor} do
+      # The title is the remote object's `name` verbatim; unlike `content` it
+      # never passes through Validator.validate_content_size/1, so this is the
+      # only bound on it.
+      attrs = %{
+        remote_actor_id: actor.id,
+        activity_type: "Create",
+        object_type: "Article",
+        ap_id: "https://remote.example/articles/long-title",
+        title: String.duplicate("x", 256),
+        published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      }
+
+      changeset = FeedItem.changeset(%FeedItem{}, attrs)
+      refute changeset.valid?
+      assert errors_on(changeset)[:title]
+
+      assert FeedItem.changeset(%FeedItem{}, %{attrs | title: String.duplicate("x", 255)}).valid?
+    end
+
     test "unique ap_id constraint", %{actor: actor} do
       attrs = %{
         remote_actor_id: actor.id,

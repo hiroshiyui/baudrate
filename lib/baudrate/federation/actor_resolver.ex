@@ -158,7 +158,10 @@ defmodule Baudrate.Federation.ActorResolver do
          {:ok, actor_type} <- required_string(json, "type"),
          {:ok, inbox} <- required_string(json, "inbox"),
          {:ok, public_key_pem} <- extract_public_key(json) do
-      username = json["preferredUsername"] || extract_username_from_id(ap_id)
+      username =
+        Sanitizer.sanitize_username(json["preferredUsername"]) ||
+          extract_username_from_id(ap_id)
+
       domain = URI.parse(ap_id).host
 
       {:ok,
@@ -184,8 +187,12 @@ defmodule Baudrate.Federation.ActorResolver do
   # `alsoKnownAs` may be a single URI string or a list of URI strings. Used to
   # verify inbound `Move` activities (the target actor must claim the moving
   # actor as an alias before its followers are migrated).
+  # Capped: the list is attacker-controlled and only ever consulted as a
+  # membership test, so an unbounded array is pure storage cost.
+  @max_also_known_as 20
+
   defp extract_also_known_as(%{"alsoKnownAs" => aka}) when is_list(aka),
-    do: Enum.filter(aka, &is_binary/1)
+    do: aka |> Enum.filter(&is_binary/1) |> Enum.take(@max_also_known_as)
 
   defp extract_also_known_as(%{"alsoKnownAs" => aka}) when is_binary(aka), do: [aka]
   defp extract_also_known_as(_), do: []
@@ -235,7 +242,10 @@ defmodule Baudrate.Federation.ActorResolver do
     |> Enum.map(fn field ->
       %{
         "name" => sanitize_field_name(field["name"]),
-        "value" => Sanitizer.sanitize(field["value"] || "")
+        # Bounded for the same reason the summary is: sanitizing a value does
+        # not shrink it, and an actor document may legally carry a megabyte of
+        # markup in a profile field.
+        "value" => field["value"] |> sanitize_field_value()
       }
     end)
     |> Enum.reject(fn %{"name" => name} -> is_nil(name) or name == "" end)
@@ -251,8 +261,16 @@ defmodule Baudrate.Federation.ActorResolver do
     |> String.slice(0, 255)
   end
 
+  defp sanitize_field_value(value) when is_binary(value) do
+    value |> Sanitizer.sanitize() |> String.slice(0, 1000)
+  end
+
+  defp sanitize_field_value(_), do: ""
+
   defp extract_username_from_id(ap_id) do
-    ap_id |> URI.parse() |> Map.get(:path, "") |> String.split("/") |> List.last() || "unknown"
+    derived = ap_id |> URI.parse() |> Map.get(:path, "") |> String.split("/") |> List.last()
+
+    Sanitizer.sanitize_username(derived) || "unknown"
   end
 
   defp required_string(json, key) do

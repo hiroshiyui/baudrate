@@ -826,7 +826,7 @@ defmodule Baudrate.Federation.InboxHandler do
             with :ok <- validate_attribution_match(object, remote_actor),
                  {:ok, body, body_html} <- sanitize_content(object) do
               published_at = parse_published(object["published"])
-              title = if object_type in ["Article", "Page"], do: object["name"]
+              title = feed_item_title(object_type, object)
               source_url = object["url"] || object["id"]
               visibility = Visibility.from_addressing(object)
 
@@ -1078,7 +1078,7 @@ defmodule Baudrate.Federation.InboxHandler do
               end
 
             published_at = parse_published(object["published"])
-            title = if object_type in ["Article", "Page"], do: object["name"]
+            title = feed_item_title(object_type, object)
             source_url = extract_url(object) || object["id"]
             visibility = Visibility.from_addressing(object)
 
@@ -1203,6 +1203,23 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp derive_title(object, body),
     do: Baudrate.Content.TitleDeriver.derive_title(object, body)
+
+  # A feed item's title is the remote object's `name` verbatim. Unlike
+  # `content` it never passes through `Validator.validate_content_size/1`, so
+  # without this an `Article`/`Page` could park a payload-sized string in the
+  # column and render it on every viewer's `/feed`. Truncating (rather than
+  # rejecting in the changeset) keeps a merely over-long legitimate title.
+  defp feed_item_title(object_type, object) when object_type in ["Article", "Page"] do
+    case object["name"] do
+      name when is_binary(name) and name != "" ->
+        Baudrate.Content.TitleDeriver.truncate_title(name, 255)
+
+      _ ->
+        nil
+    end
+  end
+
+  defp feed_item_title(_object_type, _object), do: nil
 
   defp strip_html(html) when is_binary(html) do
     html

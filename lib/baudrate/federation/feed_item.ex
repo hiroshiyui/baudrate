@@ -24,6 +24,13 @@ defmodule Baudrate.Federation.FeedItem do
 
   @max_body_length 65_536
 
+  # Matches `Baudrate.Content.Article`'s title cap. The title arrives verbatim
+  # as the remote object's `name`, which — unlike `content` — never passes
+  # through `Validator.validate_content_size/1`, so this is the only bound on
+  # it. Callers truncate first (see `Content.TitleDeriver.truncate_title/2`);
+  # this is the boundary backstop.
+  @max_title_length 255
+
   schema "feed_items" do
     belongs_to :remote_actor, RemoteActor
     belongs_to :boosted_by_actor, RemoteActor
@@ -57,6 +64,7 @@ defmodule Baudrate.Federation.FeedItem do
     |> validate_inclusion(:activity_type, ~w(Create Announce))
     |> validate_inclusion(:object_type, ~w(Note Article Page))
     |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
+    |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
     |> foreign_key_constraint(:remote_actor_id)
     |> unique_constraint(:ap_id)

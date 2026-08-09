@@ -834,7 +834,10 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       article = Content.get_article_by_ap_id(ap_id)
       assert String.ends_with?(article.title, "…")
-      assert String.length(article.title) == 81
+      # The cap is a hard ceiling that includes the ellipsis — it used to be 81
+      # here, which at the 255 cap made a long CJK title fail :title validation
+      # and drop the article entirely.
+      assert String.length(article.title) == 80
     end
   end
 
