@@ -232,6 +232,7 @@ defmodule Baudrate.Content do
   defdelegate comment_bookmarked?(user_id, comment_id), to: Bookmarks
   defdelegate toggle_article_bookmark(user_id, article_id), to: Bookmarks
   defdelegate toggle_comment_bookmark(user_id, comment_id), to: Bookmarks
+  defdelegate comment_bookmarks_by_user(user_id, comment_ids), to: Bookmarks
 
   def list_bookmarks(user_id, opts \\ []),
     do: Bookmarks.list_bookmarks(user_id, opts)

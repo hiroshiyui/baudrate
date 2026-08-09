@@ -3,11 +3,20 @@ defmodule Baudrate.Content.Bookmarks do
   Article and comment bookmark operations.
 
   Manages bookmark creation, deletion, toggling, and paginated listing.
+
+  ## Authorization
+
+  The toggle functions take a client-supplied target ID, so they gate on
+  `Interactions.article_visible_to_user?/2` at the context boundary rather than
+  trusting the caller (see `doc/adr/0016-authorization-at-the-context-boundary.md`).
+  Without it a user could bookmark a guessed article or comment ID in a board
+  they cannot view and then read its title and body excerpt on `/bookmarks`.
+  Soft-deleted targets are refused for the same reason.
   """
 
   import Ecto.Query
   alias Baudrate.Repo
-  alias Baudrate.Content.Bookmark
+  alias Baudrate.Content.{Article, Bookmark, Comment, Interactions}
 
   @bookmarks_per_page 20
   @max_bookmarks_per_page 100
@@ -67,37 +76,104 @@ defmodule Baudrate.Content.Bookmarks do
   @doc """
   Toggles an article bookmark — creates if not exists, deletes if exists.
 
-  Returns `{:ok, bookmark}` when created or `{:ok, :removed}` when deleted.
+  Returns `{:ok, bookmark}` when created, `{:ok, :removed}` when deleted, or
+  `{:error, :not_found}` when the article is missing, soft-deleted, or lives in
+  a board the user cannot view.
   """
   @spec toggle_article_bookmark(term(), term()) ::
-          {:ok, %Bookmark{}} | {:ok, :removed} | {:error, Ecto.Changeset.t()}
+          {:ok, %Bookmark{}} | {:ok, :removed} | {:error, :not_found | Ecto.Changeset.t()}
   def toggle_article_bookmark(user_id, article_id) do
-    case Repo.get_by(Bookmark, user_id: user_id, article_id: article_id) do
-      nil ->
-        bookmark_article(user_id, article_id)
-        |> handle_bookmark_conflict(user_id, article_id: article_id)
+    with :ok <- authorize_article(user_id, article_id) do
+      case Repo.get_by(Bookmark, user_id: user_id, article_id: article_id) do
+        nil ->
+          bookmark_article(user_id, article_id)
+          |> handle_bookmark_conflict(user_id, article_id: article_id)
 
-      bookmark ->
-        do_delete_bookmark(bookmark)
+        bookmark ->
+          do_delete_bookmark(bookmark)
+      end
     end
   end
 
   @doc """
   Toggles a comment bookmark — creates if not exists, deletes if exists.
 
-  Returns `{:ok, bookmark}` when created, `{:ok, :removed}` when deleted,
-  or `{:error, changeset}` on failure.
+  Returns `{:ok, bookmark}` when created, `{:ok, :removed}` when deleted, or
+  `{:error, :not_found}` when the comment is missing, soft-deleted, or belongs
+  to an article the user cannot view.
   """
   @spec toggle_comment_bookmark(term(), term()) ::
-          {:ok, %Bookmark{}} | {:ok, :removed} | {:error, Ecto.Changeset.t()}
+          {:ok, %Bookmark{}} | {:ok, :removed} | {:error, :not_found | Ecto.Changeset.t()}
   def toggle_comment_bookmark(user_id, comment_id) do
-    case Repo.get_by(Bookmark, user_id: user_id, comment_id: comment_id) do
-      nil ->
-        bookmark_comment(user_id, comment_id)
-        |> handle_bookmark_conflict(user_id, comment_id: comment_id)
+    with :ok <- authorize_comment(user_id, comment_id) do
+      case Repo.get_by(Bookmark, user_id: user_id, comment_id: comment_id) do
+        nil ->
+          bookmark_comment(user_id, comment_id)
+          |> handle_bookmark_conflict(user_id, comment_id: comment_id)
 
-      bookmark ->
-        do_delete_bookmark(bookmark)
+        bookmark ->
+          do_delete_bookmark(bookmark)
+      end
+    end
+  end
+
+  @doc """
+  Returns the subset of `comment_ids` the user has bookmarked, as a `MapSet`.
+
+  Mirrors `Content.comment_likes_by_user/2` so a comment thread can render its
+  bookmark state in one query rather than one per comment.
+  """
+  @spec comment_bookmarks_by_user(term(), [term()]) :: MapSet.t()
+  def comment_bookmarks_by_user(_user_id, []), do: MapSet.new()
+
+  def comment_bookmarks_by_user(user_id, comment_ids) when is_list(comment_ids) do
+    from(b in Bookmark,
+      where: b.user_id == ^user_id and b.comment_id in ^comment_ids,
+      select: b.comment_id
+    )
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
+  # An existing bookmark is always removable: a board whose `min_role_to_view`
+  # was raised after the fact must not strand the row on the user's list.
+  defp authorize_article(user_id, article_id) do
+    cond do
+      Repo.exists?(
+        from(b in Bookmark, where: b.user_id == ^user_id and b.article_id == ^article_id)
+      ) ->
+        :ok
+
+      not article_readable?(user_id, article_id) ->
+        {:error, :not_found}
+
+      true ->
+        :ok
+    end
+  end
+
+  defp authorize_comment(user_id, comment_id) do
+    cond do
+      Repo.exists?(
+        from(b in Bookmark, where: b.user_id == ^user_id and b.comment_id == ^comment_id)
+      ) ->
+        :ok
+
+      true ->
+        case Repo.get(Comment, comment_id) do
+          %Comment{deleted_at: nil, article_id: article_id} ->
+            if article_readable?(user_id, article_id), do: :ok, else: {:error, :not_found}
+
+          _ ->
+            {:error, :not_found}
+        end
+    end
+  end
+
+  defp article_readable?(user_id, article_id) do
+    case Repo.get(Article, article_id) do
+      %Article{deleted_at: nil} -> Interactions.article_visible_to_user?(article_id, user_id)
+      _ -> false
     end
   end
 

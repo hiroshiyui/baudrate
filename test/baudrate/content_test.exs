@@ -3515,6 +3515,87 @@ defmodule Baudrate.ContentTest do
       assert {:ok, :removed} = Content.toggle_article_bookmark(user.id, article.id)
       refute Content.article_bookmarked?(user.id, article.id)
     end
+
+    test "refuses an article in a board the user cannot view" do
+      user = create_user("user")
+      author = create_user("admin")
+
+      board =
+        create_board(%{
+          name: "Private BM Board",
+          slug: "private-bm-#{System.unique_integer([:positive])}",
+          min_role_to_view: "admin"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Secret",
+            body: "secret body",
+            slug: "secret-bm-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [board.id]
+        )
+
+      assert {:error, :not_found} = Content.toggle_article_bookmark(user.id, article.id)
+      refute Content.article_bookmarked?(user.id, article.id)
+    end
+
+    test "refuses a soft-deleted article and a nonexistent id" do
+      user = create_user("user")
+
+      board =
+        create_board(%{
+          name: "Deleted BM Board",
+          slug: "deleted-bm-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Gone",
+            body: "body",
+            slug: "gone-bm-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, _} = Content.soft_delete_article(article)
+
+      assert {:error, :not_found} = Content.toggle_article_bookmark(user.id, article.id)
+      assert {:error, :not_found} = Content.toggle_article_bookmark(user.id, -1)
+    end
+
+    test "an existing bookmark stays removable after the board is locked down" do
+      user = create_user("user")
+
+      board =
+        create_board(%{
+          name: "Locked Later Board",
+          slug: "locked-later-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Was Public",
+            body: "body",
+            slug: "was-public-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      assert {:ok, %Baudrate.Content.Bookmark{}} =
+               Content.toggle_article_bookmark(user.id, article.id)
+
+      {:ok, _} = Content.update_board(board, %{min_role_to_view: "admin"})
+
+      assert {:ok, :removed} = Content.toggle_article_bookmark(user.id, article.id)
+      refute Content.article_bookmarked?(user.id, article.id)
+    end
   end
 
   describe "toggle_comment_bookmark/2 and comment_bookmarked?/2" do
@@ -3557,6 +3638,119 @@ defmodule Baudrate.ContentTest do
       # Second toggle: removes
       assert {:ok, :removed} = Content.toggle_comment_bookmark(user.id, comment.id)
       refute Content.comment_bookmarked?(user.id, comment.id)
+    end
+
+    test "refuses a comment on an article the user cannot view" do
+      user = create_user("user")
+      author = create_user("admin")
+
+      board =
+        create_board(%{
+          name: "Private CB Board",
+          slug: "private-cb-#{System.unique_integer([:positive])}",
+          min_role_to_view: "admin"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Secret CB",
+            body: "body",
+            slug: "secret-cb-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Secret comment body",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      assert {:error, :not_found} = Content.toggle_comment_bookmark(user.id, comment.id)
+      refute Content.comment_bookmarked?(user.id, comment.id)
+    end
+
+    test "refuses a soft-deleted comment and a nonexistent id" do
+      user = create_user("user")
+
+      board =
+        create_board(%{
+          name: "Deleted CB Board",
+          slug: "deleted-cb-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Del CB",
+            body: "body",
+            slug: "del-cb-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "Doomed comment",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, _} = Content.soft_delete_comment(comment)
+
+      assert {:error, :not_found} = Content.toggle_comment_bookmark(user.id, comment.id)
+      assert {:error, :not_found} = Content.toggle_comment_bookmark(user.id, -1)
+    end
+
+    test "comment_bookmarks_by_user/2 returns only the user's bookmarked ids" do
+      user = create_user("user")
+      other = create_user("user")
+
+      board =
+        create_board(%{
+          name: "Bulk CB Board",
+          slug: "bulk-cb-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Bulk CB",
+            body: "body",
+            slug: "bulk-cb-art-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      comments =
+        for n <- 1..3 do
+          {:ok, comment} =
+            Content.create_comment(%{
+              "body" => "Bulk comment #{n}",
+              "article_id" => article.id,
+              "user_id" => user.id
+            })
+
+          comment
+        end
+
+      [first, second, third] = comments
+
+      {:ok, _} = Content.toggle_comment_bookmark(user.id, first.id)
+      {:ok, _} = Content.toggle_comment_bookmark(user.id, third.id)
+      {:ok, _} = Content.toggle_comment_bookmark(other.id, second.id)
+
+      ids = Enum.map(comments, & &1.id)
+
+      assert Content.comment_bookmarks_by_user(user.id, ids) ==
+               MapSet.new([first.id, third.id])
+
+      assert Content.comment_bookmarks_by_user(user.id, []) == MapSet.new()
     end
 
     test "comment_bookmarked? returns false for different user" do
