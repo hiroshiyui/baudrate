@@ -7,13 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
-## [Unreleased]
+## [1.13.0] — 2026-08-09
+
+A hardening release closing the findings of a project-wide audit: four fixes on
+the federation-ingest and authorization boundaries, plus a data-loss fix in
+inbound account migration. Also backfills the Architecture Decision Records, so
+the load-bearing constraints now carry their rationale.
+
+**Upgrading:** no action required. One behaviour change is visible only in
+unusual network topologies — the SSRF deny-list now refuses hosts that resolve
+into the IPv4 benchmarking range (`198.18.0.0/15`), the IETF/TEST-NET ranges, or
+through a 6to4 or Teredo tunnel. No legitimate fediverse peer lives there, but a
+lab or test instance addressed that way will stop federating.
 
 ### Added
 
 - **Bookmark comments from the thread** — comment bookmarking existed in the
   context and rendered on `/bookmarks`, but no UI could create one. Each comment
   now carries a bookmark toggle in its action row.
+- **Architecture Decision Records** in [`doc/adr/`](doc/adr/README.md) — 22
+  records reconstructing the decisions already embodied in the code as of
+  v1.12.0 (federation gate, media proxy, fail-closed proxy trust,
+  context-boundary authorization, and so on), each with the alternatives that
+  were rejected and the consequences we now live with. `README.md`,
+  `CLAUDE.md`, and `doc/development.md` link into the index, and the
+  `docs-engineering` skill now audits them.
+
+### Changed
+
+- esbuild 0.28.1 → 0.28.2, vendored daisyUI → 5.7.16, and `regex` 1.12.3 →
+  1.13.1 in the sanitizer crate. The daisyUI bump changes three component rules
+  (`.input`/`.select` focus isolation, `.sr-only` cascade position,
+  `.menu-horizontal` alignment) and no theme variables, so the `light`, `dark`,
+  and `aquaosx` palettes are unchanged.
 
 ### Fixed
 
@@ -35,6 +61,18 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   perform form recovery after a reconnect. All now carry stable, semantic ids.
 - `/articles/:slug/history` gained the `data-focus-target` marker so keyboard
   and screen-reader users land on the revision list after navigation.
+- `BaudrateWeb.Plugs.ArticleApContentNeg` documented that its two-segment path
+  match kept `/articles/new` from being content-negotiated, but that path *is*
+  two segments — only router scope order was keeping it away from the plug. The
+  guarantee is now local to the plug (`@reserved_slugs`) rather than dependent
+  on a declaration order in another file. No behaviour change in the assembled
+  router.
+- `doc/api.md` omitted the signed media proxy from its list of first-party
+  endpoints outside the AP surface, and the setup prerequisites in `README.md`
+  and `CLAUDE.md` named only two of the three Rust NIFs a build actually
+  compiles.
+- The media proxy cache directory (`priv/static/uploads/media_cache/`, added in
+  v1.12.0) was not gitignored, so running a dev server left untracked files.
 
 ### Security
 
