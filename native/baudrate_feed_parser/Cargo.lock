@@ -333,9 +333,9 @@ checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 
 [[package]]
 name = "feedparser-rs"
-version = "0.5.6"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71a3c232fe206fab9bd9f86a83ca9e8c8edcc7323fe1444cf045fbe202c85fec"
+checksum = "634050282486cebd050876301399d28a3e825c88b6f20bec91cae7a2ba0a6dd3"
 dependencies = [
  "ammonia",
  "chrono",
@@ -349,6 +349,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+ "tokio",
  "url",
 ]
 
