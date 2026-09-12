@@ -217,14 +217,22 @@ defmodule Baudrate.Auth.WebAuthn do
                  credentials
                ) do
             {:ok, auth_data} ->
-              now = DateTime.utc_now() |> DateTime.truncate(:second)
+              if sign_count_advanced?(credential.sign_count, auth_data.sign_count) do
+                now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-              credential
-              |> WebAuthnCredential.update_changeset(%{
-                sign_count: auth_data.sign_count,
-                last_used_at: now
-              })
-              |> Repo.update()
+                credential
+                |> WebAuthnCredential.update_changeset(%{
+                  sign_count: auth_data.sign_count,
+                  last_used_at: now
+                })
+                |> Repo.update()
+              else
+                Logger.warning(
+                  "auth.webauthn_clone_suspected: user_id=#{user.id} credential_id=#{Base.url_encode64(credential_id, padding: false)} stored=#{credential.sign_count} presented=#{auth_data.sign_count}"
+                )
+
+                {:error, :sign_count_regressed}
+              end
 
             {:error, _} = err ->
               Logger.warning(
@@ -260,6 +268,21 @@ defmodule Baudrate.Auth.WebAuthn do
 
   defp reduce_cbor_binaries([_ | _] = list), do: Enum.map(list, &reduce_cbor_binaries/1)
   defp reduce_cbor_binaries(v), do: v
+
+  @doc """
+  WebAuthn signature-counter check (WebAuthn L2 §6.1.1 / §7.2 step 21).
+
+  Returns `false` when the counter presented by the authenticator has not
+  advanced past the stored one, which is the specified signal that a
+  credential's private key has been cloned. `Wax.authenticate/6` returns the
+  counter but leaves this comparison to the caller.
+
+  Authenticators that do not implement a counter always report `0`; while
+  both sides are `0` the check is skipped, exactly as the spec allows.
+  """
+  @spec sign_count_advanced?(non_neg_integer(), non_neg_integer()) :: boolean()
+  def sign_count_advanced?(0, 0), do: true
+  def sign_count_advanced?(stored, presented), do: presented > stored
 
   defp url_decode64(b64) when is_binary(b64) do
     case Base.url_decode64(b64, padding: false) do

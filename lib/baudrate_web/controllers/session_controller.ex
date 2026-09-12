@@ -63,6 +63,7 @@ defmodule BaudrateWeb.SessionController do
   require Logger
 
   alias Baudrate.Auth
+  alias BaudrateWeb.RateLimits
 
   @max_totp_attempts 5
 
@@ -306,7 +307,14 @@ defmodule BaudrateWeb.SessionController do
   sets `admin_totp_verified_at` (Unix timestamp) in the cookie session and
   redirects to the validated `return_to` path. On failure, increments
   `admin_totp_attempts` and redirects back to `/admin/verify`. Locks out
-  after 5 failed attempts (redirects to `/` without dropping the session).
+  after 5 attempts (redirects to `/` without dropping the session).
+
+  The lockout is enforced by `RateLimits.check_admin_sudo/1`, a per-user
+  bucket (5 attempts / 15 min) that is hit on every attempt before the code
+  is checked. The cookie counter alone was resettable — it was deleted on
+  lockout, so the next POST started again at zero — which left the 6-digit
+  code brute-forceable by anyone holding a hijacked admin session, bounded
+  only by the per-IP limit.
   """
   def admin_totp_verify(conn, %{"code" => code} = params) do
     session_token = get_session(conn, :session_token)
@@ -315,6 +323,7 @@ defmodule BaudrateWeb.SessionController do
     case session_token && Auth.get_user_by_session_token(session_token) do
       {:ok, user} when user.role.name == "admin" ->
         attempts = get_session(conn, :admin_totp_attempts) || 0
+        sudo_locked? = RateLimits.check_admin_sudo(user.id) != :ok
         secret = Auth.decrypt_totp_secret(user)
 
         cond do
@@ -330,7 +339,7 @@ defmodule BaudrateWeb.SessionController do
             )
             |> redirect(to: "/profile")
 
-          attempts >= @max_totp_attempts ->
+          sudo_locked? or attempts >= @max_totp_attempts ->
             Logger.warning("auth.admin_totp_lockout: user_id=#{user.id} ip=#{remote_ip(conn)}")
 
             conn
@@ -444,9 +453,11 @@ defmodule BaudrateWeb.SessionController do
     case session_token && Auth.get_user_by_session_token(session_token) do
       {:ok, user} when user.role.name == "admin" ->
         attempts = get_session(conn, :admin_webauthn_attempts) || 0
+        # Same per-user bucket as the TOTP path — see admin_totp_verify/2.
+        sudo_locked? = RateLimits.check_admin_sudo(user.id) != :ok
 
         cond do
-          attempts >= @max_totp_attempts ->
+          sudo_locked? or attempts >= @max_totp_attempts ->
             Logger.warning(
               "auth.admin_webauthn_lockout: user_id=#{user.id} ip=#{remote_ip(conn)}"
             )

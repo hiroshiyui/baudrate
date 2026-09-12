@@ -33,9 +33,25 @@ defmodule BaudrateWeb.RateLimits do
   | `check_media_fetch_domain/1`  | `media_domain:` | 1 min | 20   |
   | `check_media_fetch_ip/1`      | `media_fetch_ip:` | 1 min | 20 |
   | `check_media_fetch_global/0`  | `media_fetch:global` | 1 min | 600 |
+  | `check_admin_sudo/1`          | `admin_sudo:`      | 15 min  | 5     |
   """
 
   require Logger
+
+  @doc """
+  Admin sudo re-verification (TOTP or WebAuthn): 5 attempts per 15 minutes
+  per user.
+
+  Keyed on the user id, not the session or IP, so the lockout cannot be reset
+  by discarding the cookie's attempt counter or spread across many source
+  addresses. Every attempt counts, successful or not — a legitimate admin
+  never needs more than a couple of sudo prompts in a quarter hour, while a
+  6-digit TOTP brute force needs thousands.
+  """
+  @spec check_admin_sudo(integer()) :: :ok | {:error, :rate_limited}
+  def check_admin_sudo(user_id) do
+    check("admin_sudo:#{user_id}", 900_000, 5, :admin_sudo)
+  end
 
   @doc "Article creation: 10 per 15 minutes per user."
   @spec check_create_article(integer()) :: :ok | {:error, :rate_limited}

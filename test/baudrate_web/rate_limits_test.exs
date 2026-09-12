@@ -4,6 +4,28 @@ defmodule BaudrateWeb.RateLimitsTest do
   alias BaudrateWeb.RateLimits
   alias BaudrateWeb.RateLimiter.Sandbox
 
+  describe "check_admin_sudo/1" do
+    test "allows attempts under the limit" do
+      Sandbox.set_fun(fn _b, _s, _l -> {:allow, 1} end)
+      assert :ok = RateLimits.check_admin_sudo(1)
+    end
+
+    test "denies attempts over the limit" do
+      Sandbox.set_fun(fn _b, _s, _l -> {:deny, 900_000} end)
+      assert {:error, :rate_limited} = RateLimits.check_admin_sudo(1)
+    end
+
+    test "is keyed on the user id with a 15-minute window of 5" do
+      Sandbox.set_fun(fn bucket, scale, limit ->
+        send(self(), {:bucket, bucket, scale, limit})
+        {:allow, 1}
+      end)
+
+      assert :ok = RateLimits.check_admin_sudo(42)
+      assert_received {:bucket, "admin_sudo:42", 900_000, 5}
+    end
+  end
+
   describe "check_create_article/1" do
     test "allows requests under the limit" do
       Sandbox.set_fun(fn _b, _s, _l -> {:allow, 1} end)

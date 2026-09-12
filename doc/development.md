@@ -394,6 +394,16 @@ Admins can verify using either **TOTP** (time-based one-time password) or a
 registered **WebAuthn hardware security key** (FIDO2). Both methods set the
 same `admin_totp_verified_at` session key on success.
 
+Sudo attempts are limited to **5 per 15 minutes per user** by
+`RateLimits.check_admin_sudo/1`, hit before the code or assertion is checked.
+The bucket is keyed on the user id, so the lockout survives a discarded cookie
+and cannot be spread across source IPs; the cookie's `admin_totp_attempts`
+counter remains as defense in depth. WebAuthn assertions additionally fail with
+`:sign_count_regressed` when the authenticator's signature counter does not
+advance past the stored value (`WebAuthn.sign_count_advanced?/2`), the
+specified signal of a cloned credential; authenticators that never implement a
+counter (both sides `0`) are exempt.
+
 | Aspect | Detail |
 |--------|--------|
 | Timeout | 10 minutes (`@admin_totp_timeout_seconds 600`) |

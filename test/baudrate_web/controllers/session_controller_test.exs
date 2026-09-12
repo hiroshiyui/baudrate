@@ -336,6 +336,61 @@ defmodule BaudrateWeb.SessionControllerTest do
       assert is_nil(get_session(conn, :admin_totp_attempts))
     end
 
+    test "per-user sudo bucket locks out even with a fresh attempts counter", %{conn: conn} do
+      # The cookie counter used to be the only lockout and was deleted on
+      # lockout, so a new POST started at zero again. The per-user bucket
+      # must refuse the attempt regardless of what the session says.
+      admin = setup_user("admin")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(admin, secret)
+      code = NimbleTOTP.verification_code(secret)
+
+      BaudrateWeb.RateLimiter.Sandbox.set_fun(fn
+        "admin_sudo:" <> _, _scale, _limit -> {:deny, 900_000}
+        _bucket, _scale, _limit -> {:allow, 1}
+      end)
+
+      conn =
+        conn
+        |> log_in_user(admin)
+        |> post("/auth/admin-totp-verify", %{"code" => code, "return_to" => "/admin/users"})
+
+      # Even the CORRECT code is refused while locked out.
+      assert redirected_to(conn) == "/"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Too many failed attempts"
+      assert is_nil(get_session(conn, :admin_totp_verified_at))
+      assert get_session(conn, :session_token) != nil
+    end
+
+    test "with the real limiter, a correct code is refused after 5 attempts", %{conn: conn} do
+      BaudrateWeb.RateLimiter.Sandbox.set_fun(&BaudrateWeb.RateLimiter.Hammer.check_rate/3)
+      BaudrateWeb.RateLimit.reset_all()
+
+      admin = setup_user("admin")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(admin, secret)
+      code = NimbleTOTP.verification_code(secret)
+
+      for _ <- 1..5 do
+        # Each request is a fresh conn (fresh cookie): the session counter
+        # never accumulates, exactly like an attacker discarding the cookie.
+        c =
+          build_conn()
+          |> log_in_user(admin)
+          |> post("/auth/admin-totp-verify", %{"code" => "000000", "return_to" => "/admin/users"})
+
+        assert redirected_to(c) =~ "/admin/verify"
+      end
+
+      conn =
+        conn
+        |> log_in_user(admin)
+        |> post("/auth/admin-totp-verify", %{"code" => code, "return_to" => "/admin/users"})
+
+      assert redirected_to(conn) == "/"
+      assert is_nil(get_session(conn, :admin_totp_verified_at))
+    end
+
     test "non-admin gets access denied", %{conn: conn} do
       user = setup_user("user")
 

@@ -315,6 +315,27 @@ defmodule Baudrate.Auth.WebAuthnTest do
   # WebAuthnChallenges
   # ---------------------------------------------------------------------------
 
+  describe "sign_count_advanced?/2" do
+    alias Baudrate.Auth.WebAuthn
+
+    test "accepts an advancing counter" do
+      assert WebAuthn.sign_count_advanced?(0, 1)
+      assert WebAuthn.sign_count_advanced?(7, 8)
+      assert WebAuthn.sign_count_advanced?(7, 1_000)
+    end
+
+    test "accepts authenticators that never implement a counter" do
+      assert WebAuthn.sign_count_advanced?(0, 0)
+    end
+
+    test "rejects a replayed or regressed counter (cloned authenticator)" do
+      refute WebAuthn.sign_count_advanced?(7, 7)
+      refute WebAuthn.sign_count_advanced?(7, 3)
+      # A key that once reported a counter and now reports 0 is also suspect.
+      refute WebAuthn.sign_count_advanced?(7, 0)
+    end
+  end
+
   describe "WebAuthnChallenges" do
     test "pop succeeds once and returns error on second attempt" do
       user = create_user()

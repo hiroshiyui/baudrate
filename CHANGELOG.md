@@ -18,6 +18,22 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
   windows with dark input wells. Lives in `assets/css/themes/aquaosx-dark.css`,
   mirroring `aquaosx.css` rule for rule.
 
+### Security
+
+- **Admin sudo lockout is now per user and survives a discarded cookie.** The
+  5-attempt lockout on `/auth/admin-totp-verify` and `/auth/admin-webauthn-verify`
+  lived only in the session cookie and was cleared on lockout, so the next POST
+  started again at zero. Anyone holding a hijacked admin session could
+  brute-force the 6-digit TOTP bounded only by the per-IP limit. A per-user
+  `admin_sudo:<id>` bucket (5 attempts / 15 min) is now hit before the code is
+  checked; the cookie counter remains as defense in depth.
+- **WebAuthn cloned-authenticator detection.** The signature counter returned
+  by the authenticator was stored but never compared, so a cloned security key
+  would authenticate indefinitely. Assertions whose counter does not advance
+  past the stored value are now refused with `:sign_count_regressed` and
+  logged as `auth.webauthn_clone_suspected`; authenticators that never
+  implement a counter (both sides `0`) are exempt, as the spec allows.
+
 ### Changed
 
 - **Mac OS X (Aqua) is now the default theme pair** — a fresh instance renders
