@@ -202,7 +202,7 @@ Configure at `/admin/settings`:
 | `ap_authorized_fetch` | boolean | `"false"` | Require HTTP Signatures on AP GET requests |
 | `ap_blocklist_audit_url` | string | `""` | External known-bad-actor list URL |
 | `theme_light` | enum | `"light"` | DaisyUI theme for light mode (22 options, incl. "Mac OS X (Aqua)") |
-| `theme_dark` | enum | `"dark"` | DaisyUI theme for dark mode (14 options) |
+| `theme_dark` | enum | `"dark"` | DaisyUI theme for dark mode (15 options, incl. "Mac OS X (Aqua) Dark") |
 
 The **Mac OS X (Aqua)** light theme (`aquaosx`) reproduces the Aqua look: glossy
 gel buttons, the iconic blue "default" button with a soft focus glow, hairline
@@ -215,6 +215,14 @@ chrome (the `[data-theme="aquaosx"]` layer) live in the standalone
 `assets/css/themes/aquaosx.css`, which `assets/css/app.css` pulls in via
 `@import` near the end of the file (Tailwind v4 inlines local imports in place,
 keeping the chrome overrides late in the cascade).
+
+Its dark-scheme sibling, **Mac OS X (Aqua) Dark** (`aquaosxdark`), keeps the same
+gel chrome and Aqua-blue default button on graphite windows and dark input
+wells. Select it under *Admin → Settings → Theme (dark)* — pairing it with the
+light Aqua theme gives visitors a matching look whichever scheme their browser
+or the header toggle picks. It lives in `assets/css/themes/aquaosx-dark.css`;
+the two files mirror each other rule for rule, so a chrome change in one should
+be made in both.
 
 ---
 

@@ -146,7 +146,8 @@ defmodule Baudrate.Setup do
     {"business", "Business", :dark},
     {"dim", "Dim", :dark},
     {"sunset", "Sunset", :dark},
-    {"abyss", "Abyss", :dark}
+    {"abyss", "Abyss", :dark},
+    {"aquaosxdark", "Mac OS X (Aqua) Dark", :dark}
   ]
 
   @daisyui_theme_names Enum.map(@daisyui_themes, fn {name, _, _} -> name end)

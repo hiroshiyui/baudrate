@@ -1,0 +1,290 @@
+/* ============================================================================
+   Mac OS X "Aqua" dark theme (aquaosxdark) — standalone
+   ----------------------------------------------------------------------------
+   Imported by app.css right after aquaosx.css. The dark-scheme sibling of the
+   Mac OS X (Aqua) light theme: the same glossy-gel chrome and iconic Aqua-blue
+   default button, but on graphite windows (think the Graphite appearance on a
+   dark desktop). Two parts, mirroring aquaosx.css: (1) the DaisyUI palette
+   registration (@plugin), and (2) the [data-theme="aquaosxdark"] chrome
+   overrides. Keep the two files' rule lists in sync — every selector styled in
+   aquaosx.css should have a dark counterpart here, or it falls back to the flat
+   DaisyUI look in dark mode only.
+   ============================================================================ */
+
+@plugin "../../vendor/daisyui-theme" {
+  name: "aquaosxdark";
+  default: false;
+  prefersdark: false;
+  color-scheme: "dark";
+  --color-base-100: #2b2f36;
+  --color-base-200: #23272d;
+  --color-base-300: #1b1e23;
+  --color-base-content: #e6e8ec;
+  --color-primary: #2f86ef;
+  --color-primary-content: #ffffff;
+  --color-secondary: #8a94a6;
+  --color-secondary-content: #0f1216;
+  --color-accent: #4fa3ff;
+  --color-accent-content: #0f1216;
+  --color-neutral: #4a5464;
+  --color-neutral-content: #f2f4f7;
+  --color-info: #3aa0e6;
+  --color-info-content: #0f1216;
+  --color-success: #4cc26a;
+  --color-success-content: #0f1216;
+  --color-warning: #f5b342;
+  --color-warning-content: #1d1d1f;
+  --color-error: #ef5f63;
+  --color-error-content: #ffffff;
+  --radius-selector: 1rem;
+  --radius-field: 0.7rem;
+  --radius-box: 0.9rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.28rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* ==========================================================================
+   Mac OS X "Aqua" chrome — dark
+   --------------------------------------------------------------------------
+   Same structure as the light chrome: glossy gel buttons, hairline-bordered
+   windows with soft drop shadows, the Aqua-blue default button and focus
+   glow, rounded segmented controls. Highlights are dimmer and shadows deeper
+   so the gel still reads as gel against graphite. Everything is scoped to
+   [data-theme="aquaosxdark"], so other themes are untouched.
+   ========================================================================== */
+
+[data-theme="aquaosxdark"] {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    "Lucida Grande", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --aqua-blue: #2f86ef;
+  --aqua-hairline: #4a515c;
+  --aqua-window: #33383f;
+  --aqua-well: #1f2328;
+}
+
+/* Buttons — graphite glossy gel: a muted top highlight fading to a darker
+   base, pill-rounded, hairline border, subtle lift shadow. */
+[data-theme="aquaosxdark"] .btn {
+  border: 1px solid var(--aqua-hairline);
+  background-image: linear-gradient(
+    to bottom,
+    #5b626d 0%,
+    #484f5a 47%,
+    #3c4350 53%,
+    #454c57 100%
+  );
+  color: #f2f4f7;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.4);
+  transition: filter 0.12s ease, box-shadow 0.12s ease;
+}
+[data-theme="aquaosxdark"] .btn:hover {
+  filter: brightness(1.08);
+}
+[data-theme="aquaosxdark"] .btn:active,
+[data-theme="aquaosxdark"] .btn.btn-active {
+  background-image: linear-gradient(to bottom, #2f353e 0%, #3c4350 100%);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* Primary = the iconic Aqua blue glossy "default" button, with a soft glow. */
+[data-theme="aquaosxdark"] .btn-primary {
+  border-color: #0a4fa8;
+  background-image: linear-gradient(
+    to bottom,
+    #6fb2fb 0%,
+    #1f7ae6 47%,
+    #0f61cf 53%,
+    #3f95f4 100%
+  );
+  color: #ffffff;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 0 0 3px rgba(47, 134, 239, 0.3);
+}
+[data-theme="aquaosxdark"] .btn-primary:active {
+  background-image: linear-gradient(to bottom, #0f61cf 0%, #2f86ef 100%);
+}
+
+/* Other semantic colored buttons — glossy version of their fill. */
+[data-theme="aquaosxdark"] .btn-secondary,
+[data-theme="aquaosxdark"] .btn-accent,
+[data-theme="aquaosxdark"] .btn-info,
+[data-theme="aquaosxdark"] .btn-success,
+[data-theme="aquaosxdark"] .btn-warning,
+[data-theme="aquaosxdark"] .btn-error {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.32) 0%,
+    rgba(255, 255, 255, 0.08) 48%,
+    rgba(0, 0, 0, 0.14) 52%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  border-color: rgba(0, 0, 0, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Cards, modals, dropdown panels — graphite "windows" with a hairline and a
+   deep layered shadow. Same exclusions as the light theme: bare .menu and
+   .card.rounded-full (nav bar and pill toolbars), and .alert (its colored
+   variants set their own content color). */
+[data-theme="aquaosxdark"] .card:not(.rounded-full),
+[data-theme="aquaosxdark"] .modal-box,
+[data-theme="aquaosxdark"] .dropdown-content,
+[data-theme="aquaosxdark"] .stats {
+  border: 1px solid var(--aqua-hairline);
+  background-color: var(--aqua-window);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="aquaosxdark"] .card:not(.rounded-full),
+[data-theme="aquaosxdark"] .modal-box {
+  overflow: hidden;
+}
+
+/* Header/toolbar — dark unified titlebar gradient. */
+[data-theme="aquaosxdark"] .navbar {
+  background-image: linear-gradient(to bottom, #3a3f47, #272b31);
+  border-bottom: 1px solid var(--aqua-hairline);
+}
+[data-theme="aquaosxdark"] .menu.menu-horizontal {
+  background-color: transparent;
+  box-shadow: none;
+  border: none;
+}
+
+/* Ghost buttons stay transparent toolbar buttons; soft blue wash on hover. */
+[data-theme="aquaosxdark"] .btn-ghost {
+  background-image: none;
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  text-shadow: none;
+}
+[data-theme="aquaosxdark"] .btn-ghost:hover {
+  background-image: none;
+  background-color: rgba(79, 163, 255, 0.18);
+  filter: none;
+}
+
+/* Segmented pill toolbars (font-size, theme toggle) — dark glossy capsule. */
+[data-theme="aquaosxdark"] .card.rounded-full {
+  border: 1px solid var(--aqua-hairline);
+  background-image: linear-gradient(to bottom, #3d434c, #2c3138);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Normalized card-body padding for cards with an Aqua title bar. */
+[data-theme="aquaosxdark"] .card > .card-body:has(> .card-title) {
+  padding: 1rem;
+}
+
+/* Card / modal title — full-bleed dark titlebar gloss. */
+[data-theme="aquaosxdark"] .card > .card-body > .card-title,
+[data-theme="aquaosxdark"] .modal-box > h3:first-child {
+  display: flex;
+  align-items: center;
+  background-image: linear-gradient(to bottom, #454b55, #30353d);
+  border-bottom: 1px solid var(--aqua-hairline);
+  border-radius: 0;
+  padding: 0.55rem 1.1rem;
+  margin: -1rem -1rem 0.7rem -1rem;
+}
+
+/* Inputs — dark wells with a faint inset shadow; Aqua-blue focus glow. */
+[data-theme="aquaosxdark"] .input,
+[data-theme="aquaosxdark"] .select,
+[data-theme="aquaosxdark"] .textarea,
+[data-theme="aquaosxdark"] .file-input {
+  border: 1px solid var(--aqua-hairline);
+  background-color: var(--aqua-well);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+[data-theme="aquaosxdark"] .input:focus,
+[data-theme="aquaosxdark"] .input:focus-within,
+[data-theme="aquaosxdark"] .select:focus,
+[data-theme="aquaosxdark"] .textarea:focus,
+[data-theme="aquaosxdark"] .file-input:focus-within {
+  outline: none;
+  border-color: var(--aqua-blue);
+  box-shadow: 0 0 0 3px rgba(47, 134, 239, 0.4);
+}
+
+/* Badges stay flat — status labels, not buttons. */
+[data-theme="aquaosxdark"] .badge {
+  background-image: none;
+  box-shadow: none;
+}
+
+/* Tabs — dark segmented control; active tab is the blue gel. */
+[data-theme="aquaosxdark"] .tabs-boxed,
+[data-theme="aquaosxdark"] .tabs-box {
+  background-image: linear-gradient(to bottom, #2c3138, #23272d);
+  border: 1px solid var(--aqua-hairline);
+}
+[data-theme="aquaosxdark"] .tab.tab-active {
+  background-image: linear-gradient(to bottom, #6fb2fb, #1f7ae6);
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* Dropdown menu items — Aqua-blue highlight on the hovered/focused leaf only. */
+[data-theme="aquaosxdark"] .dropdown-content a:hover,
+[data-theme="aquaosxdark"] .dropdown-content a:focus,
+[data-theme="aquaosxdark"] .dropdown-content summary:hover,
+[data-theme="aquaosxdark"] .dropdown-content summary:focus,
+[data-theme="aquaosxdark"] .dropdown-content button:hover,
+[data-theme="aquaosxdark"] .dropdown-content button:focus {
+  background-image: linear-gradient(to bottom, #3f95f4, #0f61cf);
+  color: #ffffff;
+}
+
+/* Progress / toggle-on — blue gel. */
+[data-theme="aquaosxdark"] .progress::-webkit-progress-value,
+[data-theme="aquaosxdark"] .toggle:checked {
+  background-image: linear-gradient(to bottom, #6fb2fb, #1f7ae6);
+}
+
+/* Checked knob: glossy white dot on the blue track. */
+[data-theme="aquaosxdark"] .toggle:checked::before {
+  background-color: #ffffff;
+  background-image: linear-gradient(to bottom, #ffffff, #dfe5ee);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Table — hairline grid with a faint dark-gloss header. */
+[data-theme="aquaosxdark"] .table th {
+  background-image: linear-gradient(to bottom, #3d434c, #2c3138);
+  color: #f2f4f7;
+  border-bottom: 1px solid var(--aqua-hairline);
+}
+
+/* Scrollbars (WebKit/Blink) — rounded blue gel scroller on a dark track. */
+[data-theme="aquaosxdark"] ::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+[data-theme="aquaosxdark"] ::-webkit-scrollbar-track {
+  background-color: #23272d;
+}
+[data-theme="aquaosxdark"] ::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 3px solid #23272d;
+  background-image: linear-gradient(to right, #7fb6f6, #2f86ef);
+}
+[data-theme="aquaosxdark"] ::-webkit-scrollbar-thumb:hover {
+  background-image: linear-gradient(to right, #5aa0f4, #1f6fe0);
+}

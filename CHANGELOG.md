@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [Unreleased]
+
+### Added
+
+- **Mac OS X (Aqua) Dark theme** — a dark-scheme sibling of the Mac OS X (Aqua)
+  light theme (`aquaosxdark`, labelled "Mac OS X (Aqua) Dark"), selectable under
+  *Admin → Settings → Theme (dark)*. Same glossy-gel buttons, Aqua-blue default
+  button and focus glow, hairline windows and blue-gel scrollbars, on graphite
+  windows with dark input wells. Lives in `assets/css/themes/aquaosx-dark.css`,
+  mirroring `aquaosx.css` rule for rule.
+
+### Changed
+
+- **Dependencies** — bandit 1.12.5, mint 1.10.0, phoenix 1.8.13,
+  phoenix_live_view 1.2.11, phoenix_pubsub 2.3.0 (clears five `mix hex.audit`
+  advisories: two HTTP/2 DoS issues in Bandit, two HTTP/1 parsing DoS issues in
+  Mint, and a low-severity open redirect in LiveView's local-URL check); req
+  0.7.4, hammer 7.5.0, telemetry_metrics 1.2.0, ecto 3.14.2; dns_cluster 0.3.0
+  and phoenix_live_dashboard 0.9.1 (constraints raised); feedparser-rs crate
+  0.7.0 (the crate's new built-in HTML sanitizer is disabled so Ammonia stays the
+  single sanitizer of record); vendored daisyUI 5.7.37.
+
+### Fixed
+
+- **Flaky media cache test under parallel partitions** — the media cache
+  directory is now configurable (`media_cache_dir`) and the test config gives
+  each `MIX_TEST_PARTITION` its own, so one partition's cache-wiping setup can no
+  longer delete a file another partition had just warmed.
+
 ## [1.13.0] — 2026-08-09
 
 A hardening release closing the findings of a project-wide audit: four fixes on

@@ -245,5 +245,7 @@ a.card:active,
    [data-theme="aquaosx"] chrome overrides late in the cascade, exactly where
    they lived before the split. */
 @import "./themes/aquaosx.css";
+/* Its dark-scheme sibling, "Mac OS X (Aqua) Dark" (aquaosxdark). */
+@import "./themes/aquaosx-dark.css";
 
 /* This file is for your main application CSS */

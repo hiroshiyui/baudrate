@@ -151,6 +151,27 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
       assert Setup.get_setting("theme_light") == "aquaosx"
     end
 
+    test "admin can select the Mac OS X (Aqua) Dark dark theme", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/settings")
+
+      html =
+        lv
+        |> form("#settings-form",
+          settings: %{
+            site_name: "Aqua Site",
+            theme_light: "aquaosx",
+            theme_dark: "aquaosxdark"
+          }
+        )
+        |> render_submit()
+
+      assert html =~ "Settings saved successfully"
+      assert Setup.get_setting("theme_dark") == "aquaosxdark"
+    end
+
     test "default theme values are light and dark", %{conn: conn} do
       admin = setup_user("admin")
       conn = log_in_admin(conn, admin)
