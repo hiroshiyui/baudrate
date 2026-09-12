@@ -1,4 +1,4 @@
-use feedparser_rs::{parse, Entry};
+use feedparser_rs::{parse_with_options, Entry, ParseOptions};
 
 /// Normalized feed entry returned to Elixir.
 ///
@@ -31,13 +31,20 @@ struct NifEntry {
 /// Returns `{:ok, entries}` or `{:error, reason}`.
 #[rustler::nif(schedule = "DirtyCpu")]
 fn parse_feed(data: rustler::Binary) -> Result<Vec<NifEntry>, String> {
-    let feed = parse(data.as_slice()).map_err(|e| e.to_string())?;
+    // feedparser-rs >= 0.6 sanitizes HTML-bearing fields itself by default.
+    // Baudrate runs every title and body through Ammonia on the Elixir side
+    // (`Baudrate.Bots.FeedParser`), which is the single sanitizer of record, so
+    // the crate-side pass is disabled: two allowlists would disagree, and its
+    // entity escaping would double-encode plain-text titles. Relative-URI
+    // resolution and the default parser limits are kept.
+    let options = ParseOptions {
+        sanitize_html: false,
+        ..ParseOptions::default()
+    };
 
-    let entries = feed
-        .entries
-        .iter()
-        .map(nif_entry_from)
-        .collect();
+    let feed = parse_with_options(data.as_slice(), &options).map_err(|e| e.to_string())?;
+
+    let entries = feed.entries.iter().map(nif_entry_from).collect();
 
     Ok(entries)
 }
