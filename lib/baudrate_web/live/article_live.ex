@@ -865,17 +865,16 @@ defmodule BaudrateWeb.ArticleLive do
   end
 
   defp do_create_comment_unchecked(socket, user, params, article, image_ids, replying_to) do
+    # Allow-list the form fields and always set `parent_id` from the
+    # server-side reply target: a client-supplied `parent_id` bypassed the
+    # same-article check above and could thread a comment under (and notify
+    # the author of) a comment in a board the user cannot see.
     attrs =
       params
+      |> Map.take(~w(body visibility))
       |> Map.put("article_id", article.id)
       |> Map.put("user_id", user.id)
-
-    attrs =
-      if replying_to do
-        Map.put(attrs, "parent_id", replying_to)
-      else
-        attrs
-      end
+      |> Map.put("parent_id", replying_to)
 
     case Content.create_comment(attrs, image_ids: image_ids) do
       {:ok, _comment} ->

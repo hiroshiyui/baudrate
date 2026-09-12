@@ -295,6 +295,45 @@ defmodule BaudrateWeb.ArticleLiveTest do
                :id
              ) == 0
     end
+
+    test "ignores a client-supplied parent_id that bypasses the reply target check",
+         %{conn: conn, user: user, article: article} do
+      # No reply_to was chosen, so the only same-article guard is the one on
+      # `replying_to`. A raw `comment[parent_id]` used to sail past it.
+      {:ok, %{article: other_article}} =
+        Content.create_article(
+          %{title: "Other", body: "x", slug: "other-article-parent-inject", user_id: user.id},
+          []
+        )
+
+      {:ok, foreign_parent} =
+        Content.create_comment(%{
+          "body" => "Foreign parent",
+          "article_id" => other_article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      render_hook(lv, "submit_comment", %{
+        "comment" => %{
+          "body" => "Injected parent",
+          "parent_id" => Integer.to_string(foreign_parent.id),
+          "ap_id" => "https://mastodon.social/users/victim/statuses/1",
+          "article_id" => Integer.to_string(other_article.id),
+          "user_id" => "1"
+        }
+      })
+
+      comment =
+        Repo.one!(from(c in Baudrate.Content.Comment, where: c.body == "Injected parent"))
+
+      assert comment.article_id == article.id
+      assert comment.user_id == user.id
+      assert is_nil(comment.parent_id)
+      refute comment.ap_id == "https://mastodon.social/users/victim/statuses/1"
+      assert String.starts_with?(comment.ap_id, Baudrate.Federation.base_url())
+    end
   end
 
   describe "delete_comment cross-article guard" do
@@ -979,7 +1018,8 @@ defmodule BaudrateWeb.ArticleLiveTest do
             user_id: user.id,
             url: "https://example.com/original-post"
           },
-          [board.id]
+          [board.id],
+          trusted: true
         )
 
       {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")

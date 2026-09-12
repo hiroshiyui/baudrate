@@ -836,7 +836,7 @@ defmodule Baudrate.Federation.InboxHandler do
                  {:ok, body, body_html} <- sanitize_content(object) do
               published_at = parse_published(object["published"])
               title = feed_item_title(object_type, object)
-              source_url = object["url"] || object["id"]
+              source_url = extract_url(object) || object["id"]
               visibility = Visibility.from_addressing(object)
 
               case Federation.create_feed_item(%{
@@ -1946,10 +1946,21 @@ defmodule Baudrate.Federation.InboxHandler do
 
   # Extracts the human-readable URL from an AP object.
   # The `url` field can be a string or a list of link objects; we pick the
-  # first `text/html` link or the first string entry.
-  defp extract_url(%{"url" => url}) when is_binary(url), do: url
+  # first `text/html` link or the first string entry. Whatever is picked is
+  # only kept when it is an `https://` URL: the value is rendered verbatim as
+  # an `href` ("View original"), and HEEx does not scheme-check attributes, so
+  # a `javascript:`/`data:` value would be a stored link-injection held back
+  # only by CSP. Mirrors `ActorResolver.extract_url/1`.
+  defp extract_url(object) do
+    case raw_extract_url(object) do
+      url when is_binary(url) -> if Validator.valid_https_url?(url), do: url, else: nil
+      _ -> nil
+    end
+  end
 
-  defp extract_url(%{"url" => [first | _] = urls}) when is_list(urls) do
+  defp raw_extract_url(%{"url" => url}) when is_binary(url), do: url
+
+  defp raw_extract_url(%{"url" => [first | _] = urls}) when is_list(urls) do
     html_link =
       Enum.find(urls, fn
         %{"mediaType" => mt, "href" => _} -> mt == "text/html"
@@ -1963,7 +1974,7 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
-  defp extract_url(_), do: nil
+  defp raw_extract_url(_), do: nil
 
   defp extract_image_attachments(object),
     do: AttachmentExtractor.extract_image_attachments(object)

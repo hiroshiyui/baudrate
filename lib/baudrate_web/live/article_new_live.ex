@@ -312,8 +312,11 @@ defmodule BaudrateWeb.ArticleNewLive do
   defp do_create_article(socket, user, params, board_ids, all_params) do
     slug = Content.generate_slug(params["title"] || "")
 
+    # Allow-list the form fields: everything else (`ap_id`, `url`,
+    # `published_at`, ...) is server-owned and must not come from the client.
     attrs =
       params
+      |> Map.take(~w(title body forwardable visibility))
       |> Map.put("slug", slug)
       |> Map.put("user_id", user.id)
 

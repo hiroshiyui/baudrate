@@ -10,6 +10,53 @@ defmodule Baudrate.Content.ArticleTest do
     :ok
   end
 
+  describe "changeset/2 allow-list" do
+    test "does not cast ap_id, url or published_at from user input" do
+      changeset =
+        Article.changeset(%Article{}, %{
+          title: "T",
+          body: "B",
+          slug: "t",
+          ap_id: "https://mastodon.social/users/victim/statuses/1",
+          url: "https://evil.example/",
+          published_at: ~U[2015-01-01 00:00:00Z]
+        })
+
+      assert changeset.valid?
+      refute Map.has_key?(changeset.changes, :ap_id)
+      refute Map.has_key?(changeset.changes, :url)
+      refute Map.has_key?(changeset.changes, :published_at)
+    end
+
+    test "trusted_changeset/2 casts url and published_at for system callers" do
+      changeset =
+        Article.trusted_changeset(%Article{}, %{
+          title: "T",
+          body: "B",
+          slug: "t",
+          url: "https://feed.example/post",
+          published_at: ~U[2015-01-01 00:00:00Z]
+        })
+
+      assert changeset.changes.url == "https://feed.example/post"
+      assert DateTime.compare(changeset.changes.published_at, ~U[2015-01-01 00:00:00Z]) == :eq
+    end
+
+    test "remote_changeset/2 refuses a non-https url" do
+      changeset =
+        Article.remote_changeset(%Article{}, %{
+          title: "T",
+          body: "B",
+          slug: "t",
+          ap_id: "https://remote.example/o/1",
+          remote_actor_id: 1,
+          url: "javascript:alert(1)"
+        })
+
+      assert %{url: ["must be an https URL"]} = errors_on(changeset)
+    end
+  end
+
   describe "ap_id stamping" do
     test "local article gets ap_id stamped on creation" do
       role = Repo.one!(from(r in Setup.Role, where: r.name == "user"))

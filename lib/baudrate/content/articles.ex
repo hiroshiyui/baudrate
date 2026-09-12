@@ -140,9 +140,16 @@ defmodule Baudrate.Content.Articles do
     image_ids = Keyword.get(opts, :image_ids, [])
     poll_attrs = Keyword.get(opts, :poll)
 
+    # `trusted: true` is for system callers (bots) that legitimately set
+    # `url`/`published_at`; user-facing callers must never pass it.
+    changeset =
+      if Keyword.get(opts, :trusted, false),
+        do: Article.trusted_changeset(%Article{}, attrs),
+        else: Article.changeset(%Article{}, attrs)
+
     result =
       Ecto.Multi.new()
-      |> Ecto.Multi.insert(:article, Article.changeset(%Article{}, attrs))
+      |> Ecto.Multi.insert(:article, changeset)
       |> Ecto.Multi.update(:article_with_ap_id, &article_ap_id_changeset(&1.article))
       |> Ecto.Multi.run(:board_articles, fn repo, %{article_with_ap_id: article} ->
         now = DateTime.utc_now() |> DateTime.truncate(:second)

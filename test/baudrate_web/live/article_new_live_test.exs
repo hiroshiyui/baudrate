@@ -268,4 +268,28 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
 
     assert {:error, {:redirect, %{to: "/"}}} = live(conn, "/articles/new")
   end
+
+  describe "server-owned fields" do
+    test "ignores client-supplied ap_id, url and published_at", %{conn: conn, board: board} do
+      {:ok, lv, _html} = live(conn, "/boards/#{board.slug}/articles/new")
+
+      render_hook(lv, "submit", %{
+        "article" => %{
+          "title" => "Squat Attempt",
+          "body" => "Body",
+          "ap_id" => "https://lemmy.example/post/12346",
+          "url" => "javascript:alert(1)",
+          "published_at" => "2015-01-01T00:00:00Z",
+          "user_id" => "1"
+        },
+        "board_ids" => ["#{board.id}"]
+      })
+
+      article = Baudrate.Repo.get_by!(Baudrate.Content.Article, title: "Squat Attempt")
+
+      assert String.starts_with?(article.ap_id, Baudrate.Federation.base_url())
+      assert is_nil(article.url)
+      assert is_nil(article.published_at)
+    end
+  end
 end

@@ -141,7 +141,7 @@ defmodule Baudrate.Bots.FeedWorker do
       forwardable: true
     }
 
-    case Content.create_article(attrs, bot.board_ids) do
+    case Content.create_article(attrs, bot.board_ids, trusted: true) do
       {:ok, %{article: article}} ->
         # Feed bodies are the highest-volume source of remote images; warm the
         # media cache so the first reader does not wait on the publisher's CDN.

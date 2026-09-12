@@ -62,20 +62,31 @@ defmodule Baudrate.Content.Article do
   @max_title_length 255
   @max_body_length 65_536
 
-  @doc "Changeset for creating a local article with title, body, slug, and author."
-  def changeset(article, attrs) do
+  @user_fields [:title, :body, :slug, :user_id, :forwardable, :visibility]
+  @trusted_fields @user_fields ++ [:ap_id, :url, :published_at]
+
+  @doc """
+  Changeset for creating a local article from user input.
+
+  Casts only the fields a user may set. `ap_id` is stamped post-insert by
+  `Articles.create_article/3`; `url` and `published_at` are reserved for
+  trusted system callers (`trusted_changeset/2`). Casting them here let any
+  authenticated user pre-set an `ap_id` (squatting a remote object's URI so
+  the genuine post is later dropped as a duplicate and the local one is served
+  in its place), plant an arbitrary "View original" link, or backdate a post.
+  """
+  def changeset(article, attrs), do: base_changeset(article, attrs, @user_fields)
+
+  @doc """
+  Changeset for articles created by trusted system code (RSS/Atom bots), which
+  may additionally set `url` and `published_at` from the feed entry and, for
+  mirrored objects, a pre-existing `ap_id`. Never expose to user input.
+  """
+  def trusted_changeset(article, attrs), do: base_changeset(article, attrs, @trusted_fields)
+
+  defp base_changeset(article, attrs, fields) do
     article
-    |> cast(attrs, [
-      :title,
-      :body,
-      :slug,
-      :ap_id,
-      :user_id,
-      :forwardable,
-      :visibility,
-      :url,
-      :published_at
-    ])
+    |> cast(attrs, fields)
     |> validate_required([:title, :body, :slug])
     |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
@@ -118,6 +129,8 @@ defmodule Baudrate.Content.Article do
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
       message: "must be lowercase alphanumeric with hyphens"
     )
+    # Backstop for the ingest-time scheme check: `url` is rendered as an href.
+    |> validate_format(:url, ~r{\Ahttps://}, message: "must be an https URL")
     |> foreign_key_constraint(:remote_actor_id)
     |> unique_constraint(:slug)
     |> unique_constraint(:ap_id)

@@ -66,6 +66,8 @@ defmodule Baudrate.Federation.FeedItem do
     |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
     |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
+    # `source_url` is rendered as an href; only https may reach the column.
+    |> validate_format(:source_url, ~r{\Ahttps://}, message: "must be an https URL")
     |> foreign_key_constraint(:remote_actor_id)
     |> unique_constraint(:ap_id)
   end

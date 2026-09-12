@@ -121,6 +121,28 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       assert Federation.get_feed_item_by_ap_id(ap_id) != nil
     end
 
+    test "drops a non-https object url instead of storing it as source_url", %{
+      user: user,
+      actor: actor
+    } do
+      create_accepted_follow(user, actor)
+      activity = note_activity(actor, %{"url" => "javascript:alert(1)"})
+      ap_id = activity["object"]["id"]
+
+      assert :ok = InboxHandler.handle(activity, actor, :shared)
+      item = Federation.get_feed_item_by_ap_id(ap_id)
+      assert item.source_url == ap_id
+
+      list_activity =
+        article_activity(actor, %{
+          "url" => [%{"mediaType" => "text/html", "href" => "data:text/html,<script>1</script>"}]
+        })
+
+      assert :ok = InboxHandler.handle(list_activity, actor, :shared)
+      item = Federation.get_feed_item_by_ap_id(list_activity["object"]["id"])
+      assert item.source_url == list_activity["object"]["id"]
+    end
+
     test "silently drops note from unfollowed actor", %{actor: actor} do
       activity = note_activity(actor)
       ap_id = activity["object"]["id"]
