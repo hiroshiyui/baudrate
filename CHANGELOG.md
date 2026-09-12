@@ -20,6 +20,16 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ### Security
 
+- **Outbound HTTP bodies are capped while streaming and requests have a total
+  deadline.** The federation HTTP client checked the body size only after Req
+  had buffered the whole response, so a remote actor, feed, link-preview
+  target or media URL could make the instance allocate a multi-gigabyte body
+  per fetch; POST responses (inbox deliveries, Web Push) had no cap at all.
+  A streaming collector now halts the connection as soon as the received
+  bytes or a declared `content-length` exceed the cap, on GET and POST alike.
+  A whole-request `request_timeout` (60 s, `http_request_timeout`) joins the
+  per-read `receive_timeout`, so a server trickling one byte every 29 seconds
+  can no longer hold a delivery job or media request open indefinitely.
 - **Article and comment changesets no longer cast server-owned fields.** Any
   authenticated user could submit `ap_id`, `url` or `published_at` with a new
   article (and `ap_id`/`parent_id` with a comment) — pre-squatting a remote
