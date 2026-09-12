@@ -190,6 +190,7 @@ When creating a new release:
 - `log_in_admin(conn, user)` — authenticates an admin with TOTP sudo mode enabled (sets `admin_totp_verified_at`)
 - `errors_on(changeset)` — extracts validation errors as `%{field: [messages]}`
 - Rate limiter stubbing: tests use `BaudrateWeb.RateLimiter.Sandbox` — call `set_global_response({:allow, 1})` to bypass rate limits, or `set_fun(&BaudrateWeb.RateLimiter.Hammer.check_rate/3)` for the real Hammer backend. Tests that use the real backend must reset state with `BaudrateWeb.RateLimit.reset_all/0` in setup (Hammer 7 dropped v6's `Hammer.delete_buckets/1`).
+- **Stale digest artifacts poison browser-based checks.** `Plug.Static` serves a sibling `app.css.gz` / `app.js.gz` (and `mix phx.digest` leaves `app-<digest>.*` + `cache_manifest.json`) in preference to the freshly built `app.css` / `app.js`. They are gitignored, so `git status` stays clean while Wallaby/Firefox quietly loads months-old CSS/JS. Before trusting a screenshot or feature-test rendering, make sure `priv/static/assets/{css,js}/` hold only `app.css` / `app.js` and `priv/static/cache_manifest.json` is absent.
 - **Test stability is a priority** — tests must pass deterministically across all partitions under concurrent execution, not just in isolation. Never rely on `Process.sleep` for timestamp separation; use explicit timestamps via `Repo.update_all` instead. Queries with user-visible ordering must include a tiebreaker (e.g. `desc: id`) to avoid nondeterminism when timestamps collide.
 
 ## Key Entry Points
