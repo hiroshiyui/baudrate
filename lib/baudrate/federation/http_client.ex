@@ -7,11 +7,18 @@ defmodule Baudrate.Federation.HTTPClient do
     * Private/loopback IP rejection (including IPv6 `::`)
     * DNS-pinned connections to prevent DNS rebinding attacks
     * Manual redirect following with IP validation at each hop
-    * Configurable timeouts
-    * Response body size cap
-    * Response decoding disabled (`decode_body: false`) — the raw body is
-      returned and size-capped, so Req never auto-decompresses an archive
-      response (immune to the decompression-bomb class fixed in Req 0.6)
+    * Configurable timeouts — connect, per-read (`receive_timeout`) **and**
+      whole-request (`request_timeout`); without the last one a server
+      trickling a byte every 29 s could hold a delivery job or media request
+      open indefinitely
+    * Response body size cap enforced **while streaming** (`into:` collector):
+      the connection is halted the moment the accumulated bytes (or a declared
+      `content-length`) exceed the cap, so an oversized body is never buffered
+      in the BEAM heap — and this applies to POST responses too
+    * No transparent decompression: `compressed: false` means Req never sends
+      `accept-encoding` and never inflates a response, so the cap applies to
+      the wire bytes (no decompression bombs); `decode_body: false` keeps the
+      raw body
     * Instance-identifying User-Agent header
 
   ## DNS Pinning
@@ -36,6 +43,7 @@ defmodule Baudrate.Federation.HTTPClient do
   require Logger
 
   @max_redirects 5
+  @default_request_timeout 60_000
   @req_test_options Application.compile_env(:baudrate, :req_test_options, [])
   @bypass_ssrf Application.compile_env(:baudrate, :bypass_ssrf_check, false)
   @allow_http_localhost Application.compile_env(:baudrate, :allow_http_localhost, false)
@@ -71,13 +79,9 @@ defmodule Baudrate.Federation.HTTPClient do
     with {:ok, resolved} <- validate_and_resolve(url) do
       req_opts = build_pinned_opts(resolved, headers, config)
 
-      case Req.get(req_opts) do
+      case Req.get(req_opts) |> finalize_streamed() do
         {:ok, %Req.Response{status: status, body: body}} when status in 200..299 ->
-          if byte_size(body) > config[:max_payload_size] do
-            {:error, :response_too_large}
-          else
-            {:ok, %{status: status, body: body}}
-          end
+          {:ok, %{status: status, body: body}}
 
         {:ok, %Req.Response{status: status, headers: resp_headers}}
         when status in [301, 302, 303, 307, 308] ->
@@ -88,6 +92,9 @@ defmodule Baudrate.Federation.HTTPClient do
 
         {:ok, %Req.Response{status: status, body: resp_body}} ->
           {:error, {:http_error, status, truncate_body(resp_body)}}
+
+        {:error, :response_too_large} ->
+          {:error, :response_too_large}
 
         {:error, reason} ->
           {:error, {:request_failed, reason}}
@@ -131,14 +138,10 @@ defmodule Baudrate.Federation.HTTPClient do
     with {:ok, resolved} <- validate_and_resolve(url) do
       req_opts = build_pinned_opts(resolved, headers, config)
 
-      case Req.get(req_opts) do
+      case Req.get(req_opts) |> finalize_streamed() do
         {:ok, %Req.Response{status: status, body: body, headers: resp_headers}}
         when status in 200..299 ->
-          if byte_size(body) > config[:max_payload_size] do
-            {:error, :response_too_large}
-          else
-            {:ok, %{status: status, body: body, headers: resp_headers}}
-          end
+          {:ok, %{status: status, body: body, headers: resp_headers}}
 
         {:ok, %Req.Response{status: status, headers: resp_headers}}
         when status in [301, 302, 303, 307, 308] ->
@@ -149,6 +152,9 @@ defmodule Baudrate.Federation.HTTPClient do
 
         {:ok, %Req.Response{status: status, body: resp_body}} ->
           {:error, {:http_error, status, truncate_body(resp_body)}}
+
+        {:error, :response_too_large} ->
+          {:error, :response_too_large}
 
         {:error, reason} ->
           {:error, {:request_failed, reason}}
@@ -180,12 +186,15 @@ defmodule Baudrate.Federation.HTTPClient do
         build_pinned_opts(resolved, all_headers, config)
         |> Keyword.put(:body, body)
 
-      case Req.post(req_opts) do
+      case Req.post(req_opts) |> finalize_streamed() do
         {:ok, %Req.Response{status: status, body: resp_body}} when status in 200..299 ->
           {:ok, %{status: status, body: resp_body}}
 
         {:ok, %Req.Response{status: status, body: resp_body}} ->
           {:error, {:http_error, status, truncate_body(resp_body)}}
+
+        {:error, :response_too_large} ->
+          {:error, :response_too_large}
 
         {:error, reason} ->
           {:error, {:request_failed, reason}}
@@ -208,12 +217,15 @@ defmodule Baudrate.Federation.HTTPClient do
         build_pinned_opts(resolved, headers, config)
         |> Keyword.put(:body, body)
 
-      case Req.post(req_opts) do
+      case Req.post(req_opts) |> finalize_streamed() do
         {:ok, %Req.Response{status: status, body: resp_body}} when status in 200..299 ->
           {:ok, %{status: status, body: resp_body}}
 
         {:ok, %Req.Response{status: status, body: resp_body}} ->
           {:error, {:http_error, status, truncate_body(resp_body)}}
+
+        {:error, :response_too_large} ->
+          {:error, :response_too_large}
 
         {:error, reason} ->
           {:error, {:request_failed, reason}}
@@ -287,14 +299,74 @@ defmodule Baudrate.Federation.HTTPClient do
         transport_opts: [server_name_indication: String.to_charlist(host)]
       ],
       receive_timeout: config[:http_receive_timeout],
+      # Whole-request deadline. `receive_timeout` alone is per read, so a
+      # server trickling a byte every 29 s would never trip it.
+      request_timeout: config[:http_request_timeout] || @default_request_timeout,
       max_redirects: 0,
       redirect: false,
       max_retries: 0,
-      decode_body: false
+      compressed: false,
+      decode_body: false,
+      into: body_collector(config[:max_payload_size])
     ]
 
     Keyword.merge(base_opts, @req_test_options)
   end
+
+  # Streaming body collector: accumulates chunks in `resp.private` and halts
+  # the connection as soon as the declared `content-length` or the received
+  # bytes exceed `max`. Checking `byte_size(body)` after the fact would have
+  # meant buffering an attacker's multi-GB body in RAM first.
+  defp body_collector(max) do
+    fn {:data, chunk}, {req, resp} ->
+      declared = declared_content_length(resp)
+      size = Req.Response.get_private(resp, :baudrate_size, 0) + byte_size(chunk)
+
+      if size > max or (is_integer(declared) and declared > max) do
+        {:halt, {req, Req.Response.put_private(resp, :baudrate_too_large, true)}}
+      else
+        chunks = Req.Response.get_private(resp, :baudrate_chunks, [])
+
+        resp =
+          resp
+          |> Req.Response.put_private(:baudrate_chunks, [chunk | chunks])
+          |> Req.Response.put_private(:baudrate_size, size)
+
+        {:cont, {req, resp}}
+      end
+    end
+  end
+
+  defp declared_content_length(resp) do
+    case Req.Response.get_header(resp, "content-length") do
+      [value | _] ->
+        case Integer.parse(value) do
+          {n, ""} -> n
+          _ -> nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  # Turns the collector's private state back into a plain binary body, or
+  # `{:error, :response_too_large}` when the collector halted.
+  defp finalize_streamed({:ok, %Req.Response{} = resp}) do
+    if Req.Response.get_private(resp, :baudrate_too_large, false) do
+      {:error, :response_too_large}
+    else
+      body =
+        resp
+        |> Req.Response.get_private(:baudrate_chunks, [])
+        |> Enum.reverse()
+        |> IO.iodata_to_binary()
+
+      {:ok, %{resp | body: body}}
+    end
+  end
+
+  defp finalize_streamed(other), do: other
 
   # Extracts and resolves the Location header from a redirect response.
   # Handles both absolute and relative URLs.

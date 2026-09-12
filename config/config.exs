@@ -68,6 +68,8 @@ config :baudrate, Baudrate.Federation,
   max_content_size: 65_536,
   http_connect_timeout: 10_000,
   http_receive_timeout: 30_000,
+  # Whole-request deadline (connect + all reads); receive_timeout is per read.
+  http_request_timeout: 60_000,
   max_redirects: 3,
   delivery_max_attempts: 6,
   delivery_poll_interval: 60_000,

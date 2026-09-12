@@ -71,6 +71,51 @@ defmodule Baudrate.Federation.HTTPClientTest do
       assert {:error, :response_too_large} =
                HTTPClient.get("https://remote.example/users/big")
     end
+
+    test "halts a chunked body as soon as it exceeds the cap (never buffers it all)" do
+      # 300 chunks of 1 KB = 300 KB > 256 KB cap. The collector must halt
+      # mid-stream; a post-hoc byte_size check would have buffered it all.
+      chunk = String.duplicate("y", 1024)
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        conn = Plug.Conn.send_chunked(conn, 200)
+
+        Enum.reduce_while(1..300, conn, fn _, conn ->
+          case Plug.Conn.chunk(conn, chunk) do
+            {:ok, conn} -> {:cont, conn}
+            {:error, _} -> {:halt, conn}
+          end
+        end)
+      end)
+
+      assert {:error, :response_too_large} =
+               HTTPClient.get("https://remote.example/users/chunked-big")
+    end
+
+    test "refuses a body whose declared content-length exceeds the cap" do
+      Req.Test.stub(HTTPClient, fn conn ->
+        conn
+        |> Plug.Conn.put_resp_header("content-length", "999999999")
+        |> Plug.Conn.send_resp(200, "tiny")
+      end)
+
+      assert {:error, :response_too_large} =
+               HTTPClient.get("https://remote.example/users/lying-length")
+    end
+
+    test "honours a per-call :max_size on get_html/2" do
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 200, String.duplicate("z", 2048))
+      end)
+
+      assert {:error, :response_too_large} =
+               HTTPClient.get_html("https://remote.example/page", max_size: 1024)
+
+      assert {:ok, %{body: body}} =
+               HTTPClient.get_html("https://remote.example/page", max_size: 4096)
+
+      assert byte_size(body) == 2048
+    end
   end
 
   describe "get/2 redirects" do
@@ -172,6 +217,18 @@ defmodule Baudrate.Federation.HTTPClientTest do
   end
 
   describe "post/3" do
+    test "caps the response body like GET does" do
+      Req.Test.stub(HTTPClient, fn conn ->
+        Plug.Conn.send_resp(conn, 200, String.duplicate("x", 256 * 1024 + 1))
+      end)
+
+      assert {:error, :response_too_large} =
+               HTTPClient.post("https://remote.example/inbox", "{}")
+
+      assert {:error, :response_too_large} =
+               HTTPClient.post_raw("https://remote.example/push", "{}", [])
+    end
+
     test "returns body on 202" do
       Req.Test.stub(HTTPClient, fn conn ->
         Plug.Conn.send_resp(conn, 202, "")
