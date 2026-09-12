@@ -303,6 +303,79 @@ defmodule Baudrate.Content.FeedQueriesTest do
     Repo.preload(user, :role)
   end
 
+  describe "user-page listings respect the viewer's board visibility" do
+    setup %{user: user} do
+      admin_board = insert_board("admin-only-feed", min_role_to_view: "admin")
+      {:ok, %{article: secret}} = insert_article(user, admin_board, "secret-article")
+
+      {:ok, secret_comment} =
+        Content.create_comment(%{
+          "body" => "secret comment body",
+          "article_id" => secret.id,
+          "user_id" => user.id
+        })
+
+      {:ok, admin_board: admin_board, secret: secret, secret_comment: secret_comment}
+    end
+
+    test "guests and plain users do not see admin-board articles or comments",
+         %{user: user, public_board: board} do
+      {:ok, %{article: visible}} = insert_article(user, board, "visible-article")
+
+      for viewer <- [nil, user] do
+        articles = Content.list_recent_articles_by_user(user.id, 10, viewer: viewer)
+        assert Enum.map(articles, & &1.id) == [visible.id]
+
+        assert Content.list_recent_comments_by_user(user.id, 10, viewer: viewer) == []
+
+        activity = Content.list_recent_activity_by_user(user.id, 10, viewer: viewer)
+        assert Enum.map(activity, fn {_type, item} -> item.id end) == [visible.id]
+
+        page = Content.paginate_articles_by_user(user.id, viewer: viewer)
+        assert Enum.map(page.articles, & &1.id) == [visible.id]
+
+        assert Content.paginate_comments_by_user(user.id, viewer: viewer).comments == []
+      end
+    end
+
+    test "an admin viewer sees everything", %{user: user, secret: secret, secret_comment: sc} do
+      admin = setup_user("admin")
+
+      assert Enum.map(Content.list_recent_articles_by_user(user.id, 10, viewer: admin), & &1.id) ==
+               [secret.id]
+
+      assert Enum.map(Content.list_recent_comments_by_user(user.id, 10, viewer: admin), & &1.id) ==
+               [sc.id]
+
+      assert Enum.map(Content.paginate_comments_by_user(user.id, viewer: admin).comments, & &1.id) ==
+               [sc.id]
+    end
+
+    test "boosted listings apply the same gate", %{user: user, secret: secret, secret_comment: sc} do
+      # Boosted by an admin (who can see the board); a later demotion or a
+      # board made private would leave the boost rows in place.
+      booster = setup_user("admin")
+      admin = setup_user("admin")
+      {:ok, _} = Content.boost_article(booster.id, secret.id)
+      {:ok, _} = Content.boost_comment(booster.id, sc.id)
+
+      assert Content.list_recent_boosted_by_user(booster.id, 10, viewer: nil) == []
+      assert Content.list_recent_boosted_by_user(booster.id, 10, viewer: user) == []
+      assert length(Content.list_recent_boosted_by_user(booster.id, 10, viewer: admin)) == 2
+    end
+
+    test "board-less articles stay visible to everyone", %{user: user} do
+      {:ok, %{article: loose}} =
+        Content.create_article(
+          %{title: "Loose", body: "b", slug: "loose-article", user_id: user.id},
+          []
+        )
+
+      assert Enum.map(Content.list_recent_articles_by_user(user.id, 10, viewer: nil), & &1.id) ==
+               [loose.id]
+    end
+  end
+
   defp insert_board(slug, opts) do
     {:ok, board} =
       %Board{}

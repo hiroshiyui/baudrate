@@ -43,7 +43,11 @@ defmodule BaudrateWeb.UserContentLive do
 
     case content_type do
       :articles ->
-        result = Content.paginate_articles_by_user(user.id, page: page)
+        result =
+          Content.paginate_articles_by_user(user.id,
+            page: page,
+            viewer: socket.assigns[:current_user]
+          )
 
         {:noreply,
          assign(socket,
@@ -55,7 +59,11 @@ defmodule BaudrateWeb.UserContentLive do
          )}
 
       :comments ->
-        result = Content.paginate_comments_by_user(user.id, page: page)
+        result =
+          Content.paginate_comments_by_user(user.id,
+            page: page,
+            viewer: socket.assigns[:current_user]
+          )
 
         {:noreply,
          assign(socket,

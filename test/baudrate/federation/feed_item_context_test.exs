@@ -180,6 +180,60 @@ defmodule Baudrate.Federation.FeedItemContextTest do
     end
   end
 
+  describe "list_feed_items/2 local follows" do
+    test "hides a followed user's articles from boards the follower cannot view", %{user: user} do
+      author = setup_user_with_role("admin")
+      {:ok, _} = Federation.create_local_follow(user, author)
+
+      {:ok, admin_board} =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Admin Board",
+          slug: "admin-feed-#{System.unique_integer([:positive])}",
+          min_role_to_view: "admin",
+          min_role_to_post: "admin"
+        })
+        |> Repo.insert()
+
+      {:ok, public_board} =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Public Board",
+          slug: "public-feed-#{System.unique_integer([:positive])}",
+          min_role_to_view: "guest",
+          min_role_to_post: "user"
+        })
+        |> Repo.insert()
+
+      {:ok, %{article: _secret}} =
+        Baudrate.Content.create_article(
+          %{
+            title: "Secret",
+            body: "s",
+            slug: "secret-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [admin_board.id]
+        )
+
+      {:ok, %{article: open}} =
+        Baudrate.Content.create_article(
+          %{
+            title: "Open",
+            body: "o",
+            slug: "open-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [public_board.id]
+        )
+
+      result = Federation.list_feed_items(user)
+      local_ids = for %{source: :local, article: a} <- result.items, do: a.id
+      assert local_ids == [open.id]
+      assert result.total == 1
+    end
+  end
+
   describe "get_feed_item_by_ap_id/1" do
     test "returns item when found", %{actor: actor} do
       attrs = feed_item_attrs(actor)

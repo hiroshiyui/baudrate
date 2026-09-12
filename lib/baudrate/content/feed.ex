@@ -16,7 +16,8 @@ defmodule Baudrate.Content.Feed do
     Board,
     BoardArticle,
     Comment,
-    CommentBoost
+    CommentBoost,
+    Filters
   }
 
   @per_page 20
@@ -102,29 +103,70 @@ defmodule Baudrate.Content.Feed do
 
   # --- User Content Queries ---
 
+  # Restricts a query with an `:article` named binding to articles the viewer
+  # may see: board-less articles (remote imports) are visible to everyone,
+  # otherwise at least one of the article's boards must be at or below the
+  # viewer's role. Mirrors `ArticleHelpers.user_can_view_article?/2` and the
+  # predicate `Search.search_articles/2` uses. Without it, a user's public
+  # profile listed titles, board names and comment bodies from boards the
+  # viewer (including guests) cannot open.
+  defp where_viewable(query, viewer) do
+    roles = Filters.allowed_view_roles(viewer)
+
+    from([article: a] in query,
+      where:
+        not exists(
+          from(ba in BoardArticle, where: ba.article_id == parent_as(:article).id, select: 1)
+        ) or
+          exists(
+            from(ba in BoardArticle,
+              join: b in Board,
+              on: b.id == ba.board_id,
+              where:
+                ba.article_id == parent_as(:article).id and
+                  b.min_role_to_view in ^roles,
+              select: 1
+            )
+          )
+    )
+  end
+
   @doc """
-  Returns recent non-deleted articles by a user, newest first, with boards and article_images preloaded.
+  Returns recent non-deleted articles by a user, newest first, with boards and
+  article_images preloaded. Only articles the `:viewer` (a user or `nil` for
+  guests) may see are returned.
   """
-  def list_recent_articles_by_user(user_id, limit \\ 10) do
+  def list_recent_articles_by_user(user_id, limit \\ 10, opts \\ []) do
+    viewer = Keyword.get(opts, :viewer)
+
     from(a in Article,
+      as: :article,
       where: a.user_id == ^user_id and is_nil(a.deleted_at),
       order_by: [desc: a.inserted_at, desc: a.id],
       limit: ^limit,
       preload: [:boards, :article_images]
     )
+    |> where_viewable(viewer)
     |> Repo.all()
   end
 
   @doc """
-  Returns recent non-deleted comments by a user, newest first, with article preloaded.
+  Returns recent non-deleted comments by a user, newest first, with article
+  preloaded. Only comments on articles the `:viewer` may see are returned.
   """
-  def list_recent_comments_by_user(user_id, limit \\ 10) do
+  def list_recent_comments_by_user(user_id, limit \\ 10, opts \\ []) do
+    viewer = Keyword.get(opts, :viewer)
+
     from(c in Comment,
-      where: c.user_id == ^user_id and is_nil(c.deleted_at),
+      join: a in Article,
+      as: :article,
+      on: a.id == c.article_id,
+      where: c.user_id == ^user_id and is_nil(c.deleted_at) and is_nil(a.deleted_at),
       order_by: [desc: c.inserted_at, desc: c.id],
       limit: ^limit,
       preload: [article: :boards]
     )
+    |> where_viewable(viewer)
     |> Repo.all()
   end
 
@@ -134,13 +176,13 @@ defmodule Baudrate.Content.Feed do
   `{:comment, comment}`. Fetches `limit` of each type, merges, and returns
   the top `limit` entries.
   """
-  def list_recent_activity_by_user(user_id, limit \\ 10) do
+  def list_recent_activity_by_user(user_id, limit \\ 10, opts \\ []) do
     articles =
-      list_recent_articles_by_user(user_id, limit)
+      list_recent_articles_by_user(user_id, limit, opts)
       |> Enum.map(fn a -> {a.inserted_at, {:article, a}} end)
 
     comments =
-      list_recent_comments_by_user(user_id, limit)
+      list_recent_comments_by_user(user_id, limit, opts)
       |> Enum.map(fn c -> {c.inserted_at, {:comment, c}} end)
 
     merge_and_take(articles ++ comments, limit)
@@ -152,16 +194,20 @@ defmodule Baudrate.Content.Feed do
   Excludes soft-deleted articles. Each result is a 2-tuple of
   `{boost_inserted_at, article}` with boards and article_images preloaded.
   """
-  def list_recent_boosted_articles_by_user(user_id, limit \\ 10) do
+  def list_recent_boosted_articles_by_user(user_id, limit \\ 10, opts \\ []) do
+    viewer = Keyword.get(opts, :viewer)
+
     rows =
       from(b in ArticleBoost,
         join: a in Article,
+        as: :article,
         on: a.id == b.article_id,
         where: b.user_id == ^user_id and is_nil(a.deleted_at),
         order_by: [desc: b.inserted_at, desc: b.id],
         limit: ^limit,
         select: {b.inserted_at, a}
       )
+      |> where_viewable(viewer)
       |> Repo.all()
 
     articles = Enum.map(rows, fn {_ts, a} -> a end) |> Repo.preload([:boards, :article_images])
@@ -175,16 +221,22 @@ defmodule Baudrate.Content.Feed do
   Excludes soft-deleted comments. Each result is a 2-tuple of
   `{boost_inserted_at, comment}` with article and boards preloaded.
   """
-  def list_recent_boosted_comments_by_user(user_id, limit \\ 10) do
+  def list_recent_boosted_comments_by_user(user_id, limit \\ 10, opts \\ []) do
+    viewer = Keyword.get(opts, :viewer)
+
     rows =
       from(b in CommentBoost,
         join: c in Comment,
         on: c.id == b.comment_id,
-        where: b.user_id == ^user_id and is_nil(c.deleted_at),
+        join: a in Article,
+        as: :article,
+        on: a.id == c.article_id,
+        where: b.user_id == ^user_id and is_nil(c.deleted_at) and is_nil(a.deleted_at),
         order_by: [desc: b.inserted_at, desc: b.id],
         limit: ^limit,
         select: {b.inserted_at, c}
       )
+      |> where_viewable(viewer)
       |> Repo.all()
 
     comments = Enum.map(rows, fn {_ts, c} -> c end) |> Repo.preload(article: :boards)
@@ -197,13 +249,13 @@ defmodule Baudrate.Content.Feed do
   sorted newest first by boost time. Each entry is tagged as
   `{:article, boosted_at, article}` or `{:comment, boosted_at, comment}`.
   """
-  def list_recent_boosted_by_user(user_id, limit \\ 10) do
+  def list_recent_boosted_by_user(user_id, limit \\ 10, opts \\ []) do
     articles =
-      list_recent_boosted_articles_by_user(user_id, limit)
+      list_recent_boosted_articles_by_user(user_id, limit, opts)
       |> Enum.map(fn {boosted_at, a} -> {boosted_at, {:article, boosted_at, a}} end)
 
     comments =
-      list_recent_boosted_comments_by_user(user_id, limit)
+      list_recent_boosted_comments_by_user(user_id, limit, opts)
       |> Enum.map(fn {boosted_at, c} -> {boosted_at, {:comment, boosted_at, c}} end)
 
     merge_and_take(articles ++ comments, limit)
@@ -271,12 +323,15 @@ defmodule Baudrate.Content.Feed do
   """
   def paginate_articles_by_user(user_id, opts \\ []) do
     pagination = Pagination.paginate_opts(opts, @per_page)
+    viewer = Keyword.get(opts, :viewer)
 
     base_query =
       from(a in Article,
+        as: :article,
         where: a.user_id == ^user_id and is_nil(a.deleted_at),
         distinct: a.id
       )
+      |> where_viewable(viewer)
 
     Pagination.paginate_query(base_query, pagination,
       result_key: :articles,
@@ -290,12 +345,17 @@ defmodule Baudrate.Content.Feed do
   """
   def paginate_comments_by_user(user_id, opts \\ []) do
     pagination = Pagination.paginate_opts(opts, @per_page)
+    viewer = Keyword.get(opts, :viewer)
 
     base_query =
       from(c in Comment,
-        where: c.user_id == ^user_id and is_nil(c.deleted_at),
+        join: a in Article,
+        as: :article,
+        on: a.id == c.article_id,
+        where: c.user_id == ^user_id and is_nil(c.deleted_at) and is_nil(a.deleted_at),
         distinct: c.id
       )
+      |> where_viewable(viewer)
 
     Pagination.paginate_query(base_query, pagination,
       result_key: :comments,

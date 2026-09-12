@@ -145,4 +145,32 @@ defmodule BaudrateWeb.UserContentLiveTest do
       assert html =~ ~s(href="/users/#{user.username}/comments")
     end
   end
+
+  describe "board visibility" do
+    test "guest does not see admin-only board articles or comments on user pages", %{conn: conn} do
+      user = setup_user("user")
+
+      {:ok, board} =
+        Content.create_board(%{
+          name: "Secret Admin Board",
+          slug: "secret-#{System.unique_integer([:positive])}",
+          min_role_to_view: "admin"
+        })
+
+      article = create_article(user, board, "Top Secret Title")
+      create_comment(user, article, "Top secret comment body")
+
+      {:ok, _lv, html} = live(conn, "/users/#{user.username}/articles")
+      refute html =~ "Top Secret Title"
+      refute html =~ "Secret Admin Board"
+
+      {:ok, _lv, html} = live(conn, "/users/#{user.username}/comments")
+      refute html =~ "Top secret comment body"
+      refute html =~ "Secret Admin Board"
+
+      {:ok, _lv, html} = live(conn, "/users/#{user.username}")
+      refute html =~ "Top Secret Title"
+      refute html =~ "Top secret comment body"
+    end
+  end
 end

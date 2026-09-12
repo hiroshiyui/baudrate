@@ -269,7 +269,8 @@ defmodule BaudrateWeb.UserProfileLive do
   end
 
   defp load_activity(socket, user_id, limit) do
-    results = Content.list_recent_activity_by_user(user_id, limit + 1)
+    viewer = socket.assigns[:current_user]
+    results = Content.list_recent_activity_by_user(user_id, limit + 1, viewer: viewer)
     has_more = length(results) > limit
 
     assign(socket,
@@ -279,7 +280,8 @@ defmodule BaudrateWeb.UserProfileLive do
   end
 
   defp load_boosted(socket, user_id, limit) do
-    results = Content.list_recent_boosted_by_user(user_id, limit + 1)
+    viewer = socket.assigns[:current_user]
+    results = Content.list_recent_boosted_by_user(user_id, limit + 1, viewer: viewer)
     has_more = length(results) > limit
 
     assign(socket,

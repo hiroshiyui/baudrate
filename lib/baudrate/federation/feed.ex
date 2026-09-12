@@ -15,7 +15,7 @@ defmodule Baudrate.Federation.Feed do
   import Ecto.Query
 
   alias Baudrate.Auth
-  alias Baudrate.Content.Markdown
+  alias Baudrate.Content.{Board, BoardArticle, Filters, Markdown}
   alias Baudrate.Repo
 
   alias Baudrate.Federation.{
@@ -98,14 +98,37 @@ defmodule Baudrate.Federation.Feed do
         remote_query
       end
 
+    # A followed user's articles are only feed-visible when the follower could
+    # open them on the board: board-less (remote import) articles are public;
+    # otherwise one of the article's boards must be at or below the
+    # follower's role. Without this, following an admin surfaced titles,
+    # digests and images from admin-only boards in the follower's feed.
+    allowed_roles = Filters.allowed_view_roles(user)
+
     local_query =
       from(a in Baudrate.Content.Article,
+        as: :article,
         left_join: uf in UserFollow,
         on:
           uf.followed_user_id == a.user_id and uf.user_id == ^user.id and
             uf.state == @state_accepted,
         where: a.user_id == ^user.id or not is_nil(uf.id),
-        where: is_nil(a.deleted_at)
+        where: is_nil(a.deleted_at),
+        where:
+          a.user_id == ^user.id or
+            not exists(
+              from(ba in BoardArticle, where: ba.article_id == parent_as(:article).id, select: 1)
+            ) or
+            exists(
+              from(ba in BoardArticle,
+                join: b in Board,
+                on: b.id == ba.board_id,
+                where:
+                  ba.article_id == parent_as(:article).id and
+                    b.min_role_to_view in ^allowed_roles,
+                select: 1
+              )
+            )
       )
 
     local_query =
@@ -138,7 +161,7 @@ defmodule Baudrate.Federation.Feed do
       end
 
     {remote_total, local_total, comment_total} =
-      count_feed_totals(user.id, hidden_user_ids, hidden_ap_ids)
+      count_feed_totals(user.id, hidden_user_ids, hidden_ap_ids, allowed_roles)
 
     total = remote_total + local_total + comment_total
 
@@ -558,7 +581,7 @@ defmodule Baudrate.Federation.Feed do
   # Counts remote feed items, local articles, and comments in a single SQL
   # round-trip using 3 scalar subqueries. The conditions exactly mirror the
   # Ecto queries in `list_feed_items/2`.
-  defp count_feed_totals(user_id, hidden_user_ids, hidden_ap_ids) do
+  defp count_feed_totals(user_id, hidden_user_ids, hidden_ap_ids, allowed_roles) do
     hidden_ap_ids_param = if hidden_ap_ids == [], do: nil, else: hidden_ap_ids
     hidden_user_ids_param = if hidden_user_ids == [], do: nil, else: hidden_user_ids
 
@@ -580,7 +603,11 @@ defmodule Baudrate.Federation.Feed do
                AND uf.user_id = $1 AND uf.state = 'accepted'
              WHERE (a.user_id = $1 OR uf.id IS NOT NULL)
                AND a.deleted_at IS NULL
-               AND ($3::bigint[] IS NULL OR a.user_id != ALL($3))),
+               AND ($3::bigint[] IS NULL OR a.user_id != ALL($3))
+               AND (a.user_id = $1
+                    OR NOT EXISTS (SELECT 1 FROM board_articles ba WHERE ba.article_id = a.id)
+                    OR EXISTS (SELECT 1 FROM board_articles ba JOIN boards b ON b.id = ba.board_id
+                               WHERE ba.article_id = a.id AND b.min_role_to_view = ANY($4::text[])))),
           (SELECT count(*) FROM comments c
              JOIN articles a ON a.id = c.article_id
              WHERE (a.user_id = $1 OR EXISTS(
@@ -588,7 +615,7 @@ defmodule Baudrate.Federation.Feed do
                AND c.deleted_at IS NULL AND a.deleted_at IS NULL
                AND ($3::bigint[] IS NULL OR c.user_id != ALL($3)))
         """,
-        [user_id, hidden_ap_ids_param, hidden_user_ids_param]
+        [user_id, hidden_ap_ids_param, hidden_user_ids_param, allowed_roles]
       )
 
     {remote_total, local_total, comment_total}

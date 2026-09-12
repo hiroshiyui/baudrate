@@ -295,23 +295,25 @@ defmodule Baudrate.Content do
   def list_recent_public_articles_by_user(user_id, limit \\ 20),
     do: Feed.list_recent_public_articles_by_user(user_id, limit)
 
-  def list_recent_articles_by_user(user_id, limit \\ 10),
-    do: Feed.list_recent_articles_by_user(user_id, limit)
+  # All user-page listings take `viewer:` (a user or nil) and hide content in
+  # boards the viewer cannot open. Pass the current user from every caller.
+  def list_recent_articles_by_user(user_id, limit \\ 10, opts \\ []),
+    do: Feed.list_recent_articles_by_user(user_id, limit, opts)
 
-  def list_recent_comments_by_user(user_id, limit \\ 10),
-    do: Feed.list_recent_comments_by_user(user_id, limit)
+  def list_recent_comments_by_user(user_id, limit \\ 10, opts \\ []),
+    do: Feed.list_recent_comments_by_user(user_id, limit, opts)
 
-  def list_recent_activity_by_user(user_id, limit \\ 10),
-    do: Feed.list_recent_activity_by_user(user_id, limit)
+  def list_recent_activity_by_user(user_id, limit \\ 10, opts \\ []),
+    do: Feed.list_recent_activity_by_user(user_id, limit, opts)
 
-  def list_recent_boosted_articles_by_user(user_id, limit \\ 10),
-    do: Feed.list_recent_boosted_articles_by_user(user_id, limit)
+  def list_recent_boosted_articles_by_user(user_id, limit \\ 10, opts \\ []),
+    do: Feed.list_recent_boosted_articles_by_user(user_id, limit, opts)
 
-  def list_recent_boosted_comments_by_user(user_id, limit \\ 10),
-    do: Feed.list_recent_boosted_comments_by_user(user_id, limit)
+  def list_recent_boosted_comments_by_user(user_id, limit \\ 10, opts \\ []),
+    do: Feed.list_recent_boosted_comments_by_user(user_id, limit, opts)
 
-  def list_recent_boosted_by_user(user_id, limit \\ 10),
-    do: Feed.list_recent_boosted_by_user(user_id, limit)
+  def list_recent_boosted_by_user(user_id, limit \\ 10, opts \\ []),
+    do: Feed.list_recent_boosted_by_user(user_id, limit, opts)
 
   defdelegate count_user_content_stats(user_id), to: Feed
   defdelegate count_articles_by_user(user_id), to: Feed
