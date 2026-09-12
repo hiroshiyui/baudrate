@@ -20,6 +20,25 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ### Security
 
+- **Article and comment changesets no longer cast server-owned fields.** Any
+  authenticated user could submit `ap_id`, `url` or `published_at` with a new
+  article (and `ap_id`/`parent_id` with a comment) — pre-squatting a remote
+  object's URI so the genuine post is later dropped as a duplicate and the
+  local one is served in its place, planting an arbitrary "View original"
+  link, backdating a post, or threading a comment under (and notifying the
+  author of) a comment in a board they cannot see. User changesets are now
+  allow-lists, bots use `Content.create_article/3` with `trusted: true`, and
+  the LiveViews set `parent_id` only from the server-side reply target.
+- **Remote object `url` must be https.** A federated Note/Article whose `url`
+  was `javascript:` or `data:` was stored verbatim and rendered as the "View
+  original" href, held back only by CSP. Non-https values are dropped at
+  ingest with a changeset backstop.
+- **User profile pages and the personal feed no longer leak private-board
+  content.** `/users/:name`, `/users/:name/articles|comments` and the
+  followed-user section of `/feed` listed article titles, board names and
+  comment bodies from boards the viewer (including guests) cannot open. All
+  user-page listings now take the viewer and apply the board view gate; the
+  feed applies it to followed users' local articles.
 - **Admin sudo lockout is now per user and survives a discarded cookie.** The
   5-attempt lockout on `/auth/admin-totp-verify` and `/auth/admin-webauthn-verify`
   lived only in the session cookie and was cleared on lockout, so the next POST
