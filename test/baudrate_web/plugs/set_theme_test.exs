@@ -14,8 +14,10 @@ defmodule BaudrateWeb.Plugs.SetThemeTest do
   test "assigns default themes when no settings exist", %{conn: conn} do
     conn = get(conn, "/")
 
-    assert conn.assigns[:theme_light] == "light"
-    assert conn.assigns[:theme_dark] == "dark"
+    assert conn.assigns[:theme_light] == "aquaosx"
+    assert conn.assigns[:theme_dark] == "aquaosxdark"
+    assert conn.assigns[:theme_light] == Setup.default_light_theme()
+    assert conn.assigns[:theme_dark] == Setup.default_dark_theme()
   end
 
   test "assigns custom themes from settings", %{conn: conn} do

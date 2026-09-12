@@ -108,9 +108,12 @@ defmodule Baudrate.Setup do
     "guest.view_content" => "View published content"
   }
 
+  @default_light_theme "aquaosx"
+  @default_dark_theme "aquaosxdark"
+
   @daisyui_themes [
     # Light themes
-    {"light", "Light (Default)", :light},
+    {"light", "Light", :light},
     {"cupcake", "Cupcake", :light},
     {"bumblebee", "Bumblebee", :light},
     {"emerald", "Emerald", :light},
@@ -131,9 +134,9 @@ defmodule Baudrate.Setup do
     {"caramellatte", "Caramellatte", :light},
     {"silk", "Silk", :light},
     {"nord", "Nord", :light},
-    {"aquaosx", "Mac OS X (Aqua)", :light},
+    {"aquaosx", "Mac OS X (Aqua) (Default)", :light},
     # Dark themes
-    {"dark", "Dark (Default)", :dark},
+    {"dark", "Dark", :dark},
     {"synthwave", "Synthwave", :dark},
     {"halloween", "Halloween", :dark},
     {"forest", "Forest", :dark},
@@ -147,7 +150,7 @@ defmodule Baudrate.Setup do
     {"dim", "Dim", :dark},
     {"sunset", "Sunset", :dark},
     {"abyss", "Abyss", :dark},
-    {"aquaosxdark", "Mac OS X (Aqua) Dark", :dark}
+    {"aquaosxdark", "Mac OS X (Aqua) Dark (Default)", :dark}
   ]
 
   @daisyui_theme_names Enum.map(@daisyui_themes, fn {name, _, _} -> name end)
@@ -156,6 +159,16 @@ defmodule Baudrate.Setup do
   Returns the list of all DaisyUI themes as `{name, label, scheme}` tuples.
   """
   def daisyui_themes, do: @daisyui_themes
+
+  @doc """
+  The theme used for light mode when no `theme_light` setting is stored.
+  """
+  def default_light_theme, do: @default_light_theme
+
+  @doc """
+  The theme used for dark mode when no `theme_dark` setting is stored.
+  """
+  def default_dark_theme, do: @default_dark_theme
 
   @doc """
   Returns light-scheme themes as `{label, name}` tuples for select options.
@@ -178,8 +191,8 @@ defmodule Baudrate.Setup do
   """
   def get_theme_settings do
     %{
-      light: get_setting("theme_light") || "light",
-      dark: get_setting("theme_dark") || "dark"
+      light: get_setting("theme_light") || @default_light_theme,
+      dark: get_setting("theme_dark") || @default_dark_theme
     }
   end
 
@@ -367,8 +380,8 @@ defmodule Baudrate.Setup do
       ap_domain_allowlist: get_setting("ap_domain_allowlist") || "",
       ap_authorized_fetch: get_setting("ap_authorized_fetch") || "false",
       ap_blocklist_audit_url: get_setting("ap_blocklist_audit_url") || "",
-      theme_light: get_setting("theme_light") || "light",
-      theme_dark: get_setting("theme_dark") || "dark"
+      theme_light: get_setting("theme_light") || @default_light_theme,
+      theme_dark: get_setting("theme_dark") || @default_dark_theme
     }
 
     {defaults, types}
@@ -416,8 +429,8 @@ defmodule Baudrate.Setup do
         set_setting("ap_domain_allowlist", changes.ap_domain_allowlist || "")
         set_setting("ap_authorized_fetch", changes.ap_authorized_fetch || "false")
         set_setting("ap_blocklist_audit_url", changes.ap_blocklist_audit_url || "")
-        set_setting("theme_light", changes.theme_light || "light")
-        set_setting("theme_dark", changes.theme_dark || "dark")
+        set_setting("theme_light", changes.theme_light || @default_light_theme)
+        set_setting("theme_dark", changes.theme_dark || @default_dark_theme)
 
         Baudrate.Setup.SettingsCache.refresh()
         Baudrate.Federation.DomainBlockCache.refresh()

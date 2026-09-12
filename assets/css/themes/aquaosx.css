@@ -12,7 +12,7 @@
    "aquaosx" because DaisyUI already ships a dark theme called "aqua". */
 @plugin "../../vendor/daisyui-theme" {
   name: "aquaosx";
-  default: false;
+  default: true;
   prefersdark: false;
   color-scheme: "light";
   --color-base-100: #f6f7f9;

@@ -48,11 +48,14 @@
 /* daisyUI theme plugin. You can update this file by fetching the latest version with:
   curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.js
   We ship with two themes, a light one inspired on Phoenix colors and a dark one inspired
-  on Elixir colors. Build your own at: https://daisyui.com/theme-generator/ */
+  on Elixir colors. Build your own at: https://daisyui.com/theme-generator/
+  The instance defaults are the Mac OS X (Aqua) pair (see themes/aquaosx*.css and
+  Baudrate.Setup.default_light_theme/0, default_dark_theme/0); "light"/"dark" remain
+  selectable under Admin → Settings → Theme. */
 @plugin "../vendor/daisyui-theme" {
   name: "dark";
   default: false;
-  prefersdark: true;
+  prefersdark: false;
   color-scheme: "dark";
   --color-base-100: oklch(24.353% 0 0);
   --color-base-200: oklch(22.648% 0 0);
@@ -86,7 +89,7 @@
 
 @plugin "../vendor/daisyui-theme" {
   name: "light";
-  default: true;
+  default: false;
   prefersdark: false;
   color-scheme: "light";
   --color-base-100: oklch(97.788% 0.004 56.375);

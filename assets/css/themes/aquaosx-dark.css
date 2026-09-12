@@ -14,7 +14,7 @@
 @plugin "../../vendor/daisyui-theme" {
   name: "aquaosxdark";
   default: false;
-  prefersdark: false;
+  prefersdark: true;
   color-scheme: "dark";
   --color-base-100: #2b2f36;
   --color-base-200: #23272d;

@@ -172,19 +172,19 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
       assert Setup.get_setting("theme_dark") == "aquaosxdark"
     end
 
-    test "default theme values are light and dark", %{conn: conn} do
+    test "default theme values are the Mac OS X (Aqua) pair", %{conn: conn} do
       admin = setup_user("admin")
       conn = log_in_admin(conn, admin)
 
       {:ok, _lv, html} = live(conn, "/admin/settings")
 
       # Root layout should have default theme data attributes
-      assert html =~ ~s(data-theme-light="light")
-      assert html =~ ~s(data-theme-dark="dark")
+      assert html =~ ~s(data-theme-light="aquaosx")
+      assert html =~ ~s(data-theme-dark="aquaosxdark")
 
       themes = Setup.get_theme_settings()
-      assert themes.light == "light"
-      assert themes.dark == "dark"
+      assert themes.light == "aquaosx"
+      assert themes.dark == "aquaosxdark"
     end
   end
 

@@ -20,6 +20,10 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ### Changed
 
+- **Mac OS X (Aqua) is now the default theme pair** — a fresh instance renders
+  `aquaosx` in light mode and `aquaosxdark` in dark mode. The former defaults
+  ("Light" and "Dark") remain selectable under *Admin → Settings → Theme*, and
+  instances that already saved a theme choice are unaffected.
 - **Dependencies** — bandit 1.12.5, mint 1.10.0, phoenix 1.8.13,
   phoenix_live_view 1.2.11, phoenix_pubsub 2.3.0 (clears five `mix hex.audit`
   advisories: two HTTP/2 DoS issues in Bandit, two HTTP/1 parsing DoS issues in

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html
   lang={String.replace(assigns[:locale] || "en", "_", "-")}
-  data-theme-light={assigns[:theme_light] || "light"}
-  data-theme-dark={assigns[:theme_dark] || "dark"}
+  data-theme-light={assigns[:theme_light] || Baudrate.Setup.default_light_theme()}
+  data-theme-dark={assigns[:theme_dark] || Baudrate.Setup.default_dark_theme()}
 >
   <head>
     <meta charset="utf-8" />
