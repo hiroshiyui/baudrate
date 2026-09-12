@@ -60,6 +60,11 @@ config :baudrate, allow_http_localhost: true
 config :baudrate, :bypass_ssrf_check, true
 config :baudrate, :req_test_options, plug: {Req.Test, Baudrate.Federation.HTTPClient}
 
+# Each partition gets its own media cache directory. Cache tests wipe the
+# directory in setup, so a shared one races against concurrent partitions.
+config :baudrate, Baudrate.Media,
+  media_cache_dir: Path.expand("../priv/static/uploads/media_cache_test#{partition}", __DIR__)
+
 # WebAuthn — test server runs on http://localhost:#{4002 + partition}
 config :wax_,
   origin: "http://localhost:#{4002 + partition}",

@@ -38,6 +38,7 @@ baudrate-*.tar
 /priv/static/uploads/article_images/
 /priv/static/uploads/link_preview_images/
 /priv/static/uploads/media_cache/
+/priv/static/uploads/media_cache_test*/
 
 # TLS certificates
 /priv/cert/

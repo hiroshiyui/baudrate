@@ -18,6 +18,10 @@ defmodule Baudrate.Media.Cache do
   filename is a server-computed hex digest, so no user input ever reaches the
   filesystem.
 
+  The test config overrides the directory (`:media_cache_dir`) with one per
+  `MIX_TEST_PARTITION`: the cache tests wipe their directory in `setup`, and a
+  shared directory let one partition delete a file another had just warmed.
+
   The bytes are reachable through `BaudrateWeb.MediaController` only; the nginx
   config denies `/uploads/media_cache/` directly so the signature cannot be
   bypassed.
@@ -118,7 +122,10 @@ defmodule Baudrate.Media.Cache do
 
   @doc false
   def cache_dir do
-    Application.app_dir(:baudrate, Path.join(["priv", "static", "uploads", "media_cache"]))
+    config(
+      :media_cache_dir,
+      Application.app_dir(:baudrate, Path.join(["priv", "static", "uploads", "media_cache"]))
+    )
   end
 
   # --- Private ---

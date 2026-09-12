@@ -918,6 +918,11 @@ every instance whose content is on the page.
     media_cache_max_bytes: 2 * 1024 * 1024 * 1024
   ```
 
+  `media_cache_dir` overrides the directory itself. Production should leave it
+  at the default (`uploads/media_cache/` — the only path the systemd unit and
+  nginx rules cover); the test config uses it to give each partition its own
+  directory.
+
 **Important:** Upload directory paths are resolved at **runtime** using
 `Application.app_dir/2` — never as compile-time module attributes. In OTP
 releases, compile-time `:code.priv_dir/1` resolves to the build directory,
