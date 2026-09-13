@@ -161,4 +161,16 @@ defmodule BaudrateWeb.ArticleEditLiveTest do
     # Verify the image was NOT deleted
     assert Repo.get!(ArticleImage, other_image.id)
   end
+
+  describe "accessibility" do
+    test "image file input is keyboard reachable (not display:none)", %{
+      conn: conn,
+      article: article
+    } do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}/edit")
+
+      assert has_element?(lv, "#article-images-section input[type=file].sr-only")
+      refute has_element?(lv, "#article-images-section input[type=file].hidden")
+    end
+  end
 end

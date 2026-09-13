@@ -19,15 +19,19 @@
 
     <div class="card bg-base-200">
       <div class="card-body">
-        <div id="recovery-codes-grid" class="grid grid-cols-2 gap-2 font-mono text-sm">
-          <div
+        <ol
+          id="recovery-codes-grid"
+          class="recovery-codes-grid grid grid-cols-2 gap-2 font-mono text-sm"
+          aria-label={gettext("Recovery Codes")}
+        >
+          <li
             :for={code <- @recovery_codes}
             id={"register-recovery-code-#{code}"}
             class="register-recovery-code bg-base-300 rounded px-3 py-1.5 text-center"
           >
             {code}
-          </div>
-        </div>
+          </li>
+        </ol>
       </div>
     </div>
 

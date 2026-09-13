@@ -222,4 +222,46 @@ defmodule BaudrateWeb.ProfileLiveTest do
       assert updated.avatar_id == nil
     end
   end
+
+  describe "accessibility" do
+    test "display name, bio and signature inputs have associated labels", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/profile")
+
+      assert has_element?(lv, "#profile-display-name label", "Display Name")
+      assert has_element?(lv, "#profile-display-name label input#display_name_display_name")
+
+      assert has_element?(lv, ~s(#profile-bio-section label[for="bio_bio"]), "Bio")
+      assert has_element?(lv, "#profile-bio-section textarea#bio_bio")
+
+      assert has_element?(
+               lv,
+               ~s(#profile-signature-section label[for="signature_signature"]),
+               "Signature"
+             )
+
+      assert has_element?(lv, "#profile-signature-section textarea#signature_signature")
+    end
+
+    test "section headings are h2 elements", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/profile")
+
+      assert has_element?(lv, "h2#crop-modal-title")
+      assert has_element?(lv, "h2#push-notifications-heading")
+
+      assert has_element?(
+               lv,
+               ~s(section#profile-muted-users[aria-labelledby="profile-muted-users-heading"])
+             )
+
+      assert has_element?(lv, "h2#profile-muted-users-heading", "Muted Users")
+    end
+
+    test "add language trigger has no redundant tabindex", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/profile")
+
+      assert has_element?(lv, ~s(#profile-add-language[aria-haspopup="true"]))
+      refute has_element?(lv, "#profile-add-language[tabindex]")
+      refute has_element?(lv, "#profile-add-language-menu[tabindex]")
+    end
+  end
 end

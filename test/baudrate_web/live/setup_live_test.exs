@@ -367,4 +367,47 @@ defmodule BaudrateWeb.SetupLiveTest do
       refute Baudrate.Repo.get_by(Baudrate.Setup.User, username: "secondadmin")
     end
   end
+
+  describe "accessibility" do
+    setup do
+      on_exit(fn -> Application.delete_env(:baudrate, :installation_key) end)
+    end
+
+    test "marks the current step in the steps indicator", %{conn: conn} do
+      Application.delete_env(:baudrate, :installation_key)
+
+      {:ok, view, _html} = live(conn, ~p"/setup")
+
+      assert has_element?(view, ~s(#setup-steps[aria-label="Setup progress"]))
+      assert has_element?(view, ~s(#setup-step-indicator-database[aria-current="step"]))
+      refute has_element?(view, "#setup-step-indicator-site-name[aria-current]")
+    end
+
+    test "wrong installation key links the error to the input", %{conn: conn} do
+      Application.put_env(:baudrate, :installation_key, "correct-key-abc")
+
+      {:ok, view, _html} = live(conn, ~p"/setup")
+      refute has_element?(view, "#setup-installation-key[aria-describedby]")
+
+      view
+      |> form("form", key: %{installation_key: "wrong-key"})
+      |> render_submit()
+
+      assert has_element?(
+               view,
+               ~s(#setup-installation-key[aria-invalid="true"][aria-describedby="setup-key-error"])
+             )
+
+      assert has_element?(view, ~s(#setup-key-error[role="alert"]))
+    end
+
+    test "moves focus to the new step heading on step change", %{conn: conn} do
+      Application.delete_env(:baudrate, :installation_key)
+
+      {:ok, view, _html} = live(conn, ~p"/setup")
+      view |> element("button", "Next") |> render_click()
+
+      assert_push_event(view, "focus", %{id: "setup-site-name-title"})
+    end
+  end
 end

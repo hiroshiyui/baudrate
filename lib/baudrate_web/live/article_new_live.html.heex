@@ -10,7 +10,7 @@
       navigate={~p"/boards/#{@board_slug}"}
       class="article-new-back-link text-sm text-base-content/70 hover:text-base-content"
     >
-      &larr; {gettext("Back to board")}
+      <span aria-hidden="true">&larr;</span> {gettext("Back to board")}
     </.link>
     <.link
       :if={!@board_slug}
@@ -18,7 +18,7 @@
       navigate={~p"/"}
       class="article-new-back-link text-sm text-base-content/70 hover:text-base-content"
     >
-      &larr; {gettext("Boards")}
+      <span aria-hidden="true">&larr;</span> {gettext("Boards")}
     </.link>
   </nav>
 
@@ -61,12 +61,15 @@
       id="article-new-attachments-toolbar"
       class="article-new-attachments-toolbar flex items-center gap-1"
     >
-      <.live_file_input upload={@uploads.article_images} class="hidden" />
+      <.live_file_input
+        upload={@uploads.article_images}
+        class="article-new-image-input sr-only peer"
+      />
       <label
         :if={length(@uploaded_images) < 4}
+        id="article-new-add-images"
         for={@uploads.article_images.ref}
-        class="article-new-add-images btn btn-sm btn-ghost gap-1 cursor-pointer"
-        aria-label={gettext("Add Images")}
+        class="article-new-add-images btn btn-sm btn-ghost gap-1 cursor-pointer peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary"
       >
         <.icon name="hero-photo" class="size-5" />
         {gettext("Add Images")}
@@ -75,6 +78,8 @@
         id="article-new-toggle-poll"
         type="button"
         phx-click="toggle_poll"
+        aria-expanded={to_string(@poll_enabled)}
+        aria-controls="article-poll-section"
         class={[
           "article-new-toggle-poll btn btn-sm",
           (@poll_enabled && "btn-error btn-outline") || "btn-ghost"
@@ -104,7 +109,7 @@
             type="button"
             phx-click="remove_image"
             phx-value-id={img.id}
-            class="article-new-remove-image absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+            class="article-new-remove-image absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
             aria-label={gettext("Remove image")}
           >
             <.icon name="hero-x-mark" class="size-4" />
@@ -300,23 +305,37 @@
           autocomplete="off"
           class="article-new-board-search-input input input-sm input-bordered w-full"
           aria-label={gettext("Search boards")}
-          aria-expanded={to_string(@board_search_results != [])}
-          role="combobox"
-          aria-controls="board-search-results"
+          aria-describedby="article-new-board-search-status"
         />
+        <p
+          id="article-new-board-search-status"
+          class="article-new-board-search-status sr-only"
+          role="status"
+        >
+          {if String.length(String.trim(@board_search_query || "")) >= 2,
+            do:
+              ngettext(
+                "%{count} board found",
+                "%{count} boards found",
+                length(@board_search_results)
+              )}
+        </p>
         <ul
           :if={@board_search_results != []}
           id="board-search-results"
-          role="listbox"
           class="article-new-board-search-results menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+          aria-label={gettext("Board search results")}
         >
-          <li :for={board <- @board_search_results}>
+          <li
+            :for={board <- @board_search_results}
+            id={"article-new-board-result-item-#{board.id}"}
+            class="article-new-board-result-item"
+          >
             <button
               id={"article-new-board-result-#{board.id}"}
               type="button"
               phx-click="add_board"
               phx-value-board-id={board.id}
-              role="option"
               class="article-new-board-result"
             >
               {board.name}
@@ -340,7 +359,8 @@
       <.input
         field={@form[:visibility]}
         type="select"
-        aria-label={gettext("Visibility")}
+        label={gettext("Visibility")}
+        label_class="text-base"
         options={[
           {gettext("Public"), "public"},
           {gettext("Unlisted"), "unlisted"},

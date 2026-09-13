@@ -5,10 +5,15 @@
   </.header>
 
   <%!-- Steps indicator --%>
-  <ul id="setup-steps" class="steps steps-horizontal w-full">
+  <ol
+    id="setup-steps"
+    class="setup-steps steps steps-horizontal w-full"
+    aria-label={gettext("Setup progress")}
+  >
     <li
       :if={@key_required}
       id="setup-step-indicator-verification"
+      aria-current={@step == :verify_key && "step"}
       class={[
         "setup-step-indicator step",
         @step in [:verify_key, :database, :site_name, :admin_account, :recovery_codes] &&
@@ -16,41 +21,60 @@
       ]}
     >
       {gettext("Verification")}
+      <span :if={@step == :verify_key} class="setup-step-current-marker sr-only">
+        {gettext("(current step)")}
+      </span>
     </li>
     <li
       id="setup-step-indicator-database"
+      aria-current={@step == :database && "step"}
       class={[
         "setup-step-indicator step",
         @step in [:database, :site_name, :admin_account, :recovery_codes] && "step-primary"
       ]}
     >
       {gettext("Database")}
+      <span :if={@step == :database} class="setup-step-current-marker sr-only">
+        {gettext("(current step)")}
+      </span>
     </li>
     <li
       id="setup-step-indicator-site-name"
+      aria-current={@step == :site_name && "step"}
       class={[
         "setup-step-indicator step",
         @step in [:site_name, :admin_account, :recovery_codes] && "step-primary"
       ]}
     >
       {gettext("Site Name")}
+      <span :if={@step == :site_name} class="setup-step-current-marker sr-only">
+        {gettext("(current step)")}
+      </span>
     </li>
     <li
       id="setup-step-indicator-admin-account"
+      aria-current={@step == :admin_account && "step"}
       class={[
         "setup-step-indicator step",
         @step in [:admin_account, :recovery_codes] && "step-primary"
       ]}
     >
       {gettext("Admin Account")}
+      <span :if={@step == :admin_account} class="setup-step-current-marker sr-only">
+        {gettext("(current step)")}
+      </span>
     </li>
     <li
       id="setup-step-indicator-recovery-codes"
+      aria-current={@step == :recovery_codes && "step"}
       class={["setup-step-indicator step", @step == :recovery_codes && "step-primary"]}
     >
       {gettext("Recovery Codes")}
+      <span :if={@step == :recovery_codes} class="setup-step-current-marker sr-only">
+        {gettext("(current step)")}
+      </span>
     </li>
-  </ul>
+  </ol>
 
   <%!-- Step 0: Installation Key Verification --%>
   <div :if={@step == :verify_key} id="setup-step-verify-key" class="space-y-6">
@@ -64,14 +88,17 @@
         </p>
         <.form for={%{}} as={:key} phx-submit="verify_key">
           <.input
+            id="setup-installation-key"
             name="key[installation_key]"
             type="password"
+            aria-invalid={@key_error && "true"}
+            aria-describedby={@key_error && "setup-key-error"}
             label={gettext("Installation Key")}
             value=""
             required
             autocomplete="off"
           />
-          <div :if={@key_error} id="setup-key-error" class="setup-key-error mt-2">
+          <div :if={@key_error} id="setup-key-error" class="setup-key-error mt-2" role="alert">
             <p class="text-sm text-error">{@key_error}</p>
           </div>
           <div class="flex justify-end mt-4">
@@ -397,15 +424,19 @@
           </div>
         </div>
 
-        <div id="setup-recovery-codes-grid" class="grid grid-cols-2 gap-2 font-mono text-sm">
-          <div
+        <ol
+          id="setup-recovery-codes-grid"
+          class="setup-recovery-codes-grid grid grid-cols-2 gap-2 font-mono text-sm"
+          aria-label={gettext("Recovery Codes")}
+        >
+          <li
             :for={code <- @recovery_codes}
             id={"setup-recovery-code-#{code}"}
             class="setup-recovery-code bg-base-300 rounded px-3 py-1.5 text-center"
           >
             {code}
-          </div>
-        </div>
+          </li>
+        </ol>
 
         <button
           id="setup-ack-codes"

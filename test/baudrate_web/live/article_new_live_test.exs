@@ -292,4 +292,29 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
       assert is_nil(article.published_at)
     end
   end
+
+  describe "accessibility" do
+    test "image file input is keyboard reachable (not display:none)", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/articles/new")
+
+      assert has_element?(lv, "#article-new-attachments-toolbar input[type=file].sr-only")
+      refute has_element?(lv, "#article-new-attachments-toolbar input[type=file].hidden")
+    end
+
+    test "board search is a labelled input without combobox roles", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/articles/new")
+
+      assert has_element?(lv, "#article-new-board-search-input[aria-label]")
+      refute has_element?(lv, "#article-new-board-search-input[role]")
+      assert has_element?(lv, ~s(#article-new-board-search-status[role="status"]))
+    end
+
+    test "poll toggle exposes its expanded state", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/articles/new")
+
+      assert has_element?(lv, ~s(#article-new-toggle-poll[aria-expanded="false"]))
+      lv |> element("#article-new-toggle-poll") |> render_click()
+      assert has_element?(lv, ~s(#article-new-toggle-poll[aria-expanded="true"]))
+    end
+  end
 end

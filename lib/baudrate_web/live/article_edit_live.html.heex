@@ -9,7 +9,7 @@
       navigate={~p"/articles/#{@article.slug}"}
       class="article-edit-back-link text-sm text-base-content/70 hover:text-base-content"
     >
-      &larr; {gettext("Back to article")}
+      <span aria-hidden="true">&larr;</span> {gettext("Back to article")}
     </.link>
   </nav>
 
@@ -74,7 +74,7 @@
             type="button"
             phx-click="remove_image"
             phx-value-id={img.id}
-            class="article-edit-remove-image absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+            class="article-edit-remove-image absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
             aria-label={gettext("Remove image")}
           >
             <.icon name="hero-x-mark" class="size-4" />
@@ -85,11 +85,14 @@
       <%!-- Upload input (only show if under max) --%>
       <div :if={length(@article_images) < 4}>
         <div class="space-y-2">
-          <.live_file_input upload={@uploads.article_images} class="hidden" />
+          <.live_file_input
+            upload={@uploads.article_images}
+            class="article-edit-image-input sr-only peer"
+          />
           <label
+            id="article-edit-add-images"
             for={@uploads.article_images.ref}
-            class="article-edit-add-images btn btn-sm btn-ghost gap-1 cursor-pointer"
-            aria-label={gettext("Add Images")}
+            class="article-edit-add-images btn btn-sm btn-ghost gap-1 cursor-pointer peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary"
           >
             <.icon name="hero-photo" class="size-5" />
             {gettext("Add Images")}
@@ -100,7 +103,15 @@
             class="flex items-center gap-2 text-sm"
           >
             <span class="truncate max-w-48">{entry.client_name}</span>
-            <progress value={entry.progress} max="100" class="progress progress-primary w-24">
+            <progress
+              value={entry.progress}
+              max="100"
+              class="progress progress-primary w-24"
+              aria-label={gettext("Upload progress: %{percent}%", percent: entry.progress)}
+              aria-valuenow={entry.progress}
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
               {entry.progress}%
             </progress>
             <button
@@ -174,7 +185,8 @@
       <.input
         field={@form[:visibility]}
         type="select"
-        aria-label={gettext("Visibility")}
+        label={gettext("Visibility")}
+        label_class="text-base"
         options={[
           {gettext("Public"), "public"},
           {gettext("Unlisted"), "unlisted"},

@@ -45,7 +45,11 @@
       <%!-- Upload errors --%>
       <%= for entry <- @uploads.avatar.entries do %>
         <%= for err <- upload_errors(@uploads.avatar, entry) do %>
-          <p class="text-sm text-error">
+          <p
+            id={"profile-avatar-error-#{entry.ref}"}
+            class="profile-avatar-error text-sm text-error"
+            role="alert"
+          >
             {upload_error_to_string(err)}
           </p>
         <% end %>
@@ -64,7 +68,9 @@
           {if @show_crop_modal, do: [open: true], else: []}
         >
           <div class="modal-box max-w-lg">
-            <h3 id="crop-modal-title" class="text-lg font-bold mb-4">{gettext("Crop Avatar")}</h3>
+            <h2 id="crop-modal-title" class="crop-modal-title text-lg font-bold mb-4">
+              {gettext("Crop Avatar")}
+            </h2>
             <div id="avatar-crop-container" data-avatar-crop-container phx-update="ignore">
               <div class="max-h-96 overflow-hidden">
                 <img
@@ -120,9 +126,6 @@
 
       <%!-- Display Name section --%>
       <div id="profile-display-name">
-        <div class="profile-field-label text-sm text-base-content/70 mb-2">
-          {gettext("Display Name")}
-        </div>
         <.form
           for={@display_name_form}
           id="profile-display-name-form"
@@ -133,6 +136,8 @@
           <.input
             field={@display_name_form[:display_name]}
             type="text"
+            label={gettext("Display Name")}
+            label_class="profile-field-label text-sm text-base-content/70"
             maxlength="64"
             placeholder={gettext("Your display name (max 64 characters)")}
           />
@@ -149,7 +154,6 @@
 
       <%!-- Bio section --%>
       <div id="profile-bio-section">
-        <div class="profile-field-label text-sm text-base-content/70 mb-2">{gettext("Bio")}</div>
         <.form
           for={@bio_form}
           id="profile-bio-form"
@@ -160,6 +164,8 @@
           <.input
             field={@bio_form[:bio]}
             type="textarea"
+            label={gettext("Bio")}
+            label_class="profile-field-label text-sm text-base-content/70"
             rows="4"
             maxlength="500"
             placeholder={gettext("Tell others about yourself (max 500 characters)")}
@@ -176,10 +182,13 @@
       </div>
 
       <%!-- Profile Fields section --%>
-      <div id="profile-fields-section">
-        <div class="profile-field-label text-sm text-base-content/70 mb-2">
+      <section id="profile-fields-section" aria-labelledby="profile-fields-heading">
+        <h2
+          id="profile-fields-heading"
+          class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+        >
           {gettext("Profile Fields")}
-        </div>
+        </h2>
         <p class="profile-field-hint text-sm text-base-content/70 mb-3">
           {gettext("Add up to 4 custom fields to your profile (e.g. website, location).")}
         </p>
@@ -221,13 +230,10 @@
             {gettext("Save Fields")}
           </button>
         </form>
-      </div>
+      </section>
 
       <%!-- Signature section --%>
       <div id="profile-signature-section">
-        <div class="profile-field-label text-sm text-base-content/70 mb-2">
-          {gettext("Signature")}
-        </div>
         <.form
           for={@signature_form}
           id="profile-signature-form"
@@ -238,6 +244,8 @@
           <.input
             field={@signature_form[:signature]}
             type="textarea"
+            label={gettext("Signature")}
+            label_class="profile-field-label text-sm text-base-content/70"
             rows="4"
             maxlength="500"
             toolbar
@@ -305,7 +313,10 @@
         aria-labelledby="security-keys-heading"
         phx-hook="WebAuthnRegister"
       >
-        <h2 id="security-keys-heading" class="text-sm text-base-content/70 mb-2">
+        <h2
+          id="security-keys-heading"
+          class="profile-section-heading text-sm text-base-content/70 mb-2"
+        >
           {gettext("Security Keys")}
         </h2>
         <p class="profile-field-hint text-sm text-base-content/70 mb-3">
@@ -362,7 +373,6 @@
           type="button"
           class="btn btn-sm btn-outline"
           phx-click="begin_registration"
-          aria-label={gettext("Register a new security key")}
         >
           <.icon name="hero-plus" class="w-4 h-4 mr-1" />
           {gettext("Register New Key")}
@@ -398,10 +408,13 @@
       </div>
 
       <%!-- Preferred Languages section --%>
-      <div id="profile-languages">
-        <div class="profile-field-label text-sm text-base-content/70 mb-2">
+      <section id="profile-languages" aria-labelledby="profile-languages-heading">
+        <h2
+          id="profile-languages-heading"
+          class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+        >
           {gettext("Preferred Languages")}
-        </div>
+        </h2>
         <%= if @preferred_locales == [] do %>
           <div class="profile-languages-empty text-sm text-base-content/70 italic">
             {gettext("Using browser language settings.")}
@@ -464,16 +477,15 @@
             <button
               id="profile-add-language"
               type="button"
-              tabindex="0"
               aria-haspopup="true"
               aria-expanded="false"
-              class="btn btn-sm btn-outline"
+              class="profile-add-language btn btn-sm btn-outline"
             >
               {gettext("Add Language")}
             </button>
             <ul
-              tabindex="0"
-              class="dropdown-content menu bg-base-200 rounded-box z-10 w-52 p-2 shadow-sm"
+              id="profile-add-language-menu"
+              class="profile-add-language-menu dropdown-content menu bg-base-200 rounded-box z-10 w-52 p-2 shadow-sm"
             >
               <%= for {code, name} <- unselected do %>
                 <li>
@@ -492,13 +504,16 @@
             </ul>
           </div>
         <% end %>
-      </div>
+      </section>
 
       <%!-- DM access setting --%>
-      <div id="profile-dm-access">
-        <div class="profile-field-label text-sm text-base-content/70 mb-2">
+      <section id="profile-dm-access" aria-labelledby="profile-dm-access-heading">
+        <h2
+          id="profile-dm-access-heading"
+          class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+        >
           {gettext("Direct Messages")}
-        </div>
+        </h2>
         <select
           id="profile-dm-access-select"
           name="dm_access"
@@ -519,18 +534,20 @@
         <p class="profile-field-hint text-sm text-base-content/70 mt-1">
           {gettext("Controls who can send you direct messages.")}
         </p>
-      </div>
+      </section>
 
       <%!-- Browser Push Notifications section --%>
-      <div
+      <section
         id="push-manager"
         phx-hook="PushManagerHook"
-        role="region"
         aria-labelledby="push-notifications-heading"
       >
-        <h3 id="push-notifications-heading" class="text-sm text-base-content/70 mb-2">
+        <h2
+          id="push-notifications-heading"
+          class="profile-section-heading text-sm text-base-content/70 mb-2"
+        >
           {gettext("Browser Push Notifications")}
-        </h3>
+        </h2>
         <%= if @push_supported do %>
           <%= if @push_subscribed do %>
             <button
@@ -556,13 +573,19 @@
             {gettext("Push notifications are not supported by this browser.")}
           </p>
         <% end %>
-      </div>
+      </section>
 
       <%!-- Notification Preferences section --%>
-      <div id="profile-notification-prefs">
-        <div class="profile-field-label text-sm text-base-content/70 mb-2">
+      <section
+        id="profile-notification-prefs"
+        aria-labelledby="profile-notification-prefs-heading"
+      >
+        <h2
+          id="profile-notification-prefs-heading"
+          class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+        >
           {gettext("Notification Preferences")}
-        </div>
+        </h2>
         <p class="profile-field-hint text-sm text-base-content/70 mb-3">
           {gettext("Choose which notifications you receive.")}
         </p>
@@ -597,7 +620,9 @@
                       phx-click="toggle_notification_pref"
                       phx-value-type={type}
                       aria-label={
-                        gettext("In-App") <> ": " <> BaudrateWeb.Helpers.notification_text(type)
+                        gettext("In-App: %{type}",
+                          type: BaudrateWeb.Helpers.notification_text(type)
+                        )
                       }
                     />
                   </label>
@@ -612,7 +637,9 @@
                       phx-click="toggle_web_push_pref"
                       phx-value-type={type}
                       aria-label={
-                        gettext("Push") <> ": " <> BaudrateWeb.Helpers.notification_text(type)
+                        gettext("Push: %{type}",
+                          type: BaudrateWeb.Helpers.notification_text(type)
+                        )
                       }
                     />
                   </label>
@@ -621,13 +648,16 @@
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
       <%!-- Muted Users section --%>
-      <div id="profile-muted-users">
-        <div class="profile-field-label text-sm text-base-content/70 mb-2">
+      <section id="profile-muted-users" aria-labelledby="profile-muted-users-heading">
+        <h2
+          id="profile-muted-users-heading"
+          class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+        >
           {gettext("Muted Users")}
-        </div>
+        </h2>
         <div
           :if={@mutes == []}
           class="profile-muted-users-empty text-sm text-base-content/70 italic"
@@ -666,7 +696,7 @@
             </button>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   </div>
 </div>

@@ -108,7 +108,7 @@
                 data-copy-text={invite_url(code.code)}
                 data-copied-label={gettext("Copied!")}
                 title={gettext("Copy invite link")}
-                aria-label={gettext("Copy invite link")}
+                aria-label={gettext("Copy invite link %{code}", code: code.code)}
               >
                 <.icon name="hero-clipboard-document" class="size-4" />
               </button>
@@ -118,7 +118,7 @@
                 phx-value-code={code.code}
                 class="invite-code-qr btn btn-sm btn-ghost"
                 title={gettext("Show QR code")}
-                aria-label={gettext("Show QR code")}
+                aria-label={gettext("Show QR code %{code}", code: code.code)}
               >
                 <.icon name="hero-qr-code" class="size-4" />
               </button>
@@ -128,6 +128,7 @@
                 phx-value-id={code.id}
                 data-confirm={gettext("Revoke this invite code?")}
                 class="invite-code-revoke btn btn-sm btn-ghost text-error"
+                aria-label={gettext("Revoke invite code %{code}", code: code.code)}
               >
                 {gettext("Revoke")}
               </button>

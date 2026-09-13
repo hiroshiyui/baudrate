@@ -88,7 +88,7 @@ defmodule BaudrateWeb.SetupLive do
       if InstallationKey.verify(submitted_key) do
         {:noreply,
          socket
-         |> assign(:step, :database)
+         |> go_to_step(:database)
          |> assign(:key_verified, true)
          |> assign(:key_error, nil)}
       else
@@ -126,7 +126,7 @@ defmodule BaudrateWeb.SetupLive do
 
   @impl true
   def handle_event("next_from_database", _params, socket) do
-    {:noreply, assign(socket, :step, :site_name)}
+    {:noreply, go_to_step(socket, :site_name)}
   end
 
   @impl true
@@ -146,7 +146,7 @@ defmodule BaudrateWeb.SetupLive do
       {:noreply,
        socket
        |> assign(:site_name, site_name)
-       |> assign(:step, :admin_account)}
+       |> go_to_step(:admin_account)}
     else
       changeset = Map.put(changeset, :action, :validate)
       {:noreply, assign(socket, :site_name_form, to_form(changeset, as: :site))}
@@ -173,7 +173,7 @@ defmodule BaudrateWeb.SetupLive do
     # the installation-key gate must be re-checked here and not only in the UI.
     {:noreply,
      socket
-     |> assign(:step, :verify_key)
+     |> go_to_step(:verify_key)
      |> assign(:key_error, gettext("Invalid installation key."))}
   end
 
@@ -183,7 +183,7 @@ defmodule BaudrateWeb.SetupLive do
         {:noreply,
          socket
          |> assign(:recovery_codes, result.recovery_codes)
-         |> assign(:step, :recovery_codes)}
+         |> go_to_step(:recovery_codes)}
 
       {:error, :admin_user, changeset, _changes} ->
         {:noreply, assign(socket, :admin_form, to_form(changeset, as: :admin))}
@@ -205,12 +205,30 @@ defmodule BaudrateWeb.SetupLive do
 
   @impl true
   def handle_event("back_to_database", _params, socket) do
-    {:noreply, assign(socket, :step, :database)}
+    {:noreply, go_to_step(socket, :database)}
   end
 
   @impl true
   def handle_event("back_to_site_name", _params, socket) do
-    {:noreply, assign(socket, :step, :site_name)}
+    {:noreply, go_to_step(socket, :site_name)}
+  end
+
+  # Each step swaps the whole step container, which drops keyboard focus to
+  # <body>. Moving focus to the new step's heading (handled by the global
+  # "focus" event listener in app.js) keeps screen-reader and keyboard users
+  # oriented in the wizard.
+  @step_heading_ids %{
+    verify_key: "setup-verify-key-title",
+    database: "setup-database-connection-title",
+    site_name: "setup-site-name-title",
+    admin_account: "setup-admin-account-title",
+    recovery_codes: "setup-recovery-codes-title"
+  }
+
+  defp go_to_step(socket, step) do
+    socket
+    |> assign(:step, step)
+    |> push_event("focus", %{id: Map.fetch!(@step_heading_ids, step)})
   end
 
   defp key_locked?(socket) do
