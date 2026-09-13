@@ -1613,8 +1613,13 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
   - *Stylesheets target the semantic selectors* — custom CSS in `assets/css/app.css` (theme layers, focus styles, component tweaks) MUST hook onto the semantic `id`/`class` selectors, not fragile structural/positional selectors (`.card > .card-body > .card-title`, `:nth-child`, tag chains). Every custom style rule's selector must correspond to a meaningful element's semantic `id`/`class`; if the target element lacks one, add it first. This keeps styling stable against markup refactors and makes each rule's intent self-documenting.
 - Skip-to-content link (`<a href="#main-content">`) at top of `<body>` in `root.html.heex`
 - `id="main-content"` and `tabindex="-1"` on `<main>` in both app and setup layouts — enables the skip-to-content link to move keyboard focus (not just scroll) to the main content area
-- `aria-haspopup="true"` and `aria-expanded` on all dropdown trigger buttons (mobile hamburger, desktop user menu, language picker); `aria-expanded` is synced dynamically via JS event delegation on `focusin`/`focusout` in `app.js`
-- `aria-live="polite"` on the comment tree container and flash group for screen reader announcements
+- `aria-haspopup="true"` and `aria-expanded` on all dropdown trigger buttons (mobile hamburger, desktop user menu, language picker, article/profile menus); `aria-expanded` is driven only by `focusin`/`focusout` delegation in `app.js` (no click toggle), and Escape closes the dropdown and returns focus to its trigger. Dropdown menus must not carry `tabindex="0"`
+- **Live regions announce summaries, never whole lists.** Flashes use `role="alert"` (the flash group itself is not `aria-live`, which double-announced). PubSub-driven pages render a dedicated `sr-only` `role="status"` node whose text the server sets on the event: `#comments-live-status` ("New comment by …"), `#feed-live-status`, `#notifications-live-status`, `#conversations-live-status`. Never put `aria-live` on `#comments`, `#feed-items`, or a `<tbody>` — every re-render would be read out
+- Toggle buttons (like, boost, bookmark, admin filters) expose state with `aria-pressed`; when a button has visible text, that text is its accessible name (no overriding `aria-label`, WCAG 2.5.3). Repeated row actions name their subject (`gettext("Ban %{username}", …)`), starting with the visible verb
+- Button-based search pickers (board picker, forward-to-board, DM recipient search) are plain `<button>`s in a labelled `<ul>` with the result count in a sibling `role="status"` node — not a half-implemented `combobox`/`listbox`
+- Hidden file inputs use `sr-only peer` (never `hidden`) so the styled `<label for>` stays keyboard-operable, with `peer-focus-visible:outline…` on the label
+- `<.input type="textarea">`'s `<label for>` holds only the label text; the Markdown toolbar and preview are siblings, not label content
+- `<.avatar decorative>` renders `alt=""` where the name is already visible next to it
 - `aria-invalid="true"` and `aria-describedby="<id>-error"` on form inputs with validation errors
 - Error messages wrapped in `<div id="<id>-error" role="alert">` for programmatic association
 - `aria-expanded` on reply buttons and moderator management toggle
@@ -1651,7 +1656,10 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 - JS in `app.js` finds the first `[data-focus-target]` inside `<main>` and focuses its first interactive child
 - Skips initial page load and pages with `autofocus` inputs
 - Add `data-focus-target` to list/browse pages; do NOT add to form pages or pages with `autofocus`
-- Links (`<a>`) get a `focus-visible` inset box-shadow (primary color) in `app.css` so keyboard users can see which link is focused when tabbing
+- Links (`<a>`) get a 2px `focus-visible` inset ring in `base-content` (≥3:1 in every theme) plus a transparent `outline`, so the ring still shows under Windows `forced-colors`
+- **Server-driven focus:** `push_event(socket, "focus", %{id: "…"})` is handled by a global `phx:focus` listener in `app.js` (adds `tabindex="-1"` to non-focusable targets). Use it when an action removes the focused control — destructive admin row actions, setup wizard step changes — so focus lands on the page/section heading instead of `<body>`
+- LiveView patches strip attributes JS set on server-rendered elements; `app.js` passes a `dom.onBeforeElUpdated` callback that carries over the theme buttons' `aria-pressed`, dropdown `aria-expanded`, the textarea autocomplete attributes, and the Markdown preview's `aria-live`/`aria-busy`
+- `prefers-reduced-motion: reduce` disables the card, scroll-to-top, and theme-indicator transitions in `app.css`, and JS scrolling uses `behavior: "auto"`
 
 **Auth hooks:**
 
@@ -1810,8 +1818,10 @@ container on the profile page.
 
 ### `ScrollBottomHook`
 
-Auto-scrolls the DM message list to the bottom on mount and when new messages
-are added. Attached to the message container in `ConversationLive`.
+Auto-scrolls the DM message list to the bottom on mount, and on updates only
+when the reader was already within ~80px of the bottom (so reading history is
+not interrupted). Never moves focus. Attached to `#message-list`
+(`role="log"`) in `ConversationLive`.
 
 Source: `assets/js/scroll_bottom_hook.js`
 
@@ -1864,6 +1874,15 @@ When the user types `#` followed by one or more characters, the hook debounces
 server. The server queries `Content.search_tags/2` and pushes back
 `"hashtag_suggestions"` with matching tags. The hook renders a positioned
 dropdown with keyboard navigation (ArrowUp/Down, Enter/Tab, Escape).
+
+Accessibility: the textarea keeps its native textbox role (ARIA does not allow
+`role="combobox"` on `<textarea>`) and gets `aria-autocomplete="list"`,
+`aria-controls` pointing at the `role="listbox"`, and `aria-activedescendant`
+tracking the highlighted `role="option"`. The emoji autocomplete
+(`emoji_autocomplete.js`) follows the same pattern. The suggestion count is
+announced through a shared polite live region (`autocomplete_announcer.js`)
+using the translated `data-i18n-suggestions` template (`%{count}` placeholder)
+rendered on the hook wrapper and on `<body>`; without it nothing is announced.
 
 Source: `assets/js/hashtag_autocomplete_hook.js`
 
