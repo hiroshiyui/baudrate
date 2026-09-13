@@ -1,0 +1,81 @@
+# Covers the dependency surface Dependabot cannot read (see the header of
+# .github/dependabot.yml): esbuild/Tailwind binary versions, vendored assets,
+# .tool-versions, and retired Hex packages. Results are kept in one rolling
+# issue, which is closed automatically once everything is current again.
+
+name: Dependency drift
+
+on:
+  schedule:
+    - cron: "0 20 * * 0" # Monday 04:00 Asia/Taipei, alongside Dependabot
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: dependency-drift
+  cancel-in-progress: true
+
+jobs:
+  drift:
+    name: Check untracked dependency pins
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITHUB_TOKEN: ${{ github.token }}
+      ISSUE_TITLE: "Dependency drift report"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Erlang and Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          version-file: .tool-versions
+          version-type: strict
+
+      - name: Check pinned versions against upstream
+        id: pins
+        run: |
+          set +e
+          bash .github/scripts/dependency-drift.sh > report.md
+          echo "drift=$?" >> "$GITHUB_OUTPUT"
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Audit Hex packages for retirements
+        id: hex
+        run: |
+          set +e
+          mix deps.get > /dev/null
+          out=$(mix hex.audit 2>&1)
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          {
+            echo
+            echo "### \`mix hex.audit\`"
+            echo
+            echo '```'
+            echo "$out"
+            echo '```'
+          } | tee -a report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update the rolling drift issue
+        run: |
+          number=$(gh issue list --state open --search "in:title \"$ISSUE_TITLE\"" \
+            --json number,title --jq ".[] | select(.title == \"$ISSUE_TITLE\") | .number" | head -n1)
+
+          if [ "${{ steps.pins.outputs.drift }}" = "0" ] && [ "${{ steps.hex.outputs.status }}" = "0" ]; then
+            if [ -n "$number" ]; then
+              gh issue close "$number" --comment "All untracked dependency pins are current and \`mix hex.audit\` is clean."
+            fi
+            exit 0
+          fi
+
+          if [ -n "$number" ]; then
+            gh issue edit "$number" --body-file report.md
+          else
+            gh issue create --title "$ISSUE_TITLE" --body-file report.md --label dependencies \
+              || gh issue create --title "$ISSUE_TITLE" --body-file report.md
+          fi

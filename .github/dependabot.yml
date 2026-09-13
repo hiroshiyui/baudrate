@@ -1,15 +1,25 @@
 # Dependabot configuration for Baudrate.
-# Routine dependency auditing across every ecosystem the project uses:
-# Elixir/Hex (mix), the Rust NIF crates (cargo), and GitHub Actions.
-# The frontend toolchain (esbuild, tailwind, daisyUI) is Hex-managed, so it
-# is covered by the `mix` ecosystem below — there is no npm manifest.
+# Routine dependency auditing across every manifest Dependabot can read:
+# Elixir/Hex (mix.exs + mix.lock, including the `heroicons` git dependency),
+# the Rust NIF crates (cargo), and GitHub Actions.
+#
+# NOT covered by Dependabot (no manifest it understands) — these are checked
+# weekly by `.github/workflows/dependency-drift.yml` instead:
+#   - esbuild / Tailwind CLI binaries: the `mix` ecosystem only bumps the Hex
+#     *installer* packages; the binary versions are the `version:` keys in
+#     `config/config.exs`.
+#   - Vendored assets in `assets/vendor/` (daisyUI, daisyUI theme, topbar,
+#     Cropper.js) — plain copied files with no package.json.
+#   - Erlang/OTP and Elixir pinned in `.tool-versions`.
+#   - Retired Hex packages (`mix hex.audit`) — retirement is not a GitHub
+#     security advisory, so Dependabot never alerts on it.
 #
 # Security is the top priority for this public-facing system, so security
 # updates are ungrouped (one PR each, opened as soon as an advisory lands),
 # while routine version bumps are grouped weekly to keep PR noise low.
 version: 2
 updates:
-  # ---- Elixir / Hex (also covers esbuild/tailwind/daisyUI installers) ----
+  # ---- Elixir / Hex (esbuild/tailwind *installer* packages only, not the binaries) ----
   - package-ecosystem: mix
     directory: "/"
     schedule:

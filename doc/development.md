@@ -2053,6 +2053,17 @@ in `mount/3`; the root layout renders them with the correct attribute
 | User profile (`/users/:username`) | `profile` | `summary` | User avatar → site icon |
 | Home (`/`) | `website` | `summary` | Site icon |
 
+## Dependency Monitoring
+
+Dependency updates are watched from two places, which together cover every pin:
+
+| Tool | Covers |
+|------|--------|
+| Dependabot (`.github/dependabot.yml`) | Hex packages in `mix.exs`/`mix.lock` (including the `heroicons` git dependency and the esbuild/Tailwind *installer* packages), the three Rust NIF crates under `native/`, and GitHub Actions. Security updates get one PR each; minor/patch version updates are grouped weekly. |
+| Dependency drift workflow (`.github/workflows/dependency-drift.yml`) | Pins Dependabot cannot read: the esbuild/Tailwind binary `version:` in `config/config.exs`, vendored assets in `assets/vendor/` (daisyUI version; `daisyui-theme.js` byte-compared against the matching daisyUI release; topbar; Cropper.js), Erlang/Elixir in `.tool-versions`, and retired Hex packages via `mix hex.audit`. Runs weekly (and on manual dispatch) and keeps one rolling "Dependency drift report" issue, closed automatically once everything is current. |
+
+The drift check is a plain script (`.github/scripts/dependency-drift.sh`, needs `curl` and `jq`) that also runs locally; it exits non-zero when anything is outdated. Upgrading is still a manual step — the `check-updates` skill walks through risk-grouping the results.
+
 ## Further Reading
 
 - [Architecture Decision Records](adr/README.md) — *why* the architecture is the way it is: rationale, rejected alternatives, and the consequences we live with. This guide documents *what* the system does; the ADRs document why.
