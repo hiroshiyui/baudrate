@@ -265,7 +265,7 @@ defmodule BaudrateWeb.ActivityPubController do
         try do
           article = Baudrate.Content.get_article_by_slug!(slug)
 
-          if article.boards == [] or Enum.any?(article.boards, &Board.public?/1) do
+          if publicly_servable?(article) do
             conn
             |> put_resp_content_type(@activity_json)
             |> json(Federation.article_object(article))
@@ -301,7 +301,7 @@ defmodule BaudrateWeb.ActivityPubController do
       try do
         article = Baudrate.Content.get_article_by_slug!(slug)
 
-        if article.boards == [] or Enum.any?(article.boards, &Board.public?/1) do
+        if publicly_servable?(article) do
           conn
           |> put_resp_content_type(@activity_json)
           |> json(Federation.article_replies(article))
@@ -383,6 +383,19 @@ defmodule BaudrateWeb.ActivityPubController do
   end
 
   # --- Helpers ---
+
+  # An article may be served as a public AP object when it sits in a public
+  # board (or none), and — for remote articles — was not ingested as
+  # followers-only/direct. `ObjectBuilder` stamps `to: as:Public`, so leaking a
+  # followers-only Note here would re-publish it to the whole fediverse.
+  defp publicly_servable?(article) do
+    board_ok = article.boards == [] or Enum.any?(article.boards, &Board.public?/1)
+
+    visibility_ok =
+      is_nil(article.remote_actor_id) or article.visibility in ["public", "unlisted"]
+
+    board_ok and visibility_ok
+  end
 
   defp not_found(conn), do: conn |> put_status(404) |> json(%{error: "Not Found"})
 

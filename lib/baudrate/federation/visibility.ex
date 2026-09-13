@@ -31,15 +31,34 @@ defmodule Baudrate.Federation.Visibility do
   """
   @spec from_addressing(map()) :: String.t()
   def from_addressing(object) when is_map(object) do
-    to = List.wrap(object["to"])
-    cc = List.wrap(object["cc"])
+    to = addressees(object["to"])
+    cc = addressees(object["cc"])
 
     cond do
-      @as_public in to -> "public"
-      @as_public in cc -> "unlisted"
+      Enum.any?(to, &public_collection?/1) -> "public"
+      Enum.any?(cc, &public_collection?/1) -> "unlisted"
       has_followers_collection?(to ++ cc) -> "followers_only"
       true -> "direct"
     end
+  end
+
+  # The public collection may appear as the full IRI or in either JSON-LD
+  # compact form (`as:Public`, `Public`) — ActivityPub §5.6 treats all three
+  # as equivalent. Missing the compact forms would mis-derive genuinely public
+  # content from peers that compact it as "direct" and hide it.
+  defp public_collection?(uri), do: uri in [@as_public, "as:Public", "Public"]
+
+  # Addressing values are remote-controlled: accept strings and `{"id": ...}`
+  # link objects, drop everything else (a non-string entry used to crash
+  # `String.ends_with?/2`).
+  defp addressees(value) do
+    value
+    |> List.wrap()
+    |> Enum.flat_map(fn
+      uri when is_binary(uri) -> [uri]
+      %{"id" => uri} when is_binary(uri) -> [uri]
+      _ -> []
+    end)
   end
 
   defp has_followers_collection?(uris) do

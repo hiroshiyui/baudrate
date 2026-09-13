@@ -622,6 +622,39 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       assert redirected_to(conn, 302) == "/articles/#{article.slug}"
     end
 
+    test "returns 404 for a remote article ingested as followers-only", %{conn: conn} do
+      uid = System.unique_integer([:positive])
+
+      {:ok, actor} =
+        %Baudrate.Federation.RemoteActor{}
+        |> Baudrate.Federation.RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/fo-#{uid}",
+          username: "fo_#{uid}",
+          domain: "remote.example",
+          public_key_pem: "-----BEGIN PUBLIC KEY-----\nfake\n-----END PUBLIC KEY-----",
+          inbox: "https://remote.example/users/fo-#{uid}/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert()
+
+      {:ok, %{article: article}} =
+        Baudrate.Content.create_remote_article(
+          %{
+            title: "Followers only",
+            body: "secret",
+            slug: "fo-#{uid}",
+            ap_id: "https://remote.example/notes/fo-#{uid}",
+            remote_actor_id: actor.id,
+            visibility: "followers_only"
+          },
+          []
+        )
+
+      conn = conn |> ap_conn() |> get("/ap/articles/#{article.slug}")
+      assert json_response(conn, 404)["error"] == "Not Found"
+    end
+
     test "returns 404 for non-existent article", %{conn: conn} do
       conn = conn |> ap_conn() |> get("/ap/articles/nonexistent-slug")
       assert json_response(conn, 404)["error"] == "Not Found"

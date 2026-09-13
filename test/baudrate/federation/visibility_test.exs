@@ -61,4 +61,23 @@ defmodule Baudrate.Federation.VisibilityTest do
                })
     end
   end
+
+  describe "from_addressing/1 compact forms and hostile input" do
+    test "treats the JSON-LD compact public forms as public" do
+      assert "public" == Visibility.from_addressing(%{"to" => ["as:Public"]})
+      assert "public" == Visibility.from_addressing(%{"to" => "Public"})
+      assert "unlisted" == Visibility.from_addressing(%{"cc" => ["as:Public"]})
+    end
+
+    test "accepts link objects and ignores non-string entries without crashing" do
+      assert "public" == Visibility.from_addressing(%{"to" => [%{"id" => @as_public}]})
+
+      assert "followers_only" ==
+               Visibility.from_addressing(%{
+                 "to" => [123, nil, %{"x" => 1}, "https://example.com/users/a/followers"]
+               })
+
+      assert "direct" == Visibility.from_addressing(%{"to" => [42], "cc" => [%{}]})
+    end
+  end
 end

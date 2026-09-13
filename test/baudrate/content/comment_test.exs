@@ -246,4 +246,59 @@ defmodule Baudrate.Content.CommentTest do
       assert hd(results).id == remote_actor.id
     end
   end
+
+  describe "public listing excludes non-public remote comments" do
+    test "followers-only/direct remote comments are hidden; local and public remote are shown" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+      uid = System.unique_integer([:positive])
+
+      {:ok, actor} =
+        %Baudrate.Federation.RemoteActor{}
+        |> Baudrate.Federation.RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/vis-#{uid}",
+          username: "vis_#{uid}",
+          domain: "remote.example",
+          public_key_pem: "-----BEGIN PUBLIC KEY-----\nfake\n-----END PUBLIC KEY-----",
+          inbox: "https://remote.example/users/vis-#{uid}/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Baudrate.Repo.insert()
+
+      remote = fn vis ->
+        {:ok, c} =
+          Baudrate.Content.create_remote_comment(%{
+            body: "remote #{vis}",
+            body_html: "<p>remote #{vis}</p>",
+            ap_id: "https://remote.example/notes/#{vis}-#{uid}",
+            article_id: article.id,
+            remote_actor_id: actor.id,
+            visibility: vis
+          })
+
+        c
+      end
+
+      public = remote.("public")
+      _fo = remote.("followers_only")
+      _dm = remote.("direct")
+
+      {:ok, local} =
+        Baudrate.Content.create_comment(%{
+          "body" => "local",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      for viewer <- [nil, user] do
+        ids = Baudrate.Content.list_comments_for_article(article, viewer) |> Enum.map(& &1.id)
+        assert Enum.sort(ids) == Enum.sort([public.id, local.id])
+
+        page = Baudrate.Content.paginate_comments_for_article(article, viewer)
+        assert Enum.sort(Enum.map(page.comments, & &1.id)) == Enum.sort([public.id, local.id])
+      end
+    end
+  end
 end

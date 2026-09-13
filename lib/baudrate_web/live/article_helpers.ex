@@ -33,6 +33,12 @@ defmodule BaudrateWeb.ArticleHelpers do
   An article with no boards is always visible. Otherwise at least one board
   must be visible to the user.
   """
+  # A remote article that was ingested as followers-only/direct (rows that
+  # predate the ingest refusing them) is never a public page.
+  def user_can_view_article?(%{remote_actor_id: rid, visibility: vis}, _user)
+      when not is_nil(rid) and vis not in ["public", "unlisted"],
+      do: false
+
   def user_can_view_article?(article, _user) when article.boards == [], do: true
 
   def user_can_view_article?(article, user) do
