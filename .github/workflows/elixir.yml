@@ -59,8 +59,8 @@ jobs:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
-          native/baudrate_sanitizer/target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('native/baudrate_sanitizer/Cargo.lock') }}
+          native/*/target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('native/*/Cargo.lock') }}
         restore-keys: ${{ runner.os }}-cargo-
     - name: Restore dependencies cache
       uses: actions/cache@v6
