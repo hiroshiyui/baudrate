@@ -117,6 +117,49 @@ defmodule Baudrate.Federation.ValidatorTest do
     end
   end
 
+  describe "same_host?/2" do
+    test "matches hosts case-insensitively and fails closed" do
+      assert Validator.same_host?("https://Remote.Example/a", "https://remote.example/b")
+      refute Validator.same_host?("https://remote.example/a", "https://other.example/a")
+      refute Validator.same_host?(nil, "https://remote.example/a")
+      refute Validator.same_host?("not a url", "https://remote.example/a")
+      refute Validator.same_host?(%{"id" => "x"}, "https://remote.example/a")
+    end
+  end
+
+  describe "validate_activity/1 origin binding" do
+    test "rejects an activity id on a different host than the actor" do
+      activity = %{
+        "id" => "https://mastodon.social/users/victim/statuses/1/activity",
+        "type" => "Like",
+        "actor" => "https://evil.example/users/mallory",
+        "object" => "https://local.example/ap/articles/x"
+      }
+
+      assert {:error, :activity_id_origin_mismatch} = Validator.validate_activity(activity)
+    end
+  end
+
+  describe "validate_object_origin/2" do
+    test "requires the object id to live on the signer's host" do
+      actor = %{ap_id: "https://remote.example/users/alice"}
+
+      assert :ok =
+               Validator.validate_object_origin(
+                 %{"id" => "https://remote.example/notes/1"},
+                 actor
+               )
+
+      assert {:error, :object_origin_mismatch} =
+               Validator.validate_object_origin(
+                 %{"id" => "https://mastodon.social/users/victim/statuses/1"},
+                 actor
+               )
+
+      assert {:error, :object_origin_mismatch} = Validator.validate_object_origin(%{}, actor)
+    end
+  end
+
   describe "validate_activity/1" do
     test "valid activity with all required fields" do
       activity = %{

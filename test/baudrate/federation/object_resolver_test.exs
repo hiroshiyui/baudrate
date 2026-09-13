@@ -235,6 +235,36 @@ defmodule Baudrate.Federation.ObjectResolverTest do
     end
   end
 
+  describe "origin binding" do
+    test "refuses a document whose id is on a different host than the fetch URL" do
+      {_actor, public_pem} = insert_remote_actor()
+
+      object_json =
+        build_object_json("Note", id: "https://mastodon.social/users/victim/statuses/9")
+
+      stub_object_and_actor(object_json, build_actor_json(public_pem))
+
+      assert {:error, :object_id_origin_mismatch} = ObjectResolver.resolve(@remote_object_ap_id)
+      refute Content.get_article_by_ap_id("https://mastodon.social/users/victim/statuses/9")
+    end
+
+    test "refuses an author on a different host than the object id" do
+      {_actor, public_pem} = insert_remote_actor()
+
+      object_json =
+        @remote_object_ap_id
+        |> then(fn _ -> build_object_json("Note") end)
+        |> Jason.decode!()
+        |> Map.put("attributedTo", "https://mastodon.social/users/victim")
+        |> Jason.encode!()
+
+      stub_object_and_actor(object_json, build_actor_json(public_pem))
+
+      assert {:error, :author_origin_mismatch} = ObjectResolver.resolve(@remote_object_ap_id)
+      refute Content.get_article_by_ap_id(@remote_object_ap_id)
+    end
+  end
+
   describe "resolve/1" do
     test "creates a remote article for a valid remote Note" do
       {_actor, public_pem} = insert_remote_actor()

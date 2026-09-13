@@ -54,7 +54,7 @@ defmodule Baudrate.Federation.ObjectResolver do
     with :ok <- validate_url(url),
          {:dedup, nil} <- {:dedup, Content.get_article_by_ap_id(url)},
          {:ok, object} <- fetch_object(url),
-         {:ok, object} <- validate_object(object),
+         {:ok, object} <- validate_object(object, url),
          {:ok, remote_actor} <- resolve_author(object),
          {:ok, body, body_html} <- sanitize_content(object) do
       title = TitleDeriver.derive_title(object, body)
@@ -95,7 +95,7 @@ defmodule Baudrate.Federation.ObjectResolver do
     with :ok <- validate_url(url),
          {:dedup, nil} <- {:dedup, Content.get_article_by_ap_id(url)},
          {:ok, object} <- fetch_object(url),
-         {:ok, object} <- validate_object(object),
+         {:ok, object} <- validate_object(object, url),
          {:ok, remote_actor} <- resolve_author(object),
          {:ok, article} <- materialize(object, remote_actor) do
       {:ok, Baudrate.Repo.preload(article, [:remote_actor, :user, :boards])}
@@ -136,7 +136,13 @@ defmodule Baudrate.Federation.ObjectResolver do
     end
   end
 
-  defp validate_object(object) do
+  # Origin binding, mirroring the inbox Announce path: the document's `id`
+  # must live on the host it was fetched from, and its author on the same host
+  # as the `id`. Without this any signed-in user could paste a URL on
+  # evil.example whose document claims `id`/`attributedTo` on mastodon.social,
+  # materializing attacker content as a public article under the victim's
+  # name — and squatting the victim's URI in `ap_id`.
+  defp validate_object(object, url) do
     type = object["type"]
 
     cond do
@@ -145,6 +151,9 @@ defmodule Baudrate.Federation.ObjectResolver do
 
       not is_binary(object["id"]) ->
         {:error, :missing_id}
+
+      not Validator.same_host?(object["id"], url) ->
+        {:error, :object_id_origin_mismatch}
 
       true ->
         {:ok, object}
@@ -157,9 +166,13 @@ defmodule Baudrate.Federation.ObjectResolver do
         {:error, :missing_author}
 
       author_uri ->
-        case ActorResolver.resolve(author_uri) do
-          {:ok, actor} -> {:ok, actor}
-          {:error, reason} -> {:error, {:author_resolve_failed, reason}}
+        if Validator.same_host?(author_uri, object["id"]) do
+          case ActorResolver.resolve(author_uri) do
+            {:ok, actor} -> {:ok, actor}
+            {:error, reason} -> {:error, {:author_resolve_failed, reason}}
+          end
+        else
+          {:error, :author_origin_mismatch}
         end
     end
   end

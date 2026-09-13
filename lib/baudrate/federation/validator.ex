@@ -65,6 +65,40 @@ defmodule Baudrate.Federation.Validator do
   def validate_object_id(_), do: {:error, :invalid_object_id}
 
   @doc """
+  Case-insensitive host equality for two absolute URIs. Returns `false` when
+  either is missing or unparseable (fail closed). This is the origin-binding
+  primitive: an object's `id`, its `attributedTo`, the activity `id` and the
+  signing actor must all share a host, or a remote sender could publish
+  content under another instance's URIs.
+  """
+  @spec same_host?(term(), term()) :: boolean()
+  def same_host?(a, b) when is_binary(a) and is_binary(b) do
+    with %URI{host: host_a} when is_binary(host_a) and host_a != "" <- URI.parse(a),
+         %URI{host: host_b} when is_binary(host_b) and host_b != "" <- URI.parse(b) do
+      String.downcase(host_a) == String.downcase(host_b)
+    else
+      _ -> false
+    end
+  end
+
+  def same_host?(_, _), do: false
+
+  @doc """
+  Validates that an object's `id` lives on the signing actor's host.
+
+  Used on every `Create`/`Update` path where the object is claimed to be
+  authored by the signer. Returns `:ok` or `{:error, :object_origin_mismatch}`.
+  """
+  @spec validate_object_origin(map(), %{ap_id: String.t()}) ::
+          :ok | {:error, :object_origin_mismatch}
+  def validate_object_origin(%{"id" => id}, %{ap_id: actor_ap_id})
+      when is_binary(id) and is_binary(actor_ap_id) do
+    if same_host?(id, actor_ap_id), do: :ok, else: {:error, :object_origin_mismatch}
+  end
+
+  def validate_object_origin(_, _), do: {:error, :object_origin_mismatch}
+
+  @doc """
   Validates that an activity JSON has the required fields.
   Returns `{:ok, activity}` or `{:error, reason}`.
   """
@@ -76,6 +110,14 @@ defmodule Baudrate.Federation.Validator do
 
       not valid_https_url?(actor) ->
         {:error, :invalid_actor_url}
+
+      # The activity id must live on the actor's host. Otherwise a sender can
+      # mint a Like/Announce/Create whose id is another instance's URI and
+      # squat it in the unique `ap_id` columns, so the genuine activity from
+      # that instance is later dropped as a duplicate (Mastodon enforces the
+      # same rule).
+      not same_host?(activity["id"], actor) ->
+        {:error, :activity_id_origin_mismatch}
 
       is_nil(activity["object"]) and type not in ["Delete"] ->
         {:error, :missing_object}
