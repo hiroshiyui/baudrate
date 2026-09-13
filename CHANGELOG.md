@@ -7,7 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
-## [Unreleased]
+## [1.14.0] — 2026-09-13
+
+A security release closing the findings of a project-wide audit — eleven fixes
+across the federation trust boundary, outbound HTTP, content authorization and
+admin authentication — plus a dark companion to the Mac OS X (Aqua) theme,
+which becomes the default theme pair, and a sweep of dependency updates that
+clears every open `mix hex.audit` advisory.
+
+**Upgrading:**
+
+- **The default theme changes.** Theme choices are stored only when an admin
+  saves *Admin → Settings*. An instance whose admin has never saved that page
+  will switch to the Mac OS X (Aqua) themes after upgrading. To keep the
+  previous look, select "Light" and "Dark" there and save.
+- **Followers-only and direct remote content is now hidden from public
+  pages.** Existing rows are kept, only their display changes. A peer that
+  sends replies without any `to`/`cc` addressing will see them hidden, as the
+  ActivityPub spec treats unaddressed objects as non-public.
+- **New optional config key** `http_request_timeout` (default 60 000 ms) under
+  `config :baudrate, Baudrate.Federation` bounds every outbound request.
+- No migrations.
 
 ### Added
 
