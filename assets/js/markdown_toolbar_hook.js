@@ -344,8 +344,17 @@ const MarkdownToolbarHook = {
     }
   },
 
+  // The preview container is server-rendered (phx-update="ignore") and a
+  // LiveView patch can drop client-set attributes, so the live-region
+  // attributes are (re)applied every time the preview content changes.
+  markPreviewLive(busy) {
+    this.previewDiv.setAttribute("aria-live", "polite");
+    this.previewDiv.setAttribute("aria-busy", busy ? "true" : "false");
+  },
+
   showPreviewResult(payload) {
     if (!this.isPreview) return;
+    this.markPreviewLive(false);
 
     if (payload.error) {
       const msg =
@@ -380,6 +389,7 @@ const MarkdownToolbarHook = {
       this.isPreview = true;
       this.el.classList.add("hidden");
       this.previewDiv.classList.remove("hidden");
+      this.markPreviewLive(true);
       this.previewDiv.innerHTML = SPINNER_HTML;
       this.previewBtn.innerHTML = WRITE_ICON;
       this.previewBtn.title = this.i18n.write || "Write";

@@ -8,8 +8,19 @@
  * - ArrowUp/Down to navigate, Enter/Tab to accept, Escape to dismiss
  * - Click a suggestion to insert it
  * - Selecting `:shortcode:` replaces it with the emoji character
+ *
+ * Accessibility: list autocompletion on the active textarea, which keeps its
+ * native textbox role (role="combobox" is not allowed on <textarea>) —
+ * aria-autocomplete="list", aria-controls
+ * (#emoji-autocomplete-list) and aria-activedescendant pointing at the
+ * highlighted option (`emoji-autocomplete-list-opt-${i}`, role="option",
+ * aria-selected). The result count is announced via the shared polite live
+ * region, using the translated `%{count}` template from the nearest
+ * `data-i18n-suggestions` attribute (on the textarea or an ancestor);
+ * nothing is announced when no such attribute exists.
  */
 import EMOJI_MAP from "./emoji_data"
+import { announceSuggestionCount } from "./autocomplete_announcer"
 
 // Pre-build a sorted array of [shortcode, emoji] for search
 const EMOJI_ENTRIES = Object.entries(EMOJI_MAP).sort((a, b) => a[0].localeCompare(b[0]))
@@ -77,25 +88,31 @@ function showDropdown(textarea) {
   if (!dropdown) {
     dropdown = document.createElement("ul")
     // Use fixed positioning on document.body so LiveView DOM patching can't remove it
-    dropdown.className = "menu bg-base-200 rounded-box shadow-lg z-50 max-h-52 overflow-y-auto"
+    dropdown.className = "autocomplete-listbox emoji-autocomplete-listbox menu bg-base-200 rounded-box shadow-lg z-50 max-h-52 overflow-y-auto"
     dropdown.style.position = "absolute"
     dropdown.setAttribute("role", "listbox")
     dropdown.id = "emoji-autocomplete-list"
     document.body.appendChild(dropdown)
   }
+  textarea.setAttribute("aria-autocomplete", "list")
   textarea.setAttribute("aria-controls", dropdown.id)
-  textarea.setAttribute("aria-expanded", "true")
 
   positionDropdown(textarea)
   renderDropdown(textarea)
+
+  const i18nHost = textarea.closest("[data-i18n-suggestions]")
+  announceSuggestionCount(i18nHost && i18nHost.dataset.i18nSuggestions, suggestions.length)
 }
 
 function renderDropdown(textarea) {
   if (!dropdown) return
 
   dropdown.innerHTML = ""
+  const listId = dropdown.id
   suggestions.forEach((item, i) => {
     const li = document.createElement("li")
+    li.id = `${listId}-opt-${i}`
+    li.className = "autocomplete-option emoji-autocomplete-option"
     li.setAttribute("role", "option")
     li.setAttribute("aria-selected", i === selectedIndex ? "true" : "false")
 
@@ -104,11 +121,14 @@ function renderDropdown(textarea) {
 
     const emojiSpan = document.createElement("span")
     emojiSpan.textContent = item.emoji
-    emojiSpan.className = "text-lg"
+    emojiSpan.className = "emoji-autocomplete-char text-lg"
+    // The shortcode alongside is the option's name; the glyph would be read
+    // as its (English, platform-dependent) emoji name first.
+    emojiSpan.setAttribute("aria-hidden", "true")
 
     const codeSpan = document.createElement("span")
     codeSpan.textContent = ":" + item.shortcode + ":"
-    codeSpan.className = "text-sm opacity-70"
+    codeSpan.className = "emoji-autocomplete-shortcode text-sm opacity-70"
 
     a.appendChild(emojiSpan)
     a.appendChild(codeSpan)
@@ -120,6 +140,14 @@ function renderDropdown(textarea) {
     li.appendChild(a)
     dropdown.appendChild(li)
   })
+
+  if (selectedIndex >= 0) {
+    const active = document.getElementById(`${listId}-opt-${selectedIndex}`)
+    textarea.setAttribute("aria-activedescendant", active.id)
+    active.scrollIntoView({ block: "nearest" })
+  } else {
+    textarea.removeAttribute("aria-activedescendant")
+  }
 }
 
 function hideDropdown() {
@@ -127,8 +155,15 @@ function hideDropdown() {
     dropdown.remove()
     dropdown = null
     if (activeTextarea) {
-      activeTextarea.removeAttribute("aria-controls")
-      activeTextarea.setAttribute("aria-expanded", "false")
+      // Only undo what this widget set — the hashtag/mention hook may own
+      // aria-controls on the same textarea.
+      if (activeTextarea.getAttribute("aria-controls") === "emoji-autocomplete-list") {
+        activeTextarea.removeAttribute("aria-controls")
+      }
+      const desc = activeTextarea.getAttribute("aria-activedescendant")
+      if (desc && desc.startsWith("emoji-autocomplete-list-opt-")) {
+        activeTextarea.removeAttribute("aria-activedescendant")
+      }
     }
   }
   suggestions = []

@@ -21,19 +21,29 @@
   --color-base-content: #1d1d1f;
   --color-primary: #0a64d6;
   --color-primary-content: #ffffff;
-  --color-secondary: #8a94a6;
+  /* Contrast (WCAG 1.4.3, 4.5:1). Fills darkened so white -content text clears
+     4.5:1 both on the flat fill and under the gel button's mid-band gloss
+     (12% white / 6% black overlay), and so text-<colour> clears 4.5:1 on
+     base-100. Before -> after, white on fill:
+     secondary #8a94a6 3.06 -> #586274 6.15 (gel 4.65, on base-100 5.74)
+     accent    #1e8fff 3.27 -> #0065c9 5.67 (gel 4.57, on base-100 5.29)
+     info      #0a8bd6 3.70 -> #086aa3 5.83 (gel 4.59, on base-100 5.44)
+     success   #34a853 3.06 -> #237138 6.02 (gel 4.66, on base-100 5.61)
+     error     #e5484d 3.91 -> #d41e24 5.24 (gel 4.56, on base-100 4.88,
+               text-error on white windows 3.91 -> 5.24) */
+  --color-secondary: #586274;
   --color-secondary-content: #ffffff;
-  --color-accent: #1e8fff;
+  --color-accent: #0065c9;
   --color-accent-content: #ffffff;
   --color-neutral: #3a4453;
   --color-neutral-content: #ffffff;
-  --color-info: #0a8bd6;
+  --color-info: #086aa3;
   --color-info-content: #ffffff;
-  --color-success: #34a853;
+  --color-success: #237138;
   --color-success-content: #ffffff;
   --color-warning: #f5a623;
   --color-warning-content: #1d1d1f;
-  --color-error: #e5484d;
+  --color-error: #d41e24;
   --color-error-content: #ffffff;
   --radius-selector: 1rem;
   --radius-field: 0.7rem;
@@ -88,15 +98,18 @@
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-/* Primary = the iconic Aqua blue glossy "default" button, with a soft glow. */
+/* Primary = the iconic Aqua blue glossy "default" button, with a soft glow.
+   Gel stops deepened so white text clears 4.5:1 at every stop (the old top
+   stop #6fb2fb was 2.23:1): #1872e3 4.61, #0e62cf 5.73, #0a52b5 7.27,
+   #1668d6 5.27. The 1px inset highlight keeps the glossy top edge. */
 [data-theme="aquaosx"] .btn-primary {
   border-color: #0a55b8;
   background-image: linear-gradient(
     to bottom,
-    #6fb2fb 0%,
-    #1f7ae6 47%,
-    #0f61cf 53%,
-    #3f95f4 100%
+    #1872e3 0%,
+    #0e62cf 47%,
+    #0a52b5 53%,
+    #1668d6 100%
   );
   color: #ffffff;
   text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
@@ -106,7 +119,8 @@
     0 0 0 3px rgba(30, 122, 230, 0.28);
 }
 [data-theme="aquaosx"] .btn-primary:active {
-  background-image: linear-gradient(to bottom, #0f61cf 0%, #2f86ef 100%);
+  /* white on #0a52b5 7.27, on #1668d6 5.27 (was #2f86ef 3.63) */
+  background-image: linear-gradient(to bottom, #0a52b5 0%, #1668d6 100%);
 }
 
 /* Other semantic colored buttons — glossy version of their fill: a white top
@@ -128,6 +142,15 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
     0 1px 2px rgba(0, 0, 0, 0.16);
+}
+/* The base `.btn` rule above hard-sets `color: #1d1d1f`, which (being outside
+   daisyUI's layer) also overrode daisyUI's `--btn-fg` on the filled colour
+   variants — e.g. #1d1d1f on the old error fill measured 4.30:1. Filled colour
+   variants use their -content token again (ratios in the palette comment);
+   outline/soft/dash/ghost/link variants have no fill and keep the dark text. */
+[data-theme="aquaosx"] .btn:is(.btn-secondary, .btn-accent, .btn-info, .btn-success, .btn-warning, .btn-error):not(.btn-outline, .btn-soft, .btn-dash, .btn-ghost, .btn-link) {
+  color: var(--btn-fg);
+  text-shadow: none;
 }
 
 /* Cards, modals, dropdown panels — clean white "windows" with a hairline and
@@ -253,7 +276,8 @@
   border: 1px solid var(--aqua-hairline);
 }
 [data-theme="aquaosx"] .tab.tab-active {
-  background-image: linear-gradient(to bottom, #6fb2fb, #1f7ae6);
+  /* white on #1872e3 4.61, on #0e62cf 5.73 (old top stop #6fb2fb 2.23) */
+  background-image: linear-gradient(to bottom, #1872e3, #0e62cf);
   color: #ffffff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
@@ -269,7 +293,8 @@
 [data-theme="aquaosx"] .dropdown-content summary:focus,
 [data-theme="aquaosx"] .dropdown-content button:hover,
 [data-theme="aquaosx"] .dropdown-content button:focus {
-  background-image: linear-gradient(to bottom, #3f95f4, #0f61cf);
+  /* white on #1872e3 4.61, on #0a52b5 7.27 (old top stop #3f95f4 3.08) */
+  background-image: linear-gradient(to bottom, #1872e3, #0a52b5);
   color: #ffffff;
 }
 

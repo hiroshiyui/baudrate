@@ -37,11 +37,40 @@ import WebShareHook from "./web_share_hook"
 import "./emoji_autocomplete"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+
+// Client-owned ARIA state that LiveView's DOM patching would otherwise reset to
+// the server-rendered value (or strip) on every patch of the element: the theme
+// toggle's aria-pressed, an open dropdown's aria-expanded / Escape-dismissed
+// state, the autocomplete wiring on a textarea, and the Markdown
+// preview live region. Copied from the live node onto the incoming one.
+const CLIENT_OWNED_ATTRS = [
+  ["[data-phx-theme]", ["aria-pressed"]],
+  [".dropdown [aria-haspopup]", ["aria-expanded"]],
+  ["textarea[aria-autocomplete]", ["aria-autocomplete", "aria-controls", "aria-activedescendant"]],
+  ["[id$='-md-preview']", ["aria-live", "aria-busy"]],
+]
+const preserveClientAria = (fromEl, toEl) => {
+  if (fromEl.nodeType !== Node.ELEMENT_NODE) return
+  for (const [selector, attrs] of CLIENT_OWNED_ATTRS) {
+    if (!fromEl.matches(selector)) continue
+    for (const attr of attrs) {
+      if (fromEl.hasAttribute(attr)) toEl.setAttribute(attr, fromEl.getAttribute(attr))
+    }
+  }
+  if (fromEl.classList.contains("dropdown") && fromEl.classList.contains("dropdown-close")) {
+    toEl.classList.add("dropdown-close")
+  }
+}
+
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
+  dom: {onBeforeElUpdated: preserveClientAria},
   hooks: {...colocatedHooks, AvatarCropHook, MarkdownToolbarHook, ScrollBottomHook, CopyToClipboardHook, HashtagAutocompleteHook, PushManagerHook, DraftSaveHook, FocusTrapHook, WebAuthnRegister, WebAuthnAuthenticate, WebShareHook},
 })
+
+const prefersReducedMotion = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
 // Theme switcher: resolve user preference (light/dark/system) to admin-configured DaisyUI theme
 const getThemeConfig = () => ({
@@ -49,7 +78,18 @@ const getThemeConfig = () => ({
   dark: document.documentElement.dataset.themeDark || "dark",
 })
 
-const applyTheme = (pref) => {
+const normalizeThemePref = (pref) => (pref === "light" || pref === "dark" ? pref : "system")
+
+// Reflect the active preference on the theme toggle buttons (aria-pressed), so
+// screen readers announce which of System / Light / Dark is selected.
+const syncThemeToggle = (pref) => {
+  document.querySelectorAll("[data-phx-theme]").forEach((btn) => {
+    btn.setAttribute("aria-pressed", btn.dataset.phxTheme === pref ? "true" : "false")
+  })
+}
+
+const applyTheme = (rawPref) => {
+  const pref = normalizeThemePref(rawPref)
   const config = getThemeConfig()
   let theme
   if (pref === "light") {
@@ -63,9 +103,15 @@ const applyTheme = (pref) => {
       : config.light
   }
   document.documentElement.setAttribute("data-theme", theme)
+  // Expose the *preference* (not the resolved theme) so the toggle indicator
+  // can position itself via [data-theme-pref=...] regardless of which daisyUI
+  // theme the admin mapped to light/dark.
+  document.documentElement.dataset.themePref = pref
+  syncThemeToggle(pref)
 }
 
-const setTheme = (pref) => {
+const setTheme = (rawPref) => {
+  const pref = normalizeThemePref(rawPref)
   if (pref === "system") {
     localStorage.removeItem("phx:theme")
   } else {
@@ -74,8 +120,20 @@ const setTheme = (pref) => {
   applyTheme(pref)
 }
 
+const storedThemePref = () => {
+  try {
+    return localStorage.getItem("phx:theme") || "system"
+  } catch (_e) {
+    return "system"
+  }
+}
+
 // Apply on load
-applyTheme(localStorage.getItem("phx:theme") || "system")
+applyTheme(storedThemePref())
+document.addEventListener("DOMContentLoaded", () => syncThemeToggle(document.documentElement.dataset.themePref || "system"))
+// LiveView navigation re-renders the header (and the toggle buttons with it),
+// dropping the client-set aria-pressed — re-apply after every navigation.
+window.addEventListener("phx:page-loading-stop", () => syncThemeToggle(document.documentElement.dataset.themePref || "system"))
 
 // Listen for user toggle
 window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme))
@@ -85,7 +143,7 @@ window.addEventListener("storage", (e) => {
 
 // Listen for OS preference changes (when in "system" mode)
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-  if (!localStorage.getItem("phx:theme")) applyTheme("system")
+  if (storedThemePref() === "system") applyTheme("system")
 })
 
 // Font size zoom: store zoom percentage in localStorage, apply to <html>
@@ -111,13 +169,20 @@ window.addEventListener("storage", (e) => {
 })
 
 // Sync aria-expanded with DaisyUI dropdown open/close state.
-// DaisyUI toggles via focus (keyboard) AND :active/:focus-within (click),
-// so we handle both focusin/focusout and click events.
+// DaisyUI dropdowns open while focus is inside `.dropdown` (both keyboard focus
+// and mouse clicks focus the trigger), so focusin/focusout alone drive
+// aria-expanded on the [aria-haspopup] trigger. A separate click toggle used to
+// fight the mousedown focus (open -> click flipped it back to "false").
+const dropdownTrigger = (dropdown) => dropdown.querySelector("[aria-haspopup]")
+
+// Opening state for aria-expanded: open while focus is inside, unless the menu
+// was dismissed with Escape (see below).
 document.addEventListener("focusin", (e) => {
   const dropdown = e.target.closest(".dropdown")
   if (dropdown) {
-    const trigger = dropdown.querySelector("[aria-haspopup]")
-    if (trigger) trigger.setAttribute("aria-expanded", "true")
+    const trigger = dropdownTrigger(dropdown)
+    const dismissed = dropdown.classList.contains("dropdown-close")
+    if (trigger) trigger.setAttribute("aria-expanded", dismissed ? "false" : "true")
   }
 })
 document.addEventListener("focusout", (e) => {
@@ -125,23 +190,44 @@ document.addEventListener("focusout", (e) => {
   if (dropdown) {
     setTimeout(() => {
       if (!dropdown.contains(document.activeElement)) {
-        const trigger = dropdown.querySelector("[aria-haspopup]")
+        dropdown.classList.remove("dropdown-close")
+        const trigger = dropdownTrigger(dropdown)
         if (trigger) trigger.setAttribute("aria-expanded", "false")
       }
     }, 0)
   }
 })
-document.addEventListener("click", (e) => {
-  const trigger = e.target.closest(".dropdown [aria-haspopup]")
+// Escape closes the open dropdown and returns focus to its trigger. Because the
+// daisyUI menu is shown via :focus-within, focusing the trigger would keep it
+// visible, so the dropdown gets daisyUI's `dropdown-close` modifier until the
+// user re-activates the trigger or focus leaves the dropdown.
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || !(e.target instanceof Element)) return
+  const dropdown = e.target.closest(".dropdown")
+  if (!dropdown || dropdown.classList.contains("dropdown-close")) return
+  const trigger = dropdownTrigger(dropdown)
+  dropdown.classList.add("dropdown-close")
+  const active = document.activeElement
+  if (active && dropdown.contains(active) && active !== trigger) active.blur()
   if (trigger) {
-    const expanded = trigger.getAttribute("aria-expanded") === "true"
-    trigger.setAttribute("aria-expanded", expanded ? "false" : "true")
-  } else {
-    // Click outside any dropdown — close all
-    document.querySelectorAll(".dropdown [aria-haspopup][aria-expanded='true']").forEach((el) => {
-      el.setAttribute("aria-expanded", "false")
-    })
+    trigger.setAttribute("aria-expanded", "false")
+    trigger.focus({preventScroll: true})
   }
+})
+// Re-activating the trigger (click, Enter, Space, ArrowDown) re-opens it.
+const reopenDropdown = (trigger) => {
+  const dropdown = trigger.closest(".dropdown")
+  if (!dropdown || !dropdown.classList.contains("dropdown-close")) return
+  dropdown.classList.remove("dropdown-close")
+  trigger.setAttribute("aria-expanded", "true")
+}
+document.addEventListener("mousedown", (e) => {
+  const trigger = e.target instanceof Element && e.target.closest(".dropdown [aria-haspopup]")
+  if (trigger) reopenDropdown(trigger)
+})
+document.addEventListener("keydown", (e) => {
+  if (!["Enter", " ", "ArrowDown"].includes(e.key) || !(e.target instanceof Element)) return
+  if (e.target.matches(".dropdown [aria-haspopup]")) reopenDropdown(e.target)
 })
 
 // Graceful reconnect: delay showing disconnect flash so brief interruptions
@@ -220,6 +306,20 @@ window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
   })
 })()
 
+// Server-requested focus: `push_event(socket, "focus", %{id: "..."})` moves
+// keyboard / screen-reader focus to the element with that id (e.g. after a
+// form submit replaces the content the user was on). Non-focusable targets
+// get tabindex="-1" so they can receive programmatic focus without entering
+// the tab order.
+window.addEventListener("phx:focus", (e) => {
+  const el = e.detail && e.detail.id ? document.getElementById(e.detail.id) : null
+  if (!el) return
+  if (!el.hasAttribute("tabindex") && !el.matches("a[href],button,input,select,textarea")) {
+    el.setAttribute("tabindex", "-1")
+  }
+  el.focus()
+})
+
 // Scroll-to-top FAB: shown after scrolling past the header (~64px), hidden near top.
 //
 // Looks up the button by ID on every update rather than caching the reference,
@@ -235,7 +335,7 @@ window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
   // Click via delegation — works regardless of whether the element was patched.
   document.addEventListener("click", (e) => {
     if (e.target.closest("#scroll-to-top-btn")) {
-      window.scrollTo({ top: 0, behavior: "smooth" })
+      window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" })
     }
   })
 

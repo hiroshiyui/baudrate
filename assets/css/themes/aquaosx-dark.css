@@ -20,8 +20,16 @@
   --color-base-200: #23272d;
   --color-base-300: #1b1e23;
   --color-base-content: #e6e8ec;
-  --color-primary: #2f86ef;
-  --color-primary-content: #ffffff;
+  /* Contrast (WCAG 1.4.3, 4.5:1). On graphite, a fill cannot both carry white
+     text and read as text-<colour> on base-100, so primary and error are
+     lightened and take the dark -content used by the other colours:
+     primary #2f86ef + white 3.63 -> #63a4f3 + #0f1216 7.27
+             (text-primary on base-100 3.70 -> 5.21, on windows 3.25 -> 4.57)
+     error   #ef5f63 + white 3.24 -> #f27f83 + #0f1216 7.28
+             (text-error on base-100 4.15 -> 5.21, on windows 3.65 -> 4.58)
+     The Aqua-blue default button keeps its own gel (see .btn-primary). */
+  --color-primary: #63a4f3;
+  --color-primary-content: #0f1216;
   --color-secondary: #8a94a6;
   --color-secondary-content: #0f1216;
   --color-accent: #4fa3ff;
@@ -34,8 +42,8 @@
   --color-success-content: #0f1216;
   --color-warning: #f5b342;
   --color-warning-content: #1d1d1f;
-  --color-error: #ef5f63;
-  --color-error-content: #ffffff;
+  --color-error: #f27f83;
+  --color-error-content: #0f1216;
   --radius-selector: 1rem;
   --radius-field: 0.7rem;
   --radius-box: 0.9rem;
@@ -92,15 +100,17 @@
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
-/* Primary = the iconic Aqua blue glossy "default" button, with a soft glow. */
+/* Primary = the iconic Aqua blue glossy "default" button, with a soft glow.
+   Same deepened gel as the light theme: white text >= 4.5:1 at every stop
+   (#1872e3 4.61, #0e62cf 5.73, #0a52b5 7.27, #1668d6 5.27; old top 2.23). */
 [data-theme="aquaosxdark"] .btn-primary {
   border-color: #0a4fa8;
   background-image: linear-gradient(
     to bottom,
-    #6fb2fb 0%,
-    #1f7ae6 47%,
-    #0f61cf 53%,
-    #3f95f4 100%
+    #1872e3 0%,
+    #0e62cf 47%,
+    #0a52b5 53%,
+    #1668d6 100%
   );
   color: #ffffff;
   text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.35);
@@ -110,7 +120,8 @@
     0 0 0 3px rgba(47, 134, 239, 0.3);
 }
 [data-theme="aquaosxdark"] .btn-primary:active {
-  background-image: linear-gradient(to bottom, #0f61cf 0%, #2f86ef 100%);
+  /* white on #0a52b5 7.27, on #1668d6 5.27 (was #2f86ef 3.63) */
+  background-image: linear-gradient(to bottom, #0a52b5 0%, #1668d6 100%);
 }
 
 /* Other semantic colored buttons — glossy version of their fill. */
@@ -131,6 +142,16 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.3),
     0 1px 2px rgba(0, 0, 0, 0.5);
+}
+/* The base `.btn` rule hard-sets `color: #f2f4f7`, overriding daisyUI's
+   `--btn-fg` on the filled colour variants (secondary 2.78, accent 2.38,
+   info 2.59, success 2.06, warning 1.67, error 2.94). Filled colour variants
+   use their -content token again; worst case under the gel mid-band
+   (8% white / 14% black): secondary 4.66, accent 5.38, info 4.99, success
+   6.17, warning 6.77, error 5.46. Unfilled variants keep the light text. */
+[data-theme="aquaosxdark"] .btn:is(.btn-secondary, .btn-accent, .btn-info, .btn-success, .btn-warning, .btn-error):not(.btn-outline, .btn-soft, .btn-dash, .btn-ghost, .btn-link) {
+  color: var(--btn-fg);
+  text-shadow: none;
 }
 
 /* Cards, modals, dropdown panels — graphite "windows" with a hairline and a
@@ -234,7 +255,8 @@
   border: 1px solid var(--aqua-hairline);
 }
 [data-theme="aquaosxdark"] .tab.tab-active {
-  background-image: linear-gradient(to bottom, #6fb2fb, #1f7ae6);
+  /* white on #1872e3 4.61, on #0e62cf 5.73 (old top stop #6fb2fb 2.23) */
+  background-image: linear-gradient(to bottom, #1872e3, #0e62cf);
   color: #ffffff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
@@ -246,7 +268,8 @@
 [data-theme="aquaosxdark"] .dropdown-content summary:focus,
 [data-theme="aquaosxdark"] .dropdown-content button:hover,
 [data-theme="aquaosxdark"] .dropdown-content button:focus {
-  background-image: linear-gradient(to bottom, #3f95f4, #0f61cf);
+  /* white on #1872e3 4.61, on #0a52b5 7.27 (old top stop #3f95f4 3.08) */
+  background-image: linear-gradient(to bottom, #1872e3, #0a52b5);
   color: #ffffff;
 }
 

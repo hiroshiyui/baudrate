@@ -8,6 +8,11 @@
  *   data-draft-saved-text    — translated "Draft saved" text
  *   data-draft-restored-text — translated "Draft restored" text
  *
+ * The indicator element is expected to be a polite live region. The icon is
+ * aria-hidden; the translated text is appended as a visually hidden span so
+ * screen readers announce it. If a translated text attribute is missing,
+ * nothing is announced (no English fallback).
+ *
  * Behavior:
  *   - Save: debounced 1.5s on input; stores JSON with `_ts` timestamp
  *   - Restore: on mounted(), populates fields if draft < 30 days old
@@ -117,7 +122,7 @@ const DraftSaveHook = {
     }
 
     if (restored) {
-      this._showIndicator(this.el.dataset.draftRestoredText || "Draft restored")
+      this._showIndicator(this.el.dataset.draftRestoredText)
     }
   },
 
@@ -141,12 +146,12 @@ const DraftSaveHook = {
     if (!indicator) return
 
     if (this._fadeTimer) clearTimeout(this._fadeTimer)
-    indicator.innerHTML = '<span class="loading loading-dots loading-xs"></span>'
+    indicator.innerHTML = '<span class="loading loading-dots loading-xs" aria-hidden="true"></span>'
     indicator.classList.remove("opacity-0")
     indicator.classList.add("opacity-100")
   },
 
-  _showIndicator() {
+  _showIndicator(text = this.el.dataset.draftSavedText) {
     const selector = this.el.dataset.draftIndicator
     if (!selector) return
 
@@ -155,6 +160,12 @@ const DraftSaveHook = {
 
     if (this._fadeTimer) clearTimeout(this._fadeTimer)
     indicator.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" class="size-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z"/></svg>'
+    if (text) {
+      const label = document.createElement("span")
+      label.className = "draft-indicator-text sr-only"
+      label.textContent = text
+      indicator.appendChild(label)
+    }
     indicator.classList.remove("opacity-0")
     indicator.classList.add("opacity-100")
 

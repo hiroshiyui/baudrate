@@ -164,8 +164,11 @@
 @custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
 @custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
 
-/* Use the data attribute for dark mode — matches all dark DaisyUI themes */
-@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *, [data-theme=synthwave], [data-theme=synthwave] *, [data-theme=halloween], [data-theme=halloween] *, [data-theme=forest], [data-theme=forest] *, [data-theme=aqua], [data-theme=aqua] *, [data-theme=black], [data-theme=black] *, [data-theme=luxury], [data-theme=luxury] *, [data-theme=dracula], [data-theme=dracula] *, [data-theme=night], [data-theme=night] *, [data-theme=coffee], [data-theme=coffee] *, [data-theme=business], [data-theme=business] *, [data-theme=dim], [data-theme=dim] *, [data-theme=sunset], [data-theme=sunset] *, [data-theme=abyss], [data-theme=abyss] *));
+/* Use the data attribute for dark mode — matches every dark theme registered in
+   this file: the upstream `dark` fallback, the built-in daisyUI dark themes, and
+   the instance-default Aqua dark theme `aquaosxdark` (themes/aquaosx-dark.css).
+   When registering a new dark theme, add it here too. */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *, [data-theme=synthwave], [data-theme=synthwave] *, [data-theme=halloween], [data-theme=halloween] *, [data-theme=forest], [data-theme=forest] *, [data-theme=aqua], [data-theme=aqua] *, [data-theme=black], [data-theme=black] *, [data-theme=luxury], [data-theme=luxury] *, [data-theme=dracula], [data-theme=dracula] *, [data-theme=night], [data-theme=night] *, [data-theme=coffee], [data-theme=coffee] *, [data-theme=business], [data-theme=business] *, [data-theme=dim], [data-theme=dim] *, [data-theme=sunset], [data-theme=sunset] *, [data-theme=abyss], [data-theme=abyss] *, [data-theme=aquaosxdark], [data-theme=aquaosxdark] *));
 
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
@@ -183,11 +186,18 @@
   font-family: "Roboto Slab", ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Highlight links and anchors on keyboard focus */
+/* Highlight links and anchors on keyboard focus.
+   A 2px inset ring in the theme's base-content colour: that token is the body
+   text colour, so it clears the WCAG 1.4.11 3:1 non-text minimum against
+   base-100 in every theme (the previous 1px primary ring measured 1.40:1 in
+   `light` and 1.90:1 in `dark`). The transparent outline is kept rather than
+   `outline: none` so Windows High Contrast / forced-colors mode — which drops
+   box-shadow — paints it in the system highlight colour instead. */
 a:focus-visible {
-  box-shadow: inset 0 0 0 1px var(--color-primary);
+  box-shadow: inset 0 0 0 2px var(--color-base-content);
   border-radius: var(--radius-box);
-  outline: none;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
 }
 
 /* Touch/tap feedback for interactive cards (mirrors focus-visible highlight).
@@ -229,18 +239,54 @@ a.card:active,
 }
 
 /* Scroll-to-top FAB: hidden at top of page, pops in after scrolling past the header.
-   Spring easing gives a "splash" entrance; shrinks back out on dismiss. */
+   Spring easing gives a "splash" entrance; shrinks back out on dismiss.
+   `visibility: hidden` removes the hidden FAB from the tab order and the
+   accessibility tree (opacity/pointer-events alone left it focusable while
+   invisible). The visibility change is delayed until the fade-out finishes, and
+   applied immediately on show. */
 #scroll-to-top-btn {
   opacity: 0;
   transform: scale(0.5);
   pointer-events: none;
-  transition: opacity 0.15s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  visibility: hidden;
+  transition:
+    opacity 0.15s ease,
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    visibility 0s linear 0.25s;
 }
 
 #scroll-to-top-btn.visible {
   opacity: 1;
   transform: scale(1);
   pointer-events: auto;
+  visibility: visible;
+  transition:
+    opacity 0.15s ease,
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    visibility 0s linear 0s;
+}
+
+/* Honour the OS "reduce motion" preference (WCAG 2.3.3): no spring/fade on the
+   scroll-to-top FAB, no fade on the card tap feedback, no sliding theme-toggle
+   indicator. State changes still happen — only the animation is dropped. */
+@media (prefers-reduced-motion: reduce) {
+  a.card,
+  .card:has(> .card-body > .stretched-link),
+  #scroll-to-top-btn,
+  #scroll-to-top-btn.visible,
+  #theme-toggle,
+  #theme-toggle *,
+  .theme-toggle-indicator {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Programmatic scrolls (scroll-to-top, chat auto-scroll) jump instead of
+     gliding. */
+  html,
+  html * {
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Mac OS X "Aqua" theme, extracted to its own file. Tailwind v4 inlines local
