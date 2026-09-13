@@ -7,6 +7,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.14.1] — 2026-09-13
+
+An accessibility release: a project-wide WCAG 2.2 AA / WAI-ARIA sweep of the
+web layer fixing every critical and nearly every major finding — keyboard
+barriers, unlabelled fields, silent or over-verbose live updates, theme
+contrast and focus visibility — plus CI and dependency-monitoring fixes.
+
+**Upgrading:**
+
+- **Admin → Users role changes now need an explicit Save.** The per-user role
+  dropdown no longer applies on change; this prevents keyboard users from
+  changing a role on every arrow-key press.
+- The Mac OS X (Aqua) themes use slightly darker accent, info, success, error
+  and primary-button colours (and lighter primary/error in the dark theme) to
+  meet AA contrast.
+- No migrations, no configuration changes.
+
+### Fixed
+
+- **Keyboard access** — comment and article image uploads were unreachable by
+  keyboard (`display:none` file inputs); they now use focusable `sr-only`
+  inputs with a visible focus ring. Image remove buttons, the scroll-to-top
+  button and dropdown menus are visible and operable on focus, and Escape
+  closes dropdowns and returns focus to their trigger.
+- **Accessible names** — Markdown composers no longer wrap the toolbar and
+  preview in the textarea's `<label>` (screen readers read the toolbar as the
+  field name); the comment reply box and the profile display name, bio and
+  signature fields now have real labels. Repeated row actions (Ban, Delete,
+  Revoke, …) name their subject, and buttons no longer carry `aria-label`s
+  that contradict their visible text.
+- **DM composer** — the compose form's id changed with every message, so an
+  incoming message wiped in-progress text and dropped focus. The id is now
+  stable.
+- **Admin role select** — saved on every change event (see Upgrading).
+- **Focus management** — focus moves to the section heading after destructive
+  admin actions (ban, delete, revoke, resolve, dismiss, abandon) and to each
+  setup wizard step, instead of falling to `<body>`.
+- **Live updates** — new comments, feed items, notifications and DMs are
+  announced as short status summaries; the comment tree, feed and admin table
+  bodies are no longer live regions that re-read everything on each update.
+  Draft autosave, copy-to-clipboard and Markdown preview now announce their
+  results, and the DM list no longer jumps to the bottom while reading history.
+- **State and structure** — like, boost, bookmark and admin filter toggles
+  expose `aria-pressed`; admin filters no longer claim an unimplemented tab
+  pattern; board, forward and recipient pickers are plain labelled result
+  lists with an announced count; the hashtag/emoji autocomplete uses valid
+  textbox ARIA with an announced suggestion count; polls use a fieldset and
+  announce your vote; comments, recovery codes and setup steps have list
+  semantics; headings on the profile, poll and setup pages are correctly
+  nested.
+- **Colour and contrast** — Aqua light and dark themes meet 4.5:1 for buttons,
+  alerts, badges and error text; the default dark theme was missing from the
+  `dark:` variant; the link focus ring is 2px, ≥3:1 in every theme and visible
+  under Windows forced-colors; unread, muted, diff and selected-revision states
+  no longer rely on colour alone; `prefers-reduced-motion` is honoured.
+- **Page titles** — 404 and 500 pages now have localized titles; unread counts
+  are included in the navigation link names.
+- **CI Cargo cache** — keyed on and caching all three Rust NIF crates instead
+  of only `baudrate_sanitizer`.
+
+### Added
+
+- **Dependency drift workflow** (`.github/workflows/dependency-drift.yml`) —
+  weekly check of pins Dependabot cannot read (esbuild/Tailwind binary
+  versions, vendored daisyUI/topbar/Cropper.js, `.tool-versions`) plus
+  `mix hex.audit`, reported in one rolling issue.
+- zh_TW and ja_JP translations for all new accessible names and announcements.
+
+### Changed
+
+- GitHub Actions bumped: `actions/checkout` 4 → 7, `actions/cache` 3 → 6;
+  Dependabot PRs are assigned to the maintainer.
+- Documented the focus, live-region and ARIA conventions in
+  `doc/development.md` and `CLAUDE.md`; added the `a11y-engineering` skill.
+
 ## [1.14.0] — 2026-09-13
 
 A security release closing the findings of a project-wide audit — eleven fixes
