@@ -20,6 +20,24 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ### Security
 
+- **Federated objects and activities are bound to their sender's origin.** An
+  activity `id` must share the actor's host, and a `Create`/`Update` object `id`
+  must share the signer's host. Previously any instance could publish content
+  under another instance's URIs, squatting them so the genuine post was later
+  dropped as a duplicate. User-triggered remote import applies the same rules
+  to the fetched document and its author.
+- **`Accept`/`Reject(Follow)` only affect follows addressed to the signer.**
+  Any verified remote actor could accept or reject another user's follow of a
+  third party by naming its (non-secret) follow id.
+- **Announce can no longer pull private or foreign articles into public
+  boards.** An embedded Announce naming one of this instance's article URIs is
+  refused, and an existing article is linked into the booster's following
+  boards only when it belongs to the announced author.
+- **Followers-only and direct remote content is kept off public surfaces.**
+  Such replies and articles were shown on article pages, in board-less article
+  pages, and re-served as public ActivityPub objects. They are now excluded
+  from those surfaces. The addressing parser also recognizes the compact
+  `as:Public` / `Public` forms and no longer crashes on non-string entries.
 - **Outbound HTTP bodies are capped while streaming and requests have a total
   deadline.** The federation HTTP client checked the body size only after Req
   had buffered the whole response, so a remote actor, feed, link-preview

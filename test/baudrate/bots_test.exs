@@ -223,7 +223,10 @@ defmodule Baudrate.BotsTest do
             visibility: "public",
             forwardable: true
           },
-          []
+          [],
+          # Mirrors FeedWorker.post_entry/2: bots are the trusted caller that
+          # may set `url`.
+          trusted: true
         )
 
       # Different GUID, same URL — should be detected as duplicate
@@ -251,7 +254,10 @@ defmodule Baudrate.BotsTest do
             visibility: "public",
             forwardable: true
           },
-          []
+          [],
+          # Mirrors FeedWorker.post_entry/2: bots are the trusted caller that
+          # may set `url`.
+          trusted: true
         )
 
       {:ok, _} = Content.soft_delete_article(article)
