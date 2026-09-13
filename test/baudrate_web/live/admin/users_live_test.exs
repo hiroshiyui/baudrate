@@ -102,12 +102,82 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
 
     html =
       lv
-      |> form("form[phx-change=\"change_role\"][phx-value-id=\"#{user.id}\"]",
-        role_id: mod_role.id
-      )
-      |> render_change()
+      |> form("#admin-users-role-form-#{user.id}", role_id: mod_role.id)
+      |> render_submit()
 
     assert html =~ "User role updated successfully"
+    assert Auth.get_user(user.id).role_id == mod_role.id
+  end
+
+  describe "accessibility" do
+    test "role select does not change role on change, only on submit", %{conn: conn} do
+      admin = setup_user("admin")
+      user = setup_user("user")
+      conn = log_in_admin(conn, admin)
+
+      import Ecto.Query
+      mod_role = Repo.one!(from(r in Baudrate.Setup.Role, where: r.name == "moderator"))
+
+      {:ok, lv, _html} = live(conn, "/admin/users")
+
+      refute has_element?(lv, "#admin-users-role-form-#{user.id}[phx-change]")
+      assert has_element?(lv, "#admin-users-role-form-#{user.id}[phx-submit=\"change_role\"]")
+
+      assert has_element?(
+               lv,
+               "#admin-users-role-save-#{user.id}[type=\"submit\"][aria-label=\"Save role for #{user.username}\"]"
+             )
+
+      original_role_id = user.role_id
+
+      lv
+      |> form("#admin-users-role-form-#{user.id}", role_id: mod_role.id)
+      |> render_submit()
+
+      refute Auth.get_user(user.id).role_id == original_role_id
+    end
+
+    test "status filters are toggle buttons, not tabs", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/users")
+
+      assert has_element?(lv, "#admin-users-filter-toolbar[role=\"toolbar\"]")
+      refute has_element?(lv, "[role=\"tab\"]")
+      refute has_element?(lv, "[role=\"tablist\"]")
+      assert has_element?(lv, "#admin-users-filter-all[aria-pressed=\"true\"]")
+      assert has_element?(lv, "#admin-users-filter-active[aria-pressed=\"false\"]")
+
+      lv |> element("#admin-users-filter-active") |> render_click()
+
+      assert has_element?(lv, "#admin-users-filter-active[aria-pressed=\"true\"]")
+      assert has_element?(lv, "#admin-users-filter-all[aria-pressed=\"false\"]")
+    end
+
+    test "row action buttons name their subject", %{conn: conn} do
+      admin = setup_user("admin")
+      user = setup_user("user")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/users")
+
+      assert has_element?(lv, "#admin-users-ban-#{user.id}[aria-label=\"Ban #{user.username}\"]")
+      assert has_element?(lv, "#user-#{user.id} th[scope=\"row\"]", user.username)
+    end
+
+    test "focus moves to the page heading after banning", %{conn: conn} do
+      admin = setup_user("admin")
+      user = setup_user("user")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/users")
+
+      lv |> element("#admin-users-ban-#{user.id}") |> render_click()
+      lv |> element("#admin-users-ban-confirm") |> render_click()
+
+      assert_push_event(lv, "focus", %{id: "users-heading"})
+    end
   end
 
   test "admin can approve a pending user", %{conn: conn} do

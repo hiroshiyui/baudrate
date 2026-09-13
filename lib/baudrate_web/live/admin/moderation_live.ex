@@ -151,7 +151,8 @@ defmodule BaudrateWeb.Admin.ModerationLive do
          count: count
        )
      )
-     |> load_reports()}
+     |> load_reports()
+     |> push_event("focus", %{id: "admin-moderation-heading"})}
   end
 
   @impl true
@@ -189,7 +190,8 @@ defmodule BaudrateWeb.Admin.ModerationLive do
          count: count
        )
      )
-     |> load_reports()}
+     |> load_reports()
+     |> push_event("focus", %{id: "admin-moderation-heading"})}
   end
 
   @impl true
@@ -214,7 +216,8 @@ defmodule BaudrateWeb.Admin.ModerationLive do
         {:noreply,
          socket
          |> put_flash(:info, gettext("Report resolved."))
-         |> load_reports()}
+         |> load_reports()
+         |> push_event("focus", %{id: "admin-moderation-heading"})}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to resolve report."))}
@@ -234,7 +237,8 @@ defmodule BaudrateWeb.Admin.ModerationLive do
         {:noreply,
          socket
          |> put_flash(:info, gettext("Report dismissed."))
-         |> load_reports()}
+         |> load_reports()
+         |> push_event("focus", %{id: "admin-moderation-heading"})}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to dismiss report."))}

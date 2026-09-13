@@ -39,7 +39,8 @@ defmodule BaudrateWeb.Admin.PendingUsersLive do
                 {:noreply,
                  socket
                  |> put_flash(:info, gettext("User approved successfully."))
-                 |> assign(:pending_users, Auth.list_pending_users())}
+                 |> assign(:pending_users, Auth.list_pending_users())
+                 |> push_event("focus", %{id: "admin-pending-users-heading"})}
 
               {:error, _changeset} ->
                 {:noreply, put_flash(socket, :error, gettext("Failed to approve user."))}

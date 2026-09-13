@@ -69,7 +69,12 @@
     {gettext("No invite codes yet.")}
   </div>
 
-  <div :if={@codes != []} class="overflow-x-auto">
+  <div
+    :if={@codes != []}
+    id="admin-invites-table-container"
+    class="admin-invites-table-container overflow-x-auto"
+    data-focus-target
+  >
     <table
       id="admin-invite-codes-table"
       class="admin-invites-table table table-zebra w-full"
@@ -87,9 +92,9 @@
           <th scope="col">{gettext("Actions")}</th>
         </tr>
       </thead>
-      <tbody aria-live="polite">
+      <tbody>
         <tr :for={code <- @codes} id={"invite-#{code.id}"} class="admin-invites-row">
-          <td class="admin-invites-row-code font-mono">{code.code}</td>
+          <th scope="row" class="admin-invites-row-code font-mono">{code.code}</th>
           <td>
             <span :if={code.created_by}>{display_name(code.created_by)}</span>
             <span :if={!code.created_by} class="text-base-content/70">
@@ -148,7 +153,7 @@
                 data-copied-label={gettext("Copied!")}
                 title={gettext("Copy invite link")}
                 class="admin-invites-copy-btn btn btn-sm btn-ghost"
-                aria-label={gettext("Copy invite link")}
+                aria-label={gettext("Copy invite link %{code}", code: code.code)}
               >
                 <.icon name="hero-clipboard-document" class="size-4" />
               </button>
@@ -158,7 +163,7 @@
                 phx-value-code={code.code}
                 class="admin-invites-qr-btn btn btn-sm btn-ghost"
                 title={gettext("Show QR code")}
-                aria-label={gettext("Show QR code")}
+                aria-label={gettext("Show QR code %{code}", code: code.code)}
               >
                 <.icon name="hero-qr-code" class="size-4" />
               </button>
@@ -168,6 +173,7 @@
                 phx-value-id={code.id}
                 data-confirm={gettext("Revoke this invite code?")}
                 class="admin-invites-revoke-btn btn btn-sm btn-ghost text-error"
+                aria-label={gettext("Revoke invite code %{code}", code: code.code)}
               >
                 {gettext("Revoke")}
               </button>

@@ -56,7 +56,12 @@
                 id={"admin-federation-job-#{job.id}"}
                 class="admin-federation-job-row"
               >
-                <td class="font-mono text-sm max-w-xs truncate">{job.inbox_url}</td>
+                <th
+                  scope="row"
+                  class="admin-federation-job-inbox font-mono font-normal text-sm max-w-xs truncate"
+                >
+                  {job.inbox_url}
+                </th>
                 <td>
                   <span class={[
                     "badge badge-sm",
@@ -75,6 +80,7 @@
                     phx-click="retry_job"
                     phx-value-id={job.id}
                     class="admin-federation-job-retry-btn btn btn-ghost btn-sm"
+                    aria-label={gettext("Retry delivery to %{inbox}", inbox: job.inbox_url)}
                   >
                     {gettext("Retry")}
                   </button>
@@ -83,6 +89,7 @@
                     phx-click="abandon_job"
                     phx-value-id={job.id}
                     class="admin-federation-job-abandon-btn btn btn-ghost btn-sm text-error"
+                    aria-label={gettext("Abandon delivery to %{inbox}", inbox: job.inbox_url)}
                   >
                     {gettext("Abandon")}
                   </button>
@@ -127,7 +134,12 @@
               id={"admin-federation-instance-#{instance.domain}"}
               class="admin-federation-instance-row"
             >
-              <td class="font-mono text-sm">{instance.domain}</td>
+              <th
+                scope="row"
+                class="admin-federation-instance-domain font-mono font-normal text-sm"
+              >
+                {instance.domain}
+              </th>
               <td>{instance.actor_count}</td>
               <td>{instance.follower_count}</td>
               <td>{instance.article_count + instance.comment_count}</td>
@@ -149,6 +161,7 @@
                     gettext("Block all federation with %{domain}?", domain: instance.domain)
                   }
                   class="admin-federation-block-btn btn btn-error btn-sm"
+                  aria-label={gettext("Block %{domain}", domain: instance.domain)}
                 >
                   {gettext("Block")}
                 </button>
@@ -211,12 +224,12 @@
                 id={"admin-federation-board-key-#{board.id}"}
                 class="admin-federation-board-key-row"
               >
-                <td>
+                <th scope="row" class="admin-federation-board-key-name font-normal">
                   <span :if={board.parent} class="text-base-content/50">
                     {board.parent.name} /
                   </span>
                   {board.name}
-                </td>
+                </th>
                 <td>
                   <span class="badge badge-sm badge-success">{gettext("Enabled")}</span>
                 </td>
@@ -228,6 +241,7 @@
                     phx-value-id={board.id}
                     data-confirm={gettext("Rotate keypair for %{board}?", board: board.name)}
                     class="admin-federation-rotate-board-btn btn btn-warning btn-sm"
+                    aria-label={gettext("Rotate Keys for board %{board}", board: board.name)}
                   >
                     {gettext("Rotate Keys")}
                   </button>
@@ -267,12 +281,12 @@
               id={"admin-federation-board-#{board.id}"}
               class="admin-federation-board-row"
             >
-              <td>
+              <th scope="row" class="admin-federation-board-name font-normal">
                 <span :if={board.parent} class="text-base-content/50">
                   {board.parent.name} /
                 </span>
                 {board.name}
-              </td>
+              </th>
               <td>
                 <span class={[
                   "badge badge-sm",
@@ -300,6 +314,11 @@
                     "admin-federation-toggle-board-btn btn btn-sm",
                     if(board.ap_enabled, do: "btn-ghost", else: "btn-primary")
                   ]}
+                  aria-label={
+                    if board.ap_enabled,
+                      do: gettext("Disable federation for board %{board}", board: board.name),
+                      else: gettext("Enable federation for board %{board}", board: board.name)
+                  }
                 >
                   {if board.ap_enabled, do: gettext("Disable"), else: gettext("Enable")}
                 </button>
@@ -391,13 +410,19 @@
                   id={"admin-federation-missing-#{domain}"}
                   class="admin-federation-missing-row"
                 >
-                  <td class="font-mono text-sm">{domain}</td>
+                  <th
+                    scope="row"
+                    class="admin-federation-missing-domain font-mono font-normal text-sm"
+                  >
+                    {domain}
+                  </th>
                   <td>
                     <button
                       id={"admin-federation-add-missing-#{domain}"}
                       phx-click="add_missing_domain"
                       phx-value-domain={domain}
                       class="admin-federation-add-missing-btn btn btn-warning btn-sm"
+                      aria-label={gettext("Add %{domain} to blocklist", domain: domain)}
                     >
                       {gettext("Add")}
                     </button>

@@ -44,7 +44,12 @@
     {gettext("No moderation actions recorded.")}
   </div>
 
-  <div :if={@logs != []} class="overflow-x-auto">
+  <div
+    :if={@logs != []}
+    id="admin-moderation-log-table-container"
+    class="admin-moderation-log-table-container overflow-x-auto"
+    data-focus-target
+  >
     <table
       id="admin-moderation-log-table"
       class="admin-moderation-log-table table table-zebra w-full"
@@ -59,7 +64,7 @@
           <th scope="col">{gettext("Details")}</th>
         </tr>
       </thead>
-      <tbody aria-live="polite">
+      <tbody>
         <tr
           :for={log <- @logs}
           id={"admin-moderation-log-row-#{log.id}"}

@@ -156,7 +156,8 @@ defmodule BaudrateWeb.Admin.BotsLive do
         {:noreply,
          socket
          |> put_flash(:info, gettext("Bot error state reset. Re-fetch triggered."))
-         |> reload_bots()}
+         |> reload_bots()
+         |> push_event("focus", %{id: "admin-bots-edit-#{bot_id}"})}
     end
   end
 
@@ -217,7 +218,8 @@ defmodule BaudrateWeb.Admin.BotsLive do
             {:noreply,
              socket
              |> put_flash(:info, gettext("Bot deleted successfully."))
-             |> reload_bots()}
+             |> reload_bots()
+             |> push_event("focus", %{id: "bots-heading"})}
 
           {:error, _} ->
             {:noreply, put_flash(socket, :error, gettext("Failed to delete bot."))}

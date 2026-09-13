@@ -62,6 +62,29 @@ defmodule BaudrateWeb.Admin.PendingUsersLiveTest do
 
     updated = Auth.get_user(pending_user.id)
     assert updated.status == "active"
+    assert_push_event(lv, "focus", %{id: "admin-pending-users-heading"})
+  end
+
+  test "approve button names its user and actions column has a label", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_admin(conn, admin)
+
+    {:ok, pending_user, _codes} =
+      Auth.register_user(%{
+        "username" => "labeleduser",
+        "password" => "SecurePass1!!",
+        "password_confirmation" => "SecurePass1!!",
+        "terms_accepted" => "true"
+      })
+
+    {:ok, lv, _html} = live(conn, "/admin/pending-users")
+
+    assert has_element?(
+             lv,
+             "#admin-pending-users-approve-#{pending_user.id}[aria-label=\"Approve labeleduser\"]"
+           )
+
+    assert has_element?(lv, "#admin-pending-users-table thead th .sr-only", "Actions")
   end
 
   test "non-admin is redirected away", %{conn: conn} do

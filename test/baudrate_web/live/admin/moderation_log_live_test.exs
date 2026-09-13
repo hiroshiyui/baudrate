@@ -58,4 +58,16 @@ defmodule BaudrateWeb.Admin.ModerationLogLiveTest do
     html = lv |> element("button[phx-value-action=\"ban_user\"]") |> render_click()
     assert html =~ "Ban User"
   end
+
+  test "log table body is not a live region", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_admin(conn, admin)
+
+    Moderation.log_action(admin.id, "ban_user")
+
+    {:ok, lv, _html} = live(conn, "/admin/moderation-log")
+
+    assert has_element?(lv, "#admin-moderation-log-table tbody")
+    refute has_element?(lv, "#admin-moderation-log-table tbody[aria-live]")
+  end
 end

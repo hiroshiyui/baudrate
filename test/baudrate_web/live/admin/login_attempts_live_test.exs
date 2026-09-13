@@ -56,4 +56,16 @@ defmodule BaudrateWeb.Admin.LoginAttemptsLiveTest do
     assert html =~ "alice"
     refute html =~ "bob"
   end
+
+  test "attempts table body is not a live region", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_admin(conn, admin)
+
+    Auth.record_login_attempt("a11yuser", "10.0.0.1", false)
+
+    {:ok, lv, _html} = live(conn, "/admin/login-attempts")
+
+    assert has_element?(lv, "#admin-login-attempts-table tbody")
+    refute has_element?(lv, "#admin-login-attempts-table tbody[aria-live]")
+  end
 end

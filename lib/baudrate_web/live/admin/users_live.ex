@@ -200,7 +200,8 @@ defmodule BaudrateWeb.Admin.UsersLive do
              |> assign(ban_target: nil, ban_target_username: nil, ban_reason: "")
              |> put_flash(:info, flash_msg)
              |> reload_users()
-             |> reload_counts()}
+             |> reload_counts()
+             |> push_event("focus", %{id: "users-heading"})}
 
           {:error, :self_action} ->
             {:noreply, put_flash(socket, :error, gettext("You cannot ban yourself."))}
@@ -347,7 +348,8 @@ defmodule BaudrateWeb.Admin.UsersLive do
        )
      )
      |> reload_users()
-     |> reload_counts()}
+     |> reload_counts()
+     |> push_event("focus", %{id: "users-heading"})}
   end
 
   @impl true
@@ -359,7 +361,11 @@ defmodule BaudrateWeb.Admin.UsersLive do
   end
 
   @impl true
-  def handle_event("change_role", %{"id" => id, "role_id" => role_id}, socket) do
+  # Submitted by the per-row role form (`phx-submit`), which carries the
+  # target user id in a hidden `id` input alongside the selected `role_id`.
+  # A submit (rather than `phx-change`) keeps arrow-key browsing of the
+  # `<select>` from changing the role on every keystroke.
+  def handle_event("change_role", %{"user_id" => id, "role_id" => role_id}, socket) do
     with {:ok, user_id} <- parse_id(id),
          {:ok, parsed_role_id} <- parse_id(role_id) do
       case Auth.get_user(user_id) do

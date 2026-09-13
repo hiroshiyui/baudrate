@@ -43,7 +43,12 @@
     {gettext("No login attempts recorded.")}
   </div>
 
-  <div :if={@attempts != []} class="overflow-x-auto">
+  <div
+    :if={@attempts != []}
+    id="admin-login-attempts-table-container"
+    class="admin-login-attempts-table-container overflow-x-auto"
+    data-focus-target
+  >
     <table
       id="admin-login-attempts-table"
       class="admin-login-attempts-table table table-zebra w-full"
@@ -57,7 +62,7 @@
           <th scope="col">{gettext("Result")}</th>
         </tr>
       </thead>
-      <tbody aria-live="polite">
+      <tbody>
         <tr
           :for={attempt <- @attempts}
           id={"admin-login-attempts-row-#{attempt.id}"}

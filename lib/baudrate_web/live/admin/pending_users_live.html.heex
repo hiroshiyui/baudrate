@@ -11,7 +11,12 @@
     {gettext("No pending users.")}
   </div>
 
-  <div :if={@pending_users != []} class="overflow-x-auto">
+  <div
+    :if={@pending_users != []}
+    id="admin-pending-users-table-container"
+    class="admin-pending-users-table-container overflow-x-auto"
+    data-focus-target
+  >
     <table
       id="admin-pending-users-table"
       class="admin-pending-users-table table"
@@ -21,7 +26,7 @@
         <tr>
           <th scope="col">{gettext("Username")}</th>
           <th scope="col">{gettext("Registered")}</th>
-          <th scope="col"></th>
+          <th scope="col"><span class="sr-only">{gettext("Actions")}</span></th>
         </tr>
       </thead>
       <tbody>
@@ -30,7 +35,9 @@
           id={"admin-pending-users-row-#{user.id}"}
           class="admin-pending-users-row"
         >
-          <td>{user.username}</td>
+          <th scope="row" class="admin-pending-users-row-username font-medium">
+            {user.username}
+          </th>
           <td>
             <time datetime={datetime_attr(user.inserted_at)}>
               {format_datetime(user.inserted_at)}
@@ -42,6 +49,7 @@
               class="admin-pending-users-approve btn btn-sm btn-primary"
               phx-click="approve"
               phx-value-id={user.id}
+              aria-label={gettext("Approve %{username}", username: user.username)}
             >
               {gettext("Approve")}
             </button>

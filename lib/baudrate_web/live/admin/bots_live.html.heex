@@ -107,8 +107,13 @@
           required
         />
 
-        <div class="fieldset mb-2">
-          <label class="label mb-1">{gettext("Target Boards")}</label>
+        <fieldset id="admin-bots-target-boards" class="admin-bots-target-boards fieldset mb-2">
+          <legend
+            id="admin-bots-target-boards-legend"
+            class="admin-bots-target-boards-legend label mb-1"
+          >
+            {gettext("Target Boards")}
+          </legend>
           <div class="flex flex-wrap gap-2">
             <%= for board <- @boards do %>
               <label class="admin-bots-board-option flex items-center gap-2 cursor-pointer">
@@ -124,7 +129,7 @@
               </label>
             <% end %>
           </div>
-        </div>
+        </fieldset>
 
         <.input
           field={@form[:fetch_interval_minutes]}
@@ -161,31 +166,40 @@
       {gettext("No bots configured yet.")}
     </div>
 
-    <div :if={@bots != []} class="overflow-x-auto">
+    <div
+      :if={@bots != []}
+      id="admin-bots-table-container"
+      class="admin-bots-table-container overflow-x-auto"
+      data-focus-target
+    >
       <table id="admin-bots-table" class="admin-bots-table table table-zebra w-full">
         <thead>
           <tr>
-            <th>{gettext("Bot")}</th>
-            <th>{gettext("Feed URL")}</th>
-            <th>{gettext("Boards")}</th>
-            <th>{gettext("Status")}</th>
-            <th>{gettext("Last Fetched")}</th>
-            <th>{gettext("Errors")}</th>
-            <th>{gettext("Actions")}</th>
+            <th scope="col">{gettext("Bot")}</th>
+            <th scope="col">{gettext("Feed URL")}</th>
+            <th scope="col">{gettext("Boards")}</th>
+            <th scope="col">{gettext("Status")}</th>
+            <th scope="col">{gettext("Last Fetched")}</th>
+            <th scope="col">{gettext("Errors")}</th>
+            <th scope="col">{gettext("Actions")}</th>
           </tr>
         </thead>
         <tbody>
           <tr :for={bot <- @bots} id={"bot-#{bot.id}"} class="bot-row">
-            <td>
+            <th scope="row" class="admin-bots-row-bot font-normal">
               <div class="flex items-center gap-2">
-                <.avatar user={bot.user} size={36} />
+                <.avatar user={bot.user} size={36} decorative />
                 <div>
-                  <div class="font-semibold">{display_name(bot.user)}</div>
-                  <div class="text-xs text-base-content/60">@{bot.user.username}</div>
+                  <div class="admin-bots-row-display-name font-semibold">
+                    {display_name(bot.user)}
+                  </div>
+                  <div class="admin-bots-row-username text-xs text-base-content/60">
+                    @{bot.user.username}
+                  </div>
                   <span class="badge badge-sm badge-ghost">{gettext("Bot")}</span>
                 </div>
               </div>
-            </td>
+            </th>
             <td>
               <a
                 id={"admin-bots-feed-url-#{bot.id}"}
@@ -198,6 +212,7 @@
                 {String.slice(bot.feed_url, 0, 60)}{if String.length(bot.feed_url) > 60,
                   do: "…",
                   else: ""}
+                <span class="sr-only">{gettext("(opens in new tab)")}</span>
               </a>
             </td>
             <td>
@@ -226,9 +241,21 @@
             </td>
             <td>
               <%= if bot.error_count > 0 do %>
-                <span class="badge badge-sm badge-error" title={bot.last_error}>
-                  {bot.error_count}
+                <span
+                  id={"admin-bots-error-count-#{bot.id}"}
+                  class="admin-bots-error-count badge badge-sm badge-error"
+                >
+                  {ngettext("%{count} error", "%{count} errors", bot.error_count,
+                    count: bot.error_count
+                  )}
                 </span>
+                <p
+                  :if={bot.last_error}
+                  id={"admin-bots-last-error-#{bot.id}"}
+                  class="admin-bots-last-error text-xs text-base-content/70 mt-1 max-w-xs break-words"
+                >
+                  {bot.last_error}
+                </p>
               <% else %>
                 <span class="text-base-content/40">—</span>
               <% end %>
@@ -240,6 +267,7 @@
                   phx-click="edit"
                   phx-value-id={bot.id}
                   class="admin-bots-edit-btn btn btn-xs btn-ghost"
+                  aria-label={gettext("Edit bot %{username}", username: bot.user.username)}
                 >
                   {gettext("Edit")}
                 </button>
@@ -248,6 +276,11 @@
                   phx-click="toggle_active"
                   phx-value-id={bot.id}
                   class="admin-bots-toggle-active-btn btn btn-xs btn-ghost"
+                  aria-label={
+                    if bot.active,
+                      do: gettext("Deactivate bot %{username}", username: bot.user.username),
+                      else: gettext("Activate bot %{username}", username: bot.user.username)
+                  }
                 >
                   {if bot.active, do: gettext("Deactivate"), else: gettext("Activate")}
                 </button>
@@ -257,6 +290,9 @@
                   phx-click="reset_errors"
                   phx-value-id={bot.id}
                   class="admin-bots-reset-errors-btn btn btn-xs btn-warning btn-outline"
+                  aria-label={
+                    gettext("Reset & Retry bot %{username}", username: bot.user.username)
+                  }
                   title={gettext("Reset error count and trigger an immediate re-fetch")}
                 >
                   {gettext("Reset & Retry")}
@@ -266,6 +302,9 @@
                   phx-click="refresh_favicon"
                   phx-value-id={bot.id}
                   class="admin-bots-refresh-favicon-btn btn btn-xs btn-ghost"
+                  aria-label={
+                    gettext("Refresh Favicon for bot %{username}", username: bot.user.username)
+                  }
                   title={
                     gettext("Re-fetch favicon from the feed site and set it as the bot avatar")
                   }
@@ -280,6 +319,7 @@
                     gettext("Delete this bot and its user account? This cannot be undone.")
                   }
                   class="admin-bots-delete-btn btn btn-xs btn-error btn-outline"
+                  aria-label={gettext("Delete bot %{username}", username: bot.user.username)}
                 >
                   {gettext("Delete")}
                 </button>

@@ -142,7 +142,8 @@ defmodule BaudrateWeb.Admin.InvitesLive do
         {:noreply,
          socket
          |> put_flash(:info, gettext("Invite code revoked."))
-         |> reload_page()}
+         |> reload_page()
+         |> push_event("focus", %{id: "admin-invites-heading"})}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to revoke invite code."))}

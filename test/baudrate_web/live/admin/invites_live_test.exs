@@ -52,6 +52,24 @@ defmodule BaudrateWeb.Admin.InvitesLiveTest do
       |> render_click()
 
     assert html =~ "Invite code revoked"
+    assert_push_event(lv, "focus", %{id: "admin-invites-heading"})
+  end
+
+  test "invite table has no live region and revoke names its code", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_admin(conn, admin)
+
+    {:ok, invite} = Auth.generate_invite_code(admin)
+
+    {:ok, lv, _html} = live(conn, "/admin/invites")
+
+    refute has_element?(lv, "#admin-invite-codes-table tbody[aria-live]")
+    assert has_element?(lv, "#invite-#{invite.id} th[scope=\"row\"]", invite.code)
+
+    assert has_element?(
+             lv,
+             "#admin-invites-revoke-#{invite.id}[aria-label=\"Revoke invite code #{invite.code}\"]"
+           )
   end
 
   test "active codes show copy and QR buttons", %{conn: conn} do

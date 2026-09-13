@@ -31,7 +31,10 @@ defmodule BaudrateWeb.Admin.FederationLive do
         case DeliveryStats.retry_job(job_id) do
           {:ok, _} ->
             {:noreply,
-             socket |> put_flash(:info, gettext("Job queued for retry.")) |> load_dashboard()}
+             socket
+             |> put_flash(:info, gettext("Job queued for retry."))
+             |> load_dashboard()
+             |> push_event("focus", %{id: "delivery-queue-heading"})}
 
           {:error, _} ->
             {:noreply, put_flash(socket, :error, gettext("Job not found."))}
@@ -48,7 +51,11 @@ defmodule BaudrateWeb.Admin.FederationLive do
       {:ok, job_id} ->
         case DeliveryStats.abandon_job(job_id) do
           {:ok, _} ->
-            {:noreply, socket |> put_flash(:info, gettext("Job abandoned.")) |> load_dashboard()}
+            {:noreply,
+             socket
+             |> put_flash(:info, gettext("Job abandoned."))
+             |> load_dashboard()
+             |> push_event("focus", %{id: "delivery-queue-heading"})}
 
           {:error, _} ->
             {:noreply, put_flash(socket, :error, gettext("Job not found."))}
@@ -147,13 +154,15 @@ defmodule BaudrateWeb.Admin.FederationLive do
         {:noreply,
          socket
          |> put_flash(:info, gettext("Domain %{domain} added to blocklist.", domain: domain))
-         |> assign(audit_result: result)}
+         |> assign(audit_result: result)
+         |> push_event("focus", %{id: "blocklist-audit-heading"})}
 
       _ ->
         {:noreply,
          socket
          |> put_flash(:info, gettext("Domain %{domain} added to blocklist.", domain: domain))
-         |> assign(audit_result: nil)}
+         |> assign(audit_result: nil)
+         |> push_event("focus", %{id: "blocklist-audit-heading"})}
     end
   end
 
@@ -175,7 +184,8 @@ defmodule BaudrateWeb.Admin.FederationLive do
                :info,
                gettext("Added %{count} domains to blocklist.", count: length(missing))
              )
-             |> assign(audit_result: result)}
+             |> assign(audit_result: result)
+             |> push_event("focus", %{id: "blocklist-audit-heading"})}
 
           _ ->
             {:noreply,
@@ -184,7 +194,8 @@ defmodule BaudrateWeb.Admin.FederationLive do
                :info,
                gettext("Added %{count} domains to blocklist.", count: length(missing))
              )
-             |> assign(audit_result: nil)}
+             |> assign(audit_result: nil)
+             |> push_event("focus", %{id: "blocklist-audit-heading"})}
         end
 
       _ ->

@@ -191,6 +191,51 @@ defmodule BaudrateWeb.Admin.BotsLiveTest do
 
     assert html =~ "Bot deleted successfully."
     refute html =~ username
+    assert_push_event(lv, "focus", %{id: "bots-heading"})
+  end
+
+  describe "accessibility" do
+    test "row actions name their bot and errors are visible text", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      username = "a11ybot_#{System.unique_integer([:positive])}"
+
+      {:ok, bot} =
+        Bots.create_bot(%{
+          "username" => username,
+          "feed_url" => "https://example.com/feed.xml",
+          "board_ids" => []
+        })
+
+      import Ecto.Query
+
+      Repo.update_all(from(b in Baudrate.Bots.Bot, where: b.id == ^bot.id),
+        set: [error_count: 3, last_error: "HTTP 500"]
+      )
+
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+
+      assert has_element?(
+               lv,
+               "#admin-bots-delete-#{bot.id}[aria-label=\"Delete bot #{username}\"]"
+             )
+
+      assert has_element?(lv, "#admin-bots-edit-#{bot.id}[aria-label=\"Edit bot #{username}\"]")
+      assert has_element?(lv, "#admin-bots-error-count-#{bot.id}", "3 errors")
+      assert has_element?(lv, "#admin-bots-last-error-#{bot.id}", "HTTP 500")
+      assert has_element?(lv, "#admin-bots-feed-url-#{bot.id} .sr-only", "(opens in new tab)")
+    end
+
+    test "target boards checkboxes are grouped in a fieldset with a legend", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+      lv |> element("#admin-bots-new-btn") |> render_click()
+
+      assert has_element?(lv, "fieldset#admin-bots-target-boards legend", "Target Boards")
+    end
   end
 
   test "displays bot badge in bot list", %{conn: conn} do

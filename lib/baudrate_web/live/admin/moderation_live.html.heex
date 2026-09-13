@@ -3,11 +3,11 @@
     {gettext("Moderation Queue")}
   </h1>
 
-  <%!-- Status Filter Tabs --%>
+  <%!-- Status Filter Toggle Buttons --%>
   <div
     id="admin-moderation-status-tabs"
     class="admin-moderation-status-tabs tabs tabs-boxed"
-    role="tablist"
+    role="toolbar"
     aria-label={gettext("Report status")}
   >
     <button
@@ -15,8 +15,7 @@
       class={["admin-moderation-status-tab tab", @status_filter == "open" && "tab-active"]}
       phx-click="filter"
       phx-value-status="open"
-      role="tab"
-      aria-selected={to_string(@status_filter == "open")}
+      aria-pressed={to_string(@status_filter == "open")}
     >
       {gettext("Open")}
     </button>
@@ -25,8 +24,7 @@
       class={["admin-moderation-status-tab tab", @status_filter == "resolved" && "tab-active"]}
       phx-click="filter"
       phx-value-status="resolved"
-      role="tab"
-      aria-selected={to_string(@status_filter == "resolved")}
+      aria-pressed={to_string(@status_filter == "resolved")}
     >
       {gettext("Resolved")}
     </button>
@@ -35,8 +33,7 @@
       class={["admin-moderation-status-tab tab", @status_filter == "dismissed" && "tab-active"]}
       phx-click="filter"
       phx-value-status="dismissed"
-      role="tab"
-      aria-selected={to_string(@status_filter == "dismissed")}
+      aria-pressed={to_string(@status_filter == "dismissed")}
     >
       {gettext("Dismissed")}
     </button>
@@ -93,13 +90,19 @@
   </div>
 
   <%!-- Reports --%>
-  <div id="admin-moderation-reports" class="admin-moderation-reports space-y-4">
+  <div
+    id="admin-moderation-reports"
+    class="admin-moderation-reports space-y-4"
+    data-focus-target
+  >
     <div
       :if={@reports == []}
       id="admin-moderation-empty"
       class="admin-moderation-empty text-center py-8 opacity-70"
     >
-      {gettext("No reports with status \"%{status}\".", status: @status_filter)}
+      {gettext("No reports with status \"%{status}\".",
+        status: translate_report_status(@status_filter)
+      )}
     </div>
 
     <div
@@ -140,8 +143,12 @@
               </time>
             </span>
           </div>
-          <div :if={report.reporter} class="text-sm opacity-70">
-            {gettext("Reported by")} {display_name(report.reporter)}
+          <div
+            :if={report.reporter}
+            id={"admin-moderation-report-reporter-#{report.id}"}
+            class="admin-moderation-report-reporter text-sm opacity-70"
+          >
+            {gettext("Reported by %{name}", name: display_name(report.reporter))}
           </div>
         </div>
 
@@ -165,6 +172,7 @@
             phx-value-type="article"
             phx-value-id={report.article.id}
             data-confirm={gettext("Delete this article?")}
+            aria-label={gettext("Delete Article: %{title}", title: report.article.title)}
           >
             {gettext("Delete Article")}
           </button>
@@ -184,6 +192,7 @@
             phx-value-type="comment"
             phx-value-id={report.comment.id}
             data-confirm={gettext("Delete this comment?")}
+            aria-label={gettext("Delete Comment from report #%{id}", id: report.id)}
           >
             {gettext("Delete Comment")}
           </button>
@@ -214,10 +223,16 @@
         <%!-- Resolution Info --%>
         <div
           :if={report.status in ["resolved", "dismissed"] and report.resolved_by}
-          class="mt-2 text-sm opacity-70"
+          id={"admin-moderation-report-handled-by-#{report.id}"}
+          class="admin-moderation-report-handled-by mt-2 text-sm opacity-70"
         >
-          {gettext("Handled by")} {display_name(report.resolved_by)}
-          {if report.resolution_note, do: " — #{report.resolution_note}", else: ""}
+          {if report.resolution_note,
+            do:
+              gettext("Handled by %{name} — %{note}",
+                name: display_name(report.resolved_by),
+                note: report.resolution_note
+              ),
+            else: gettext("Handled by %{name}", name: display_name(report.resolved_by))}
         </div>
 
         <%!-- Send Flag to Remote --%>
@@ -249,13 +264,14 @@
               type="text"
               name="note"
               placeholder={gettext("Resolution note (optional)")}
-              aria-label={gettext("Resolution note")}
+              aria-label={gettext("Resolution note for report #%{id}", id: report.id)}
             />
             <button
               id={"admin-moderation-resolve-submit-#{report.id}"}
               class="admin-moderation-resolve-submit btn btn-success btn-sm"
               type="submit"
               phx-disable-with={gettext("Resolving...")}
+              aria-label={gettext("Resolve report #%{id}", id: report.id)}
             >
               {gettext("Resolve")}
             </button>
@@ -265,6 +281,7 @@
             class="admin-moderation-dismiss btn btn-ghost btn-sm"
             phx-click="dismiss"
             phx-value-id={report.id}
+            aria-label={gettext("Dismiss report #%{id}", id: report.id)}
           >
             {gettext("Dismiss")}
           </button>

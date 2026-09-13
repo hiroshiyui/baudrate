@@ -104,6 +104,33 @@ defmodule BaudrateWeb.Admin.BoardsLiveTest do
 
     assert html =~ "Board deleted successfully"
     refute html =~ "Delete Me"
+    assert_push_event(lv, "focus", %{id: "boards-heading"})
+  end
+
+  test "boards table has no live region and row actions name their board", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_admin(conn, admin)
+
+    {:ok, board} =
+      Content.create_board(%{
+        name: "A11y Board",
+        slug: "a11y-board-#{System.unique_integer([:positive])}"
+      })
+
+    {:ok, lv, _html} = live(conn, "/admin/boards")
+
+    refute has_element?(lv, "#boards-table tbody[aria-live]")
+    assert has_element?(lv, "#board-#{board.id} th[scope=\"row\"]", "A11y Board")
+
+    assert has_element?(
+             lv,
+             "#admin-boards-delete-#{board.id}[aria-label=\"Delete board A11y Board\"]"
+           )
+
+    assert has_element?(
+             lv,
+             "#admin-boards-edit-#{board.id}[aria-label=\"Edit board A11y Board\"]"
+           )
   end
 
   test "admin cannot delete board with articles", %{conn: conn} do

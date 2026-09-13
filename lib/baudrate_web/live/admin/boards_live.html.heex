@@ -177,6 +177,7 @@
             phx-value-user-id={bm.user.id}
             data-confirm={gettext("Remove this moderator?")}
             class="admin-boards-moderator-remove btn btn-sm btn-error btn-outline"
+            aria-label={gettext("Remove moderator %{username}", username: bm.user.username)}
           >
             {gettext("Remove")}
           </button>
@@ -241,7 +242,12 @@
     {gettext("No boards yet.")}
   </div>
 
-  <div :if={@boards != []} class="overflow-x-auto">
+  <div
+    :if={@boards != []}
+    id="admin-boards-table-container"
+    class="admin-boards-table-container overflow-x-auto"
+    data-focus-target
+  >
     <table id="boards-table" class="admin-boards-table table" aria-labelledby="boards-heading">
       <thead>
         <tr>
@@ -254,9 +260,9 @@
           <th scope="col">{gettext("Actions")}</th>
         </tr>
       </thead>
-      <tbody aria-live="polite">
+      <tbody>
         <tr :for={board <- @boards} id={"board-#{board.id}"} class="admin-boards-row">
-          <td class="admin-boards-row-name font-medium">{board.name}</td>
+          <th scope="row" class="admin-boards-row-name font-medium">{board.name}</th>
           <td class="admin-boards-row-slug font-mono text-sm">{board.slug}</td>
           <td>{if board.parent, do: board.parent.name, else: gettext("None")}</td>
           <td>
@@ -288,6 +294,7 @@
               phx-click="edit"
               phx-value-id={board.id}
               class="admin-boards-edit-btn btn btn-sm btn-ghost"
+              aria-label={gettext("Edit board %{name}", name: board.name)}
             >
               {gettext("Edit")}
             </button>
@@ -296,6 +303,7 @@
               phx-click="manage_moderators"
               phx-value-id={board.id}
               class="admin-boards-moderators-btn btn btn-sm btn-ghost"
+              aria-label={gettext("Moderators of board %{name}", name: board.name)}
               aria-expanded={
                 to_string(@managing_moderators_board && @managing_moderators_board.id == board.id)
               }
@@ -307,6 +315,7 @@
               id={"admin-boards-follows-#{board.id}"}
               navigate={~p"/boards/#{board.slug}/follows"}
               class="admin-boards-follows-link btn btn-sm btn-ghost"
+              aria-label={gettext("Follows of board %{name}", name: board.name)}
             >
               {gettext("Follows")}
             </.link>
@@ -316,6 +325,7 @@
               phx-value-id={board.id}
               data-confirm={gettext("Are you sure you want to delete this board?")}
               class="admin-boards-delete-btn btn btn-sm btn-error btn-outline"
+              aria-label={gettext("Delete board %{name}", name: board.name)}
             >
               {gettext("Delete")}
             </button>

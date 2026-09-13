@@ -363,4 +363,47 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
       assert Enum.all?(logs, fn log -> log.details["bulk"] == true end)
     end
   end
+
+  describe "accessibility" do
+    test "status filters are toggle buttons with aria-pressed, not tabs", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      assert has_element?(lv, "#admin-moderation-status-tabs[role=\"toolbar\"]")
+      refute has_element?(lv, "[role=\"tab\"]")
+      refute has_element?(lv, "[role=\"tablist\"]")
+      assert has_element?(lv, "#admin-moderation-tab-open[aria-pressed=\"true\"]")
+
+      lv |> element("#admin-moderation-tab-resolved") |> render_click()
+
+      assert has_element?(lv, "#admin-moderation-tab-resolved[aria-pressed=\"true\"]")
+      assert has_element?(lv, "#admin-moderation-tab-open[aria-pressed=\"false\"]")
+    end
+
+    test "row actions name their report and focus returns to heading on dismiss", %{
+      conn: conn
+    } do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {report, _article} = create_report_with_article(admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      assert has_element?(
+               lv,
+               "#admin-moderation-dismiss-#{report.id}[aria-label=\"Dismiss report ##{report.id}\"]"
+             )
+
+      assert has_element?(
+               lv,
+               "#admin-moderation-resolve-submit-#{report.id}[aria-label=\"Resolve report ##{report.id}\"]"
+             )
+
+      lv |> element("#admin-moderation-dismiss-#{report.id}") |> render_click()
+      assert_push_event(lv, "focus", %{id: "admin-moderation-heading"})
+    end
+  end
 end

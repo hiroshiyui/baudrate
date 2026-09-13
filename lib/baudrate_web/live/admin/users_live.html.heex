@@ -48,11 +48,15 @@
     id="users-filters"
     class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
   >
-    <div role="tablist" aria-label={gettext("Filter by status")} class="tabs tabs-boxed">
+    <div
+      id="admin-users-filter-toolbar"
+      role="toolbar"
+      aria-label={gettext("Filter by status")}
+      class="admin-users-filter-toolbar tabs tabs-boxed"
+    >
       <button
         id="admin-users-filter-all"
-        role="tab"
-        aria-selected={to_string(!@status_filter)}
+        aria-pressed={to_string(!@status_filter)}
         class={["admin-users-filter-tab tab", !@status_filter && "tab-active"]}
         phx-click="filter"
         phx-value-status=""
@@ -61,8 +65,7 @@
       </button>
       <button
         id="admin-users-filter-active"
-        role="tab"
-        aria-selected={to_string(@status_filter == "active")}
+        aria-pressed={to_string(@status_filter == "active")}
         class={["admin-users-filter-tab tab", @status_filter == "active" && "tab-active"]}
         phx-click="filter"
         phx-value-status="active"
@@ -71,8 +74,7 @@
       </button>
       <button
         id="admin-users-filter-pending"
-        role="tab"
-        aria-selected={to_string(@status_filter == "pending")}
+        aria-pressed={to_string(@status_filter == "pending")}
         class={["admin-users-filter-tab tab", @status_filter == "pending" && "tab-active"]}
         phx-click="filter"
         phx-value-status="pending"
@@ -81,8 +83,7 @@
       </button>
       <button
         id="admin-users-filter-banned"
-        role="tab"
-        aria-selected={to_string(@status_filter == "banned")}
+        aria-pressed={to_string(@status_filter == "banned")}
         class={["admin-users-filter-tab tab", @status_filter == "banned" && "tab-active"]}
         phx-click="filter"
         phx-value-status="banned"
@@ -138,7 +139,12 @@
     {gettext("No users found.")}
   </div>
 
-  <div :if={@users != []} class="overflow-x-auto">
+  <div
+    :if={@users != []}
+    id="admin-users-table-container"
+    class="admin-users-table-container overflow-x-auto"
+    data-focus-target
+  >
     <table id="users-table" class="admin-users-table table" aria-labelledby="users-heading">
       <thead>
         <tr>
@@ -179,16 +185,17 @@
               />
             </label>
           </td>
-          <td class="admin-users-row-username font-medium">{user.username}</td>
+          <th scope="row" class="admin-users-row-username font-medium">{user.username}</th>
           <td>
             <%= if user.id == @current_user.id do %>
               <span class="badge badge-ghost">{translate_role(user.role.name)}</span>
             <% else %>
               <form
                 id={"admin-users-role-form-#{user.id}"}
-                phx-change="change_role"
-                phx-value-id={user.id}
+                class="admin-users-role-form flex items-center gap-1"
+                phx-submit="change_role"
               >
+                <input type="hidden" name="user_id" value={user.id} />
                 <select
                   id={"admin-users-role-select-#{user.id}"}
                   name="role_id"
@@ -203,6 +210,14 @@
                     {translate_role(role.name)}
                   </option>
                 </select>
+                <button
+                  type="submit"
+                  id={"admin-users-role-save-#{user.id}"}
+                  class="admin-users-role-save btn btn-xs"
+                  aria-label={gettext("Save role for %{username}", username: user.username)}
+                >
+                  {gettext("Save")}
+                </button>
               </form>
             <% end %>
           </td>
@@ -227,6 +242,7 @@
               id={"admin-users-approve-#{user.id}"}
               phx-click="approve"
               phx-value-id={user.id}
+              aria-label={gettext("Approve %{username}", username: user.username)}
               class="admin-users-approve-btn btn btn-sm btn-primary"
             >
               {gettext("Approve")}
@@ -236,6 +252,7 @@
               id={"admin-users-ban-#{user.id}"}
               phx-click="show_ban_modal"
               phx-value-id={user.id}
+              aria-label={gettext("Ban %{username}", username: user.username)}
               class="admin-users-ban-btn btn btn-sm btn-error btn-outline"
             >
               {gettext("Ban")}
@@ -245,6 +262,7 @@
               id={"admin-users-unban-#{user.id}"}
               phx-click="unban"
               phx-value-id={user.id}
+              aria-label={gettext("Unban %{username}", username: user.username)}
               class="admin-users-unban-btn btn btn-sm btn-success btn-outline"
             >
               {gettext("Unban")}
