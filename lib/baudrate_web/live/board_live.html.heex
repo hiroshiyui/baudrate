@@ -7,7 +7,11 @@
     <li><.link navigate="/">{gettext("Home")}</.link></li>
     <%= for ancestor <- @ancestors do %>
       <%= if ancestor.id == @board.id do %>
-        <li>{ancestor.name}</li>
+        <li>
+          <span id="board-breadcrumb-current" class="board-breadcrumb-current" aria-current="page">
+            {ancestor.name}
+          </span>
+        </li>
       <% else %>
         <li><.link navigate={~p"/boards/#{ancestor.slug}"}>{ancestor.name}</.link></li>
       <% end %>
@@ -95,9 +99,12 @@
           {sub.name}
           <span
             :if={@current_user && MapSet.member?(@unread_sub_board_ids, sub.id)}
-            class="inline-block w-2 h-2 flex-shrink-0 rounded-full bg-primary"
+            class="sub-board-unread-dot inline-block w-2 h-2 flex-shrink-0 rounded-full bg-primary"
+            role="img"
             aria-label={gettext("Unread")}
-          ></span>
+          >
+            <span class="sr-only">{gettext("Unread")}</span>
+          </span>
         </h3>
         <p :if={sub.description} class="sub-board-description text-sm text-base-content/70">
           {sub.description}
@@ -239,10 +246,14 @@
           phx-click="toggle_article_like"
           phx-value-id={article.id}
           class="board-article-like relative z-10 inline-flex items-center gap-1 text-base-content/60 hover:text-error cursor-pointer"
+          aria-pressed={to_string(MapSet.member?(@article_liked_ids, article.id))}
           aria-label={
-            if MapSet.member?(@article_liked_ids, article.id),
-              do: gettext("Unlike"),
-              else: gettext("Like")
+            ngettext(
+              "Like, %{count} like",
+              "Like, %{count} likes",
+              Map.get(@article_like_counts, article.id, 0),
+              count: Map.get(@article_like_counts, article.id, 0)
+            )
           }
         >
           &middot;
@@ -268,10 +279,14 @@
           phx-click="toggle_article_boost"
           phx-value-id={article.id}
           class="board-article-boost relative z-10 inline-flex items-center gap-1 text-base-content/60 hover:text-success cursor-pointer"
+          aria-pressed={to_string(MapSet.member?(@article_boosted_ids, article.id))}
           aria-label={
-            if MapSet.member?(@article_boosted_ids, article.id),
-              do: gettext("Unboost"),
-              else: gettext("Boost")
+            ngettext(
+              "Boost, %{count} boost",
+              "Boost, %{count} boosts",
+              Map.get(@article_boost_counts, article.id, 0),
+              count: Map.get(@article_boost_counts, article.id, 0)
+            )
           }
         >
           &middot;

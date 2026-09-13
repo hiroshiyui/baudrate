@@ -139,7 +139,12 @@
         >
           {Baudrate.Sanitizer.Native.strip_tags(@remote_actor.summary)}
         </div>
-        <span class="badge badge-outline badge-xs mt-1">{@remote_actor.actor_type}</span>
+        <span
+          id="search-remote-actor-type"
+          class="search-remote-actor-type badge badge-outline badge-xs mt-1"
+        >
+          {translate_actor_type(@remote_actor.actor_type)}
+        </span>
       </div>
       <div class="flex-none">
         <%= cond do %>
@@ -152,6 +157,8 @@
               id="search-actor-pending"
               phx-click="unfollow"
               phx-value-id={@remote_actor.id}
+              aria-label={gettext("Pending — cancel follow request")}
+              data-confirm={gettext("Cancel this follow request?")}
               class="search-actor-follow-btn btn btn-sm btn-warning btn-outline"
             >
               {gettext("Pending")}
@@ -253,7 +260,7 @@
             <p class="text-sm mt-1 line-clamp-3">{String.slice(article.body || "", 0..300)}</p>
             <div class="flex items-center gap-2 mt-2 text-xs text-base-content/70">
               <span class="badge badge-outline badge-xs">{gettext("Remote post")}</span>
-              <span class="badge badge-outline badge-xs">{article.visibility}</span>
+              <span class="badge badge-outline badge-xs">{translate_visibility(article.visibility)}</span>
               <time :if={article.inserted_at} datetime={datetime_attr(article_datetime(article))}>
                 {format_datetime(article_datetime(article))}
               </time>
@@ -329,7 +336,7 @@
             <p class="text-sm mt-1 line-clamp-3">{String.slice(preview.body || "", 0..300)}</p>
             <div class="flex items-center gap-2 mt-2 text-xs text-base-content/70">
               <span class="badge badge-outline badge-xs">{gettext("Remote post")}</span>
-              <span class="badge badge-outline badge-xs">{preview.visibility}</span>
+              <span class="badge badge-outline badge-xs">{translate_visibility(preview.visibility)}</span>
               <time :if={preview.published_at} datetime={datetime_attr(preview.published_at)}>
                 {format_datetime(preview.published_at)}
               </time>

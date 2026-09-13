@@ -67,6 +67,7 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:can_comment, can_comment)
         |> assign(:comment_form, to_form(comment_changeset, as: :comment))
         |> assign(:replying_to, nil)
+        |> assign(:comments_live_status, "")
         |> assign(:article_images, article_images)
         |> assign(:revision_count, revision_count)
         |> assign(:page_title, article.title)
@@ -730,8 +731,13 @@ defmodule BaudrateWeb.ArticleLive do
   defp build_report_target(_, _), do: %{}
 
   @impl true
-  def handle_info({event, _payload}, socket)
-      when event in [:comment_created, :comment_deleted] do
+  def handle_info({:comment_created, payload}, socket) do
+    socket = load_comments(socket, socket.assigns.comment_page)
+    {:noreply, announce_new_comment(socket, payload)}
+  end
+
+  @impl true
+  def handle_info({:comment_deleted, _payload}, socket) do
     {:noreply, load_comments(socket, socket.assigns.comment_page)}
   end
 
@@ -934,6 +940,47 @@ defmodule BaudrateWeb.ArticleLive do
 
     assign(socket, :uploaded_comment_images, [])
   end
+
+  # Announces a newly arrived comment through the `role="status"` node, since
+  # the re-rendered comment tree itself is not a live region. Only comments
+  # that are actually rendered for this viewer (i.e. passed the visibility,
+  # block and mute filters of `load_comments/2`) and that were not written
+  # by the viewer are announced, so nothing hidden leaks through the status.
+  defp announce_new_comment(socket, %{comment_id: comment_id}) do
+    current_user = socket.assigns.current_user
+
+    comment =
+      (socket.assigns.comment_roots ++ List.flatten(Map.values(socket.assigns.children_map)))
+      |> Enum.find(&(&1.id == comment_id))
+
+    cond do
+      is_nil(comment) ->
+        socket
+
+      current_user && comment.user_id == current_user.id ->
+        socket
+
+      name = comment_author_name(comment) ->
+        assign(
+          socket,
+          :comments_live_status,
+          gettext("New comment by %{name}", name: name)
+        )
+
+      true ->
+        assign(socket, :comments_live_status, gettext("New comment"))
+    end
+  end
+
+  defp announce_new_comment(socket, _payload), do: socket
+
+  defp comment_author_name(%{user: %Baudrate.Setup.User{} = user}),
+    do: BaudrateWeb.Helpers.display_name(user)
+
+  defp comment_author_name(%{remote_actor: %Baudrate.Federation.RemoteActor{} = actor}),
+    do: BaudrateWeb.Helpers.display_name(actor)
+
+  defp comment_author_name(_), do: nil
 
   defp load_comments(socket, page) do
     article = socket.assigns.article

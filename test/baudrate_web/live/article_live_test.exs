@@ -106,6 +106,25 @@ defmodule BaudrateWeb.ArticleLiveTest do
     assert render(lv) =~ "PubSub comment here"
   end
 
+  test "announces a comment by another user through a status region", %{
+    conn: conn,
+    article: article
+  } do
+    other = setup_user("user")
+    {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+    assert has_element?(lv, "#comments-live-status[role='status']")
+    refute has_element?(lv, "#comments[aria-live]")
+
+    Content.create_comment(%{
+      "body" => "Announced comment",
+      "article_id" => article.id,
+      "user_id" => other.id
+    })
+
+    assert has_element?(lv, "#comments-live-status", "New comment by #{other.username}")
+  end
+
   test "updates comment list when comment is deleted via PubSub", %{
     conn: conn,
     user: user,
@@ -752,6 +771,29 @@ defmodule BaudrateWeb.ArticleLiveTest do
   end
 
   describe "bookmark" do
+    test "bookmark toggle exposes aria-pressed state", %{conn: conn, article: article} do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+      assert has_element?(lv, "#article-bookmark-toggle[aria-pressed='false']")
+      refute has_element?(lv, "#article-bookmark-toggle[aria-label]")
+
+      lv |> element("#article-bookmark-toggle") |> render_click()
+      assert has_element?(lv, "#article-bookmark-toggle[aria-pressed='true']")
+    end
+
+    test "article menu trigger declares a collapsed popup and menu is not tabbable", %{
+      conn: conn,
+      article: article
+    } do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      assert has_element?(
+               lv,
+               "#article-menu-trigger[aria-haspopup='true'][aria-expanded='false']"
+             )
+
+      refute has_element?(lv, "#article-menu[tabindex]")
+    end
+
     test "toggle bookmark button", %{conn: conn, article: article} do
       {:ok, lv, html} = live(conn, "/articles/#{article.slug}")
       # Should show unbookmarked state
@@ -832,6 +874,21 @@ defmodule BaudrateWeb.ArticleLiveTest do
       lv |> element(~s|button[phx-click="toggle_like"]|) |> render_click()
       html = render(lv)
       refute html =~ "hero-heart-solid"
+    end
+
+    test "like toggle keeps its visible count as the name and exposes aria-pressed", %{
+      article: article
+    } do
+      other_user = setup_user("user")
+      conn = log_in_user(Phoenix.ConnTest.build_conn(), other_user)
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+      assert has_element?(lv, "#article-like-toggle[aria-pressed='false']", "0 Likes")
+      refute has_element?(lv, "#article-like-toggle[aria-label]")
+      assert has_element?(lv, "#article-boost-toggle[aria-pressed='false']")
+
+      lv |> element("#article-like-toggle") |> render_click()
+      assert has_element?(lv, "#article-like-toggle[aria-pressed='true']", "1 Like")
     end
 
     test "author does not see like toggle button", %{conn: conn, article: article} do

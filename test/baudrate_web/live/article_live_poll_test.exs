@@ -56,6 +56,31 @@ defmodule BaudrateWeb.ArticleLivePollTest do
       assert html =~ "vote_option"
     end
 
+    test "vote options are grouped in a fieldset under an h2 poll heading", %{
+      conn: conn,
+      article: article
+    } do
+      {:ok, lv, _html} = live(conn, ~p"/articles/#{article.slug}")
+      assert has_element?(lv, "h2#poll-heading")
+      assert has_element?(lv, "#poll-vote-form fieldset#article-poll-vote-options legend")
+    end
+
+    test "results mark the viewer's own vote for screen readers", %{
+      conn: conn,
+      article: article,
+      poll: poll
+    } do
+      {:ok, lv, _html} = live(conn, ~p"/articles/#{article.slug}")
+      option = List.first(poll.options)
+
+      lv
+      |> form("#poll-vote-form", %{"vote_option" => to_string(option.id)})
+      |> render_submit()
+
+      assert has_element?(lv, ".article-poll-your-vote", "Your vote")
+      assert has_element?(lv, "#article-poll-result-progress-#{option.id}[aria-label]")
+    end
+
     test "guest sees results without vote form", %{article: article} do
       conn = build_conn()
 

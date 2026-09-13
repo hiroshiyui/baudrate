@@ -82,6 +82,25 @@ defmodule BaudrateWeb.FeedLiveTest do
       assert html =~ "/profile"
     end
 
+    test "feed list is not a live region; new items are announced via status", %{
+      conn: conn,
+      user: user
+    } do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      create_feed_item(actor)
+
+      {:ok, lv, _html} = live(conn, "/feed")
+      assert has_element?(lv, "#feed-items[role='feed']")
+      refute has_element?(lv, "#feed-items[aria-live]")
+      assert has_element?(lv, "#feed-live-status[role='status']")
+
+      create_feed_item(actor)
+      send(lv.pid, {:feed_item_created, %{}})
+
+      assert has_element?(lv, "#feed-live-status", "1 new feed item")
+    end
+
     test "shows empty state when no items", %{conn: conn} do
       {:ok, _lv, html} = live(conn, "/feed")
       assert html =~ "feed is empty"
@@ -276,6 +295,9 @@ defmodule BaudrateWeb.FeedLiveTest do
 
       assert html =~ ~s(id="post-board-search-results")
       assert html =~ board.name
+      assert has_element?(lv, "#post-board-search-status[role='status']", "1 board found")
+      refute has_element?(lv, "#quick-post-boards [role='combobox']")
+      refute has_element?(lv, "#post-board-search-results [role='option']")
     end
 
     test "selecting a board adds a chip and clears results", %{conn: conn} do
@@ -801,8 +823,9 @@ defmodule BaudrateWeb.FeedLiveTest do
 
       {:ok, lv, html} = live(conn, "/feed")
 
-      # Initially shows "Like" aria-label (not liked)
+      # Constant "Like" name; state is conveyed by aria-pressed
       assert html =~ ~s(aria-label="Like")
+      assert has_element?(lv, ~s(button[phx-click="toggle_feed_item_like"][aria-pressed="false"]))
       refute html =~ "hero-heart-solid"
 
       # Click like button
@@ -814,7 +837,12 @@ defmodule BaudrateWeb.FeedLiveTest do
       # After clicking, should show solid heart with text-error class
       assert html =~ "hero-heart-solid"
       assert html =~ "text-error"
-      assert html =~ ~s(aria-label="Unlike")
+      refute html =~ ~s(aria-label="Unlike")
+
+      assert has_element?(
+               lv,
+               ~s(button[phx-click="toggle_feed_item_like"][phx-value-id="#{item.id}"][aria-pressed="true"])
+             )
     end
 
     test "clicking boost toggles feed item boost", %{conn: conn, user: user} do
@@ -826,8 +854,14 @@ defmodule BaudrateWeb.FeedLiveTest do
 
       {:ok, lv, html} = live(conn, "/feed")
 
-      # Initially shows "Boost" aria-label (not boosted)
+      # Constant "Boost" name; state is conveyed by aria-pressed
       assert html =~ ~s(aria-label="Boost")
+
+      assert has_element?(
+               lv,
+               ~s(button[phx-click="toggle_feed_item_boost"][aria-pressed="false"])
+             )
+
       refute html =~ "hero-arrow-path-rounded-square-solid"
 
       # Click boost button
@@ -839,7 +873,12 @@ defmodule BaudrateWeb.FeedLiveTest do
       # After clicking, should show solid icon with text-success class
       assert html =~ "hero-arrow-path-rounded-square-solid"
       assert html =~ "text-success"
-      assert html =~ ~s(aria-label="Unboost")
+      refute html =~ ~s(aria-label="Unboost")
+
+      assert has_element?(
+               lv,
+               ~s(button[phx-click="toggle_feed_item_boost"][phx-value-id="#{item.id}"][aria-pressed="true"])
+             )
     end
 
     test "like/boost buttons appear on local articles from followed users", %{
@@ -857,6 +896,8 @@ defmodule BaudrateWeb.FeedLiveTest do
       assert html =~ "Followed User Article"
       assert html =~ ~s(phx-click="toggle_article_like")
       assert html =~ ~s(phx-click="toggle_article_boost")
+      assert html =~ ~s(aria-label="Like, 0 likes")
+      assert html =~ ~s(aria-pressed="false")
     end
 
     test "like/boost buttons do not appear on own articles", %{conn: conn} do

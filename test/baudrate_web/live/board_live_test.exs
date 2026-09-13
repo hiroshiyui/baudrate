@@ -96,6 +96,44 @@ defmodule BaudrateWeb.BoardLiveTest do
     # Breadcrumb should contain parent board link
     assert html =~ "General"
     assert html =~ "Child Board"
+
+    {:ok, lv, _html} = live(conn, "/boards/#{child.slug}")
+    assert has_element?(lv, "#board-breadcrumb [aria-current='page']", "Child Board")
+  end
+
+  test "article like/boost buttons expose aria-pressed and a count-bearing name", %{
+    board: board
+  } do
+    author = setup_user("user")
+
+    {:ok, %{article: article}} =
+      Content.create_article(
+        %{
+          title: "Likeable Article",
+          body: "Body",
+          slug: "likeable-art-#{System.unique_integer([:positive])}",
+          user_id: author.id
+        },
+        [board.id]
+      )
+
+    viewer = setup_user("user")
+    conn = log_in_user(Phoenix.ConnTest.build_conn(), viewer)
+    {:ok, lv, _html} = live(conn, "/boards/#{board.slug}")
+
+    assert has_element?(
+             lv,
+             "#board-article-like-#{article.id}[aria-pressed='false'][aria-label='Like, 0 likes']"
+           )
+
+    assert has_element?(lv, "#board-article-boost-#{article.id}[aria-pressed='false']")
+
+    lv |> element("#board-article-like-#{article.id}") |> render_click()
+
+    assert has_element?(
+             lv,
+             "#board-article-like-#{article.id}[aria-pressed='true'][aria-label='Like, 1 like']"
+           )
   end
 
   test "shows comment count on articles", %{conn: conn, user: user, board: board} do

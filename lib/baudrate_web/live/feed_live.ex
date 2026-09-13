@@ -25,7 +25,9 @@ defmodule BaudrateWeb.FeedLive do
   alias Baudrate.Federation.PubSub, as: FederationPubSub
   alias BaudrateWeb.RateLimits
   alias BaudrateWeb.InteractionHelpers
-  import BaudrateWeb.Helpers, only: [parse_page: 1, parse_id: 1, translate_role: 1]
+
+  import BaudrateWeb.Helpers,
+    only: [parse_page: 1, parse_id: 1, translate_role: 1, translate_object_type: 1]
 
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
@@ -54,7 +56,8 @@ defmodule BaudrateWeb.FeedLive do
         forwarding_item_type: nil,
         forward_search_results: [],
         forward_search_query: "",
-        uploaded_reply_images: []
+        uploaded_reply_images: [],
+        feed_live_status: ""
       )
       |> then(fn s ->
         if can_post do
@@ -153,18 +156,32 @@ defmodule BaudrateWeb.FeedLive do
       |> Enum.map(& &1.feed_item.id)
 
     reply_counts = Federation.count_feed_item_replies(remote_feed_item_ids)
+    new_count = result.total - Map.get(socket.assigns, :total, result.total)
 
     {:noreply,
      socket
      |> assign(:items, result.items)
      |> assign(:total_pages, result.total_pages)
      |> assign(:total, result.total)
-     |> assign(:reply_counts, reply_counts)}
+     |> assign(:reply_counts, reply_counts)
+     |> announce_new_items(new_count)}
   end
 
   # Defensive catch-all so an unexpected message (e.g. a late task reply or
   # monitor :DOWN) never crashes the LiveView.
   def handle_info(_msg, socket), do: {:noreply, socket}
+
+  # `#feed-items` is deliberately not a live region (a whole re-rendered feed
+  # would be read out); arrivals are summarised in `#feed-live-status` instead.
+  defp announce_new_items(socket, count) when count > 0 do
+    assign(
+      socket,
+      :feed_live_status,
+      ngettext("%{count} new feed item", "%{count} new feed items", count, count: count)
+    )
+  end
+
+  defp announce_new_items(socket, _count), do: socket
 
   def handle_event("validate_post", %{"article" => params}, socket) do
     changeset =

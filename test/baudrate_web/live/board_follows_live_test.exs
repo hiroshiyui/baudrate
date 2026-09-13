@@ -59,8 +59,10 @@ defmodule BaudrateWeb.BoardFollowsLiveTest do
       board = create_board()
 
       conn = log_in_user(conn, user)
-      {:ok, _lv, html} = live(conn, ~p"/boards/#{board.slug}/follows")
+      {:ok, lv, html} = live(conn, ~p"/boards/#{board.slug}/follows")
       assert html =~ "Board Follows"
+      assert has_element?(lv, "#board-follows-breadcrumb [aria-current='page']")
+      assert has_element?(lv, "#board-follows-search-status[role='status']")
     end
 
     test "admin can access the page", %{conn: conn} do

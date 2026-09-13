@@ -17,6 +17,10 @@
     </button>
   </div>
 
+  <p id="notifications-live-status" class="notifications-live-status sr-only" role="status">
+    {@live_status}
+  </p>
+
   <div
     :if={@notifications == []}
     id="notifications-empty"
@@ -65,6 +69,13 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-start justify-between gap-2">
             <p class="text-sm">
+              <span
+                :if={!notif.read}
+                id={"notification-unread-label-#{notif.id}"}
+                class="notification-unread-label badge badge-primary badge-xs mr-1"
+              >
+                {gettext("Unread")}
+              </span>
               <.link
                 :if={actor_link(notif)}
                 id={"notification-actor-#{notif.id}"}

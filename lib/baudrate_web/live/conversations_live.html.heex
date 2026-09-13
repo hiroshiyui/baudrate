@@ -18,6 +18,10 @@
     </.link>
   </div>
 
+  <p id="conversations-live-status" class="conversations-live-status sr-only" role="status">
+    {@live_status}
+  </p>
+
   <div
     :if={@conversations == []}
     id="conversations-empty"
@@ -57,7 +61,16 @@
         <% end %>
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
-            <span class="font-semibold truncate">{participant_name(other)}</span>
+            <span class="conversation-participant-name font-semibold truncate">
+              {participant_name(other)}
+            </span>
+            <span
+              :if={Map.get(@muted_conversations, conv.id, false)}
+              id={"conversation-muted-label-#{conv.id}"}
+              class="conversation-muted-label badge badge-ghost badge-sm shrink-0 ml-2"
+            >
+              {gettext("Muted")}
+            </span>
             <span :if={conv.last_message_at} class="text-xs text-base-content/70 shrink-0 ml-2">
               {format_relative_time(conv.last_message_at)}
             </span>

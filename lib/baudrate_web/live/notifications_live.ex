@@ -28,7 +28,7 @@ defmodule BaudrateWeb.NotificationsLive do
       NotificationPubSub.subscribe_user(user.id)
     end
 
-    {:ok, assign(socket, page_title: gettext("Notifications"))}
+    {:ok, assign(socket, page_title: gettext("Notifications"), live_status: "")}
   end
 
   @impl true
@@ -54,7 +54,8 @@ defmodule BaudrateWeb.NotificationsLive do
     {:noreply,
      socket
      |> assign(:notifications, result.notifications)
-     |> assign(:total_pages, result.total_pages)}
+     |> assign(:total_pages, result.total_pages)
+     |> maybe_announce(event, user.id)}
   end
 
   @impl true
@@ -82,6 +83,25 @@ defmodule BaudrateWeb.NotificationsLive do
     Notification.mark_all_as_read(user.id)
     {:noreply, socket}
   end
+
+  # Screen readers do not notice a silently re-rendered list, so a newly
+  # arrived notification is announced through the page's `role="status"` node.
+  defp maybe_announce(socket, :notification_created, user_id) do
+    count = Notification.unread_count(user_id)
+
+    assign(
+      socket,
+      :live_status,
+      ngettext(
+        "New notification. %{count} unread notification",
+        "New notification. %{count} unread notifications",
+        count,
+        count: count
+      )
+    )
+  end
+
+  defp maybe_announce(socket, _event, _user_id), do: socket
 
   defp actor_name(%{actor_user: %{username: _} = user}),
     do: BaudrateWeb.Helpers.display_name(user)

@@ -7,7 +7,15 @@
     <ul>
       <li><.link navigate="/">{gettext("Home")}</.link></li>
       <li><.link navigate={~p"/boards/#{@board.slug}"}>{@board.name}</.link></li>
-      <li>{gettext("Board Follows")}</li>
+      <li>
+        <span
+          id="board-follows-breadcrumb-current"
+          class="board-follows-breadcrumb-current"
+          aria-current="page"
+        >
+          {gettext("Board Follows")}
+        </span>
+      </li>
     </ul>
   </nav>
 
@@ -93,59 +101,66 @@
         </button>
       </form>
 
-      <div :if={@search_error} class="board-follows-search-error text-error text-sm mt-2">
+      <div
+        :if={@search_error}
+        id="board-follows-search-error"
+        class="board-follows-search-error text-error text-sm mt-2"
+        role="alert"
+      >
         {@search_error}
       </div>
 
-      <div
-        :if={@search_result}
-        id="board-follows-search-result"
-        class="board-follows-search-result mt-4 card bg-base-100 shadow-sm"
-      >
-        <div class="card-body p-4 flex flex-row items-center gap-4">
-          <div class="avatar">
-            <div class="w-12 h-12 rounded-full bg-base-300 flex items-center justify-center">
-              <img
-                :if={@search_result.avatar_url}
-                src={Baudrate.Media.Proxy.url(@search_result.avatar_url)}
-                alt={@search_result.display_name || @search_result.username}
-                class="rounded-full"
-              />
-              <.icon
-                :if={!@search_result.avatar_url}
-                name="hero-user-circle"
-                class="size-8 opacity-50"
-              />
+      <div id="board-follows-search-status" class="board-follows-search-status" role="status">
+        <div
+          :if={@search_result}
+          id="board-follows-search-result"
+          class="board-follows-search-result mt-4 card bg-base-100 shadow-sm"
+        >
+          <div class="card-body p-4 flex flex-row items-center gap-4">
+            <div class="avatar">
+              <div class="w-12 h-12 rounded-full bg-base-300 flex items-center justify-center">
+                <img
+                  :if={@search_result.avatar_url}
+                  src={Baudrate.Media.Proxy.url(@search_result.avatar_url)}
+                  alt={@search_result.display_name || @search_result.username}
+                  class="rounded-full"
+                />
+                <.icon
+                  :if={!@search_result.avatar_url}
+                  name="hero-user-circle"
+                  class="size-8 opacity-50"
+                />
+              </div>
             </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold truncate">
+                {@search_result.display_name || @search_result.username}
+              </div>
+              <div class="text-sm text-base-content/70 truncate">
+                @{@search_result.username}@{@search_result.domain}
+              </div>
+              <div
+                :if={@search_result.summary && @search_result.summary != ""}
+                class="text-sm text-base-content/70 mt-1 line-clamp-2"
+              >
+                {Baudrate.Sanitizer.Native.strip_tags(@search_result.summary)}
+              </div>
+            </div>
+            <%= if already_following?(@follows, @search_result.id) do %>
+              <span class="board-follows-already-following badge badge-ghost">
+                {gettext("Already following")}
+              </span>
+            <% else %>
+              <button
+                id="board-follows-follow-submit"
+                phx-click="follow"
+                phx-value-id={@search_result.id}
+                class="board-follows-follow-submit btn btn-sm btn-primary"
+              >
+                {gettext("Follow")}
+              </button>
+            <% end %>
           </div>
-          <div class="flex-1 min-w-0">
-            <div class="font-bold truncate">
-              {@search_result.display_name || @search_result.username}
-            </div>
-            <div class="text-sm text-base-content/70 truncate">
-              @{@search_result.username}@{@search_result.domain}
-            </div>
-            <div
-              :if={@search_result.summary && @search_result.summary != ""}
-              class="text-sm text-base-content/70 mt-1 line-clamp-2"
-            >
-              {Baudrate.Sanitizer.Native.strip_tags(@search_result.summary)}
-            </div>
-          </div>
-          <%= if already_following?(@follows, @search_result.id) do %>
-            <span class="board-follows-already-following badge badge-ghost">
-              {gettext("Already following")}
-            </span>
-          <% else %>
-            <button
-              id="board-follows-follow-submit"
-              phx-click="follow"
-              phx-value-id={@search_result.id}
-              class="board-follows-follow-submit btn btn-sm btn-primary"
-            >
-              {gettext("Follow")}
-            </button>
-          <% end %>
         </div>
       </div>
     </div>

@@ -54,6 +54,42 @@ defmodule BaudrateWeb.NotificationsLiveTest do
       assert html =~ "replied to your article"
     end
 
+    test "unread notifications carry a visible Unread label", %{conn: conn, user: user} do
+      other = setup_user("user")
+
+      {:ok, notif} =
+        Notification.create_notification(%{
+          type: "mention",
+          user_id: user.id,
+          actor_user_id: other.id
+        })
+
+      {:ok, lv, _html} = live(conn, "/notifications")
+
+      assert has_element?(lv, "#notification-unread-label-#{notif.id}", "Unread")
+    end
+
+    test "announces newly created notifications via a status region", %{
+      conn: conn,
+      user: user
+    } do
+      other = setup_user("user")
+      {:ok, lv, _html} = live(conn, "/notifications")
+
+      assert has_element?(lv, "#notifications-live-status[role='status']")
+
+      {:ok, notif} =
+        Notification.create_notification(%{
+          type: "mention",
+          user_id: user.id,
+          actor_user_id: other.id
+        })
+
+      send(lv.pid, {:notification_created, %{notification_id: notif.id}})
+
+      assert has_element?(lv, "#notifications-live-status", "1 unread notification")
+    end
+
     test "renders multiple notification types with correct icons", %{
       conn: conn,
       user: user

@@ -113,14 +113,14 @@
       aria-labelledby="poll-heading"
     >
       <div class="card bg-base-200 p-4">
-        <h3 id="poll-heading" class="article-poll-heading font-semibold mb-1">
+        <h2 id="poll-heading" class="article-poll-heading text-base font-semibold mb-1">
           {gettext("Poll")}
           <span class="text-sm font-normal text-base-content/70">
             ({if @poll.mode == "single",
               do: gettext("Single choice"),
               else: gettext("Multiple choice")})
           </span>
-        </h3>
+        </h2>
 
         <div class="text-sm text-base-content/70 mb-3">
           <span :if={@poll_closed} class="badge badge-error badge-sm">{gettext("Closed")}</span>
@@ -140,27 +140,36 @@
           id="poll-vote-form"
           class="article-poll-vote-form space-y-2"
         >
-          <div :for={option <- @poll.options} class="article-poll-option form-control">
-            <label class="label cursor-pointer justify-start gap-3">
-              <input
-                :if={@poll.mode == "single"}
-                id={"poll-option-#{option.id}"}
-                type="radio"
-                name="vote_option"
-                value={option.id}
-                class="article-poll-option-input radio radio-sm"
-              />
-              <input
-                :if={@poll.mode == "multiple"}
-                id={"poll-option-#{option.id}"}
-                type="checkbox"
-                name="vote_options[]"
-                value={option.id}
-                class="article-poll-option-input checkbox checkbox-sm"
-              />
-              <span class="label-text">{option.text}</span>
-            </label>
-          </div>
+          <fieldset id="article-poll-vote-options" class="article-poll-vote-options space-y-2">
+            <legend class="article-poll-vote-options-legend sr-only">
+              {gettext("Poll options")}
+            </legend>
+            <div
+              :for={option <- @poll.options}
+              id={"article-poll-option-#{option.id}"}
+              class="article-poll-option form-control"
+            >
+              <label class="label cursor-pointer justify-start gap-3">
+                <input
+                  :if={@poll.mode == "single"}
+                  id={"poll-option-#{option.id}"}
+                  type="radio"
+                  name="vote_option"
+                  value={option.id}
+                  class="article-poll-option-input radio radio-sm"
+                />
+                <input
+                  :if={@poll.mode == "multiple"}
+                  id={"poll-option-#{option.id}"}
+                  type="checkbox"
+                  name="vote_options[]"
+                  value={option.id}
+                  class="article-poll-option-input checkbox checkbox-sm"
+                />
+                <span class="label-text">{option.text}</span>
+              </label>
+            </div>
+          </fieldset>
           <button
             id="poll-vote-submit"
             type="submit"
@@ -184,6 +193,9 @@
                   name="hero-check-circle-solid"
                   class="size-4 text-success"
                 />
+                <span :if={option.id in @user_votes} class="article-poll-your-vote sr-only">
+                  {gettext("Your vote")}
+                </span>
                 {option.text}
               </span>
               <span class="text-base-content/70">
@@ -191,7 +203,9 @@
               </span>
             </div>
             <progress
-              class="progress progress-primary w-full"
+              id={"article-poll-result-progress-#{option.id}"}
+              class="article-poll-result-progress progress progress-primary w-full"
+              aria-label={option.text}
               value={option.votes_count}
               max={max(total_votes(@poll), 1)}
             >
@@ -285,15 +299,13 @@
         id="article-like-toggle"
         phx-click="toggle_like"
         class="article-action article-like-toggle btn btn-sm btn-ghost"
-        aria-label={if @liked, do: gettext("Unlike"), else: gettext("Like")}
+        aria-pressed={to_string(@liked)}
       >
         <.icon
           name={if @liked, do: "hero-heart-solid", else: "hero-heart"}
           class={["size-4", @liked && "text-error"]}
         />
-        {if @liked,
-          do: ngettext("%{count} Like", "%{count} Likes", @like_count),
-          else: ngettext("%{count} Like", "%{count} Likes", @like_count)}
+        {ngettext("%{count} Like", "%{count} Likes", @like_count)}
       </button>
       <%!-- Boost count (visible to all) + toggle (for non-authors) --%>
       <span
@@ -308,7 +320,7 @@
         id="article-boost-toggle"
         phx-click="toggle_boost"
         class="article-action article-boost-toggle btn btn-sm btn-ghost"
-        aria-label={if @boosted, do: gettext("Unboost"), else: gettext("Boost")}
+        aria-pressed={to_string(@boosted)}
       >
         <.icon
           name={
@@ -325,7 +337,7 @@
         id="article-bookmark-toggle"
         phx-click="toggle_bookmark"
         class="article-action article-bookmark-toggle btn btn-sm btn-ghost"
-        aria-label={if @bookmarked, do: gettext("Remove bookmark"), else: gettext("Bookmark")}
+        aria-pressed={to_string(@bookmarked)}
       >
         <.icon
           name={if @bookmarked, do: "hero-bookmark-solid", else: "hero-bookmark"}
@@ -347,13 +359,13 @@
           tabindex="0"
           class="article-menu-trigger btn btn-sm btn-ghost"
           aria-haspopup="true"
+          aria-expanded="false"
           aria-label={gettext("More actions")}
         >
           <.icon name="hero-ellipsis-vertical" class="size-4" />
         </button>
         <ul
           id="article-menu"
-          tabindex="0"
           class="article-menu-list dropdown-content menu bg-base-200 rounded-box z-10 w-52 p-2 shadow-sm"
         >
           <li :if={@can_edit}>
@@ -461,9 +473,7 @@
             autocomplete="off"
             class="article-forward-input input input-sm input-bordered w-full"
             aria-label={gettext("Search boards")}
-            aria-expanded={to_string(@forward_search_results != [])}
-            role="combobox"
-            aria-controls="forward-board-results"
+            aria-describedby="forward-board-results-status"
           />
           <button
             id="article-forward-cancel"
@@ -475,10 +485,25 @@
             <.icon name="hero-x-mark" class="size-4" />
           </button>
         </.form>
+        <p
+          id="forward-board-results-status"
+          class="article-forward-results-status sr-only"
+          role="status"
+        >
+          {if String.length(String.trim(@forward_search_query)) >= 2,
+            do:
+              ngettext(
+                "%{count} board found",
+                "%{count} boards found",
+                length(@forward_search_results),
+                count: length(@forward_search_results)
+              ),
+            else: ""}
+        </p>
         <ul
           :if={@forward_search_results != []}
           id="forward-board-results"
-          role="listbox"
+          aria-label={gettext("Matching boards")}
           class="article-forward-results menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
         >
           <li :for={board <- @forward_search_results}>
@@ -486,7 +511,7 @@
               id={"article-forward-result-#{board.id}"}
               phx-click="forward_to_board"
               phx-value-board-id={board.id}
-              role="option"
+              type="button"
               class="article-forward-result"
             >
               {board.name}
@@ -586,11 +611,15 @@
     </div>
 
     <%!-- Comment tree --%>
+    <p id="comments-live-status" class="article-comments-live-status sr-only" role="status">
+      {@comments_live_status}
+    </p>
+
     <div
       id="comments"
       class="article-comments space-y-4"
-      aria-live="polite"
-      aria-relevant="additions removals"
+      role="list"
+      aria-label={gettext("Comments")}
     >
       <%= for comment <- @comment_roots do %>
         <.comment_node

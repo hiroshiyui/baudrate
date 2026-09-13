@@ -258,6 +258,38 @@ defmodule BaudrateWeb.Helpers do
   def translate_status(other), do: other
 
   @doc """
+  Translates a content visibility value (`public`, `unlisted`,
+  `followers_only`, `direct`) to a localized display string.
+  Unknown values are returned unchanged.
+  """
+  def translate_visibility("public"), do: gettext("Public")
+  def translate_visibility("unlisted"), do: gettext("Unlisted")
+  def translate_visibility("followers_only"), do: gettext("Followers only")
+  def translate_visibility("direct"), do: gettext("Direct")
+  def translate_visibility(other), do: other
+
+  @doc """
+  Translates an ActivityStreams object type (`Note`, `Article`, `Page`) to a
+  localized display string. Unknown values are returned unchanged.
+  """
+  def translate_object_type("Note"), do: gettext("Note")
+  def translate_object_type("Article"), do: gettext("Article")
+  def translate_object_type("Page"), do: gettext("Page")
+  def translate_object_type(other), do: other
+
+  @doc """
+  Translates an ActivityPub actor type (`Person`, `Group`, `Organization`,
+  `Service`, `Application`) to a localized display string. Unknown values are
+  returned unchanged.
+  """
+  def translate_actor_type("Person"), do: gettext("Person")
+  def translate_actor_type("Group"), do: gettext("Group")
+  def translate_actor_type("Organization"), do: gettext("Organization")
+  def translate_actor_type("Service"), do: gettext("Service")
+  def translate_actor_type("Application"), do: gettext("Application")
+  def translate_actor_type(other), do: other
+
+  @doc """
   Translates a report status to a localized display string.
   """
   def translate_report_status("open"), do: gettext("open")

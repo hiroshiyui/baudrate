@@ -102,7 +102,7 @@ defmodule BaudrateWeb.ConversationLive do
     body = String.trim(body)
 
     if body == "" do
-      {:noreply, socket}
+      {:noreply, assign(socket, :message_form, to_form(%{"body" => ""}, as: :message))}
     else
       socket = ensure_conversation(socket, user)
       conversation = socket.assigns.conversation
@@ -134,6 +134,14 @@ defmodule BaudrateWeb.ConversationLive do
           {:noreply, put_flash(socket, :error, gettext("Too many messages. Please slow down."))}
       end
     end
+  end
+
+  # Tracks the composer's in-progress text in the form assign so that the
+  # reset after a successful send is a real diff ("typed text" -> "") and the
+  # input is cleared without remounting the form (a remount loses focus).
+  @impl true
+  def handle_event("update_message", %{"message" => %{"body" => body}}, socket) do
+    {:noreply, assign(socket, :message_form, to_form(%{"body" => body}, as: :message))}
   end
 
   @impl true

@@ -48,26 +48,45 @@
           />
         </.form>
 
-        <div
+        <p
+          id="conversation-search-results-status"
+          class="conversation-search-results-status sr-only"
+          role="status"
+        >
+          {if String.length(@search_query) >= 2,
+            do:
+              ngettext(
+                "%{count} user found",
+                "%{count} users found",
+                length(@search_results),
+                count: length(@search_results)
+              ),
+            else: ""}
+        </p>
+
+        <ul
           :if={@search_results != []}
           id="conversation-search-results"
           class="conversation-search-results space-y-1"
-          role="listbox"
-          aria-label={gettext("Search results")}
+          aria-label={gettext("Matching users")}
         >
-          <button
+          <li
             :for={user <- @search_results}
-            id={"conversation-search-result-#{user.id}"}
-            type="button"
-            class="conversation-search-result flex items-center gap-3 w-full p-2 rounded-lg hover:bg-base-300 transition-colors cursor-pointer"
-            phx-click="select_recipient"
-            phx-value-username={user.username}
-            role="option"
+            id={"conversation-search-result-item-#{user.id}"}
+            class="conversation-search-result-item"
           >
-            <.avatar user={user} size={36} />
-            <span class="conversation-search-result-name font-medium">{user.username}</span>
-          </button>
-        </div>
+            <button
+              id={"conversation-search-result-#{user.id}"}
+              type="button"
+              class="conversation-search-result flex items-center gap-3 w-full p-2 rounded-lg hover:bg-base-300 transition-colors cursor-pointer"
+              phx-click="select_recipient"
+              phx-value-username={user.username}
+            >
+              <.avatar user={user} size={36} />
+              <span class="conversation-search-result-name font-medium">{user.username}</span>
+            </button>
+          </li>
+        </ul>
 
         <div
           :if={@search_results == [] && String.length(@search_query) >= 2}
@@ -105,7 +124,9 @@
         class="message-list card-body p-4 space-y-3 max-h-[60vh] overflow-y-auto"
         id="message-list"
         phx-hook="ScrollBottom"
-        aria-live="polite"
+        role="log"
+        aria-label={gettext("Messages")}
+        tabindex="0"
       >
         <div
           :if={@messages == []}
@@ -167,7 +188,8 @@
       <div id="conversation-compose" class="conversation-compose border-t border-base-300 p-4">
         <.form
           for={@message_form}
-          id={"message-form-#{length(@messages)}"}
+          id="conversation-compose-form"
+          phx-change="update_message"
           phx-submit="send_message"
           class="conversation-compose-form flex gap-2"
         >
@@ -180,6 +202,7 @@
             class="conversation-compose-input input input-bordered flex-1"
             autocomplete="off"
             maxlength="65536"
+            phx-debounce="300"
             aria-label={gettext("Message")}
           />
           <button

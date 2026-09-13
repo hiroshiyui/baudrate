@@ -33,6 +33,7 @@ defmodule BaudrateWeb.ConversationsLive do
       |> assign(:unread_counts, unread_counts)
       |> assign(:muted_conversations, muted_convs)
       |> assign(:page_title, gettext("Messages"))
+      |> assign(:live_status, "")
 
     {:ok, socket}
   end
@@ -48,11 +49,24 @@ defmodule BaudrateWeb.ConversationsLive do
      socket
      |> assign(:conversations, conversations)
      |> assign(:unread_counts, unread_counts)
-     |> assign(:muted_conversations, muted_convs)}
+     |> assign(:muted_conversations, muted_convs)
+     |> assign(:live_status, unread_status(unread_counts, muted_convs))}
   end
 
   @impl true
   def handle_info(_msg, socket), do: {:noreply, socket}
+
+  # Announced through the page's `role="status"` node so screen-reader users
+  # learn about incoming messages that silently re-render the list.
+  defp unread_status(unread_counts, muted_convs) do
+    count =
+      unread_counts
+      |> Enum.reject(fn {conv_id, _} -> Map.get(muted_convs, conv_id, false) end)
+      |> Enum.map(fn {_, n} -> n end)
+      |> Enum.sum()
+
+    ngettext("%{count} unread message", "%{count} unread messages", count, count: count)
+  end
 
   defp load_unread_counts(conversations, user) do
     conversation_ids = Enum.map(conversations, & &1.id)

@@ -25,7 +25,14 @@ defmodule BaudrateWeb.SearchLive do
   alias BaudrateWeb.RateLimits
 
   import BaudrateWeb.Helpers,
-    only: [parse_page: 1, parse_id: 1, translate_role: 1, extract_peer_ip: 1]
+    only: [
+      parse_page: 1,
+      parse_id: 1,
+      translate_role: 1,
+      extract_peer_ip: 1,
+      translate_visibility: 1,
+      translate_actor_type: 1
+    ]
 
   @impl true
   def mount(_params, _session, socket) do

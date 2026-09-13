@@ -59,6 +59,30 @@ defmodule BaudrateWeb.ArticleHistoryLiveTest do
     assert html =~ "Version #2"
   end
 
+  test "revision table is a plain table with labelled actions and marked selection", %{
+    conn: conn,
+    user: user,
+    article: article
+  } do
+    {:ok, a2} =
+      Content.update_article(article, %{title: "Second Version", body: "Second body"}, user)
+
+    {:ok, _a3} =
+      Content.update_article(a2, %{title: "Third Version", body: "Third body"}, user)
+
+    {:ok, lv, _html} = live(conn, "/articles/#{article.slug}/history")
+
+    refute has_element?(lv, "#article-history-table[role]")
+    assert has_element?(lv, "#article-history-table th .sr-only", "Actions")
+    assert has_element?(lv, "button[phx-value-index='0'][aria-label='View version #2']")
+
+    lv |> element("button[phx-value-index='0']") |> render_click()
+
+    assert has_element?(lv, "tr.article-history-revision-row[aria-current='true']")
+    assert has_element?(lv, "ins .article-history-diff-ins-label", "Added:")
+    assert has_element?(lv, "del .article-history-diff-del-label", "Removed:")
+  end
+
   test "shows full content for oldest revision (no previous to diff against)", %{
     conn: conn,
     user: user,

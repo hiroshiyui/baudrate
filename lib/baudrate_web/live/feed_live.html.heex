@@ -86,7 +86,7 @@
                     type="button"
                     phx-click="remove_image"
                     phx-value-id={img.id}
-                    class="absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                    class="feed-remove-image absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
                     aria-label={gettext("Remove image")}
                   >
                     <.icon name="hero-x-mark" class="size-4" />
@@ -286,23 +286,38 @@
                   phx-debounce="300"
                   autocomplete="off"
                   class="input input-sm input-bordered w-full"
+                  id="post-board-search-input"
                   aria-label={gettext("Search boards")}
-                  aria-expanded={to_string(@post_board_search_results != [])}
-                  role="combobox"
-                  aria-controls="post-board-search-results"
+                  aria-describedby="post-board-search-status"
                 />
+                <p
+                  id="post-board-search-status"
+                  class="post-board-search-status sr-only"
+                  role="status"
+                >
+                  {if String.length(String.trim(@post_board_search_query)) >= 2,
+                    do:
+                      ngettext(
+                        "%{count} board found",
+                        "%{count} boards found",
+                        length(@post_board_search_results),
+                        count: length(@post_board_search_results)
+                      ),
+                    else: ""}
+                </p>
                 <ul
                   :if={@post_board_search_results != []}
                   id="post-board-search-results"
-                  role="listbox"
-                  class="menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+                  aria-label={gettext("Matching boards")}
+                  class="post-board-search-results menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
                 >
                   <li :for={board <- @post_board_search_results}>
                     <button
                       type="button"
+                      id={"post-board-search-result-#{board.id}"}
+                      class="post-board-search-result"
                       phx-click="add_post_board"
                       phx-value-board-id={board.id}
-                      role="option"
                     >
                       {board.name}
                     </button>
@@ -338,6 +353,10 @@
       </div>
     </div>
 
+    <p id="feed-live-status" class="feed-live-status sr-only" role="status">
+      {@feed_live_status}
+    </p>
+
     <div
       :if={@items == []}
       id="feed-empty"
@@ -356,7 +375,6 @@
       id="feed-items"
       class="space-y-4"
       role="feed"
-      aria-live="polite"
       aria-label={gettext("Feed")}
       data-focus-target
     >
@@ -444,7 +462,7 @@
                 item.feed_item.object_type == "Note" && "badge-info",
                 item.feed_item.object_type in ["Article", "Page"] && "badge-accent"
               ]}>
-                {item.feed_item.object_type}
+                {translate_object_type(item.feed_item.object_type)}
               </span>
             </div>
           </div>
@@ -495,7 +513,6 @@
               phx-click="toggle_reply"
               phx-value-id={item.feed_item.id}
               class="feed-item-reply btn btn-ghost btn-xs"
-              aria-label={gettext("Reply")}
             >
               <.icon name="hero-chat-bubble-left" class="size-4" />
               {gettext("Reply")}
@@ -510,11 +527,8 @@
               phx-click="toggle_feed_item_like"
               phx-value-id={item.feed_item.id}
               class="feed-item-like btn btn-ghost btn-xs"
-              aria-label={
-                if MapSet.member?(@feed_item_liked_ids, item.feed_item.id),
-                  do: gettext("Unlike"),
-                  else: gettext("Like")
-              }
+              aria-label={gettext("Like")}
+              aria-pressed={to_string(MapSet.member?(@feed_item_liked_ids, item.feed_item.id))}
             >
               <.icon
                 name={
@@ -532,11 +546,8 @@
               phx-click="toggle_feed_item_boost"
               phx-value-id={item.feed_item.id}
               class="feed-item-boost btn btn-ghost btn-xs"
-              aria-label={
-                if MapSet.member?(@feed_item_boosted_ids, item.feed_item.id),
-                  do: gettext("Unboost"),
-                  else: gettext("Boost")
-              }
+              aria-label={gettext("Boost")}
+              aria-pressed={to_string(MapSet.member?(@feed_item_boosted_ids, item.feed_item.id))}
             >
               <.icon
                 name={
@@ -587,9 +598,6 @@
                   autocomplete="off"
                   class="input input-sm input-bordered w-full"
                   aria-label={gettext("Search boards")}
-                  aria-expanded={to_string(@forward_search_results != [])}
-                  role="combobox"
-                  aria-controls={"forward-board-results-#{item.feed_item.id}"}
                 />
                 <button
                   type="button"
@@ -600,17 +608,33 @@
                   <.icon name="hero-x-mark" class="size-4" />
                 </button>
               </.form>
+              <p
+                id={"forward-board-results-status-#{item.feed_item.id}"}
+                class="feed-forward-results-status sr-only"
+                role="status"
+              >
+                {if String.length(String.trim(@forward_search_query)) >= 2,
+                  do:
+                    ngettext(
+                      "%{count} board found",
+                      "%{count} boards found",
+                      length(@forward_search_results),
+                      count: length(@forward_search_results)
+                    ),
+                  else: ""}
+              </p>
               <ul
                 :if={@forward_search_results != []}
                 id={"forward-board-results-#{item.feed_item.id}"}
-                role="listbox"
-                class="menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+                aria-label={gettext("Matching boards")}
+                class="feed-forward-results menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
               >
                 <li :for={board <- @forward_search_results}>
                   <button
+                    type="button"
+                    class="feed-forward-result"
                     phx-click="forward_to_board"
                     phx-value-board-id={board.id}
-                    role="option"
                   >
                     {board.name}
                   </button>
@@ -793,10 +817,14 @@
               phx-click="toggle_article_like"
               phx-value-id={item.article.id}
               class="feed-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
+              aria-pressed={to_string(MapSet.member?(@article_liked_ids, item.article.id))}
               aria-label={
-                if MapSet.member?(@article_liked_ids, item.article.id),
-                  do: gettext("Unlike"),
-                  else: gettext("Like")
+                ngettext(
+                  "Like, %{count} like",
+                  "Like, %{count} likes",
+                  Map.get(@article_like_counts, item.article.id, 0),
+                  count: Map.get(@article_like_counts, item.article.id, 0)
+                )
               }
             >
               <.icon
@@ -820,10 +848,14 @@
               phx-click="toggle_article_boost"
               phx-value-id={item.article.id}
               class="feed-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
+              aria-pressed={to_string(MapSet.member?(@article_boosted_ids, item.article.id))}
               aria-label={
-                if MapSet.member?(@article_boosted_ids, item.article.id),
-                  do: gettext("Unboost"),
-                  else: gettext("Boost")
+                ngettext(
+                  "Boost, %{count} boost",
+                  "Boost, %{count} boosts",
+                  Map.get(@article_boost_counts, item.article.id, 0),
+                  count: Map.get(@article_boost_counts, item.article.id, 0)
+                )
               }
             >
               <.icon
@@ -896,10 +928,14 @@
               phx-click="toggle_comment_like"
               phx-value-id={item.comment.id}
               class="feed-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
+              aria-pressed={to_string(MapSet.member?(@comment_liked_ids, item.comment.id))}
               aria-label={
-                if MapSet.member?(@comment_liked_ids, item.comment.id),
-                  do: gettext("Unlike"),
-                  else: gettext("Like")
+                ngettext(
+                  "Like, %{count} like",
+                  "Like, %{count} likes",
+                  Map.get(@comment_like_counts, item.comment.id, 0),
+                  count: Map.get(@comment_like_counts, item.comment.id, 0)
+                )
               }
             >
               <.icon
@@ -921,10 +957,14 @@
               phx-click="toggle_comment_boost"
               phx-value-id={item.comment.id}
               class="feed-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
+              aria-pressed={to_string(MapSet.member?(@comment_boosted_ids, item.comment.id))}
               aria-label={
-                if MapSet.member?(@comment_boosted_ids, item.comment.id),
-                  do: gettext("Unboost"),
-                  else: gettext("Boost")
+                ngettext(
+                  "Boost, %{count} boost",
+                  "Boost, %{count} boosts",
+                  Map.get(@comment_boost_counts, item.comment.id, 0),
+                  count: Map.get(@comment_boost_counts, item.comment.id, 0)
+                )
               }
             >
               <.icon
@@ -977,7 +1017,6 @@
                   autocomplete="off"
                   class="input input-sm input-bordered w-full"
                   aria-label={gettext("Search boards")}
-                  role="combobox"
                 />
                 <button
                   type="button"
@@ -988,17 +1027,33 @@
                   <.icon name="hero-x-mark" class="size-4" />
                 </button>
               </.form>
+              <p
+                id={"forward-board-results-status-comment-#{item.comment.id}"}
+                class="feed-forward-results-status sr-only"
+                role="status"
+              >
+                {if String.length(String.trim(@forward_search_query)) >= 2,
+                  do:
+                    ngettext(
+                      "%{count} board found",
+                      "%{count} boards found",
+                      length(@forward_search_results),
+                      count: length(@forward_search_results)
+                    ),
+                  else: ""}
+              </p>
               <ul
                 :if={@forward_search_results != []}
                 id={"forward-board-results-comment-#{item.comment.id}"}
-                role="listbox"
-                class="menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+                aria-label={gettext("Matching boards")}
+                class="feed-forward-results menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
               >
                 <li :for={board <- @forward_search_results}>
                   <button
+                    type="button"
+                    class="feed-forward-result"
                     phx-click="forward_to_board"
                     phx-value-board-id={board.id}
-                    role="option"
                   >
                     {board.name}
                   </button>
@@ -1084,10 +1139,14 @@
               phx-click="toggle_comment_like"
               phx-value-id={item.comment.id}
               class="feed-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
+              aria-pressed={to_string(MapSet.member?(@comment_liked_ids, item.comment.id))}
               aria-label={
-                if MapSet.member?(@comment_liked_ids, item.comment.id),
-                  do: gettext("Unlike"),
-                  else: gettext("Like")
+                ngettext(
+                  "Like, %{count} like",
+                  "Like, %{count} likes",
+                  Map.get(@comment_like_counts, item.comment.id, 0),
+                  count: Map.get(@comment_like_counts, item.comment.id, 0)
+                )
               }
             >
               <.icon
@@ -1109,10 +1168,14 @@
               phx-click="toggle_comment_boost"
               phx-value-id={item.comment.id}
               class="feed-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
+              aria-pressed={to_string(MapSet.member?(@comment_boosted_ids, item.comment.id))}
               aria-label={
-                if MapSet.member?(@comment_boosted_ids, item.comment.id),
-                  do: gettext("Unboost"),
-                  else: gettext("Boost")
+                ngettext(
+                  "Boost, %{count} boost",
+                  "Boost, %{count} boosts",
+                  Map.get(@comment_boost_counts, item.comment.id, 0),
+                  count: Map.get(@comment_boost_counts, item.comment.id, 0)
+                )
               }
             >
               <.icon
@@ -1165,7 +1228,6 @@
                   autocomplete="off"
                   class="input input-sm input-bordered w-full"
                   aria-label={gettext("Search boards")}
-                  role="combobox"
                 />
                 <button
                   type="button"
@@ -1176,17 +1238,33 @@
                   <.icon name="hero-x-mark" class="size-4" />
                 </button>
               </.form>
+              <p
+                id={"forward-board-results-status-rcomment-#{item.comment.id}"}
+                class="feed-forward-results-status sr-only"
+                role="status"
+              >
+                {if String.length(String.trim(@forward_search_query)) >= 2,
+                  do:
+                    ngettext(
+                      "%{count} board found",
+                      "%{count} boards found",
+                      length(@forward_search_results),
+                      count: length(@forward_search_results)
+                    ),
+                  else: ""}
+              </p>
               <ul
                 :if={@forward_search_results != []}
                 id={"forward-board-results-rcomment-#{item.comment.id}"}
-                role="listbox"
-                class="menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+                aria-label={gettext("Matching boards")}
+                class="feed-forward-results menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
               >
                 <li :for={board <- @forward_search_results}>
                   <button
+                    type="button"
+                    class="feed-forward-result"
                     phx-click="forward_to_board"
                     phx-value-board-id={board.id}
-                    role="option"
                   >
                     {board.name}
                   </button>

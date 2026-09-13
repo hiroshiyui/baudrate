@@ -33,7 +33,6 @@
       <table
         id="article-history-table"
         class="article-history-table table table-sm"
-        role="grid"
         aria-label={gettext("Revision list")}
       >
         <thead>
@@ -41,7 +40,9 @@
             <th scope="col">{gettext("Version")}</th>
             <th scope="col">{gettext("Editor")}</th>
             <th scope="col">{gettext("Date")}</th>
-            <th scope="col"></th>
+            <th scope="col">
+              <span class="article-history-actions-label sr-only">{gettext("Actions")}</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -49,6 +50,7 @@
             <tr
               id={"article-history-revision-#{revision.id}"}
               class={["article-history-revision-row", @selected_index == index && "bg-base-200"]}
+              aria-current={@selected_index == index && "true"}
             >
               <td>{"##{length(@revisions) - index}"}</td>
               <td>
@@ -74,6 +76,9 @@
                   id={"article-history-select-#{revision.id}"}
                   phx-click="select_revision"
                   phx-value-index={index}
+                  aria-label={
+                    gettext("View version #%{number}", number: length(@revisions) - index)
+                  }
                   class={[
                     "article-history-select btn btn-xs",
                     if(@selected_index == index, do: "btn-primary", else: "btn-ghost")
@@ -107,12 +112,14 @@
           <%= if previous do %>
             <%= for {tag, text} <- compute_diff(previous.title, selected.title) do %>
               <span :if={tag == :eq}>{text}</span>
-              <ins :if={tag == :ins} class="bg-success/30 text-success-content no-underline">
-                {text}
-              </ins>
-              <del :if={tag == :del} class="bg-error/30 text-error-content">
-                {text}
-              </del>
+              <ins
+                :if={tag == :ins}
+                class="article-history-diff-ins bg-success/30 text-success-content"
+              ><span class="article-history-diff-ins-label sr-only">{gettext("Added:")} </span>{text}</ins>
+              <del
+                :if={tag == :del}
+                class="article-history-diff-del bg-error/30 text-error-content"
+              ><span class="article-history-diff-del-label sr-only">{gettext("Removed:")} </span>{text}</del>
             <% end %>
           <% else %>
             {selected.title}
@@ -127,12 +134,14 @@
           <%= if previous do %>
             <%= for {tag, text} <- compute_diff(previous.body, selected.body) do %>
               <span :if={tag == :eq}>{text}</span>
-              <ins :if={tag == :ins} class="bg-success/30 text-success-content no-underline">
-                {text}
-              </ins>
-              <del :if={tag == :del} class="bg-error/30 text-error-content">
-                {text}
-              </del>
+              <ins
+                :if={tag == :ins}
+                class="article-history-diff-ins bg-success/30 text-success-content"
+              ><span class="article-history-diff-ins-label sr-only">{gettext("Added:")} </span>{text}</ins>
+              <del
+                :if={tag == :del}
+                class="article-history-diff-del bg-error/30 text-error-content"
+              ><span class="article-history-diff-del-label sr-only">{gettext("Removed:")} </span>{text}</del>
             <% end %>
           <% else %>
             {selected.body}

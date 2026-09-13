@@ -174,6 +174,16 @@ defmodule BaudrateWeb.SearchLiveRemoteActorTest do
 
       # Verify follow record exists
       assert Federation.user_follows?(user.id, remote_actor.id)
+
+      # The pending button cancels the request: its name must say so (while
+      # still containing the visible "Pending") and it must confirm first.
+      assert has_element?(
+               lv,
+               "#search-actor-pending[data-confirm][aria-label^='Pending']"
+             )
+
+      # Actor type badge is localized, not the raw AS type
+      assert has_element?(lv, "#search-remote-actor-type", "Person")
     end
 
     test "unfollow button triggers unfollow", %{conn: conn, user: user} do

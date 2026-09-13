@@ -70,6 +70,31 @@ defmodule BaudrateWeb.ConversationLiveTest do
       # Should not crash, no message added (match DaisyUI chat bubble class, not hero icon names)
       refute render(view) =~ ~s(class="chat-bubble)
     end
+
+    test "compose form keeps a stable id after sending", %{conn: conn, user: user, other: other} do
+      conn = log_in_user(conn, user)
+      {:ok, view, _html} = live(conn, "/messages/new?to=#{other.username}")
+
+      assert has_element?(view, "form#conversation-compose-form")
+
+      view
+      |> form("#conversation-compose-form", message: %{body: "Draft"})
+      |> render_change()
+
+      view
+      |> form("#conversation-compose-form", message: %{body: "Draft"})
+      |> render_submit()
+
+      assert has_element?(view, "form#conversation-compose-form")
+      assert has_element?(view, "#conversation-compose-input[value='']")
+    end
+
+    test "message list is exposed as a labelled log", %{conn: conn, user: user, other: other} do
+      conn = log_in_user(conn, user)
+      {:ok, view, _html} = live(conn, "/messages/new?to=#{other.username}")
+
+      assert has_element?(view, "#message-list[role='log'][aria-label='Messages']")
+    end
   end
 
   describe "recipient selection" do
@@ -93,6 +118,9 @@ defmodule BaudrateWeb.ConversationLiveTest do
         |> render_change()
 
       assert html =~ other.username
+      assert has_element?(view, "#conversation-search-results-status[role='status']")
+      refute has_element?(view, "[role='listbox']")
+      refute has_element?(view, "[role='option']")
     end
 
     test "clicking a result navigates to /messages/new?to=username", %{
