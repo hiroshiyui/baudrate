@@ -45,7 +45,7 @@ jobs:
       uses: ynab/asdf-action@v1.2
       with:
         version: 0.16.7
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Install Erlang and Elixir
       run: |
         asdf plugin add erlang
