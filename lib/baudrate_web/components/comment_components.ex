@@ -34,6 +34,7 @@ defmodule BaudrateWeb.CommentComponents do
     ~H"""
     <div
       id={"comment-#{@comment.id}"}
+      role="listitem"
       class={["comment-item comment border-l-2 border-base-300 pl-4", @depth > 0 && "ml-4"]}
     >
       <div class="py-2">
@@ -43,7 +44,7 @@ defmodule BaudrateWeb.CommentComponents do
             navigate={~p"/users/#{@comment.user.username}"}
             class="comment-author-link inline-flex items-center gap-1 font-semibold text-base-content link link-hover"
           >
-            <.avatar user={@comment.user} size={24} />
+            <.avatar user={@comment.user} size={24} decorative />
             {display_name(@comment.user)}
           </.link>
           <a
@@ -55,7 +56,7 @@ defmodule BaudrateWeb.CommentComponents do
           >
             {display_name(@comment.remote_actor)}@{@comment.remote_actor.domain}
           </a>
-          <span>&middot;</span>
+          <span class="comment-meta-separator" aria-hidden="true">&middot;</span>
           <a
             :if={@comment.remote_actor}
             href={@comment.url || @comment.ap_id}
@@ -227,6 +228,7 @@ defmodule BaudrateWeb.CommentComponents do
               tabindex="0"
               class="comment-actions-menu-toggle btn btn-ghost btn-xs btn-circle"
               aria-haspopup="true"
+              aria-expanded="false"
               aria-label={gettext("More actions")}
             >
               <.icon name="hero-ellipsis-vertical" class="size-4" />
@@ -320,6 +322,12 @@ defmodule BaudrateWeb.CommentComponents do
             <.input
               field={@comment_form[:body]}
               type="textarea"
+              label={
+                gettext("Reply to %{author}",
+                  author: display_name(@comment.user || @comment.remote_actor)
+                )
+              }
+              label_class="sr-only"
               placeholder={gettext("Write a reply...")}
               toolbar
               rows="6"
@@ -362,29 +370,41 @@ defmodule BaudrateWeb.CommentComponents do
         </div>
       </div>
 
-      <%!-- Recursive children --%>
-      <%= for child <- @children do %>
-        <.comment_node
-          comment={child}
-          children_map={@children_map}
-          depth={@depth + 1}
-          can_comment={@can_comment}
-          can_delete={@can_delete}
-          replying_to={@replying_to}
-          comment_form={@comment_form}
-          current_user={@current_user}
-          comment_liked_ids={@comment_liked_ids}
-          comment_like_counts={@comment_like_counts}
-          comment_boosted_ids={@comment_boosted_ids}
-          comment_boost_counts={@comment_boost_counts}
-          comment_bookmarked_ids={@comment_bookmarked_ids}
-          forwarding_comment_id={@forwarding_comment_id}
-          comment_forward_search_results={@comment_forward_search_results}
-          comment_forward_search_query={@comment_forward_search_query}
-          uploads={@uploads}
-          uploaded_comment_images={@uploaded_comment_images}
-        />
-      <% end %>
+      <%!-- Recursive children (exposed as a nested list of replies) --%>
+      <div
+        :if={@children != []}
+        id={"comment-replies-#{@comment.id}"}
+        class="comment-replies"
+        role="list"
+        aria-label={
+          gettext("Replies to %{author}",
+            author: display_name(@comment.user || @comment.remote_actor)
+          )
+        }
+      >
+        <%= for child <- @children do %>
+          <.comment_node
+            comment={child}
+            children_map={@children_map}
+            depth={@depth + 1}
+            can_comment={@can_comment}
+            can_delete={@can_delete}
+            replying_to={@replying_to}
+            comment_form={@comment_form}
+            current_user={@current_user}
+            comment_liked_ids={@comment_liked_ids}
+            comment_like_counts={@comment_like_counts}
+            comment_boosted_ids={@comment_boosted_ids}
+            comment_boost_counts={@comment_boost_counts}
+            comment_bookmarked_ids={@comment_bookmarked_ids}
+            forwarding_comment_id={@forwarding_comment_id}
+            comment_forward_search_results={@comment_forward_search_results}
+            comment_forward_search_query={@comment_forward_search_query}
+            uploads={@uploads}
+            uploaded_comment_images={@uploaded_comment_images}
+          />
+        <% end %>
+      </div>
     </div>
     """
   end
@@ -403,11 +423,13 @@ defmodule BaudrateWeb.CommentComponents do
     <div class="comment-image-upload">
       <%!-- Add images button (hidden file input + label) --%>
       <div :if={length(@uploaded_images) < 4} class="flex items-center gap-1 mb-2">
-        <.live_file_input upload={@uploads.comment_images} class="hidden" />
+        <.live_file_input
+          upload={@uploads.comment_images}
+          class="comment-image-file-input sr-only peer"
+        />
         <label
           for={@uploads.comment_images.ref}
-          class="comment-image-add-label btn btn-sm btn-ghost gap-1 cursor-pointer"
-          aria-label={gettext("Add Images")}
+          class="comment-image-add-label btn btn-sm btn-ghost gap-1 cursor-pointer peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary"
         >
           <.icon name="hero-photo" class="size-4" />
           {gettext("Add Images")}
@@ -433,7 +455,7 @@ defmodule BaudrateWeb.CommentComponents do
             type="button"
             phx-click="remove_comment_image"
             phx-value-id={img.id}
-            class="comment-image-remove-button absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+            class="comment-image-remove-button absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
             aria-label={gettext("Remove image")}
           >
             <.icon name="hero-x-mark" class="size-4" />
@@ -499,11 +521,10 @@ defmodule BaudrateWeb.CommentComponents do
     ~H"""
     <div class="reply-image-upload">
       <div :if={length(@uploaded_images) < 4} class="flex items-center gap-1 mb-2">
-        <.live_file_input upload={@uploads.reply_images} class="hidden" />
+        <.live_file_input upload={@uploads.reply_images} class="reply-image-file-input sr-only peer" />
         <label
           for={@uploads.reply_images.ref}
-          class="reply-image-add-label btn btn-sm btn-ghost gap-1 cursor-pointer"
-          aria-label={gettext("Add Images")}
+          class="reply-image-add-label btn btn-sm btn-ghost gap-1 cursor-pointer peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary"
         >
           <.icon name="hero-photo" class="size-4" />
           {gettext("Add Images")}
@@ -525,7 +546,7 @@ defmodule BaudrateWeb.CommentComponents do
             type="button"
             phx-click="remove_reply_image"
             phx-value-id={img.id}
-            class="reply-image-remove-button absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+            class="reply-image-remove-button absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
             aria-label={gettext("Remove image")}
           >
             <.icon name="hero-x-mark" class="size-4" />
@@ -604,7 +625,8 @@ defmodule BaudrateWeb.CommentComponents do
         phx-click="toggle_comment_like"
         phx-value-id={@comment.id}
         class="comment-like-button hover:text-error cursor-pointer"
-        aria-label={if @is_liked, do: gettext("Unlike"), else: gettext("Like")}
+        aria-pressed={to_string(@is_liked)}
+        aria-label={gettext("Like")}
       >
         <.icon
           name={if @is_liked, do: "hero-heart-solid", else: "hero-heart"}
@@ -643,7 +665,8 @@ defmodule BaudrateWeb.CommentComponents do
         phx-click="toggle_comment_boost"
         phx-value-id={@comment.id}
         class="comment-boost-button hover:text-success cursor-pointer"
-        aria-label={if @is_boosted, do: gettext("Unboost"), else: gettext("Boost")}
+        aria-pressed={to_string(@is_boosted)}
+        aria-label={gettext("Boost")}
       >
         <.icon
           name={

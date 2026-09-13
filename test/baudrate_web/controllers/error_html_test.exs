@@ -20,6 +20,14 @@ defmodule BaudrateWeb.ErrorHTMLTest do
     assert html =~ gettext("Back to home")
   end
 
+  test "page_title/1 returns localized titles for error statuses only" do
+    assert BaudrateWeb.ErrorHTML.page_title(404) == gettext("Page not found")
+    assert BaudrateWeb.ErrorHTML.page_title(500) == gettext("Something went wrong")
+    assert BaudrateWeb.ErrorHTML.page_title(503) == gettext("Something went wrong")
+    assert BaudrateWeb.ErrorHTML.page_title(nil) == nil
+    assert BaudrateWeb.ErrorHTML.page_title(200) == nil
+  end
+
   test "falls back to the Phoenix plain-text message for status codes without a template" do
     # The fallback path HTML-escapes the raw status message before embedding.
     assert render_to_string(BaudrateWeb.ErrorHTML, "418", "html", []) =~ "teapot"

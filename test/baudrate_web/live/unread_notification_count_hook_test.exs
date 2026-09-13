@@ -31,6 +31,30 @@ defmodule BaudrateWeb.UnreadNotificationCountHookTest do
       assert html =~ "1"
     end
 
+    test "badge is hidden from AT and the count is part of the link name", %{
+      conn: conn,
+      user: user
+    } do
+      other = setup_user("user")
+
+      {:ok, _notif} =
+        Notification.create_notification(%{
+          type: "reply_to_article",
+          user_id: user.id,
+          actor_user_id: other.id
+        })
+
+      {:ok, _lv, html} = live(conn, "/")
+
+      assert html =~
+               ~r/class="nav-unread-badge badge badge-secondary badge-xs[^"]*"\s+aria-hidden="true"/
+
+      assert html =~ ~r/class="nav-unread-count sr-only">\s*1 unread notification\s*</
+      [dock_tag] = Regex.run(~r/<a[^>]*id="dock-notifications"[^>]*>/, html)
+      assert dock_tag =~ ~s(aria-label="Notifications, 1 unread")
+      refute html =~ ~s(aria-label="1 unread notification")
+    end
+
     test "does not show badge when no unread notifications", %{conn: conn} do
       {:ok, _lv, html} = live(conn, "/")
 

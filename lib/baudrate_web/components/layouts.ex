@@ -120,7 +120,7 @@ defmodule BaudrateWeb.Layouts do
                 <hr />
               </li>
               <li :if={@current_user} class="menu-title flex flex-row items-center gap-2">
-                <.avatar user={@current_user} size={36} />
+                <.avatar user={@current_user} size={36} decorative />
                 <span class="truncate max-w-[10rem]">{display_name(@current_user)}</span>
                 ({translate_role(@current_user.role.name)})
               </li>
@@ -156,53 +156,88 @@ defmodule BaudrateWeb.Layouts do
         <nav id="nav-desktop-menu" class="nav-desktop-menu" aria-label={gettext("Main menu")}>
           <ul class="menu menu-horizontal px-1 items-center">
             <li>
-              <.link navigate="/" id="nav-home" class="nav-link btn btn-ghost">{gettext("Home")}</.link>
+              <.link
+                navigate="/"
+                id="nav-home"
+                class="nav-link btn btn-ghost"
+                aria-current={if active_nav?(assigns[:current_path], "/"), do: "page"}
+              >
+                {gettext("Home")}
+              </.link>
             </li>
             <li>
-              <.link navigate="/feed" id="nav-feed" class="nav-link btn btn-ghost">
+              <.link
+                navigate="/feed"
+                id="nav-feed"
+                class="nav-link btn btn-ghost"
+                aria-current={if active_nav?(assigns[:current_path], "/feed"), do: "page"}
+              >
                 {gettext("Feed")}
               </.link>
             </li>
             <li>
-              <.link navigate="/search" id="nav-search" class="nav-link btn btn-ghost">
+              <.link
+                navigate="/search"
+                id="nav-search"
+                class="nav-link btn btn-ghost"
+                aria-current={if active_nav?(assigns[:current_path], "/search"), do: "page"}
+              >
                 {gettext("Search")}
               </.link>
             </li>
             <li>
-              <.link navigate="/messages" id="nav-messages" class="nav-link btn btn-ghost">
+              <.link
+                navigate="/messages"
+                id="nav-messages"
+                class="nav-link btn btn-ghost"
+                aria-current={if active_nav?(assigns[:current_path], "/messages"), do: "page"}
+              >
                 {gettext("Messages")}
                 <span
                   :if={assigns[:unread_dm_count] && @unread_dm_count > 0}
-                  class="badge badge-primary badge-xs ml-1"
-                  aria-label={
-                    ngettext(
-                      "%{count} unread message",
-                      "%{count} unread messages",
-                      @unread_dm_count,
-                      count: @unread_dm_count
-                    )
-                  }
+                  class="nav-unread-badge badge badge-primary badge-xs ml-1"
+                  aria-hidden="true"
                 >
                   {display_badge_count(@unread_dm_count)}
+                </span>
+                <span
+                  :if={assigns[:unread_dm_count] && @unread_dm_count > 0}
+                  class="nav-unread-count sr-only"
+                >
+                  {ngettext(
+                    "%{count} unread message",
+                    "%{count} unread messages",
+                    @unread_dm_count,
+                    count: @unread_dm_count
+                  )}
                 </span>
               </.link>
             </li>
             <li>
-              <.link navigate="/notifications" id="nav-notifications" class="nav-link btn btn-ghost">
+              <.link
+                navigate="/notifications"
+                id="nav-notifications"
+                class="nav-link btn btn-ghost"
+                aria-current={if active_nav?(assigns[:current_path], "/notifications"), do: "page"}
+              >
                 {gettext("Notifications")}
                 <span
                   :if={assigns[:unread_notification_count] && @unread_notification_count > 0}
-                  class="badge badge-secondary badge-xs ml-1"
-                  aria-label={
-                    ngettext(
-                      "%{count} unread notification",
-                      "%{count} unread notifications",
-                      @unread_notification_count,
-                      count: @unread_notification_count
-                    )
-                  }
+                  class="nav-unread-badge badge badge-secondary badge-xs ml-1"
+                  aria-hidden="true"
                 >
                   {display_badge_count(@unread_notification_count)}
+                </span>
+                <span
+                  :if={assigns[:unread_notification_count] && @unread_notification_count > 0}
+                  class="nav-unread-count sr-only"
+                >
+                  {ngettext(
+                    "%{count} unread notification",
+                    "%{count} unread notifications",
+                    @unread_notification_count,
+                    count: @unread_notification_count
+                  )}
                 </span>
               </.link>
             </li>
@@ -254,7 +289,7 @@ defmodule BaudrateWeb.Layouts do
             aria-expanded="false"
             class="nav-menu-button btn btn-ghost gap-2"
           >
-            <.avatar user={@current_user} size={36} />
+            <.avatar user={@current_user} size={36} decorative />
             <span class="truncate max-w-[10rem]">{display_name(@current_user)}</span>
             <.icon name="hero-chevron-down-micro" class="size-4" />
           </button>
@@ -383,7 +418,7 @@ defmodule BaudrateWeb.Layouts do
 
   def flash_group(assigns) do
     ~H"""
-    <div id={@id} class="flash-group" aria-live="polite" aria-atomic="true">
+    <div id={@id} class="flash-group">
       <.flash kind={:info} flash={@flash} />
       <.flash kind={:error} flash={@flash} />
 
@@ -497,13 +532,14 @@ defmodule BaudrateWeb.Layouts do
       aria-label={gettext("Theme")}
       class="toolbar-theme card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full"
     >
-      <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 transition-[left]" />
+      <div class="theme-toggle-indicator absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme-pref=light]_&]:left-1/3 [[data-theme-pref=dark]_&]:left-2/3 transition-[left]" />
 
       <button
         id="theme-toggle-system"
         class="theme-option flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="system"
+        aria-pressed="false"
         aria-label={gettext("System theme")}
       >
         <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
@@ -514,6 +550,7 @@ defmodule BaudrateWeb.Layouts do
         class="theme-option flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="light"
+        aria-pressed="false"
         aria-label={gettext("Light theme")}
       >
         <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
@@ -524,6 +561,7 @@ defmodule BaudrateWeb.Layouts do
         class="theme-option flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="dark"
+        aria-pressed="false"
         aria-label={gettext("Dark theme")}
       >
         <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
@@ -575,22 +613,25 @@ defmodule BaudrateWeb.Layouts do
         <.link
           navigate="/messages"
           id="dock-messages"
-          aria-label={gettext("Messages")}
+          aria-label={
+            if @unread_dm_count > 0,
+              do:
+                ngettext(
+                  "Messages, %{count} unread",
+                  "Messages, %{count} unread",
+                  @unread_dm_count,
+                  count: @unread_dm_count
+                ),
+              else: gettext("Messages")
+          }
           aria-current={if active_nav?(@current_path, "/messages"), do: "page"}
           class={["dock-link", if(active_nav?(@current_path, "/messages"), do: "dock-active")]}
         >
           <span class="indicator">
             <span
               :if={@unread_dm_count > 0}
-              class="indicator-item badge badge-primary badge-xs"
-              aria-label={
-                ngettext(
-                  "%{count} unread message",
-                  "%{count} unread messages",
-                  @unread_dm_count,
-                  count: @unread_dm_count
-                )
-              }
+              class="dock-unread-badge indicator-item badge badge-primary badge-xs"
+              aria-hidden="true"
             >
               {display_badge_count(@unread_dm_count)}
             </span>
@@ -600,22 +641,25 @@ defmodule BaudrateWeb.Layouts do
         <.link
           navigate="/notifications"
           id="dock-notifications"
-          aria-label={gettext("Notifications")}
+          aria-label={
+            if @unread_notification_count > 0,
+              do:
+                ngettext(
+                  "Notifications, %{count} unread",
+                  "Notifications, %{count} unread",
+                  @unread_notification_count,
+                  count: @unread_notification_count
+                ),
+              else: gettext("Notifications")
+          }
           aria-current={if active_nav?(@current_path, "/notifications"), do: "page"}
           class={["dock-link", if(active_nav?(@current_path, "/notifications"), do: "dock-active")]}
         >
           <span class="indicator">
             <span
               :if={@unread_notification_count > 0}
-              class="indicator-item badge badge-secondary badge-xs"
-              aria-label={
-                ngettext(
-                  "%{count} unread notification",
-                  "%{count} unread notifications",
-                  @unread_notification_count,
-                  count: @unread_notification_count
-                )
-              }
+              class="dock-unread-badge indicator-item badge badge-secondary badge-xs"
+              aria-hidden="true"
             >
               {display_badge_count(@unread_notification_count)}
             </span>

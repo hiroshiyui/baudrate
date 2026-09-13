@@ -55,6 +55,46 @@ defmodule BaudrateWeb.LayoutsTest do
       {:ok, _lv, html} = live(conn, "/profile")
       assert html =~ "Theme"
     end
+
+    test "theme option buttons expose data-phx-theme and initial aria-pressed", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/profile")
+
+      for theme <- ~w(system light dark) do
+        assert html =~
+                 ~r/class="theme-option[^"]*"[^>]*data-phx-theme="#{theme}"[^>]*aria-pressed="false"/
+      end
+    end
+
+    test "indicator keys on data-theme-pref, not the resolved data-theme", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/profile")
+      # `&` is HTML-escaped in the rendered class attribute.
+      assert html =~ ~r/\[\[data-theme-pref=light\]_(&|&amp;)\]:left-1\/3/
+      assert html =~ ~r/\[\[data-theme-pref=dark\]_(&|&amp;)\]:left-2\/3/
+      refute html =~ ~r/\[\[data-theme=light\]_(&|&amp;)\]/
+    end
+  end
+
+  describe "desktop nav" do
+    test "marks the current page link with aria-current", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/search")
+      [search_tag] = Regex.run(~r/<a[^>]*id="nav-search"[^>]*>/, html)
+      [feed_tag] = Regex.run(~r/<a[^>]*id="nav-feed"[^>]*>/, html)
+      assert search_tag =~ ~s(aria-current="page")
+      refute feed_tag =~ ~s(aria-current="page")
+    end
+
+    test "user avatar beside the visible username is decorative", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/profile")
+      refute html =~ ~r/id="nav-user-menu-button"[^>]*>\s*<div[^>]*role="img"/
+    end
+  end
+
+  describe "flash group" do
+    test "does not add a live region on top of role=alert flashes", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/profile")
+      assert html =~ ~s(id="flash-group")
+      refute html =~ ~r/id="flash-group"[^>]*aria-live/
+    end
   end
 
   describe "share button" do

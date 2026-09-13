@@ -303,70 +303,29 @@ defmodule BaudrateWeb.CoreComponents do
   def input(%{type: "textarea"} = assigns) do
     ~H"""
     <div class="core-field core-field-textarea fieldset mb-2">
-      <label>
-        <span :if={@label} class={["label mb-1", @label_class]}>{@label}</span>
-        <div
-          :if={@toolbar}
-          id={"#{@id}-hashtag-wrap"}
-          phx-hook="HashtagAutocompleteHook"
-          class="relative"
-        >
-          <textarea
-            id={@id}
-            name={@name}
-            phx-hook="MarkdownToolbarHook"
-            class={[
-              "core-textarea",
-              @class || "w-full textarea",
-              @errors != [] && (@error_class || "textarea-error")
-            ]}
-            aria-invalid={@errors != [] && "true"}
-            aria-describedby={@errors != [] && "#{@id}-error"}
-            {@rest}
-          >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
-        </div>
-        <div
-          :if={@toolbar}
-          id={"#{@id}-md-preview"}
-          class="hidden w-full prose prose-sm max-w-none border border-base-300 rounded-lg p-3 min-h-[6rem] bg-base-100"
-          phx-update="ignore"
-          role="region"
-          aria-label={gettext("Markdown preview")}
-        >
-        </div>
-        <div
-          :if={@toolbar}
-          id={"#{@id}-md-toolbar"}
-          phx-update="ignore"
-          data-i18n={
-            Jason.encode!(%{
-              bold: gettext("Bold"),
-              italic: gettext("Italic"),
-              strikethrough: gettext("Strikethrough"),
-              heading: gettext("Heading"),
-              link: gettext("Link"),
-              image: gettext("Image"),
-              inline_code: gettext("Inline Code"),
-              code_block: gettext("Code Block"),
-              blockquote: gettext("Blockquote"),
-              bullet_list: gettext("Bullet List"),
-              numbered_list: gettext("Numbered List"),
-              horizontal_rule: gettext("Horizontal Rule"),
-              preview: gettext("Preview"),
-              write: gettext("Write"),
-              toolbar_label: gettext("Markdown formatting"),
-              nothing_to_preview: gettext("Nothing to preview."),
-              content_too_large: gettext("Content too large to preview."),
-              expand_toolbar: gettext("Expand toolbar"),
-              collapse_toolbar: gettext("Collapse toolbar")
-            })
-          }
-        >
-        </div>
+      <%!-- The <label> holds only the label text. The textarea, Markdown
+           preview region and JS-populated toolbar are siblings, so the
+           toolbar buttons and preview content never leak into the
+           textarea's accessible name and clicks on them are not
+           redirected to the textarea. --%>
+      <label
+        :if={@label}
+        for={@id}
+        class={["core-field-label core-textarea-label label mb-1", @label_class]}
+      >
+        {@label}
+      </label>
+      <div
+        :if={@toolbar}
+        id={"#{@id}-hashtag-wrap"}
+        phx-hook="HashtagAutocompleteHook"
+        data-i18n-suggestions={gettext("Suggestions: %{count}", count: "%{count}")}
+        class="relative"
+      >
         <textarea
-          :if={!@toolbar}
           id={@id}
           name={@name}
+          phx-hook="MarkdownToolbarHook"
           class={[
             "core-textarea",
             @class || "w-full textarea",
@@ -376,7 +335,58 @@ defmodule BaudrateWeb.CoreComponents do
           aria-describedby={@errors != [] && "#{@id}-error"}
           {@rest}
         >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
-      </label>
+      </div>
+      <div
+        :if={@toolbar}
+        id={"#{@id}-md-preview"}
+        class="hidden w-full prose prose-sm max-w-none border border-base-300 rounded-lg p-3 min-h-[6rem] bg-base-100"
+        phx-update="ignore"
+        role="region"
+        aria-label={gettext("Markdown preview")}
+      >
+      </div>
+      <div
+        :if={@toolbar}
+        id={"#{@id}-md-toolbar"}
+        phx-update="ignore"
+        data-i18n={
+          Jason.encode!(%{
+            bold: gettext("Bold"),
+            italic: gettext("Italic"),
+            strikethrough: gettext("Strikethrough"),
+            heading: gettext("Heading"),
+            link: gettext("Link"),
+            image: gettext("Image"),
+            inline_code: gettext("Inline Code"),
+            code_block: gettext("Code Block"),
+            blockquote: gettext("Blockquote"),
+            bullet_list: gettext("Bullet List"),
+            numbered_list: gettext("Numbered List"),
+            horizontal_rule: gettext("Horizontal Rule"),
+            preview: gettext("Preview"),
+            write: gettext("Write"),
+            toolbar_label: gettext("Markdown formatting"),
+            nothing_to_preview: gettext("Nothing to preview."),
+            content_too_large: gettext("Content too large to preview."),
+            expand_toolbar: gettext("Expand toolbar"),
+            collapse_toolbar: gettext("Collapse toolbar")
+          })
+        }
+      >
+      </div>
+      <textarea
+        :if={!@toolbar}
+        id={@id}
+        name={@name}
+        class={[
+          "core-textarea",
+          @class || "w-full textarea",
+          @errors != [] && (@error_class || "textarea-error")
+        ]}
+        aria-invalid={@errors != [] && "true"}
+        aria-describedby={@errors != [] && "#{@id}-error"}
+        {@rest}
+      >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
       <div :if={@errors != []} class="core-field-error" id={"#{@id}-error"} role="alert">
         <.error :for={msg <- @errors}>{msg}</.error>
       </div>
@@ -589,6 +599,12 @@ defmodule BaudrateWeb.CoreComponents do
   attr :size, :integer, default: 48, values: [120, 48, 36, 24]
   attr :class, :string, default: nil
 
+  attr :decorative, :boolean,
+    default: false,
+    doc:
+      "when true the avatar is hidden from assistive technology (empty alt, no role/label); " <>
+        "use when the user's name is rendered as visible text right next to it"
+
   def avatar(%{user: %{avatar_id: avatar_id}} = assigns) when is_binary(avatar_id) do
     assigns = assign(assigns, :url, Baudrate.Avatar.avatar_url(avatar_id, assigns.size))
 
@@ -599,7 +615,7 @@ defmodule BaudrateWeb.CoreComponents do
       @class
     ]}>
       <div class={size_class(@size)}>
-        <img src={@url} alt={display_name(@user)} />
+        <img src={@url} alt={if @decorative, do: "", else: display_name(@user)} />
       </div>
     </div>
     """
@@ -615,8 +631,9 @@ defmodule BaudrateWeb.CoreComponents do
         "core-avatar avatar avatar-placeholder",
         @class
       ]}
-      role="img"
-      aria-label={display_name(@user)}
+      role={if !@decorative, do: "img"}
+      aria-label={if !@decorative, do: display_name(@user)}
+      aria-hidden={if @decorative, do: "true"}
     >
       <div class={["bg-neutral text-neutral-content", size_class(@size)]}>
         <span
@@ -696,9 +713,11 @@ defmodule BaudrateWeb.CoreComponents do
             :if={p == @page}
             class="pagination-current join-item btn btn-sm btn-active"
             aria-current="page"
-            aria-label={gettext("Page %{number}", number: p)}
           >
-            {p}
+            <span class="pagination-current-label sr-only">
+              {gettext("Page %{number}", number: p)}
+            </span>
+            <span class="pagination-current-number" aria-hidden="true">{p}</span>
           </span>
         <% end %>
 

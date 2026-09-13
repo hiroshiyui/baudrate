@@ -257,6 +257,102 @@ defmodule BaudrateWeb.CoreComponentsTest do
 
       assert html =~ "status=open"
     end
+
+    test "current page exposes its name via visually hidden text, not aria-label" do
+      html =
+        render_component(&CoreComponents.pagination/1,
+          page: 2,
+          total_pages: 5,
+          path: "/boards/test",
+          params: %{}
+        )
+
+      assert html =~ ~r/class="pagination-current[^"]*"\s+aria-current="page"/
+      refute html =~ ~r/class="pagination-current[^"]*"[^>]*aria-label=/
+      assert html =~ ~r/class="pagination-current-label sr-only">\s*Page 2\s*</
+      assert html =~ ~r/class="pagination-current-number" aria-hidden="true">2</
+    end
+  end
+
+  describe "avatar/1 decorative" do
+    test "placeholder avatar is hidden from assistive technology" do
+      user = %Baudrate.Setup.User{username: "erin", display_name: nil, avatar_id: nil}
+
+      html = render_component(&CoreComponents.avatar/1, user: user, size: 24, decorative: true)
+
+      assert html =~ ~s(aria-hidden="true")
+      refute html =~ ~s(role="img")
+      refute html =~ ~s(aria-label="erin")
+    end
+
+    test "image avatar renders an empty alt" do
+      user = %Baudrate.Setup.User{username: "frank", display_name: "Frank", avatar_id: "abc123"}
+
+      html = render_component(&CoreComponents.avatar/1, user: user, size: 24, decorative: true)
+
+      assert html =~ ~s(alt="")
+      refute html =~ ~s(alt="Frank")
+    end
+
+    test "non-decorative placeholder keeps role=img and label" do
+      user = %Baudrate.Setup.User{username: "gina", display_name: nil, avatar_id: nil}
+
+      html = render_component(&CoreComponents.avatar/1, user: user, size: 24)
+
+      assert html =~ ~s(role="img")
+      assert html =~ ~s(aria-label="gina")
+      # The initial inside is always aria-hidden; only the wrapper must stay exposed.
+      [wrapper] = Regex.run(~r/<div class="core-avatar[^>]*>/, html)
+      refute wrapper =~ ~s(aria-hidden="true")
+    end
+  end
+
+  describe "input/1 textarea" do
+    test "label only wraps the label text and points at the textarea" do
+      html =
+        render_component(&CoreComponents.input/1,
+          type: "textarea",
+          id: "post-body",
+          name: "post[body]",
+          value: "",
+          label: "Body",
+          toolbar: true
+        )
+
+      assert html =~ ~r/<label[^>]*for="post-body"[^>]*>\s*Body\s*<\/label>/
+      refute html =~ ~r/<label[^>]*>(?:(?!<\/label>).)*<textarea/s
+      refute html =~ ~r/<label[^>]*>(?:(?!<\/label>).)*post-body-md-toolbar/s
+      assert html =~ ~s(id="post-body-md-preview")
+      assert html =~ ~s(id="post-body-md-toolbar")
+      assert html =~ ~s(phx-hook="MarkdownToolbarHook")
+    end
+
+    test "renders no label element when label is nil" do
+      html =
+        render_component(&CoreComponents.input/1,
+          type: "textarea",
+          id: "plain-body",
+          name: "body",
+          value: ""
+        )
+
+      refute html =~ "<label"
+      assert html =~ ~s(id="plain-body")
+    end
+
+    test "label_class is applied to the label" do
+      html =
+        render_component(&CoreComponents.input/1,
+          type: "textarea",
+          id: "reply-body",
+          name: "body",
+          value: "",
+          label: "Reply",
+          label_class: "sr-only"
+        )
+
+      assert html =~ ~r/<label[^>]*for="reply-body"[^>]*class="[^"]*sr-only/
+    end
   end
 
   describe "extract_youtube_video_id/1" do

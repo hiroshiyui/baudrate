@@ -26,6 +26,25 @@ defmodule BaudrateWeb.UnreadDmCountHookTest do
       assert html =~ "1"
     end
 
+    test "badge is hidden from AT and the count is part of the link name", %{
+      conn: conn,
+      user: user
+    } do
+      other = setup_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(user, other)
+      {:ok, _msg} = Messaging.create_message(conv, other, %{body: "Hello!"})
+
+      {:ok, _lv, html} = live(conn, "/")
+
+      assert html =~
+               ~r/class="nav-unread-badge badge badge-primary badge-xs[^"]*"\s+aria-hidden="true"/
+
+      assert html =~ ~r/class="nav-unread-count sr-only">\s*1 unread message\s*</
+      [dock_tag] = Regex.run(~r/<a[^>]*id="dock-messages"[^>]*>/, html)
+      assert dock_tag =~ ~s(aria-label="Messages, 1 unread")
+      refute html =~ ~s(aria-label="1 unread message")
+    end
+
     test "does not show badge when no unread messages", %{conn: conn} do
       {:ok, _lv, html} = live(conn, "/")
 
