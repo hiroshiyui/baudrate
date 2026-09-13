@@ -118,14 +118,27 @@ defmodule Baudrate.Federation.Follows do
     |> Repo.insert()
   end
 
+  # Looks up a follow by its Follow activity ap_id. When `signer` (the remote
+  # actor that sent the Accept/Reject) is given, the row must also belong to
+  # that actor — follow ap_ids are minted locally and are not secret, so an
+  # unscoped lookup let any verified actor accept or reject someone else's
+  # follow of a third party. `nil` keeps the internal/test callers working.
+  defp scoped_follow_query(schema, follow_ap_id, nil) do
+    from(f in schema, where: f.ap_id == ^follow_ap_id)
+  end
+
+  defp scoped_follow_query(schema, follow_ap_id, %{id: signer_id}) do
+    from(f in schema, where: f.ap_id == ^follow_ap_id and f.remote_actor_id == ^signer_id)
+  end
+
   @doc """
   Marks an outbound follow as accepted by matching the Follow activity's AP ID.
 
   Called when an `Accept(Follow)` activity is received from the remote actor.
   Returns `{:ok, %UserFollow{}}` or `{:error, :not_found}`.
   """
-  def accept_user_follow(follow_ap_id) when is_binary(follow_ap_id) do
-    case Repo.one(from(uf in UserFollow, where: uf.ap_id == ^follow_ap_id)) do
+  def accept_user_follow(follow_ap_id, signer \\ nil) when is_binary(follow_ap_id) do
+    case Repo.one(scoped_follow_query(UserFollow, follow_ap_id, signer)) do
       nil ->
         {:error, :not_found}
 
@@ -145,8 +158,8 @@ defmodule Baudrate.Federation.Follows do
   Called when a `Reject(Follow)` activity is received from the remote actor.
   Returns `{:ok, %UserFollow{}}` or `{:error, :not_found}`.
   """
-  def reject_user_follow(follow_ap_id) when is_binary(follow_ap_id) do
-    case Repo.one(from(uf in UserFollow, where: uf.ap_id == ^follow_ap_id)) do
+  def reject_user_follow(follow_ap_id, signer \\ nil) when is_binary(follow_ap_id) do
+    case Repo.one(scoped_follow_query(UserFollow, follow_ap_id, signer)) do
       nil ->
         {:error, :not_found}
 
@@ -306,8 +319,8 @@ defmodule Baudrate.Federation.Follows do
   Called when an `Accept(Follow)` activity is received from the remote actor.
   Returns `{:ok, %BoardFollow{}}` or `{:error, :not_found}`.
   """
-  def accept_board_follow(follow_ap_id) when is_binary(follow_ap_id) do
-    case Repo.one(from(bf in BoardFollow, where: bf.ap_id == ^follow_ap_id)) do
+  def accept_board_follow(follow_ap_id, signer \\ nil) when is_binary(follow_ap_id) do
+    case Repo.one(scoped_follow_query(BoardFollow, follow_ap_id, signer)) do
       nil ->
         {:error, :not_found}
 
@@ -327,8 +340,8 @@ defmodule Baudrate.Federation.Follows do
   Called when a `Reject(Follow)` activity is received from the remote actor.
   Returns `{:ok, %BoardFollow{}}` or `{:error, :not_found}`.
   """
-  def reject_board_follow(follow_ap_id) when is_binary(follow_ap_id) do
-    case Repo.one(from(bf in BoardFollow, where: bf.ap_id == ^follow_ap_id)) do
+  def reject_board_follow(follow_ap_id, signer \\ nil) when is_binary(follow_ap_id) do
+    case Repo.one(scoped_follow_query(BoardFollow, follow_ap_id, signer)) do
       nil ->
         {:error, :not_found}
 

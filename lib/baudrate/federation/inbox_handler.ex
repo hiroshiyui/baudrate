@@ -307,7 +307,11 @@ defmodule Baudrate.Federation.InboxHandler do
          _target
        )
        when is_binary(object_id) do
-    if not Validator.valid_https_url?(object_id) do
+    # Same rule as the fetched path: an embedded object must never name one of
+    # our own URIs. Otherwise a followed booster could Announce
+    # `{"id": "<base>/ap/articles/<private-slug>"}` and have the existing local
+    # article linked into every public board that follows them.
+    if not Validator.valid_https_url?(object_id) or Validator.local_actor?(object_id) do
       Logger.warning(
         "federation.activity: type=Announce rejected invalid embedded object id=#{inspect(object_id)}"
       )
@@ -456,12 +460,19 @@ defmodule Baudrate.Federation.InboxHandler do
        ) do
     follow_id = extract_follow_id(follow_obj)
 
-    if follow_id do
-      accept_follow_with_fallback(follow_id, remote_actor)
-    else
-      Logger.info(
-        "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} (no follow id)"
-      )
+    cond do
+      is_nil(follow_id) ->
+        Logger.info(
+          "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} (no follow id)"
+        )
+
+      not follow_object_is_signer?(follow_obj, remote_actor) ->
+        Logger.warning(
+          "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} rejected (embedded Follow targets another actor)"
+        )
+
+      true ->
+        accept_follow_with_fallback(follow_id, remote_actor)
     end
 
     :ok
@@ -487,12 +498,19 @@ defmodule Baudrate.Federation.InboxHandler do
        ) do
     follow_id = extract_follow_id(follow_obj)
 
-    if follow_id do
-      reject_follow_with_fallback(follow_id, remote_actor)
-    else
-      Logger.info(
-        "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} (no follow id)"
-      )
+    cond do
+      is_nil(follow_id) ->
+        Logger.info(
+          "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} (no follow id)"
+        )
+
+      not follow_object_is_signer?(follow_obj, remote_actor) ->
+        Logger.warning(
+          "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} rejected (embedded Follow targets another actor)"
+        )
+
+      true ->
+        reject_follow_with_fallback(follow_id, remote_actor)
     end
 
     :ok
@@ -578,7 +596,8 @@ defmodule Baudrate.Federation.InboxHandler do
   # --- Update helpers ---
 
   defp handle_update_note(object, remote_actor) do
-    with {:ok, ap_id} <- Validator.validate_object_id(object) do
+    with {:ok, ap_id} <- Validator.validate_object_id(object),
+         :ok <- Validator.validate_object_origin(object, remote_actor) do
       case Content.get_comment_by_ap_id(ap_id) do
         %{remote_actor_id: actor_id} = comment when actor_id == remote_actor.id ->
           {:ok, body, body_html} = sanitize_content(object)
@@ -603,7 +622,8 @@ defmodule Baudrate.Federation.InboxHandler do
   end
 
   defp handle_update_article(object, remote_actor) do
-    with {:ok, ap_id} <- Validator.validate_object_id(object) do
+    with {:ok, ap_id} <- Validator.validate_object_id(object),
+         :ok <- Validator.validate_object_origin(object, remote_actor) do
       case Content.get_article_by_ap_id(ap_id) do
         %{remote_actor_id: actor_id} = article when actor_id == remote_actor.id ->
           {:ok, body, _body_html} = sanitize_content(object)
@@ -681,6 +701,7 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp handle_create_note_comment(object, remote_actor) do
     with :ok <- validate_attribution_match(object, remote_actor),
+         :ok <- Validator.validate_object_origin(object, remote_actor),
          {:ok, ap_id} <- Validator.validate_object_id(object),
          {:ok, body, body_html} <- sanitize_content(object),
          {:ok, article, parent_id} <- resolve_reply_target(object, remote_actor) do
@@ -759,6 +780,7 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp handle_incoming_dm(object, remote_actor) do
     with :ok <- validate_attribution_match(object, remote_actor),
+         :ok <- Validator.validate_object_origin(object, remote_actor),
          {:ok, ap_id} <- Validator.validate_object_id(object),
          {:ok, body, body_html} <- sanitize_content(object),
          {:ok, local_user} <- resolve_dm_recipient(object),
@@ -827,7 +849,8 @@ defmodule Baudrate.Federation.InboxHandler do
         :ok
 
       _followers ->
-        with {:ok, ap_id} <- Validator.validate_object_id(object) do
+        with {:ok, ap_id} <- Validator.validate_object_id(object),
+             :ok <- Validator.validate_object_origin(object, remote_actor) do
           # Idempotency check
           if Federation.get_feed_item_by_ap_id(ap_id) do
             :ok
@@ -1009,57 +1032,69 @@ defmodule Baudrate.Federation.InboxHandler do
              {:ok, body, _body_html} <- sanitize_content(object) do
           existing = Content.get_article_by_ap_id(ap_id)
 
-          if existing do
-            # Article already exists — link to all following boards
-            Enum.each(boards, fn board ->
-              Content.add_article_to_board(existing, board.id)
-            end)
+          # Resolve the original author first: an existing article is only
+          # linked into the following boards when it belongs to that author
+          # (`remote_actor_id` match). Any other match — a local article, or a
+          # remote one by someone else — is a booster trying to re-home
+          # content it does not own.
+          author_uri = resolve_attributed_to(object)
 
-            :ok
-          else
-            # Resolve the original author
-            author_uri = resolve_attributed_to(object)
-
-            author_actor_id =
-              case if(author_uri, do: ActorResolver.resolve(author_uri)) do
-                {:ok, actor} -> actor.id
-                _ -> booster_actor.id
-              end
-
-            title = derive_title(object, body)
-            slug = Content.generate_slug(title)
-            board_ids = Enum.map(boards, & &1.id)
-            poll_opts = extract_poll_from_object(object, ap_id)
-            image_attachments = AttachmentExtractor.extract_image_attachments(object)
-            url = extract_url(object)
-            visibility = Visibility.from_addressing(object)
-
-            case Content.create_remote_article(
-                   %{
-                     title: title,
-                     body: body,
-                     slug: slug,
-                     ap_id: ap_id,
-                     url: url,
-                     remote_actor_id: author_actor_id,
-                     visibility: visibility
-                   },
-                   board_ids,
-                   poll_opts ++ [image_attachments: image_attachments]
-                 ) do
-              {:ok, _multi} ->
-                Logger.info(
-                  "federation.activity: type=Announce(#{object_type}) ap_id=#{ap_id} routed_to=#{length(boards)}"
-                )
-
-                :ok
-
-              {:error, :article, %Ecto.Changeset{} = changeset, _} ->
-                if has_unique_error?(changeset), do: :ok, else: {:error, :create_article_failed}
-
-              {:error, _step, _reason, _changes} ->
-                {:error, :create_article_failed}
+          author_actor_id =
+            case if(author_uri, do: ActorResolver.resolve(author_uri)) do
+              {:ok, actor} -> actor.id
+              _ -> booster_actor.id
             end
+
+          cond do
+            existing && existing.remote_actor_id == author_actor_id ->
+              Enum.each(boards, fn board ->
+                Content.add_article_to_board(existing, board.id)
+              end)
+
+              :ok
+
+            existing ->
+              Logger.warning(
+                "federation.announce: refused to link existing article ap_id=#{ap_id} to boards (not owned by announced author)"
+              )
+
+              :ok
+
+            true ->
+              title = derive_title(object, body)
+              slug = Content.generate_slug(title)
+              board_ids = Enum.map(boards, & &1.id)
+              poll_opts = extract_poll_from_object(object, ap_id)
+              image_attachments = AttachmentExtractor.extract_image_attachments(object)
+              url = extract_url(object)
+              visibility = Visibility.from_addressing(object)
+
+              case Content.create_remote_article(
+                     %{
+                       title: title,
+                       body: body,
+                       slug: slug,
+                       ap_id: ap_id,
+                       url: url,
+                       remote_actor_id: author_actor_id,
+                       visibility: visibility
+                     },
+                     board_ids,
+                     poll_opts ++ [image_attachments: image_attachments]
+                   ) do
+                {:ok, _multi} ->
+                  Logger.info(
+                    "federation.activity: type=Announce(#{object_type}) ap_id=#{ap_id} routed_to=#{length(boards)}"
+                  )
+
+                  :ok
+
+                {:error, :article, %Ecto.Changeset{} = changeset, _} ->
+                  if has_unique_error?(changeset), do: :ok, else: {:error, :create_article_failed}
+
+                {:error, _step, _reason, _changes} ->
+                  {:error, :create_article_failed}
+              end
           end
         end
     end
@@ -1450,7 +1485,8 @@ defmodule Baudrate.Federation.InboxHandler do
   end
 
   defp create_article_in_board(object, body, remote_actor, board, type) do
-    with {:ok, ap_id} <- Validator.validate_object_id(object) do
+    with {:ok, ap_id} <- Validator.validate_object_id(object),
+         :ok <- Validator.validate_object_origin(object, remote_actor) do
       existing = Content.get_article_by_ap_id(ap_id)
 
       if existing do
@@ -1506,6 +1542,7 @@ defmodule Baudrate.Federation.InboxHandler do
 
       boards ->
         with :ok <- validate_attribution_match(object, remote_actor),
+             :ok <- Validator.validate_object_origin(object, remote_actor),
              {:ok, ap_id} <- Validator.validate_object_id(object),
              {:ok, body, _body_html} <- sanitize_content(object) do
           existing = Content.get_article_by_ap_id(ap_id)
@@ -1770,16 +1807,30 @@ defmodule Baudrate.Federation.InboxHandler do
   defp extract_follow_id(%{"id" => id}) when is_binary(id) and id != "", do: id
   defp extract_follow_id(_), do: nil
 
-  # Try user follow first, then board follow as fallback
+  # When the embedded Follow names its target, it must be the signer: only the
+  # followed actor may accept or reject a follow addressed to it.
+  defp follow_object_is_signer?(%{"object" => target}, remote_actor) when is_binary(target),
+    do: target == remote_actor.ap_id
+
+  defp follow_object_is_signer?(%{"object" => %{"id" => target}}, remote_actor)
+       when is_binary(target),
+       do: target == remote_actor.ap_id
+
+  defp follow_object_is_signer?(_, _), do: true
+
+  # Try user follow first, then board follow as fallback. Both lookups are
+  # scoped to the signing actor: follow ap_ids are minted locally and are not
+  # secret, so without the scope any verified actor could flip someone
+  # else's pending follow of a third party to accepted/rejected.
   defp accept_follow_with_fallback(follow_id, remote_actor) do
-    case Federation.accept_user_follow(follow_id) do
+    case Federation.accept_user_follow(follow_id, remote_actor) do
       {:ok, _follow} ->
         Logger.info(
           "federation.activity: type=Accept(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id}"
         )
 
       {:error, :not_found} ->
-        case Federation.accept_board_follow(follow_id) do
+        case Federation.accept_board_follow(follow_id, remote_actor) do
           {:ok, _follow} ->
             Logger.info(
               "federation.activity: type=Accept(BoardFollow) actor=#{remote_actor.ap_id} follow=#{follow_id}"
@@ -1794,14 +1845,14 @@ defmodule Baudrate.Federation.InboxHandler do
   end
 
   defp reject_follow_with_fallback(follow_id, remote_actor) do
-    case Federation.reject_user_follow(follow_id) do
+    case Federation.reject_user_follow(follow_id, remote_actor) do
       {:ok, _follow} ->
         Logger.info(
           "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id}"
         )
 
       {:error, :not_found} ->
-        case Federation.reject_board_follow(follow_id) do
+        case Federation.reject_board_follow(follow_id, remote_actor) do
           {:ok, _follow} ->
             Logger.info(
               "federation.activity: type=Reject(BoardFollow) actor=#{remote_actor.ap_id} follow=#{follow_id}"

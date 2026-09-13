@@ -165,8 +165,8 @@ defmodule Baudrate.Federation do
   # --- User Follows (Outbound) ---
 
   defdelegate create_user_follow(user, remote_actor), to: Follows
-  defdelegate accept_user_follow(follow_ap_id), to: Follows
-  defdelegate reject_user_follow(follow_ap_id), to: Follows
+  defdelegate accept_user_follow(follow_ap_id, signer \\ nil), to: Follows
+  defdelegate reject_user_follow(follow_ap_id, signer \\ nil), to: Follows
   defdelegate delete_user_follow(user, remote_actor), to: Follows
   defdelegate get_user_follow(user_id, remote_actor_id), to: Follows
   defdelegate get_user_follow_with_actor(user_id, remote_actor_id), to: Follows
@@ -179,8 +179,8 @@ defmodule Baudrate.Federation do
   # --- Board Follows ---
 
   defdelegate create_board_follow(board, remote_actor), to: Follows
-  defdelegate accept_board_follow(follow_ap_id), to: Follows
-  defdelegate reject_board_follow(follow_ap_id), to: Follows
+  defdelegate accept_board_follow(follow_ap_id, signer \\ nil), to: Follows
+  defdelegate reject_board_follow(follow_ap_id, signer \\ nil), to: Follows
   defdelegate delete_board_follow(board, remote_actor), to: Follows
   defdelegate get_board_follow(board_id, remote_actor_id), to: Follows
   defdelegate get_board_follow_with_actor(board_id, remote_actor_id), to: Follows

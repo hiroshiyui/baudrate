@@ -249,7 +249,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "type" => "Note",
           "content" => "<p>Nice article!</p>",
           "attributedTo" => remote_actor.ap_id,
-          "inReplyTo" => article_uri
+          "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
 
@@ -279,7 +280,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "type" => "Note",
           "content" => oversized,
           "attributedTo" => remote_actor.ap_id,
-          "inReplyTo" => article_uri
+          "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
 
@@ -308,7 +310,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "content" => "<p>Comment with URL</p>",
           "url" => "https://remote.example/@user/#{uid}",
           "attributedTo" => remote_actor.ap_id,
-          "inReplyTo" => article_uri
+          "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
 
@@ -339,7 +342,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "type" => "Note",
           "content" => "First comment",
           "attributedTo" => remote_actor.ap_id,
-          "inReplyTo" => article_uri
+          "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
 
@@ -355,7 +359,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "type" => "Note",
           "content" => "Reply to first comment",
           "attributedTo" => remote_actor.ap_id,
-          "inReplyTo" => comment_ap_id
+          "inReplyTo" => comment_ap_id,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
 
@@ -386,7 +391,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "type" => "Note",
           "content" => "Impersonated!",
           "attributedTo" => "https://evil.example/users/impersonator",
-          "inReplyTo" => article_uri
+          "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
 
@@ -412,7 +418,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "type" => "Note",
           "content" => "Hello",
           "attributedTo" => remote_actor.ap_id,
-          "inReplyTo" => article_uri
+          "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
 
@@ -475,7 +482,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "type" => "Note",
           "content" => "<p>Deep reply via chain walk</p>",
           "attributedTo" => remote_actor.ap_id,
-          "inReplyTo" => intermediate_uri
+          "inReplyTo" => intermediate_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
 
@@ -496,7 +504,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
         body =
           Jason.encode!(%{
             "id" => "https://remote.example#{conn.request_path}",
-            "inReplyTo" => next_id
+            "inReplyTo" => next_id,
+            "to" => ["https://www.w3.org/ns/activitystreams#Public"]
           })
 
         conn
@@ -513,7 +522,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "type" => "Note",
           "content" => "<p>Infinite chain</p>",
           "attributedTo" => remote_actor.ap_id,
-          "inReplyTo" => "https://remote.example/notes/chain-start"
+          "inReplyTo" => "https://remote.example/notes/chain-start",
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
 
@@ -540,6 +550,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "content" => "<p>Check out this image!</p>",
           "attributedTo" => remote_actor.ap_id,
           "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
           "attachment" => [
             %{
               "type" => "Document",
@@ -588,6 +599,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "content" => "<p>HTTP image</p>",
           "attributedTo" => remote_actor.ap_id,
           "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
           "attachment" => [
             %{
               "type" => "Document",
@@ -1365,7 +1377,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "type" => "Note",
           "content" => "To be deleted",
           "attributedTo" => remote_actor.ap_id,
-          "inReplyTo" => article_uri
+          "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
 
@@ -1497,7 +1510,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "type" => "Note",
           "content" => "Original comment",
           "attributedTo" => remote_actor.ap_id,
-          "inReplyTo" => article_uri
+          "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
 
@@ -1799,7 +1813,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
             remote_actor.ap_id,
             %{"type" => "Organization", "name" => "Some Org"}
           ],
-          "inReplyTo" => article_uri
+          "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
 
@@ -1829,7 +1844,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
             "https://evil.example/users/impersonator",
             %{"type" => "Organization"}
           ],
-          "inReplyTo" => article_uri
+          "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
 
@@ -1857,6 +1873,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "content" => "<p>Sensitive content here</p>",
           "attributedTo" => remote_actor.ap_id,
           "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
           "sensitive" => true,
           "summary" => "Content Warning"
         }
@@ -1890,6 +1907,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "content" => "<p>Normal content</p>",
           "attributedTo" => remote_actor.ap_id,
           "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
           "sensitive" => false,
           "summary" => "Not a CW"
         }
@@ -2303,7 +2321,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "type" => "Note",
           "content" => "Cleanup comment",
           "attributedTo" => remote_actor.ap_id,
-          "inReplyTo" => local_article_uri
+          "inReplyTo" => local_article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
 
@@ -2336,6 +2355,181 @@ defmodule Baudrate.Federation.InboxHandlerTest do
 
       dm = Baudrate.Repo.get!(Baudrate.Messaging.DirectMessage, dm_message.id)
       assert dm.deleted_at != nil
+    end
+  end
+
+  describe "Accept/Reject(Follow) signer scoping" do
+    setup do
+      user = setup_user_with_role("user")
+      followed = create_remote_actor()
+      bystander = create_remote_actor()
+      {:ok, follow} = Federation.create_user_follow(user, followed)
+      {:ok, follow: follow, followed: followed, bystander: bystander}
+    end
+
+    test "a third-party actor cannot accept someone else's pending follow",
+         %{follow: follow, bystander: bystander} do
+      activity = %{
+        "id" => "#{bystander.ap_id}#accept-#{System.unique_integer([:positive])}",
+        "type" => "Accept",
+        "actor" => bystander.ap_id,
+        "object" => %{"type" => "Follow", "id" => follow.ap_id}
+      }
+
+      assert :ok = InboxHandler.handle(activity, bystander, :shared)
+      assert Repo.get!(Baudrate.Federation.UserFollow, follow.id).state == "pending"
+    end
+
+    test "a third-party actor cannot reject someone else's follow",
+         %{follow: follow, followed: followed, bystander: bystander} do
+      {:ok, _} = Federation.accept_user_follow(follow.ap_id, followed)
+
+      activity = %{
+        "id" => "#{bystander.ap_id}#reject-#{System.unique_integer([:positive])}",
+        "type" => "Reject",
+        "actor" => bystander.ap_id,
+        "object" => follow.ap_id
+      }
+
+      assert :ok = InboxHandler.handle(activity, bystander, :shared)
+      assert Repo.get!(Baudrate.Federation.UserFollow, follow.id).state == "accepted"
+    end
+
+    test "the followed actor can still accept", %{follow: follow, followed: followed} do
+      activity = %{
+        "id" => "#{followed.ap_id}#accept-#{System.unique_integer([:positive])}",
+        "type" => "Accept",
+        "actor" => followed.ap_id,
+        "object" => %{"type" => "Follow", "id" => follow.ap_id, "object" => followed.ap_id}
+      }
+
+      assert :ok = InboxHandler.handle(activity, followed, :shared)
+      assert Repo.get!(Baudrate.Federation.UserFollow, follow.id).state == "accepted"
+    end
+  end
+
+  describe "object origin binding" do
+    test "Create(Note) whose id is on another host does not squat that ap_id" do
+      user = setup_user_with_role("user")
+      board = create_board()
+      article = create_article_for_board(user, board)
+      attacker = create_remote_actor()
+
+      victim_id =
+        "https://mastodon.social/users/victim/statuses/#{System.unique_integer([:positive])}"
+
+      activity = %{
+        "id" => "#{attacker.ap_id}/activities/#{System.unique_integer([:positive])}",
+        "type" => "Create",
+        "actor" => attacker.ap_id,
+        "object" => %{
+          "id" => victim_id,
+          "type" => "Note",
+          "content" => "<p>squat</p>",
+          "attributedTo" => attacker.ap_id,
+          "inReplyTo" => Federation.actor_uri(:article, article.slug),
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
+        }
+      }
+
+      InboxHandler.handle(activity, attacker, :shared)
+      refute Content.get_comment_by_ap_id(victim_id)
+    end
+  end
+
+  describe "Announce cannot re-home content it does not own" do
+    setup do
+      booster = create_remote_actor()
+
+      board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Public Federated",
+          slug: "pubfed-#{System.unique_integer([:positive])}",
+          ap_enabled: true,
+          min_role_to_view: "guest",
+          ap_accept_policy: "open"
+        })
+        |> Repo.insert!()
+
+      {:ok, _} =
+        %Baudrate.Federation.BoardFollow{}
+        |> Baudrate.Federation.BoardFollow.changeset(%{
+          board_id: board.id,
+          remote_actor_id: booster.id,
+          state: "accepted",
+          ap_id: "https://remote.example/follows/#{System.unique_integer([:positive])}",
+          accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert()
+
+      {:ok, booster: booster, board: board}
+    end
+
+    test "embedded Announce naming a local private article is refused",
+         %{booster: booster, board: board} do
+      user = setup_user_with_role("user")
+
+      private =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Private",
+          slug: "priv-#{System.unique_integer([:positive])}",
+          min_role_to_view: "admin"
+        })
+        |> Repo.insert!()
+
+      article = create_article_for_board(user, private)
+      local_uri = Federation.actor_uri(:article, article.slug)
+
+      activity = %{
+        "id" => "#{booster.ap_id}/announce/#{System.unique_integer([:positive])}",
+        "type" => "Announce",
+        "actor" => booster.ap_id,
+        "object" => %{"id" => local_uri, "type" => "Article", "content" => "x"}
+      }
+
+      assert {:error, :invalid_object_id} = InboxHandler.handle(activity, booster, :shared)
+
+      board_ids =
+        article |> Repo.preload(:boards, force: true) |> Map.fetch!(:boards) |> Enum.map(& &1.id)
+
+      refute board.id in board_ids
+    end
+
+    test "embedded Announce of another author's existing remote article is not linked",
+         %{booster: booster, board: board} do
+      owner = create_remote_actor()
+      ap_id = "https://remote.example/articles/#{System.unique_integer([:positive])}"
+
+      {:ok, %{article: existing}} =
+        Content.create_remote_article(
+          %{
+            title: "Owned",
+            body: "b",
+            slug: "owned-#{System.unique_integer([:positive])}",
+            ap_id: ap_id,
+            remote_actor_id: owner.id,
+            visibility: "public"
+          },
+          []
+        )
+
+      activity = %{
+        "id" => "#{booster.ap_id}/announce/#{System.unique_integer([:positive])}",
+        "type" => "Announce",
+        "actor" => booster.ap_id,
+        # No attributedTo: authorship falls back to the booster, who does not
+        # own the existing row.
+        "object" => %{"id" => ap_id, "type" => "Article", "content" => "x"}
+      }
+
+      assert :ok = InboxHandler.handle(activity, booster, :shared)
+
+      board_ids =
+        existing |> Repo.preload(:boards, force: true) |> Map.fetch!(:boards) |> Enum.map(& &1.id)
+
+      refute board.id in board_ids
     end
   end
 
@@ -2416,7 +2610,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           Jason.encode!(%{
             "id" => "https://#{host_for_depth.(n)}/notes/#{n}",
             "type" => "Note",
-            "inReplyTo" => "https://#{host_for_depth.(n + 1)}/notes/#{n + 1}"
+            "inReplyTo" => "https://#{host_for_depth.(n + 1)}/notes/#{n + 1}",
+            "to" => ["https://www.w3.org/ns/activitystreams#Public"]
           })
 
         conn
@@ -2435,7 +2630,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "type" => "Note",
           "content" => "<p>Chained</p>",
           "attributedTo" => remote_actor.ap_id,
-          "inReplyTo" => in_reply_to
+          "inReplyTo" => in_reply_to,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
     end
@@ -2473,7 +2669,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           Jason.encode!(%{
             "id" => "https://cycle.example#{conn.request_path}",
             "type" => "Note",
-            "inReplyTo" => "https://cycle.example/#{target}"
+            "inReplyTo" => "https://cycle.example/#{target}",
+            "to" => ["https://www.w3.org/ns/activitystreams#Public"]
           })
 
         conn
@@ -2533,7 +2730,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           Jason.encode!(%{
             "id" => "https://remote.example/notes/mid",
             "type" => "Note",
-            "inReplyTo" => article_uri
+            "inReplyTo" => article_uri,
+            "to" => ["https://www.w3.org/ns/activitystreams#Public"]
           })
 
         conn
@@ -2579,7 +2777,8 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "type" => "Note",
           "content" => "<p>Injected</p>",
           "attributedTo" => remote_actor.ap_id,
-          "inReplyTo" => article_uri
+          "inReplyTo" => article_uri,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"]
         }
       }
     end
