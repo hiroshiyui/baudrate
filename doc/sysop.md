@@ -678,6 +678,17 @@ nginx -t && systemctl reload nginx
 
   Requests from peers outside the allow-list keep their real `remote_ip` and
   cannot spoof rate-limit / audit IPs through the header.
+
+  IPv4-mapped IPv6 addresses (`::ffff:a.b.c.d`) are treated as the IPv4
+  address they carry. On the default dual-stack bind (`{0, 0, 0, 0, 0, 0, 0, 0}`),
+  Nginx on `127.0.0.1` connects as `::ffff:127.0.0.1`, and it still matches the
+  `127.0.0.1` entry. Before v1.15.0 it did not: the header was ignored and every
+  request was logged and rate-limited as coming from the proxy.
+
+  **To verify**, check that `ip=` fields in the application log show real
+  client addresses rather than `127.0.0.1` or `::ffff:127.0.0.1`. Other
+  IPv4-embedding prefixes (NAT64 `64:ff9b::/96`, 6to4) are *not* unwrapped, so
+  list them explicitly if a proxy really connects that way.
 - **Bind Phoenix to localhost only** if Nginx and Phoenix run on the same
   machine. In `runtime.exs`, change `ip: {0, 0, 0, 0, 0, 0, 0, 0}` to
   `ip: {127, 0, 0, 1}` (IPv4) or `ip: {0, 0, 0, 0, 0, 0, 0, 1}` (IPv6
