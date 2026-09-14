@@ -7,7 +7,7 @@ Paths are relative to the repository root. `lib/baudrate_web/…` is shortened t
 Baudrate is already strong on security engineering, ADRs, accessibility plumbing and test coverage. The gaps are:
 - **Broken promises:** the UI or docs say something happens and it doesn't.
 - **Moderation reach:** tools exist but not for the right people.
-- **Operability:** backups, observability and multi-node.
+- **Operability:** backups, observability, and an unclear single-node stance.
 - **Federation reach:** our interactions don't reach remote authors.
 - **Discovery and onboarding** for new visitors.
 
@@ -35,11 +35,14 @@ Fix each bug in its own commit on `current`, with a regression test.
   - A Flag without `content` (Mastodon allows it) doesn't match the handler and is dropped.
   - There is no dedup and no rate limit.
   - Evidence: `core/federation/inbox_handler.ex:439,1856`, `web/live/admin/moderation_live.html.heex:205`, `core/moderation/report.ex`.
-- [ ] **B4. "Followers only" and "Direct" don't restrict local posts.** (confirmed)
-  - The article, comment and feed composers offer these options, but they only change federation addressing.
-  - Viewing and RSS filter out *remote* non-public rows only, so guests can read a local "Direct" post.
-  - Needs decision D1 first.
-  - Evidence: `web/live/article_new_live.html.heex:367`, `web/live/article_live.html.heex:578-589`, `web/live/article_helpers.ex:37`, `core/content/feed.ex:34`.
+- [ ] **B4. "Followers only" and "Direct" don't restrict local posts.** (confirmed; approach set by D1)
+  - The article, edit, comment and feed quick-post composers offer them, but they only change federation addressing (`core/federation/publisher.ex:38-45`). Guests can still read such posts on this site.
+  - "Direct" is broken on top of that: it addresses nobody, and `article_addressing/2` still adds the post's boards as recipients, so a "Direct" board post reaches board followers.
+  - Fix (D1): offer only Public and Unlisted in every local composer.
+    - Enforce it at the context boundary: local `Article.changeset/2` and `Comment.changeset/2` accept only `public`/`unlisted`.
+    - Remote rows keep their derived visibility.
+  - Production had no local rows with either value on 2026-09-14 (all local articles and comments are `public`), so no data migration is needed.
+  - Evidence: `web/live/article_new_live.html.heex:367`, `web/live/article_edit_live.html.heex:193`, `web/live/article_live.html.heex:584`, `web/live/feed_live.html.heex:336`.
 - [ ] **B5. Long DM conversations lose their newest messages.** (confirmed)
   - `Messaging.list_messages/2` sorts oldest first with `limit: 100`, and nothing loads more, so after 100 messages new ones never appear.
   - Evidence: `core/messaging.ex:410-418`, `web/live/conversation_live.ex:51,212`.
@@ -72,15 +75,15 @@ Fix each bug in its own commit on `current`, with a regression test.
 
 ---
 
-## Decisions needed
+## Decisions (made 2026-09-14)
 
-- [ ] **D1. Local visibility (blocks B4).** Choose one:
-  - hide local "Followers only" / "Direct" posts on the web as well (Mastodon semantics);
-  - remove those options from board composers, since boards are public hubs, and keep them where they are really enforced (feed replies, DMs);
-  - keep them but relabel them as federation-only.
-- [ ] **D2. Scale target.** Officially single-node (document it and drop or flag `DNS_CLUSTER_QUERY`), or real multi-node support (see Operability).
-- [ ] **D3. Email.** Stay email-less by design, which needs recovery-code regeneration and an audited admin-assisted reset, or add optional SMTP for recovery and admin alerts.
-- [ ] **D4. Data export / move gate.** Keep "TOTP enabled for ≥ 7 days" (ADR 0023, ADR 0025), or add a path for members without TOTP.
+- **D1. Local post visibility.** Remove "Followers only" and "Direct" from local composers and keep Public and Unlisted.
+  - Boards are public spaces whose audience is set by the board's view role, and direct messages are the private channel.
+  - Implemented by B4.
+- **D2. Scale target: one server.** Baudrate officially supports a single node. See "Single-node stance" under Sysops.
+- **D3. Email: stay without email.** Recovery is covered by three additions instead; see "Account recovery" under Registered members.
+- **D4. Data export and move gate: keep "TOTP enabled for ≥ 7 days"** (ADR 0023, ADR 0025), and improve the path for members; see "Data export and move path" under Registered members.
+  - Accepting WebAuthn in step-up re-authentication remains a separate possible feature.
 
 ---
 
@@ -126,10 +129,17 @@ Each phase gets its own plan before work starts.
 
 ## Registered members
 
-- [ ] **Account recovery dead-end.**
-  - There's no email, and recovery codes are issued only at registration and setup, with no regeneration.
-  - Admins can't reset a password.
-  - Losing the password and the codes means losing the account (depends on D3).
+- [ ] **Account recovery (D3: no email).** Today there's no email, recovery codes are issued only at registration and setup, and admins can't reset a password, so losing both the password and the codes loses the account. Add:
+  - [ ] **Regenerate recovery codes** from `/profile`.
+    - Behind step-up re-authentication (`Auth.verify_reauthentication/5`, ADR 0022).
+    - Old codes stop working.
+    - Sends an always-delivered security notice.
+  - [ ] **Admin-assisted reset.**
+    - An admin creates a single-use reset link (24 h expiry) and hands it over through another channel.
+    - Using it sets a new password, revokes all sessions (`Auth.Sessions`), and runs `cancel_active_exports/2` and `cancel_active_moves/2`.
+    - It sends a security notice and is written to the audit log.
+    - Needs an ADR covering social-engineering risk and what happens to the account's TOTP and security keys.
+  - [ ] **Nudges:** remind users to store recovery codes and to add a second factor or security key (registration, `/profile`).
 - [ ] **Onboarding.**
   - After registering, users are sent to `/login` instead of being signed in (`web/live/register_live.ex:88`).
   - No welcome or profile-setup step, and display name isn't asked at signup.
@@ -162,7 +172,10 @@ Each phase gets its own plan before work starts.
 - [ ] **Account.**
   - No self-service account deletion.
   - No list of sessions or devices; only "sign out everywhere else".
-  - Data export and account move need TOTP for ≥ 7 days (D4).
+- [ ] **Data export and move path (D4: keep the gate).** On `/profile/export` and `/profile/move`:
+  - Explain why TOTP for 7 days is required.
+  - Link straight to TOTP setup, and show the date the member becomes eligible.
+  - Document that the operator can fulfil an export offline with `Release.export_user_data/3` (already audited) for members who can't use TOTP.
 - [ ] **`/profile` is one 887-line page** with a separate save button per section; split it into tabs or sub-pages.
 - [ ] **Privacy controls.** Only `dm_access` exists: no discoverability or indexing opt-out, no manual follower approval, no domain mute and no keyword filter.
 - [ ] **Translations.** Fill the 5 empty strings in each of zh_TW and ja_JP.
@@ -225,10 +238,15 @@ Each phase gets its own plan before work starts.
   - Telemetry feeds only the dev LiveDashboard.
   - No Prometheus or OpenTelemetry export, no error tracking, and plain-text logs rather than JSON.
 - [ ] **`/health` only runs `SELECT 1`.** Include delivery backlog, worker liveness and free disk space.
-- [ ] **Multi-node is advertised but unsafe** (depends on D2).
-  - `DeliveryWorker` has no `FOR UPDATE SKIP LOCKED`.
-  - Settings, board and domain-block caches refresh only on the local node.
+- [ ] **Single-node stance (D2).** `DNS_CLUSTER_QUERY` and `DNSCluster` suggest clustering is supported, but nothing else is multi-node safe:
+  - `DeliveryWorker` has no `SKIP LOCKED`;
+  - settings, board and domain-block caches refresh only on the local node;
   - WebAuthn challenges, download nonces, rate limits, uploads and the media cache are all per node.
+
+  To do:
+  - Remove `DNS_CLUSTER_QUERY` from `doc/sysop.md` and `config/runtime.exs`, and drop `DNSCluster` from the supervision tree and `mix.exs`.
+  - Record the single-node assumption in an ADR.
+  - Rewrite the scaling section around vertical scaling, Postgres tuning and a CDN.
 - [ ] **Delivery.**
   - Activities are enqueued in a task after the transaction commits, so a restart in between loses them (`core/federation.ex:367`).
   - Throughput is 50 jobs every 60 s at concurrency 10.
