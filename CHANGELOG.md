@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.14.3] — 2026-09-14
+
+A deployment fix. After an Erlang/OTP or Elixir version bump, the Ansible
+deploy role now rebuilds from scratch on its own.
+
+**Upgrading:**
+
+- Upgrading from v1.14.1 or earlier: install OTP 28.5.0.6 first with
+  `ansible-playbook playbooks/setup-server.yml --tags elixir`, then deploy
+  v1.14.3. You no longer need to delete `_build/prod` by hand.
+- The first deploy with this version always does one full rebuild, because
+  no toolchain stamp exists yet.
+- No migrations, no configuration changes.
+
+### Fixed
+
+- **Deploys reused build artifacts from the previous toolchain.** The deploy
+  role only removed `_build/prod/rel`, so after a `.tool-versions` bump a
+  release could include dependency BEAM files and Rust NIFs compiled by the
+  old Erlang/Elixir. The role now records `.tool-versions` in
+  `_build/prod/.tool-versions.stamp` after each successful compile. When the
+  deployed tag pins a different toolchain, or no stamp exists, it wipes
+  `_build/prod` before building. Builds on an unchanged toolchain stay
+  incremental.
+
 ## [1.14.2] — 2026-09-14
 
 A maintenance release. It updates the runtime and vendored front-end
