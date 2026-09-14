@@ -1,0 +1,241 @@
+<section
+  id="data-export-page"
+  class="data-export-page mx-auto max-w-2xl space-y-6"
+  aria-labelledby="data-export-heading"
+>
+  <h1 id="data-export-heading" class="data-export-heading text-2xl font-bold">
+    {gettext("Export Your Data")}
+  </h1>
+
+  <p id="data-export-live-status" class="data-export-live-status sr-only" role="status">
+    {@status_message}
+  </p>
+
+  <div id="data-export-intro" class="data-export-intro space-y-2 text-sm text-base-content/80">
+    <p>
+      {gettext(
+        "Download a copy of what you wrote and own on this site: your profile, articles, comments, interactions, relationships, the direct messages you sent, and your uploaded images."
+      )}
+    </p>
+    <p>
+      {gettext(
+        "To protect your account, an export becomes available 24 hours after you request it, can be downloaded for 48 hours, and at most 3 times. You will be asked for your password and authenticator code each time."
+      )}
+    </p>
+  </div>
+
+  <%!-- Eligibility --%>
+  <div
+    :if={@eligibility != :ok and is_nil(@active)}
+    id="data-export-ineligible"
+    class="data-export-ineligible alert alert-warning"
+    role="note"
+  >
+    <.icon name="hero-shield-exclamation" class="size-5 shrink-0" />
+    <div class="space-y-2">
+      <p id="data-export-ineligible-reason" class="data-export-ineligible-reason">
+        {error_message(elem(@eligibility, 1))}
+      </p>
+      <.link
+        :if={@eligibility == {:error, :totp_required}}
+        id="data-export-enable-totp"
+        navigate={~p"/profile/totp-reset"}
+        class="data-export-enable-totp btn btn-sm"
+      >
+        {gettext("Enable TOTP")}
+      </.link>
+    </div>
+  </div>
+
+  <%!-- Request --%>
+  <section
+    :if={@eligibility == :ok and is_nil(@active)}
+    id="data-export-request"
+    class="data-export-request card bg-base-200 shadow-sm"
+    aria-labelledby="data-export-request-heading"
+  >
+    <div class="card-body space-y-3">
+      <h2 id="data-export-request-heading" class="data-export-request-heading card-title text-lg">
+        {gettext("Request an export")}
+      </h2>
+      <.form
+        for={@request_form}
+        id="data-export-request-form"
+        class="data-export-request-form space-y-3"
+        phx-submit="request_export"
+      >
+        <.export_credentials prefix="export_request" totp_enabled={@totp_enabled} />
+        <button
+          id="data-export-request-submit"
+          type="submit"
+          class="data-export-request-submit btn btn-primary"
+          phx-disable-with={gettext("Requesting...")}
+        >
+          {gettext("Request data export")}
+        </button>
+      </.form>
+    </div>
+  </section>
+
+  <%!-- Active request --%>
+  <section
+    :if={@active}
+    id="data-export-active"
+    class="data-export-active card bg-base-200 shadow-sm"
+    aria-labelledby="data-export-active-heading"
+  >
+    <div class="card-body space-y-4">
+      <h2
+        id="data-export-active-heading"
+        class="data-export-active-heading card-title text-lg"
+        tabindex="-1"
+      >
+        {status_label(@active.status)}
+      </h2>
+
+      <dl class="data-export-active-details grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1 text-sm">
+        <dt class="data-export-detail-label opacity-70">{gettext("Requested")}</dt>
+        <dd id="data-export-active-requested" class="data-export-detail-value">
+          {format_datetime(@active.requested_at)}
+          <span :if={@active.requested_user_agent_family} class="opacity-70">
+            ({@active.requested_user_agent_family})
+          </span>
+        </dd>
+        <dt class="data-export-detail-label opacity-70">{gettext("Available from")}</dt>
+        <dd id="data-export-active-ready" class="data-export-detail-value">
+          {format_datetime(@active.ready_at)}
+        </dd>
+        <dt class="data-export-detail-label opacity-70">{gettext("Available until")}</dt>
+        <dd id="data-export-active-expires" class="data-export-detail-value">
+          {format_datetime(@active.expires_at)}
+        </dd>
+        <dt class="data-export-detail-label opacity-70">{gettext("Downloads left")}</dt>
+        <dd id="data-export-active-remaining" class="data-export-detail-value">
+          {DataPortability.max_downloads() - @active.download_count}
+        </dd>
+      </dl>
+
+      <%!-- Download (ready only) --%>
+      <.form
+        :if={@active.status == "ready"}
+        for={@download_form}
+        id="data-export-download-auth-form"
+        class="data-export-download-auth-form space-y-3"
+        phx-submit="authorize_download"
+      >
+        <.export_credentials prefix="export_download" totp_enabled={@totp_enabled} />
+        <button
+          id="data-export-download-submit"
+          type="submit"
+          class="data-export-download-submit btn btn-primary"
+          phx-disable-with={gettext("Preparing...")}
+        >
+          <.icon name="hero-arrow-down-tray" class="size-4" />
+          {gettext("Download")}
+        </button>
+      </.form>
+
+      <form
+        :if={@active.status == "ready"}
+        id="data-export-download-form"
+        class="hidden"
+        action={~p"/exports/#{@active.id}/download"}
+        method="post"
+        phx-trigger-action={@trigger_download}
+      >
+        <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+        <input type="hidden" name="token" value={@download_token} />
+      </form>
+
+      <div class="data-export-cancel space-y-3 border-t border-base-300 pt-4">
+        <p class="text-sm text-base-content/80">
+          {gettext(
+            "Did not request this? Cancel it and sign out of every other session, then change your password."
+          )}
+        </p>
+        <button
+          id="data-export-cancel"
+          type="button"
+          class="data-export-cancel-button btn btn-sm btn-outline"
+          phx-click="cancel_export"
+          phx-value-id={@active.id}
+          data-confirm={gettext("Cancel this data export request?")}
+        >
+          {gettext("Cancel request")}
+        </button>
+
+        <.form
+          for={@cancel_sign_out_form}
+          id="data-export-cancel-sign-out-form"
+          class="data-export-cancel-sign-out-form space-y-3"
+          phx-submit="cancel_and_sign_out"
+        >
+          <.export_credentials prefix="cancel_sign_out" totp_enabled={@totp_enabled} />
+          <button
+            id="data-export-cancel-sign-out-submit"
+            type="submit"
+            class="data-export-cancel-sign-out-submit btn btn-sm btn-warning"
+            phx-disable-with={gettext("Signing out...")}
+          >
+            {gettext("Cancel and sign out everywhere else")}
+          </button>
+        </.form>
+      </div>
+    </div>
+  </section>
+
+  <%!-- History --%>
+  <section
+    id="data-export-history"
+    class="data-export-history space-y-2"
+    aria-labelledby="data-export-history-heading"
+  >
+    <h2 id="data-export-history-heading" class="data-export-history-heading text-lg font-semibold">
+      {gettext("History")}
+    </h2>
+    <p
+      :if={@history == []}
+      id="data-export-history-empty"
+      class="data-export-history-empty text-sm text-base-content/70"
+    >
+      {gettext("No data exports yet.")}
+    </p>
+    <div :if={@history != []} class="overflow-x-auto">
+      <table id="data-export-history-table" class="data-export-history-table table table-sm">
+        <thead>
+          <tr>
+            <th scope="col">{gettext("Requested")}</th>
+            <th scope="col">{gettext("Status")}</th>
+            <th scope="col">{gettext("Downloads")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            :for={request <- @history}
+            id={"data-export-history-#{request.id}"}
+            class="data-export-history-row"
+          >
+            <td class="data-export-history-requested">{format_datetime(request.requested_at)}</td>
+            <td class="data-export-history-status">
+              {status_label(request.status)}
+              <span :if={cancel_reason_label(request.cancel_reason)} class="opacity-70">
+                ({cancel_reason_label(request.cancel_reason)})
+              </span>
+            </td>
+            <td class="data-export-history-downloads">{request.download_count}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <nav id="data-export-nav" aria-label={gettext("Data export navigation")}>
+    <.link
+      id="data-export-profile-link"
+      navigate={~p"/profile"}
+      class="data-export-profile-link link link-hover text-sm"
+    >
+      {gettext("Back to Profile")}
+    </.link>
+  </nav>
+</section>

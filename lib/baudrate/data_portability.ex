@@ -237,6 +237,15 @@ defmodule Baudrate.DataPortability do
     end
   end
 
+  @doc """
+  Returns the user's request `request_id` if it can be downloaded right now
+  (active, inside its window, under the cap), else `nil`. No
+  re-authentication and no counting. The download endpoint uses it to avoid
+  building an archive for a request that `claim_download/2` would refuse.
+  """
+  @spec fetch_downloadable(integer(), integer()) :: ExportRequest.t() | nil
+  def fetch_downloadable(user_id, request_id), do: downloadable_request(user_id, request_id)
+
   defp downloadable_request(user_id, request_id) when is_integer(request_id) do
     now = now()
 
@@ -372,6 +381,23 @@ defmodule Baudrate.DataPortability do
 
     Repo.one(
       from(r in ExportRequest, where: r.user_id == ^user_id and r.status in ^@active_statuses)
+    )
+  end
+
+  @doc """
+  Returns the user's active request for display (the warning banner) without
+  applying transitions, so it performs no writes. A request past its window is
+  treated as inactive. Returns `nil` when there is none.
+  """
+  @spec active_request_summary(integer()) :: ExportRequest.t() | nil
+  def active_request_summary(user_id) when is_integer(user_id) do
+    now = now()
+
+    Repo.one(
+      from(r in ExportRequest,
+        where: r.user_id == ^user_id and r.status in ^@active_statuses and r.expires_at > ^now,
+        limit: 1
+      )
     )
   end
 

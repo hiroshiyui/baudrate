@@ -635,6 +635,10 @@ A complete nginx configuration is provided at
   Served directly by nginx, bypassing the BEAM for better performance.
 - Upstream keepalive connections to Phoenix
 - Reverse proxy to Phoenix on port 4000
+- **Data export downloads** (`/exports/`) — unbuffered, never written to a
+  temp file, never retried or cached. Without this location nginx would buffer
+  a user's data archive to its own disk. Keep it when you customise the
+  config.
 - **Near-zero downtime deploys** — `proxy_next_upstream` retries on 502 during
   restarts (up to 30s, 3 attempts); custom 502 maintenance page as fallback
 

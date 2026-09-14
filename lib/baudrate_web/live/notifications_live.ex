@@ -115,7 +115,7 @@ defmodule BaudrateWeb.NotificationsLive do
   defp actor_link(_), do: nil
 
   defp target_link(%{article: %{slug: slug}}) when not is_nil(slug), do: ~p"/articles/#{slug}"
-  defp target_link(%{type: "data_export_" <> _}), do: "/profile/export"
+  defp target_link(%{type: "data_export_" <> _}), do: ~p"/profile/export"
   defp target_link(%{type: type}) when type in @security_types, do: ~p"/profile"
   defp target_link(_), do: nil
 

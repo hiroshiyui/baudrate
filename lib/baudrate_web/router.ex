@@ -284,6 +284,14 @@ defmodule BaudrateWeb.Router do
     post "/admin-webauthn-verify", SessionController, :admin_webauthn_verify
   end
 
+  # Data export download (ADR 0023). A single-use token from DataExportLive,
+  # checked alongside Fetch Metadata and the session in ExportController.
+  scope "/exports", BaudrateWeb do
+    pipe_through :browser
+
+    post "/:id/download", ExportController, :download
+  end
+
   # Authenticated routes (defined before public_browsable to ensure literal
   # paths like /articles/new match before wildcard /articles/:slug)
   scope "/", BaudrateWeb do
@@ -302,6 +310,7 @@ defmodule BaudrateWeb.Router do
       live "/profile", ProfileLive
       live "/profile/totp-reset", TotpResetLive
       live "/profile/password", PasswordChangeLive
+      live "/profile/export", DataExportLive
       live "/profile/recovery-codes", RecoveryCodesLive
       live "/admin/verify", AdminTotpVerifyLive
       live "/invites", UserInvitesLive

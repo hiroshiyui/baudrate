@@ -28,18 +28,18 @@ msgstr ""
 msgid "Actions"
 msgstr "操作"
 
-#: lib/baudrate_web/components/layouts.ex:431
-#: lib/baudrate_web/components/layouts.ex:441
+#: lib/baudrate_web/components/layouts.ex:476
+#: lib/baudrate_web/components/layouts.ex:486
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "正在嘗試重新連線"
 
-#: lib/baudrate_web/components/layouts.ex:438
+#: lib/baudrate_web/components/layouts.ex:483
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "發生錯誤！"
 
-#: lib/baudrate_web/components/layouts.ex:428
+#: lib/baudrate_web/components/layouts.ex:473
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "找不到網路連線"
@@ -174,10 +174,11 @@ msgstr "資料庫遷移"
 msgid "Next"
 msgstr "下一步"
 
+#: lib/baudrate_web/live/data_export_live.ex:207
 #: lib/baudrate_web/live/login_live.html.heex:26
 #: lib/baudrate_web/live/profile_live.html.heex:312
 #: lib/baudrate_web/live/profile_live.html.heex:412
-#: lib/baudrate_web/live/profile_live.html.heex:510
+#: lib/baudrate_web/live/profile_live.html.heex:525
 #: lib/baudrate_web/live/register_live.html.heex:73
 #: lib/baudrate_web/live/setup_live.html.heex:260
 #: lib/baudrate_web/live/totp_reset_live.html.heex:30
@@ -274,7 +275,7 @@ msgid "Set Up Two-Factor Authentication"
 msgstr "設定雙因素驗證"
 
 #: lib/baudrate_web/components/layouts.ex:267
-#: lib/baudrate_web/components/layouts.ex:691
+#: lib/baudrate_web/components/layouts.ex:736
 #: lib/baudrate_web/live/login_live.ex:32
 #: lib/baudrate_web/live/login_live.html.heex:2
 #: lib/baudrate_web/live/login_live.html.heex:46
@@ -350,14 +351,15 @@ msgid "Boards"
 msgstr "看板"
 
 #: lib/baudrate_web/components/layouts.ex:165
-#: lib/baudrate_web/components/layouts.ex:589
-#: lib/baudrate_web/components/layouts.ex:673
+#: lib/baudrate_web/components/layouts.ex:634
+#: lib/baudrate_web/components/layouts.ex:718
 #: lib/baudrate_web/live/board_follows_live.html.heex:8
 #: lib/baudrate_web/live/board_live.html.heex:7
 #, elixir-autogen, elixir-format
 msgid "Home"
 msgstr "首頁"
 
+#: lib/baudrate_web/live/data_export_live.html.heex:238
 #: lib/baudrate_web/live/password_change_live.html.heex:157
 #: lib/baudrate_web/live/totp_reset_live.html.heex:98
 #, elixir-autogen, elixir-format
@@ -374,9 +376,10 @@ msgstr "返回 TOTP 驗證"
 msgid "Continue"
 msgstr "繼續"
 
+#: lib/baudrate_web/live/data_export_live.ex:224
 #: lib/baudrate_web/live/password_change_live.html.heex:53
 #: lib/baudrate_web/live/profile_live.html.heex:430
-#: lib/baudrate_web/live/profile_live.html.heex:527
+#: lib/baudrate_web/live/profile_live.html.heex:542
 #: lib/baudrate_web/live/totp_reset_live.html.heex:51
 #, elixir-autogen, elixir-format
 msgid "Current TOTP Code"
@@ -390,6 +393,7 @@ msgstr "目前的 TOTP 驗證碼"
 msgid "Disabled"
 msgstr "已停用"
 
+#: lib/baudrate_web/live/data_export_live.html.heex:45
 #: lib/baudrate_web/live/profile_live.html.heex:303
 #, elixir-autogen, elixir-format
 msgid "Enable TOTP"
@@ -429,6 +433,7 @@ msgstr "輸入您的密碼以開始設定雙因素驗證。"
 msgid "I've saved my recovery codes"
 msgstr "我已儲存救援碼"
 
+#: lib/baudrate_web/live/data_export_live.ex:273
 #: lib/baudrate_web/live/password_change_live.ex:132
 #: lib/baudrate_web/live/profile_live.ex:471
 #: lib/baudrate_web/live/profile_live.ex:532
@@ -442,7 +447,7 @@ msgstr "憑證無效，請重試。"
 msgid "Lost your device? Use a recovery code"
 msgstr "遺失裝置？使用救援碼"
 
-#: lib/baudrate_web/live/profile_live.html.heex:555
+#: lib/baudrate_web/live/profile_live.html.heex:570
 #, elixir-autogen, elixir-format
 msgid "Member Since"
 msgstr "加入日期"
@@ -593,8 +598,8 @@ msgstr "頭像變更次數過多，請稍後再試。"
 
 #: lib/baudrate_web/controllers/session_controller.ex:373
 #: lib/baudrate_web/controllers/session_controller.ex:523
-#: lib/baudrate_web/live/auth_hooks.ex:247
-#: lib/baudrate_web/live/auth_hooks.ex:259
+#: lib/baudrate_web/live/auth_hooks.ex:257
+#: lib/baudrate_web/live/auth_hooks.ex:269
 #, elixir-autogen, elixir-format
 msgid "Access denied."
 msgstr "存取被拒絕。"
@@ -755,7 +760,7 @@ msgstr "您的帳號尚待審核。"
 msgid "by %{author}"
 msgstr "由 %{author} 發表"
 
-#: lib/baudrate_web/live/profile_live.html.heex:638
+#: lib/baudrate_web/live/profile_live.html.heex:653
 #, elixir-autogen, elixir-format
 msgid "Add Language"
 msgstr "新增語言"
@@ -770,12 +775,12 @@ msgstr "更新語言偏好失敗。"
 msgid "Language preferences updated."
 msgstr "語言偏好已更新。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:570
+#: lib/baudrate_web/live/profile_live.html.heex:585
 #, elixir-autogen, elixir-format
 msgid "Preferred Languages"
 msgstr "偏好語言"
 
-#: lib/baudrate_web/live/profile_live.html.heex:574
+#: lib/baudrate_web/live/profile_live.html.heex:589
 #, elixir-autogen, elixir-format
 msgid "Using browser language settings."
 msgstr "使用瀏覽器語言設定。"
@@ -1141,7 +1146,7 @@ msgid "Reason:"
 msgstr "原因："
 
 #: lib/baudrate_web/components/layouts.ex:274
-#: lib/baudrate_web/components/layouts.ex:700
+#: lib/baudrate_web/components/layouts.ex:745
 #: lib/baudrate_web/live/register_live.ex:42
 #, elixir-autogen, elixir-format
 msgid "Register"
@@ -1202,6 +1207,7 @@ msgstr "向 %{domain} 發送檢舉報告？"
 #: lib/baudrate_web/live/admin/federation_live.html.heex:47
 #: lib/baudrate_web/live/admin/invites_live.html.heex:87
 #: lib/baudrate_web/live/admin/users_live.html.heex:168
+#: lib/baudrate_web/live/data_export_live.html.heex:208
 #: lib/baudrate_web/live/user_invites_live.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "Status"
@@ -1353,8 +1359,8 @@ msgstr "儲存變更"
 
 #: lib/baudrate_web/components/layouts.ex:185
 #: lib/baudrate_web/components/layouts.ex:264
-#: lib/baudrate_web/components/layouts.ex:607
-#: lib/baudrate_web/components/layouts.ex:682
+#: lib/baudrate_web/components/layouts.ex:652
+#: lib/baudrate_web/components/layouts.ex:727
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:26
 #: lib/baudrate_web/live/board_follows_live.html.heex:99
 #: lib/baudrate_web/live/search_live.ex:59
@@ -1651,12 +1657,12 @@ msgstr "無法刪除含有子看板的看板。"
 msgid "Change role for %{username}"
 msgstr "更改 %{username} 的角色"
 
-#: lib/baudrate_web/components/layouts.ex:565
+#: lib/baudrate_web/components/layouts.ex:610
 #, elixir-autogen, elixir-format
 msgid "Dark theme"
 msgstr "深色主題"
 
-#: lib/baudrate_web/components/layouts.ex:554
+#: lib/baudrate_web/components/layouts.ex:599
 #, elixir-autogen, elixir-format
 msgid "Light theme"
 msgstr "淺色主題"
@@ -1666,7 +1672,7 @@ msgstr "淺色主題"
 msgid "Open navigation menu"
 msgstr "開啟導覽選單"
 
-#: lib/baudrate_web/components/layouts.ex:543
+#: lib/baudrate_web/components/layouts.ex:588
 #, elixir-autogen, elixir-format
 msgid "System theme"
 msgstr "系統主題"
@@ -1807,6 +1813,7 @@ msgid "Dismiss Report"
 msgstr "駁回檢舉"
 
 #: lib/baudrate_web/live/admin/invites_live.html.heex:116
+#: lib/baudrate_web/live/data_export_live.ex:308
 #: lib/baudrate_web/live/user_invites_live.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "Expired"
@@ -2123,6 +2130,7 @@ msgstr "簽名檔已更新。"
 msgid "These codes are the only way to recover your account if you lose your password. Each code can only be used once. Store them in a safe place."
 msgstr "這些救援碼是您忘記密碼時恢復帳號的唯一方式。每個救援碼只能使用一次，請妥善保管。"
 
+#: lib/baudrate_web/live/data_export_live.ex:265
 #: lib/baudrate_web/live/password_change_live.ex:115
 #: lib/baudrate_web/live/password_reset_live.ex:46
 #: lib/baudrate_web/live/profile_live.ex:456
@@ -2217,7 +2225,7 @@ msgstr "置頂"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:182
 #: lib/baudrate_web/live/profile_live.html.heex:375
-#: lib/baudrate_web/live/profile_live.html.heex:617
+#: lib/baudrate_web/live/profile_live.html.heex:632
 #, elixir-autogen, elixir-format
 msgid "Remove"
 msgstr "移除"
@@ -2521,12 +2529,12 @@ msgstr "TOTP 設定"
 msgid "TOTP Verification"
 msgstr "TOTP 驗證"
 
-#: lib/baudrate_web/components/layouts.ex:481
+#: lib/baudrate_web/components/layouts.ex:526
 #, elixir-autogen, elixir-format
 msgid "Decrease font size"
 msgstr "縮小字體"
 
-#: lib/baudrate_web/components/layouts.ex:490
+#: lib/baudrate_web/components/layouts.ex:535
 #, elixir-autogen, elixir-format
 msgid "Increase font size"
 msgstr "放大字體"
@@ -2536,12 +2544,12 @@ msgstr "放大字體"
 msgid "Avatar preview"
 msgstr "頭像預覽"
 
-#: lib/baudrate_web/components/layouts.ex:474
+#: lib/baudrate_web/components/layouts.ex:519
 #, elixir-autogen, elixir-format
 msgid "Font size"
 msgstr "字體大小"
 
-#: lib/baudrate_web/components/layouts.ex:532
+#: lib/baudrate_web/components/layouts.ex:577
 #: lib/baudrate_web/live/admin/settings_live.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Theme"
@@ -2613,6 +2621,7 @@ msgid "Editor"
 msgstr "編輯者"
 
 #: lib/baudrate_web/live/article_live.html.heex:380
+#: lib/baudrate_web/live/data_export_live.html.heex:194
 #, elixir-autogen, elixir-format
 msgid "History"
 msgstr "紀錄"
@@ -2673,12 +2682,12 @@ msgstr "%{count} 小時前"
 msgid "%{count}m ago"
 msgstr "%{count} 分鐘前"
 
-#: lib/baudrate_web/live/profile_live.html.heex:679
+#: lib/baudrate_web/live/profile_live.html.heex:694
 #, elixir-autogen, elixir-format
 msgid "Anyone"
 msgstr "任何人"
 
-#: lib/baudrate_web/live/profile_live.html.heex:689
+#: lib/baudrate_web/live/profile_live.html.heex:704
 #, elixir-autogen, elixir-format
 msgid "Controls who can send you direct messages."
 msgstr "設定誰可以傳送私訊給您。"
@@ -2698,7 +2707,7 @@ msgstr "私訊權限設定已更新。"
 msgid "Delete this message?"
 msgstr "刪除此訊息？"
 
-#: lib/baudrate_web/live/profile_live.html.heex:669
+#: lib/baudrate_web/live/profile_live.html.heex:684
 #, elixir-autogen, elixir-format
 msgid "Direct Messages"
 msgstr "私訊"
@@ -2731,7 +2740,7 @@ msgstr "更新私訊權限設定失敗。"
 #: lib/baudrate_web/live/article_new_live.html.heex:367
 #: lib/baudrate_web/live/board_follows_live.html.heex:49
 #: lib/baudrate_web/live/feed_live.html.heex:336
-#: lib/baudrate_web/live/profile_live.html.heex:682
+#: lib/baudrate_web/live/profile_live.html.heex:697
 #, elixir-autogen, elixir-format
 msgid "Followers only"
 msgstr "僅追蹤者"
@@ -2743,7 +2752,7 @@ msgid "Message"
 msgstr "訊息"
 
 #: lib/baudrate_web/components/layouts.ex:195
-#: lib/baudrate_web/components/layouts.ex:625
+#: lib/baudrate_web/components/layouts.ex:670
 #: lib/baudrate_web/live/conversation_live.html.heex:128
 #: lib/baudrate_web/live/conversations_live.ex:35
 #: lib/baudrate_web/live/conversations_live.html.heex:9
@@ -2769,7 +2778,7 @@ msgstr "尚無訊息。"
 msgid "No messages yet. Send the first one!"
 msgstr "尚無訊息，傳送第一則吧！"
 
-#: lib/baudrate_web/live/profile_live.html.heex:685
+#: lib/baudrate_web/live/profile_live.html.heex:700
 #, elixir-autogen, elixir-format
 msgid "Nobody"
 msgstr "不允許任何人"
@@ -2799,7 +2808,7 @@ msgstr "訊息傳送過於頻繁，請稍後再試。"
 msgid "Type a message..."
 msgstr "輸入訊息⋯⋯"
 
-#: lib/baudrate_web/live/profile_live.html.heex:676
+#: lib/baudrate_web/live/profile_live.html.heex:691
 #, elixir-autogen, elixir-format
 msgid "Who can send you direct messages"
 msgstr "誰可以傳送私訊給您"
@@ -2903,18 +2912,18 @@ msgstr "靜音 %{username}"
 msgid "Mute this user? Their content will be hidden from your view."
 msgstr "確定要靜音此使用者？其發佈的內容將會從您的檢視中隱藏。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:810
+#: lib/baudrate_web/live/profile_live.html.heex:825
 #, elixir-autogen, elixir-format
 msgid "Muted Users"
 msgstr "已靜音的使用者"
 
-#: lib/baudrate_web/live/profile_live.html.heex:816
+#: lib/baudrate_web/live/profile_live.html.heex:831
 #, elixir-autogen, elixir-format
 msgid "No muted users."
 msgstr "沒有已靜音的使用者。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:844
-#: lib/baudrate_web/live/profile_live.html.heex:846
+#: lib/baudrate_web/live/profile_live.html.heex:859
+#: lib/baudrate_web/live/profile_live.html.heex:861
 #: lib/baudrate_web/live/user_profile_live.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Unmute"
@@ -3619,7 +3628,7 @@ msgid "You haven't followed anyone yet."
 msgstr "您還沒有追蹤任何人。"
 
 #: lib/baudrate_web/components/layouts.ex:175
-#: lib/baudrate_web/components/layouts.ex:598
+#: lib/baudrate_web/components/layouts.ex:643
 #: lib/baudrate_web/live/feed_live.ex:46
 #: lib/baudrate_web/live/feed_live.html.heex:3
 #: lib/baudrate_web/live/feed_live.html.heex:15
@@ -3954,7 +3963,7 @@ msgstr "找不到文章。"
 msgid "Comment not found."
 msgstr "找不到留言。"
 
-#: lib/baudrate_web/live/auth_hooks.ex:187
+#: lib/baudrate_web/live/auth_hooks.ex:197
 #: lib/baudrate_web/plugs/rate_limit.ex:99
 #, elixir-autogen, elixir-format
 msgid "Too many requests. Please try again later."
@@ -4049,7 +4058,7 @@ msgid_plural "%{count} unread notifications"
 msgstr[0] "%{count} 則未讀通知"
 
 #: lib/baudrate_web/components/layouts.ex:223
-#: lib/baudrate_web/components/layouts.ex:653
+#: lib/baudrate_web/components/layouts.ex:698
 #: lib/baudrate_web/live/notifications_live.ex:33
 #: lib/baudrate_web/live/notifications_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -4129,17 +4138,17 @@ msgstr "提交了檢舉報告"
 msgid "Failed to update notification preferences."
 msgstr "更新通知偏好設定失敗。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:741
+#: lib/baudrate_web/live/profile_live.html.heex:756
 #, elixir-autogen, elixir-format
 msgid "Notification Preferences"
 msgstr "通知偏好設定"
 
-#: lib/baudrate_web/live/profile_live.html.heex:703
+#: lib/baudrate_web/live/profile_live.html.heex:718
 #, elixir-autogen, elixir-format
 msgid "Browser Push Notifications"
 msgstr "瀏覽器推播通知"
 
-#: lib/baudrate_web/live/profile_live.html.heex:744
+#: lib/baudrate_web/live/profile_live.html.heex:759
 #, elixir-autogen, elixir-format
 msgid "Choose which notifications you receive."
 msgstr "選擇要接收哪些通知。"
@@ -4149,12 +4158,12 @@ msgstr "選擇要接收哪些通知。"
 msgid "Configured"
 msgstr "已設定"
 
-#: lib/baudrate_web/live/profile_live.html.heex:713
+#: lib/baudrate_web/live/profile_live.html.heex:728
 #, elixir-autogen, elixir-format
 msgid "Disable Push"
 msgstr "停用推播"
 
-#: lib/baudrate_web/live/profile_live.html.heex:722
+#: lib/baudrate_web/live/profile_live.html.heex:737
 #, elixir-autogen, elixir-format
 msgid "Enable Push"
 msgstr "啟用推播"
@@ -4169,7 +4178,7 @@ msgstr "啟用推播通知失敗。"
 msgid "Generate VAPID Keys"
 msgstr "產生 VAPID 金鑰"
 
-#: lib/baudrate_web/live/profile_live.html.heex:751
+#: lib/baudrate_web/live/profile_live.html.heex:766
 #, elixir-autogen, elixir-format
 msgid "In-App"
 msgstr "應用程式內"
@@ -4179,7 +4188,7 @@ msgstr "應用程式內"
 msgid "Public Key"
 msgstr "公鑰"
 
-#: lib/baudrate_web/live/profile_live.html.heex:752
+#: lib/baudrate_web/live/profile_live.html.heex:767
 #, elixir-autogen, elixir-format
 msgid "Push"
 msgstr "推播"
@@ -4189,7 +4198,7 @@ msgstr "推播"
 msgid "Push notification permission was denied by the browser."
 msgstr "瀏覽器拒絕了推播通知權限。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:727
+#: lib/baudrate_web/live/profile_live.html.heex:742
 #, elixir-autogen, elixir-format
 msgid "Push notifications are not supported by this browser."
 msgstr "此瀏覽器不支援推播通知。"
@@ -4209,7 +4218,7 @@ msgstr "推播通知已啟用。"
 msgid "This will generate new VAPID keys. Existing push subscriptions will stop working. Continue?"
 msgstr "這將產生新的 VAPID 金鑰。現有的推播訂閱將會失效。確定要繼續嗎？"
 
-#: lib/baudrate_web/live/profile_live.html.heex:750
+#: lib/baudrate_web/live/profile_live.html.heex:765
 #, elixir-autogen, elixir-format
 msgid "Type"
 msgstr "類型"
@@ -4810,12 +4819,12 @@ msgstr "投票中..."
 msgid "Image %{number} (opens in new tab)"
 msgstr "圖片 %{number}（在新分頁中開啟）"
 
-#: lib/baudrate_web/live/profile_live.html.heex:607
+#: lib/baudrate_web/live/profile_live.html.heex:622
 #, elixir-autogen, elixir-format
 msgid "Move %{locale} down"
 msgstr "將 %{locale} 下移"
 
-#: lib/baudrate_web/live/profile_live.html.heex:596
+#: lib/baudrate_web/live/profile_live.html.heex:611
 #, elixir-autogen, elixir-format
 msgid "Move %{locale} up"
 msgstr "將 %{locale} 上移"
@@ -4960,12 +4969,12 @@ msgstr "取消並返回首頁"
 msgid "For security, please re-enter your TOTP code to access admin functions."
 msgstr "為了安全起見，請重新輸入 TOTP 驗證碼以存取管理功能。"
 
-#: lib/baudrate_web/live/auth_hooks.ex:216
+#: lib/baudrate_web/live/auth_hooks.ex:226
 #, elixir-autogen, elixir-format
 msgid "TOTP must be configured before accessing admin pages."
 msgstr "在存取管理頁面之前必須設定 TOTP。"
 
-#: lib/baudrate_web/components/layouts.ex:582
+#: lib/baudrate_web/components/layouts.ex:627
 #, elixir-autogen, elixir-format
 msgid "Mobile navigation"
 msgstr "行動導覽列"
@@ -5609,7 +5618,7 @@ msgstr "此瀏覽器不支援 WebAuthn。"
 msgid "or"
 msgstr "或"
 
-#: lib/baudrate_web/components/layouts.ex:401
+#: lib/baudrate_web/components/layouts.ex:402
 #, elixir-autogen, elixir-format
 msgid "Scroll to top"
 msgstr "回到頂部"
@@ -5714,8 +5723,8 @@ msgstr[0] "共 %{count} 筆結果"
 msgid "Page %{page} of %{total_pages} — %{count} results total"
 msgstr "第 %{page} / %{total_pages} 頁 — 共 %{count} 筆結果"
 
-#: lib/baudrate_web/components/layouts.ex:514
-#: lib/baudrate_web/components/layouts.ex:515
+#: lib/baudrate_web/components/layouts.ex:559
+#: lib/baudrate_web/components/layouts.ex:560
 #, elixir-autogen, elixir-format
 msgid "Share this page"
 msgstr "分享此頁面"
@@ -5926,7 +5935,7 @@ msgstr "處理人：%{name}"
 msgid "Handled by %{name} — %{note}"
 msgstr "處理人：%{name} — %{note}"
 
-#: lib/baudrate_web/live/profile_live.html.heex:774
+#: lib/baudrate_web/live/profile_live.html.heex:789
 #, elixir-autogen, elixir-format
 msgid "In-App: %{type}"
 msgstr "應用程式內：%{type}"
@@ -5954,7 +5963,7 @@ msgstr "符合的看板"
 msgid "Matching users"
 msgstr "符合的使用者"
 
-#: lib/baudrate_web/components/layouts.ex:619
+#: lib/baudrate_web/components/layouts.ex:664
 #, elixir-autogen, elixir-format
 msgid "Messages, %{count} unread"
 msgid_plural "Messages, %{count} unread"
@@ -5991,7 +6000,7 @@ msgstr[0] "新通知。%{count} 則未讀通知"
 msgid "Note"
 msgstr "貼文"
 
-#: lib/baudrate_web/components/layouts.ex:647
+#: lib/baudrate_web/components/layouts.ex:692
 #, elixir-autogen, elixir-format
 msgid "Notifications, %{count} unread"
 msgid_plural "Notifications, %{count} unread"
@@ -6017,7 +6026,7 @@ msgstr "待處理 — 取消追蹤請求"
 msgid "Person"
 msgstr "個人"
 
-#: lib/baudrate_web/live/profile_live.html.heex:791
+#: lib/baudrate_web/live/profile_live.html.heex:806
 #, elixir-autogen, elixir-format
 msgid "Push: %{type}"
 msgstr "推播：%{type}"
@@ -6151,6 +6160,7 @@ msgstr "若要新增或移除安全金鑰，請確認您的密碼和目前的 TO
 msgid "To add or remove security keys, confirm your password."
 msgstr "若要新增或移除安全金鑰，請確認您的密碼。"
 
+#: lib/baudrate_web/live/data_export_live.ex:269
 #: lib/baudrate_web/live/password_change_live.ex:123
 #: lib/baudrate_web/live/profile_live.ex:463
 #: lib/baudrate_web/live/profile_live.ex:524
@@ -6269,17 +6279,17 @@ msgstr[0] "密碼已變更。已登出 %{count} 個其他工作階段。"
 msgid "Please fix the problems with the new password."
 msgstr "請修正新密碼的問題。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:491
+#: lib/baudrate_web/live/profile_live.html.heex:506
 #, elixir-autogen, elixir-format
 msgid "Sessions"
 msgstr "工作階段"
 
-#: lib/baudrate_web/live/profile_live.html.heex:548
+#: lib/baudrate_web/live/profile_live.html.heex:563
 #, elixir-autogen, elixir-format
 msgid "Sign Out Everywhere Else"
 msgstr "登出其他所有裝置"
 
-#: lib/baudrate_web/live/profile_live.html.heex:494
+#: lib/baudrate_web/live/profile_live.html.heex:509
 #, elixir-autogen, elixir-format
 msgid "Sign out of every other browser or device where your account is signed in. This one stays signed in."
 msgstr "登出您帳號在其他所有瀏覽器或裝置上的登入。目前這個工作階段會保持登入。"
@@ -6290,7 +6300,8 @@ msgid "Signed out %{count} other session."
 msgid_plural "Signed out %{count} other sessions."
 msgstr[0] "已登出 %{count} 個其他工作階段。"
 
-#: lib/baudrate_web/live/profile_live.html.heex:545
+#: lib/baudrate_web/live/data_export_live.html.heex:178
+#: lib/baudrate_web/live/profile_live.html.heex:560
 #, elixir-autogen, elixir-format
 msgid "Signing out..."
 msgstr "登出中..."
@@ -6300,6 +6311,7 @@ msgstr "登出中..."
 msgid "Your account password was changed."
 msgstr "您的帳號密碼已變更。"
 
+#: lib/baudrate_web/live/data_export_live.ex:299
 #: lib/baudrate_web/live/password_change_live.ex:72
 #: lib/baudrate_web/live/profile_live.ex:537
 #, elixir-autogen, elixir-format
@@ -6400,3 +6412,243 @@ msgstr "包含："
 #, elixir-autogen, elixir-format
 msgid "Not included:"
 msgstr "不包含："
+
+#: lib/baudrate_web/components/layouts.ex:428
+#, elixir-autogen, elixir-format
+msgid "A data export of your account is in progress"
+msgstr "您的帳號有一筆資料匯出正在進行中"
+
+#: lib/baudrate_web/controllers/export_controller.ex:146
+#, elixir-autogen, elixir-format
+msgid "Another data export is being prepared. Please try again in a minute."
+msgstr "目前正在準備另一筆資料匯出，請稍候一分鐘再試。"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:104
+#, elixir-autogen, elixir-format
+msgid "Available from"
+msgstr "可下載時間"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:108
+#, elixir-autogen, elixir-format
+msgid "Available until"
+msgstr "下載期限"
+
+#: lib/baudrate_web/live/data_export_live.ex:293
+#, elixir-autogen, elixir-format
+msgid "Bot accounts cannot export data."
+msgstr "機器人帳號無法匯出資料。"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:180
+#, elixir-autogen, elixir-format
+msgid "Cancel and sign out everywhere else"
+msgstr "取消並登出其他所有裝置"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:164
+#, elixir-autogen, elixir-format
+msgid "Cancel request"
+msgstr "取消申請"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:162
+#, elixir-autogen, elixir-format
+msgid "Cancel this data export request?"
+msgstr "要取消這筆資料匯出申請嗎？"
+
+#: lib/baudrate_web/live/data_export_live.ex:307
+#, elixir-autogen, elixir-format
+msgid "Cancelled"
+msgstr "已取消"
+
+#: lib/baudrate_web/live/data_export_live.ex:306
+#, elixir-autogen, elixir-format
+msgid "Completed"
+msgstr "已完成"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:232
+#, elixir-autogen, elixir-format
+msgid "Data export navigation"
+msgstr "資料匯出導覽"
+
+#: lib/baudrate_web/live/data_export_live.ex:93
+#, elixir-autogen, elixir-format
+msgid "Data export request cancelled."
+msgstr "資料匯出申請已取消。"
+
+#: lib/baudrate_web/live/data_export_live.ex:74
+#, elixir-autogen, elixir-format
+msgid "Data export requested. You can download it after %{time}."
+msgstr "已申請資料匯出，可在 %{time} 之後下載。"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:152
+#, elixir-autogen, elixir-format
+msgid "Did not request this? Cancel it and sign out of every other session, then change your password."
+msgstr "不是您申請的嗎？請取消並登出其他所有工作階段，然後變更密碼。"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:134
+#, elixir-autogen, elixir-format
+msgid "Download"
+msgstr "下載"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:16
+#, elixir-autogen, elixir-format
+msgid "Download a copy of what you wrote and own on this site: your profile, articles, comments, interactions, relationships, the direct messages you sent, and your uploaded images."
+msgstr "下載您在本站撰寫與擁有的內容副本：個人資料、文章、留言、互動、人際關係、您傳送的私人訊息，以及您上傳的圖片。"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:209
+#, elixir-autogen, elixir-format
+msgid "Downloads"
+msgstr "下載次數"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:112
+#, elixir-autogen, elixir-format
+msgid "Downloads left"
+msgstr "剩餘下載次數"
+
+#: lib/baudrate_web/live/data_export_live.ex:282
+#, elixir-autogen, elixir-format
+msgid "Enable two-factor authentication (TOTP) to export your data."
+msgstr "請先啟用雙因素驗證（TOTP）才能匯出資料。"
+
+#: lib/baudrate_web/live/data_export_live.ex:40
+#: lib/baudrate_web/live/data_export_live.html.heex:7
+#: lib/baudrate_web/live/profile_live.html.heex:495
+#, elixir-autogen, elixir-format
+msgid "Export Your Data"
+msgstr "匯出您的資料"
+
+#: lib/baudrate_web/live/data_export_live.ex:128
+#, elixir-autogen, elixir-format
+msgid "Export cancelled and %{count} other session signed out. Consider changing your password."
+msgid_plural "Export cancelled and %{count} other sessions signed out. Consider changing your password."
+msgstr[0] "已取消匯出，並登出 %{count} 個其他工作階段。建議您變更密碼。"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:201
+#, elixir-autogen, elixir-format
+msgid "No data exports yet."
+msgstr "目前沒有資料匯出紀錄。"
+
+#: lib/baudrate_web/live/data_export_live.ex:296
+#, elixir-autogen, elixir-format
+msgid "Only active accounts can export data. Please contact an administrator."
+msgstr "只有正常狀態的帳號可以匯出資料，請聯絡管理員。"
+
+#: lib/baudrate_web/live/data_export_live.ex:178
+#, elixir-autogen, elixir-format
+msgid "Preparing your data export. The download will start shortly."
+msgstr "正在準備您的資料匯出，下載即將開始。"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:131
+#, elixir-autogen, elixir-format
+msgid "Preparing..."
+msgstr "準備中..."
+
+#: lib/baudrate_web/live/data_export_live.ex:305
+#, elixir-autogen, elixir-format
+msgid "Ready to download"
+msgstr "可以下載"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:59
+#, elixir-autogen, elixir-format
+msgid "Request an export"
+msgstr "申請匯出"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:74
+#, elixir-autogen, elixir-format
+msgid "Request data export"
+msgstr "申請資料匯出"
+
+#: lib/baudrate_web/live/data_export_live.ex:96
+#, elixir-autogen, elixir-format
+msgid "Request not found."
+msgstr "找不到該申請。"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:97
+#: lib/baudrate_web/live/data_export_live.html.heex:207
+#, elixir-autogen, elixir-format
+msgid "Requested"
+msgstr "申請時間"
+
+#: lib/baudrate_web/components/layouts.ex:432
+#, elixir-autogen, elixir-format
+msgid "Requested %{time} from %{browser}. If this was not you, cancel it now."
+msgstr "於 %{time} 從 %{browser} 申請。若不是您本人，請立即取消。"
+
+#: lib/baudrate_web/components/layouts.ex:437
+#, elixir-autogen, elixir-format
+msgid "Requested %{time}. If this was not you, cancel it now."
+msgstr "於 %{time} 申請。若不是您本人，請立即取消。"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:72
+#, elixir-autogen, elixir-format
+msgid "Requesting..."
+msgstr "申請中..."
+
+#: lib/baudrate_web/components/layouts.ex:448
+#, elixir-autogen, elixir-format
+msgid "Review"
+msgstr "檢視"
+
+#: lib/baudrate_web/controllers/export_controller.ex:158
+#, elixir-autogen, elixir-format
+msgid "The data export could not be prepared. Please try again later."
+msgstr "無法準備資料匯出，請稍後再試。"
+
+#: lib/baudrate_web/live/data_export_live.ex:301
+#, elixir-autogen, elixir-format
+msgid "The data export is not available."
+msgstr "目前無法使用資料匯出。"
+
+#: lib/baudrate_web/live/data_export_live.html.heex:21
+#, elixir-autogen, elixir-format
+msgid "To protect your account, an export becomes available 24 hours after you request it, can be downloaded for 48 hours, and at most 3 times. You will be asked for your password and authenticator code each time."
+msgstr "為了保護您的帳號，匯出會在申請 24 小時後才可下載，下載期限為 48 小時，最多 3 次。每次都需要輸入密碼與驗證器代碼。"
+
+#: lib/baudrate_web/live/data_export_live.ex:286
+#, elixir-autogen, elixir-format
+msgid "Two-factor authentication must be enabled for 7 days first. You can export in %{count} day."
+msgid_plural "Two-factor authentication must be enabled for 7 days first. You can export in %{count} days."
+msgstr[0] "雙因素驗證需先啟用滿 7 天。您可以在 %{count} 天後匯出。"
+
+#: lib/baudrate_web/live/data_export_live.ex:304
+#, elixir-autogen, elixir-format
+msgid "Waiting"
+msgstr "等待中"
+
+#: lib/baudrate_web/live/data_export_live.ex:276
+#, elixir-autogen, elixir-format
+msgid "You already have a data export request in progress."
+msgstr "您已經有一筆進行中的資料匯出申請。"
+
+#: lib/baudrate_web/live/data_export_live.ex:279
+#, elixir-autogen, elixir-format
+msgid "You can request at most 2 data exports per week. Please try again later."
+msgstr "每週最多只能申請 2 次資料匯出，請稍後再試。"
+
+#: lib/baudrate_web/live/profile_live.html.heex:487
+#, elixir-autogen, elixir-format
+msgid "Your Data"
+msgstr "您的資料"
+
+#: lib/baudrate_web/live/data_export_live.ex:315
+#, elixir-autogen, elixir-format
+msgid "account suspended"
+msgstr "帳號已停權"
+
+#: lib/baudrate_web/live/data_export_live.ex:312
+#, elixir-autogen, elixir-format
+msgid "by you"
+msgstr "由您取消"
+
+#: lib/baudrate_web/live/data_export_live.ex:313
+#, elixir-autogen, elixir-format
+msgid "password changed"
+msgstr "密碼已變更"
+
+#: lib/baudrate_web/live/data_export_live.ex:316
+#, elixir-autogen, elixir-format
+msgid "signed out everywhere"
+msgstr "已登出所有裝置"
+
+#: lib/baudrate_web/live/data_export_live.ex:314
+#, elixir-autogen, elixir-format
+msgid "two-factor authentication changed"
+msgstr "雙因素驗證已變更"

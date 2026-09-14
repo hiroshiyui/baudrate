@@ -69,6 +69,11 @@ defmodule BaudrateWeb.AuthHooks do
               |> assign(:locale, locale)
               |> assign(:unread_dm_count, Messaging.unread_count(user))
               |> assign(:unread_notification_count, Notification.unread_count(user.id))
+              # Warning banner while a data export request is pending/ready (ADR 0023).
+              |> assign(
+                :active_data_export,
+                Baudrate.DataPortability.active_request_summary(user.id)
+              )
               |> MarkdownPreviewHook.attach()
               |> UnreadDmCountHook.attach(user)
               |> UnreadNotificationCountHook.attach(user)
@@ -103,6 +108,11 @@ defmodule BaudrateWeb.AuthHooks do
               |> assign(:locale, locale)
               |> assign(:unread_dm_count, Messaging.unread_count(user))
               |> assign(:unread_notification_count, Notification.unread_count(user.id))
+              # Warning banner while a data export request is pending/ready (ADR 0023).
+              |> assign(
+                :active_data_export,
+                Baudrate.DataPortability.active_request_summary(user.id)
+              )
               |> MarkdownPreviewHook.attach()
               |> UnreadDmCountHook.attach(user)
               |> UnreadNotificationCountHook.attach(user)

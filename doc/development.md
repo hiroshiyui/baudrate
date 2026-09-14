@@ -1206,6 +1206,28 @@ payload is rendered in the recipient's preferred locale and links to
 - `lib/baudrate/notification/pubsub.ex` — PubSub broadcast helpers
 - `lib/baudrate_web/live/notifications_live.ex` — paginated notification center with mark-read
 
+### Data Export
+
+Self-service download of a user's own data, designed against data leakage
+([ADR 0023](adr/0023-data-export-threat-model.md)). `Baudrate.DataPortability`
+holds every rule; the web layer only collects credentials.
+
+| Piece | Responsibility |
+|-------|----------------|
+| `DataPortability` | Eligibility (active, non-bot, TOTP ≥ 7 days); `request_export/3` and `authorize_download/4` with step-up re-authentication inside the context; 24 h cooling-off, 48 h window, 3 downloads (`claim_download/2`, one conditional `UPDATE … RETURNING`); `cancel_export/3`, `cancel_active_exports/2`; `sweep_transitions/1` (hourly + before reads, notices exactly once) |
+| `DataPortability.ExportRequest` | `export_requests` rows: request records only, never an archive. A partial unique index allows one active request per user. Stores a browser family, never an IP |
+| `DataPortability.Collector` | Allow-list serializers and the viewer-gated board predicate. Own articles live or self-deleted (`deleted_by_id`); other people's content as URIs; the user's own DMs only; no active invite codes |
+| `DataPortability.Files` | Rebuilds media paths from a strict hex filename (ignores `storage_path`), resolves the symlinked uploads root, and rejects any symlinked component |
+| `DataPortability.Archive` | Builds at download time under `pg_try_advisory_xact_lock`, with a deadline, `statement_timeout` and size cap. `0700` staging and a `0600` zip in `System.tmp_dir!()`; JSON + README only; `sweep_temp/0` removes leftovers |
+| `DataPortability.DownloadNonces` | ETS single-use nonces for download tokens (per node, 90 s) |
+| `DataExportLive` (`/profile/export`) | Eligibility, request, cancel, "cancel and sign out everywhere else", download (re-auth → token → `phx-trigger-action`), history |
+| `ExportController` (`POST /exports/:id/download`) | Fetch Metadata (`same-origin`/`navigate`/`document`), session-bound 60 s token, nonce consumed once, then build → claim → `send_file` with `attachment`/`no-store`/`nosniff` and cleanup. Any other failure is the same 404; a busy slot is 503 + `Retry-After` |
+| `Layouts.data_export_banner/1` | Warning on every page while a request is pending/ready (`AuthHooks` assigns `:active_data_export`) |
+
+Security notices `data_export_requested`, `_ready`, `_downloaded` and
+`_cancelled` are always delivered. The acceptance gate is the canary test in
+`test/baudrate/data_portability/archive_test.exs`.
+
 ### Bookmarks
 
 Users can bookmark articles or comments for later reference. Bookmarks are
@@ -1811,7 +1833,8 @@ Baudrate.Supervisor (one_for_one)
 ├── Baudrate.Repo                      # Ecto database connection pool
 ├── DNSCluster                         # DNS-based cluster discovery
 ├── Phoenix.PubSub                     # PubSub for LiveView
-├── Baudrate.Auth.SessionCleaner       # Hourly cleanup (sessions, login attempts, orphan images)
+├── Baudrate.Auth.SessionCleaner       # Hourly cleanup (sessions, login attempts, orphan images, export requests/temp)
+├── Baudrate.DataPortability.DownloadNonces # ETS single-use nonces for data export download tokens
 ├── Baudrate.Setup.SettingsCache       # ETS cache for site settings (must start before DomainBlockCache)
 ├── Baudrate.Content.BoardCache        # ETS cache for board lookups (by ID, slug, hierarchy)
 ├── Baudrate.Federation.TaskSupervisor # Async federation delivery tasks

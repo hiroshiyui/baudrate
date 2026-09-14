@@ -482,6 +482,21 @@
         </form>
       </section>
 
+      <div id="profile-data-export">
+        <div class="profile-field-label text-sm text-base-content/70">
+          {gettext("Your Data")}
+        </div>
+        <div class="profile-field-value">
+          <.link
+            id="profile-data-export-link"
+            navigate={~p"/profile/export"}
+            class="profile-data-export-link btn btn-sm btn-outline"
+          >
+            {gettext("Export Your Data")}
+          </.link>
+        </div>
+      </div>
+
       <%!-- Sessions section --%>
       <section id="profile-sessions" aria-labelledby="profile-sessions-heading">
         <h2

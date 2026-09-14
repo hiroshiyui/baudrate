@@ -381,6 +381,7 @@ defmodule BaudrateWeb.Layouts do
       class="layout-main flex-1 px-4 pt-6 pb-24 lg:pt-10 lg:pb-20 sm:px-6 lg:px-8 outline-none"
     >
       <div class={["mx-auto space-y-4", if(assigns[:wide_layout], do: "max-w-7xl", else: "max-w-6xl")]}>
+        <.data_export_banner :if={assigns[:active_data_export]} request={@active_data_export} />
         {@inner_content}
       </div>
     </main>
@@ -403,6 +404,50 @@ defmodule BaudrateWeb.Layouts do
     >
       <.icon name="hero-arrow-up-solid" class="size-6" />
     </button>
+    """
+  end
+
+  @doc """
+  Warning shown on every page while the current user has a pending or ready
+  data export request (ADR 0023). It cannot be dismissed and names the
+  requesting browser family, so a user whose account was compromised notices
+  the request during the 24-hour wait and can cancel it.
+  """
+  attr :request, :map, required: true
+
+  def data_export_banner(assigns) do
+    ~H"""
+    <aside
+      id="data-export-banner"
+      class="data-export-banner alert alert-warning"
+      aria-labelledby="data-export-banner-heading"
+    >
+      <.icon name="hero-shield-exclamation" class="size-5 shrink-0" />
+      <div class="min-w-0 space-y-1">
+        <h2 id="data-export-banner-heading" class="data-export-banner-heading font-semibold">
+          {gettext("A data export of your account is in progress")}
+        </h2>
+        <p id="data-export-banner-text" class="data-export-banner-text text-sm break-words">
+          <%= if @request.requested_user_agent_family do %>
+            {gettext("Requested %{time} from %{browser}. If this was not you, cancel it now.",
+              time: format_datetime(@request.requested_at),
+              browser: @request.requested_user_agent_family
+            )}
+          <% else %>
+            {gettext("Requested %{time}. If this was not you, cancel it now.",
+              time: format_datetime(@request.requested_at)
+            )}
+          <% end %>
+        </p>
+      </div>
+      <.link
+        id="data-export-banner-link"
+        navigate={~p"/profile/export"}
+        class="data-export-banner-link btn btn-sm"
+      >
+        {gettext("Review")}
+      </.link>
+    </aside>
     """
   end
 

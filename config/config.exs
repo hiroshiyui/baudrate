@@ -7,6 +7,12 @@
 # General application configuration
 import Config
 
+# Redact credentials from request logs. Phoenix only filters "password" by
+# default; step-up forms also send TOTP/recovery "code"s, and data export
+# downloads carry a single-use "token" (ADR 0023). Matching is by substring,
+# so e.g. "current_password", "challenge_token" and "invite_code" are covered.
+config :phoenix, :filter_parameters, ["password", "token", "code", "secret"]
+
 config :baudrate,
   ecto_repos: [Baudrate.Repo],
   generators: [timestamp_type: :utc_datetime]

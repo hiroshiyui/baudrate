@@ -14,6 +14,7 @@ defmodule Baudrate.Application do
       {Phoenix.PubSub, name: Baudrate.PubSub},
       Baudrate.Auth.SessionCleaner,
       Baudrate.Auth.WebAuthnChallenges,
+      Baudrate.DataPortability.DownloadNonces,
       Baudrate.Setup.SettingsCache,
       # Logs a banner when the setup wizard is locked by a missing
       # INSTALLATION_KEY. Logging only — never raises, so a database blip
