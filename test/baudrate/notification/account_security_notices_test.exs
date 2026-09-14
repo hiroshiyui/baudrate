@@ -178,5 +178,19 @@ defmodule Baudrate.Notification.AccountSecurityNoticesTest do
       assert payload.title == expected
       refute payload.title == "A security key was added to your account."
     end
+
+    test "a failed-code notice links to the password change page", %{user: user} do
+      {:ok, _} = Hooks.notify_account_security(user.id, "totp_login_failed")
+
+      [notice] = notices(user)
+
+      payload =
+        notice
+        |> Repo.preload([:user, :actor_user, :actor_remote_actor, :article])
+        |> WebPush.build_payload()
+
+      assert payload.url == BaudrateWeb.Endpoint.url() <> "/profile/password"
+      assert payload.title =~ "failed the two-factor code"
+    end
   end
 end

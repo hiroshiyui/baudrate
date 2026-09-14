@@ -365,8 +365,16 @@ an attacker could lock out any account by submitting wrong passwords. The delay
 is checked before `authenticate_by_password/2` to avoid incurring bcrypt cost
 on throttled attempts.
 
+The TOTP step of login counts too. It is only reached with the correct
+password, so its failures are recorded against the account
+(`record_login_totp_failure/2`, `factor: "totp"`) and `totp_verify/2` checks the
+same throttle. After 3 failed codes in an hour the owner gets a
+`totp_login_failed` security notice, at most once an hour
+([ADR 0024](adr/0024-totp-codes-are-single-use-with-a-one-period-grace-window.md)).
+
 Key functions in `Auth`:
-- `record_login_attempt/3` — records an attempt (username lowercased)
+- `record_login_attempt/4` — records an attempt (username lowercased; `factor` is
+  `"password"` (default), `"totp"` or `"reauth"`)
 - `check_login_throttle/1` — returns `:ok` or `{:delay, seconds}`
 - `paginate_login_attempts/1` — paginated admin query
 - `purge_old_login_attempts/0` — cleanup (called by `SessionCleaner`)
@@ -396,6 +404,19 @@ sessions only. Both keep the caller's session by **row id** (tokens rotate daily
 while a LiveView holds what it saw at mount) and send always-delivered security
 notices (`password_changed`, `signed_out_everywhere`). They are the account-recovery
 prerequisites for data export (ADR 0023).
+
+### TOTP Code Verification
+
+Every check of a stored TOTP secret goes through `Auth.verify_totp_code/3`
+([ADR 0024](adr/0024-totp-codes-are-single-use-with-a-one-period-grace-window.md)):
+
+| Aspect | Detail |
+|--------|--------|
+| Window | The current or the previous 30-second period (`match_totp_step/3`), so a code that rolls over while being typed still works. The next period is not accepted |
+| Single use | `users.totp_last_used_step` holds the last accepted period. One conditional `UPDATE` accepts only a later period, so a used code, or an older one, is refused, even for concurrent requests |
+| Callers | Login (`totp_verify/2`), admin sudo (`admin_totp_verify/2`), step-up re-authentication. Enrolment records its confirming code as used (`enable_totp/3`, `used_step:`); `disable_totp/1` clears the column |
+| Step-up | Consumes the code only when the password is also correct (`claim: password_valid`) |
+| UI | Every TOTP field shows `<.totp_code_hint>` ("each code works only once") at all times, never only after a failure |
 
 ### Admin Sudo Mode
 
@@ -437,8 +458,10 @@ admin session could register its own key and pass `/admin/verify`
 ([ADR 0022](adr/0022-step-up-reauthentication-for-second-factor-changes.md)).
 
 - `Auth.verify_reauthentication/5` (`Baudrate.Auth.Reauthentication`) checks
-  the password, plus the current TOTP code when TOTP is enabled. Recovery
-  codes are never accepted.
+  the password, plus an unused TOTP code when TOTP is enabled (see TOTP Code
+  Verification). Recovery codes are never accepted. Failures are recorded with
+  `factor: "reauth"` and never send `totp_login_failed`, because this form does
+  not say which factor was wrong.
 - It enforces `Auth.check_login_throttle/1` before checking any credential,
   and records failures in `login_attempts`. The account throttle therefore
   survives page reloads, and a re-authentication form cannot be used to guess
@@ -1175,8 +1198,10 @@ In-app notification system with real-time delivery via PubSub.
 - `totp_enabled` / `totp_disabled` — TOTP was set up or turned off
 - `password_changed` — the password was changed while signed in
 - `signed_out_everywhere` — all other sessions were signed out (`data.count`)
+- `totp_login_failed` — the correct password was entered but the TOTP code failed 3 times within an hour at login; links to `/profile/password` (ADR 0024)
 
-**Account security notices** (the last six types, `Notification.Notification.security_types/0`)
+**Account security notices** (the types from `security_key_added` on, and the
+`data_export_*` types; `Notification.Notification.security_types/0`)
 are emitted by the Auth context itself: `WebAuthn.create_webauthn_credential/2`,
 `WebAuthn.delete_webauthn_credential/2`, `SecondFactor.enable_totp/2` and
 `SecondFactor.disable_totp/1` (the latter only when TOTP was on) call

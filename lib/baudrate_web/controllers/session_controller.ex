@@ -33,6 +33,14 @@ defmodule BaudrateWeb.SessionController do
   and the user must re-authenticate from the login page. Attempt count is
   tracked in the cookie session under `:totp_attempts`.
 
+  That counter resets with every new login, so it is not the real bound.
+  Each failed code is also recorded against the account
+  (`Auth.record_login_totp_failure/2`, ADR 0024), `totp_verify/2` honours
+  the per-account login throttle, and repeated failures send the owner a
+  `totp_login_failed` security notice. Codes are consumed on use
+  (`Auth.verify_totp_code/3`): the current or previous 30-second code is
+  accepted, once.
+
   ## Admin Sudo Mode
 
   `admin_totp_verify/2` handles TOTP re-verification for admin sudo mode.
@@ -147,7 +155,19 @@ defmodule BaudrateWeb.SessionController do
         |> put_flash(:error, gettext("Too many failed attempts. Please log in again."))
         |> redirect(to: "/login")
 
-      Auth.valid_totp?(secret, code, since: get_session(conn, :totp_verified_at)) ->
+      seconds = login_throttle_seconds(user) ->
+        Logger.warning("auth.totp_verify_throttled: user_id=#{user.id} ip=#{remote_ip(conn)}")
+
+        conn
+        |> put_flash(
+          :error,
+          gettext("Account temporarily locked. Try again in %{seconds} seconds.",
+            seconds: seconds
+          )
+        )
+        |> redirect(to: "/totp/verify")
+
+      Auth.verify_totp_code(user, code) ->
         Logger.info("auth.totp_verify_success: user_id=#{user.id} ip=#{remote_ip(conn)}")
 
         conn
@@ -158,6 +178,8 @@ defmodule BaudrateWeb.SessionController do
         Logger.warning(
           "auth.totp_verify_failure: user_id=#{user.id} attempt=#{attempts + 1} ip=#{remote_ip(conn)}"
         )
+
+        Auth.record_login_totp_failure(user, remote_ip(conn))
 
         conn
         |> put_session(:totp_attempts, attempts + 1)
@@ -187,8 +209,8 @@ defmodule BaudrateWeb.SessionController do
         |> put_flash(:error, gettext("Too many failed attempts. Please log in again."))
         |> redirect(to: "/login")
 
-      Auth.valid_totp?(secret, code) ->
-        case Auth.enable_totp(user, secret) do
+      step = enrolment_code_step(secret, code) ->
+        case Auth.enable_totp(user, secret, used_step: step) do
           {:ok, updated_user} ->
             Logger.info("auth.totp_enabled: user_id=#{user.id} ip=#{remote_ip(conn)}")
 
@@ -347,7 +369,7 @@ defmodule BaudrateWeb.SessionController do
             |> put_flash(:error, gettext("Too many failed attempts. Please try again later."))
             |> redirect(to: "/")
 
-          Auth.valid_totp?(secret, code) ->
+          Auth.verify_totp_code(user, code) ->
             Logger.info(
               "auth.admin_totp_verify_success: user_id=#{user.id} ip=#{remote_ip(conn)}"
             )
@@ -581,7 +603,6 @@ defmodule BaudrateWeb.SessionController do
     |> configure_session(renew: true)
     |> delete_session(:user_id)
     |> delete_session(:totp_verified)
-    |> delete_session(:totp_verified_at)
     |> delete_session(:totp_setup_secret)
     |> delete_session(:return_to)
     |> put_session(:session_token, session_token)
@@ -591,6 +612,22 @@ defmodule BaudrateWeb.SessionController do
     |> put_session(:live_socket_id, Auth.live_socket_id(session_id))
     |> put_session(:preferred_locales, user.preferred_locales || [])
     |> redirect(to: final_redirect)
+  end
+
+  # Failed TOTP codes at login count toward the per-account login throttle
+  # (ADR 0024), so it is checked here as well as on the password step.
+  defp login_throttle_seconds(user) do
+    case Auth.check_login_throttle(user.username) do
+      {:delay, seconds} -> seconds
+      :ok -> nil
+    end
+  end
+
+  defp enrolment_code_step(secret, code) do
+    case Auth.match_totp_step(secret, code) do
+      {:ok, step} -> step
+      :error -> nil
+    end
   end
 
   defp remote_ip(conn) do

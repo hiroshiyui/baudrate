@@ -857,6 +857,24 @@ defmodule BaudrateWeb.CoreComponents do
   end
 
   @doc """
+  Renders the hint under a TOTP code field that each code works once.
+
+  Codes are consumed on use (ADR 0024), so two checks within the same
+  30 seconds need two codes. The hint is always shown, never only after a
+  failure: showing it for a reused code would tell whoever is guessing that
+  the rest of the form was right. Point the input's `aria-describedby` at `id`.
+  """
+  attr :id, :string, required: true
+
+  def totp_code_hint(assigns) do
+    ~H"""
+    <p id={@id} class="totp-code-hint text-xs text-base-content/70 mt-1">
+      {gettext("Each code works only once. If you just used one, wait for the next code.")}
+    </p>
+    """
+  end
+
+  @doc """
   Renders the password policy checklist with a strength meter.
 
   `strength` is the map returned by `BaudrateWeb.Helpers.password_strength/1`

@@ -105,6 +105,44 @@ defmodule Baudrate.Auth.ReauthenticationTest do
                Auth.verify_reauthentication(user, "wrong", code, @ip, :test)
     end
 
+    test "a code is consumed: the same code cannot authorize a second check" do
+      {user, secret} = user_with_totp()
+      code = totp_code(secret)
+
+      assert :ok = Auth.verify_reauthentication(user, @password, code, @ip, :test)
+
+      assert {:error, :invalid_credentials} =
+               Auth.verify_reauthentication(user, @password, code, @ip, :test)
+
+      assert [%LoginAttempt{factor: "reauth"}] =
+               Repo.all(from(a in LoginAttempt, where: a.username == ^user.username))
+    end
+
+    test "a wrong password does not burn the user's current code" do
+      {user, secret} = user_with_totp()
+      code = totp_code(secret)
+
+      assert {:error, :invalid_credentials} =
+               Auth.verify_reauthentication(user, "wrong", code, @ip, :test)
+
+      assert is_nil(Repo.reload!(user).totp_last_used_step)
+      assert :ok = Auth.verify_reauthentication(user, @password, code, @ip, :test)
+    end
+
+    test "failed codes here never send the totp_login_failed notice" do
+      {user, _secret} = user_with_totp()
+
+      for _ <- 1..4 do
+        Auth.verify_reauthentication(user, @password, "000000", @ip, :test)
+      end
+
+      refute Repo.exists?(
+               from(n in Baudrate.Notification.Notification,
+                 where: n.user_id == ^user.id and n.type == "totp_login_failed"
+               )
+             )
+    end
+
     test "does not accept a recovery code in place of the TOTP code" do
       {user, _secret} = user_with_totp()
       [recovery_code | _] = Auth.generate_recovery_codes(user)

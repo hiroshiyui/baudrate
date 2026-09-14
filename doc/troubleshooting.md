@@ -415,9 +415,14 @@ The `SessionCleaner` GenServer runs every hour and:
 
 If users report "invalid TOTP code" errors with correct codes:
 
-1. **Clock skew** — TOTP is time-based. Ensure both server and user's device
-   have accurate time (NTP on server, auto time on device)
-2. **SECRET_KEY_BASE changed** — TOTP secrets are encrypted with a key
+1. **Code already used** — each code works once per account (ADR 0024). A
+   user who signs in on a second device, or confirms two actions, within the
+   same 30 seconds must wait for the next code
+2. **Clock skew** — TOTP is time-based. A code is accepted for its own
+   30-second period and the one after it, but never before its period starts,
+   so a device clock running ahead fails first. Ensure both server and user's
+   device have accurate time (NTP on server, auto time on device)
+3. **SECRET_KEY_BASE changed** — TOTP secrets are encrypted with a key
    derived from `SECRET_KEY_BASE`. If it changed, all TOTP secrets are
    unrecoverable. Users must use recovery codes to log in and re-enroll TOTP.
 
@@ -431,6 +436,10 @@ Failed logins trigger progressive delays per account:
 | 5-9 | 5 seconds |
 | 10-14 | 30 seconds |
 | 15+ | 120 seconds |
+
+Failed TOTP codes at login and failed re-authentication from a signed-in
+session count as failures too; `/admin/login-attempts` shows which check each
+attempt was for.
 
 This is **not** a hard lockout — it's a delay. The account is never fully
 locked out to prevent DoS via deliberate failed logins.

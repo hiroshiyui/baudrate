@@ -30,6 +30,8 @@ defmodule BaudrateWeb.DataExportLiveTest do
 
   defp make_ready(request) do
     shift = DataPortability.ready_delay_seconds() + 60
+    # A day later the user signs in with a new code; the request's code is used up (ADR 0024).
+    forget_totp_use(request.user_id)
 
     Repo.update_all(from(r in ExportRequest, where: r.id == ^request.id),
       set: [
@@ -121,6 +123,7 @@ defmodule BaudrateWeb.DataExportLiveTest do
     {:ok, request} =
       DataPortability.request_export(user, creds(secret), ip_address: "203.0.113.9")
 
+    forget_totp_use(user)
     {:ok, other_token, _} = Auth.create_user_session(user.id)
     {:ok, lv, _html} = live(conn, "/profile/export")
 

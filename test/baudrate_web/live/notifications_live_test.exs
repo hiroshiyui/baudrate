@@ -76,6 +76,28 @@ defmodule BaudrateWeb.NotificationsLiveTest do
       refute has_element?(lv, "#notification-actor-#{notice.id}")
     end
 
+    test "a failed-code notice links to the password change page with its own warning",
+         %{conn: conn, user: user} do
+      {:ok, notice} =
+        Baudrate.Notification.Hooks.notify_account_security(user.id, "totp_login_failed")
+
+      {:ok, lv, _html} = live(conn, "/notifications")
+
+      assert has_element?(lv, "#notification-#{notice.id}", "failed the two-factor code")
+
+      assert has_element?(
+               lv,
+               "#notification-target-#{notice.id}[href='/profile/password']",
+               "Change your password"
+             )
+
+      assert has_element?(
+               lv,
+               "#notification-security-hint-#{notice.id}",
+               "your password is known to someone else"
+             )
+    end
+
     test "unread notifications carry a visible Unread label", %{conn: conn, user: user} do
       other = setup_user("user")
 

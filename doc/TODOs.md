@@ -33,9 +33,6 @@ See "Data Export" in `doc/development.md` and `doc/sysop.md`.
 Follow-ups:
 - Move the registration, password reset and setup pages onto the shared
   `<.password_requirements>` component.
-- `Auth.valid_totp?/3` accepts only the current 30-second period, while
-  `doc/sysop.md` promises ±30 s clock-skew tolerance. Decide whether to add a
-  one-step grace window (with `:since` replay protection) or correct the doc.
 
 ---
 

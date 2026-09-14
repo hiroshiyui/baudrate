@@ -43,6 +43,35 @@ defmodule BaudrateWeb.Admin.LoginAttemptsLiveTest do
     assert html =~ "Success"
   end
 
+  test "shows which check each attempt was for", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_admin(conn, admin)
+
+    {:ok, password} = Auth.record_login_attempt("factoruser", "10.0.0.1", false)
+    {:ok, totp} = Auth.record_login_attempt("factoruser", "10.0.0.1", false, "totp")
+    {:ok, reauth} = Auth.record_login_attempt("factoruser", "10.0.0.1", false, "reauth")
+
+    {:ok, lv, _html} = live(conn, "/admin/login-attempts")
+
+    assert has_element?(
+             lv,
+             "#admin-login-attempts-row-#{password.id} .admin-login-attempts-factor",
+             "Password"
+           )
+
+    assert has_element?(
+             lv,
+             "#admin-login-attempts-row-#{totp.id} .admin-login-attempts-factor",
+             "Two-factor code"
+           )
+
+    assert has_element?(
+             lv,
+             "#admin-login-attempts-row-#{reauth.id} .admin-login-attempts-factor",
+             "Re-authentication"
+           )
+  end
+
   test "admin can filter by username", %{conn: conn} do
     admin = setup_user("admin")
     conn = log_in_admin(conn, admin)

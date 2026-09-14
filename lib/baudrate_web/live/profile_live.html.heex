@@ -440,7 +440,9 @@
               maxlength="6"
               autocomplete="one-time-code"
               required
+              aria-describedby="security-reauth-code-hint"
             />
+            <.totp_code_hint id="security-reauth-code-hint" />
           </div>
           <button
             id="profile-security-reauth-submit"
@@ -551,7 +553,9 @@
               maxlength="6"
               autocomplete="one-time-code"
               required
+              aria-describedby="sign-out-code-hint"
             />
+            <.totp_code_hint id="sign-out-code-hint" />
           </div>
           <button
             id="profile-sign-out-everywhere-submit"

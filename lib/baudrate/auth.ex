@@ -69,7 +69,10 @@ defmodule Baudrate.Auth do
   defdelegate live_socket_id(session_id), to: Sessions
   defdelegate sign_out_other_sessions(user, keep_session_id), to: Sessions
   defdelegate purge_expired_sessions, to: Sessions
-  defdelegate record_login_attempt(username, ip_address, success), to: Sessions
+
+  defdelegate record_login_attempt(username, ip_address, success, factor \\ "password"),
+    to: Sessions
+
   defdelegate check_login_throttle(username), to: Sessions
   defdelegate paginate_login_attempts(opts \\ []), to: Sessions
   defdelegate purge_old_login_attempts, to: Sessions
@@ -80,8 +83,10 @@ defmodule Baudrate.Auth do
   defdelegate generate_totp_secret, to: SecondFactor
   defdelegate totp_uri(secret, username, issuer \\ "Baudrate"), to: SecondFactor
   defdelegate totp_qr_data_uri(uri), to: SecondFactor
-  defdelegate valid_totp?(secret, code, opts \\ []), to: SecondFactor
-  defdelegate enable_totp(user, secret), to: SecondFactor
+  defdelegate match_totp_step(secret, code), to: SecondFactor
+  defdelegate verify_totp_code(user, code, opts \\ []), to: SecondFactor
+  defdelegate record_login_totp_failure(user, ip_address), to: SecondFactor
+  defdelegate enable_totp(user, secret, opts \\ []), to: SecondFactor
   defdelegate decrypt_totp_secret(user), to: SecondFactor
   defdelegate disable_totp(user), to: SecondFactor
   defdelegate totp_enabled_for_at_least?(user, days), to: SecondFactor

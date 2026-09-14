@@ -61,7 +61,7 @@ msgstr ""
 msgid "Admin Account"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:874
+#: lib/baudrate_web/components/core_components.ex:892
 #: lib/baudrate_web/live/password_reset_live.html.heex:118
 #: lib/baudrate_web/live/register_live.html.heex:115
 #: lib/baudrate_web/live/setup_live.html.heex:292
@@ -101,7 +101,7 @@ msgstr ""
 msgid "Connected"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:877
+#: lib/baudrate_web/components/core_components.ex:895
 #: lib/baudrate_web/live/password_reset_live.html.heex:172
 #: lib/baudrate_web/live/register_live.html.heex:169
 #: lib/baudrate_web/live/setup_live.html.heex:346
@@ -109,7 +109,7 @@ msgstr ""
 msgid "Contains a digit"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:875
+#: lib/baudrate_web/components/core_components.ex:893
 #: lib/baudrate_web/live/password_reset_live.html.heex:136
 #: lib/baudrate_web/live/register_live.html.heex:133
 #: lib/baudrate_web/live/setup_live.html.heex:310
@@ -117,7 +117,7 @@ msgstr ""
 msgid "Contains a lowercase letter"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:878
+#: lib/baudrate_web/components/core_components.ex:896
 #: lib/baudrate_web/live/password_reset_live.html.heex:190
 #: lib/baudrate_web/live/register_live.html.heex:187
 #: lib/baudrate_web/live/setup_live.html.heex:364
@@ -125,7 +125,7 @@ msgstr ""
 msgid "Contains a special character"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:876
+#: lib/baudrate_web/components/core_components.ex:894
 #: lib/baudrate_web/live/password_reset_live.html.heex:154
 #: lib/baudrate_web/live/register_live.html.heex:151
 #: lib/baudrate_web/live/setup_live.html.heex:328
@@ -174,11 +174,12 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
+#: lib/baudrate_web/live/admin/login_attempts_live.ex:63
 #: lib/baudrate_web/live/data_export_live.ex:207
 #: lib/baudrate_web/live/login_live.html.heex:26
 #: lib/baudrate_web/live/profile_live.html.heex:312
 #: lib/baudrate_web/live/profile_live.html.heex:412
-#: lib/baudrate_web/live/profile_live.html.heex:525
+#: lib/baudrate_web/live/profile_live.html.heex:527
 #: lib/baudrate_web/live/register_live.html.heex:73
 #: lib/baudrate_web/live/setup_live.html.heex:260
 #: lib/baudrate_web/live/totp_reset_live.html.heex:30
@@ -186,7 +187,7 @@ msgstr ""
 msgid "Password"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:886
+#: lib/baudrate_web/components/core_components.ex:904
 #: lib/baudrate_web/live/password_reset_live.html.heex:100
 #: lib/baudrate_web/live/register_live.html.heex:97
 #: lib/baudrate_web/live/setup_live.html.heex:274
@@ -303,10 +304,10 @@ msgstr ""
 msgid "Verification Code"
 msgstr ""
 
-#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:51
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:53
 #: lib/baudrate_web/live/recovery_code_verify_live.html.heex:47
 #: lib/baudrate_web/live/setup_live.html.heex:111
-#: lib/baudrate_web/live/totp_verify_live.html.heex:41
+#: lib/baudrate_web/live/totp_verify_live.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "Verify"
 msgstr ""
@@ -360,8 +361,8 @@ msgid "Home"
 msgstr ""
 
 #: lib/baudrate_web/live/data_export_live.html.heex:238
-#: lib/baudrate_web/live/password_change_live.html.heex:157
-#: lib/baudrate_web/live/totp_reset_live.html.heex:98
+#: lib/baudrate_web/live/password_change_live.html.heex:159
+#: lib/baudrate_web/live/totp_reset_live.html.heex:100
 #, elixir-autogen, elixir-format
 msgid "Back to Profile"
 msgstr ""
@@ -371,7 +372,7 @@ msgstr ""
 msgid "Back to TOTP verification"
 msgstr ""
 
-#: lib/baudrate_web/live/totp_reset_live.html.heex:77
+#: lib/baudrate_web/live/totp_reset_live.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "Continue"
 msgstr ""
@@ -379,7 +380,7 @@ msgstr ""
 #: lib/baudrate_web/live/data_export_live.ex:224
 #: lib/baudrate_web/live/password_change_live.html.heex:53
 #: lib/baudrate_web/live/profile_live.html.heex:430
-#: lib/baudrate_web/live/profile_live.html.heex:542
+#: lib/baudrate_web/live/profile_live.html.heex:544
 #: lib/baudrate_web/live/totp_reset_live.html.heex:51
 #, elixir-autogen, elixir-format
 msgid "Current TOTP Code"
@@ -433,7 +434,7 @@ msgstr ""
 msgid "I've saved my recovery codes"
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:273
+#: lib/baudrate_web/live/data_export_live.ex:275
 #: lib/baudrate_web/live/password_change_live.ex:132
 #: lib/baudrate_web/live/profile_live.ex:471
 #: lib/baudrate_web/live/profile_live.ex:532
@@ -442,12 +443,12 @@ msgstr ""
 msgid "Invalid credentials. Please try again."
 msgstr ""
 
-#: lib/baudrate_web/live/totp_verify_live.html.heex:65
+#: lib/baudrate_web/live/totp_verify_live.html.heex:67
 #, elixir-autogen, elixir-format
 msgid "Lost your device? Use a recovery code"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:570
+#: lib/baudrate_web/live/profile_live.html.heex:574
 #, elixir-autogen, elixir-format
 msgid "Member Since"
 msgstr ""
@@ -491,7 +492,7 @@ msgstr ""
 
 #: lib/baudrate_web/live/profile_live.html.heex:293
 #: lib/baudrate_web/live/totp_reset_live.html.heex:4
-#: lib/baudrate_web/live/totp_reset_live.html.heex:75
+#: lib/baudrate_web/live/totp_reset_live.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "Reset Authenticator"
 msgstr ""
@@ -512,8 +513,8 @@ msgstr ""
 msgid "TOTP QR Code"
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:347
-#: lib/baudrate_web/controllers/session_controller.ex:468
+#: lib/baudrate_web/controllers/session_controller.ex:369
+#: lib/baudrate_web/controllers/session_controller.ex:490
 #: lib/baudrate_web/live/totp_reset_live.ex:58
 #, elixir-autogen, elixir-format
 msgid "Too many failed attempts. Please try again later."
@@ -596,8 +597,8 @@ msgstr ""
 msgid "Too many avatar changes. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:373
-#: lib/baudrate_web/controllers/session_controller.ex:523
+#: lib/baudrate_web/controllers/session_controller.ex:395
+#: lib/baudrate_web/controllers/session_controller.ex:545
 #: lib/baudrate_web/live/auth_hooks.ex:257
 #: lib/baudrate_web/live/auth_hooks.ex:269
 #, elixir-autogen, elixir-format
@@ -760,7 +761,7 @@ msgstr ""
 msgid "by %{author}"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:653
+#: lib/baudrate_web/live/profile_live.html.heex:657
 #, elixir-autogen, elixir-format
 msgid "Add Language"
 msgstr ""
@@ -775,12 +776,12 @@ msgstr ""
 msgid "Language preferences updated."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:585
+#: lib/baudrate_web/live/profile_live.html.heex:589
 #, elixir-autogen, elixir-format
 msgid "Preferred Languages"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:589
+#: lib/baudrate_web/live/profile_live.html.heex:593
 #, elixir-autogen, elixir-format
 msgid "Using browser language settings."
 msgstr ""
@@ -821,7 +822,7 @@ msgstr ""
 #: lib/baudrate_web/live/admin/settings_live.html.heex:134
 #: lib/baudrate_web/live/admin/settings_live.html.heex:201
 #: lib/baudrate_web/live/article_edit_live.html.heex:201
-#: lib/baudrate_web/live/password_change_live.html.heex:141
+#: lib/baudrate_web/live/password_change_live.html.heex:143
 #: lib/baudrate_web/live/profile_live.html.heex:148
 #: lib/baudrate_web/live/profile_live.html.heex:177
 #: lib/baudrate_web/live/profile_live.html.heex:228
@@ -1005,7 +1006,7 @@ msgid "Error Rate (24h)"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:23
-#: lib/baudrate_web/live/admin/login_attempts_live.html.heex:83
+#: lib/baudrate_web/live/admin/login_attempts_live.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Failed"
 msgstr ""
@@ -1815,7 +1816,7 @@ msgid "Dismiss Report"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/invites_live.html.heex:116
-#: lib/baudrate_web/live/data_export_live.ex:308
+#: lib/baudrate_web/live/data_export_live.ex:310
 #: lib/baudrate_web/live/user_invites_live.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "Expired"
@@ -2003,7 +2004,7 @@ msgstr ""
 msgid "Back to Sign In"
 msgstr ""
 
-#: lib/baudrate_web/live/password_change_live.html.heex:108
+#: lib/baudrate_web/live/password_change_live.html.heex:110
 #: lib/baudrate_web/live/password_reset_live.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Confirm New Password"
@@ -2066,7 +2067,7 @@ msgstr ""
 msgid "Invalid username or recovery code."
 msgstr ""
 
-#: lib/baudrate_web/live/password_change_live.html.heex:75
+#: lib/baudrate_web/live/password_change_live.html.heex:77
 #: lib/baudrate_web/live/password_reset_live.html.heex:66
 #, elixir-autogen, elixir-format
 msgid "New Password"
@@ -2132,7 +2133,7 @@ msgstr ""
 msgid "These codes are the only way to recover your account if you lose your password. Each code can only be used once. Store them in a safe place."
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:265
+#: lib/baudrate_web/live/data_export_live.ex:267
 #: lib/baudrate_web/live/password_change_live.ex:115
 #: lib/baudrate_web/live/password_reset_live.ex:46
 #: lib/baudrate_web/live/profile_live.ex:456
@@ -2227,7 +2228,7 @@ msgstr ""
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:182
 #: lib/baudrate_web/live/profile_live.html.heex:375
-#: lib/baudrate_web/live/profile_live.html.heex:632
+#: lib/baudrate_web/live/profile_live.html.heex:636
 #, elixir-autogen, elixir-format
 msgid "Remove"
 msgstr ""
@@ -2670,27 +2671,27 @@ msgstr ""
 msgid "Markdown preview"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:463
+#: lib/baudrate_web/helpers.ex:470
 #, elixir-autogen, elixir-format
 msgid "%{count}d ago"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:462
+#: lib/baudrate_web/helpers.ex:469
 #, elixir-autogen, elixir-format
 msgid "%{count}h ago"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:461
+#: lib/baudrate_web/helpers.ex:468
 #, elixir-autogen, elixir-format
 msgid "%{count}m ago"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:694
+#: lib/baudrate_web/live/profile_live.html.heex:698
 #, elixir-autogen, elixir-format
 msgid "Anyone"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:704
+#: lib/baudrate_web/live/profile_live.html.heex:708
 #, elixir-autogen, elixir-format
 msgid "Controls who can send you direct messages."
 msgstr ""
@@ -2710,7 +2711,7 @@ msgstr ""
 msgid "Delete this message?"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:684
+#: lib/baudrate_web/live/profile_live.html.heex:688
 #, elixir-autogen, elixir-format
 msgid "Direct Messages"
 msgstr ""
@@ -2743,7 +2744,7 @@ msgstr ""
 #: lib/baudrate_web/live/article_new_live.html.heex:367
 #: lib/baudrate_web/live/board_follows_live.html.heex:49
 #: lib/baudrate_web/live/feed_live.html.heex:336
-#: lib/baudrate_web/live/profile_live.html.heex:697
+#: lib/baudrate_web/live/profile_live.html.heex:701
 #, elixir-autogen, elixir-format
 msgid "Followers only"
 msgstr ""
@@ -2781,7 +2782,7 @@ msgstr ""
 msgid "No messages yet. Send the first one!"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:700
+#: lib/baudrate_web/live/profile_live.html.heex:704
 #, elixir-autogen, elixir-format
 msgid "Nobody"
 msgstr ""
@@ -2811,7 +2812,7 @@ msgstr ""
 msgid "Type a message..."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:691
+#: lib/baudrate_web/live/profile_live.html.heex:695
 #, elixir-autogen, elixir-format
 msgid "Who can send you direct messages"
 msgstr ""
@@ -2832,18 +2833,19 @@ msgstr ""
 msgid "You cannot send messages to this user."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:460
+#: lib/baudrate_web/helpers.ex:467
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr ""
 
+#: lib/baudrate_web/controllers/session_controller.ex:164
 #: lib/baudrate_web/live/login_live.ex:77
 #: lib/baudrate_web/live/password_reset_live.ex:70
 #, elixir-autogen, elixir-format
 msgid "Account temporarily locked. Try again in %{seconds} seconds."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/login_attempts_live.ex:22
+#: lib/baudrate_web/live/admin/login_attempts_live.ex:26
 #, elixir-autogen, elixir-format
 msgid "Admin Login Attempts"
 msgstr ""
@@ -2880,12 +2882,12 @@ msgstr ""
 msgid "No login attempts recorded."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/login_attempts_live.html.heex:62
+#: lib/baudrate_web/live/admin/login_attempts_live.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Result"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/login_attempts_live.html.heex:80
+#: lib/baudrate_web/live/admin/login_attempts_live.html.heex:82
 #, elixir-autogen, elixir-format
 msgid "Success"
 msgstr ""
@@ -2915,18 +2917,18 @@ msgstr ""
 msgid "Mute this user? Their content will be hidden from your view."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:825
+#: lib/baudrate_web/live/profile_live.html.heex:829
 #, elixir-autogen, elixir-format
 msgid "Muted Users"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:831
+#: lib/baudrate_web/live/profile_live.html.heex:835
 #, elixir-autogen, elixir-format
 msgid "No muted users."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:859
-#: lib/baudrate_web/live/profile_live.html.heex:861
+#: lib/baudrate_web/live/profile_live.html.heex:863
+#: lib/baudrate_web/live/profile_live.html.heex:865
 #: lib/baudrate_web/live/user_profile_live.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Unmute"
@@ -2989,7 +2991,7 @@ msgstr ""
 msgid "User menu"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:921
+#: lib/baudrate_web/components/core_components.ex:939
 #: lib/baudrate_web/live/password_reset_live.html.heex:210
 #: lib/baudrate_web/live/register_live.html.heex:207
 #: lib/baudrate_web/live/setup_live.html.heex:385
@@ -2997,7 +2999,7 @@ msgstr ""
 msgid "Fair"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:900
+#: lib/baudrate_web/components/core_components.ex:918
 #: lib/baudrate_web/live/password_reset_live.html.heex:116
 #: lib/baudrate_web/live/password_reset_live.html.heex:134
 #: lib/baudrate_web/live/password_reset_live.html.heex:152
@@ -3023,7 +3025,7 @@ msgstr ""
 msgid "Next page"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:900
+#: lib/baudrate_web/components/core_components.ex:918
 #: lib/baudrate_web/live/password_reset_live.html.heex:116
 #: lib/baudrate_web/live/password_reset_live.html.heex:134
 #: lib/baudrate_web/live/password_reset_live.html.heex:152
@@ -3054,7 +3056,7 @@ msgstr ""
 msgid "Pagination"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:917
+#: lib/baudrate_web/components/core_components.ex:935
 #: lib/baudrate_web/live/password_reset_live.html.heex:206
 #: lib/baudrate_web/live/register_live.html.heex:203
 #: lib/baudrate_web/live/setup_live.html.heex:381
@@ -3073,7 +3075,7 @@ msgstr ""
 msgid "Select moderator"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:922
+#: lib/baudrate_web/components/core_components.ex:940
 #: lib/baudrate_web/live/password_reset_live.html.heex:211
 #: lib/baudrate_web/live/register_live.html.heex:208
 #: lib/baudrate_web/live/setup_live.html.heex:386
@@ -3081,7 +3083,7 @@ msgstr ""
 msgid "Strong"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:920
+#: lib/baudrate_web/components/core_components.ex:938
 #: lib/baudrate_web/live/password_reset_live.html.heex:209
 #: lib/baudrate_web/live/register_live.html.heex:206
 #: lib/baudrate_web/live/setup_live.html.heex:384
@@ -3150,17 +3152,17 @@ msgstr ""
 msgid "Unblock User"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:480
+#: lib/baudrate_web/helpers.ex:487
 #, elixir-autogen, elixir-format
 msgid "%{n} B"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:483
+#: lib/baudrate_web/helpers.ex:490
 #, elixir-autogen, elixir-format
 msgid "%{n} KB"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:486
+#: lib/baudrate_web/helpers.ex:493
 #, elixir-autogen, elixir-format
 msgid "%{n} MB"
 msgstr ""
@@ -3191,31 +3193,31 @@ msgstr ""
 msgid "Board RSS Feed"
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:205
+#: lib/baudrate_web/controllers/session_controller.ex:227
 #, elixir-autogen, elixir-format
 msgid "Failed to enable TOTP. Please try again."
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:113
-#: lib/baudrate_web/controllers/session_controller.ex:259
+#: lib/baudrate_web/controllers/session_controller.ex:121
+#: lib/baudrate_web/controllers/session_controller.ex:281
 #, elixir-autogen, elixir-format
 msgid "Invalid or expired token."
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:298
+#: lib/baudrate_web/controllers/session_controller.ex:320
 #, elixir-autogen, elixir-format
 msgid "Invalid recovery code. Please try again."
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:105
-#: lib/baudrate_web/controllers/session_controller.ex:251
+#: lib/baudrate_web/controllers/session_controller.ex:113
+#: lib/baudrate_web/controllers/session_controller.ex:273
 #, elixir-autogen, elixir-format
 msgid "Invalid session."
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:164
-#: lib/baudrate_web/controllers/session_controller.ex:216
-#: lib/baudrate_web/controllers/session_controller.ex:367
+#: lib/baudrate_web/controllers/session_controller.ex:186
+#: lib/baudrate_web/controllers/session_controller.ex:238
+#: lib/baudrate_web/controllers/session_controller.ex:389
 #, elixir-autogen, elixir-format
 msgid "Invalid verification code. Please try again."
 msgstr ""
@@ -3235,25 +3237,25 @@ msgstr ""
 msgid "Recent articles on %{site_name}"
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:128
-#: lib/baudrate_web/controllers/session_controller.ex:179
-#: lib/baudrate_web/controllers/session_controller.ex:273
-#: lib/baudrate_web/controllers/session_controller.ex:378
-#: lib/baudrate_web/controllers/session_controller.ex:427
-#: lib/baudrate_web/controllers/session_controller.ex:528
+#: lib/baudrate_web/controllers/session_controller.ex:136
+#: lib/baudrate_web/controllers/session_controller.ex:201
+#: lib/baudrate_web/controllers/session_controller.ex:295
+#: lib/baudrate_web/controllers/session_controller.ex:400
+#: lib/baudrate_web/controllers/session_controller.ex:449
+#: lib/baudrate_web/controllers/session_controller.ex:550
 #, elixir-autogen, elixir-format
 msgid "Session expired. Please log in again."
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:137
-#: lib/baudrate_web/controllers/session_controller.ex:338
+#: lib/baudrate_web/controllers/session_controller.ex:145
+#: lib/baudrate_web/controllers/session_controller.ex:360
 #, elixir-autogen, elixir-format
 msgid "TOTP configuration error. Please contact an administrator."
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:147
-#: lib/baudrate_web/controllers/session_controller.ex:187
-#: lib/baudrate_web/controllers/session_controller.ex:281
+#: lib/baudrate_web/controllers/session_controller.ex:155
+#: lib/baudrate_web/controllers/session_controller.ex:209
+#: lib/baudrate_web/controllers/session_controller.ex:303
 #, elixir-autogen, elixir-format
 msgid "Too many failed attempts. Please log in again."
 msgstr ""
@@ -4085,8 +4087,8 @@ msgstr ""
 msgid "Mark all as read"
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.html.heex:136
-#: lib/baudrate_web/live/notifications_live.html.heex:137
+#: lib/baudrate_web/live/notifications_live.html.heex:134
+#: lib/baudrate_web/live/notifications_live.html.heex:135
 #, elixir-autogen, elixir-format
 msgid "Mark as read"
 msgstr ""
@@ -4136,7 +4138,7 @@ msgstr "replied to your article"
 msgid "replied to your comment"
 msgstr "replied to your comment"
 
-#: lib/baudrate_web/helpers.ex:369
+#: lib/baudrate_web/helpers.ex:375
 #, elixir-autogen, elixir-format
 msgid "sent you a notification"
 msgstr ""
@@ -4152,17 +4154,17 @@ msgstr "submitted a moderation report"
 msgid "Failed to update notification preferences."
 msgstr "Failed to update notification preferences."
 
-#: lib/baudrate_web/live/profile_live.html.heex:756
+#: lib/baudrate_web/live/profile_live.html.heex:760
 #, elixir-autogen, elixir-format
 msgid "Notification Preferences"
 msgstr "Notification Preferences"
 
-#: lib/baudrate_web/live/profile_live.html.heex:718
+#: lib/baudrate_web/live/profile_live.html.heex:722
 #, elixir-autogen, elixir-format
 msgid "Browser Push Notifications"
 msgstr "Browser Push Notifications"
 
-#: lib/baudrate_web/live/profile_live.html.heex:759
+#: lib/baudrate_web/live/profile_live.html.heex:763
 #, elixir-autogen, elixir-format
 msgid "Choose which notifications you receive."
 msgstr "Choose which notifications you receive."
@@ -4172,12 +4174,12 @@ msgstr "Choose which notifications you receive."
 msgid "Configured"
 msgstr "Configured"
 
-#: lib/baudrate_web/live/profile_live.html.heex:728
+#: lib/baudrate_web/live/profile_live.html.heex:732
 #, elixir-autogen, elixir-format
 msgid "Disable Push"
 msgstr "Disable Push"
 
-#: lib/baudrate_web/live/profile_live.html.heex:737
+#: lib/baudrate_web/live/profile_live.html.heex:741
 #, elixir-autogen, elixir-format
 msgid "Enable Push"
 msgstr "Enable Push"
@@ -4192,7 +4194,7 @@ msgstr "Failed to enable push notifications."
 msgid "Generate VAPID Keys"
 msgstr "Generate VAPID Keys"
 
-#: lib/baudrate_web/live/profile_live.html.heex:766
+#: lib/baudrate_web/live/profile_live.html.heex:770
 #, elixir-autogen, elixir-format
 msgid "In-App"
 msgstr "In-App"
@@ -4202,7 +4204,7 @@ msgstr "In-App"
 msgid "Public Key"
 msgstr "Public Key"
 
-#: lib/baudrate_web/live/profile_live.html.heex:767
+#: lib/baudrate_web/live/profile_live.html.heex:771
 #, elixir-autogen, elixir-format
 msgid "Push"
 msgstr "Push"
@@ -4212,7 +4214,7 @@ msgstr "Push"
 msgid "Push notification permission was denied by the browser."
 msgstr "Push notification permission was denied by the browser."
 
-#: lib/baudrate_web/live/profile_live.html.heex:742
+#: lib/baudrate_web/live/profile_live.html.heex:746
 #, elixir-autogen, elixir-format
 msgid "Push notifications are not supported by this browser."
 msgstr "Push notifications are not supported by this browser."
@@ -4232,7 +4234,7 @@ msgstr "Push notifications enabled."
 msgid "This will generate new VAPID keys. Existing push subscriptions will stop working. Continue?"
 msgstr "This will generate new VAPID keys. Existing push subscriptions will stop working. Continue?"
 
-#: lib/baudrate_web/live/profile_live.html.heex:765
+#: lib/baudrate_web/live/profile_live.html.heex:769
 #, elixir-autogen, elixir-format
 msgid "Type"
 msgstr "Type"
@@ -4717,12 +4719,12 @@ msgstr ""
 msgid "Registration help"
 msgstr ""
 
-#: lib/baudrate_web/live/totp_reset_live.html.heex:92
+#: lib/baudrate_web/live/totp_reset_live.html.heex:94
 #, elixir-autogen, elixir-format
 msgid "TOTP reset help"
 msgstr ""
 
-#: lib/baudrate_web/live/totp_verify_live.html.heex:58
+#: lib/baudrate_web/live/totp_verify_live.html.heex:60
 #, elixir-autogen, elixir-format
 msgid "TOTP verification help"
 msgstr ""
@@ -4788,7 +4790,7 @@ msgid "Posting..."
 msgstr ""
 
 #: lib/baudrate_web/live/password_reset_live.html.heex:221
-#: lib/baudrate_web/live/totp_reset_live.html.heex:72
+#: lib/baudrate_web/live/totp_reset_live.html.heex:74
 #, elixir-autogen, elixir-format
 msgid "Resetting..."
 msgstr ""
@@ -4815,10 +4817,10 @@ msgstr ""
 msgid "Signing up..."
 msgstr ""
 
-#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:49
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:51
 #: lib/baudrate_web/live/recovery_code_verify_live.html.heex:45
 #: lib/baudrate_web/live/totp_setup_live.html.heex:72
-#: lib/baudrate_web/live/totp_verify_live.html.heex:39
+#: lib/baudrate_web/live/totp_verify_live.html.heex:41
 #, elixir-autogen, elixir-format
 msgid "Verifying..."
 msgstr ""
@@ -4835,12 +4837,12 @@ msgstr ""
 msgid "Image %{number} (opens in new tab)"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:622
+#: lib/baudrate_web/live/profile_live.html.heex:626
 #, elixir-autogen, elixir-format
 msgid "Move %{locale} down"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:611
+#: lib/baudrate_web/live/profile_live.html.heex:615
 #, elixir-autogen, elixir-format
 msgid "Move %{locale} up"
 msgstr ""
@@ -4970,12 +4972,12 @@ msgstr ""
 msgid "Admin Verification Required"
 msgstr ""
 
-#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:114
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:116
 #, elixir-autogen, elixir-format
 msgid "Admin verification options"
 msgstr ""
 
-#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:121
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:123
 #, elixir-autogen, elixir-format
 msgid "Cancel and return to home"
 msgstr ""
@@ -5036,7 +5038,7 @@ msgstr ""
 msgid "Search query"
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:198
+#: lib/baudrate_web/controllers/session_controller.ex:220
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication enabled successfully."
 msgstr ""
@@ -5046,12 +5048,12 @@ msgstr ""
 msgid "%{articles} articles, %{comments} comments"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:1018
+#: lib/baudrate_web/components/core_components.ex:1036
 #, elixir-autogen, elixir-format
 msgid "Link preview"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:1035
+#: lib/baudrate_web/components/core_components.ex:1053
 #, elixir-autogen, elixir-format
 msgid "Link preview: %{title}"
 msgstr ""
@@ -5149,7 +5151,7 @@ msgstr ""
 msgid "Image attachment"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:988
+#: lib/baudrate_web/components/core_components.ex:1006
 #, elixir-autogen, elixir-format
 msgid "YouTube video"
 msgstr ""
@@ -5270,7 +5272,7 @@ msgstr ""
 msgid "Copy profile URL"
 msgstr ""
 
-#: lib/baudrate_web/components/core_components.ex:1040
+#: lib/baudrate_web/components/core_components.ex:1058
 #, elixir-autogen, elixir-format
 msgid "Preview image for %{title}"
 msgstr ""
@@ -5515,7 +5517,7 @@ msgstr ""
 msgid "Refresh Favicon"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:464
+#: lib/baudrate_web/live/profile_live.html.heex:466
 #, elixir-autogen, elixir-format
 msgid "Register New Key"
 msgstr ""
@@ -5545,7 +5547,7 @@ msgstr ""
 msgid "Reset error count and trigger an immediate re-fetch"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:481
+#: lib/baudrate_web/live/profile_live.html.heex:483
 #, elixir-autogen, elixir-format
 msgid "Security Key"
 msgstr ""
@@ -5555,12 +5557,12 @@ msgstr ""
 msgid "Security Keys"
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:412
+#: lib/baudrate_web/controllers/session_controller.ex:434
 #, elixir-autogen, elixir-format
 msgid "Security key registered successfully."
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:421
+#: lib/baudrate_web/controllers/session_controller.ex:443
 #: lib/baudrate_web/live/profile_live.ex:563
 #, elixir-autogen, elixir-format
 msgid "Security key registration failed. Please try again."
@@ -5576,8 +5578,8 @@ msgstr ""
 msgid "Security key removed."
 msgstr ""
 
-#: lib/baudrate_web/controllers/session_controller.ex:501
-#: lib/baudrate_web/controllers/session_controller.ex:515
+#: lib/baudrate_web/controllers/session_controller.ex:523
+#: lib/baudrate_web/controllers/session_controller.ex:537
 #: lib/baudrate_web/live/admin_totp_verify_live.ex:98
 #, elixir-autogen, elixir-format
 msgid "Security key verification failed. Please try again."
@@ -5603,12 +5605,12 @@ msgstr ""
 msgid "Unnamed Key"
 msgstr ""
 
-#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:88
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "Use Security Key"
 msgstr ""
 
-#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:78
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "Use a registered security key instead."
 msgstr ""
@@ -5629,7 +5631,7 @@ msgstr ""
 msgid "WebAuthn is not supported by this browser."
 msgstr ""
 
-#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:75
+#: lib/baudrate_web/live/admin_totp_verify_live.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "or"
 msgstr ""
@@ -5957,7 +5959,7 @@ msgstr ""
 msgid "Handled by %{name} — %{note}"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:789
+#: lib/baudrate_web/live/profile_live.html.heex:793
 #, elixir-autogen, elixir-format
 msgid "In-App: %{type}"
 msgstr ""
@@ -6052,7 +6054,7 @@ msgstr ""
 msgid "Person"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:806
+#: lib/baudrate_web/live/profile_live.html.heex:810
 #, elixir-autogen, elixir-format
 msgid "Push: %{type}"
 msgstr ""
@@ -6156,12 +6158,12 @@ msgstr ""
 msgid "Your vote"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:452
+#: lib/baudrate_web/live/profile_live.html.heex:454
 #, elixir-autogen, elixir-format
 msgid "Confirm Identity"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:449
+#: lib/baudrate_web/live/profile_live.html.heex:451
 #, elixir-autogen, elixir-format
 msgid "Confirming..."
 msgstr ""
@@ -6186,7 +6188,7 @@ msgstr ""
 msgid "To add or remove security keys, confirm your password."
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:269
+#: lib/baudrate_web/live/data_export_live.ex:271
 #: lib/baudrate_web/live/password_change_live.ex:123
 #: lib/baudrate_web/live/profile_live.ex:463
 #: lib/baudrate_web/live/profile_live.ex:524
@@ -6230,17 +6232,17 @@ msgstr ""
 msgid "A security key was removed from your account."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.html.heex:123
+#: lib/baudrate_web/live/notifications_live.ex:149
 #, elixir-autogen, elixir-format
 msgid "If you did not make this change, check your security settings right away and contact an administrator."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:132
+#: lib/baudrate_web/live/notifications_live.ex:134
 #, elixir-autogen, elixir-format
 msgid "Review your security settings"
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:127
+#: lib/baudrate_web/live/notifications_live.ex:128
 #, elixir-autogen, elixir-format
 msgid "Security key: %{label}"
 msgstr ""
@@ -6255,7 +6257,7 @@ msgstr ""
 msgid "Two-factor authentication (TOTP) was turned off on your account."
 msgstr ""
 
-#: lib/baudrate/notification/web_push.ex:308
+#: lib/baudrate/notification/web_push.ex:313
 #, elixir-autogen, elixir-format
 msgid "Someone"
 msgstr ""
@@ -6267,13 +6269,13 @@ msgstr ""
 
 #: lib/baudrate_web/live/password_change_live.ex:41
 #: lib/baudrate_web/live/password_change_live.html.heex:6
-#: lib/baudrate_web/live/password_change_live.html.heex:143
+#: lib/baudrate_web/live/password_change_live.html.heex:145
 #: lib/baudrate_web/live/profile_live.html.heex:320
 #, elixir-autogen, elixir-format
 msgid "Change Password"
 msgstr ""
 
-#: lib/baudrate_web/live/password_change_live.html.heex:150
+#: lib/baudrate_web/live/password_change_live.html.heex:152
 #, elixir-autogen, elixir-format
 msgid "Change password navigation"
 msgstr ""
@@ -6306,17 +6308,17 @@ msgstr[1] ""
 msgid "Please fix the problems with the new password."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:506
+#: lib/baudrate_web/live/profile_live.html.heex:508
 #, elixir-autogen, elixir-format
 msgid "Sessions"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:563
+#: lib/baudrate_web/live/profile_live.html.heex:567
 #, elixir-autogen, elixir-format
 msgid "Sign Out Everywhere Else"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:509
+#: lib/baudrate_web/live/profile_live.html.heex:511
 #, elixir-autogen, elixir-format
 msgid "Sign out of every other browser or device where your account is signed in. This one stays signed in."
 msgstr ""
@@ -6329,7 +6331,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: lib/baudrate_web/live/data_export_live.html.heex:178
-#: lib/baudrate_web/live/profile_live.html.heex:560
+#: lib/baudrate_web/live/profile_live.html.heex:564
 #, elixir-autogen, elixir-format
 msgid "Signing out..."
 msgstr ""
@@ -6339,34 +6341,34 @@ msgstr ""
 msgid "Your account password was changed."
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:299
+#: lib/baudrate_web/live/data_export_live.ex:301
 #: lib/baudrate_web/live/password_change_live.ex:72
 #: lib/baudrate_web/live/profile_live.ex:537
 #, elixir-autogen, elixir-format
 msgid "Your session has expired. Please sign in again."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:358
+#: lib/baudrate_web/helpers.ex:364
 #, elixir-autogen, elixir-format
 msgid "A data export of your account was requested. It can be downloaded after 24 hours."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:367
+#: lib/baudrate_web/helpers.ex:373
 #, elixir-autogen, elixir-format
 msgid "A data export request on your account was cancelled."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:129
+#: lib/baudrate_web/live/notifications_live.ex:130
 #, elixir-autogen, elixir-format
 msgid "Review your data exports"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:361
+#: lib/baudrate_web/helpers.ex:367
 #, elixir-autogen, elixir-format
 msgid "Your data export is ready and can be downloaded for 48 hours."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:364
+#: lib/baudrate_web/helpers.ex:370
 #, elixir-autogen, elixir-format
 msgid "Your data export was downloaded."
 msgstr ""
@@ -6461,7 +6463,7 @@ msgstr ""
 msgid "Available until"
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:293
+#: lib/baudrate_web/live/data_export_live.ex:295
 #, elixir-autogen, elixir-format
 msgid "Bot accounts cannot export data."
 msgstr ""
@@ -6481,12 +6483,12 @@ msgstr ""
 msgid "Cancel this data export request?"
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:307
+#: lib/baudrate_web/live/data_export_live.ex:309
 #, elixir-autogen, elixir-format
 msgid "Cancelled"
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:306
+#: lib/baudrate_web/live/data_export_live.ex:308
 #, elixir-autogen, elixir-format
 msgid "Completed"
 msgstr ""
@@ -6532,14 +6534,14 @@ msgstr ""
 msgid "Downloads left"
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:282
+#: lib/baudrate_web/live/data_export_live.ex:284
 #, elixir-autogen, elixir-format
 msgid "Enable two-factor authentication (TOTP) to export your data."
 msgstr ""
 
 #: lib/baudrate_web/live/data_export_live.ex:40
 #: lib/baudrate_web/live/data_export_live.html.heex:7
-#: lib/baudrate_web/live/profile_live.html.heex:495
+#: lib/baudrate_web/live/profile_live.html.heex:497
 #, elixir-autogen, elixir-format
 msgid "Export Your Data"
 msgstr ""
@@ -6557,7 +6559,7 @@ msgstr[1] ""
 msgid "No data exports yet."
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:296
+#: lib/baudrate_web/live/data_export_live.ex:298
 #, elixir-autogen, elixir-format
 msgid "Only active accounts can export data. Please contact an administrator."
 msgstr ""
@@ -6572,7 +6574,7 @@ msgstr ""
 msgid "Preparing..."
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:305
+#: lib/baudrate_web/live/data_export_live.ex:307
 #, elixir-autogen, elixir-format
 msgid "Ready to download"
 msgstr ""
@@ -6624,7 +6626,7 @@ msgstr ""
 msgid "The data export could not be prepared. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:301
+#: lib/baudrate_web/live/data_export_live.ex:303
 #, elixir-autogen, elixir-format
 msgid "The data export is not available."
 msgstr ""
@@ -6634,54 +6636,54 @@ msgstr ""
 msgid "To protect your account, an export becomes available 24 hours after you request it, can be downloaded for 48 hours, and at most 3 times. You will be asked for your password and authenticator code each time."
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:286
+#: lib/baudrate_web/live/data_export_live.ex:288
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication must be enabled for 7 days first. You can export in %{count} day."
 msgid_plural "Two-factor authentication must be enabled for 7 days first. You can export in %{count} days."
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/baudrate_web/live/data_export_live.ex:304
+#: lib/baudrate_web/live/data_export_live.ex:306
 #, elixir-autogen, elixir-format
 msgid "Waiting"
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:276
+#: lib/baudrate_web/live/data_export_live.ex:278
 #, elixir-autogen, elixir-format
 msgid "You already have a data export request in progress."
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:279
+#: lib/baudrate_web/live/data_export_live.ex:281
 #, elixir-autogen, elixir-format
 msgid "You can request at most 2 data exports per week. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:487
+#: lib/baudrate_web/live/profile_live.html.heex:489
 #, elixir-autogen, elixir-format
 msgid "Your Data"
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:315
+#: lib/baudrate_web/live/data_export_live.ex:317
 #, elixir-autogen, elixir-format
 msgid "account suspended"
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:312
+#: lib/baudrate_web/live/data_export_live.ex:314
 #, elixir-autogen, elixir-format
 msgid "by you"
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:313
+#: lib/baudrate_web/live/data_export_live.ex:315
 #, elixir-autogen, elixir-format
 msgid "password changed"
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:316
+#: lib/baudrate_web/live/data_export_live.ex:318
 #, elixir-autogen, elixir-format
 msgid "signed out everywhere"
 msgstr ""
 
-#: lib/baudrate_web/live/data_export_live.ex:314
+#: lib/baudrate_web/live/data_export_live.ex:316
 #, elixir-autogen, elixir-format
 msgid "two-factor authentication changed"
 msgstr ""
@@ -6712,4 +6714,39 @@ msgstr ""
 #: lib/baudrate_web/live/admin/data_exports_live.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "The 100 most recent data export requests. Users download their own data; there is no way to export another user's data from here."
+msgstr ""
+
+#: lib/baudrate_web/live/notifications_live.ex:131
+#, elixir-autogen, elixir-format
+msgid "Change your password"
+msgstr ""
+
+#: lib/baudrate_web/live/admin/login_attempts_live.html.heex:62
+#, elixir-autogen, elixir-format
+msgid "Check"
+msgstr ""
+
+#: lib/baudrate_web/components/core_components.ex:872
+#, elixir-autogen, elixir-format
+msgid "Each code works only once. If you just used one, wait for the next code."
+msgstr ""
+
+#: lib/baudrate_web/live/notifications_live.ex:143
+#, elixir-autogen, elixir-format
+msgid "If this was not you, your password is known to someone else. Change it right away and contact an administrator."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/login_attempts_live.ex:62
+#, elixir-autogen, elixir-format
+msgid "Re-authentication"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:358
+#, elixir-autogen, elixir-format
+msgid "Someone entered the correct password for your account but failed the two-factor code several times."
+msgstr ""
+
+#: lib/baudrate_web/live/admin/login_attempts_live.ex:61
+#, elixir-autogen, elixir-format
+msgid "Two-factor code"
 msgstr ""

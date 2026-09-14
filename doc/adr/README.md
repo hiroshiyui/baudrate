@@ -39,6 +39,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0021](0021-setup-wizard-and-installation-key-gate.md) | First-run setup wizard gated by `INSTALLATION_KEY` | Accepted |
 | [0022](0022-step-up-reauthentication-for-second-factor-changes.md) | Changing an account's second factors requires step-up re-authentication | Accepted |
 | [0023](0023-data-export-threat-model.md) | Self-service data export is designed against data leakage first | Accepted |
+| [0024](0024-totp-codes-are-single-use-with-a-one-period-grace-window.md) | TOTP codes are single-use, with a one-period grace window | Accepted |
 
 ## Writing a new ADR
 

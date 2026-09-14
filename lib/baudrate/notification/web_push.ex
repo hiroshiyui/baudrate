@@ -201,7 +201,8 @@ defmodule Baudrate.Notification.WebPush do
 
   Account security notices (`Notification.security_types/0`) are rendered in
   the recipient's preferred locale and link to `/profile`, where the security
-  keys and TOTP settings live.
+  keys and TOTP settings live. Data export notices link to `/profile/export`
+  and `totp_login_failed` to `/profile/password`.
   """
   def build_payload(notification) do
     title = notification_title(notification)
@@ -255,6 +256,10 @@ defmodule Baudrate.Notification.WebPush do
 
   defp notification_url(%{type: "data_export_" <> _}) do
     BaudrateWeb.Endpoint.url() <> "/profile/export"
+  end
+
+  defp notification_url(%{type: "totp_login_failed"}) do
+    BaudrateWeb.Endpoint.url() <> "/profile/password"
   end
 
   defp notification_url(%{type: type}) when type in @security_types do

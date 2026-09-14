@@ -33,6 +33,8 @@ defmodule Baudrate.Notification.Notification do
     * `totp_disabled` — TOTP two-factor authentication was turned off
     * `password_changed` — the account password was changed while signed in
     * `signed_out_everywhere` — all other sessions were signed out (`data.count`)
+    * `totp_login_failed` — the correct password was entered but the TOTP code
+      kept failing at login, so someone else may know the password (ADR 0024)
     * `data_export_requested` — a data export was requested (`data.ready_at`, `data.browser`)
     * `data_export_ready` — the export can be downloaded (`data.expires_at`)
     * `data_export_downloaded` — the export was downloaded (`data.count`, `data.remaining`)
@@ -70,6 +72,7 @@ defmodule Baudrate.Notification.Notification do
     totp_disabled
     password_changed
     signed_out_everywhere
+    totp_login_failed
     data_export_requested
     data_export_ready
     data_export_downloaded
@@ -83,6 +86,7 @@ defmodule Baudrate.Notification.Notification do
     totp_disabled
     password_changed
     signed_out_everywhere
+    totp_login_failed
     data_export_requested
     data_export_ready
     data_export_downloaded

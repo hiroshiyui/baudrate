@@ -25,6 +25,19 @@ defmodule Baudrate.Auth.LoginAttemptTest do
       assert attempt.success == true
     end
 
+    test "records which check the attempt was for, defaulting to the password" do
+      assert {:ok, %{factor: "password"}} = Auth.record_login_attempt("f1", "127.0.0.1", false)
+
+      assert {:ok, %{factor: "totp"}} =
+               Auth.record_login_attempt("f1", "127.0.0.1", false, "totp")
+
+      assert {:ok, %{factor: "reauth"}} =
+               Auth.record_login_attempt("f1", "127.0.0.1", false, "reauth")
+
+      assert {:error, changeset} = Auth.record_login_attempt("f1", "127.0.0.1", false, "sms")
+      assert %{factor: [_]} = errors_on(changeset)
+    end
+
     test "lowercases username for case-insensitive matching" do
       {:ok, attempt} = Auth.record_login_attempt("MiXeDcAsE", "127.0.0.1", false)
       assert attempt.username == "mixedcase"

@@ -233,7 +233,9 @@ defmodule BaudrateWeb.DataExportLive do
         maxlength="6"
         autocomplete="one-time-code"
         required
+        aria-describedby={"#{@prefix}-code-hint"}
       />
+      <.totp_code_hint id={"#{@prefix}-code-hint"} />
     </div>
     """
   end

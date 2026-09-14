@@ -300,8 +300,11 @@ defmodule Baudrate.Auth.Sessions do
 
   The username is lowercased for case-insensitive matching.
   Both successful and failed attempts are recorded for audit purposes.
+  `factor` is `"password"` (default), `"totp"` or `"reauth"`; see
+  `Baudrate.Auth.LoginAttempt`.
   """
-  def record_login_attempt(username, ip_address, success) when is_binary(username) do
+  def record_login_attempt(username, ip_address, success, factor \\ "password")
+      when is_binary(username) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     %LoginAttempt{}
@@ -309,6 +312,7 @@ defmodule Baudrate.Auth.Sessions do
       username: String.downcase(username),
       ip_address: ip_address,
       success: success,
+      factor: factor,
       inserted_at: now
     })
     |> Repo.insert()

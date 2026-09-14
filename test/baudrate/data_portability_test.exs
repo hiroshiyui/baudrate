@@ -55,6 +55,8 @@ defmodule Baudrate.DataPortabilityTest do
 
   defp request!(user, secret) do
     {:ok, request} = DataPortability.request_export(user, creds(secret), opts())
+    # The code is now used up (ADR 0024). A real user comes back with a new one.
+    forget_totp_use(user)
     request
   end
 

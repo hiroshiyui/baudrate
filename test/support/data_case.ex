@@ -57,19 +57,33 @@ defmodule Baudrate.DataCase do
   end
 
   @doc """
-  Returns the current TOTP code for `secret`, first waiting out the last
-  3 seconds of a 30-second period.
+  Returns the current TOTP code for `secret`.
 
-  `Auth.valid_totp?/3` accepts only the current period. A code generated at
-  the very end of one period and verified a few milliseconds later, after a
-  bcrypt check, in the next period is rejected. Across a full partitioned run
-  that happens often enough to make tests flaky. This waits for the next
-  period instead, which is a clock boundary, not timestamp separation between
-  records.
+  A code for the previous 30-second period is still accepted (ADR 0024), so a
+  code generated just before a period boundary and verified just after it
+  works. No waiting is needed.
   """
-  def totp_code(secret) do
-    remaining = 30 - rem(System.os_time(:second), 30)
-    if remaining <= 3, do: Process.sleep(remaining * 1000 + 100)
-    NimbleTOTP.verification_code(secret)
+  def totp_code(secret), do: NimbleTOTP.verification_code(secret)
+
+  @doc """
+  Forgets the TOTP period last accepted for `user` (a struct or id), so the
+  current code can be used again.
+
+  Codes are consumed on use (ADR 0024). A test that authenticates twice
+  within the same 30 seconds, where a real user would be minutes or days
+  apart (requesting an export, then downloading it), calls this between the
+  two instead of waiting for the next period.
+  """
+  def forget_totp_use(%{id: id}), do: forget_totp_use(id)
+
+  def forget_totp_use(user_id) when is_integer(user_id) do
+    import Ecto.Query, only: [from: 2]
+
+    Baudrate.Repo.update_all(
+      from(u in Baudrate.Setup.User, where: u.id == ^user_id),
+      set: [totp_last_used_step: nil]
+    )
+
+    :ok
   end
 end

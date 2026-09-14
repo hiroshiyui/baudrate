@@ -116,6 +116,7 @@ defmodule BaudrateWeb.NotificationsLive do
 
   defp target_link(%{article: %{slug: slug}}) when not is_nil(slug), do: ~p"/articles/#{slug}"
   defp target_link(%{type: "data_export_" <> _}), do: ~p"/profile/export"
+  defp target_link(%{type: "totp_login_failed"}), do: ~p"/profile/password"
   defp target_link(%{type: type}) when type in @security_types, do: ~p"/profile"
   defp target_link(_), do: nil
 
@@ -127,6 +128,7 @@ defmodule BaudrateWeb.NotificationsLive do
        do: gettext("Security key: %{label}", label: label)
 
   defp target_title(%{type: "data_export_" <> _}), do: gettext("Review your data exports")
+  defp target_title(%{type: "totp_login_failed"}), do: gettext("Change your password")
 
   defp target_title(%{type: type}) when type in @security_types,
     do: gettext("Review your security settings")
@@ -134,4 +136,17 @@ defmodule BaudrateWeb.NotificationsLive do
   defp target_title(_), do: nil
 
   defp security_notice?(%{type: type}), do: type in @security_types
+
+  # This notice is not about a change the user made, so the usual hint does not fit.
+  defp security_hint(%{type: "totp_login_failed"}),
+    do:
+      gettext(
+        "If this was not you, your password is known to someone else. Change it right away and contact an administrator."
+      )
+
+  defp security_hint(_),
+    do:
+      gettext(
+        "If you did not make this change, check your security settings right away and contact an administrator."
+      )
 end

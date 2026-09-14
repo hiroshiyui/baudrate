@@ -20,6 +20,16 @@ defmodule Baudrate.Auth.Reauthentication do
   re-authentication form and never hit the login throttle. Web-layer callers
   must also apply `BaudrateWeb.RateLimits.check_reauth/1` first.
 
+  ## Codes are consumed
+
+  A TOTP code accepted here is used up (`SecondFactor.verify_totp_code/3`,
+  ADR 0024), so two checks within the same 30 seconds need two different
+  codes. The code is consumed only when the password is also correct. A wrong
+  password never burns the user's current code.
+
+  Failures here never send the `totp_login_failed` notice: this form does not
+  say which factor was wrong, and the notice would.
+
   ## Not accepted
 
   Recovery codes are deliberately not accepted. They exist to recover a lost
@@ -63,13 +73,13 @@ defmodule Baudrate.Auth.Reauthentication do
     # Evaluate both factors unconditionally so response timing does not reveal
     # which one was wrong.
     password_valid = Passwords.verify_password(user, password)
-    totp_valid = totp_valid?(user, String.trim(code))
+    totp_valid = totp_valid?(user, String.trim(code), password_valid)
 
     if password_valid and totp_valid do
       Logger.info("auth.reauth_success: user_id=#{user.id} purpose=#{purpose} ip=#{ip_address}")
       :ok
     else
-      Sessions.record_login_attempt(user.username, ip_address, false)
+      Sessions.record_login_attempt(user.username, ip_address, false, "reauth")
 
       Logger.warning(
         "auth.reauth_failure: user_id=#{user.id} purpose=#{purpose} ip=#{ip_address}"
@@ -79,16 +89,14 @@ defmodule Baudrate.Auth.Reauthentication do
     end
   end
 
-  # An account with TOTP enabled must present a valid current code. A secret
-  # that cannot be decrypted fails closed.
-  defp totp_valid?(%User{totp_enabled: true} = user, code) do
-    case SecondFactor.decrypt_totp_secret(user) do
-      nil -> false
-      secret -> SecondFactor.valid_totp?(secret, code)
-    end
+  # An account with TOTP enabled must present an unused code for the current or
+  # previous time step. A secret that cannot be decrypted fails closed. The
+  # code is consumed only when the password was right.
+  defp totp_valid?(%User{totp_enabled: true} = user, code, password_valid) do
+    SecondFactor.verify_totp_code(user, code, claim: password_valid)
   end
 
-  defp totp_valid?(%User{}, _code), do: true
+  defp totp_valid?(%User{}, _code, _password_valid), do: true
 
   defp normalize(value) when is_binary(value), do: value
   defp normalize(_), do: ""

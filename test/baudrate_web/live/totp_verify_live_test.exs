@@ -22,6 +22,9 @@ defmodule BaudrateWeb.TotpVerifyLiveTest do
 
     assert html =~ "Two-Factor Authentication"
     assert html =~ "Verification Code"
+    # Codes are single-use (ADR 0024); the hint is always there, not only after a failure.
+    assert html =~ ~s(aria-describedby="totp-verify-code-hint")
+    assert html =~ "Each code works only once"
   end
 
   test "redirects to /login without session", %{conn: conn} do

@@ -59,6 +59,7 @@
           <th scope="col">{gettext("Date")}</th>
           <th scope="col">{gettext("Username")}</th>
           <th scope="col">{gettext("IP Address")}</th>
+          <th scope="col">{gettext("Check")}</th>
           <th scope="col">{gettext("Result")}</th>
         </tr>
       </thead>
@@ -75,6 +76,7 @@
           </td>
           <td>{attempt.username}</td>
           <td class="text-sm font-mono">{attempt.ip_address || "—"}</td>
+          <td class="admin-login-attempts-factor text-sm">{factor_label(attempt.factor)}</td>
           <td>
             <span :if={attempt.success} class="badge badge-success badge-sm">
               {gettext("Success")}

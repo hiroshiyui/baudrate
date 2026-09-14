@@ -282,6 +282,14 @@ All login attempts (success and failure) are recorded and viewable at
 `/admin/login-attempts` (paginated, filterable by username). Records older
 than 7 days are purged hourly by `SessionCleaner`.
 
+The **Check** column shows what each attempt was for:
+
+| Check | Meaning |
+|-------|---------|
+| Password | The password step of login, or a password reset |
+| Two-factor code | The TOTP step of login. It is only reached with the **correct password**, so a run of failures here means someone else knows that password. The user is notified after 3 in an hour |
+| Re-authentication | Password plus code entered from a signed-in session (password change, security keys, data export) |
+
 Failed logins trigger **progressive per-account delays** (not hard lockout):
 
 | Failures (1-hour window) | Delay |
@@ -309,7 +317,14 @@ recovery codes when displayed. Each code can only be used once.
 - Secrets encrypted at rest with AES-256-GCM (key derived from
   `SECRET_KEY_BASE`)
 - Recovery codes: 10 per user, HMAC-SHA256 hashed, one-time use
-- Clock skew tolerance: ±30 seconds (NTP synchronization is critical)
+- Codes are accepted for the current 30-second period and for 30 seconds after
+  they roll over. A code from a device clock running ahead is not accepted, so
+  keep the server on NTP
+- Each code works **once** per account: a code that signed in or confirmed an
+  action is refused if entered again, even within its 30 seconds (ADR 0024).
+  Users who need two checks in a row wait for the next code
+- Failed codes at login count toward the account's login throttle, and after 3
+  in an hour the user gets a security notice to change their password
 - Users can reset their own TOTP at `/profile/totp-reset`
 - `users.totp_enabled_at` records when TOTP was enabled; accounts that already
   had TOTP when that column was added are stamped with the upgrade time. Features that refuse

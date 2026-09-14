@@ -21,6 +21,10 @@ defmodule Baudrate.Setup.User do
       `Baudrate.Auth.SecondFactor.totp_enabled_for_at_least?/2`, ADR 0023).
       Accounts that had TOTP before the column existed were backfilled with
       the migration time.
+    * `totp_last_used_step` — the most recent TOTP time step (unix time div 30)
+      accepted for this account, or `nil`. A code is accepted only for a later
+      step, so each code works once (`Baudrate.Auth.SecondFactor.verify_totp_code/3`,
+      ADR 0024). Cleared when TOTP is disabled.
 
   ## ActivityPub Fields
 
@@ -96,6 +100,7 @@ defmodule Baudrate.Setup.User do
     field :totp_secret, :binary
     field :totp_enabled, :boolean, default: false
     field :totp_enabled_at, :utc_datetime
+    field :totp_last_used_step, :integer
     field :avatar_id, :string
     field :status, :string, default: "active"
     field :preferred_locales, {:array, :string}, default: []
@@ -216,7 +221,7 @@ defmodule Baudrate.Setup.User do
   @doc "Changeset for updating the TOTP secret, enabled flag, and enablement timestamp."
   def totp_changeset(user, attrs) do
     user
-    |> cast(attrs, [:totp_secret, :totp_enabled, :totp_enabled_at])
+    |> cast(attrs, [:totp_secret, :totp_enabled, :totp_enabled_at, :totp_last_used_step])
   end
 
   @doc "Changeset for setting user status to `\"active\"` or `\"pending\"`."

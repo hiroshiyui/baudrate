@@ -138,15 +138,20 @@ defmodule Baudrate.AuthTest do
       assert String.starts_with?(data_uri, "data:image/svg+xml;base64,")
     end
 
-    test "valid_totp? validates correct code" do
+    test "match_totp_step accepts the current code" do
       secret = Auth.generate_totp_secret()
-      code = totp_code(secret)
-      assert Auth.valid_totp?(secret, code)
+      assert {:ok, step} = Auth.match_totp_step(secret, totp_code(secret))
+      assert is_integer(step)
     end
 
-    test "valid_totp? rejects incorrect code" do
+    test "verify_totp_code rejects an incorrect code" do
+      user = create_user("user")
       secret = Auth.generate_totp_secret()
-      refute Auth.valid_totp?(secret, "000000")
+      {:ok, user} = Auth.enable_totp(user, secret)
+      code = totp_code(secret)
+      wrong = if code == "000000", do: "111111", else: "000000"
+
+      refute Auth.verify_totp_code(user, wrong)
     end
 
     test "enable_totp stores encrypted secret and enables TOTP" do

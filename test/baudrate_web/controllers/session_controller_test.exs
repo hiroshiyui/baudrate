@@ -1,6 +1,8 @@
 defmodule BaudrateWeb.SessionControllerTest do
   use BaudrateWeb.ConnCase
 
+  import Ecto.Query
+
   alias Baudrate.Auth
   alias Baudrate.Repo
   alias Baudrate.Setup.Setting
@@ -102,6 +104,98 @@ defmodule BaudrateWeb.SessionControllerTest do
       conn = post(conn, "/auth/totp-verify", %{"code" => "123456"})
       assert redirected_to(conn) == "/login"
     end
+
+    test "a code that already signed in cannot sign in again", %{conn: conn} do
+      user = setup_user("user")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(user, secret)
+      code = totp_code(secret)
+
+      first =
+        conn
+        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> post("/auth/totp-verify", %{"code" => code})
+
+      assert redirected_to(first) == "/"
+
+      replay =
+        build_conn()
+        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> post("/auth/totp-verify", %{"code" => code})
+
+      assert redirected_to(replay) == "/totp/verify"
+      assert is_nil(get_session(replay, :session_token))
+    end
+
+    test "accepts the code from the previous 30-second period", %{conn: conn} do
+      user = setup_user("user")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(user, secret)
+      code = NimbleTOTP.verification_code(secret, time: System.os_time(:second) - 30)
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> post("/auth/totp-verify", %{"code" => code})
+
+      assert redirected_to(conn) == "/"
+    end
+
+    test "records a failed code against the account and warns the owner after 3", %{conn: conn} do
+      user = setup_user("user")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(user, secret)
+      wrong = if totp_code(secret) == "000000", do: "111111", else: "000000"
+
+      for _ <- 1..3 do
+        conn
+        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> post("/auth/totp-verify", %{"code" => wrong})
+      end
+
+      assert [%{factor: "totp", success: false} | _] =
+               Repo.all(
+                 from(a in Baudrate.Auth.LoginAttempt,
+                   where: a.username == ^String.downcase(user.username)
+                 )
+               )
+
+      assert Repo.exists?(
+               from(n in Baudrate.Notification.Notification,
+                 where: n.user_id == ^user.id and n.type == "totp_login_failed"
+               )
+             )
+    end
+
+    test "honours the per-account login throttle without consuming the code", %{conn: conn} do
+      user = setup_user("user")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(user, secret)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert_all(
+        Baudrate.Auth.LoginAttempt,
+        for(
+          _ <- 1..15,
+          do: %{
+            username: String.downcase(user.username),
+            success: false,
+            factor: "totp",
+            inserted_at: now
+          }
+        )
+      )
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> post("/auth/totp-verify", %{"code" => totp_code(secret)})
+
+      assert redirected_to(conn) == "/totp/verify"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Account temporarily locked"
+      assert is_nil(get_session(conn, :session_token))
+      assert is_nil(Repo.reload!(user).totp_last_used_step)
+    end
   end
 
   describe "POST /auth/totp-enable" do
@@ -123,6 +217,16 @@ defmodule BaudrateWeb.SessionControllerTest do
 
       updated_user = Auth.get_user(user.id)
       assert updated_user.totp_enabled == true
+
+      # The enrolment code is used up: it cannot also sign in.
+      assert is_integer(updated_user.totp_last_used_step)
+
+      replay =
+        build_conn()
+        |> Plug.Test.init_test_session(%{user_id: user.id})
+        |> post("/auth/totp-verify", %{"code" => code})
+
+      assert redirected_to(replay) == "/totp/verify"
     end
 
     test "rejects invalid code during setup", %{conn: conn} do
@@ -304,6 +408,27 @@ defmodule BaudrateWeb.SessionControllerTest do
       assert redirected_to(conn) == "/admin/users"
       assert is_integer(get_session(conn, :admin_totp_verified_at))
       assert is_nil(get_session(conn, :admin_totp_attempts))
+    end
+
+    test "a code that was already used cannot grant sudo mode", %{conn: conn} do
+      admin = setup_user("admin")
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(admin, secret)
+      code = totp_code(secret)
+      logged_in = log_in_user(conn, admin)
+
+      assert logged_in
+             |> post("/auth/admin-totp-verify", %{"code" => code, "return_to" => "/admin/users"})
+             |> redirected_to() == "/admin/users"
+
+      replay =
+        post(logged_in, "/auth/admin-totp-verify", %{
+          "code" => code,
+          "return_to" => "/admin/users"
+        })
+
+      assert redirected_to(replay) =~ "/admin/verify"
+      assert is_nil(get_session(replay, :admin_totp_verified_at))
     end
 
     test "invalid code shows error and increments attempts", %{conn: conn} do

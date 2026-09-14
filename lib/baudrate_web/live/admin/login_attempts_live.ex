@@ -4,6 +4,10 @@ defmodule BaudrateWeb.Admin.LoginAttemptsLive do
 
   Displays a paginated, filterable list of login attempts for security
   monitoring. Only accessible to admin users.
+
+  Each row shows which check the attempt was for (`LoginAttempt` `factor`).
+  Failed two-factor codes at login follow a correct password, so a run of
+  them means someone else probably knows that account's password (ADR 0024).
   """
 
   use BaudrateWeb, :live_view
@@ -53,4 +57,8 @@ defmodule BaudrateWeb.Admin.LoginAttemptsLive do
     params = if term == "", do: %{}, else: %{"username" => term}
     {:noreply, push_patch(socket, to: ~p"/admin/login-attempts?#{params}")}
   end
+
+  defp factor_label("totp"), do: gettext("Two-factor code")
+  defp factor_label("reauth"), do: gettext("Re-authentication")
+  defp factor_label(_), do: gettext("Password")
 end
