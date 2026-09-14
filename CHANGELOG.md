@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.15.0] — 2026-09-14
+
+Real client IPs behind a same-host reverse proxy, and version information in
+the admin panel.
+
+**Upgrading:**
+
+- **Per-IP rate limits and IP logging now see real client addresses** on the
+  default deployment (Nginx on the same host). Before this release every
+  request was attributed to the proxy, so all visitors shared one bucket for
+  the login, TOTP, password-reset, search and LiveView-mount limits. That
+  meant one abusive client could lock everyone out. After upgrading, `ip=`
+  fields in the log should show real addresses instead of `::ffff:127.0.0.1`.
+- IP addresses recorded before the upgrade (login attempts, sessions, log
+  lines) remain the proxy's and cannot be recovered.
+- No migrations, no configuration changes.
+
+### Added
+
+- **System Information on `/admin/settings`:** the running Baudrate version
+  plus the Elixir, Erlang/OTP and ERTS versions, read from the running node.
+
+### Security
+
+- **The reverse proxy was never trusted on a dual-stack bind.** The production
+  endpoint listens on the IPv6 any-address, so Nginx connecting from
+  `127.0.0.1` arrived as the IPv4-mapped `::ffff:127.0.0.1`. That never
+  matched the `127.0.0.1` trusted-proxy entry, so `X-Forwarded-For` was
+  ignored, over plain HTTP and LiveView sockets alike.
+  - IPv4-mapped addresses are now unmapped before trust matching and before
+    they are stored.
+  - Only the `::ffff:0:0/96` prefix is unmapped. NAT64 and 6to4 addresses are
+    different hosts and stay untrusted.
+  - The LiveView path now resolves client IPs through the same function as the
+    plug, and no longer uses an unparseable header value verbatim.
+
 ## [1.14.4] — 2026-09-14
 
 A security release. **All instances should upgrade.** A stolen admin session
