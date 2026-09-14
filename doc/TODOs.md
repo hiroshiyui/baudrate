@@ -17,25 +17,25 @@ Baudrate is already strong on security engineering, ADRs, accessibility plumbing
 
 Fix each bug in its own commit on `current`, with a regression test.
 
-- [ ] **B1. Blocking a domain from the Federation dashboard doesn't take effect.** (confirmed)
+- [x] **B1. Blocking a domain from the Federation dashboard doesn't take effect.** (confirmed)
   - `block_domain` and the audit "Add" / "Add All" buttons refresh `SettingsCache` but not `DomainBlockCache`. Inbox, delivery, DM and link-preview checks keep ignoring the block until settings are saved or the app restarts.
   - The instance-list block is also missing from the audit log.
   - The cache fails open (nothing blocked) before its first load.
   - Evidence: `web/live/admin/federation_live.ex:67-90`, `core/federation/domain_block_cache.ex`, `core/setup.ex:436`.
   - Test: enable the cache in a test and check `domain_blocked?/1` after `block_domain`.
-- [ ] **B2. The audit log silently drops some actions.** (confirmed)
+- [x] **B2. The audit log silently drops some actions.** (confirmed)
   - `pin_article`, `unpin_article`, `lock_article`, `unlock_article` and the six bot actions (`create/update/delete/toggle_bot`, `reset_bot_errors`, `refresh_bot_favicon`) are not in `@valid_actions`, so the insert fails and the error is ignored.
   - These are never logged at all: settings saves (including blocklist edits, so unblocks), board federation toggles, accept-policy changes, removing an article from a board, admin edits of other users' articles, and sending a Flag.
   - `doc/sysop.md` and `doc/development.md` claim every action is logged.
   - Evidence: `core/moderation/log.ex:15`, `web/live/article_live.ex:232,257`, `web/live/admin/bots_live.ex`.
   - Test: a guard that every action name passed to `Moderation.log_action` in `lib/` is valid.
-- [ ] **B3. Reports from other servers (inbound `Flag`) are stored backwards.** (confirmed)
+- [x] **B3. Reports from other servers (inbound `Flag`) are stored backwards.** (confirmed)
   - The *reporting* actor is saved in `remote_actor_id` and shown as "Reported Actor". "Send Flag" then sends a Flag back to the reporter.
   - The reported local user is never set in `reported_user_id`.
   - A Flag without `content` (Mastodon allows it) doesn't match the handler and is dropped.
   - There is no dedup and no rate limit.
   - Evidence: `core/federation/inbox_handler.ex:439,1856`, `web/live/admin/moderation_live.html.heex:205`, `core/moderation/report.ex`.
-- [ ] **B4. "Followers only" and "Direct" don't restrict local posts.** (confirmed; approach set by D1)
+- [x] **B4. "Followers only" and "Direct" don't restrict local posts.** (confirmed; approach set by D1)
   - The article, edit, comment and feed quick-post composers offer them, but they only change federation addressing (`core/federation/publisher.ex:38-45`). Guests can still read such posts on this site.
   - "Direct" is broken on top of that: it addresses nobody, and `article_addressing/2` still adds the post's boards as recipients, so a "Direct" board post reaches board followers.
   - Fix (D1): offer only Public and Unlisted in every local composer.
@@ -43,34 +43,34 @@ Fix each bug in its own commit on `current`, with a regression test.
     - Remote rows keep their derived visibility.
   - Production had no local rows with either value on 2026-09-14 (all local articles and comments are `public`), so no data migration is needed.
   - Evidence: `web/live/article_new_live.html.heex:367`, `web/live/article_edit_live.html.heex:193`, `web/live/article_live.html.heex:584`, `web/live/feed_live.html.heex:336`.
-- [ ] **B5. Long DM conversations lose their newest messages.** (confirmed)
+- [x] **B5. Long DM conversations lose their newest messages.** (confirmed)
   - `Messaging.list_messages/2` sorts oldest first with `limit: 100`, and nothing loads more, so after 100 messages new ones never appear.
   - Evidence: `core/messaging.ex:410-418`, `web/live/conversation_live.ex:51,212`.
-- [ ] **B6. Engagement on remote posts never reaches the remote author.** (confirmed)
+- [x] **B6. Engagement on remote posts never reaches the remote author.** (confirmed)
   - `Delivery.enqueue_for_article/3` collects only local author followers and board followers.
   - Comments, likes, updates and deletes on a remote article skip the author's inbox.
   - Evidence: `core/federation/delivery.ex:266`, `core/federation/publisher.ex:514-600`.
-- [ ] **B7. Comment authors can't delete their own comments.** (confirmed)
+- [x] **B7. Comment authors can't delete their own comments.** (confirmed)
   - The template passes `can_delete={@is_board_mod}`, although `Permissions.can_delete_comment?/3` allows authors.
   - Deleting a parent comment also hides all its replies, because roots and descendants both filter `deleted_at` and there's no "[deleted]" placeholder.
   - Evidence: `web/live/article_live.html.heex:632`, `core/content/comments.ex:205,249`.
-- [ ] **B8. The theme and font-size bootstrap script never runs.** (confirmed)
+- [x] **B8. The theme and font-size bootstrap script never runs.** (confirmed)
   - CSP `script-src 'self'` blocks the inline script in the root layout, so pages can flash the wrong theme or font size.
   - Move it to a static file, or allow it with a CSP hash.
   - Evidence: `web/components/layouts/root.html.heex:72`, `web/router.ex:74`.
-- [ ] **B9. The documented backups don't work on Ansible installs.** (confirmed)
+- [x] **B9. The documented backups don't work on Ansible installs.** (confirmed)
   - `mix backup` isn't in the release.
   - `Helper.uploads_dir/0` points inside the release instead of `/opt/baudrate/shared/uploads`, so a cron job would archive an almost empty directory with no error.
   - The files backup doesn't exclude `media_cache`, although `doc/sysop.md` says it does.
   - Evidence: `lib/mix/tasks/backup/helper.ex:54`, `doc/sysop.md:982`, `core/release.ex`.
-- [ ] **B10. Notifications are never cleaned up.** (confirmed) `Notification.cleanup_old_notifications/1` exists and is tested, but nothing calls it; schedule it in `SessionCleaner`.
+- [x] **B10. Notifications are never cleaned up.** (confirmed) `Notification.cleanup_old_notifications/1` exists and is tested, but nothing calls it; schedule it in `SessionCleaner`.
   - Evidence: `core/notification.ex:172`.
-- [ ] **B11. Activity ids can repeat after a restart.**
+- [x] **B11. Activity ids can repeat after a restart.**
   - They are built with `System.unique_integer/1` (34 places in the publisher), which restarts with the VM.
   - A reused id can match the delivery dedup index `(inbox_url, actor_uri, activity_id)` and be skipped, and receivers may treat it as a duplicate.
   - Use UUIDs.
   - Evidence: `core/federation/publisher.ex:74` and others.
-- [ ] **B12. Local reports can't be sent to the remote author's server.** Article and comment reports store only the content id, never the remote author, so "Send Flag" never appears on local reports.
+- [x] **B12. Local reports can't be sent to the remote author's server.** Article and comment reports store only the content id, never the remote author, so "Send Flag" never appears on local reports.
   - Evidence: `web/live/article_live.ex:727`.
 
 ---
