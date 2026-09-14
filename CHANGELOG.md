@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.18.2] — 2026-09-14
+
+Fixes from a product review: domain blocks, the audit log, reports from other
+instances, post visibility, long DM conversations, federated interactions,
+comment deletion, backups and more.
+
+**Upgrading:**
+
+- One migration: `reports.reporter_remote_actor_id`. Reports that arrived from
+  other instances before this release stored the reporting actor as the
+  reported actor; the migration moves them.
+- **Backups:** `mix backup` is not part of a release, and on an Ansible install
+  it archived an almost empty uploads directory without error. Use
+  `bin/baudrate eval 'Baudrate.Release.backup("/var/backups/baudrate")'`
+  instead (see "Backup & Restore" in `doc/sysop.md`), replace any cron job
+  built from the old guide, and check the new archive's size.
+- The composers no longer offer "Followers only" or "Direct" for articles and
+  comments. Existing rows are untouched.
+
+### Fixed
+
+- **Domain blocks from the Federation dashboard take effect at once.** The
+  instance list and blocklist audit buttons saved the blocklist without
+  reloading the cache the federation checks read, so the block was ignored
+  until the next settings save or restart.
+- **The audit log no longer drops entries.** Pin, lock and every bot action
+  used names the log refused. Settings saves (with the domains added to and
+  removed from the blocklist and allowlist), End User Agreement edits, push key
+  generation, board federation and accept policy changes, removing an article
+  from a board, admins editing others' articles, and sent Flags are now
+  recorded too.
+- **Reports from other instances are recorded correctly.** An inbound `Flag`
+  stored its reporter as the reported actor and never recorded the reported
+  local account; Flags without a comment were dropped. Duplicates are now
+  skipped, Flags naming nothing local are ignored, and each instance may file
+  10 per hour.
+- **Reports about remote posts can be forwarded.** Reporting a remote article
+  or comment records its author, so "Send Flag" is available.
+- **"Followers only" and "Direct" no longer promise privacy the site did not
+  enforce.** Local articles and comments stayed readable by guests, and a
+  "Direct" board post still went to board followers. Local posts now accept
+  only Public or Unlisted.
+- **Long DM conversations show their newest messages.** Past 100 messages, new
+  ones never appeared. Older messages load on request.
+- **Replies, likes and boosts reach remote authors.** Interactions with remote
+  articles and comments went only to followers, so the author's instance never
+  saw them.
+- **Comment authors can delete their own comments**, and replies to a deleted
+  comment stay visible under a placeholder instead of disappearing.
+- **No wrong-theme flash on page load.** The content security policy blocked
+  the theme bootstrap script; it is now allowed by its hash.
+- **Activity and follow ids stay unique across restarts.** They ended in a
+  counter that restarts with the VM, so an id could repeat: a new activity
+  could be skipped as a duplicate delivery, and a new follow or feed reply
+  could collide with an existing one and fail.
+- **Old notifications are purged.** Notifications older than 90 days are now
+  deleted hourly.
+
 ## [1.18.1] — 2026-09-14
 
 Fixes for moved accounts and admin sudo mode, plus a rate limit on data export
