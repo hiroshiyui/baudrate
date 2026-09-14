@@ -22,7 +22,14 @@ pinned_asset() {
 otp_version="$(cat "$(erl -noshell -eval 'io:format("~s", [code:root_dir()]), halt().')/releases/$(erl -noshell -eval 'io:format("~s", [erlang:system_info(otp_release)]), halt().')/OTP_VERSION")"
 elixir_version="$(elixir -e 'IO.write(System.version())')"
 esbuild_version="$("$MIX_ESBUILD_PATH" --version)"
-tailwind_version="$("$MIX_TAILWIND_PATH" --help 2>&1 | sed -nE 's/.*tailwindcss v([0-9.]+).*/\1/p' | head -n1)"
+# Same probe as the tailwind Hex package; NO_COLOR and stripping escape codes
+# keep the version parseable when the CLI decides to print colours.
+tailwind_output="$(NO_COLOR=1 "$MIX_TAILWIND_PATH" --help 2>&1 || true)"
+tailwind_version="$(printf '%s\n' "$tailwind_output" | sed -E 's/\x1b\[[0-9;]*m//g' | sed -nE 's/.*tailwindcss v([0-9.]+).*/\1/p' | head -n1)"
+if [ -z "$tailwind_version" ]; then
+  echo "tailwind --help printed:"
+  printf '%s\n' "$tailwind_output" | head -n 20
+fi
 
 check erlang "$otp_version" "$(pinned_tool erlang)"
 check elixir "$elixir_version" "$(pinned_tool elixir)"
