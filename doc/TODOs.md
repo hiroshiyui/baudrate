@@ -2,7 +2,9 @@
 
 ## Design reference
 
-Phases 0 and 1 implement [ADR 0023](adr/0023-data-export-threat-model.md). Read it first: every
+Phases 0 and 1 implement [ADR 0023](adr/0023-data-export-threat-model.md), and Phase 2
+implements [ADR 0025](adr/0025-account-migration.md). Data import (a former Phase 3) was dropped
+from the plan. Read the ADRs first: every
 bullet below exists to prevent a specific way data could leak. When a TODO here conflicts with
 the ADR, the ADR wins. Reuse the step-up re-authentication and account security notice machinery
 from [ADR 0022](adr/0022-step-up-reauthentication-for-second-factor-changes.md).
@@ -102,90 +104,3 @@ and feed item migration (`Federation.migrate_feed_items/2`).
 
 - `doc/development.md` federation section, `doc/sysop.md`, `CLAUDE.md` gotchas,
   README features, zh_TW / ja_JP translations throughout.
-
----
-
-## Phase 3: Data Import — LOW PRIORITY
-
-Only practical imports for a BBS. Skip articles/comments/DMs (context is lost across platforms).
-
-### 3.1 Create `DataPortability.Import` module
-
-File: `lib/baudrate/data_portability/import.ex`
-
-Functions:
-- `import_following_list(user, csv_content)` — parse Mastodon-format CSV (`account` column with `user@domain`), resolve each via WebFinger, send Follow activities, rate-limited at 10/min
-- `import_block_list(user, csv_content)` — parse CSV, create UserBlock records for each entry
-- `import_mute_list(user, csv_content)` — parse CSV, create UserMute records
-- `import_bookmarks(user, json_content)` — parse JSON array of AP URIs, resolve to local articles if they exist, create bookmarks
-
-Each returns `{:ok, %{imported: N, skipped: M, failed: K}}`.
-
-### 3.2 Implement following list CSV import
-
-Mastodon export format: CSV with `account` column containing `user@domain` handles.
-
-Steps per entry:
-1. Parse `user@domain` from CSV row
-2. Resolve via `Federation.WebFingerClient.finger/1`
-3. Resolve actor via `ActorResolver.resolve/1`
-4. Create UserFollow + send Follow activity via `Federation.follow_remote_actor/2`
-5. Rate limit: 10 follows per minute (use `Process.sleep` between batches)
-6. Skip already-followed actors, log failures
-
-### 3.3 Implement block/mute list CSV import
-
-Same CSV format as Mastodon. For each `user@domain` entry:
-- Resolve to local user (if local) or remote actor
-- Create UserBlock / UserMute record
-- Skip duplicates
-
-### 3.4 Implement bookmark import
-
-JSON array of objects with `ap_id` or `url` fields:
-- Resolve AP URI to local article via `Content.get_article_by_ap_id/1`
-- Create bookmark if article exists locally
-- Skip unresolvable entries
-
-### 3.5 Create `DataImportLive` LiveView
-
-File: `lib/baudrate_web/live/data_import_live.ex` + `.html.heex`
-Route: `/profile/import` in the `:authenticated` live_session
-
-UI per import type (following, blocks, mutes, bookmarks):
-- File upload input (accept `.csv` or `.json`)
-- "Import" button
-- Progress indicator (for async following list imports)
-- Results summary: "Imported N, skipped M, failed K"
-- Max file size: 1 MB
-
-### 3.6 Add routes and rate limiting for import
-
-Router: add to `:authenticated` live_session:
-- `live "/profile/import", DataImportLive`
-
-Rate limiting:
-- 1 import per hour per type per user
-- Password re-verification before import
-
-### 3.7 Security for imports
-
-- Validate all CSV/JSON input at boundaries (malformed input must not crash)
-- Follows are rate-limited at the outbound delivery level (existing delivery queue)
-- Max file size 1 MB enforced at upload
-- Never use `String.to_atom/1` on imported data
-- Never put imported data in file paths
-- Log import actions in moderation audit log
-
-### 3.8 Write tests for imports
-
-- `test/baudrate/data_portability/import_test.exs` — unit tests for each import function
-- Test CSV parsing edge cases (empty, malformed, BOM, encoding)
-- Test deduplication (already followed, already blocked)
-- LiveView tests for upload and results display
-
-### 3.9 Update i18n and documentation for imports
-
-- Add strings for import UI, result summaries, error messages
-- Translate to en, zh_TW, ja_JP
-- Document import formats in `doc/development.md`
