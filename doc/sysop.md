@@ -319,7 +319,12 @@ recovery codes when displayed. Each code can only be used once.
 Users can register FIDO2-compatible hardware security keys (e.g. YubiKey,
 Passkey, Touch ID) as an additional second factor at `/profile`.
 
-- **Registration** — at `/profile` → "Security Keys" section → "Register New Key"
+- **Registration** — at `/profile` → "Security Keys" section. The user first
+  confirms their identity (password, plus the current TOTP code if TOTP is
+  enabled), which unlocks "Register New Key" and "Remove" for 5 minutes.
+  Without this, a stolen session cookie could enrol a key and use it to pass
+  admin sudo mode. Failed confirmations count as failed logins toward the
+  account throttle and appear in the login-attempt log.
 - **Admin sudo mode** — at `/admin/verify` admins can choose TOTP or a registered
   security key; both grant the same 10-minute sudo window
 - **Multiple keys** — users may register as many keys as they like; each has a
@@ -327,7 +332,9 @@ Passkey, Touch ID) as an additional second factor at `/profile`.
 - **Credential storage** — credential ID and public key are stored in the
   `webauthn_credentials` table; credentials are deleted with the user (cascade)
 - **Challenges** — single-use, 60-second ETS-backed challenge store
-  (`WebAuthnChallenges` GenServer); challenges are consumed atomically
+  (`WebAuthnChallenges` GenServer); challenges are consumed atomically and are
+  bound to their purpose (a challenge issued for sudo verification cannot
+  register a key)
 - **Sign count** — incremented on each successful authentication to detect
   cloned authenticators (a lower count than expected triggers an error)
 - **No user-verification enforcement** — `user_verification: :preferred`; the

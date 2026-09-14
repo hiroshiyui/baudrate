@@ -58,6 +58,7 @@ lib/
 │   │   ├── passwords.ex         # Password hashing, validation, and reset logic
 │   │   ├── profiles.ex          # User profile updates: display name, bio, signature, profile_fields
 │   │   ├── recovery_code.ex     # Ecto schema for one-time recovery codes
+│   │   ├── reauthentication.ex  # Step-up re-authentication (password + TOTP) for factor changes
 │   │   ├── reserved_handle.ex   # Reserved username/handle list (system, sysop, admin, etc.)
 │   │   ├── second_factor.ex     # TOTP enrollment, verification, and recovery
 │   │   ├── session_cleaner.ex   # GenServer: hourly cleanup (sessions, login attempts, orphan images)
@@ -311,6 +312,7 @@ and never need to know about the internal split.
 | `Auth.Passwords` | Password hashing (bcrypt), verification, and recovery code-based resets |
 | `Auth.Sessions` | Session lifecycle (dual-token rotation), server-side session storage, and login attempt throttling/monitoring |
 | `Auth.SecondFactor` | TOTP enrollment, encryption/decryption of secrets, QR code generation, and recovery code management |
+| `Auth.Reauthentication` | Step-up re-authentication from an authenticated session (password, plus TOTP when enabled; no recovery codes); feeds the per-account login throttle |
 | `Auth.WebAuthn` | FIDO2/WebAuthn credential registration and authentication (hardware security keys); ETS-backed challenge lifecycle |
 | `Auth.Invites` | Invite-only registration logic, quota management, and admin-issued invites |
 | `Auth.Profiles` | User preference updates: display name, bio, signature, profile fields, avatar association, and notification settings |
@@ -413,6 +415,30 @@ counter (both sides `0`) are exempt.
 | Lockout | 5 failed attempts lock admin out of admin pages (session NOT dropped) |
 | Verification page | `/admin/verify` stays in `:authenticated` to avoid redirect loops |
 | Session key | `admin_totp_verified_at` — Unix timestamp set on successful verification |
+
+### Step-up Re-authentication
+
+Because sudo mode accepts any registered WebAuthn key, a session cookie alone
+must never be able to change which factors an account has. Otherwise a stolen
+admin session could register its own key and pass `/admin/verify`
+([ADR 0022](adr/0022-step-up-reauthentication-for-second-factor-changes.md)).
+
+- `Auth.verify_reauthentication/5` (`Baudrate.Auth.Reauthentication`) checks
+  the password, plus the current TOTP code when TOTP is enabled. Recovery
+  codes are never accepted.
+- It enforces `Auth.check_login_throttle/1` before checking any credential,
+  and records failures in `login_attempts`. The account throttle therefore
+  survives page reloads, and a re-authentication form cannot be used to guess
+  passwords around the login throttle.
+- Callers first apply `RateLimits.check_reauth/1` (5 per 15 minutes per user,
+  shared across all re-authentication forms).
+- `/profile` requires it before registering or removing a security key. A
+  success unlocks key management for 5 minutes, held in socket assigns and
+  re-checked by every event handler.
+- `/profile/totp-reset` requires it before resetting or enabling TOTP.
+- WebAuthn challenges are bound to their purpose: `WebAuthnChallenges.pop/3`
+  takes `:attestation` (registration) or `:authentication` (sudo assertion),
+  and a mismatch consumes the entry.
 
 The `:admin` live_session boundary forces a full page load when navigating
 from authenticated pages to admin pages, ensuring the cookie session is

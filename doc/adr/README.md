@@ -37,6 +37,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0019](0019-gettext-i18n-no-bare-strings.md) | All user-visible text goes through Gettext | Accepted |
 | [0020](0020-testing-strategy.md) | Deterministic, partitioned tests with a stubbable rate limiter | Accepted |
 | [0021](0021-setup-wizard-and-installation-key-gate.md) | First-run setup wizard gated by `INSTALLATION_KEY` | Accepted |
+| [0022](0022-step-up-reauthentication-for-second-factor-changes.md) | Changing an account's second factors requires step-up re-authentication | Accepted |
 
 ## Writing a new ADR
 
