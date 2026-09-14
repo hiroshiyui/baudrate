@@ -13,6 +13,13 @@ defmodule Baudrate.Moderation.Report do
     * `remote_actor_id` — the **reported** remote actor. Moderators can send
       it a `Flag` ("Send Flag"). Never the reporter.
     * `article_id`, `comment_id`, `reported_user_id` — reported local records
+    * `feed_item_id` — a reported feed item (its author is `remote_actor_id`)
+    * `message_id` and `message_body` — a reported direct message and a copy
+      of its text taken when the report was made. Only that one message is
+      copied, never the rest of the conversation. The sender is
+      `reported_user_id` or `remote_actor_id`. `message_body` is never cast
+      from attributes; only `Moderation.report_message/3` sets it, from the
+      stored message.
   """
 
   use Ecto.Schema
@@ -23,6 +30,7 @@ defmodule Baudrate.Moderation.Report do
     field :status, :string, default: "open"
     field :resolved_at, :utc_datetime
     field :resolution_note, :string
+    field :message_body, :string
 
     belongs_to :reporter, Baudrate.Setup.User
     belongs_to :reporter_remote_actor, Baudrate.Federation.RemoteActor
@@ -30,6 +38,8 @@ defmodule Baudrate.Moderation.Report do
     belongs_to :comment, Baudrate.Content.Comment
     belongs_to :remote_actor, Baudrate.Federation.RemoteActor
     belongs_to :reported_user, Baudrate.Setup.User
+    belongs_to :feed_item, Baudrate.Federation.FeedItem
+    belongs_to :message, Baudrate.Messaging.DirectMessage
     belongs_to :resolved_by, Baudrate.Setup.User
 
     timestamps(type: :utc_datetime)
@@ -48,6 +58,8 @@ defmodule Baudrate.Moderation.Report do
       :comment_id,
       :remote_actor_id,
       :reported_user_id,
+      :feed_item_id,
+      :message_id,
       :resolved_by_id,
       :resolved_at,
       :resolution_note
@@ -87,21 +99,19 @@ defmodule Baudrate.Moderation.Report do
     |> foreign_key_constraint(:comment_id)
     |> foreign_key_constraint(:remote_actor_id)
     |> foreign_key_constraint(:reported_user_id)
+    |> foreign_key_constraint(:feed_item_id)
+    |> foreign_key_constraint(:message_id)
     |> foreign_key_constraint(:resolved_by_id)
   end
 
-  defp validate_has_target(changeset) do
-    article_id = get_field(changeset, :article_id)
-    comment_id = get_field(changeset, :comment_id)
-    remote_actor_id = get_field(changeset, :remote_actor_id)
-    reported_user_id = get_field(changeset, :reported_user_id)
+  @target_fields ~w(article_id comment_id remote_actor_id reported_user_id feed_item_id message_id)a
 
-    if is_nil(article_id) and is_nil(comment_id) and is_nil(remote_actor_id) and
-         is_nil(reported_user_id) do
+  defp validate_has_target(changeset) do
+    if Enum.all?(@target_fields, &is_nil(get_field(changeset, &1))) do
       add_error(
         changeset,
         :base,
-        "must target at least one of: article, comment, remote actor, or user"
+        "must target at least one of: article, comment, remote actor, user, feed item, or message"
       )
     else
       changeset

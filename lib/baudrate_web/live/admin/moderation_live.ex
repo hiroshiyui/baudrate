@@ -298,13 +298,13 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     report = Moderation.get_report!(report_id)
 
     if report.remote_actor do
+      # The reported objects that live on the remote server, so it can find
+      # them: a reported message is one it delivered to us.
       content_ap_ids =
-        []
-        |> then(fn ids ->
-          if report.article && report.article.ap_id, do: [report.article.ap_id | ids], else: ids
-        end)
-        |> then(fn ids ->
-          if report.comment && report.comment.ap_id, do: [report.comment.ap_id | ids], else: ids
+        [report.comment, report.article, report.feed_item, report.message]
+        |> Enum.flat_map(fn
+          %{ap_id: ap_id} when is_binary(ap_id) -> [ap_id]
+          _ -> []
         end)
 
       flag =

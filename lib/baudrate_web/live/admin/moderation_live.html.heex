@@ -216,6 +216,47 @@
         </div>
 
         <div
+          :if={report.feed_item}
+          id={"admin-moderation-report-feed-item-#{report.id}"}
+          class="admin-moderation-report-feed-item mt-2 p-3 bg-base-300 rounded-lg"
+        >
+          <p class="text-sm font-semibold">{gettext("Reported Feed Item:")}</p>
+          <p
+            :if={report.feed_item.title}
+            class="admin-moderation-report-feed-item-title break-words"
+          >
+            {report.feed_item.title}
+          </p>
+          <p class="admin-moderation-report-feed-item-body text-sm whitespace-pre-wrap break-words">
+            {String.slice(report.feed_item.body || "", 0..500)}
+          </p>
+          <a
+            :if={report.feed_item.source_url}
+            id={"admin-moderation-report-feed-item-link-#{report.id}"}
+            href={report.feed_item.source_url}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            class="admin-moderation-report-feed-item-link link link-primary text-sm break-all"
+          >
+            {gettext("View original")}
+          </a>
+        </div>
+
+        <div
+          :if={report.message_id || report.message_body}
+          id={"admin-moderation-report-message-#{report.id}"}
+          class="admin-moderation-report-message mt-2 p-3 bg-base-300 rounded-lg"
+        >
+          <p class="text-sm font-semibold">{gettext("Reported Direct Message:")}</p>
+          <p class="admin-moderation-report-message-body text-sm whitespace-pre-wrap break-words">
+            {report.message_body}
+          </p>
+          <p class="admin-moderation-report-message-note text-xs opacity-70 mt-1">
+            {gettext("Only this message was shared with moderators, not the conversation.")}
+          </p>
+        </div>
+
+        <div
           :if={report.remote_actor}
           class="admin-moderation-report-actor mt-2 p-3 bg-base-300 rounded-lg"
         >

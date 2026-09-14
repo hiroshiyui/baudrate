@@ -2,10 +2,13 @@ defmodule Baudrate.Moderation do
   @moduledoc """
   The Moderation context manages content reports and moderation actions.
 
-  Reports can target articles, comments, remote actors, or local users.
-  Admins and moderators can review, resolve, or dismiss reports through
-  the moderation queue. Authenticated users can submit reports from
-  article pages, comment threads, and user profile pages.
+  Reports can target articles, comments, remote actors, local users, feed
+  items, or received direct messages. Admins and moderators can review,
+  resolve, or dismiss reports through the moderation queue. Authenticated
+  users can submit reports from article pages, comment threads, user profile
+  pages, their feed, and their conversations. `report_feed_item/3`,
+  `report_message/3` and `report_remote_actor/3` check that the reporter can
+  see what they report.
   """
 
   import Ecto.Query
@@ -13,7 +16,10 @@ defmodule Baudrate.Moderation do
   require Logger
 
   alias Baudrate.Repo
+  alias Baudrate.Federation.{FeedItem, RemoteActor}
+  alias Baudrate.Messaging.DirectMessage
   alias Baudrate.Moderation.{Log, Report}
+  alias Baudrate.Setup.User
 
   @log_per_page 25
 
@@ -70,41 +76,146 @@ defmodule Baudrate.Moderation do
   defp same_target(field, nil), do: dynamic([r], is_nil(field(r, ^field)))
   defp same_target(field, id), do: dynamic([r], field(r, ^field) == ^id)
 
+  @target_fields ~w(article_id comment_id remote_actor_id reported_user_id feed_item_id message_id)a
+
   @doc """
-  Checks whether the given reporter already has an open report for the
-  same target. Returns `true` if a duplicate exists.
+  Checks whether the given reporter already has an open report for exactly
+  the same target: every target field (`article_id`, `comment_id`,
+  `remote_actor_id`, `reported_user_id`, `feed_item_id`, `message_id`) must
+  match, and a field missing from `target_attrs` must be empty. So a report
+  about one of an account's posts does not count as a report about the
+  account. Returns `true` if a duplicate exists.
   """
   @spec has_open_report?(integer(), map()) :: boolean()
   def has_open_report?(reporter_id, target_attrs) do
-    base =
-      from(r in Report,
-        where: r.reporter_id == ^reporter_id and r.status == "open"
-      )
-
     query =
-      Enum.reduce(target_attrs, base, fn
-        {:article_id, id}, q when not is_nil(id) ->
-          from(r in q, where: r.article_id == ^id)
-
-        {:comment_id, id}, q when not is_nil(id) ->
-          from(r in q, where: r.comment_id == ^id)
-
-        {:reported_user_id, id}, q when not is_nil(id) ->
-          from(r in q, where: r.reported_user_id == ^id)
-
-        {:remote_actor_id, id}, q when not is_nil(id) ->
-          from(r in q, where: r.remote_actor_id == ^id)
-
-        _, q ->
-          q
-      end)
+      Enum.reduce(
+        @target_fields,
+        from(r in Report, where: r.reporter_id == ^reporter_id and r.status == "open"),
+        fn field, q -> from(r in q, where: ^same_target(field, target_attrs[field])) end
+      )
 
     Repo.exists?(query)
   end
 
   @doc """
+  Reports a feed item on behalf of a member. The member must be able to see
+  the item (`Federation.feed_item_accessible?/2`); its remote author is
+  recorded as the reported actor, so moderators can "Send Flag".
+
+  Returns `{:ok, report}`, `{:error, :not_found}`, `{:error, :already_reported}`
+  or `{:error, changeset}`.
+  """
+  @spec report_feed_item(User.t(), term(), String.t()) ::
+          {:ok, Report.t()} | {:error, :not_found | :already_reported | Ecto.Changeset.t()}
+  def report_feed_item(%User{} = reporter, feed_item_id, reason) do
+    with %FeedItem{} = item <- get_by_id(FeedItem, feed_item_id),
+         true <- Baudrate.Federation.feed_item_accessible?(reporter, item) do
+      file_report(
+        reporter,
+        %{feed_item_id: item.id, remote_actor_id: item.remote_actor_id},
+        reason
+      )
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  @doc """
+  Reports a direct message on behalf of a member who received it.
+
+  The member must be a participant of the conversation and must not be the
+  sender, and the message must not be deleted. A copy of that one message's
+  text is stored with the report (`message_body`); nothing else from the
+  conversation is. The sender is recorded as the reported user or actor.
+
+  Returns `{:ok, report}`, `{:error, :not_found}`, `{:error, :already_reported}`
+  or `{:error, changeset}`.
+  """
+  @spec report_message(User.t(), term(), String.t()) ::
+          {:ok, Report.t()} | {:error, :not_found | :already_reported | Ecto.Changeset.t()}
+  def report_message(%User{id: user_id} = reporter, message_id, reason) do
+    message =
+      with {:ok, id} <- cast_id(message_id) do
+        Repo.one(
+          from(dm in DirectMessage,
+            join: c in assoc(dm, :conversation),
+            where: dm.id == ^id and is_nil(dm.deleted_at),
+            where: c.user_a_id == ^user_id or c.user_b_id == ^user_id,
+            where: is_nil(dm.sender_user_id) or dm.sender_user_id != ^user_id
+          )
+        )
+      end
+
+    case message do
+      %DirectMessage{} = dm ->
+        target = %{
+          message_id: dm.id,
+          reported_user_id: dm.sender_user_id,
+          remote_actor_id: dm.sender_remote_actor_id
+        }
+
+        file_report(reporter, target, reason, %Report{message_body: dm.body})
+
+      _ ->
+        {:error, :not_found}
+    end
+  end
+
+  @doc """
+  Reports a remote account on behalf of a member.
+
+  Returns `{:ok, report}`, `{:error, :not_found}`, `{:error, :already_reported}`
+  or `{:error, changeset}`.
+  """
+  @spec report_remote_actor(User.t(), term(), String.t()) ::
+          {:ok, Report.t()} | {:error, :not_found | :already_reported | Ecto.Changeset.t()}
+  def report_remote_actor(%User{} = reporter, remote_actor_id, reason) do
+    case get_by_id(RemoteActor, remote_actor_id) do
+      %RemoteActor{id: id} -> file_report(reporter, %{remote_actor_id: id}, reason)
+      nil -> {:error, :not_found}
+    end
+  end
+
+  defp file_report(reporter, target, reason, report \\ %Report{}) do
+    target = Map.reject(target, fn {_field, value} -> is_nil(value) end)
+
+    if has_open_report?(reporter.id, target) do
+      {:error, :already_reported}
+    else
+      attrs = Map.merge(target, %{reason: reason, reporter_id: reporter.id})
+
+      result = report |> Report.changeset(attrs) |> Repo.insert()
+
+      with {:ok, report} <- result do
+        Baudrate.Notification.Hooks.notify_report_created(report.id)
+        result
+      end
+    end
+  end
+
+  defp get_by_id(schema, id) do
+    case cast_id(id) do
+      {:ok, id} -> Repo.get(schema, id)
+      :error -> nil
+    end
+  end
+
+  defp cast_id(id) when is_integer(id), do: {:ok, id}
+
+  defp cast_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {int, ""} -> {:ok, int}
+      _ -> :error
+    end
+  end
+
+  defp cast_id(_), do: :error
+
+  @doc """
   Lists reports filtered by status. Defaults to "open".
-  Preloads reporter, article, comment, remote_actor, reported_user, and resolved_by.
+  Preloads the reporter, every target except the reported message (the report
+  carries its own copy of the text in `message_body`), and resolved_by.
   """
   @spec list_reports(keyword()) :: [Report.t()]
   def list_reports(opts \\ []) do
@@ -120,7 +231,8 @@ defmodule Baudrate.Moderation do
         :comment,
         :remote_actor,
         :reported_user,
-        :resolved_by
+        :resolved_by,
+        feed_item: :remote_actor
       ]
     )
     |> Repo.all()
@@ -140,7 +252,9 @@ defmodule Baudrate.Moderation do
       :comment,
       :remote_actor,
       :reported_user,
-      :resolved_by
+      :resolved_by,
+      :message,
+      feed_item: :remote_actor
     ])
   end
 

@@ -406,4 +406,60 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
       assert_push_event(lv, "focus", %{id: "admin-moderation-heading"})
     end
   end
+
+  describe "member reports of feed items and messages" do
+    test "shows the reported feed item and only the copied message text", %{conn: conn} do
+      admin = setup_user("admin")
+      member = setup_user("user")
+      sender = setup_user("user")
+      uid = System.unique_integer([:positive])
+
+      actor =
+        %Baudrate.Federation.RemoteActor{}
+        |> Baudrate.Federation.RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/q-#{uid}",
+          username: "q_#{uid}",
+          domain: "remote.example",
+          public_key_pem: "-----BEGIN PUBLIC KEY-----\nfake\n-----END PUBLIC KEY-----",
+          inbox: "https://remote.example/users/q-#{uid}/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert!()
+
+      {:ok, follow} = Baudrate.Federation.create_user_follow(member, actor)
+      {:ok, _} = Baudrate.Federation.accept_user_follow(follow.ap_id)
+
+      {:ok, item} =
+        Baudrate.Federation.create_feed_item(%{
+          remote_actor_id: actor.id,
+          activity_type: "Create",
+          object_type: "Note",
+          ap_id: "https://remote.example/notes/#{uid}",
+          body: "Cheap pills",
+          body_html: "<p>Cheap pills</p>",
+          source_url: "https://remote.example/notes/#{uid}",
+          published_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      {:ok, feed_report} = Moderation.report_feed_item(member, item.id, "Spam post")
+
+      {:ok, conversation} = Baudrate.Messaging.find_or_create_conversation(sender, member)
+      {:ok, _} = Baudrate.Messaging.create_message(conversation, sender, %{"body" => "Earlier"})
+      {:ok, dm} = Baudrate.Messaging.create_message(conversation, sender, %{"body" => "Threat"})
+      {:ok, dm_report} = Moderation.report_message(member, dm.id, "Harassing me")
+
+      conn = log_in_admin(conn, admin)
+      {:ok, lv, html} = live(conn, "/admin/moderation")
+
+      assert has_element?(
+               lv,
+               "#admin-moderation-report-feed-item-#{feed_report.id}",
+               "Cheap pills"
+             )
+
+      assert has_element?(lv, "#admin-moderation-report-message-#{dm_report.id}", "Threat")
+      refute html =~ "Earlier"
+    end
+  end
 end
