@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.19.1] — 2026-09-15
+
+Fixes for the feed pager, hashtag and mention autocomplete, menus in the Aqua
+themes, and the hourly cleanup job.
+
+### Fixed
+
+- **The feed pager switches pages again, and #hashtag / @mention autocomplete
+  works.** The autocomplete script on Markdown text boxes called a method
+  renamed in v1.14.1, so it failed as it loaded. Suggestions never appeared,
+  and on `/feed` the failure stopped page updates: the pager changed the URL
+  but not the page.
+- **Menus inside cards are no longer cut off in the Aqua themes.** The themes
+  clip everything that sticks out of a card, which hid most of the "More
+  actions" menu on feed items, as well as other menus inside cards. A card
+  stops clipping while a menu inside it is open.
+- **The hourly cleanup job no longer stops partway.** Refreshing a stale link
+  preview crashed when the fetch timed out, which skipped every later step of
+  that run: the data export and account move sweeps, the orphan preview and
+  media cache purges, and notification cleanup. The failure is now recorded
+  on the preview, and each cleanup step runs on its own, so one failure is
+  logged and the rest still run.
+
 ## [1.19.0] — 2026-09-14
 
 Members can protect themselves without asking staff: blocking now actually
