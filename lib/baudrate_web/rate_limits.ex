@@ -130,6 +130,16 @@ defmodule BaudrateWeb.RateLimits do
     check("outbound_follow:#{user_id}", 3_600_000, 10, :outbound_follow)
   end
 
+  @doc """
+  Account alias changes (ADR 0025): 10 per hour per user. Adding an alias
+  makes outbound WebFinger and actor fetches, so this also bounds the requests
+  one account can make other servers receive.
+  """
+  @spec check_account_alias(integer()) :: :ok | {:error, :rate_limited}
+  def check_account_alias(user_id) do
+    check("account_alias:#{user_id}", 3_600_000, 10, :account_alias)
+  end
+
   @doc "Report creation: 5 per 15 minutes per user."
   @spec check_create_report(integer()) :: :ok | {:error, :rate_limited}
   def check_create_report(user_id) do

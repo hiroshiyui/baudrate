@@ -184,6 +184,8 @@ defmodule Baudrate.DataPortability.Collector do
       "role" => user.role.name,
       "created_at" => iso(user.inserted_at),
       "two_factor" => %{"totp_enabled" => user.totp_enabled == true},
+      "also_known_as" => user.also_known_as || [],
+      "moved_to" => user.moved_to,
       "security_keys" =>
         Enum.map(keys, fn k ->
           %{

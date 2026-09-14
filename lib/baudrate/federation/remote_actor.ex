@@ -41,6 +41,9 @@ defmodule Baudrate.Federation.RemoteActor do
     field :fetched_at, :utc_datetime
     field :profile_fields, {:array, :map}, default: []
     field :also_known_as, {:array, :string}, default: []
+    # The target of the last Move processed from this actor (ADR 0025).
+    field :moved_to_ap_id, :string
+    field :moved_at, :utc_datetime
 
     has_many :followers, Baudrate.Federation.Follower
 

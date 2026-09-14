@@ -1255,6 +1255,22 @@ Security notices `data_export_requested`, `_ready`, `_downloaded` and
 `_cancelled` are always delivered. The acceptance gate is the canary test in
 `test/baudrate/data_portability/archive_test.exs`.
 
+### Account Migration
+
+Moving an account between servers with ActivityPub aliases and `Move`
+([ADR 0025](adr/0025-account-migration.md)). `Baudrate.AccountMigration` owns the
+rules; `/profile/move` (`AccountMigrationLive`) only collects input.
+
+| Piece | Detail |
+|-------|--------|
+| `users.also_known_as` | Actor ids this account claims, published as `alsoKnownAs` (only when non-empty). Needed on the destination for an outbound move, and here for an inbound one |
+| `AccountMigration.add_alias/2` | Input `@user@domain` or `https://` URI → `Federation.lookup_remote_actor/1` (WebFinger + `ActorResolver`, HTTPS and SSRF-guarded); stores the resolved actor id. Refuses non-`Person` actors, local actors, duplicates, more than 5, and moved accounts. Row locked `FOR UPDATE` |
+| `AccountMigration.remove_alias/2` | Removes one alias |
+| Step-up | `/profile/move` unlocks alias changes for 5 minutes after `Auth.verify_reauthentication/5`, held in socket assigns and re-checked by every handler (the ADR 0022 pattern). Lookups run in `start_async/3` behind `RateLimits.check_account_alias/1` (10/hour per user) |
+| Notices | `account_alias_added` / `account_alias_removed`, always delivered, link to `/profile/move` |
+| `users.moved_to` / `moved_at` | Set when a move is sent; published as `movedTo`. `AccountMigration.moved?/1` |
+| `remote_actors.moved_to_ap_id` / `moved_at` | The last processed inbound `Move` per origin actor |
+
 ### Bookmarks
 
 Users can bookmark articles or comments for later reference. Bookmarks are

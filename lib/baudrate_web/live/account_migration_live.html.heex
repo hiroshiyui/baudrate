@@ -1,0 +1,211 @@
+<section
+  id="account-migration-page"
+  class="account-migration-page mx-auto max-w-2xl space-y-6"
+  aria-labelledby="account-migration-heading"
+>
+  <h1 id="account-migration-heading" class="account-migration-heading text-2xl font-bold">
+    {gettext("Account Migration")}
+  </h1>
+
+  <p
+    id="account-migration-live-status"
+    class="account-migration-live-status sr-only"
+    role="status"
+  >
+    {@status_message}
+  </p>
+
+  <div
+    id="account-migration-intro"
+    class="account-migration-intro space-y-2 text-sm text-base-content/80"
+  >
+    <p>
+      {gettext(
+        "Aliases tell other servers that an account elsewhere is also yours. They are needed before an account can move."
+      )}
+    </p>
+    <ul class="list-disc ps-5 space-y-1">
+      <li>
+        {gettext(
+          "To move an account from another server to this one, add the old account here as an alias first."
+        )}
+      </li>
+      <li>
+        {gettext(
+          "To move this account to another server, add this account as an alias on the new account first."
+        )}
+      </li>
+    </ul>
+  </div>
+
+  <section
+    id="account-aliases"
+    class="account-aliases card bg-base-200 shadow-sm"
+    aria-labelledby="account-aliases-heading"
+  >
+    <div class="card-body space-y-4">
+      <h2
+        id="account-aliases-heading"
+        class="account-aliases-heading card-title text-lg"
+        tabindex="-1"
+      >
+        {gettext("Aliases")}
+      </h2>
+
+      <p
+        :if={@aliases == []}
+        id="account-aliases-empty"
+        class="account-aliases-empty text-sm text-base-content/70"
+      >
+        {gettext("This account has no aliases.")}
+      </p>
+
+      <ul :if={@aliases != []} id="account-aliases-list" class="account-aliases-list space-y-2">
+        <li
+          :for={{entry, index} <- Enum.with_index(@aliases)}
+          id={"account-alias-#{index}"}
+          class="account-alias flex flex-wrap items-center justify-between gap-2"
+        >
+          <div class="account-alias-details min-w-0">
+            <p class="account-alias-handle font-medium break-all">{alias_display(entry)}</p>
+            <p
+              :if={entry.actor}
+              class="account-alias-uri text-xs text-base-content/60 break-all"
+            >
+              {entry.ap_id}
+            </p>
+          </div>
+          <button
+            :if={@reauth_until}
+            id={"account-alias-remove-#{index}"}
+            type="button"
+            class="account-alias-remove btn btn-sm btn-ghost text-error"
+            phx-click="remove_alias"
+            phx-value-ap-id={entry.ap_id}
+            data-confirm={gettext("Remove this alias?")}
+            aria-label={gettext("Remove alias %{label}", label: alias_display(entry))}
+          >
+            <.icon name="hero-trash" class="w-4 h-4" />
+            {gettext("Remove")}
+          </button>
+        </li>
+      </ul>
+
+      <.form
+        :if={is_nil(@reauth_until)}
+        for={@reauth_form}
+        id="account-migration-reauth-form"
+        class="account-migration-reauth-form space-y-3"
+        phx-submit="confirm_identity"
+      >
+        <p
+          id="account-migration-reauth-hint"
+          class="account-migration-reauth-hint text-sm text-base-content/70"
+        >
+          <%= if @current_user.totp_enabled do %>
+            {gettext(
+              "To add or remove aliases, confirm your password and current authenticator code."
+            )}
+          <% else %>
+            {gettext("To add or remove aliases, confirm your password.")}
+          <% end %>
+        </p>
+        <div class="form-control">
+          <label
+            id="reauth-password-label"
+            class="account-migration-field-label label"
+            for="reauth_password"
+          >
+            <span class="label-text">{gettext("Password")}</span>
+          </label>
+          <input
+            type="password"
+            id="reauth_password"
+            name="reauth[password]"
+            class="account-migration-reauth-password input input-bordered input-sm w-full max-w-xs"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+        <div :if={@current_user.totp_enabled} class="form-control">
+          <label
+            id="reauth-code-label"
+            class="account-migration-field-label label"
+            for="reauth_code"
+          >
+            <span class="label-text">{gettext("Current TOTP Code")}</span>
+          </label>
+          <input
+            type="text"
+            id="reauth_code"
+            name="reauth[code]"
+            class="account-migration-reauth-code input input-bordered input-sm w-full max-w-xs tracking-widest"
+            inputmode="numeric"
+            pattern="[0-9]{6}"
+            maxlength="6"
+            autocomplete="one-time-code"
+            required
+            aria-describedby="reauth-code-hint"
+          />
+          <.totp_code_hint id="reauth-code-hint" />
+        </div>
+        <button
+          id="account-migration-reauth-submit"
+          type="submit"
+          class="account-migration-reauth-submit btn btn-sm btn-outline"
+          phx-disable-with={gettext("Confirming...")}
+        >
+          <.icon name="hero-lock-open" class="w-4 h-4 mr-1" />
+          {gettext("Confirm Identity")}
+        </button>
+      </.form>
+
+      <.form
+        :if={@reauth_until}
+        for={@alias_form}
+        id="account-alias-add-form"
+        class="account-alias-add-form space-y-2"
+        phx-submit="add_alias"
+      >
+        <div class="form-control">
+          <label
+            id="account-alias-input-label"
+            class="account-migration-field-label label"
+            for="account_alias_input"
+          >
+            <span class="label-text">{gettext("Add an alias")}</span>
+          </label>
+          <input
+            type="text"
+            id="account_alias_input"
+            name="alias[account]"
+            value={@alias_form[:account].value}
+            class="account-alias-input input input-bordered input-sm w-full"
+            placeholder={gettext("@user@example.com")}
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="2048"
+            required
+            aria-describedby="account-alias-input-hint"
+          />
+          <p
+            id="account-alias-input-hint"
+            class="account-alias-input-hint text-xs text-base-content/70 mt-1"
+          >
+            {gettext("Enter the account as @user@example.com or as its https:// address.")}
+          </p>
+        </div>
+        <button
+          id="account-alias-add-submit"
+          type="submit"
+          class="account-alias-add-submit btn btn-sm btn-primary"
+          disabled={@alias_lookup}
+          phx-disable-with={gettext("Looking up...")}
+        >
+          <.icon name="hero-plus" class="w-4 h-4 mr-1" />
+          {gettext("Add Alias")}
+        </button>
+      </.form>
+    </div>
+  </section>
+</section>

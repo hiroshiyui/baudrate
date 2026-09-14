@@ -26,6 +26,16 @@ defmodule Baudrate.Setup.User do
       step, so each code works once (`Baudrate.Auth.SecondFactor.verify_totp_code/3`,
       ADR 0024). Cleared when TOTP is disabled.
 
+  ## Account Migration Fields (ADR 0025)
+
+    * `also_known_as` — actor ids of other accounts this user claims
+      (`alsoKnownAs`). A remote account can move here only if it is listed.
+      Changed through `Baudrate.AccountMigration`, never cast from user params.
+    * `moved_to` — actor id this account moved to, set when the `Move` was
+      sent. While set, the account is read-only
+      (`Baudrate.AccountMigration.moved?/1`).
+    * `moved_at` — when the `Move` was sent
+
   ## ActivityPub Fields
 
     * `ap_public_key` — PEM-encoded RSA public key for ActivityPub federation
@@ -101,6 +111,9 @@ defmodule Baudrate.Setup.User do
     field :totp_enabled, :boolean, default: false
     field :totp_enabled_at, :utc_datetime
     field :totp_last_used_step, :integer
+    field :also_known_as, {:array, :string}, default: []
+    field :moved_to, :string
+    field :moved_at, :utc_datetime
     field :avatar_id, :string
     field :status, :string, default: "active"
     field :preferred_locales, {:array, :string}, default: []
@@ -230,6 +243,26 @@ defmodule Baudrate.Setup.User do
     |> cast(attrs, [:status])
     |> validate_required([:status])
     |> validate_inclusion(:status, ["active", "pending"])
+  end
+
+  @doc """
+  Changeset for the account's aliases (`also_known_as`). Only
+  `Baudrate.AccountMigration` calls it, with actor ids it has resolved.
+  """
+  def aliases_changeset(user, aliases) when is_list(aliases) do
+    user
+    |> change(also_known_as: aliases)
+    |> validate_length(:also_known_as, max: 5)
+  end
+
+  @doc """
+  Changeset for the moved state. `moved_to` is an actor id, or `nil` to remove
+  the redirect. Only `Baudrate.AccountMigration` calls it.
+  """
+  def moved_changeset(user, moved_to, moved_at) do
+    user
+    |> change(moved_to: moved_to, moved_at: moved_at)
+    |> validate_format(:moved_to, ~r{\Ahttps://}, message: "must be an https URI")
   end
 
   @doc "Changeset for banning a user: sets status to `\"banned\"` with timestamp and optional reason."

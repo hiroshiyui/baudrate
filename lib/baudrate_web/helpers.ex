@@ -359,6 +359,12 @@ defmodule BaudrateWeb.Helpers do
         "Someone entered the correct password for your account but failed the two-factor code several times."
       )
 
+  def notification_text("account_alias_added"),
+    do: gettext("An account alias was added to your account.")
+
+  def notification_text("account_alias_removed"),
+    do: gettext("An account alias was removed from your account.")
+
   def notification_text("data_export_requested"),
     do:
       gettext("A data export of your account was requested. It can be downloaded after 24 hours.")
@@ -395,6 +401,8 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("password_changed"), do: "hero-lock-closed"
   def notification_icon("signed_out_everywhere"), do: "hero-arrow-right-start-on-rectangle"
   def notification_icon("totp_login_failed"), do: "hero-exclamation-triangle"
+  def notification_icon("account_alias_added"), do: "hero-link"
+  def notification_icon("account_alias_removed"), do: "hero-link-slash"
   def notification_icon("data_export_requested"), do: "hero-archive-box"
   def notification_icon("data_export_ready"), do: "hero-archive-box-arrow-down"
   def notification_icon("data_export_downloaded"), do: "hero-arrow-down-tray"

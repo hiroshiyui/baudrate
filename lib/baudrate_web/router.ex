@@ -311,6 +311,7 @@ defmodule BaudrateWeb.Router do
       live "/profile/totp-reset", TotpResetLive
       live "/profile/password", PasswordChangeLive
       live "/profile/export", DataExportLive
+      live "/profile/move", AccountMigrationLive
       live "/profile/recovery-codes", RecoveryCodesLive
       live "/admin/verify", AdminTotpVerifyLive
       live "/invites", UserInvitesLive

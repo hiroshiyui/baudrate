@@ -64,6 +64,7 @@ new ADR; accepted ADRs are superseded, never rewritten.
 - **Moderation** (`lib/baudrate/moderation.ex`) — reports, resolve/dismiss, audit log
 - **Notification** (`lib/baudrate/notification.ex`) — in-app notifications, unread counts, mark read, cleanup, admin announcements, account security notices
 - **Bots** (`lib/baudrate/bots.ex`) — RSS/Atom feed bot accounts: CRUD, feed scheduling, deduplication, favicon fetcher
+- **AccountMigration** (`lib/baudrate/account_migration.ex`) — account aliases (`alsoKnownAs`) and moving accounts with ActivityPub `Move` (ADR 0025)
 - **DataPortability** (`lib/baudrate/data_portability.ex`) — self-service data export requests (eligibility, cooling-off, cancellation, download cap) and the archive builder (ADR 0023)
 
 ### Key Gotchas

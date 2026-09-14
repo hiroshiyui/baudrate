@@ -46,7 +46,7 @@ their behalf and notified.
 Already shipped: inbound `Move` alias verification (`remote_actors.also_known_as`)
 and feed item migration (`Federation.migrate_feed_items/2`).
 
-### Stage 1 — Aliases and actor fields
+### Stage 1 — Aliases and actor fields ✅ done
 
 - Migration: `users.also_known_as` (`{:array, :string}`, default `[]`),
   `users.moved_to`, `users.moved_at`; `remote_actors.moved_to_ap_id`,

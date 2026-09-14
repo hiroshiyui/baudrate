@@ -65,6 +65,23 @@ defmodule Baudrate.Federation.ActorRendererTest do
   end
 
   describe "user_actor/1" do
+    test "publishes alsoKnownAs and movedTo only when set (ADR 0025)" do
+      user = create_user("user")
+      plain = ActorRenderer.user_actor(user)
+      refute Map.has_key?(plain, "alsoKnownAs")
+      refute Map.has_key?(plain, "movedTo")
+
+      moved = %{
+        user
+        | also_known_as: ["https://old.example/users/me"],
+          moved_to: "https://new.example/users/me"
+      }
+
+      actor = ActorRenderer.user_actor(moved)
+      assert actor["alsoKnownAs"] == ["https://old.example/users/me"]
+      assert actor["movedTo"] == "https://new.example/users/me"
+    end
+
     test "renders a Person whose identity fields agree with each other" do
       user = create_user("user")
       actor = ActorRenderer.user_actor(user)

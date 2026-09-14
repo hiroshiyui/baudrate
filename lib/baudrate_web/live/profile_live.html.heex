@@ -499,6 +499,21 @@
         </div>
       </div>
 
+      <div id="profile-account-migration">
+        <div class="profile-field-label text-sm text-base-content/70">
+          {gettext("Account Migration")}
+        </div>
+        <div class="profile-field-value">
+          <.link
+            id="profile-account-migration-link"
+            navigate={~p"/profile/move"}
+            class="profile-account-migration-link btn btn-sm btn-outline"
+          >
+            {gettext("Aliases and Moving")}
+          </.link>
+        </div>
+      </div>
+
       <%!-- Sessions section --%>
       <section id="profile-sessions" aria-labelledby="profile-sessions-heading">
         <h2

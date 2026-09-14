@@ -22,6 +22,10 @@ defmodule Baudrate.Federation.ActorRenderer do
 
   @doc """
   Returns a Person JSON-LD map for the given user.
+
+  Includes `alsoKnownAs` when the user has aliases and `movedTo` once the
+  account has moved (ADR 0025). Remote servers use them to verify and follow
+  a `Move`.
   """
   def user_actor(user) do
     uri = actor_uri(:user, user.username)
@@ -48,7 +52,12 @@ defmodule Baudrate.Federation.ActorRenderer do
     |> put_if("summary", render_bio_html(user.bio))
     |> put_if("icon", user_avatar_icon(user))
     |> put_if("attachment", render_profile_fields(user.profile_fields))
+    |> put_if("alsoKnownAs", non_empty(user.also_known_as))
+    |> put_if("movedTo", user.moved_to)
   end
+
+  defp non_empty([_ | _] = list), do: list
+  defp non_empty(_), do: nil
 
   @doc """
   Returns a Group JSON-LD map for the given board.

@@ -26,7 +26,7 @@ defmodule Baudrate.Notification.Hooks do
     * `notify_report_created/1` — moderation_report (all admins)
     * `notify_account_security/3` — security_key_added, security_key_removed,
       totp_enabled, totp_disabled, password_changed, signed_out_everywhere,
-      totp_login_failed, data_export_*
+      totp_login_failed, account_alias_added, account_alias_removed, data_export_*
   """
 
   alias Baudrate.{Auth, Notification, Repo, Setup}

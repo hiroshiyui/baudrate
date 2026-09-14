@@ -35,6 +35,8 @@ defmodule Baudrate.Notification.Notification do
     * `signed_out_everywhere` — all other sessions were signed out (`data.count`)
     * `totp_login_failed` — the correct password was entered but the TOTP code
       kept failing at login, so someone else may know the password (ADR 0024)
+    * `account_alias_added` / `account_alias_removed` — an account alias
+      (`alsoKnownAs`) was added or removed (`data.label`, ADR 0025)
     * `data_export_requested` — a data export was requested (`data.ready_at`, `data.browser`)
     * `data_export_ready` — the export can be downloaded (`data.expires_at`)
     * `data_export_downloaded` — the export was downloaded (`data.count`, `data.remaining`)
@@ -73,6 +75,8 @@ defmodule Baudrate.Notification.Notification do
     password_changed
     signed_out_everywhere
     totp_login_failed
+    account_alias_added
+    account_alias_removed
     data_export_requested
     data_export_ready
     data_export_downloaded
@@ -87,6 +91,8 @@ defmodule Baudrate.Notification.Notification do
     password_changed
     signed_out_everywhere
     totp_login_failed
+    account_alias_added
+    account_alias_removed
     data_export_requested
     data_export_ready
     data_export_downloaded
