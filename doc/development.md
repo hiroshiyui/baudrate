@@ -2337,6 +2337,8 @@ Both inputs are checked against pinned SHA-256s. GeckoDriver is compiled from
 its crates.io crate with `cargo build --locked`, outside the repository (its
 build script embeds the enclosing checkout's commit in `--version`). Re-run the
 task after a version bump: it rebuilds a GeckoDriver whose `--version` differs.
+The tests start Selenium Server on `127.0.0.1:4444` only; Selenium Grid has no
+authentication.
 
 #### Running Feature Tests
 

@@ -66,7 +66,20 @@ defmodule BaudrateWeb.SeleniumServer do
         :binary,
         :exit_status,
         :stderr_to_stdout,
-        args: ["-jar", jar_path, "standalone", "--port", "4444", "--log", log_path],
+        # Selenium Grid has no authentication and binds every interface by
+        # default, which would let anyone on the network drive a browser on
+        # this machine; loopback is all the tests need.
+        args: [
+          "-jar",
+          jar_path,
+          "standalone",
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "4444",
+          "--log",
+          log_path
+        ],
         env: [{~c"PATH", env_path}],
         cd: to_charlist(selenium_dir())
       ]
