@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.18.1] — 2026-09-14
+
+Fixes for moved accounts and admin sudo mode, plus a rate limit on data export
+downloads.
+
+**Upgrading:**
+
+- No migrations, no configuration changes.
+
+### Fixed
+
+- **Admin verification returns to the page you asked for.** Opening an admin
+  page (e.g. `/admin/bots`) in a new page load while sudo mode had expired
+  always landed on `/admin/settings` after verifying. It now returns to the
+  requested page, including its query string.
+- **Moved accounts no longer see controls that only fail.** Like and boost
+  show the count (a toggle stays only to undo an existing like or boost),
+  polls show results instead of the vote form, and forward and reply are
+  hidden on articles, boards, feeds and comments.
+
+### Security
+
+- **Data export downloads are rate limited per IP**: 10 per 15 minutes on
+  `POST /exports/:id/download`, checked before any session or database work.
+
+### Changed
+
+- Registration, password reset and setup use the shared password requirements
+  component.
+
 ## [1.18.0] — 2026-09-14
 
 Account migration with ActivityPub `Move`, and a fix for federation
