@@ -2356,8 +2356,9 @@ JS hooks have no other tests, so run the feature tests after changing
 `assets/js/` or a template's hooks. `js_errors_test.exs` crawls the member
 and public pages, re-mounts each through a live navigation, types into every
 textarea and opens every dropdown, and fails on any JavaScript error,
-`console.error` (e.g. an unregistered `phx-hook`) or LiveView crash. Admin
-pages are not crawled (sudo mode needs TOTP). The regular suite still guards
+`console.error` (e.g. an unregistered `phx-hook`) or LiveView crash. The admin
+crawl signs in with TOTP and passes sudo verification first, and every crawl
+fails if a page redirects instead of rendering. The regular suite still guards
 hook names: `js_hooks_registered_test.exs` fails when a template's `phx-hook`
 is not registered in `app.js`.
 
@@ -2387,6 +2388,13 @@ collisions when running tests in parallel.
 
 - **`log_in_via_browser/2`** — fills the login form and waits for redirect. Only
   works for `"user"` role (admin/moderator require TOTP).
+- **`enable_totp!/1`**, **`totp_code/2`** — give a user TOTP and produce a valid
+  code (clearing the single-use marker, so a test can authenticate twice).
+- **`log_in_with_totp_via_browser/3`**, **`log_in_admin_via_browser/1`** — sign
+  in through the password and TOTP pages.
+- **`visit_admin/3`** — visits an `/admin` page, passing `/admin/verify` sudo
+  verification when it is asked for.
+- **`js_value/2`** — runs a script in the browser and returns its value.
 - **`create_board/1`** — creates a board with `ap_enabled: false` (prevents
   federation delivery in tests).
 - **`create_article/3`** — creates an article in a board for a given user.
@@ -2395,13 +2403,29 @@ collisions when running tests in parallel.
 
 | Test File | Tests | Coverage |
 |-----------|-------|----------|
-| `home_page_test.exs` | 4 | Guest welcome, board listing, personalized greeting, board navigation |
-| `login_test.exs` | 4 | Successful login, failed login, registration link, redirect if authenticated |
-| `registration_test.exs` | 2 | Registration with recovery codes, acknowledging codes |
-| `browsing_test.exs` | 3 | Home→board→article flow, empty board, article with author/comments |
+| `admin_login_test.exs` | 1 | Admin signs in with TOTP and passes sudo verification |
+| `article_bookmark_test.exs` | 3 | Bookmark, remove bookmark, no button for guests |
 | `article_creation_test.exs` | 2 | Create article via form, new article link from board |
+| `article_deletion_test.exs` | 3 | Delete button for author only, not for others or guests |
+| `article_editing_test.exs` | 2 | Author edits, non-author cannot open the edit page |
+| `article_likes_test.exs` | 3 | Like, unlike, cannot like own article |
+| `bookmarks_test.exs` | 2 | Bookmarks page and empty state |
+| `browsing_test.exs` | 3 | Home→board→article flow, empty board, article with author/comments |
+| `comments_test.exs` | 2 | Member posts a comment, guest cannot |
+| `feed_pagination_test.exs` | 3 | Pager (including from `?page=2`), scroll back to the list, `@mention` autocomplete |
+| `following_test.exs` | 2 | Following page and empty state |
+| `home_page_test.exs` | 4 | Guest welcome, board listing, personalized greeting, board navigation |
+| `invites_test.exs` | 2 | Invites page and generate button |
+| `js_errors_test.exs` | 3 | Member, guest and admin page crawls with no JS errors or LiveView crashes |
+| `login_test.exs` | 4 | Successful login, failed login, registration link, redirect if authenticated |
 | `logout_test.exs` | 1 | Sign out redirects to login |
+| `messages_test.exs` | 3 | Messages page, empty state, new message page |
+| `notifications_test.exs` | 2 | Notifications page and empty state |
+| `password_reset_test.exs` | 2 | Reset page from login, required-field validation |
+| `registration_test.exs` | 2 | Registration with recovery codes, acknowledging codes |
+| `search_test.exs` | 3 | Keyword search, no results, `author:` operator |
 | `setup_wizard_test.exs` | 1 | Full setup wizard flow (DB→Site Name→Admin→Recovery Codes) |
+| `user_profile_test.exs` | 2 | Profile page with stats, author link navigates to profile |
 
 #### Key Files
 
