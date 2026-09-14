@@ -527,62 +527,40 @@ defmodule Baudrate.Federation.InboxHandler do
     :ok
   end
 
-  # --- Move — migrate follows to new actor ---
+  # --- Move — a followed account moved (ADR 0025) ---
 
   defp dispatch(
-         %{"type" => "Move", "actor" => actor_uri, "target" => target_uri},
+         %{"type" => "Move", "actor" => actor_uri, "target" => target_uri} = activity,
          remote_actor,
          _target
        )
        when is_binary(target_uri) do
-    if actor_uri != remote_actor.ap_id do
-      Logger.warning(
-        "federation.activity: type=Move rejected actor_mismatch signer=#{remote_actor.ap_id} actor=#{actor_uri}"
-      )
-
-      {:error, :actor_mismatch}
-    else
-      Logger.info("federation.activity: type=Move from=#{actor_uri} to=#{target_uri}")
-
-      # Force-refresh the target so the alsoKnownAs check reflects its current
-      # state (a stale cache could pre-date the alias being set).
-      case ActorResolver.refresh(target_uri) do
-        {:ok, new_actor} ->
-          if actor_uri in (new_actor.also_known_as || []) do
-            {migrated, deleted} = Federation.migrate_user_follows(remote_actor.id, new_actor.id)
-
-            # Feed membership is a query-time join on `user_follows`, so the
-            # follow and the items it makes visible have to move together.
-            # Migrating only the follow silently empties every follower's feed
-            # of that actor's history and makes those items fail
-            # `feed_item_accessible?/2`.
-            {authored, boosted} = Federation.migrate_feed_items(remote_actor.id, new_actor.id)
-
-            Logger.info(
-              "federation.move_complete: from=#{actor_uri} to=#{target_uri} " <>
-                "migrated=#{migrated} deduped=#{deleted} " <>
-                "feed_items_authored=#{authored} feed_items_boosted=#{boosted}"
-            )
-
-            :ok
-          else
-            # The target has not claimed the moving actor as an alias, so the
-            # Move is unauthorized. Without this check any remote actor could
-            # redirect its local followers onto an arbitrary target account.
-            Logger.warning(
-              "federation.move_rejected: from=#{actor_uri} to=#{target_uri} reason=alias_not_claimed"
-            )
-
-            {:error, :move_not_authorized}
-          end
-
-        {:error, reason} ->
-          Logger.warning(
-            "federation.move_failed: from=#{actor_uri} to=#{target_uri} reason=#{inspect(reason)}"
-          )
-
-          :ok
+    object_uri =
+      case activity["object"] do
+        %{"id" => id} when is_binary(id) -> id
+        id when is_binary(id) -> id
+        _ -> nil
       end
+
+    cond do
+      actor_uri != remote_actor.ap_id ->
+        Logger.warning(
+          "federation.activity: type=Move rejected actor_mismatch signer=#{remote_actor.ap_id} actor=#{actor_uri}"
+        )
+
+        {:error, :actor_mismatch}
+
+      # The moved account is the signer itself; a Move of anyone else is refused.
+      not is_nil(object_uri) and object_uri != actor_uri ->
+        Logger.warning(
+          "federation.activity: type=Move rejected object_mismatch actor=#{actor_uri} object=#{object_uri}"
+        )
+
+        {:error, :actor_mismatch}
+
+      true ->
+        Logger.info("federation.activity: type=Move from=#{actor_uri} to=#{target_uri}")
+        Baudrate.AccountMigration.handle_inbound_move(remote_actor, target_uri)
     end
   end
 

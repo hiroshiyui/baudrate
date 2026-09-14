@@ -246,7 +246,7 @@ defmodule Baudrate.Notification.WebPush do
       "admin_announcement" ->
         get_in(notification.data || %{}, ["message"]) || ""
 
-      "actor_moved" ->
+      type when type in ["actor_moved", "board_actor_moved"] ->
         get_in(notification.data || %{}, ["label"]) || ""
 
       _ ->

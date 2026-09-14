@@ -299,27 +299,4 @@ defmodule Baudrate.Federation.FeedItemContextTest do
       assert Federation.local_followers_of_remote_actor(actor.id) == []
     end
   end
-
-  describe "migrate_user_follows/2" do
-    test "moves follows to new actor", %{user: user, actor: actor} do
-      create_accepted_follow(user, actor)
-      new_actor = create_remote_actor()
-
-      {1, 0} = Federation.migrate_user_follows(actor.id, new_actor.id)
-
-      assert Federation.user_follows?(user.id, new_actor.id)
-      refute Federation.user_follows?(user.id, actor.id)
-    end
-
-    test "deduplicates when already following new actor", %{user: user, actor: actor} do
-      create_accepted_follow(user, actor)
-      new_actor = create_remote_actor()
-      create_accepted_follow(user, new_actor)
-
-      {0, 1} = Federation.migrate_user_follows(actor.id, new_actor.id)
-
-      assert Federation.user_follows?(user.id, new_actor.id)
-      refute Federation.user_follows?(user.id, actor.id)
-    end
-  end
 end

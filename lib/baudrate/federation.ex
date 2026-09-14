@@ -199,7 +199,6 @@ defmodule Baudrate.Federation do
   defdelegate batch_local_follow_states(follower_user_id, followed_user_ids), to: Follows
   defdelegate local_follows?(user_id, followed_user_id), to: Follows
   defdelegate local_followers_of_user(followed_user_id), to: Follows
-  defdelegate migrate_user_follows(old_actor_id, new_actor_id), to: Follows
   defdelegate migrate_feed_items(old_actor_id, new_actor_id), to: Feed
 
   # --- Feed Items ---

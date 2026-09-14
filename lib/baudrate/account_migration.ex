@@ -46,7 +46,18 @@ defmodule Baudrate.AccountMigration do
   alias Baudrate.AccountMigration.AccountMove
   alias Baudrate.Content.BoardModerator
   alias Baudrate.DataPortability.UserAgent
-  alias Baudrate.Federation.{ActorResolver, Delivery, KeyStore, Publisher, RemoteActor}
+
+  alias Baudrate.Federation.{
+    ActorResolver,
+    BoardFollow,
+    Delivery,
+    KeyStore,
+    Publisher,
+    RemoteActor,
+    UserFollow,
+    Validator
+  }
+
   alias Baudrate.Notification.Hooks
   alias Baudrate.Repo
   alias Baudrate.Setup.User
@@ -57,6 +68,7 @@ defmodule Baudrate.AccountMigration do
   @move_interval_days 30
   @staff_roles ~w(admin moderator)
   @sweep_batch 20
+  @inbound_move_interval_days 30
   @cancel_reasons AccountMove.cancel_reasons()
 
   @doc "Seconds between requesting a move and sending it."
@@ -698,6 +710,199 @@ defmodule Baudrate.AccountMigration do
 
       {:ok, updated}
     end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Inbound: a followed remote account moves
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Handles a verified inbound `Move` of `origin` (the signing remote actor) to
+  `target_uri` (ADR 0025).
+
+  The destination must claim `origin` in `alsoKnownAs` (a local destination:
+  in `users.also_known_as`), otherwise `{:error, :move_not_authorized}`.
+  A `Move` is ignored (`:ok`) when the destination cannot be resolved or has
+  moved itself, or when `origin` already had a `Move` processed in the last
+  #{@inbound_move_interval_days} days. That bound stops an actor bouncing between accounts it
+  controls from making every local follower send a stream of `Follow`s.
+
+  For each active local follower of `origin`:
+
+    * `Undo(Follow)` is sent to `origin` and the old follow removed;
+    * a remote destination gets a pending follow and a `Follow` on the
+      follower's behalf (accepted when it answers); a local destination gets a
+      local follow;
+    * the follower gets an `actor_moved` notice.
+
+  Feed items are repointed to a remote destination
+  (`Federation.migrate_feed_items/2`), so the history shows again once the
+  new follow is accepted. Board follows are never repointed: admins get a
+  `board_actor_moved` notice instead.
+  """
+  @spec handle_inbound_move(RemoteActor.t(), String.t()) ::
+          :ok | {:error, :move_not_authorized}
+  def handle_inbound_move(%RemoteActor{} = origin, target_uri) when is_binary(target_uri) do
+    if Validator.local_actor?(target_uri) do
+      move_to_local(origin, target_uri)
+    else
+      move_to_remote(origin, target_uri)
+    end
+  end
+
+  defp move_to_remote(origin, target_uri) do
+    # Force-refresh so the alias check reflects the destination's current state.
+    case ActorResolver.refresh(target_uri) do
+      {:ok, target} ->
+        cond do
+          origin.ap_id not in (target.also_known_as || []) ->
+            log_move_rejected(origin, target_uri, "alias_not_claimed")
+            {:error, :move_not_authorized}
+
+          target.id == origin.id or target.moved_to_ap_id ->
+            log_move_ignored(origin, target_uri, "target_moved")
+            :ok
+
+          not claim_inbound_move(origin, target.ap_id) ->
+            log_move_ignored(origin, target_uri, "recently_moved")
+            :ok
+
+          true ->
+            label = handle(target)
+            data = %{"label" => label, "url" => target.url || target.ap_id}
+
+            migrated =
+              refollow(origin, data, fn follower ->
+                follow_on_behalf(follower, target)
+              end)
+
+            {authored, boosted} = Federation.migrate_feed_items(origin.id, target.id)
+            notify_board_admins(origin, label)
+
+            Logger.info(
+              "federation.move_complete: from=#{origin.ap_id} to=#{target.ap_id} followers=#{migrated} feed_items_authored=#{authored} feed_items_boosted=#{boosted}"
+            )
+
+            :ok
+        end
+
+      {:error, reason} ->
+        log_move_ignored(origin, target_uri, "unresolvable #{inspect(reason)}")
+        :ok
+    end
+  end
+
+  defp move_to_local(origin, target_uri) do
+    case local_user_for_actor_uri(target_uri) do
+      %User{status: "active", moved_to: nil} = target ->
+        cond do
+          origin.ap_id not in (target.also_known_as || []) ->
+            log_move_rejected(origin, target_uri, "alias_not_claimed")
+            {:error, :move_not_authorized}
+
+          not claim_inbound_move(origin, target_uri) ->
+            log_move_ignored(origin, target_uri, "recently_moved")
+            :ok
+
+          true ->
+            data = %{"label" => "@#{target.username}", "url" => "/users/#{target.username}"}
+
+            migrated =
+              refollow(origin, data, fn follower ->
+                if follower.id != target.id, do: Federation.create_local_follow(follower, target)
+              end)
+
+            notify_board_admins(origin, "@#{target.username}")
+
+            Logger.info(
+              "federation.move_complete: from=#{origin.ap_id} to=#{target_uri} local=true followers=#{migrated}"
+            )
+
+            :ok
+        end
+
+      _ ->
+        log_move_ignored(origin, target_uri, "local_target_unavailable")
+        :ok
+    end
+  end
+
+  defp local_user_for_actor_uri(uri) do
+    prefix = Federation.actor_uri(:user, "")
+    username = String.replace_prefix(uri, prefix, "")
+
+    if String.starts_with?(uri, prefix) and username =~ ~r/\A[A-Za-z0-9_]+\z/ do
+      Repo.one(from(u in User, where: u.username == ^username))
+    end
+  end
+
+  # One conditional UPDATE, so duplicate deliveries of the same Move (user and
+  # shared inbox) are processed once.
+  defp claim_inbound_move(origin, target_ap_id) do
+    now = now()
+    cutoff = DateTime.add(now, -@inbound_move_interval_days * 86_400, :second)
+
+    {count, _} =
+      from(r in RemoteActor,
+        where: r.id == ^origin.id and (is_nil(r.moved_at) or r.moved_at < ^cutoff)
+      )
+      |> Repo.update_all(set: [moved_to_ap_id: target_ap_id, moved_at: now, updated_at: now])
+
+    count == 1
+  end
+
+  defp refollow(origin, data, follow_new) do
+    from(uf in UserFollow,
+      where: uf.remote_actor_id == ^origin.id,
+      preload: [:user, :remote_actor]
+    )
+    |> Repo.all()
+    |> Enum.filter(&match?(%User{status: "active"}, &1.user))
+    |> Enum.count(fn follow ->
+      follower = follow.user
+      undo_remote_follow(follower, follow, origin)
+      Repo.delete(follow)
+      follow_new.(follower)
+      Hooks.notify_actor_moved(follower.id, %{actor_remote_actor_id: origin.id}, data)
+      true
+    end)
+  end
+
+  defp undo_remote_follow(follower, follow, origin) do
+    case KeyStore.ensure_user_keypair(follower) do
+      {:ok, follower} ->
+        {activity, actor_uri} = Publisher.build_undo_follow(follower, follow)
+        Delivery.deliver_follow(activity, origin, actor_uri)
+
+      _ ->
+        :error
+    end
+  end
+
+  defp notify_board_admins(origin, label) do
+    boards =
+      Repo.all(
+        from(bf in BoardFollow,
+          join: b in assoc(bf, :board),
+          where: bf.remote_actor_id == ^origin.id,
+          order_by: [asc: b.name],
+          select: b.name
+        )
+      )
+
+    if boards != [] do
+      Hooks.notify_board_actor_moved(origin.id, %{"label" => label, "boards" => boards})
+    end
+  end
+
+  defp log_move_rejected(origin, target_uri, reason) do
+    Logger.warning(
+      "federation.move_rejected: from=#{origin.ap_id} to=#{target_uri} reason=#{reason}"
+    )
+  end
+
+  defp log_move_ignored(origin, target_uri, reason) do
+    Logger.info("federation.move_ignored: from=#{origin.ap_id} to=#{target_uri} reason=#{reason}")
   end
 
   defp credential(credentials, key) when is_map(credentials),

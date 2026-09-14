@@ -803,6 +803,37 @@ sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; set +a; \
 - **Handing it over:** deliver the file over a secure channel, then delete
   it (`shred -u` where the filesystem supports it).
 
+### Account Migration
+
+Users manage aliases and move their account to another server at
+`/profile/move` ([ADR 0025](adr/0025-account-migration.md)). A move redirects
+followers on other servers, and they cannot be brought back, so the design
+assumes the request may come from a compromised account:
+
+- **Eligibility:** the data export gate (active, non-bot, TOTP enabled for
+  at least 7 days), and **no admin, moderator or board moderator role**.
+  Demote staff before they move, so a hijacked staff account cannot leave the
+  instance without moderators. One move per account every 30 days.
+- **Destination:** it must already list the account in `alsoKnownAs`. This is
+  checked when the move is requested and again when it is sent.
+- **Timing:** the `Move` is sent by the hourly sweep **24 hours** after the
+  request. Until then every page shows a warning banner with Cancel. A
+  password change, TOTP reset, sign out everywhere or a ban cancels it.
+- **Afterwards:** the account can still sign in, read, follow and export its
+  data, but cannot post, comment, send DMs, like, boost, vote or create
+  invites. Its profile points to the new account. The user can remove the
+  redirect (password and TOTP) to post again; followers who already moved
+  stay moved. Local followers are moved on their behalf.
+- **Inbound moves:** when a remote account that local users follow moves,
+  they unfollow it and send a `Follow` to the new account (pending until it
+  accepts). **Board follows are never switched over**: admins get a notice
+  naming the boards, and decide on `/boards/:slug/follows`. At most one move
+  per remote account is processed every 30 days.
+- **Logs:** `account_migration.move_requested`, `move_sent`, `move_failed`,
+  `move_cancelled` and `redirect_removed` (user side), and
+  `federation.move_complete`, `move_rejected` and `move_ignored` (inbound).
+  There is no admin UI to move someone else's account.
+
 ### Content Security
 
 - **HTML sanitization** — all federated content sanitized via Ammonia (Rust NIF,

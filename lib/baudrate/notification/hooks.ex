@@ -30,6 +30,7 @@ defmodule Baudrate.Notification.Hooks do
       account_move_requested, account_move_cancelled, account_move_failed,
       account_moved, account_redirect_removed, data_export_*
     * `notify_actor_moved/3` — actor_moved
+    * `notify_board_actor_moved/2` — board_actor_moved (all admins)
   """
 
   alias Baudrate.{Auth, Notification, Repo, Setup}
@@ -183,6 +184,23 @@ defmodule Baudrate.Notification.Hooks do
     |> Map.take([:actor_user_id, :actor_remote_actor_id])
     |> Map.merge(%{type: "actor_moved", user_id: user_id, data: data})
     |> Notification.create_notification()
+  end
+
+  @doc """
+  Tells every admin that a remote account followed by one or more boards has
+  moved. Board follows are never switched over automatically, since they
+  decide what appears in a board (ADR 0025). `data` carries `"label"` (the new
+  account) and `"boards"` (board names).
+  """
+  def notify_board_actor_moved(remote_actor_id, data) when is_map(data) do
+    Enum.each(Setup.admin_user_ids(), fn admin_id ->
+      Notification.create_notification(%{
+        type: "board_actor_moved",
+        user_id: admin_id,
+        actor_remote_actor_id: remote_actor_id,
+        data: data
+      })
+    end)
   end
 
   @doc """

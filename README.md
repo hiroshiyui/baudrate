@@ -21,6 +21,7 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
 - **TOTP two-factor authentication** -- required for admin/moderator, optional for users, with recovery codes
 - **WebAuthn / FIDO2 security keys** -- register hardware security keys or passkeys (e.g. YubiKey, Touch ID) for second-factor and admin sudo-mode re-verification
 - **Account security** -- password change and sign out everywhere behind step-up re-authentication; always-delivered notices when a password, second factor, or session changes
+- **Account migration** -- aliases (`alsoKnownAs`) and ActivityPub `Move` to another server, with a 24-hour cooling-off and warning banner, a destination check at request and send time, and a read-only old account whose redirect can be removed; followers of accounts that move elsewhere are refollowed properly
 - **Data export** -- download a JSON + media archive of what you wrote and own, designed against data leakage: TOTP-gated, 24-hour cooling-off with a site-wide warning banner, re-authentication for every download, and no archive ever stored on the server
 - **ActivityPub federation** -- federate with Mastodon, Lemmy, and the Fediverse
   - WebFinger and NodeInfo discovery

@@ -38,7 +38,7 @@ Follow-ups:
 
 ---
 
-## Phase 2: Account Migration (ActivityPub Move) — MEDIUM PRIORITY
+## Phase 2: Account Migration (ActivityPub Move) — ✅ done
 
 Designed in [ADR 0025](adr/0025-account-migration.md). Decisions: TOTP ≥ 7 days
 and no staff roles; 24 h cooling-off with a banner and cancel; the old account
@@ -89,7 +89,7 @@ and feed item migration (`Federation.migrate_feed_items/2`).
   invites. LiveViews hide the controls.
 - "Remove redirect": step-up, clears `moved_to`/`moved_at`, notice.
 
-### Stage 4 — Inbound Move fixes
+### Stage 4 — Inbound Move fixes ✅ done
 
 - Replace the silent repoint: for each local follower send `Follow` to the
   target (pending) and `Undo(Follow)` to the origin; keep feed item migration.
@@ -100,7 +100,7 @@ and feed item migration (`Federation.migrate_feed_items/2`).
 - Ignore a `Move` whose target has `movedTo`; one processed `Move` per origin
   every 30 days (`remote_actors.moved_to_ap_id` / `moved_at`).
 
-### Stage 5 — Docs
+### Stage 5 — Docs ✅ done
 
 - `doc/development.md` federation section, `doc/sysop.md`, `CLAUDE.md` gotchas,
   README features, zh_TW / ja_JP translations throughout.

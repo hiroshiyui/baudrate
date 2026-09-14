@@ -2685,17 +2685,17 @@ msgstr ""
 msgid "Markdown preview"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:513
+#: lib/baudrate_web/helpers.ex:517
 #, elixir-autogen, elixir-format
 msgid "%{count}d ago"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:512
+#: lib/baudrate_web/helpers.ex:516
 #, elixir-autogen, elixir-format
 msgid "%{count}h ago"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:511
+#: lib/baudrate_web/helpers.ex:515
 #, elixir-autogen, elixir-format
 msgid "%{count}m ago"
 msgstr ""
@@ -2847,7 +2847,7 @@ msgstr ""
 msgid "You cannot send messages to this user."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:510
+#: lib/baudrate_web/helpers.ex:514
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr ""
@@ -3166,17 +3166,17 @@ msgstr ""
 msgid "Unblock User"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:530
+#: lib/baudrate_web/helpers.ex:534
 #, elixir-autogen, elixir-format
 msgid "%{n} B"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:533
+#: lib/baudrate_web/helpers.ex:537
 #, elixir-autogen, elixir-format
 msgid "%{n} KB"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:536
+#: lib/baudrate_web/helpers.ex:540
 #, elixir-autogen, elixir-format
 msgid "%{n} MB"
 msgstr ""
@@ -4122,12 +4122,12 @@ msgstr ""
 msgid "followed you"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:337
+#: lib/baudrate_web/helpers.ex:340
 #, elixir-autogen, elixir-format
 msgid "forwarded your article"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:333
+#: lib/baudrate_web/helpers.ex:336
 #, elixir-autogen, elixir-format
 msgid "liked your article"
 msgstr ""
@@ -4137,7 +4137,7 @@ msgstr ""
 msgid "mentioned you"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:339
+#: lib/baudrate_web/helpers.ex:342
 #, elixir-autogen, elixir-format
 msgid "posted an announcement"
 msgstr ""
@@ -4152,12 +4152,12 @@ msgstr ""
 msgid "replied to your comment"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:406
+#: lib/baudrate_web/helpers.ex:409
 #, elixir-autogen, elixir-format
 msgid "sent you a notification"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:338
+#: lib/baudrate_web/helpers.ex:341
 #, elixir-autogen, elixir-format
 msgid "submitted a moderation report"
 msgstr ""
@@ -4776,7 +4776,7 @@ msgstr ""
 msgid "You cannot like your own comment."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:334
+#: lib/baudrate_web/helpers.ex:337
 #, elixir-autogen, elixir-format
 msgid "liked your comment"
 msgstr ""
@@ -5105,12 +5105,12 @@ msgstr ""
 msgid "You cannot boost your own comment."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:335
+#: lib/baudrate_web/helpers.ex:338
 #, elixir-autogen, elixir-format
 msgid "boosted your article"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:336
+#: lib/baudrate_web/helpers.ex:339
 #, elixir-autogen, elixir-format
 msgid "boosted your comment"
 msgstr ""
@@ -6239,37 +6239,37 @@ msgstr ""
 msgid "System Information"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:343
+#: lib/baudrate_web/helpers.ex:346
 #, elixir-autogen, elixir-format
 msgid "A security key was added to your account."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:346
+#: lib/baudrate_web/helpers.ex:349
 #, elixir-autogen, elixir-format
 msgid "A security key was removed from your account."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:160
+#: lib/baudrate_web/live/notifications_live.ex:168
 #, elixir-autogen, elixir-format
 msgid "If you did not make this change, check your security settings right away and contact an administrator."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:145
+#: lib/baudrate_web/live/notifications_live.ex:153
 #, elixir-autogen, elixir-format
 msgid "Review your security settings"
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:132
+#: lib/baudrate_web/live/notifications_live.ex:140
 #, elixir-autogen, elixir-format
 msgid "Security key: %{label}"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:349
+#: lib/baudrate_web/helpers.ex:352
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication (TOTP) was set up on your account."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:352
+#: lib/baudrate_web/helpers.ex:355
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication (TOTP) was turned off on your account."
 msgstr ""
@@ -6279,7 +6279,7 @@ msgstr ""
 msgid "Someone"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:358
+#: lib/baudrate_web/helpers.ex:361
 #, elixir-autogen, elixir-format
 msgid "All other sessions on your account were signed out."
 msgstr ""
@@ -6353,7 +6353,7 @@ msgstr[1] ""
 msgid "Signing out..."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:355
+#: lib/baudrate_web/helpers.ex:358
 #, elixir-autogen, elixir-format
 msgid "Your account password was changed."
 msgstr ""
@@ -6365,27 +6365,27 @@ msgstr ""
 msgid "Your session has expired. Please sign in again."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:395
+#: lib/baudrate_web/helpers.ex:398
 #, elixir-autogen, elixir-format
 msgid "A data export of your account was requested. It can be downloaded after 24 hours."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:404
+#: lib/baudrate_web/helpers.ex:407
 #, elixir-autogen, elixir-format
 msgid "A data export request on your account was cancelled."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:141
+#: lib/baudrate_web/live/notifications_live.ex:149
 #, elixir-autogen, elixir-format
 msgid "Review your data exports"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:398
+#: lib/baudrate_web/helpers.ex:401
 #, elixir-autogen, elixir-format
 msgid "Your data export is ready and can be downloaded for 48 hours."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:401
+#: lib/baudrate_web/helpers.ex:404
 #, elixir-autogen, elixir-format
 msgid "Your data export was downloaded."
 msgstr ""
@@ -6738,7 +6738,7 @@ msgstr ""
 msgid "The 100 most recent data export requests. Users download their own data; there is no way to export another user's data from here."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:142
+#: lib/baudrate_web/live/notifications_live.ex:150
 #, elixir-autogen, elixir-format
 msgid "Change your password"
 msgstr ""
@@ -6753,7 +6753,7 @@ msgstr ""
 msgid "Each code works only once. If you just used one, wait for the next code."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:154
+#: lib/baudrate_web/live/notifications_live.ex:162
 #, elixir-autogen, elixir-format
 msgid "If this was not you, your password is known to someone else. Change it right away and contact an administrator."
 msgstr ""
@@ -6763,7 +6763,7 @@ msgstr ""
 msgid "Re-authentication"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:362
+#: lib/baudrate_web/helpers.ex:365
 #, elixir-autogen, elixir-format
 msgid "Someone entered the correct password for your account but failed the two-factor code several times."
 msgstr ""
@@ -6813,7 +6813,7 @@ msgstr ""
 msgid "Alias removed."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:136
+#: lib/baudrate_web/live/notifications_live.ex:144
 #, elixir-autogen, elixir-format
 msgid "Alias: %{label}"
 msgstr ""
@@ -6833,12 +6833,12 @@ msgstr ""
 msgid "Aliases tell other servers that an account elsewhere is also yours. They are needed before an account can move."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:367
+#: lib/baudrate_web/helpers.ex:370
 #, elixir-autogen, elixir-format
 msgid "An account alias was added to your account."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:370
+#: lib/baudrate_web/helpers.ex:373
 #, elixir-autogen, elixir-format
 msgid "An account alias was removed from your account."
 msgstr ""
@@ -6934,12 +6934,12 @@ msgstr ""
 msgid "A move of this account is already pending."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:374
+#: lib/baudrate_web/helpers.ex:377
 #, elixir-autogen, elixir-format
 msgid "A move of your account to another server was requested. It will be sent after 24 hours unless you cancel it."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:379
+#: lib/baudrate_web/helpers.ex:382
 #, elixir-autogen, elixir-format
 msgid "A pending move of your account was cancelled."
 msgstr ""
@@ -6989,7 +6989,7 @@ msgstr ""
 msgid "Destination account"
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:139
+#: lib/baudrate_web/live/notifications_live.ex:147
 #, elixir-autogen, elixir-format
 msgid "Destination: %{label}"
 msgstr ""
@@ -7122,7 +7122,7 @@ msgstr[1] ""
 msgid "Your account is about to move to %{account}"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:382
+#: lib/baudrate_web/helpers.ex:385
 #, elixir-autogen, elixir-format
 msgid "A pending move of your account could not be sent and was stopped."
 msgstr ""
@@ -7152,7 +7152,7 @@ msgstr ""
 msgid "Removing..."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:391
+#: lib/baudrate_web/helpers.ex:394
 #, elixir-autogen, elixir-format
 msgid "The redirect of your moved account was removed. It can post again."
 msgstr ""
@@ -7173,7 +7173,7 @@ msgstr ""
 msgid "This account has moved. New account:"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:410
+#: lib/baudrate_web/helpers.ex:413
 #, elixir-autogen, elixir-format
 msgid "Your account has moved and is read-only. Remove the redirect to post again."
 msgstr ""
@@ -7183,7 +7183,7 @@ msgstr ""
 msgid "Your account has moved and is read-only. You can still read, export your data and manage your account."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:386
+#: lib/baudrate_web/helpers.ex:389
 #, elixir-autogen, elixir-format
 msgid "Your account has moved. Your followers were sent to your new account, and this account is now read-only."
 msgstr ""
@@ -7216,4 +7216,14 @@ msgstr ""
 #: lib/baudrate_web/live/account_migration_live.ex:413
 #, elixir-autogen, elixir-format
 msgid "this account was no longer eligible"
+msgstr ""
+
+#: lib/baudrate_web/live/notifications_live.ex:133
+#, elixir-autogen, elixir-format
+msgid "New account: %{label}. Boards: %{boards}"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:334
+#, elixir-autogen, elixir-format
+msgid "moved to a new account. Boards that follow it were not switched over."
 msgstr ""

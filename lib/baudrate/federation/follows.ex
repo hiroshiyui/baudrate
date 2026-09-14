@@ -597,32 +597,4 @@ defmodule Baudrate.Federation.Follows do
     )
     |> Repo.all()
   end
-
-  @doc """
-  Migrates user follows from one remote actor to another (for Move activity).
-
-  Updates all follows pointing to `old_actor_id` to point to `new_actor_id`.
-  If a user already follows the new actor, the duplicate follow is deleted.
-
-  Returns `{migrated_count, deleted_count}`.
-  """
-  def migrate_user_follows(old_actor_id, new_actor_id) do
-    follows = Repo.all(from(uf in UserFollow, where: uf.remote_actor_id == ^old_actor_id))
-
-    {migrated, deleted} =
-      Enum.reduce(follows, {0, 0}, fn follow, {m, d} ->
-        if user_follows?(follow.user_id, new_actor_id) do
-          Repo.delete!(follow)
-          {m, d + 1}
-        else
-          follow
-          |> UserFollow.changeset(%{remote_actor_id: new_actor_id})
-          |> Repo.update!()
-
-          {m + 1, d}
-        end
-      end)
-
-    {migrated, deleted}
-  end
 end

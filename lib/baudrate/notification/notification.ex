@@ -21,6 +21,8 @@ defmodule Baudrate.Notification.Notification do
     * `admin_announcement` — announcement from an admin
     * `actor_moved` — an account the user followed moved; the user now follows
       the new account (`data.label`, `data.url`, ADR 0025)
+    * `board_actor_moved` — a remote account followed by boards moved; board
+      follows were not switched over (admins only; `data.label`, `data.boards`)
 
   ### Account security notices
 
@@ -80,6 +82,7 @@ defmodule Baudrate.Notification.Notification do
     moderation_report
     admin_announcement
     actor_moved
+    board_actor_moved
     security_key_added
     security_key_removed
     totp_enabled

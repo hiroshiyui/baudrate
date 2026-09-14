@@ -98,7 +98,7 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
       end)
     end
 
-    test "migrates follows to new actor", %{user: user, actor: actor} do
+    test "follows the new actor for real and unfollows the old one", %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
       new_actor = create_remote_actor(%{domain: "new.example"})
 
@@ -108,8 +108,33 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
       activity = move_activity(actor, new_actor.ap_id)
       assert :ok = InboxHandler.handle(activity, actor, :shared)
 
-      assert Federation.user_follows?(user.id, new_actor.id)
       refute Federation.user_follows?(user.id, actor.id)
+
+      # A new Follow is sent, and the follow stays pending until the new actor
+      # accepts it. Repointing the old row as "accepted" left the new server
+      # unaware of the follower, so nothing was ever delivered (ADR 0025).
+      assert %{state: "pending", ap_id: follow_ap_id} =
+               Federation.get_user_follow(user.id, new_actor.id)
+
+      jobs =
+        Repo.all(Baudrate.Federation.DeliveryJob) |> Enum.map(&Jason.decode!(&1.activity_json))
+
+      assert Enum.any?(
+               jobs,
+               &(&1["type"] == "Follow" and &1["id"] == follow_ap_id and
+                   &1["object"] == new_actor.ap_id)
+             )
+
+      assert Enum.any?(jobs, &(&1["type"] == "Undo" and &1["object"]["object"] == actor.ap_id))
+
+      assert [%{type: "actor_moved", actor_remote_actor_id: actor_id}] =
+               Repo.all(
+                 Ecto.Query.from(n in Baudrate.Notification.Notification,
+                   where: n.user_id == ^user.id
+                 )
+               )
+
+      assert actor_id == actor.id
     end
 
     test "deduplicates when user already follows new actor", %{user: user, actor: actor} do
@@ -157,7 +182,7 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
       assert Federation.user_follows?(user.id, actor.id)
     end
 
-    test "keeps the moved actor's feed history visible and interactable",
+    test "keeps the moved actor's feed history, visible once the new actor accepts",
          %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
       new_actor = create_remote_actor(%{domain: "new.example"})
@@ -201,6 +226,11 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
       assert boosted.boosted_by_actor_id == new_actor.id
       # The original author of a boosted item is untouched.
       assert boosted.remote_actor_id == author.id
+
+      # Pending until the new actor accepts the Follow sent on the user's behalf.
+      refute Federation.feed_item_accessible?(user, authored)
+      follow = Federation.get_user_follow(user.id, new_actor.id)
+      {:ok, _} = Federation.accept_user_follow(follow.ap_id)
 
       assert Federation.feed_item_accessible?(user, authored)
       assert Federation.feed_item_accessible?(user, boosted)
@@ -247,6 +277,111 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
 
       # The validate_actor_match check will reject because activity actor != signer
       assert {:error, :actor_mismatch} = InboxHandler.handle(activity, actor, :shared)
+    end
+
+    test "refuses a Move of an object other than the signer", %{actor: actor} do
+      activity = %{
+        move_activity(actor, "https://new.example/users/x")
+        | "object" => "https://x.example/u/y"
+      }
+
+      assert {:error, :actor_mismatch} = InboxHandler.handle(activity, actor, :shared)
+    end
+
+    test "ignores a Move to an account that has itself moved", %{user: user, actor: actor} do
+      create_accepted_follow(user, actor)
+      new_actor = create_remote_actor(%{domain: "new.example"})
+      {public_pem, _} = KeyStore.generate_keypair()
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        Req.Test.json(conn, %{
+          "id" => new_actor.ap_id,
+          "type" => "Person",
+          "preferredUsername" => new_actor.username,
+          "inbox" => new_actor.inbox,
+          "alsoKnownAs" => [actor.ap_id],
+          "movedTo" => "https://third.example/users/elsewhere",
+          "publicKey" => %{"id" => "#{new_actor.ap_id}#main-key", "publicKeyPem" => public_pem}
+        })
+      end)
+
+      assert :ok = InboxHandler.handle(move_activity(actor, new_actor.ap_id), actor, :shared)
+      assert Federation.user_follows?(user.id, actor.id)
+    end
+
+    test "processes one Move per actor every 30 days", %{user: user, actor: actor} do
+      create_accepted_follow(user, actor)
+      first = create_remote_actor(%{domain: "first.example"})
+      stub_target_actor(first, [actor.ap_id])
+      assert :ok = InboxHandler.handle(move_activity(actor, first.ap_id), actor, :shared)
+
+      # The user follows the old actor again, and the actor tries to bounce elsewhere.
+      create_accepted_follow(user, actor)
+      second = create_remote_actor(%{domain: "second.example"})
+      stub_target_actor(second, [actor.ap_id])
+
+      assert :ok = InboxHandler.handle(move_activity(actor, second.ap_id), actor, :shared)
+      assert Federation.user_follows?(user.id, actor.id)
+      refute Federation.user_follows?(user.id, second.id)
+      assert %{moved_to_ap_id: moved_to} = Repo.reload!(actor)
+      assert moved_to == first.ap_id
+    end
+
+    test "a Move to a local account that lists the actor becomes a local follow",
+         %{user: user, actor: actor} do
+      create_accepted_follow(user, actor)
+      destination = setup_user_with_role("user")
+
+      Repo.update_all(
+        Ecto.Query.from(u in Baudrate.Setup.User, where: u.id == ^destination.id),
+        set: [also_known_as: [actor.ap_id]]
+      )
+
+      target_uri = Federation.actor_uri(:user, destination.username)
+      assert :ok = InboxHandler.handle(move_activity(actor, target_uri), actor, :shared)
+
+      assert Federation.local_follows?(user.id, destination.id)
+      refute Federation.user_follows?(user.id, actor.id)
+    end
+
+    test "a Move to a local account that does not list the actor is refused",
+         %{user: user, actor: actor} do
+      create_accepted_follow(user, actor)
+      destination = setup_user_with_role("user")
+      target_uri = Federation.actor_uri(:user, destination.username)
+
+      assert {:error, :move_not_authorized} =
+               InboxHandler.handle(move_activity(actor, target_uri), actor, :shared)
+
+      assert Federation.user_follows?(user.id, actor.id)
+      refute Federation.local_follows?(user.id, destination.id)
+    end
+
+    test "board follows are not switched over; admins are told", %{actor: actor} do
+      admin = setup_user_with_role("admin")
+
+      board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Relay",
+          slug: "relay-#{System.unique_integer([:positive])}"
+        })
+        |> Repo.insert!()
+
+      {:ok, board_follow} = Federation.create_board_follow(board, actor)
+      new_actor = create_remote_actor(%{domain: "new.example"})
+      stub_target_actor(new_actor, [actor.ap_id])
+
+      assert :ok = InboxHandler.handle(move_activity(actor, new_actor.ap_id), actor, :shared)
+
+      assert Repo.reload!(board_follow).remote_actor_id == actor.id
+
+      assert [%{data: %{"boards" => ["Relay"], "label" => "@" <> _}}] =
+               Repo.all(
+                 Ecto.Query.from(n in Baudrate.Notification.Notification,
+                   where: n.user_id == ^admin.id and n.type == "board_actor_moved"
+                 )
+               )
     end
   end
 end

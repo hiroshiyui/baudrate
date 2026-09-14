@@ -330,6 +330,9 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("actor_moved"),
     do: gettext("moved to a new account, which you now follow")
 
+  def notification_text("board_actor_moved"),
+    do: gettext("moved to a new account. Boards that follow it were not switched over.")
+
   def notification_text("article_liked"), do: gettext("liked your article")
   def notification_text("comment_liked"), do: gettext("liked your comment")
   def notification_text("article_boosted"), do: gettext("boosted your article")
@@ -438,6 +441,7 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("account_moved"), do: "hero-truck"
   def notification_icon("account_redirect_removed"), do: "hero-arrow-uturn-left"
   def notification_icon("actor_moved"), do: "hero-truck"
+  def notification_icon("board_actor_moved"), do: "hero-truck"
   def notification_icon("data_export_requested"), do: "hero-archive-box"
   def notification_icon("data_export_ready"), do: "hero-archive-box-arrow-down"
   def notification_icon("data_export_downloaded"), do: "hero-arrow-down-tray"

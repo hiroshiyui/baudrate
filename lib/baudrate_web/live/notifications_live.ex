@@ -127,6 +127,14 @@ defmodule BaudrateWeb.NotificationsLive do
   defp target_title(%{type: "actor_moved", data: %{"label" => label}}) when label != "",
     do: gettext("New account: %{label}", label: label)
 
+  defp target_title(%{type: "board_actor_moved", data: %{"label" => label, "boards" => boards}})
+       when is_list(boards),
+       do:
+         gettext("New account: %{label}. Boards: %{boards}",
+           label: label,
+           boards: Enum.join(boards, ", ")
+         )
+
   defp target_title(%{type: type, data: %{"label" => label}})
        when type in ["security_key_added", "security_key_removed"] and label != "",
        do: gettext("Security key: %{label}", label: label)
