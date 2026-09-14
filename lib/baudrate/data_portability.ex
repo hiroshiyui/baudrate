@@ -484,6 +484,162 @@ defmodule Baudrate.DataPortability do
     count
   end
 
+  # ---------------------------------------------------------------------------
+  # SysOp export (audited, out-of-band)
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Builds an export for `username` on behalf of the SysOp (ADR 0023 §2): for
+  banned users, accounts without qualifying TOTP, or other cases the SysOp
+  has verified out of band. Run through `Baudrate.Release.export_user_data/3`.
+
+  Options (all required):
+
+    * `:operator` — the OS user running the task (audited)
+    * `:reason` — why the export was made, e.g. a ticket reference (audited)
+    * `:base_url` — the instance base URL
+
+  Guards:
+
+    * `output_dir` must exist, be a real directory, grant **no** permissions
+      to group or others (`chmod 700`), and resolve outside `priv/static` and
+      the uploads root, so the file can never be served.
+    * The archive is written with `O_EXCL` (never overwrites) and mode `0600`.
+
+  Side effects: an `export_requests` row (`source: "sysop"`, `completed`,
+  `operator`), a `Logger` warning with operator and reason, and a
+  `data_export_downloaded` notice to the user. The notice row is inserted
+  directly, because under `bin/baudrate eval` neither PubSub nor push
+  delivery is running.
+
+  Returns `{:ok, path}` or `{:error, reason}`.
+  """
+  @spec sysop_export(String.t(), String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
+  def sysop_export(username, output_dir, opts)
+      when is_binary(username) and is_binary(output_dir) do
+    operator = opts |> Keyword.get(:operator) |> blank_to_nil()
+    reason = opts |> Keyword.get(:reason) |> blank_to_nil()
+    base_url = Keyword.fetch!(opts, :base_url)
+
+    with {:operator, op} when is_binary(op) <- {:operator, operator},
+         {:reason, r} when is_binary(r) <- {:reason, reason},
+         %User{} = user <-
+           Repo.one(from(u in User, where: u.username == ^username, preload: :role)) ||
+             {:error, :user_not_found},
+         {:ok, dir} <- private_output_dir(output_dir),
+         {:ok, info} <- Baudrate.DataPortability.Archive.build(user, base_url: base_url) do
+      try do
+        stamp = DateTime.utc_now() |> Calendar.strftime("%Y%m%dT%H%M%SZ")
+        dest = Path.join(dir, "baudrate-export-#{user.username}-#{stamp}.zip")
+
+        with :ok <- copy_exclusive(info.path, dest) do
+          record_sysop_export(user, op, r, dest)
+          {:ok, dest}
+        end
+      after
+        Baudrate.DataPortability.Archive.cleanup(info)
+      end
+    else
+      {:operator, _} -> {:error, :operator_required}
+      {:reason, _} -> {:error, :reason_required}
+      {:error, _} = error -> error
+    end
+  end
+
+  defp blank_to_nil(value) when is_binary(value) do
+    case String.trim(value) do
+      "" -> nil
+      trimmed -> String.slice(trimmed, 0, 200)
+    end
+  end
+
+  defp blank_to_nil(_), do: nil
+
+  defp private_output_dir(output_dir) do
+    alias Baudrate.DataPortability.Files
+
+    with {:ok, real} <- realpath_or_error(output_dir),
+         {:ok, %File.Stat{type: :directory, mode: mode}} <- File.stat(real),
+         :ok <-
+           if(Bitwise.band(mode, 0o077) == 0, do: :ok, else: {:error, :output_dir_not_private}),
+         :ok <- outside(real, Files.uploads_root()),
+         :ok <- outside(real, Application.app_dir(:baudrate, "priv/static")) do
+      {:ok, real}
+    else
+      {:ok, %File.Stat{}} -> {:error, :output_dir_not_a_directory}
+      {:error, reason} when is_atom(reason) -> {:error, reason}
+      _ -> {:error, :output_dir_invalid}
+    end
+  end
+
+  defp realpath_or_error(path) do
+    case Baudrate.DataPortability.Files.realpath(path) do
+      {:ok, real} -> {:ok, real}
+      :error -> {:error, :output_dir_invalid}
+    end
+  end
+
+  defp outside(real, root) do
+    case Baudrate.DataPortability.Files.realpath(root) do
+      {:ok, real_root} ->
+        if real == real_root or String.starts_with?(real, real_root <> "/"),
+          do: {:error, :output_dir_forbidden},
+          else: :ok
+
+      # A root that does not exist cannot contain the output directory.
+      :error ->
+        :ok
+    end
+  end
+
+  defp copy_exclusive(source, dest) do
+    case File.open(dest, [:write, :exclusive, :binary]) do
+      {:ok, device} ->
+        try do
+          File.chmod!(dest, 0o600)
+          source |> File.stream!(65_536) |> Enum.each(&IO.binwrite(device, &1))
+          :ok
+        after
+          File.close(device)
+        end
+
+      {:error, :eexist} ->
+        {:error, :output_file_exists}
+
+      {:error, reason} ->
+        {:error, {:output_file, reason}}
+    end
+  end
+
+  defp record_sysop_export(user, operator, reason, dest) do
+    now = now()
+
+    %ExportRequest{}
+    |> ExportRequest.create_changeset(%{
+      user_id: user.id,
+      status: "completed",
+      source: "sysop",
+      requested_at: now,
+      ready_at: now,
+      expires_at: now,
+      download_count: 1,
+      operator: operator
+    })
+    |> Repo.insert!()
+
+    %Baudrate.Notification.Notification{}
+    |> Baudrate.Notification.Notification.changeset(%{
+      type: "data_export_downloaded",
+      user_id: user.id,
+      data: %{"source" => "sysop"}
+    })
+    |> Repo.insert!()
+
+    Logger.warning(
+      "data_export.sysop_export: user_id=#{user.id} operator=#{inspect(operator)} reason=#{inspect(reason)} path=#{dest}"
+    )
+  end
+
   defp credential(credentials, key) when is_map(credentials),
     do: Map.get(credentials, key) || Map.get(credentials, Atom.to_string(key))
 

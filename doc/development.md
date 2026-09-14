@@ -1223,6 +1223,8 @@ holds every rule; the web layer only collects credentials.
 | `DataExportLive` (`/profile/export`) | Eligibility, request, cancel, "cancel and sign out everywhere else", download (re-auth → token → `phx-trigger-action`), history |
 | `ExportController` (`POST /exports/:id/download`) | Fetch Metadata (`same-origin`/`navigate`/`document`), session-bound 60 s token, nonce consumed once, then build → claim → `send_file` with `attachment`/`no-store`/`nosniff` and cleanup. Any other failure is the same 404; a busy slot is 503 + `Retry-After` |
 | `Layouts.data_export_banner/1` | Warning on every page while a request is pending/ready (`AuthHooks` assigns `:active_data_export`) |
+| `DataPortability.sysop_export/3` / `Release.export_user_data/3` | Audited SysOp export for users who cannot self-serve. Requires operator and reason; output directory owner-only and outside web roots; `O_EXCL` + `0600`; records a `sysop` request row and a notice |
+| `Admin.DataExportsLive` (`/admin/data-exports`) | Admin-only, read-only history (not moderators, not the moderation log); no export-on-behalf |
 
 Security notices `data_export_requested`, `_ready`, `_downloaded` and
 `_cancelled` are always delivered. The acceptance gate is the canary test in

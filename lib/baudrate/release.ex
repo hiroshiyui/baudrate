@@ -18,6 +18,9 @@ defmodule Baudrate.Release do
       # Or against the already-running node — same function, no port collision
       # because no second VM boots:
       bin/baudrate rpc "Baudrate.Release.backfill_ap_ids(dry_run: true)"
+
+      # Audited SysOp data export (ADR 0023), after verifying identity out of band:
+      bin/baudrate eval 'Baudrate.Release.export_user_data("alice", "/root/exports", reason: "ticket 42")'
   """
 
   import Ecto.Query
@@ -217,6 +220,42 @@ defmodule Baudrate.Release do
             acc
         end
     end
+  end
+
+  @doc """
+  Audited SysOp data export for `username` into `output_dir` (ADR 0023).
+
+  Use it for banned users, accounts without qualifying TOTP, or any request
+  verified **out of band** (see the SysOp guide). It uses the same archive
+  builder and exclusions as self-service export.
+
+  `output_dir` must be owner-only (`chmod 700`) and outside every web root.
+  `:reason` is required and logged together with the OS user
+  (`$SUDO_USER`/`$USER`, or `:operator`). The user receives a notice.
+
+      bin/baudrate eval 'Baudrate.Release.export_user_data("alice", "/root/exports", reason: "ticket 42")'
+  """
+  def export_user_data(username, output_dir, opts \\ []) do
+    load_app()
+
+    operator =
+      Keyword.get(opts, :operator) || System.get_env("SUDO_USER") || System.get_env("USER")
+
+    {:ok, result, _} =
+      Ecto.Migrator.with_repo(Repo, fn _repo ->
+        Baudrate.DataPortability.sysop_export(username, output_dir,
+          operator: operator,
+          reason: Keyword.get(opts, :reason),
+          base_url: base_url_from_config()
+        )
+      end)
+
+    case result do
+      {:ok, path} -> IO.puts("Export written to #{path} (mode 0600).")
+      {:error, reason} -> IO.puts("Export refused: #{inspect(reason)}")
+    end
+
+    result
   end
 
   # Builds the canonical site origin from `BaudrateWeb.Endpoint`'s `:url`

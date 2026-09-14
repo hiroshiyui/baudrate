@@ -726,6 +726,64 @@ timer. Verify renewal works: `sudo certbot renew --dry-run`.
 | Rotation | Tokens rotated every 24 hours |
 | Concurrency | Max 3 sessions per user; oldest evicted on 4th login |
 | Banning | Invalidates all existing sessions immediately |
+| Revocation | Logout, bans, password change/reset, TOTP reset, sign out everywhere and expiry also close that session's open LiveView pages (`live_socket_id`) |
+
+### Data Export
+
+Users can download their own data at `/profile/export`
+([ADR 0023](adr/0023-data-export-threat-model.md)). The design assumes a
+request may come from a compromised account:
+
+- **Eligibility:** an active, non-bot account with **TOTP enabled for at
+  least 7 days**. Accounts that had TOTP before the `totp_enabled_at` column
+  existed count from the upgrade.
+- **Timing:** a request is downloadable **24 hours** later, for **48 hours**,
+  at most **3 times**, with the password and TOTP code asked for each time.
+  Users get always-delivered notices and a banner on every page, and any
+  session can cancel. Password change, TOTP reset, a ban and sign out
+  everywhere cancel requests automatically.
+- **No archive is ever stored on the server.** It is built into the
+  service's private `/tmp` at download time and deleted after sending. Keep
+  the nginx `/exports/` location unbuffered (see the nginx notes).
+- **Browsers:** downloads require Fetch Metadata headers
+  (`Sec-Fetch-Site/Mode/Dest`), which all current browsers send. Very old
+  browsers get 403.
+- **Admins** can review requests at `/admin/data-exports`. There is
+  deliberately no way to export another user's data from the web UI.
+
+#### SysOp export (banned users, accounts without TOTP)
+
+For someone who cannot use self-service (for example a banned user
+exercising their right of access), run the audited release task. **Verify
+the requester's identity out of band first.** There is no email in
+Baudrate, so a message claiming to be from a user proves nothing. Use one of
+these checks:
+
+1. The request comes from the contact address or account the user registered
+   with elsewhere and has used with you before, **and**
+2. the user proves control of the account: for example, they sign in and
+   post a phrase you give them in a private board or DM (not possible for
+   banned users), or they answer details only the account owner would know
+   and that are not public (recent private message recipients, approximate
+   registration date, invite code used).
+
+Record what you checked in your ticket, then:
+
+```bash
+sudo -u baudrate mkdir -m 700 -p /opt/baudrate/exports-out   # owner-only, outside web roots
+cd /opt/baudrate/current
+sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; set +a; \
+  bin/baudrate eval "Baudrate.Release.export_user_data(\"alice\", \"/opt/baudrate/exports-out\", reason: \"ticket 42\")"'
+```
+
+- **Refusals:** the task refuses an output directory readable by group or
+  others, or inside `priv/static` or the uploads root, and it never
+  overwrites a file.
+- **What it records:** it writes a `0600` ZIP, logs a
+  `data_export.sysop_export` warning with the OS user and reason, adds a
+  `sysop` row to the export history, and notifies the user.
+- **Handing it over:** deliver the file over a secure channel, then delete
+  it (`shred -u` where the filesystem supports it).
 
 ### Content Security
 
@@ -1165,6 +1223,7 @@ discover each other via `Phoenix.PubSub.PG2`.
 | `/admin/moderation-log` | Audit trail of all admin actions |
 | `/admin/invites` | Invite code generation and revocation |
 | `/admin/login-attempts` | Login attempt history (filterable, paginated) |
+| `/admin/data-exports` | Data export request history (admin-only, read-only; no export-on-behalf) |
 | `/admin/verify` | Admin TOTP re-verification (sudo mode, 10-min timeout) |
 
 ---

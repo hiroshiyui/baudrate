@@ -1,0 +1,68 @@
+<section
+  id="admin-data-exports-page"
+  class="admin-data-exports-page space-y-6"
+  aria-labelledby="admin-data-exports-heading"
+>
+  <h1 id="admin-data-exports-heading" class="admin-data-exports-heading text-2xl font-bold">
+    {gettext("Data Exports")}
+  </h1>
+
+  <p id="admin-data-exports-intro" class="admin-data-exports-intro text-sm text-base-content/70">
+    {gettext(
+      "The 100 most recent data export requests. Users download their own data; there is no way to export another user's data from here."
+    )}
+  </p>
+
+  <p
+    :if={@requests == []}
+    id="admin-data-exports-empty"
+    class="admin-data-exports-empty text-base-content/70"
+  >
+    {gettext("No data exports yet.")}
+  </p>
+
+  <div :if={@requests != []} class="overflow-x-auto">
+    <table id="admin-data-exports-table" class="admin-data-exports-table table table-sm">
+      <thead>
+        <tr>
+          <th scope="col">{gettext("Requested")}</th>
+          <th scope="col">{gettext("User")}</th>
+          <th scope="col">{gettext("Source")}</th>
+          <th scope="col">{gettext("Status")}</th>
+          <th scope="col">{gettext("Downloads")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          :for={request <- @requests}
+          id={"admin-data-export-#{request.id}"}
+          class="admin-data-export-row"
+        >
+          <td class="admin-data-export-requested whitespace-nowrap">
+            {format_datetime(request.requested_at)}
+          </td>
+          <td class="admin-data-export-user break-all">
+            <.link
+              :if={request.user}
+              navigate={~p"/users/#{request.user.username}"}
+              class="admin-data-export-user-link link link-hover"
+            >
+              {request.user.username}
+            </.link>
+          </td>
+          <td class="admin-data-export-source">
+            {source_label(request.source)}
+            <span :if={request.operator} class="opacity-70">({request.operator})</span>
+          </td>
+          <td class="admin-data-export-status">
+            {status_label(request.status)}
+            <span :if={cancel_reason_label(request.cancel_reason)} class="opacity-70">
+              ({cancel_reason_label(request.cancel_reason)})
+            </span>
+          </td>
+          <td class="admin-data-export-downloads">{request.download_count}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
