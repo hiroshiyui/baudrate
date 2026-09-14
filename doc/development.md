@@ -1608,6 +1608,7 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `<span>` tags with safe classes (`h-card`, `hashtag`, `mention`, `invisible`) preserved by sanitizer
 - Outbound activities use visibility-aware `to`/`cc` addressing (respects stored `visibility` field; `Federation.Visibility` derives visibility from AP addressing on ingest)
 - Outbound Article objects include board actor URIs merged into `cc` (improves discoverability)
+- Interactions with remote posts also go to the remote author: comments (and their deletion) reach the remote article author and the remote author of the parent comment; likes/unlikes reach the liked article's or comment's remote author; boosts/unboosts reach the boosted post's remote author as well as the booster's followers (`Delivery.enqueue_for_article/4` `:remote_authors`). Before v1.18.2 they went only to followers, so remote authors never saw them
 - Outbound Article objects include plain-text `summary` (≤ 500 chars) for Mastodon preview display
 - Outbound Article objects include `tag` array with `Hashtag` objects (extracted from body, code blocks excluded)
 - Cross-post deduplication: same remote article arriving via multiple board inboxes links to all boards

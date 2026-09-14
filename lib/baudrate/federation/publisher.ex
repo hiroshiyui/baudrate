@@ -514,7 +514,10 @@ defmodule Baudrate.Federation.Publisher do
   def publish_comment_created(comment, article) do
     article = Repo.preload(article, [:boards, :user])
     {activity, actor_uri} = build_create_comment(comment, article)
-    Delivery.enqueue_for_article(activity, actor_uri, article)
+
+    Delivery.enqueue_for_article(activity, actor_uri, article,
+      remote_authors: reply_authors(comment, article)
+    )
   end
 
   @doc """
@@ -523,7 +526,39 @@ defmodule Baudrate.Federation.Publisher do
   def publish_comment_deleted(comment, article) do
     article = Repo.preload(article, [:boards, :user])
     {activity, actor_uri} = build_delete_comment(comment, article)
-    Delivery.enqueue_for_article(activity, actor_uri, article)
+
+    Delivery.enqueue_for_article(activity, actor_uri, article,
+      remote_authors: reply_authors(comment, article)
+    )
+  end
+
+  # Remote actors who should hear about a comment: the remote author of the
+  # article and of the comment it replies to.
+  defp reply_authors(comment, article) do
+    article = Repo.preload(article, :remote_actor)
+
+    parent_author =
+      case comment.parent_id do
+        nil ->
+          nil
+
+        parent_id ->
+          case Repo.get(Baudrate.Content.Comment, parent_id) do
+            %{remote_actor_id: id} when not is_nil(id) ->
+              Repo.get(Baudrate.Federation.RemoteActor, id)
+
+            _ ->
+              nil
+          end
+      end
+
+    Enum.uniq([article.remote_actor, parent_author])
+  end
+
+  defp remote_author(%{remote_actor_id: nil}), do: []
+
+  defp remote_author(record) do
+    [Repo.preload(record, :remote_actor).remote_actor]
   end
 
   @doc """
@@ -597,7 +632,10 @@ defmodule Baudrate.Federation.Publisher do
     like_ap_id = like && like.ap_id
 
     {activity, actor_uri} = build_like_article(user, article, like_ap_id)
-    Delivery.enqueue_for_article(activity, actor_uri, article)
+
+    Delivery.enqueue_for_article(activity, actor_uri, article,
+      remote_authors: remote_author(article)
+    )
   end
 
   @doc """
@@ -607,7 +645,10 @@ defmodule Baudrate.Federation.Publisher do
     user = Repo.get!(Baudrate.Setup.User, user_id)
     article = Repo.preload(article, [:boards, :user])
     {activity, actor_uri} = build_undo_like_article(user, article, like_ap_id)
-    Delivery.enqueue_for_article(activity, actor_uri, article)
+
+    Delivery.enqueue_for_article(activity, actor_uri, article,
+      remote_authors: remote_author(article)
+    )
   end
 
   # --- Comment Like ---
@@ -674,7 +715,10 @@ defmodule Baudrate.Federation.Publisher do
     like_ap_id = like && like.ap_id
 
     {activity, actor_uri} = build_like_comment(user, comment, like_ap_id)
-    Delivery.enqueue_for_article(activity, actor_uri, comment.article)
+
+    Delivery.enqueue_for_article(activity, actor_uri, comment.article,
+      remote_authors: remote_author(comment)
+    )
   end
 
   @doc """
@@ -684,7 +728,10 @@ defmodule Baudrate.Federation.Publisher do
     user = Repo.get!(Baudrate.Setup.User, user_id)
     comment = Repo.preload(comment, article: [:boards, :user])
     {activity, actor_uri} = build_undo_like_comment(user, comment, like_ap_id)
-    Delivery.enqueue_for_article(activity, actor_uri, comment.article)
+
+    Delivery.enqueue_for_article(activity, actor_uri, comment.article,
+      remote_authors: remote_author(comment)
+    )
   end
 
   # --- Article Boost (User Announce) ---
@@ -756,7 +803,7 @@ defmodule Baudrate.Federation.Publisher do
     boost_ap_id = boost && boost.ap_id
 
     {activity, actor_uri} = build_user_announce_article(user, article, boost_ap_id)
-    Delivery.enqueue_for_followers(activity, actor_uri)
+    enqueue_for_followers_and_authors(activity, actor_uri, remote_author(article))
   end
 
   @doc """
@@ -768,7 +815,7 @@ defmodule Baudrate.Federation.Publisher do
     user = Repo.get!(Baudrate.Setup.User, user_id)
     article = Repo.preload(article, [:boards, :user])
     {activity, actor_uri} = build_undo_user_announce_article(user, article, boost_ap_id)
-    Delivery.enqueue_for_followers(activity, actor_uri)
+    enqueue_for_followers_and_authors(activity, actor_uri, remote_author(article))
   end
 
   # --- Comment Boost (User Announce) ---
@@ -843,7 +890,7 @@ defmodule Baudrate.Federation.Publisher do
     boost_ap_id = boost && boost.ap_id
 
     {activity, actor_uri} = build_user_announce_comment(user, comment, boost_ap_id)
-    Delivery.enqueue_for_followers(activity, actor_uri)
+    enqueue_for_followers_and_authors(activity, actor_uri, remote_author(comment))
   end
 
   @doc """
@@ -855,7 +902,24 @@ defmodule Baudrate.Federation.Publisher do
     user = Repo.get!(Baudrate.Setup.User, user_id)
     comment = Repo.preload(comment, article: [:boards, :user])
     {activity, actor_uri} = build_undo_user_announce_comment(user, comment, boost_ap_id)
-    Delivery.enqueue_for_followers(activity, actor_uri)
+    enqueue_for_followers_and_authors(activity, actor_uri, remote_author(comment))
+  end
+
+  # A boost goes to the booster's followers, and also to the boosted post's
+  # remote author so their instance counts it.
+  defp enqueue_for_followers_and_authors(activity, actor_uri, authors) do
+    follower_inboxes = Delivery.resolve_follower_inboxes(actor_uri)
+
+    author_inboxes =
+      for %{shared_inbox: shared, inbox: inbox} <- authors,
+          target = if(is_binary(shared) and shared != "", do: shared, else: inbox),
+          is_binary(target) and target != "",
+          do: target
+
+    case Enum.uniq(follower_inboxes ++ author_inboxes) do
+      [] -> {:ok, 0}
+      inboxes -> Delivery.enqueue(activity, actor_uri, inboxes)
+    end
   end
 
   # --- Feed Item Like/Boost ---

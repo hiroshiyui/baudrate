@@ -259,6 +259,114 @@ defmodule Baudrate.Federation.DeliveryTest do
     end
   end
 
+  describe "interactions with remote posts reach their authors" do
+    # Federation runs synchronously in tests, so these interactions enqueue
+    # their jobs immediately.
+    setup do
+      board = create_board()
+      author = create_remote_actor()
+      user = create_user()
+      uid = System.unique_integer([:positive])
+
+      {:ok, %{article: article}} =
+        Baudrate.Content.create_remote_article(
+          %{
+            title: "Remote post",
+            body: "Body",
+            slug: "remote-post-#{uid}",
+            ap_id: "https://remote.example/articles/#{uid}",
+            remote_actor_id: author.id
+          },
+          [board.id]
+        )
+
+      Repo.delete_all(DeliveryJob)
+      %{author: author, user: user, article: article}
+    end
+
+    defp inboxes_for(type) do
+      from(j in DeliveryJob, select: {j.inbox_url, j.activity_json})
+      |> Repo.all()
+      |> Enum.filter(fn {_, json} -> Jason.decode!(json)["type"] == type end)
+      |> Enum.map(&elem(&1, 0))
+    end
+
+    test "a comment, and a like, on a remote article", %{
+      author: author,
+      user: user,
+      article: article
+    } do
+      {:ok, _} =
+        Baudrate.Content.create_comment(%{
+          "body" => "Hi",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      assert author.inbox in inboxes_for("Create")
+
+      {:ok, _} = Baudrate.Content.toggle_article_like(user.id, article.id)
+      assert author.inbox in inboxes_for("Like")
+    end
+
+    test "a boost of a remote article", %{author: author, user: user, article: article} do
+      {:ok, _} = Baudrate.Content.toggle_article_boost(user.id, article.id)
+      assert author.inbox in inboxes_for("Announce")
+    end
+
+    test "a reply to a remote comment reaches the comment's author too",
+         %{user: user, article: article} do
+      commenter = create_remote_actor()
+      uid = System.unique_integer([:positive])
+
+      {:ok, parent} =
+        Baudrate.Content.create_remote_comment(%{
+          body: "Remote comment",
+          body_html: "<p>Remote comment</p>",
+          ap_id: "https://remote.example/notes/#{uid}",
+          article_id: article.id,
+          remote_actor_id: commenter.id
+        })
+
+      Repo.delete_all(DeliveryJob)
+
+      {:ok, _} =
+        Baudrate.Content.create_comment(%{
+          "body" => "Reply",
+          "article_id" => article.id,
+          "user_id" => user.id,
+          "parent_id" => parent.id
+        })
+
+      assert commenter.inbox in inboxes_for("Create")
+
+      {:ok, _} = Baudrate.Content.toggle_comment_like(user.id, parent.id)
+      assert commenter.inbox in inboxes_for("Like")
+    end
+
+    test "a local article's interactions do not add any remote author" do
+      user = create_user()
+      board = create_board()
+
+      {:ok, %{article: article}} =
+        Baudrate.Content.create_article(
+          %{
+            title: "Local",
+            body: "B",
+            slug: "local-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      Repo.delete_all(DeliveryJob)
+      liker = create_user()
+      {:ok, _} = Baudrate.Content.toggle_article_like(liker.id, article.id)
+
+      assert inboxes_for("Like") == []
+    end
+  end
+
   describe "enqueue_for_article/3" do
     test "collects inboxes from user followers and board followers" do
       user = create_user()

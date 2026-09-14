@@ -262,8 +262,16 @@ defmodule Baudrate.Federation.Delivery do
   Resolves followers of both the article's author and all public boards
   the article is posted to, deduplicates by shared inbox, and creates
   delivery jobs.
+
+  ## Options
+
+    * `:remote_authors` — remote actors who must receive the activity
+      themselves, such as the author of the remote article or comment being
+      liked or replied to. Their followers are not involved, so without this
+      an interaction with a remote post never reached its author. `nil`
+      entries are ignored.
   """
-  def enqueue_for_article(activity_json, actor_uri, article) do
+  def enqueue_for_article(activity_json, actor_uri, article, opts \\ []) do
     article = Repo.preload(article, [:boards, :user])
 
     # Collect inboxes from user followers (skip for remote articles with no local user)
@@ -284,7 +292,18 @@ defmodule Baudrate.Federation.Delivery do
         resolve_follower_inboxes(board_uri)
       end)
 
-    all_inboxes = Enum.uniq(user_inboxes ++ board_inboxes)
+    author_inboxes =
+      opts
+      |> Keyword.get(:remote_authors, [])
+      |> Enum.flat_map(fn
+        %{shared_inbox: shared, inbox: inbox} ->
+          if(is_binary(shared) and shared != "", do: [shared], else: List.wrap(inbox))
+
+        _ ->
+          []
+      end)
+
+    all_inboxes = Enum.uniq(user_inboxes ++ board_inboxes ++ author_inboxes)
 
     if all_inboxes != [] do
       enqueue(activity_json, actor_uri, all_inboxes)
