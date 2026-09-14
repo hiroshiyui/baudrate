@@ -39,6 +39,7 @@ defmodule Baudrate.Federation.DeliveryWorkerTest do
       {:ok, job} =
         DeliveryJob.create_changeset(%{
           activity_json: ~s({"type":"Create"}),
+          activity_id: "https://local.example/ap/users/test#worker-1",
           inbox_url: "https://remote.example/inbox",
           actor_uri: "https://local.example/ap/users/test"
         })
@@ -66,6 +67,7 @@ defmodule Baudrate.Federation.DeliveryWorkerTest do
         %DeliveryJob{}
         |> Ecto.Changeset.change(%{
           activity_json: ~s({"type":"Create"}),
+          activity_id: "https://local.example/ap/users/test#worker-2",
           inbox_url: "https://remote.example/inbox",
           actor_uri: "https://local.example/ap/users/test",
           status: "failed",
@@ -88,6 +90,7 @@ defmodule Baudrate.Federation.DeliveryWorkerTest do
         %DeliveryJob{}
         |> Ecto.Changeset.change(%{
           activity_json: ~s({"type":"Create"}),
+          activity_id: "https://local.example/ap/users/test#worker-3",
           inbox_url: "https://remote.example/inbox",
           actor_uri: "https://local.example/ap/users/test",
           status: "delivered",
@@ -109,6 +112,7 @@ defmodule Baudrate.Federation.DeliveryWorkerTest do
         %DeliveryJob{}
         |> Ecto.Changeset.change(%{
           activity_json: ~s({"type":"Create"}),
+          activity_id: "https://local.example/ap/users/test#worker-4",
           inbox_url: "https://remote.example/inbox",
           actor_uri: "https://local.example/ap/users/test",
           status: "abandoned",

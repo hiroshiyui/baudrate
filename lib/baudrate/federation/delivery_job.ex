@@ -19,6 +19,9 @@ defmodule Baudrate.Federation.DeliveryJob do
 
   schema "delivery_jobs" do
     field :activity_json, :string
+    # The activity's `id` (or a hash of the JSON when it has none). Pending and
+    # failed jobs are unique per (inbox_url, actor_uri, activity_id).
+    field :activity_id, :string
     field :inbox_url, :string
     field :actor_uri, :string
     field :status, :string, default: "pending"
@@ -34,12 +37,31 @@ defmodule Baudrate.Federation.DeliveryJob do
 
   @doc """
   Changeset for creating a new delivery job.
+
+  `activity_id` is derived from `activity_json`: the activity's `id`, or an
+  MD5 of the JSON when it has none. It is the dedup key alongside the inbox
+  and actor.
   """
   def create_changeset(job \\ %__MODULE__{}, attrs) do
     job
     |> cast(attrs, @required_fields)
     |> validate_required(@required_fields)
+    |> put_activity_id()
   end
+
+  defp put_activity_id(%Ecto.Changeset{valid?: true} = changeset) do
+    json = get_field(changeset, :activity_json)
+
+    id =
+      case Jason.decode(json) do
+        {:ok, %{"id" => id}} when is_binary(id) and id != "" -> id
+        _ -> :crypto.hash(:md5, json) |> Base.encode16(case: :lower)
+      end
+
+    put_change(changeset, :activity_id, id)
+  end
+
+  defp put_activity_id(changeset), do: changeset
 
   @doc """
   Marks a job as successfully delivered.

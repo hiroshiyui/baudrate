@@ -541,8 +541,11 @@ Admin actions:
 - **Abandon** pending/failed jobs
 - **Abandon all for domain** (useful for unresponsive instances)
 
-Job deduplication: a partial unique index on `(inbox_url, actor_uri)` for
-pending/failed jobs prevents duplicate deliveries on retry or race conditions.
+Job deduplication: a partial unique index on `(inbox_url, actor_uri,
+activity_id)` for pending/failed jobs queues the same activity once per inbox.
+Before v1.17.0 the index omitted `activity_id`, so while one job for an inbox was
+pending or retrying, later activities from the same actor to that inbox were
+silently dropped (for example during a remote instance's outage).
 
 ### Key Rotation
 

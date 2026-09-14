@@ -1508,7 +1508,7 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - DB-backed queue (`delivery_jobs` table) with `DeliveryWorker` GenServer polling (graceful shutdown via `terminate/2`)
 - Exponential backoff: 1m → 5m → 30m → 2h → 12h → 24h, then abandoned after 6 attempts
 - Domain blocklist respected: deliveries to blocked domains are skipped
-- Job deduplication: partial unique index on `(inbox_url, actor_uri)` for pending/failed jobs prevents duplicates on retry/race conditions
+- Job deduplication: partial unique index on `(inbox_url, actor_uri, activity_id)` for pending/failed jobs, so the same activity is queued once per inbox while different activities are all queued. `activity_id` is the activity's `id` (MD5 of the JSON when absent), set by `DeliveryJob.create_changeset/2`. The index once omitted `activity_id` and silently dropped every later activity from an actor to an inbox while one job was pending or retrying
 - `KeyStore.ensure_user_keypair/1` must be called before enqueuing any signed delivery — ensures the user has an RSA keypair for HTTP Signature signing
 
 **Followers collection endpoints** (paginated with `?page=N`):

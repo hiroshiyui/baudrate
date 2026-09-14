@@ -101,19 +101,57 @@ defmodule Baudrate.Federation.DeliveryTest do
       assert Jason.decode!(job.activity_json) == activity
     end
 
-    test "skips duplicate pending job for same inbox+actor" do
-      activity1 = Jason.encode!(%{"type" => "Create", "id" => "1"})
-      activity2 = Jason.encode!(%{"type" => "Create", "id" => "2"})
+    test "skips a duplicate pending job for the same activity, inbox and actor" do
+      activity = Jason.encode!(%{"type" => "Create", "id" => "1"})
       actor = "https://local/ap/users/dedup"
       inbox = "https://dedup.example/inbox"
 
-      assert {:ok, 1} = Delivery.enqueue(activity1, actor, [inbox])
-      assert {:ok, 1} = Delivery.enqueue(activity2, actor, [inbox])
+      assert {:ok, 1} = Delivery.enqueue(activity, actor, [inbox])
+      assert {:ok, 1} = Delivery.enqueue(activity, actor, [inbox])
 
       jobs =
         Repo.all(from(j in DeliveryJob, where: j.inbox_url == ^inbox and j.actor_uri == ^actor))
 
       assert length(jobs) == 1
+    end
+
+    test "queues different activities from the same actor to the same inbox" do
+      # The dedup index once omitted the activity, so while one job was pending
+      # or retrying every later activity to that inbox was dropped.
+      like = %{"type" => "Like", "id" => "https://local/ap/users/dedup3#like-1"}
+      boost = %{"type" => "Announce", "id" => "https://local/ap/users/dedup3#announce-1"}
+      actor = "https://local/ap/users/dedup3"
+      inbox = "https://dedup3.example/inbox"
+
+      assert {:ok, 1} = Delivery.enqueue(like, actor, [inbox])
+
+      # Even while the first job is failing and waiting to be retried.
+      Repo.update_all(from(j in DeliveryJob, where: j.inbox_url == ^inbox),
+        set: [status: "failed"]
+      )
+
+      assert {:ok, 1} = Delivery.enqueue(boost, actor, [inbox])
+
+      types =
+        Repo.all(
+          from(j in DeliveryJob,
+            where: j.inbox_url == ^inbox and j.actor_uri == ^actor,
+            select: j.activity_id
+          )
+        )
+
+      assert Enum.sort(types) == Enum.sort([like["id"], boost["id"]])
+    end
+
+    test "an activity without an id is keyed by a hash of its JSON" do
+      actor = "https://local/ap/users/dedup4"
+      inbox = "https://dedup4.example/inbox"
+
+      assert {:ok, 1} = Delivery.enqueue(%{"type" => "Update", "n" => 1}, actor, [inbox])
+      assert {:ok, 1} = Delivery.enqueue(%{"type" => "Update", "n" => 2}, actor, [inbox])
+      assert {:ok, 1} = Delivery.enqueue(%{"type" => "Update", "n" => 2}, actor, [inbox])
+
+      assert Repo.aggregate(from(j in DeliveryJob, where: j.inbox_url == ^inbox), :count) == 2
     end
 
     test "allows new job after previous one is delivered" do
