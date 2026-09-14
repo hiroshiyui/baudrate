@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.19.2] — 2026-09-15
+
+Fixes two bugs found by auditing recent accessibility changes; one of them
+v1.19.1 exposed.
+
+### Fixed
+
+- **Typing `#` or `@` no longer crashes `/profile` and `/admin/settings`.**
+  Hashtag and mention suggestions work again since v1.19.1, but only the
+  article and feed pages answered their requests, so typing in the profile
+  signature or the End User Agreement field crashed the page and lost unsaved
+  input. Suggestions are now answered on every signed-in page.
+- **Direct message conversations open at the newest messages.** The
+  conversation page named a script that did not exist, so it never scrolled
+  to the bottom, and the scroll position kept when loading older messages
+  (v1.18.2) never worked.
+
 ## [1.19.1] — 2026-09-15
 
 Fixes for the feed pager, hashtag and mention autocomplete, menus in the Aqua
