@@ -8,7 +8,8 @@ import Config
 config :baudrate, Baudrate.Repo,
   username: "baudrate_db_user",
   password: "baudrate_database",
-  hostname: "localhost",
+  # PGHOST lets CI reach the Postgres service container by name.
+  hostname: System.get_env("PGHOST", "localhost"),
   database: "baudrate_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2

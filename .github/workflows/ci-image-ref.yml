@@ -1,0 +1,55 @@
+# Reusable: reads the CI image digest pinned in ci/image/image.lock and
+# verifies, before any job runs inside it, that the image was built and
+# attested by this repository's CI image workflow. Jobs use the `ref` output
+# as their container image.
+
+name: CI image reference
+
+on:
+  workflow_call:
+    outputs:
+      ref:
+        description: "Digest-pinned CI image reference"
+        value: ${{ jobs.verify.outputs.ref }}
+
+permissions: {}
+
+jobs:
+  verify:
+    name: Verify CI image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
+    outputs:
+      ref: ${{ steps.lock.outputs.ref }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          sparse-checkout: ci/image/image.lock
+          sparse-checkout-cone-mode: false
+
+      - name: Read the pinned digest
+        id: lock
+        run: |
+          set -eu
+          ref="$(cat ci/image/image.lock)"
+          pattern="^ghcr\.io/${GITHUB_REPOSITORY_OWNER}/baudrate-ci@sha256:[0-9a-f]{64}$"
+          if ! printf '%s' "$ref" | grep -Eq "$pattern"; then
+            echo "::error file=ci/image/image.lock::expected ghcr.io/${GITHUB_REPOSITORY_OWNER}/baudrate-ci@sha256:<digest>, got '$ref'"
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Verify build provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ steps.lock.outputs.ref }}
+        run: |
+          set -eu
+          echo "$GH_TOKEN" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+          gh attestation verify "oci://${REF}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --signer-workflow "${GITHUB_REPOSITORY}/.github/workflows/ci-image.yml"

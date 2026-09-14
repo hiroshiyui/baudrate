@@ -31,6 +31,9 @@ config :baudrate, BaudrateWeb.Endpoint,
 # Configure esbuild (the version is required)
 config :esbuild,
   version: "0.28.2",
+  # The CI image ships a checksum-verified binary (ci/image/Dockerfile); unset,
+  # the binary is installed under _build as usual.
+  path: System.get_env("MIX_ESBUILD_PATH"),
   baudrate: [
     args:
       ~w(js/app.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
@@ -47,6 +50,7 @@ config :esbuild,
 # Configure tailwind (the version is required)
 config :tailwind,
   version: "4.3.3",
+  path: System.get_env("MIX_TAILWIND_PATH"),
   baudrate: [
     args: ~w(
       --input=assets/css/app.css

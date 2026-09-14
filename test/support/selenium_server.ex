@@ -6,11 +6,16 @@ defmodule BaudrateWeb.SeleniumServer do
   others detect it via health check.
   """
 
-  @selenium_dir Path.expand("../../tmp/selenium", __DIR__)
   @selenium_jar "selenium-server-4.27.0.jar"
   @health_url ~c"http://localhost:4444/status"
   @poll_interval 500
   @timeout 15_000
+
+  # The CI image keeps Selenium and GeckoDriver in /opt/selenium
+  # (BAUDRATE_SELENIUM_DIR); locally they come from `mix selenium.setup`.
+  defp selenium_dir do
+    System.get_env("BAUDRATE_SELENIUM_DIR") || Path.expand("../../tmp/selenium", __DIR__)
+  end
 
   @doc """
   Ensures Selenium Server is running. Starts it if not already up.
@@ -39,7 +44,7 @@ defmodule BaudrateWeb.SeleniumServer do
   end
 
   defp start_server do
-    jar_path = Path.join(@selenium_dir, @selenium_jar)
+    jar_path = Path.join(selenium_dir(), @selenium_jar)
 
     unless File.exists?(jar_path) do
       raise """
@@ -50,9 +55,9 @@ defmodule BaudrateWeb.SeleniumServer do
 
     # Set PATH to include geckodriver location
     current_path = System.get_env("PATH", "")
-    env_path = ~c"#{@selenium_dir}:#{current_path}"
+    env_path = ~c"#{selenium_dir()}:#{current_path}"
 
-    log_path = Path.join(@selenium_dir, "server.log")
+    log_path = Path.join(selenium_dir(), "server.log")
 
     Port.open(
       {:spawn_executable, System.find_executable("java")},
@@ -62,7 +67,7 @@ defmodule BaudrateWeb.SeleniumServer do
         :stderr_to_stdout,
         args: ["-jar", jar_path, "standalone", "--port", "4444"],
         env: [{~c"PATH", env_path}],
-        cd: to_charlist(@selenium_dir)
+        cd: to_charlist(selenium_dir())
       ]
     )
 

@@ -1,0 +1,141 @@
+# Builds the CI image (ci/image/Dockerfile), publishes it to GHCR with a
+# build-provenance attestation, and proposes it to CI by changing the pinned
+# digest in ci/image/image.lock. CI only runs images whose digest was merged
+# there and whose attestation says this workflow built them. See
+# ci/image/README.md.
+
+name: CI image
+
+on:
+  push:
+    branches: [ "current" ]
+    paths:
+      - "ci/image/Dockerfile"
+      - ".github/workflows/ci-image.yml"
+  schedule:
+    - cron: "30 19 * * 0" # Monday 03:30 Asia/Taipei: pick up Debian security updates
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ci-image
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build, attest and propose
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # push the update branch
+      packages: write       # push to ghcr.io
+      id-token: write       # sign the attestation
+      attestations: write
+      pull-requests: write  # open the update PR (when the repository allows it)
+      issues: write         # otherwise, open an issue with the compare link
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/baudrate-ci
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Scheduled runs start on the default branch (main), which only moves
+          # at releases; the image is built from, and proposed to, current.
+          ref: ${{ github.event_name == 'schedule' && 'current' || github.ref }}
+          persist-credentials: false
+
+      - name: Check the image matches the project's pinned versions
+        run: |
+          set -eu
+          arg() { sed -nE "s/^ARG $1=(.*)$/\1/p" ci/image/Dockerfile; }
+          tool() { awk -v t="$1" '$1 == t { print $2 }' .tool-versions; }
+          cfg() { sed -nE "/^config :$1,/,/^\s*$/ s/^\s*version: \"([^\"]+)\".*/\1/p" config/config.exs | head -1; }
+          fail=0
+          check() { if [ "$2" != "$3" ]; then echo "::error::$1: Dockerfile has '$2', project pins '$3'"; fail=1; fi; }
+          check erlang   "$(arg OTP_VERSION)"      "$(tool erlang)"
+          check elixir   "$(arg ELIXIR_VERSION)"   "$(tool elixir)"
+          check otp-major "$(arg ELIXIR_OTP_MAJOR)" "$(tool erlang | cut -d. -f1)"
+          check esbuild  "$(arg ESBUILD_VERSION)"  "$(cfg esbuild)"
+          check tailwind "$(arg TAILWIND_VERSION)" "$(cfg tailwind)"
+          check selenium "$(arg SELENIUM_VERSION)" "$(sed -nE 's/^\s*@selenium_version "([^"]+)"/\1/p' lib/mix/tasks/selenium_setup.ex)"
+          check geckodriver "$(arg GECKODRIVER_VERSION)" "$(sed -nE 's/^\s*@geckodriver_version "([^"]+)"/\1/p' lib/mix/tasks/selenium_setup.ex)"
+          if grep -q '__[A-Z_]*SHA256__' ci/image/Dockerfile; then echo "::error::unfilled checksum placeholder"; fail=1; fi
+          exit $fail
+
+      - name: Build
+        run: |
+          set -eu
+          docker build --pull --no-cache \
+            --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" \
+            --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -t baudrate-ci:candidate ci/image
+
+      - name: Smoke test the image
+        run: |
+          docker run --rm baudrate-ci:candidate sh -euxc '
+            elixir --version
+            mix hex.info >/dev/null
+            rustc --version
+            firefox --version
+            java -version
+            pg_dump --version
+          '
+
+      - name: Push to GHCR
+        id: push
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          tag="$(date -u +%Y%m%d)-$(git rev-parse --short=7 HEAD)"
+          echo "$GH_TOKEN" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+          docker tag baudrate-ci:candidate "${IMAGE}:${tag}"
+          docker push "${IMAGE}:${tag}"
+          digest="$(docker inspect --format '{{index .RepoDigests 0}}' "${IMAGE}:${tag}" | cut -d@ -f2)"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+          echo "Pushed \`${IMAGE}@${digest}\` (tag \`${tag}\`)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Propose the new digest to CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.push.outputs.tag }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          set -eu
+          ref="${IMAGE}@${DIGEST}"
+          if [ "$(cat ci/image/image.lock)" = "$ref" ]; then
+            echo "CI already uses ${ref}" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          source_sha="$(git rev-parse HEAD)"
+          branch="ci-image/${TAG}"
+          echo "$ref" > ci/image/image.lock
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -q -am "ci: use CI image ${TAG}"
+          git push -q "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$branch"
+          body="Built by ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} from ${source_sha}.
+
+          Image: \`${ref}\`
+
+          Merging changes ci/image/image.lock, so CI runs this image. CI verifies its provenance attestation first."
+          compare="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/current...${branch}?expand=1"
+          if gh pr create --base current --head "$branch" --title "ci: use CI image ${TAG}" --body "$body"; then
+            echo "Opened a pull request for ${branch}" >> "$GITHUB_STEP_SUMMARY"
+          else
+            # The repository does not let Actions open pull requests.
+            gh issue create --title "CI image ${TAG} is ready" \
+              --body "${body}
+
+          Open the pull request: ${compare}"
+            echo "Open the pull request: ${compare}" >> "$GITHUB_STEP_SUMMARY"
+          fi
