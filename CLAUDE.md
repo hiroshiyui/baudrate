@@ -154,15 +154,22 @@ new ADR; accepted ADRs are superseded, never rewritten.
 5. Remove the finishied tasks from TODOs
 6. When a bug is discovered, **always** check for similar issues across the project after applying the fix
 
+### Branching
+
+- **All development happens on the `current` branch.** Commit and push every change (features, fixes, docs, dependency bumps) to `current`.
+- **Never commit to, push to, or rebase `main` directly.** `main` only moves when a release is cut, by merging `current` into it (see Release Engineering). If you find yourself on `main` with changes, `git switch current` before committing (uncommitted changes carry over).
+- Because `main` is never touched directly, the release merge is always a fast-forward (`git merge --ff-only current`). If it is not, stop and ask — something was committed to `main` out of band.
+
 ### Release Engineering
 
-When creating a new release:
+When creating a new release (on `current`):
 
 1. Update `CHANGELOG.md` with the new version entry (follow [Keep a Changelog](https://keepachangelog.com/) format)
 2. Update `version` in `mix.exs` to match the new tag version
-3. Commit, push, and create the git tag (e.g. `v1.1.21`)
-4. Push the tag (`git push --tags`)
-5. Create the GitHub release via `gh release create`
+3. Commit the release on `current` and push `current`
+4. Merge into `main`: `git switch main && git merge --ff-only current && git push origin main`, then `git switch current`
+5. Create the annotated git tag on the release commit (e.g. `v1.1.21`) and push it (`git push --tags`)
+6. Create the GitHub release via `gh release create`
 
 ### Code Organization
 

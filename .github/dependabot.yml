@@ -22,6 +22,7 @@ updates:
   # ---- Elixir / Hex (esbuild/tailwind *installer* packages only, not the binaries) ----
   - package-ecosystem: mix
     directory: "/"
+    target-branch: current
     schedule:
       interval: weekly
       day: monday
@@ -46,6 +47,7 @@ updates:
   # ---- Rust NIF crates (each is a standalone crate with its own Cargo.lock) ----
   - package-ecosystem: cargo
     directory: "/native/baudrate_sanitizer"
+    target-branch: current
     schedule:
       interval: weekly
       day: monday
@@ -68,6 +70,7 @@ updates:
 
   - package-ecosystem: cargo
     directory: "/native/baudrate_html_parser"
+    target-branch: current
     schedule:
       interval: weekly
       day: monday
@@ -90,6 +93,7 @@ updates:
 
   - package-ecosystem: cargo
     directory: "/native/baudrate_feed_parser"
+    target-branch: current
     schedule:
       interval: weekly
       day: monday
@@ -113,6 +117,7 @@ updates:
   # ---- GitHub Actions used by CI workflows ----
   - package-ecosystem: github-actions
     directory: "/"
+    target-branch: current
     schedule:
       interval: weekly
       day: monday
