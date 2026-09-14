@@ -1286,7 +1286,7 @@ msgstr "コメント"
 #: lib/baudrate_web/live/admin/boards_live.html.heex:330
 #: lib/baudrate_web/live/admin/bots_live.html.heex:324
 #: lib/baudrate_web/live/article_live.html.heex:449
-#: lib/baudrate_web/live/conversation_live.html.heex:182
+#: lib/baudrate_web/live/conversation_live.html.heex:198
 #, elixir-autogen, elixir-format
 msgid "Delete"
 msgstr "削除"
@@ -1679,7 +1679,7 @@ msgstr "システムテーマ"
 #: lib/baudrate_web/live/admin/users_live.ex:170
 #: lib/baudrate_web/live/admin/users_live.ex:373
 #: lib/baudrate_web/live/admin/users_live.ex:411
-#: lib/baudrate_web/live/conversation_live.ex:273
+#: lib/baudrate_web/live/conversation_live.ex:306
 #: lib/baudrate_web/live/user_content_live.ex:24
 #: lib/baudrate_web/live/user_content_live.ex:30
 #: lib/baudrate_web/live/user_profile_live.ex:30
@@ -2692,7 +2692,7 @@ msgstr "全員"
 msgid "Controls who can send you direct messages."
 msgstr "ダイレクトメッセージの送信を許可する対象を設定します。"
 
-#: lib/baudrate_web/live/conversation_live.ex:272
+#: lib/baudrate_web/live/conversation_live.ex:305
 #, elixir-autogen, elixir-format
 msgid "Conversation not found."
 msgstr "会話が見つかりません。"
@@ -2702,7 +2702,7 @@ msgstr "会話が見つかりません。"
 msgid "DM access setting updated."
 msgstr "DM アクセス設定を更新しました。"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:180
+#: lib/baudrate_web/live/conversation_live.html.heex:196
 #, elixir-autogen, elixir-format
 msgid "Delete this message?"
 msgstr "このメッセージを削除しますか？"
@@ -2717,12 +2717,12 @@ msgstr "ダイレクトメッセージ"
 msgid "Direct messages are not end-to-end encrypted. Do not share sensitive information."
 msgstr "ダイレクトメッセージはエンドツーエンド暗号化されていません。機密情報を共有しないでください。"
 
-#: lib/baudrate_web/live/conversation_live.ex:191
+#: lib/baudrate_web/live/conversation_live.ex:207
 #, elixir-autogen, elixir-format
 msgid "Failed to delete message."
 msgstr "メッセージの削除に失敗しました。"
 
-#: lib/baudrate_web/live/conversation_live.ex:130
+#: lib/baudrate_web/live/conversation_live.ex:134
 #, elixir-autogen, elixir-format
 msgid "Failed to send message."
 msgstr "メッセージの送信に失敗しました。"
@@ -2740,7 +2740,7 @@ msgstr "DM アクセス設定の更新に失敗しました。"
 msgid "Followers only"
 msgstr "フォロワーのみ"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:206
+#: lib/baudrate_web/live/conversation_live.html.heex:222
 #: lib/baudrate_web/live/user_profile_live.html.heex:58
 #, elixir-autogen, elixir-format
 msgid "Message"
@@ -2755,8 +2755,8 @@ msgstr "メッセージ"
 msgid "Messages"
 msgstr "メッセージ"
 
-#: lib/baudrate_web/live/conversation_live.ex:76
-#: lib/baudrate_web/live/conversation_live.ex:94
+#: lib/baudrate_web/live/conversation_live.ex:80
+#: lib/baudrate_web/live/conversation_live.ex:98
 #: lib/baudrate_web/live/conversation_live.html.heex:16
 #: lib/baudrate_web/live/conversations_live.html.heex:17
 #, elixir-autogen, elixir-format
@@ -2768,7 +2768,7 @@ msgstr "新規メッセージ"
 msgid "No messages yet."
 msgstr "メッセージはまだありません。"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:136
+#: lib/baudrate_web/live/conversation_live.html.heex:152
 #, elixir-autogen, elixir-format
 msgid "No messages yet. Send the first one!"
 msgstr "メッセージはまだありません。最初のメッセージを送りましょう！"
@@ -2778,12 +2778,12 @@ msgstr "メッセージはまだありません。最初のメッセージを送
 msgid "Nobody"
 msgstr "誰にも許可しない"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:212
+#: lib/baudrate_web/live/conversation_live.html.heex:228
 #, elixir-autogen, elixir-format
 msgid "Send"
 msgstr "送信"
 
-#: lib/baudrate_web/live/conversation_live.ex:274
+#: lib/baudrate_web/live/conversation_live.ex:307
 #, elixir-autogen, elixir-format
 msgid "Something went wrong."
 msgstr "エラーが発生しました。"
@@ -2793,12 +2793,12 @@ msgstr "エラーが発生しました。"
 msgid "Start a conversation from a user's profile page."
 msgstr "ユーザーのプロフィールページから会話を始めましょう。"
 
-#: lib/baudrate_web/live/conversation_live.ex:134
+#: lib/baudrate_web/live/conversation_live.ex:138
 #, elixir-autogen, elixir-format
 msgid "Too many messages. Please slow down."
 msgstr "メッセージの送信が多すぎます。しばらくお待ちください。"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:201
+#: lib/baudrate_web/live/conversation_live.html.heex:217
 #, elixir-autogen, elixir-format
 msgid "Type a message..."
 msgstr "メッセージを入力…"
@@ -2808,18 +2808,18 @@ msgstr "メッセージを入力…"
 msgid "Who can send you direct messages"
 msgstr "ダイレクトメッセージの送信を許可する対象"
 
-#: lib/baudrate_web/live/conversation_live.html.heex:149
+#: lib/baudrate_web/live/conversation_live.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "You"
 msgstr "あなた"
 
-#: lib/baudrate_web/live/conversation_live.ex:188
+#: lib/baudrate_web/live/conversation_live.ex:204
 #, elixir-autogen, elixir-format
 msgid "You can only delete your own messages."
 msgstr "自分のメッセージのみ削除できます。"
 
-#: lib/baudrate_web/live/conversation_live.ex:83
-#: lib/baudrate_web/live/conversation_live.ex:127
+#: lib/baudrate_web/live/conversation_live.ex:87
+#: lib/baudrate_web/live/conversation_live.ex:131
 #, elixir-autogen, elixir-format
 msgid "You cannot send messages to this user."
 msgstr "このユーザーにメッセージを送信できません。"
@@ -7220,3 +7220,13 @@ msgstr "削除されたコメントへの返信"
 #, elixir-autogen, elixir-format
 msgid "This comment was deleted."
 msgstr "このコメントは削除されました。"
+
+#: lib/baudrate_web/live/conversation_live.html.heex:143
+#, elixir-autogen, elixir-format
+msgid "Load older messages"
+msgstr "以前のメッセージを読み込む"
+
+#: lib/baudrate_web/live/conversation_live.html.heex:141
+#, elixir-autogen, elixir-format
+msgid "Loading..."
+msgstr "読み込み中..."

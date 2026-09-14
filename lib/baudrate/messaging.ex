@@ -401,32 +401,56 @@ defmodule Baudrate.Messaging do
   end
 
   @doc """
-  Lists messages in a conversation, paginated, oldest first.
+  Lists the **newest** messages in a conversation, returned oldest first.
 
-  Excludes soft-deleted messages. Preloads sender_user and sender_remote_actor.
+  Excludes soft-deleted messages. Preloads sender_user, sender_remote_actor
+  and link_preview.
+
+  ## Options
+
+    * `:limit` — how many messages (default 100)
+    * `:before_id` — only messages older than this message id, to page back
+      through history
   """
   @spec list_messages(Conversation.t(), keyword()) :: [DirectMessage.t()]
   def list_messages(%Conversation{id: conversation_id}, opts \\ []) do
     limit = Keyword.get(opts, :limit, 100)
-    after_id = Keyword.get(opts, :after_id)
+    before_id = Keyword.get(opts, :before_id)
 
     query =
       from(dm in DirectMessage,
         where: dm.conversation_id == ^conversation_id,
         where: is_nil(dm.deleted_at),
-        order_by: [asc: dm.inserted_at, asc: dm.id],
+        # Take the newest `limit` rows, then flip them for display. Ordering
+        # ascending with a limit returned the oldest rows, so a conversation
+        # past the limit never showed its newest messages.
+        order_by: [desc: dm.id],
         limit: ^limit,
         preload: [:sender_user, :sender_remote_actor, :link_preview]
       )
 
     query =
-      if after_id do
-        from(dm in query, where: dm.id > ^after_id)
+      if before_id do
+        from(dm in query, where: dm.id < ^before_id)
       else
         query
       end
 
-    Repo.all(query)
+    query |> Repo.all() |> Enum.reverse()
+  end
+
+  @doc """
+  Returns true when the conversation has a non-deleted message older than
+  `message_id`.
+  """
+  @spec messages_before?(Conversation.t(), integer()) :: boolean()
+  def messages_before?(%Conversation{id: conversation_id}, message_id) do
+    Repo.exists?(
+      from(dm in DirectMessage,
+        where: dm.conversation_id == ^conversation_id,
+        where: is_nil(dm.deleted_at) and dm.id < ^message_id
+      )
+    )
   end
 
   @doc """

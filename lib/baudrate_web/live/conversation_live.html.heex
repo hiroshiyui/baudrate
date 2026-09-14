@@ -129,6 +129,22 @@
         tabindex="0"
       >
         <div
+          :if={@has_older_messages}
+          id="conversation-load-older"
+          class="conversation-load-older text-center"
+        >
+          <button
+            id="conversation-load-older-button"
+            type="button"
+            phx-click="load_older"
+            class="conversation-load-older-button btn btn-ghost btn-sm"
+            phx-disable-with={gettext("Loading...")}
+          >
+            {gettext("Load older messages")}
+          </button>
+        </div>
+
+        <div
           :if={@messages == []}
           id="conversation-empty"
           class="conversation-empty text-center py-8 text-base-content/70"

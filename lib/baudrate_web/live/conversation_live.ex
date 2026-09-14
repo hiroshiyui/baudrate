@@ -19,7 +19,10 @@ defmodule BaudrateWeb.ConversationLive do
   alias BaudrateWeb.RateLimits
   import BaudrateWeb.Helpers, only: [parse_id: 1, participant_name: 1]
 
-  @max_messages 100
+  # Messages loaded when the page opens, and per "Load older messages" click.
+  @page_size 100
+  # Upper bound on messages kept in the socket during one long session.
+  @max_loaded 1_000
 
   @impl true
   def mount(params, _session, socket) do
@@ -48,14 +51,14 @@ defmodule BaudrateWeb.ConversationLive do
       MessagingPubSub.subscribe_conversation(conversation.id)
     end
 
-    messages = Messaging.list_messages(conversation)
+    messages = Messaging.list_messages(conversation, limit: @page_size)
     mark_read(conversation, user, messages)
 
     socket =
       socket
       |> assign(:mode, :conversation)
       |> assign(:conversation, conversation)
-      |> assign(:messages, messages)
+      |> assign_messages(messages)
       |> assign(:other_participant, other)
       |> assign(:new_conversation, false)
       |> assign(:page_title, participant_name(other))
@@ -71,6 +74,7 @@ defmodule BaudrateWeb.ConversationLive do
         |> assign(:mode, :new_conversation)
         |> assign(:conversation, nil)
         |> assign(:messages, [])
+        |> assign(:has_older_messages, false)
         |> assign(:other_participant, recipient)
         |> assign(:new_conversation, true)
         |> assign(:page_title, gettext("New Message"))
@@ -113,13 +117,13 @@ defmodule BaudrateWeb.ConversationLive do
             {:ok, message} ->
               messages =
                 (socket.assigns.messages ++ [Messaging.get_message(message.id)])
-                |> Enum.take(-@max_messages)
+                |> Enum.take(-@max_loaded)
 
               mark_read(conversation, user, messages)
 
               {:noreply,
                socket
-               |> assign(:messages, messages)
+               |> assign_messages(messages)
                |> assign(:message_form, to_form(%{"body" => ""}, as: :message))}
 
             {:error, :not_allowed} ->
@@ -163,6 +167,19 @@ defmodule BaudrateWeb.ConversationLive do
   end
 
   @impl true
+  def handle_event("load_older", _params, socket) do
+    case socket.assigns do
+      %{conversation: %{} = conversation, messages: [oldest | _] = messages} ->
+        older = Messaging.list_messages(conversation, before_id: oldest.id, limit: @page_size)
+        loaded = Enum.take(older ++ messages, @max_loaded)
+        {:noreply, assign_messages(socket, loaded)}
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_event("delete_message", %{"id" => id}, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}
@@ -180,8 +197,7 @@ defmodule BaudrateWeb.ConversationLive do
       message ->
         case Messaging.soft_delete_message(message, user) do
           {:ok, _} ->
-            messages = Messaging.list_messages(socket.assigns.conversation)
-            {:noreply, assign(socket, :messages, messages)}
+            {:noreply, reload_messages(socket)}
 
           {:error, :unauthorized} ->
             {:noreply,
@@ -199,9 +215,9 @@ defmodule BaudrateWeb.ConversationLive do
     message = Messaging.get_message(message_id)
 
     if message && message.sender_user_id != user.id do
-      messages = (socket.assigns.messages ++ [message]) |> Enum.take(-@max_messages)
+      messages = (socket.assigns.messages ++ [message]) |> Enum.take(-@max_loaded)
       mark_read(socket.assigns.conversation, user, messages)
-      {:noreply, assign(socket, :messages, messages)}
+      {:noreply, assign_messages(socket, messages)}
     else
       {:noreply, socket}
     end
@@ -209,20 +225,37 @@ defmodule BaudrateWeb.ConversationLive do
 
   @impl true
   def handle_info({:dm_message_deleted, _payload}, socket) do
-    messages = Messaging.list_messages(socket.assigns.conversation)
-    {:noreply, assign(socket, :messages, messages)}
+    {:noreply, reload_messages(socket)}
   end
 
   @impl true
   def handle_info({:link_preview_fetched, _payload}, socket) do
-    messages = Messaging.list_messages(socket.assigns.conversation)
-    {:noreply, assign(socket, :messages, messages)}
+    {:noreply, reload_messages(socket)}
   end
 
   @impl true
   def handle_info(_msg, socket), do: {:noreply, socket}
 
   # --- Private helpers ---
+
+  defp assign_messages(socket, messages) do
+    has_older =
+      case messages do
+        [oldest | _] -> Messaging.messages_before?(socket.assigns.conversation, oldest.id)
+        [] -> false
+      end
+
+    socket
+    |> assign(:messages, messages)
+    |> assign(:has_older_messages, has_older)
+  end
+
+  # Re-reads the newest messages, keeping as many as are already on the page
+  # so a reload does not drop history the user loaded.
+  defp reload_messages(socket) do
+    limit = socket.assigns.messages |> length() |> max(@page_size) |> min(@max_loaded)
+    assign_messages(socket, Messaging.list_messages(socket.assigns.conversation, limit: limit))
+  end
 
   defp resolve_conversation(%{"id" => id}, user) do
     case Messaging.get_conversation_for_user(id, user) do

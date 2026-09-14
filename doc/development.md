@@ -1131,6 +1131,7 @@ further (`{:error, :not_allowed}`).
 - `create_message/3` — authorizes the send, creates the message, broadcasts PubSub, schedules federation
 - `receive_remote_dm/3` — handles incoming federated DMs
 - `list_conversations/1` — ordered by `last_message_at` desc
+- `list_messages/2` — the newest `:limit` messages (default 100), returned oldest first; `:before_id` pages back, and `messages_before?/2` tells the conversation page whether to offer "Load older messages"
 - `unread_count/1` — counts unread across all conversations
 - `soft_delete_message/2` — sender-only deletion, schedules AP Delete
 - `mark_conversation_read/3` — upserts read cursor

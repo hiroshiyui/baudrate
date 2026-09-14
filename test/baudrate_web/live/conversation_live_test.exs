@@ -36,6 +36,38 @@ defmodule BaudrateWeb.ConversationLiveTest do
       assert render(view) =~ "Test message"
     end
 
+    test "a long conversation shows its newest messages and loads older ones on request",
+         %{conn: conn, user: user, other: other} do
+      {:ok, conv} = Messaging.find_or_create_conversation(user, other)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Baudrate.Repo.insert_all(
+        Baudrate.Messaging.DirectMessage,
+        for n <- 1..105 do
+          %{
+            conversation_id: conv.id,
+            sender_user_id: other.id,
+            body: "history-#{n}-end",
+            inserted_at: DateTime.add(now, n - 200, :second),
+            updated_at: now
+          }
+        end
+      )
+
+      conn = log_in_user(conn, user)
+      {:ok, view, html} = live(conn, "/messages/#{conv.id}")
+
+      assert html =~ "history-105-end"
+      refute html =~ "history-5-end"
+      assert has_element?(view, "#conversation-load-older-button")
+
+      html = view |> element("#conversation-load-older-button") |> render_click()
+
+      assert html =~ "history-1-end"
+      assert html =~ "history-105-end"
+      refute has_element?(view, "#conversation-load-older-button")
+    end
+
     test "non-participant is redirected", %{conn: conn} do
       user_a = setup_user("user")
       user_b = setup_user("user")

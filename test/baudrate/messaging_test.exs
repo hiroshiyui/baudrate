@@ -542,6 +542,27 @@ defmodule Baudrate.MessagingTest do
       assert length(messages) == 2
       assert hd(messages).id == msg1.id
     end
+
+    test "returns the newest messages when there are more than the limit, and pages back" do
+      user_a = create_user("user")
+      user_b = create_user("user")
+      {:ok, conv} = Messaging.find_or_create_conversation(user_a, user_b)
+
+      ids =
+        for n <- 1..5 do
+          {:ok, msg} = Messaging.create_message(conv, user_a, %{body: "m#{n}"})
+          msg.id
+        end
+
+      newest = Messaging.list_messages(conv, limit: 2)
+      assert Enum.map(newest, & &1.id) == Enum.take(ids, -2)
+      assert Messaging.messages_before?(conv, hd(newest).id)
+
+      older = Messaging.list_messages(conv, limit: 2, before_id: hd(newest).id)
+      assert Enum.map(older, & &1.id) == Enum.slice(ids, 1, 2)
+
+      refute Messaging.messages_before?(conv, hd(ids))
+    end
   end
 
   # --- other_participant ---
