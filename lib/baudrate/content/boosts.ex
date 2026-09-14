@@ -101,7 +101,8 @@ defmodule Baudrate.Content.Boosts do
 
   Returns `{:ok, boost}` when created, `{:ok, :removed}` when deleted,
   `{:error, :self_boost}` if the user owns the article,
-  `{:error, :deleted}` if the article is soft-deleted.
+  `{:error, :deleted}` if the article is soft-deleted,
+  `{:error, :blocked}` if a block stands between the user and the author.
   """
   def toggle_article_boost(user_id, article_id) do
     case Repo.get(Article, article_id) do
@@ -130,6 +131,12 @@ defmodule Baudrate.Content.Boosts do
       Baudrate.AccountMigration.ensure_not_moved(user_id) != :ok and
           is_nil(Repo.get_by(ArticleBoost, user_id: user_id, article_id: article_id)) ->
         {:error, :account_moved}
+
+      # A block between the user and the author refuses new interactions;
+      # undoing an earlier one stays allowed.
+      Baudrate.Auth.blocked_with_author?(user_id, article) and
+          is_nil(Repo.get_by(ArticleBoost, user_id: user_id, article_id: article_id)) ->
+        {:error, :blocked}
 
       true ->
         case Repo.get_by(ArticleBoost, user_id: user_id, article_id: article_id) do
@@ -283,7 +290,8 @@ defmodule Baudrate.Content.Boosts do
 
   Returns `{:ok, boost}` when created, `{:ok, :removed}` when deleted,
   `{:error, :self_boost}` if the user owns the comment,
-  `{:error, :deleted}` if the comment is soft-deleted.
+  `{:error, :deleted}` if the comment is soft-deleted,
+  `{:error, :blocked}` if a block stands between the user and the author.
   """
   def toggle_comment_boost(user_id, comment_id) do
     case Repo.get(Comment, comment_id) do
@@ -312,6 +320,12 @@ defmodule Baudrate.Content.Boosts do
       Baudrate.AccountMigration.ensure_not_moved(user_id) != :ok and
           is_nil(Repo.get_by(CommentBoost, user_id: user_id, comment_id: comment_id)) ->
         {:error, :account_moved}
+
+      # A block between the user and the author refuses new interactions;
+      # undoing an earlier one stays allowed.
+      Baudrate.Auth.blocked_with_author?(user_id, comment) and
+          is_nil(Repo.get_by(CommentBoost, user_id: user_id, comment_id: comment_id)) ->
+        {:error, :blocked}
 
       true ->
         case Repo.get_by(CommentBoost, user_id: user_id, comment_id: comment_id) do

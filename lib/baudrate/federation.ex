@@ -12,7 +12,7 @@ defmodule Baudrate.Federation do
     attributedTo arrays, content warnings)
   - **Outbound delivery** — DB-backed delivery queue with exponential backoff
     retry; activities pushed to remote followers' inboxes on article/comment
-    CRUD, likes, follows, blocks, and polls
+    CRUD, likes, follows, and polls
   - **Collections** — paginated OrderedCollection endpoints for outbox,
     followers, following, boards index, article replies, and search
   - **User follows** — local users can follow remote actors via Follow/Undo(Follow)
@@ -128,6 +128,8 @@ defmodule Baudrate.Federation do
   defdelegate nodeinfo_links(), to: Discovery
   defdelegate nodeinfo(), to: Discovery
   defdelegate get_remote_actor(id), to: Discovery
+  defdelegate get_remote_actor_by_ap_id(ap_id), to: Discovery
+  defdelegate remote_actors_by_ap_ids(ap_ids), to: Discovery
   defdelegate lookup_remote_actor(query), to: Discovery
   defdelegate fetch_remote_object(url), to: Discovery
   defdelegate lookup_remote_object(url), to: Discovery
@@ -168,6 +170,7 @@ defmodule Baudrate.Federation do
   defdelegate accept_user_follow(follow_ap_id, signer \\ nil), to: Follows
   defdelegate reject_user_follow(follow_ap_id, signer \\ nil), to: Follows
   defdelegate delete_user_follow(user, remote_actor), to: Follows
+  defdelegate sever_remote_follows(user, remote_actor), to: Follows
   defdelegate get_user_follow(user_id, remote_actor_id), to: Follows
   defdelegate get_user_follow_with_actor(user_id, remote_actor_id), to: Follows
   defdelegate get_user_follow_by_ap_id(ap_id), to: Follows

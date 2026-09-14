@@ -51,24 +51,54 @@ defmodule Baudrate.Auth.Moderation do
   end
 
   # --- User Blocks ---
+  #
+  # A block is enforced on this site only; no ActivityPub `Block` is sent
+  # (P1-D1). Besides hiding the blocked account's content from the blocker,
+  # it removes follows in both directions and refuses every new interaction
+  # between the two: replies, likes, boosts, forwards, follows and DMs. Undoing
+  # an earlier like or boost stays allowed. Content stays publicly visible;
+  # a block controls interaction, not visibility.
 
   @doc """
-  Blocks a local user. Returns `{:ok, block}` or `{:error, changeset}`.
+  Blocks a local user and removes the follows between the two accounts in
+  both directions. Returns `{:ok, block}` or `{:error, changeset}`.
   """
   @spec block_user(User.t(), User.t()) :: {:ok, UserBlock.t()} | {:error, Ecto.Changeset.t()}
-  def block_user(%User{id: user_id}, %User{id: blocked_id}) do
-    %UserBlock{}
-    |> UserBlock.local_changeset(%{user_id: user_id, blocked_user_id: blocked_id})
-    |> Repo.insert()
+  def block_user(%User{id: user_id} = user, %User{id: blocked_id} = blocked) do
+    result =
+      %UserBlock{}
+      |> UserBlock.local_changeset(%{user_id: user_id, blocked_user_id: blocked_id})
+      |> Repo.insert()
+
+    with {:ok, _block} <- result do
+      Baudrate.Federation.delete_local_follow(user, blocked)
+      Baudrate.Federation.delete_local_follow(blocked, user)
+      result
+    end
   end
 
   @doc """
   Blocks a remote actor by AP ID. Returns `{:ok, block}` or `{:error, changeset}`.
+
+  When the actor is known, the follows between it and the user are removed in
+  both directions: the user's follow is undone with `Undo(Follow)` and the
+  actor's follow of the user is ended with `Reject(Follow)`
+  (`Federation.sever_remote_follows/2`).
   """
-  def block_remote_actor(%User{id: user_id}, ap_id) when is_binary(ap_id) do
-    %UserBlock{}
-    |> UserBlock.remote_changeset(%{user_id: user_id, blocked_actor_ap_id: ap_id})
-    |> Repo.insert()
+  def block_remote_actor(%User{id: user_id} = user, ap_id) when is_binary(ap_id) do
+    result =
+      %UserBlock{}
+      |> UserBlock.remote_changeset(%{user_id: user_id, blocked_actor_ap_id: ap_id})
+      |> Repo.insert()
+
+    with {:ok, _block} <- result do
+      case Baudrate.Federation.get_remote_actor_by_ap_id(ap_id) do
+        nil -> :ok
+        remote_actor -> Baudrate.Federation.sever_remote_follows(user, remote_actor)
+      end
+
+      result
+    end
   end
 
   @doc """
@@ -123,6 +153,54 @@ defmodule Baudrate.Auth.Moderation do
       )
     )
   end
+
+  @doc """
+  Returns `true` if either of the two local users has blocked the other.
+  """
+  @spec blocked_between?(integer() | nil, integer() | nil) :: boolean()
+  def blocked_between?(user_id, other_id) when is_integer(user_id) and is_integer(other_id) do
+    Repo.exists?(
+      from(b in UserBlock,
+        where:
+          (b.user_id == ^user_id and b.blocked_user_id == ^other_id) or
+            (b.user_id == ^other_id and b.blocked_user_id == ^user_id)
+      )
+    )
+  end
+
+  def blocked_between?(_, _), do: false
+
+  @doc """
+  Returns `true` if the local user has blocked the remote actor with the given
+  database ID.
+  """
+  @spec remote_actor_blocked_by?(integer() | nil, integer() | nil) :: boolean()
+  def remote_actor_blocked_by?(remote_actor_id, user_id)
+      when is_integer(remote_actor_id) and is_integer(user_id) do
+    Repo.exists?(
+      from(b in UserBlock,
+        join: ra in Baudrate.Federation.RemoteActor,
+        on: ra.ap_id == b.blocked_actor_ap_id,
+        where: b.user_id == ^user_id and ra.id == ^remote_actor_id
+      )
+    )
+  end
+
+  def remote_actor_blocked_by?(_, _), do: false
+
+  @doc """
+  Returns `true` if a block stands between the local user and the author of
+  `content` (any map with `user_id` and `remote_actor_id`, such as an article,
+  comment or feed item), in either direction for a local author.
+  """
+  @spec blocked_with_author?(integer(), map()) :: boolean()
+  def blocked_with_author?(user_id, %{user_id: author_id}) when is_integer(author_id),
+    do: blocked_between?(user_id, author_id)
+
+  def blocked_with_author?(user_id, %{remote_actor_id: actor_id}) when is_integer(actor_id),
+    do: remote_actor_blocked_by?(actor_id, user_id)
+
+  def blocked_with_author?(_user_id, _content), do: false
 
   @doc """
   Lists all blocks for a user, with blocked_user preloaded where applicable.

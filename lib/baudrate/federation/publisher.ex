@@ -250,41 +250,25 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
-  Builds a `Block` activity from a local user to a remote actor.
+  Builds a `Reject(Follow)` activity that ends a remote actor's follow of a
+  local user, from the stored `Follower` row. Used when the user blocks the
+  actor; no `Block` activity is ever sent (P1-D1).
 
   Returns `{activity_map, actor_uri}`.
   """
-  def build_block(user, target_ap_id) do
+  def build_reject_follow(user, %Baudrate.Federation.Follower{} = follower) do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
       "@context" => @ap_context,
-      "id" => "#{actor_uri}#block-#{Ecto.UUID.generate()}",
-      "type" => "Block",
-      "actor" => actor_uri,
-      "object" => target_ap_id
-    }
-
-    {activity, actor_uri}
-  end
-
-  @doc """
-  Builds an `Undo(Block)` activity.
-
-  Returns `{activity_map, actor_uri}`.
-  """
-  def build_undo_block(user, target_ap_id) do
-    actor_uri = Federation.actor_uri(:user, user.username)
-
-    activity = %{
-      "@context" => @ap_context,
-      "id" => "#{actor_uri}#undo-block-#{Ecto.UUID.generate()}",
-      "type" => "Undo",
+      "id" => "#{actor_uri}#reject-follow-#{Ecto.UUID.generate()}",
+      "type" => "Reject",
       "actor" => actor_uri,
       "object" => %{
-        "type" => "Block",
-        "actor" => actor_uri,
-        "object" => target_ap_id
+        "id" => follower.activity_id,
+        "type" => "Follow",
+        "actor" => follower.follower_uri,
+        "object" => actor_uri
       }
     }
 

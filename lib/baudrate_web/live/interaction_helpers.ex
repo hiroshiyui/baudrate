@@ -70,6 +70,10 @@ defmodule BaudrateWeb.InteractionHelpers do
           {:error, :account_moved} ->
             {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
 
+          {:error, :blocked} ->
+            {:noreply,
+             put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
+
           {:error, _} ->
             {:noreply, put_flash(socket, :error, opts[:fail_message])}
         end
@@ -110,6 +114,10 @@ defmodule BaudrateWeb.InteractionHelpers do
 
           {:error, :account_moved} ->
             {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
+
+          {:error, :blocked} ->
+            {:noreply,
+             put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
 
           {:error, _} ->
             {:noreply, put_flash(socket, :error, fail_message)}

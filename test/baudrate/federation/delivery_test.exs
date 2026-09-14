@@ -561,33 +561,6 @@ defmodule Baudrate.Federation.DeliveryTest do
     end
   end
 
-  describe "deliver_block/3" do
-    test "creates a delivery job with provided actor URI" do
-      user = create_user()
-      remote = create_remote_actor()
-      actor_uri = Federation.actor_uri(:user, user.username)
-      block_json = Jason.encode!(%{"type" => "Block"})
-
-      assert {:ok, 1} = Delivery.deliver_block(block_json, remote, actor_uri)
-
-      job = Repo.one!(DeliveryJob)
-      assert job.actor_uri == actor_uri
-      assert job.inbox_url == remote.inbox
-    end
-
-    test "uses shared_inbox when available" do
-      user = create_user()
-      remote = create_remote_actor(%{shared_inbox: "https://remote.example/inbox"})
-      actor_uri = Federation.actor_uri(:user, user.username)
-      block_json = Jason.encode!(%{"type" => "Block"})
-
-      assert {:ok, 1} = Delivery.deliver_block(block_json, remote, actor_uri)
-
-      job = Repo.one!(DeliveryJob)
-      assert job.inbox_url == "https://remote.example/inbox"
-    end
-  end
-
   describe "deliver_one/1 telemetry" do
     test "emits start and stop telemetry events on delivery attempt" do
       test_pid = self()

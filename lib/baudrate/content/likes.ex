@@ -108,12 +108,13 @@ defmodule Baudrate.Content.Likes do
 
   Returns `{:ok, like}` when created, `{:ok, :removed}` when deleted,
   `{:error, :self_like}` if the user owns the article,
-  `{:error, :deleted}` if the article is soft-deleted.
+  `{:error, :deleted}` if the article is soft-deleted,
+  `{:error, :blocked}` if a block stands between the user and the author.
   """
   @spec toggle_article_like(term(), term()) ::
           {:ok, %ArticleLike{}}
           | {:ok, :removed}
-          | {:error, :self_like | :deleted | Ecto.Changeset.t()}
+          | {:error, :self_like | :deleted | :blocked | Ecto.Changeset.t()}
   def toggle_article_like(user_id, article_id) do
     case Repo.get(Article, article_id) do
       nil ->
@@ -141,6 +142,12 @@ defmodule Baudrate.Content.Likes do
       Baudrate.AccountMigration.ensure_not_moved(user_id) != :ok and
           is_nil(Repo.get_by(ArticleLike, user_id: user_id, article_id: article_id)) ->
         {:error, :account_moved}
+
+      # A block between the user and the author refuses new interactions;
+      # undoing an earlier one stays allowed.
+      Baudrate.Auth.blocked_with_author?(user_id, article) and
+          is_nil(Repo.get_by(ArticleLike, user_id: user_id, article_id: article_id)) ->
+        {:error, :blocked}
 
       true ->
         case Repo.get_by(ArticleLike, user_id: user_id, article_id: article_id) do
@@ -300,12 +307,13 @@ defmodule Baudrate.Content.Likes do
 
   Returns `{:ok, like}` when created, `{:ok, :removed}` when deleted,
   `{:error, :self_like}` if the user owns the comment,
-  `{:error, :deleted}` if the comment is soft-deleted.
+  `{:error, :deleted}` if the comment is soft-deleted,
+  `{:error, :blocked}` if a block stands between the user and the author.
   """
   @spec toggle_comment_like(term(), term()) ::
           {:ok, %CommentLike{}}
           | {:ok, :removed}
-          | {:error, :self_like | :deleted | Ecto.Changeset.t()}
+          | {:error, :self_like | :deleted | :blocked | Ecto.Changeset.t()}
   def toggle_comment_like(user_id, comment_id) do
     case Repo.get(Comment, comment_id) do
       nil ->
@@ -333,6 +341,12 @@ defmodule Baudrate.Content.Likes do
       Baudrate.AccountMigration.ensure_not_moved(user_id) != :ok and
           is_nil(Repo.get_by(CommentLike, user_id: user_id, comment_id: comment_id)) ->
         {:error, :account_moved}
+
+      # A block between the user and the author refuses new interactions;
+      # undoing an earlier one stays allowed.
+      Baudrate.Auth.blocked_with_author?(user_id, comment) and
+          is_nil(Repo.get_by(CommentLike, user_id: user_id, comment_id: comment_id)) ->
+        {:error, :blocked}
 
       true ->
         case Repo.get_by(CommentLike, user_id: user_id, comment_id: comment_id) do

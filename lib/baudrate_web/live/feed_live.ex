@@ -633,6 +633,9 @@ defmodule BaudrateWeb.FeedLive do
       {:error, :account_moved} ->
         {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
 
+      {:error, :blocked} ->
+        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
+
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to send reply."))}
     end

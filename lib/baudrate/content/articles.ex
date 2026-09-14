@@ -358,6 +358,10 @@ defmodule Baudrate.Content.Articles do
       not Permissions.can_forward_article?(user, article) ->
         {:error, :unauthorized}
 
+      # Forwarding is an interaction: refused across a block.
+      Baudrate.Auth.blocked_with_author?(user.id, article) ->
+        {:error, :unauthorized}
+
       # Must be able to post in target board
       not Permissions.can_post_in_board?(board, user) ->
         {:error, :cannot_post}
@@ -410,6 +414,9 @@ defmodule Baudrate.Content.Articles do
         {:error, :not_found}
 
       not Permissions.can_forward_feed_item?(user, feed_item) ->
+        {:error, :unauthorized}
+
+      Baudrate.Auth.blocked_with_author?(user.id, feed_item) ->
         {:error, :unauthorized}
 
       not Permissions.can_post_in_board?(board, user) ->
@@ -504,6 +511,9 @@ defmodule Baudrate.Content.Articles do
         {:error, :unauthorized}
 
       not Permissions.can_forward_comment?(user, comment) ->
+        {:error, :unauthorized}
+
+      Baudrate.Auth.blocked_with_author?(user.id, comment) ->
         {:error, :unauthorized}
 
       not Permissions.can_post_in_board?(board, user) ->

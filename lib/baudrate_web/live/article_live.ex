@@ -337,6 +337,9 @@ defmodule BaudrateWeb.ArticleLive do
       {:error, :account_moved} ->
         {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
 
+      {:error, :blocked} ->
+        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
+
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to toggle like."))}
     end
@@ -358,6 +361,9 @@ defmodule BaudrateWeb.ArticleLive do
 
       {:error, :account_moved} ->
         {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
+
+      {:error, :blocked} ->
+        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to toggle boost."))}
@@ -927,6 +933,9 @@ defmodule BaudrateWeb.ArticleLive do
 
       {:error, :account_moved} ->
         {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
+
+      {:error, :blocked} ->
+        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :comment_form, to_form(changeset, as: :comment))}

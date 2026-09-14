@@ -114,6 +114,29 @@ defmodule Baudrate.Federation.Discovery do
   end
 
   @doc """
+  Returns a known remote actor by its ActivityPub ID, or nil. Never fetches.
+  """
+  @spec get_remote_actor_by_ap_id(String.t()) :: RemoteActor.t() | nil
+  def get_remote_actor_by_ap_id(ap_id) when is_binary(ap_id) do
+    Repo.get_by(RemoteActor, ap_id: ap_id)
+  end
+
+  @doc """
+  Returns the known remote actors for the given ActivityPub IDs as a map keyed
+  by AP ID. Unknown IDs are left out. Never fetches.
+  """
+  @spec remote_actors_by_ap_ids([String.t()]) :: %{String.t() => RemoteActor.t()}
+  def remote_actors_by_ap_ids([]), do: %{}
+
+  def remote_actors_by_ap_ids(ap_ids) when is_list(ap_ids) do
+    import Ecto.Query
+
+    from(ra in RemoteActor, where: ra.ap_id in ^ap_ids)
+    |> Repo.all()
+    |> Map.new(&{&1.ap_id, &1})
+  end
+
+  @doc """
   Looks up a remote actor by `@user@domain` handle or actor URL.
 
   For `@user@domain` handles, performs a WebFinger lookup to discover the

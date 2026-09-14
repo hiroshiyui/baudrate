@@ -117,6 +117,9 @@ defmodule Baudrate.Auth do
   defdelegate unblock_remote_actor(user, ap_id), to: Moderation
   defdelegate blocked?(user, target), to: Moderation
   defdelegate user_blocked_by?(user_id, blocker_id), to: Moderation
+  defdelegate blocked_between?(user_id, other_id), to: Moderation
+  defdelegate remote_actor_blocked_by?(remote_actor_id, user_id), to: Moderation
+  defdelegate blocked_with_author?(user_id, content), to: Moderation
   defdelegate list_blocks(user), to: Moderation
   defdelegate blocked_user_ids(user), to: Moderation
   defdelegate blocked_actor_ap_ids(user), to: Moderation

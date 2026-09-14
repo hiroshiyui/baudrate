@@ -35,6 +35,10 @@ defmodule Baudrate.Content.Comments do
     * `:image_ids` — list of `CommentImage` IDs (integers) to associate with
       the comment after insertion. Only orphan images owned by the comment
       author are associated.
+
+  Returns `{:error, :account_moved}` for a moved account (ADR 0025) and
+  `{:error, :blocked}` when a block stands between the commenter and the
+  author of the article or of the parent comment.
   """
   @spec create_comment(map(), keyword()) ::
           {:ok, %Comment{}} | {:error, Ecto.Changeset.t() | term()}
@@ -42,11 +46,28 @@ defmodule Baudrate.Content.Comments do
     attrs = attrs |> Map.new(fn {k, v} -> {to_string(k), v} end)
 
     # A moved account is read-only (ADR 0025).
-    case Baudrate.AccountMigration.ensure_not_moved(attrs["user_id"]) do
-      :ok -> do_create_comment(attrs, opts)
-      error -> error
+    with :ok <- Baudrate.AccountMigration.ensure_not_moved(attrs["user_id"]),
+         :ok <- ensure_not_blocked(attrs) do
+      do_create_comment(attrs, opts)
     end
   end
+
+  # A block between the commenter and the author of the article, or of the
+  # comment being replied to, refuses the comment.
+  defp ensure_not_blocked(%{"user_id" => user_id} = attrs) when is_integer(user_id) do
+    targets = [
+      attrs["article_id"] && Repo.get(Article, attrs["article_id"]),
+      attrs["parent_id"] && Repo.get(Comment, attrs["parent_id"])
+    ]
+
+    if Enum.any?(targets, &(&1 && Baudrate.Auth.blocked_with_author?(user_id, &1))) do
+      {:error, :blocked}
+    else
+      :ok
+    end
+  end
+
+  defp ensure_not_blocked(_attrs), do: :ok
 
   defp do_create_comment(attrs, opts) do
     body_html = Baudrate.Content.Markdown.to_html(attrs["body"] || "")

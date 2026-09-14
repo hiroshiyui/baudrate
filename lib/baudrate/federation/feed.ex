@@ -321,13 +321,15 @@ defmodule Baudrate.Federation.Feed do
   federating a `Create(Note)` to an unrelated remote inbox.
 
   Returns `{:ok, %FeedItemReply{}}`, `{:error, :not_found}`,
-  `{:error, :account_moved}` (ADR 0025), or `{:error, changeset}`.
+  `{:error, :account_moved}` (ADR 0025), `{:error, :blocked}` (the user has
+  blocked the item's author), or `{:error, changeset}`.
   """
   def create_feed_item_reply(feed_item, user, body, opts \\ []) do
     cond do
       not feed_item_accessible?(user, feed_item) -> {:error, :not_found}
       # A moved account is read-only (ADR 0025).
       Baudrate.AccountMigration.ensure_not_moved(user) != :ok -> {:error, :account_moved}
+      Baudrate.Auth.blocked_with_author?(user.id, feed_item) -> {:error, :blocked}
       true -> do_create_feed_item_reply(feed_item, user, body, opts)
     end
   end
@@ -465,14 +467,22 @@ defmodule Baudrate.Federation.Feed do
 
   # --- Private ---
 
+  defp ensure_author_not_blocked(user, feed_item) do
+    if Baudrate.Auth.blocked_with_author?(user.id, feed_item),
+      do: {:error, :blocked},
+      else: :ok
+  end
+
   defp do_toggle_feed_item_like(user, feed_item) do
     feed_item_id = feed_item.id
 
     case Repo.get_by(FeedItemLike, user_id: user.id, feed_item_id: feed_item_id) do
       nil ->
-        # A moved account is read-only: it can undo, not add (ADR 0025).
+        # A moved account is read-only, and a blocked author cannot be
+        # interacted with: both can undo, not add (ADR 0025).
         result =
-          with :ok <- Baudrate.AccountMigration.ensure_not_moved(user) do
+          with :ok <- Baudrate.AccountMigration.ensure_not_moved(user),
+               :ok <- ensure_author_not_blocked(user, feed_item) do
             %FeedItemLike{}
             |> FeedItemLike.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
             |> Repo.insert()
@@ -512,9 +522,11 @@ defmodule Baudrate.Federation.Feed do
 
     case Repo.get_by(FeedItemBoost, user_id: user.id, feed_item_id: feed_item_id) do
       nil ->
-        # A moved account is read-only: it can undo, not add (ADR 0025).
+        # A moved account is read-only, and a blocked author cannot be
+        # interacted with: both can undo, not add (ADR 0025).
         result =
-          with :ok <- Baudrate.AccountMigration.ensure_not_moved(user) do
+          with :ok <- Baudrate.AccountMigration.ensure_not_moved(user),
+               :ok <- ensure_author_not_blocked(user, feed_item) do
             %FeedItemBoost{}
             |> FeedItemBoost.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
             |> Repo.insert()

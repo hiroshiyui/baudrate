@@ -208,39 +208,29 @@ defmodule Baudrate.Federation.PublisherTest do
     end
   end
 
-  describe "build_block/2" do
-    test "builds a Block activity" do
+  describe "build_reject_follow/2" do
+    test "builds a Reject embedding the remote actor's original Follow" do
       user = create_user()
-      target_ap_id = "https://remote.example/users/target"
+      actor_uri = Federation.actor_uri(:user, user.username)
 
-      {activity, actor_uri} = Publisher.build_block(user, target_ap_id)
+      follower = %Baudrate.Federation.Follower{
+        actor_uri: actor_uri,
+        follower_uri: "https://remote.example/users/target",
+        activity_id: "https://remote.example/follows/1"
+      }
 
-      assert activity["type"] == "Block"
+      {activity, ^actor_uri} = Publisher.build_reject_follow(user, follower)
+
+      assert activity["type"] == "Reject"
       assert activity["actor"] == actor_uri
-      assert activity["object"] == target_ap_id
+      assert activity["id"] =~ "#reject-follow-"
 
-      assert activity["@context"] == [
-               "https://www.w3.org/ns/activitystreams",
-               "https://w3id.org/security/v1"
-             ]
-
-      assert activity["id"] =~ "#block-"
-    end
-  end
-
-  describe "build_undo_block/2" do
-    test "builds an Undo(Block) activity" do
-      user = create_user()
-      target_ap_id = "https://remote.example/users/target"
-
-      {activity, actor_uri} = Publisher.build_undo_block(user, target_ap_id)
-
-      assert activity["type"] == "Undo"
-      assert activity["actor"] == actor_uri
-      assert activity["object"]["type"] == "Block"
-      assert activity["object"]["actor"] == actor_uri
-      assert activity["object"]["object"] == target_ap_id
-      assert activity["id"] =~ "#undo-block-"
+      assert activity["object"] == %{
+               "id" => "https://remote.example/follows/1",
+               "type" => "Follow",
+               "actor" => "https://remote.example/users/target",
+               "object" => actor_uri
+             }
     end
   end
 

@@ -118,6 +118,10 @@ defmodule BaudrateWeb.UserProfileLive do
                  gettext("This account has moved. Follow its new account instead.")
                )}
 
+            {:error, :blocked} ->
+              {:noreply,
+               put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
+
             {:error, _} ->
               {:noreply, put_flash(socket, :error, gettext("Already following this user."))}
           end

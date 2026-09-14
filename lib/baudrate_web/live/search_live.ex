@@ -195,6 +195,10 @@ defmodule BaudrateWeb.SearchLive do
                gettext("Follow rate limit exceeded. Please try again later.")
              )}
 
+          {:error, :blocked} ->
+            {:noreply,
+             put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
+
           {:error, %Ecto.Changeset{}} ->
             {:noreply, put_flash(socket, :error, gettext("Already following this actor."))}
 
@@ -262,6 +266,10 @@ defmodule BaudrateWeb.SearchLive do
                :error,
                gettext("Follow rate limit exceeded. Please try again later.")
              )}
+
+          {:error, :blocked} ->
+            {:noreply,
+             put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
 
           {:error, %Ecto.Changeset{}} ->
             {:noreply, put_flash(socket, :error, gettext("Already following this user."))}

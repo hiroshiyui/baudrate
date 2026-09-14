@@ -103,8 +103,16 @@ defmodule Baudrate.Federation.Follows do
   Returns `{:ok, %UserFollow{}}` or `{:error, changeset}`.
   """
   @spec create_user_follow(Baudrate.Setup.User.t(), RemoteActor.t()) ::
-          {:ok, UserFollow.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, UserFollow.t()} | {:error, :blocked | Ecto.Changeset.t()}
   def create_user_follow(user, remote_actor) do
+    if Baudrate.Auth.remote_actor_blocked_by?(remote_actor.id, user.id) do
+      {:error, :blocked}
+    else
+      insert_user_follow(user, remote_actor)
+    end
+  end
+
+  defp insert_user_follow(user, remote_actor) do
     ap_id =
       "#{Baudrate.Federation.actor_uri(:user, user.username)}#follow-#{Ecto.UUID.generate()}"
 
@@ -187,6 +195,67 @@ defmodule Baudrate.Federation.Follows do
       nil -> {:error, :not_found}
       %UserFollow{} = follow -> Repo.delete(follow)
     end
+  end
+
+  @doc """
+  Removes every follow between a local user and a remote actor, in both
+  directions, and tells the remote server. Used when the user blocks the actor.
+
+    * The user's follow of the actor (pending or accepted) is deleted and an
+      `Undo(Follow)` is queued.
+    * The actor's follow of the user is deleted and a `Reject(Follow)` is
+      queued, the standard way to remove a follower. No `Block` is sent
+      (P1-D1).
+
+  Returns `:ok`.
+  """
+  @spec sever_remote_follows(Baudrate.Setup.User.t(), RemoteActor.t()) :: :ok
+  def sever_remote_follows(user, %RemoteActor{} = remote_actor) do
+    alias Baudrate.Federation.{KeyStore, Publisher}
+
+    outbound =
+      Repo.one(
+        from(uf in UserFollow,
+          where: uf.user_id == ^user.id and uf.remote_actor_id == ^remote_actor.id,
+          preload: :remote_actor
+        )
+      )
+
+    actor_uri = Baudrate.Federation.actor_uri(:user, user.username)
+
+    inbound =
+      Repo.one(
+        from(f in Follower,
+          where: f.actor_uri == ^actor_uri and f.remote_actor_id == ^remote_actor.id
+        )
+      )
+
+    signer =
+      with true <- not is_nil(outbound || inbound),
+           {:ok, user} <- KeyStore.ensure_user_keypair(user) do
+        user
+      else
+        _ -> nil
+      end
+
+    if outbound do
+      notify_remote(signer, remote_actor, &Publisher.build_undo_follow(&1, outbound))
+      Repo.delete(outbound)
+    end
+
+    if inbound do
+      notify_remote(signer, remote_actor, &Publisher.build_reject_follow(&1, inbound))
+      Repo.delete(inbound)
+    end
+
+    :ok
+  end
+
+  defp notify_remote(nil, _remote_actor, _build), do: :ok
+
+  defp notify_remote(signer, remote_actor, build) do
+    {activity, actor_uri} = build.(signer)
+    Baudrate.Federation.Delivery.deliver_follow(activity, remote_actor, actor_uri)
   end
 
   @doc """
@@ -492,13 +561,17 @@ defmodule Baudrate.Federation.Follows do
 
   The follow is auto-accepted immediately with no AP delivery required.
   Returns `{:ok, %UserFollow{}}`, `{:error, :self_follow}`,
-  `{:error, :account_moved}` (the followed account has moved, ADR 0025) or
+  `{:error, :account_moved}` (the followed account has moved, ADR 0025),
+  `{:error, :blocked}` (either user has blocked the other) or
   `{:error, changeset}`.
   """
   def create_local_follow(%{id: follower_id} = follower, %{id: followed_id}) do
     cond do
       follower_id == followed_id ->
         {:error, :self_follow}
+
+      Baudrate.Auth.blocked_between?(follower_id, followed_id) ->
+        {:error, :blocked}
 
       # A moved account is followed at its new address (ADR 0025).
       Baudrate.AccountMigration.ensure_not_moved(followed_id) != :ok ->

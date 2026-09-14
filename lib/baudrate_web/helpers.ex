@@ -413,6 +413,13 @@ defmodule BaudrateWeb.Helpers do
     do: gettext("Your account has moved and is read-only. Remove the redirect to post again.")
 
   @doc """
+  Flash text for an interaction refused because a block stands between the
+  user and the author (`{:error, :blocked}`).
+  """
+  def blocked_interaction_message,
+    do: gettext("You cannot interact with this account because one of you has blocked the other.")
+
+  @doc """
   Whether to render an interactive like/boost toggle for `user` on content by
   `author_id`, given whether the user has already `active`-ly liked or boosted it.
 

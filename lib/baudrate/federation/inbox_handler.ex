@@ -82,7 +82,9 @@ defmodule Baudrate.Federation.InboxHandler do
       # Board federation controls whether remote actors may follow the board.
       # This guard is needed for the shared inbox path where the controller
       # cannot pre-filter by ap_enabled.
-      if non_federated_board_actor?(actor_uri, target) do
+      # A user who has blocked the actor refuses its follow, as Mastodon does.
+      if non_federated_board_actor?(actor_uri, target) or
+           follow_blocked_by_target?(actor_uri, remote_actor) do
         send_reject_async(activity, actor_uri, remote_actor)
         :ok
       else
@@ -222,7 +224,7 @@ defmodule Baudrate.Federation.InboxHandler do
 
     case resolve_local_article_by_ap_or_uri(object_uri) do
       %{id: article_id} = article ->
-        if not article_federated?(article) do
+        if not article_federated?(article) or blocked_by_author?(article, remote_actor) do
           :ok
         else
           case Content.create_remote_article_like(%{
@@ -245,7 +247,8 @@ defmodule Baudrate.Federation.InboxHandler do
           %{article_id: aid} = comment ->
             like_article = Baudrate.Repo.get(Baudrate.Content.Article, aid)
 
-            if like_article && article_federated?(like_article) do
+            if like_article && article_federated?(like_article) &&
+                 not blocked_by_author?(comment, remote_actor) do
               case Content.create_remote_comment_like(%{
                      ap_id: ap_id,
                      comment_id: comment.id,
@@ -710,6 +713,12 @@ defmodule Baudrate.Federation.InboxHandler do
             "federation.activity: type=Create(Note) rejected non_federated_article ap_id=#{ap_id}"
           )
 
+          :ok
+
+        # A reply to the content of a user who has blocked the sender is
+        # refused, exactly like a local comment across a block.
+        reply_blocked?(article, parent_id, remote_actor) ->
+          Logger.info("federation.activity: type=Create(Note) rejected blocked ap_id=#{ap_id}")
           :ok
 
         # Idempotency: if comment with this ap_id already exists, return :ok
@@ -1715,7 +1724,7 @@ defmodule Baudrate.Federation.InboxHandler do
   defp maybe_create_local_boost(object_uri, ap_id, remote_actor) do
     case resolve_local_article_by_ap_or_uri(object_uri) do
       %{id: article_id} = article ->
-        if article_federated?(article) do
+        if article_federated?(article) and not blocked_by_author?(article, remote_actor) do
           Content.create_remote_article_boost(%{
             ap_id: ap_id,
             article_id: article_id,
@@ -1730,7 +1739,8 @@ defmodule Baudrate.Federation.InboxHandler do
           %{article_id: article_id} = comment ->
             article = Baudrate.Repo.get(Baudrate.Content.Article, article_id)
 
-            if article && article_federated?(article) do
+            if article && article_federated?(article) &&
+                 not blocked_by_author?(comment, remote_actor) do
               Content.create_remote_comment_boost(%{
                 ap_id: ap_id,
                 comment_id: comment.id,
@@ -1857,6 +1867,31 @@ defmodule Baudrate.Federation.InboxHandler do
               "federation.activity: type=Reject(Follow) actor=#{remote_actor.ap_id} follow=#{follow_id} (not found)"
             )
         end
+    end
+  end
+
+  # --- Block helpers ---
+
+  # A local user's block of a remote actor refuses that actor's follows,
+  # likes, boosts and replies on the user's content (see `Auth.Moderation`).
+  defp blocked_by_author?(%{user_id: user_id}, remote_actor) when is_integer(user_id),
+    do: Baudrate.Auth.remote_actor_blocked_by?(remote_actor.id, user_id)
+
+  defp blocked_by_author?(_content, _remote_actor), do: false
+
+  defp reply_blocked?(article, parent_id, remote_actor) do
+    parent = if is_integer(parent_id), do: Content.get_comment(parent_id)
+    blocked_by_author?(article, remote_actor) or blocked_by_author?(parent, remote_actor)
+  end
+
+  defp follow_blocked_by_target?(actor_uri, remote_actor) do
+    user_prefix = "#{Federation.base_url()}/ap/users/"
+
+    with <<^user_prefix::binary, username::binary>> <- actor_uri,
+         %{id: user_id} <- Baudrate.Auth.get_user_by_username(username) do
+      Baudrate.Auth.remote_actor_blocked_by?(remote_actor.id, user_id)
+    else
+      _ -> false
     end
   end
 
