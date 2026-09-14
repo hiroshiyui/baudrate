@@ -436,18 +436,34 @@ defmodule Baudrate.Federation.InboxHandler do
 
   # --- Flag (incoming report from remote instance) ---
 
-  defp dispatch(%{"type" => "Flag", "content" => reason} = activity, remote_actor, _target)
-       when is_binary(reason) do
+  # The signer is the reporter (often the remote instance actor). The Flag's
+  # objects name what is reported: local accounts, articles and comments.
+  # Reports about nothing local are dropped, and `content` is optional.
+  defp dispatch(%{"type" => "Flag"} = activity, remote_actor, _target) do
     objects = List.wrap(activity["object"]) |> Enum.filter(&is_binary/1)
+    reason = flag_reason(activity["content"])
     report_attrs = build_flag_report_attrs(objects, remote_actor, reason)
 
-    case Baudrate.Moderation.create_report(report_attrs) do
-      {:ok, _report} ->
-        Logger.info("federation.activity: type=Flag from=#{remote_actor.ap_id}")
+    cond do
+      not flag_has_local_target?(report_attrs) ->
+        Logger.info("federation.flag_ignored: reason=no_local_target from=#{remote_actor.ap_id}")
         :ok
 
-      {:error, _} ->
-        {:error, :flag_failed}
+      RateLimits.check_inbound_flag(remote_actor.domain) != :ok ->
+        :ok
+
+      true ->
+        case Baudrate.Moderation.create_remote_flag_report(report_attrs) do
+          {:ok, :duplicate} ->
+            :ok
+
+          {:ok, _report} ->
+            Logger.info("federation.activity: type=Flag from=#{remote_actor.ap_id}")
+            :ok
+
+          {:error, _} ->
+            {:error, :flag_failed}
+        end
     end
   end
 
@@ -1862,10 +1878,38 @@ defmodule Baudrate.Federation.InboxHandler do
 
     %{
       reason: reason,
-      remote_actor_id: remote_actor.id,
+      reporter_remote_actor_id: remote_actor.id,
       article_id: article_id,
-      comment_id: comment_id
+      comment_id: comment_id,
+      reported_user_id: find_flagged_user(content_uris)
     }
+  end
+
+  defp flag_has_local_target?(attrs) do
+    Enum.any?([attrs.article_id, attrs.comment_id, attrs.reported_user_id])
+  end
+
+  # Mastodon sends the reporter's comment as plain text, and may send none.
+  defp flag_reason(content) when is_binary(content) do
+    content |> Baudrate.Sanitizer.Native.strip_tags() |> String.trim() |> String.slice(0, 2000)
+  end
+
+  defp flag_reason(_content), do: ""
+
+  # A reported local account appears as its actor URI.
+  defp find_flagged_user(uris) do
+    user_prefix = "#{Federation.base_url()}/ap/users/"
+
+    Enum.find_value(uris, fn uri ->
+      with true <- String.starts_with?(uri, user_prefix),
+           username = String.replace_prefix(uri, user_prefix, ""),
+           true <- username =~ ~r/\A[A-Za-z0-9_]+\z/,
+           %{id: id} <- Baudrate.Repo.get_by(Baudrate.Setup.User, username: username) do
+        id
+      else
+        _ -> nil
+      end
+    end)
   end
 
   defp find_flagged_article(uris) do

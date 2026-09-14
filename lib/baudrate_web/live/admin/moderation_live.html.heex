@@ -150,11 +150,28 @@
           >
             {gettext("Reported by %{name}", name: display_name(report.reporter))}
           </div>
+          <div
+            :if={report.reporter_remote_actor}
+            id={"admin-moderation-report-remote-reporter-#{report.id}"}
+            class="admin-moderation-report-remote-reporter text-sm opacity-70"
+          >
+            {gettext("Reported from %{domain} by %{name}",
+              domain: report.reporter_remote_actor.domain,
+              name: display_name(report.reporter_remote_actor)
+            )}
+          </div>
         </div>
 
         <div class="admin-moderation-report-reason mt-2">
           <p class="font-semibold">{gettext("Reason:")}</p>
-          <p class="whitespace-pre-wrap break-words">{report.reason}</p>
+          <p :if={report.reason != ""} class="whitespace-pre-wrap break-words">{report.reason}</p>
+          <p
+            :if={report.reason == ""}
+            id={"admin-moderation-report-no-reason-#{report.id}"}
+            class="admin-moderation-report-no-reason italic opacity-70"
+          >
+            {gettext("No reason given.")}
+          </p>
         </div>
 
         <%!-- Reported Content --%>

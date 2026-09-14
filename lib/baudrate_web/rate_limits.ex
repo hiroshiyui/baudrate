@@ -35,6 +35,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_media_fetch_global/0`  | `media_fetch:global` | 1 min | 600 |
   | `check_admin_sudo/1`          | `admin_sudo:`      | 15 min  | 5     |
   | `check_reauth/1`              | `reauth:`          | 15 min  | 5     |
+  | `check_inbound_flag/1`        | `inbound_flag:`    | 1 hour  | 10    |
   """
 
   require Logger
@@ -199,6 +200,12 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_media_fetch_global() :: :ok | {:error, :rate_limited}
   def check_media_fetch_global do
     check("media_fetch:global", 60_000, 600, :media_fetch_global)
+  end
+
+  @doc "Reports (inbound `Flag`) accepted from one remote domain: 10 per hour."
+  @spec check_inbound_flag(String.t()) :: :ok | {:error, :rate_limited}
+  def check_inbound_flag(domain) do
+    check("inbound_flag:#{domain}", 3_600_000, 10, :inbound_flag)
   end
 
   @doc "Reply-chain walks initiated by a remote domain: 20 per minute."

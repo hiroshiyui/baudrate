@@ -34,6 +34,43 @@ defmodule Baudrate.Moderation do
   end
 
   @doc """
+  Creates a report from an inbound `Flag` (see `Report.remote_flag_changeset/2`)
+  and notifies moderators.
+
+  An open report from the same remote reporter about exactly the same targets
+  is not duplicated: `{:ok, :duplicate}` is returned instead.
+  """
+  @spec create_remote_flag_report(map()) ::
+          {:ok, Report.t()} | {:ok, :duplicate} | {:error, Ecto.Changeset.t()}
+  def create_remote_flag_report(attrs) do
+    duplicate? =
+      Repo.exists?(
+        from(r in Report,
+          where:
+            r.status == "open" and
+              r.reporter_remote_actor_id == ^attrs.reporter_remote_actor_id,
+          where: ^same_target(:article_id, attrs[:article_id]),
+          where: ^same_target(:comment_id, attrs[:comment_id]),
+          where: ^same_target(:reported_user_id, attrs[:reported_user_id])
+        )
+      )
+
+    if duplicate? do
+      {:ok, :duplicate}
+    else
+      result = %Report{} |> Report.remote_flag_changeset(attrs) |> Repo.insert()
+
+      with {:ok, report} <- result do
+        Baudrate.Notification.Hooks.notify_report_created(report.id)
+        result
+      end
+    end
+  end
+
+  defp same_target(field, nil), do: dynamic([r], is_nil(field(r, ^field)))
+  defp same_target(field, id), do: dynamic([r], field(r, ^field) == ^id)
+
+  @doc """
   Checks whether the given reporter already has an open report for the
   same target. Returns `true` if a duplicate exists.
   """
@@ -76,7 +113,15 @@ defmodule Baudrate.Moderation do
     from(r in Report,
       where: r.status == ^status,
       order_by: [desc: r.inserted_at, desc: r.id],
-      preload: [:reporter, :article, :comment, :remote_actor, :reported_user, :resolved_by]
+      preload: [
+        :reporter,
+        :reporter_remote_actor,
+        :article,
+        :comment,
+        :remote_actor,
+        :reported_user,
+        :resolved_by
+      ]
     )
     |> Repo.all()
   end
@@ -88,7 +133,15 @@ defmodule Baudrate.Moderation do
   def get_report!(id) do
     Report
     |> Repo.get!(id)
-    |> Repo.preload([:reporter, :article, :comment, :remote_actor, :reported_user, :resolved_by])
+    |> Repo.preload([
+      :reporter,
+      :reporter_remote_actor,
+      :article,
+      :comment,
+      :remote_actor,
+      :reported_user,
+      :resolved_by
+    ])
   end
 
   @doc """

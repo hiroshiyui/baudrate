@@ -700,7 +700,11 @@ defmodule BaudrateWeb.ArticleLive do
 
       :ok ->
         target_attrs =
-          build_report_target(socket.assigns.report_target_type, socket.assigns.report_target_id)
+          build_report_target(
+            socket.assigns.article,
+            socket.assigns.report_target_type,
+            socket.assigns.report_target_id
+          )
 
         cond do
           target_attrs == %{} ->
@@ -729,21 +733,35 @@ defmodule BaudrateWeb.ArticleLive do
     end
   end
 
-  defp build_report_target("article", id) do
+  # Reports name this article or one of its comments. When the content came
+  # from another instance, its remote author is recorded as the reported actor,
+  # so moderators can forward the report with "Send Flag".
+  defp build_report_target(article, "article", id) do
     case Integer.parse(id) do
-      {num, ""} -> %{article_id: num}
+      {num, ""} when num == article.id ->
+        %{article_id: num} |> with_remote_author(article.remote_actor_id)
+
+      _ ->
+        %{}
+    end
+  end
+
+  defp build_report_target(article, "comment", id) do
+    with {num, ""} <- Integer.parse(id),
+         %{article_id: article_id} = comment when article_id == article.id <-
+           Content.get_comment(num) do
+      %{comment_id: num} |> with_remote_author(comment.remote_actor_id)
+    else
       _ -> %{}
     end
   end
 
-  defp build_report_target("comment", id) do
-    case Integer.parse(id) do
-      {num, ""} -> %{comment_id: num}
-      _ -> %{}
-    end
-  end
+  defp build_report_target(_article, _, _), do: %{}
 
-  defp build_report_target(_, _), do: %{}
+  defp with_remote_author(attrs, nil), do: attrs
+
+  defp with_remote_author(attrs, remote_actor_id),
+    do: Map.put(attrs, :remote_actor_id, remote_actor_id)
 
   @impl true
   def handle_info({:comment_created, payload}, socket) do

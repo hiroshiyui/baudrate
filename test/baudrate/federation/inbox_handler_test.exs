@@ -2084,52 +2084,90 @@ defmodule Baudrate.Federation.InboxHandlerTest do
   end
 
   describe "Flag" do
-    test "creates a report when article URI is included" do
+    defp flag(remote_actor, objects, extra \\ %{}) do
+      Map.merge(
+        %{
+          "id" => "https://remote.example/activities/flag-#{System.unique_integer([:positive])}",
+          "type" => "Flag",
+          "actor" => remote_actor.ap_id,
+          "content" => "This content violates our rules",
+          "object" => [remote_actor.ap_id | objects]
+        },
+        extra
+      )
+    end
+
+    defp reports_from(remote_actor) do
+      Baudrate.Moderation.list_reports(status: "open")
+      |> Enum.filter(&(&1.reporter_remote_actor_id == remote_actor.id))
+    end
+
+    test "records the signer as the reporter, not as the reported actor" do
       user = setup_user_with_role("user")
-      board = create_board()
-      article = create_article_for_board(user, board)
+      article = create_article_for_board(user, create_board())
       remote_actor = create_remote_actor()
 
       article_uri = Federation.actor_uri(:article, article.slug)
+      assert :ok = InboxHandler.handle(flag(remote_actor, [article_uri]), remote_actor, :shared)
 
-      activity = %{
-        "id" => "https://remote.example/activities/flag-#{System.unique_integer([:positive])}",
-        "type" => "Flag",
-        "actor" => remote_actor.ap_id,
-        "content" => "This content violates our rules",
-        "object" => [remote_actor.ap_id, article_uri]
-      }
-
-      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
-
-      reports = Baudrate.Moderation.list_reports(status: "open")
-      assert length(reports) >= 1
-
-      report = Enum.find(reports, &(&1.remote_actor_id == remote_actor.id))
-      assert report
+      assert [report] = reports_from(remote_actor)
       assert report.reason == "This content violates our rules"
       assert report.article_id == article.id
+      assert is_nil(report.remote_actor_id)
+      assert is_nil(report.reporter_id)
     end
 
-    test "creates a report even with no matching content URIs" do
+    test "records a reported local account" do
+      user = setup_user_with_role("user")
       remote_actor = create_remote_actor()
+      user_uri = Federation.actor_uri(:user, user.username)
 
-      activity = %{
-        "id" => "https://remote.example/activities/flag-#{System.unique_integer([:positive])}",
-        "type" => "Flag",
-        "actor" => remote_actor.ap_id,
-        "content" => "Spam actor",
-        "object" => [remote_actor.ap_id, "https://remote.example/notes/nonexistent"]
-      }
+      assert :ok = InboxHandler.handle(flag(remote_actor, [user_uri]), remote_actor, :shared)
+
+      assert [report] = reports_from(remote_actor)
+      assert report.reported_user_id == user.id
+    end
+
+    test "accepts a Flag without a comment" do
+      user = setup_user_with_role("user")
+      remote_actor = create_remote_actor()
+      user_uri = Federation.actor_uri(:user, user.username)
+      activity = flag(remote_actor, [user_uri]) |> Map.delete("content")
 
       assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert [%{reason: ""}] = reports_from(remote_actor)
+    end
 
-      reports = Baudrate.Moderation.list_reports(status: "open")
-      report = Enum.find(reports, &(&1.remote_actor_id == remote_actor.id))
-      assert report
-      assert report.reason == "Spam actor"
-      assert is_nil(report.article_id)
-      assert is_nil(report.comment_id)
+    test "ignores a Flag that names nothing on this instance" do
+      remote_actor = create_remote_actor()
+      activity = flag(remote_actor, ["https://remote.example/notes/nonexistent"])
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+      assert reports_from(remote_actor) == []
+    end
+
+    test "does not duplicate an open report for the same targets" do
+      user = setup_user_with_role("user")
+      remote_actor = create_remote_actor()
+      user_uri = Federation.actor_uri(:user, user.username)
+
+      assert :ok = InboxHandler.handle(flag(remote_actor, [user_uri]), remote_actor, :shared)
+      assert :ok = InboxHandler.handle(flag(remote_actor, [user_uri]), remote_actor, :shared)
+
+      assert [_one] = reports_from(remote_actor)
+    end
+
+    test "is rate limited per remote domain" do
+      user = setup_user_with_role("user")
+      remote_actor = create_remote_actor()
+      user_uri = Federation.actor_uri(:user, user.username)
+
+      BaudrateWeb.RateLimiter.Sandbox.set_fun(fn bucket, _scale, _limit ->
+        if String.starts_with?(bucket, "inbound_flag:"), do: {:deny, 10}, else: {:allow, 1}
+      end)
+
+      assert :ok = InboxHandler.handle(flag(remote_actor, [user_uri]), remote_actor, :shared)
+      assert reports_from(remote_actor) == []
     end
   end
 

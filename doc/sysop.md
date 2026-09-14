@@ -434,7 +434,12 @@ The `sysop` board is a protected system board:
 - **Resolve** — mark resolved with optional notes (logged)
 - **Dismiss** — mark dismissed, no action taken (logged)
 - **Delete** reported content directly from the queue (soft-delete, logged)
-- **Flag** — send AP `Flag` activity to remote instances for remote content
+- **Flag** — send AP `Flag` activity to remote instances for remote content.
+  Available when the report names remote content (its remote author is
+  recorded as the reported actor). Reports that arrive from other instances
+  show "Reported from <domain> by <actor>"; before v1.18.2 they were stored
+  with the reporter in the reported-actor field, and the upgrade migration
+  moves those rows.
 
 ### Moderation Log (`/admin/moderation-log`)
 

@@ -1120,6 +1120,75 @@ defmodule BaudrateWeb.ArticleLiveTest do
     end
   end
 
+  describe "reporting remote content" do
+    test "records the remote author as the reported actor, so the report can be forwarded",
+         %{conn: conn, user: user, board: board} do
+      uid = System.unique_integer([:positive])
+
+      {:ok, actor} =
+        %Baudrate.Federation.RemoteActor{}
+        |> Baudrate.Federation.RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/r#{uid}",
+          username: "r#{uid}",
+          domain: "remote.example",
+          public_key_pem: elem(Baudrate.Federation.KeyStore.generate_keypair(), 0),
+          inbox: "https://remote.example/users/r#{uid}/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert()
+
+      {:ok, %{article: article}} =
+        Content.create_remote_article(
+          %{
+            title: "Remote post",
+            body: "Body",
+            slug: "remote-report-#{uid}",
+            ap_id: "https://remote.example/articles/#{uid}",
+            remote_actor_id: actor.id
+          },
+          [board.id]
+        )
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      render_click(lv, "open_report_modal", %{
+        "type" => "article",
+        "id" => Integer.to_string(article.id),
+        "label" => article.title
+      })
+
+      render_click(lv, "submit_report", %{"reason" => "spam"})
+
+      assert [report] = Baudrate.Moderation.list_reports(status: "open")
+      assert report.reporter_id == user.id
+      assert report.article_id == article.id
+      assert report.remote_actor_id == actor.id
+    end
+
+    test "refuses a report naming another article's id", %{
+      conn: conn,
+      article: article,
+      user: user
+    } do
+      {:ok, %{article: other}} =
+        Content.create_article(
+          %{title: "Other", body: "B", slug: "other-report-target", user_id: user.id},
+          []
+        )
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      render_click(lv, "open_report_modal", %{
+        "type" => "article",
+        "id" => Integer.to_string(other.id),
+        "label" => "x"
+      })
+
+      assert render_click(lv, "submit_report", %{"reason" => "spam"}) =~ "Failed to submit report"
+    end
+  end
+
   describe "view original link" do
     test "is absent for local articles", %{conn: conn, article: article} do
       {:ok, _lv, html} = live(conn, "/articles/#{article.slug}")
