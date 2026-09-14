@@ -835,11 +835,68 @@
         </div>
       </section>
 
+      <%!-- Blocked Accounts section --%>
+      <section id="profile-blocked-accounts" aria-labelledby="profile-blocked-accounts-heading">
+        <h2
+          id="profile-blocked-accounts-heading"
+          class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+          tabindex="-1"
+        >
+          {gettext("Blocked Accounts")}
+        </h2>
+        <p class="profile-blocked-accounts-help text-xs text-base-content/70 mb-2">
+          {gettext(
+            "Blocked accounts cannot reply to, like, boost, follow or message you, and their content is hidden from you."
+          )}
+        </p>
+        <div
+          :if={@blocks == []}
+          id="profile-blocked-accounts-empty"
+          class="profile-blocked-accounts-empty text-sm text-base-content/70 italic"
+        >
+          {gettext("No blocked accounts.")}
+        </div>
+        <ul :if={@blocks != []} id="profile-blocked-accounts-list" class="space-y-2">
+          <li
+            :for={block <- @blocks}
+            id={"blocked-account-#{block.id}"}
+            class="blocked-account flex items-center gap-3"
+          >
+            <.safety_list_account
+              user={block.blocked_user}
+              ap_id={block.blocked_actor_ap_id}
+              remote_actors={@safety_remote_actors}
+              name_class="blocked-account-name"
+            />
+            <button
+              id={"blocked-account-unblock-#{block.id}"}
+              type="button"
+              class="blocked-account-unblock btn btn-sm btn-ghost ml-auto"
+              phx-click="unblock"
+              phx-value-id={block.id}
+              aria-label={
+                gettext("Unblock %{name}",
+                  name:
+                    safety_list_name(
+                      block.blocked_user,
+                      block.blocked_actor_ap_id,
+                      @safety_remote_actors
+                    )
+                )
+              }
+            >
+              {gettext("Unblock")}
+            </button>
+          </li>
+        </ul>
+      </section>
+
       <%!-- Muted Users section --%>
       <section id="profile-muted-users" aria-labelledby="profile-muted-users-heading">
         <h2
           id="profile-muted-users-heading"
           class="profile-field-label profile-section-heading text-sm text-base-content/70 mb-2"
+          tabindex="-1"
         >
           {gettext("Muted Users")}
         </h2>
@@ -855,27 +912,28 @@
             id={"muted-user-#{mute.id}"}
             class="muted-user flex items-center gap-3"
           >
-            <%= if mute.muted_user do %>
-              <.avatar user={mute.muted_user} size={36} />
-              <span class="muted-user-name font-semibold">{display_name(mute.muted_user)}</span>
-            <% else %>
-              <div class="avatar avatar-placeholder">
-                <div
-                  class="bg-neutral text-neutral-content rounded-full"
-                  style="width: 36px; height: 36px"
-                >
-                  <span class="text-xs">@</span>
-                </div>
-              </div>
-              <span class="muted-user-name text-sm text-base-content/70">{mute.muted_actor_ap_id}</span>
-            <% end %>
+            <.safety_list_account
+              user={mute.muted_user}
+              ap_id={mute.muted_actor_ap_id}
+              remote_actors={@safety_remote_actors}
+              name_class="muted-user-name"
+            />
             <button
               id={"muted-user-unmute-#{mute.id}"}
               type="button"
               class="muted-user-unmute btn btn-sm btn-ghost btn-error ml-auto"
               phx-click="unmute"
               phx-value-id={mute.id}
-              aria-label={gettext("Unmute")}
+              aria-label={
+                gettext("Unmute %{name}",
+                  name:
+                    safety_list_name(
+                      mute.muted_user,
+                      mute.muted_actor_ap_id,
+                      @safety_remote_actors
+                    )
+                )
+              }
             >
               {gettext("Unmute")}
             </button>

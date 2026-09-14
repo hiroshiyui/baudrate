@@ -417,7 +417,7 @@ defmodule BaudrateWeb.Helpers do
   user and the author (`{:error, :blocked}`).
   """
   def blocked_interaction_message,
-    do: gettext("You cannot interact with this account because one of you has blocked the other.")
+    do: gettext("You cannot interact with this account.")
 
   @doc """
   Whether to render an interactive like/boost toggle for `user` on content by

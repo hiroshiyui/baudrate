@@ -37,6 +37,12 @@ defmodule BaudrateWeb.ProfileLive do
   re-authentication (`Auth.sign_out_other_sessions/2`). The session to keep is
   identified by its row id (`@session_id`, resolved at mount), not by token,
   because tokens rotate daily.
+
+  ## Blocked and Muted Accounts
+
+  The Blocked Accounts and Muted Users sections list local users and remote
+  actors, each with an undo control. Remote actors are stored by AP ID and
+  shown as `@user@domain` when the actor is known (`@safety_remote_actors`).
   """
 
   use BaudrateWeb, :live_view
@@ -60,7 +66,6 @@ defmodule BaudrateWeb.ProfileLive do
     display_name_changeset = Baudrate.Setup.User.display_name_changeset(user, %{})
     bio_changeset = Baudrate.Setup.User.bio_changeset(user, %{})
     signature_changeset = Baudrate.Setup.User.signature_changeset(user, %{})
-    mutes = Auth.list_mutes(user)
     webauthn_credentials = Auth.list_webauthn_credentials(user)
 
     socket =
@@ -75,7 +80,7 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:bio_form, to_form(bio_changeset, as: :bio))
       |> assign(:signature_form, to_form(signature_changeset, as: :signature))
       |> assign(:signature_preview, Baudrate.Content.Markdown.to_html(user.signature))
-      |> assign(:mutes, mutes)
+      |> assign_blocks_and_mutes(user)
       |> assign(:notification_preferences, user.notification_preferences || %{})
       |> assign(:profile_fields, pad_profile_fields(user.profile_fields))
       |> assign(:push_supported, false)
@@ -306,12 +311,34 @@ defmodule BaudrateWeb.ProfileLive do
         Auth.unmute_remote_actor(user, mute.muted_actor_ap_id)
       end
 
-      mutes = Auth.list_mutes(user)
+      {:noreply,
+       socket
+       |> assign_blocks_and_mutes(user)
+       |> put_flash(:info, gettext("User unmuted."))
+       |> push_event("focus", %{id: "profile-muted-users-heading"})}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("unblock", %{"id" => id}, socket) do
+    user = socket.assigns.current_user
+    block = Enum.find(socket.assigns.blocks, &(to_string(&1.id) == id))
+
+    if block do
+      if block.blocked_user_id do
+        blocked_user = Auth.get_user(block.blocked_user_id)
+        if blocked_user, do: Auth.unblock_user(user, blocked_user)
+      else
+        Auth.unblock_remote_actor(user, block.blocked_actor_ap_id)
+      end
 
       {:noreply,
        socket
-       |> assign(:mutes, mutes)
-       |> put_flash(:info, gettext("User unmuted."))}
+       |> assign_blocks_and_mutes(user)
+       |> put_flash(:info, gettext("Account unblocked."))
+       |> push_event("focus", %{id: "profile-blocked-accounts-heading"})}
     else
       {:noreply, socket}
     end
@@ -757,4 +784,76 @@ defmodule BaudrateWeb.ProfileLive do
   end
 
   defp parse_raw_profile_fields(_), do: []
+
+  # Blocks and mutes of remote actors are stored by AP ID; the known actors are
+  # looked up so the lists can show `@user@domain` instead of a bare URI.
+  defp assign_blocks_and_mutes(socket, user) do
+    blocks = Auth.list_blocks(user)
+    mutes = Auth.list_mutes(user)
+
+    remote_actors =
+      (Enum.map(blocks, & &1.blocked_actor_ap_id) ++ Enum.map(mutes, & &1.muted_actor_ap_id))
+      |> Enum.reject(&is_nil/1)
+      |> Enum.uniq()
+      |> Baudrate.Federation.remote_actors_by_ap_ids()
+
+    assign(socket, blocks: blocks, mutes: mutes, safety_remote_actors: remote_actors)
+  end
+
+  attr :user, :any, default: nil
+  attr :ap_id, :string, default: nil
+  attr :remote_actors, :map, required: true
+  attr :name_class, :string, required: true
+
+  # One account in the blocked or muted list: a local user, a known remote
+  # actor, or (for an actor this instance no longer knows) its AP ID.
+  defp safety_list_account(assigns) do
+    assigns =
+      assign(assigns, :remote_actor, assigns.ap_id && assigns.remote_actors[assigns.ap_id])
+
+    ~H"""
+    <%= cond do %>
+      <% @user -> %>
+        <.avatar user={@user} size={36} />
+        <span class={[@name_class, "font-semibold break-words min-w-0"]}>
+          {display_name(@user)}
+          <span class="text-sm font-normal text-base-content/70">@{@user.username}</span>
+        </span>
+      <% @remote_actor -> %>
+        <div class="avatar avatar-placeholder">
+          <div
+            class="bg-neutral text-neutral-content rounded-full"
+            style="width: 36px; height: 36px"
+          >
+            <span class="text-xs">@</span>
+          </div>
+        </div>
+        <span class={[@name_class, "font-semibold break-words min-w-0"]}>
+          {display_name(@remote_actor)}
+          <span class="text-sm font-normal text-base-content/70 break-all">
+            @{@remote_actor.username}@{@remote_actor.domain}
+          </span>
+        </span>
+      <% true -> %>
+        <div class="avatar avatar-placeholder">
+          <div
+            class="bg-neutral text-neutral-content rounded-full"
+            style="width: 36px; height: 36px"
+          >
+            <span class="text-xs">@</span>
+          </div>
+        </div>
+        <span class={[@name_class, "text-sm text-base-content/70 break-all min-w-0"]}>{@ap_id}</span>
+    <% end %>
+    """
+  end
+
+  defp safety_list_name(%Baudrate.Setup.User{username: username}, _ap_id, _actors), do: username
+
+  defp safety_list_name(_user, ap_id, actors) do
+    case actors[ap_id] do
+      %{username: username, domain: domain} -> "@#{username}@#{domain}"
+      nil -> ap_id
+    end
+  end
 end

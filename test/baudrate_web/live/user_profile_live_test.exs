@@ -64,6 +64,57 @@ defmodule BaudrateWeb.UserProfileLiveTest do
     assert render_hook(lv, :unmute_user, %{})
   end
 
+  describe "blocking" do
+    setup do
+      BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1})
+      :ok
+    end
+
+    test "blocks and unblocks from the more-actions menu", %{conn: conn} do
+      me = setup_user("user")
+      other = setup_user("user")
+      {:ok, _} = Federation.create_local_follow(me, other)
+      conn = log_in_user(conn, me)
+
+      {:ok, lv, _html} = live(conn, "/users/#{other.username}")
+      assert has_element?(lv, "#user-profile-unfollow")
+
+      lv |> element("#user-profile-block") |> render_click()
+
+      assert Auth.blocked?(me, other)
+      refute Federation.local_follows?(me.id, other.id)
+      assert has_element?(lv, "#user-profile-unblock")
+      refute has_element?(lv, "#user-profile-follow")
+      refute has_element?(lv, "#user-profile-message")
+      assert_push_event(lv, "focus", %{id: "user-profile-more-actions"})
+
+      lv |> element("#user-profile-unblock") |> render_click()
+
+      refute Auth.blocked?(me, other)
+      assert has_element?(lv, "#user-profile-block")
+      assert has_element?(lv, "#user-profile-follow")
+    end
+
+    test "block events as a guest are a no-op", %{conn: conn} do
+      user = setup_user("user")
+      {:ok, lv, _html} = live(conn, "/users/#{user.username}")
+
+      assert render_hook(lv, :block_user, %{})
+      assert render_hook(lv, :unblock_user, %{})
+    end
+
+    test "the block is refused when rate limited", %{conn: conn} do
+      me = setup_user("user")
+      other = setup_user("user")
+      conn = log_in_user(conn, me)
+      {:ok, lv, _html} = live(conn, "/users/#{other.username}")
+
+      BaudrateWeb.RateLimiter.Sandbox.set_global_response({:deny, 1_000})
+      assert render_hook(lv, :block_user, %{}) =~ "Too many actions"
+      refute Auth.blocked?(me, other)
+    end
+  end
+
   test "displays bio on user profile page", %{conn: conn} do
     user = setup_user("user")
     {:ok, _updated} = Auth.update_bio(user, "This is my bio text")

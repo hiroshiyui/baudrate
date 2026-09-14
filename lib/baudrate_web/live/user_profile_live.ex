@@ -4,8 +4,9 @@ defmodule BaudrateWeb.UserProfileLive do
 
   Displays a user's avatar, role, join date, content stats,
   recent articles & comments, and boosted articles & comments. Redirects if
-  the user doesn't exist or is banned. Authenticated users can follow/unfollow
-  and mute/unmute other users.
+  the user doesn't exist or is banned. Authenticated users can follow/unfollow,
+  mute/unmute and block/unblock other users. Blocking removes the follows
+  between the two accounts, so the follow state is reset.
   """
 
   use BaudrateWeb, :live_view
@@ -48,6 +49,13 @@ defmodule BaudrateWeb.UserProfileLive do
             false
           end
 
+        is_blocked =
+          if current_user && current_user.id != user.id do
+            Auth.blocked?(current_user, user)
+          else
+            false
+          end
+
         is_following =
           if current_user && current_user.id != user.id do
             Federation.local_follows?(current_user.id, user.id)
@@ -66,6 +74,7 @@ defmodule BaudrateWeb.UserProfileLive do
            article_count: article_count,
            comment_count: comment_count,
            is_muted: is_muted,
+           is_blocked: is_blocked,
            is_following: is_following,
            page_title: user.username,
            linked_data_json: jsonld,
@@ -195,6 +204,51 @@ defmodule BaudrateWeb.UserProfileLive do
        socket
        |> assign(:is_muted, false)
        |> put_flash(:info, gettext("User unmuted."))}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("block_user", _params, socket) do
+    current_user = socket.assigns.current_user
+
+    if current_user do
+      case RateLimits.check_mute_user(current_user.id) do
+        {:error, :rate_limited} ->
+          {:noreply,
+           put_flash(socket, :error, gettext("Too many actions. Please try again later."))}
+
+        :ok ->
+          case Auth.block_user(current_user, socket.assigns.profile_user) do
+            {:ok, _} ->
+              {:noreply,
+               socket
+               |> assign(is_blocked: true, is_following: false)
+               |> put_flash(:info, gettext("User blocked."))
+               |> push_event("focus", %{id: "user-profile-more-actions"})}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, gettext("Failed to block user."))}
+          end
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("unblock_user", _params, socket) do
+    current_user = socket.assigns.current_user
+
+    if current_user do
+      Auth.unblock_user(current_user, socket.assigns.profile_user)
+
+      {:noreply,
+       socket
+       |> assign(:is_blocked, false)
+       |> put_flash(:info, gettext("User unblocked."))
+       |> push_event("focus", %{id: "user-profile-more-actions"})}
     else
       {:noreply, socket}
     end

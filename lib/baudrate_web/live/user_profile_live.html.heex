@@ -49,7 +49,7 @@
         class="flex gap-2 mt-2"
       >
         <.link
-          :if={!@profile_user.is_bot and is_nil(@moved_to)}
+          :if={!@profile_user.is_bot and is_nil(@moved_to) and !@is_blocked}
           id="user-profile-message"
           navigate={~p"/messages/new?to=#{@profile_user.username}"}
           class="btn btn-sm btn-outline"
@@ -58,7 +58,7 @@
           {gettext("Message")}
         </.link>
         <button
-          :if={!@is_following and is_nil(@moved_to)}
+          :if={!@is_following and is_nil(@moved_to) and !@is_blocked}
           id="user-profile-follow"
           type="button"
           class="btn btn-sm btn-primary"
@@ -129,6 +129,33 @@
               >
                 <.icon name="hero-flag" class="size-4" />
                 {gettext("Report")}
+              </button>
+            </li>
+            <li :if={!@is_blocked}>
+              <button
+                id="user-profile-block"
+                class="user-profile-block text-error"
+                phx-click="block_user"
+                data-confirm={
+                  gettext(
+                    "Block this user? You will stop following each other, and neither of you can reply to, like, boost, follow or message the other."
+                  )
+                }
+                aria-label={gettext("Block %{username}", username: @profile_user.username)}
+              >
+                <.icon name="hero-no-symbol" class="size-4" />
+                {gettext("Block")}
+              </button>
+            </li>
+            <li :if={@is_blocked}>
+              <button
+                id="user-profile-unblock"
+                class="user-profile-unblock"
+                phx-click="unblock_user"
+                aria-label={gettext("Unblock %{username}", username: @profile_user.username)}
+              >
+                <.icon name="hero-check-circle" class="size-4" />
+                {gettext("Unblock")}
               </button>
             </li>
           </ul>
