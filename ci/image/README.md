@@ -19,7 +19,7 @@ token. The image moves all of that to one reviewed, reproducible build.
 
 | Input | Source | Verification |
 |---|---|---|
-| Base OS | `debian:trixie-slim` | pinned by digest |
+| Base OS | `debian:trixie-slim` | pinned by digest; Dependabot proposes updates |
 | Build tools, Firefox ESR, OpenJDK 21, PostgreSQL client, libssl, ncurses | Debian apt | Debian's signed repositories |
 | Erlang/OTP | upstream source tarball, built in the image | SHA-256 |
 | Elixir | upstream precompiled release (`elixir-otp-28.zip`, BEAM bytecode) | SHA-256 |
@@ -58,6 +58,15 @@ The only actions used are GitHub's own, pinned to commit SHAs.
 4. Each job runs `verify-toolchain.sh` first, so a version bump in
    `.tool-versions` or `config/config.exs` fails fast until the image is
    rebuilt.
+
+## Running as root
+
+Jobs run as the image's root user, as GitHub recommends for container jobs.
+The runner mounts `HOME` (`/github/home`) owned by the runner's uid, and
+Firefox refuses to start as root in a home it does not own, so the browser
+test step sets `HOME=/root`. A non-root container user would add little
+isolation on GitHub-hosted runners: the job VM is ephemeral and the runner
+user already has passwordless `sudo` on it.
 
 ## Changing a version
 

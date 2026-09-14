@@ -68,6 +68,9 @@ workflow token, or push to the repository.
   workflow creates do not start CI by themselves, so the update arrives as an
   issue with a compare link, and CI runs on the merge.
 - The image is x86-64 only, like the runners.
+- Jobs run as root inside the container, as GitHub expects for container
+  jobs; the browser step sets `HOME=/root` because Firefox will not start as
+  root in the runner-owned `/github/home`.
 - Adding a third-party action, a `curl | sh`, or an unpinned download to a
   workflow undoes this; put new tools in the image instead.
 
