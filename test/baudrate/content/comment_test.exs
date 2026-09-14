@@ -301,4 +301,63 @@ defmodule Baudrate.Content.CommentTest do
       end
     end
   end
+
+  describe "paginate_comments_for_article/3 with deleted comments" do
+    setup do
+      user = create_user()
+      article = create_article(user, create_board())
+      %{user: user, article: article}
+    end
+
+    defp comment!(article, user, parent \\ nil) do
+      {:ok, c} =
+        Baudrate.Content.create_comment(%{
+          "body" => "c#{System.unique_integer([:positive])}",
+          "article_id" => article.id,
+          "user_id" => user.id,
+          "parent_id" => parent && parent.id
+        })
+
+      c
+    end
+
+    defp page_ids(article, viewer \\ nil) do
+      Baudrate.Content.paginate_comments_for_article(article, viewer).comments
+      |> Enum.map(&{&1.id, &1.deleted_at != nil})
+      |> Enum.sort()
+    end
+
+    test "a deleted comment without replies is left out", %{user: user, article: article} do
+      live = comment!(article, user)
+      gone = comment!(article, user)
+      {:ok, _} = Baudrate.Content.soft_delete_comment(gone)
+
+      assert page_ids(article) == [{live.id, false}]
+    end
+
+    test "deleted ancestors of a visible reply are kept as placeholders, at any depth",
+         %{user: user, article: article} do
+      root = comment!(article, user)
+      middle = comment!(article, user, root)
+      leaf = comment!(article, user, middle)
+      {:ok, _} = Baudrate.Content.soft_delete_comment(root)
+      {:ok, _} = Baudrate.Content.soft_delete_comment(middle)
+
+      assert page_ids(article) ==
+               Enum.sort([{root.id, true}, {middle.id, true}, {leaf.id, false}])
+    end
+
+    test "a deleted comment whose only reply is hidden from the viewer is left out",
+         %{user: user, article: article} do
+      viewer = create_user()
+      blocked = create_user()
+      root = comment!(article, user)
+      _reply = comment!(article, blocked, root)
+      {:ok, _} = Baudrate.Content.soft_delete_comment(root)
+      {:ok, _} = Baudrate.Auth.block_user(viewer, blocked)
+
+      assert page_ids(article, Repo.preload(viewer, :role)) == []
+      assert length(page_ids(article)) == 2
+    end
+  end
 end

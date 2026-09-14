@@ -418,6 +418,69 @@ defmodule BaudrateWeb.ArticleLiveTest do
       html = render(lv)
       refute html =~ "Comment to delete"
     end
+
+    test "an author can delete their own comment, but not someone else's",
+         %{conn: conn, user: user, article: article} do
+      other = setup_user("user")
+
+      {:ok, own} =
+        Content.create_comment(%{
+          "body" => "Mine",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      {:ok, theirs} =
+        Content.create_comment(%{
+          "body" => "Theirs",
+          "article_id" => article.id,
+          "user_id" => other.id
+        })
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      refute has_element?(lv, ~s|button[phx-click="delete_comment"][phx-value-id="#{theirs.id}"]|)
+
+      lv
+      |> element(~s|button[phx-click="delete_comment"][phx-value-id="#{own.id}"]|)
+      |> render_click()
+
+      refute has_element?(lv, "#comment-#{own.id}")
+
+      # The server refuses a forged event for someone else's comment.
+      render_hook(lv, "delete_comment", %{"id" => Integer.to_string(theirs.id)})
+      assert Repo.reload!(theirs).deleted_at == nil
+    end
+
+    test "replies to a deleted comment stay visible under a placeholder",
+         %{conn: conn, user: user, article: article} do
+      other = setup_user("user")
+
+      {:ok, parent} =
+        Content.create_comment(%{
+          "body" => "Secret parent",
+          "article_id" => article.id,
+          "user_id" => other.id
+        })
+
+      {:ok, reply} =
+        Content.create_comment(%{
+          "body" => "Surviving reply",
+          "article_id" => article.id,
+          "user_id" => user.id,
+          "parent_id" => parent.id
+        })
+
+      {:ok, _} = Content.soft_delete_comment(parent)
+
+      {:ok, lv, html} = live(conn, "/articles/#{article.slug}")
+
+      assert has_element?(lv, "#comment-deleted-#{parent.id}")
+      assert has_element?(lv, "#comment-replies-#{parent.id} #comment-#{reply.id}")
+      assert html =~ "Surviving reply"
+      refute html =~ "Secret parent"
+      refute has_element?(lv, ~s|button[phx-click="delete_comment"][phx-value-id="#{parent.id}"]|)
+    end
   end
 
   describe "reply_to and cancel_reply" do

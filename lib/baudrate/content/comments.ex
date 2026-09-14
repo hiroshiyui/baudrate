@@ -183,6 +183,11 @@ defmodule Baudrate.Content.Comments do
   all descendant replies for each page of roots via iterative widening (max 5
   levels, matching the thread depth limit).
 
+  A soft-deleted comment is included (with its `deleted_at` set) only when a
+  visible reply sits somewhere below it, so the page can render a placeholder
+  and keep that reply in its thread. Deleted comments with no visible replies
+  are left out.
+
   ## Options
 
     * `:page` — page number (default 1)
@@ -198,11 +203,13 @@ defmodule Baudrate.Content.Comments do
     offset = (page - 1) * per_page
 
     {blocked_uids, blocked_ap_ids} = Filters.hidden_filters(current_user)
+    placeholder_ids = deleted_ancestor_ids(article_id, blocked_uids, blocked_ap_ids)
 
     # Count root comments
     root_count_query =
       from(c in Comment,
-        where: c.article_id == ^article_id and is_nil(c.deleted_at) and is_nil(c.parent_id)
+        where: c.article_id == ^article_id and is_nil(c.parent_id),
+        where: is_nil(c.deleted_at) or c.id in ^placeholder_ids
       )
       |> exclude_remote_nonpublic()
       |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
@@ -212,7 +219,8 @@ defmodule Baudrate.Content.Comments do
     # Fetch a page of root comments
     root_query =
       from(c in Comment,
-        where: c.article_id == ^article_id and is_nil(c.deleted_at) and is_nil(c.parent_id),
+        where: c.article_id == ^article_id and is_nil(c.parent_id),
+        where: is_nil(c.deleted_at) or c.id in ^placeholder_ids,
         order_by: [asc: c.inserted_at, asc: c.id],
         offset: ^offset,
         limit: ^per_page,
@@ -224,7 +232,8 @@ defmodule Baudrate.Content.Comments do
     roots = Repo.all(root_query)
 
     # Iteratively fetch all descendants (max 5 levels)
-    descendants = fetch_descendants(article_id, roots, blocked_uids, blocked_ap_ids, 5)
+    descendants =
+      fetch_descendants(article_id, roots, {blocked_uids, blocked_ap_ids, placeholder_ids}, 5)
 
     total_pages = max(ceil(total_roots / per_page), 1)
 
@@ -237,17 +246,17 @@ defmodule Baudrate.Content.Comments do
     }
   end
 
-  defp fetch_descendants(_article_id, [], _blocked_uids, _blocked_ap_ids, _remaining), do: []
-  defp fetch_descendants(_article_id, _parents, _blocked_uids, _blocked_ap_ids, 0), do: []
+  defp fetch_descendants(_article_id, [], _filters, _remaining), do: []
+  defp fetch_descendants(_article_id, _parents, _filters, 0), do: []
 
-  defp fetch_descendants(article_id, parents, blocked_uids, blocked_ap_ids, remaining) do
+  defp fetch_descendants(article_id, parents, filters, remaining) do
+    {blocked_uids, blocked_ap_ids, placeholder_ids} = filters
     parent_ids = Enum.map(parents, & &1.id)
 
     child_query =
       from(c in Comment,
-        where:
-          c.article_id == ^article_id and is_nil(c.deleted_at) and
-            c.parent_id in ^parent_ids,
+        where: c.article_id == ^article_id and c.parent_id in ^parent_ids,
+        where: is_nil(c.deleted_at) or c.id in ^placeholder_ids,
         order_by: [asc: c.inserted_at, asc: c.id],
         preload: [:user, :remote_actor, :link_preview, :images]
       )
@@ -259,8 +268,56 @@ defmodule Baudrate.Content.Comments do
     if children == [] do
       []
     else
-      children ++
-        fetch_descendants(article_id, children, blocked_uids, blocked_ap_ids, remaining - 1)
+      children ++ fetch_descendants(article_id, children, filters, remaining - 1)
+    end
+  end
+
+  # Ids of soft-deleted comments that have a visible (not deleted, not hidden
+  # from this viewer) reply somewhere below them. Only ids and parent ids are
+  # loaded, so this stays cheap for long threads.
+  defp deleted_ancestor_ids(article_id, blocked_uids, blocked_ap_ids) do
+    deleted_parents =
+      from(c in Comment,
+        where: c.article_id == ^article_id and not is_nil(c.deleted_at),
+        select: {c.id, c.parent_id}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    if deleted_parents == %{} do
+      []
+    else
+      live_parents =
+        from(c in Comment,
+          where: c.article_id == ^article_id and is_nil(c.deleted_at),
+          select: {c.id, c.parent_id}
+        )
+        |> exclude_remote_nonpublic()
+        |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
+        |> Repo.all()
+
+      parents = Map.merge(deleted_parents, Map.new(live_parents))
+
+      live_parents
+      |> Enum.reduce(MapSet.new(), fn {_id, parent_id}, acc ->
+        collect_deleted_ancestors(parent_id, parents, deleted_parents, acc)
+      end)
+      |> MapSet.to_list()
+    end
+  end
+
+  defp collect_deleted_ancestors(nil, _parents, _deleted, acc), do: acc
+
+  defp collect_deleted_ancestors(id, parents, deleted, acc) do
+    cond do
+      MapSet.member?(acc, id) ->
+        acc
+
+      Map.has_key?(deleted, id) ->
+        collect_deleted_ancestors(Map.get(parents, id), parents, deleted, MapSet.put(acc, id))
+
+      true ->
+        collect_deleted_ancestors(Map.get(parents, id), parents, deleted, acc)
     end
   end
 

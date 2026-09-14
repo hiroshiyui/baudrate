@@ -824,7 +824,7 @@ defmodule BaudrateWeb.ArticleLive do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("Comment not found."))}
 
-      %{article_id: cid} when cid != article.id ->
+      %{article_id: cid, deleted_at: deleted_at} when cid != article.id or deleted_at != nil ->
         {:noreply, put_flash(socket, :error, gettext("Comment not found."))}
 
       comment ->

@@ -29,7 +29,15 @@ defmodule BaudrateWeb.CommentComponents do
   attr :uploaded_comment_images, :list, default: []
 
   def comment_node(assigns) do
-    assigns = assign(assigns, :children, Map.get(assigns.children_map, assigns.comment.id, []))
+    %{comment: comment, current_user: current_user} = assigns
+    own? = current_user != nil and comment.user_id == current_user.id
+
+    assigns =
+      assigns
+      |> assign(:children, Map.get(assigns.children_map, comment.id, []))
+      |> assign(:deleted?, comment.deleted_at != nil)
+      # `can_delete` is the moderation right; authors may delete their own.
+      |> assign(:can_delete_this, assigns.can_delete or own?)
 
     ~H"""
     <div
@@ -37,7 +45,16 @@ defmodule BaudrateWeb.CommentComponents do
       role="listitem"
       class={["comment-item comment border-l-2 border-base-300 pl-4", @depth > 0 && "ml-4"]}
     >
-      <div class="py-2">
+      <%!-- A deleted comment stays as a placeholder so its replies stay visible.
+           Nothing about it is shown: not the author, body, date or actions. --%>
+      <p
+        :if={@deleted?}
+        id={"comment-deleted-#{@comment.id}"}
+        class="comment-deleted py-2 text-sm italic text-base-content/60"
+      >
+        {gettext("This comment was deleted.")}
+      </p>
+      <div :if={!@deleted?} class="py-2">
         <div class="comment-meta flex flex-wrap items-center gap-2 text-sm text-base-content/70 mb-1">
           <.link
             :if={@comment.user}
@@ -80,7 +97,7 @@ defmodule BaudrateWeb.CommentComponents do
           </a>
 
           <button
-            :if={@can_delete}
+            :if={@can_delete_this}
             phx-click="delete_comment"
             phx-value-id={@comment.id}
             data-confirm={gettext("Are you sure you want to delete this comment?")}
@@ -380,9 +397,12 @@ defmodule BaudrateWeb.CommentComponents do
         class="comment-replies"
         role="list"
         aria-label={
-          gettext("Replies to %{author}",
-            author: display_name(@comment.user || @comment.remote_actor)
-          )
+          if @deleted?,
+            do: gettext("Replies to a deleted comment"),
+            else:
+              gettext("Replies to %{author}",
+                author: display_name(@comment.user || @comment.remote_actor)
+              )
         }
       >
         <%= for child <- @children do %>
