@@ -8,8 +8,8 @@ defmodule Mix.Tasks.Restore.Files do
 
     * `backup_file` — path to the `.tar.gz` archive
 
-  Extracts the archive into `priv/static/`, restoring the `uploads/` directory
-  structure (avatars and article images).
+  Extracts the archive into the parent of the real uploads directory (symlinks
+  resolved), restoring the `uploads/` tree. See `Baudrate.Backup.restore_files/1`.
 
   ## Examples
 
@@ -34,31 +34,12 @@ defmodule Mix.Tasks.Restore.Files do
         [] -> Mix.raise("Usage: mix restore.files <backup_file>")
       end
 
-    unless File.exists?(backup_file) do
-      Mix.raise("Backup file not found: #{backup_file}")
-    end
-
-    unless String.ends_with?(backup_file, ".tar.gz") do
-      Mix.raise("Expected a .tar.gz file, got: #{backup_file}")
-    end
-
-    # Extract to the parent of the uploads dir (priv/static/)
-    uploads_dir = Helper.uploads_dir()
-    extract_dir = Path.dirname(uploads_dir)
-
-    File.mkdir_p!(extract_dir)
-
+    Helper.load_config!()
     Mix.shell().info("Restoring uploaded files from #{backup_file}...")
     Mix.shell().info("WARNING: This will overwrite existing uploaded files.")
 
-    tar_args = ["-xzf", backup_file, "-C", extract_dir]
-
-    case System.cmd("tar", tar_args, stderr_to_stdout: true) do
-      {_output, 0} ->
-        Mix.shell().info("Files restored successfully to #{uploads_dir}")
-
-      {output, code} ->
-        Mix.raise("tar failed (exit code #{code}):\n#{output}")
-    end
+    backup_file
+    |> Baudrate.Backup.restore_files()
+    |> Helper.report!("Files restored to")
   end
 end

@@ -19,6 +19,9 @@ defmodule Baudrate.Release do
       # because no second VM boots:
       bin/baudrate rpc "Baudrate.Release.backfill_ap_ids(dry_run: true)"
 
+      # Backup and restore (Mix tasks are not in a release):
+      bin/baudrate eval 'Baudrate.Release.backup("/var/backups/baudrate")'
+
       # Audited SysOp data export (ADR 0023), after verifying identity out of band:
       bin/baudrate eval 'Baudrate.Release.export_user_data("alice", "/root/exports", reason: "ticket 42")'
   """
@@ -219,6 +222,51 @@ defmodule Baudrate.Release do
 
             acc
         end
+    end
+  end
+
+  @doc """
+  Backs up the database and the uploads directory into `output_dir`
+  (`Baudrate.Backup.backup/2`). Mix is not available in a release, so this is
+  how an Ansible install takes a backup:
+
+      bin/baudrate eval 'Baudrate.Release.backup("/var/backups/baudrate")'
+
+  Options: `:format` — `"custom"` (default) or `"sql"`. Prints the two file
+  paths; raises (a non-zero exit from `eval`) on failure, so cron notices.
+  `output_dir` should be owner-only and outside every web root: the dump holds
+  every account's data.
+  """
+  def backup(output_dir, opts \\ []) do
+    load_app()
+
+    case Baudrate.Backup.backup(output_dir, opts) do
+      {:ok, %{db: db, files: files}} ->
+        IO.puts("database: #{db}")
+        IO.puts("files: #{files}")
+        :ok
+
+      {:error, message} ->
+        raise "backup failed: #{message}"
+    end
+  end
+
+  @doc """
+  Restores a database dump and an uploads archive made by `backup/2`.
+  **Stop the service first**; this overwrites the database and uploaded files.
+
+      systemctl stop baudrate
+      bin/baudrate eval 'Baudrate.Release.restore("/var/backups/baudrate/baudrate_db_….dump", "/var/backups/baudrate/baudrate_files_….tar.gz")'
+  """
+  def restore(db_backup, files_backup) do
+    load_app()
+
+    with {:ok, _} <- Baudrate.Backup.restore_db(db_backup),
+         {:ok, uploads} <- Baudrate.Backup.restore_files(files_backup) do
+      IO.puts("restored database from #{db_backup} and files into #{uploads}")
+      :ok
+    else
+      {:error, message} -> raise "restore failed: #{message}"
     end
   end
 

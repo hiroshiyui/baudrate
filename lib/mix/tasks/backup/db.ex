@@ -33,36 +33,13 @@ defmodule Mix.Tasks.Backup.Db do
   def run(args) do
     {opts, _rest, _invalid} = OptionParser.parse(args, switches: @switches, aliases: @aliases)
 
-    format = opts[:format] || "custom"
-
-    unless format in ["custom", "sql"] do
-      Mix.raise("Invalid format: #{format}. Use \"custom\" or \"sql\".")
-    end
-
+    Helper.load_config!()
     dir = Helper.ensure_backup_dir!(opts[:output_dir])
-    config = Helper.repo_config()
-    {env, pg_args} = Helper.pg_env(config)
-
-    extension = if format == "custom", do: ".dump", else: ".sql"
-    filename = "baudrate_db_#{Helper.timestamp()}#{extension}"
-    output_path = Path.join(dir, filename)
-
-    dump_args =
-      if format == "custom" do
-        ["-Fc", "-f", output_path] ++ pg_args
-      else
-        ["-f", output_path] ++ pg_args
-      end
 
     Mix.shell().info("Backing up database...")
 
-    case System.cmd("pg_dump", dump_args, env: env, stderr_to_stdout: true) do
-      {_output, 0} ->
-        size = output_path |> File.stat!() |> Map.get(:size) |> Helper.format_size()
-        Mix.shell().info("Database backup created: #{output_path} (#{size})")
-
-      {output, code} ->
-        Mix.raise("pg_dump failed (exit code #{code}):\n#{output}")
-    end
+    dir
+    |> Baudrate.Backup.backup_db(opts[:format] || "custom")
+    |> Helper.report!("Database backup created")
   end
 end

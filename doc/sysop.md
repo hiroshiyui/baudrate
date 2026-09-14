@@ -938,32 +938,50 @@ the app icon, which scales to any resolution.
 
 ## Backup & Restore
 
-Baudrate provides mix tasks for backing up and restoring the database and
-uploaded files (avatars, article images). Backups are written to the `backups/`
-directory at the project root (git-ignored).
+A backup is two files: a PostgreSQL dump (`baudrate_db_YYYYMMDD_HHMMSS.dump`,
+or `.sql`) and an archive of the uploads directory
+(`baudrate_files_YYYYMMDD_HHMMSS.tar.gz`: avatars, article, comment and reply
+images, link preview images). The uploads directory is resolved through its
+symlinks, so an Ansible install archives the real `shared/uploads`.
+`media_cache/` is left out: it only holds re-encoded copies of remote images,
+which are fetched again on demand.
 
-### Backup
+The dump contains every account's data, including encrypted TOTP secrets and
+federation keys. Keep backups owner-only (`chmod 700`), outside every web root,
+and remember that restoring them also needs the same `SECRET_KEY_BASE`.
+
+> **Before v1.18.2** backups were only available as Mix tasks, which are not
+> part of a release, and on an Ansible install `mix backup` archived an almost
+> empty uploads directory without error. If you set up a backup cron job from
+> an earlier version of this guide, replace it with the release command below
+> and check the archive size.
+
+### Backup (release / Ansible install)
+
+Run as the service user, with the service environment loaded:
 
 ```bash
-# Full backup (database + files)
-mix backup
+sudo install -d -o baudrate -g baudrate -m 700 /var/backups/baudrate   # once
+cd /opt/baudrate/current
+sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; set +a;
+  ./bin/baudrate eval "Baudrate.Release.backup(\"/var/backups/baudrate\")"'
 
-# Database only (custom format, restorable with pg_restore)
-mix backup.db
-
-# Database only (plain SQL, restorable with psql)
-mix backup.db --format sql
-
-# Uploaded files only (tar.gz archive)
-mix backup.files
-
-# Custom output directory
-mix backup --output-dir /mnt/backups
+# Plain SQL instead of pg_restore's custom format:
+#   ./bin/baudrate eval "Baudrate.Release.backup(\"/var/backups/baudrate\", format: \"sql\")"
 ```
 
-**Naming convention:**
-- Database: `baudrate_db_YYYYMMDD_HHMMSS.dump` (custom) or `.sql` (plain)
-- Files: `baudrate_files_YYYYMMDD_HHMMSS.tar.gz`
+It prints both file paths and exits non-zero on failure. `pg_dump` and `tar`
+must be on the `PATH` (the PostgreSQL client matching the server version).
+
+### Backup (source checkout)
+
+```bash
+mix backup                              # database + files into backups/
+mix backup.db                           # custom format, for pg_restore
+mix backup.db --format sql              # plain SQL, for psql
+mix backup.files                        # uploads archive only
+mix backup --output-dir /mnt/backups
+```
 
 The `custom` format (default) is recommended — it is compressed and supports
 selective restore with `pg_restore`. The `sql` format is human-readable and
@@ -971,31 +989,39 @@ useful for inspecting or migrating data.
 
 ### Restore
 
+**Stop the service first**; a restore overwrites the database and uploaded
+files.
+
 ```bash
-# Full restore (database + files)
+systemctl stop baudrate
+cd /opt/baudrate/current
+sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; set +a;
+  ./bin/baudrate eval "Baudrate.Release.restore(\"/var/backups/baudrate/baudrate_db_20260228_120000.dump\", \"/var/backups/baudrate/baudrate_files_20260228_120000.tar.gz\")"'
+systemctl start baudrate
+```
+
+From a source checkout:
+
+```bash
 mix restore backups/baudrate_db_20260228_120000.dump backups/baudrate_files_20260228_120000.tar.gz
-
-# Database only
 mix restore.db backups/baudrate_db_20260228_120000.dump
-
-# Files only
 mix restore.files backups/baudrate_files_20260228_120000.tar.gz
 ```
 
-**Warning:** Restore operations overwrite existing data. Stop the application
-before restoring to avoid conflicts with active connections.
+Test a restore on a scratch host now and then; a backup you have never
+restored is a guess.
 
 ### Automated Backups
 
-Use cron for scheduled backups:
+Use cron (as root) for scheduled backups:
 
 ```bash
 # Daily backup at 3:00 AM
-0 3 * * * cd /path/to/baudrate && mix backup --output-dir /mnt/backups 2>&1 | logger -t baudrate-backup
+0 3 * * * cd /opt/baudrate/current && sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; set +a; ./bin/baudrate eval "Baudrate.Release.backup(\"/var/backups/baudrate\")"' 2>&1 | logger -t baudrate-backup
 ```
 
 Implement a retention policy to avoid filling disk — delete backups older than
-your desired retention period.
+your desired retention period — and copy backups off the host.
 
 ---
 

@@ -130,17 +130,6 @@ defmodule Mix.Tasks.Backup.HelperTest do
     end
   end
 
-  describe "repo_config/0" do
-    test "returns a keyword list" do
-      config = Helper.repo_config()
-      assert is_list(config)
-    end
-  end
-
-  describe "uploads_dir/0" do
-    test "returns a path ending in uploads" do
-      dir = Helper.uploads_dir()
-      assert String.ends_with?(dir, "uploads")
-    end
-  end
+  # Uploads directory resolution and archiving are tested in
+  # test/baudrate/backup_test.exs (`Baudrate.Backup`).
 end
