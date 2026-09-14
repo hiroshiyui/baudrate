@@ -147,7 +147,6 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
         "/profile/export",
         "/profile/move",
         "/profile/totp-reset",
-        "/profile/recovery-codes",
         "/invites",
         "/messages",
         "/messages/new",
