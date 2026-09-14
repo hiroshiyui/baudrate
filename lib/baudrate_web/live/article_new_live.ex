@@ -85,24 +85,6 @@ defmodule BaudrateWeb.ArticleNewLive do
   end
 
   @impl true
-  def handle_event("hashtag_suggest", %{"prefix" => prefix}, socket) do
-    tags = Content.search_tags(prefix, limit: 10)
-    {:noreply, push_event(socket, "hashtag_suggestions", %{tags: tags})}
-  end
-
-  @impl true
-  def handle_event("mention_suggest", %{"prefix" => prefix}, socket) do
-    users =
-      Baudrate.Auth.search_users(prefix,
-        limit: 10,
-        exclude_id: socket.assigns.current_user.id
-      )
-      |> Enum.map(&%{username: &1.username, type: "local"})
-
-    {:noreply, push_event(socket, "mention_suggestions", %{users: users})}
-  end
-
-  @impl true
   def handle_event("search_boards", %{"value" => query}, socket) do
     selected_ids = MapSet.new(socket.assigns.selected_boards, & &1.id)
 

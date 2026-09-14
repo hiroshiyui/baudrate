@@ -43,6 +43,7 @@ defmodule BaudrateWeb.AuthHooks do
   alias Baudrate.Auth
   alias Baudrate.Messaging
   alias Baudrate.Notification
+  alias BaudrateWeb.AutocompleteSuggestHook
   alias BaudrateWeb.MarkdownPreviewHook
   alias BaudrateWeb.UnreadDmCountHook
   alias BaudrateWeb.UnreadNotificationCountHook
@@ -80,6 +81,7 @@ defmodule BaudrateWeb.AuthHooks do
                 Baudrate.AccountMigration.active_move_summary(user.id)
               )
               |> MarkdownPreviewHook.attach()
+              |> AutocompleteSuggestHook.attach()
               |> UnreadDmCountHook.attach(user)
               |> UnreadNotificationCountHook.attach(user)
               |> attach_current_path_hook()
@@ -124,6 +126,7 @@ defmodule BaudrateWeb.AuthHooks do
                 Baudrate.AccountMigration.active_move_summary(user.id)
               )
               |> MarkdownPreviewHook.attach()
+              |> AutocompleteSuggestHook.attach()
               |> UnreadDmCountHook.attach(user)
               |> UnreadNotificationCountHook.attach(user)
               |> attach_current_path_hook()
