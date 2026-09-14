@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.14.2] — 2026-09-14
+
+A maintenance release. It updates the runtime and vendored front-end
+dependencies flagged by the weekly dependency drift report.
+
+**Upgrading:**
+
+- **Erlang/OTP 28.5.0.6 is now the pinned runtime.** Install it (e.g.
+  `asdf install` from `.tool-versions`) and rebuild from a clean `_build`,
+  because compiled BEAM files and Rust NIFs are tied to the OTP build. The
+  Ansible `erlang_version` has been bumped to match, so re-run the `elixir`
+  role on deployment hosts.
+- No migrations, no configuration changes.
+
+### Changed
+
+- **Erlang/OTP 28.3.1 → 28.5.0.6.** Same-major maintenance and security
+  patches. OTP 29 and Elixir 1.20 are deliberately held for a separate review.
+- **topbar 3.0.0 → 3.0.1.** The page-loading bar hides with the `hidden`
+  attribute and is marked `role="presentation"`, so assistive technology
+  ignores it.
+- **Cropper.js 1.6.2 → 1.6.3** (avatar cropping). Fixes unanchored
+  action/tag-name regexes, guards event listener helpers against invalid
+  targets, and prevents `NaN` in zoom-ratio calculations. Cropper.js 2.x is a
+  rewrite and is held.
+- **Development workflow.** All development now happens on the `current`
+  branch. `main` only advances by fast-forward when a release is cut. CI now
+  runs on `current` as well as `main`, and Dependabot version-update PRs target
+  `current`.
+
 ## [1.14.1] — 2026-09-13
 
 An accessibility release: a project-wide WCAG 2.2 AA / WAI-ARIA sweep of the
