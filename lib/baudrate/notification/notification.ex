@@ -33,6 +33,10 @@ defmodule Baudrate.Notification.Notification do
     * `totp_disabled` — TOTP two-factor authentication was turned off
     * `password_changed` — the account password was changed while signed in
     * `signed_out_everywhere` — all other sessions were signed out (`data.count`)
+    * `data_export_requested` — a data export was requested (`data.ready_at`, `data.browser`)
+    * `data_export_ready` — the export can be downloaded (`data.expires_at`)
+    * `data_export_downloaded` — the export was downloaded (`data.count`, `data.remaining`)
+    * `data_export_cancelled` — an export request was cancelled (`data.reason`)
 
   ## Deduplication
 
@@ -66,6 +70,10 @@ defmodule Baudrate.Notification.Notification do
     totp_disabled
     password_changed
     signed_out_everywhere
+    data_export_requested
+    data_export_ready
+    data_export_downloaded
+    data_export_cancelled
   )
 
   @security_types ~w(
@@ -75,6 +83,10 @@ defmodule Baudrate.Notification.Notification do
     totp_disabled
     password_changed
     signed_out_everywhere
+    data_export_requested
+    data_export_ready
+    data_export_downloaded
+    data_export_cancelled
   )
 
   @doc "Returns the list of valid notification type strings."

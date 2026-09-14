@@ -115,6 +115,7 @@ defmodule BaudrateWeb.NotificationsLive do
   defp actor_link(_), do: nil
 
   defp target_link(%{article: %{slug: slug}}) when not is_nil(slug), do: ~p"/articles/#{slug}"
+  defp target_link(%{type: "data_export_" <> _}), do: "/profile/export"
   defp target_link(%{type: type}) when type in @security_types, do: ~p"/profile"
   defp target_link(_), do: nil
 
@@ -124,6 +125,8 @@ defmodule BaudrateWeb.NotificationsLive do
   defp target_title(%{type: type, data: %{"label" => label}})
        when type in ["security_key_added", "security_key_removed"] and label != "",
        do: gettext("Security key: %{label}", label: label)
+
+  defp target_title(%{type: "data_export_" <> _}), do: gettext("Review your data exports")
 
   defp target_title(%{type: type}) when type in @security_types,
     do: gettext("Review your security settings")

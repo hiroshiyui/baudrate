@@ -166,6 +166,8 @@ defmodule Baudrate.Auth.SecondFactor do
     |> Repo.update()
     |> tap(fn
       {:ok, updated} when was_enabled == true ->
+        # Self-service export requires TOTP (ADR 0023); losing it cancels any request.
+        Baudrate.DataPortability.cancel_active_exports(updated.id, "totp_changed")
         Hooks.notify_account_security(updated.id, "totp_disabled")
 
       _ ->

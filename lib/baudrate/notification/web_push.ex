@@ -253,6 +253,10 @@ defmodule Baudrate.Notification.WebPush do
     end
   end
 
+  defp notification_url(%{type: "data_export_" <> _}) do
+    BaudrateWeb.Endpoint.url() <> "/profile/export"
+  end
+
   defp notification_url(%{type: type}) when type in @security_types do
     BaudrateWeb.Endpoint.url() <> "/profile"
   end

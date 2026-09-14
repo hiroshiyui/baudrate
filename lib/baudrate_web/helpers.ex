@@ -353,6 +353,19 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("signed_out_everywhere"),
     do: gettext("All other sessions on your account were signed out.")
 
+  def notification_text("data_export_requested"),
+    do:
+      gettext("A data export of your account was requested. It can be downloaded after 24 hours.")
+
+  def notification_text("data_export_ready"),
+    do: gettext("Your data export is ready and can be downloaded for 48 hours.")
+
+  def notification_text("data_export_downloaded"),
+    do: gettext("Your data export was downloaded.")
+
+  def notification_text("data_export_cancelled"),
+    do: gettext("A data export request on your account was cancelled.")
+
   def notification_text(_), do: gettext("sent you a notification")
 
   @doc """
@@ -375,6 +388,10 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("totp_disabled"), do: "hero-shield-exclamation"
   def notification_icon("password_changed"), do: "hero-lock-closed"
   def notification_icon("signed_out_everywhere"), do: "hero-arrow-right-start-on-rectangle"
+  def notification_icon("data_export_requested"), do: "hero-archive-box"
+  def notification_icon("data_export_ready"), do: "hero-archive-box-arrow-down"
+  def notification_icon("data_export_downloaded"), do: "hero-arrow-down-tray"
+  def notification_icon("data_export_cancelled"), do: "hero-archive-box-x-mark"
   def notification_icon(_), do: "hero-bell"
 
   @doc """

@@ -246,8 +246,9 @@ defmodule Baudrate.Auth.Sessions do
 
   @doc """
   "Sign out everywhere": revokes every other session of `user` (closing their
-  LiveView sockets), keeps the session row `keep_session_id`, and sends the
-  always-delivered `signed_out_everywhere` security notice.
+  LiveView sockets), keeps the session row `keep_session_id`, cancels any
+  active data export request, and sends the always-delivered
+  `signed_out_everywhere` security notice.
 
   **The caller must already have verified step-up re-authentication**, so a
   cookie-only attacker cannot use this to sign the real user out while keeping
@@ -256,6 +257,7 @@ defmodule Baudrate.Auth.Sessions do
   @spec sign_out_other_sessions(User.t(), integer()) :: {:ok, non_neg_integer()}
   def sign_out_other_sessions(%User{} = user, keep_session_id) when is_integer(keep_session_id) do
     revoked = delete_other_sessions_for_user(user.id, keep_session_id)
+    Baudrate.DataPortability.cancel_active_exports(user.id, "signed_out_everywhere")
 
     Baudrate.Notification.Hooks.notify_account_security(user.id, "signed_out_everywhere", %{
       "count" => revoked
