@@ -142,6 +142,30 @@ defmodule BaudrateWeb.ProfileLiveTest do
       assert updated.notification_preferences["mention"]["in_app"] == false
     end
 
+    test "every rendered toggle can actually be switched off", %{conn: conn, user: user} do
+      {:ok, lv, _html} = live(conn, "/profile")
+
+      for type <- Baudrate.Notification.Notification.configurable_types() do
+        assert has_element?(lv, "#profile-notification-in-app-#{type}")
+        html = render_click(lv, "toggle_notification_pref", %{"type" => type})
+        refute html =~ "Failed to update notification preferences."
+      end
+
+      updated = Repo.get!(Baudrate.Setup.User, user.id)
+
+      for type <- ~w(comment_liked article_boosted comment_boosted) do
+        assert updated.notification_preferences[type]["in_app"] == false
+      end
+    end
+
+    test "account security notices are not offered as toggles", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/profile")
+
+      for type <- Baudrate.Notification.Notification.security_types() do
+        refute has_element?(lv, "#profile-notification-in-app-#{type}")
+      end
+    end
+
     test "toggles notification preference back on", %{conn: conn, user: user} do
       {:ok, _} =
         Auth.update_notification_preferences(user, %{"mention" => %{"in_app" => false}})

@@ -24,6 +24,8 @@ defmodule Baudrate.Notification.Hooks do
     * `notify_remote_follow/2` — new_follower (remote actor)
     * `notify_remote_comment_created/3` — reply_to_article, reply_to_comment
     * `notify_report_created/1` — moderation_report (all admins)
+    * `notify_account_security/3` — security_key_added, security_key_removed,
+      totp_enabled, totp_disabled
   """
 
   alias Baudrate.{Auth, Notification, Repo, Setup}
@@ -133,6 +135,23 @@ defmodule Baudrate.Notification.Hooks do
         actor_user_id: forwarder_user_id,
         article_id: article.id
       })
+    end
+  end
+
+  @doc """
+  Notifies a user that one of their second factors changed.
+
+  `type` must be one of `Notification.Notification.security_types/0`. These
+  notices have no actor and are delivered regardless of notification
+  preferences, so that a user notices a change they did not make (ADR 0022).
+  `data` carries display-only context such as a security key's `"label"`.
+  """
+  def notify_account_security(user_id, type, data \\ %{})
+      when is_integer(user_id) and is_binary(type) and is_map(data) do
+    if type in Baudrate.Notification.Notification.security_types() do
+      Notification.create_notification(%{type: type, user_id: user_id, data: data})
+    else
+      {:error, :not_a_security_type}
     end
   end
 

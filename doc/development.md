@@ -1152,12 +1152,28 @@ In-app notification system with real-time delivery via PubSub.
 - `article_forwarded` — your article was forwarded to another board
 - `moderation_report` — a new moderation report (admins only)
 - `admin_announcement` — announcement from an admin
+- `security_key_added` / `security_key_removed` — a WebAuthn key was registered or removed (`data.label`)
+- `totp_enabled` / `totp_disabled` — TOTP was set up or turned off
+
+**Account security notices** (the last four types, `Notification.Notification.security_types/0`)
+are emitted by the Auth context itself: `WebAuthn.create_webauthn_credential/2`,
+`WebAuthn.delete_webauthn_credential/2`, `SecondFactor.enable_totp/2` and
+`SecondFactor.disable_totp/1` (the latter only when TOTP was on) call
+`Hooks.notify_account_security/3`, so every path that changes a factor
+produces one. They have no actor, so they are never deduplicated. They are
+**always delivered**: `create_notification/1` and push delivery ignore
+notification preferences for these types, and
+`User.notification_preferences_changeset/2` does not accept them. The web push
+payload is rendered in the recipient's preferred locale and links to
+`/profile`. They let a user notice a factor change they did not make
+([ADR 0022](adr/0022-step-up-reauthentication-for-second-factor-changes.md)).
 
 **Key design decisions:**
 - Self-notification suppression — users never receive notifications for their own actions
 - Blocked/muted suppression — notifications from blocked or muted users are silently dropped
 - Deduplication via COALESCE-based unique indexes on `(user_id, type, actor_*, article_id, comment_id)` — on conflict returns `{:ok, :duplicate}`
-- Per-notification-type preferences — users can opt out of specific types via `notification_preferences` (JSON column)
+- Per-notification-type preferences — users can opt out of specific types via `notification_preferences` (JSON column); account security notices cannot be turned off. `Notification.Notification.configurable_types/0` is the single list behind both the preferences changeset and the `/profile` toggles (they used to drift apart)
+- Web push titles are built from the same translated `Helpers.notification_text/1` fragment as the in-app list (actor name + text), in the recipient's preferred locale; the icon is the actor's 120 px avatar rendition
 - Real-time via PubSub events: `:notification_created`, `:notification_read`, `:notifications_all_read`
 - `UnreadNotificationCountHook` on_mount hook maintains `@unread_notification_count` for the nav badge
 - Notification hooks in `Notification.Hooks` are called fire-and-forget from context functions
@@ -1165,7 +1181,7 @@ In-app notification system with real-time delivery via PubSub.
 **Files:**
 - `lib/baudrate/notification.ex` — context (create, list, mark read, unread count, preferences)
 - `lib/baudrate/notification/notification.ex` — schema with type validation
-- `lib/baudrate/notification/hooks.ex` — hook functions called from Content/Federation contexts
+- `lib/baudrate/notification/hooks.ex` — hook functions called from Content/Federation/Auth contexts
 - `lib/baudrate/notification/pubsub.ex` — PubSub broadcast helpers
 - `lib/baudrate_web/live/notifications_live.ex` — paginated notification center with mark-read
 

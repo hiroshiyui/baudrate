@@ -50,17 +50,25 @@ defmodule Baudrate.Auth.WebAuthn do
     Repo.exists?(from c in WebAuthnCredential, where: c.user_id == ^user.id)
   end
 
-  @doc "Persists a new WebAuthn credential for a user."
+  @doc """
+  Persists a new WebAuthn credential for a user and sends the user a
+  `security_key_added` notice.
+  """
   @spec create_webauthn_credential(User.t(), map()) ::
           {:ok, WebAuthnCredential.t()} | {:error, Ecto.Changeset.t()}
   def create_webauthn_credential(%User{} = user, attrs) do
     %WebAuthnCredential{user_id: user.id}
     |> WebAuthnCredential.changeset(attrs)
     |> Repo.insert()
+    |> tap(fn
+      {:ok, credential} -> notify(user, "security_key_added", credential)
+      _ -> :ok
+    end)
   end
 
   @doc """
-  Deletes a WebAuthn credential by ID, scoped to the owning user.
+  Deletes a WebAuthn credential by ID, scoped to the owning user, and sends the
+  user a `security_key_removed` notice.
 
   Returns `{:ok, credential}` on success or `{:error, :not_found}` if the
   credential does not exist or does not belong to the user.
@@ -69,9 +77,24 @@ defmodule Baudrate.Auth.WebAuthn do
           {:ok, WebAuthnCredential.t()} | {:error, :not_found | Ecto.Changeset.t()}
   def delete_webauthn_credential(%User{} = user, id) do
     case Repo.get_by(WebAuthnCredential, id: id, user_id: user.id) do
-      nil -> {:error, :not_found}
-      credential -> Repo.delete(credential)
+      nil ->
+        {:error, :not_found}
+
+      credential ->
+        credential
+        |> Repo.delete()
+        |> tap(fn
+          {:ok, deleted} -> notify(user, "security_key_removed", deleted)
+          _ -> :ok
+        end)
     end
+  end
+
+  # Account security notice (ADR 0022). The label is display-only context.
+  defp notify(%User{id: user_id}, type, %WebAuthnCredential{label: label}) do
+    Baudrate.Notification.Hooks.notify_account_security(user_id, type, %{
+      "label" => label || ""
+    })
   end
 
   # ---------------------------------------------------------------------------

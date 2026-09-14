@@ -6,6 +6,7 @@ defmodule Baudrate.Auth.SecondFactor do
   import Ecto.Query
   alias Baudrate.Repo
   alias Baudrate.Auth.{RecoveryCode, TotpVault}
+  alias Baudrate.Notification.Hooks
   alias Baudrate.Setup.User
 
   @recovery_code_count 10
@@ -93,6 +94,8 @@ defmodule Baudrate.Auth.SecondFactor do
 
   The raw secret never touches the database — only the AES-256-GCM ciphertext
   is stored in `users.totp_secret`.
+
+  Sends the user a `totp_enabled` account security notice (ADR 0022).
   """
   @spec enable_totp(User.t(), binary()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def enable_totp(user, secret) do
@@ -101,6 +104,10 @@ defmodule Baudrate.Auth.SecondFactor do
     user
     |> User.totp_changeset(%{totp_secret: encrypted, totp_enabled: true})
     |> Repo.update()
+    |> tap(fn
+      {:ok, updated} -> Hooks.notify_account_security(updated.id, "totp_enabled")
+      _ -> :ok
+    end)
   end
 
   @doc """
@@ -120,11 +127,25 @@ defmodule Baudrate.Auth.SecondFactor do
   @doc """
   Disables TOTP for a user by clearing the encrypted secret and setting
   `totp_enabled` to `false`.
+
+  Sends a `totp_disabled` account security notice when TOTP was actually on.
+  The TOTP reset flow disables and then re-enables, so it produces a
+  `totp_disabled` and a `totp_enabled` notice. If the user abandons setup
+  midway, the account is left without TOTP, and the first notice records that.
   """
   def disable_totp(user) do
+    was_enabled = user.totp_enabled
+
     user
     |> User.totp_changeset(%{totp_secret: nil, totp_enabled: false})
     |> Repo.update()
+    |> tap(fn
+      {:ok, updated} when was_enabled == true ->
+        Hooks.notify_account_security(updated.id, "totp_disabled")
+
+      _ ->
+        :ok
+    end)
   end
 
   @doc """

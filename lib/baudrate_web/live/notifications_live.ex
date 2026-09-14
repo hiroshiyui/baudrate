@@ -20,6 +20,8 @@ defmodule BaudrateWeb.NotificationsLive do
       format_relative_time: 1
     ]
 
+  @security_types Baudrate.Notification.Notification.security_types()
+
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
@@ -113,9 +115,20 @@ defmodule BaudrateWeb.NotificationsLive do
   defp actor_link(_), do: nil
 
   defp target_link(%{article: %{slug: slug}}) when not is_nil(slug), do: ~p"/articles/#{slug}"
+  defp target_link(%{type: type}) when type in @security_types, do: ~p"/profile"
   defp target_link(_), do: nil
 
   defp target_title(%{article: %{title: title}}) when not is_nil(title), do: title
   defp target_title(%{type: "admin_announcement", data: %{"message" => msg}}), do: msg
+
+  defp target_title(%{type: type, data: %{"label" => label}})
+       when type in ["security_key_added", "security_key_removed"] and label != "",
+       do: gettext("Security key: %{label}", label: label)
+
+  defp target_title(%{type: type}) when type in @security_types,
+    do: gettext("Review your security settings")
+
   defp target_title(_), do: nil
+
+  defp security_notice?(%{type: type}), do: type in @security_types
 end

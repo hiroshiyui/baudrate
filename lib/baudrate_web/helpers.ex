@@ -333,6 +333,20 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("article_forwarded"), do: gettext("forwarded your article")
   def notification_text("moderation_report"), do: gettext("submitted a moderation report")
   def notification_text("admin_announcement"), do: gettext("posted an announcement")
+
+  # Account security notices have no actor, so these are full sentences.
+  def notification_text("security_key_added"),
+    do: gettext("A security key was added to your account.")
+
+  def notification_text("security_key_removed"),
+    do: gettext("A security key was removed from your account.")
+
+  def notification_text("totp_enabled"),
+    do: gettext("Two-factor authentication (TOTP) was set up on your account.")
+
+  def notification_text("totp_disabled"),
+    do: gettext("Two-factor authentication (TOTP) was turned off on your account.")
+
   def notification_text(_), do: gettext("sent you a notification")
 
   @doc """
@@ -349,6 +363,10 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("article_forwarded"), do: "hero-arrow-uturn-right"
   def notification_icon("moderation_report"), do: "hero-flag"
   def notification_icon("admin_announcement"), do: "hero-megaphone"
+  def notification_icon("security_key_added"), do: "hero-key"
+  def notification_icon("security_key_removed"), do: "hero-key"
+  def notification_icon("totp_enabled"), do: "hero-shield-check"
+  def notification_icon("totp_disabled"), do: "hero-shield-exclamation"
   def notification_icon(_), do: "hero-bell"
 
   @doc """

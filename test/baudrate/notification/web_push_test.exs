@@ -170,6 +170,66 @@ defmodule Baudrate.Notification.WebPushTest do
     end
   end
 
+  describe "build_payload/1" do
+    defp payload_for(user, actor, type) do
+      {:ok, notification} =
+        %Baudrate.Notification.Notification{}
+        |> Baudrate.Notification.Notification.changeset(%{
+          type: type,
+          user_id: user.id,
+          actor_user_id: actor.id
+        })
+        |> Repo.insert()
+
+      notification
+      |> Repo.preload([:user, :actor_user, :actor_remote_actor, :article], force: true)
+      |> WebPush.build_payload()
+    end
+
+    test "titles every type from the shared text, including likes and boosts of comments",
+         %{user: user, actor: actor} do
+      for type <- Baudrate.Notification.Notification.configurable_types() do
+        payload = payload_for(user, actor, type)
+
+        assert payload.title ==
+                 "#{actor.username} #{BaudrateWeb.Helpers.notification_text(type)}",
+               "unexpected push title for #{type}: #{payload.title}"
+
+        refute payload.title =~ "New notification"
+      end
+    end
+
+    test "renders the title in the recipient's preferred locale", %{user: user, actor: actor} do
+      {:ok, user} = Baudrate.Auth.update_preferred_locales(user, ["ja_JP"])
+
+      payload = payload_for(user, actor, "comment_boosted")
+
+      expected =
+        Gettext.with_locale(BaudrateWeb.Gettext, "ja_JP", fn ->
+          BaudrateWeb.Helpers.notification_text("comment_boosted")
+        end)
+
+      assert payload.title == "#{actor.username} #{expected}"
+      refute expected == "boosted your comment"
+    end
+
+    # Regression: the icon pointed at avatars/<id>.webp, but avatars are only
+    # stored per size (avatars/<id>/<size>.webp), so it never loaded.
+    test "uses a sized avatar path for the actor icon", %{user: user, actor: actor} do
+      avatar_id = Baudrate.Avatar.generate_avatar_id()
+
+      Repo.update_all(
+        from(u in Baudrate.Setup.User, where: u.id == ^actor.id),
+        set: [avatar_id: avatar_id]
+      )
+
+      payload = payload_for(user, Repo.reload!(actor), "mention")
+
+      assert payload.icon ==
+               BaudrateWeb.Endpoint.url() <> "/uploads/avatars/#{avatar_id}/120.webp"
+    end
+  end
+
   describe "deliver_notification/1 with soft-deleted article" do
     test "succeeds when article is soft-deleted", %{user: user, actor: actor} do
       _sub = create_subscription(user)

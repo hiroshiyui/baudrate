@@ -42,6 +42,35 @@ defmodule Baudrate.NotificationPreferencesTest do
       assert changeset.valid?
     end
 
+    # Regression: the changeset kept its own list, which lacked comment_liked,
+    # article_boosted and comment_boosted, although /profile offered toggles
+    # for them, so switching those off always failed.
+    test "accepts every configurable type offered on the profile page", %{user: user} do
+      types = Baudrate.Notification.Notification.configurable_types()
+      assert "comment_liked" in types
+      assert "article_boosted" in types
+      assert "comment_boosted" in types
+
+      prefs = Map.new(types, &{&1, %{"in_app" => false}})
+
+      changeset =
+        Baudrate.Setup.User.notification_preferences_changeset(user, %{
+          notification_preferences: prefs
+        })
+
+      assert changeset.valid?
+    end
+
+    test "configurable types are every valid type except account security notices" do
+      alias Baudrate.Notification.Notification, as: Schema
+
+      assert Enum.sort(Schema.configurable_types() ++ Schema.security_types()) ==
+               Enum.sort(Schema.valid_types())
+
+      assert Schema.configurable_types() -- Schema.security_types() ==
+               Schema.configurable_types()
+    end
+
     test "rejects unknown notification types", %{user: user} do
       prefs = %{"invalid_type" => %{"in_app" => false}}
 

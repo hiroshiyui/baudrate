@@ -54,6 +54,28 @@ defmodule BaudrateWeb.NotificationsLiveTest do
       assert html =~ "replied to your article"
     end
 
+    test "renders an account security notice with a link to the profile and a warning",
+         %{conn: conn, user: user} do
+      {:ok, _cred} =
+        Baudrate.Auth.create_webauthn_credential(user, %{
+          credential_id: :crypto.strong_rand_bytes(32),
+          public_key_cbor: CBOR.encode(%{1 => 2, -2 => :crypto.strong_rand_bytes(32)}),
+          sign_count: 0,
+          label: "Office Key"
+        })
+
+      [notice] =
+        Repo.all(from(n in Baudrate.Notification.Notification, where: n.user_id == ^user.id))
+
+      {:ok, lv, _html} = live(conn, "/notifications")
+
+      assert has_element?(lv, "#notification-#{notice.id}", "A security key was added")
+      assert has_element?(lv, "#notification-target-#{notice.id}[href='/profile']", "Office Key")
+      assert has_element?(lv, "#notification-security-hint-#{notice.id}")
+      # No actor is rendered for a security notice.
+      refute has_element?(lv, "#notification-actor-#{notice.id}")
+    end
+
     test "unread notifications carry a visible Unread label", %{conn: conn, user: user} do
       other = setup_user("user")
 

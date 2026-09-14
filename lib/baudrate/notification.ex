@@ -22,6 +22,9 @@ defmodule Baudrate.Notification do
   @per_page 20
   @max_per_page 100
 
+  # Account security notices bypass notification preferences.
+  @security_types Notification.security_types()
+
   @doc """
   Creates a notification for a user.
 
@@ -29,7 +32,8 @@ defmodule Baudrate.Notification do
 
     * The recipient is the actor (self-notification)
     * The recipient has blocked or muted the actor
-    * The recipient has disabled in-app notifications for this type
+    * The recipient has disabled in-app notifications for this type (never
+      for account security notices, see `Notification.security_types/0`)
 
   Returns `{:ok, :duplicate}` on unique constraint violation (dedup).
 
@@ -283,6 +287,13 @@ defmodule Baudrate.Notification do
 
   defp fetch_recipient(_attrs), do: {:ok, nil}
 
+  # Account security notices are always delivered. `User.notification_preferences_changeset/2`
+  # already rejects these keys, but a stored preference must not be able to
+  # silence a warning about a second-factor change either.
+  defp check_in_app_preference(%{type: type}, _user)
+       when type in @security_types,
+       do: :ok
+
   defp check_in_app_preference(%{type: type}, %User{notification_preferences: prefs})
        when is_binary(type) and is_map(prefs) do
     case get_in(prefs, [type, "in_app"]) do
@@ -305,6 +316,9 @@ defmodule Baudrate.Notification do
       schedule_push_delivery(notification)
     end
   end
+
+  defp web_push_enabled_for?(_user, type) when type in @security_types,
+    do: true
 
   defp web_push_enabled_for?(%User{notification_preferences: prefs}, type)
        when is_map(prefs) and is_binary(type) do

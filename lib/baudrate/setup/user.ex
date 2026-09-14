@@ -320,28 +320,18 @@ defmodule Baudrate.Setup.User do
     |> validate_inclusion(:dm_access, ["anyone", "followers", "nobody"])
   end
 
-  @valid_notification_types ~w(
-    reply_to_article
-    reply_to_comment
-    mention
-    new_follower
-    article_liked
-    article_forwarded
-    moderation_report
-    admin_announcement
-  )
-
   @doc """
   Changeset for updating notification preferences.
 
-  Accepts a map of `%{"type" => %{"in_app" => boolean}}`. Only known
-  notification types are allowed; unknown keys are rejected.
+  Accepts a map of `%{"type" => %{"in_app" => boolean}}`. Only types from
+  `Baudrate.Notification.Notification.configurable_types/0` are allowed;
+  unknown keys and account security notice types are rejected.
   """
   def notification_preferences_changeset(user, attrs) do
     user
     |> cast(attrs, [:notification_preferences])
     |> validate_change(:notification_preferences, fn :notification_preferences, prefs ->
-      invalid_types = Map.keys(prefs) -- @valid_notification_types
+      invalid_types = Map.keys(prefs) -- Baudrate.Notification.Notification.configurable_types()
 
       if invalid_types == [] do
         []

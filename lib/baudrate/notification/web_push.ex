@@ -26,8 +26,12 @@ defmodule Baudrate.Notification.WebPush do
 
   import Ecto.Query
 
+  use Gettext, backend: BaudrateWeb.Gettext
+
   alias Baudrate.Notification.PushSubscription
   alias Baudrate.Notification.VAPID
+
+  @security_types Baudrate.Notification.Notification.security_types()
   alias Baudrate.Notification.VapidVault
   alias Baudrate.Repo
   alias Baudrate.Setup
@@ -144,7 +148,8 @@ defmodule Baudrate.Notification.WebPush do
   push subscription.
   """
   def deliver_notification(%Baudrate.Notification.Notification{} = notification) do
-    notification = Repo.preload(notification, [:actor_user, :actor_remote_actor, :article])
+    notification =
+      Repo.preload(notification, [:user, :actor_user, :actor_remote_actor, :article])
 
     subscriptions =
       from(s in PushSubscription, where: s.user_id == ^notification.user_id)
@@ -189,7 +194,16 @@ defmodule Baudrate.Notification.WebPush do
     end
   end
 
-  defp build_payload(notification) do
+  @doc """
+  Builds the push payload map (`title`, `body`, `url`, `type`, `icon`) for a
+  notification whose `:user`, `:actor_user`, `:actor_remote_actor` and
+  `:article` associations are preloaded.
+
+  Account security notices (`Notification.security_types/0`) are rendered in
+  the recipient's preferred locale and link to `/profile`, where the security
+  keys and TOTP settings live.
+  """
+  def build_payload(notification) do
     title = notification_title(notification)
     body = notification_body(notification)
     url = notification_url(notification)
@@ -204,20 +218,25 @@ defmodule Baudrate.Notification.WebPush do
     }
   end
 
-  defp notification_title(notification) do
-    actor_name = actor_display_name(notification)
+  # Titles mirror the in-app notification list: the actor's name followed by
+  # the same translated `Helpers.notification_text/1` fragment, rendered in the
+  # recipient's preferred locale. Account security notices have no actor and
+  # their text is already a full sentence. Deriving titles from the shared
+  # text keeps every notification type covered; a separate hard-coded list
+  # here drifted (comment likes and boosts fell through to a generic title)
+  # and was English-only.
+  defp notification_title(%{type: type} = notification) when type in @security_types do
+    with_recipient_locale(notification, fn -> BaudrateWeb.Helpers.notification_text(type) end)
+  end
 
-    case notification.type do
-      "reply_to_article" -> "#{actor_name} replied to your article"
-      "reply_to_comment" -> "#{actor_name} replied to your comment"
-      "mention" -> "#{actor_name} mentioned you"
-      "new_follower" -> "#{actor_name} followed you"
-      "article_liked" -> "#{actor_name} liked your article"
-      "article_forwarded" -> "#{actor_name} shared your article"
-      "moderation_report" -> "New moderation report"
-      "admin_announcement" -> "Admin announcement"
-      _ -> "New notification"
-    end
+  defp notification_title(%{type: type} = notification) do
+    with_recipient_locale(notification, fn ->
+      "#{actor_display_name(notification)} #{BaudrateWeb.Helpers.notification_text(type)}"
+    end)
+  end
+
+  defp notification_body(%{type: type} = notification) when type in @security_types do
+    get_in(notification.data || %{}, ["label"]) || ""
   end
 
   defp notification_body(notification) do
@@ -232,6 +251,10 @@ defmodule Baudrate.Notification.WebPush do
           ""
         end
     end
+  end
+
+  defp notification_url(%{type: type}) when type in @security_types do
+    BaudrateWeb.Endpoint.url() <> "/profile"
   end
 
   defp notification_url(notification) do
@@ -249,30 +272,36 @@ defmodule Baudrate.Notification.WebPush do
     end
   end
 
+  defp with_recipient_locale(%{user: %Baudrate.Setup.User{preferred_locales: locales}}, fun) do
+    case BaudrateWeb.Locale.resolve_from_preferences(locales) do
+      nil -> fun.()
+      locale -> Gettext.with_locale(BaudrateWeb.Gettext, locale, fun)
+    end
+  end
+
+  defp with_recipient_locale(_notification, fun), do: fun.()
+
   defp notification_icon(notification) do
     case notification do
       %{actor_user: %{avatar_id: avatar_id}} when not is_nil(avatar_id) ->
-        "#{BaudrateWeb.Endpoint.url()}/uploads/avatars/#{avatar_id}.webp"
+        # Avatars are stored per size (`avatars/<id>/<size>.webp`); there is no
+        # unsized file. 120 px is the largest rendition.
+        BaudrateWeb.Endpoint.url() <> Baudrate.Avatar.avatar_url(avatar_id, 120)
 
       _ ->
         nil
     end
   end
 
-  defp actor_display_name(notification) do
-    cond do
-      notification.actor_user ->
-        notification.actor_user.display_name || notification.actor_user.username
+  # Same naming as `BaudrateWeb.NotificationsLive`: a local user's display name
+  # (falling back to the username), or `username@domain` for a remote actor.
+  defp actor_display_name(%{actor_user: %Baudrate.Setup.User{} = user}),
+    do: BaudrateWeb.Helpers.display_name(user)
 
-      notification.actor_remote_actor ->
-        notification.actor_remote_actor.display_name ||
-          notification.actor_remote_actor.username ||
-          "Remote user"
+  defp actor_display_name(%{actor_remote_actor: %{username: username, domain: domain}}),
+    do: "#{username}@#{domain}"
 
-      true ->
-        "System"
-    end
-  end
+  defp actor_display_name(_notification), do: gettext("Someone")
 
   # HKDF-SHA256 extract-and-expand
   defp hkdf_sha256(salt, ikm, info, length) do

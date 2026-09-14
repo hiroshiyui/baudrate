@@ -115,6 +115,15 @@
           >
             {target_title(notif)}
           </p>
+          <p
+            :if={security_notice?(notif)}
+            id={"notification-security-hint-#{notif.id}"}
+            class="notification-security-hint text-xs text-base-content/70 mt-1"
+          >
+            {gettext(
+              "If you did not make this change, check your security settings right away and contact an administrator."
+            )}
+          </p>
         </div>
 
         <%!-- Mark read button --%>

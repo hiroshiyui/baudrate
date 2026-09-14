@@ -671,10 +671,7 @@
             </thead>
             <tbody>
               <tr
-                :for={
-                  type <-
-                    ~w(reply_to_article reply_to_comment mention new_follower article_liked comment_liked article_boosted comment_boosted article_forwarded moderation_report admin_announcement)
-                }
+                :for={type <- Baudrate.Notification.Notification.configurable_types()}
                 id={"profile-notification-pref-#{type}"}
                 class="profile-notification-pref-row"
               >
