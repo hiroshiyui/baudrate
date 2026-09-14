@@ -149,22 +149,34 @@ These are scheduled elsewhere:
 - **Anti-spam:** CAPTCHA, trust levels, new-account limits, keyword filters, first-post approval, IP bans → Phase 5.
 - **Content tools:** moving articles between boards → 7C; splitting or merging threads → Backlog.
 - **Admin surface:** an `/admin` dashboard with metrics, and a UI for admin announcements → 7A, 7B.
-- **Federation:** silence and reject-media domain levels (only full blocks in 1D), outbound `Block` activities (P1-D1) → Backlog.
+- **Federation:** silence and reject-media domain levels (only full blocks in 1D) → Backlog; outbound `Block` activities were ruled out (P1-D1).
 - **Legal:** takedown workflow, age gating → Backlog; content warnings → 3E.
 
-### Decisions needed before Phase 1 starts
+### Decisions (made 2026-09-14)
 
-Recommended answers in brackets.
-
-- [ ] **P1-D1. Should blocking a remote actor send an ActivityPub `Block` to its instance?** [No: enforce locally only. A `Block` tells the blocked person's server about the block, and a public hub gains little from it.]
-- [ ] **P1-D2. Sanctions model.** [Warn (notice only); silence (read-only, optional end date); suspend (no sign-in until a date, lifts automatically); ban (permanent, unchanged). Stored as a sanctions history table, not new `status` values, like moves never overloaded `status`.]
-- [ ] **P1-D3. Who may do what.** [Board moderators: content in their boards only. Global moderators: warn, silence, suspend for up to 30 days, reject pending registrations. Admins: everything, plus ban and role changes.]
-- [ ] **P1-D4. Who hears about outcomes.** [The reporter: "reviewed", no details. The affected author: content removal with the reason, and every sanction. Dismissed reports: nobody.]
-- [ ] **P1-D5. Cross-posted articles.** [A board moderator removes the article from their board. Deleting or pinning it everywhere needs rights on every board it is in.]
-- [ ] **P1-D6. Evidence retention.** [Moderator deletions stay readable to staff for 90 days, then are purged. Author deletions are wiped at once.]
-- [ ] **P1-D7. What a domain block does.** [Remove follows both ways and hide existing content at query time, reversible by unblocking. No silence or reject-media levels yet.]
-- [ ] **P1-D8. Changed terms.** [Existing users see a banner and must accept before posting or interacting. Reading never requires it.]
-- [ ] **P1-D9. Report reason categories.** [Spam, harassment, illegal content, breaks a rule (pick one), other. A free-text comment stays optional for local reports.]
+- **P1-D1. Blocking a remote account is enforced locally only.** No ActivityPub `Block` is sent; the blocked person's server is never told.
+- **P1-D2. Sanctions.**
+  - Warn: a notice only.
+  - Silence: read-only, with an optional end date.
+  - Suspend: no sign-in until a date; lifts automatically.
+  - Ban: permanent, unchanged.
+  - Stored as a sanctions history table; `users.status` gets no new values.
+- **P1-D3. Who may do what.**
+  - Board moderators: content in their boards only.
+  - Global moderators: warn, silence, suspend for up to 30 days, reject pending registrations.
+  - Admins: everything, plus ban and role changes.
+- **P1-D4. Who hears about outcomes.**
+  - The reporter is told the report was reviewed, with no details.
+  - The affected author is told about content removal (with the reason) and about every sanction.
+  - Nobody is told about dismissed reports.
+- **P1-D5. Cross-posted articles.** A board moderator can remove the article from their own board. Deleting, pinning or locking it everywhere needs moderation rights on every board it is in; admins and global moderators are exempt.
+- **P1-D6. Evidence.** Content a moderator deletes stays readable to staff for 90 days, then is purged. Content an author deletes is wiped at once.
+- **P1-D7. Domain blocks.**
+  - Remove follows both ways and hide the domain's existing content at query time.
+  - Unblocking restores the content; follows have to be made again.
+  - Full blocks only, with no silence or reject-media levels.
+- **P1-D8. Changed terms.** A banner on every page, and posting and interacting pause until the member accepts. Reading never requires it.
+- **P1-D9. Report categories.** Spam, harassment, illegal content, breaks a rule (choosing which rule from the Rules page), other. A free-text comment is optional for local reports.
 
 ---
 
@@ -583,7 +595,7 @@ Kept so the review is complete. None of these are scheduled; propose moving one 
   - the `featured` collection, `Add`/`Remove` and `contentMap`;
   - RFC 9421 signatures;
   - silence and reject-media domain levels;
-  - outbound `Block` (P1-D1).
+  - outbound `Block` (ruled out by P1-D1).
 - **Members:** group DMs, read receipts, emoji reactions, inline image placement, reply depth beyond 5, RTL layout, `hreflang` links.
 - **Content tools:** splitting and merging threads, custom pages beyond Rules, Terms and Privacy.
 - **Legal:** a takedown and legal-request workflow, age gating.
