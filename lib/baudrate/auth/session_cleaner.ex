@@ -20,8 +20,8 @@ defmodule Baudrate.Auth.SessionCleaner do
     * Media cache — evicts proxied remote images untouched for 30 days, then
       oldest-first until under the configured size ceiling
     * Data export requests — applies due `pending → ready → expired`
-      transitions (sending ready notices) and purges finished requests older
-      than a year (`Baudrate.DataPortability`)
+      transitions (sending ready notices), purges finished requests older
+      than a year, and removes stale archive temp directories (also at boot)
 
   The first cleanup is scheduled on `init/1`, so it runs one interval after
   the application boots — not immediately — to avoid slowing startup.
@@ -39,6 +39,8 @@ defmodule Baudrate.Auth.SessionCleaner do
 
   @impl true
   def init(_opts) do
+    # Archive staging directories left behind by a crash: remove at boot.
+    Baudrate.DataPortability.Archive.sweep_temp()
     schedule_cleanup()
     {:ok, %{}}
   end
@@ -61,6 +63,7 @@ defmodule Baudrate.Auth.SessionCleaner do
 
   defp sweep_data_exports do
     Baudrate.DataPortability.sweep_transitions(:all)
+    Baudrate.DataPortability.Archive.sweep_temp()
     count = Baudrate.DataPortability.purge_old_history()
 
     if count > 0 do

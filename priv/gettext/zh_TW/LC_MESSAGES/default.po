@@ -6330,3 +6330,73 @@ msgstr "您的資料匯出已準備好，可在 48 小時內下載。"
 #, elixir-autogen, elixir-format
 msgid "Your data export was downloaded."
 msgstr "您的資料匯出已被下載。"
+
+#: lib/baudrate/data_portability/archive.ex:253
+#, elixir-autogen, elixir-format
+msgid "- articles.json, comments.json, feed_replies.json: what you wrote and can still see, including your own article revisions and polls"
+msgstr "- articles.json、comments.json、feed_replies.json：您撰寫且目前仍能看到的內容，包含您自己的文章修訂紀錄與投票"
+
+#: lib/baudrate/data_portability/archive.ex:279
+#, elixir-autogen, elixir-format
+msgid "- content removed by moderators, and content in boards you can no longer view"
+msgstr "- 被板主或管理員移除的內容，以及您已無法檢視的看板中的內容"
+
+#: lib/baudrate/data_portability/archive.ex:257
+#, elixir-autogen, elixir-format
+msgid "- interactions.json: your likes, boosts, poll votes and bookmarks (targets as links only)"
+msgstr "- interactions.json：您的喜歡、轉推、投票與書籤（對象僅以連結表示）"
+
+#: lib/baudrate/data_portability/archive.ex:265
+#, elixir-autogen, elixir-format
+msgid "- invites.json: invite codes you created (active codes are not included)"
+msgstr "- invites.json：您建立的邀請碼（仍有效的邀請碼不包含在內）"
+
+#: lib/baudrate/data_portability/archive.ex:267
+#, elixir-autogen, elixir-format
+msgid "- media/: your avatar and the images you uploaded"
+msgstr "- media/：您的頭像與您上傳的圖片"
+
+#: lib/baudrate/data_portability/archive.ex:275
+#, elixir-autogen, elixir-format
+msgid "- messages written by other people, notifications, moderation reports and logs, reading history"
+msgstr "- 他人撰寫的訊息、通知、檢舉與管理紀錄、閱讀紀錄"
+
+#: lib/baudrate/data_portability/archive.ex:263
+#, elixir-autogen, elixir-format
+msgid "- messages.json: direct messages you sent, and who you sent them to"
+msgstr "- messages.json：您傳送的私人訊息，以及收件對象"
+
+#: lib/baudrate/data_portability/archive.ex:271
+#, elixir-autogen, elixir-format
+msgid "- passwords, two-factor secrets, recovery codes, security key material, session tokens and IP addresses"
+msgstr "- 密碼、雙因素驗證密鑰、救援碼、安全金鑰資料、工作階段權杖與 IP 位址"
+
+#: lib/baudrate/data_portability/archive.ex:249
+#, elixir-autogen, elixir-format
+msgid "- profile.json: your profile, settings, whether two-factor authentication is on, and your security key labels"
+msgstr "- profile.json：您的個人資料、設定、是否啟用雙因素驗證，以及安全金鑰名稱"
+
+#: lib/baudrate/data_portability/archive.ex:261
+#, elixir-autogen, elixir-format
+msgid "- relationships.json: who you follow, your followers, blocks and mutes"
+msgstr "- relationships.json：您追蹤的對象、您的追蹤者、封鎖與靜音名單"
+
+#: lib/baudrate/data_portability/archive.ex:243
+#, elixir-autogen, elixir-format
+msgid "Baudrate data export for %{username}"
+msgstr "%{username} 的 Baudrate 資料匯出"
+
+#: lib/baudrate/data_portability/archive.ex:245
+#, elixir-autogen, elixir-format
+msgid "Generated at: %{time}"
+msgstr "產生時間：%{time}"
+
+#: lib/baudrate/data_portability/archive.ex:247
+#, elixir-autogen, elixir-format
+msgid "Included:"
+msgstr "包含："
+
+#: lib/baudrate/data_portability/archive.ex:269
+#, elixir-autogen, elixir-format
+msgid "Not included:"
+msgstr "不包含："

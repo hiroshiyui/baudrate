@@ -6330,3 +6330,73 @@ msgstr "データエクスポートの準備ができました。48 時間ダウ
 #, elixir-autogen, elixir-format
 msgid "Your data export was downloaded."
 msgstr "データエクスポートがダウンロードされました。"
+
+#: lib/baudrate/data_portability/archive.ex:253
+#, elixir-autogen, elixir-format
+msgid "- articles.json, comments.json, feed_replies.json: what you wrote and can still see, including your own article revisions and polls"
+msgstr "- articles.json、comments.json、feed_replies.json：あなたが書いて現在も閲覧できる内容（自分の記事の編集履歴と投票を含む）"
+
+#: lib/baudrate/data_portability/archive.ex:279
+#, elixir-autogen, elixir-format
+msgid "- content removed by moderators, and content in boards you can no longer view"
+msgstr "- モデレーターによって削除された内容、および現在は閲覧できない掲示板の内容"
+
+#: lib/baudrate/data_portability/archive.ex:257
+#, elixir-autogen, elixir-format
+msgid "- interactions.json: your likes, boosts, poll votes and bookmarks (targets as links only)"
+msgstr "- interactions.json：いいね、ブースト、投票、ブックマーク（対象はリンクのみ）"
+
+#: lib/baudrate/data_portability/archive.ex:265
+#, elixir-autogen, elixir-format
+msgid "- invites.json: invite codes you created (active codes are not included)"
+msgstr "- invites.json：作成した招待コード（有効なコードは含まれません）"
+
+#: lib/baudrate/data_portability/archive.ex:267
+#, elixir-autogen, elixir-format
+msgid "- media/: your avatar and the images you uploaded"
+msgstr "- media/：アバターとアップロードした画像"
+
+#: lib/baudrate/data_portability/archive.ex:275
+#, elixir-autogen, elixir-format
+msgid "- messages written by other people, notifications, moderation reports and logs, reading history"
+msgstr "- 他の人が書いたメッセージ、通知、通報とモデレーションログ、閲覧履歴"
+
+#: lib/baudrate/data_portability/archive.ex:263
+#, elixir-autogen, elixir-format
+msgid "- messages.json: direct messages you sent, and who you sent them to"
+msgstr "- messages.json：送信したダイレクトメッセージと送信相手"
+
+#: lib/baudrate/data_portability/archive.ex:271
+#, elixir-autogen, elixir-format
+msgid "- passwords, two-factor secrets, recovery codes, security key material, session tokens and IP addresses"
+msgstr "- パスワード、二要素認証のシークレット、リカバリーコード、セキュリティキーの鍵情報、セッショントークン、IP アドレス"
+
+#: lib/baudrate/data_portability/archive.ex:249
+#, elixir-autogen, elixir-format
+msgid "- profile.json: your profile, settings, whether two-factor authentication is on, and your security key labels"
+msgstr "- profile.json：プロフィール、設定、二要素認証の有無、セキュリティキーの名前"
+
+#: lib/baudrate/data_portability/archive.ex:261
+#, elixir-autogen, elixir-format
+msgid "- relationships.json: who you follow, your followers, blocks and mutes"
+msgstr "- relationships.json：フォロー、フォロワー、ブロックとミュート"
+
+#: lib/baudrate/data_portability/archive.ex:243
+#, elixir-autogen, elixir-format
+msgid "Baudrate data export for %{username}"
+msgstr "%{username} の Baudrate データエクスポート"
+
+#: lib/baudrate/data_portability/archive.ex:245
+#, elixir-autogen, elixir-format
+msgid "Generated at: %{time}"
+msgstr "作成日時：%{time}"
+
+#: lib/baudrate/data_portability/archive.ex:247
+#, elixir-autogen, elixir-format
+msgid "Included:"
+msgstr "含まれるもの："
+
+#: lib/baudrate/data_portability/archive.ex:269
+#, elixir-autogen, elixir-format
+msgid "Not included:"
+msgstr "含まれないもの："
