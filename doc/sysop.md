@@ -616,6 +616,7 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 | AP endpoints | 120 / min | per IP |
 | AP inbox | 60 / min | per remote domain |
 | Feeds (RSS/Atom) | 30 / min | per IP |
+| Data export download | 10 / 15 min | per IP |
 | Direct messages | 20 / min | per user |
 | Feed item replies | 20 / 5 min | per user |
 

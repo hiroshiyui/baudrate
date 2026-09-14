@@ -119,6 +119,18 @@ defmodule BaudrateWeb.ExportControllerTest do
     assert Repo.reload!(request).download_count == 1
   end
 
+  test "downloads are rate limited per IP before any other check",
+       %{conn: conn, user: user, request: request, session_id: session_id} do
+    BaudrateWeb.RateLimiter.Sandbox.set_fun(fn bucket, _scale, _limit ->
+      if String.starts_with?(bucket, "data_export_download:"), do: {:deny, 10}, else: {:allow, 1}
+    end)
+
+    resp = conn |> navigate() |> download(request.id, token(user, request, session_id))
+
+    assert resp.status == 429
+    assert Repo.reload!(request).download_count == 0
+  end
+
   test "requests that are not a same-origin top-level navigation get 403",
        %{conn: conn, user: user, request: request, session_id: session_id} do
     for headers <- [

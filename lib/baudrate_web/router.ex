@@ -284,10 +284,15 @@ defmodule BaudrateWeb.Router do
     post "/admin-webauthn-verify", SessionController, :admin_webauthn_verify
   end
 
+  pipeline :rate_limit_data_export_download do
+    plug BaudrateWeb.Plugs.RateLimit, action: :data_export_download
+  end
+
   # Data export download (ADR 0023). A single-use token from DataExportLive,
-  # checked alongside Fetch Metadata and the session in ExportController.
+  # checked alongside Fetch Metadata and the session in ExportController. The
+  # per-IP limit runs before the session and database lookups.
   scope "/exports", BaudrateWeb do
-    pipe_through :browser
+    pipe_through [:rate_limit_data_export_download, :browser]
 
     post "/:id/download", ExportController, :download
   end

@@ -16,6 +16,8 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     * `:push_subscription` — 10 requests per minute per IP
     * `:share_target` — 10 requests per minute per IP
     * `:media` — 300 requests per minute per IP (media proxy, cache hits included)
+    * `:data_export_download` — 10 requests per 15 minutes per IP (a legitimate
+      user downloads an export at most 3 times)
 
   Registration and password reset are **not** listed here: those flows submit
   over the LiveView channel rather than a plug-routed request, so they check
@@ -44,7 +46,8 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     feeds: {60_000, 30},
     push_subscription: {60_000, 10},
     share_target: {60_000, 10},
-    media: {60_000, 300}
+    media: {60_000, 300},
+    data_export_download: {900_000, 10}
   }
 
   @impl true
