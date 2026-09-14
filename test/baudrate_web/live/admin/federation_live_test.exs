@@ -135,6 +135,15 @@ defmodule BaudrateWeb.Admin.FederationLiveTest do
 
     blocklist = Baudrate.Setup.get_setting("ap_domain_blocklist")
     assert blocklist =~ "evil.example"
+
+    # The federation checks' cache sees the block at once, and it is audited.
+    assert [{:domain_config, :blocklist, blocked}] =
+             :ets.lookup(:domain_block_cache, :domain_config)
+
+    assert MapSet.member?(blocked, "evil.example")
+
+    assert [%{details: %{"domain" => "evil.example"}}] =
+             Baudrate.Moderation.list_moderation_logs(action: "block_domain").logs
   end
 
   test "toggle board federation", %{conn: conn} do

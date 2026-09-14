@@ -81,7 +81,10 @@ defmodule BaudrateWeb.Admin.FederationLive do
           else: current <> ", " <> domain
 
       Setup.set_setting("ap_domain_blocklist", new_list)
-      Baudrate.Setup.SettingsCache.refresh()
+
+      Moderation.log_action(socket.assigns.current_user.id, "block_domain",
+        details: %{domain: domain, source: "instances"}
+      )
     end
 
     {:noreply,
@@ -246,7 +249,6 @@ defmodule BaudrateWeb.Admin.FederationLive do
           else: current <> ", " <> domain
 
       Setup.set_setting("ap_domain_blocklist", new_list)
-      Baudrate.Setup.SettingsCache.refresh()
     end
   end
 

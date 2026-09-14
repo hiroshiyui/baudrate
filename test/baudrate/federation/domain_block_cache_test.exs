@@ -9,6 +9,28 @@ defmodule Baudrate.Federation.DomainBlockCacheTest do
     :ok
   end
 
+  # `domain_blocked?/1` reads the database while the settings cache is off in
+  # tests, so these read the ETS entry that production uses.
+  defp cached_config, do: :ets.lookup(:domain_block_cache, :domain_config)
+
+  describe "cache refresh on setting writes" do
+    test "writing the blocklist updates the cache without an explicit refresh" do
+      Setup.set_setting("ap_federation_mode", "blocklist")
+      Setup.set_setting("ap_domain_blocklist", "fresh-block.example")
+
+      assert [{:domain_config, :blocklist, blocked}] = cached_config()
+      assert MapSet.member?(blocked, "fresh-block.example")
+    end
+
+    test "switching to allowlist mode updates the cache" do
+      Setup.set_setting("ap_domain_allowlist", "only.example")
+      Setup.set_setting("ap_federation_mode", "allowlist")
+
+      assert [{:domain_config, :allowlist, allowed}] = cached_config()
+      assert MapSet.member?(allowed, "only.example")
+    end
+  end
+
   describe "domain_blocked?/1 with blocklist mode" do
     test "returns false when domain is not in blocklist" do
       refute DomainBlockCache.domain_blocked?("example.com")

@@ -250,8 +250,13 @@ defmodule Baudrate.Setup do
     end
   end
 
+  @domain_block_keys ~w(ap_federation_mode ap_domain_blocklist ap_domain_allowlist)
+
   @doc """
   Upserts a setting by key. Creates or updates the setting.
+
+  Writing a federation mode, blocklist or allowlist key also refreshes
+  `Baudrate.Federation.DomainBlockCache`.
   """
   @spec set_setting(String.t(), String.t()) :: {:ok, Setting.t()} | {:error, Ecto.Changeset.t()}
   def set_setting(key, value) when is_binary(key) and is_binary(value) do
@@ -273,6 +278,12 @@ defmodule Baudrate.Setup do
         {:ok, _} -> Baudrate.Setup.SettingsCache.put(key, value)
         _ -> :ok
       end
+    end
+
+    # Federation checks read domain blocks from their own ETS cache, so a
+    # write to any of these keys must reach it too, whichever caller made it.
+    if key in @domain_block_keys and match?({:ok, _}, result) do
+      Baudrate.Federation.DomainBlockCache.refresh()
     end
 
     result
@@ -433,7 +444,6 @@ defmodule Baudrate.Setup do
         set_setting("theme_dark", changes.theme_dark || @default_dark_theme)
 
         Baudrate.Setup.SettingsCache.refresh()
-        Baudrate.Federation.DomainBlockCache.refresh()
 
         changes
       end)

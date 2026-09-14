@@ -6,8 +6,9 @@ defmodule Baudrate.Federation.DomainBlockCache do
   corresponding domain set (blocklist or allowlist), avoiding repeated
   DB queries on every incoming/outgoing activity.
 
-  The cache is refreshed automatically when federation settings change
-  (via `refresh/0` called from `Setup.save_settings/1`).
+  The cache is refreshed automatically whenever a federation mode, blocklist
+  or allowlist setting is written (`Setup.set_setting/2` calls `refresh/0`),
+  so every path that blocks a domain takes effect immediately.
   """
 
   use GenServer
@@ -38,8 +39,9 @@ defmodule Baudrate.Federation.DomainBlockCache do
           blocked_in_mode?(mode, domain_set, domain)
 
         [] ->
-          # Cache not yet loaded — fall back to not blocked
-          false
+          # Not loaded yet: decide from the database rather than failing open.
+          {mode, domain_set} = read_from_db()
+          blocked_in_mode?(mode, domain_set, domain)
       end
     else
       {mode, domain_set} = read_from_db()
