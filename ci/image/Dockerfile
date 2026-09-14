@@ -18,10 +18,11 @@
 # Versions must match .tool-versions and config/config.exs; the image
 # workflow checks this before publishing.
 
-ARG DEBIAN_IMAGE=debian:trixie-slim@sha256:d7e12182ce18b85b93007c1dedf31f2d29e01ccf3182cc4017c709b6259bc132
+# The base is written out in both stages (not an ARG) so Dependabot can
+# propose digest updates; keep the two lines identical.
 
 # ---------------------------------------------------------------------------
-FROM ${DEBIAN_IMAGE} AS otp
+FROM debian:trixie-slim@sha256:d7e12182ce18b85b93007c1dedf31f2d29e01ccf3182cc4017c709b6259bc132 AS otp
 
 ARG OTP_VERSION=28.5.0.6
 ARG OTP_SHA256=49d7a75e906334af54ae336ba53fc4e6ad100645e8e7efd3be008de284dab3ba
@@ -46,7 +47,7 @@ RUN set -eux; \
     rm -rf /tmp/otp /tmp/otp.tar.gz
 
 # ---------------------------------------------------------------------------
-FROM ${DEBIAN_IMAGE}
+FROM debian:trixie-slim@sha256:d7e12182ce18b85b93007c1dedf31f2d29e01ccf3182cc4017c709b6259bc132
 
 ARG ELIXIR_VERSION=1.19.5
 ARG ELIXIR_OTP_MAJOR=28

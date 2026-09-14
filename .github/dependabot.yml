@@ -1,7 +1,8 @@
 # Dependabot configuration for Baudrate.
 # Routine dependency auditing across every manifest Dependabot can read:
 # Elixir/Hex (mix.exs + mix.lock, including the `heroicons` git dependency),
-# the Rust NIF crates (cargo), and GitHub Actions.
+# the Rust NIF crates (cargo), GitHub Actions (pinned to commit SHAs), and the
+# CI image's Debian base digest (docker).
 #
 # NOT covered by Dependabot (no manifest it understands) — these are checked
 # weekly by `.github/workflows/dependency-drift.yml` instead:
@@ -113,6 +114,26 @@ updates:
         update-types:
           - minor
           - patch
+
+  # ---- CI image base (ci/image/Dockerfile), pinned by digest ----
+  # A merged bump rebuilds the image, which then proposes its own digest for
+  # ci/image/image.lock (see ci/image/README.md).
+  - package-ecosystem: docker
+    directory: "/ci/image"
+    target-branch: current
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Taipei
+    open-pull-requests-limit: 2
+    assignees:
+      - hiroshiyui
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: "chore(ci)"
 
   # ---- GitHub Actions used by CI workflows ----
   - package-ecosystem: github-actions
