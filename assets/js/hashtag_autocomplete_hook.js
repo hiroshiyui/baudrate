@@ -31,7 +31,7 @@ const HashtagAutocompleteHook = {
     this.debounceTimer = null
     this.activeType = null // "hashtag" or "mention"
 
-    this.applyComboboxRole()
+    this.applyAutocompleteSemantics()
 
     this.textarea.addEventListener("input", () => this.onInput())
     this.textarea.addEventListener("keydown", (e) => this.onKeydown(e))

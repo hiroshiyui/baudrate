@@ -251,6 +251,34 @@ defmodule BaudrateWeb.FeedLiveTest do
       {:ok, _lv, html2} = live(conn, "/feed?page=2")
       assert html2 =~ "Feed"
     end
+
+    test "the pager switches pages in place", %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      items =
+        for n <- 1..25 do
+          create_feed_item(actor, %{published_at: DateTime.add(now, -n * 60, :second)})
+        end
+
+      oldest = List.last(items)
+      newest = hd(items)
+
+      {:ok, lv, _html} = live(conn, "/feed")
+      assert has_element?(lv, "#feed-item-fi-#{newest.id}")
+      refute has_element?(lv, "#feed-item-fi-#{oldest.id}")
+
+      lv |> element(".pagination-page", "2") |> render_click()
+      assert_patch(lv, "/feed?page=2")
+      assert has_element?(lv, "#feed-item-fi-#{oldest.id}")
+      refute has_element?(lv, "#feed-item-fi-#{newest.id}")
+      assert has_element?(lv, ".pagination-current[aria-current=page]", "2")
+
+      lv |> element(".pagination-prev") |> render_click()
+      assert_patch(lv, "/feed?page=1")
+      assert has_element?(lv, "#feed-item-fi-#{newest.id}")
+    end
   end
 
   describe "local follows in feed" do
