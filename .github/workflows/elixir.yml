@@ -144,6 +144,10 @@ jobs:
       run: mix assets.build
     - name: Run browser tests
       run: mix test --only feature --include feature --seed 9527
+      env:
+        # The runner mounts HOME (/github/home) owned by another uid, and
+        # Firefox refuses to start as root in a home it does not own.
+        HOME: /root
     - name: Upload failure screenshots
       if: failure()
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
