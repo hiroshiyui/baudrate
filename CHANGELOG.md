@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.18.0] — 2026-09-14
+
+Account migration with ActivityPub `Move`, and a fix for federation
+deliveries that were silently dropped.
+
+**Upgrading:**
+
+- **Three migrations** run on deploy: `users.also_known_as`, `moved_to` and
+  `moved_at` plus `remote_actors.moved_to_ap_id` and `moved_at`; the
+  `account_moves` table; and `delivery_jobs.activity_id`, backfilled from
+  queued jobs, with a new dedup index.
+- No configuration or nginx changes.
+- Users who follow a remote account that moves now send a real `Follow` to
+  the new account. Its posts appear once that account accepts.
+
+### Added
+
+- **Account migration** at `/profile/move` (ADR 0025):
+  - **Aliases** (`alsoKnownAs`), entered as `@user@domain` or an `https://`
+    URI, behind password and TOTP confirmation, with a notice for every
+    change. They are published on the actor document.
+  - **Moving to another server** needs TOTP enabled for 7 days, no admin,
+    moderator or board moderator role, and a destination that already lists
+    this account as an alias. The `Move` is sent 24 hours after the request,
+    after checking everything again. Until then every page shows a warning
+    banner with Cancel. A password change, TOTP reset, sign out everywhere or
+    a ban cancels it. One move per 30 days.
+  - **After a move:** remote followers get the `Move`, and local followers
+    are moved to the new account for them and notified. The old account
+    stays able to sign in, read, follow and export, but cannot post,
+    comment, send DMs, like, boost, vote or create invites; this is enforced
+    in the application core, not only hidden in pages. Its profile points to
+    the new account. "Remove redirect" restores posting; followers who
+    already moved stay moved.
+- **Notices** for alias changes, move requests, cancellations, failures,
+  completed moves and removed redirects, which cannot be turned off, plus
+  "moved to a new account" for followers and a notice for admins when a
+  remote account followed by boards moves.
+
+### Fixed
+
+- **Federation deliveries were silently dropped.** Pending delivery jobs
+  were deduplicated by inbox and sender only. While one job for an inbox was
+  waiting or retrying, later activities from the same account to that inbox
+  were discarded, for example a boost right after a like, two quick posts in
+  a federated board, or everything sent to a server while it was down. Jobs
+  are now deduplicated per activity.
+- **Following an account that moved stopped delivering its posts.** An
+  inbound `Move` switched local follows to the new account without sending
+  it a `Follow`, so it never delivered anything. Followers now unfollow the
+  old account and send a real `Follow` to the new one. A `Move` must name
+  the signer as its object, a destination that has itself moved is ignored,
+  at most one `Move` per remote account is processed every 30 days, and
+  board follows are never switched automatically.
+
 ## [1.17.0] — 2026-09-14
 
 Users can export their own data, change their password and sign out
