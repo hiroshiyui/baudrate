@@ -271,6 +271,7 @@ lib/
 │   │   ├── totp_verify_live.ex  # TOTP code verification
 │   │   ├── admin_totp_verify_live.ex       # Admin re-verification for sudo mode (TOTP or WebAuthn security key)
 │   │   ├── markdown_preview_hook.ex       # LiveView hook for markdown preview toggling
+│   │   ├── autocomplete_suggest_hook.ex   # LiveView hook answering #hashtag / @mention suggest events
 │   │   ├── sandbox_hook.ex                # Ecto sandbox hook for feature tests
 │   │   ├── unread_dm_count_hook.ex         # Real-time @unread_dm_count via PubSub
 │   │   └── unread_notification_count_hook.ex # Real-time @unread_notification_count via PubSub
@@ -2047,11 +2048,21 @@ wrapper `<div>` around the textarea (since `MarkdownToolbarHook` already
 occupies `phx-hook` on the textarea itself). Automatically enabled when the
 `toolbar` attribute is set on `<.input type="textarea">`.
 
-When the user types `#` followed by one or more characters, the hook debounces
-(200ms) then sends `pushEvent("hashtag_suggest", %{prefix: "..."})` to the
-server. The server queries `Content.search_tags/2` and pushes back
-`"hashtag_suggestions"` with matching tags. The hook renders a positioned
-dropdown with keyboard navigation (ArrowUp/Down, Enter/Tab, Escape).
+When the user types `#` (or `@`) followed by one or more characters, the hook
+debounces (200ms) then sends `pushEvent("hashtag_suggest", %{prefix: "..."})`
+(or `"mention_suggest"`) to the server, and renders the pushed-back
+`"hashtag_suggestions"` / `"mention_suggestions"` as a positioned dropdown with
+keyboard navigation (ArrowUp/Down, Enter/Tab, Escape).
+
+The server side is `BaudrateWeb.AutocompleteSuggestHook`, attached with
+`attach_hook/4` in `AuthHooks` next to `MarkdownPreviewHook`, so every
+authenticated LiveView answers both events: tags from `Content.search_tags/2`,
+local users from `Auth.search_users/2`, plus the remote actors in the
+article's discussion when the LiveView has an `:article` assign. Events that a
+shared JS hook pushes from any page must be handled this way, never per
+LiveView: until v1.19.2 each page had its own handlers, `/profile` and
+`/admin/settings` had none, and typing `@` in those fields crashed the
+LiveView.
 
 Accessibility: the textarea keeps its native textbox role (ARIA does not allow
 `role="combobox"` on `<textarea>`) and gets `aria-autocomplete="list"`,
@@ -2062,7 +2073,7 @@ announced through a shared polite live region (`autocomplete_announcer.js`)
 using the translated `data-i18n-suggestions` template (`%{count}` placeholder)
 rendered on the hook wrapper and on `<body>`; without it nothing is announced.
 
-Source: `assets/js/hashtag_autocomplete_hook.js`
+Source: `assets/js/hashtag_autocomplete_hook.js`, `lib/baudrate_web/live/autocomplete_suggest_hook.ex`
 
 ### `PushManagerHook`
 
@@ -2303,6 +2314,15 @@ mix test --include feature test/baudrate_web/features/home_page_test.exs --seed 
 ```
 
 Regular tests (`mix test`) do **not** start Selenium or include feature tests.
+
+JS hooks have no other tests, so run the feature tests after changing
+`assets/js/` or a template's hooks. `js_errors_test.exs` crawls the member
+and public pages, re-mounts each through a live navigation, types into every
+textarea and opens every dropdown, and fails on any JavaScript error,
+`console.error` (e.g. an unregistered `phx-hook`) or LiveView crash. Admin
+pages are not crawled (sudo mode needs TOTP). The regular suite still guards
+hook names: `js_hooks_registered_test.exs` fails when a template's `phx-hook`
+is not registered in `app.js`.
 
 #### Architecture
 
