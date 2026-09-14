@@ -392,7 +392,7 @@ Key functions in `Auth`:
 | TTL | 14 days from creation or last rotation |
 | Rotation | `RefreshSession` plug rotates both tokens every 24 hours |
 | Concurrency | Max 3 sessions per user; oldest (by `refreshed_at`) evicted |
-| Cleanup | `SessionCleaner` GenServer purges expired sessions every hour |
+| Cleanup | `SessionCleaner` GenServer purges expired sessions every hour. Each hourly step runs through `run_step/2`, so a step that raises is logged (`session_cleaner.step_failed`) and the remaining steps still run |
 | LiveView sockets | Each session's cookie carries `live_socket_id` = `"user_session:<row id>"` (set at login, backfilled by `RefreshSession`); the row id is stable across rotation |
 | Revocation | Every session deletion (`delete_session_by_token/1`, `delete_all_sessions_for_user/1`, `delete_other_sessions_for_user/2`, eviction, expiry, `purge_expired_sessions/0`) broadcasts `"disconnect"` to the deleted sessions' socket ids **after** the rows are gone, so open LiveView pages remount and hit the auth hooks instead of acting on a dead session |
 

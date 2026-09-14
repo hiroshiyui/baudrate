@@ -124,4 +124,18 @@ defmodule Baudrate.Content.LinkPreview.FetcherTest do
       assert preview.description == "Meta description"
     end
   end
+
+  describe "refetch/1" do
+    test "records a transport failure instead of raising" do
+      {:ok, preview} = Fetcher.fetch_or_get("https://example.com/goes-away")
+
+      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+        Req.Test.transport_error(conn, :timeout)
+      end)
+
+      assert {:ok, %LinkPreview{status: "failed", error: error}} = Fetcher.refetch(preview)
+      assert error =~ "timeout"
+      assert String.length(error) <= 255
+    end
+  end
 end

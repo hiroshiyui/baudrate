@@ -52,20 +52,51 @@ defmodule Baudrate.Auth.SessionCleaner do
 
   @impl true
   def handle_info(:cleanup, state) do
-    Baudrate.Auth.purge_expired_sessions()
-    Baudrate.Auth.purge_old_login_attempts()
-    cleanup_orphan_article_images()
-    cleanup_orphan_comment_images()
-    cleanup_orphan_reply_images()
-    cleanup_delivery_jobs()
-    refresh_stale_link_previews()
-    purge_orphan_link_previews()
-    purge_stale_media_cache()
-    sweep_data_exports()
-    sweep_account_moves()
-    cleanup_old_notifications()
+    # Each step runs on its own: a step that raises is logged and the rest
+    # still run. A crash used to abort the whole run, so a single link preview
+    # refetch failing every hour silently skipped the export and account move
+    # sweeps and every purge after it.
+    [
+      purge_expired_sessions: &Baudrate.Auth.purge_expired_sessions/0,
+      purge_old_login_attempts: &Baudrate.Auth.purge_old_login_attempts/0,
+      cleanup_orphan_article_images: &cleanup_orphan_article_images/0,
+      cleanup_orphan_comment_images: &cleanup_orphan_comment_images/0,
+      cleanup_orphan_reply_images: &cleanup_orphan_reply_images/0,
+      cleanup_delivery_jobs: &cleanup_delivery_jobs/0,
+      refresh_stale_link_previews: &refresh_stale_link_previews/0,
+      purge_orphan_link_previews: &purge_orphan_link_previews/0,
+      purge_stale_media_cache: &purge_stale_media_cache/0,
+      sweep_data_exports: &sweep_data_exports/0,
+      sweep_account_moves: &sweep_account_moves/0,
+      cleanup_old_notifications: &cleanup_old_notifications/0
+    ]
+    |> Enum.each(fn {name, step} -> run_step(name, step) end)
+
     schedule_cleanup()
     {:noreply, state}
+  end
+
+  @doc false
+  # Runs one cleanup step, logging instead of crashing when it raises or exits.
+  def run_step(name, step) do
+    step.()
+    :ok
+  rescue
+    exception ->
+      Logger.error(
+        "session_cleaner.step_failed: step=#{name} " <>
+          Exception.format(:error, exception, __STACKTRACE__)
+      )
+
+      :error
+  catch
+    kind, reason ->
+      Logger.error(
+        "session_cleaner.step_failed: step=#{name} " <>
+          Exception.format(kind, reason, __STACKTRACE__)
+      )
+
+      :error
   end
 
   defp sweep_data_exports do

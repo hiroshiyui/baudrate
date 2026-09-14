@@ -95,10 +95,13 @@ defmodule Baudrate.Content.LinkPreview.Fetcher do
         # Delete cached image on failure
         ImageProxy.delete_image(preview.image_path)
 
+        # `reason` is often a tuple (e.g. a transport timeout), which
+        # `to_string/1` cannot format: it raised and crashed the hourly
+        # SessionCleaner run. Same formatting as `fetch_or_get/2`.
         preview
         |> LinkPreview.fetched_changeset(%{
           status: "failed",
-          error: to_string(reason),
+          error: String.slice(inspect(reason), 0, 255),
           image_path: nil
         })
         |> Repo.update()

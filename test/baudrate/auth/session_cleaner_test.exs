@@ -61,6 +61,22 @@ defmodule Baudrate.Auth.SessionCleanerTest do
     end
   end
 
+  describe "run_step/2" do
+    import ExUnit.CaptureLog
+
+    test "a step that raises or exits is logged and reported, not propagated" do
+      log =
+        capture_log(fn ->
+          assert :error = SessionCleaner.run_step(:boom, fn -> raise "boom" end)
+          assert :error = SessionCleaner.run_step(:gone, fn -> exit(:gone) end)
+          assert :ok = SessionCleaner.run_step(:fine, fn -> :anything end)
+        end)
+
+      assert log =~ "session_cleaner.step_failed: step=boom"
+      assert log =~ "session_cleaner.step_failed: step=gone"
+    end
+  end
+
   describe "handle_info :cleanup" do
     test "triggers purge_expired_sessions", %{user: user} do
       {:ok, _token, _refresh} = Auth.create_user_session(user.id)
