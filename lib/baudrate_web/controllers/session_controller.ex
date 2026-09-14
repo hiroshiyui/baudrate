@@ -400,7 +400,8 @@ defmodule BaudrateWeb.SessionController do
 
     case session_token && Auth.get_user_by_session_token(session_token) do
       {:ok, user} ->
-        with {:ok, challenge} <- Baudrate.Auth.WebAuthnChallenges.pop(token, user.id),
+        with {:ok, challenge} <-
+               Baudrate.Auth.WebAuthnChallenges.pop(token, user.id, :attestation),
              {:ok, credential_attrs} <-
                Auth.finish_registration(user, att_obj_b64, cdj_b64, challenge),
              {:ok, _credential} <-
@@ -468,7 +469,7 @@ defmodule BaudrateWeb.SessionController do
             |> redirect(to: "/")
 
           true ->
-            case Baudrate.Auth.WebAuthnChallenges.pop(token, user.id) do
+            case Baudrate.Auth.WebAuthnChallenges.pop(token, user.id, :authentication) do
               {:ok, challenge} ->
                 case Auth.finish_authentication(
                        user,

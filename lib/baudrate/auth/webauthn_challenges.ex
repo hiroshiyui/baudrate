@@ -11,10 +11,16 @@ defmodule Baudrate.Auth.WebAuthnChallenges do
 
   ## Security
 
-  - `pop/2` atomically removes the entry on first retrieval (single-use).
+  - `pop/3` atomically removes the entry on first retrieval (single-use).
   - Expired entries are never returned, even if the sweeper hasn't run yet.
   - The token is a 16-byte cryptographically random value (base64url encoded).
   - User ID is checked on pop to prevent cross-user challenge reuse.
+  - The challenge's purpose (`:attestation` for registration, `:authentication`
+    for assertions) is checked on pop. `Wax.register/3` validates the
+    *client-supplied* `clientData.type`, but not the stored challenge's type.
+    Without this check, an authentication challenge (which `/admin/verify`
+    hands to any admin session) could be spent on registering a new key,
+    bypassing the re-authentication gate on registration.
   """
 
   use GenServer
@@ -46,13 +52,17 @@ defmodule Baudrate.Auth.WebAuthnChallenges do
   @doc """
   Retrieves and atomically removes a challenge by token.
 
-  Returns `{:ok, challenge}` if the token exists, belongs to `user_id`,
-  and has not expired. Returns `{:error, :not_found}` otherwise.
+  Returns `{:ok, challenge}` if the token exists, belongs to `user_id`, was
+  issued for `type` (`:attestation` or `:authentication`), and has not expired.
+  Returns `{:error, :not_found}` otherwise. The entry is consumed even when the
+  type does not match, so a token can never be retried for another purpose.
   """
-  @spec pop(String.t(), integer()) :: {:ok, Wax.Challenge.t()} | {:error, :not_found}
-  def pop(token, user_id) when is_binary(token) do
+  @spec pop(String.t(), integer(), :attestation | :authentication) ::
+          {:ok, Wax.Challenge.t()} | {:error, :not_found}
+  def pop(token, user_id, type)
+      when is_binary(token) and type in [:attestation, :authentication] do
     case :ets.take(@table, token) do
-      [{^token, {challenge, ^user_id, expires_at}}] ->
+      [{^token, {%{type: ^type} = challenge, ^user_id, expires_at}}] ->
         if System.system_time(:second) <= expires_at do
           {:ok, challenge}
         else
@@ -64,7 +74,7 @@ defmodule Baudrate.Auth.WebAuthnChallenges do
     end
   end
 
-  def pop(_, _), do: {:error, :not_found}
+  def pop(_, _, _), do: {:error, :not_found}
 
   # --- GenServer callbacks ---
 

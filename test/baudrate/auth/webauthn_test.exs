@@ -174,15 +174,16 @@ defmodule Baudrate.Auth.WebAuthnTest do
       user = create_user()
       {token, _json} = Auth.begin_registration(user)
 
-      assert {:ok, %Wax.Challenge{type: :attestation}} = WebAuthnChallenges.pop(token, user.id)
+      assert {:ok, %Wax.Challenge{type: :attestation}} =
+               WebAuthnChallenges.pop(token, user.id, :attestation)
     end
 
     test "challenge token is single-use" do
       user = create_user()
       {token, _json} = Auth.begin_registration(user)
 
-      assert {:ok, _} = WebAuthnChallenges.pop(token, user.id)
-      assert {:error, :not_found} = WebAuthnChallenges.pop(token, user.id)
+      assert {:ok, _} = WebAuthnChallenges.pop(token, user.id, :attestation)
+      assert {:error, :not_found} = WebAuthnChallenges.pop(token, user.id, :attestation)
     end
   end
 
@@ -228,7 +229,8 @@ defmodule Baudrate.Auth.WebAuthnTest do
       user = create_user()
       {token, _json} = Auth.begin_authentication(user)
 
-      assert {:ok, %Wax.Challenge{type: :authentication}} = WebAuthnChallenges.pop(token, user.id)
+      assert {:ok, %Wax.Challenge{type: :authentication}} =
+               WebAuthnChallenges.pop(token, user.id, :authentication)
     end
   end
 
@@ -342,8 +344,8 @@ defmodule Baudrate.Auth.WebAuthnTest do
       challenge = %{bytes: :crypto.strong_rand_bytes(32), type: :attestation}
       token = WebAuthnChallenges.put(user.id, challenge)
 
-      assert {:ok, ^challenge} = WebAuthnChallenges.pop(token, user.id)
-      assert {:error, :not_found} = WebAuthnChallenges.pop(token, user.id)
+      assert {:ok, ^challenge} = WebAuthnChallenges.pop(token, user.id, :attestation)
+      assert {:error, :not_found} = WebAuthnChallenges.pop(token, user.id, :attestation)
     end
 
     test "pop returns error for wrong user_id" do
@@ -351,12 +353,38 @@ defmodule Baudrate.Auth.WebAuthnTest do
       challenge = %{bytes: :crypto.strong_rand_bytes(32), type: :attestation}
       token = WebAuthnChallenges.put(user.id, challenge)
 
-      assert {:error, :not_found} = WebAuthnChallenges.pop(token, user.id + 999_999)
+      assert {:error, :not_found} = WebAuthnChallenges.pop(token, user.id + 999_999, :attestation)
+    end
+
+    test "an authentication challenge cannot be spent on registration" do
+      user = create_user()
+      {token, _json} = Auth.begin_authentication(user)
+
+      assert {:error, :not_found} = WebAuthnChallenges.pop(token, user.id, :attestation)
+      # The mismatched pop consumed the entry, so it cannot be retried either.
+      assert {:error, :not_found} = WebAuthnChallenges.pop(token, user.id, :authentication)
+    end
+
+    test "a registration challenge cannot be spent on authentication" do
+      user = create_user()
+      {token, _json} = Auth.begin_registration(user)
+
+      assert {:error, :not_found} = WebAuthnChallenges.pop(token, user.id, :authentication)
+      assert {:error, :not_found} = WebAuthnChallenges.pop(token, user.id, :attestation)
+    end
+
+    test "pop rejects an entry without a challenge type" do
+      user = create_user()
+      token = WebAuthnChallenges.put(user.id, %{bytes: :crypto.strong_rand_bytes(32)})
+
+      assert {:error, :not_found} = WebAuthnChallenges.pop(token, user.id, :attestation)
     end
 
     test "pop returns error for unknown token" do
       user = create_user()
-      assert {:error, :not_found} = WebAuthnChallenges.pop("nonexistent_token_abc123", user.id)
+
+      assert {:error, :not_found} =
+               WebAuthnChallenges.pop("nonexistent_token_abc123", user.id, :attestation)
     end
 
     test "expired entries are not returned" do
@@ -364,10 +392,10 @@ defmodule Baudrate.Auth.WebAuthnTest do
       # Insert an entry with a past expiry directly into ETS
       expired_at = System.system_time(:second) - 10
       token = Base.url_encode64(:crypto.strong_rand_bytes(16), padding: false)
-      challenge = %{bytes: :crypto.strong_rand_bytes(32)}
+      challenge = %{bytes: :crypto.strong_rand_bytes(32), type: :attestation}
       :ets.insert(:webauthn_challenges, {token, {challenge, user.id, expired_at}})
 
-      assert {:error, :not_found} = WebAuthnChallenges.pop(token, user.id)
+      assert {:error, :not_found} = WebAuthnChallenges.pop(token, user.id, :attestation)
     end
   end
 end

@@ -1,6 +1,8 @@
 defmodule BaudrateWeb.SessionControllerWebAuthnTest do
   use BaudrateWeb.ConnCase
 
+  import ExUnit.CaptureLog
+
   alias Baudrate.Auth.WebAuthnChallenges
   alias Baudrate.Repo
   alias Baudrate.Setup.Setting
@@ -38,7 +40,7 @@ defmodule BaudrateWeb.SessionControllerWebAuthnTest do
 
       # Put a challenge for a different user
       other_user = setup_user("user")
-      challenge = %{bytes: :crypto.strong_rand_bytes(32)}
+      challenge = Wax.new_registration_challenge([])
       token = WebAuthnChallenges.put(other_user.id, challenge)
 
       conn =
@@ -86,6 +88,34 @@ defmodule BaudrateWeb.SessionControllerWebAuthnTest do
 
       assert redirected_to(conn) == "/profile"
       assert Phoenix.Flash.get(conn.assigns.flash, :error)
+    end
+
+    # An authentication challenge is what /admin/verify hands out without any
+    # re-authentication. If it could be spent here, the re-authentication gate
+    # in ProfileLive's begin_registration would be bypassed.
+    test "rejects an authentication challenge token", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_user(conn, admin)
+      {token, _options} = Baudrate.Auth.begin_authentication(admin)
+
+      log =
+        capture_log(fn ->
+          conn =
+            post(conn, "/auth/webauthn-register", %{
+              "attestation_object" => Base.url_encode64("not_valid_cbor", padding: false),
+              "client_data_json" => Base.url_encode64("not_valid_json", padding: false),
+              "challenge_token" => token,
+              "label" => "Attacker Key"
+            })
+
+          assert redirected_to(conn) == "/profile"
+          assert Phoenix.Flash.get(conn.assigns.flash, :error)
+        end)
+
+      # Refused at the challenge lookup, before any attestation parsing.
+      assert log =~ "auth.webauthn_register_failed"
+      assert log =~ ":not_found"
+      assert Baudrate.Auth.list_webauthn_credentials(admin) == []
     end
   end
 
@@ -149,6 +179,29 @@ defmodule BaudrateWeb.SessionControllerWebAuthnTest do
 
       assert redirected_to(conn) =~ "/admin/verify"
       assert Phoenix.Flash.get(conn.assigns.flash, :error)
+    end
+
+    test "rejects a registration challenge token", %{conn: conn, admin: admin} do
+      conn = log_in_user(conn, admin)
+      {token, _options} = Baudrate.Auth.begin_registration(admin)
+
+      log =
+        capture_log(fn ->
+          conn =
+            post(conn, "/auth/admin-webauthn-verify", %{
+              "authenticator_data" => "dGVzdA",
+              "client_data_json" => "dGVzdA",
+              "signature" => "dGVzdA",
+              "credential_id" => "dGVzdA",
+              "challenge_token" => token,
+              "return_to" => "/admin/settings"
+            })
+
+          assert redirected_to(conn) =~ "/admin/verify"
+          refute get_session(conn, :admin_totp_verified_at)
+        end)
+
+      assert log =~ "auth.admin_webauthn_invalid_challenge"
     end
 
     test "increments attempt counter on failed verification", %{conn: conn, admin: admin} do
