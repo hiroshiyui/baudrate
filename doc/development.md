@@ -2262,6 +2262,32 @@ in `mount/3`; the root layout renders them with the correct attribute
 | User profile (`/users/:username`) | `profile` | `summary` | User avatar → site icon |
 | Home (`/`) | `website` | `summary` | Site icon |
 
+## Continuous Integration
+
+CI (`.github/workflows/elixir.yml`) runs two jobs on every push and pull
+request to `main` and `current`, both inside the project's own CI image
+([ADR 0027](adr/0027-ci-runs-in-a-pinned-attested-image.md)):
+
+| Job | Runs |
+|-----|------|
+| Test (4 partitions) | format check, `compile --warnings-as-errors`, `mix lint`, `mix test --partitions 4 --seed 9527` |
+| Browser tests | `mix assets.build`, then `mix test --only feature` (Wallaby + Selenium + headless Firefox ESR); failure screenshots and the Selenium log are uploaded |
+
+The image (`ci/image/Dockerfile`) contains Erlang/OTP, Elixir, Rust, Firefox
+ESR, Java, the PostgreSQL client, esbuild, Tailwind, GeckoDriver and Selenium
+Server, all from pinned, checksum-verified inputs. Jobs use it only through the
+digest in `ci/image/image.lock`, after `ci-image-ref.yml` verifies its build
+provenance, and each job first runs `ci/image/verify-toolchain.sh`. Only
+GitHub-owned actions are used, pinned to commit SHAs; the PostgreSQL service is
+pinned by digest. Inside the container the database is reached as `postgres`
+(`PGHOST`), and esbuild, Tailwind and Selenium come from the image
+(`MIX_ESBUILD_PATH`, `MIX_TAILWIND_PATH`, `BAUDRATE_SELENIUM_DIR`).
+
+Changing Erlang, Elixir, Rust, esbuild, Tailwind, GeckoDriver or Selenium needs
+the Dockerfile's version and SHA-256 updated too; see `ci/image/README.md`.
+`.github/workflows/ci-image.yml` rebuilds the image on Dockerfile changes and
+weekly, and proposes the new digest.
+
 ## Dependency Monitoring
 
 Dependency updates are watched from two places, which together cover every pin:
@@ -2271,7 +2297,7 @@ Dependency updates are watched from two places, which together cover every pin:
 | Dependabot (`.github/dependabot.yml`) | Hex packages in `mix.exs`/`mix.lock` (including the `heroicons` git dependency and the esbuild/Tailwind *installer* packages), the three Rust NIF crates under `native/`, and GitHub Actions. Security updates get one PR each; minor/patch version updates are grouped weekly. |
 | Dependency drift workflow (`.github/workflows/dependency-drift.yml`) | Pins Dependabot cannot read: the esbuild/Tailwind binary `version:` in `config/config.exs`, vendored assets in `assets/vendor/` (daisyUI version; `daisyui-theme.js` byte-compared against the matching daisyUI release; topbar; Cropper.js), Erlang/Elixir in `.tool-versions`, and retired Hex packages via `mix hex.audit`. Runs weekly (and on manual dispatch) and keeps one rolling "Dependency drift report" issue, closed automatically once everything is current. |
 
-The drift check is a plain script (`.github/scripts/dependency-drift.sh`, needs `curl` and `jq`) that also runs locally; it exits non-zero when anything is outdated. Upgrading is still a manual step — the `check-updates` skill walks through risk-grouping the results.
+The drift check is a plain script (`.github/scripts/dependency-drift.sh`, needs `curl` and `jq`) that also runs locally; in CI, `mix hex.audit` runs inside the CI image while the script runs on the runner; it exits non-zero when anything is outdated. Upgrading is still a manual step — the `check-updates` skill walks through risk-grouping the results.
 
 ## Further Reading
 

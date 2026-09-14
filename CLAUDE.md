@@ -133,6 +133,10 @@ new ADR; accepted ADRs are superseded, never rewritten.
 - `published_at` on articles: stores the original publication timestamp from RSS/Atom feed entries (via bot posting). Nil for locally-created articles. Used to preserve original feed entry dates when bots create articles.
 - Plain HTML inputs inside `phx-change` forms are reset on every re-render: `<input value={@assign}>` elements not backed by a Phoenix form changeset have their values overwritten by the server assign on each re-render triggered by `phx-change`. Fix: wrap them in a container with `id` + `phx-update="ignore"` so LiveView skips patching that subtree after the initial mount. Example: bot profile field rows in `/admin/bots` edit form.
 
+### CI
+
+- **CI runs only in the project's CI image** (ADR 0027, `ci/image/`). Jobs use the digest in `ci/image/image.lock` after `ci-image-ref.yml` verifies its provenance attestation. Never add a third-party action, `curl | sh`, or an unpinned download to a workflow: put the tool in `ci/image/Dockerfile` with a SHA-256 cross-checked against upstream's published checksum. Use only GitHub-owned actions, pinned to a commit SHA with a `# vN` comment. Bumping Erlang/Elixir (`.tool-versions`), esbuild/Tailwind (`config/config.exs`) or Selenium/GeckoDriver also needs the Dockerfile `ARG`s and checksums updated; CI's `verify-toolchain.sh` fails until the image is rebuilt and the proposed `image.lock` change is merged.
+
 ## Project Conventions
 
 ### Principle Maintenance

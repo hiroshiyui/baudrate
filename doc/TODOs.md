@@ -553,7 +553,6 @@ Needs an ADR.
 
 - [ ] **Static checks:** Dialyzer, a coverage report, and a check that gettext translations are extracted and up to date.
 - [ ] **NIF crates:** `cargo clippy` and `cargo test` for the three NIF crates (they have no `#[test]` today).
-- [ ] **Browser tests:** run the Wallaby feature tests in CI with headless Firefox.
 - [ ] **Ansible:** `ansible-lint` on the playbooks.
 
 ### 8B — Repository files (S)
