@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.16.0] — 2026-09-14
+
+Users are now told whenever their second factors change, plus fixes to
+notification preferences and push notifications.
+
+**Upgrading:**
+
+- No migrations, no configuration changes.
+- Users start receiving account security notices for second-factor changes
+  made after the upgrade. They cannot be turned off.
+- Push notification titles are now localized, and some wording changed to
+  match the in-app notification list (e.g. "forwarded your article" instead
+  of "shared your article").
+
+### Added
+
+- **Account security notices.** A user is notified when a security key is
+  added to or removed from their account (with the key's label), and when
+  TOTP two-factor authentication is set up or turned off.
+  - The notices are sent from the functions that make the change, so no path
+    can skip them.
+  - They are always delivered, in-app and by push, whatever the notification
+    preferences say.
+  - Each notice links to `/profile` and says what to do if the user did not
+    make the change.
+  - This lets someone notice a change they did not make (see ADR 0022).
+
+### Fixed
+
+- **Some notification preferences could not be switched off.** Turning off
+  "liked your comment", "boosted your article" or "boosted your comment" on
+  `/profile` failed with "Failed to update notification preferences." The page
+  and the validation now share one list of notification types.
+- **Push notification icons never loaded.** They pointed at an avatar path
+  that does not exist; they now use the stored 120 px avatar.
+- **Push notification titles were English-only, and some types had no
+  title.** Comment likes and boosts showed "New notification". Titles now use
+  the same translated text as the in-app notification list, in the
+  recipient's preferred language.
+
+### Documentation
+
+- **The Ansible README explains rollback after an old Erlang/Elixir version
+  is uninstalled.** Re-deploying such a tag needs that version reinstalled.
+  The immediate alternative is to repoint the `current` and `static` symlinks
+  at a kept release and restart.
+
 ## [1.15.0] — 2026-09-14
 
 Real client IPs behind a same-host reverse proxy, and version information in
