@@ -775,7 +775,7 @@ Signature: keyId="https://remote.example/users/bob#main-key",
 |--------|-------------|
 | `(request-target)` | Pseudo-header: `post /ap/inbox` |
 | `host` | Request host |
-| `date` | RFC 7231 HTTP date (validated within +/-30 seconds) |
+| `date` | RFC 7231 HTTP date (validated within +/-300 seconds) |
 | `digest` | `SHA-256=<base64>` of request body |
 
 **Algorithm:** `rsa-sha256` (also accepts `hs2019`)

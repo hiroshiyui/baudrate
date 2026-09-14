@@ -838,8 +838,9 @@ as needed. Restart nginx after changes: `nginx -t && systemctl reload nginx`.
 
 ### Clock Synchronization
 
-HTTP Signatures validate the `Date` header within ±30 seconds. If the server
-clock drifts, all incoming federation requests will fail signature verification.
+HTTP Signatures validate the `Date` header within ±300 seconds (5 minutes,
+`Baudrate.Federation` `signature_max_age`). If the server clock drifts further, all
+incoming federation requests will fail signature verification.
 
 ```bash
 timedatectl status          # Check time sync status

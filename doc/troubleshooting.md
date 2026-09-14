@@ -288,7 +288,7 @@ preloading.
 
 ### Clock synchronization (NTP)
 
-HTTP Signatures include a `Date` header validated within **+/-30 seconds**.
+HTTP Signatures include a `Date` header validated within **+/-300 seconds** (5 minutes).
 If your server's clock is off, all incoming federation requests will be
 rejected with signature verification failures.
 
