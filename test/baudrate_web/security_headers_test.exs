@@ -45,6 +45,19 @@ defmodule BaudrateWeb.SecurityHeadersTest do
       refute csp =~ "script-src 'self' 'unsafe-inline'"
     end
 
+    test "allows the theme bootstrap inline script by its hash, and nothing else inline",
+         %{conn: conn} do
+      conn = get(conn, "/login")
+      [csp] = get_resp_header(conn, "content-security-policy")
+
+      # The script the page actually renders must hash to what the policy allows.
+      [_, inline] = Regex.run(~r{<script>(.*?)</script>}s, html_response(conn, 200))
+      hash = "'sha256-" <> Base.encode64(:crypto.hash(:sha256, inline)) <> "'"
+
+      assert [_, script_src] = Regex.run(~r/script-src ([^;]*)/, csp)
+      assert String.split(script_src) == ["'self'", hash]
+    end
+
     test "allows YouTube embeds in frame-src", %{conn: conn} do
       conn = get(conn, "/login")
       [csp] = get_resp_header(conn, "content-security-policy")

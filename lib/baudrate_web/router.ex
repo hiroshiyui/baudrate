@@ -58,6 +58,10 @@ defmodule BaudrateWeb.Router do
 
   use BaudrateWeb, :router
 
+  # The only inline script allowed is the root layout's theme bootstrap, by
+  # hash (`BaudrateWeb.ThemeBootstrap`); everything else must come from 'self'.
+  @content_security_policy "default-src 'self'; script-src 'self' #{BaudrateWeb.ThemeBootstrap.csp_source()}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: ws: wss:; worker-src 'self'; frame-src https://www.youtube-nocookie.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'"
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -70,8 +74,7 @@ defmodule BaudrateWeb.Router do
     # the UI. This is a known DaisyUI requirement and cannot be avoided without
     # replacing the CSS framework.
     plug :put_secure_browser_headers, %{
-      "content-security-policy" =>
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: ws: wss:; worker-src 'self'; frame-src https://www.youtube-nocookie.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
+      "content-security-policy" => @content_security_policy,
       "permissions-policy" => "geolocation=(), microphone=(), camera=()",
       "referrer-policy" => "strict-origin-when-cross-origin",
       "x-frame-options" => "DENY"
@@ -115,8 +118,7 @@ defmodule BaudrateWeb.Router do
     plug :put_root_layout, html: {BaudrateWeb.Layouts, :root}
 
     plug :put_secure_browser_headers, %{
-      "content-security-policy" =>
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: ws: wss:; worker-src 'self'; frame-src https://www.youtube-nocookie.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
+      "content-security-policy" => @content_security_policy,
       "permissions-policy" => "geolocation=(), microphone=(), camera=()",
       "referrer-policy" => "strict-origin-when-cross-origin",
       "x-frame-options" => "DENY"

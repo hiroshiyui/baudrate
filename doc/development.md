@@ -1725,6 +1725,7 @@ Exposed via `Federation.fetch_remote_object/1` (preview) and `Federation.lookup_
 - Signed outbound GET requests — actor resolution falls back to signed GET when remote instances require authorized fetch
 - Session cookie `secure` flag handled by `force_ssl` / `Plug.SSL` in production
 - CSP `img-src` allows only `'self' data: blob:` — remote actor avatars and every other remote image are served through the local media proxy (`Baudrate.Media.Proxy`), so no page issues a third-party subresource request
+- CSP `script-src` is `'self'` plus one hash: the root layout's theme bootstrap (`BaudrateWeb.ThemeBootstrap`), hashed at compile time from the bytes the layout renders. Never add `'unsafe-inline'`; a new inline script needs its own hash the same way
 
 **Public API:**
 
