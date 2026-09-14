@@ -4,7 +4,7 @@ This list comes from a product review done on 2026-09-14, after v1.18.1, which l
 
 Paths are relative to the repository root. `lib/baudrate_web/…` is shortened to `web/…` and `lib/baudrate/…` to `core/…`. Line numbers were correct as of v1.18.1.
 
-Phase 0 (correctness bugs) shipped in v1.18.2. Phase 1 below is scoped, with its decisions P1-D1–P1-D9 still open; later phases are listed by role further down and get scoped when they start.
+Phase 0 (correctness bugs) shipped in v1.18.2. Every other open item is assigned to one of Phases 1–8 below, each with stages, acceptance criteria and the decisions it needs, or listed in the Backlog. Work phase by phase; within a phase, ship each stage as its own release.
 
 Baudrate is already strong on security engineering, ADRs, accessibility plumbing and test coverage. At review time, the gaps were:
 - **Broken promises:** the UI or docs say something happens and it doesn't.
@@ -20,25 +20,27 @@ Baudrate is already strong on security engineering, ADRs, accessibility plumbing
 - **D1. Local post visibility.** Remove "Followers only" and "Direct" from local composers and keep Public and Unlisted.
   - Boards are public spaces whose audience is set by the board's view role, and direct messages are the private channel.
   - Implemented by B4.
-- **D2. Scale target: one server.** Baudrate officially supports a single node. See "Single-node stance" under Sysops.
-- **D3. Email: stay without email.** Recovery is covered by three additions instead; see "Account recovery" under Registered members.
-- **D4. Data export and move gate: keep "TOTP enabled for ≥ 7 days"** (ADR 0023, ADR 0025), and improve the path for members; see "Data export and move path" under Registered members.
+- **D2. Scale target: one server.** Baudrate officially supports a single node. Implemented by 2B.
+- **D3. Email: stay without email.** Recovery is covered by three additions instead: 4D.
+- **D4. Data export and move gate: keep "TOTP enabled for ≥ 7 days"** (ADR 0023, ADR 0025), and improve the path for members: 6E.
   - Accepting WebAuthn in step-up re-authentication remains a separate possible feature.
 
 ---
 
 ## Roadmap
 
-Each phase gets its own plan before work starts.
+Each phase settles its decisions and gets its own implementation plan before work starts. Sizes: S ≈ a day, M ≈ a few days, L ≈ a week.
 
-| Phase | Theme | Why |
-|-------|-------|-----|
-| 1 | Trust and safety | A public hub can't grow without moderation reach |
-| 2 | Operability | Data loss and blind operations are the biggest risks |
-| 3 | Federation reach | Threading, Lemmy groups and profile changes don't federate |
-| 4 | Discovery and onboarding | Turns visitors into members |
-| 5 | Member depth | Retention |
-| 6 | Contributor health | Lowers the bus factor of one |
+| Phase | Theme | Stages | Why |
+|-------|-------|--------|-----|
+| 1 | Trust and safety | 1A–1E | A public hub can't grow without moderation reach |
+| 2 | Operability | 2A–2H | Data loss and blind operations are the biggest risks |
+| 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
+| 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
+| 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
+| 6 | Member depth | 6A–6E | Retention |
+| 7 | Admin and content tools | 7A–7E | Running the site without a shell |
+| 8 | Contributor health | 8A–8D | Lowers the bus factor of one |
 
 ---
 
@@ -143,12 +145,12 @@ Needs an ADR (domain blocks as rows), based on P1-D7.
 
 ### Not in Phase 1
 
-These stay in the role lists below:
-- **Anti-spam:** CAPTCHA, trust levels, new-account limits, keyword filters, first-post approval, IP bans. A later phase of its own.
-- **Content tools:** moving articles between boards, splitting or merging threads.
-- **Admin surface:** an `/admin` dashboard with metrics, and a UI for admin announcements.
-- **Federation:** silence and reject-media domain levels (only full blocks in 1D), outbound `Block` activities (P1-D1).
-- **Legal:** takedown workflow, age gating, content warnings.
+These are scheduled elsewhere:
+- **Anti-spam:** CAPTCHA, trust levels, new-account limits, keyword filters, first-post approval, IP bans → Phase 5.
+- **Content tools:** moving articles between boards → 7C; splitting or merging threads → Backlog.
+- **Admin surface:** an `/admin` dashboard with metrics, and a UI for admin announcements → 7A, 7B.
+- **Federation:** silence and reject-media domain levels (only full blocks in 1D), outbound `Block` activities (P1-D1) → Backlog.
+- **Legal:** takedown workflow, age gating → Backlog; content warnings → 3E.
 
 ### Decisions needed before Phase 1 starts
 
@@ -166,175 +168,426 @@ Recommended answers in brackets.
 
 ---
 
-## Guests and first-time visitors
+## Phase 2 — Operability (scope)
 
-Public Rules, Terms and Privacy pages are in Phase 1 (1E).
+**Goal.** No data loss goes unnoticed, the operator hears about problems before users do, and a bad deploy can be undone.
 
-- [ ] **The home page is thin.** It shows top-level boards only: no latest, popular or unanswered posts, no board stats (posts, last activity), no site description, and no empty state when there are no boards (`web/live/home_live.html.heex`).
-- [ ] **No "recent", "popular" or "unanswered" pages, and no tag index.** Only `/tags/:tag` exists. `Content.list_recent_public_articles` is used only by RSS.
+**Done when:**
+- production takes verified backups on a schedule, and a restore has been rehearsed;
+- a delivery or inbound backlog, a stalled worker or a full disk shows up in health checks and metrics;
+- no federated activity is lost to a restart;
+- the production host no longer compiles releases;
+- a release can be rolled back with one command.
+
+### 2A — Backups and recovery (M)
+
+- [ ] **Ansible `backup` role.**
+  - Creates an owner-only backup directory.
+  - Installs a systemd timer running `Baudrate.Release.backup/2` (v1.18.2).
+  - Keeps N days of backups (variable).
+  - Runs an optional off-host copy command (variable, e.g. rsync or rclone).
+- [ ] **Dump before migrations.** The deploy playbook takes a database dump before running migrations and keeps the last 3.
+- [ ] **Restore runbook** in `doc/sysop.md`, rehearsed once on a scratch host, with the date recorded there.
+- [ ] **Backup freshness in health checks:** the time of the last successful backup (see 2D).
+- **Accepted when:** production has a backup less than 24 h old, and the rehearsal restored a working instance.
+
+### 2B — Single-node stance, D2 (S)
+
+- [ ] Remove `DNS_CLUSTER_QUERY` from `config/runtime.exs` and `doc/sysop.md`, and drop `DNSCluster` from `application.ex` and `mix.exs`.
+- [ ] ADR: Baudrate runs on one node, so ETS caches, nonces, challenges, rate limits and local uploads are sound.
+- [ ] Rewrite the scaling section of `doc/sysop.md` around a bigger host, Postgres tuning and a CDN for static assets.
+
+### 2C — Delivery and inbound robustness (L)
+
+- [ ] **Enqueue delivery jobs in the same transaction as the change that causes them.** Today a task inserts them after the commit (`core/federation.ex:367`), so a restart in between loses the activity.
+- [ ] **Wake the delivery worker on enqueue** instead of waiting up to 60 s.
+- [ ] **Per-domain circuit breaker:** after N consecutive failures a domain's jobs back off together instead of taking worker slots one by one.
+- [ ] **Inbound queue.**
+  - After signature verification, store the activity and answer `202`.
+  - Process it with bounded concurrency outside the request.
+  - Keep today's validation order, and reject oversized or duplicate activities before storing them.
+- **Accepted when:** killing the node between a post and its delivery loses nothing (test), and a remote instance posting many activities cannot use up the web request pool.
+
+### 2D — Observability (M)
+
+- [ ] **Structured logs:** an optional JSON log format, off by default.
+- [ ] **Metrics:** a Prometheus text endpoint on a localhost-only port (P2-D1). It exports request, LiveView, Repo, delivery queue, inbound queue, media cache and bot fetch metrics from the existing `BaudrateWeb.Telemetry` definitions.
+- [ ] **Detailed health:** `/health` stays public and minimal, and a localhost-only detail view reports:
+  - delivery backlog and the age of the oldest job;
+  - inbound backlog;
+  - worker liveness (`DeliveryWorker`, `SessionCleaner`, `FeedWorker`);
+  - free disk space under `shared/uploads`;
+  - the last successful backup.
+- [ ] **Error reporting (P2-D2).**
+- **Accepted when:** each detail check fails in a test when its condition is broken, and the sysop guide shows how to scrape and alert on it.
+
+### 2E — Deploy safety (M)
+
+- [ ] **Build releases in CI** on a Debian 12 image when a tag is pushed, and attach the tarball to the GitHub release (P2-D3).
+- [ ] **Deploy the artifact.** The deploy playbook installs the attached release instead of compiling, and Rust, build-essential and git leave the production host.
+- [ ] **Rollback playbook** that points `current` back at the previous release. It refuses when that release is older than the newest applied migration, unless forced, and documents why.
+- [ ] **Security checks in CI:** Sobelow and `mix_audit` on every PR, and a release-build smoke test (start the release and hit `/health`).
+
+### 2F — Retention (S)
+
+- [ ] Purge on a schedule, with periods set by P2-D4:
+  - old `feed_items` nobody has bookmarked or interacted with;
+  - old `announces`;
+  - soft-deleted articles and comments past the evidence window (P1-D6).
+- [ ] Postgres guidance in `doc/sysop.md`: autovacuum, `shared_buffers` and connection pool sizing for a single host.
+
+### 2G — Key separation (M)
+
+Needs an ADR.
+
+- [ ] Separate encryption keys for TOTP secrets and federation private keys, apart from `SECRET_KEY_BASE`. Today one secret derives every key and cannot be rotated.
+- [ ] A release task that re-encrypts the stored secrets under a new key, so any key can be rotated.
+
+### 2H — Drift (S)
+
+- [ ] Run the same PostgreSQL major version in Ansible and CI (15 in Ansible, 17 in CI today).
+- [ ] Update the worker table in `doc/sysop.md` (add `FeedWorker` and every `SessionCleaner` job).
+- [ ] Fix the README clone URL and add `INSTALLATION_KEY` to its production environment list.
+- [ ] Remove the two link-preview images committed under `priv/static/uploads`.
+
+### Decisions needed
+
+- [ ] **P2-D1. Metrics stack.** [A Prometheus text endpoint with no third-party service, scraped by whatever the operator runs.]
+- [ ] **P2-D2. Error reporting.** [None built in; errors go to logs and metrics. Sending errors to a third party would leak request data.]
+- [ ] **P2-D3. Where releases are built.** [In GitHub Actions on a Debian 12 image matching production; deploy the artifact.]
+- [ ] **P2-D4. Retention periods.** [Uninteracted feed items 90 days; announces 180 days; soft-deleted rows after the 90-day evidence window.]
+
+---
+
+## Phase 3 — Federation reach (scope)
+
+**Goal.** Conversations, mentions, profile changes and groups work the way Mastodon and Lemmy users expect.
+
+**Done when:**
+- a reply to a comment threads under that comment on Mastodon;
+- a mentioned remote user is notified;
+- Lemmy community activity arriving through a group appears here;
+- profile and board edits reach followers;
+- content warnings survive in both directions.
+
+### 3A — Threading and mentions (M)
+
+- [ ] **`inReplyTo` names the parent comment** when replying to a comment (`core/federation/publisher.ex:186`).
+- [ ] **`Mention` tags.** `@user@domain` mentions in local articles and comments become `Mention` tags plus `cc` addressing, delivered to the mentioned actors.
+  - Unknown handles are resolved via WebFinger, rate limited (P3-D2).
+
+### 3B — Fetchable objects (M)
+
+- [ ] **New local comments get a fetchable id,** `/ap/comments/:id`, served with the same visibility and federation gates as articles.
+  - Today their ids are `/ap/users/:name#note-N`, which returns the actor document when fetched.
+  - Existing comments keep their stored ids (P3-D1).
+- [ ] **Polls are fetchable** as `Question` objects.
+
+### 3C — Lemmy groups, FEP-1b12 (M)
+
+- [ ] **Accept an `Announce` from a group that wraps `Create`, `Update`, `Delete`, `Like` or `Undo`** (`core/federation/inbox_handler.ex:948` drops them).
+  - Each wrapped activity passes the same origin checks as a direct delivery, and is fetched by id when it is not embedded.
+- [ ] **Interop tests** with recorded Lemmy fixtures, both for a Lemmy community a board follows and for a Lemmy user who follows a board.
+
+### 3D — Profile, board and poll updates (S)
+
+- [ ] **`Update(Person)`** when avatar, display name, bio or profile fields change, debounced.
+- [ ] **`Update(Group)`** when a board's name, description or avatar changes.
+- [ ] **`Update(Question)`** with final counts when a poll closes.
+- [ ] **`Delete(Person)`** ships with self-service account deletion (6E).
+
+### 3E — Content warnings and media (M)
+
+- [ ] **Inbound:** store `summary` and `sensitive` in their own fields on articles, comments and feed items, and render the content collapsed behind its warning. Today they are merged into the body (`core/federation/inbox_handler.ex:1219`).
+- [ ] **Outbound:** an optional content warning in the local composer (articles, comments, feed replies), sent as `summary` and `sensitive`.
+- [ ] **Video and audio attachments** render as a link card to the original, never embedded, following the no-third-party rule. They are dropped today.
+
+### 3F — Protocol hygiene (S)
+
+- [ ] **NodeInfo:**
+  - `localPosts` counts only local articles;
+  - user totals exclude bots and banned users;
+  - add active-user counts for one month and half a year (`core/federation/discovery.ex:85-100`).
+  - Advertise NodeInfo 2.0 as well.
+- [ ] Declare a JSON-LD namespace for the `baudrate:*` extension fields.
+- [ ] Actor documents get a short cache lifetime instead of `no-store`.
+
+### Decisions needed
+
+- [ ] **P3-D1. Comment ids.** [New comments use `/ap/comments/:id`; existing rows keep their stored `ap_id`, because other servers already know them.]
+- [ ] **P3-D2. Resolving mentions of unknown handles.** [Resolve at post time with WebFinger, rate limited per user; leave the mention as plain text if it doesn't resolve.]
+
+---
+
+## Phase 4 — Discovery and onboarding (scope)
+
+**Goal.** A first-time visitor understands what the site is and finds something to read; a new member gets to a first post without a dead end, and can always get back into the account.
+
+**Done when:**
+- a guest's first page shows recent content and the site's purpose;
+- search engines index public content without duplicates;
+- a new member is signed in and guided after registering;
+- a locked-out member has a documented way back in (D3).
+
+### 4A — Home and navigation (M)
+
+- [ ] **Home page.**
+  - Latest articles from public boards.
+  - Board cards with post counts and last activity.
+  - A site description, from a new admin setting `site_description`, which `web/open_graph.ex:151` already reads.
+  - An empty state when there are no boards.
 - [ ] **Branding for guests.**
-  - The guest welcome hardcodes "Baudrate" instead of `site_name` (`web/live/home_live.html.heex:14`).
-  - Guests on mobile never see the site name: the logo is `hidden lg:block` and the hamburger menu is for signed-in users only (`web/components/layouts.ex:39,153`).
-  - The footer is empty.
-- [ ] **SEO.**
-  - No sitemap, no canonical `<link>` for `?page=N`, and no `<meta name="description">`.
-  - No `noindex` on search and login pages, and `robots.txt` is the stock file.
-  - `site_description` (read in `web/open_graph.ex:151`) has no admin setting.
-  - An unknown user redirects to `/` instead of returning 404 (`web/live/user_profile_live.ex:28-37`).
-- [ ] **Feeds aren't discoverable.** No RSS link or icon anywhere in the UI, user feeds aren't advertised in `<head>`, and there are no tag feeds.
-- [ ] **Search.** No sort (relevance or date) and no board or date filter UI. The Users tab is capped at 20 with no pagination (`web/live/search_live.ex:398`). Operators don't work on the Comments tab.
-- [ ] **Sharing.**
-  - The share button hides itself when `navigator.share` is missing, with no copy-link fallback (`assets/js/web_share_hook.js:15`).
-  - Fediverse visitors have no "follow from your instance" flow.
-- [ ] **PWA.**
-  - The service worker is registered only by `PushManagerHook` on `/profile`, and only when VAPID and PushManager are available. Install and share-target are therefore unreliable.
-  - There's no offline page.
-- [ ] **YouTube embeds contact Google for every reader** (`web/components/core_components.ex:1011`). Use a click-to-load placeholder, in line with the no-third-party rule.
-- [ ] **No guest language switcher** (Accept-Language only), no RTL support, and no `hreflang`.
+  - The welcome text uses `site_name` instead of the hardcoded "Baudrate" (`web/live/home_live.html.heex:14`).
+  - Guests on mobile see the site name.
+  - The footer (1E) also links feeds.
+- [ ] **New pages:** `/recent`, `/popular` (P4-D1) and `/unanswered`, plus a tag index at `/tags`.
 
-## Registered members
+### 4B — SEO and feeds (S)
 
-Blocking and muting are in Phase 1 (1A).
+- [ ] **`sitemap.xml`** for public boards and articles, paginated.
+- [ ] **Canonical links and metadata.**
+  - Canonical `<link>` on paginated pages.
+  - `<meta name="description">`.
+  - `noindex` on search, login and registration pages.
+  - A real `robots.txt`.
+- [ ] **Unknown users** return 404 instead of redirecting (`web/live/user_profile_live.ex:28-37`).
+- [ ] **Feed links.**
+  - Visible feed links on the home, board, user and tag pages.
+  - User feeds advertised in `<head>`.
+  - Tag feeds.
 
-- [ ] **Account recovery (D3: no email).** Today there's no email, recovery codes are issued only at registration and setup, and admins can't reset a password, so losing both the password and the codes loses the account. Add:
-  - [ ] **Regenerate recovery codes** from `/profile`.
-    - Behind step-up re-authentication (`Auth.verify_reauthentication/5`, ADR 0022).
-    - Old codes stop working.
-    - Sends an always-delivered security notice.
-  - [ ] **Admin-assisted reset.**
-    - An admin creates a single-use reset link (24 h expiry) and hands it over through another channel.
-    - Using it sets a new password, revokes all sessions (`Auth.Sessions`), and runs `cancel_active_exports/2` and `cancel_active_moves/2`.
-    - It sends a security notice and is written to the audit log.
-    - Needs an ADR covering social-engineering risk and what happens to the account's TOTP and security keys.
-  - [ ] **Nudges:** remind users to store recovery codes and to add a second factor or security key (registration, `/profile`).
-- [ ] **Onboarding.**
-  - After registering, users are sent to `/login` instead of being signed in (`web/live/register_live.ex:88`).
-  - No welcome or profile-setup step, and display name isn't asked at signup.
-  - No notification when an account is approved (`core/auth/users.ex:140`).
-  - Hitting a private page gives no explanation, and there's no return to that page after sign-in.
-- [ ] **Comments.**
-  - Authors can't edit their own comments; only remote comment updates exist.
-  - Replies stop at depth 5 (`web/components/comment_components.ex:154`).
-- [ ] **Composer.**
-  - No alt-text field for images; alt text is always generic "Image N" (`core/content/article_image.ex`).
-  - No content-warning or spoiler option, and images can't be placed inline.
-  - Drafts are stored only in the browser (localStorage).
-- [ ] **Reading.**
-  - No per-comment "new since last visit" and no jump-to-unread.
-  - The comments heading counts only the current page (`web/live/article_live.html.heex:536`).
-  - Guests get no "sign in to comment" prompt.
-  - Board lists re-render under the reader when a new post arrives, with no "N new posts" banner.
-- [ ] **Notifications.**
-  - They open the top of the article instead of the comment (`web/live/notifications_live.ex:117`).
-  - No grouping ("5 people liked") and no filter by type.
-  - No notifications for approval, report outcome, watched boards or a poll closing.
-- [ ] **No way to watch or subscribe to a board or thread.** Also no followers list, follower count or remove-follower.
-- [ ] **Direct messages.**
-  - A new DM sends no web push, because DMs aren't a notification type (`core/notification.ex:334`).
-  - No attachments, search, group conversations or read receipts for the sender.
-- [ ] **Timestamps** use the site time zone with no label and no per-user setting (`web/helpers.ex:28`).
-- [ ] **Account.**
-  - No self-service account deletion.
-  - No list of sessions or devices; only "sign out everywhere else".
-- [ ] **Data export and move path (D4: keep the gate).** On `/profile/export` and `/profile/move`:
-  - Explain why TOTP for 7 days is required.
-  - Link straight to TOTP setup, and show the date the member becomes eligible.
-  - Document that the operator can fulfil an export offline with `Release.export_user_data/3` (already audited) for members who can't use TOTP.
-- [ ] **`/profile` is one 887-line page** with a separate save button per section; split it into tabs or sub-pages.
-- [ ] **Privacy controls.** Only `dm_access` exists: no discoverability or indexing opt-out, no manual follower approval, no domain mute and no keyword filter.
-- [ ] **Translations.** Fill the 5 empty strings in each of zh_TW and ja_JP.
+### 4C — Search (S)
 
-## Board moderators
+- [ ] Sort by relevance or date, and filter by board and date.
+- [ ] Page through users past the first 20 (`web/live/search_live.ex:398`).
+- [ ] Search operators on the Comments tab.
 
-All board moderator items are in Phase 1 (1B).
+### 4D — Onboarding and account recovery, D3 (M)
 
-## Global moderators and admins
+- [ ] **Signing in after registering (P4-D2).** Open mode signs the new member in, instead of sending them to `/login` (`web/live/register_live.ex:88`). A first-visit step asks for a display name and avatar.
+- [ ] **Approval mode.** The pending page explains what happens next, and approval sends a notice (`core/auth/users.ex:140`).
+- [ ] **Private pages** explain that signing in is needed, and bring the user back after sign-in.
+- [ ] **Regenerate recovery codes** from `/profile`.
+  - Behind step-up re-authentication (ADR 0022).
+  - Old codes stop working.
+  - Sends an always-delivered security notice.
+- [ ] **Admin-assisted reset** (needs an ADR).
+  - A single-use link that expires in 24 h, handed over through another channel.
+  - Using it sets a new password, revokes sessions, and cancels exports and moves.
+  - Sends a security notice and writes an audit entry.
+  - The ADR decides what happens to TOTP and security keys, and covers the risk of an admin being talked into it.
+- [ ] **Nudges** to store recovery codes and add a second factor.
 
-The report queue, notifications, sanctions, user detail page, permissions, evidence retention, domain blocks and terms acceptance are in Phase 1. What remains here is outside it.
+### 4E — Sharing and PWA (S)
 
-- [ ] **Content tools.** No moving articles between boards, no split or merge of threads, and no tool to empty a board so it can be deleted (`core/content/boards.ex:184`).
-- [ ] **Anti-spam.** None of: CAPTCHA or proof-of-work, trust levels, new-account or link limits, keyword filters, first-post approval, or IP bans. (Admin alerts for pending registrations are in 1C.)
-- [ ] **Delivery dashboard** shows only 20 actionable jobs, with no domain filter and no bulk retry.
-- [ ] **No `/admin` dashboard** with metrics (users, posts, growth, federation health).
-- [ ] **Admin announcements have no UI**, although `Notification.create_admin_announcement/2` exists. Also missing: custom pages, and site description and contact settings.
-- [ ] **No takedown or legal-request workflow, and no age gating.**
-- [ ] **Board ordering** is a number field; there's no drag-and-drop.
-- [ ] **Bots.**
-  - No display of the next fetch time, no post counts, no "fetch now" that isn't also a reset, and no dry-run preview.
-  - No include or exclude filters.
-  - The first fetch posts the whole backlog (`core/bots/feed_worker.ex:118`).
-  - Bots aren't auto-disabled after repeated failures.
-  - No conditional GET (ETag or If-Modified-Since).
+- [ ] **Service worker on every page,** independent of push (`assets/js/push_manager_hook.js:28-34`), with an offline fallback page.
+- [ ] **Copy-link fallback** when `navigator.share` is missing (`assets/js/web_share_hook.js:15`).
+- [ ] **"Follow from your instance":** a visitor enters their instance and is sent to its remote-follow page for a user or board.
 
-## Sysops and operators
+### 4F — Privacy and language (S)
 
-- [ ] **Backups** (beyond B9).
-  - No Ansible backup role, and no `pg_dump` before migrations run during deploy.
-  - No documented, tested restore on a fresh host.
-- [ ] **Deploy.**
-  - Releases are built on the production host (Rust toolchain on prod, CPU load while serving).
-  - Rollback is manual (`ansible/README.md:150-178`), and migrations are never reversed.
-  - No release artifact is built in CI.
-- [ ] **Observability.**
-  - Telemetry feeds only the dev LiveDashboard.
-  - No Prometheus or OpenTelemetry export, no error tracking, and plain-text logs rather than JSON.
-- [ ] **`/health` only runs `SELECT 1`.** Include delivery backlog, worker liveness and free disk space.
-- [ ] **Single-node stance (D2).** `DNS_CLUSTER_QUERY` and `DNSCluster` suggest clustering is supported, but nothing else is multi-node safe:
-  - `DeliveryWorker` has no `SKIP LOCKED`;
-  - settings, board and domain-block caches refresh only on the local node;
-  - WebAuthn challenges, download nonces, rate limits, uploads and the media cache are all per node.
+- [ ] **YouTube embeds** load only after a click (`web/components/core_components.ex:1011`).
+- [ ] **Language switcher** for guests, kept in a cookie.
+- [ ] **Translations:** fill the 5 empty strings in each of zh_TW and ja_JP.
 
-  To do:
-  - Remove `DNS_CLUSTER_QUERY` from `doc/sysop.md` and `config/runtime.exs`, and drop `DNSCluster` from the supervision tree and `mix.exs`.
-  - Record the single-node assumption in an ADR.
-  - Rewrite the scaling section around vertical scaling, Postgres tuning and a CDN.
-- [ ] **Delivery.**
-  - Activities are enqueued in a task after the transaction commits, so a restart in between loses them (`core/federation.ex:367`).
-  - Throughput is 50 jobs every 60 s at concurrency 10.
-  - Nothing is delivered immediately on enqueue, and there's no per-domain circuit breaker.
-- [ ] **Inbound activities are processed inside the HTTP request**, including remote fetches, competing for the default pool of 10 DB connections. There's no inbound queue.
-- [ ] **Retention.**
-  - Nothing ages out `feed_items`, announces, soft-deleted rows or remote content.
-  - No Postgres tuning or vacuum guidance.
-- [ ] **Storage.** Local disk only: no S3-compatible storage and no CDN guidance.
-- [ ] **One secret for everything.** `SECRET_KEY_BASE` derives the session, TOTP and federation key encryption keys and can't be rotated.
-- [ ] **Drift.**
-  - Ansible installs Postgres 15 while CI uses 17.
-  - The worker table in `doc/sysop.md` omits `FeedWorker` and most `SessionCleaner` jobs.
-  - The README clone URL is a placeholder and its production env list omits `INSTALLATION_KEY`.
-  - Two link-preview images are committed under `priv/static/uploads`.
+### Decisions needed
 
-## Remote fediverse users and instances
+- [ ] **P4-D1. What "popular" means.** [Likes, boosts and comments in the last 7 days, public boards only.]
+- [ ] **P4-D2. Signing in after registering.** [Open mode: sign in at once. Approval mode: sign in as pending, which can read and edit the profile, as today after login. Invite mode: like open mode.]
 
-- [ ] **Reply threading and mentions.**
-  - Outbound comments always set `inReplyTo` to the article, even when replying to a comment (`core/federation/publisher.ex:186`).
-  - No `Mention` tags outside DMs, so mentioned remote users aren't notified.
-- [ ] **Lemmy groups (FEP-1b12).** An `Announce` that wraps `Create`, `Update`, `Delete` or `Like` is dropped; only bare Note, Article or Page objects are accepted (`core/federation/inbox_handler.ex:948`).
-- [ ] **Comments can't be fetched by URL.** Their ids are `/ap/users/:name#note-N`, so fetching one returns the actor document. Polls and DMs aren't served as objects either.
-- [ ] **Missing outbound activities.**
-  - No `Update(Person)` when a profile changes (avatar, display name, bio, profile fields).
-  - No `Update(Group)` when a board is edited.
-  - No `Delete(Person)` and no poll result `Update`.
-- [ ] **Content warnings and attachments.**
-  - Inbound content warnings are merged into the body as `[CW: …]` (`core/federation/inbox_handler.ex:1219`).
-  - Outbound posts never set `summary` or `sensitive`.
-  - Only image attachments are accepted, so video and audio are dropped.
-- [ ] **NodeInfo counts are wrong.** `localPosts` includes remote articles, user totals include bots and banned users, and there are no active-user counts (`core/federation/discovery.ex:85-100`).
-- [ ] **Namespaces and caching.** The `baudrate:*` extension fields have no JSON-LD namespace in `@context`, and actor documents are served with `no-store`.
-- [ ] **Absent:** custom emoji, relays, backfilling remote outboxes or threads, the `featured` (pinned) collection, `Add`/`Remove`, `contentMap`, RFC 9421 signatures and a NodeInfo 2.0 link.
+---
 
-## Developers and contributors
+## Phase 5 — Anti-spam (scope)
 
-- [ ] **CI checks.** Add Sobelow, Dialyzer, `mix_audit` on PRs, coverage, a check that gettext translations are up to date, `cargo clippy` and tests for the NIF crates, a release-build smoke test, and ansible-lint. The Wallaby feature tests never run in CI.
-- [ ] **Repository files.** Add CONTRIBUTING, SECURITY.md, a code of conduct, and issue and PR templates.
-- [ ] **Local setup.** Every contributor needs Rust and libvips. Consider `rustler_precompiled` for the NIFs.
-- [ ] **Unimplemented design doc.** `doc/door-apps-development.md` describes a plugin system with no code; mark it as a proposal or remove it.
-- [ ] **No API or extension points:** no REST, Mastodon-client or OAuth API, and no webhooks.
-- [ ] **Performance.**
-  - Outbox and collection pages run per-item preloads and counts, about 160 queries per page (`core/federation/collections.ex:49,218`).
-  - Offset pagination runs a full count on every page (`core/pagination.ex:88-93`).
-  - No LiveView streams are used.
-  - Cropper.js is bundled for every page instead of only the avatar editor.
+**Goal.** An instance with open registration survives a spam wave without an admin deleting posts one by one.
+
+**Done when:** automated sign-ups are slowed down, new accounts cannot mass-post links, and moderators can stop a wave with filters and IP bans.
+
+### 5A — Registration friction (S)
+
+- [ ] **A self-hosted proof-of-work challenge** on registration (P5-D1). No third-party CAPTCHA, in line with the no-third-party rule.
+- [ ] **Ban an account and the accounts it invited** in one audited action, using the invite chain (`invited_by_id`).
+
+### 5B — Limits for new accounts (M)
+
+- [ ] **A trust level, earned by age and approved activity (P5-D2).** Until a member earns it, they have lower rate limits, at most one link per post, no DMs to non-followers, and fewer images.
+
+### 5C — Hold first posts (S)
+
+- [ ] **An optional setting** that holds a new account's first post (or first N) in the Phase 1 moderation queue until a moderator approves it.
+
+### 5D — Keyword and link filters (M)
+
+- [ ] **Admin-managed filters** on words, patterns and domains.
+  - Each filter blocks, holds for review, or flags (P5-D3).
+  - Applied when local content is created and when remote content arrives.
+  - Every match is audited.
+
+### 5E — IP bans (S)
+
+- [ ] **IP and CIDR bans** for registration and sign-in, with a reason and an optional expiry, audited.
+  - Resolve addresses through `RealIp` only.
+
+### Decisions needed
+
+- [ ] **P5-D1. Challenge type.** [A self-hosted proof-of-work challenge; no external CAPTCHA.]
+- [ ] **P5-D2. Trust thresholds.** [3 days old and 3 posts not removed; admins and moderators are always trusted.]
+- [ ] **P5-D3. Filter actions.** [Block, hold for review, or flag; remote content can only be dropped or flagged.]
+
+---
+
+## Phase 6 — Member depth (scope)
+
+**Goal.** Members who stay find that the site keeps up with them: they can fix mistakes, follow what matters, and control their account.
+
+**Done when:**
+- comments can be edited;
+- notifications lead straight to the comment they are about;
+- members can watch boards and threads;
+- DMs notify;
+- members can delete their account and manage their sessions.
+
+### 6A — Comments and composer (M)
+
+- [ ] **Edit your own comments,** with revision history like articles, federated as `Update(Note)` (P6-D1).
+- [ ] **Alt text** on article, comment and reply images, federated as the attachment `name`. Today alt text is always "Image N".
+- [ ] **Drafts on the server,** with a drafts list, next to the local autosave.
+
+### 6B — Reading and notifications (M)
+
+- [ ] **Per-comment "new since your last visit"** and a jump to the first unread comment.
+- [ ] **The comments heading shows the total count,** not this page's (`web/live/article_live.html.heex:536`).
+- [ ] **Guests see a "sign in to comment" prompt.**
+- [ ] **Board lists show an "N new posts" banner** instead of re-rendering under the reader (`web/live/board_live.ex:162`).
+- [ ] **Notifications link to the comment's anchor and page** (`web/live/notifications_live.ex:117`).
+  - Group similar notifications ("5 people liked…").
+  - Filter by type.
+  - Notify when a poll you voted in closes.
+
+### 6C — Watching and followers (M)
+
+- [ ] **Watch a board or a thread,** and get notified of new posts or replies.
+- [ ] **Your followers:** a list, a count, and a way to remove a follower (sends `Reject`).
+
+### 6D — Direct messages (M)
+
+- [ ] **Web push for new DMs.**
+- [ ] **Image attachments in DMs,** reusing the upload pipeline.
+- [ ] **Search your own conversations.**
+
+### 6E — Account and privacy (L)
+
+- [ ] **Self-service account deletion** (needs an ADR, P6-D2).
+  - Cooling-off period and step-up re-authentication.
+  - `Delete(Person)` to followers.
+- [ ] **Session list:** browser family and last seen for each session, each with its own sign-out.
+- [ ] **Time zones:** a per-user time zone, and a time-zone label on timestamps (`web/helpers.ex:28`).
+- [ ] **Privacy settings:**
+  - opt out of search and indexing (`noindex`, left out of search);
+  - approve followers manually;
+  - mute a domain;
+  - mute keywords.
+- [ ] **Data export and move pages (D4).**
+  - Explain the TOTP rule and link to TOTP setup.
+  - Show the date the member becomes eligible.
+  - Say that the operator can run an export offline.
+- [ ] **Split `/profile`** (887 lines, one save button per section) into sub-pages.
+
+### Decisions needed
+
+- [ ] **P6-D1. Editing comments.** [No time limit; every edit is kept in history, and moderators see all revisions.]
+- [ ] **P6-D2. What account deletion removes.** [Profile, DMs and keys are deleted. Articles and comments are anonymized ("deleted user") by default, or deleted if the member chooses.]
+
+---
+
+## Phase 7 — Admin and content tools (scope)
+
+**Goal.** Running the site doesn't need a shell or SQL.
+
+**Done when:**
+- an admin sees the site's state on one page;
+- an admin can announce, reorganise content and fix bots from the UI.
+
+### 7A — Admin dashboard (M)
+
+- [ ] **`/admin`** shows members and growth, pending registrations, open reports, federation health, delivery backlog, disk space and the last backup (reusing the 2D checks).
+- [ ] **Check `admin.view_dashboard`,** which is defined but unused.
+
+### 7B — Announcements and site settings (S)
+
+- [ ] **Admin announcements UI:** a notification plus a site-wide banner that can be dismissed. `Notification.create_admin_announcement/2` already exists.
+- [ ] **A contact setting** (shown on the About and Rules pages).
+
+### 7C — Content tools (M)
+
+- [ ] **Move an article to another board,** audited and federated.
+- [ ] **Move every article out of a board,** so the board can be deleted (`core/content/boards.ex:184`).
+- [ ] **Keyboard-accessible board ordering** (move up and down) instead of a number field.
+
+### 7D — Bots (M)
+
+- [ ] **Bots list:** show the next fetch time and post counts.
+  - A "fetch now" separate from "reset errors".
+  - A dry-run preview of the next fetch.
+- [ ] **What a bot posts:** include and exclude filters on title and content. The first fetch posts only the latest N entries, not the whole backlog (`core/bots/feed_worker.ex:118`).
+- [ ] **Failures:** a bot is disabled automatically after N failed fetches, with an admin notice.
+- [ ] **Conditional GET** (ETag and Last-Modified).
+
+### 7E — Delivery dashboard (S)
+
+- [ ] **Page through actionable jobs** (only 20 are shown today), filter by domain, and retry or abandon in bulk per domain.
+
+---
+
+## Phase 8 — Contributor health (scope)
+
+**Goal.** Someone other than the maintainer can set up, test and contribute safely.
+
+**Done when:** a new contributor can go from clone to passing tests without installing Rust, and CI catches what reviews would.
+
+### 8A — CI (M)
+
+- [ ] **Static checks:** Dialyzer, a coverage report, and a check that gettext translations are extracted and up to date.
+- [ ] **NIF crates:** `cargo clippy` and `cargo test` for the three NIF crates (they have no `#[test]` today).
+- [ ] **Browser tests:** run the Wallaby feature tests in CI with headless Firefox.
+- [ ] **Ansible:** `ansible-lint` on the playbooks.
+
+### 8B — Repository files (S)
+
+- [ ] CONTRIBUTING, SECURITY.md (how to report vulnerabilities), a code of conduct, and issue and PR templates.
+
+### 8C — Local setup (M)
+
+- [ ] **Precompiled NIFs** (`rustler_precompiled`) published with each release, so contributors don't need Rust.
+- [ ] **Development database credentials** from the environment, with today's values as defaults (`config/dev.exs`).
+- [ ] **`doc/door-apps-development.md`:** mark it as a proposal or remove it; no code backs it.
+
+### 8D — Performance (M)
+
+- [ ] **Outbox and collection pages:** batch the per-item preloads and counts (about 160 queries per page today; `core/federation/collections.ex:49,218`).
+- [ ] **Large lists:** keyset pagination for the outbox and feeds, where `core/pagination.ex:88-93` runs a full count every page.
+- [ ] **LiveView streams** for the feed, board, notification and conversation lists.
+- [ ] **Cropper.js** loads only on the avatar editor.
+
+---
+
+## Backlog (not planned)
+
+Kept so the review is complete. None of these are scheduled; propose moving one into a phase before working on it.
+
+- **Scale and storage:** multi-node clustering (ruled out by D2), S3-compatible storage, CDN integration.
+- **APIs:** a Mastodon-compatible client API, OAuth, a REST API, webhooks, plugins or themes.
+- **Federation extras:**
+  - custom emoji and quote posts;
+  - relays and backfilling remote outboxes or threads;
+  - the `featured` collection, `Add`/`Remove` and `contentMap`;
+  - RFC 9421 signatures;
+  - silence and reject-media domain levels;
+  - outbound `Block` (P1-D1).
+- **Members:** group DMs, read receipts, emoji reactions, inline image placement, reply depth beyond 5, RTL layout, `hreflang` links.
+- **Content tools:** splitting and merging threads, custom pages beyond Rules, Terms and Privacy.
+- **Legal:** a takedown and legal-request workflow, age gating.
+- **Email:** ruled out by D3.
 
 ---
 
