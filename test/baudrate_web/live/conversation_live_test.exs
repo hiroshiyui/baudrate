@@ -34,6 +34,8 @@ defmodule BaudrateWeb.ConversationLiveTest do
       conn = log_in_user(conn, user)
       {:ok, view, _html} = live(conn, "/messages/#{conv.id}")
       assert render(view) =~ "Test message"
+      # The registered hook name; "ScrollBottom" was never registered.
+      assert has_element?(view, ~s(#message-list[phx-hook="ScrollBottomHook"]))
     end
 
     test "a long conversation shows its newest messages and loads older ones on request",
