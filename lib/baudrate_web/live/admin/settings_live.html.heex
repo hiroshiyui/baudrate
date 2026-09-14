@@ -3,6 +3,35 @@
     {gettext("Admin Settings")}
   </h1>
 
+  <section
+    id="admin-system-info"
+    class="admin-system-info card bg-base-200 shadow-sm"
+    aria-labelledby="admin-system-info-heading"
+  >
+    <div class="card-body">
+      <h2 id="admin-system-info-heading" class="admin-system-info-heading card-title text-lg">
+        {gettext("System Information")}
+      </h2>
+      <dl class="admin-system-info-list grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1 text-sm">
+        <dt class="admin-system-info-label opacity-70">{gettext("Baudrate version")}</dt>
+        <dd id="admin-system-info-baudrate" class="admin-system-info-value font-mono break-all">
+          v{@system_info.baudrate}
+        </dd>
+        <dt class="admin-system-info-label opacity-70">{gettext("Elixir version")}</dt>
+        <dd id="admin-system-info-elixir" class="admin-system-info-value font-mono break-all">
+          {@system_info.elixir}
+        </dd>
+        <dt class="admin-system-info-label opacity-70">{gettext("Erlang/OTP version")}</dt>
+        <dd id="admin-system-info-otp" class="admin-system-info-value font-mono break-all">
+          {gettext("OTP %{release} (ERTS %{erts})",
+            release: @system_info.otp,
+            erts: @system_info.erts
+          )}
+        </dd>
+      </dl>
+    </div>
+  </section>
+
   <div id="settings-card" class="admin-settings-card card bg-base-200 shadow-sm">
     <div class="card-body">
       <.form for={@form} id="settings-form" phx-change="validate" phx-submit="save">

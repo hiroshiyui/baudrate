@@ -24,6 +24,29 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
     assert html =~ "approval_required"
   end
 
+  test "admin sees the running Baudrate, Elixir and Erlang/OTP versions", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_admin(conn, admin)
+
+    {:ok, lv, _html} = live(conn, "/admin/settings")
+
+    assert has_element?(lv, "#admin-system-info")
+
+    assert has_element?(
+             lv,
+             "#admin-system-info-baudrate",
+             "v#{Application.spec(:baudrate, :vsn)}"
+           )
+
+    assert has_element?(lv, "#admin-system-info-elixir", System.version())
+
+    assert has_element?(
+             lv,
+             "#admin-system-info-otp",
+             "OTP #{:erlang.system_info(:otp_release)} (ERTS #{:erlang.system_info(:version)})"
+           )
+  end
+
   test "non-admin is redirected away", %{conn: conn} do
     user = setup_user("user")
     conn = log_in_user(conn, user)

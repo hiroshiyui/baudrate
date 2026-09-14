@@ -1134,7 +1134,7 @@ discover each other via `Phoenix.PubSub.PG2`.
 
 | Route | Purpose |
 |-------|---------|
-| `/admin/settings` | Site name, registration mode, federation settings |
+| `/admin/settings` | Site name, registration mode, federation settings; read-only system information (Baudrate, Elixir, Erlang/OTP and ERTS versions) |
 | `/admin/users` | User management (search, ban/unban, role changes) |
 | `/admin/pending-users` | Approve pending registrations |
 | `/admin/boards` | Board CRUD, permissions, moderator assignment |

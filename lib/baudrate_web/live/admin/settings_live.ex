@@ -5,6 +5,11 @@ defmodule BaudrateWeb.Admin.SettingsLive do
   Only accessible to users with the `"admin"` role. Provides a form
   to edit the site name, timezone, registration mode, federation settings,
   and End User Agreement, backed by the `Baudrate.Setup` context.
+
+  Also shows read-only system information: the running Baudrate release
+  version and the Elixir, Erlang/OTP, and ERTS versions it runs on. The
+  Baudrate version is already public through NodeInfo and the federation
+  `User-Agent`; the runtime versions are shown to admins only.
   """
 
   use BaudrateWeb, :live_view
@@ -34,6 +39,7 @@ defmodule BaudrateWeb.Admin.SettingsLive do
       |> assign(dark_theme_options: Setup.dark_theme_options())
       |> assign(vapid_configured: vapid_public_key != nil)
       |> assign(vapid_public_key: vapid_public_key)
+      |> assign(system_info: system_info())
       |> assign(page_title: gettext("Admin Settings"))
 
     {:ok, socket}
@@ -98,5 +104,17 @@ defmodule BaudrateWeb.Admin.SettingsLive do
      |> assign(vapid_configured: true)
      |> assign(vapid_public_key: public_key_b64)
      |> put_flash(:info, gettext("VAPID keys generated successfully."))}
+  end
+
+  # Versions of the running node, read at mount time. `otp_release` is only
+  # the major release ("28"); the ERTS version pins the exact runtime build
+  # bundled into the release.
+  defp system_info do
+    %{
+      baudrate: Application.spec(:baudrate, :vsn) |> to_string(),
+      elixir: System.version(),
+      otp: :erlang.system_info(:otp_release) |> to_string(),
+      erts: :erlang.system_info(:version) |> to_string()
+    }
   end
 end
