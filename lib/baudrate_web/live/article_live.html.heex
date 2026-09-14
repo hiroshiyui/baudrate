@@ -132,9 +132,9 @@
           </span>
         </div>
 
-        <%!-- Vote form: shown when logged in, poll open, and not yet voted --%>
+        <%!-- Vote form: shown when logged in (not moved), poll open, and not yet voted --%>
         <.form
-          :if={@current_user && !@poll_closed && !@has_voted}
+          :if={@current_user && !moved_account?(@current_user) && !@poll_closed && !@has_voted}
           for={%{}}
           phx-submit="cast_vote"
           id="poll-vote-form"
@@ -180,9 +180,11 @@
           </button>
         </.form>
 
-        <%!-- Results: shown when voted, closed, or guest --%>
+        <%!-- Results: shown when voted, closed, guest, or moved (read-only) account --%>
         <div
-          :if={@has_voted || @poll_closed || is_nil(@current_user)}
+          :if={
+            @has_voted || @poll_closed || is_nil(@current_user) || moved_account?(@current_user)
+          }
           class="article-poll-results space-y-2"
         >
           <div :for={option <- @poll.options} class="article-poll-result">
@@ -214,7 +216,7 @@
           </div>
 
           <button
-            :if={@has_voted && !@poll_closed}
+            :if={@has_voted && !@poll_closed && !moved_account?(@current_user)}
             id="poll-change-vote"
             phx-click="change_vote"
             class="article-poll-change-vote btn btn-sm btn-ghost mt-2"
@@ -288,14 +290,14 @@
       </a>
       <%!-- Like count (visible to all) + toggle (for non-authors) --%>
       <span
-        :if={!@current_user || @article.user_id == @current_user.id}
+        :if={!interaction_toggle?(@current_user, @article.user_id, @liked)}
         class="article-like-count btn btn-sm btn-ghost pointer-events-none"
       >
         <.icon name="hero-heart" class="size-4" />
         {ngettext("%{count} Like", "%{count} Likes", @like_count)}
       </span>
       <button
-        :if={@current_user && @article.user_id != @current_user.id}
+        :if={interaction_toggle?(@current_user, @article.user_id, @liked)}
         id="article-like-toggle"
         phx-click="toggle_like"
         class="article-action article-like-toggle btn btn-sm btn-ghost"
@@ -309,14 +311,14 @@
       </button>
       <%!-- Boost count (visible to all) + toggle (for non-authors) --%>
       <span
-        :if={!@current_user || @article.user_id == @current_user.id}
+        :if={!interaction_toggle?(@current_user, @article.user_id, @boosted)}
         class="article-boost-count btn btn-sm btn-ghost pointer-events-none"
       >
         <.icon name="hero-arrow-path-rounded-square" class="size-4" />
         {ngettext("%{count} Boost", "%{count} Boosts", @boost_count)}
       </span>
       <button
-        :if={@current_user && @article.user_id != @current_user.id}
+        :if={interaction_toggle?(@current_user, @article.user_id, @boosted)}
         id="article-boost-toggle"
         phx-click="toggle_boost"
         class="article-action article-boost-toggle btn btn-sm btn-ghost"

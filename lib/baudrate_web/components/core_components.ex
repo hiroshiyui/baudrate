@@ -40,6 +40,12 @@ defmodule BaudrateWeb.CoreComponents do
   @doc "Returns the best profile URL for a remote actor. See `BaudrateWeb.Helpers.remote_actor_profile_url/1`."
   defdelegate remote_actor_profile_url(actor), to: BaudrateWeb.Helpers
 
+  @doc "Whether to render a like/boost toggle. See `BaudrateWeb.Helpers.interaction_toggle?/3`."
+  defdelegate interaction_toggle?(user, author_id, active), to: BaudrateWeb.Helpers
+
+  @doc "Whether the user is a moved, read-only account. See `BaudrateWeb.Helpers.moved_account?/1`."
+  defdelegate moved_account?(user), to: BaudrateWeb.Helpers
+
   @doc "Formats a datetime in the site's configured timezone. See `BaudrateWeb.Helpers.format_datetime/2`."
   defdelegate format_datetime(datetime, format), to: BaudrateWeb.Helpers
 

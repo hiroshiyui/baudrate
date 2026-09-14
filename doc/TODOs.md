@@ -86,7 +86,8 @@ and feed item migration (`Federation.migrate_feed_items/2`).
   local follow, `actor_moved` notice.
 - Read-only at the context boundary: articles, comments, feed replies, DMs,
   likes and boosts (articles, comments, feed items), forwards, poll votes,
-  invites. LiveViews hide the controls.
+  invites. Pages hide the controls (`interaction_toggle?/3`, `moved_account?/1`),
+  keeping a toggle only to undo an existing like or boost.
 - "Remove redirect": step-up, clears `moved_to`/`moved_at`, notice.
 
 ### Stage 4 — Inbound Move fixes ✅ done

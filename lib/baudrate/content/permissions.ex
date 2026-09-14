@@ -220,6 +220,7 @@ defmodule Baudrate.Content.Permissions do
   `public` or `unlisted`.
   """
   def can_forward_article?(nil, _article), do: false
+  def can_forward_article?(%{moved_to: moved_to}, _article) when is_binary(moved_to), do: false
   def can_forward_article?(%{role: %{name: "admin"}}, _article), do: true
   def can_forward_article?(%{id: uid}, %{user_id: uid}), do: true
 
@@ -237,6 +238,10 @@ defmodule Baudrate.Content.Permissions do
   to an actor they do not follow.
   """
   def can_forward_feed_item?(nil, _feed_item), do: false
+
+  def can_forward_feed_item?(%{moved_to: moved_to}, _feed_item) when is_binary(moved_to),
+    do: false
+
   def can_forward_feed_item?(%{role: %{name: "admin"}}, _feed_item), do: true
 
   def can_forward_feed_item?(user, feed_item) do

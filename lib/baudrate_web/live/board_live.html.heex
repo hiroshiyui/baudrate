@@ -241,7 +241,13 @@
         </.link>
         <%!-- Like button --%>
         <button
-          :if={@current_user && article.user_id != @current_user.id}
+          :if={
+            interaction_toggle?(
+              @current_user,
+              article.user_id,
+              MapSet.member?(@article_liked_ids, article.id)
+            )
+          }
           id={"board-article-like-#{article.id}"}
           phx-click="toggle_article_like"
           phx-value-id={article.id}
@@ -274,7 +280,13 @@
         </button>
         <%!-- Boost button --%>
         <button
-          :if={@current_user && article.user_id != @current_user.id}
+          :if={
+            interaction_toggle?(
+              @current_user,
+              article.user_id,
+              MapSet.member?(@article_boosted_ids, article.id)
+            )
+          }
           id={"board-article-boost-#{article.id}"}
           phx-click="toggle_article_boost"
           phx-value-id={article.id}

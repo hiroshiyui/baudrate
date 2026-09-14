@@ -524,6 +524,13 @@
               </span>
             </button>
             <button
+              :if={
+                interaction_toggle?(
+                  @current_user,
+                  nil,
+                  MapSet.member?(@feed_item_liked_ids, item.feed_item.id)
+                )
+              }
               phx-click="toggle_feed_item_like"
               phx-value-id={item.feed_item.id}
               class="feed-item-like btn btn-ghost btn-xs"
@@ -543,6 +550,13 @@
               />
             </button>
             <button
+              :if={
+                interaction_toggle?(
+                  @current_user,
+                  nil,
+                  MapSet.member?(@feed_item_boosted_ids, item.feed_item.id)
+                )
+              }
               phx-click="toggle_feed_item_boost"
               phx-value-id={item.feed_item.id}
               class="feed-item-boost btn btn-ghost btn-xs"
@@ -562,7 +576,10 @@
               />
             </button>
             <button
-              :if={item.feed_item.visibility in ["public", "unlisted"]}
+              :if={
+                !moved_account?(@current_user) and
+                  item.feed_item.visibility in ["public", "unlisted"]
+              }
               phx-click="toggle_forward_search"
               phx-value-id={item.feed_item.id}
               phx-value-type="feed_item"
@@ -701,6 +718,7 @@
             </div>
 
             <.form
+              :if={!moved_account?(@current_user)}
               for={@reply_form}
               id={"feed-reply-form-#{item.feed_item.id}"}
               phx-change="validate_reply"
@@ -813,7 +831,13 @@
             </.link>
             <%!-- Like button (not own) --%>
             <button
-              :if={item.article.user_id != @current_user.id}
+              :if={
+                interaction_toggle?(
+                  @current_user,
+                  item.article.user_id,
+                  MapSet.member?(@article_liked_ids, item.article.id)
+                )
+              }
               phx-click="toggle_article_like"
               phx-value-id={item.article.id}
               class="feed-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
@@ -844,7 +868,13 @@
             </button>
             <%!-- Boost button (not own) --%>
             <button
-              :if={item.article.user_id != @current_user.id}
+              :if={
+                interaction_toggle?(
+                  @current_user,
+                  item.article.user_id,
+                  MapSet.member?(@article_boosted_ids, item.article.id)
+                )
+              }
               phx-click="toggle_article_boost"
               phx-value-id={item.article.id}
               class="feed-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
@@ -925,6 +955,13 @@
             class="flex items-center gap-3 mt-2"
           >
             <button
+              :if={
+                interaction_toggle?(
+                  @current_user,
+                  item.comment.user_id,
+                  MapSet.member?(@comment_liked_ids, item.comment.id)
+                )
+              }
               phx-click="toggle_comment_like"
               phx-value-id={item.comment.id}
               class="feed-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
@@ -954,6 +991,13 @@
               </span>
             </button>
             <button
+              :if={
+                interaction_toggle?(
+                  @current_user,
+                  item.comment.user_id,
+                  MapSet.member?(@comment_boosted_ids, item.comment.id)
+                )
+              }
               phx-click="toggle_comment_boost"
               phx-value-id={item.comment.id}
               class="feed-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
@@ -983,7 +1027,10 @@
               </span>
             </button>
             <button
-              :if={item.comment.visibility in ["public", "unlisted"]}
+              :if={
+                !moved_account?(@current_user) and
+                  item.comment.visibility in ["public", "unlisted"]
+              }
               phx-click="toggle_forward_search"
               phx-value-id={item.comment.id}
               phx-value-type="comment"
@@ -1136,6 +1183,13 @@
 
           <div class="flex items-center gap-3 mt-2">
             <button
+              :if={
+                interaction_toggle?(
+                  @current_user,
+                  item.comment.user_id,
+                  MapSet.member?(@comment_liked_ids, item.comment.id)
+                )
+              }
               phx-click="toggle_comment_like"
               phx-value-id={item.comment.id}
               class="feed-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
@@ -1165,6 +1219,13 @@
               </span>
             </button>
             <button
+              :if={
+                interaction_toggle?(
+                  @current_user,
+                  item.comment.user_id,
+                  MapSet.member?(@comment_boosted_ids, item.comment.id)
+                )
+              }
               phx-click="toggle_comment_boost"
               phx-value-id={item.comment.id}
               class="feed-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
@@ -1194,7 +1255,10 @@
               </span>
             </button>
             <button
-              :if={item.comment.visibility in ["public", "unlisted"]}
+              :if={
+                !moved_account?(@current_user) and
+                  item.comment.visibility in ["public", "unlisted"]
+              }
               phx-click="toggle_forward_search"
               phx-value-id={item.comment.id}
               phx-value-type="comment"

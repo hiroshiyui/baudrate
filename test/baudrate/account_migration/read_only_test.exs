@@ -141,7 +141,7 @@ defmodule Baudrate.AccountMigration.ReadOnlyTest do
       })
       |> Repo.insert!()
 
-    assert {:error, :cannot_post} = Content.forward_article_to_board(article, other_board, mover)
+    assert {:error, :unauthorized} = Content.forward_article_to_board(article, other_board, mover)
     refute Auth.can_create_content?(mover)
   end
 

@@ -209,7 +209,10 @@ defmodule BaudrateWeb.CommentComponents do
           </button>
           <%!-- Forward comment to board --%>
           <button
-            :if={@current_user && @comment.visibility in ["public", "unlisted"]}
+            :if={
+              @current_user && !moved_account?(@current_user) &&
+                @comment.visibility in ["public", "unlisted"]
+            }
             phx-click="toggle_comment_forward"
             phx-value-id={@comment.id}
             class="comment-forward-button btn btn-ghost btn-xs"
@@ -608,19 +611,17 @@ defmodule BaudrateWeb.CommentComponents do
     liked_ids = assigns.comment_liked_ids || MapSet.new()
     counts = assigns.comment_like_counts || %{}
     is_liked = MapSet.member?(liked_ids, assigns.comment.id)
-    is_own = assigns.current_user && assigns.comment.user_id == assigns.current_user.id
     like_count = Map.get(counts, assigns.comment.id, 0)
 
     assigns =
       assigns
       |> assign(:is_liked, is_liked)
-      |> assign(:is_own, is_own)
       |> assign(:like_count, like_count)
 
     ~H"""
     <span class="comment-like inline-flex items-center gap-1 text-sm text-base-content/70">
       <button
-        :if={@current_user && !@is_own}
+        :if={interaction_toggle?(@current_user, @comment.user_id, @is_liked)}
         type="button"
         phx-click="toggle_comment_like"
         phx-value-id={@comment.id}
@@ -633,7 +634,11 @@ defmodule BaudrateWeb.CommentComponents do
           class={["size-4", @is_liked && "text-error"]}
         />
       </button>
-      <.icon :if={!@current_user || @is_own} name="hero-heart" class="size-4" />
+      <.icon
+        :if={!interaction_toggle?(@current_user, @comment.user_id, @is_liked)}
+        name="hero-heart"
+        class="size-4"
+      />
       <span :if={@like_count > 0} class="comment-like-count">{@like_count}</span>
     </span>
     """
@@ -648,19 +653,17 @@ defmodule BaudrateWeb.CommentComponents do
     boosted_ids = assigns.comment_boosted_ids || MapSet.new()
     counts = assigns.comment_boost_counts || %{}
     is_boosted = MapSet.member?(boosted_ids, assigns.comment.id)
-    is_own = assigns.current_user && assigns.comment.user_id == assigns.current_user.id
     boost_count = Map.get(counts, assigns.comment.id, 0)
 
     assigns =
       assigns
       |> assign(:is_boosted, is_boosted)
-      |> assign(:is_own, is_own)
       |> assign(:boost_count, boost_count)
 
     ~H"""
     <span class="comment-boost inline-flex items-center gap-1 text-sm text-base-content/70">
       <button
-        :if={@current_user && !@is_own}
+        :if={interaction_toggle?(@current_user, @comment.user_id, @is_boosted)}
         type="button"
         phx-click="toggle_comment_boost"
         phx-value-id={@comment.id}
@@ -678,7 +681,7 @@ defmodule BaudrateWeb.CommentComponents do
         />
       </button>
       <.icon
-        :if={!@current_user || @is_own}
+        :if={!interaction_toggle?(@current_user, @comment.user_id, @is_boosted)}
         name="hero-arrow-path-rounded-square"
         class="size-4"
       />

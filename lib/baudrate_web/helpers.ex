@@ -413,6 +413,26 @@ defmodule BaudrateWeb.Helpers do
     do: gettext("Your account has moved and is read-only. Remove the redirect to post again.")
 
   @doc """
+  Whether to render an interactive like/boost toggle for `user` on content by
+  `author_id`, given whether the user has already `active`-ly liked or boosted it.
+
+  Guests and authors get the static count. A moved account is read-only
+  (ADR 0025), so it gets a toggle only to undo an existing like or boost; the
+  context boundary enforces the same rule.
+  """
+  def interaction_toggle?(nil, _author_id, _active), do: false
+  def interaction_toggle?(%{id: id}, id, _active), do: false
+
+  def interaction_toggle?(%{moved_to: moved_to}, _author_id, active) when is_binary(moved_to),
+    do: active == true
+
+  def interaction_toggle?(_user, _author_id, _active), do: true
+
+  @doc "Whether `user` is a moved (read-only) account (ADR 0025)."
+  def moved_account?(%{moved_to: moved_to}) when is_binary(moved_to), do: true
+  def moved_account?(_user), do: false
+
+  @doc """
   Returns the Heroicon name for a notification type.
   """
   def notification_icon("reply_to_article"), do: "hero-chat-bubble-left-ellipsis"

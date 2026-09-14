@@ -363,4 +363,25 @@ defmodule BaudrateWeb.HelpersTest do
       assert Helpers.remote_actor_profile_url(actor) == "https://remote.example/users/alice"
     end
   end
+
+  describe "interaction_toggle?/3 and moved_account?/1" do
+    test "guests and authors get no toggle" do
+      refute Helpers.interaction_toggle?(nil, 1, false)
+      refute Helpers.interaction_toggle?(%{id: 1, moved_to: nil}, 1, true)
+    end
+
+    test "active accounts get a toggle on others' content" do
+      assert Helpers.interaction_toggle?(%{id: 1, moved_to: nil}, 2, false)
+      assert Helpers.interaction_toggle?(%{id: 1, moved_to: nil}, nil, false)
+    end
+
+    test "moved accounts get a toggle only to undo" do
+      moved = %{id: 1, moved_to: "https://new.example/users/a"}
+      refute Helpers.interaction_toggle?(moved, 2, false)
+      assert Helpers.interaction_toggle?(moved, 2, true)
+      assert Helpers.moved_account?(moved)
+      refute Helpers.moved_account?(%{id: 1, moved_to: nil})
+      refute Helpers.moved_account?(nil)
+    end
+  end
 end
