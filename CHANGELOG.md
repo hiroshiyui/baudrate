@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.14.4] — 2026-09-14
+
+A security release. **All instances should upgrade.** A stolen admin session
+cookie could get past admin sudo mode without the admin's password or second
+factor.
+
+**Upgrading:**
+
+- **Managing security keys now asks for your password first** (plus the
+  current TOTP code if TOTP is enabled). On `/profile`, confirming unlocks
+  "Register New Key" and "Remove" for 5 minutes.
+- **After upgrading, review the security keys registered on admin accounts**
+  (`/profile` → Security Keys, or the `webauthn_credentials` table). Look for
+  keys you don't recognise, and check the logs for
+  `auth.webauthn_register_success` lines for admin users. Remove any unknown
+  key and reset that admin's password and TOTP.
+- The Ansible systemd unit no longer uses `ExecStop`. It is installed with the
+  next deploy, and that deploy's restart already uses it.
+- No migrations, no configuration changes.
+
+### Security
+
+- **Admin sudo mode could be bypassed with a stolen session.** Registering a
+  WebAuthn security key required only a logged-in session, and sudo mode
+  accepts any key registered on the account. Someone holding an admin's
+  session cookie could enrol their own key and use it to pass `/admin/verify`,
+  and could also remove the admin's real keys.
+  - Registering or removing a key now requires step-up re-authentication.
+  - WebAuthn challenges are bound to their purpose, so a sudo-verification
+    challenge can no longer be used to register a key.
+  - See ADR 0022.
+- **The TOTP reset page did not throttle password guesses durably.** Its
+  lockout reset on page reload, and failures were not counted against the
+  account. A stolen session could use it to guess the account password
+  without hitting the login throttle. Re-authentication failures now feed the
+  per-account login throttle, behind a per-user rate limit shared by every
+  re-authentication form. Recovery codes are never accepted for
+  re-authentication.
+
+### Fixed
+
+- **Deleting a security key with a malformed id crashed the profile page.**
+  The id is now parsed safely.
+- **The service stop command failed after every deploy.** `ExecStop` ran
+  `bin/baudrate stop` through the already-swapped `current` symlink. Each
+  release build has its own cookie, so the old node rejected the connection
+  and systemd fell back to SIGTERM, logging "Invalid challenge reply" on every
+  deploy. The unit now relies on SIGTERM directly, which the VM turns into
+  the same orderly shutdown.
+
 ## [1.14.3] — 2026-09-14
 
 A deployment fix. After an Erlang/OTP or Elixir version bump, the Ansible
