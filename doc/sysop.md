@@ -891,6 +891,14 @@ BEAM code, the Ammonia NIF `.so`, ERTS, and the overlay convenience scripts
 > `mix release` to avoid stale `lib/baudrate-<old-version>/` directories
 > accumulating alongside the new version. The Ansible deploy playbook handles
 > this automatically.
+>
+> When `.tool-versions` changes the Erlang/OTP or Elixir version, remove all of
+> `_build/prod/` instead. Compiled BEAM files and Rust NIFs belong to the
+> toolchain that built them. The Ansible deploy playbook does this
+> automatically: it compares the tag's `.tool-versions` with a
+> `_build/prod/.tool-versions.stamp` written after each successful compile.
+> Install the new toolchain first (`setup-server.yml --tags elixir`), or the
+> build fails.
 
 ### Uploads Directory
 

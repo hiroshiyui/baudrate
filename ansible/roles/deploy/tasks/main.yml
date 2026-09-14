@@ -111,6 +111,31 @@
 # Phase 4: Build OTP release
 # ============================================================
 
+# Compiled BEAM files and Rust NIFs in _build/prod belong to the Erlang/Elixir
+# toolchain that built them. A stamp copy of .tool-versions is written after
+# each successful compile; when the checked-out tag pins a different toolchain
+# (or no stamp exists yet), _build/prod is wiped so nothing built by the old
+# toolchain is reused in the release.
+- name: Read toolchain pins of the checked-out tag
+  ansible.builtin.slurp:
+    src: "{{ deploy_path }}/src/.tool-versions"
+  register: tool_versions_current
+
+- name: Check toolchain stamp of the previous build
+  ansible.builtin.stat:
+    path: "{{ deploy_path }}/src/_build/prod/.tool-versions.stamp"
+    get_checksum: true
+    checksum_algorithm: sha256
+  register: tool_versions_stamp
+
+- name: Remove build artifacts from a different Erlang/Elixir toolchain
+  ansible.builtin.file:
+    path: "{{ deploy_path }}/src/_build/prod"
+    state: absent
+  when: >-
+    not tool_versions_stamp.stat.exists
+    or tool_versions_stamp.stat.checksum != (tool_versions_current.content | b64decode | hash('sha256'))
+
 - name: Install mix dependencies (prod only)
   ansible.builtin.command:
     cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix deps.get --only prod"
@@ -134,6 +159,13 @@
     RUSTUP_HOME: "{{ baudrate_home }}/.rustup"
     MIX_ENV: prod
   changed_when: true
+
+- name: Record toolchain stamp for this build
+  ansible.builtin.copy:
+    src: "{{ deploy_path }}/src/.tool-versions"
+    dest: "{{ deploy_path }}/src/_build/prod/.tool-versions.stamp"
+    remote_src: true
+    mode: "0644"
 
 - name: Deploy assets
   ansible.builtin.command:
