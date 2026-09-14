@@ -414,6 +414,30 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
+  Builds a `Move` activity announcing that `user` moved to `target_ap_id`
+  (ADR 0025).
+
+  `object` is the moving account itself, as Mastodon and other servers expect.
+  Receivers verify that the target lists the account in `alsoKnownAs`, then
+  move their follows. Returns `{activity_map, actor_uri}`.
+  """
+  def build_move(user, target_ap_id) when is_binary(target_ap_id) do
+    actor_uri = Federation.actor_uri(:user, user.username)
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#move-#{System.unique_integer([:positive])}",
+      "type" => "Move",
+      "actor" => actor_uri,
+      "object" => actor_uri,
+      "target" => target_ap_id,
+      "to" => ["#{actor_uri}/followers"]
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
   Publishes an `Update` activity for an actor to all followers.
   Used after key rotation to distribute the new public key.
   """

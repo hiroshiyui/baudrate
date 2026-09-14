@@ -235,6 +235,90 @@
         </p>
       </div>
 
+      <%!-- Moved --%>
+      <div
+        :if={@moved_to}
+        id="account-move-moved"
+        class="account-move-moved space-y-3"
+      >
+        <p id="account-move-moved-text" class="account-move-moved-text font-semibold break-words">
+          {gettext("This account has moved. New account:")}
+          <a
+            id="account-move-moved-link"
+            href={@moved_to.url}
+            class="account-move-moved-link link break-all"
+            rel="nofollow noopener noreferrer"
+          >
+            {@moved_to.label}
+          </a>
+        </p>
+        <p
+          id="account-move-redirect-intro"
+          class="account-move-redirect-intro text-sm text-base-content/80"
+        >
+          {gettext(
+            "Removing the redirect lets this account post again and stops pointing visitors to the new account. Followers who were already moved stay with the new account."
+          )}
+        </p>
+        <.form
+          for={@redirect_form}
+          id="account-redirect-form"
+          class="account-redirect-form space-y-3"
+          phx-submit="remove_redirect"
+        >
+          <div class="form-control">
+            <label
+              id="account-redirect-password-label"
+              class="account-migration-field-label label"
+              for="account_redirect_password"
+            >
+              <span class="label-text">{gettext("Password")}</span>
+            </label>
+            <input
+              type="password"
+              id="account_redirect_password"
+              name="redirect[password]"
+              class="account-redirect-password input input-bordered input-sm w-full max-w-xs"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+          <div :if={@totp_enabled} class="form-control">
+            <label
+              id="account-redirect-code-label"
+              class="account-migration-field-label label"
+              for="account_redirect_code"
+            >
+              <span class="label-text">{gettext("Current TOTP Code")}</span>
+            </label>
+            <input
+              type="text"
+              id="account_redirect_code"
+              name="redirect[code]"
+              class="account-redirect-code input input-bordered input-sm w-full max-w-xs tracking-widest"
+              inputmode="numeric"
+              pattern="[0-9]{6}"
+              maxlength="6"
+              autocomplete="one-time-code"
+              required
+              aria-describedby="account-redirect-code-hint"
+            />
+            <.totp_code_hint id="account-redirect-code-hint" />
+          </div>
+          <button
+            id="account-redirect-submit"
+            type="submit"
+            class="account-redirect-submit btn btn-sm btn-outline"
+            phx-disable-with={gettext("Removing...")}
+            data-confirm={
+              gettext("Remove the redirect? Followers who already moved will not come back.")
+            }
+          >
+            {gettext("Remove Redirect")}
+          </button>
+        </.form>
+      </div>
+
       <%!-- Pending move --%>
       <div
         :if={@active_move}
@@ -280,7 +364,7 @@
 
       <%!-- Not eligible --%>
       <div
-        :if={is_nil(@active_move) and @move_eligibility != :ok}
+        :if={is_nil(@active_move) and is_nil(@moved_to) and @move_eligibility != :ok}
         id="account-move-ineligible"
         class="account-move-ineligible alert"
         role="note"
@@ -435,6 +519,9 @@
               {move_status_label(move.status)}
               <span :if={cancel_reason_label(move.cancel_reason)} class="opacity-70">
                 ({cancel_reason_label(move.cancel_reason)})
+              </span>
+              <span :if={move_failure_label(move.failure_reason)} class="opacity-70">
+                ({move_failure_label(move.failure_reason)})
               </span>
             </td>
           </tr>

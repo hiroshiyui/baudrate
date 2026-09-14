@@ -393,6 +393,7 @@ defmodule BaudrateWeb.Layouts do
       <div class={["mx-auto space-y-4", if(assigns[:wide_layout], do: "max-w-7xl", else: "max-w-6xl")]}>
         <.data_export_banner :if={assigns[:active_data_export]} request={@active_data_export} />
         <.account_move_banner :if={assigns[:active_account_move]} summary={@active_account_move} />
+        <.account_moved_notice :if={assigns[:current_user] && @current_user.moved_to} />
         {@inner_content}
       </div>
     </main>
@@ -505,6 +506,34 @@ defmodule BaudrateWeb.Layouts do
         id="account-move-banner-link"
         navigate={~p"/profile/move"}
         class="account-move-banner-link btn btn-sm"
+      >
+        {gettext("Review")}
+      </.link>
+    </aside>
+    """
+  end
+
+  @doc """
+  Notice on every page for the owner of a moved account: it is read-only, and
+  the redirect can be removed on `/profile/move` (ADR 0025).
+  """
+  def account_moved_notice(assigns) do
+    ~H"""
+    <aside
+      id="account-moved-notice"
+      class="account-moved-notice alert alert-info"
+      aria-labelledby="account-moved-notice-text"
+    >
+      <.icon name="hero-truck" class="size-5 shrink-0" />
+      <p id="account-moved-notice-text" class="account-moved-notice-text min-w-0 text-sm">
+        {gettext(
+          "Your account has moved and is read-only. You can still read, export your data and manage your account."
+        )}
+      </p>
+      <.link
+        id="account-moved-notice-link"
+        navigate={~p"/profile/move"}
+        class="account-moved-notice-link btn btn-sm"
       >
         {gettext("Review")}
       </.link>

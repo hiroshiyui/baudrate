@@ -126,6 +126,11 @@ defmodule Baudrate.Content.Boosts do
       not Interactions.article_visible_to_user?(article_id, user_id) ->
         {:error, :not_found}
 
+      # A moved account is read-only: it can undo, not add (ADR 0025).
+      Baudrate.AccountMigration.ensure_not_moved(user_id) != :ok and
+          is_nil(Repo.get_by(ArticleBoost, user_id: user_id, article_id: article_id)) ->
+        {:error, :account_moved}
+
       true ->
         case Repo.get_by(ArticleBoost, user_id: user_id, article_id: article_id) do
           nil ->
@@ -302,6 +307,11 @@ defmodule Baudrate.Content.Boosts do
 
       not Interactions.article_visible_to_user?(comment.article_id, user_id) ->
         {:error, :not_found}
+
+      # A moved account is read-only: it can undo, not add (ADR 0025).
+      Baudrate.AccountMigration.ensure_not_moved(user_id) != :ok and
+          is_nil(Repo.get_by(CommentBoost, user_id: user_id, comment_id: comment_id)) ->
+        {:error, :account_moved}
 
       true ->
         case Repo.get_by(CommentBoost, user_id: user_id, comment_id: comment_id) do

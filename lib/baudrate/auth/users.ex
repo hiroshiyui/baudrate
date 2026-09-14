@@ -163,13 +163,15 @@ defmodule Baudrate.Auth.Users do
   @doc """
   Returns `true` if the user can create content.
 
-  Requires both:
+  Requires all of:
     1. Account status is `"active"` (pending users cannot post)
-    2. Role has the `"user.create_content"` permission
+    2. The account has not moved away (`moved_to` is `nil`, ADR 0025)
+    3. Role has the `"user.create_content"` permission
   """
   @spec can_create_content?(User.t()) :: boolean()
   def can_create_content?(user) do
-    user_active?(user) && Setup.has_permission?(user.role.name, "user.create_content")
+    user_active?(user) && is_nil(Map.get(user, :moved_to)) &&
+      Setup.has_permission?(user.role.name, "user.create_content")
   end
 
   @doc """

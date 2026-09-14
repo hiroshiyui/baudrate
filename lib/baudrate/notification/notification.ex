@@ -19,6 +19,8 @@ defmodule Baudrate.Notification.Notification do
     * `article_forwarded` — your article was forwarded to another board
     * `moderation_report` — a new moderation report (admins only)
     * `admin_announcement` — announcement from an admin
+    * `actor_moved` — an account the user followed moved; the user now follows
+      the new account (`data.label`, `data.url`, ADR 0025)
 
   ### Account security notices
 
@@ -40,6 +42,12 @@ defmodule Baudrate.Notification.Notification do
     * `account_move_requested` — a move of the account was requested; it is
       sent after 24 hours (`data.label`, `data.send_after`, `data.browser`)
     * `account_move_cancelled` — a pending move was cancelled (`data.reason`)
+    * `account_move_failed` — the send-time re-check refused a move
+      (`data.reason`, `data.label`)
+    * `account_moved` — the move was sent; the account is now read-only
+      (`data.label`)
+    * `account_redirect_removed` — the redirect of a moved account was removed
+      (`data.label`)
     * `data_export_requested` — a data export was requested (`data.ready_at`, `data.browser`)
     * `data_export_ready` — the export can be downloaded (`data.expires_at`)
     * `data_export_downloaded` — the export was downloaded (`data.count`, `data.remaining`)
@@ -71,6 +79,7 @@ defmodule Baudrate.Notification.Notification do
     article_forwarded
     moderation_report
     admin_announcement
+    actor_moved
     security_key_added
     security_key_removed
     totp_enabled
@@ -82,6 +91,9 @@ defmodule Baudrate.Notification.Notification do
     account_alias_removed
     account_move_requested
     account_move_cancelled
+    account_move_failed
+    account_moved
+    account_redirect_removed
     data_export_requested
     data_export_ready
     data_export_downloaded
@@ -100,6 +112,9 @@ defmodule Baudrate.Notification.Notification do
     account_alias_removed
     account_move_requested
     account_move_cancelled
+    account_move_failed
+    account_moved
+    account_redirect_removed
     data_export_requested
     data_export_ready
     data_export_downloaded

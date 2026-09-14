@@ -326,6 +326,10 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("reply_to_comment"), do: gettext("replied to your comment")
   def notification_text("mention"), do: gettext("mentioned you")
   def notification_text("new_follower"), do: gettext("followed you")
+
+  def notification_text("actor_moved"),
+    do: gettext("moved to a new account, which you now follow")
+
   def notification_text("article_liked"), do: gettext("liked your article")
   def notification_text("comment_liked"), do: gettext("liked your comment")
   def notification_text("article_boosted"), do: gettext("boosted your article")
@@ -374,6 +378,18 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("account_move_cancelled"),
     do: gettext("A pending move of your account was cancelled.")
 
+  def notification_text("account_move_failed"),
+    do: gettext("A pending move of your account could not be sent and was stopped.")
+
+  def notification_text("account_moved"),
+    do:
+      gettext(
+        "Your account has moved. Your followers were sent to your new account, and this account is now read-only."
+      )
+
+  def notification_text("account_redirect_removed"),
+    do: gettext("The redirect of your moved account was removed. It can post again.")
+
   def notification_text("data_export_requested"),
     do:
       gettext("A data export of your account was requested. It can be downloaded after 24 hours.")
@@ -388,6 +404,10 @@ defmodule BaudrateWeb.Helpers do
     do: gettext("A data export request on your account was cancelled.")
 
   def notification_text(_), do: gettext("sent you a notification")
+
+  @doc "Flash text when a moved account tries to post or interact (ADR 0025)."
+  def account_moved_message,
+    do: gettext("Your account has moved and is read-only. Remove the redirect to post again.")
 
   @doc """
   Returns the Heroicon name for a notification type.
@@ -414,6 +434,10 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("account_alias_removed"), do: "hero-link-slash"
   def notification_icon("account_move_requested"), do: "hero-truck"
   def notification_icon("account_move_cancelled"), do: "hero-x-circle"
+  def notification_icon("account_move_failed"), do: "hero-exclamation-triangle"
+  def notification_icon("account_moved"), do: "hero-truck"
+  def notification_icon("account_redirect_removed"), do: "hero-arrow-uturn-left"
+  def notification_icon("actor_moved"), do: "hero-truck"
   def notification_icon("data_export_requested"), do: "hero-archive-box"
   def notification_icon("data_export_ready"), do: "hero-archive-box-arrow-down"
   def notification_icon("data_export_downloaded"), do: "hero-arrow-down-tray"

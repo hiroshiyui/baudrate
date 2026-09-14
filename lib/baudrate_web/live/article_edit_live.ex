@@ -151,8 +151,14 @@ defmodule BaudrateWeb.ArticleEditLive do
          |> put_flash(:info, gettext("Article updated successfully."))
          |> redirect(to: ~p"/articles/#{updated_article.slug}")}
 
-      {:error, changeset} ->
+      {:error, :account_moved} ->
+        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset, as: :article))}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update article."))}
     end
   end
 

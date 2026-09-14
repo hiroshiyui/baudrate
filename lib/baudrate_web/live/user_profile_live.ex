@@ -62,6 +62,7 @@ defmodule BaudrateWeb.UserProfileLive do
          socket
          |> assign(
            profile_user: user,
+           moved_to: Baudrate.AccountMigration.moved_target(user),
            article_count: article_count,
            comment_count: comment_count,
            is_muted: is_muted,
@@ -108,6 +109,14 @@ defmodule BaudrateWeb.UserProfileLive do
 
             {:error, :self_follow} ->
               {:noreply, put_flash(socket, :error, gettext("You cannot follow yourself."))}
+
+            {:error, :account_moved} ->
+              {:noreply,
+               put_flash(
+                 socket,
+                 :error,
+                 gettext("This account has moved. Follow its new account instead.")
+               )}
 
             {:error, _} ->
               {:noreply, put_flash(socket, :error, gettext("Already following this user."))}

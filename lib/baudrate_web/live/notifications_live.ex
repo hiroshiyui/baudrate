@@ -124,6 +124,9 @@ defmodule BaudrateWeb.NotificationsLive do
   defp target_title(%{article: %{title: title}}) when not is_nil(title), do: title
   defp target_title(%{type: "admin_announcement", data: %{"message" => msg}}), do: msg
 
+  defp target_title(%{type: "actor_moved", data: %{"label" => label}}) when label != "",
+    do: gettext("New account: %{label}", label: label)
+
   defp target_title(%{type: type, data: %{"label" => label}})
        when type in ["security_key_added", "security_key_removed"] and label != "",
        do: gettext("Security key: %{label}", label: label)

@@ -98,6 +98,22 @@ defmodule BaudrateWeb.NotificationsLiveTest do
              )
     end
 
+    test "an actor_moved notice names the new account", %{conn: conn, user: user} do
+      mover = setup_user("user")
+
+      {:ok, notice} =
+        Baudrate.Notification.Hooks.notify_actor_moved(user.id, %{actor_user_id: mover.id}, %{
+          "label" => "@mover@new.example",
+          "url" => "https://new.example/@mover"
+        })
+
+      {:ok, lv, _html} = live(conn, "/notifications")
+
+      assert has_element?(lv, "#notification-#{notice.id}", "moved to a new account")
+      assert has_element?(lv, "#notification-#{notice.id}", "New account: @mover@new.example")
+      refute has_element?(lv, "#notification-security-hint-#{notice.id}")
+    end
+
     test "unread notifications carry a visible Unread label", %{conn: conn, user: user} do
       other = setup_user("user")
 

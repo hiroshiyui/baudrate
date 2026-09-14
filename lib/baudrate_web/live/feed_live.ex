@@ -630,6 +630,9 @@ defmodule BaudrateWeb.FeedLive do
       {:error, :not_found} ->
         {:noreply, put_flash(socket, :error, gettext("Feed item not found."))}
 
+      {:error, :account_moved} ->
+        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
+
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to send reply."))}
     end
@@ -708,6 +711,9 @@ defmodule BaudrateWeb.FeedLive do
            to_form(Content.change_article(%Article{}, params), as: :article)
          )
          |> put_flash(:error, format_poll_errors(changeset))}
+
+      {:error, :account, :account_moved, _} ->
+        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
 
       {:error, _, _, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to create article."))}

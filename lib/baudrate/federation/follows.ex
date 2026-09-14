@@ -491,32 +491,44 @@ defmodule Baudrate.Federation.Follows do
   Creates a local follow (user → user on same instance).
 
   The follow is auto-accepted immediately with no AP delivery required.
-  Returns `{:ok, %UserFollow{}}` or `{:error, changeset}`.
+  Returns `{:ok, %UserFollow{}}`, `{:error, :self_follow}`,
+  `{:error, :account_moved}` (the followed account has moved, ADR 0025) or
+  `{:error, changeset}`.
   """
   def create_local_follow(%{id: follower_id} = follower, %{id: followed_id}) do
-    if follower_id == followed_id do
-      {:error, :self_follow}
-    else
-      now = DateTime.utc_now() |> DateTime.truncate(:second)
+    cond do
+      follower_id == followed_id ->
+        {:error, :self_follow}
 
-      ap_id =
-        "#{Baudrate.Federation.actor_uri(:user, follower.username)}#follow-#{System.unique_integer([:positive])}"
+      # A moved account is followed at its new address (ADR 0025).
+      Baudrate.AccountMigration.ensure_not_moved(followed_id) != :ok ->
+        {:error, :account_moved}
 
-      result =
-        %UserFollow{}
-        |> UserFollow.changeset(%{
-          user_id: follower_id,
-          followed_user_id: followed_id,
-          state: @state_accepted,
-          ap_id: ap_id,
-          accepted_at: now
-        })
-        |> Repo.insert()
+      true ->
+        insert_local_follow(follower, followed_id)
+    end
+  end
 
-      with {:ok, _follow} <- result do
-        Baudrate.Notification.Hooks.notify_local_follow(follower_id, followed_id)
-        result
-      end
+  defp insert_local_follow(%{id: follower_id} = follower, followed_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    ap_id =
+      "#{Baudrate.Federation.actor_uri(:user, follower.username)}#follow-#{System.unique_integer([:positive])}"
+
+    result =
+      %UserFollow{}
+      |> UserFollow.changeset(%{
+        user_id: follower_id,
+        followed_user_id: followed_id,
+        state: @state_accepted,
+        ap_id: ap_id,
+        accepted_at: now
+      })
+      |> Repo.insert()
+
+    with {:ok, _follow} <- result do
+      Baudrate.Notification.Hooks.notify_local_follow(follower_id, followed_id)
+      result
     end
   end
 

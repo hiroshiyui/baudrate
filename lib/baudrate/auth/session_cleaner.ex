@@ -22,6 +22,8 @@ defmodule Baudrate.Auth.SessionCleaner do
     * Data export requests — applies due `pending → ready → expired`
       transitions (sending ready notices), purges finished requests older
       than a year, and removes stale archive temp directories (also at boot)
+    * Account moves — sends moves whose 24-hour cooling-off has passed, or
+      marks them failed when the send-time re-check refuses them (ADR 0025)
 
   The first cleanup is scheduled on `init/1`, so it runs one interval after
   the application boots — not immediately — to avoid slowing startup.
@@ -57,6 +59,7 @@ defmodule Baudrate.Auth.SessionCleaner do
     purge_orphan_link_previews()
     purge_stale_media_cache()
     sweep_data_exports()
+    sweep_account_moves()
     schedule_cleanup()
     {:noreply, state}
   end
@@ -68,6 +71,15 @@ defmodule Baudrate.Auth.SessionCleaner do
 
     if count > 0 do
       Logger.info("session_cleaner.export_requests_purged: count=#{count}")
+    end
+  end
+
+  # Sends account moves whose 24-hour cooling-off has passed (ADR 0025).
+  defp sweep_account_moves do
+    count = Baudrate.AccountMigration.sweep_due_moves()
+
+    if count > 0 do
+      Logger.info("session_cleaner.account_moves_processed: count=#{count}")
     end
   end
 

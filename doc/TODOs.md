@@ -75,7 +75,7 @@ and feed item migration (`Federation.migrate_feed_items/2`).
 - Sweep (hourly, `SessionCleaner`): due requests re-checked, then sent or marked
   `failed` with a notice.
 
-### Stage 3 — Sending, post-move state and read-only enforcement
+### Stage 3 — Sending, post-move state and read-only enforcement ✅ done
 
 - `Publisher.build_move/2`; deliver to remote follower inboxes.
 - Set `moved_to` / `moved_at`; `account_moved` notice; profile banner

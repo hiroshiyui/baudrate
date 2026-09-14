@@ -40,6 +40,15 @@ defmodule Baudrate.Content.Comments do
           {:ok, %Comment{}} | {:error, Ecto.Changeset.t() | term()}
   def create_comment(attrs, opts \\ []) do
     attrs = attrs |> Map.new(fn {k, v} -> {to_string(k), v} end)
+
+    # A moved account is read-only (ADR 0025).
+    case Baudrate.AccountMigration.ensure_not_moved(attrs["user_id"]) do
+      :ok -> do_create_comment(attrs, opts)
+      error -> error
+    end
+  end
+
+  defp do_create_comment(attrs, opts) do
     body_html = Baudrate.Content.Markdown.to_html(attrs["body"] || "")
     image_ids = Keyword.get(opts, :image_ids, [])
 

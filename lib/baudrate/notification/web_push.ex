@@ -246,6 +246,9 @@ defmodule Baudrate.Notification.WebPush do
       "admin_announcement" ->
         get_in(notification.data || %{}, ["message"]) || ""
 
+      "actor_moved" ->
+        get_in(notification.data || %{}, ["label"]) || ""
+
       _ ->
         if notification.article && is_nil(notification.article.deleted_at) do
           notification.article.title || ""

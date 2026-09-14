@@ -46,7 +46,7 @@ defmodule Baudrate.AccountMigration do
   alias Baudrate.AccountMigration.AccountMove
   alias Baudrate.Content.BoardModerator
   alias Baudrate.DataPortability.UserAgent
-  alias Baudrate.Federation.{ActorResolver, RemoteActor}
+  alias Baudrate.Federation.{ActorResolver, Delivery, KeyStore, Publisher, RemoteActor}
   alias Baudrate.Notification.Hooks
   alias Baudrate.Repo
   alias Baudrate.Setup.User
@@ -56,6 +56,7 @@ defmodule Baudrate.AccountMigration do
   @cooling_off_seconds 24 * 3600
   @move_interval_days 30
   @staff_roles ~w(admin moderator)
+  @sweep_batch 20
   @cancel_reasons AccountMove.cancel_reasons()
 
   @doc "Seconds between requesting a move and sending it."
@@ -443,6 +444,260 @@ defmodule Baudrate.AccountMigration do
     end)
 
     cancelled
+  end
+
+  # ---------------------------------------------------------------------------
+  # Sending
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Sends every pending move whose cooling-off has passed (at most
+  #{@sweep_batch} per run), via `send_move/1`. Called hourly by
+  `Baudrate.Auth.SessionCleaner`. Returns the number processed.
+  """
+  @spec sweep_due_moves() :: non_neg_integer()
+  def sweep_due_moves do
+    now = now()
+
+    due =
+      Repo.all(
+        from(m in AccountMove,
+          where: m.status == "pending" and m.send_after <= ^now,
+          order_by: [asc: m.send_after, asc: m.id],
+          limit: @sweep_batch
+        )
+      )
+
+    Enum.each(due, &send_move/1)
+    length(due)
+  end
+
+  @doc """
+  Re-checks a due move and sends it, or marks it failed.
+
+  Everything is checked again at send time: the account must still be
+  eligible, and the destination must still resolve, list this account in
+  `alsoKnownAs`, and not have moved. A move cancelled while the check ran is
+  left alone: the `pending → sent` update is conditional.
+
+  On success, in order:
+
+    1. the move is marked `sent` and `users.moved_to` / `moved_at` are set,
+       in one transaction;
+    2. an `Update` of the actor (now carrying `movedTo`) and the `Move` are
+       queued for the account's remote followers;
+    3. local followers are moved to the destination
+       (`migrate_local_followers/2`);
+    4. the owner gets an always-delivered `account_moved` notice.
+
+  Returns `:sent`, `:failed` or `:skipped`.
+  """
+  @spec send_move(AccountMove.t()) :: :sent | :failed | :skipped
+  def send_move(%AccountMove{status: "pending"} = move) do
+    user = Repo.get(User, move.user_id)
+
+    result =
+      with %User{} <- user || {:error, :user_missing},
+           :ok <- move_eligibility(user),
+           {:ok, target} <- verify_move_target(user, move.target_ap_id) do
+        {:ok, target}
+      end
+
+    case result do
+      {:ok, target} -> complete_move(move, user, target)
+      {:error, reason} -> fail_move(move, reason)
+    end
+  end
+
+  def send_move(%AccountMove{}), do: :skipped
+
+  defp complete_move(move, user, target) do
+    now = now()
+
+    Repo.transaction(fn ->
+      {count, _} =
+        from(m in AccountMove, where: m.id == ^move.id and m.status == "pending")
+        |> Repo.update_all(set: [status: "sent", sent_at: now, updated_at: now])
+
+      if count != 1, do: Repo.rollback(:not_pending)
+
+      user |> User.moved_changeset(target.ap_id, now) |> Repo.update!()
+    end)
+    |> case do
+      {:ok, moved_user} ->
+        publish_move(moved_user, target)
+        migrated = migrate_local_followers(moved_user, target)
+
+        Hooks.notify_account_security(user.id, "account_moved", %{"label" => handle(target)})
+
+        Logger.warning(
+          "account_migration.move_sent: user_id=#{user.id} move_id=#{move.id} target=#{target.ap_id} local_followers=#{migrated}"
+        )
+
+        :sent
+
+      {:error, :not_pending} ->
+        :skipped
+    end
+  end
+
+  defp publish_move(moved_user, target) do
+    {:ok, moved_user} = KeyStore.ensure_user_keypair(moved_user)
+    {update, actor_uri} = Publisher.build_update_actor(:user, moved_user)
+    Delivery.enqueue_for_followers(update, actor_uri)
+    {move_activity, ^actor_uri} = Publisher.build_move(moved_user, target.ap_id)
+    Delivery.enqueue_for_followers(move_activity, actor_uri)
+  end
+
+  defp fail_move(move, reason) do
+    code = failure_code(reason)
+    now = now()
+
+    {count, _} =
+      from(m in AccountMove, where: m.id == ^move.id and m.status == "pending")
+      |> Repo.update_all(set: [status: "failed", failure_reason: code, updated_at: now])
+
+    if count == 1 do
+      Hooks.notify_account_security(move.user_id, "account_move_failed", %{
+        "reason" => code,
+        "label" => alias_label(move.target_ap_id)
+      })
+
+      Logger.warning(
+        "account_migration.move_failed: user_id=#{move.user_id} move_id=#{move.id} reason=#{code}"
+      )
+
+      :failed
+    else
+      :skipped
+    end
+  end
+
+  defp failure_code({reason, _detail}) when is_atom(reason), do: Atom.to_string(reason)
+  defp failure_code(reason) when is_atom(reason), do: Atom.to_string(reason)
+  defp failure_code(_), do: "unknown"
+
+  @doc """
+  Moves the local followers of `moved_user` to `target`.
+
+  For each active local follower: remove the local follow, create a pending
+  follow of the destination and deliver `Follow` on their behalf (skipped when
+  they already follow it), and send an `actor_moved` notice. Returns the
+  number of followers moved.
+  """
+  @spec migrate_local_followers(User.t(), RemoteActor.t()) :: non_neg_integer()
+  def migrate_local_followers(%User{} = moved_user, %RemoteActor{} = target) do
+    moved_user.id
+    |> Federation.local_followers_of_user()
+    |> Enum.map(&Repo.get(User, &1))
+    |> Enum.filter(&match?(%User{status: "active", is_bot: false}, &1))
+    |> Enum.count(fn follower ->
+      Federation.delete_local_follow(follower, moved_user)
+      follow_on_behalf(follower, target)
+
+      Hooks.notify_actor_moved(follower.id, %{actor_user_id: moved_user.id}, %{
+        "label" => handle(target),
+        "url" => target.url || target.ap_id
+      })
+
+      true
+    end)
+  end
+
+  @doc """
+  Creates a pending follow of `target` for `follower` and delivers the
+  `Follow`. Does nothing when `follower` already follows `target`.
+  """
+  @spec follow_on_behalf(User.t(), RemoteActor.t()) :: :followed | :already_following | :error
+  def follow_on_behalf(%User{} = follower, %RemoteActor{} = target) do
+    if Federation.user_follows?(follower.id, target.id) do
+      :already_following
+    else
+      with {:ok, follower} <- KeyStore.ensure_user_keypair(follower),
+           {:ok, follow} <- Federation.create_user_follow(follower, target) do
+        {activity, actor_uri} = Publisher.build_follow(follower, target, follow.ap_id)
+        Delivery.deliver_follow(activity, target, actor_uri)
+        :followed
+      else
+        _ -> :error
+      end
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # After a move
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Returns `:ok` unless the account (a `User` or user id) has moved, in which
+  case `{:error, :account_moved}`. Context functions that create content or
+  interactions call it, so a moved account is read-only however it is
+  reached (ADR 0025).
+  """
+  @spec ensure_not_moved(User.t() | integer() | nil) :: :ok | {:error, :account_moved}
+  def ensure_not_moved(%User{id: id}), do: ensure_not_moved(id)
+
+  def ensure_not_moved(user_id) when is_integer(user_id) do
+    moved =
+      Repo.exists?(from(u in User, where: u.id == ^user_id and not is_nil(u.moved_to)))
+
+    if moved, do: {:error, :account_moved}, else: :ok
+  end
+
+  def ensure_not_moved(_), do: :ok
+
+  @doc """
+  Returns `%{label: "@user@domain", url: "https://…"}` for the account a moved
+  user moved to, or `nil` when the user has not moved. Uses the cached remote
+  actor; falls back to the actor id.
+  """
+  @spec moved_target(User.t()) :: %{label: String.t(), url: String.t()} | nil
+  def moved_target(%User{moved_to: moved_to}) when is_binary(moved_to) do
+    case Repo.one(from(r in RemoteActor, where: r.ap_id == ^moved_to)) do
+      %RemoteActor{} = actor -> %{label: handle(actor), url: actor.url || actor.ap_id}
+      nil -> %{label: moved_to, url: moved_to}
+    end
+  end
+
+  def moved_target(_user), do: nil
+
+  @doc """
+  Removes the redirect of a moved account after step-up re-authentication:
+  clears `moved_to` / `moved_at`, publishes an `Update` of the actor without
+  `movedTo`, and restores posting. Followers already moved stay moved, and the
+  30-day limit still counts the move.
+
+  Returns `{:ok, user}` or `{:error, reason}`: `:not_moved`,
+  `:invalid_credentials` or `{:throttled, seconds}`.
+  """
+  @spec remove_redirect(User.t(), map(), keyword()) :: {:ok, User.t()} | {:error, term()}
+  def remove_redirect(%User{} = user, credentials, opts) do
+    user = Repo.get!(User, user.id)
+
+    with :ok <- if(moved?(user), do: :ok, else: {:error, :not_moved}),
+         :ok <-
+           Auth.verify_reauthentication(
+             user,
+             credential(credentials, :password),
+             credential(credentials, :code),
+             Keyword.fetch!(opts, :ip_address),
+             :account_redirect
+           ),
+         {:ok, updated} <- user |> User.moved_changeset(nil, nil) |> Repo.update() do
+      {:ok, updated} = KeyStore.ensure_user_keypair(updated)
+      {update, actor_uri} = Publisher.build_update_actor(:user, updated)
+      Delivery.enqueue_for_followers(update, actor_uri)
+
+      Hooks.notify_account_security(user.id, "account_redirect_removed", %{
+        "label" => alias_label(user.moved_to)
+      })
+
+      Logger.warning(
+        "account_migration.redirect_removed: user_id=#{user.id} was=#{user.moved_to}"
+      )
+
+      {:ok, updated}
+    end
   end
 
   defp credential(credentials, key) when is_map(credentials),

@@ -53,6 +53,7 @@ defmodule BaudrateWeb.AccountMigrationLive do
      |> assign(:alias_form, empty_alias_form())
      |> assign(:alias_lookup, false)
      |> assign(:move_form, empty_move_form())
+     |> assign(:redirect_form, empty_redirect_form())
      |> assign(:move_submitting, false)
      |> assign(:status_message, "")
      |> assign(:aliases, AccountMigration.list_aliases(user))
@@ -177,6 +178,41 @@ defmodule BaudrateWeb.AccountMigrationLive do
          |> start_async(:request_move, fn ->
            AccountMigration.request_move(user, account, credentials, opts)
          end)}
+    end
+  end
+
+  def handle_event("remove_redirect", %{"redirect" => params}, socket) do
+    user = socket.assigns.current_user
+
+    result =
+      with :ok <- RateLimits.check_reauth(user.id) do
+        AccountMigration.remove_redirect(
+          user,
+          %{password: params["password"], code: params["code"]},
+          ip_address: socket.assigns.peer_ip
+        )
+      end
+
+    case result do
+      {:ok, _updated} ->
+        {:noreply,
+         socket
+         # The layout's moved notice reads the current user.
+         |> assign(:current_user, %{user | moved_to: nil, moved_at: nil})
+         |> assign(:redirect_form, empty_redirect_form())
+         |> load_move_state()
+         |> put_flash(:info, gettext("The redirect was removed. This account can post again."))
+         |> push_event("focus", %{id: "account-move-heading"})}
+
+      {:error, :not_moved} ->
+        {:noreply, socket |> load_move_state() |> assign(:redirect_form, empty_redirect_form())}
+
+      {:error, reason} ->
+        {:noreply,
+         socket
+         |> assign(:redirect_form, empty_redirect_form())
+         |> put_flash(:error, move_error_message(reason))
+         |> push_event("focus", %{id: "account_redirect_password"})}
     end
   end
 
@@ -364,6 +400,22 @@ defmodule BaudrateWeb.AccountMigrationLive do
     do: gettext("The move could not be requested. Please try again later.")
 
   @doc false
+  def move_failure_label("alias_not_claimed"),
+    do: gettext("the destination no longer lists this account as an alias")
+
+  def move_failure_label("target_moved"), do: gettext("the destination has moved")
+
+  def move_failure_label(reason) when reason in ["not_found", "invalid_input", "not_a_person"],
+    do: gettext("the destination could not be reached")
+
+  def move_failure_label(reason)
+      when reason in ["staff", "board_moderator", "totp_required", "totp_too_new", "not_active"],
+      do: gettext("this account was no longer eligible")
+
+  def move_failure_label(nil), do: nil
+  def move_failure_label(_), do: gettext("it could not be sent")
+
+  @doc false
   def move_status_label("pending"), do: gettext("Waiting")
   def move_status_label("sent"), do: gettext("Sent")
   def move_status_label("cancelled"), do: gettext("Cancelled")
@@ -377,6 +429,7 @@ defmodule BaudrateWeb.AccountMigrationLive do
 
     socket
     |> assign(:move_eligibility, AccountMigration.move_eligibility(fresh))
+    |> assign(:moved_to, AccountMigration.moved_target(fresh))
     |> assign(:totp_enabled, fresh.totp_enabled)
     |> assign(:active_move, summary)
     # The layout banner reads this assign; keep it in step with the page.
@@ -414,5 +467,6 @@ defmodule BaudrateWeb.AccountMigrationLive do
   defp empty_reauth_form, do: to_form(%{"password" => "", "code" => ""}, as: :reauth)
   defp empty_alias_form, do: to_form(%{"account" => ""}, as: :alias)
   defp empty_move_form, do: to_form(%{"account" => ""}, as: :move)
+  defp empty_redirect_form, do: to_form(%{}, as: :redirect)
   defp cancel_reason_label(reason), do: DataExportLive.cancel_reason_label(reason)
 end

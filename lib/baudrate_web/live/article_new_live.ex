@@ -342,6 +342,9 @@ defmodule BaudrateWeb.ArticleNewLive do
          )
          |> put_flash(:error, format_poll_errors(changeset))}
 
+      {:error, :account, :account_moved, _} ->
+        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
+
       {:error, _, _, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to create article."))}
     end

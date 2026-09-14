@@ -432,4 +432,174 @@ defmodule Baudrate.AccountMigrationTest do
     assert labels[actor.ap_id] == "@#{actor.username}@#{actor.domain}"
     assert labels[unknown] == unknown
   end
+
+  # ---------------------------------------------------------------------------
+  # Sending and after
+  # ---------------------------------------------------------------------------
+
+  defp pending_move(user, target_ap_id, send_after_offset \\ -60) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    Repo.insert!(%AccountMigration.AccountMove{
+      user_id: user.id,
+      target_ap_id: target_ap_id,
+      status: "pending",
+      requested_at: DateTime.add(now, -86_400),
+      send_after: DateTime.add(now, send_after_offset)
+    })
+  end
+
+  defp jobs_of_type(type) do
+    Baudrate.Federation.DeliveryJob
+    |> Repo.all()
+    |> Enum.filter(&(Jason.decode!(&1.activity_json)["type"] == type))
+  end
+
+  describe "send_move/1" do
+    setup %{user: user} do
+      user = make_eligible(user)
+      target = "https://new.example/users/me"
+      stub_target(target, aka: [local_uri(user)])
+      %{user: user, target: target}
+    end
+
+    test "sends Update and Move to remote followers and makes the account moved",
+         %{user: user, target: target} do
+      follower = remote_actor(%{inbox: "https://follower.example/inbox"})
+      {:ok, _} = Baudrate.Federation.create_follower(local_uri(user), follower, "https://f/1")
+      move = pending_move(user, target)
+
+      assert :sent = AccountMigration.send_move(move)
+
+      assert %{status: "sent", sent_at: %DateTime{}} = Repo.reload!(move)
+      moved = Repo.reload!(user)
+      assert moved.moved_to == target
+      assert AccountMigration.moved?(moved)
+
+      assert [move_job] = jobs_of_type("Move")
+      activity = Jason.decode!(move_job.activity_json)
+      assert activity["object"] == local_uri(user)
+      assert activity["target"] == target
+      assert move_job.inbox_url == "https://follower.example/inbox"
+
+      assert [update_job] = jobs_of_type("Update")
+      assert Jason.decode!(update_job.activity_json)["object"]["movedTo"] == target
+
+      assert [%{data: %{"label" => "@me@new.example"}}] = notices(user, "account_moved")
+    end
+
+    test "moves local followers to the destination and tells them",
+         %{user: user, target: target} do
+      follower = create_follower_user()
+      {:ok, _} = Baudrate.Federation.create_local_follow(follower, user)
+      move = pending_move(user, target)
+
+      assert :sent = AccountMigration.send_move(move)
+
+      refute Baudrate.Federation.local_follows?(follower.id, user.id)
+      target_actor = Repo.one!(from(r in RemoteActor, where: r.ap_id == ^target))
+
+      assert %{state: "pending"} =
+               Baudrate.Federation.get_user_follow(follower.id, target_actor.id)
+
+      assert [follow_job] = jobs_of_type("Follow")
+      assert Jason.decode!(follow_job.activity_json)["object"] == target
+
+      assert [%{actor_user_id: actor_id, data: %{"label" => "@me@new.example"}}] =
+               notices(follower, "actor_moved")
+
+      assert actor_id == user.id
+    end
+
+    test "is refused at send time when the destination dropped the alias",
+         %{user: user, target: target} do
+      stub_target(target, aka: [])
+      move = pending_move(user, target)
+
+      assert :failed = AccountMigration.send_move(move)
+      assert %{status: "failed", failure_reason: "alias_not_claimed"} = Repo.reload!(move)
+      refute AccountMigration.moved?(Repo.reload!(user))
+      assert jobs_of_type("Move") == []
+      assert [%{data: %{"reason" => "alias_not_claimed"}}] = notices(user, "account_move_failed")
+    end
+
+    test "is refused when the account became staff in the meantime",
+         %{user: user, target: target} do
+      moderator = Repo.one!(from(r in Setup.Role, where: r.name == "moderator"))
+
+      Repo.update_all(from(u in Setup.User, where: u.id == ^user.id),
+        set: [role_id: moderator.id]
+      )
+
+      move = pending_move(user, target)
+
+      assert :failed = AccountMigration.send_move(move)
+      assert %{failure_reason: "staff"} = Repo.reload!(move)
+    end
+
+    test "a cancelled move is not sent", %{user: user, target: target} do
+      move = pending_move(user, target)
+      {:ok, _} = AccountMigration.cancel_move(user.id, move.id)
+
+      assert :skipped = AccountMigration.send_move(Repo.reload!(move))
+      refute AccountMigration.moved?(Repo.reload!(user))
+    end
+
+    test "sweep_due_moves/0 sends only moves whose cooling-off has passed",
+         %{user: user, target: target} do
+      other = make_eligible(create_follower_user())
+      due = pending_move(user, target)
+      not_due = pending_move(other, "https://new.example/users/other", 3600)
+
+      assert AccountMigration.sweep_due_moves() == 1
+      assert %{status: "sent"} = Repo.reload!(due)
+      assert %{status: "pending"} = Repo.reload!(not_due)
+    end
+  end
+
+  describe "remove_redirect/3" do
+    setup %{user: user} do
+      user = make_eligible(user)
+      target = "https://new.example/users/me"
+      stub_target(target, aka: [local_uri(user)])
+      :sent = AccountMigration.send_move(pending_move(user, target))
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+      %{user: Repo.reload!(user)}
+    end
+
+    test "needs credentials, then clears the redirect and publishes the actor", %{user: user} do
+      assert {:error, :invalid_credentials} =
+               AccountMigration.remove_redirect(user, creds(user, "wrong"), @opts)
+
+      assert AccountMigration.moved?(Repo.reload!(user))
+
+      assert {:ok, updated} = AccountMigration.remove_redirect(user, creds(user), @opts)
+      refute AccountMigration.moved?(updated)
+      assert [_] = notices(user, "account_redirect_removed")
+
+      # The move still counts toward the 30-day limit.
+      assert {:error, {:recently_moved, _}} = AccountMigration.move_eligibility(updated)
+    end
+
+    test "an account that has not moved has no redirect to remove" do
+      other = make_eligible(create_follower_user())
+      assert {:error, :not_moved} = AccountMigration.remove_redirect(other, %{}, @opts)
+    end
+  end
+
+  defp create_follower_user do
+    role = Repo.one!(from(r in Setup.Role, where: r.name == "user"))
+
+    {:ok, user} =
+      %Setup.User{}
+      |> Setup.User.registration_changeset(%{
+        "username" => "follower_#{System.unique_integer([:positive])}",
+        "password" => "Password123!x",
+        "password_confirmation" => "Password123!x",
+        "role_id" => role.id
+      })
+      |> Repo.insert()
+
+    Repo.preload(user, :role)
+  end
 end

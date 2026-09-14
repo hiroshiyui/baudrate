@@ -227,4 +227,78 @@ defmodule BaudrateWeb.AccountMigrationLiveTest do
       assert %{status: "pending"} = Repo.reload!(move)
     end
   end
+
+  describe "after the move" do
+    setup %{user: user} do
+      secret = Auth.generate_totp_secret()
+      {:ok, _} = Auth.enable_totp(user, secret)
+
+      target =
+        %RemoteActor{}
+        |> RemoteActor.changeset(%{
+          ap_id: "https://new.example/users/moved",
+          username: "moved",
+          domain: "new.example",
+          url: "https://new.example/@moved",
+          public_key_pem: elem(KeyStore.generate_keypair(), 0),
+          inbox: "https://new.example/users/moved/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert!()
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.update_all(from(u in User, where: u.id == ^user.id),
+        set: [moved_to: target.ap_id, moved_at: now]
+      )
+
+      %{secret: secret, target: target}
+    end
+
+    test "shows where the account moved and a notice on every page", %{conn: conn, user: user} do
+      {:ok, lv, _html} = live(conn, "/profile/move")
+
+      assert has_element?(
+               lv,
+               "#account-move-moved-link[href='https://new.example/@moved']",
+               "@moved@new.example"
+             )
+
+      assert has_element?(lv, "#account-moved-notice")
+      refute has_element?(lv, "#account-move-form")
+
+      # The public profile points visitors to the new account and offers no follow.
+      {:ok, profile, _html} = live(build_conn(), "/users/#{user.username}")
+      assert has_element?(profile, "#user-profile-moved-link", "@moved@new.example")
+
+      viewer = setup_user("user")
+
+      {:ok, viewer_profile, _html} =
+        live(log_in_user(build_conn(), viewer), "/users/#{user.username}")
+
+      refute has_element?(viewer_profile, "#user-profile-follow")
+    end
+
+    test "removing the redirect needs credentials and restores posting",
+         %{conn: conn, user: user, secret: secret} do
+      {:ok, lv, _html} = live(conn, "/profile/move")
+
+      html =
+        lv
+        |> form("#account-redirect-form", redirect: %{password: "wrong", code: "000000"})
+        |> render_submit()
+
+      assert html =~ "Invalid credentials"
+      assert Repo.reload!(user).moved_to
+
+      lv
+      |> form("#account-redirect-form", redirect: %{password: @password, code: totp_code(secret)})
+      |> render_submit()
+
+      assert is_nil(Repo.reload!(user).moved_to)
+      refute has_element?(lv, "#account-move-moved")
+      refute has_element?(lv, "#account-moved-notice")
+    end
+  end
 end

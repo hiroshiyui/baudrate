@@ -24,9 +24,13 @@ defmodule Baudrate.Auth.Invites do
     2. Quota remaining > 0 within rolling #{@invite_quota_window_days}-day window
   """
   @spec can_generate_invite?(User.t()) ::
-          {:ok, integer() | :unlimited} | {:error, :invite_quota_exceeded}
+          {:ok, integer() | :unlimited} | {:error, :invite_quota_exceeded | :account_moved}
   def can_generate_invite?(%User{} = user) do
     cond do
+      # A moved account is read-only (ADR 0025).
+      Baudrate.AccountMigration.moved?(user) ->
+        {:error, :account_moved}
+
       user.role.name == "admin" ->
         {:ok, :unlimited}
 
@@ -125,18 +129,26 @@ defmodule Baudrate.Auth.Invites do
 
     * `{:error, :unauthorized}` — caller is not an admin
     * `{:error, :invite_quota_exceeded}` — target user's quota is exhausted
+    * `{:error, :account_moved}` — the target account has moved (ADR 0025)
   """
   def admin_generate_invite_code_for_user(%User{} = admin, %User{} = target_user, opts \\ []) do
-    if admin.role.name != "admin" do
-      {:error, :unauthorized}
-    else
-      remaining = invite_quota_remaining(target_user)
+    cond do
+      admin.role.name != "admin" ->
+        {:error, :unauthorized}
 
-      if remaining <= 0 do
-        {:error, :invite_quota_exceeded}
-      else
-        do_generate_invite_code(target_user, opts)
-      end
+      Baudrate.AccountMigration.moved?(target_user) ->
+        {:error, :account_moved}
+
+      true ->
+        admin_generate_within_quota(target_user, opts)
+    end
+  end
+
+  defp admin_generate_within_quota(target_user, opts) do
+    if invite_quota_remaining(target_user) <= 0 do
+      {:error, :invite_quota_exceeded}
+    else
+      do_generate_invite_code(target_user, opts)
     end
   end
 

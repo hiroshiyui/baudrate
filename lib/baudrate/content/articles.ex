@@ -137,6 +137,20 @@ defmodule Baudrate.Content.Articles do
           {:ok, %{article: %Article{}, board_articles: non_neg_integer()}}
           | {:error, Ecto.Multi.name(), any(), map()}
   def create_article(attrs, board_ids, opts \\ []) when is_list(board_ids) do
+    author_id = attrs[:user_id] || attrs["user_id"]
+
+    # A moved account is read-only (ADR 0025). A comment forwarded into a board
+    # by someone else keeps its author and is not new writing by that author.
+    # The error uses the Multi shape every caller already handles.
+    if Keyword.get(opts, :forwarded_comment, false) or
+         Baudrate.AccountMigration.ensure_not_moved(author_id) == :ok do
+      do_create_article(attrs, board_ids, opts)
+    else
+      {:error, :account, :account_moved, %{}}
+    end
+  end
+
+  defp do_create_article(attrs, board_ids, opts) do
     image_ids = Keyword.get(opts, :image_ids, [])
     poll_attrs = Keyword.get(opts, :poll)
 
@@ -232,12 +246,20 @@ defmodule Baudrate.Content.Articles do
   Publishes an `Update(Article)` activity to federation after success.
   """
   @spec update_article(%Article{}, map(), map() | nil) ::
-          {:ok, %Article{}} | {:error, Ecto.Changeset.t()}
+          {:ok, %Article{}} | {:error, Ecto.Changeset.t() | :account_moved}
   def update_article(%Article{} = article, attrs) do
     update_article(article, attrs, nil)
   end
 
   def update_article(%Article{} = article, attrs, editor) do
+    # A moved account is read-only (ADR 0025); admins editing its articles are not.
+    case Baudrate.AccountMigration.ensure_not_moved(editor) do
+      :ok -> do_update_article(article, attrs, editor)
+      error -> error
+    end
+  end
+
+  defp do_update_article(article, attrs, editor) do
     result =
       Ecto.Multi.new()
       |> maybe_snapshot_revision(article, editor)
@@ -563,7 +585,7 @@ defmodule Baudrate.Content.Articles do
         visibility: comment.visibility || "public"
       }
 
-      case Baudrate.Content.create_article(attrs, [board.id]) do
+      case Baudrate.Content.create_article(attrs, [board.id], forwarded_comment: true) do
         {:ok, %{article: article}} ->
           schedule_federation_task(fn ->
             Baudrate.Federation.Publisher.publish_article_forwarded(article, board)

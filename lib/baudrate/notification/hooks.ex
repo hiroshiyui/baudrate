@@ -27,7 +27,9 @@ defmodule Baudrate.Notification.Hooks do
     * `notify_account_security/3` — security_key_added, security_key_removed,
       totp_enabled, totp_disabled, password_changed, signed_out_everywhere,
       totp_login_failed, account_alias_added, account_alias_removed,
-      account_move_requested, account_move_cancelled, data_export_*
+      account_move_requested, account_move_cancelled, account_move_failed,
+      account_moved, account_redirect_removed, data_export_*
+    * `notify_actor_moved/3` — actor_moved
   """
 
   alias Baudrate.{Auth, Notification, Repo, Setup}
@@ -166,6 +168,21 @@ defmodule Baudrate.Notification.Hooks do
       user_id: followed_id,
       actor_user_id: follower_id
     })
+  end
+
+  @doc """
+  Notifies a local user that an account they followed moved and that they now
+  follow the new account (ADR 0025).
+
+  `actor` is `%{actor_user_id: id}` for a local account or
+  `%{actor_remote_actor_id: id}` for a remote one. `data` carries `"label"`
+  (the new account's handle) and `"url"`.
+  """
+  def notify_actor_moved(user_id, actor, data) when is_map(actor) and is_map(data) do
+    actor
+    |> Map.take([:actor_user_id, :actor_remote_actor_id])
+    |> Map.merge(%{type: "actor_moved", user_id: user_id, data: data})
+    |> Notification.create_notification()
   end
 
   @doc """

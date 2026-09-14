@@ -328,6 +328,9 @@ defmodule BaudrateWeb.ArticleLive do
       {:error, :self_like} ->
         {:noreply, put_flash(socket, :error, gettext("You cannot like your own article."))}
 
+      {:error, :account_moved} ->
+        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
+
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to toggle like."))}
     end
@@ -346,6 +349,9 @@ defmodule BaudrateWeb.ArticleLive do
 
       {:error, :self_boost} ->
         {:noreply, put_flash(socket, :error, gettext("You cannot boost your own article."))}
+
+      {:error, :account_moved} ->
+        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to toggle boost."))}
@@ -639,6 +645,9 @@ defmodule BaudrateWeb.ArticleLive do
            |> assign(:poll_closed, true)
            |> put_flash(:error, gettext("This poll has closed."))}
 
+        {:error, :account_moved} ->
+          {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
+
         {:error, _reason} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to record vote."))}
       end
@@ -891,6 +900,9 @@ defmodule BaudrateWeb.ArticleLive do
          |> assign(:replying_to, nil)
          |> assign(:uploaded_comment_images, [])
          |> put_flash(:info, gettext("Comment posted."))}
+
+      {:error, :account_moved} ->
+        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :comment_form, to_form(changeset, as: :comment))}

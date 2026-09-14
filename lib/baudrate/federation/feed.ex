@@ -320,14 +320,15 @@ defmodule Baudrate.Federation.Feed do
   or non-followed item is refused here at the context boundary rather than
   federating a `Create(Note)` to an unrelated remote inbox.
 
-  Returns `{:ok, %FeedItemReply{}}`, `{:error, :not_found}`, or
-  `{:error, changeset}`.
+  Returns `{:ok, %FeedItemReply{}}`, `{:error, :not_found}`,
+  `{:error, :account_moved}` (ADR 0025), or `{:error, changeset}`.
   """
   def create_feed_item_reply(feed_item, user, body, opts \\ []) do
-    if feed_item_accessible?(user, feed_item) do
-      do_create_feed_item_reply(feed_item, user, body, opts)
-    else
-      {:error, :not_found}
+    cond do
+      not feed_item_accessible?(user, feed_item) -> {:error, :not_found}
+      # A moved account is read-only (ADR 0025).
+      Baudrate.AccountMigration.ensure_not_moved(user) != :ok -> {:error, :account_moved}
+      true -> do_create_feed_item_reply(feed_item, user, body, opts)
     end
   end
 
@@ -469,10 +470,13 @@ defmodule Baudrate.Federation.Feed do
 
     case Repo.get_by(FeedItemLike, user_id: user.id, feed_item_id: feed_item_id) do
       nil ->
+        # A moved account is read-only: it can undo, not add (ADR 0025).
         result =
-          %FeedItemLike{}
-          |> FeedItemLike.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
-          |> Repo.insert()
+          with :ok <- Baudrate.AccountMigration.ensure_not_moved(user) do
+            %FeedItemLike{}
+            |> FeedItemLike.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
+            |> Repo.insert()
+          end
 
         with {:ok, like} <- result do
           ap_id =
@@ -508,10 +512,13 @@ defmodule Baudrate.Federation.Feed do
 
     case Repo.get_by(FeedItemBoost, user_id: user.id, feed_item_id: feed_item_id) do
       nil ->
+        # A moved account is read-only: it can undo, not add (ADR 0025).
         result =
-          %FeedItemBoost{}
-          |> FeedItemBoost.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
-          |> Repo.insert()
+          with :ok <- Baudrate.AccountMigration.ensure_not_moved(user) do
+            %FeedItemBoost{}
+            |> FeedItemBoost.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
+            |> Repo.insert()
+          end
 
         with {:ok, boost} <- result do
           ap_id =
