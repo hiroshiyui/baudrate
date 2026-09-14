@@ -9,7 +9,9 @@ defmodule BaudrateWeb.SeleniumServer do
   @selenium_jar "selenium-server-4.27.0.jar"
   @health_url ~c"http://localhost:4444/status"
   @poll_interval 500
-  @timeout 15_000
+  # A cold JVM on a CI runner can take well over 15 s to bring the standalone
+  # server up; locally it is ready in a few seconds.
+  @timeout 60_000
 
   # The CI image keeps Selenium and GeckoDriver in /opt/selenium
   # (BAUDRATE_SELENIUM_DIR); locally they come from `mix selenium.setup`.
@@ -65,7 +67,7 @@ defmodule BaudrateWeb.SeleniumServer do
         :binary,
         :exit_status,
         :stderr_to_stdout,
-        args: ["-jar", jar_path, "standalone", "--port", "4444"],
+        args: ["-jar", jar_path, "standalone", "--port", "4444", "--log", log_path],
         env: [{~c"PATH", env_path}],
         cd: to_charlist(selenium_dir())
       ]
