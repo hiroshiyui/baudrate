@@ -245,12 +245,7 @@ defmodule BaudrateWeb.AuthHooks do
         if is_integer(verified_at) && now - verified_at < @admin_totp_timeout_seconds do
           {:cont, socket}
         else
-          return_to =
-            if connected?(socket) do
-              get_connect_info(socket, :request_path) || "/admin/settings"
-            else
-              "/admin/settings"
-            end
+          return_to = admin_return_path(socket)
 
           {:halt,
            redirect(socket, to: "/admin/verify?return_to=#{URI.encode_www_form(return_to)}")}
@@ -312,6 +307,18 @@ defmodule BaudrateWeb.AuthHooks do
       locale ->
         Gettext.put_locale(locale)
         locale
+    end
+  end
+
+  # The admin page to come back to after sudo verification. `:uri` comes from
+  # the conn on the HTTP render and from the socket's connect info once
+  # connected (the page the socket was opened on). Anything outside `/admin/`
+  # falls back to the settings page; `/admin/verify` re-sanitizes it anyway.
+  defp admin_return_path(socket) do
+    case get_connect_info(socket, :uri) do
+      %URI{path: "/admin/" <> _ = path, query: query} when query in [nil, ""] -> path
+      %URI{path: "/admin/" <> _ = path, query: query} -> path <> "?" <> query
+      _ -> "/admin/settings"
     end
   end
 end

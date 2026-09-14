@@ -424,7 +424,8 @@ Admin routes (`/admin/*`) require periodic re-verification — similar to Unix
 `sudo`. When an admin navigates to any admin page, the `:require_admin_totp`
 hook checks the `admin_totp_verified_at` timestamp in the cookie session. If
 missing or older than 10 minutes, the admin is redirected to `/admin/verify`
-for re-verification.
+for re-verification, with `return_to` set to the requested admin path and query
+(read from the `:uri` connect info), so verification lands back on that page.
 
 Admins can verify using either **TOTP** (time-based one-time password) or a
 registered **WebAuthn hardware security key** (FIDO2). Both methods set the

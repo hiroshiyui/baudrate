@@ -20,6 +20,22 @@ defmodule BaudrateWeb.AdminTotpVerifyLiveTest do
     Repo.preload(admin, :role)
   end
 
+  describe "sudo mode redirect" do
+    test "an admin page without sudo returns to that page after verification", %{conn: conn} do
+      conn = log_in_user(conn, setup_totp_admin())
+
+      assert {:error, {:redirect, %{to: to}}} = live(conn, "/admin/bots")
+      assert to == "/admin/verify?return_to=" <> URI.encode_www_form("/admin/bots")
+    end
+
+    test "the query string is kept", %{conn: conn} do
+      conn = log_in_user(conn, setup_totp_admin())
+
+      assert {:error, {:redirect, %{to: to}}} = live(conn, "/admin/users?page=2")
+      assert to == "/admin/verify?return_to=" <> URI.encode_www_form("/admin/users?page=2")
+    end
+  end
+
   describe "GET /admin/verify" do
     test "admin can view verification page with form", %{conn: conn} do
       admin = setup_totp_admin()
