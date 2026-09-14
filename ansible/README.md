@@ -162,6 +162,22 @@ directories are kept on the server (up to `keep_releases`).
 **Note:** Database migrations are **not** automatically rolled back. If the
 newer version added migrations, you may need to handle rollback manually.
 
+**Note:** Re-deploying rebuilds the older tag from source with the Erlang/Elixir
+versions pinned in *that tag's* `.tool-versions`. If you have since uninstalled
+that toolchain (e.g. Erlang 28.3.1, pinned up to v1.14.1), the build fails
+until you reinstall it (`asdf install erlang <version>` as the `baudrate`
+user). Each kept directory in `releases/` bundles its own ERTS, so for an
+immediate rollback without rebuilding, repoint both symlinks at a kept release
+and restart the service. nginx serves assets through `static`, which points
+directly at a release rather than through `current`:
+
+```bash
+REL=/opt/baudrate/releases/<timestamp>
+sudo -u baudrate ln -sfn "$REL" /opt/baudrate/current
+sudo -u baudrate ln -sfn "$(readlink -f "$REL"/lib/baudrate-*/priv/static | tail -1)" /opt/baudrate/static
+sudo systemctl restart baudrate
+```
+
 ## Selective Execution
 
 Run specific roles using tags:
