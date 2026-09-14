@@ -66,6 +66,12 @@ defmodule Baudrate.Content.Article do
   @max_body_length 65_536
 
   @user_fields [:title, :body, :slug, :user_id, :forwardable, :visibility]
+
+  # Local articles are board content, public on this site whatever their
+  # federation addressing, so only `public` and `unlisted` are offered (D1 in
+  # doc/TODOs.md). Remote articles keep the visibility derived on ingest.
+  @local_visibilities ~w(public unlisted)
+  @remote_visibilities ~w(public unlisted followers_only direct)
   @trusted_fields @user_fields ++ [:ap_id, :url, :published_at]
 
   @doc """
@@ -93,7 +99,7 @@ defmodule Baudrate.Content.Article do
     |> validate_required([:title, :body, :slug])
     |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
-    |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
+    |> validate_inclusion(:visibility, @local_visibilities)
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
       message: "must be lowercase alphanumeric with hyphens"
     )
@@ -109,7 +115,7 @@ defmodule Baudrate.Content.Article do
     |> validate_required([:title, :body])
     |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
-    |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
+    |> validate_inclusion(:visibility, @local_visibilities)
   end
 
   @doc "Changeset for remote articles received via ActivityPub."
@@ -128,7 +134,7 @@ defmodule Baudrate.Content.Article do
     |> validate_required([:title, :body, :slug, :ap_id, :remote_actor_id])
     |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
-    |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
+    |> validate_inclusion(:visibility, @remote_visibilities)
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
       message: "must be lowercase alphanumeric with hyphens"
     )

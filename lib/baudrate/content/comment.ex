@@ -55,7 +55,9 @@ defmodule Baudrate.Content.Comment do
     comment
     |> cast(attrs, [:body, :body_html, :article_id, :parent_id, :user_id, :visibility])
     |> validate_required([:body, :article_id, :user_id])
-    |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
+    # Local comments are public on the article page, so only public/unlisted
+    # addressing is offered (D1 in doc/TODOs.md).
+    |> validate_inclusion(:visibility, ~w(public unlisted))
     |> foreign_key_constraint(:article_id)
     |> foreign_key_constraint(:parent_id)
     |> foreign_key_constraint(:user_id)

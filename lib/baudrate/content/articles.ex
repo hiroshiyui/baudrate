@@ -582,7 +582,10 @@ defmodule Baudrate.Content.Articles do
         body: comment.body || "",
         slug: slug,
         user_id: comment.user_id,
-        visibility: comment.visibility || "public"
+        # Local articles accept only public/unlisted (D1). A legacy local
+        # comment with narrower addressing, which only an admin may forward,
+        # becomes unlisted rather than failing.
+        visibility: if(comment.visibility == "public", do: "public", else: "unlisted")
       }
 
       case Baudrate.Content.create_article(attrs, [board.id], forwarded_comment: true) do

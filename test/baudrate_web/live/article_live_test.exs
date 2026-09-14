@@ -707,11 +707,15 @@ defmodule BaudrateWeb.ArticleLiveTest do
             title: "FO Article",
             body: "Private content",
             slug: "fo-article-live",
-            user_id: user.id,
-            visibility: "followers_only"
+            user_id: user.id
           },
           []
         )
+
+      # A row written before local composers dropped followers-only (D1).
+      Repo.update_all(from(a in Baudrate.Content.Article, where: a.id == ^article.id),
+        set: [visibility: "followers_only"]
+      )
 
       other = setup_user("user")
 

@@ -727,6 +727,14 @@ ActivityPub visibility derived from `to`/`cc` addressing:
 Visibility is derived on ingest by `Federation.Visibility.from_addressing/1`
 and respected in outbound activities by the Publisher.
 
+Local articles and comments only accept `public` or `unlisted` (the composers
+offer nothing else, and `Article.changeset/2`, `trusted_changeset/2`,
+`update_changeset/2` and `Comment.changeset/2` reject the rest). Board content
+is readable on this site by anyone the board lets in, whatever its federation
+addressing, so offering "Followers only" or "Direct" there promised a privacy
+the site never enforced. Direct messages are the private channel. Remote rows
+keep all four values.
+
 ### Article Images
 
 Articles support up to 4 image attachments displayed as a responsive media

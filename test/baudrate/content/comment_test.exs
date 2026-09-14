@@ -360,4 +360,39 @@ defmodule Baudrate.Content.CommentTest do
       assert length(page_ids(article)) == 2
     end
   end
+
+  describe "local visibility (D1)" do
+    test "local comments accept only public and unlisted" do
+      for vis <- ~w(public unlisted) do
+        assert Comment.changeset(%Comment{}, %{
+                 body: "b",
+                 article_id: 1,
+                 user_id: 1,
+                 visibility: vis
+               }).valid?
+      end
+
+      for vis <- ~w(followers_only direct) do
+        changeset =
+          Comment.changeset(%Comment{}, %{body: "b", article_id: 1, user_id: 1, visibility: vis})
+
+        assert "is invalid" in errors_on(changeset).visibility
+      end
+    end
+
+    test "remote comments keep every derived visibility" do
+      for vis <- ~w(public unlisted followers_only direct) do
+        changeset =
+          Comment.remote_changeset(%Comment{}, %{
+            body: "b",
+            ap_id: "https://remote.example/notes/1",
+            article_id: 1,
+            remote_actor_id: 1,
+            visibility: vis
+          })
+
+        refute Keyword.has_key?(changeset.errors, :visibility)
+      end
+    end
+  end
 end

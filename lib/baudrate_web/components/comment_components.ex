@@ -364,9 +364,7 @@ defmodule BaudrateWeb.CommentComponents do
                 type="select"
                 options={[
                   {gettext("Public"), "public"},
-                  {gettext("Unlisted"), "unlisted"},
-                  {gettext("Followers only"), "followers_only"},
-                  {gettext("Direct"), "direct"}
+                  {gettext("Unlisted"), "unlisted"}
                 ]}
                 class="comment-reply-visibility select select-sm"
                 aria-label={gettext("Visibility")}

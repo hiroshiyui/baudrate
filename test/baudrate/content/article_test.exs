@@ -57,6 +57,43 @@ defmodule Baudrate.Content.ArticleTest do
     end
   end
 
+  describe "local visibility (D1)" do
+    @attrs %{title: "T", body: "B", slug: "t"}
+
+    test "local create and edit accept only public and unlisted" do
+      for vis <- ~w(public unlisted) do
+        assert Article.changeset(%Article{}, Map.put(@attrs, :visibility, vis)).valid?
+        assert Article.update_changeset(%Article{}, Map.put(@attrs, :visibility, vis)).valid?
+      end
+
+      for vis <- ~w(followers_only direct) do
+        for changeset <- [
+              Article.changeset(%Article{}, Map.put(@attrs, :visibility, vis)),
+              Article.trusted_changeset(%Article{}, Map.put(@attrs, :visibility, vis)),
+              Article.update_changeset(%Article{}, Map.put(@attrs, :visibility, vis))
+            ] do
+          assert "is invalid" in errors_on(changeset).visibility
+        end
+      end
+    end
+
+    test "remote articles keep every derived visibility" do
+      for vis <- ~w(public unlisted followers_only direct) do
+        changeset =
+          Article.remote_changeset(%Article{}, %{
+            title: "T",
+            body: "B",
+            slug: "t",
+            ap_id: "https://remote.example/o/1",
+            remote_actor_id: 1,
+            visibility: vis
+          })
+
+        assert changeset.valid?
+      end
+    end
+  end
+
   describe "ap_id stamping" do
     test "local article gets ap_id stamped on creation" do
       role = Repo.one!(from(r in Setup.Role, where: r.name == "user"))

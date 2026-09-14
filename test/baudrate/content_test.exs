@@ -2472,11 +2472,12 @@ defmodule Baudrate.ContentTest do
             title: "Followers Only",
             body: "body",
             slug: "fo-fwd-#{System.unique_integer([:positive])}",
-            user_id: author.id,
-            visibility: "followers_only"
+            user_id: author.id
           },
           [board.id]
         )
+
+      article = force_visibility!(article, "followers_only")
 
       other = create_user("user")
 
@@ -2846,9 +2847,10 @@ defmodule Baudrate.ContentTest do
         Content.create_comment(%{
           body: "Followers only comment",
           article_id: article.id,
-          user_id: author.id,
-          visibility: "followers_only"
+          user_id: author.id
         })
+
+      comment = force_visibility!(comment, "followers_only")
 
       assert {:error, :unauthorized} = Content.forward_comment_to_board(comment, board, user)
     end
@@ -3104,11 +3106,12 @@ defmodule Baudrate.ContentTest do
             title: "FO Article",
             body: "body",
             slug: "fo-art-#{System.unique_integer([:positive])}",
-            user_id: author.id,
-            visibility: "followers_only"
+            user_id: author.id
           },
           []
         )
+
+      article = force_visibility!(article, "followers_only")
 
       refute Content.can_forward_article?(other, article)
     end
@@ -3211,11 +3214,12 @@ defmodule Baudrate.ContentTest do
             title: "Direct FWD",
             body: "body",
             slug: "direct-fwd-#{System.unique_integer([:positive])}",
-            user_id: author.id,
-            visibility: "direct"
+            user_id: author.id
           },
           []
         )
+
+      article = force_visibility!(article, "direct")
 
       refute Content.can_forward_article?(other, article)
     end
@@ -3230,11 +3234,12 @@ defmodule Baudrate.ContentTest do
             title: "Admin Direct FWD",
             body: "body",
             slug: "admin-direct-fwd-#{System.unique_integer([:positive])}",
-            user_id: author.id,
-            visibility: "direct"
+            user_id: author.id
           },
           []
         )
+
+      article = force_visibility!(article, "direct")
 
       assert Content.can_forward_article?(admin, article)
     end
@@ -4338,5 +4343,12 @@ defmodule Baudrate.ContentTest do
       # DB row matches
       assert Repo.get!(Baudrate.Content.Comment, comment.id).ap_id == comment.ap_id
     end
+  end
+
+  # Local composers only offer public/unlisted (D1), but rows written before
+  # that, and remote rows, can still carry the other values.
+  defp force_visibility!(%schema{id: id} = record, visibility) do
+    {1, _} = Repo.update_all(from(r in schema, where: r.id == ^id), set: [visibility: visibility])
+    %{record | visibility: visibility}
   end
 end
