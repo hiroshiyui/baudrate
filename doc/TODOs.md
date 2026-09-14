@@ -38,105 +38,70 @@ Follow-ups:
 
 ## Phase 2: Account Migration (ActivityPub Move) — MEDIUM PRIORITY
 
-### 2.1 Migration: add `also_known_as` and `moved_to` to users
+Designed in [ADR 0025](adr/0025-account-migration.md). Decisions: TOTP ≥ 7 days
+and no staff roles; 24 h cooling-off with a banner and cancel; the old account
+becomes read-only and the redirect can be removed; local followers are moved on
+their behalf and notified.
 
-File: `priv/repo/migrations/TIMESTAMP_add_also_known_as_and_moved_to_to_users.exs`
+Already shipped: inbound `Move` alias verification (`remote_actors.also_known_as`)
+and feed item migration (`Federation.migrate_feed_items/2`).
 
-```elixir
-alter table(:users) do
-  add :also_known_as, {:array, :string}, default: []
-  add :moved_to, :string
-end
-```
+### Stage 1 — Aliases and actor fields
 
-- `also_known_as` — AP URIs of other accounts this user claims ownership of (bidirectional alias per FEP-7628 / Mastodon convention)
-- `moved_to` — AP URI of the account this user migrated to (set after sending Move)
-- Add `"moved"` to valid values in user `status_changeset` validation
+- Migration: `users.also_known_as` (`{:array, :string}`, default `[]`),
+  `users.moved_to`, `users.moved_at`; `remote_actors.moved_to_ap_id`,
+  `remote_actors.moved_at`.
+- `ActorRenderer.user_actor/1`: `alsoKnownAs` (always) and `movedTo` (when set).
+- `Federation.Migration` (or `Auth`-side) alias functions: add (handle or URI →
+  `ActorResolver`, HTTPS, remote Person only, no duplicates, cap 5), remove;
+  both behind `Auth.verify_reauthentication/5` inside the context.
+- Security notices `account_alias_added` / `account_alias_removed`.
+- `/profile/move` page: aliases list, add, remove, with explanations.
+- Data export: `also_known_as` and `moved_to` in `profile.json`.
 
-### 2.2 Include `alsoKnownAs` / `movedTo` in AP actor JSON
+### Stage 2 — Outbound Move request lifecycle
 
-File: `lib/baudrate/federation.ex` — `user_actor/1`
+- `account_moves` table: `user_id`, `target_ap_id`, `status`
+  (`pending`/`sent`/`cancelled`/`failed`), `requested_at`, `send_after`,
+  `sent_at`, `cancelled_at`, `cancel_reason`, `failure_reason`,
+  `requested_session_id`, `requested_user_agent_family`. Partial unique index:
+  one pending per user.
+- Eligibility: active, non-bot, TOTP ≥ 7 days, not admin/moderator, not a board
+  moderator, no move sent in the last 30 days, not currently moved.
+- Request: eligibility → target resolves and claims this account → step-up →
+  insert → notice. Cancel (owner), `cancel_active_moves/2` hooked into password
+  change, TOTP disable, sign out everywhere, ban.
+- Banner on every page while pending (like the export banner).
+- Sweep (hourly, `SessionCleaner`): due requests re-checked, then sent or marked
+  `failed` with a notice.
 
-- Add `"alsoKnownAs"` field (array of strings from `user.also_known_as`)
-- Add `"movedTo"` field (string from `user.moved_to`, only if set)
-- These fields are standard AP Person properties used by Mastodon, Pleroma, etc.
+### Stage 3 — Sending, post-move state and read-only enforcement
 
-### 2.3 Add alias management UI in ProfileLive
+- `Publisher.build_move/2`; deliver to remote follower inboxes.
+- Set `moved_to` / `moved_at`; `account_moved` notice; profile banner
+  "This account has moved to …".
+- Local followers: pending follow of the target + `Follow` delivery, remove old
+  local follow, `actor_moved` notice.
+- Read-only at the context boundary: articles, comments, feed replies, DMs,
+  likes and boosts (articles, comments, feed items), forwards, poll votes,
+  invites. LiveViews hide the controls.
+- "Remove redirect": step-up, clears `moved_to`/`moved_at`, notice.
 
-File: `lib/baudrate_web/live/profile_live.ex` + template
+### Stage 4 — Inbound Move fixes
 
-New "Account Aliases" section:
-- List current aliases (AP URIs in `also_known_as`)
-- Add alias form: text input for AP URI
-- Validation: must be valid HTTPS URI, must be resolvable as AP actor via `ActorResolver.resolve/1`
-- Remove alias button per entry
-- Explanation text: "Add aliases before migrating. The destination account must also add your Baudrate account as an alias."
+- Replace the silent repoint: for each local follower send `Follow` to the
+  target (pending) and `Undo(Follow)` to the origin; keep feed item migration.
+- Target is a local user whose `also_known_as` claims the origin: create local
+  follows instead.
+- `actor_moved` notice (configurable type) for each migrated local follower.
+- Board follows are never repointed; admins get a notice.
+- Ignore a `Move` whose target has `movedTo`; one processed `Move` per origin
+  every 30 days (`remote_actors.moved_to_ap_id` / `moved_at`).
 
-### 2.4 Implement outbound Move
+### Stage 5 — Docs
 
-File: `lib/baudrate/federation/publisher.ex`
-
-- `build_move_activity(user, target_uri)` — builds AP `Move` activity: `actor` = this user's AP URI, `target` = destination AP URI, `object` = this user's AP URI
-- `publish_move(user, target_uri)` — validates bidirectional alias (fetch target actor, verify its `alsoKnownAs` contains this user's AP URI), then enqueues Move to all followers via delivery queue
-
-### 2.5 Post-move account state
-
-After sending Move:
-- Set `user.moved_to` to target URI
-- Set `user.status` to `"moved"`
-- Display "This account has moved to {target}" on user's profile page and AP actor endpoint
-- Disable posting (account becomes read-only) — reject article/comment/DM creation for moved users
-- Do NOT delete content — existing articles/comments remain accessible
-
-### 2.6 Add "Migrate Account" UI in ProfileLive
-
-New section (below Account Aliases):
-1. Instructions: "Set up an alias on your destination instance first"
-2. Text input for destination account AP URI
-3. "Verify & Migrate" button
-4. Backend: verify bidirectional alias, confirm via password re-verification
-5. Send Move activity to all followers
-6. Display post-migration status banner
-
-> **2.7 (inbound Move `alsoKnownAs` verification) — ✅ completed and shipped.**
-> The handler verifies the moving actor appears in the target's `alsoKnownAs`
-> (rejecting `{:error, :move_not_authorized}`) and stores aliases on
-> `remote_actors.also_known_as`. The *outbound* side still needs `also_known_as`
-> on the local **`users`** table — see 2.1.
-
-> **2.8 (migrate feed items on inbound Move) — ✅ completed and shipped.**
-> `Federation.migrate_feed_items/2` repoints both `feed_items.remote_actor_id`
-> and `feed_items.boosted_by_actor_id`, and the Move handler calls it alongside
-> `migrate_user_follows/2`. This was not cosmetic: feed membership is a
-> query-time join on `user_follows`, so migrating only the follow made the
-> actor's entire published history disappear from its followers' feeds and fail
-> `feed_item_accessible?/2` (no like, boost, reply, or forward). The
-> `feed_item_replies.remote_actor_id` bullet was mistaken — that table has only
-> a local `user_id`. Articles and comments are deliberately *not* repointed:
-> they are board content with their own permalinks and `ap_id`s, and remain
-> published under the old actor on its own instance.
-
-### 2.9 Notify local followers on inbound Move
-
-When a followed remote actor sends Move:
-- Create notification for each local user who followed the old actor
-- Notification type: `"actor_moved"` (new type)
-- Message: "{old_name} has moved to {new_name}"
-- Link to the new actor's profile
-
-### 2.10 Write tests for account migration
-
-- `test/baudrate/federation/move_test.exs` — outbound Move: alias verification, activity building, delivery
-- Update `test/baudrate/federation/inbox_handler_test.exs` — inbound Move: alsoKnownAs verification, feed item migration, reject unverified
-- `test/baudrate_web/live/profile_live_test.exs` — alias management UI, migrate UI
-- Changeset tests for `also_known_as`, `moved_to`, `"moved"` status
-
-### 2.11 Update i18n and documentation
-
-- Add strings for alias management, migration UI, notifications
-- Translate to en, zh_TW, ja_JP
-- Document Move support in `doc/development.md` federation section
-- Update `CLAUDE.md` Key Gotchas if needed
+- `doc/development.md` federation section, `doc/sysop.md`, `CLAUDE.md` gotchas,
+  README features, zh_TW / ja_JP translations throughout.
 
 ---
 
