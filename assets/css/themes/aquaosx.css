@@ -179,6 +179,13 @@
   overflow: hidden;
 }
 
+/* ...except while a dropdown inside the card is open: its menu is absolutely
+   positioned and would be cut off at the card's edge (e.g. the "More actions"
+   menu of a feed item or comment). */
+[data-theme="aquaosx"] .card:not(.rounded-full):has(.dropdown:focus-within, .dropdown.dropdown-open) {
+  overflow: visible;
+}
+
 /* The header/toolbar itself gets a gentle top-lit gradient (Aqua unified
    titlebar), and the horizontal nav inside it stays transparent so ghost
    buttons sit on that gradient rather than inside a white pill. */
