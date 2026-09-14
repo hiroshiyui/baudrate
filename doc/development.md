@@ -1892,7 +1892,7 @@ Baudrate.Supervisor (one_for_one)
 ├── Baudrate.Repo                      # Ecto database connection pool
 ├── DNSCluster                         # DNS-based cluster discovery
 ├── Phoenix.PubSub                     # PubSub for LiveView
-├── Baudrate.Auth.SessionCleaner       # Hourly cleanup (sessions, login attempts, orphan images, export requests/temp)
+├── Baudrate.Auth.SessionCleaner       # Hourly cleanup (sessions, login attempts, orphan images, export requests/temp, notifications >90 days)
 ├── Baudrate.DataPortability.DownloadNonces # ETS single-use nonces for data export download tokens
 ├── Baudrate.Setup.SettingsCache       # ETS cache for site settings (must start before DomainBlockCache)
 ├── Baudrate.Content.BoardCache        # ETS cache for board lookups (by ID, slug, hierarchy)

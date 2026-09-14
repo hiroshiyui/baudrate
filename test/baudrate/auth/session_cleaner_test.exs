@@ -79,5 +79,33 @@ defmodule Baudrate.Auth.SessionCleanerTest do
       count = Repo.aggregate(from(s in UserSession, where: s.user_id == ^user.id), :count)
       assert count == 0
     end
+
+    test "deletes notifications older than 90 days and keeps recent ones", %{user: user} do
+      alias Baudrate.Notification.Notification, as: NotificationSchema
+
+      {:ok, old} =
+        Baudrate.Notification.create_notification(%{type: "admin_announcement", user_id: user.id})
+
+      {:ok, recent} =
+        Baudrate.Notification.create_notification(%{
+          type: "admin_announcement",
+          user_id: user.id,
+          data: %{"message" => "recent"}
+        })
+
+      old_time = DateTime.utc_now() |> DateTime.add(-91, :day) |> DateTime.truncate(:second)
+
+      Repo.update_all(from(n in NotificationSchema, where: n.id == ^old.id),
+        set: [inserted_at: old_time]
+      )
+
+      pid = Process.whereis(SessionCleaner)
+      send(pid, :cleanup)
+      # A synchronous call returns only after :cleanup has been handled.
+      :sys.get_state(pid)
+
+      refute Repo.get(NotificationSchema, old.id)
+      assert Repo.get(NotificationSchema, recent.id)
+    end
   end
 end

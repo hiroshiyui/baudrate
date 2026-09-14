@@ -24,6 +24,8 @@ defmodule Baudrate.Auth.SessionCleaner do
       than a year, and removes stale archive temp directories (also at boot)
     * Account moves — sends moves whose 24-hour cooling-off has passed, or
       marks them failed when the send-time re-check refuses them (ADR 0025)
+    * Notifications — deletes notifications older than 90 days
+      (`Notification.cleanup_old_notifications/1`)
 
   The first cleanup is scheduled on `init/1`, so it runs one interval after
   the application boots — not immediately — to avoid slowing startup.
@@ -34,6 +36,7 @@ defmodule Baudrate.Auth.SessionCleaner do
   require Logger
 
   @interval :timer.hours(1)
+  @notification_retention_days 90
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -60,6 +63,7 @@ defmodule Baudrate.Auth.SessionCleaner do
     purge_stale_media_cache()
     sweep_data_exports()
     sweep_account_moves()
+    cleanup_old_notifications()
     schedule_cleanup()
     {:noreply, state}
   end
@@ -80,6 +84,14 @@ defmodule Baudrate.Auth.SessionCleaner do
 
     if count > 0 do
       Logger.info("session_cleaner.account_moves_processed: count=#{count}")
+    end
+  end
+
+  defp cleanup_old_notifications do
+    {count, _} = Baudrate.Notification.cleanup_old_notifications(@notification_retention_days)
+
+    if count > 0 do
+      Logger.info("session_cleaner.notifications_purged: count=#{count}")
     end
   end
 
