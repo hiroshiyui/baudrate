@@ -971,7 +971,12 @@ The Ansible deploy playbook minimises downtime through three mechanisms:
 
 2. **Graceful shutdown** — Thousand Island's `shutdown_timeout: 30_000` (in `runtime.exs`)
    drains in-flight HTTP requests for up to 30 seconds on SIGTERM. The systemd
-   `TimeoutStopSec=35` gives it 5 extra seconds of margin.
+   `TimeoutStopSec=35` gives it 5 extra seconds of margin. The unit deliberately
+   has no `ExecStop=bin/baudrate stop`. By stop time the `current` symlink
+   already points at the new release, whose per-build cookie the old node
+   rejects. SIGTERM needs no cookie and triggers the same orderly `init:stop()`.
+   If you write your own unit file, do not add an `ExecStop` that uses the
+   release's `stop` command.
 
 3. **Nginx request buffering** — `proxy_next_upstream error timeout http_502`
    tells nginx to hold incoming requests and retry up to 3 times over 30 seconds

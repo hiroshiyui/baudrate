@@ -12,12 +12,18 @@ User={{ baudrate_user }}
 WorkingDirectory={{ deploy_path }}/current
 EnvironmentFile={{ deploy_path }}/env/baudrate.env
 ExecStart={{ deploy_path }}/current/bin/server
-ExecStop={{ deploy_path }}/current/bin/baudrate stop
 Restart=on-failure
 RestartSec=5
 
+# No ExecStop: systemd stops the node with SIGTERM, which the BEAM turns into
+# an orderly init:stop(). `bin/baudrate stop` must not be used here. It runs
+# from the `current` symlink, which a deploy has already swapped to the new
+# release, and each release build has its own random cookie, so the old node
+# rejects the connection ("Invalid challenge reply").
+#
 # Allow 35s for graceful shutdown — Bandit drains in-flight requests
 # for up to 30s (shutdown_timeout in runtime.exs), plus 5s margin.
+KillSignal=SIGTERM
 TimeoutStopSec=35
 SyslogIdentifier=baudrate
 
