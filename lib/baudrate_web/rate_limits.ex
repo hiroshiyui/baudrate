@@ -34,6 +34,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_media_fetch_ip/1`      | `media_fetch_ip:` | 1 min | 20 |
   | `check_media_fetch_global/0`  | `media_fetch:global` | 1 min | 600 |
   | `check_admin_sudo/1`          | `admin_sudo:`      | 15 min  | 5     |
+  | `check_reauth/1`              | `reauth:`          | 15 min  | 5     |
   """
 
   require Logger
@@ -51,6 +52,22 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_admin_sudo(integer()) :: :ok | {:error, :rate_limited}
   def check_admin_sudo(user_id) do
     check("admin_sudo:#{user_id}", 900_000, 5, :admin_sudo)
+  end
+
+  @doc """
+  Step-up re-authentication (password, plus TOTP when enabled) from an
+  authenticated session: 5 attempts per 15 minutes per user.
+
+  Shared by every re-authentication form (security key management, TOTP
+  reset), so a stolen session cannot multiply its password guesses by
+  switching forms. Every attempt counts, successful or not. This bucket fails
+  open like all Hammer checks; the fail-closed backstop is the database-backed
+  per-account login throttle that `Baudrate.Auth.verify_reauthentication/5`
+  enforces.
+  """
+  @spec check_reauth(integer()) :: :ok | {:error, :rate_limited}
+  def check_reauth(user_id) do
+    check("reauth:#{user_id}", 900_000, 5, :reauth)
   end
 
   @doc "Article creation: 10 per 15 minutes per user."

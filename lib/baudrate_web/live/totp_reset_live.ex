@@ -10,12 +10,21 @@ defmodule BaudrateWeb.TotpResetLive do
   ## Enable Mode (totp_enabled == false, policy == :optional)
   Requires password only. Same POST flow.
 
-  Both modes enforce a 5-attempt lockout tracked in socket assigns.
+  ## Throttling
+
+  Credentials are checked by `Auth.verify_reauthentication/5`, behind the
+  per-user `RateLimits.check_reauth/1` bucket. Failures feed the per-account
+  login throttle, so reloading the page does not reset the lockout, and this
+  form cannot be used to guess the password around the login throttle. A
+  5-attempt counter in socket assigns remains as defense in depth.
   """
 
   use BaudrateWeb, :live_view
 
   alias Baudrate.Auth
+  alias BaudrateWeb.RateLimits
+
+  import BaudrateWeb.Helpers, only: [extract_peer_ip: 1]
 
   @max_attempts 5
 
@@ -28,6 +37,7 @@ defmodule BaudrateWeb.TotpResetLive do
       socket
       |> assign(:mode, mode)
       |> assign(:attempts, 0)
+      |> assign(:peer_ip, if(connected?(socket), do: extract_peer_ip(socket), else: "unknown"))
       |> assign(:form, to_form(%{"password" => "", "code" => ""}, as: :totp_reset))
       |> assign(:trigger_action, false)
       |> assign(:page_title, gettext("TOTP Reset"))
@@ -51,42 +61,60 @@ defmodule BaudrateWeb.TotpResetLive do
       {:noreply, socket}
     else
       user = socket.assigns.current_user
-      password = params["password"] || ""
-      code = String.trim(params["code"] || "")
 
-      password_valid = Auth.verify_password(user, password)
-
-      totp_valid =
-        if socket.assigns.mode == :reset do
-          secret = Auth.decrypt_totp_secret(user)
-          secret && Auth.valid_totp?(secret, code)
-        else
-          true
+      result =
+        with :ok <- RateLimits.check_reauth(user.id) do
+          Auth.verify_reauthentication(
+            user,
+            params["password"],
+            params["code"],
+            socket.assigns.peer_ip,
+            :totp_reset
+          )
         end
 
-      if password_valid && totp_valid do
-        token =
-          Phoenix.Token.sign(BaudrateWeb.Endpoint, "totp_reset", %{
-            user_id: user.id,
-            mode: socket.assigns.mode
-          })
+      case result do
+        :ok ->
+          token =
+            Phoenix.Token.sign(BaudrateWeb.Endpoint, "totp_reset", %{
+              user_id: user.id,
+              mode: socket.assigns.mode
+            })
 
-        socket =
-          socket
-          |> assign(:token, token)
-          |> assign(:trigger_action, true)
+          socket =
+            socket
+            |> assign(:token, token)
+            |> assign(:trigger_action, true)
 
-        {:noreply, socket}
-      else
-        attempts = socket.assigns.attempts + 1
+          {:noreply, socket}
 
-        socket =
-          socket
-          |> assign(:attempts, attempts)
-          |> put_flash(:error, gettext("Invalid credentials. Please try again."))
-          |> assign(:form, to_form(%{"password" => "", "code" => ""}, as: :totp_reset))
+        {:error, :rate_limited} ->
+          {:noreply,
+           socket
+           |> put_flash(:error, gettext("Too many attempts. Please try again later."))
+           |> assign(:form, to_form(%{"password" => "", "code" => ""}, as: :totp_reset))}
 
-        {:noreply, socket}
+        {:error, {:throttled, seconds}} ->
+          {:noreply,
+           socket
+           |> put_flash(
+             :error,
+             gettext("Too many failed attempts. Please try again in %{seconds} seconds.",
+               seconds: seconds
+             )
+           )
+           |> assign(:form, to_form(%{"password" => "", "code" => ""}, as: :totp_reset))}
+
+        {:error, :invalid_credentials} ->
+          attempts = socket.assigns.attempts + 1
+
+          socket =
+            socket
+            |> assign(:attempts, attempts)
+            |> put_flash(:error, gettext("Invalid credentials. Please try again."))
+            |> assign(:form, to_form(%{"password" => "", "code" => ""}, as: :totp_reset))
+
+          {:noreply, socket}
       end
     end
   end

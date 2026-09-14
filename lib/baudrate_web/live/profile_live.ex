@@ -19,6 +19,16 @@ defmodule BaudrateWeb.ProfileLive do
   ActivityPub actor, matching the Mastodon convention for profile metadata.
   The `@profile_fields` assign is always a list of exactly 4 maps (padded
   with empty entries) for predictable template rendering.
+
+  ## Security Keys
+
+  Registering or removing a WebAuthn key requires step-up re-authentication
+  (password, plus the current TOTP code when TOTP is enabled) via
+  `Auth.verify_reauthentication/5`. A successful check unlocks key management
+  for `@security_reauth_seconds` seconds in this LiveView process only. The
+  deadline lives in socket assigns, which the client cannot set, and a reload
+  locks it again. Without this gate, a stolen session cookie could enrol the
+  attacker's own key and use it to pass admin sudo mode (ADR 0022).
   """
 
   use BaudrateWeb, :live_view
@@ -28,7 +38,9 @@ defmodule BaudrateWeb.ProfileLive do
   alias BaudrateWeb.Locale
   alias BaudrateWeb.RateLimits
 
-  import BaudrateWeb.Helpers, only: [translate_role: 1]
+  import BaudrateWeb.Helpers, only: [translate_role: 1, extract_peer_ip: 1]
+
+  @security_reauth_seconds 300
 
   @impl true
   def mount(_params, _session, socket) do
@@ -63,6 +75,9 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:webauthn_credentials, webauthn_credentials)
       |> assign(:webauthn_challenge_token, nil)
       |> assign(:trigger_webauthn_register, false)
+      |> assign(:security_reauth_until, nil)
+      |> assign(:security_reauth_form, empty_security_reauth_form())
+      |> assign(:peer_ip, if(connected?(socket), do: extract_peer_ip(socket), else: "unknown"))
       |> assign(:page_title, gettext("Profile"))
       |> allow_upload(:avatar,
         accept: ~w(.jpg .jpeg .png .webp),
@@ -394,17 +409,72 @@ defmodule BaudrateWeb.ProfileLive do
   end
 
   @impl true
-  def handle_event("begin_registration", _params, socket) do
+  def handle_event("security_reauth", %{"security_reauth" => params}, socket) do
     user = socket.assigns.current_user
-    {challenge_token, options_json} = Auth.begin_registration(user)
 
-    socket =
-      socket
-      |> assign(:webauthn_challenge_token, challenge_token)
-      |> assign(:trigger_webauthn_register, false)
-      |> push_event("webauthn_register", %{options: options_json})
+    result =
+      with :ok <- RateLimits.check_reauth(user.id) do
+        Auth.verify_reauthentication(
+          user,
+          params["password"],
+          params["code"],
+          socket.assigns.peer_ip,
+          :security_keys
+        )
+      end
 
-    {:noreply, socket}
+    socket = assign(socket, :security_reauth_form, empty_security_reauth_form())
+
+    case result do
+      :ok ->
+        {:noreply,
+         socket
+         |> assign(
+           :security_reauth_until,
+           System.monotonic_time(:second) + @security_reauth_seconds
+         )
+         |> put_flash(
+           :info,
+           gettext("Identity confirmed. You can manage your security keys for 5 minutes.")
+         )
+         |> push_event("focus", %{id: "profile-security-key-register"})}
+
+      {:error, :rate_limited} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Too many attempts. Please try again later."))}
+
+      {:error, {:throttled, seconds}} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("Too many failed attempts. Please try again in %{seconds} seconds.",
+             seconds: seconds
+           )
+         )}
+
+      {:error, :invalid_credentials} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Invalid credentials. Please try again."))
+         |> push_event("focus", %{id: "security_reauth_password"})}
+    end
+  end
+
+  @impl true
+  def handle_event("begin_registration", _params, socket) do
+    with_security_reauth(socket, fn socket ->
+      user = socket.assigns.current_user
+      {challenge_token, options_json} = Auth.begin_registration(user)
+
+      socket =
+        socket
+        |> assign(:webauthn_challenge_token, challenge_token)
+        |> assign(:trigger_webauthn_register, false)
+        |> push_event("webauthn_register", %{options: options_json})
+
+      {:noreply, socket}
+    end)
   end
 
   @impl true
@@ -421,20 +491,29 @@ defmodule BaudrateWeb.ProfileLive do
 
   @impl true
   def handle_event("delete_webauthn_credential", %{"id" => id}, socket) do
-    user = socket.assigns.current_user
+    with_security_reauth(socket, fn socket ->
+      user = socket.assigns.current_user
 
-    case Auth.delete_webauthn_credential(user, String.to_integer(id)) do
-      {:ok, _} ->
-        credentials = Auth.list_webauthn_credentials(user)
+      result =
+        case Integer.parse(to_string(id)) do
+          {credential_id, ""} -> Auth.delete_webauthn_credential(user, credential_id)
+          _ -> {:error, :not_found}
+        end
 
-        {:noreply,
-         socket
-         |> assign(:webauthn_credentials, credentials)
-         |> put_flash(:info, gettext("Security key removed."))}
+      case result do
+        {:ok, _} ->
+          credentials = Auth.list_webauthn_credentials(user)
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to remove security key."))}
-    end
+          {:noreply,
+           socket
+           |> assign(:webauthn_credentials, credentials)
+           |> put_flash(:info, gettext("Security key removed."))
+           |> push_event("focus", %{id: "security-keys-heading"})}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to remove security key."))}
+      end
+    end)
   end
 
   @impl true
@@ -555,6 +634,30 @@ defmodule BaudrateWeb.ProfileLive do
     list
     |> List.replace_at(i, Enum.at(list, j))
     |> List.replace_at(j, Enum.at(list, i))
+  end
+
+  # Runs `fun` only while a step-up re-authentication is still fresh. This is
+  # the server-side gate: the template hides the key management controls when
+  # locked, but events can be sent regardless of what is rendered.
+  defp with_security_reauth(socket, fun) do
+    until = socket.assigns.security_reauth_until
+
+    if until && System.monotonic_time(:second) < until do
+      fun.(socket)
+    else
+      {:noreply,
+       socket
+       |> assign(:security_reauth_until, nil)
+       |> put_flash(
+         :error,
+         gettext("Please confirm your identity before managing security keys.")
+       )
+       |> push_event("focus", %{id: "security_reauth_password"})}
+    end
+  end
+
+  defp empty_security_reauth_form do
+    to_form(%{"password" => "", "code" => ""}, as: :security_reauth)
   end
 
   defp pad_profile_fields(nil), do: List.duplicate(%{"name" => "", "value" => ""}, 4)

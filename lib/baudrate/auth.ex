@@ -26,6 +26,10 @@ defmodule Baudrate.Auth do
   defdelegate authenticate_by_password(username, password), to: Passwords
   defdelegate verify_password(user, password), to: Passwords
 
+  defdelegate verify_reauthentication(user, password, code, ip_address, purpose),
+    to: Baudrate.Auth.Reauthentication,
+    as: :verify
+
   defdelegate reset_password_with_recovery_code(
                 username,
                 recovery_code,

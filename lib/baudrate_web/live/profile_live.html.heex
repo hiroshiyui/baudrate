@@ -348,6 +348,7 @@
               </div>
             </div>
             <button
+              :if={@security_reauth_until}
               id={"security-key-remove-#{cred.id}"}
               type="button"
               class="security-key-remove btn btn-sm btn-ghost btn-error"
@@ -368,10 +369,80 @@
           {gettext("No security keys registered.")}
         </div>
 
+        <.form
+          :if={is_nil(@security_reauth_until)}
+          for={@security_reauth_form}
+          id="profile-security-reauth-form"
+          class="profile-security-reauth-form space-y-3"
+          phx-submit="security_reauth"
+        >
+          <p
+            id="profile-security-reauth-hint"
+            class="profile-field-hint text-sm text-base-content/70"
+          >
+            <%= if @current_user.totp_enabled do %>
+              {gettext(
+                "To add or remove security keys, confirm your password and current authenticator code."
+              )}
+            <% else %>
+              {gettext("To add or remove security keys, confirm your password.")}
+            <% end %>
+          </p>
+          <div class="form-control">
+            <label
+              id="security-reauth-password-label"
+              class="profile-security-reauth-label label"
+              for="security_reauth_password"
+            >
+              <span class="label-text">{gettext("Password")}</span>
+            </label>
+            <input
+              type="password"
+              id="security_reauth_password"
+              name="security_reauth[password]"
+              value={@security_reauth_form[:password].value}
+              class="profile-security-reauth-password input input-bordered input-sm w-full max-w-xs"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+          <div :if={@current_user.totp_enabled} class="form-control">
+            <label
+              id="security-reauth-code-label"
+              class="profile-security-reauth-label label"
+              for="security_reauth_code"
+            >
+              <span class="label-text">{gettext("Current TOTP Code")}</span>
+            </label>
+            <input
+              type="text"
+              id="security_reauth_code"
+              name="security_reauth[code]"
+              value={@security_reauth_form[:code].value}
+              class="profile-security-reauth-code input input-bordered input-sm w-full max-w-xs tracking-widest"
+              inputmode="numeric"
+              pattern="[0-9]{6}"
+              maxlength="6"
+              autocomplete="one-time-code"
+              required
+            />
+          </div>
+          <button
+            id="profile-security-reauth-submit"
+            type="submit"
+            class="profile-security-reauth-submit btn btn-sm btn-outline"
+            phx-disable-with={gettext("Confirming...")}
+          >
+            <.icon name="hero-lock-open" class="w-4 h-4 mr-1" />
+            {gettext("Confirm Identity")}
+          </button>
+        </.form>
+
         <button
+          :if={@security_reauth_until}
           id="profile-security-key-register"
           type="button"
-          class="btn btn-sm btn-outline"
+          class="profile-security-key-register btn btn-sm btn-outline"
           phx-click="begin_registration"
         >
           <.icon name="hero-plus" class="w-4 h-4 mr-1" />
