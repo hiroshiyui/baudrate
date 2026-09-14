@@ -209,6 +209,12 @@ defmodule BaudrateWeb.ArticleLive do
          {:ok, board_id} <- parse_id(board_id_str),
          board when not is_nil(board) <- Enum.find(article.boards, &(&1.id == board_id)),
          {:ok, updated} <- Content.remove_article_from_board(article, board, user) do
+      Moderation.log_action(user.id, "remove_article_from_board",
+        target_type: "article",
+        target_id: article.id,
+        details: %{"title" => article.title, "board" => board.name, "board_id" => board.id}
+      )
+
       {:noreply,
        socket
        |> put_flash(:info, gettext("Article removed from %{board}.", board: board.name))

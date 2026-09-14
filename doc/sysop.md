@@ -441,12 +441,19 @@ The `sysop` board is a protected system board:
 Immutable audit trail of all administrative actions:
 
 - User bans/unbans, role changes, approvals
-- Report resolution/dismissal
-- Content deletions (articles, comments)
-- Board CRUD operations
-- Domain blocking/unblocking
+- Report resolution/dismissal, and Flags sent to remote instances
+- Content deletions (articles, comments), removing an article from a board,
+  pin/lock changes, and admins editing other users' articles
+- Board CRUD operations, board federation toggles, board accept policy changes
+- Domain blocks from the Federation dashboard, and every settings save (the
+  entry lists the changed keys and the domains added to or removed from the
+  blocklist/allowlist)
+- End User Agreement edits and push (VAPID) key generation
 - Federation key rotations
 - Board moderator assignments
+- Bot create/update/delete/toggle, error resets and favicon refreshes
+
+Before v1.18.2, pin/lock changes and bot actions were silently not recorded.
 
 Filterable by action type, paginated (25 per page).
 

@@ -70,6 +70,14 @@ defmodule BaudrateWeb.BoardFollowsLive do
 
     case Content.update_board(board, %{ap_accept_policy: policy}) do
       {:ok, updated_board} ->
+        Baudrate.Moderation.log_action(
+          socket.assigns.current_user.id,
+          "update_board_accept_policy",
+          target_type: "board",
+          target_id: board.id,
+          details: %{from: board.ap_accept_policy, to: updated_board.ap_accept_policy}
+        )
+
         {:noreply,
          socket
          |> assign(:board, updated_board)

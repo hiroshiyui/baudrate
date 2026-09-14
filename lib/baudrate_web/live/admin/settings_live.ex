@@ -16,7 +16,7 @@ defmodule BaudrateWeb.Admin.SettingsLive do
 
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
-  alias Baudrate.Setup
+  alias Baudrate.{Moderation, Setup}
 
   @impl true
   def mount(_params, _session, socket) do
@@ -56,8 +56,11 @@ defmodule BaudrateWeb.Admin.SettingsLive do
 
   @impl true
   def handle_event("save", %{"settings" => params}, socket) do
+    before = Map.new(params, fn {key, _} -> {key, Setup.get_setting(key)} end)
+
     case Setup.save_settings(params) do
       {:ok, _changes} ->
+        log_settings_change(socket.assigns.current_user.id, before)
         changeset = Setup.change_settings()
 
         {:noreply,
@@ -79,6 +82,8 @@ defmodule BaudrateWeb.Admin.SettingsLive do
   def handle_event("save_eua", %{"eua_settings" => %{"eua" => eua_text}}, socket) do
     case Setup.update_eua(eua_text) do
       {:ok, _} ->
+        Moderation.log_action(socket.assigns.current_user.id, "update_eua")
+
         {:noreply,
          socket
          |> assign(eua: eua_text)
@@ -97,6 +102,7 @@ defmodule BaudrateWeb.Admin.SettingsLive do
 
     Setup.set_setting("vapid_public_key", public_key_b64)
     Setup.set_setting("vapid_private_key_encrypted", Base.encode64(encrypted_private))
+    Moderation.log_action(socket.assigns.current_user.id, "generate_vapid_keys")
     Baudrate.Setup.SettingsCache.refresh()
 
     {:noreply,
@@ -116,5 +122,45 @@ defmodule BaudrateWeb.Admin.SettingsLive do
       otp: :erlang.system_info(:otp_release) |> to_string(),
       erts: :erlang.system_info(:version) |> to_string()
     }
+  end
+
+  # Records which settings changed. Blocklist and allowlist edits also list the
+  # domains added and removed, so an unblock is as visible as a block.
+  defp log_settings_change(actor_id, before) do
+    changed =
+      before
+      |> Enum.filter(fn {key, old} -> Setup.get_setting(key) != old end)
+      |> Enum.map(fn {key, _} -> key end)
+      |> Enum.sort()
+
+    if changed != [] do
+      details =
+        Enum.reduce(~w(ap_domain_blocklist ap_domain_allowlist), %{changed: changed}, fn key,
+                                                                                         acc ->
+          if key in changed do
+            old = domain_set(before[key])
+            new = domain_set(Setup.get_setting(key))
+
+            Map.put(acc, key, %{
+              added: MapSet.difference(new, old) |> Enum.sort(),
+              removed: MapSet.difference(old, new) |> Enum.sort()
+            })
+          else
+            acc
+          end
+        end)
+
+      Moderation.log_action(actor_id, "update_settings", details: details)
+    end
+  end
+
+  defp domain_set(nil), do: MapSet.new()
+
+  defp domain_set(value) do
+    value
+    |> String.split(",", trim: true)
+    |> Enum.map(&(&1 |> String.trim() |> String.downcase()))
+    |> Enum.reject(&(&1 == ""))
+    |> MapSet.new()
   end
 end

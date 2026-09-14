@@ -214,6 +214,12 @@ defmodule BaudrateWeb.Admin.FederationLive do
       {:ok, board} ->
         case Content.toggle_board_federation(board) do
           {:ok, updated} ->
+            Moderation.log_action(socket.assigns.current_user.id, "toggle_board_federation",
+              target_type: "board",
+              target_id: updated.id,
+              details: %{name: updated.name, ap_enabled: updated.ap_enabled}
+            )
+
             {:noreply,
              socket
              |> put_flash(

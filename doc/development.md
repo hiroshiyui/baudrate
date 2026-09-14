@@ -1164,11 +1164,16 @@ to the user's DM PubSub topic via `attach_hook/4` and re-fetches the count on
 > **See the [SysOp Guide](sysop.md#moderation) for moderation operations.**
 
 The moderation system includes a content reporting queue (`/admin/moderation`)
-and an audit log (`/admin/moderation-log`). All moderation actions — banning,
-unbanning, role changes, report resolution, board CRUD, and content deletion —
-are automatically recorded in the moderation log with actor, action type,
-target, and contextual details. The log is filterable by action type and
-paginated.
+and an audit log (`/admin/moderation-log`). Moderation and administrative
+actions — banning, role changes, report resolution and Flags, board CRUD and
+federation settings, content deletion, pin/lock, settings saves, and bot
+management — are recorded with actor, action type, target, and contextual
+details. The log is filterable by action type and paginated.
+
+Every action name must be listed in `Moderation.Log`'s `@valid_actions`,
+or the insert fails. Callers do not check the result, so `log_action/3` logs
+a refused entry as an error, and `test/baudrate/moderation/log_test.exs`
+walks every `log_action` call in `lib/` to reject unknown names.
 
 **User-facing reports:** Authenticated users can report articles, comments, and
 other users directly from the UI. Report buttons appear on article pages (for

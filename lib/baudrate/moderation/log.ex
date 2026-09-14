@@ -12,7 +12,20 @@ defmodule Baudrate.Moderation.Log do
 
   alias Baudrate.Setup.User
 
-  @valid_actions ~w(ban_user unban_user update_role approve_user resolve_report dismiss_report delete_article delete_comment create_board update_board delete_board block_user unblock_user block_domain unblock_domain rotate_keys add_board_moderator remove_board_moderator)
+  # Every action name passed to `Baudrate.Moderation.log_action/3` must be
+  # listed here, or the insert fails. `test/baudrate/moderation/log_test.exs`
+  # checks every call site.
+  @valid_actions ~w(
+    ban_user unban_user update_role approve_user
+    resolve_report dismiss_report send_flag
+    delete_article delete_comment edit_article remove_article_from_board
+    pin_article unpin_article lock_article unlock_article
+    create_board update_board delete_board toggle_board_federation update_board_accept_policy
+    add_board_moderator remove_board_moderator
+    block_user unblock_user block_domain unblock_domain rotate_keys
+    update_settings update_eua generate_vapid_keys
+    create_bot update_bot delete_bot toggle_bot reset_bot_errors refresh_bot_favicon
+  )
 
   schema "moderation_logs" do
     field :action, :string

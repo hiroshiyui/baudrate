@@ -10,6 +10,8 @@ defmodule Baudrate.Moderation do
 
   import Ecto.Query
 
+  require Logger
+
   alias Baudrate.Repo
   alias Baudrate.Moderation.{Log, Report}
 
@@ -146,15 +148,25 @@ defmodule Baudrate.Moderation do
   @spec log_action(integer(), String.t(), keyword()) ::
           {:ok, Log.t()} | {:error, Ecto.Changeset.t()}
   def log_action(actor_id, action, opts \\ []) do
-    %Log{}
-    |> Log.changeset(%{
-      actor_id: actor_id,
-      action: action,
-      target_type: Keyword.get(opts, :target_type),
-      target_id: Keyword.get(opts, :target_id),
-      details: Keyword.get(opts, :details, %{})
-    })
-    |> Repo.insert()
+    result =
+      %Log{}
+      |> Log.changeset(%{
+        actor_id: actor_id,
+        action: action,
+        target_type: Keyword.get(opts, :target_type),
+        target_id: Keyword.get(opts, :target_id),
+        details: Keyword.get(opts, :details, %{})
+      })
+      |> Repo.insert()
+
+    # Callers do not check the result, so a refused entry must not vanish.
+    with {:error, changeset} <- result do
+      Logger.error(
+        "moderation.log_failed: action=#{inspect(action)} errors=#{inspect(changeset.errors)}"
+      )
+    end
+
+    result
   end
 
   @doc """

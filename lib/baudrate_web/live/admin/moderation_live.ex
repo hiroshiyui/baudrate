@@ -316,6 +316,12 @@ defmodule BaudrateWeb.Admin.ModerationLive do
 
       Baudrate.Federation.Delivery.deliver_flag(flag, report.remote_actor)
 
+      Moderation.log_action(socket.assigns.current_user.id, "send_flag",
+        target_type: "report",
+        target_id: report.id,
+        details: %{domain: report.remote_actor.domain, actor: report.remote_actor.ap_id}
+      )
+
       {:noreply,
        put_flash(
          socket,

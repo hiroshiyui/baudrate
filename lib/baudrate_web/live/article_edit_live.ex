@@ -144,8 +144,19 @@ defmodule BaudrateWeb.ArticleEditLive do
   end
 
   defp do_update_article(socket, params) do
-    case Content.update_article(socket.assigns.article, params, socket.assigns.current_user) do
+    editor = socket.assigns.current_user
+    article = socket.assigns.article
+
+    case Content.update_article(article, params, editor) do
       {:ok, updated_article} ->
+        if article.user_id != editor.id do
+          Baudrate.Moderation.log_action(editor.id, "edit_article",
+            target_type: "article",
+            target_id: article.id,
+            details: %{"title" => updated_article.title, "author_id" => article.user_id}
+          )
+        end
+
         {:noreply,
          socket
          |> put_flash(:info, gettext("Article updated successfully."))

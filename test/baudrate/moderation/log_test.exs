@@ -44,7 +44,46 @@ defmodule Baudrate.Moderation.LogTest do
       actions = Log.valid_actions()
       assert "ban_user" in actions
       assert "create_board" in actions
-      assert length(actions) == 18
+      assert actions == Enum.uniq(actions)
     end
+  end
+
+  describe "call sites" do
+    # An action name missing from `@valid_actions` makes the insert fail, and
+    # callers ignore the result, so the entry silently disappears. Walk every
+    # `log_action/2,3` call in lib/ and check each literal action name,
+    # including both branches of `if(..., do: "a", else: "b")`.
+    test "every action name passed to Moderation.log_action is valid" do
+      used = Enum.flat_map(Path.wildcard("lib/**/*.ex"), &action_names/1)
+
+      assert length(used) > 20, "expected to find the log_action call sites"
+      assert Enum.uniq(used) -- Log.valid_actions() == []
+    end
+  end
+
+  defp action_names(path) do
+    {_ast, names} =
+      path
+      |> File.read!()
+      |> Code.string_to_quoted!()
+      |> Macro.prewalk([], fn
+        {{:., _, [_module, :log_action]}, _, [_actor, action | _]} = node, acc ->
+          {node, acc ++ string_literals(action)}
+
+        node, acc ->
+          {node, acc}
+      end)
+
+    names
+  end
+
+  defp string_literals(ast) do
+    {_ast, found} =
+      Macro.prewalk(ast, [], fn
+        literal, acc when is_binary(literal) -> {literal, [literal | acc]}
+        node, acc -> {node, acc}
+      end)
+
+    found
   end
 end
