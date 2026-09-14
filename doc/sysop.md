@@ -430,13 +430,17 @@ The `sysop` board is a protected system board:
 
 ### Report Queue (`/admin/moderation`)
 
-- View open reports targeting articles, comments, or remote actors
+- View open reports targeting articles, comments, local users, remote
+  accounts, feed items, or direct messages
+- A reported direct message shows a copy of that one message, taken when it
+  was reported. The rest of the conversation is never shown, and the copy
+  stays even if the sender deletes the message
 - **Resolve** — mark resolved with optional notes (logged)
 - **Dismiss** — mark dismissed, no action taken (logged)
 - **Delete** reported content directly from the queue (soft-delete, logged)
 - **Flag** — send AP `Flag` activity to remote instances for remote content.
-  Available when the report names remote content (its remote author is
-  recorded as the reported actor). Reports that arrive from other instances
+  Available when the report names remote content, a remote account, or a
+  message from one (its remote author is recorded as the reported actor). Reports that arrive from other instances
   show "Reported from <domain> by <actor>"; before v1.18.2 they were stored
   with the reporter in the reported-actor field, and the upgrade migration
   moves those rows.

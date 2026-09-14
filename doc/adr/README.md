@@ -41,6 +41,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0023](0023-data-export-threat-model.md) | Self-service data export is designed against data leakage first | Accepted |
 | [0024](0024-totp-codes-are-single-use-with-a-one-period-grace-window.md) | TOTP codes are single-use, with a one-period grace window | Accepted |
 | [0025](0025-account-migration.md) | Account migration (ActivityPub Move) is gated, delayed and reversible | Accepted |
+| [0026](0026-blocks-stop-interaction-locally.md) | A block stops interaction in both directions, enforced on this site only | Accepted |
 
 ## Writing a new ADR
 

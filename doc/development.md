@@ -156,7 +156,7 @@ lib/
 │   │   ├── follows.ex           # Local/remote follow logic, acceptance, and migration
 │   │   ├── http_client.ex       # SSRF-safe HTTP client for remote fetches (unsigned + signed GET)
 │   │   ├── http_signature.ex    # HTTP Signature signing and verification (POST + GET)
-│   │   ├── inbox_handler.ex     # Incoming activity dispatch (Follow, Create, Like, Block, etc.)
+│   │   ├── inbox_handler.ex     # Incoming activity dispatch (Follow, Create, Like, Flag, etc.)
 │   │   ├── instance_stats.ex    # Per-domain instance statistics
 │   │   ├── key_store.ex         # RSA-2048 keypair management for actors (generate, ensure, rotate)
 │   │   ├── key_vault.ex         # AES-256-GCM encryption for private keys at rest
@@ -173,7 +173,7 @@ lib/
 │   ├── moderation.ex            # Moderation context: reports, resolve/dismiss, audit log
 │   ├── moderation/
 │   │   ├── log.ex               # ModerationLog schema (audit trail of moderation actions)
-│   │   └── report.ex            # Report schema (article, comment, remote actor targets)
+│   │   └── report.ex            # Report schema (article, comment, remote actor, user, feed item, DM targets)
 │   ├── notification.ex          # Notification context: create, list, mark read, cleanup, admin announcements
 │   ├── notification/
 │   │   ├── hooks.ex             # Fire-and-forget notification creation hooks (comment, article, like, follow, report)
@@ -208,7 +208,8 @@ lib/
 │   ├── components/
 │   │   ├── comment_components.ex # Focused components for rendering comment threads
 │   │   ├── core_components.ex   # Shared UI components (avatar, flash, input, etc.)
-│   │   └── layouts.ex           # App and setup layouts with nav, theme toggle, footer
+│   │   ├── layouts.ex           # App and setup layouts with nav, theme toggle, footer
+│   │   └── safety_components.ex # Mute / block / report menu items for remote accounts
 │   ├── controllers/
 │   │   ├── activity_pub_controller.ex  # ActivityPub endpoints (content-negotiated)
 │   │   ├── error_html.ex        # HTML error pages
@@ -254,10 +255,11 @@ lib/
 │   │   ├── login_live.ex        # Login form (phx-trigger-action pattern)
 │   │   ├── notifications_live.ex # Notification center (paginated, mark read, real-time)
 │   │   ├── password_reset_live.ex  # Password reset via recovery codes
-│   │   ├── profile_live.ex      # User profile with avatar upload/crop, locale prefs, signature, WebAuthn security key management
+│   │   ├── profile_live.ex      # User profile with avatar upload/crop, locale prefs, signature, WebAuthn security key management, blocked and muted accounts
 │   │   ├── recovery_code_verify_live.ex  # Recovery code login
 │   │   ├── recovery_codes_live.ex        # Recovery codes display
 │   │   ├── register_live.ex     # Public user registration (supports invite-only mode, terms notice, recovery codes)
+│   │   ├── safety_actions.ex    # Shared handlers: block/mute remote accounts, report feed items, DMs, accounts
 │   │   ├── search_live.ex       # Full-text search + remote actor lookup (WebFinger/AP)
 │   │   ├── tag_live.ex          # Browse articles by hashtag (/tags/:tag)
 │   │   ├── user_invites_live.ex # User invite code management (quota-limited, generate, revoke)
@@ -1184,14 +1186,29 @@ or the insert fails. Callers do not check the result, so `log_action/3` logs
 a refused entry as an error, and `test/baudrate/moderation/log_test.exs`
 walks every `log_action` call in `lib/` to reject unknown names.
 
-**User-facing reports:** Authenticated users can report articles, comments, and
-other users directly from the UI. Report buttons appear on article pages (for
-articles and comments by other users) and on user profile pages. Reports are
-submitted via a modal dialog with a required reason field (max 2000 chars).
-Duplicate prevention ensures one open report per reporter per target.
-Report creation is rate-limited to 5 per 15 minutes per user.
-Reports target one of: `article_id`, `comment_id`, `remote_actor_id`, or
-`reported_user_id`.
+**User-facing reports:** Authenticated users can report articles, comments,
+other users, feed items, direct messages they received, and remote accounts
+directly from the UI. Report controls appear on article pages (for articles and
+comments by other users), user profile pages, the "More actions" menu of remote
+feed items and remote comments, the header menu of a conversation with a remote
+actor, and on every received message. Reports are submitted via a modal dialog
+with a required reason field (max 2000 chars). Duplicate prevention ensures one
+open report per reporter per exact target (`Moderation.has_open_report?/2`
+compares every target field, so reporting a post does not count as reporting
+its author). Report creation is rate-limited to 5 per 15 minutes per user.
+Reports target `article_id`, `comment_id`, `remote_actor_id`,
+`reported_user_id`, `feed_item_id` or `message_id`.
+
+Feed items, messages and remote accounts are reported through
+`Moderation.report_feed_item/3`, `report_message/3` and
+`report_remote_actor/3`, which check that the reporter can see the target (a
+feed item must pass `Federation.feed_item_accessible?/2`; a message must be in
+the reporter's conversation, sent by the other participant, and not deleted).
+The remote author or sender becomes `remote_actor_id`, so "Send Flag" works; it
+forwards the reported objects' `ap_id`s. A message report stores a copy of that
+one message's text in `reports.message_body`, taken when the report is made and
+never cast from attributes: moderators see the reported message and nothing
+else from the conversation, and the copy survives the sender deleting it.
 
 ### Notifications
 
@@ -1509,6 +1526,7 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `Delete(actor)` — removes all follower records and soft-deletes all content (articles, comments, DMs) from the deleted actor
 - `Flag` — incoming reports stored in the local moderation queue. The signer is recorded as `reports.reporter_remote_actor_id`; the Flag's objects that name local accounts, articles and comments become the report's targets, and a Flag naming nothing local is dropped. `content` is optional. An open report from the same reporter about the same targets is not duplicated, and each remote domain may file 10 per hour (`RateLimits.check_inbound_flag/1`). `reports.remote_actor_id` is always the **reported** remote actor (set when a local user reports remote content), never the reporter
 - `Block` / `Undo(Block)` — remote actor blocks (logged for informational purposes)
+- Local user blocks (ADR 0026): a remote actor's `Follow` of a user who blocked it is answered with `Reject(Follow)`, and its `Like`, `Announce` and replies on that user's articles and comments are dropped with `:ok`
 - `Accept(Follow)` / `Reject(Follow)` — mark outbound user follows as accepted/rejected
 - `Move` — handled by `AccountMigration.handle_inbound_move/2` (ADR 0025). Authorized only when the signer matches the Move `actor` and `object`, **and** the target claims the moving actor in `alsoKnownAs` (force-refreshed with `ActorResolver.refresh/1`; a local target is checked against `users.also_known_as`), otherwise `{:error, :move_not_authorized}`, so a remote actor cannot redirect its local followers onto a non-consenting target. Each active local follower sends `Undo(Follow)` to the old actor and a pending `Follow` to the new one (a local target gets a local follow), with an `actor_moved` notice. Feed items are repointed (`migrate_feed_items/2`, both `remote_actor_id` and `boosted_by_actor_id`) so history shows again once the new follow is accepted. Board follows are not repointed; admins get `board_actor_moved`. A target that has itself moved is ignored, and one Move per origin is processed every 30 days (`remote_actors.moved_at`). Articles and comments keep their original `remote_actor_id`: they are board content with their own permalinks and remain published under the old actor upstream.
 
@@ -1520,7 +1538,7 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `Update(Article)` — enqueued when a local article is edited
 - `Create(Note)` — DM to remote actor, delivered to personal inbox (not shared inbox) for privacy
 - `Delete(Tombstone)` — DM deletion, delivered to remote recipient's personal inbox
-- `Block` / `Undo(Block)` — delivered to the blocked actor's inbox when a user blocks/unblocks a remote actor
+- `Reject(Follow)` / `Undo(Follow)` — sent when a user blocks a remote actor, to end the actor's follow of the user and the user's follow of the actor (`Federation.sever_remote_follows/2`). No `Block` activity is ever sent (ADR 0026)
 - `Follow` / `Undo(Follow)` — sent when a local user follows/unfollows a remote actor
 - `Update(Person/Group/Organization)` — distributed to followers on key rotation or profile changes
 - Delivery targets vary by activity type: `Create`/`Update`/`Delete` go to followers of the article's author + followers of all public boards the article is in; user `Announce`/`Undo(Announce)` (boosts) go to the **booster's** followers via `enqueue_for_followers/2`
@@ -1620,15 +1638,19 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 administration (kill switch, federation modes, domain blocklist/allowlist,
 per-board toggle, delivery queue management, key rotation, blocklist audit).
 
-**User blocks:**
+**User blocks** ([ADR 0026](adr/0026-blocks-stop-interaction-locally.md)):
 
-Users can block local users and remote actors. Blocks prevent interaction
-and are communicated to remote instances via `Block` / `Undo(Block)` activities:
+Users can block local users and remote actors. A block stops interaction in both
+directions and is enforced on this site only; no `Block` activity is sent:
 
-- `Auth.block_user/2` / `Auth.unblock_user/2` — local user blocks
-- `Auth.block_remote_actor/2` / `Auth.unblock_remote_actor/2` — remote actor blocks
+- `Auth.block_user/2` / `Auth.unblock_user/2` — local user blocks; blocking deletes the local follows in both directions
+- `Auth.block_remote_actor/2` / `Auth.unblock_remote_actor/2` — remote actor blocks; blocking a known actor sends `Undo(Follow)` and `Reject(Follow)` and deletes both follows. Unblocking restores no follows
 - `Auth.blocked?/2` — check if blocked (works with local users and AP IDs)
-- Content filtering: blocked users' content is hidden from article listings, comments, and search results
+- `Auth.blocked_between?/2` (either local user blocked the other), `Auth.remote_actor_blocked_by?/2`, and `Auth.blocked_with_author?/2` (a block between a user and the author of an article, comment or feed item)
+- Refused with `{:error, :blocked}` at the context boundary: comments on the other's articles and replies to their comments, likes and boosts (undo stays allowed), local and remote follows, and feed item likes, boosts and replies. Forwards are refused with `{:error, :unauthorized}`, and DMs by `Messaging.can_send_dm?/2`. Any new way to interact must add the same check
+- Inbound activities from a blocked remote actor on the blocker's content are refused (see Inbound handling)
+- Content filtering: blocked users' content is hidden from the blocker's article listings, comments, feed, and search results. The blocked account can still read the blocker's public content
+- UI: Block / Unblock in the user profile's "More actions" menu; Mute, Block and Report account in the "More actions" menu of remote feed items and remote comments and in the header of a conversation with a remote actor (`BaudrateWeb.SafetyActions`, `BaudrateWeb.SafetyComponents`); a Blocked Accounts list with unblock controls on `/profile`
 - Database: `user_blocks` table with partial unique indexes for local and remote blocks
 
 **User mutes:**
@@ -1643,7 +1665,7 @@ or sending any federation activity. Mutes are purely local:
 - Content filtering: muted users' content is combined with blocked users' content via `hidden_filters/1` and filtered from article listings, comments, and search results
 - SysOp board exemption: admin articles in the SysOp board (slug `"sysop"`) are never hidden, even if the admin is muted — this ensures system announcements are always visible
 - DM conversations with muted users are visually de-emphasized (reduced opacity, no unread badge) rather than hidden
-- Mute management: toggle on user profiles, manage list on `/profile` settings page
+- Mute management: toggle on user profiles, mute remote accounts from feed items, remote comments and remote conversations, manage list on `/profile` settings page (remote actors shown as `@user@domain` when known)
 - Database: `user_mutes` table with partial unique indexes for local and remote mutes
 
 **Authorized fetch mode:**

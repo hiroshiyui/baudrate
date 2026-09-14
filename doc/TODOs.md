@@ -33,7 +33,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
-| 1 | Trust and safety | 1A–1E | A public hub can't grow without moderation reach |
+| 1 | Trust and safety | 1A–1E (1A done) | A public hub can't grow without moderation reach |
 | 2 | Operability | 2A–2H | Data loss and blind operations are the biggest risks |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
@@ -57,18 +57,9 @@ Each phase settles its decisions and gets its own implementation plan before wor
 
 Work happens in five stages, each shipped and released on its own, in this order. Sizes are rough (S ≈ a day, M ≈ a few days, L ≈ a week).
 
-### 1A — Member self-protection (S)
+### 1A — Member self-protection (S) — done, unreleased
 
-- [ ] Block and unblock a local user from their profile page.
-  - `Auth.block_user/2` and `unblock_user/2` already exist; they need a UI.
-  - The `/profile` "Blocked" list shows local users and remote actors, each with an unblock control.
-- [ ] Block or mute a remote actor from wherever it appears: feed items, remote comments and remote DM conversations.
-  - Reuse `Auth.block_remote_actor/2` and the mute functions.
-- [ ] Report a feed item, a received DM or a remote actor.
-  - Record the remote author as `reports.remote_actor_id`, so "Send Flag" works.
-  - A DM report includes that one message's text; nothing else from the conversation.
-- [ ] Rate limits: reuse `check_mute_user/1` for blocks and `check_create_report/1` for reports.
-- **Accepted when:** each control's action is enforced by the context, every list has an undo, and the README's blocking claim is true.
+Shipped on `current`; see "Recently completed". Blocking semantics are recorded in [ADR 0026](adr/0026-blocks-stop-interaction-locally.md).
 
 ### 1B — A report queue that works, including for board moderators (L)
 
@@ -92,7 +83,7 @@ Work happens in five stages, each shipped and released on its own, in this order
 - [ ] **Moderator actions.**
   - Moderators are not held to the author delete limit of 20 per 5 minutes, but get their own, higher limit.
   - A deletion made from the queue records who deleted it.
-- [ ] **Evidence retention (P1-D6).** Content deleted by a moderator stays readable to staff in the report for 90 days, then it is purged. An author deleting their own content still wipes it at once.
+- [ ] **Evidence retention (P1-D6).** Content deleted by a moderator stays readable to staff in the report for 90 days, then it is purged. An author deleting their own content still wipes it at once. The message text copied into a DM report (`reports.message_body`, added in 1A) is purged on the same schedule once the report is closed.
 - **Accepted when:** a board moderator can resolve a report about their board end to end; a context-level test proves they cannot see or act on other boards' reports; every action is in the audit log.
 
 ### 1C — Sanctions short of a ban (M)
@@ -323,6 +314,7 @@ Needs an ADR.
   - Advertise NodeInfo 2.0 as well.
 - [ ] Declare a JSON-LD namespace for the `baudrate:*` extension fields.
 - [ ] Actor documents get a short cache lifetime instead of `no-store`.
+- [ ] A `Follow` of a local user that arrives through the shared inbox creates no `new_follower` notification: `InboxHandler.notify_follow_target/2` only notifies for the `{:user, user}` target. Resolve the user from the `object` URI, as the block check (`follow_blocked_by_target?/2`) already does. Found while building 1A.
 
 ### Decisions needed
 
@@ -604,6 +596,16 @@ Kept so the review is complete. None of these are scheduled; propose moving one 
 ---
 
 ## Recently completed
+
+- **Phase 1A — member self-protection (unreleased).**
+  - A block now stops replies, likes, boosts, forwards, follows and DMs in both
+    directions, locally and for inbound federation, and removes follows both
+    ways without sending `Block` ([ADR 0026](adr/0026-blocks-stop-interaction-locally.md)).
+  - Block and unblock on user profiles; a Blocked Accounts list on `/profile`;
+    remote actors in the blocked and muted lists shown as `@user@domain`.
+  - Mute, block and report remote accounts from feed items, remote comments
+    and remote conversations; report feed items and received DMs (a DM report
+    copies only that message).
 
 - **v1.18.2 — Phase 0 correctness bugs (B1–B12 of the 2026-09-14 review).**
   Domain blocks from the Federation dashboard apply at once; the audit log no

@@ -50,7 +50,7 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
 - **Emoji autocomplete** -- type `:shortcode` in any textarea for instant emoji suggestions
 - **Markdown toolbar** -- toolbar with formatting shortcuts for article and comment editing
 - **RSS/Atom bot accounts** -- admin-managed feed bots that periodically fetch RSS 0.9x/2.0, RSS 1.0 (RDF), Atom, and JSON Feed sources and post articles to target boards; configurable fetch interval, per-bot bio and profile fields, automatic favicon avatar fetching, error tracking with exponential backoff, and manual reset-and-retry
-- **User blocking and muting** -- block users to prevent interaction; mute to hide content locally
+- **User blocking, muting and reporting** -- block local or remote accounts to stop replies, likes, boosts, follows and messages in both directions; mute to hide content locally; report posts, comments, feed items, received messages and accounts to moderators
 - **Push notifications** -- PWA with Web Push support and service worker
 - **Web Share** -- share the current page to other apps via the OS-level share sheet (smartphone / installed PWA), powered by the Web Share API
 - **Internationalization** -- Gettext with zh_TW and ja_JP locales and Accept-Language auto-detection
