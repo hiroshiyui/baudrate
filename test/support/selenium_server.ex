@@ -6,7 +6,6 @@ defmodule BaudrateWeb.SeleniumServer do
   others detect it via health check.
   """
 
-  @selenium_jar "selenium-server-4.27.0.jar"
   @health_url ~c"http://localhost:4444/status"
   @poll_interval 500
   # A cold JVM on a CI runner can take well over 15 s to bring the standalone
@@ -46,7 +45,7 @@ defmodule BaudrateWeb.SeleniumServer do
   end
 
   defp start_server do
-    jar_path = Path.join(selenium_dir(), @selenium_jar)
+    jar_path = Path.join(selenium_dir(), Mix.Tasks.Selenium.Setup.selenium_jar_name())
 
     unless File.exists?(jar_path) do
       raise """

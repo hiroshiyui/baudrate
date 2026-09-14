@@ -1,32 +1,45 @@
 defmodule Mix.Tasks.Selenium.Setup do
   @moduledoc """
-  Downloads Selenium Server and GeckoDriver for browser testing.
+  Installs Selenium Server and GeckoDriver for browser testing.
 
       mix selenium.setup
 
-  Downloads:
-  - Selenium Server 4.27.0 JAR
-  - GeckoDriver 0.36.0 (linux64)
+  Installs into `tmp/selenium/`:
+  - Selenium Server 4.49.0 JAR, from the Selenium GitHub release
+  - GeckoDriver 0.37.1, built from its crates.io source crate (needs `cargo`)
 
-  Files are placed in `tmp/selenium/`. Skips download if files already exist.
+  Existing files are kept when they match these versions; an older GeckoDriver
+  is rebuilt.
 
   Every download is checked against a pinned SHA-256 before it is used, so a
   tampered or truncated file (on a developer machine or in CI) is refused
-  instead of being executed. Bump the checksum together with the version.
+  instead of being executed. Bump the checksum together with the version, and
+  the matching `ARG`s in `ci/image/Dockerfile`.
+
+  GeckoDriver is built from source because its 0.37.x release binaries are
+  signed only by a Mozilla subkey revoked on 2026-08-06 as compromised. The
+  crate is published through a separate channel and ships its `Cargo.lock`;
+  `cargo build --locked` checks every dependency against it.
   """
 
   use Mix.Task
 
-  @selenium_version "4.27.0"
-  @geckodriver_version "0.36.0"
-  @selenium_sha256 "5481ca09814fc0ec8c2b8ff07b8574a467f49f0c285107b1525325d535408d6a"
-  @geckodriver_tarball_sha256 "0bde38707eb0a686a20c6bd50f4adcc7d60d4f73c60eb83ee9e0db8f65823e04"
+  @selenium_version "4.49.0"
+  @geckodriver_version "0.37.1"
+  @selenium_sha256 "8221cb7bf687b8ca13c31c2bca9fb8cc12e9d4c808baff670c66cb0e450ceb35"
+  @geckodriver_crate_sha256 "79f38cf1541aaf57f6f7eb270f691bcb702485a95dbaaefe740141a8ea46f0ef"
   @dest_dir "tmp/selenium"
 
   @selenium_url "https://github.com/SeleniumHQ/selenium/releases/download/selenium-#{@selenium_version}/selenium-server-#{@selenium_version}.jar"
-  @geckodriver_url "https://github.com/mozilla/geckodriver/releases/download/v#{@geckodriver_version}/geckodriver-v#{@geckodriver_version}-linux64.tar.gz"
+  @geckodriver_crate_url "https://static.crates.io/crates/geckodriver/geckodriver-#{@geckodriver_version}.crate"
 
-  @shortdoc "Downloads Selenium Server and GeckoDriver for browser testing"
+  @shortdoc "Installs Selenium Server and GeckoDriver for browser testing"
+
+  @doc """
+  File name of the pinned Selenium Server JAR, shared with
+  `BaudrateWeb.SeleniumServer` so the version lives in one place.
+  """
+  def selenium_jar_name, do: "selenium-server-#{@selenium_version}.jar"
 
   @impl Mix.Task
   def run(_args) do
@@ -34,17 +47,14 @@ defmodule Mix.Tasks.Selenium.Setup do
 
     File.mkdir_p!(@dest_dir)
 
-    selenium_jar = Path.join(@dest_dir, "selenium-server-#{@selenium_version}.jar")
-    geckodriver_bin = Path.join(@dest_dir, "geckodriver")
-
     download_if_missing(
-      selenium_jar,
+      Path.join(@dest_dir, selenium_jar_name()),
       @selenium_url,
       @selenium_sha256,
       "Selenium Server #{@selenium_version}"
     )
 
-    download_geckodriver_if_missing(geckodriver_bin)
+    install_geckodriver(Path.join(@dest_dir, "geckodriver"))
 
     Mix.shell().info("Selenium setup complete. Files in #{@dest_dir}/")
   end
@@ -60,21 +70,75 @@ defmodule Mix.Tasks.Selenium.Setup do
     end
   end
 
-  defp download_geckodriver_if_missing(dest) do
-    if File.exists?(dest) do
-      Mix.shell().info("GeckoDriver already exists at #{dest}")
+  defp install_geckodriver(dest) do
+    if installed_geckodriver_version(dest) == @geckodriver_version do
+      Mix.shell().info("GeckoDriver #{@geckodriver_version} already exists at #{dest}")
     else
-      tarball = Path.join(@dest_dir, "geckodriver.tar.gz")
-      Mix.shell().info("Downloading GeckoDriver #{@geckodriver_version}...")
-      download_file(@geckodriver_url, tarball)
-      verify_sha256!(tarball, @geckodriver_tarball_sha256)
-
-      Mix.shell().info("Extracting GeckoDriver...")
-      {_, 0} = System.cmd("tar", ["xzf", tarball, "-C", @dest_dir])
-      File.rm(tarball)
-      File.chmod!(dest, 0o755)
-      Mix.shell().info("GeckoDriver extracted to #{dest}")
+      build_geckodriver(dest)
     end
+  end
+
+  defp installed_geckodriver_version(path) do
+    with true <- File.exists?(path),
+         {output, 0} <- System.cmd(Path.expand(path), ["--version"], stderr_to_stdout: true),
+         [_, version] <- Regex.run(~r/\Ageckodriver (\S+)/, output) do
+      version
+    else
+      _ -> nil
+    end
+  end
+
+  defp build_geckodriver(dest) do
+    cargo =
+      System.find_executable("cargo") ||
+        Mix.raise(
+          "GeckoDriver #{@geckodriver_version} is built from source and needs cargo (the Rust toolchain) on PATH"
+        )
+
+    # Built outside the repository: GeckoDriver's build script embeds the
+    # commit of the nearest enclosing .git/.hg checkout in `--version`.
+    build_root =
+      Path.join(System.tmp_dir!(), "baudrate-geckodriver-#{System.unique_integer([:positive])}")
+
+    File.mkdir_p!(build_root)
+
+    try do
+      build_geckodriver_in(build_root, cargo, dest)
+    after
+      File.rm_rf!(build_root)
+    end
+  end
+
+  defp build_geckodriver_in(build_root, cargo, dest) do
+    crate = Path.join(build_root, "geckodriver-#{@geckodriver_version}.crate")
+    source_dir = Path.join(build_root, "geckodriver-#{@geckodriver_version}")
+    target_dir = Path.join(build_root, "target")
+
+    Mix.shell().info("Downloading the GeckoDriver #{@geckodriver_version} source crate...")
+    download_file(@geckodriver_crate_url, crate)
+    verify_sha256!(crate, @geckodriver_crate_sha256)
+    {_, 0} = System.cmd("tar", ["xzf", crate, "-C", build_root])
+
+    Mix.shell().info("Building GeckoDriver #{@geckodriver_version} (cargo build --locked)...")
+
+    args = [
+      "build",
+      "--release",
+      "--locked",
+      "--manifest-path",
+      Path.join(source_dir, "Cargo.toml"),
+      "--target-dir",
+      target_dir
+    ]
+
+    case System.cmd(cargo, args, into: IO.stream(), stderr_to_stdout: true) do
+      {_, 0} -> :ok
+      {_, status} -> Mix.raise("Building GeckoDriver failed (cargo exited with #{status})")
+    end
+
+    File.cp!(Path.join([target_dir, "release", "geckodriver"]), dest)
+    File.chmod!(dest, 0o755)
+    Mix.shell().info("GeckoDriver #{@geckodriver_version} installed at #{dest}")
   end
 
   defp verify_sha256!(path, expected) do

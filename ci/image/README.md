@@ -26,11 +26,21 @@ token. The image moves all of that to one reviewed, reproducible build.
 | Hex, Rebar | `mix local.hex` / `mix local.rebar` | Mix checks the signed installer index |
 | Rust | `rustup-init`, one pinned toolchain | SHA-256; rustup verifies components against the channel manifest |
 | esbuild | npm registry package | SHA-256 |
-| Tailwind CSS, GeckoDriver, Selenium Server | GitHub releases | SHA-256 |
+| Tailwind CSS, Selenium Server | GitHub releases | SHA-256 |
+| GeckoDriver | crates.io source crate, built in the image with its `Cargo.lock` | SHA-256; `cargo build --locked` checks every dependency's checksum |
 
 Every SHA-256 was cross-checked against the checksums the project publishes
 (OTP `MD5.txt`, Elixir `.sha256sum`, rustup `.sha256`, npm `integrity`,
-Tailwind `sha256sums.txt`), not only computed from one download.
+Tailwind `sha256sums.txt`, the crates.io index checksum, and the digest GitHub
+records for a release asset), not only computed from one download.
+
+GeckoDriver is built from source rather than taken from its GitHub release.
+Mozilla revoked the subkey that signs the 0.37.x release tarballs
+(`09BEED63F3462A2DFFAB3B875ECB6497C1A20256`) on 2026-08-06 as compromised,
+after it leaked into a private repository, so those signatures no longer
+establish anything. Before using a future release binary instead, check that it
+is signed by a current, unrevoked subkey of Mozilla's release key
+(`14F26682D0916CDD81E37B6D61B7B526D98F0353`).
 
 Still fetched at run time, outside the image: Hex packages (`mix deps.get`,
 checked against `mix.lock`), Rust crates (checked against `Cargo.lock`), and
@@ -73,7 +83,9 @@ user already has passwordless `sudo` on it.
 1. Change the version in the project (`.tool-versions`, `config/config.exs`,
    `lib/mix/tasks/selenium_setup.ex`) and the matching `ARG` in `Dockerfile`.
 2. Download the new artifact, compute `sha256sum`, compare it with the
-   upstream-published checksum, and update the `*_SHA256` argument.
+   upstream-published checksum, and update the `*_SHA256` argument. For
+   GeckoDriver that is the `.crate` file and the `checksum` crates.io lists for
+   the version (`https://crates.io/api/v1/crates/geckodriver/versions`).
 3. Push to `current`; merge the proposed `image.lock` change once the image
    build has passed.
 

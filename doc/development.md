@@ -2275,7 +2275,9 @@ request to `main` and `current`, both inside the project's own CI image
 
 The image (`ci/image/Dockerfile`) contains Erlang/OTP, Elixir, Rust, Firefox
 ESR, Java, the PostgreSQL client, esbuild, Tailwind, GeckoDriver and Selenium
-Server, all from pinned, checksum-verified inputs. Jobs use it only through the
+Server, all from pinned, checksum-verified inputs. GeckoDriver is built from
+its crates.io source crate: its 0.37.x release binaries are signed only by a
+Mozilla subkey revoked as compromised. Jobs use it only through the
 digest in `ci/image/image.lock`, after `ci-image-ref.yml` verifies its build
 provenance, and each job first runs `ci/image/verify-toolchain.sh`. Only
 GitHub-owned actions are used, pinned to commit SHAs; the PostgreSQL service is
@@ -2322,13 +2324,19 @@ from the regular test suite.
 
 - Java runtime (for Selenium Server)
 - Firefox browser
+- Rust toolchain (`cargo`), which builds GeckoDriver
 - GeckoDriver + Selenium Server JAR in `tmp/selenium/`
 
 #### Setup
 
 ```bash
-mix selenium.setup    # Downloads Selenium Server 4.27.0 + GeckoDriver 0.36.0
+mix selenium.setup    # Selenium Server 4.49.0 + GeckoDriver 0.37.1 (built from source)
 ```
+
+Both inputs are checked against pinned SHA-256s. GeckoDriver is compiled from
+its crates.io crate with `cargo build --locked`, outside the repository (its
+build script embeds the enclosing checkout's commit in `--version`). Re-run the
+task after a version bump: it rebuilds a GeckoDriver whose `--version` differs.
 
 #### Running Feature Tests
 
