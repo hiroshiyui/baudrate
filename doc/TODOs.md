@@ -4,74 +4,14 @@ This list comes from a product review done on 2026-09-14, after v1.18.1, which l
 
 Paths are relative to the repository root. `lib/baudrate_web/…` is shortened to `web/…` and `lib/baudrate/…` to `core/…`. Line numbers were correct as of v1.18.1.
 
-Baudrate is already strong on security engineering, ADRs, accessibility plumbing and test coverage. The gaps are:
+Phase 0 (correctness bugs) shipped in v1.18.2. Phase 1 below is scoped, with its decisions P1-D1–P1-D9 still open; later phases are listed by role further down and get scoped when they start.
+
+Baudrate is already strong on security engineering, ADRs, accessibility plumbing and test coverage. At review time, the gaps were:
 - **Broken promises:** the UI or docs say something happens and it doesn't.
 - **Moderation reach:** tools exist but not for the right people.
 - **Operability:** backups, observability, and an unclear single-node stance.
 - **Federation reach:** our interactions don't reach remote authors.
 - **Discovery and onboarding** for new visitors.
-
----
-
-## Phase 0 — Correctness bugs (fix first)
-
-Fix each bug in its own commit on `current`, with a regression test.
-
-- [x] **B1. Blocking a domain from the Federation dashboard doesn't take effect.** (confirmed)
-  - `block_domain` and the audit "Add" / "Add All" buttons refresh `SettingsCache` but not `DomainBlockCache`. Inbox, delivery, DM and link-preview checks keep ignoring the block until settings are saved or the app restarts.
-  - The instance-list block is also missing from the audit log.
-  - The cache fails open (nothing blocked) before its first load.
-  - Evidence: `web/live/admin/federation_live.ex:67-90`, `core/federation/domain_block_cache.ex`, `core/setup.ex:436`.
-  - Test: enable the cache in a test and check `domain_blocked?/1` after `block_domain`.
-- [x] **B2. The audit log silently drops some actions.** (confirmed)
-  - `pin_article`, `unpin_article`, `lock_article`, `unlock_article` and the six bot actions (`create/update/delete/toggle_bot`, `reset_bot_errors`, `refresh_bot_favicon`) are not in `@valid_actions`, so the insert fails and the error is ignored.
-  - These are never logged at all: settings saves (including blocklist edits, so unblocks), board federation toggles, accept-policy changes, removing an article from a board, admin edits of other users' articles, and sending a Flag.
-  - `doc/sysop.md` and `doc/development.md` claim every action is logged.
-  - Evidence: `core/moderation/log.ex:15`, `web/live/article_live.ex:232,257`, `web/live/admin/bots_live.ex`.
-  - Test: a guard that every action name passed to `Moderation.log_action` in `lib/` is valid.
-- [x] **B3. Reports from other servers (inbound `Flag`) are stored backwards.** (confirmed)
-  - The *reporting* actor is saved in `remote_actor_id` and shown as "Reported Actor". "Send Flag" then sends a Flag back to the reporter.
-  - The reported local user is never set in `reported_user_id`.
-  - A Flag without `content` (Mastodon allows it) doesn't match the handler and is dropped.
-  - There is no dedup and no rate limit.
-  - Evidence: `core/federation/inbox_handler.ex:439,1856`, `web/live/admin/moderation_live.html.heex:205`, `core/moderation/report.ex`.
-- [x] **B4. "Followers only" and "Direct" don't restrict local posts.** (confirmed; approach set by D1)
-  - The article, edit, comment and feed quick-post composers offer them, but they only change federation addressing (`core/federation/publisher.ex:38-45`). Guests can still read such posts on this site.
-  - "Direct" is broken on top of that: it addresses nobody, and `article_addressing/2` still adds the post's boards as recipients, so a "Direct" board post reaches board followers.
-  - Fix (D1): offer only Public and Unlisted in every local composer.
-    - Enforce it at the context boundary: local `Article.changeset/2` and `Comment.changeset/2` accept only `public`/`unlisted`.
-    - Remote rows keep their derived visibility.
-  - Production had no local rows with either value on 2026-09-14 (all local articles and comments are `public`), so no data migration is needed.
-  - Evidence: `web/live/article_new_live.html.heex:367`, `web/live/article_edit_live.html.heex:193`, `web/live/article_live.html.heex:584`, `web/live/feed_live.html.heex:336`.
-- [x] **B5. Long DM conversations lose their newest messages.** (confirmed)
-  - `Messaging.list_messages/2` sorts oldest first with `limit: 100`, and nothing loads more, so after 100 messages new ones never appear.
-  - Evidence: `core/messaging.ex:410-418`, `web/live/conversation_live.ex:51,212`.
-- [x] **B6. Engagement on remote posts never reaches the remote author.** (confirmed)
-  - `Delivery.enqueue_for_article/3` collects only local author followers and board followers.
-  - Comments, likes, updates and deletes on a remote article skip the author's inbox.
-  - Evidence: `core/federation/delivery.ex:266`, `core/federation/publisher.ex:514-600`.
-- [x] **B7. Comment authors can't delete their own comments.** (confirmed)
-  - The template passes `can_delete={@is_board_mod}`, although `Permissions.can_delete_comment?/3` allows authors.
-  - Deleting a parent comment also hides all its replies, because roots and descendants both filter `deleted_at` and there's no "[deleted]" placeholder.
-  - Evidence: `web/live/article_live.html.heex:632`, `core/content/comments.ex:205,249`.
-- [x] **B8. The theme and font-size bootstrap script never runs.** (confirmed)
-  - CSP `script-src 'self'` blocks the inline script in the root layout, so pages can flash the wrong theme or font size.
-  - Move it to a static file, or allow it with a CSP hash.
-  - Evidence: `web/components/layouts/root.html.heex:72`, `web/router.ex:74`.
-- [x] **B9. The documented backups don't work on Ansible installs.** (confirmed)
-  - `mix backup` isn't in the release.
-  - `Helper.uploads_dir/0` points inside the release instead of `/opt/baudrate/shared/uploads`, so a cron job would archive an almost empty directory with no error.
-  - The files backup doesn't exclude `media_cache`, although `doc/sysop.md` says it does.
-  - Evidence: `lib/mix/tasks/backup/helper.ex:54`, `doc/sysop.md:982`, `core/release.ex`.
-- [x] **B10. Notifications are never cleaned up.** (confirmed) `Notification.cleanup_old_notifications/1` exists and is tested, but nothing calls it; schedule it in `SessionCleaner`.
-  - Evidence: `core/notification.ex:172`.
-- [x] **B11. Activity ids can repeat after a restart.**
-  - They are built with `System.unique_integer/1` (34 places in the publisher), which restarts with the VM.
-  - A reused id can match the delivery dedup index `(inbox_url, actor_uri, activity_id)` and be skipped, and receivers may treat it as a duplicate.
-  - Use UUIDs.
-  - Evidence: `core/federation/publisher.ex:74` and others.
-- [x] **B12. Local reports can't be sent to the remote author's server.** Article and comment reports store only the content id, never the remote author, so "Send Flag" never appears on local reports.
-  - Evidence: `web/live/article_live.ex:727`.
 
 ---
 
@@ -95,14 +35,140 @@ Each phase gets its own plan before work starts.
 |-------|-------|-----|
 | 1 | Trust and safety | A public hub can't grow without moderation reach |
 | 2 | Operability | Data loss and blind operations are the biggest risks |
-| 3 | Federation reach | Interactions currently don't reach remote authors |
+| 3 | Federation reach | Threading, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | Turns visitors into members |
 | 5 | Member depth | Retention |
 | 6 | Contributor health | Lowers the bus factor of one |
 
 ---
 
+## Phase 1 — Trust and safety (scope)
+
+**Goal.** Everyone who has to act on abuse can act, at the right level, and everyone affected by a decision is told about it.
+
+**Done when:**
+- a member can protect themselves without asking staff;
+- a board moderator can handle reports about their board without the admin area;
+- a global moderator can sanction a user short of a permanent ban;
+- every sanction and report outcome is audited and reaches the people it concerns;
+- the site publishes the rules those decisions rest on.
+
+Work happens in five stages, each shipped and released on its own, in this order. Sizes are rough (S ≈ a day, M ≈ a few days, L ≈ a week).
+
+### 1A — Member self-protection (S)
+
+- [ ] Block and unblock a local user from their profile page.
+  - `Auth.block_user/2` and `unblock_user/2` already exist; they need a UI.
+  - The `/profile` "Blocked" list shows local users and remote actors, each with an unblock control.
+- [ ] Block or mute a remote actor from wherever it appears: feed items, remote comments and remote DM conversations.
+  - Reuse `Auth.block_remote_actor/2` and the mute functions.
+- [ ] Report a feed item, a received DM or a remote actor.
+  - Record the remote author as `reports.remote_actor_id`, so "Send Flag" works.
+  - A DM report includes that one message's text; nothing else from the conversation.
+- [ ] Rate limits: reuse `check_mute_user/1` for blocks and `check_create_report/1` for reports.
+- **Accepted when:** each control's action is enforced by the context, every list has an undo, and the README's blocking claim is true.
+
+### 1B — A report queue that works, including for board moderators (L)
+
+- [ ] **Queue basics.**
+  - Paginate `Moderation.list_reports/1`.
+  - Link each report to the reported content, account or actor.
+  - Show the full reported text.
+  - Show how many other reports the same target has.
+  - A fixed reason category on every new report (P1-D9).
+- [ ] **Scoped queue for board moderators.**
+  - Board moderators (role `user`) get a queue of reports about articles and comments in the boards they moderate.
+  - It is reachable from those boards, shows no admin navigation, and never shows reports about other boards, accounts or DMs.
+- [ ] **Who hears about a new report.** Admins and global moderators are notified of every report. A board moderator is notified of reports about their boards.
+- [ ] **Outcome notices (P1-D4).**
+  - The reporter is told their report was reviewed.
+  - The author of removed content is told it was removed, with the reason.
+  - Neither is told about dismissed reports.
+- [ ] **Cross-posted articles (P1-D5).**
+  - A board moderator can remove an article from *their* board.
+  - Pin, lock and delete on an article in several boards need moderation rights on every one of them (admins and global moderators excepted).
+- [ ] **Moderator actions.**
+  - Moderators are not held to the author delete limit of 20 per 5 minutes, but get their own, higher limit.
+  - A deletion made from the queue records who deleted it.
+- [ ] **Evidence retention (P1-D6).** Content deleted by a moderator stays readable to staff in the report for 90 days, then it is purged. An author deleting their own content still wipes it at once.
+- **Accepted when:** a board moderator can resolve a report about their board end to end; a context-level test proves they cannot see or act on other boards' reports; every action is in the audit log.
+
+### 1C — Sanctions short of a ban (M)
+
+Needs an ADR (the sanctions model), based on P1-D2 and P1-D3.
+
+- [ ] **Warn.** A notice to the user plus an audit entry. No restriction.
+- [ ] **Silence.**
+  - A silenced account can read, but cannot post or interact. It is enforced at the context boundary by generalising the moved-account gate (`AccountMigration.ensure_not_moved/1`, ADR 0025).
+  - Optional end date.
+  - Existing content stays up.
+- [ ] **Suspend.**
+  - A suspended account cannot sign in until a set date. Sessions are revoked and exports and moves cancelled, like a ban (`Auth.Sessions`, `cancel_active_exports/2`, `cancel_active_moves/2`).
+  - Lifts automatically; the hourly `SessionCleaner` clears expired sanctions.
+- [ ] **Reject pending registrations**, with a reason, and notify admins of new pending registrations.
+- [ ] **User detail page** (`/admin/users/:id`).
+  - Role, status and sanction history.
+  - Reports against the user and reports the user filed.
+  - Recent content, inviter and invitees (`invited_by_id`), recent login attempts.
+- [ ] **Role filter** on the users list (the context already supports it).
+- [ ] **Enforce the defined permissions.** Either check `moderator.mute_user`, `admin.manage_roles` and `admin.view_dashboard`, or remove them. Global moderators get the sanction tools P1-D3 grants them.
+- [ ] Every sanction is audited, and the user is told what it is, why and until when (always delivered, like account security notices).
+- **Accepted when:** a silenced or suspended user is refused on every posting or interaction path and on sign-in respectively (tests per path), and sanctions expire on schedule.
+
+### 1D — Instance-level federation moderation (M)
+
+Needs an ADR (domain blocks as rows), based on P1-D7.
+
+- [ ] **Move the domain blocklist from the comma-separated setting into a `domain_blocks` table:** domain, reason, public comment, who blocked it, when.
+  - Migrate existing entries.
+  - Keep `DomainBlockCache` as the single read path.
+  - Keep allowlist mode as it is.
+- [ ] **Block and unblock from the Federation dashboard,** with a reason; both audited.
+- [ ] **What a block does (P1-D7).**
+  - Removes followers and follows with that domain.
+  - Hides that domain's existing remote content (articles, comments, feed items) at query time, so an unblock restores it.
+- [ ] **Instance-wide suspension of a single remote actor:** refuse its activities and hide its content, without blocking its whole domain.
+- [ ] A read-only instance detail page: known actors, followers, content counts, delivery errors and block state.
+- **Accepted when:** blocking a domain stops inbound and outbound traffic at once, removes its follows, and hides its content everywhere a guest or member can look; unblocking restores the content.
+
+### 1E — Rules and terms (S)
+
+- [ ] **Admin-editable Rules and Privacy pages,** next to the existing End User Agreement (`Setup.get_eua/0`).
+  - Public at `/rules`, `/terms` and `/privacy`.
+  - Linked from the footer, which is empty today.
+- [ ] **Record acceptance.** Store `terms_accepted_at` and the terms version at registration; `terms_accepted` is only a virtual field today.
+- [ ] **Publishing a new terms version (P1-D8).** Existing users see a banner and must accept before they post or interact again; reading is unaffected.
+- [ ] Report categories can point to a rule (P1-D9).
+- **Accepted when:** a guest can read all three pages, and every account has an acceptance record for the current version before it can post.
+
+### Not in Phase 1
+
+These stay in the role lists below:
+- **Anti-spam:** CAPTCHA, trust levels, new-account limits, keyword filters, first-post approval, IP bans. A later phase of its own.
+- **Content tools:** moving articles between boards, splitting or merging threads.
+- **Admin surface:** an `/admin` dashboard with metrics, and a UI for admin announcements.
+- **Federation:** silence and reject-media domain levels (only full blocks in 1D), outbound `Block` activities (P1-D1).
+- **Legal:** takedown workflow, age gating, content warnings.
+
+### Decisions needed before Phase 1 starts
+
+Recommended answers in brackets.
+
+- [ ] **P1-D1. Should blocking a remote actor send an ActivityPub `Block` to its instance?** [No: enforce locally only. A `Block` tells the blocked person's server about the block, and a public hub gains little from it.]
+- [ ] **P1-D2. Sanctions model.** [Warn (notice only); silence (read-only, optional end date); suspend (no sign-in until a date, lifts automatically); ban (permanent, unchanged). Stored as a sanctions history table, not new `status` values, like moves never overloaded `status`.]
+- [ ] **P1-D3. Who may do what.** [Board moderators: content in their boards only. Global moderators: warn, silence, suspend for up to 30 days, reject pending registrations. Admins: everything, plus ban and role changes.]
+- [ ] **P1-D4. Who hears about outcomes.** [The reporter: "reviewed", no details. The affected author: content removal with the reason, and every sanction. Dismissed reports: nobody.]
+- [ ] **P1-D5. Cross-posted articles.** [A board moderator removes the article from their board. Deleting or pinning it everywhere needs rights on every board it is in.]
+- [ ] **P1-D6. Evidence retention.** [Moderator deletions stay readable to staff for 90 days, then are purged. Author deletions are wiped at once.]
+- [ ] **P1-D7. What a domain block does.** [Remove follows both ways and hide existing content at query time, reversible by unblocking. No silence or reject-media levels yet.]
+- [ ] **P1-D8. Changed terms.** [Existing users see a banner and must accept before posting or interacting. Reading never requires it.]
+- [ ] **P1-D9. Report reason categories.** [Spam, harassment, illegal content, breaks a rule (pick one), other. A free-text comment stays optional for local reports.]
+
+---
+
 ## Guests and first-time visitors
+
+Public Rules, Terms and Privacy pages are in Phase 1 (1E).
 
 - [ ] **The home page is thin.** It shows top-level boards only: no latest, popular or unanswered posts, no board stats (posts, last activity), no site description, and no empty state when there are no boards (`web/live/home_live.html.heex`).
 - [ ] **No "recent", "popular" or "unanswered" pages, and no tag index.** Only `/tags/:tag` exists. `Content.list_recent_public_articles` is used only by RSS.
@@ -110,7 +176,6 @@ Each phase gets its own plan before work starts.
   - The guest welcome hardcodes "Baudrate" instead of `site_name` (`web/live/home_live.html.heex:14`).
   - Guests on mobile never see the site name: the logo is `hidden lg:block` and the hamburger menu is for signed-in users only (`web/components/layouts.ex:39,153`).
   - The footer is empty.
-- [ ] **No public About, Rules, Terms or Privacy pages.** The user agreement is shown only on `/register`.
 - [ ] **SEO.**
   - No sitemap, no canonical `<link>` for `?page=N`, and no `<meta name="description">`.
   - No `noindex` on search and login pages, and `robots.txt` is the stock file.
@@ -129,6 +194,8 @@ Each phase gets its own plan before work starts.
 
 ## Registered members
 
+Blocking and muting are in Phase 1 (1A).
+
 - [ ] **Account recovery (D3: no email).** Today there's no email, recovery codes are issued only at registration and setup, and admins can't reset a password, so losing both the password and the codes loses the account. Add:
   - [ ] **Regenerate recovery codes** from `/profile`.
     - Behind step-up re-authentication (`Auth.verify_reauthentication/5`, ADR 0022).
@@ -145,9 +212,6 @@ Each phase gets its own plan before work starts.
   - No welcome or profile-setup step, and display name isn't asked at signup.
   - No notification when an account is approved (`core/auth/users.ex:140`).
   - Hitting a private page gives no explanation, and there's no return to that page after sign-in.
-- [ ] **Blocking and muting.**
-  - No UI to block a user or remote actor, although `Auth.block_user/2` and `block_remote_actor/2` exist and the README advertises blocking.
-  - Remote actors can't be muted from the UI; `/profile` only offers unmute.
 - [ ] **Comments.**
   - Authors can't edit their own comments; only remote comment updates exist.
   - Replies stop at depth 5 (`web/components/comment_components.ex:154`).
@@ -182,40 +246,17 @@ Each phase gets its own plan before work starts.
 
 ## Board moderators
 
-- [ ] **No board moderator dashboard.** Users with the `user` role can't reach `/admin/moderation`, so board moderators get no report queue, notifications or audit log for their board.
-- [ ] **Scope is too broad.**
-  - `board_moderator_for_any?/2` lets a moderator of board A pin, lock or delete an article cross-posted to boards A and B.
-  - Pin and lock are per article, not per board (`core/content/permissions.ex`).
-- [ ] **Scope is too narrow.**
-  - Board moderators can't remove an article from their own board; `remove_article_from_board` is author and admin only (`core/content/articles.ex:615`).
-  - They can't edit board name, description or roles.
+All board moderator items are in Phase 1 (1B).
 
 ## Global moderators and admins
 
-- [ ] **Report queue.**
-  - No pagination (`list_reports/1` loads every row).
-  - No assignment, no "in review" status and no reason categories.
-  - No links to the reported content or user, and comments are cut to 200 characters.
-  - No history per target.
-- [ ] **Report notifications.** New reports notify admins only, not moderators (`core/notification/hooks.ex:252`), and neither the reporter nor the reported user hears the outcome.
-- [ ] **User actions.** No warnings, temporary suspension, silencing or per-user rate limits. Pending users can't be rejected. Banning doesn't hide existing content.
-- [ ] **No user detail page** (their content, reports, IP, inviter), and no role filter in the UI, although the context supports one (`core/auth/users.ex:230`). `invited_by_id` isn't shown anywhere.
-- [ ] **Unenforced permissions.**
-  - `moderator.mute_user`, `admin.manage_roles` and `admin.view_dashboard` are defined but never checked.
-  - Global moderators have no ban or user tools.
-  - Moderators are held to the author delete limit of 20 per 5 minutes (`web/live/article_live.ex:188`), which hurts during spam waves.
-- [ ] **Deleting a comment destroys the evidence.** `soft_delete_comment` wipes the body, there's no restore, and deletions from the queue don't record who deleted.
+The report queue, notifications, sanctions, user detail page, permissions, evidence retention, domain blocks and terms acceptance are in Phase 1. What remains here is outside it.
+
 - [ ] **Content tools.** No moving articles between boards, no split or merge of threads, and no tool to empty a board so it can be deleted (`core/content/boards.ex:184`).
-- [ ] **Anti-spam.** None of: CAPTCHA or proof-of-work, trust levels, new-account or link limits, keyword filters, first-post approval, IP bans, or admin alerts for pending registrations.
-- [ ] **Domain blocklist.**
-  - It's a single comma-separated setting, with no severity, reason, date, public comment or unblock button.
-  - Blocking doesn't remove existing follows or hide received content.
-  - There's no silence or reject-media level, and no per-instance detail page.
+- [ ] **Anti-spam.** None of: CAPTCHA or proof-of-work, trust levels, new-account or link limits, keyword filters, first-post approval, or IP bans. (Admin alerts for pending registrations are in 1C.)
 - [ ] **Delivery dashboard** shows only 20 actionable jobs, with no domain filter and no bulk retry.
-- [ ] **Users can't report feed items, DMs or remote actors.**
 - [ ] **No `/admin` dashboard** with metrics (users, posts, growth, federation health).
 - [ ] **Admin announcements have no UI**, although `Notification.create_admin_announcement/2` exists. Also missing: custom pages, and site description and contact settings.
-- [ ] **Terms acceptance isn't recorded.** `terms_accepted` is a virtual field (`core/setup/user.ex:136`), there's no version or date, and users aren't asked again when the terms change.
 - [ ] **No takedown or legal-request workflow, and no age gating.**
 - [ ] **Board ordering** is a number field; there's no drag-and-drop.
 - [ ] **Bots.**
@@ -298,6 +339,17 @@ Each phase gets its own plan before work starts.
 ---
 
 ## Recently completed
+
+- **v1.18.2 — Phase 0 correctness bugs (B1–B12 of the 2026-09-14 review).**
+  Domain blocks from the Federation dashboard apply at once; the audit log no
+  longer drops entries and covers settings, federation and bot actions;
+  inbound `Flag` records reporter and target correctly; local composers offer
+  only Public/Unlisted (D1); long DM conversations show their newest messages;
+  interactions reach remote authors; comment authors can delete their comments
+  and replies to deleted comments stay visible; the theme bootstrap script runs
+  under the CSP; activity and follow ids are UUIDs; old notifications are
+  purged; reports about remote posts can be forwarded; backups work from a
+  release. See CHANGELOG.md.
 
 - **Data portability.**
   - v1.17.0: account recovery prerequisites and self-service data export ([ADR 0023](adr/0023-data-export-threat-model.md)).
