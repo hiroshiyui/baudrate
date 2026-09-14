@@ -585,6 +585,30 @@ defmodule Baudrate.Federation.PublisherTest do
     end
   end
 
+  describe "minted activity ids" do
+    # Ids used to end in System.unique_integer/1, a counter that restarts with
+    # the VM. After a restart an id could repeat, matching the delivery dedup
+    # index (so the new activity was skipped) or a unique ap_id column.
+    @uuid ~r/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/
+
+    test "end in a random UUID and never repeat" do
+      user = create_user()
+      article = create_article(user, create_board())
+
+      ids =
+        for _ <- 1..3 do
+          {like, _} = Publisher.build_like_article(user, article)
+          {undo, _} = Publisher.build_undo_like_article(user, article)
+          {create, _} = Publisher.build_create_article(article)
+          [like["id"], undo["id"], create["id"]]
+        end
+        |> List.flatten()
+
+      assert Enum.all?(ids, &(&1 =~ @uuid))
+      assert ids == Enum.uniq(ids)
+    end
+  end
+
   describe "build_undo_like_article/2" do
     test "builds an Undo(Like) activity" do
       user = create_user()

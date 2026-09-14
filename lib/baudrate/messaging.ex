@@ -600,7 +600,7 @@ defmodule Baudrate.Messaging do
 
   defp generate_ap_context do
     base = Federation.base_url()
-    "#{base}/contexts/dm-#{System.unique_integer([:positive])}"
+    "#{base}/contexts/dm-#{Ecto.UUID.generate()}"
   end
 
   defp maybe_federate_dm(message, conversation, sender) do

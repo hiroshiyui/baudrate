@@ -334,7 +334,7 @@ defmodule Baudrate.Federation.Feed do
 
   defp do_create_feed_item_reply(feed_item, user, body, opts) do
     ap_id =
-      "#{Baudrate.Federation.actor_uri(:user, user.username)}#feed-reply-#{System.unique_integer([:positive])}"
+      "#{Baudrate.Federation.actor_uri(:user, user.username)}#feed-reply-#{Ecto.UUID.generate()}"
 
     body_html = Markdown.to_html(body)
     image_ids = Keyword.get(opts, :image_ids, [])

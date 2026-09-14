@@ -106,7 +106,7 @@ defmodule Baudrate.Federation.Follows do
           {:ok, UserFollow.t()} | {:error, Ecto.Changeset.t()}
   def create_user_follow(user, remote_actor) do
     ap_id =
-      "#{Baudrate.Federation.actor_uri(:user, user.username)}#follow-#{System.unique_integer([:positive])}"
+      "#{Baudrate.Federation.actor_uri(:user, user.username)}#follow-#{Ecto.UUID.generate()}"
 
     %UserFollow{}
     |> UserFollow.changeset(%{
@@ -301,7 +301,7 @@ defmodule Baudrate.Federation.Follows do
           {:ok, BoardFollow.t()} | {:error, Ecto.Changeset.t()}
   def create_board_follow(board, remote_actor) do
     ap_id =
-      "#{Baudrate.Federation.actor_uri(:board, board.slug)}#follow-#{System.unique_integer([:positive])}"
+      "#{Baudrate.Federation.actor_uri(:board, board.slug)}#follow-#{Ecto.UUID.generate()}"
 
     %BoardFollow{}
     |> BoardFollow.changeset(%{
@@ -513,7 +513,7 @@ defmodule Baudrate.Federation.Follows do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     ap_id =
-      "#{Baudrate.Federation.actor_uri(:user, follower.username)}#follow-#{System.unique_integer([:positive])}"
+      "#{Baudrate.Federation.actor_uri(:user, follower.username)}#follow-#{Ecto.UUID.generate()}"
 
     result =
       %UserFollow{}

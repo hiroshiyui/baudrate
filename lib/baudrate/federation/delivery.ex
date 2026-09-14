@@ -62,7 +62,7 @@ defmodule Baudrate.Federation.Delivery do
   defp build_accept(follow_activity, local_actor_uri) do
     %{
       "@context" => @as_context,
-      "id" => "#{local_actor_uri}#accept-#{System.unique_integer([:positive])}",
+      "id" => "#{local_actor_uri}#accept-#{Ecto.UUID.generate()}",
       "type" => "Accept",
       "actor" => local_actor_uri,
       "object" => follow_activity
@@ -89,7 +89,7 @@ defmodule Baudrate.Federation.Delivery do
   defp build_reject(follow_activity, local_actor_uri) do
     %{
       "@context" => @as_context,
-      "id" => "#{local_actor_uri}#reject-#{System.unique_integer([:positive])}",
+      "id" => "#{local_actor_uri}#reject-#{Ecto.UUID.generate()}",
       "type" => "Reject",
       "actor" => local_actor_uri,
       "object" => follow_activity
