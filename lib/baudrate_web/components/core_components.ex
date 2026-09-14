@@ -889,6 +889,7 @@ defmodule BaudrateWeb.CoreComponents do
   prefix, so colour is never the only signal.
   """
   attr :id, :string, default: "password-strength"
+  attr :class, :any, default: nil, doc: "extra classes, e.g. spacing"
   attr :strength, :map, required: true
 
   def password_requirements(assigns) do
@@ -905,7 +906,7 @@ defmodule BaudrateWeb.CoreComponents do
       )
 
     ~H"""
-    <div id={@id} class="password-requirements space-y-1">
+    <div id={@id} class={["password-requirements space-y-1", @class]}>
       <p class="password-requirements-title text-sm font-medium">
         {gettext("Password requirements:")}
       </p>
