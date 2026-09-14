@@ -76,7 +76,7 @@ defmodule Baudrate.Auth.ReauthenticationTest do
   describe "verify_reauthentication/5 with TOTP enabled" do
     test "requires a valid current code in addition to the password" do
       {user, secret} = user_with_totp()
-      code = NimbleTOTP.verification_code(secret)
+      code = totp_code(secret)
 
       assert :ok = Auth.verify_reauthentication(user, @password, code, @ip, :test)
     end
@@ -99,7 +99,7 @@ defmodule Baudrate.Auth.ReauthenticationTest do
 
     test "rejects a valid code with a wrong password" do
       {user, secret} = user_with_totp()
-      code = NimbleTOTP.verification_code(secret)
+      code = totp_code(secret)
 
       assert {:error, :invalid_credentials} =
                Auth.verify_reauthentication(user, "wrong", code, @ip, :test)

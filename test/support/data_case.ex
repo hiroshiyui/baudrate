@@ -55,4 +55,21 @@ defmodule Baudrate.DataCase do
       end)
     end)
   end
+
+  @doc """
+  Returns the current TOTP code for `secret`, first waiting out the last
+  3 seconds of a 30-second period.
+
+  `Auth.valid_totp?/3` accepts only the current period. A code generated at
+  the very end of one period and verified a few milliseconds later, after a
+  bcrypt check, in the next period is rejected. Across a full partitioned run
+  that happens often enough to make tests flaky. This waits for the next
+  period instead, which is a clock boundary, not timestamp separation between
+  records.
+  """
+  def totp_code(secret) do
+    remaining = 30 - rem(System.os_time(:second), 30)
+    if remaining <= 3, do: Process.sleep(remaining * 1000 + 100)
+    NimbleTOTP.verification_code(secret)
+  end
 end

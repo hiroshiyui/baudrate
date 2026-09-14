@@ -225,7 +225,7 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
       assert html =~ "Invalid credentials"
       refute has_element?(lv, "#profile-security-key-register")
 
-      reauth(lv, %{password: @password, code: NimbleTOTP.verification_code(secret)})
+      reauth(lv, %{password: @password, code: totp_code(secret)})
       assert has_element?(lv, "#profile-security-key-register")
     end
   end

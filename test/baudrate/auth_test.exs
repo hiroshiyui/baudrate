@@ -140,7 +140,7 @@ defmodule Baudrate.AuthTest do
 
     test "valid_totp? validates correct code" do
       secret = Auth.generate_totp_secret()
-      code = NimbleTOTP.verification_code(secret)
+      code = totp_code(secret)
       assert Auth.valid_totp?(secret, code)
     end
 

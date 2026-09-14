@@ -122,7 +122,7 @@ defmodule BaudrateWeb.PasswordChangeLiveTest do
 
     submit(lv, %{
       current_password: @password,
-      code: NimbleTOTP.verification_code(secret),
+      code: totp_code(secret),
       password: @new,
       password_confirmation: @new
     })

@@ -28,6 +28,7 @@ defmodule BaudrateWeb.ConnCase do
       import Plug.Conn
       import Phoenix.ConnTest
       import BaudrateWeb.ConnCase
+      import Baudrate.DataCase, only: [totp_code: 1]
     end
   end
 

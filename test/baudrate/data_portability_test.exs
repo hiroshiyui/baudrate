@@ -49,7 +49,7 @@ defmodule Baudrate.DataPortabilityTest do
   end
 
   defp creds(secret, password \\ @password),
-    do: %{password: password, code: NimbleTOTP.verification_code(secret)}
+    do: %{password: password, code: totp_code(secret)}
 
   defp opts, do: [ip_address: "203.0.113.5", user_agent: @firefox]
 

@@ -57,7 +57,7 @@ defmodule BaudrateWeb.SessionControllerTest do
       user = setup_user("user")
       secret = Auth.generate_totp_secret()
       {:ok, _} = Auth.enable_totp(user, secret)
-      code = NimbleTOTP.verification_code(secret)
+      code = totp_code(secret)
 
       conn =
         conn
@@ -108,7 +108,7 @@ defmodule BaudrateWeb.SessionControllerTest do
     test "enables TOTP with valid code (secret from session)", %{conn: conn} do
       user = setup_user("admin")
       secret = Auth.generate_totp_secret()
-      code = NimbleTOTP.verification_code(secret)
+      code = totp_code(secret)
 
       conn =
         conn
@@ -294,7 +294,7 @@ defmodule BaudrateWeb.SessionControllerTest do
       admin = setup_user("admin")
       secret = Auth.generate_totp_secret()
       {:ok, _} = Auth.enable_totp(admin, secret)
-      code = NimbleTOTP.verification_code(secret)
+      code = totp_code(secret)
 
       conn =
         conn
@@ -347,7 +347,7 @@ defmodule BaudrateWeb.SessionControllerTest do
       admin = setup_user("admin")
       secret = Auth.generate_totp_secret()
       {:ok, _} = Auth.enable_totp(admin, secret)
-      code = NimbleTOTP.verification_code(secret)
+      code = totp_code(secret)
 
       BaudrateWeb.RateLimiter.Sandbox.set_fun(fn
         "admin_sudo:" <> _, _scale, _limit -> {:deny, 900_000}
@@ -373,7 +373,7 @@ defmodule BaudrateWeb.SessionControllerTest do
       admin = setup_user("admin")
       secret = Auth.generate_totp_secret()
       {:ok, _} = Auth.enable_totp(admin, secret)
-      code = NimbleTOTP.verification_code(secret)
+      code = totp_code(secret)
 
       for _ <- 1..5 do
         # Each request is a fresh conn (fresh cookie): the session counter
@@ -411,7 +411,7 @@ defmodule BaudrateWeb.SessionControllerTest do
       admin = setup_user("admin")
       secret = Auth.generate_totp_secret()
       {:ok, _} = Auth.enable_totp(admin, secret)
-      code = NimbleTOTP.verification_code(secret)
+      code = totp_code(secret)
 
       conn =
         conn
@@ -434,7 +434,7 @@ defmodule BaudrateWeb.SessionControllerTest do
       admin = setup_user("admin")
       secret = Auth.generate_totp_secret()
       {:ok, _} = Auth.enable_totp(admin, secret)
-      code = NimbleTOTP.verification_code(secret)
+      code = totp_code(secret)
 
       conn =
         conn
@@ -451,7 +451,7 @@ defmodule BaudrateWeb.SessionControllerTest do
       admin = setup_user("admin")
       secret = Auth.generate_totp_secret()
       {:ok, _} = Auth.enable_totp(admin, secret)
-      code = NimbleTOTP.verification_code(secret)
+      code = totp_code(secret)
 
       conn =
         conn
@@ -468,7 +468,7 @@ defmodule BaudrateWeb.SessionControllerTest do
       admin = setup_user("admin")
       secret = Auth.generate_totp_secret()
       {:ok, _} = Auth.enable_totp(admin, secret)
-      code = NimbleTOTP.verification_code(secret)
+      code = totp_code(secret)
 
       conn =
         conn
@@ -500,7 +500,7 @@ defmodule BaudrateWeb.SessionControllerTest do
       user = setup_user("admin")
       secret = Auth.generate_totp_secret()
       {:ok, _} = Auth.enable_totp(user, secret)
-      code = NimbleTOTP.verification_code(secret)
+      code = totp_code(secret)
 
       conn =
         conn
