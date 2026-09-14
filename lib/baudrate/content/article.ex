@@ -41,6 +41,9 @@ defmodule Baudrate.Content.Article do
     field :ap_id, :string
     field :url, :string
     field :deleted_at, :utc_datetime
+    # Local user who soft-deleted the article (author or moderator); nil for
+    # remote deletions and rows deleted before this was recorded.
+    field :deleted_by_id, :id
     field :last_activity_at, :utc_datetime
     field :published_at, :utc_datetime_usec
 
@@ -145,11 +148,17 @@ defmodule Baudrate.Content.Article do
     |> validate_length(:body, max: @max_body_length)
   end
 
-  @doc "Changeset for soft-deleting an article."
-  def soft_delete_changeset(article) do
+  @doc """
+  Changeset for soft-deleting an article.
+
+  `deleted_by_id` is the local user performing the deletion (the author or a
+  moderator), or `nil` for remote deletions. The data export uses it to tell
+  an author's own deletions from moderator removals (ADR 0023).
+  """
+  def soft_delete_changeset(article, deleted_by_id \\ nil) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     article
-    |> change(deleted_at: now)
+    |> change(deleted_at: now, deleted_by_id: deleted_by_id)
   end
 end

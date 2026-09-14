@@ -16,6 +16,13 @@ defmodule BaudrateWeb.Plugs.RefreshSession do
 
   If session data is missing or malformed (no tokens, no timestamp), the plug
   passes through without action.
+
+  ## Live socket id backfill
+
+  Sessions created before `:live_socket_id` was introduced lack it, so their
+  LiveView sockets could not be closed when the session is revoked. When a
+  cookie carries a valid `session_token` but no `:live_socket_id`, the plug
+  looks up the session row once and stores `Auth.live_socket_id/1`.
   """
 
   import Plug.Conn
@@ -25,6 +32,22 @@ defmodule BaudrateWeb.Plugs.RefreshSession do
   def init(opts), do: opts
 
   def call(conn, _opts) do
+    conn
+    |> rotate_if_due()
+    |> backfill_live_socket_id()
+  end
+
+  defp backfill_live_socket_id(conn) do
+    with nil <- get_session(conn, :live_socket_id),
+         token when is_binary(token) <- get_session(conn, :session_token),
+         id when is_integer(id) <- Baudrate.Auth.session_id_by_token(token) do
+      put_session(conn, :live_socket_id, Baudrate.Auth.live_socket_id(id))
+    else
+      _ -> conn
+    end
+  end
+
+  defp rotate_if_due(conn) do
     session_token = get_session(conn, :session_token)
     refresh_token = get_session(conn, :refresh_token)
     refreshed_at_str = get_session(conn, :refreshed_at)

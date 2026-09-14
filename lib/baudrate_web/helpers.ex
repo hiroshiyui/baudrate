@@ -347,6 +347,12 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("totp_disabled"),
     do: gettext("Two-factor authentication (TOTP) was turned off on your account.")
 
+  def notification_text("password_changed"),
+    do: gettext("Your account password was changed.")
+
+  def notification_text("signed_out_everywhere"),
+    do: gettext("All other sessions on your account were signed out.")
+
   def notification_text(_), do: gettext("sent you a notification")
 
   @doc """
@@ -367,6 +373,8 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("security_key_removed"), do: "hero-key"
   def notification_icon("totp_enabled"), do: "hero-shield-check"
   def notification_icon("totp_disabled"), do: "hero-shield-exclamation"
+  def notification_icon("password_changed"), do: "hero-lock-closed"
+  def notification_icon("signed_out_everywhere"), do: "hero-arrow-right-start-on-rectangle"
   def notification_icon(_), do: "hero-bell"
 
   @doc """

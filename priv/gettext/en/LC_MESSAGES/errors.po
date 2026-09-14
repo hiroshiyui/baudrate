@@ -110,3 +110,23 @@ msgstr ""
 
 msgid "must be equal to %{number}"
 msgstr ""
+
+## From Baudrate.Setup.User password policy and Baudrate.Auth.Passwords
+## (custom changeset messages; not statically extractable)
+msgid "must contain a lowercase letter"
+msgstr ""
+
+msgid "must contain an uppercase letter"
+msgstr ""
+
+msgid "must contain a digit"
+msgstr ""
+
+msgid "must contain a special character"
+msgstr ""
+
+msgid "does not match password"
+msgstr ""
+
+msgid "must be different from your current password"
+msgstr ""

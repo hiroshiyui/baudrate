@@ -91,3 +91,23 @@ msgstr "必須大於或等於 %{number}"
 
 msgid "must be equal to %{number}"
 msgstr "必須等於 %{number}"
+
+## From Baudrate.Setup.User password policy and Baudrate.Auth.Passwords
+## (custom changeset messages; not statically extractable)
+msgid "must contain a lowercase letter"
+msgstr "必須包含小寫字母"
+
+msgid "must contain an uppercase letter"
+msgstr "必須包含大寫字母"
+
+msgid "must contain a digit"
+msgstr "必須包含數字"
+
+msgid "must contain a special character"
+msgstr "必須包含特殊字元"
+
+msgid "does not match password"
+msgstr "與密碼不相符"
+
+msgid "must be different from your current password"
+msgstr "必須與目前的密碼不同"

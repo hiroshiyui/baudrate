@@ -102,13 +102,38 @@ defmodule Baudrate.Auth.SecondFactor do
     encrypted = TotpVault.encrypt(secret)
 
     user
-    |> User.totp_changeset(%{totp_secret: encrypted, totp_enabled: true})
+    |> User.totp_changeset(%{
+      totp_secret: encrypted,
+      totp_enabled: true,
+      totp_enabled_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
     |> Repo.update()
     |> tap(fn
       {:ok, updated} -> Hooks.notify_account_security(updated.id, "totp_enabled")
       _ -> :ok
     end)
   end
+
+  @doc """
+  Returns `true` when the user has TOTP enabled and it was enabled at least
+  `days` days ago (by `totp_enabled_at`).
+
+  Features that must not trust a freshly enrolled factor use this. For
+  example, self-service data export requires 7 days (ADR 0023), so an
+  attacker who enrols their own authenticator on a compromised account cannot
+  use it straight away. A user with TOTP enabled but no timestamp returns
+  `false` (fail closed).
+  """
+  @spec totp_enabled_for_at_least?(User.t(), non_neg_integer()) :: boolean()
+  def totp_enabled_for_at_least?(
+        %User{totp_enabled: true, totp_enabled_at: %DateTime{} = enabled_at},
+        days
+      )
+      when is_integer(days) and days >= 0 do
+    DateTime.diff(DateTime.utc_now(), enabled_at, :second) >= days * 86_400
+  end
+
+  def totp_enabled_for_at_least?(%User{}, _days), do: false
 
   @doc """
   Decrypts a user's TOTP secret from the stored encrypted form.
@@ -137,7 +162,7 @@ defmodule Baudrate.Auth.SecondFactor do
     was_enabled = user.totp_enabled
 
     user
-    |> User.totp_changeset(%{totp_secret: nil, totp_enabled: false})
+    |> User.totp_changeset(%{totp_secret: nil, totp_enabled: false, totp_enabled_at: nil})
     |> Repo.update()
     |> tap(fn
       {:ok, updated} when was_enabled == true ->

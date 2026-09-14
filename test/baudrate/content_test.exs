@@ -224,6 +224,22 @@ defmodule Baudrate.ContentTest do
       refute Content.can_lock_article?(other, article)
     end
 
+    test "soft delete records who deleted the article", %{
+      author: author,
+      mod: mod,
+      article: article
+    } do
+      {:ok, by_author} = Content.soft_delete_article(article, deleted_by: author.id)
+      assert by_author.deleted_by_id == author.id
+
+      {:ok, by_mod} = Content.soft_delete_article(article, deleted_by: mod.id)
+      assert by_mod.deleted_by_id == mod.id
+
+      # Remote deletions pass no :deleted_by and stay unattributed.
+      {:ok, unattributed} = Content.soft_delete_article(article)
+      assert is_nil(unattributed.deleted_by_id)
+    end
+
     test "permissions unchanged on soft-deleted article", %{
       admin: admin,
       author: author,

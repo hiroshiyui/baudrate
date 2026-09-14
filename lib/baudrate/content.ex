@@ -105,7 +105,7 @@ defmodule Baudrate.Content do
   defdelegate create_remote_article(attrs, board_ids, opts), to: Articles
   defdelegate get_article(id), to: Articles
   defdelegate get_article_by_ap_id(ap_id), to: Articles
-  defdelegate soft_delete_article(article), to: Articles
+  defdelegate soft_delete_article(article, opts \\ []), to: Articles
   defdelegate update_remote_article(article, attrs), to: Articles
   defdelegate create_article_revision(article, editor), to: Articles
   defdelegate list_article_revisions(article_id), to: Articles

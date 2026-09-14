@@ -857,6 +857,77 @@ defmodule BaudrateWeb.CoreComponents do
   end
 
   @doc """
+  Renders the password policy checklist with a strength meter.
+
+  `strength` is the map returned by `BaudrateWeb.Helpers.password_strength/1`
+  (`:length`, `:lowercase`, `:uppercase`, `:digit`, `:special`). Met and unmet
+  states are conveyed by icon, colour, and an `sr-only` "Met:"/"Not met:"
+  prefix, so colour is never the only signal.
+  """
+  attr :id, :string, default: "password-strength"
+  attr :strength, :map, required: true
+
+  def password_requirements(assigns) do
+    assigns =
+      assign(assigns,
+        items: [
+          {:length, gettext("At least 12 characters")},
+          {:lowercase, gettext("Contains a lowercase letter")},
+          {:uppercase, gettext("Contains an uppercase letter")},
+          {:digit, gettext("Contains a digit")},
+          {:special, gettext("Contains a special character")}
+        ],
+        met: Enum.count(Map.values(assigns.strength), & &1)
+      )
+
+    ~H"""
+    <div id={@id} class="password-requirements space-y-1">
+      <p class="password-requirements-title text-sm font-medium">
+        {gettext("Password requirements:")}
+      </p>
+      <ul class="password-requirements-list text-sm space-y-0.5">
+        <li
+          :for={{key, label} <- @items}
+          id={"#{@id}-#{key}"}
+          class="password-requirement flex items-center gap-1.5"
+        >
+          <.icon
+            name={if @strength[key], do: "hero-check-circle-mini", else: "hero-x-circle-mini"}
+            class={["size-4", if(@strength[key], do: "text-success", else: "text-error")]}
+            aria-hidden="true"
+          />
+          <span class="sr-only">
+            {if @strength[key], do: gettext("Met:"), else: gettext("Not met:")}
+          </span>
+          {label}
+        </li>
+      </ul>
+      <progress
+        id={"#{@id}-meter"}
+        class={[
+          "password-requirements-meter progress w-full",
+          cond do
+            @met <= 1 -> "progress-error"
+            @met <= 3 -> "progress-warning"
+            true -> "progress-success"
+          end
+        ]}
+        value={@met}
+        max="5"
+        aria-label={gettext("Password strength")}
+        aria-valuetext={
+          cond do
+            @met <= 1 -> gettext("Weak")
+            @met <= 3 -> gettext("Fair")
+            true -> gettext("Strong")
+          end
+        }
+      ></progress>
+    </div>
+    """
+  end
+
+  @doc """
   Translates an error message using gettext.
   """
   def translate_error({msg, opts}) do

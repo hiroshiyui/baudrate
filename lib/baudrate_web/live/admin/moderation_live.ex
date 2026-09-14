@@ -251,7 +251,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
         {:noreply, put_flash(socket, :error, gettext("Article not found."))}
 
       article ->
-        case Content.soft_delete_article(article) do
+        case Content.soft_delete_article(article, deleted_by: socket.assigns.current_user.id) do
           {:ok, _} ->
             Moderation.log_action(socket.assigns.current_user.id, "delete_article",
               target_type: "article",

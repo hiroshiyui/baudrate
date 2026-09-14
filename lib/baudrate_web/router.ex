@@ -301,6 +301,7 @@ defmodule BaudrateWeb.Router do
       live "/articles/:slug/edit", ArticleEditLive
       live "/profile", ProfileLive
       live "/profile/totp-reset", TotpResetLive
+      live "/profile/password", PasswordChangeLive
       live "/profile/recovery-codes", RecoveryCodesLive
       live "/admin/verify", AdminTotpVerifyLive
       live "/invites", UserInvitesLive

@@ -683,12 +683,18 @@ defmodule Baudrate.Content.Articles do
 
   @doc """
   Soft-deletes an article by setting `deleted_at`.
+
+  ## Options
+
+    * `:deleted_by` — id of the local user performing the deletion (the author
+      or a moderator). Stored as `deleted_by_id`. Omit for remote deletions.
   """
-  @spec soft_delete_article(%Article{}) :: {:ok, %Article{}} | {:error, Ecto.Changeset.t()}
-  def soft_delete_article(%Article{} = article) do
+  @spec soft_delete_article(%Article{}, keyword()) ::
+          {:ok, %Article{}} | {:error, Ecto.Changeset.t()}
+  def soft_delete_article(%Article{} = article, opts \\ []) do
     result =
       article
-      |> Article.soft_delete_changeset()
+      |> Article.soft_delete_changeset(Keyword.get(opts, :deleted_by))
       |> Repo.update()
 
     with {:ok, deleted_article} <- result do

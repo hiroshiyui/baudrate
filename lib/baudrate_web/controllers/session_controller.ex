@@ -575,6 +575,7 @@ defmodule BaudrateWeb.SessionController do
     ]
 
     {:ok, session_token, refresh_token} = Auth.create_user_session(user.id, opts)
+    session_id = Auth.session_id_by_token(session_token)
 
     conn
     |> configure_session(renew: true)
@@ -586,6 +587,8 @@ defmodule BaudrateWeb.SessionController do
     |> put_session(:session_token, session_token)
     |> put_session(:refresh_token, refresh_token)
     |> put_session(:refreshed_at, DateTime.utc_now() |> DateTime.to_iso8601())
+    # Tags this session's LiveView sockets so revoking the session closes them.
+    |> put_session(:live_socket_id, Auth.live_socket_id(session_id))
     |> put_session(:preferred_locales, user.preferred_locales || [])
     |> redirect(to: final_redirect)
   end

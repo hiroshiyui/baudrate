@@ -16,6 +16,11 @@ defmodule Baudrate.Setup.User do
     * `totp_secret` — AES-256-GCM encrypted TOTP secret (binary), or `nil`
       if TOTP has not been enabled. Never stores the raw secret.
     * `totp_enabled` — boolean flag; when `true`, login requires TOTP verification
+    * `totp_enabled_at` — when TOTP was last enabled (`nil` while disabled). Lets
+      features refuse a freshly enrolled factor (see
+      `Baudrate.Auth.SecondFactor.totp_enabled_for_at_least?/2`, ADR 0023).
+      Accounts that had TOTP before the column existed were backfilled with
+      the migration time.
 
   ## ActivityPub Fields
 
@@ -90,6 +95,7 @@ defmodule Baudrate.Setup.User do
     field :hashed_password, :string
     field :totp_secret, :binary
     field :totp_enabled, :boolean, default: false
+    field :totp_enabled_at, :utc_datetime
     field :avatar_id, :string
     field :status, :string, default: "active"
     field :preferred_locales, {:array, :string}, default: []
@@ -182,6 +188,17 @@ defmodule Baudrate.Setup.User do
     |> validate_confirmation(:password, message: "does not match password")
   end
 
+  @doc """
+  Validates a new password and its confirmation against the password policy
+  without hashing it. Used to report problems before any expensive or
+  rate-limited step (e.g. step-up re-authentication) runs.
+  """
+  def password_validation_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:password, :password_confirmation])
+    |> validate_password()
+  end
+
   @doc "Changeset for resetting a user's password: validates and hashes the new password."
   def password_reset_changeset(user, attrs) do
     user
@@ -196,10 +213,10 @@ defmodule Baudrate.Setup.User do
     |> cast(attrs, [:avatar_id])
   end
 
-  @doc "Changeset for updating TOTP secret and enabled flag."
+  @doc "Changeset for updating the TOTP secret, enabled flag, and enablement timestamp."
   def totp_changeset(user, attrs) do
     user
-    |> cast(attrs, [:totp_secret, :totp_enabled])
+    |> cast(attrs, [:totp_secret, :totp_enabled, :totp_enabled_at])
   end
 
   @doc "Changeset for setting user status to `\"active\"` or `\"pending\"`."

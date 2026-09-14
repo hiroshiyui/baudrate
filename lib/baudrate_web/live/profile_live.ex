@@ -29,6 +29,14 @@ defmodule BaudrateWeb.ProfileLive do
   deadline lives in socket assigns, which the client cannot set, and a reload
   locks it again. Without this gate, a stolen session cookie could enrol the
   attacker's own key and use it to pass admin sudo mode (ADR 0022).
+
+  ## Password and Sessions
+
+  The profile links to `/profile/password` (`PasswordChangeLive`). The Sessions
+  section signs out every other session after the same step-up
+  re-authentication (`Auth.sign_out_other_sessions/2`). The session to keep is
+  identified by its row id (`@session_id`, resolved at mount), not by token,
+  because tokens rotate daily.
   """
 
   use BaudrateWeb, :live_view
@@ -43,7 +51,7 @@ defmodule BaudrateWeb.ProfileLive do
   @security_reauth_seconds 300
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
     user = socket.assigns.current_user
     policy = Auth.totp_policy(user.role.name)
     is_active = Auth.user_active?(user)
@@ -77,6 +85,10 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:trigger_webauthn_register, false)
       |> assign(:security_reauth_until, nil)
       |> assign(:security_reauth_form, empty_security_reauth_form())
+      |> assign(:sign_out_form, to_form(%{"password" => "", "code" => ""}, as: :sign_out))
+      # Session row id (stable across token rotation) of the session to keep
+      # when signing out everywhere else.
+      |> assign(:session_id, Auth.session_id_by_token(session["session_token"]))
       |> assign(:peer_ip, if(connected?(socket), do: extract_peer_ip(socket), else: "unknown"))
       |> assign(:page_title, gettext("Profile"))
       |> allow_upload(:avatar,
@@ -458,6 +470,71 @@ defmodule BaudrateWeb.ProfileLive do
          socket
          |> put_flash(:error, gettext("Invalid credentials. Please try again."))
          |> push_event("focus", %{id: "security_reauth_password"})}
+    end
+  end
+
+  @impl true
+  def handle_event("sign_out_everywhere", %{"sign_out" => params}, socket) do
+    user = socket.assigns.current_user
+
+    result =
+      with :ok <- RateLimits.check_reauth(user.id),
+           :ok <-
+             Auth.verify_reauthentication(
+               user,
+               params["password"],
+               params["code"],
+               socket.assigns.peer_ip,
+               :sign_out_everywhere
+             ),
+           session_id when is_integer(session_id) <- socket.assigns.session_id do
+        Auth.sign_out_other_sessions(user, session_id)
+      else
+        nil -> {:error, :no_session}
+        other -> other
+      end
+
+    socket =
+      assign(socket, :sign_out_form, to_form(%{"password" => "", "code" => ""}, as: :sign_out))
+
+    case result do
+      {:ok, revoked} ->
+        {:noreply,
+         socket
+         |> put_flash(
+           :info,
+           ngettext(
+             "Signed out %{count} other session.",
+             "Signed out %{count} other sessions.",
+             revoked,
+             count: revoked
+           )
+         )
+         |> push_event("focus", %{id: "profile-sessions-heading"})}
+
+      {:error, :rate_limited} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Too many attempts. Please try again later."))}
+
+      {:error, {:throttled, seconds}} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("Too many failed attempts. Please try again in %{seconds} seconds.",
+             seconds: seconds
+           )
+         )}
+
+      {:error, :invalid_credentials} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Invalid credentials. Please try again."))
+         |> push_event("focus", %{id: "sign_out_password"})}
+
+      {:error, :no_session} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Your session has expired. Please sign in again."))}
     end
   end
 

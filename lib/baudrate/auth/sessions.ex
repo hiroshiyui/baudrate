@@ -4,6 +4,7 @@ defmodule Baudrate.Auth.Sessions do
   """
 
   import Ecto.Query
+  require Logger
   alias Baudrate.Repo
   alias Baudrate.Auth.{LoginAttempt, UserSession}
   alias Baudrate.Setup.User
@@ -61,7 +62,7 @@ defmodule Baudrate.Auth.Sessions do
     expires_at = DateTime.add(now, @session_ttl_seconds, :second)
 
     Repo.transaction(fn ->
-      evict_excess_sessions(user_id)
+      evicted_ids = evict_excess_sessions(user_id)
 
       changeset =
         UserSession.changeset(%UserSession{}, %{
@@ -75,13 +76,18 @@ defmodule Baudrate.Auth.Sessions do
         })
 
       case Repo.insert(changeset) do
-        {:ok, _session} -> {session_token, refresh_token}
+        {:ok, _session} -> {session_token, refresh_token, evicted_ids}
         {:error, changeset} -> Repo.rollback(changeset)
       end
     end)
     |> case do
-      {:ok, {session_token, refresh_token}} -> {:ok, session_token, refresh_token}
-      {:error, changeset} -> {:error, changeset}
+      {:ok, {session_token, refresh_token, evicted_ids}} ->
+        # Only after commit, so reconnecting sockets see the eviction.
+        disconnect_sockets(evicted_ids)
+        {:ok, session_token, refresh_token}
+
+      {:error, changeset} ->
+        {:error, changeset}
     end
   end
 
@@ -99,6 +105,9 @@ defmodule Baudrate.Auth.Sessions do
     if excess_count > 0 do
       ids_to_delete = Enum.take(sessions, excess_count)
       from(s in UserSession, where: s.id in ^ids_to_delete) |> Repo.delete_all()
+      ids_to_delete
+    else
+      []
     end
   end
 
@@ -120,7 +129,7 @@ defmodule Baudrate.Auth.Sessions do
         if DateTime.compare(session.expires_at, DateTime.utc_now()) == :gt do
           {:ok, session.user}
         else
-          Repo.delete(session)
+          revoke(from(s in UserSession, where: s.id == ^session.id))
           {:error, :expired}
         end
     end
@@ -166,28 +175,110 @@ defmodule Baudrate.Auth.Sessions do
             {:error, changeset} -> {:error, changeset}
           end
         else
-          Repo.delete(session)
+          revoke(from(s in UserSession, where: s.id == ^session.id))
           {:error, :expired}
         end
     end
   end
 
   @doc """
-  Deletes the session matching the given raw session token.
+  Returns the LiveView socket id for a session row: `"user_session:<id>"`.
+
+  `SessionController` stores it in the cookie session as `:live_socket_id`
+  (and `RefreshSession` backfills it for older cookies). Phoenix then tags
+  every LiveView socket opened by that session with this id, so revoking the
+  session can close those sockets instead of letting an already-open page
+  keep acting on a deleted session until it happens to reconnect.
+  """
+  @spec live_socket_id(integer()) :: String.t()
+  def live_socket_id(session_id) when is_integer(session_id), do: "user_session:#{session_id}"
+
+  @doc """
+  Returns the id of the session row matching `raw_token`, or `nil`.
+
+  The row id is stable across token rotation, unlike the tokens themselves.
+  """
+  @spec session_id_by_token(String.t() | nil) :: integer() | nil
+  def session_id_by_token(raw_token) when is_binary(raw_token) do
+    token_hash = hash_token(raw_token)
+    Repo.one(from s in UserSession, where: s.token_hash == ^token_hash, select: s.id)
+  end
+
+  def session_id_by_token(_), do: nil
+
+  @doc """
+  Deletes the session matching the given raw session token and disconnects
+  its LiveView sockets.
   """
   def delete_session_by_token(raw_token) do
     token_hash = hash_token(raw_token)
-    from(s in UserSession, where: s.token_hash == ^token_hash) |> Repo.delete_all()
+    revoke(from(s in UserSession, where: s.token_hash == ^token_hash))
     :ok
   end
 
   @doc """
-  Deletes all server-side sessions for a given user ID.
-  Used during TOTP reset to invalidate all existing sessions.
+  Deletes all server-side sessions for a given user ID and disconnects their
+  LiveView sockets.
+
+  Used by bans, recovery-code password resets, and TOTP resets. Returns
+  `{count, nil}`.
   """
   def delete_all_sessions_for_user(user_id) do
-    from(s in UserSession, where: s.user_id == ^user_id)
-    |> Repo.delete_all()
+    count = revoke(from(s in UserSession, where: s.user_id == ^user_id))
+    {count, nil}
+  end
+
+  @doc """
+  Deletes every session of `user_id` except the session row `keep_session_id`,
+  and disconnects the deleted sessions' LiveView sockets. The kept session
+  and its sockets are untouched.
+
+  Used by "sign out everywhere" and password change. `keep_session_id` is a
+  row id (see `session_id_by_token/1`), not a token, because tokens rotate
+  daily while a LiveView holds on to what it saw at mount. Returns the number
+  of sessions revoked.
+  """
+  @spec delete_other_sessions_for_user(integer(), integer()) :: non_neg_integer()
+  def delete_other_sessions_for_user(user_id, keep_session_id)
+      when is_integer(user_id) and is_integer(keep_session_id) do
+    revoke(from(s in UserSession, where: s.user_id == ^user_id and s.id != ^keep_session_id))
+  end
+
+  @doc """
+  "Sign out everywhere": revokes every other session of `user` (closing their
+  LiveView sockets), keeps the session row `keep_session_id`, and sends the
+  always-delivered `signed_out_everywhere` security notice.
+
+  **The caller must already have verified step-up re-authentication**, so a
+  cookie-only attacker cannot use this to sign the real user out while keeping
+  their own session. Returns `{:ok, revoked_count}`.
+  """
+  @spec sign_out_other_sessions(User.t(), integer()) :: {:ok, non_neg_integer()}
+  def sign_out_other_sessions(%User{} = user, keep_session_id) when is_integer(keep_session_id) do
+    revoked = delete_other_sessions_for_user(user.id, keep_session_id)
+
+    Baudrate.Notification.Hooks.notify_account_security(user.id, "signed_out_everywhere", %{
+      "count" => revoked
+    })
+
+    Logger.info("auth.signed_out_everywhere: user_id=#{user.id} revoked_sessions=#{revoked}")
+    {:ok, revoked}
+  end
+
+  # Deletes the sessions matched by `query`, then broadcasts "disconnect" to
+  # each one's LiveView sockets. The broadcast happens only after the rows are
+  # gone: a socket that reconnects re-runs the auth hooks, which must already
+  # see the session as deleted.
+  defp revoke(query) do
+    {count, ids} = query |> select([s], s.id) |> Repo.delete_all()
+    disconnect_sockets(ids)
+    count
+  end
+
+  defp disconnect_sockets(session_ids) do
+    Enum.each(session_ids, fn id ->
+      BaudrateWeb.Endpoint.broadcast(live_socket_id(id), "disconnect", %{})
+    end)
   end
 
   @doc """
@@ -196,7 +287,8 @@ defmodule Baudrate.Auth.Sessions do
   """
   def purge_expired_sessions do
     now = DateTime.utc_now()
-    from(s in UserSession, where: s.expires_at < ^now) |> Repo.delete_all()
+    count = revoke(from(s in UserSession, where: s.expires_at < ^now))
+    {count, nil}
   end
 
   # --- Per-account brute-force protection ---

@@ -9,6 +9,45 @@ defmodule BaudrateWeb.Plugs.RefreshSessionTest do
     %{user: user, session_token: session_token, refresh_token: refresh_token}
   end
 
+  describe "live_socket_id backfill" do
+    test "adds live_socket_id for a valid session that lacks it", %{
+      conn: conn,
+      session_token: session_token,
+      refresh_token: refresh_token
+    } do
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{
+          session_token: session_token,
+          refresh_token: refresh_token,
+          refreshed_at: DateTime.utc_now() |> DateTime.to_iso8601()
+        })
+        |> RefreshSession.call([])
+
+      id = Baudrate.Auth.session_id_by_token(session_token)
+      assert get_session(conn, :live_socket_id) == "user_session:#{id}"
+    end
+
+    test "keeps an existing live_socket_id and ignores unknown tokens", %{conn: conn} do
+      kept =
+        conn
+        |> Plug.Test.init_test_session(%{
+          session_token: "whatever",
+          live_socket_id: "user_session:1"
+        })
+        |> RefreshSession.call([])
+
+      assert get_session(kept, :live_socket_id) == "user_session:1"
+
+      unknown =
+        conn
+        |> Plug.Test.init_test_session(%{session_token: "not-a-session"})
+        |> RefreshSession.call([])
+
+      refute get_session(unknown, :live_socket_id)
+    end
+  end
+
   describe "call/2" do
     test "passes through when no session tokens are present", %{conn: conn} do
       conn =

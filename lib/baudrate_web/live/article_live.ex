@@ -779,7 +779,7 @@ defmodule BaudrateWeb.ArticleLive do
   def handle_info(_msg, socket), do: {:noreply, socket}
 
   defp do_delete_article(socket, article, user) do
-    case Content.soft_delete_article(article) do
+    case Content.soft_delete_article(article, deleted_by: user.id) do
       {:ok, _} ->
         if user.id != article.user_id do
           Moderation.log_action(user.id, "delete_article",

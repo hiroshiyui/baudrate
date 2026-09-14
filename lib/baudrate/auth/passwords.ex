@@ -4,9 +4,12 @@ defmodule Baudrate.Auth.Passwords do
   """
 
   import Ecto.Query
+  require Logger
+
   alias Baudrate.Repo
   alias Baudrate.Setup.User
   alias Baudrate.Auth.{Sessions, SecondFactor}
+  alias Baudrate.Notification.Hooks
 
   @doc """
   Authenticates a user by username and password.
@@ -46,6 +49,73 @@ defmodule Baudrate.Auth.Passwords do
   def verify_password(_, _) do
     Bcrypt.no_user_verify()
     false
+  end
+
+  @doc """
+  Validates a password change for a signed-in user without applying it.
+
+  The new password must satisfy the password policy, match its confirmation,
+  and differ from the current password. Returns a changeset with
+  `action: :validate`, so callers can show errors before running step-up
+  re-authentication (which counts toward rate limits).
+  """
+  @spec password_change_changeset(User.t(), map()) :: Ecto.Changeset.t()
+  def password_change_changeset(%User{} = user, attrs) do
+    changeset = User.password_validation_changeset(user, attrs)
+    new_password = Ecto.Changeset.get_change(changeset, :password)
+
+    changeset =
+      if changeset.valid? and is_binary(new_password) and
+           Bcrypt.verify_pass(new_password, user.hashed_password) do
+        Ecto.Changeset.add_error(
+          changeset,
+          :password,
+          "must be different from your current password"
+        )
+      else
+        changeset
+      end
+
+    %{changeset | action: :validate}
+  end
+
+  @doc """
+  Changes the password of a signed-in user.
+
+  **The caller must already have verified step-up re-authentication**
+  (`Auth.verify_reauthentication/5`); this function does not re-check the
+  current password.
+
+  On success it:
+    * stores the new password hash,
+    * revokes every other session of the user (closing their LiveView
+      sockets) and keeps the session row `keep_session_id`, so an attacker
+      holding another session is signed out while the user stays signed in,
+    * sends the always-delivered `password_changed` security notice.
+
+  Returns `{:ok, user, revoked_session_count}` or `{:error, changeset}`.
+  """
+  @spec change_password(User.t(), map(), integer()) ::
+          {:ok, User.t(), non_neg_integer()} | {:error, Ecto.Changeset.t()}
+  def change_password(%User{} = user, attrs, keep_session_id) when is_integer(keep_session_id) do
+    validation = password_change_changeset(user, attrs)
+
+    if validation.valid? do
+      case user |> User.password_reset_changeset(attrs) |> Repo.update() do
+        {:ok, updated} ->
+          revoked = Sessions.delete_other_sessions_for_user(user.id, keep_session_id)
+          Hooks.notify_account_security(user.id, "password_changed")
+
+          Logger.info("auth.password_changed: user_id=#{user.id} revoked_sessions=#{revoked}")
+
+          {:ok, updated, revoked}
+
+        {:error, changeset} ->
+          {:error, changeset}
+      end
+    else
+      {:error, validation}
+    end
   end
 
   @doc """

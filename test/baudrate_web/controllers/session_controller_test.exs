@@ -20,6 +20,10 @@ defmodule BaudrateWeb.SessionControllerTest do
       assert get_session(conn, :session_token) != nil
       assert get_session(conn, :refresh_token) != nil
       assert is_nil(get_session(conn, :user_id))
+
+      # LiveView sockets of this session are tagged so revocation can close them.
+      session_id = Auth.session_id_by_token(get_session(conn, :session_token))
+      assert get_session(conn, :live_socket_id) == "user_session:#{session_id}"
     end
 
     test "redirects to /totp/setup for admin without TOTP", %{conn: conn} do

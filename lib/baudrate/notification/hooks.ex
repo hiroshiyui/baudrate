@@ -25,7 +25,7 @@ defmodule Baudrate.Notification.Hooks do
     * `notify_remote_comment_created/3` — reply_to_article, reply_to_comment
     * `notify_report_created/1` — moderation_report (all admins)
     * `notify_account_security/3` — security_key_added, security_key_removed,
-      totp_enabled, totp_disabled
+      totp_enabled, totp_disabled, password_changed, signed_out_everywhere
   """
 
   alias Baudrate.{Auth, Notification, Repo, Setup}

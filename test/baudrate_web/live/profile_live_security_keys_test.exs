@@ -169,6 +169,47 @@ defmodule BaudrateWeb.ProfileLiveSecurityKeysTest do
     end
   end
 
+  describe "sign out everywhere" do
+    defp sign_out(lv, params) do
+      lv
+      |> form("#profile-sign-out-everywhere-form", sign_out: params)
+      |> render_submit()
+    end
+
+    test "requires the password and keeps other sessions on failure", %{conn: conn, user: user} do
+      {:ok, other_token, _} = Auth.create_user_session(user.id)
+      {:ok, lv, _html} = live(conn, "/profile")
+
+      html = sign_out(lv, %{password: "wrong"})
+
+      assert html =~ "Invalid credentials"
+      assert {:ok, _} = Auth.get_user_by_session_token(other_token)
+    end
+
+    test "signs out other sessions, keeps this one, and notifies", %{conn: conn, user: user} do
+      {:ok, other_token, _} = Auth.create_user_session(user.id)
+      this_token = Plug.Conn.get_session(conn, :session_token)
+      {:ok, lv, _html} = live(conn, "/profile")
+
+      html = sign_out(lv, %{password: @password})
+
+      assert html =~ "Signed out 1 other session."
+      assert {:error, :not_found} = Auth.get_user_by_session_token(other_token)
+      assert {:ok, _} = Auth.get_user_by_session_token(this_token)
+
+      assert Repo.exists?(
+               from(n in Baudrate.Notification.Notification,
+                 where: n.user_id == ^user.id and n.type == "signed_out_everywhere"
+               )
+             )
+    end
+
+    test "links to the password change page", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/profile")
+      assert has_element?(lv, "#profile-password-change[href='/profile/password']")
+    end
+  end
+
   describe "accounts with TOTP enabled" do
     setup %{user: user} do
       secret = Auth.generate_totp_secret()

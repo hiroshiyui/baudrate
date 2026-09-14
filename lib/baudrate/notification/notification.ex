@@ -24,13 +24,15 @@ defmodule Baudrate.Notification.Notification do
 
   These types have no actor and are always delivered: they bypass the
   per-type in-app and web push preferences (see `security_types/0`). They let
-  a user notice a change to their second factors that they did not make
-  (ADR 0022).
+  a user notice a change they did not make to how their account signs in
+  (second factors, password, sessions); see ADR 0022 and ADR 0023.
 
     * `security_key_added` — a WebAuthn security key was registered (`data.label`)
     * `security_key_removed` — a WebAuthn security key was removed (`data.label`)
     * `totp_enabled` — TOTP two-factor authentication was set up
     * `totp_disabled` — TOTP two-factor authentication was turned off
+    * `password_changed` — the account password was changed while signed in
+    * `signed_out_everywhere` — all other sessions were signed out (`data.count`)
 
   ## Deduplication
 
@@ -62,9 +64,18 @@ defmodule Baudrate.Notification.Notification do
     security_key_removed
     totp_enabled
     totp_disabled
+    password_changed
+    signed_out_everywhere
   )
 
-  @security_types ~w(security_key_added security_key_removed totp_enabled totp_disabled)
+  @security_types ~w(
+    security_key_added
+    security_key_removed
+    totp_enabled
+    totp_disabled
+    password_changed
+    signed_out_everywhere
+  )
 
   @doc "Returns the list of valid notification type strings."
   def valid_types, do: @valid_types

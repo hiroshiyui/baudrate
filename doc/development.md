@@ -383,6 +383,19 @@ Key functions in `Auth`:
 | Rotation | `RefreshSession` plug rotates both tokens every 24 hours |
 | Concurrency | Max 3 sessions per user; oldest (by `refreshed_at`) evicted |
 | Cleanup | `SessionCleaner` GenServer purges expired sessions every hour |
+| LiveView sockets | Each session's cookie carries `live_socket_id` = `"user_session:<row id>"` (set at login, backfilled by `RefreshSession`); the row id is stable across rotation |
+| Revocation | Every session deletion (`delete_session_by_token/1`, `delete_all_sessions_for_user/1`, `delete_other_sessions_for_user/2`, eviction, expiry, `purge_expired_sessions/0`) broadcasts `"disconnect"` to the deleted sessions' socket ids **after** the rows are gone, so open LiveView pages remount and hit the auth hooks instead of acting on a dead session |
+
+**Password change and sign out everywhere** (`/profile/password`, `/profile` → Sessions)
+both require step-up re-authentication (`Auth.verify_reauthentication/5`, password
+plus TOTP when enabled). `Auth.change_password/3` validates the new password first
+(`password_change_changeset/2`: policy, confirmation, different from the current one)
+so mistakes do not use up re-authentication attempts. It then stores the hash and
+revokes every *other* session. `Auth.sign_out_other_sessions/2` revokes other
+sessions only. Both keep the caller's session by **row id** (tokens rotate daily
+while a LiveView holds what it saw at mount) and send always-delivered security
+notices (`password_changed`, `signed_out_everywhere`). They are the account-recovery
+prerequisites for data export (ADR 0023).
 
 ### Admin Sudo Mode
 
@@ -571,6 +584,8 @@ Password reset is available at `/password-reset`. Users enter their username,
 a recovery code, and a new password. Each recovery code can only be used once.
 Recovery codes are the sole password recovery mechanism — there is no email in
 the system. Rate limited to 5 attempts per hour per IP.
+
+Signed-in users change their password at `/profile/password` (see Session Management).
 
 ### User Display Name
 
@@ -880,6 +895,10 @@ Comments are threaded via `parent_id` (self-referential) and belong to an
 article. Both articles and comments can originate locally (via `user_id`) or
 from remote ActivityPub actors (via `remote_actor_id`). Soft-delete is
 implemented via `deleted_at` timestamps on both articles and comments.
+Articles also record `deleted_by_id` (the local author or moderator who deleted
+it, via `Content.soft_delete_article(article, deleted_by: user_id)`). Remote
+deletions and rows deleted before the column existed stay `nil`, meaning
+attribution unknown, and the data export excludes them (ADR 0023).
 
 Article likes track favorites from local users and remote actors, with
 partial unique indexes enforcing one-like-per-actor-per-article. Comment
@@ -1154,8 +1173,10 @@ In-app notification system with real-time delivery via PubSub.
 - `admin_announcement` — announcement from an admin
 - `security_key_added` / `security_key_removed` — a WebAuthn key was registered or removed (`data.label`)
 - `totp_enabled` / `totp_disabled` — TOTP was set up or turned off
+- `password_changed` — the password was changed while signed in
+- `signed_out_everywhere` — all other sessions were signed out (`data.count`)
 
-**Account security notices** (the last four types, `Notification.Notification.security_types/0`)
+**Account security notices** (the last six types, `Notification.Notification.security_types/0`)
 are emitted by the Auth context itself: `WebAuthn.create_webauthn_credential/2`,
 `WebAuthn.delete_webauthn_credential/2`, `SecondFactor.enable_totp/2` and
 `SecondFactor.disable_totp/1` (the latter only when TOTP was on) call

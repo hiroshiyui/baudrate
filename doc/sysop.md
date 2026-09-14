@@ -311,6 +311,13 @@ recovery codes when displayed. Each code can only be used once.
 - Recovery codes: 10 per user, HMAC-SHA256 hashed, one-time use
 - Clock skew tolerance: ±30 seconds (NTP synchronization is critical)
 - Users can reset their own TOTP at `/profile/totp-reset`
+- `users.totp_enabled_at` records when TOTP was enabled; accounts that already
+  had TOTP when that column was added are stamped with the upgrade time. Features that refuse
+  a freshly enrolled factor (data export needs 7 days) count from there.
+- Signed-in users can change their password at `/profile/password` and sign out
+  every other session from `/profile` → Sessions. Both require the password (plus
+  TOTP when enabled), close the other sessions' open pages immediately, and send
+  a security notice that cannot be turned off.
 - If `SECRET_KEY_BASE` changes, all TOTP secrets become unrecoverable — users
   must use recovery codes and re-enroll
 

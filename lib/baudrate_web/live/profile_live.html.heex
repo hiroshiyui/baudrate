@@ -307,6 +307,21 @@
         </div>
       </div>
 
+      <div id="profile-password">
+        <div class="profile-field-label text-sm text-base-content/70">
+          {gettext("Password")}
+        </div>
+        <div class="profile-field-value">
+          <.link
+            id="profile-password-change"
+            navigate={~p"/profile/password"}
+            class="profile-password-change btn btn-sm btn-outline"
+          >
+            {gettext("Change Password")}
+          </.link>
+        </div>
+      </div>
+
       <%!-- Security Keys (WebAuthn) section --%>
       <section
         id="profile-security-keys"
@@ -465,6 +480,74 @@
           <input type="hidden" id="client_data_json" name="client_data_json" />
           <input type="hidden" name="label" value={gettext("Security Key")} />
         </form>
+      </section>
+
+      <%!-- Sessions section --%>
+      <section id="profile-sessions" aria-labelledby="profile-sessions-heading">
+        <h2
+          id="profile-sessions-heading"
+          class="profile-section-heading text-sm text-base-content/70 mb-2"
+        >
+          {gettext("Sessions")}
+        </h2>
+        <p id="profile-sessions-hint" class="profile-field-hint text-sm text-base-content/70 mb-3">
+          {gettext(
+            "Sign out of every other browser or device where your account is signed in. This one stays signed in."
+          )}
+        </p>
+        <.form
+          for={@sign_out_form}
+          id="profile-sign-out-everywhere-form"
+          class="profile-sign-out-everywhere-form space-y-3"
+          phx-submit="sign_out_everywhere"
+        >
+          <div class="form-control">
+            <label
+              id="sign-out-password-label"
+              class="profile-sign-out-label label"
+              for="sign_out_password"
+            >
+              <span class="label-text">{gettext("Password")}</span>
+            </label>
+            <input
+              type="password"
+              id="sign_out_password"
+              name="sign_out[password]"
+              class="profile-sign-out-password input input-bordered input-sm w-full max-w-xs"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+          <div :if={@current_user.totp_enabled} class="form-control">
+            <label
+              id="sign-out-code-label"
+              class="profile-sign-out-label label"
+              for="sign_out_code"
+            >
+              <span class="label-text">{gettext("Current TOTP Code")}</span>
+            </label>
+            <input
+              type="text"
+              id="sign_out_code"
+              name="sign_out[code]"
+              class="profile-sign-out-code input input-bordered input-sm w-full max-w-xs tracking-widest"
+              inputmode="numeric"
+              pattern="[0-9]{6}"
+              maxlength="6"
+              autocomplete="one-time-code"
+              required
+            />
+          </div>
+          <button
+            id="profile-sign-out-everywhere-submit"
+            type="submit"
+            class="profile-sign-out-everywhere-submit btn btn-sm btn-outline btn-warning"
+            phx-disable-with={gettext("Signing out...")}
+          >
+            <.icon name="hero-arrow-right-start-on-rectangle" class="w-4 h-4 mr-1" />
+            {gettext("Sign Out Everywhere Else")}
+          </button>
+        </.form>
       </section>
 
       <div id="profile-member-since">

@@ -25,6 +25,8 @@ defmodule Baudrate.Auth do
   # --- Passwords & Core Auth ---
   defdelegate authenticate_by_password(username, password), to: Passwords
   defdelegate verify_password(user, password), to: Passwords
+  defdelegate password_change_changeset(user, attrs), to: Passwords
+  defdelegate change_password(user, attrs, keep_session_id), to: Passwords
 
   defdelegate verify_reauthentication(user, password, code, ip_address, purpose),
     to: Baudrate.Auth.Reauthentication,
@@ -62,6 +64,10 @@ defmodule Baudrate.Auth do
   defdelegate refresh_user_session(raw_refresh_token), to: Sessions
   defdelegate delete_session_by_token(raw_token), to: Sessions
   defdelegate delete_all_sessions_for_user(user_id), to: Sessions
+  defdelegate delete_other_sessions_for_user(user_id, keep_session_id), to: Sessions
+  defdelegate session_id_by_token(raw_token), to: Sessions
+  defdelegate live_socket_id(session_id), to: Sessions
+  defdelegate sign_out_other_sessions(user, keep_session_id), to: Sessions
   defdelegate purge_expired_sessions, to: Sessions
   defdelegate record_login_attempt(username, ip_address, success), to: Sessions
   defdelegate check_login_throttle(username), to: Sessions
@@ -78,6 +84,7 @@ defmodule Baudrate.Auth do
   defdelegate enable_totp(user, secret), to: SecondFactor
   defdelegate decrypt_totp_secret(user), to: SecondFactor
   defdelegate disable_totp(user), to: SecondFactor
+  defdelegate totp_enabled_for_at_least?(user, days), to: SecondFactor
   defdelegate generate_recovery_codes(user), to: SecondFactor
   defdelegate verify_recovery_code(user, code), to: SecondFactor
 
