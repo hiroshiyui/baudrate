@@ -374,26 +374,29 @@ defmodule BaudrateWeb.Helpers do
       Application.get_env(:baudrate, BaudrateWeb.Plugs.RealIp, [])
       |> Keyword.get(:header)
 
-    peer_ip_str =
+    peer_ip =
       case Phoenix.LiveView.get_connect_info(socket, :peer_data) do
-        %{address: addr} -> addr |> :inet.ntoa() |> to_string()
+        %{address: addr} -> addr
         _ -> nil
       end
 
     x_headers = Phoenix.LiveView.get_connect_info(socket, :x_headers) || []
 
-    ip_from_header =
-      if header && BaudrateWeb.Plugs.RealIp.peer_trusted?(peer_ip_str) do
-        case List.keyfind(x_headers, header, 0) do
-          {_, value} ->
-            value |> String.split(",") |> List.first() |> String.trim()
-
-          nil ->
-            nil
-        end
+    forwarded =
+      with header when is_binary(header) <- header,
+           {_, value} <- List.keyfind(x_headers, header, 0) do
+        value
+      else
+        _ -> nil
       end
 
-    ip_from_header || peer_ip_str || "unknown"
+    # Same resolution as the RealIp plug: trusted peer + parseable header, with
+    # IPv4-mapped addresses unmapped. An unparseable header value falls back to
+    # the peer rather than being used verbatim as a rate-limit key or log field.
+    case BaudrateWeb.Plugs.RealIp.client_ip(peer_ip, forwarded) do
+      nil -> "unknown"
+      ip -> ip |> :inet.ntoa() |> to_string()
+    end
   end
 
   @doc """
