@@ -20,170 +20,22 @@ Shipped on `current`: logged-in password change (`/profile/password`), sign out 
 
 ---
 
-## Phase 1: Data Export — HIGH PRIORITY
+## Phase 1: Data Export — ✅ done
 
-### 1.1 Schema: `export_requests`
+Shipped on `current` as designed in ADR 0023:
+- request lifecycle: `export_requests`, `DataPortability`
+- archive: `Collector`, `Files`, `Archive`, with the canary acceptance test
+- web: `/profile/export`, `POST /exports/:id/download`, the warning banner, and the nginx `/exports/` location
+- SysOp and admin: `Release.export_user_data/3`, `/admin/data-exports`
 
-Columns:
-- `id`
-- `user_id` (FK, `on_delete: :delete_all`)
-- `status`: `pending` | `ready` | `completed` | `cancelled` | `expired`
-- `requested_at`, `ready_at` (`requested_at + 24h`), `expires_at` (`ready_at + 48h`)
-- `download_count` (default 0, max 3)
-- `requested_session_id` (FK `user_sessions`, `nilify_all`)
-- `requested_user_agent_family`: a short display string for the banner ("Firefox on Linux").
-  **No IP.**
-- `cancelled_at`, `cancel_reason`: `user` | `password_changed` | `totp_changed` | `banned` |
-  `signed_out_everywhere`
-- timestamps
+See "Data Export" in `doc/development.md` and `doc/sysop.md`.
 
-Indexes / constraints:
-- Partial unique index on `user_id` WHERE `status IN ('pending','ready')` (one active request).
-- Index `(user_id, requested_at)` for the per-week cap.
-- Rows are never deleted by users (immutable history). Purge after 1 year in `SessionCleaner`.
-
-### 1.2 Context: `Baudrate.DataPortability`
-
-Authorization lives here (ADR 0016), not in LiveViews.
-- `eligibility(user)` returns `:ok` or
-  `{:error, :not_active | :bot | :totp_required | {:totp_too_new, days_left}}`.
-- `request_export(user, session, reauth_result)` checks eligibility, a DB-counted cap of 2 requests
-  per 7 days, and the unique index. It sends the `data_export_requested` notice.
-- `cancel_export(user, request_id, reason)`, scoped to the user. It sends `data_export_cancelled`.
-- `cancel_active_exports(user, reason)`, called from password change, TOTP reset/disable,
-  `ban_user/3`, and sign out everywhere.
-- `claim_download(user, request_id)`: an atomic
-  `UPDATE … SET download_count = download_count + 1 WHERE id = ? AND user_id = ? AND status = 'ready' AND now() BETWEEN ready_at AND expires_at AND download_count < 3 RETURNING *`.
-  Status becomes `completed` at 3.
-- `list_export_history(user)`, and an admin-only `list_export_requests/1`.
-- Status transitions: a periodic job (or lazy on read) moves `pending → ready` and `ready → expired`.
-  Send `data_export_ready` when a request becomes ready.
-- New always-delivered security notice types: `data_export_requested`, `data_export_ready`,
-  `data_export_downloaded`, `data_export_cancelled`.
-
-### 1.3 Archive builder: `Baudrate.DataPortability.Archive`
-
-- Build under the single instance-wide slot: `pg_try_advisory_lock(<constant>)`. Busy means "try
-  again in a minute", with no queueing.
-- Output is a `0600` file in `System.tmp_dir!()` (the unit has `PrivateTmp=true`; verify it is
-  writable under `ProtectSystem=strict`). **Never** under `priv/static` or `shared/uploads`.
-- Hard limits: build timeout (e.g. 120 s) and archive size cap (e.g. 500 MB). Abort and delete on
-  breach.
-- `Application.start` / boot: sweep leftover export temp files.
-- Entries use the `:zip` module with stored or deflated entries. Entry names come from record ids
-  (`articles/123.json`, `media/article_images/456.webp`), never titles or client filenames.
-- Layout (JSON only, no CSV, no HTML viewer):
-  ```
-  README.txt           — what is included / excluded (translated), export timestamp
-  profile.json         — username, display name, bio, signature, profile_fields, locales,
-                         dm_access, notification preferences, role, created_at,
-                         totp_enabled (bool), security_keys: [{label, added, last_used}]
-  articles.json        — own, live, in currently viewable boards (+ board-less), incl. own
-                         revisions and polls; own self-deleted flagged (deleted_by_id == user)
-  comments.json        — own live comments; parent/article as URI only
-  feed_replies.json    — own feed item replies; target feed item as URI only
-  interactions.json    — likes, boosts (article/comment/feed item), poll votes, bookmarks: target URI only
-  relationships.json   — following (local usernames / remote AP URIs + state),
-                         followers (local via user_follows.followed_user_id, remote via
-                         followers.actor_uri == the user's actor URI — no user_id column),
-                         blocks, mutes
-  messages.json        — conversations: counterpart handle only; messages SENT by the user only
-  invites.json         — codes created: used/revoked/expired status + dates; active code values
-                         masked; invitee identities omitted
-  media/               — avatar (all sizes), article_images, comment_images,
-                         feed_item_reply_images owned by the user
-  ```
-- **Excluded** (ADR 0023 §10): secrets, session IPs/UAs, notifications, reports about the user,
-  moderation log, login_attempts, others' revisions, reading history (`article_reads`,
-  `board_reads`, read cursors), moderator-removed content, content in boards the user can no
-  longer view, `ap_private_key_encrypted`, push subscriptions.
-
-### 1.4 Serializers: allow-list only
-
-- One module per data type with an explicit field list. Never `Map.from_struct`, never
-  `Jason.encode!(schema)`.
-- Visibility rule: use the viewer-gated `Content.*_by_user` queries with `viewer: user` (the same
-  predicate as `BaudrateWeb.ArticleHelpers.user_can_view_article?/2`; move it into the context if
-  the export needs it, since the context must not call a web module). Never query by `user_id`
-  alone.
-- Files: resolve `storage_path` / avatar paths with `Path.expand`, require the result to sit under
-  `Application.app_dir(:baudrate, "priv/static/uploads")` after following symlinks (`File.lstat`
-  each segment, or compare `:file.read_link_all` results), and require a regular file. Anything
-  else is skipped and logged.
-
-### 1.5 Web: `DataExportLive` + `ExportController`
-
-- `/profile/export` in the `:authenticated` live_session:
-  - Eligibility explanation. For users without qualifying TOTP it links to TOTP setup and shows
-    days left.
-  - "Request export": step-up form. On success it shows the pending state and the ready time.
-  - "Cancel" and "Cancel and sign out everywhere" (Phase 0.2).
-  - Download: step-up form. On success it signs a single-use token and submits a POST form
-    through `phx-trigger-action`.
-  - Immutable history table.
-  - Server-driven focus and `role="status"` announcements; semantic ids/classes (ADR 0018);
-    gettext.
-- Global banner in the app layout while a request is `pending` or `ready`. It cannot be
-  dismissed, names the requesting browser, and links to cancel.
-- `POST /exports/:id/download` (`ExportController`):
-  - Token: `Phoenix.Token` salted `"data_export_download"` with
-    `%{request_id, user_id, session_token_hash}`, `max_age: 60`, single-use via an ETS nonce set.
-    It is bound to the current session.
-  - Require `Sec-Fetch-Mode: navigate`, `Sec-Fetch-Dest: document`, `Sec-Fetch-Site: same-origin`.
-    Otherwise answer 403.
-  - `claim_download/2`, then build, then `send_file` with `Content-Disposition: attachment`,
-    `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`. Delete the temp file after the
-    send (also on client abort).
-  - Send the `data_export_downloaded` notice.
-  - Answer 404 for a request that is not found, not the user's, not ready, expired, or exhausted.
-    There is no ownership oracle.
-- nginx (Ansible template): a `location` for `/exports/` with `proxy_buffering off;`,
-  `proxy_max_temp_file_size 0;`, and no cache.
-- `config :phoenix, :filter_parameters` adds `"token"` and `"code"` alongside `"password"`.
-
-### 1.6 SysOp release task
-
-- `Baudrate.Release.export_user_data(username, output_dir, operator: "...")` via `bin/baudrate eval`.
-- Same archive builder and exclusions. It writes a `0600` file and refuses output directories
-  inside any static root or `shared/uploads`.
-- Records an `export_requests` row (`status: completed`, `cancel_reason: nil`,
-  `requested_session_id: nil`, a note that it was a SysOp export) and a `Logger` line with the
-  OS user.
-- Document the out-of-band identity verification procedure in `doc/sysop.md`.
-
-### 1.7 Tests (acceptance gates)
-
-- **Canary test.**
-  - Seed a user with unique marker strings or bytes in: `hashed_password`, `totp_secret`,
-    recovery code hashes, session token hashes, WebAuthn `public_key_cbor`/`credential_id`, push
-    `endpoint`/`p256dh`/`auth`, `ap_private_key_encrypted`, an active invite code, a
-    `login_attempts.ip_address` from another IP, a session `user_agent`, a DM received from
-    another user, a report filed about the user, and a moderator revision.
-  - Build an archive and assert that none of the markers appears in any entry, whether raw,
-    Base64 or hex.
-- Visibility: content in a board the user lost access to is excluded; board-less and currently
-  visible content is included.
-- Deleted content: moderator-deleted excluded; self-deleted included; `deleted_by_id IS NULL`
-  excluded.
-- Path confinement: a `storage_path` pointing to `../../env/baudrate.env`, an absolute path
-  outside uploads, or a symlink escape is skipped.
-- Eligibility: no TOTP, TOTP less than 7 days old, bot, banned → refused. A recovery code never
-  authorizes.
-- Lifecycle: the 24 h gate; cancel from another session; automatic cancellation on password
-  change, TOTP reset, ban, and sign out everywhere; the 48 h expiry; the 3-download cap under
-  concurrent claims (two processes, one wins).
-- Download endpoint: missing, wrong or expired token; token reuse; token from another session;
-  missing or incorrect `Sec-Fetch-*` headers; a different user's request id returns 404.
-- Build slot: a concurrent second build is refused. Timeout and size cap abort and delete the
-  temp file.
-- Notices are always delivered, including when preferences are stored as off.
-
-### 1.8 Docs and i18n
-
-- ADR 0023 is the design record. Update `doc/development.md` (DataPortability context, export
-  flow), `doc/sysop.md` (SysOp task, nginx location, identity verification), `CLAUDE.md` (key
-  gotchas: canary test gate, no archive at rest, path confinement), and README features.
-- zh_TW and ja_JP for all UI text, notices, and `README.txt` in the archive.
+Follow-ups:
+- Move the registration, password reset and setup pages onto the shared
+  `<.password_requirements>` component.
+- `Auth.valid_totp?/3` accepts only the current 30-second period, while
+  `doc/sysop.md` promises ±30 s clock-skew tolerance. Decide whether to add a
+  one-step grace window (with `:since` replay protection) or correct the doc.
 
 ---
 
