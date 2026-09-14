@@ -1,7 +1,7 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+# Tests run inside the project's own CI image (ci/image/), pinned by digest in
+# ci/image/image.lock and checked for build provenance before use, so no
+# toolchain, browser or third-party action is fetched at run time. Only
+# GitHub-owned actions are used, pinned to commit SHAs.
 
 name: Elixir CI
 
@@ -15,25 +15,45 @@ permissions:
   contents: read
 
 jobs:
+  image:
+    name: CI image
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
+    uses: ./.github/workflows/ci-image-ref.yml
+
   build:
 
     name: Test (partition ${{ matrix.partition }}/4)
+    needs: image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    container:
+      image: ${{ needs.image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     strategy:
       fail-fast: false
       matrix:
         partition: [1, 2, 3, 4]
 
+    env:
+      MIX_ENV: test
+      PGHOST: postgres
+
     services:
       postgres:
-        image: postgres:17
+        image: postgres:17@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675
         env:
           POSTGRES_USER: baudrate_db_user
           POSTGRES_PASSWORD: baudrate_database
           POSTGRES_DB: baudrate_test
-        ports:
-          - 5432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -41,33 +61,19 @@ jobs:
           --health-retries 5
 
     steps:
-    - name: Set up asdf
-      uses: ynab/asdf-action@v1.2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
-        version: 0.16.7
-    - uses: actions/checkout@v7
-    - name: Install Erlang and Elixir
-      run: |
-        asdf plugin add erlang
-        asdf plugin add elixir
-        asdf install
-    - name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
-    - name: Restore Cargo cache
-      uses: actions/cache@v6
+        persist-credentials: false
+    - name: Check the CI image matches the pinned toolchain
+      run: ci/image/verify-toolchain.sh
+    - name: Restore dependency and build caches
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
         path: |
-          ~/.cargo/registry
-          ~/.cargo/git
+          deps
           native/*/target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('native/*/Cargo.lock') }}
-        restore-keys: ${{ runner.os }}-cargo-
-    - name: Restore dependencies cache
-      uses: actions/cache@v6
-      with:
-        path: deps
-        key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-        restore-keys: ${{ runner.os }}-mix-
+          /opt/cargo/registry
+        key: ${{ runner.os }}-${{ hashFiles('ci/image/image.lock') }}-${{ hashFiles('**/mix.lock', 'native/*/Cargo.lock') }}
     - name: Install dependencies
       run: mix deps.get
     - name: Check formatting
@@ -83,24 +89,34 @@ jobs:
 
   feature:
 
-    # Browser (Wallaby + Selenium + headless Firefox) tests. They are excluded
-    # from `mix test` and are the only tests that run the JS hooks, so without
-    # this job a hook that throws or an unhandled hook event reaches production.
+    # Browser (Wallaby + Selenium + headless Firefox ESR) tests. They are
+    # excluded from `mix test` and are the only tests that run the JS hooks, so
+    # without this job a hook that throws or an unhandled hook event reaches
+    # production.
     name: Browser tests (Firefox)
+    needs: image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    container:
+      image: ${{ needs.image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     env:
       MIX_ENV: test
+      PGHOST: postgres
 
     services:
       postgres:
-        image: postgres:17
+        image: postgres:17@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675
         env:
           POSTGRES_USER: baudrate_db_user
           POSTGRES_PASSWORD: baudrate_database
           POSTGRES_DB: baudrate_test
-        ports:
-          - 5432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -108,58 +124,32 @@ jobs:
           --health-retries 5
 
     steps:
-    - name: Set up asdf
-      uses: ynab/asdf-action@v1.2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
-        version: 0.16.7
-    - uses: actions/checkout@v7
-    - name: Install Erlang and Elixir
-      run: |
-        asdf plugin add erlang
-        asdf plugin add elixir
-        asdf install
-    - name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
-    - name: Restore Cargo cache
-      uses: actions/cache@v6
+        persist-credentials: false
+    - name: Check the CI image matches the pinned toolchain
+      run: ci/image/verify-toolchain.sh
+    - name: Restore dependency and build caches
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
         path: |
-          ~/.cargo/registry
-          ~/.cargo/git
+          deps
           native/*/target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('native/*/Cargo.lock') }}
-        restore-keys: ${{ runner.os }}-cargo-
-    - name: Restore dependencies cache
-      uses: actions/cache@v6
-      with:
-        path: deps
-        key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-        restore-keys: ${{ runner.os }}-mix-
+          /opt/cargo/registry
+        key: ${{ runner.os }}-${{ hashFiles('ci/image/image.lock') }}-${{ hashFiles('**/mix.lock', 'native/*/Cargo.lock') }}
     - name: Install dependencies
       run: mix deps.get
+    # esbuild and Tailwind come from the image (MIX_ESBUILD_PATH, MIX_TAILWIND_PATH).
     - name: Build assets
-      run: |
-        mix assets.setup
-        mix assets.build
-    - name: Restore Selenium cache
-      uses: actions/cache@v6
-      with:
-        path: tmp/selenium
-        key: ${{ runner.os }}-selenium-${{ hashFiles('lib/mix/tasks/selenium_setup.ex') }}
-    # Downloads are verified against pinned SHA-256 checksums.
-    - name: Download Selenium Server and GeckoDriver
-      run: mix selenium.setup
-    - name: Show browser versions
-      run: |
-        firefox --version
-        java -version
-        tmp/selenium/geckodriver --version | head -1
+      run: mix assets.build
     - name: Run browser tests
       run: mix test --only feature --include feature --seed 9527
     - name: Upload failure screenshots
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: wallaby-screenshots
-        path: tmp/wallaby_screenshots/
+        path: |
+          tmp/wallaby_screenshots/
+          /opt/selenium/server.log
         if-no-files-found: ignore

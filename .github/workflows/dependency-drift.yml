@@ -2,6 +2,10 @@
 # .github/dependabot.yml): esbuild/Tailwind binary versions, vendored assets,
 # .tool-versions, and retired Hex packages. Results are kept in one rolling
 # issue, which is closed automatically once everything is current again.
+#
+# `mix hex.audit` runs inside the project's CI image (ci/image/), so no
+# toolchain is installed at run time; the pin checks only need the runner's
+# curl, jq and gh.
 
 name: Dependency drift
 
@@ -12,29 +16,69 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 concurrency:
   group: dependency-drift
   cancel-in-progress: true
 
 jobs:
+  image:
+    name: CI image
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
+    uses: ./.github/workflows/ci-image-ref.yml
+
+  hex-audit:
+    name: Audit Hex packages
+    needs: image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ needs.image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      status: ${{ steps.hex.outputs.status }}
+      report: ${{ steps.hex.outputs.report }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Audit Hex packages for retirements
+        id: hex
+        run: |
+          set +e
+          mix deps.get > /dev/null
+          out=$(mix hex.audit 2>&1)
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          # Base64 keeps arbitrary output intact through the job output.
+          echo "report=$(printf '%s' "$out" | base64 -w0)" >> "$GITHUB_OUTPUT"
+
   drift:
     name: Check untracked dependency pins
+    needs: hex-audit
+    # Still report pin drift when the image or the audit failed.
+    if: ${{ always() }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     env:
       GH_TOKEN: ${{ github.token }}
       GITHUB_TOKEN: ${{ github.token }}
       ISSUE_TITLE: "Dependency drift report"
 
     steps:
-      - uses: actions/checkout@v7
-
-      - name: Set up Erlang and Elixir
-        uses: erlef/setup-beam@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          version-file: .tool-versions
-          version-type: strict
+          persist-credentials: false
 
       - name: Check pinned versions against upstream
         id: pins
@@ -44,13 +88,19 @@ jobs:
           echo "drift=$?" >> "$GITHUB_OUTPUT"
           cat report.md >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Audit Hex packages for retirements
+      - name: Add the Hex audit
         id: hex
+        env:
+          HEX_STATUS: ${{ needs.hex-audit.outputs.status }}
+          HEX_REPORT: ${{ needs.hex-audit.outputs.report }}
         run: |
-          set +e
-          mix deps.get > /dev/null
-          out=$(mix hex.audit 2>&1)
-          status=$?
+          if [ -z "$HEX_STATUS" ]; then
+            out="The audit did not run (CI image verification or the audit job failed)."
+            status=1
+          else
+            out=$(printf '%s' "$HEX_REPORT" | base64 -d)
+            status=$HEX_STATUS
+          fi
           echo "status=$status" >> "$GITHUB_OUTPUT"
           {
             echo
