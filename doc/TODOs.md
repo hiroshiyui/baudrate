@@ -9,46 +9,14 @@ from [ADR 0022](adr/0022-step-up-reauthentication-for-second-factor-changes.md).
 
 ---
 
-## Phase 0: Account recovery prerequisites — HIGH PRIORITY (ships before Phase 1)
+## Phase 0: Account recovery prerequisites — ✅ done
 
-Without these, a user who notices a malicious export request cannot lock the attacker out while
-logged in.
-
-### 0.1 Change password (logged-in)
-
-- `/profile/password`, or a section on `/profile`. Step-up via `Auth.verify_reauthentication/5`
-  behind `RateLimits.check_reauth/1`.
-- New password goes through the existing password rules (`User.password_reset_changeset/2`).
-  Reject reuse of the current password.
-- On success, revoke **all other** sessions and keep the current one, via rotation. Never leave
-  the old session token valid.
-- Always-delivered security notice `password_changed` (add to
-  `Notification.Notification.security_types/0`, helpers text/icon, push, i18n).
-- Tests: wrong password/TOTP refused and recorded; throttle survives reload; other sessions
-  revoked; notice sent; recovery code not accepted.
-
-### 0.2 Sign out everywhere
-
-- Button on `/profile`. Also requires step-up, so a cookie-only attacker cannot use it to kick the
-  real user out while keeping their own session.
-- Revokes every session except the current one (`Sessions`: add `delete_other_sessions/2`).
-- Always-delivered security notice `signed_out_everywhere`.
-- Tests: other sessions invalid immediately (including LiveView sockets on next event / refresh
-  plug), current session kept, notice sent.
-
-### 0.3 `users.totp_enabled_at`
-
-- Migration: `add :totp_enabled_at, :utc_datetime`. Backfill currently TOTP-enabled users with the
-  **migration time**, not `updated_at`. That is conservative: the true enrolment time is unknown,
-  so existing users wait 7 days after the deploy.
-- `SecondFactor.enable_totp/2` sets it; `disable_totp/1` clears it.
-- `Auth.totp_age_at_least?(user, days)` helper.
-
-### 0.4 `articles.deleted_by_id`
-
-- Migration: `add :deleted_by_id, references(:users, on_delete: :nilify_all)`; set in every
-  soft-delete path (author delete, moderator/admin delete, federation `Delete`).
-- Existing soft-deleted rows stay `NULL`, meaning attribution unknown, so the export excludes them.
+Shipped on `current`: logged-in password change (`/profile/password`), sign out everywhere
+(`/profile` → Sessions), session revocation that closes open LiveView sockets
+(`live_socket_id`), `users.totp_enabled_at` with `Auth.totp_enabled_for_at_least?/2`, and
+`articles.deleted_by_id`. See "Session Management" in `doc/development.md`. Phase 1 builds on these:
+`cancel_active_exports/2` must be called from `Auth.change_password/3`,
+`Auth.sign_out_other_sessions/2`, TOTP reset/disable and `ban_user/3`.
 
 ---
 
