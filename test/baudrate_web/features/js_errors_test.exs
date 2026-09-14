@@ -134,6 +134,7 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
         "/search?q=test",
         "/users/#{other.username}",
         "/users/#{user.username}/articles",
+        "/users/#{other.username}/comments",
         "/boards/#{board.slug}",
         "/boards/#{board.slug}/articles/new",
         "/articles/new",
@@ -143,6 +144,10 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
         "/tags/tag",
         "/profile",
         "/profile/password",
+        "/profile/export",
+        "/profile/move",
+        "/profile/totp-reset",
+        "/profile/recovery-codes",
         "/invites",
         "/messages",
         "/messages/new",
@@ -178,10 +183,57 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
     assert crawl(session, public ++ ["/login", "/register"]) == []
   end
 
+  feature "admin pages run without JavaScript errors", %{session: session, user: user} do
+    {session, admin, secret} = log_in_admin_via_browser(session)
+    # The follows page is only for federated boards; nothing is delivered.
+    board = create_board(%{ap_enabled: true})
+
+    {:ok, _} =
+      Baudrate.Moderation.create_report(%{
+        reason: "Spam",
+        reporter_id: user.id,
+        reported_user_id: user.id
+      })
+
+    _pending = setup_user_with_status("pending")
+    {:ok, _code} = Baudrate.Auth.generate_invite_code(admin)
+
+    admin_paths = [
+      "/admin/settings",
+      "/admin/pending-users",
+      "/admin/federation",
+      "/admin/moderation",
+      "/admin/boards",
+      "/admin/users",
+      "/admin/moderation-log",
+      "/admin/invites",
+      "/admin/login-attempts",
+      "/admin/data-exports",
+      "/admin/bots",
+      "/boards/#{board.slug}/follows"
+    ]
+
+    # Pass sudo verification once; the crawl re-visits each page itself.
+    session = visit_admin(session, "/admin/settings", {admin, secret})
+
+    assert crawl(session, admin_paths) == []
+  end
+
+  defp setup_user_with_status(status), do: setup_user("user") |> then(&set_status(&1, status))
+
+  defp set_status(user, status) do
+    user |> Ecto.Changeset.change(status: status) |> Repo.update!()
+  end
+
   defp crawl(session, paths) do
     Enum.flat_map(paths, fn path ->
+      session = visit(session, path)
+
+      # A redirect (e.g. to /login or /admin/verify) would crawl the wrong page.
+      assert current_path(session) == URI.parse(path).path,
+             "#{path} redirected to #{current_path(session)}"
+
       session
-      |> visit(path)
       |> execute_script(@recorder)
       |> execute_script(@remount)
 

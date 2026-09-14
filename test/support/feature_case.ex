@@ -33,7 +33,17 @@ defmodule BaudrateWeb.FeatureCase do
       import BaudrateWeb.ConnCase, only: [setup_user: 1, log_in_user: 2]
 
       import BaudrateWeb.FeatureCase,
-        only: [log_in_via_browser: 2, create_board: 1, create_article: 3]
+        only: [
+          log_in_via_browser: 2,
+          log_in_with_totp_via_browser: 3,
+          log_in_admin_via_browser: 1,
+          visit_admin: 3,
+          enable_totp!: 1,
+          totp_code: 2,
+          create_board: 1,
+          create_article: 3,
+          js_value: 2
+        ]
     end
   end
 
@@ -84,6 +94,99 @@ defmodule BaudrateWeb.FeatureCase do
     |> click(Query.button("Sign In"))
     # Wait for redirect to complete — the home page h1 confirms full auth
     |> assert_has(Query.css("h1", text: "Welcome, #{user.username}!"))
+  end
+
+  @doc """
+  Enables TOTP for `user` with a fresh secret and returns `{user, secret}`.
+
+  Admins and moderators must have TOTP to sign in; the raw `secret` is what
+  `totp_code/2` needs to compute codes in the test.
+  """
+  def enable_totp!(user) do
+    secret = Baudrate.Auth.generate_totp_secret()
+    {:ok, user} = Baudrate.Auth.enable_totp(user, secret)
+    {Baudrate.Repo.preload(user, :role, force: true), secret}
+  end
+
+  @doc """
+  Returns a current TOTP code for `secret`, first clearing the user's
+  single-use marker (ADR 0024) so a second verification within the same
+  30-second period is accepted, as `forget_totp_use/1` does in LiveView tests.
+  """
+  def totp_code(user, secret) do
+    Baudrate.DataCase.forget_totp_use(user)
+    NimbleTOTP.verification_code(secret)
+  end
+
+  @doc """
+  Signs in through the login form and the TOTP verification page, for a user
+  whose TOTP is enabled (`enable_totp!/1`). Works for every role.
+  """
+  def log_in_with_totp_via_browser(session, user, secret) do
+    session
+    |> visit("/login")
+    |> fill_in(Query.css("#login_username"), with: user.username)
+    |> fill_in(Query.css("#login_password"), with: "Password123!x")
+    |> click(Query.button("Sign In"))
+    |> assert_has(Query.css("#totp_code"))
+    |> fill_in(Query.css("#totp_code"), with: totp_code(user, secret))
+    |> click(Query.css("#totp-verify-submit"))
+    |> assert_has(Query.css("#home-welcome-heading"))
+  end
+
+  @doc """
+  Creates an admin with TOTP, signs in through the browser, and returns
+  `{session, admin, secret}` for `visit_admin/3`.
+  """
+  def log_in_admin_via_browser(session) do
+    {admin, secret} = enable_totp!(BaudrateWeb.ConnCase.setup_user("admin"))
+    {log_in_with_totp_via_browser(session, admin, secret), admin, secret}
+  end
+
+  @doc """
+  Visits an `/admin` page, passing the admin sudo verification (`/admin/verify`)
+  with a TOTP code when the page asks for it. `who` is `{user, secret}`.
+  """
+  def visit_admin(session, path, {user, secret}) do
+    session = visit(session, path)
+
+    if String.starts_with?(current_path(session), "/admin/verify") do
+      session
+      |> fill_in(Query.css("#admin_totp_code"), with: totp_code(user, secret))
+      |> click(Query.css("#admin-totp-verify-submit"))
+      # Sudo verification returns to the page that was asked for.
+      |> wait_for_path(path, 50)
+    else
+      session
+    end
+  end
+
+  defp wait_for_path(session, path, 0),
+    do: raise("not redirected to #{path}, at #{current_path(session)}")
+
+  defp wait_for_path(session, path, tries) do
+    if current_path(session) == URI.parse(path).path do
+      session
+    else
+      Process.sleep(100)
+      wait_for_path(session, path, tries - 1)
+    end
+  end
+
+  @doc """
+  Runs `script` (which must `return` a value) in the browser and returns the
+  value.
+  """
+  def js_value(session, script) do
+    parent = self()
+    ref = make_ref()
+    execute_script(session, script, fn value -> send(parent, {ref, value}) end)
+
+    receive do
+      {^ref, value} -> value
+    after
+      5_000 -> raise "no value returned from script"
+    end
   end
 
   @doc """
