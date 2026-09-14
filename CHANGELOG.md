@@ -7,6 +7,100 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.17.0] — 2026-09-14
+
+Users can export their own data, change their password and sign out
+everywhere else. TOTP codes are now single-use and tolerate a code rolling
+over while it is typed.
+
+**Upgrading:**
+
+- **Four migrations** run on deploy: `users.totp_enabled_at` (existing TOTP
+  users are stamped with the migration time), `articles.deleted_by_id`,
+  the `export_requests` table, and `users.totp_last_used_step` plus
+  `login_attempts.factor`. None rewrites existing rows beyond that stamp.
+- **Re-run the nginx role** (`setup-server.yml --tags nginx`), or add the
+  `location /exports/` block from `doc/examples/nginx.conf.example` by hand.
+  Without it nginx may buffer export archives to disk. The deploy playbook
+  does not update nginx.
+- Self-service export needs TOTP enabled for at least 7 days, so users who
+  already have TOTP can export 7 days after the upgrade.
+- Each TOTP code now works once. Signing in on two devices, or confirming two
+  actions, within the same 30 seconds needs two codes. Every code field says
+  so.
+
+### Added
+
+- **Data export** at `/profile/export` (ADR 0023). It is designed against
+  leakage first:
+  - It needs TOTP enabled for at least 7 days, and the password plus a TOTP
+    code both to request and to download.
+  - A request can be downloaded 24 hours later, for 48 hours, at most 3 times.
+    At most 2 requests per 7 days.
+  - While a request is waiting or ready, every page shows a warning banner
+    naming the requesting browser, with "Cancel" and "Cancel and sign out
+    everywhere else". A password change, TOTP reset, sign out everywhere or
+    ban cancels it. Every step sends a notice that cannot be turned off.
+  - No archive is ever stored: the ZIP is built at download time into a
+    private temporary file and deleted after sending.
+  - It contains only what the user wrote and can still see, from explicit
+    field lists. DMs contain only the user's own messages. Content removed by
+    moderators and content in boards the user lost access to are excluded.
+  - Downloads accept only a same-origin page navigation with a 60-second
+    single-use token bound to the session. Every other failure is the same
+    404.
+  - A canary test fails the build if any secret column or other people's data
+    appears in an archive.
+- **SysOp export** for banned users or accounts without TOTP:
+  `bin/baudrate eval "Baudrate.Release.export_user_data(...)"`. It requires an
+  operator and a reason, writes a `0600` file to an owner-only directory
+  outside the web roots, is audited, and notifies the user. `doc/sysop.md`
+  describes identity verification.
+- **`/admin/data-exports`:** a read-only, admin-only history of export
+  requests. There is no way to export another user's data from the web UI.
+- **Change password** at `/profile/password`, behind password plus TOTP. It
+  signs out every other session and sends a `password_changed` notice.
+- **Sign out everywhere else** from `/profile` → Sessions, behind the same
+  check, with a `signed_out_everywhere` notice.
+- **A `totp_login_failed` notice** when the correct password is entered but the
+  TOTP code fails 3 times within an hour at login, pointing the user to change
+  their password.
+- **`/admin/login-attempts` shows what each attempt was for:** password,
+  two-factor code, or re-authentication. Failed two-factor codes follow a
+  correct password.
+
+### Changed
+
+- **TOTP accepts the previous 30-second period too**, so a code that rolls
+  over while the user types it still works (ADR 0024). Codes from a device
+  clock running ahead are still refused.
+- The password policy messages ("must contain a digit", ...) are now
+  translated.
+
+### Security
+
+- **TOTP replay protection never worked.** The login step checked a session
+  key that was never set, so login, admin sudo and step-up re-authentication
+  all accepted an already used code again for the rest of its 30 seconds.
+  Codes are now consumed per account with one conditional update, which also
+  holds under concurrent requests.
+- **Failed TOTP codes at login were not limited per account.** Anyone with the
+  password was bounded only per IP and per resettable cookie. They now count
+  toward the per-account login throttle.
+- **Revoking a session did not close its open pages.** Logout, bans, password
+  resets, eviction and expiry deleted the session row, but an already-open
+  LiveView page (including a banned user's) kept acting until it reconnected.
+  Every revocation now disconnects the session's sockets.
+- `token`, `code` and `secret` parameters are now redacted from logs along
+  with `password`.
+
+### Documentation
+
+- HTTP Signatures accept a `Date` header within ±300 seconds; the SysOp guide,
+  troubleshooting guide and API reference said ±30.
+- The SysOp guide claimed ±30 seconds of TOTP clock-skew tolerance, which was
+  never true. It now describes the actual window.
+
 ## [1.16.0] — 2026-09-14
 
 Users are now told whenever their second factors change, plus fixes to
