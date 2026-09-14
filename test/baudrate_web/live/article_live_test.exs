@@ -1082,6 +1082,72 @@ defmodule BaudrateWeb.ArticleLiveTest do
     assert read.read_at
   end
 
+  describe "remote commenter safety menu" do
+    setup %{article: article} do
+      BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1})
+      uid = System.unique_integer([:positive])
+
+      actor =
+        %Baudrate.Federation.RemoteActor{}
+        |> Baudrate.Federation.RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/rc-#{uid}",
+          username: "rc_#{uid}",
+          domain: "remote.example",
+          public_key_pem: "-----BEGIN PUBLIC KEY-----\nfake\n-----END PUBLIC KEY-----",
+          inbox: "https://remote.example/users/rc-#{uid}/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.insert!()
+
+      {:ok, comment} =
+        Content.create_remote_comment(%{
+          body: "Remote reply",
+          body_html: "<p>Remote reply</p>",
+          ap_id: "https://remote.example/notes/rc-#{uid}",
+          article_id: article.id,
+          remote_actor_id: actor.id
+        })
+
+      %{actor: actor, comment: comment}
+    end
+
+    test "blocking the commenter hides their comments",
+         %{conn: conn, user: user, article: article, actor: actor, comment: comment} do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+      assert has_element?(lv, "#comment-#{comment.id}-block-actor")
+
+      lv |> element("#comment-#{comment.id}-block-actor") |> render_click()
+
+      assert Baudrate.Auth.blocked?(user, actor.ap_id)
+      refute has_element?(lv, "#comment-#{comment.id}-block-actor")
+      assert_push_event(lv, "focus", %{id: "comments-heading"})
+    end
+
+    test "muting the commenter hides their comments",
+         %{conn: conn, user: user, article: article, actor: actor, comment: comment} do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+      lv |> element("#comment-#{comment.id}-mute-actor") |> render_click()
+
+      assert Baudrate.Auth.muted?(user, actor.ap_id)
+      refute has_element?(lv, "#comment-#{comment.id}-mute-actor")
+    end
+
+    test "the commenter's account can be reported",
+         %{conn: conn, article: article, actor: actor, comment: comment} do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      lv |> element("#comment-#{comment.id}-report-actor") |> render_click()
+      assert has_element?(lv, "#report-modal-title", "Report Account")
+      lv |> form("#report-modal form", %{"reason" => "Spam bot"}) |> render_submit()
+
+      assert [%{remote_actor_id: id, comment_id: nil}] =
+               Baudrate.Moderation.list_reports(status: "open")
+
+      assert id == actor.id
+    end
+  end
+
   describe "submit_report with malformed target IDs" do
     test "handles non-numeric article report target gracefully", %{
       conn: conn,

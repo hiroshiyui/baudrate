@@ -785,6 +785,9 @@ defmodule BaudrateWeb.CoreComponents do
         "article" -> gettext("Report Article")
         "comment" -> gettext("Report Comment")
         "user" -> gettext("Report User")
+        "feed_item" -> gettext("Report Post")
+        "message" -> gettext("Report Message")
+        "remote_actor" -> gettext("Report Account")
         _ -> gettext("Report")
       end
 

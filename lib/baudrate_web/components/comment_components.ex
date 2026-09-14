@@ -255,7 +255,7 @@ defmodule BaudrateWeb.CommentComponents do
             </button>
             <ul
               tabindex="0"
-              class="comment-actions-menu-list dropdown-content menu bg-base-200 rounded-box z-10 w-40 p-2 shadow-sm"
+              class="comment-actions-menu-list dropdown-content menu bg-base-200 rounded-box z-10 w-56 p-2 shadow-sm"
             >
               <li>
                 <button
@@ -269,6 +269,11 @@ defmodule BaudrateWeb.CommentComponents do
                   {gettext("Report")}
                 </button>
               </li>
+              <BaudrateWeb.SafetyComponents.remote_actor_safety_items
+                :if={@comment.remote_actor}
+                actor={@comment.remote_actor}
+                id_prefix={"comment-#{@comment.id}"}
+              />
             </ul>
           </div>
         </div>

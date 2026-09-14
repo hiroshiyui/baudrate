@@ -587,6 +587,47 @@
             >
               <.icon name="hero-arrow-uturn-right" class="size-4" />
             </button>
+            <div
+              id={"feed-item-actions-menu-#{item.feed_item.id}"}
+              class="feed-item-actions-menu dropdown dropdown-end ml-auto"
+            >
+              <button
+                type="button"
+                tabindex="0"
+                id={"feed-item-actions-menu-toggle-#{item.feed_item.id}"}
+                class="feed-item-actions-menu-toggle btn btn-ghost btn-xs btn-circle"
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-label={gettext("More actions")}
+              >
+                <.icon name="hero-ellipsis-vertical" class="size-4" />
+              </button>
+              <ul
+                tabindex="0"
+                class="feed-item-actions-menu-list dropdown-content menu bg-base-200 rounded-box z-10 w-56 p-2 shadow-sm"
+              >
+                <li>
+                  <button
+                    type="button"
+                    id={"feed-item-report-#{item.feed_item.id}"}
+                    class="feed-item-report"
+                    phx-click="open_report_modal"
+                    phx-value-type="feed_item"
+                    phx-value-id={item.feed_item.id}
+                    phx-value-label={
+                      String.slice(item.feed_item.title || item.feed_item.body || "", 0..100)
+                    }
+                  >
+                    <.icon name="hero-flag" class="size-4" />
+                    {gettext("Report post")}
+                  </button>
+                </li>
+                <BaudrateWeb.SafetyComponents.remote_actor_safety_items
+                  actor={item.feed_item.remote_actor}
+                  id_prefix={"feed-item-#{item.feed_item.id}"}
+                />
+              </ul>
+            </div>
           </div>
 
           <%!-- Forward search panel --%>
@@ -1402,3 +1443,12 @@
     </div>
   </aside>
 </div>
+
+<.report_modal
+  :if={@show_report_modal}
+  show={@show_report_modal}
+  target_type={@report_target_type}
+  target_label={@report_target_label}
+  on_close="close_report_modal"
+  on_submit="submit_report"
+/>

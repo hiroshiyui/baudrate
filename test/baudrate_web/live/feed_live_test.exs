@@ -67,6 +67,99 @@ defmodule BaudrateWeb.FeedLiveTest do
     item
   end
 
+  describe "safety menu on remote feed items" do
+    setup do
+      BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1})
+      :ok
+    end
+
+    test "reports the post", %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      item = create_feed_item(actor)
+
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      lv |> element("#feed-item-report-#{item.id}") |> render_click()
+      assert has_element?(lv, "#report-modal-title", "Report Post")
+
+      lv |> form("#report-modal form", %{"reason" => "Spam"}) |> render_submit()
+
+      assert [report] = Baudrate.Moderation.list_reports(status: "open")
+      assert report.feed_item_id == item.id
+      assert report.remote_actor_id == actor.id
+      refute has_element?(lv, "#report-modal")
+    end
+
+    test "reports the author", %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      item = create_feed_item(actor)
+
+      {:ok, lv, _html} = live(conn, "/feed")
+
+      lv |> element("#feed-item-#{item.id}-report-actor") |> render_click()
+      lv |> form("#report-modal form", %{"reason" => "Fake account"}) |> render_submit()
+
+      assert [%{remote_actor_id: actor_id, feed_item_id: nil}] =
+               Baudrate.Moderation.list_reports(status: "open")
+
+      assert actor_id == actor.id
+    end
+
+    test "blocking the author removes the follow and hides the items",
+         %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      item = create_feed_item(actor)
+
+      {:ok, lv, _html} = live(conn, "/feed")
+      assert has_element?(lv, "#feed-item-fi-#{item.id}")
+
+      lv |> element("#feed-item-#{item.id}-block-actor") |> render_click()
+
+      assert Baudrate.Auth.blocked?(user, actor.ap_id)
+      refute Federation.user_follows?(user.id, actor.id)
+      refute has_element?(lv, "#feed-item-fi-#{item.id}")
+      assert_push_event(lv, "focus", %{id: "feed-heading"})
+    end
+
+    test "blocks and reports are refused when rate limited", %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      item = create_feed_item(actor)
+
+      {:ok, lv, _html} = live(conn, "/feed")
+      BaudrateWeb.RateLimiter.Sandbox.set_global_response({:deny, 1_000})
+
+      assert lv |> element("#feed-item-#{item.id}-block-actor") |> render_click() =~
+               "Too many actions"
+
+      refute Baudrate.Auth.blocked?(user, actor.ap_id)
+
+      lv |> element("#feed-item-report-#{item.id}") |> render_click()
+
+      assert lv |> form("#report-modal form", %{"reason" => "Spam"}) |> render_submit() =~
+               "Too many reports"
+
+      assert Baudrate.Moderation.list_reports(status: "open") == []
+    end
+
+    test "muting the author hides the items but keeps the follow",
+         %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      item = create_feed_item(actor)
+
+      {:ok, lv, _html} = live(conn, "/feed")
+      lv |> element("#feed-item-#{item.id}-mute-actor") |> render_click()
+
+      assert Baudrate.Auth.muted?(user, actor.ap_id)
+      assert Federation.user_follows?(user.id, actor.id)
+      refute has_element?(lv, "#feed-item-fi-#{item.id}")
+    end
+  end
+
   describe "page loads" do
     test "authenticated user sees feed page", %{conn: conn} do
       {:ok, _lv, html} = live(conn, "/feed")

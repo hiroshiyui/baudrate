@@ -22,6 +22,7 @@ defmodule BaudrateWeb.ArticleLive do
   alias BaudrateWeb.OpenGraph
   alias BaudrateWeb.RateLimits
   alias BaudrateWeb.InteractionHelpers
+  alias BaudrateWeb.SafetyActions
   import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1]
 
   @impl true
@@ -666,6 +667,25 @@ defmodule BaudrateWeb.ArticleLive do
     end
   end
 
+  # Blocking or muting a remote commenter hides their comments, so the thread
+  # is reloaded and focus moves to the comments heading.
+  @impl true
+  def handle_event(event, %{"id" => id}, socket)
+      when event in ["block_remote_actor", "mute_remote_actor"] do
+    action = if event == "block_remote_actor", do: :block, else: :mute
+
+    case SafetyActions.remote_actor_action(socket, action, id) do
+      {:ok, socket} ->
+        {:noreply,
+         socket
+         |> load_comments(socket.assigns.comment_page)
+         |> push_event("focus", %{id: "comments-heading"})}
+
+      {:error, socket} ->
+        {:noreply, socket}
+    end
+  end
+
   @impl true
   def handle_event("change_vote", _params, socket) do
     {:noreply, assign(socket, :has_voted, false)}
@@ -695,6 +715,14 @@ defmodule BaudrateWeb.ArticleLive do
 
   @impl true
   def handle_event("submit_report", %{"reason" => reason}, socket) do
+    if socket.assigns.report_target_type in SafetyActions.report_types() do
+      {:noreply, SafetyActions.submit_report(socket, reason)}
+    else
+      submit_content_report(socket, reason)
+    end
+  end
+
+  defp submit_content_report(socket, reason) do
     user = socket.assigns.current_user
 
     case RateLimits.check_create_report(user.id) do

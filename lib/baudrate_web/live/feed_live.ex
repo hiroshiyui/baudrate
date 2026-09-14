@@ -12,6 +12,9 @@ defmodule BaudrateWeb.FeedLive do
   article. Also provides inline reply forms for responding to remote feed
   items via ActivityPub. Subscribes to `Federation.PubSub` for real-time
   updates.
+
+  Each remote feed item has a "More actions" menu to report the post, and to
+  mute, block or report its author (`BaudrateWeb.SafetyActions`).
   """
 
   use BaudrateWeb, :live_view
@@ -25,6 +28,7 @@ defmodule BaudrateWeb.FeedLive do
   alias Baudrate.Federation.PubSub, as: FederationPubSub
   alias BaudrateWeb.RateLimits
   alias BaudrateWeb.InteractionHelpers
+  alias BaudrateWeb.SafetyActions
 
   import BaudrateWeb.Helpers,
     only: [parse_page: 1, parse_id: 1, translate_role: 1, translate_object_type: 1]
@@ -59,6 +63,7 @@ defmodule BaudrateWeb.FeedLive do
         uploaded_reply_images: [],
         feed_live_status: ""
       )
+      |> SafetyActions.assign_report_modal()
       |> then(fn s ->
         if can_post do
           s
@@ -406,6 +411,33 @@ defmodule BaudrateWeb.FeedLive do
                 )
             end
         end
+    end
+  end
+
+  def handle_event("open_report_modal", params, socket),
+    do: {:noreply, SafetyActions.open_report_modal(socket, params)}
+
+  def handle_event("close_report_modal", _params, socket),
+    do: {:noreply, SafetyActions.assign_report_modal(socket)}
+
+  def handle_event("submit_report", %{"reason" => reason}, socket),
+    do: {:noreply, SafetyActions.submit_report(socket, reason)}
+
+  # Blocking or muting hides the account's items, so the page is reloaded and
+  # focus moves to the feed heading (the control that had focus is gone).
+  def handle_event(event, %{"id" => id}, socket)
+      when event in ["block_remote_actor", "mute_remote_actor"] do
+    action = if event == "block_remote_actor", do: :block, else: :mute
+
+    case SafetyActions.remote_actor_action(socket, action, id) do
+      {:ok, socket} ->
+        {:noreply,
+         socket
+         |> push_patch(to: ~p"/feed?page=#{socket.assigns.page}")
+         |> push_event("focus", %{id: "feed-heading"})}
+
+      {:error, socket} ->
+        {:noreply, socket}
     end
   end
 

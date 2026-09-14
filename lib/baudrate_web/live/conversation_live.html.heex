@@ -18,10 +18,40 @@
     <h1
       :if={@mode != :select_recipient}
       id="conversation-heading"
-      class="conversation-heading text-xl font-bold"
+      class="conversation-heading text-xl font-bold break-words min-w-0"
     >
       {participant_name(@other_participant)}
     </h1>
+    <div
+      :if={
+        @mode == :conversation and match?(%Baudrate.Federation.RemoteActor{}, @other_participant)
+      }
+      id="conversation-actions-menu"
+      class="conversation-actions-menu dropdown dropdown-end ml-auto"
+    >
+      <button
+        type="button"
+        tabindex="0"
+        id="conversation-actions-menu-toggle"
+        class="conversation-actions-menu-toggle btn btn-ghost btn-sm btn-circle"
+        aria-haspopup="true"
+        aria-expanded="false"
+        aria-label={gettext("More actions")}
+      >
+        <.icon name="hero-ellipsis-vertical" class="size-5" />
+      </button>
+      <ul
+        tabindex="0"
+        class="conversation-actions-menu-list dropdown-content menu bg-base-200 rounded-box z-10 w-56 p-2 shadow-sm"
+      >
+        <BaudrateWeb.SafetyComponents.remote_actor_safety_items
+          actor={@other_participant}
+          id_prefix="conversation"
+          muted={@other_muted}
+          blocked={@other_blocked}
+        />
+      </ul>
+    </div>
   </div>
 
   <%= if @mode == :select_recipient do %>
@@ -186,6 +216,21 @@
               preview={msg.link_preview}
             />
           </div>
+          <div :if={msg.sender_user_id != @current_user.id} class="chat-footer">
+            <button
+              id={"message-report-#{msg.id}"}
+              type="button"
+              class="message-report btn btn-ghost btn-xs"
+              phx-click="open_report_modal"
+              phx-value-type="message"
+              phx-value-id={msg.id}
+              phx-value-label={String.slice(msg.body || "", 0..100)}
+              aria-label={gettext("Report this message")}
+            >
+              <.icon name="hero-flag" class="size-3" />
+              {gettext("Report")}
+            </button>
+          </div>
           <div :if={msg.sender_user_id == @current_user.id} class="chat-footer">
             <button
               id={"message-delete-#{msg.id}"}
@@ -234,3 +279,12 @@
     </div>
   <% end %>
 </div>
+
+<.report_modal
+  :if={@mode == :conversation}
+  show={@show_report_modal}
+  target_type={@report_target_type}
+  target_label={@report_target_label}
+  on_close="close_report_modal"
+  on_submit="submit_report"
+/>

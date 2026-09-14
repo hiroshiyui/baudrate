@@ -207,4 +207,77 @@ defmodule BaudrateWeb.ConversationLiveTest do
       refute render(view) =~ "Delete this"
     end
   end
+
+  describe "safety controls" do
+    setup do
+      BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1})
+      :ok
+    end
+
+    test "a received message can be reported, one's own cannot",
+         %{conn: conn, user: user, other: other} do
+      {:ok, conv} = Messaging.find_or_create_conversation(user, other)
+      {:ok, mine} = Messaging.create_message(conv, user, %{body: "Hello"})
+      {:ok, theirs} = Messaging.create_message(conv, other, %{body: "Go away"})
+
+      conn = log_in_user(conn, user)
+      {:ok, view, _html} = live(conn, "/messages/#{conv.id}")
+
+      refute has_element?(view, "#message-report-#{mine.id}")
+      refute has_element?(view, "#conversation-actions-menu")
+
+      view |> element("#message-report-#{theirs.id}") |> render_click()
+      assert has_element?(view, "#report-modal-title", "Report Message")
+      view |> form("#report-modal form", %{"reason" => "Rude"}) |> render_submit()
+
+      assert [report] = Baudrate.Moderation.list_reports(status: "open")
+      assert report.message_body == "Go away"
+      assert report.reported_user_id == other.id
+    end
+
+    test "a remote participant can be muted, blocked and unblocked from the header",
+         %{conn: conn, user: user} do
+      uid = System.unique_integer([:positive])
+
+      actor =
+        %Baudrate.Federation.RemoteActor{}
+        |> Baudrate.Federation.RemoteActor.changeset(%{
+          ap_id: "https://remote.example/users/dm-#{uid}",
+          username: "dm_#{uid}",
+          domain: "remote.example",
+          public_key_pem: "-----BEGIN PUBLIC KEY-----\nfake\n-----END PUBLIC KEY-----",
+          inbox: "https://remote.example/users/dm-#{uid}/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Baudrate.Repo.insert!()
+
+      {:ok, message} =
+        Messaging.receive_remote_dm(user, actor, %{
+          body: "Hi",
+          body_html: "<p>Hi</p>",
+          ap_id: "https://remote.example/dms/#{uid}"
+        })
+
+      conn = log_in_user(conn, user)
+      {:ok, view, _html} = live(conn, "/messages/#{message.conversation_id}")
+
+      view |> element("#conversation-mute-actor") |> render_click()
+      assert Baudrate.Auth.muted?(user, actor.ap_id)
+      assert has_element?(view, "#conversation-unmute-actor")
+
+      view |> element("#conversation-block-actor") |> render_click()
+      assert Baudrate.Auth.blocked?(user, actor.ap_id)
+      assert has_element?(view, "#conversation-unblock-actor")
+      assert_push_event(view, "focus", %{id: "conversation-actions-menu-toggle"})
+
+      view |> element("#conversation-unblock-actor") |> render_click()
+      refute Baudrate.Auth.blocked?(user, actor.ap_id)
+
+      view |> element("#conversation-report-actor") |> render_click()
+      view |> form("#report-modal form", %{"reason" => "Spam"}) |> render_submit()
+      assert [%{remote_actor_id: id}] = Baudrate.Moderation.list_reports(status: "open")
+      assert id == actor.id
+    end
+  end
 end

@@ -3,7 +3,10 @@ defmodule BaudrateWeb.ConversationLive do
   LiveView for a single conversation thread (`/messages/:id` or `/messages/new?to=username`).
 
   Displays messages as bubbles with sender alignment, supports sending new
-  messages, deleting own messages, and auto-marks messages as read.
+  messages, deleting own messages, and auto-marks messages as read. Each
+  received message can be reported (only that message's text reaches the
+  moderators), and a conversation with a remote actor has a menu to mute,
+  block or report the actor (`BaudrateWeb.SafetyActions`).
   Subscribes to conversation-level PubSub for real-time updates.
 
   When navigated to `/messages/new` without a `?to=` param, renders a
@@ -17,6 +20,7 @@ defmodule BaudrateWeb.ConversationLive do
   alias Baudrate.Messaging
   alias Baudrate.Messaging.PubSub, as: MessagingPubSub
   alias BaudrateWeb.RateLimits
+  alias BaudrateWeb.SafetyActions
   import BaudrateWeb.Helpers, only: [parse_id: 1, participant_name: 1]
 
   # Messages loaded when the page opens, and per "Load older messages" click.
@@ -63,6 +67,8 @@ defmodule BaudrateWeb.ConversationLive do
       |> assign(:new_conversation, false)
       |> assign(:page_title, participant_name(other))
       |> assign(:message_form, to_form(%{"body" => ""}, as: :message))
+      |> assign_other_safety_state()
+      |> SafetyActions.assign_report_modal()
 
     {:ok, socket}
   end
@@ -187,6 +193,39 @@ defmodule BaudrateWeb.ConversationLive do
     end
   end
 
+  @impl true
+  def handle_event("open_report_modal", params, socket),
+    do: {:noreply, SafetyActions.open_report_modal(socket, params)}
+
+  @impl true
+  def handle_event("close_report_modal", _params, socket),
+    do: {:noreply, SafetyActions.assign_report_modal(socket)}
+
+  @impl true
+  def handle_event("submit_report", %{"reason" => reason}, socket),
+    do: {:noreply, SafetyActions.submit_report(socket, reason)}
+
+  # The conversation stays on screen after these, so the menu switches to the
+  # matching undo control and keeps focus on its toggle.
+  @impl true
+  def handle_event(event, %{"id" => id}, socket)
+      when event in ~w(block_remote_actor unblock_remote_actor mute_remote_actor unmute_remote_actor) do
+    action =
+      case event do
+        "block_remote_actor" -> :block
+        "unblock_remote_actor" -> :unblock
+        "mute_remote_actor" -> :mute
+        "unmute_remote_actor" -> :unmute
+      end
+
+    {_result, socket} = SafetyActions.remote_actor_action(socket, action, id)
+
+    {:noreply,
+     socket
+     |> assign_other_safety_state()
+     |> push_event("focus", %{id: "conversation-actions-menu-toggle"})}
+  end
+
   defp do_delete_message(socket, msg_id) do
     user = socket.assigns.current_user
 
@@ -237,6 +276,22 @@ defmodule BaudrateWeb.ConversationLive do
   def handle_info(_msg, socket), do: {:noreply, socket}
 
   # --- Private helpers ---
+
+  # Mute and block state for a remote participant, shown in the header menu.
+  defp assign_other_safety_state(socket) do
+    case socket.assigns.other_participant do
+      %Baudrate.Federation.RemoteActor{ap_id: ap_id} ->
+        user = socket.assigns.current_user
+
+        assign(socket,
+          other_muted: Auth.muted?(user, ap_id),
+          other_blocked: Auth.blocked?(user, ap_id)
+        )
+
+      _ ->
+        assign(socket, other_muted: false, other_blocked: false)
+    end
+  end
 
   defp assign_messages(socket, messages) do
     has_older =
