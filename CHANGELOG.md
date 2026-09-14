@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.19.0] — 2026-09-14
+
+Members can protect themselves without asking staff: blocking now actually
+stops interaction, and remote accounts, feed posts and received messages can
+be muted, blocked or reported where they appear (Phase 1A).
+
+**Upgrading:**
+
+- One migration: `reports.feed_item_id`, `reports.message_id` and
+  `reports.message_body`.
+- Blocks created before this release (there was no control for them, so
+  normally none exist) are not revisited: their follows stay until the block is
+  removed and made again. New interactions between the accounts are refused
+  from now on.
+
+### Added
+
+- **Block and unblock users from their profile** ("More actions" menu). While
+  blocked, Follow and Message are hidden.
+- **Blocked Accounts list on `/profile`**, with an unblock control per account.
+  Remote accounts in the blocked and muted lists show as `@user@domain`.
+- **Mute, block and report remote accounts** from the menu of remote feed
+  items and remote comments, and from the header of a conversation with a
+  remote account.
+- **Report feed posts and received direct messages.** A message report keeps a
+  copy of that one message for moderators, who never see the rest of the
+  conversation; the copy survives the sender deleting the message. The
+  moderation queue shows both, and "Send Flag" includes the reported objects.
+
+### Changed
+
+- **A block stops interaction in both directions** ([ADR 0026](doc/adr/0026-blocks-stop-interaction-locally.md)).
+  Neither account can reply to, like, boost, forward or follow the other, or
+  message it; undoing an earlier like or boost still works. Blocking removes
+  follows both ways (`Undo(Follow)` and `Reject(Follow)` for remote accounts).
+  A blocked remote account's follow is rejected and its likes, boosts and
+  replies on the blocker's posts are dropped. No `Block` activity is sent.
+- A duplicate report now means the same exact target: reporting one of an
+  account's posts no longer prevents reporting the account.
+
+### Removed
+
+- The unused builders for outbound `Block` / `Undo(Block)` activities. The
+  documentation claimed they were sent; they never were.
+
 ## [1.18.2] — 2026-09-14
 
 Fixes from a product review: domain blocks, the audit log, reports from other
