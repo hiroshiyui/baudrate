@@ -25,5 +25,5 @@ keep_releases: 5
 asdf_version: "0.16.7"
 
 # Erlang/Elixir versions (match .tool-versions)
-erlang_version: "28.3.1"
+erlang_version: "28.5.0.6"
 elixir_version: "1.19.5"
