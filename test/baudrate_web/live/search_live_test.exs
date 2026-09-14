@@ -309,9 +309,8 @@ defmodule BaudrateWeb.SearchLiveTest do
       end
 
       {:ok, lv, _html} = live(conn, "/search?q=Backscroll&page=2")
-      # Mount→handle_params on page 2 transitions from assigned default page=1 → 2,
-      # so the very first render does fire the event. Drain it.
-      assert_push_event(lv, "scroll-to-top", %{})
+      # Opening a deep page directly is an initial load: nothing to scroll.
+      refute_push_event(lv, "scroll-to-top", %{})
 
       assert render_patch(lv, "/search?q=Backscroll&page=1")
       assert_push_event(lv, "scroll-to-top", %{})

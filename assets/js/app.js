@@ -282,6 +282,10 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
+// Set by the phx:scroll-to-top handler (pagination) so the focus handler below
+// moves focus into the list the page scrolled to, not the first focus target.
+let paginationFocusTarget = null
+
 // Auto-focus first content item after LiveView client-side navigation.
 // Skips initial page load and pages with autofocus inputs (e.g., search).
 ;(() => {
@@ -293,10 +297,13 @@ window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
       return
     }
 
-    const main = document.getElementById("main-content")
-    if (!main || main.querySelector("[autofocus]")) return
+    const paginated = paginationFocusTarget
+    paginationFocusTarget = null
 
-    const target = main.querySelector("[data-focus-target]")
+    const main = document.getElementById("main-content")
+    if (!main || (!paginated && main.querySelector("[autofocus]"))) return
+
+    const target = paginated || main.querySelector("[data-focus-target]")
     if (!target) return
 
     const focusable = target.querySelector(
@@ -344,13 +351,19 @@ window.addEventListener("phx:focus", (e) => {
   document.addEventListener("DOMContentLoaded", updateFab)
 })()
 
-// Scroll to the first content item when the server signals a pagination navigation.
-// Fired before phx:page-loading-stop, so the focus handler runs after without
-// fighting the scroll position.
+// Scroll to the paginated list when the page number changes
+// (`BaudrateWeb.PaginationScrollHook`, on every paginated page): the pager's
+// `data-scroll-target` element (e.g. an article's comments) or else the page's
+// `[data-focus-target]`. Fired before phx:page-loading-stop, so the focus
+// handler runs after it, moves focus into the same element, and does not
+// fight the scroll position.
 window.addEventListener("phx:scroll-to-top", () => {
   const main = document.getElementById("main-content")
-  const target = main?.querySelector("[data-focus-target]")
+  if (!main) return
+  const scrollId = main.querySelector(".pagination-nav[data-scroll-target]")?.dataset.scrollTarget
+  const target = (scrollId && document.getElementById(scrollId)) || main.querySelector("[data-focus-target]")
   if (!target) return
+  paginationFocusTarget = target
   const headerHeight = document.getElementById("site-header")?.offsetHeight ?? 0
   const top = target.getBoundingClientRect().top + window.scrollY - headerHeight
   window.scrollTo({ top, behavior: "instant" })

@@ -58,6 +58,10 @@ defmodule BaudrateWeb do
         on_mount BaudrateWeb.SandboxHook
       end
 
+      # Every LiveView scrolls back to its list when `?page` changes, so a new
+      # paginated page cannot forget to (see BaudrateWeb.PaginationScrollHook).
+      on_mount BaudrateWeb.PaginationScrollHook
+
       unquote(html_helpers())
     end
   end

@@ -668,7 +668,9 @@ defmodule BaudrateWeb.CoreComponents do
   @doc """
   Renders a pagination control using DaisyUI join buttons.
 
-  Uses `patch` navigation so LiveView updates without full reload.
+  Uses `patch` navigation so LiveView updates without full reload. After the
+  page changes, `BaudrateWeb.PaginationScrollHook` scrolls to `scroll_target`
+  (an element id) or, without one, to the page's `[data-focus-target]`.
 
   ## Examples
 
@@ -679,6 +681,11 @@ defmodule BaudrateWeb.CoreComponents do
   attr :path, :string, required: true
   attr :params, :map, default: %{}
 
+  attr :scroll_target, :string,
+    default: nil,
+    doc:
+      "id of the element to scroll to after a page change (default: the page's data-focus-target)"
+
   def pagination(assigns) do
     assigns = assign(assigns, :page_range, pagination_range(assigns.page, assigns.total_pages))
 
@@ -687,6 +694,7 @@ defmodule BaudrateWeb.CoreComponents do
       :if={@total_pages > 1}
       aria-label={gettext("Pagination")}
       class="pagination-nav flex justify-center mt-6"
+      data-scroll-target={@scroll_target}
     >
       <div class="join">
         <.link

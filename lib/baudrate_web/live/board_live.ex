@@ -72,7 +72,6 @@ defmodule BaudrateWeb.BoardLive do
   @impl true
   def handle_params(params, _uri, socket) do
     page = parse_page(params["page"])
-    is_paginating = Map.has_key?(socket.assigns, :page)
 
     result =
       Content.paginate_articles_for_board(socket.assigns.board,
@@ -103,8 +102,6 @@ defmodule BaudrateWeb.BoardLive do
         article_like_counts: Content.article_like_counts(article_ids),
         article_boost_counts: Content.article_boost_counts(article_ids)
       )
-
-    socket = if is_paginating, do: push_event(socket, "scroll-to-top", %{}), else: socket
 
     {:noreply, socket}
   end

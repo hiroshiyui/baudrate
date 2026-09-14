@@ -62,6 +62,37 @@ defmodule BaudrateWeb.Features.FeedPaginationTest do
     |> assert_has(Query.css(".pagination-current", text: "2"))
   end
 
+  feature "paging from the bottom scrolls back to the top of the list", %{
+    session: session,
+    user: user
+  } do
+    session =
+      session
+      |> log_in_via_browser(user)
+      |> visit("/feed")
+      |> execute_script("window.scrollTo(0, document.body.scrollHeight)")
+      |> click(Query.css(".pagination-page", text: "2"))
+      |> assert_has(Query.css(".pagination-current", text: "2"))
+
+    # Let the scroll-to-top event and the focus handler run.
+    Process.sleep(300)
+
+    execute_script(
+      session,
+      """
+      const list = document.getElementById("feed-items");
+      const header = document.getElementById("site-header");
+      return [Math.round(list.getBoundingClientRect().top - (header ? header.offsetHeight : 0)),
+              list.contains(document.activeElement)];
+      """,
+      fn value -> send(self(), {:scroll, value}) end
+    )
+
+    assert_receive {:scroll, [offset, focus_inside]}
+    assert abs(offset) <= 2
+    assert focus_inside
+  end
+
   feature "@mention autocomplete suggests in the feed composer", %{session: session, user: user} do
     other = setup_user("user")
     prefix = String.slice(other.username, 0, 6)

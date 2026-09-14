@@ -69,7 +69,6 @@ defmodule BaudrateWeb.SearchLive do
         else: "articles"
 
     page = parse_page(params["page"])
-    is_paginating = page != socket.assigns[:page]
 
     socket =
       socket
@@ -138,9 +137,6 @@ defmodule BaudrateWeb.SearchLive do
             else
               socket
             end
-
-          socket =
-            if is_paginating, do: push_event(socket, "scroll-to-top", %{}), else: socket
 
           {:noreply, socket}
       end
