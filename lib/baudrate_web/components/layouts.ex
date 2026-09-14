@@ -392,6 +392,7 @@ defmodule BaudrateWeb.Layouts do
     >
       <div class={["mx-auto space-y-4", if(assigns[:wide_layout], do: "max-w-7xl", else: "max-w-6xl")]}>
         <.data_export_banner :if={assigns[:active_data_export]} request={@active_data_export} />
+        <.account_move_banner :if={assigns[:active_account_move]} summary={@active_account_move} />
         {@inner_content}
       </div>
     </main>
@@ -454,6 +455,56 @@ defmodule BaudrateWeb.Layouts do
         id="data-export-banner-link"
         navigate={~p"/profile/export"}
         class="data-export-banner-link btn btn-sm"
+      >
+        {gettext("Review")}
+      </.link>
+    </aside>
+    """
+  end
+
+  @doc """
+  Warning shown on every page while a move of the user's account is pending
+  (ADR 0025).
+
+  It cannot be dismissed. It names the destination, the requesting browser
+  family and when the `Move` will be sent, so a user whose account was taken
+  over notices during the 24-hour wait and can cancel it.
+  """
+  attr :summary, :map, required: true
+
+  def account_move_banner(assigns) do
+    ~H"""
+    <aside
+      id="account-move-banner"
+      class="account-move-banner alert alert-warning"
+      aria-labelledby="account-move-banner-heading"
+    >
+      <.icon name="hero-shield-exclamation" class="size-5 shrink-0" />
+      <div class="min-w-0 space-y-1">
+        <h2 id="account-move-banner-heading" class="account-move-banner-heading font-semibold">
+          {gettext("Your account is about to move to %{account}", account: @summary.label)}
+        </h2>
+        <p id="account-move-banner-text" class="account-move-banner-text text-sm break-words">
+          <%= if @summary.move.requested_user_agent_family do %>
+            {gettext(
+              "Requested %{time} from %{browser}. Your followers will be moved after %{send_time}. If this was not you, cancel it now.",
+              time: format_datetime(@summary.move.requested_at),
+              browser: @summary.move.requested_user_agent_family,
+              send_time: format_datetime(@summary.move.send_after)
+            )}
+          <% else %>
+            {gettext(
+              "Requested %{time}. Your followers will be moved after %{send_time}. If this was not you, cancel it now.",
+              time: format_datetime(@summary.move.requested_at),
+              send_time: format_datetime(@summary.move.send_after)
+            )}
+          <% end %>
+        </p>
+      </div>
+      <.link
+        id="account-move-banner-link"
+        navigate={~p"/profile/move"}
+        class="account-move-banner-link btn btn-sm"
       >
         {gettext("Review")}
       </.link>

@@ -179,6 +179,7 @@ defmodule Baudrate.Federation.ActorResolver do
          shared_inbox: get_in(json, ["endpoints", "sharedInbox"]),
          actor_type: actor_type,
          also_known_as: extract_also_known_as(json),
+         moved_to_ap_id: extract_moved_to(json),
          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
        }}
     end
@@ -196,6 +197,13 @@ defmodule Baudrate.Federation.ActorResolver do
 
   defp extract_also_known_as(%{"alsoKnownAs" => aka}) when is_binary(aka), do: [aka]
   defp extract_also_known_as(_), do: []
+
+  # `movedTo` on an actor document: the account moved there. A move target
+  # that has itself moved is refused (ADR 0025). https only, bounded.
+  defp extract_moved_to(%{"movedTo" => "https://" <> _ = uri}) when byte_size(uri) <= 2048,
+    do: uri
+
+  defp extract_moved_to(_), do: nil
 
   # Reject a weak or non-RSA key before the actor is cached, so the row never
   # exists rather than failing every later signature verification. The same

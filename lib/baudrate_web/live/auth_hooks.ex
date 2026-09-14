@@ -74,6 +74,11 @@ defmodule BaudrateWeb.AuthHooks do
                 :active_data_export,
                 Baudrate.DataPortability.active_request_summary(user.id)
               )
+              # Warning banner while an account move is pending (ADR 0025).
+              |> assign(
+                :active_account_move,
+                Baudrate.AccountMigration.active_move_summary(user.id)
+              )
               |> MarkdownPreviewHook.attach()
               |> UnreadDmCountHook.attach(user)
               |> UnreadNotificationCountHook.attach(user)
@@ -112,6 +117,11 @@ defmodule BaudrateWeb.AuthHooks do
               |> assign(
                 :active_data_export,
                 Baudrate.DataPortability.active_request_summary(user.id)
+              )
+              # Warning banner while an account move is pending (ADR 0025).
+              |> assign(
+                :active_account_move,
+                Baudrate.AccountMigration.active_move_summary(user.id)
               )
               |> MarkdownPreviewHook.attach()
               |> UnreadDmCountHook.attach(user)

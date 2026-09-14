@@ -1269,7 +1269,13 @@ rules; `/profile/move` (`AccountMigrationLive`) only collects input.
 | Step-up | `/profile/move` unlocks alias changes for 5 minutes after `Auth.verify_reauthentication/5`, held in socket assigns and re-checked by every handler (the ADR 0022 pattern). Lookups run in `start_async/3` behind `RateLimits.check_account_alias/1` (10/hour per user) |
 | Notices | `account_alias_added` / `account_alias_removed`, always delivered, link to `/profile/move` |
 | `users.moved_to` / `moved_at` | Set when a move is sent; published as `movedTo`. `AccountMigration.moved?/1` |
-| `remote_actors.moved_to_ap_id` / `moved_at` | The last processed inbound `Move` per origin actor |
+| `remote_actors.moved_to_ap_id` / `moved_at` | Where a remote actor moved: its `movedTo` (parsed by `ActorResolver`) or the target of the last processed `Move`. `moved_at` is set only when a `Move` is processed |
+| `AccountMigration.move_eligibility/1` | The data export gate (active, non-bot, TOTP ≥ 7 days), plus: not moved, no admin/moderator role, not a board moderator, no move sent in the last 30 days |
+| `AccountMigration.verify_move_target/2` | Resolves like an alias, then force-refreshes (`ActorResolver.refresh/1`): a `Person` listing this account in `alsoKnownAs`, without `movedTo` |
+| `AccountMigration.request_move/4` | Eligibility → no pending move → target (network) → step-up re-authentication inside the context → `account_moves` row (`pending`, `send_after` = +24 h) → `account_move_requested` notice |
+| `AccountMove` | `account_moves` rows: `pending`/`sent`/`cancelled`/`failed`, one pending per user (partial unique index), browser family but never an IP |
+| Cancellation | `cancel_move/3` (owner, any session) and `cancel_active_moves/2`, called next to `cancel_active_exports/2` on password change, TOTP disable, sign out everywhere and ban; `account_move_cancelled` notice |
+| Banner | `Layouts.account_move_banner/1` on every page while a move is pending (`:active_account_move`, from `active_move_summary/1` in `AuthHooks`) |
 
 ### Bookmarks
 

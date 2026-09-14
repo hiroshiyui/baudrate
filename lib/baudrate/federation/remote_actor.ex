@@ -41,7 +41,9 @@ defmodule Baudrate.Federation.RemoteActor do
     field :fetched_at, :utc_datetime
     field :profile_fields, {:array, :map}, default: []
     field :also_known_as, {:array, :string}, default: []
-    # The target of the last Move processed from this actor (ADR 0025).
+    # Where this actor moved: its `movedTo`, or the target of the last Move
+    # processed from it. `moved_at` is set only when a Move is processed and
+    # bounds how often one is (ADR 0025).
     field :moved_to_ap_id, :string
     field :moved_at, :utc_datetime
 
@@ -51,7 +53,7 @@ defmodule Baudrate.Federation.RemoteActor do
   end
 
   @required_fields ~w(ap_id username domain public_key_pem inbox actor_type fetched_at)a
-  @optional_fields ~w(display_name avatar_url summary shared_inbox url profile_fields also_known_as)a
+  @optional_fields ~w(display_name avatar_url summary shared_inbox url profile_fields also_known_as moved_to_ap_id)a
 
   @doc "Casts and validates fields for creating or updating a remote actor cache entry."
   def changeset(remote_actor, attrs) do
@@ -59,6 +61,8 @@ defmodule Baudrate.Federation.RemoteActor do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_inclusion(:actor_type, ~w(Person Group Organization Application Service))
+    |> validate_format(:moved_to_ap_id, ~r{\Ahttps://})
+    |> validate_length(:moved_to_ap_id, max: 2048)
     |> unique_constraint(:ap_id)
     |> unique_constraint([:username, :domain])
   end

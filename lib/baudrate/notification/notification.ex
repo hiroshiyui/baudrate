@@ -37,6 +37,9 @@ defmodule Baudrate.Notification.Notification do
       kept failing at login, so someone else may know the password (ADR 0024)
     * `account_alias_added` / `account_alias_removed` — an account alias
       (`alsoKnownAs`) was added or removed (`data.label`, ADR 0025)
+    * `account_move_requested` — a move of the account was requested; it is
+      sent after 24 hours (`data.label`, `data.send_after`, `data.browser`)
+    * `account_move_cancelled` — a pending move was cancelled (`data.reason`)
     * `data_export_requested` — a data export was requested (`data.ready_at`, `data.browser`)
     * `data_export_ready` — the export can be downloaded (`data.expires_at`)
     * `data_export_downloaded` — the export was downloaded (`data.count`, `data.remaining`)
@@ -77,6 +80,8 @@ defmodule Baudrate.Notification.Notification do
     totp_login_failed
     account_alias_added
     account_alias_removed
+    account_move_requested
+    account_move_cancelled
     data_export_requested
     data_export_ready
     data_export_downloaded
@@ -93,6 +98,8 @@ defmodule Baudrate.Notification.Notification do
     totp_login_failed
     account_alias_added
     account_alias_removed
+    account_move_requested
+    account_move_cancelled
     data_export_requested
     data_export_ready
     data_export_downloaded

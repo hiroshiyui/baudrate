@@ -132,6 +132,9 @@ defmodule BaudrateWeb.NotificationsLive do
        when type in ["account_alias_added", "account_alias_removed"] and label != "",
        do: gettext("Alias: %{label}", label: label)
 
+  defp target_title(%{type: "account_move_" <> _, data: %{"label" => label}}) when label != "",
+    do: gettext("Destination: %{label}", label: label)
+
   defp target_title(%{type: "data_export_" <> _}), do: gettext("Review your data exports")
   defp target_title(%{type: "totp_login_failed"}), do: gettext("Change your password")
 

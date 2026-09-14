@@ -28,18 +28,18 @@ msgstr ""
 msgid "Actions"
 msgstr "操作"
 
-#: lib/baudrate_web/components/layouts.ex:486
-#: lib/baudrate_web/components/layouts.ex:496
+#: lib/baudrate_web/components/layouts.ex:537
+#: lib/baudrate_web/components/layouts.ex:547
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "再接続を試みています"
 
-#: lib/baudrate_web/components/layouts.ex:493
+#: lib/baudrate_web/components/layouts.ex:544
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "エラーが発生しました！"
 
-#: lib/baudrate_web/components/layouts.ex:483
+#: lib/baudrate_web/components/layouts.ex:534
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "インターネットに接続できません"
@@ -175,6 +175,7 @@ msgid "Next"
 msgstr "次へ"
 
 #: lib/baudrate_web/live/account_migration_live.html.heex:119
+#: lib/baudrate_web/live/account_migration_live.html.heex:348
 #: lib/baudrate_web/live/admin/login_attempts_live.ex:63
 #: lib/baudrate_web/live/data_export_live.ex:207
 #: lib/baudrate_web/live/login_live.html.heex:26
@@ -277,7 +278,7 @@ msgid "Set Up Two-Factor Authentication"
 msgstr "二要素認証のセットアップ"
 
 #: lib/baudrate_web/components/layouts.ex:272
-#: lib/baudrate_web/components/layouts.ex:746
+#: lib/baudrate_web/components/layouts.ex:797
 #: lib/baudrate_web/live/login_live.ex:32
 #: lib/baudrate_web/live/login_live.html.heex:2
 #: lib/baudrate_web/live/login_live.html.heex:46
@@ -353,8 +354,8 @@ msgid "Boards"
 msgstr "掲示板"
 
 #: lib/baudrate_web/components/layouts.ex:170
-#: lib/baudrate_web/components/layouts.ex:644
-#: lib/baudrate_web/components/layouts.ex:728
+#: lib/baudrate_web/components/layouts.ex:695
+#: lib/baudrate_web/components/layouts.ex:779
 #: lib/baudrate_web/live/board_follows_live.html.heex:8
 #: lib/baudrate_web/live/board_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -379,6 +380,7 @@ msgid "Continue"
 msgstr "続行"
 
 #: lib/baudrate_web/live/account_migration_live.html.heex:136
+#: lib/baudrate_web/live/account_migration_live.html.heex:365
 #: lib/baudrate_web/live/data_export_live.ex:224
 #: lib/baudrate_web/live/password_change_live.html.heex:53
 #: lib/baudrate_web/live/profile_live.html.heex:430
@@ -396,6 +398,7 @@ msgstr "現在のTOTPコード"
 msgid "Disabled"
 msgstr "無効"
 
+#: lib/baudrate_web/live/account_migration_live.html.heex:299
 #: lib/baudrate_web/live/data_export_live.html.heex:45
 #: lib/baudrate_web/live/profile_live.html.heex:303
 #, elixir-autogen, elixir-format
@@ -436,7 +439,7 @@ msgstr "パスワードを入力して二要素認証のセットアップを開
 msgid "I've saved my recovery codes"
 msgstr "リカバリーコードを保存しました"
 
-#: lib/baudrate_web/live/account_migration_live.ex:92
+#: lib/baudrate_web/live/account_migration_live.ex:107
 #: lib/baudrate_web/live/data_export_live.ex:275
 #: lib/baudrate_web/live/password_change_live.ex:132
 #: lib/baudrate_web/live/profile_live.ex:471
@@ -602,8 +605,8 @@ msgstr "アバターの変更回数が多すぎます。しばらくしてから
 
 #: lib/baudrate_web/controllers/session_controller.ex:395
 #: lib/baudrate_web/controllers/session_controller.ex:545
-#: lib/baudrate_web/live/auth_hooks.ex:257
-#: lib/baudrate_web/live/auth_hooks.ex:269
+#: lib/baudrate_web/live/auth_hooks.ex:267
+#: lib/baudrate_web/live/auth_hooks.ex:279
 #, elixir-autogen, elixir-format
 msgid "Access denied."
 msgstr "アクセスが拒否されました。"
@@ -1008,6 +1011,7 @@ msgstr "エラー"
 msgid "Error Rate (24h)"
 msgstr "エラー率（24時間）"
 
+#: lib/baudrate_web/live/account_migration_live.ex:370
 #: lib/baudrate_web/live/admin/federation_live.html.heex:23
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:85
 #, elixir-autogen, elixir-format
@@ -1150,7 +1154,7 @@ msgid "Reason:"
 msgstr "理由："
 
 #: lib/baudrate_web/components/layouts.ex:279
-#: lib/baudrate_web/components/layouts.ex:755
+#: lib/baudrate_web/components/layouts.ex:806
 #: lib/baudrate_web/live/register_live.ex:42
 #, elixir-autogen, elixir-format
 msgid "Register"
@@ -1207,6 +1211,7 @@ msgstr "%{domain} に通報を送信"
 msgid "Send a Flag report to %{domain}?"
 msgstr "%{domain} に通報レポートを送信しますか？"
 
+#: lib/baudrate_web/live/account_migration_live.html.heex:419
 #: lib/baudrate_web/live/admin/bots_live.html.heex:181
 #: lib/baudrate_web/live/admin/data_exports_live.html.heex:31
 #: lib/baudrate_web/live/admin/federation_live.html.heex:47
@@ -1364,8 +1369,8 @@ msgstr "変更を保存"
 
 #: lib/baudrate_web/components/layouts.ex:190
 #: lib/baudrate_web/components/layouts.ex:269
-#: lib/baudrate_web/components/layouts.ex:662
-#: lib/baudrate_web/components/layouts.ex:737
+#: lib/baudrate_web/components/layouts.ex:713
+#: lib/baudrate_web/components/layouts.ex:788
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:26
 #: lib/baudrate_web/live/board_follows_live.html.heex:99
 #: lib/baudrate_web/live/search_live.ex:59
@@ -1662,12 +1667,12 @@ msgstr "サブ掲示板がある掲示板は削除できません。"
 msgid "Change role for %{username}"
 msgstr "%{username} の役割を変更"
 
-#: lib/baudrate_web/components/layouts.ex:620
+#: lib/baudrate_web/components/layouts.ex:671
 #, elixir-autogen, elixir-format
 msgid "Dark theme"
 msgstr "ダークテーマ"
 
-#: lib/baudrate_web/components/layouts.ex:609
+#: lib/baudrate_web/components/layouts.ex:660
 #, elixir-autogen, elixir-format
 msgid "Light theme"
 msgstr "ライトテーマ"
@@ -1677,7 +1682,7 @@ msgstr "ライトテーマ"
 msgid "Open navigation menu"
 msgstr "ナビゲーションメニューを開く"
 
-#: lib/baudrate_web/components/layouts.ex:598
+#: lib/baudrate_web/components/layouts.ex:649
 #, elixir-autogen, elixir-format
 msgid "System theme"
 msgstr "システムテーマ"
@@ -2135,8 +2140,8 @@ msgstr "署名を更新しました。"
 msgid "These codes are the only way to recover your account if you lose your password. Each code can only be used once. Store them in a safe place."
 msgstr "これらのコードは、パスワードを忘れた場合にアカウントを復旧する唯一の方法です。各コードは1回のみ使用可能です。安全な場所に保管してください。"
 
-#: lib/baudrate_web/live/account_migration_live.ex:77
-#: lib/baudrate_web/live/account_migration_live.ex:107
+#: lib/baudrate_web/live/account_migration_live.ex:92
+#: lib/baudrate_web/live/account_migration_live.ex:122
 #: lib/baudrate_web/live/data_export_live.ex:267
 #: lib/baudrate_web/live/password_change_live.ex:115
 #: lib/baudrate_web/live/password_reset_live.ex:46
@@ -2538,12 +2543,12 @@ msgstr "TOTP設定"
 msgid "TOTP Verification"
 msgstr "TOTP認証"
 
-#: lib/baudrate_web/components/layouts.ex:536
+#: lib/baudrate_web/components/layouts.ex:587
 #, elixir-autogen, elixir-format
 msgid "Decrease font size"
 msgstr "文字を小さく"
 
-#: lib/baudrate_web/components/layouts.ex:545
+#: lib/baudrate_web/components/layouts.ex:596
 #, elixir-autogen, elixir-format
 msgid "Increase font size"
 msgstr "文字を大きく"
@@ -2553,12 +2558,12 @@ msgstr "文字を大きく"
 msgid "Avatar preview"
 msgstr "アバタープレビュー"
 
-#: lib/baudrate_web/components/layouts.ex:529
+#: lib/baudrate_web/components/layouts.ex:580
 #, elixir-autogen, elixir-format
 msgid "Font size"
 msgstr "文字サイズ"
 
-#: lib/baudrate_web/components/layouts.ex:587
+#: lib/baudrate_web/components/layouts.ex:638
 #: lib/baudrate_web/live/admin/settings_live.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Theme"
@@ -2676,17 +2681,17 @@ msgstr "%{editor} による編集"
 msgid "Markdown preview"
 msgstr "Markdown プレビュー"
 
-#: lib/baudrate_web/helpers.ex:478
+#: lib/baudrate_web/helpers.ex:489
 #, elixir-autogen, elixir-format
 msgid "%{count}d ago"
 msgstr "%{count}日前"
 
-#: lib/baudrate_web/helpers.ex:477
+#: lib/baudrate_web/helpers.ex:488
 #, elixir-autogen, elixir-format
 msgid "%{count}h ago"
 msgstr "%{count}時間前"
 
-#: lib/baudrate_web/helpers.ex:476
+#: lib/baudrate_web/helpers.ex:487
 #, elixir-autogen, elixir-format
 msgid "%{count}m ago"
 msgstr "%{count}分前"
@@ -2761,7 +2766,7 @@ msgid "Message"
 msgstr "メッセージ"
 
 #: lib/baudrate_web/components/layouts.ex:200
-#: lib/baudrate_web/components/layouts.ex:680
+#: lib/baudrate_web/components/layouts.ex:731
 #: lib/baudrate_web/live/conversation_live.html.heex:128
 #: lib/baudrate_web/live/conversations_live.ex:35
 #: lib/baudrate_web/live/conversations_live.html.heex:9
@@ -2838,7 +2843,7 @@ msgstr "自分のメッセージのみ削除できます。"
 msgid "You cannot send messages to this user."
 msgstr "このユーザーにメッセージを送信できません。"
 
-#: lib/baudrate_web/helpers.ex:475
+#: lib/baudrate_web/helpers.ex:486
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "たった今"
@@ -3157,17 +3162,17 @@ msgstr "ドメインのブロックを解除"
 msgid "Unblock User"
 msgstr "ユーザーのブロックを解除"
 
-#: lib/baudrate_web/helpers.ex:495
+#: lib/baudrate_web/helpers.ex:506
 #, elixir-autogen, elixir-format
 msgid "%{n} B"
 msgstr "%{n} B"
 
-#: lib/baudrate_web/helpers.ex:498
+#: lib/baudrate_web/helpers.ex:509
 #, elixir-autogen, elixir-format
 msgid "%{n} KB"
 msgstr "%{n} KB"
 
-#: lib/baudrate_web/helpers.ex:501
+#: lib/baudrate_web/helpers.ex:512
 #, elixir-autogen, elixir-format
 msgid "%{n} MB"
 msgstr "%{n} MB"
@@ -3638,7 +3643,7 @@ msgid "You haven't followed anyone yet."
 msgstr "まだ誰もフォローしていません。"
 
 #: lib/baudrate_web/components/layouts.ex:180
-#: lib/baudrate_web/components/layouts.ex:653
+#: lib/baudrate_web/components/layouts.ex:704
 #: lib/baudrate_web/live/feed_live.ex:46
 #: lib/baudrate_web/live/feed_live.html.heex:3
 #: lib/baudrate_web/live/feed_live.html.heex:15
@@ -3973,7 +3978,7 @@ msgstr "記事が見つかりません。"
 msgid "Comment not found."
 msgstr "コメントが見つかりません。"
 
-#: lib/baudrate_web/live/auth_hooks.ex:197
+#: lib/baudrate_web/live/auth_hooks.ex:207
 #: lib/baudrate_web/plugs/rate_limit.ex:99
 #, elixir-autogen, elixir-format
 msgid "Too many requests. Please try again later."
@@ -4068,7 +4073,7 @@ msgid_plural "%{count} unread notifications"
 msgstr[0] "%{count} 件の未読通知"
 
 #: lib/baudrate_web/components/layouts.ex:228
-#: lib/baudrate_web/components/layouts.ex:708
+#: lib/baudrate_web/components/layouts.ex:759
 #: lib/baudrate_web/live/notifications_live.ex:33
 #: lib/baudrate_web/live/notifications_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -4132,7 +4137,7 @@ msgstr "あなたの記事に返信しました"
 msgid "replied to your comment"
 msgstr "あなたのコメントに返信しました"
 
-#: lib/baudrate_web/helpers.ex:381
+#: lib/baudrate_web/helpers.ex:390
 #, elixir-autogen, elixir-format
 msgid "sent you a notification"
 msgstr "通知を送りました"
@@ -4979,12 +4984,12 @@ msgstr "キャンセルしてホームに戻る"
 msgid "For security, please re-enter your TOTP code to access admin functions."
 msgstr "セキュリティのため、管理機能にアクセスするにはTOTPコードを再入力してください。"
 
-#: lib/baudrate_web/live/auth_hooks.ex:226
+#: lib/baudrate_web/live/auth_hooks.ex:236
 #, elixir-autogen, elixir-format
 msgid "TOTP must be configured before accessing admin pages."
 msgstr "管理ページにアクセスする前にTOTPを設定する必要があります。"
 
-#: lib/baudrate_web/components/layouts.ex:637
+#: lib/baudrate_web/components/layouts.ex:688
 #, elixir-autogen, elixir-format
 msgid "Mobile navigation"
 msgstr "モバイルナビゲーション"
@@ -5628,7 +5633,7 @@ msgstr "このブラウザは WebAuthn に対応していません。"
 msgid "or"
 msgstr "または"
 
-#: lib/baudrate_web/components/layouts.ex:412
+#: lib/baudrate_web/components/layouts.ex:413
 #, elixir-autogen, elixir-format
 msgid "Scroll to top"
 msgstr "トップへ戻る"
@@ -5733,8 +5738,8 @@ msgstr[0] "%{count} 件の結果"
 msgid "Page %{page} of %{total_pages} — %{count} results total"
 msgstr "%{page} / %{total_pages} ページ — 合計 %{count} 件の結果"
 
-#: lib/baudrate_web/components/layouts.ex:569
-#: lib/baudrate_web/components/layouts.ex:570
+#: lib/baudrate_web/components/layouts.ex:620
+#: lib/baudrate_web/components/layouts.ex:621
 #, elixir-autogen, elixir-format
 msgid "Share this page"
 msgstr "このページを共有"
@@ -5973,7 +5978,7 @@ msgstr "一致する掲示板"
 msgid "Matching users"
 msgstr "一致するユーザー"
 
-#: lib/baudrate_web/components/layouts.ex:674
+#: lib/baudrate_web/components/layouts.ex:725
 #, elixir-autogen, elixir-format
 msgid "Messages, %{count} unread"
 msgid_plural "Messages, %{count} unread"
@@ -6010,7 +6015,7 @@ msgstr[0] "新しい通知。未読の通知 %{count} 件"
 msgid "Note"
 msgstr "投稿"
 
-#: lib/baudrate_web/components/layouts.ex:702
+#: lib/baudrate_web/components/layouts.ex:753
 #, elixir-autogen, elixir-format
 msgid "Notifications, %{count} unread"
 msgid_plural "Notifications, %{count} unread"
@@ -6172,7 +6177,7 @@ msgstr "セキュリティキーを追加または削除するには、パスワ
 msgid "To add or remove security keys, confirm your password."
 msgstr "セキュリティキーを追加または削除するには、パスワードで本人確認を行ってください。"
 
-#: lib/baudrate_web/live/account_migration_live.ex:84
+#: lib/baudrate_web/live/account_migration_live.ex:99
 #: lib/baudrate_web/live/data_export_live.ex:271
 #: lib/baudrate_web/live/password_change_live.ex:123
 #: lib/baudrate_web/live/profile_live.ex:463
@@ -6217,12 +6222,12 @@ msgstr "アカウントにセキュリティキーが追加されました。"
 msgid "A security key was removed from your account."
 msgstr "アカウントからセキュリティキーが削除されました。"
 
-#: lib/baudrate_web/live/notifications_live.ex:154
+#: lib/baudrate_web/live/notifications_live.ex:157
 #, elixir-autogen, elixir-format
 msgid "If you did not make this change, check your security settings right away and contact an administrator."
 msgstr "この変更に心当たりがない場合は、すぐにセキュリティ設定を確認し、管理者に連絡してください。"
 
-#: lib/baudrate_web/live/notifications_live.ex:139
+#: lib/baudrate_web/live/notifications_live.ex:142
 #, elixir-autogen, elixir-format
 msgid "Review your security settings"
 msgstr "セキュリティ設定を確認"
@@ -6331,27 +6336,27 @@ msgstr "アカウントのパスワードが変更されました。"
 msgid "Your session has expired. Please sign in again."
 msgstr "セッションの有効期限が切れました。もう一度ログインしてください。"
 
-#: lib/baudrate_web/helpers.ex:370
+#: lib/baudrate_web/helpers.ex:379
 #, elixir-autogen, elixir-format
 msgid "A data export of your account was requested. It can be downloaded after 24 hours."
 msgstr "アカウントのデータエクスポートがリクエストされました。24 時間後にダウンロードできるようになります。"
 
-#: lib/baudrate_web/helpers.ex:379
+#: lib/baudrate_web/helpers.ex:388
 #, elixir-autogen, elixir-format
 msgid "A data export request on your account was cancelled."
 msgstr "アカウントのデータエクスポートのリクエストがキャンセルされました。"
 
-#: lib/baudrate_web/live/notifications_live.ex:135
+#: lib/baudrate_web/live/notifications_live.ex:138
 #, elixir-autogen, elixir-format
 msgid "Review your data exports"
 msgstr "データエクスポートを確認"
 
-#: lib/baudrate_web/helpers.ex:373
+#: lib/baudrate_web/helpers.ex:382
 #, elixir-autogen, elixir-format
 msgid "Your data export is ready and can be downloaded for 48 hours."
 msgstr "データエクスポートの準備ができました。48 時間ダウンロードできます。"
 
-#: lib/baudrate_web/helpers.ex:376
+#: lib/baudrate_web/helpers.ex:385
 #, elixir-autogen, elixir-format
 msgid "Your data export was downloaded."
 msgstr "データエクスポートがダウンロードされました。"
@@ -6426,7 +6431,7 @@ msgstr "含まれるもの："
 msgid "Not included:"
 msgstr "含まれないもの："
 
-#: lib/baudrate_web/components/layouts.ex:438
+#: lib/baudrate_web/components/layouts.ex:439
 #, elixir-autogen, elixir-format
 msgid "A data export of your account is in progress"
 msgstr "アカウントのデータエクスポートが進行中です"
@@ -6466,6 +6471,7 @@ msgstr "リクエストをキャンセル"
 msgid "Cancel this data export request?"
 msgstr "このデータエクスポートのリクエストをキャンセルしますか？"
 
+#: lib/baudrate_web/live/account_migration_live.ex:369
 #: lib/baudrate_web/live/data_export_live.ex:309
 #, elixir-autogen, elixir-format
 msgid "Cancelled"
@@ -6576,6 +6582,7 @@ msgstr "データエクスポートをリクエスト"
 msgid "Request not found."
 msgstr "リクエストが見つかりません。"
 
+#: lib/baudrate_web/live/account_migration_live.html.heex:417
 #: lib/baudrate_web/live/admin/data_exports_live.html.heex:28
 #: lib/baudrate_web/live/data_export_live.html.heex:97
 #: lib/baudrate_web/live/data_export_live.html.heex:207
@@ -6583,12 +6590,12 @@ msgstr "リクエストが見つかりません。"
 msgid "Requested"
 msgstr "リクエスト日時"
 
-#: lib/baudrate_web/components/layouts.ex:442
+#: lib/baudrate_web/components/layouts.ex:443
 #, elixir-autogen, elixir-format
 msgid "Requested %{time} from %{browser}. If this was not you, cancel it now."
 msgstr "%{time} に %{browser} からリクエストされました。心当たりがない場合はすぐにキャンセルしてください。"
 
-#: lib/baudrate_web/components/layouts.ex:447
+#: lib/baudrate_web/components/layouts.ex:448
 #, elixir-autogen, elixir-format
 msgid "Requested %{time}. If this was not you, cancel it now."
 msgstr "%{time} にリクエストされました。心当たりがない場合はすぐにキャンセルしてください。"
@@ -6598,7 +6605,8 @@ msgstr "%{time} にリクエストされました。心当たりがない場合�
 msgid "Requesting..."
 msgstr "リクエスト中..."
 
-#: lib/baudrate_web/components/layouts.ex:458
+#: lib/baudrate_web/components/layouts.ex:459
+#: lib/baudrate_web/components/layouts.ex:509
 #, elixir-autogen, elixir-format
 msgid "Review"
 msgstr "確認"
@@ -6624,6 +6632,7 @@ msgid "Two-factor authentication must be enabled for 7 days first. You can expor
 msgid_plural "Two-factor authentication must be enabled for 7 days first. You can export in %{count} days."
 msgstr[0] "二要素認証を有効にしてから 7 日経過する必要があります。あと %{count} 日でエクスポートできます。"
 
+#: lib/baudrate_web/live/account_migration_live.ex:367
 #: lib/baudrate_web/live/data_export_live.ex:306
 #, elixir-autogen, elixir-format
 msgid "Waiting"
@@ -6697,7 +6706,7 @@ msgstr "シスオペ"
 msgid "The 100 most recent data export requests. Users download their own data; there is no way to export another user's data from here."
 msgstr "直近 100 件のデータエクスポートのリクエストです。ユーザーは自分のデータのみをダウンロードでき、ここから他のユーザーのデータをエクスポートすることはできません。"
 
-#: lib/baudrate_web/live/notifications_live.ex:136
+#: lib/baudrate_web/live/notifications_live.ex:139
 #, elixir-autogen, elixir-format
 msgid "Change your password"
 msgstr "パスワードを変更"
@@ -6712,7 +6721,7 @@ msgstr "確認項目"
 msgid "Each code works only once. If you just used one, wait for the next code."
 msgstr "各コードは一度しか使えません。使ったばかりの場合は、次のコードに切り替わるまでお待ちください。"
 
-#: lib/baudrate_web/live/notifications_live.ex:148
+#: lib/baudrate_web/live/notifications_live.ex:151
 #, elixir-autogen, elixir-format
 msgid "If this was not you, your password is known to someone else. Change it right away and contact an administrator."
 msgstr "心当たりがない場合、パスワードが他人に知られています。すぐにパスワードを変更し、管理者に連絡してください。"
@@ -6733,11 +6742,12 @@ msgid "Two-factor code"
 msgstr "二要素認証コード"
 
 #: lib/baudrate_web/live/account_migration_live.html.heex:184
+#: lib/baudrate_web/live/account_migration_live.html.heex:326
 #, elixir-autogen, elixir-format
 msgid "@user@example.com"
 msgstr "@user@example.com"
 
-#: lib/baudrate_web/live/account_migration_live.ex:37
+#: lib/baudrate_web/live/account_migration_live.ex:47
 #: lib/baudrate_web/live/account_migration_live.html.heex:7
 #: lib/baudrate_web/live/profile_live.html.heex:504
 #, elixir-autogen, elixir-format
@@ -6754,19 +6764,19 @@ msgstr "エイリアスを追加"
 msgid "Add an alias"
 msgstr "エイリアスを追加"
 
-#: lib/baudrate_web/live/account_migration_live.ex:149
-#: lib/baudrate_web/live/account_migration_live.ex:150
+#: lib/baudrate_web/live/account_migration_live.ex:258
+#: lib/baudrate_web/live/account_migration_live.ex:259
 #, elixir-autogen, elixir-format
 msgid "Alias %{label} added."
 msgstr "エイリアス %{label} を追加しました。"
 
-#: lib/baudrate_web/live/account_migration_live.ex:132
+#: lib/baudrate_web/live/account_migration_live.ex:147
 #, elixir-autogen, elixir-format
 msgid "Alias not found."
 msgstr "エイリアスが見つかりません。"
 
-#: lib/baudrate_web/live/account_migration_live.ex:127
-#: lib/baudrate_web/live/account_migration_live.ex:128
+#: lib/baudrate_web/live/account_migration_live.ex:142
+#: lib/baudrate_web/live/account_migration_live.ex:143
 #, elixir-autogen, elixir-format
 msgid "Alias removed."
 msgstr "エイリアスを削除しました。"
@@ -6801,23 +6811,23 @@ msgstr "アカウントにエイリアスが追加されました。"
 msgid "An account alias was removed from your account."
 msgstr "アカウントからエイリアスが削除されました。"
 
-#: lib/baudrate_web/live/account_migration_live.ex:190
+#: lib/baudrate_web/live/account_migration_live.ex:299
 #, elixir-autogen, elixir-format
 msgid "An account can have at most %{count} aliases."
 msgstr "エイリアスは1アカウントにつき最大 %{count} 件までです。"
 
-#: lib/baudrate_web/live/account_migration_live.ex:178
+#: lib/baudrate_web/live/account_migration_live.ex:287
 #: lib/baudrate_web/live/account_migration_live.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Enter the account as @user@example.com or as its https:// address."
 msgstr "アカウントは @user@example.com または https:// のアドレスで入力してください。"
 
-#: lib/baudrate_web/live/account_migration_live.ex:71
+#: lib/baudrate_web/live/account_migration_live.ex:86
 #, elixir-autogen, elixir-format
 msgid "Identity confirmed. You can manage your aliases for 5 minutes."
 msgstr "本人確認が完了しました。5分間エイリアスを管理できます。"
 
-#: lib/baudrate_web/live/account_migration_live.ex:114
+#: lib/baudrate_web/live/account_migration_live.ex:129
 #, elixir-autogen, elixir-format
 msgid "Looking up the account…"
 msgstr "アカウントを検索中…"
@@ -6827,12 +6837,12 @@ msgstr "アカウントを検索中…"
 msgid "Looking up..."
 msgstr "検索中…"
 
-#: lib/baudrate_web/live/account_migration_live.ex:184
+#: lib/baudrate_web/live/account_migration_live.ex:293
 #, elixir-autogen, elixir-format
 msgid "Only person accounts can be aliases, not groups, bots or servers."
 msgstr "エイリアスにできるのは個人のアカウントだけです。グループ、ボット、サーバーは指定できません。"
 
-#: lib/baudrate_web/live/account_migration_live.ex:206
+#: lib/baudrate_web/live/account_migration_live.ex:400
 #, elixir-autogen, elixir-format
 msgid "Please confirm your identity before managing aliases."
 msgstr "エイリアスを管理する前に、本人確認を行ってください。"
@@ -6847,17 +6857,17 @@ msgstr "エイリアス %{label} を削除"
 msgid "Remove this alias?"
 msgstr "このエイリアスを削除しますか？"
 
-#: lib/baudrate_web/live/account_migration_live.ex:181
+#: lib/baudrate_web/live/account_migration_live.ex:290
 #, elixir-autogen, elixir-format
 msgid "That account could not be found. Check the address and try again."
 msgstr "そのアカウントが見つかりません。アドレスを確認して、もう一度お試しください。"
 
-#: lib/baudrate_web/live/account_migration_live.ex:186
+#: lib/baudrate_web/live/account_migration_live.ex:295
 #, elixir-autogen, elixir-format
 msgid "That account is already an alias."
 msgstr "そのアカウントはすでにエイリアスです。"
 
-#: lib/baudrate_web/live/account_migration_live.ex:195
+#: lib/baudrate_web/live/account_migration_live.ex:304
 #, elixir-autogen, elixir-format
 msgid "This account has moved. Remove the redirect before changing aliases."
 msgstr "このアカウントは移行済みです。エイリアスを変更する前にリダイレクトを解除してください。"
@@ -6886,3 +6896,195 @@ msgstr "別のサーバーのアカウントをここへ移行するには、先
 #, elixir-autogen, elixir-format
 msgid "To move this account to another server, add this account as an alias on the new account first."
 msgstr "このアカウントを別のサーバーへ移行するには、先に新しいアカウント側でこのアカウントをエイリアスに追加してください。"
+
+#: lib/baudrate_web/live/account_migration_live.ex:321
+#, elixir-autogen, elixir-format
+msgid "A move of this account is already pending."
+msgstr "このアカウントの移行はすでに保留中です。"
+
+#: lib/baudrate_web/helpers.ex:370
+#, elixir-autogen, elixir-format
+msgid "A move of your account to another server was requested. It will be sent after 24 hours unless you cancel it."
+msgstr "アカウントを別のサーバーへ移行する要求がありました。キャンセルしない限り、24時間後に送信されます。"
+
+#: lib/baudrate_web/helpers.ex:375
+#, elixir-autogen, elixir-format
+msgid "A pending move of your account was cancelled."
+msgstr "保留中のアカウント移行がキャンセルされました。"
+
+#: lib/baudrate_web/live/account_migration_live.ex:327
+#, elixir-autogen, elixir-format
+msgid "Administrators and moderators cannot move their account. Ask to be demoted first."
+msgstr "管理者とモデレーターはアカウントを移行できません。先に権限の解除を依頼してください。"
+
+#: lib/baudrate_web/live/account_migration_live.ex:331
+#, elixir-autogen, elixir-format
+msgid "Board moderators cannot move their account. Ask to be removed as a moderator first."
+msgstr "掲示板のモデレーターはアカウントを移行できません。先にモデレーターからの解除を依頼してください。"
+
+#: lib/baudrate_web/live/account_migration_live.ex:353
+#, elixir-autogen, elixir-format
+msgid "Bot accounts cannot move."
+msgstr "ボットアカウントは移行できません。"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:277
+#, elixir-autogen, elixir-format
+msgid "Cancel move"
+msgstr "移行をキャンセル"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:275
+#, elixir-autogen, elixir-format
+msgid "Cancel this move?"
+msgstr "この移行をキャンセルしますか？"
+
+#: lib/baudrate_web/live/account_migration_live.ex:176
+#, elixir-autogen, elixir-format
+msgid "Checking the destination account…"
+msgstr "移行先のアカウントを確認中…"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:386
+#, elixir-autogen, elixir-format
+msgid "Checking..."
+msgstr "確認中…"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:418
+#, elixir-autogen, elixir-format
+msgid "Destination"
+msgstr "移行先"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:318
+#, elixir-autogen, elixir-format
+msgid "Destination account"
+msgstr "移行先のアカウント"
+
+#: lib/baudrate_web/live/notifications_live.ex:136
+#, elixir-autogen, elixir-format
+msgid "Destination: %{label}"
+msgstr "移行先：%{label}"
+
+#: lib/baudrate_web/live/account_migration_live.ex:342
+#, elixir-autogen, elixir-format
+msgid "Enable two-factor authentication (TOTP) to move your account."
+msgstr "アカウントを移行するには、二要素認証（TOTP）を有効にしてください。"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:404
+#, elixir-autogen, elixir-format
+msgid "Move history"
+msgstr "移行履歴"
+
+#: lib/baudrate_web/live/account_migration_live.ex:210
+#, elixir-autogen, elixir-format
+msgid "Move requested. It will be sent after %{time} unless you cancel it."
+msgstr "移行を要求しました。キャンセルしない限り、%{time} 以降に送信されます。"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:219
+#, elixir-autogen, elixir-format
+msgid "Move this account"
+msgstr "このアカウントを移行"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:227
+#, elixir-autogen, elixir-format
+msgid "Moving tells your followers' servers to follow your new account instead. It is sent 24 hours after you request it, so you can still cancel."
+msgstr "移行すると、フォロワーのサーバーに新しいアカウントをフォローするよう伝えます。要求から24時間後に送信されるため、それまではキャンセルできます。"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:251
+#, elixir-autogen, elixir-format
+msgid "Moving to %{account}"
+msgstr "%{account} へ移行中"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:232
+#, elixir-autogen, elixir-format
+msgid "Once sent, followers on other servers are moved and cannot be brought back. This account then becomes read-only: you can still sign in, read and export your data, but not post. Your content stays here."
+msgstr "送信すると、他のサーバーのフォロワーは移され、元に戻すことはできません。このアカウントは読み取り専用になり、ログイン、閲覧、データのエクスポートはできますが、投稿はできません。コンテンツはここに残ります。"
+
+#: lib/baudrate_web/live/account_migration_live.ex:356
+#, elixir-autogen, elixir-format
+msgid "Only active accounts can move. Please contact an administrator."
+msgstr "移行できるのは有効なアカウントだけです。管理者に連絡してください。"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:389
+#, elixir-autogen, elixir-format
+msgid "Request Move"
+msgstr "移行を要求"
+
+#: lib/baudrate_web/components/layouts.ex:489
+#, elixir-autogen, elixir-format
+msgid "Requested %{time} from %{browser}. Your followers will be moved after %{send_time}. If this was not you, cancel it now."
+msgstr "%{time} に %{browser} から要求されました。フォロワーは %{send_time} 以降に移されます。心当たりがない場合は、今すぐキャンセルしてください。"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:254
+#, elixir-autogen, elixir-format
+msgid "Requested %{time}. It will be sent after %{send_time}."
+msgstr "%{time} に要求されました。%{send_time} 以降に送信されます。"
+
+#: lib/baudrate_web/components/layouts.ex:496
+#, elixir-autogen, elixir-format
+msgid "Requested %{time}. Your followers will be moved after %{send_time}. If this was not you, cancel it now."
+msgstr "%{time} に要求されました。フォロワーは %{send_time} 以降に移されます。心当たりがない場合は、今すぐキャンセルしてください。"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:264
+#, elixir-autogen, elixir-format
+msgid "Requested from %{browser}."
+msgstr "%{browser} から要求されました。"
+
+#: lib/baudrate_web/live/account_migration_live.ex:368
+#, elixir-autogen, elixir-format
+msgid "Sent"
+msgstr "送信済み"
+
+#: lib/baudrate_web/live/account_migration_live.ex:313
+#, elixir-autogen, elixir-format
+msgid "The destination account does not list this account as an alias yet. Add it there first, then try again."
+msgstr "移行先のアカウントがまだこのアカウントをエイリアスに登録していません。先にそちらで追加してから、もう一度お試しください。"
+
+#: lib/baudrate_web/live/account_migration_live.ex:318
+#, elixir-autogen, elixir-format
+msgid "The destination account has itself moved. Choose its new account instead."
+msgstr "移行先のアカウント自体が移行済みです。その新しいアカウントを指定してください。"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:337
+#, elixir-autogen, elixir-format
+msgid "The destination must already list this account as an alias. Enter it as @user@example.com or as its https:// address."
+msgstr "移行先のアカウントに、このアカウントがエイリアスとして登録されている必要があります。@user@example.com または https:// のアドレスで入力してください。"
+
+#: lib/baudrate_web/live/account_migration_live.ex:364
+#, elixir-autogen, elixir-format
+msgid "The move could not be requested. Please try again later."
+msgstr "移行を要求できませんでした。しばらくしてからもう一度お試しください。"
+
+#: lib/baudrate_web/live/account_migration_live.ex:191
+#: lib/baudrate_web/live/account_migration_live.ex:192
+#, elixir-autogen, elixir-format
+msgid "The move was cancelled."
+msgstr "移行をキャンセルしました。"
+
+#: lib/baudrate_web/live/account_migration_live.ex:199
+#, elixir-autogen, elixir-format
+msgid "There is no pending move to cancel."
+msgstr "キャンセルできる保留中の移行はありません。"
+
+#: lib/baudrate_web/live/account_migration_live.ex:323
+#, elixir-autogen, elixir-format
+msgid "This account has already moved."
+msgstr "このアカウントはすでに移行済みです。"
+
+#: lib/baudrate_web/live/account_migration_live.html.heex:411
+#, elixir-autogen, elixir-format
+msgid "This account has not requested a move."
+msgstr "このアカウントはまだ移行を要求していません。"
+
+#: lib/baudrate_web/live/account_migration_live.ex:337
+#, elixir-autogen, elixir-format
+msgid "This account moved less than 30 days ago. You can move again after %{time}."
+msgstr "このアカウントは30日以内に移行しています。%{time} 以降に再度移行できます。"
+
+#: lib/baudrate_web/live/account_migration_live.ex:346
+#, elixir-autogen, elixir-format
+msgid "Two-factor authentication must be enabled for 7 days first. You can move in %{count} day."
+msgid_plural "Two-factor authentication must be enabled for 7 days first. You can move in %{count} days."
+msgstr[0] "二要素認証を有効にしてから7日経つ必要があります。%{count} 日後に移行できます。"
+
+#: lib/baudrate_web/components/layouts.ex:485
+#, elixir-autogen, elixir-format
+msgid "Your account is about to move to %{account}"
+msgstr "アカウントがまもなく %{account} へ移行します"

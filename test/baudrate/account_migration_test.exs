@@ -175,4 +175,261 @@ defmodule Baudrate.AccountMigrationTest do
     refute AccountMigration.moved?(%Setup.User{})
     assert AccountMigration.moved?(%Setup.User{moved_to: "https://new.example/users/me"})
   end
+
+  # ---------------------------------------------------------------------------
+  # Moving away
+  # ---------------------------------------------------------------------------
+
+  defp make_eligible(user) do
+    {:ok, _} = Baudrate.Auth.enable_totp(user, Baudrate.Auth.generate_totp_secret())
+    past = DateTime.utc_now() |> DateTime.add(-8 * 86_400) |> DateTime.truncate(:second)
+
+    Repo.update_all(from(u in Setup.User, where: u.id == ^user.id),
+      set: [totp_enabled_at: past]
+    )
+
+    Repo.reload!(user) |> Repo.preload(:role, force: true)
+  end
+
+  defp secret_for(user) do
+    Baudrate.Auth.decrypt_totp_secret(Repo.reload!(user))
+  end
+
+  defp creds(user, password \\ "Password123!x"),
+    do: %{password: password, code: totp_code(secret_for(user))}
+
+  @opts [ip_address: "203.0.113.30", user_agent: "Mozilla/5.0 (X11; Linux x86_64) Firefox/130.0"]
+
+  # Serves a destination actor document. `aka` is its alsoKnownAs.
+  defp stub_target(ap_id, opts) do
+    {public_pem, _} = KeyStore.generate_keypair()
+
+    doc =
+      %{
+        "id" => ap_id,
+        "type" => Keyword.get(opts, :type, "Person"),
+        "preferredUsername" => ap_id |> String.split("/") |> List.last(),
+        "inbox" => "#{ap_id}/inbox",
+        "alsoKnownAs" => Keyword.get(opts, :aka, []),
+        "publicKey" => %{
+          "id" => "#{ap_id}#main-key",
+          "owner" => ap_id,
+          "publicKeyPem" => public_pem
+        }
+      }
+      |> then(fn d ->
+        if moved = opts[:moved_to], do: Map.put(d, "movedTo", moved), else: d
+      end)
+
+    Req.Test.stub(HTTPClient, fn conn -> Req.Test.json(conn, doc) end)
+  end
+
+  defp local_uri(user), do: Baudrate.Federation.actor_uri(:user, user.username)
+
+  describe "move_eligibility/1" do
+    test "needs TOTP that is at least 7 days old", %{user: user} do
+      assert {:error, :totp_required} = AccountMigration.move_eligibility(user)
+
+      {:ok, _} = Baudrate.Auth.enable_totp(user, Baudrate.Auth.generate_totp_secret())
+
+      assert {:error, {:totp_too_new, 7}} =
+               AccountMigration.move_eligibility(Repo.reload!(user))
+
+      assert :ok = AccountMigration.move_eligibility(make_eligible(user))
+    end
+
+    test "refuses staff, board moderators and moved accounts", %{user: user} do
+      user = make_eligible(user)
+
+      for role_name <- ["admin", "moderator"] do
+        role = Repo.one!(from(r in Setup.Role, where: r.name == ^role_name))
+        staff = %{user | role: role}
+        assert {:error, :staff} = AccountMigration.move_eligibility(staff)
+      end
+
+      board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Moved board",
+          slug: "moved-board-#{System.unique_integer([:positive])}"
+        })
+        |> Repo.insert!()
+
+      moderator =
+        Repo.insert!(%Baudrate.Content.BoardModerator{board_id: board.id, user_id: user.id})
+
+      assert {:error, :board_moderator} = AccountMigration.move_eligibility(user)
+      Repo.delete!(moderator)
+
+      assert {:error, :moved} =
+               AccountMigration.move_eligibility(%{user | moved_to: "https://new.example/u/me"})
+    end
+
+    test "allows one sent move per 30 days", %{user: user} do
+      user = make_eligible(user)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      sent_at = DateTime.add(now, -10 * 86_400)
+
+      Repo.insert!(%AccountMigration.AccountMove{
+        user_id: user.id,
+        target_ap_id: "https://new.example/users/me",
+        status: "sent",
+        requested_at: DateTime.add(sent_at, -86_400),
+        send_after: sent_at,
+        sent_at: sent_at
+      })
+
+      assert {:error, {:recently_moved, at}} = AccountMigration.move_eligibility(user)
+      assert DateTime.diff(at, now, :day) in 19..20
+    end
+  end
+
+  describe "verify_move_target/2" do
+    test "accepts a person that lists this account as an alias", %{user: user} do
+      stub_target("https://new.example/users/me", aka: [local_uri(user)])
+
+      assert {:ok, %RemoteActor{ap_id: "https://new.example/users/me"}} =
+               AccountMigration.verify_move_target(user, "https://new.example/users/me")
+    end
+
+    test "refuses a target without the alias, a moved target and non-persons", %{user: user} do
+      stub_target("https://new.example/users/a", aka: [])
+
+      assert {:error, :alias_not_claimed} =
+               AccountMigration.verify_move_target(user, "https://new.example/users/a")
+
+      stub_target("https://new.example/users/b",
+        aka: [local_uri(user)],
+        moved_to: "https://elsewhere.example/users/b"
+      )
+
+      assert {:error, :target_moved} =
+               AccountMigration.verify_move_target(user, "https://new.example/users/b")
+
+      stub_target("https://new.example/users/c", aka: [local_uri(user)], type: "Group")
+
+      assert {:error, :not_a_person} =
+               AccountMigration.verify_move_target(user, "https://new.example/users/c")
+    end
+  end
+
+  describe "request_move/4" do
+    test "creates a pending move that is sent after 24 hours, with a notice", %{user: user} do
+      user = make_eligible(user)
+      stub_target("https://new.example/users/me", aka: [local_uri(user)])
+
+      assert {:ok, move} =
+               AccountMigration.request_move(
+                 user,
+                 "https://new.example/users/me",
+                 creds(user),
+                 @opts
+               )
+
+      assert move.status == "pending"
+      assert move.target_ap_id == "https://new.example/users/me"
+      assert DateTime.diff(move.send_after, move.requested_at) == 24 * 3600
+      assert move.requested_user_agent_family == "Firefox on Linux"
+
+      assert [%{data: %{"label" => "@me@new.example", "browser" => "Firefox on Linux"}}] =
+               notices(user, "account_move_requested")
+
+      assert %{label: "@me@new.example"} = AccountMigration.active_move_summary(user.id)
+
+      forget_totp_use(user)
+
+      assert {:error, :pending_move_exists} =
+               AccountMigration.request_move(
+                 user,
+                 "https://new.example/users/me",
+                 creds(user),
+                 @opts
+               )
+    end
+
+    test "checks the target before credentials and records nothing on failure", %{user: user} do
+      user = make_eligible(user)
+      stub_target("https://new.example/users/me", aka: [])
+
+      assert {:error, :alias_not_claimed} =
+               AccountMigration.request_move(
+                 user,
+                 "https://new.example/users/me",
+                 creds(user, "wrong"),
+                 @opts
+               )
+
+      assert Repo.aggregate(Baudrate.Auth.LoginAttempt, :count) == 0
+
+      stub_target("https://new.example/users/me", aka: [local_uri(user)])
+
+      assert {:error, :invalid_credentials} =
+               AccountMigration.request_move(
+                 user,
+                 "https://new.example/users/me",
+                 creds(user, "wrong"),
+                 @opts
+               )
+
+      assert AccountMigration.active_move(user.id) == nil
+      assert notices(user, "account_move_requested") == []
+    end
+
+    test "an ineligible account is refused before anything else", %{user: user} do
+      assert {:error, :totp_required} =
+               AccountMigration.request_move(user, "https://new.example/users/me", %{}, @opts)
+    end
+  end
+
+  describe "cancelling" do
+    setup %{user: user} do
+      user = make_eligible(user)
+      stub_target("https://new.example/users/me", aka: [local_uri(user)])
+
+      {:ok, move} =
+        AccountMigration.request_move(user, "https://new.example/users/me", creds(user), @opts)
+
+      forget_totp_use(user)
+      %{user: user, move: move}
+    end
+
+    test "the owner can cancel; others cannot", %{user: user, move: move} do
+      assert {:error, :not_found} = AccountMigration.cancel_move(user.id + 1_000_000, move.id)
+
+      assert {:ok, %{status: "cancelled", cancel_reason: "user"}} =
+               AccountMigration.cancel_move(user.id, move.id)
+
+      assert [%{data: %{"reason" => "user"}}] = notices(user, "account_move_cancelled")
+      assert {:error, :not_found} = AccountMigration.cancel_move(user.id, move.id)
+      assert AccountMigration.active_move_summary(user.id) == nil
+    end
+
+    test "sign out everywhere cancels a pending move", %{user: user, move: move} do
+      {:ok, token, _refresh} = Baudrate.Auth.create_user_session(user.id)
+      keep = Baudrate.Auth.session_id_by_token(token)
+
+      {:ok, _} = Baudrate.Auth.sign_out_other_sessions(user, keep)
+      assert %{status: "cancelled", cancel_reason: "signed_out_everywhere"} = Repo.reload!(move)
+    end
+
+    test "disabling TOTP cancels a pending move", %{user: user, move: move} do
+      {:ok, _} = Baudrate.Auth.disable_totp(Repo.reload!(user))
+      assert %{status: "cancelled", cancel_reason: "totp_changed"} = Repo.reload!(move)
+    end
+
+    test "a ban cancels a pending move", %{user: user, move: move} do
+      {:ok, _, _} = Baudrate.Auth.ban_user(user, user.id + 1_000_000)
+      assert %{status: "cancelled", cancel_reason: "banned"} = Repo.reload!(move)
+    end
+  end
+
+  test "target_labels/1 uses cached handles and falls back to the URI" do
+    actor = remote_actor()
+    unknown = "https://unknown.example/users/x"
+
+    labels = AccountMigration.target_labels([actor.ap_id, unknown])
+
+    assert labels[actor.ap_id] == "@#{actor.username}@#{actor.domain}"
+    assert labels[unknown] == unknown
+  end
 end

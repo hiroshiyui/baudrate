@@ -208,4 +208,238 @@
       </.form>
     </div>
   </section>
+
+  <section
+    id="account-move"
+    class="account-move card bg-base-200 shadow-sm"
+    aria-labelledby="account-move-heading"
+  >
+    <div class="card-body space-y-4">
+      <h2 id="account-move-heading" class="account-move-heading card-title text-lg" tabindex="-1">
+        {gettext("Move this account")}
+      </h2>
+
+      <div
+        id="account-move-intro"
+        class="account-move-intro space-y-2 text-sm text-base-content/80"
+      >
+        <p>
+          {gettext(
+            "Moving tells your followers' servers to follow your new account instead. It is sent 24 hours after you request it, so you can still cancel."
+          )}
+        </p>
+        <p id="account-move-warning" class="account-move-warning font-medium">
+          {gettext(
+            "Once sent, followers on other servers are moved and cannot be brought back. This account then becomes read-only: you can still sign in, read and export your data, but not post. Your content stays here."
+          )}
+        </p>
+      </div>
+
+      <%!-- Pending move --%>
+      <div
+        :if={@active_move}
+        id="account-move-pending"
+        class="account-move-pending alert alert-warning"
+        role="note"
+      >
+        <.icon name="hero-clock" class="size-5 shrink-0" />
+        <div class="min-w-0 space-y-1">
+          <p
+            id="account-move-pending-target"
+            class="account-move-pending-target font-semibold break-all"
+          >
+            {gettext("Moving to %{account}", account: @active_move.label)}
+          </p>
+          <p id="account-move-pending-time" class="account-move-pending-time text-sm">
+            {gettext("Requested %{time}. It will be sent after %{send_time}.",
+              time: format_datetime(@active_move.move.requested_at),
+              send_time: format_datetime(@active_move.move.send_after)
+            )}
+          </p>
+          <p
+            :if={@active_move.move.requested_user_agent_family}
+            id="account-move-pending-browser"
+            class="account-move-pending-browser text-sm"
+          >
+            {gettext("Requested from %{browser}.",
+              browser: @active_move.move.requested_user_agent_family
+            )}
+          </p>
+        </div>
+        <button
+          id="account-move-cancel"
+          type="button"
+          class="account-move-cancel btn btn-sm"
+          phx-click="cancel_move"
+          phx-value-id={@active_move.move.id}
+          data-confirm={gettext("Cancel this move?")}
+        >
+          {gettext("Cancel move")}
+        </button>
+      </div>
+
+      <%!-- Not eligible --%>
+      <div
+        :if={is_nil(@active_move) and @move_eligibility != :ok}
+        id="account-move-ineligible"
+        class="account-move-ineligible alert"
+        role="note"
+      >
+        <.icon name="hero-information-circle" class="size-5 shrink-0" />
+        <div class="space-y-2">
+          <p id="account-move-ineligible-reason" class="account-move-ineligible-reason">
+            {move_error_message(elem(@move_eligibility, 1))}
+          </p>
+          <.link
+            :if={@move_eligibility == {:error, :totp_required}}
+            id="account-move-enable-totp"
+            navigate={~p"/profile/totp-reset"}
+            class="account-move-enable-totp btn btn-sm"
+          >
+            {gettext("Enable TOTP")}
+          </.link>
+        </div>
+      </div>
+
+      <%!-- Request --%>
+      <.form
+        :if={is_nil(@active_move) and @move_eligibility == :ok}
+        for={@move_form}
+        id="account-move-form"
+        class="account-move-form space-y-3"
+        phx-submit="request_move"
+      >
+        <div class="form-control">
+          <label
+            id="account-move-account-label"
+            class="account-migration-field-label label"
+            for="account_move_account"
+          >
+            <span class="label-text">{gettext("Destination account")}</span>
+          </label>
+          <input
+            type="text"
+            id="account_move_account"
+            name="move[account]"
+            value={@move_form[:account].value}
+            class="account-move-account input input-bordered input-sm w-full"
+            placeholder={gettext("@user@example.com")}
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="2048"
+            required
+            aria-describedby="account-move-account-hint"
+          />
+          <p
+            id="account-move-account-hint"
+            class="account-move-account-hint text-xs text-base-content/70 mt-1"
+          >
+            {gettext(
+              "The destination must already list this account as an alias. Enter it as @user@example.com or as its https:// address."
+            )}
+          </p>
+        </div>
+        <div class="form-control">
+          <label
+            id="account-move-password-label"
+            class="account-migration-field-label label"
+            for="account_move_password"
+          >
+            <span class="label-text">{gettext("Password")}</span>
+          </label>
+          <input
+            type="password"
+            id="account_move_password"
+            name="move[password]"
+            class="account-move-password input input-bordered input-sm w-full max-w-xs"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+        <div :if={@totp_enabled} class="form-control">
+          <label
+            id="account-move-code-label"
+            class="account-migration-field-label label"
+            for="account_move_code"
+          >
+            <span class="label-text">{gettext("Current TOTP Code")}</span>
+          </label>
+          <input
+            type="text"
+            id="account_move_code"
+            name="move[code]"
+            class="account-move-code input input-bordered input-sm w-full max-w-xs tracking-widest"
+            inputmode="numeric"
+            pattern="[0-9]{6}"
+            maxlength="6"
+            autocomplete="one-time-code"
+            required
+            aria-describedby="account-move-code-hint"
+          />
+          <.totp_code_hint id="account-move-code-hint" />
+        </div>
+        <button
+          id="account-move-submit"
+          type="submit"
+          class="account-move-submit btn btn-sm btn-warning"
+          disabled={@move_submitting}
+          phx-disable-with={gettext("Checking...")}
+        >
+          <.icon name="hero-truck" class="w-4 h-4 mr-1" />
+          {gettext("Request Move")}
+        </button>
+      </.form>
+    </div>
+  </section>
+
+  <section
+    id="account-move-history"
+    class="account-move-history space-y-2"
+    aria-labelledby="account-move-history-heading"
+  >
+    <h2
+      id="account-move-history-heading"
+      class="account-move-history-heading text-lg font-semibold"
+    >
+      {gettext("Move history")}
+    </h2>
+    <p
+      :if={@move_history == []}
+      id="account-move-history-empty"
+      class="account-move-history-empty text-sm text-base-content/70"
+    >
+      {gettext("This account has not requested a move.")}
+    </p>
+    <div :if={@move_history != []} class="overflow-x-auto">
+      <table id="account-move-history-table" class="account-move-history-table table table-sm">
+        <thead>
+          <tr>
+            <th scope="col">{gettext("Requested")}</th>
+            <th scope="col">{gettext("Destination")}</th>
+            <th scope="col">{gettext("Status")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            :for={move <- @move_history}
+            id={"account-move-history-#{move.id}"}
+            class="account-move-history-row"
+          >
+            <td class="account-move-history-requested whitespace-nowrap">
+              {format_datetime(move.requested_at)}
+            </td>
+            <td class="account-move-history-target break-all">
+              {Map.get(@target_labels, move.target_ap_id, move.target_ap_id)}
+            </td>
+            <td class="account-move-history-status">
+              {move_status_label(move.status)}
+              <span :if={cancel_reason_label(move.cancel_reason)} class="opacity-70">
+                ({cancel_reason_label(move.cancel_reason)})
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </section>

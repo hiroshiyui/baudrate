@@ -91,7 +91,8 @@ defmodule Baudrate.Auth.Passwords do
     * revokes every other session of the user (closing their LiveView
       sockets) and keeps the session row `keep_session_id`, so an attacker
       holding another session is signed out while the user stays signed in,
-    * cancels any active data export request (ADR 0023),
+    * cancels any active data export request (ADR 0023) and pending account
+      move (ADR 0025),
     * sends the always-delivered `password_changed` security notice.
 
   Returns `{:ok, user, revoked_session_count}` or `{:error, changeset}`.
@@ -106,6 +107,7 @@ defmodule Baudrate.Auth.Passwords do
         {:ok, updated} ->
           revoked = Sessions.delete_other_sessions_for_user(user.id, keep_session_id)
           Baudrate.DataPortability.cancel_active_exports(user.id, "password_changed")
+          Baudrate.AccountMigration.cancel_active_moves(user.id, "password_changed")
           Hooks.notify_account_security(user.id, "password_changed")
 
           Logger.info("auth.password_changed: user_id=#{user.id} revoked_sessions=#{revoked}")
@@ -153,6 +155,7 @@ defmodule Baudrate.Auth.Passwords do
             {:ok, user} ->
               Sessions.delete_all_sessions_for_user(user.id)
               Baudrate.DataPortability.cancel_active_exports(user.id, "password_changed")
+              Baudrate.AccountMigration.cancel_active_moves(user.id, "password_changed")
               {:ok, user}
 
             {:error, changeset} ->

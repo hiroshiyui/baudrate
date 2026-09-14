@@ -59,7 +59,7 @@ and feed item migration (`Federation.migrate_feed_items/2`).
 - `/profile/move` page: aliases list, add, remove, with explanations.
 - Data export: `also_known_as` and `moved_to` in `profile.json`.
 
-### Stage 2 — Outbound Move request lifecycle
+### Stage 2 — Outbound Move request lifecycle ✅ done (sending is Stage 3)
 
 - `account_moves` table: `user_id`, `target_ap_id`, `status`
   (`pending`/`sent`/`cancelled`/`failed`), `requested_at`, `send_after`,

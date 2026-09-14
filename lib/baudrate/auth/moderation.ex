@@ -35,6 +35,7 @@ defmodule Baudrate.Auth.Moderation do
     with {:ok, banned_user} <- result do
       Sessions.delete_all_sessions_for_user(banned_user.id)
       Baudrate.DataPortability.cancel_active_exports(banned_user.id, "banned")
+      Baudrate.AccountMigration.cancel_active_moves(banned_user.id, "banned")
       {revoked_count, _} = Invites.revoke_invite_codes_for_user(banned_user.id)
       {:ok, banned_user, revoked_count}
     end
