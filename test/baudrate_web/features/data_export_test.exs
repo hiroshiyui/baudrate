@@ -45,8 +45,7 @@ defmodule BaudrateWeb.Features.DataExportTest do
     |> fill_in(Query.css("#export_download_code"), with: totp_code(user, secret))
     |> click(Query.css("#data-export-download-submit"))
 
-    archive = wait_for_file(archive_glob, 100)
-    assert {:ok, entries} = :zip.table(String.to_charlist(archive))
+    {archive, entries} = wait_for_archive(archive_glob, 150)
     assert length(entries) > 1
     assert Repo.reload!(request).download_count == 1
 
@@ -67,13 +66,18 @@ defmodule BaudrateWeb.Features.DataExportTest do
     )
   end
 
-  defp wait_for_file(glob, 0), do: flunk("no download matching #{glob}")
+  defp wait_for_archive(glob, 0), do: flunk("no complete download matching #{glob}")
 
-  defp wait_for_file(glob, tries) do
-    # Firefox writes to a .part file and renames it when the download is done.
-    case Path.wildcard(glob) do
-      [path] -> path
-      _ -> Process.sleep(100) && wait_for_file(glob, tries - 1)
+  # Firefox creates the final file as an empty placeholder and writes the
+  # download to a .part file beside it, so wait until that is gone and the
+  # archive reads as a zip.
+  defp wait_for_archive(glob, tries) do
+    with [path] <- Path.wildcard(glob),
+         false <- File.exists?(path <> ".part"),
+         {:ok, entries} <- :zip.table(String.to_charlist(path)) do
+      {path, entries}
+    else
+      _ -> Process.sleep(100) && wait_for_archive(glob, tries - 1)
     end
   end
 end
