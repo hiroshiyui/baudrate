@@ -2364,6 +2364,16 @@ fails if a page redirects instead of rendering. The regular suite still guards
 hook names: `js_hooks_registered_test.exs` fails when a template's `phx-hook`
 is not registered in `app.js`.
 
+`layout_test.exs` checks rendered layout without screenshots. For member and
+admin pages, in the Aqua light and dark themes, at Firefox's minimum window
+width (500 px; Firefox allows nothing narrower, and it is below Tailwind's
+`sm` breakpoint) and at desktop width, it fails when the page is wider than
+the window, naming the innermost element that sticks out (including text
+overflowing its box), or when a dropdown menu leaves the viewport or one of
+its items is not the topmost element at its centre (clipped by a card or
+covered by the mobile dock). The test data includes long unbreakable tokens
+and a one-line feed post, the shapes behind earlier layout bugs.
+
 #### Architecture
 
 Feature tests solve a key compatibility issue: Wallaby 0.30 sends legacy JSON
@@ -2433,6 +2443,7 @@ to `tmp/wallaby_downloads` without a prompt.
 | `home_page_test.exs` | 4 | Guest welcome, board listing, personalized greeting, board navigation |
 | `invites_test.exs` | 3 | Invites page, generate button, generate a code and copy its link |
 | `js_errors_test.exs` | 3 | Member, guest and admin page crawls with no JS errors, LiveView crashes, or form fields erased by a re-render |
+| `layout_test.exs` | 2 | Member and admin pages in both Aqua themes at narrow and desktop width: no sideways scrolling, every dropdown item reachable |
 | `login_test.exs` | 4 | Successful login, failed login, registration link, redirect if authenticated |
 | `logout_test.exs` | 1 | Sign out redirects to login |
 | `messages_test.exs` | 4 | Messages page, empty state, new message page, send a message that arrives on the recipient's open inbox |
