@@ -146,7 +146,7 @@
 
             <%!-- Poll Section --%>
             <div id="feed-poll-section">
-              <fieldset :if={@poll_enabled} class="space-y-3" phx-change="validate_poll">
+              <fieldset :if={@poll_enabled} class="space-y-3">
                 <legend class="sr-only">{gettext("Poll")}</legend>
 
                 <div role="group" aria-label={gettext("Poll options")} class="space-y-2">
@@ -155,11 +155,12 @@
                     class="flex items-center gap-2"
                   >
                     <input
+                      id={"feed-poll-option-#{idx}"}
                       type="text"
                       name={"poll_options[#{idx}]"}
                       value={opt}
                       placeholder={gettext("Option %{number}", number: idx + 1)}
-                      class="input input-bordered input-sm w-full"
+                      class="feed-poll-option-input input input-bordered input-sm w-full"
                       aria-label={gettext("Option %{number}", number: idx + 1)}
                       maxlength="200"
                     />

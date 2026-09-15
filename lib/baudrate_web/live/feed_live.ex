@@ -26,7 +26,7 @@ defmodule BaudrateWeb.FeedLive do
   alias Baudrate.Federation
   alias Baudrate.Federation.FeedItemReply
   alias Baudrate.Federation.PubSub, as: FederationPubSub
-  alias BaudrateWeb.RateLimits
+  alias BaudrateWeb.{PollComposer, RateLimits}
   alias BaudrateWeb.InteractionHelpers
   alias BaudrateWeb.SafetyActions
 
@@ -188,12 +188,15 @@ defmodule BaudrateWeb.FeedLive do
 
   defp announce_new_items(socket, _count), do: socket
 
-  def handle_event("validate_post", %{"article" => params}, socket) do
+  def handle_event("validate_post", %{"article" => params} = all_params, socket) do
     changeset =
       Content.change_article(%Article{}, params)
       |> Map.put(:action, :validate)
 
-    {:noreply, assign(socket, :form, to_form(changeset, as: :article))}
+    {:noreply,
+     socket
+     |> assign(:form, to_form(changeset, as: :article))
+     |> PollComposer.assign_poll_params(all_params)}
   end
 
   def handle_event("submit_post", %{"article" => params} = all_params, socket) do
@@ -291,7 +294,7 @@ defmodule BaudrateWeb.FeedLive do
   def handle_event("add_poll_option", _params, socket) do
     options = socket.assigns.poll_options
 
-    if length(options) < 4 do
+    if length(options) < PollComposer.max_options() do
       {:noreply, assign(socket, :poll_options, options ++ [""])}
     else
       {:noreply, socket}
@@ -313,22 +316,6 @@ defmodule BaudrateWeb.FeedLive do
       {:noreply, socket}
     end
   end
-
-  def handle_event(
-        "validate_poll",
-        %{"poll_options" => poll_options, "poll_mode" => mode, "poll_expires" => expires},
-        socket
-      ) do
-    options = Map.values(poll_options) |> Enum.sort_by(fn _ -> 0 end)
-
-    {:noreply,
-     socket
-     |> assign(:poll_options, options)
-     |> assign(:poll_mode, mode)
-     |> assign(:poll_expires, expires)}
-  end
-
-  def handle_event("validate_poll", _params, socket), do: {:noreply, socket}
 
   def handle_event("toggle_reply", %{"id" => feed_item_id_str}, socket) do
     case parse_id(feed_item_id_str) do

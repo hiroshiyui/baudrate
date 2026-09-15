@@ -30,7 +30,7 @@ defmodule BaudrateWeb.ArticleNewLive do
   alias Baudrate.Auth
   alias Baudrate.Content
   alias Baudrate.Content.ArticleImageStorage
-  alias BaudrateWeb.RateLimits
+  alias BaudrateWeb.{PollComposer, RateLimits}
   import BaudrateWeb.Helpers, only: [parse_id: 1]
 
   @impl true
@@ -136,12 +136,15 @@ defmodule BaudrateWeb.ArticleNewLive do
   end
 
   @impl true
-  def handle_event("validate", %{"article" => params}, socket) do
+  def handle_event("validate", %{"article" => params} = all_params, socket) do
     changeset =
       Content.change_article(%Baudrate.Content.Article{}, params)
       |> Map.put(:action, :validate)
 
-    {:noreply, assign(socket, :form, to_form(changeset, as: :article))}
+    {:noreply,
+     socket
+     |> assign(:form, to_form(changeset, as: :article))
+     |> PollComposer.assign_poll_params(all_params)}
   end
 
   @impl true
@@ -174,7 +177,7 @@ defmodule BaudrateWeb.ArticleNewLive do
   def handle_event("add_poll_option", _params, socket) do
     options = socket.assigns.poll_options
 
-    if length(options) < 4 do
+    if length(options) < PollComposer.max_options() do
       {:noreply, assign(socket, :poll_options, options ++ [""])}
     else
       {:noreply, socket}
@@ -197,23 +200,6 @@ defmodule BaudrateWeb.ArticleNewLive do
       {:noreply, socket}
     end
   end
-
-  @impl true
-  def handle_event(
-        "validate_poll",
-        %{"poll_options" => poll_options, "poll_mode" => mode, "poll_expires" => expires},
-        socket
-      ) do
-    options = Map.values(poll_options) |> Enum.sort_by(fn _ -> 0 end)
-
-    {:noreply,
-     socket
-     |> assign(:poll_options, options)
-     |> assign(:poll_mode, mode)
-     |> assign(:poll_expires, expires)}
-  end
-
-  def handle_event("validate_poll", _params, socket), do: {:noreply, socket}
 
   @impl true
   def handle_event(

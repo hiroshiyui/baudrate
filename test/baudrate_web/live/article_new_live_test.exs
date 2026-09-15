@@ -317,4 +317,26 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
       assert has_element?(lv, ~s(#article-new-toggle-poll[aria-expanded="true"]))
     end
   end
+
+  # LiveView ignores phx-change on the poll's fieldset, so poll edits arrive with
+  # the article form's change event. Unless that event keeps them, the re-render
+  # resets every option input in the browser and no poll can be created.
+  test "poll fields typed into the form are rendered back after a change", %{conn: conn} do
+    {:ok, lv, _html} = live(conn, "/articles/new")
+    lv |> element("#article-new-toggle-poll") |> render_click()
+
+    lv
+    |> form("#article-new-form",
+      article: %{title: "Lunch"},
+      poll_options: %{"0" => "Noodles", "1" => "Curry"},
+      poll_mode: "multiple",
+      poll_expires: "1d"
+    )
+    |> render_change()
+
+    assert has_element?(lv, ~s(#article-new-poll-option-0[value="Noodles"]))
+    assert has_element?(lv, ~s(#article-new-poll-option-1[value="Curry"]))
+    assert has_element?(lv, "#article-new-poll-mode-multiple[checked]")
+    assert has_element?(lv, ~s(#poll-expires option[value="1d"][selected]))
+  end
 end

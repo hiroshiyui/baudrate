@@ -169,7 +169,7 @@
 
     <%!-- Poll Section --%>
     <div id="article-poll-section" class="article-new-poll-section">
-      <fieldset :if={@poll_enabled} class="article-new-poll space-y-3" phx-change="validate_poll">
+      <fieldset :if={@poll_enabled} class="article-new-poll space-y-3">
         <legend class="sr-only">{gettext("Poll")}</legend>
 
         <div role="group" aria-label={gettext("Poll options")} class="space-y-2">

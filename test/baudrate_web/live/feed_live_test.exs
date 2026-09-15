@@ -697,6 +697,25 @@ defmodule BaudrateWeb.FeedLiveTest do
       refute html =~ "Option 3"
     end
 
+    # See the article composer test: poll edits arrive with the form's change
+    # event, which must keep them or the re-render erases the typed options.
+    test "poll options typed into the form are rendered back after a change", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, "/feed")
+      lv |> element("button[phx-click='toggle_poll']") |> render_click()
+
+      lv
+      |> form("#feed-quick-post-form",
+        article: %{title: "Lunch"},
+        poll_options: %{"0" => "Noodles", "1" => "Curry"},
+        poll_mode: "single",
+        poll_expires: ""
+      )
+      |> render_change()
+
+      assert has_element?(lv, ~s(#feed-poll-option-0[value="Noodles"]))
+      assert has_element?(lv, ~s(#feed-poll-option-1[value="Curry"]))
+    end
+
     test "creates article with poll", %{conn: conn} do
       {:ok, lv, _html} = live(conn, "/feed")
 
