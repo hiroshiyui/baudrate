@@ -20,11 +20,13 @@
   </aside>
   <div id="profile-header" class="flex items-center gap-4">
     <.avatar user={@profile_user} size={120} />
-    <div>
-      <h1 id="user-profile-heading" class="text-2xl font-bold">{display_name(@profile_user)}</h1>
+    <div class="user-profile-header-info min-w-0">
+      <h1 id="user-profile-heading" class="text-2xl font-bold break-words">
+        {display_name(@profile_user)}
+      </h1>
       <div class="text-sm text-base-content/70 flex items-center gap-1">
         <.icon name="hero-identification" class="size-6 shrink-0" />
-        <span class="user-profile-handle" title={gettext("Fediverse handle")}>{fediverse_handle(
+        <span class="user-profile-handle break-all" title={gettext("Fediverse handle")}>{fediverse_handle(
           @profile_user
         )}</span>
       </div>
@@ -46,7 +48,7 @@
       <div
         :if={@current_user && @current_user.id != @profile_user.id}
         id="user-profile-actions"
-        class="flex gap-2 mt-2"
+        class="user-profile-actions flex flex-wrap gap-2 mt-2"
       >
         <.link
           :if={!@profile_user.is_bot and is_nil(@moved_to) and !@is_blocked}
