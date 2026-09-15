@@ -27,6 +27,7 @@ defmodule Baudrate.Moderation.Report do
 
   schema "reports" do
     field :reason, :string
+    field :category, :string
     field :status, :string, default: "open"
     field :resolved_at, :utc_datetime
     field :resolution_note, :string
@@ -46,12 +47,17 @@ defmodule Baudrate.Moderation.Report do
   end
 
   @valid_statuses ~w(open resolved dismissed)
+  # P1-D9. "rule_violation" will point at a rule once the Rules page exists
+  # (1E); inbound federated Flags carry no category, so it stays optional for
+  # them and for reports made before this field existed.
+  @valid_categories ~w(spam harassment illegal rule_violation other)
 
   @doc "Casts and validates fields for creating or updating a report."
   def changeset(report, attrs) do
     report
     |> cast(attrs, [
       :reason,
+      :category,
       :status,
       :reporter_id,
       :article_id,
@@ -67,6 +73,8 @@ defmodule Baudrate.Moderation.Report do
     |> validate_required([:reason])
     |> validate_length(:reason, min: 1, max: 2000)
     |> validate_inclusion(:status, @valid_statuses)
+    |> validate_inclusion(:category, @valid_categories)
+    |> validate_local_category()
     |> validate_has_target()
     |> foreign_key_constraints()
   end
@@ -89,6 +97,17 @@ defmodule Baudrate.Moderation.Report do
     |> validate_length(:reason, max: 2000)
     |> validate_has_target()
     |> foreign_key_constraints()
+  end
+
+  @doc "The reason categories a member picks from (P1-D9)."
+  def categories, do: @valid_categories
+
+  # A report made on this site always has a category; one that arrived as a
+  # federated Flag has whatever the remote instance sent, which is nothing.
+  defp validate_local_category(changeset) do
+    if get_field(changeset, :reporter_id),
+      do: validate_required(changeset, [:category]),
+      else: changeset
   end
 
   defp foreign_key_constraints(changeset) do

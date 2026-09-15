@@ -83,6 +83,7 @@ defmodule BaudrateWeb.Features.SafetyTest do
       |> visit("/feed")
       |> click(Query.css("#feed-item-actions-menu-toggle-#{item.id}"))
       |> click(Query.css("#feed-item-report-#{item.id}"))
+      |> click(Query.css("#report-category option[value=harassment]"))
       |> fill_in(Query.css("#report-reason"), with: "Harassment")
       |> click(Query.css("#report-modal .report-modal-submit"))
       |> assert_has(Query.text("Report submitted. Thank you."))

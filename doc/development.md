@@ -1178,8 +1178,9 @@ to the user's DM PubSub topic via `attach_hook/4` and re-fetches the count on
 
 > **See the [SysOp Guide](sysop.md#moderation) for moderation operations.**
 
-The moderation system includes a content reporting queue (`/admin/moderation`)
-and an audit log (`/admin/moderation-log`). Moderation and administrative
+The moderation system includes a content reporting queue (`/admin/moderation`,
+20 reports a page, newest first, `?status=` and `?page=` in the URL) and an
+audit log (`/admin/moderation-log`). Moderation and administrative
 actions — banning, role changes, report resolution and Flags, board CRUD and
 federation settings, content deletion, pin/lock, settings saves, and bot
 management — are recorded with actor, action type, target, and contextual
@@ -1196,12 +1197,23 @@ directly from the UI. Report controls appear on article pages (for articles and
 comments by other users), user profile pages, the "More actions" menu of remote
 feed items and remote comments, the header menu of a conversation with a remote
 actor, and on every received message. Reports are submitted via a modal dialog
-with a required reason field (max 2000 chars). Duplicate prevention ensures one
+with a required reason category (P1-D9: spam, harassment, illegal content,
+breaks a rule, other) and a required free-text reason (max 2000 chars). Only
+those two fields come from the client (`SafetyActions.report_details/1`); the
+target always comes from server-side assigns. A report that arrives as a
+federated `Flag` carries no category, so `reports.category` is required only
+when `reporter_id` is set. Duplicate prevention ensures one
 open report per reporter per exact target (`Moderation.has_open_report?/2`
 compares every target field, so reporting a post does not count as reporting
 its author). Report creation is rate-limited to 5 per 15 minutes per user.
 Reports target `article_id`, `comment_id`, `remote_actor_id`,
 `reported_user_id`, `feed_item_id` or `message_id`.
+
+Each row in the queue shows the category, the full reported text, a link to
+the reported article, comment (at its place on the article), account or
+original post, and how many **other** open reports share that exact target
+(`Moderation.other_open_report_counts/1`, one grouped query per target field,
+so no N+1).
 
 Feed items, messages and remote accounts are reported through
 `Moderation.report_feed_item/3`, `report_message/3` and

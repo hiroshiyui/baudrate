@@ -83,7 +83,9 @@ defmodule BaudrateWeb.FeedLiveTest do
       lv |> element("#feed-item-report-#{item.id}") |> render_click()
       assert has_element?(lv, "#report-modal-title", "Report Post")
 
-      lv |> form("#report-modal form", %{"reason" => "Spam"}) |> render_submit()
+      lv
+      |> form("#report-modal form", %{"reason" => "Spam", "category" => "spam"})
+      |> render_submit()
 
       assert [report] = Baudrate.Moderation.list_reports(status: "open")
       assert report.feed_item_id == item.id
@@ -99,7 +101,10 @@ defmodule BaudrateWeb.FeedLiveTest do
       {:ok, lv, _html} = live(conn, "/feed")
 
       lv |> element("#feed-item-#{item.id}-report-actor") |> render_click()
-      lv |> form("#report-modal form", %{"reason" => "Fake account"}) |> render_submit()
+
+      lv
+      |> form("#report-modal form", %{"reason" => "Fake account", "category" => "spam"})
+      |> render_submit()
 
       assert [%{remote_actor_id: actor_id, feed_item_id: nil}] =
                Baudrate.Moderation.list_reports(status: "open")
@@ -139,7 +144,9 @@ defmodule BaudrateWeb.FeedLiveTest do
 
       lv |> element("#feed-item-report-#{item.id}") |> render_click()
 
-      assert lv |> form("#report-modal form", %{"reason" => "Spam"}) |> render_submit() =~
+      assert lv
+             |> form("#report-modal form", %{"reason" => "Spam", "category" => "spam"})
+             |> render_submit() =~
                "Too many reports"
 
       assert Baudrate.Moderation.list_reports(status: "open") == []

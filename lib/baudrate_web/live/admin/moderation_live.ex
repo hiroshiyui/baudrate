@@ -12,28 +12,46 @@ defmodule BaudrateWeb.Admin.ModerationLive do
 
   alias Baudrate.Content
   alias Baudrate.Moderation
-  import BaudrateWeb.Helpers, only: [parse_id: 1, translate_report_status: 1]
+
+  @statuses ~w(open resolved dismissed)
+  import BaudrateWeb.Helpers,
+    only: [
+      parse_id: 1,
+      parse_page: 1,
+      translate_report_category: 1,
+      translate_report_status: 1
+    ]
 
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
-     socket
-     |> assign(
+     assign(socket,
        status_filter: "open",
+       page: 1,
+       total_pages: 1,
        selected_report_ids: MapSet.new(),
        bulk_resolve_note: "",
        show_bulk_resolve_modal: false,
        page_title: gettext("Admin Moderation")
-     )
+     )}
+  end
+
+  # Status and page live in the URL, so a moderator can link to a page of the
+  # queue and the pager works like every other paginated page.
+  @impl true
+  def handle_params(params, _uri, socket) do
+    status = if params["status"] in @statuses, do: params["status"], else: "open"
+
+    {:noreply,
+     socket
+     |> assign(status_filter: status, page: parse_page(params["page"]))
+     |> assign(selected_report_ids: MapSet.new())
      |> load_reports()}
   end
 
   @impl true
   def handle_event("filter", %{"status" => status}, socket) do
-    {:noreply,
-     socket
-     |> assign(status_filter: status, selected_report_ids: MapSet.new())
-     |> load_reports()}
+    {:noreply, push_patch(socket, to: ~p"/admin/moderation?status=#{status}")}
   end
 
   @impl true
@@ -334,7 +352,14 @@ defmodule BaudrateWeb.Admin.ModerationLive do
   end
 
   defp load_reports(socket) do
-    reports = Moderation.list_reports(status: socket.assigns.status_filter)
-    assign(socket, reports: reports)
+    %{reports: reports, page: page, total_pages: total_pages} =
+      Moderation.paginate_reports(status: socket.assigns.status_filter, page: socket.assigns.page)
+
+    assign(socket,
+      reports: reports,
+      page: page,
+      total_pages: total_pages,
+      other_reports: Moderation.other_open_report_counts(reports)
+    )
   end
 end

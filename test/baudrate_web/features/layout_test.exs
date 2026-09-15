@@ -138,6 +138,7 @@ defmodule BaudrateWeb.Features.LayoutTest do
 
     {:ok, _} =
       Baudrate.Moderation.create_report(%{
+        category: "spam",
         reason: long_token,
         reporter_id: other.id,
         article_id: article.id

@@ -20,6 +20,7 @@ defmodule BaudrateWeb.Features.ModerationQueueTest do
     |> visit("/articles/#{article.slug}")
     |> click(Query.css("#article-menu-trigger"))
     |> click(Query.css("#article-menu-report"))
+    |> click(Query.css("#report-category option[value=spam]"))
     |> fill_in(Query.css("#report-reason"), with: "Spam with a shop link")
     |> click(Query.css("#report-modal .report-modal-submit"))
     |> assert_has(Query.text("Report submitted. Thank you."))
@@ -111,6 +112,7 @@ defmodule BaudrateWeb.Features.ModerationQueueTest do
       Moderation.create_report(%{
         reporter_id: reporter.id,
         article_id: article.id,
+        category: "spam",
         reason: reason
       })
 

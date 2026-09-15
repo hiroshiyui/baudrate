@@ -1139,7 +1139,10 @@ defmodule BaudrateWeb.ArticleLiveTest do
 
       lv |> element("#comment-#{comment.id}-report-actor") |> render_click()
       assert has_element?(lv, "#report-modal-title", "Report Account")
-      lv |> form("#report-modal form", %{"reason" => "Spam bot"}) |> render_submit()
+
+      lv
+      |> form("#report-modal form", %{"reason" => "Spam bot", "category" => "spam"})
+      |> render_submit()
 
       assert [%{remote_actor_id: id, comment_id: nil}] =
                Baudrate.Moderation.list_reports(status: "open")
@@ -1224,7 +1227,7 @@ defmodule BaudrateWeb.ArticleLiveTest do
         "label" => article.title
       })
 
-      render_click(lv, "submit_report", %{"reason" => "spam"})
+      render_click(lv, "submit_report", %{"reason" => "spam", "category" => "spam"})
 
       assert [report] = Baudrate.Moderation.list_reports(status: "open")
       assert report.reporter_id == user.id

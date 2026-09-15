@@ -18,6 +18,7 @@ defmodule BaudrateWeb.UserProfileLive do
   alias BaudrateWeb.LinkedData
   alias BaudrateWeb.OpenGraph
   alias BaudrateWeb.RateLimits
+  alias BaudrateWeb.SafetyActions
   import BaudrateWeb.Helpers, only: [translate_role: 1]
 
   @per_page 10
@@ -299,7 +300,7 @@ defmodule BaudrateWeb.UserProfileLive do
   end
 
   @impl true
-  def handle_event("submit_report", %{"reason" => reason}, socket) do
+  def handle_event("submit_report", %{"reason" => _} = params, socket) do
     user = socket.assigns.current_user
     profile_user = socket.assigns.profile_user
 
@@ -319,7 +320,10 @@ defmodule BaudrateWeb.UserProfileLive do
            |> assign(:show_report_modal, false)
            |> put_flash(:error, gettext("You have already reported this."))}
         else
-          attrs = Map.merge(target_attrs, %{reason: reason, reporter_id: user.id})
+          attrs =
+            target_attrs
+            |> Map.merge(SafetyActions.report_details(params))
+            |> Map.put(:reporter_id, user.id)
 
           case Moderation.create_report(attrs) do
             {:ok, _report} ->

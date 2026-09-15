@@ -235,6 +235,7 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
 
     {:ok, _} =
       Baudrate.Moderation.create_report(%{
+        category: "spam",
         reason: "Spam",
         reporter_id: user.id,
         reported_user_id: user.id

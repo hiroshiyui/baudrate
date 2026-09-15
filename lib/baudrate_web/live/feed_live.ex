@@ -391,8 +391,8 @@ defmodule BaudrateWeb.FeedLive do
   def handle_event("close_report_modal", _params, socket),
     do: {:noreply, SafetyActions.assign_report_modal(socket)}
 
-  def handle_event("submit_report", %{"reason" => reason}, socket),
-    do: {:noreply, SafetyActions.submit_report(socket, reason)}
+  def handle_event("submit_report", %{"reason" => _} = params, socket),
+    do: {:noreply, SafetyActions.submit_report(socket, params)}
 
   # Blocking or muting hides the account's items, so the page is reloaded and
   # focus moves to the feed heading (the control that had focus is gone).

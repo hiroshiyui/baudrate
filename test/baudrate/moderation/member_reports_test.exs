@@ -77,7 +77,10 @@ defmodule Baudrate.Moderation.MemberReportsTest do
       item = create_feed_item(actor)
 
       assert {:ok, %Report{} = report} =
-               Moderation.report_feed_item(user, to_string(item.id), "Spam")
+               Moderation.report_feed_item(user, to_string(item.id), %{
+                 reason: "Spam",
+                 category: "spam"
+               })
 
       assert report.feed_item_id == item.id
       assert report.remote_actor_id == actor.id
@@ -86,16 +89,23 @@ defmodule Baudrate.Moderation.MemberReportsTest do
 
     test "refuses an item outside the reporter's feed", %{user: user, actor: actor} do
       item = create_feed_item(actor)
-      assert {:error, :not_found} = Moderation.report_feed_item(user, item.id, "Spam")
-      assert {:error, :not_found} = Moderation.report_feed_item(user, "nope", "Spam")
+
+      assert {:error, :not_found} =
+               Moderation.report_feed_item(user, item.id, %{reason: "Spam", category: "spam"})
+
+      assert {:error, :not_found} =
+               Moderation.report_feed_item(user, "nope", %{reason: "Spam", category: "spam"})
     end
 
     test "refuses a second open report of the same item", %{user: user, actor: actor} do
       follow!(user, actor)
       item = create_feed_item(actor)
 
-      assert {:ok, _} = Moderation.report_feed_item(user, item.id, "Spam")
-      assert {:error, :already_reported} = Moderation.report_feed_item(user, item.id, "Again")
+      assert {:ok, _} =
+               Moderation.report_feed_item(user, item.id, %{reason: "Spam", category: "spam"})
+
+      assert {:error, :already_reported} =
+               Moderation.report_feed_item(user, item.id, %{reason: "Again", category: "spam"})
     end
   end
 
@@ -112,7 +122,11 @@ defmodule Baudrate.Moderation.MemberReportsTest do
          %{user: user, sender: sender, conversation: conversation, message: message} do
       {:ok, _other} = Messaging.create_message(conversation, sender, %{"body" => "Unreported"})
 
-      assert {:ok, report} = Moderation.report_message(user, to_string(message.id), "Harassment")
+      assert {:ok, report} =
+               Moderation.report_message(user, to_string(message.id), %{
+                 reason: "Harassment",
+                 category: "spam"
+               })
 
       assert report.message_id == message.id
       assert report.message_body == "You again"
@@ -122,7 +136,9 @@ defmodule Baudrate.Moderation.MemberReportsTest do
 
     test "keeps the copy after the sender deletes the message",
          %{user: user, sender: sender, message: message} do
-      {:ok, report} = Moderation.report_message(user, message.id, "Harassment")
+      {:ok, report} =
+        Moderation.report_message(user, message.id, %{reason: "Harassment", category: "spam"})
+
       {:ok, _} = Messaging.soft_delete_message(message, sender)
 
       assert Repo.reload!(report).message_body == "You again"
@@ -130,11 +146,19 @@ defmodule Baudrate.Moderation.MemberReportsTest do
 
     test "refuses the sender, outsiders, and deleted messages",
          %{user: user, sender: sender, message: message} do
-      assert {:error, :not_found} = Moderation.report_message(sender, message.id, "Mine")
-      assert {:error, :not_found} = Moderation.report_message(create_user(), message.id, "x")
+      assert {:error, :not_found} =
+               Moderation.report_message(sender, message.id, %{reason: "Mine", category: "spam"})
+
+      assert {:error, :not_found} =
+               Moderation.report_message(create_user(), message.id, %{
+                 reason: "x",
+                 category: "spam"
+               })
 
       {:ok, _} = Messaging.soft_delete_message(message, sender)
-      assert {:error, :not_found} = Moderation.report_message(user, message.id, "Gone")
+
+      assert {:error, :not_found} =
+               Moderation.report_message(user, message.id, %{reason: "Gone", category: "spam"})
     end
 
     test "records a remote sender as the reported actor", %{user: user, actor: actor} do
@@ -145,7 +169,9 @@ defmodule Baudrate.Moderation.MemberReportsTest do
           ap_id: "https://remote.example/dms/#{System.unique_integer([:positive])}"
         })
 
-      assert {:ok, report} = Moderation.report_message(user, message.id, "Spam")
+      assert {:ok, report} =
+               Moderation.report_message(user, message.id, %{reason: "Spam", category: "spam"})
+
       assert report.remote_actor_id == actor.id
       assert is_nil(report.reported_user_id)
       assert report.message_body == "Remote hello"
@@ -154,6 +180,7 @@ defmodule Baudrate.Moderation.MemberReportsTest do
     test "message_body cannot be set through report attributes", %{user: user, actor: actor} do
       {:ok, report} =
         Moderation.create_report(%{
+          category: "spam",
           reason: "x",
           reporter_id: user.id,
           remote_actor_id: actor.id,
@@ -166,13 +193,19 @@ defmodule Baudrate.Moderation.MemberReportsTest do
 
   describe "report_remote_actor/3" do
     test "reports the account", %{user: user, actor: actor} do
-      assert {:ok, report} = Moderation.report_remote_actor(user, actor.id, "Impersonation")
+      assert {:ok, report} =
+               Moderation.report_remote_actor(user, actor.id, %{
+                 reason: "Impersonation",
+                 category: "spam"
+               })
+
       assert report.remote_actor_id == actor.id
       assert is_nil(report.feed_item_id)
     end
 
     test "refuses an unknown actor", %{user: user} do
-      assert {:error, :not_found} = Moderation.report_remote_actor(user, -1, "x")
+      assert {:error, :not_found} =
+               Moderation.report_remote_actor(user, -1, %{reason: "x", category: "spam"})
     end
 
     test "a report about one of the account's posts is not a report about the account",
@@ -180,11 +213,17 @@ defmodule Baudrate.Moderation.MemberReportsTest do
       follow!(user, actor)
       item = create_feed_item(actor)
 
-      assert {:ok, _} = Moderation.report_feed_item(user, item.id, "Spam")
-      assert {:ok, _} = Moderation.report_remote_actor(user, actor.id, "Spam account")
+      assert {:ok, _} =
+               Moderation.report_feed_item(user, item.id, %{reason: "Spam", category: "spam"})
+
+      assert {:ok, _} =
+               Moderation.report_remote_actor(user, actor.id, %{
+                 reason: "Spam account",
+                 category: "spam"
+               })
 
       assert {:error, :already_reported} =
-               Moderation.report_remote_actor(user, actor.id, "Again")
+               Moderation.report_remote_actor(user, actor.id, %{reason: "Again", category: "spam"})
     end
   end
 
@@ -193,7 +232,8 @@ defmodule Baudrate.Moderation.MemberReportsTest do
     follow!(user, actor)
     item = create_feed_item(actor)
 
-    {:ok, report} = Moderation.report_feed_item(user, item.id, "Spam")
+    {:ok, report} =
+      Moderation.report_feed_item(user, item.id, %{reason: "Spam", category: "spam"})
 
     assert [%{id: id, feed_item: %{remote_actor: %RemoteActor{}}}] =
              Moderation.list_reports(status: "open")

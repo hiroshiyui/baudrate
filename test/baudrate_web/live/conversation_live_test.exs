@@ -230,7 +230,10 @@ defmodule BaudrateWeb.ConversationLiveTest do
 
       view |> element("#message-report-#{theirs.id}") |> render_click()
       assert has_element?(view, "#report-modal-title", "Report Message")
-      view |> form("#report-modal form", %{"reason" => "Rude"}) |> render_submit()
+
+      view
+      |> form("#report-modal form", %{"reason" => "Rude", "category" => "spam"})
+      |> render_submit()
 
       assert [report] = Baudrate.Moderation.list_reports(status: "open")
       assert report.message_body == "Go away"
@@ -277,7 +280,11 @@ defmodule BaudrateWeb.ConversationLiveTest do
       refute Baudrate.Auth.blocked?(user, actor.ap_id)
 
       view |> element("#conversation-report-actor") |> render_click()
-      view |> form("#report-modal form", %{"reason" => "Spam"}) |> render_submit()
+
+      view
+      |> form("#report-modal form", %{"reason" => "Spam", "category" => "spam"})
+      |> render_submit()
+
       assert [%{remote_actor_id: id}] = Baudrate.Moderation.list_reports(status: "open")
       assert id == actor.id
     end

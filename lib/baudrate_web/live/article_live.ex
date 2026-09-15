@@ -689,15 +689,15 @@ defmodule BaudrateWeb.ArticleLive do
   end
 
   @impl true
-  def handle_event("submit_report", %{"reason" => reason}, socket) do
+  def handle_event("submit_report", %{"reason" => _} = params, socket) do
     if socket.assigns.report_target_type in SafetyActions.report_types() do
-      {:noreply, SafetyActions.submit_report(socket, reason)}
+      {:noreply, SafetyActions.submit_report(socket, params)}
     else
-      submit_content_report(socket, reason)
+      submit_content_report(socket, SafetyActions.report_details(params))
     end
   end
 
-  defp submit_content_report(socket, reason) do
+  defp submit_content_report(socket, details) do
     user = socket.assigns.current_user
 
     case RateLimits.check_create_report(user.id) do
@@ -726,7 +726,7 @@ defmodule BaudrateWeb.ArticleLive do
              |> put_flash(:error, gettext("You have already reported this."))}
 
           true ->
-            attrs = Map.merge(target_attrs, %{reason: reason, reporter_id: user.id})
+            attrs = target_attrs |> Map.merge(details) |> Map.put(:reporter_id, user.id)
 
             case Moderation.create_report(attrs) do
               {:ok, _report} ->

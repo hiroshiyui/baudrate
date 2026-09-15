@@ -63,12 +63,7 @@ Shipped on `current`; see "Recently completed". Blocking semantics are recorded 
 
 ### 1B — A report queue that works, including for board moderators (L)
 
-- [ ] **Queue basics.**
-  - Paginate `Moderation.list_reports/1`.
-  - Link each report to the reported content, account or actor.
-  - Show the full reported text.
-  - Show how many other reports the same target has.
-  - A fixed reason category on every new report (P1-D9).
+- [x] **Queue basics** (2026-09-16): `Moderation.paginate_reports/1` (20 a page, status and page in the URL), links to the reported content, account or actor, the full reported text, `other_open_report_counts/1` next to each report, and a required reason category (P1-D9) on every report made on this site.
 - [ ] **Scoped queue for board moderators.**
   - Board moderators (role `user`) get a queue of reports about articles and comments in the boards they moderate.
   - It is reachable from those boards, shows no admin navigation, and never shows reports about other boards, accounts or DMs.

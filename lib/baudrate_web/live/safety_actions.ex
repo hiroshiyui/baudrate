@@ -25,6 +25,16 @@ defmodule BaudrateWeb.SafetyActions do
   def report_types, do: @report_types
 
   @doc """
+  What the member filled in on the report dialog: the free-text reason and the
+  reason category (P1-D9). Only these two come from the client; the target is
+  always taken from server-side assigns.
+  """
+  @spec report_details(map()) :: %{reason: String.t() | nil, category: String.t() | nil}
+  def report_details(params) when is_map(params) do
+    %{reason: params["reason"], category: params["category"]}
+  end
+
+  @doc """
   Blocks, unblocks, mutes or unmutes the remote actor whose ID the client sent.
 
   Returns `{:ok, socket}` when the relationship changed and `{:error, socket}`
@@ -105,13 +115,14 @@ defmodule BaudrateWeb.SafetyActions do
   Files the open report (a feed item, message or remote actor) through its
   `Moderation` function and closes the modal with a flash message.
   """
-  def submit_report(socket, reason) do
+  def submit_report(socket, params) do
+    details = report_details(params)
     user = socket.assigns.current_user
     %{report_target_type: type, report_target_id: id} = socket.assigns
 
     result =
       case RateLimits.check_create_report(user.id) do
-        :ok -> file_report(type, user, id, reason)
+        :ok -> file_report(type, user, id, details)
         {:error, :rate_limited} -> {:error, :rate_limited}
       end
 
@@ -132,13 +143,13 @@ defmodule BaudrateWeb.SafetyActions do
     end
   end
 
-  defp file_report("feed_item", user, id, reason),
-    do: Moderation.report_feed_item(user, id, reason)
+  defp file_report("feed_item", user, id, details),
+    do: Moderation.report_feed_item(user, id, details)
 
-  defp file_report("message", user, id, reason), do: Moderation.report_message(user, id, reason)
+  defp file_report("message", user, id, details), do: Moderation.report_message(user, id, details)
 
-  defp file_report("remote_actor", user, id, reason),
-    do: Moderation.report_remote_actor(user, id, reason)
+  defp file_report("remote_actor", user, id, details),
+    do: Moderation.report_remote_actor(user, id, details)
 
-  defp file_report(_type, _user, _id, _reason), do: {:error, :not_found}
+  defp file_report(_type, _user, _id, _details), do: {:error, :not_found}
 end

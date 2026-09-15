@@ -87,6 +87,110 @@ defmodule Baudrate.ModerationTest do
     end
   end
 
+  describe "report categories (P1-D9)" do
+    test "a report made on this site needs a valid category", %{
+      user: user,
+      remote_actor: actor
+    } do
+      base = %{reason: "Spam", reporter_id: user.id, remote_actor_id: actor.id}
+
+      assert {:error, changeset} = Moderation.create_report(base)
+      assert errors_on(changeset).category
+
+      assert {:error, changeset} = Moderation.create_report(Map.put(base, :category, "vibes"))
+      assert errors_on(changeset).category
+
+      assert {:ok, report} = Moderation.create_report(Map.put(base, :category, "harassment"))
+      assert report.category == "harassment"
+    end
+
+    test "a report that arrived as a federated Flag keeps no category", %{
+      user: user,
+      remote_actor: actor
+    } do
+      assert {:ok, report} =
+               %Report{}
+               |> Report.remote_flag_changeset(%{
+                 reason: "Spam",
+                 reporter_remote_actor_id: actor.id,
+                 reported_user_id: user.id
+               })
+               |> Repo.insert()
+
+      assert is_nil(report.category)
+    end
+  end
+
+  describe "paginate_reports/1" do
+    test "returns one page at a time, newest first", %{user: user, remote_actor: actor} do
+      for n <- 1..3 do
+        {:ok, _} =
+          Moderation.create_report(%{
+            reason: "Report #{n}",
+            category: "spam",
+            reporter_id: user.id,
+            remote_actor_id: actor.id
+          })
+      end
+
+      assert %{reports: [newest, _], page: 1, total: 3, total_pages: 2} =
+               Moderation.paginate_reports(per_page: 2)
+
+      assert newest.reason == "Report 3"
+      assert %{reports: [oldest], page: 2} = Moderation.paginate_reports(per_page: 2, page: 2)
+      assert oldest.reason == "Report 1"
+    end
+
+    test "filters by status", %{user: user, remote_actor: actor} do
+      {:ok, report} =
+        Moderation.create_report(%{
+          reason: "Spam",
+          category: "spam",
+          reporter_id: user.id,
+          remote_actor_id: actor.id
+        })
+
+      {:ok, _} = Moderation.dismiss_report(report, user.id)
+
+      assert %{reports: [], total: 0} = Moderation.paginate_reports(status: "open")
+      assert %{reports: [_], total: 1} = Moderation.paginate_reports(status: "dismissed")
+    end
+  end
+
+  describe "other_open_report_counts/1" do
+    test "counts other open reports about the same target", %{remote_actor: actor} do
+      other_actor = create_remote_actor()
+
+      reports =
+        for {reporter, target} <- [
+              {create_user(), actor},
+              {create_user(), actor},
+              {create_user(), other_actor}
+            ] do
+          {:ok, report} =
+            Moderation.create_report(%{
+              reason: "Spam",
+              category: "spam",
+              reporter_id: reporter.id,
+              remote_actor_id: target.id
+            })
+
+          report
+        end
+
+      [first, second, alone] = reports
+      counts = Moderation.other_open_report_counts(reports)
+
+      assert counts[first.id] == 1
+      assert counts[second.id] == 1
+      assert Map.get(counts, alone.id, 0) == 0
+
+      {:ok, _} = Moderation.resolve_report(second, create_user().id, "handled")
+      counts = Moderation.other_open_report_counts(reports)
+      assert Map.get(counts, first.id, 0) == 0
+    end
+  end
+
   describe "list_reports/1" do
     test "returns open reports by default", %{remote_actor: actor} do
       {:ok, _} = Moderation.create_report(%{reason: "Open report", remote_actor_id: actor.id})
@@ -164,6 +268,7 @@ defmodule Baudrate.ModerationTest do
 
       assert {:ok, %Report{} = report} =
                Moderation.create_report(%{
+                 category: "spam",
                  reason: "Abusive behavior",
                  reporter_id: user.id,
                  reported_user_id: target.id
@@ -185,6 +290,7 @@ defmodule Baudrate.ModerationTest do
     } do
       {:ok, _} =
         Moderation.create_report(%{
+          category: "spam",
           reason: "Spam",
           reporter_id: user.id,
           remote_actor_id: actor.id
@@ -196,6 +302,7 @@ defmodule Baudrate.ModerationTest do
     test "returns false after report is resolved", %{user: user, remote_actor: actor} do
       {:ok, report} =
         Moderation.create_report(%{
+          category: "spam",
           reason: "Spam",
           reporter_id: user.id,
           remote_actor_id: actor.id
@@ -211,6 +318,7 @@ defmodule Baudrate.ModerationTest do
 
       {:ok, _} =
         Moderation.create_report(%{
+          category: "spam",
           reason: "Harassment",
           reporter_id: user.id,
           reported_user_id: target.id

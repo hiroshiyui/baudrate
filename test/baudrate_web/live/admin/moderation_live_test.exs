@@ -30,6 +30,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
     {:ok, report} =
       Moderation.create_report(%{
+        category: "spam",
         reason: "Offensive content",
         reporter_id: reporter.id,
         article_id: article.id
@@ -62,6 +63,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
     {:ok, report} =
       Moderation.create_report(%{
+        category: "spam",
         reason: "Spam comment",
         reporter_id: reporter.id,
         comment_id: comment.id
@@ -442,12 +444,15 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
           published_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
 
-      {:ok, feed_report} = Moderation.report_feed_item(member, item.id, "Spam post")
+      {:ok, feed_report} =
+        Moderation.report_feed_item(member, item.id, %{reason: "Spam post", category: "spam"})
 
       {:ok, conversation} = Baudrate.Messaging.find_or_create_conversation(sender, member)
       {:ok, _} = Baudrate.Messaging.create_message(conversation, sender, %{"body" => "Earlier"})
       {:ok, dm} = Baudrate.Messaging.create_message(conversation, sender, %{"body" => "Threat"})
-      {:ok, dm_report} = Moderation.report_message(member, dm.id, "Harassing me")
+
+      {:ok, dm_report} =
+        Moderation.report_message(member, dm.id, %{reason: "Harassing me", category: "spam"})
 
       conn = log_in_admin(conn, admin)
       {:ok, lv, html} = live(conn, "/admin/moderation")
@@ -460,6 +465,117 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
 
       assert has_element?(lv, "#admin-moderation-report-message-#{dm_report.id}", "Threat")
       refute html =~ "Earlier"
+    end
+  end
+
+  describe "queue basics (1B)" do
+    test "shows the category, links to the reported article and the reporter's text", %{
+      conn: conn
+    } do
+      admin = setup_user("admin")
+      member = setup_user("user")
+      {report, article} = create_report_with_article(member)
+
+      conn = log_in_admin(conn, admin)
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      assert has_element?(lv, "#admin-moderation-report-category-#{report.id}", "Spam")
+
+      assert lv
+             |> element("#admin-moderation-report-article-link-#{report.id}")
+             |> render() =~ "/articles/#{article.slug}"
+
+      # The whole reported text, not a preview.
+      assert has_element?(lv, ".admin-moderation-report-article-body", article.body)
+    end
+
+    test "links a reported comment to its place on the article, and a reported user to their profile",
+         %{conn: conn} do
+      admin = setup_user("admin")
+      member = setup_user("user")
+      {comment_report, comment} = create_report_with_comment(member)
+
+      {:ok, user_report} =
+        Moderation.create_report(%{
+          category: "harassment",
+          reason: "Abusive",
+          reporter_id: member.id,
+          reported_user_id: member.id
+        })
+
+      conn = log_in_admin(conn, admin)
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      link =
+        lv |> element("#admin-moderation-report-comment-link-#{comment_report.id}") |> render()
+
+      assert link =~ "#comment-#{comment.id}"
+
+      assert lv
+             |> element("#admin-moderation-report-user-link-#{user_report.id}")
+             |> render() =~ "/users/#{member.username}"
+    end
+
+    test "says how many other open reports the same target has", %{conn: conn} do
+      admin = setup_user("admin")
+      first_reporter = setup_user("user")
+      second_reporter = setup_user("user")
+      {first, article} = create_report_with_article(first_reporter)
+
+      {:ok, second} =
+        Moderation.create_report(%{
+          category: "spam",
+          reason: "Same article",
+          reporter_id: second_reporter.id,
+          article_id: article.id
+        })
+
+      conn = log_in_admin(conn, admin)
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      assert has_element?(
+               lv,
+               "#admin-moderation-report-others-#{first.id}",
+               "1 other open report"
+             )
+
+      assert has_element?(lv, "#admin-moderation-report-others-#{second.id}")
+    end
+
+    test "pages through the queue and keeps the status filter", %{conn: conn} do
+      admin = setup_user("admin")
+      member = setup_user("user")
+
+      reports =
+        for n <- 1..21 do
+          {:ok, report} =
+            Moderation.create_report(%{
+              category: "other",
+              reason: "Report number #{n}",
+              reporter_id: member.id,
+              reported_user_id: setup_user("user").id
+            })
+
+          report
+        end
+
+      newest = List.last(reports)
+      oldest = List.first(reports)
+
+      conn = log_in_admin(conn, admin)
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      assert has_element?(lv, "#admin-moderation-report-#{newest.id}")
+      refute has_element?(lv, "#admin-moderation-report-#{oldest.id}")
+
+      {:ok, lv, _html} = live(conn, "/admin/moderation?page=2")
+      assert has_element?(lv, "#admin-moderation-report-#{oldest.id}")
+      refute has_element?(lv, "#admin-moderation-report-#{newest.id}")
+
+      # The pager keeps the status the queue is showing.
+      {:ok, lv, _html} = live(conn, "/admin/moderation?status=resolved")
+      refute has_element?(lv, "#admin-moderation-report-#{newest.id}")
+      assert has_element?(lv, "#admin-moderation-tab-resolved")
     end
   end
 end

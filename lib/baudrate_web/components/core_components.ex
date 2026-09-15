@@ -819,6 +819,23 @@ defmodule BaudrateWeb.CoreComponents do
           {@target_label}
         </p>
         <.form for={%{}} phx-submit={@on_submit} class="report-modal-form mt-4">
+          <label for="report-category" class="label">
+            <span class="label-text">{gettext("What is wrong?")}</span>
+          </label>
+          <select
+            id="report-category"
+            name="category"
+            class="report-modal-category select select-bordered w-full"
+            required
+          >
+            <option value="" selected>{gettext("Choose a reason")}</option>
+            <option
+              :for={category <- Baudrate.Moderation.Report.categories()}
+              value={category}
+            >
+              {BaudrateWeb.Helpers.translate_report_category(category)}
+            </option>
+          </select>
           <label for="report-reason" class="label">
             <span class="label-text">{gettext("Reason")}</span>
           </label>

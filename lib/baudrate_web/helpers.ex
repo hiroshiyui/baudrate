@@ -298,6 +298,18 @@ defmodule BaudrateWeb.Helpers do
   def translate_report_status(other), do: other
 
   @doc """
+  Translates a report's reason category (P1-D9) for display.
+  """
+  def translate_report_category("spam"), do: gettext("Spam")
+  def translate_report_category("harassment"), do: gettext("Harassment")
+  def translate_report_category("illegal"), do: gettext("Illegal content")
+  def translate_report_category("rule_violation"), do: gettext("Breaks a rule")
+  def translate_report_category("other"), do: gettext("Other")
+  # A report that arrived as a federated Flag carries no category.
+  def translate_report_category(nil), do: gettext("Not categorised")
+  def translate_report_category(other), do: other
+
+  @doc """
   Builds a full invite link URL for the given invite code string.
 
   ## Examples

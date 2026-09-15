@@ -226,6 +226,7 @@ defmodule Baudrate.DataPortability.ArchiveTest do
       Moderation.create_report(%{
         reporter_id: other.id,
         reported_user_id: user.id,
+        category: "spam",
         reason: m.report_reason
       })
 

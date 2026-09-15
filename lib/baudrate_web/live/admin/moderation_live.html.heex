@@ -137,10 +137,27 @@
             ]}>
               {translate_report_status(report.status)}
             </span>
+            <span
+              id={"admin-moderation-report-category-#{report.id}"}
+              class="admin-moderation-report-category badge badge-sm badge-outline ml-2"
+            >
+              {translate_report_category(report.category)}
+            </span>
             <span class="text-sm opacity-70 ml-2">
               <time datetime={datetime_attr(report.inserted_at)}>
                 {format_datetime(report.inserted_at)}
               </time>
+            </span>
+            <span
+              :if={Map.get(@other_reports, report.id, 0) > 0}
+              id={"admin-moderation-report-others-#{report.id}"}
+              class="admin-moderation-report-others badge badge-sm badge-warning ml-2"
+            >
+              {ngettext(
+                "%{count} other open report on this target",
+                "%{count} other open reports on this target",
+                Map.get(@other_reports, report.id, 0)
+              )}
             </span>
           </div>
           <div
@@ -180,7 +197,16 @@
           class="admin-moderation-report-article mt-2 p-3 bg-base-300 rounded-lg"
         >
           <p class="text-sm font-semibold">{gettext("Reported Article:")}</p>
-          <p>{report.article.title}</p>
+          <.link
+            id={"admin-moderation-report-article-link-#{report.id}"}
+            navigate={~p"/articles/#{report.article.slug}"}
+            class="admin-moderation-report-article-link link link-primary break-words"
+          >
+            {report.article.title}
+          </.link>
+          <p class="admin-moderation-report-article-body text-sm whitespace-pre-wrap break-words max-h-64 overflow-y-auto mt-1">
+            {report.article.body}
+          </p>
           <button
             :if={report.status == "open" and is_nil(report.article.deleted_at)}
             id={"admin-moderation-delete-article-#{report.id}"}
@@ -200,7 +226,19 @@
           class="admin-moderation-report-comment mt-2 p-3 bg-base-300 rounded-lg"
         >
           <p class="text-sm font-semibold">{gettext("Reported Comment:")}</p>
-          <p class="text-sm">{String.slice(report.comment.body || "", 0..200)}</p>
+          <p class="admin-moderation-report-comment-body text-sm whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
+            {report.comment.body}
+          </p>
+          <.link
+            :if={report.comment.article}
+            id={"admin-moderation-report-comment-link-#{report.id}"}
+            navigate={
+              ~p"/articles/#{report.comment.article.slug}" <> "#comment-#{report.comment.id}"
+            }
+            class="admin-moderation-report-comment-link link link-primary text-sm"
+          >
+            {gettext("View in context")}
+          </.link>
           <button
             :if={report.status == "open" and is_nil(report.comment.deleted_at)}
             id={"admin-moderation-delete-comment-#{report.id}"}
@@ -227,8 +265,8 @@
           >
             {report.feed_item.title}
           </p>
-          <p class="admin-moderation-report-feed-item-body text-sm whitespace-pre-wrap break-words">
-            {String.slice(report.feed_item.body || "", 0..500)}
+          <p class="admin-moderation-report-feed-item-body text-sm whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
+            {report.feed_item.body}
           </p>
           <a
             :if={report.feed_item.source_url}
@@ -261,7 +299,15 @@
           class="admin-moderation-report-actor mt-2 p-3 bg-base-300 rounded-lg"
         >
           <p class="text-sm font-semibold">{gettext("Reported Actor:")}</p>
-          <p class="font-mono text-sm">{report.remote_actor.ap_id}</p>
+          <a
+            id={"admin-moderation-report-actor-link-#{report.id}"}
+            href={report.remote_actor.url || report.remote_actor.ap_id}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            class="admin-moderation-report-actor-link link link-primary font-mono text-sm break-all"
+          >
+            {report.remote_actor.ap_id}
+          </a>
           <p class="text-sm opacity-70">
             {display_name(report.remote_actor)}@{report.remote_actor.domain}
           </p>
@@ -273,7 +319,13 @@
         >
           <p class="text-sm font-semibold">{gettext("Reported User:")}</p>
           <p>
-            {display_name(report.reported_user)}
+            <.link
+              id={"admin-moderation-report-user-link-#{report.id}"}
+              navigate={~p"/users/#{report.reported_user.username}"}
+              class="admin-moderation-report-user-link link link-primary"
+            >
+              {display_name(report.reported_user)}
+            </.link>
             <span class="text-sm opacity-70">(@{report.reported_user.username})</span>
           </p>
         </div>
@@ -347,6 +399,13 @@
       </div>
     </div>
   </div>
+
+  <.pagination
+    :if={@total_pages > 1}
+    page={@page}
+    total_pages={@total_pages}
+    path={~p"/admin/moderation?status=#{@status_filter}"}
+  />
 </div>
 
 <%!-- Bulk resolve modal --%>

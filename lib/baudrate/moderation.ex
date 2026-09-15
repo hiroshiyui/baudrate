@@ -15,6 +15,7 @@ defmodule Baudrate.Moderation do
 
   require Logger
 
+  alias Baudrate.Pagination
   alias Baudrate.Repo
   alias Baudrate.Federation.{FeedItem, RemoteActor}
   alias Baudrate.Messaging.DirectMessage
@@ -78,6 +79,20 @@ defmodule Baudrate.Moderation do
 
   @target_fields ~w(article_id comment_id remote_actor_id reported_user_id feed_item_id message_id)a
 
+  # Every target except the reported message: a report carries its own copy of
+  # that one message's text in `message_body`.
+  @report_preloads [
+    :reporter,
+    :reporter_remote_actor,
+    :article,
+    :remote_actor,
+    :reported_user,
+    :resolved_by,
+    # The article a reported comment is on, so the queue can link to it.
+    comment: :article,
+    feed_item: :remote_actor
+  ]
+
   @doc """
   Checks whether the given reporter already has an open report for exactly
   the same target: every target field (`article_id`, `comment_id`,
@@ -103,18 +118,20 @@ defmodule Baudrate.Moderation do
   the item (`Federation.feed_item_accessible?/2`); its remote author is
   recorded as the reported actor, so moderators can "Send Flag".
 
+  `details` is what the member filled in: `%{reason: …, category: …}`.
+
   Returns `{:ok, report}`, `{:error, :not_found}`, `{:error, :already_reported}`
   or `{:error, changeset}`.
   """
-  @spec report_feed_item(User.t(), term(), String.t()) ::
+  @spec report_feed_item(User.t(), term(), map()) ::
           {:ok, Report.t()} | {:error, :not_found | :already_reported | Ecto.Changeset.t()}
-  def report_feed_item(%User{} = reporter, feed_item_id, reason) do
+  def report_feed_item(%User{} = reporter, feed_item_id, details) do
     with %FeedItem{} = item <- get_by_id(FeedItem, feed_item_id),
          true <- Baudrate.Federation.feed_item_accessible?(reporter, item) do
       file_report(
         reporter,
         %{feed_item_id: item.id, remote_actor_id: item.remote_actor_id},
-        reason
+        details
       )
     else
       _ -> {:error, :not_found}
@@ -129,12 +146,14 @@ defmodule Baudrate.Moderation do
   text is stored with the report (`message_body`); nothing else from the
   conversation is. The sender is recorded as the reported user or actor.
 
+  `details` is what the member filled in: `%{reason: …, category: …}`.
+
   Returns `{:ok, report}`, `{:error, :not_found}`, `{:error, :already_reported}`
   or `{:error, changeset}`.
   """
-  @spec report_message(User.t(), term(), String.t()) ::
+  @spec report_message(User.t(), term(), map()) ::
           {:ok, Report.t()} | {:error, :not_found | :already_reported | Ecto.Changeset.t()}
-  def report_message(%User{id: user_id} = reporter, message_id, reason) do
+  def report_message(%User{id: user_id} = reporter, message_id, details) do
     message =
       with {:ok, id} <- cast_id(message_id) do
         Repo.one(
@@ -155,7 +174,7 @@ defmodule Baudrate.Moderation do
           remote_actor_id: dm.sender_remote_actor_id
         }
 
-        file_report(reporter, target, reason, %Report{message_body: dm.body})
+        file_report(reporter, target, details, %Report{message_body: dm.body})
 
       _ ->
         {:error, :not_found}
@@ -165,25 +184,30 @@ defmodule Baudrate.Moderation do
   @doc """
   Reports a remote account on behalf of a member.
 
+  `details` is what the member filled in: `%{reason: …, category: …}`.
+
   Returns `{:ok, report}`, `{:error, :not_found}`, `{:error, :already_reported}`
   or `{:error, changeset}`.
   """
-  @spec report_remote_actor(User.t(), term(), String.t()) ::
+  @spec report_remote_actor(User.t(), term(), map()) ::
           {:ok, Report.t()} | {:error, :not_found | :already_reported | Ecto.Changeset.t()}
-  def report_remote_actor(%User{} = reporter, remote_actor_id, reason) do
+  def report_remote_actor(%User{} = reporter, remote_actor_id, details) do
     case get_by_id(RemoteActor, remote_actor_id) do
-      %RemoteActor{id: id} -> file_report(reporter, %{remote_actor_id: id}, reason)
+      %RemoteActor{id: id} -> file_report(reporter, %{remote_actor_id: id}, details)
       nil -> {:error, :not_found}
     end
   end
 
-  defp file_report(reporter, target, reason, report \\ %Report{}) do
+  # `details` carries what the member filled in: `:reason` and `:category`
+  # (P1-D9). Only the target fields come from the server.
+  defp file_report(reporter, target, details, report \\ %Report{}) do
     target = Map.reject(target, fn {_field, value} -> is_nil(value) end)
 
     if has_open_report?(reporter.id, target) do
       {:error, :already_reported}
     else
-      attrs = Map.merge(target, %{reason: reason, reporter_id: reporter.id})
+      details = Map.take(details, [:reason, :category])
+      attrs = target |> Map.merge(details) |> Map.put(:reporter_id, reporter.id)
 
       result = report |> Report.changeset(attrs) |> Repo.insert()
 
@@ -224,19 +248,67 @@ defmodule Baudrate.Moderation do
     from(r in Report,
       where: r.status == ^status,
       order_by: [desc: r.inserted_at, desc: r.id],
-      preload: [
-        :reporter,
-        :reporter_remote_actor,
-        :article,
-        :comment,
-        :remote_actor,
-        :reported_user,
-        :resolved_by,
-        feed_item: :remote_actor
-      ]
+      preload: ^@report_preloads
     )
     |> Repo.all()
   end
+
+  @doc """
+  A page of reports with the same preloads as `list_reports/1`.
+
+  Options: `:status` (default `"open"`), `:page`, `:per_page` (default 20,
+  at most 100). Returns `%{reports: […], page:, per_page:, total:,
+  total_pages:}`.
+  """
+  @spec paginate_reports(keyword()) :: map()
+  def paginate_reports(opts \\ []) do
+    status = Keyword.get(opts, :status, "open")
+
+    from(r in Report, where: r.status == ^status)
+    |> Pagination.paginate_query(Pagination.paginate_opts(opts, 20, max_per_page: 100),
+      result_key: :reports,
+      order_by: [desc: :inserted_at, desc: :id],
+      preloads: @report_preloads
+    )
+  end
+
+  @doc """
+  How many **other** open reports each of `reports` shares a target with,
+  as `%{report_id => count}`. A target reported by several members, or
+  reported again after a dismissal, is worth seeing at a glance.
+  """
+  @spec other_open_report_counts([Report.t()]) :: %{integer() => non_neg_integer()}
+  def other_open_report_counts(reports) do
+    Enum.reduce(@target_fields, %{}, fn field, acc ->
+      ids = reports |> Enum.map(&Map.fetch!(&1, field)) |> Enum.reject(&is_nil/1) |> Enum.uniq()
+
+      if ids == [] do
+        acc
+      else
+        counts =
+          from(r in Report,
+            where: r.status == "open" and field(r, ^field) in ^ids,
+            group_by: field(r, ^field),
+            select: {field(r, ^field), count(r.id)}
+          )
+          |> Repo.all()
+          |> Map.new()
+
+        Enum.reduce(reports, acc, fn report, acc ->
+          case Map.get(report, field) do
+            nil ->
+              acc
+
+            value ->
+              Map.update(acc, report.id, others(counts, value), &(&1 + others(counts, value)))
+          end
+        end)
+      end
+    end)
+  end
+
+  # The report itself is in the count when it is still open.
+  defp others(counts, value), do: max(Map.get(counts, value, 0) - 1, 0)
 
   @doc """
   Fetches a report by ID with all preloads, or raises.
@@ -346,8 +418,6 @@ defmodule Baudrate.Moderation do
   """
   @spec list_moderation_logs(keyword()) :: map()
   def list_moderation_logs(opts \\ []) do
-    alias Baudrate.Pagination
-
     action_filter = Keyword.get(opts, :action)
     pagination = Pagination.paginate_opts(opts, @log_per_page)
 

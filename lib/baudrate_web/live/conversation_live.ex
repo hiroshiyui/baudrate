@@ -202,8 +202,8 @@ defmodule BaudrateWeb.ConversationLive do
     do: {:noreply, SafetyActions.assign_report_modal(socket)}
 
   @impl true
-  def handle_event("submit_report", %{"reason" => reason}, socket),
-    do: {:noreply, SafetyActions.submit_report(socket, reason)}
+  def handle_event("submit_report", %{"reason" => _} = params, socket),
+    do: {:noreply, SafetyActions.submit_report(socket, params)}
 
   # The conversation stays on screen after these, so the menu switches to the
   # matching undo control and keeps focus on its toggle.

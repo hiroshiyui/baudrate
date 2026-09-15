@@ -68,7 +68,7 @@ defmodule BaudrateWeb.ReportTest do
 
       # Submit the report
       lv
-      |> form("#report-modal form", %{reason: "This article is spam"})
+      |> form("#report-modal form", %{reason: "This article is spam", category: "spam"})
       |> render_submit()
 
       flash = assert_redirected_or_flash(lv)
@@ -82,6 +82,7 @@ defmodule BaudrateWeb.ReportTest do
     } do
       # Create an existing open report
       Moderation.create_report(%{
+        category: "spam",
         reason: "Already reported",
         reporter_id: reporter.id,
         article_id: article.id
@@ -95,7 +96,7 @@ defmodule BaudrateWeb.ReportTest do
 
       html =
         lv
-        |> form("#report-modal form", %{reason: "Duplicate report"})
+        |> form("#report-modal form", %{reason: "Duplicate report", category: "spam"})
         |> render_submit()
 
       assert html =~ "already reported"
@@ -134,7 +135,7 @@ defmodule BaudrateWeb.ReportTest do
 
       html =
         lv
-        |> form("#report-modal form", %{reason: "This comment is abusive"})
+        |> form("#report-modal form", %{reason: "This comment is abusive", category: "spam"})
         |> render_submit()
 
       assert html =~ "Report submitted"
@@ -158,7 +159,7 @@ defmodule BaudrateWeb.ReportTest do
 
       html =
         lv
-        |> form("#report-modal form", %{reason: "Harassment"})
+        |> form("#report-modal form", %{reason: "Harassment", category: "spam"})
         |> render_submit()
 
       assert html =~ "Report submitted"
@@ -170,6 +171,7 @@ defmodule BaudrateWeb.ReportTest do
       author: author
     } do
       Moderation.create_report(%{
+        category: "spam",
         reason: "Already reported",
         reporter_id: reporter.id,
         reported_user_id: author.id
@@ -183,7 +185,7 @@ defmodule BaudrateWeb.ReportTest do
 
       html =
         lv
-        |> form("#report-modal form", %{reason: "Duplicate"})
+        |> form("#report-modal form", %{reason: "Duplicate", category: "spam"})
         |> render_submit()
 
       assert html =~ "already reported"
