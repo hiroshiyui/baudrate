@@ -187,9 +187,10 @@ These are scheduled elsewhere:
 Scheduled backups, retention, the pre-deploy dump and restore commands are
 built (ADR 0028: `Baudrate.Backup.Snapshots`, Ansible `backup` role).
 
-- [ ] **Enable on production** and check the first nightly run and a pre-deploy dump.
+- [x] **Enabled on production** 2026-09-16 (v1.19.5): timer at 04:44 Asia/Taipei, first backup 448 MB (45 MB dump), a second one added 47 MB with all 11,861 uploads hard-linked.
+- [x] **Restore rehearsed** 2026-09-16 into a scratch database on the host; row counts, schema version, file count and sampled checksums all matched (`doc/sysop.md` → Restore). A rehearsal on a freshly provisioned host is still open.
 - [ ] **Pull machine for off-host copies:** choose it, set `backup_pull_public_key`, add its pull timer and its own retention.
-- [ ] **Rehearse a restore** of a production backup on a scratch host, with the date recorded in `doc/sysop.md`.
+- [ ] **Alert on a failed or stale backup** — today a failure only appears in the server's journal (see 2D).
 - [ ] **Backup freshness in health checks:** the time of the last successful backup (see 2D).
 - **Accepted when:** production has a backup less than 24 h old, and the rehearsal restored a working instance.
 

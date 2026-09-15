@@ -1045,8 +1045,31 @@ sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; set +a;
   ./bin/baudrate eval "Baudrate.Release.restore_db(\"/var/backups/baudrate/predeploy/20260916T101500Z-v1.19.5.dump\")"'
 ```
 
-Rehearse a restore on a scratch host now and then; a backup you have never
-restored is a guess.
+Rehearse a restore now and then; a backup you have never restored is a guess.
+A rehearsal that leaves production alone: create a scratch database, restore
+the newest dump into it, compare row counts with the live database, then drop
+it.
+
+```bash
+BK=$(ls -d /var/backups/baudrate/daily/*/ | tail -1)
+sudo -u postgres createdb -O baudrate -T template0 baudrate_restore_check
+sudo -u baudrate pg_restore -d baudrate_restore_check --no-owner "$BK/db.dump"
+for t in users articles comments feed_items remote_actors schema_migrations; do
+  echo "$t $(sudo -u postgres psql -Atd baudrate_prod -c "select count(*) from $t")" \
+       "$(sudo -u postgres psql -Atd baudrate_restore_check -c "select count(*) from $t")"
+done
+sudo -u postgres dropdb baudrate_restore_check
+```
+
+Check the uploads too: `find "$BK/uploads" -type f | wc -l` against the live
+count (`find /opt/baudrate/shared/uploads -path '*/media_cache' -prune -o -type
+f -print | wc -l`), and `sha256sum` a few saved files against their live copies.
+
+**Last rehearsed: 2026-09-16** on baudrate.tw, from the 2026-09-15 backup: the
+restore took 70 s, every row count matched (101,369 articles, 28 users,
+4,085 comments, 5,371 remote actors, schema version 20260914200000), all
+11,861 saved upload files were present and the sampled checksums matched.
+A rehearsal on a freshly provisioned host is still worth doing once.
 
 ### Manual backups
 
