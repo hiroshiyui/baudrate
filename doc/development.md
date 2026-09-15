@@ -2433,6 +2433,7 @@ to `tmp/wallaby_downloads` without a prompt.
 | `login_test.exs` | 4 | Successful login, failed login, registration link, redirect if authenticated |
 | `logout_test.exs` | 1 | Sign out redirects to login |
 | `messages_test.exs` | 3 | Messages page, empty state, new message page |
+| `moderation_queue_test.exs` | 3 | Report an article from its menu, resolve with a note; delete reported content and dismiss; bulk resolve |
 | `notifications_test.exs` | 2 | Notifications page and empty state |
 | `password_change_test.exs` | 1 | Change the password; the old one is refused and the new one signs in |
 | `password_reset_test.exs` | 3 | Reset page from login, full reset with a recovery code then sign-in, required-field validation |
