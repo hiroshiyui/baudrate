@@ -109,7 +109,9 @@ requests would share one rate-limit bucket.
 
 ### What `deploy-baudrate.yml` Does
 
-All tasks run as the `baudrate` system user by default (set at the role level).
+The `backup` role runs first, as root: it keeps the nightly backup timer and
+the backup directories in place (see [Backups](#backups)). The `deploy` role's
+tasks run as the `baudrate` system user by default (set at the role level).
 Only systemd operations (service install, enable, reload, restart) escalate to
 root.
 
@@ -122,6 +124,7 @@ root.
 | Install | Copy release to `releases/<timestamp>/`, symlink shared uploads |
 | Env file | Template `baudrate.env` with `DATABASE_URL`, `SECRET_KEY_BASE`, etc. |
 | Systemd | Install and enable `baudrate.service` |
+| Pre-deploy dump | Dump the database with the new release into `/var/backups/baudrate/predeploy/`, keeping `backup_keep_predeploy` (3); a failure stops the deploy |
 | Migrate | Run `bin/migrate` from the new release |
 | Activate | Atomic symlink swap: `current` → new release |
 | Health check | Poll `/health` until 200 (up to 60 seconds) |
@@ -145,6 +148,23 @@ root.
       article_images/
   env/
     baudrate.env                            # EnvironmentFile for systemd (mode 0600)
+
+/var/backups/baudrate/                      # baudrate:baudrate-backup, mode 2750
+  daily/20260916T203000Z/                   # Nightly backup: db.dump, uploads/, MANIFEST.json
+  predeploy/20260916T101500Z-v1.19.5.dump   # Dump taken before a deploy's migrations
+```
+
+### Backups
+
+The `backup` role (ADR 0028, `doc/sysop.md` → Backup & Restore) installs
+`baudrate-backup.timer`, which runs `Baudrate.Release.snapshot_backup/2` every
+night at `backup_schedule` and keeps `backup_keep_daily` (7) complete backups.
+The backup checks free space first and removes old backups only after a new
+one succeeded. To change its settings or enable pull access
+(`backup_pull_public_key`) without deploying, run only the role:
+
+```bash
+ansible-playbook playbooks/deploy-baudrate.yml --tags backup -e release_tag=<deployed tag>
 ```
 
 ### Rollback
@@ -278,4 +298,5 @@ ansible/
     rust/                                  # rustup + Rust toolchain
     nginx/                                 # nginx + Let's Encrypt SSL
     deploy/                                # Build, release, and activate Baudrate
+    backup/                                # Nightly backup timer, backup dirs, pull access
 ```

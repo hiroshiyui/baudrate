@@ -1,0 +1,38 @@
+# {{ ansible_managed }}
+# Baudrate nightly backup (ADR 0028). Runs from baudrate-backup.timer; run it
+# by hand with `systemctl start baudrate-backup` and read the result with
+# `journalctl -u baudrate-backup`.
+
+[Unit]
+Description=Baudrate nightly backup
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+User={{ baudrate_user }}
+UMask=0027
+WorkingDirectory={{ deploy_path }}/current
+EnvironmentFile={{ deploy_path }}/env/baudrate.env
+ExecStart={{ deploy_path }}/current/bin/baudrate eval 'Baudrate.Release.snapshot_backup("{{ backup_path }}/daily", keep: {{ backup_keep_daily }})'
+SyslogIdentifier=baudrate-backup
+TimeoutStartSec=2h
+
+# Stay out of the site's way on a small server: lowest CPU and I/O priority,
+# at most half a CPU, and a memory ceiling (the BEAM plus pg_dump need far less).
+Nice=19
+IOSchedulingClass=idle
+CPUQuota=50%
+MemoryHigh=384M
+MemoryMax=768M
+
+# Read what it backs up; write only the backups.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ backup_path }}
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true

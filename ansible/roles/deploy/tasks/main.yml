@@ -284,6 +284,29 @@
 # restart window: only the symlink swap + service restart
 # remain, which nginx buffers via proxy_next_upstream.
 
+# Taken with the new release, right before its migrations, so a migration that
+# goes wrong can be undone to minutes earlier rather than to the last nightly
+# backup (ADR 0028). The dump keeps the newest few and refuses to fill the
+# disk; any failure stops the deploy before the database changes. A release
+# older than the pre-deploy dump (a rollback) skips it with a message.
+
+- name: Dump the database before migrations
+  ansible.builtin.command:
+    cmd: >-
+      {{ deploy_path }}/releases/{{ release_timestamp }}/bin/baudrate eval
+      'if Code.ensure_loaded?(Baudrate.Release) and
+      function_exported?(Baudrate.Release, :predeploy_dump, 2),
+      do: Baudrate.Release.predeploy_dump("{{ backup_path }}/predeploy",
+      keep: {{ backup_keep_predeploy }}, label: "{{ release_tag }}"),
+      else: IO.puts("skipped: this release has no pre-deploy dump")'
+  environment:
+    DATABASE_URL: "ecto://{{ postgres_db_user }}:{{ postgres_db_password }}@localhost/{{ postgres_db_name }}"
+    DATABASE_SSL: "false"
+    SECRET_KEY_BASE: "{{ secret_key_base }}"
+    PHX_HOST: "{{ domain }}"
+  register: predeploy_dump
+  changed_when: "'database dump:' in predeploy_dump.stdout"
+
 - name: Run database migrations
   ansible.builtin.command:
     cmd: "{{ deploy_path }}/releases/{{ release_timestamp }}/bin/migrate"

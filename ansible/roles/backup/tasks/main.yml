@@ -1,0 +1,87 @@
+---
+# Baudrate — Backup role (ADR 0028)
+#
+# Schedules the nightly backup, Baudrate.Release.snapshot_backup/2, with a
+# systemd timer, and creates the directories it and the deploy role's
+# pre-migration dump write to. The backup itself enforces retention, checks
+# free space and never leaves a partial backup; this role only schedules it.
+#
+# Off-host copies are pulled by another machine. Pull access stays disabled
+# until backup_pull_public_key is set.
+
+- name: Create backup group
+  ansible.builtin.group:
+    name: "{{ backup_group }}"
+    system: true
+
+# setgid directories keep new backups in the backup group, so a pull user in
+# that group can read them; nobody else can.
+- name: Create backup directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ baudrate_user }}"
+    group: "{{ backup_group }}"
+    mode: "2750"
+  loop:
+    - "{{ backup_path }}"
+    - "{{ backup_path }}/daily"
+    - "{{ backup_path }}/predeploy"
+
+- name: Deploy backup service and timer units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    mode: "0644"
+  loop:
+    - baudrate-backup.service
+    - baudrate-backup.timer
+  notify: Reload systemd
+
+- name: Reload systemd before enabling the timer
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start the backup timer
+  ansible.builtin.systemd:
+    name: baudrate-backup.timer
+    enabled: true
+    state: started
+
+# --- Pull access for off-host copies ---
+
+- name: Set up read-only pull access
+  when: backup_pull_public_key | default('') | length > 0
+  block:
+    - name: Install rsync
+      ansible.builtin.apt:
+        name: rsync
+        state: present
+
+    - name: Check that rrsync is available
+      ansible.builtin.stat:
+        path: /usr/bin/rrsync
+      register: rrsync_check
+
+    - name: Fail without rrsync
+      ansible.builtin.assert:
+        that: rrsync_check.stat.exists
+        fail_msg: "/usr/bin/rrsync is missing; it restricts the pull key to read-only rsync."
+
+    - name: Create pull user
+      ansible.builtin.user:
+        name: "{{ backup_pull_user }}"
+        system: true
+        group: "{{ backup_group }}"
+        shell: /bin/sh
+        home: "/var/lib/{{ backup_pull_user }}"
+        create_home: true
+        password: "!"
+
+    # The key can only run a read-only rsync of the backup directory: no shell,
+    # no forwarding, no writes, and nothing outside the backups.
+    - name: Restrict the pull key to read-only rsync of the backups
+      ansible.posix.authorized_key:
+        user: "{{ backup_pull_user }}"
+        key: "{{ backup_pull_public_key }}"
+        key_options: 'command="/usr/bin/rrsync -ro {{ backup_path }}",restrict'
+        exclusive: true

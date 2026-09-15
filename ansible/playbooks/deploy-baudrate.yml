@@ -104,6 +104,9 @@
             prompt: "Press Enter after you have saved the installation key (Ctrl+C to abort)"
 
   roles:
+    # Before deploy: it creates the directory the pre-migration dump writes to.
+    - role: backup
+      tags: [backup]
     - role: deploy
       become_user: "{{ baudrate_user }}"
       tags: [deploy]

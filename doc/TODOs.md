@@ -184,13 +184,12 @@ These are scheduled elsewhere:
 
 ### 2A — Backups and recovery (M)
 
-- [ ] **Ansible `backup` role.**
-  - Creates an owner-only backup directory.
-  - Installs a systemd timer running `Baudrate.Release.backup/2` (v1.18.2).
-  - Keeps N days of backups (variable).
-  - Runs an optional off-host copy command (variable, e.g. rsync or rclone).
-- [ ] **Dump before migrations.** The deploy playbook takes a database dump before running migrations and keeps the last 3.
-- [ ] **Restore runbook** in `doc/sysop.md`, rehearsed once on a scratch host, with the date recorded there.
+Scheduled backups, retention, the pre-deploy dump and restore commands are
+built (ADR 0028: `Baudrate.Backup.Snapshots`, Ansible `backup` role).
+
+- [ ] **Enable on production** and check the first nightly run and a pre-deploy dump.
+- [ ] **Pull machine for off-host copies:** choose it, set `backup_pull_public_key`, add its pull timer and its own retention.
+- [ ] **Rehearse a restore** of a production backup on a scratch host, with the date recorded in `doc/sysop.md`.
 - [ ] **Backup freshness in health checks:** the time of the last successful backup (see 2D).
 - **Accepted when:** production has a backup less than 24 h old, and the rehearsal restored a working instance.
 

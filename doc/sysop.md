@@ -942,42 +942,125 @@ the app icon, which scales to any resolution.
 
 ## Backup & Restore
 
-A backup is two files: a PostgreSQL dump (`baudrate_db_YYYYMMDD_HHMMSS.dump`,
-or `.sql`) and an archive of the uploads directory
-(`baudrate_files_YYYYMMDD_HHMMSS.tar.gz`: avatars, article, comment and reply
-images, link preview images). The uploads directory is resolved through its
-symlinks, so an Ansible install archives the real `shared/uploads`.
-`media_cache/` is left out: it only holds re-encoded copies of remote images,
-which are fetched again on demand.
+The Ansible `backup` role schedules a backup every night and keeps the newest
+seven (ADR 0028). Each backup is a folder,
+`/var/backups/baudrate/daily/<YYYYMMDDTHHMMSSZ>/` (UTC), holding:
+
+- `db.dump`: a `pg_dump -Fc` dump, checked with `pg_restore --list`.
+- `uploads/`: avatars, article, comment and reply images, and link preview
+  images. `media_cache/` is left out: it only holds re-encoded copies of remote
+  images, which are fetched again on demand. A file unchanged since the
+  previous backup is hard-linked to its copy there, so each folder is complete
+  while unchanged files are stored once.
+- `MANIFEST.json`: the version, time, dump size and SHA-256, and file counts.
+
+The backup is built under `.incomplete-…` and renamed only when every step
+has succeeded. It refuses to start when it would leave less than 1 GiB or 10%
+of the disk free, and removes older backups only after a new one succeeded,
+so failed runs never delete the last good copies.
 
 The dump contains every account's data, including encrypted TOTP secrets and
-federation keys. Keep backups owner-only (`chmod 700`), outside every web root,
-and remember that restoring them also needs the same `SECRET_KEY_BASE`.
+federation keys. The backup directory is readable only by the `baudrate` user
+and the `baudrate-backup` group. Restoring also needs the same
+`SECRET_KEY_BASE`: keep an offline copy of your SOPS secrets file and its key.
 
 > **Before v1.18.2** backups were only available as Mix tasks, which are not
 > part of a release, and on an Ansible install `mix backup` archived an almost
 > empty uploads directory without error. If you set up a backup cron job from
-> an earlier version of this guide, replace it with the release command below
-> and check the archive size.
+> an earlier version of this guide, remove it; the timer replaces it.
 
-### Backup (release / Ansible install)
+### Scheduled backups (Ansible install)
 
-Run as the service user, with the service environment loaded:
+`deploy-baudrate.yml` applies the `backup` role (tag `backup`). Its variables
+are in `inventory/group_vars/all.yml`:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `backup_path` | `/var/backups/baudrate` | Holds `daily/` and `predeploy/` |
+| `backup_keep_daily` | `7` | Complete nightly backups to keep |
+| `backup_keep_predeploy` | `3` | Pre-migration dumps to keep |
+| `backup_schedule` | `*-*-* 04:30:00 Asia/Taipei` | systemd `OnCalendar`, plus up to 15 minutes' random delay |
+| `backup_pull_public_key` | empty | Key allowed to pull off-host copies (below) |
+
+The service runs at idle I/O priority, niceness 19, at most half a CPU and
+768 MB of memory, and can write only the backup directory.
 
 ```bash
-sudo install -d -o baudrate -g baudrate -m 700 /var/backups/baudrate   # once
-cd /opt/baudrate/current
-sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; set +a;
-  ./bin/baudrate eval "Baudrate.Release.backup(\"/var/backups/baudrate\")"'
-
-# Plain SQL instead of pg_restore's custom format:
-#   ./bin/baudrate eval "Baudrate.Release.backup(\"/var/backups/baudrate\", format: \"sql\")"
+systemctl list-timers baudrate-backup.timer   # last and next run
+journalctl -u baudrate-backup -n 20           # what the last runs wrote or why they failed
+sudo systemctl start baudrate-backup          # back up now (waits until it finishes)
+ls /var/backups/baudrate/daily/               # complete backups, newest last
 ```
 
-It prints both file paths and exits non-zero on failure. `pg_dump` and `tar`
-must be on the `PATH` (the PostgreSQL client matching the server version).
+A failed run exits non-zero and shows as failed in `systemctl status
+baudrate-backup`; nothing was removed.
 
-### Backup (source checkout)
+### Before each deploy
+
+The deploy playbook dumps the database with the new release right before its
+migrations, into `predeploy/<timestamp>-<tag>.dump`, keeping the newest
+three. A failed dump stops the deploy before the database changes.
+
+### Off-host copies
+
+Backups on the server do not survive losing the server. Copy them to another
+machine by **pulling** them: the server then holds no credential that could
+reach or delete the copies.
+
+1. On the pulling machine, create a key used only for this:
+   `ssh-keygen -t ed25519 -f ~/.ssh/baudrate-backup-pull -N ''`.
+2. Set `backup_pull_public_key` to the public key and run the playbook with
+   `--tags backup`. This installs `rsync` and creates the `baudrate-pull` user,
+   whose key may only run a read-only rsync of the backup directory
+   (`rrsync -ro`): no shell, no forwarding, no writes.
+3. Pull with rsync, **without `--delete`**, so backups the server has since
+   removed stay on the pulling machine and a compromised server cannot erase
+   what was already copied. `-H` keeps the hard links between backups, so the
+   copy is as compact as the server's:
+
+   ```bash
+   rsync -aH -e 'ssh -i ~/.ssh/baudrate-backup-pull' \
+     baudrate-pull@your.server:daily/ ~/Backups/baudrate/daily/
+   ```
+
+   Run it from a timer on that machine, and prune its old copies there.
+
+### Restore
+
+**Stop the service first**; a restore overwrites the database and copies the
+uploaded files back (files added after the backup are kept).
+
+```bash
+systemctl stop baudrate
+cd /opt/baudrate/current
+sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; set +a;
+  ./bin/baudrate eval "Baudrate.Release.restore_snapshot(\"/var/backups/baudrate/daily/20260916T203000Z\")"'
+systemctl start baudrate
+```
+
+A pre-deploy dump restores the database only:
+
+```bash
+sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; set +a;
+  ./bin/baudrate eval "Baudrate.Release.restore_db(\"/var/backups/baudrate/predeploy/20260916T101500Z-v1.19.5.dump\")"'
+```
+
+Rehearse a restore on a scratch host now and then; a backup you have never
+restored is a guess.
+
+### Manual backups
+
+A one-off backup as two files, a dump and a `.tar.gz` of the uploads:
+
+```bash
+cd /opt/baudrate/current
+sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; set +a;
+  ./bin/baudrate eval "Baudrate.Release.backup(\"/root/manual-backup\")"'
+#   format: "sql" writes plain SQL instead of pg_restore's custom format
+```
+
+Restore those with `Baudrate.Release.restore("…dump", "…tar.gz")`.
+From a source checkout:
 
 ```bash
 mix backup                              # database + files into backups/
@@ -985,47 +1068,11 @@ mix backup.db                           # custom format, for pg_restore
 mix backup.db --format sql              # plain SQL, for psql
 mix backup.files                        # uploads archive only
 mix backup --output-dir /mnt/backups
-```
-
-The `custom` format (default) is recommended — it is compressed and supports
-selective restore with `pg_restore`. The `sql` format is human-readable and
-useful for inspecting or migrating data.
-
-### Restore
-
-**Stop the service first**; a restore overwrites the database and uploaded
-files.
-
-```bash
-systemctl stop baudrate
-cd /opt/baudrate/current
-sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; set +a;
-  ./bin/baudrate eval "Baudrate.Release.restore(\"/var/backups/baudrate/baudrate_db_20260228_120000.dump\", \"/var/backups/baudrate/baudrate_files_20260228_120000.tar.gz\")"'
-systemctl start baudrate
-```
-
-From a source checkout:
-
-```bash
 mix restore backups/baudrate_db_20260228_120000.dump backups/baudrate_files_20260228_120000.tar.gz
-mix restore.db backups/baudrate_db_20260228_120000.dump
-mix restore.files backups/baudrate_files_20260228_120000.tar.gz
 ```
 
-Test a restore on a scratch host now and then; a backup you have never
-restored is a guess.
-
-### Automated Backups
-
-Use cron (as root) for scheduled backups:
-
-```bash
-# Daily backup at 3:00 AM
-0 3 * * * cd /opt/baudrate/current && sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; set +a; ./bin/baudrate eval "Baudrate.Release.backup(\"/var/backups/baudrate\")"' 2>&1 | logger -t baudrate-backup
-```
-
-Implement a retention policy to avoid filling disk — delete backups older than
-your desired retention period — and copy backups off the host.
+`pg_dump`, `pg_restore` and `tar` must be on the `PATH` (the PostgreSQL client
+matching the server version).
 
 ---
 

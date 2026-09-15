@@ -27,3 +27,16 @@ asdf_version: "0.16.7"
 # Erlang/Elixir versions (match .tool-versions)
 erlang_version: "28.5.0.6"
 elixir_version: "1.19.5"
+
+# --- Backups (roles/backup, ADR 0028) ---
+backup_path: /var/backups/baudrate
+backup_group: baudrate-backup
+# Complete nightly backups to keep; older ones are removed after a new one succeeds.
+backup_keep_daily: 7
+# Database dumps taken before migrations to keep.
+backup_keep_predeploy: 3
+# systemd OnCalendar; a quiet hour for the site.
+backup_schedule: "*-*-* 04:30:00 Asia/Taipei"
+# Public key of the machine that pulls off-host copies. Empty: no pull access.
+backup_pull_public_key: ""
+backup_pull_user: baudrate-pull

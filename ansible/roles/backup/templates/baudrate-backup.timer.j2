@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+# Schedules baudrate-backup.service (ADR 0028). `systemctl list-timers
+# baudrate-backup.timer` shows the last and next run.
+
+[Unit]
+Description=Nightly Baudrate backup
+
+[Timer]
+OnCalendar={{ backup_schedule }}
+RandomizedDelaySec=15min
+# Run after boot if the server was down at the scheduled time.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
