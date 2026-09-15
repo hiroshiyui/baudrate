@@ -44,6 +44,11 @@ defmodule Baudrate.Backup.Snapshots do
   @dump_name ~r/\A\d{8}T\d{6}Z(-[A-Za-z0-9._-]+)?\.dump\z/
   @label ~r/\A[A-Za-z0-9._-]{1,64}\z/
   @gib 1024 * 1024 * 1024
+  # Backups hold every account's data, so their permissions never depend on the
+  # caller's umask: the deploy playbook's pre-deploy dump would otherwise be
+  # readable by every local user, unlike the timer's (UMask=0027).
+  @dir_mode 0o750
+  @file_mode 0o640
   # Assumed size of a first dump, before there is a previous one to measure.
   @first_dump_estimate 512 * 1024 * 1024
 
@@ -73,6 +78,7 @@ defmodule Baudrate.Backup.Snapshots do
         with :ok <- ensure_absent(target),
              :ok <- check_space(root, dump_estimate(previous) + plan.copy_bytes, opts),
              {:ok, result} <- build(building, plan) do
+          File.chmod!(building, @dir_mode)
           File.rename!(building, target)
           removed = prune(list(root), keep)
           {:ok, Map.merge(result, %{path: target, removed: removed})}
@@ -109,6 +115,7 @@ defmodule Baudrate.Backup.Snapshots do
              :ok <- check_space(root, dump_estimate(List.first(list_dumps(root))), opts),
              {:ok, _} <- Backup.dump_db_to(building),
              {:ok, _} <- Backup.verify_db_dump(building) do
+          File.chmod!(building, @file_mode)
           File.rename!(building, target)
           removed = prune(list_dumps(root), keep)
           {:ok, %{path: target, bytes: File.stat!(target).size, removed: removed}}
@@ -164,6 +171,7 @@ defmodule Baudrate.Backup.Snapshots do
 
     with {:ok, _} <- Backup.dump_db_to(dump),
          {:ok, _} <- Backup.verify_db_dump(dump),
+         :ok <- File.chmod(dump, @file_mode),
          {:ok, counts} <- snapshot(plan, Path.join(dir, "uploads")) do
       manifest = %{
         version: to_string(Application.spec(:baudrate, :vsn) || "unknown"),
@@ -172,10 +180,9 @@ defmodule Baudrate.Backup.Snapshots do
         uploads: counts
       }
 
-      File.write!(
-        Path.join(dir, "MANIFEST.json"),
-        Jason.encode_to_iodata!(manifest, pretty: true)
-      )
+      manifest_path = Path.join(dir, "MANIFEST.json")
+      File.write!(manifest_path, Jason.encode_to_iodata!(manifest, pretty: true))
+      File.chmod!(manifest_path, @file_mode)
 
       {:ok, Map.merge(counts, %{db_bytes: manifest.database.bytes})}
     end

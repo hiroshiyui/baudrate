@@ -39,6 +39,8 @@ defmodule Baudrate.Backup.SnapshotsTest do
 
   defp inode(path), do: File.stat!(path).inode
 
+  defp mode(path), do: File.stat!(path).mode |> Bitwise.band(0o777)
+
   test "creates a complete backup: a checked dump, uploads without the media cache, a manifest",
        %{uploads: uploads, root: root} do
     assert {:ok, result} = Snapshots.create(root, opts(uploads, now: at(30)))
@@ -54,6 +56,26 @@ defmodule Baudrate.Backup.SnapshotsTest do
     assert manifest["database"]["sha256"] =~ ~r/\A[0-9a-f]{64}\z/
     assert manifest["uploads"]["files"] == 2
     assert Snapshots.list(root) == [result.path]
+  end
+
+  # The pre-deploy dump runs from the deploy playbook, whose umask is not the
+  # backup service's, and a dump holds every account's data.
+  test "writes backups only the owner and the backup group can read", %{
+    uploads: uploads,
+    root: root,
+    base: base
+  } do
+    {:ok, backup} = Snapshots.create(root, opts(uploads))
+
+    {:ok, dump} =
+      Snapshots.dump_database(Path.join(base, "predeploy"),
+        free_space: fn _ -> {:ok, @plenty} end
+      )
+
+    assert mode(backup.path) == 0o750
+    assert mode(Path.join(backup.path, "db.dump")) == 0o640
+    assert mode(Path.join(backup.path, "MANIFEST.json")) == 0o640
+    assert mode(dump.path) == 0o640
   end
 
   test "hard-links unchanged uploads to the previous backup and copies new or changed ones",

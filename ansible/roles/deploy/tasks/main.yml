@@ -291,8 +291,11 @@
 # older than the pre-deploy dump (a rollback) skips it with a message.
 
 - name: Dump the database before migrations
-  ansible.builtin.command:
+  ansible.builtin.shell:
+    # umask, so a release older than the dump's own chmod still writes a dump
+    # no other local user can read.
     cmd: >-
+      umask 0027 &&
       {{ deploy_path }}/releases/{{ release_timestamp }}/bin/baudrate eval
       'if Code.ensure_loaded?(Baudrate.Release) and
       function_exported?(Baudrate.Release, :predeploy_dump, 2),
