@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.19.4] — 2026-09-15
+
+Fixes forms that erased what was typed, including password reset, password
+change and polls, and layout problems on narrow screens. Browser tests now
+cover account security, moderation, member features and layout.
+
+### Fixed
+
+- **Password reset works when the form is filled in order.** Typing the new
+  password erased the username and recovery code, so the reset failed. This
+  is the only way back into an account without email.
+- **Password change no longer erases the current password.** Typing the new
+  password cleared it, so the change failed with "Invalid credentials" and
+  the attempt counted towards the sign-in throttle.
+- **Polls can be created again.** In the article composer and the feed's
+  quick post, typing a poll option erased the others, and typing the title
+  erased them all.
+- **A bio typed in the admin bot form is kept** when another field changes.
+- **Long titles no longer widen the page.** An article title with a long
+  unbreakable token (a URL-like RSS or federated title) made the article and
+  edit history pages scroll sideways at every width.
+- **Member profiles fit narrow phones.** The header with the name, handle and
+  Message/Follow/Mute/More buttons did not wrap, and the More actions menu
+  opened partly off-screen.
+- **Menus near the end of a page clear the mobile dock.** Their last items,
+  such as "Report account" on the last feed post, sat under the bottom
+  navigation where they could not be tapped.
+
+### Changed
+
+- **Browser tests cover much more** (77, up from 55), in CI: TOTP enrollment
+  and sign-in, recovery codes, password change and reset, sign out
+  everywhere, security keys, data export download, the moderation queue,
+  block/mute/report menus, the composer (preview, drafts, polls, image
+  upload), direct messages and invites.
+- **The page crawl catches forms that erase typed input,** by filling every
+  live-validated form field by field.
+- **A layout test checks every member and admin page** in the Aqua light and
+  dark themes at narrow and desktop width, for sideways scrolling and for
+  menu items that are clipped or covered.
+
 ## [1.19.3] — 2026-09-15
 
 Paging returns you to the list on every paginated page. CI now runs in the
