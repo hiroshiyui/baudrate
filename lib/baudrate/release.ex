@@ -271,6 +271,101 @@ defmodule Baudrate.Release do
   end
 
   @doc """
+  Makes a scheduled backup in `root` and keeps the newest `:keep` (default 7)
+  (`Baudrate.Backup.Snapshots.create/2`, ADR 0028): a folder with a checked
+  database dump, a hard-link snapshot of the uploads and a manifest. The
+  systemd timer from the Ansible `backup` role runs:
+
+      bin/baudrate eval 'Baudrate.Release.snapshot_backup("/var/backups/baudrate/daily", keep: 7)'
+
+  Prints what was written and removed. Raises on failure, so `eval` exits
+  non-zero and systemd records the run as failed; nothing else is removed then.
+  """
+  def snapshot_backup(root, opts \\ []) do
+    load_app()
+
+    case Baudrate.Backup.Snapshots.create(root, Keyword.take(opts, [:keep])) do
+      {:ok, result} ->
+        IO.puts("backup: #{result.path}")
+
+        IO.puts(
+          "database dump: #{Baudrate.Backup.format_size(result.db_bytes)}; uploads: " <>
+            "#{result.files} files (#{result.copied} copied, #{result.linked} hard-linked)"
+        )
+
+        Enum.each(result.removed, &IO.puts("removed: #{&1}"))
+        :ok
+
+      {:error, message} ->
+        raise "backup failed: #{message}"
+    end
+  end
+
+  @doc """
+  Dumps the database into `root` before a deploy runs migrations, keeping the
+  newest `:keep` dumps (default 3). `:label` names the dump, e.g. the release
+  tag (`Baudrate.Backup.Snapshots.dump_database/2`).
+
+      bin/baudrate eval 'Baudrate.Release.predeploy_dump("/var/backups/baudrate/predeploy", label: "v1.19.5")'
+  """
+  def predeploy_dump(root, opts \\ []) do
+    load_app()
+
+    case Baudrate.Backup.Snapshots.dump_database(root, Keyword.take(opts, [:keep, :label])) do
+      {:ok, result} ->
+        IO.puts("database dump: #{result.path} (#{Baudrate.Backup.format_size(result.bytes)})")
+        Enum.each(result.removed, &IO.puts("removed: #{&1}"))
+        :ok
+
+      {:error, message} ->
+        raise "pre-deploy dump failed: #{message}"
+    end
+  end
+
+  @doc """
+  Restores a backup folder made by `snapshot_backup/2`: the database
+  (overwritten) and the uploads (copied back; files added since are kept).
+  **Stop the service first.**
+
+      systemctl stop baudrate
+      bin/baudrate eval 'Baudrate.Release.restore_snapshot("/var/backups/baudrate/daily/20260916T203000Z")'
+
+  A pre-deploy dump is a plain `.dump` file; restore it with `restore_db/1`.
+  """
+  def restore_snapshot(path) do
+    load_app()
+
+    case Baudrate.Backup.Snapshots.restore(path) do
+      {:ok, result} ->
+        IO.puts("restored database from #{result.database}")
+        IO.puts("restored #{result.files} files into #{result.uploads}")
+        :ok
+
+      {:error, message} ->
+        raise "restore failed: #{message}"
+    end
+  end
+
+  @doc """
+  Restores only the database from a `.dump` or `.sql` file, such as a
+  pre-deploy dump. **Stop the service first.**
+
+      bin/baudrate eval 'Baudrate.Release.restore_db("/var/backups/baudrate/predeploy/20260916T101500Z-v1.19.5.dump")'
+  """
+  def restore_db(path) do
+    load_app()
+
+    case Baudrate.Backup.restore_db(path) do
+      {:ok, _} ->
+        IO.puts("restored database from #{path}")
+        :ok
+
+      {:error, message} ->
+        raise "restore failed: #{message}"
+    end
+  end
+
+  @doc """
   Audited SysOp data export for `username` into `output_dir` (ADR 0023).
 
   Use it for banned users, accounts without qualifying TOTP, or any request

@@ -43,6 +43,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0025](0025-account-migration.md) | Account migration (ActivityPub Move) is gated, delayed and reversible | Accepted |
 | [0026](0026-blocks-stop-interaction-locally.md) | A block stops interaction in both directions, enforced on this site only | Accepted |
 | [0027](0027-ci-runs-in-a-pinned-attested-image.md) | CI runs in a digest-pinned, attested image built from verified inputs | Accepted |
+| [0028](0028-backups-are-complete-folders-with-count-based-retention.md) | Backups are complete folders with count-based retention, pulled off-host | Accepted |
 
 ## Writing a new ADR
 

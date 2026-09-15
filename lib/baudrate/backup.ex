@@ -47,16 +47,47 @@ defmodule Baudrate.Backup do
 
   def backup_db(output_dir, format) when format in @formats do
     File.mkdir_p!(output_dir)
-    {env, pg_args} = pg_env(repo_config())
     extension = if format == "custom", do: ".dump", else: ".sql"
-    output_path = Path.join(output_dir, "baudrate_db_#{timestamp()}#{extension}")
+    dump_db_to(Path.join(output_dir, "baudrate_db_#{timestamp()}#{extension}"), format)
+  end
+
+  def backup_db(_output_dir, format),
+    do: {:error, "Invalid format: #{format}. Use \"custom\" or \"sql\"."}
+
+  @doc "Dumps the database with `pg_dump` into the file `output_path`."
+  @spec dump_db_to(String.t(), String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  def dump_db_to(output_path, format \\ "custom") when format in @formats do
+    {env, pg_args} = pg_env(repo_config())
     format_args = if format == "custom", do: ["-Fc"], else: []
 
     run("pg_dump", format_args ++ ["-f", output_path] ++ pg_args, env, output_path)
   end
 
-  def backup_db(_output_dir, format),
-    do: {:error, "Invalid format: #{format}. Use \"custom\" or \"sql\"."}
+  @doc """
+  Checks that a custom-format dump is complete and readable by listing its
+  table of contents with `pg_restore --list`.
+  """
+  @spec verify_db_dump(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  def verify_db_dump(path), do: run("pg_restore", ["--list", "-f", "/dev/null", path], [], path)
+
+  @doc """
+  Free and total bytes on the filesystem holding `path`, from `df -Pk`.
+  """
+  @spec free_space(String.t()) ::
+          {:ok, %{free: non_neg_integer(), total: non_neg_integer()}} | {:error, String.t()}
+  def free_space(path) do
+    with {:ok, output} <- capture("df", ["-Pk", path]),
+         [_header, line | _] <- String.split(output, "\n", trim: true),
+         # Filesystem, 1024-blocks, Used, Available, Capacity, Mounted on.
+         [_fs, total, _used, available | _] <- String.split(line),
+         {total, ""} <- Integer.parse(total),
+         {available, ""} <- Integer.parse(available) do
+      {:ok, %{free: available * 1024, total: total * 1024}}
+    else
+      {:error, message} -> {:error, message}
+      _ -> {:error, "Could not read free space for #{path}"}
+    end
+  end
 
   @doc "Archives the uploads directory (without `media_cache/`) into `output_dir`."
   @spec backup_files(String.t()) :: {:ok, String.t()} | {:error, String.t()}
@@ -203,13 +234,17 @@ defmodule Baudrate.Backup do
   defp repo_config, do: Application.get_env(:baudrate, Baudrate.Repo, [])
 
   defp run(cmd, args, env, result_path) do
+    with {:ok, _output} <- capture(cmd, args, env), do: {:ok, result_path}
+  end
+
+  defp capture(cmd, args, env \\ []) do
     case System.find_executable(cmd) do
       nil ->
         {:error, "#{cmd} not found in PATH"}
 
       _ ->
         case System.cmd(cmd, args, env: env, stderr_to_stdout: true) do
-          {_output, 0} -> {:ok, result_path}
+          {output, 0} -> {:ok, output}
           {output, code} -> {:error, "#{cmd} failed (exit code #{code}):\n#{output}"}
         end
     end

@@ -72,6 +72,9 @@ lib/
 │   │   ├── webauthn_challenges.ex # ETS-backed challenge store (60s TTL, single-use, GenServer)
 │   │   └── webauthn_credential.ex # WebAuthnCredential schema (credential_id, public_key_cbor, sign_count)
 │   ├── avatar.ex                # Avatar image processing (crop, resize, WebP)
+│   ├── backup.ex                # pg_dump/pg_restore and uploads archive helpers (release + mix)
+│   ├── backup/
+│   │   └── snapshots.ex         # Nightly backup folders: hard-link uploads, retention, disk guard (ADR 0028)
 │   ├── bots.ex                  # Bots context: bot CRUD, feed scheduling, deduplication
 │   ├── bots/
 │   │   ├── bot.ex               # Bot schema (1:1 with User, feed config, fetch state)
