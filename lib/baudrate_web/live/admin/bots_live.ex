@@ -305,6 +305,17 @@ defmodule BaudrateWeb.Admin.BotsLive do
     assign(socket, :bots, Bots.list_bots())
   end
 
+  # The bio is not a Bot field, so the changeset form does not carry it. Render
+  # what was typed (the form's params) once the form has changed: re-rendering
+  # the form resets a textarea to its rendered content, so falling back to the
+  # stored bio erased a bio typed before another field was edited.
+  defp bio_value(form, editing_bot) do
+    case form.params do
+      %{"bio" => bio} -> bio
+      _ -> (editing_bot && editing_bot.user.bio) || ""
+    end
+  end
+
   defp pad_profile_fields(nil), do: List.duplicate(%{"name" => "", "value" => ""}, 4)
 
   defp pad_profile_fields(fields) when is_list(fields) do

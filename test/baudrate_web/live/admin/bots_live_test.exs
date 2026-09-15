@@ -298,6 +298,22 @@ defmodule BaudrateWeb.Admin.BotsLiveTest do
       assert bot.user.bio == feed_url
     end
 
+    # The bio is not part of the Bot changeset; re-rendering the form used to
+    # reset the textarea to the stored bio, erasing what was typed.
+    test "a typed bio survives a change to another field", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/bots")
+      lv |> element("#admin-bots-new-btn") |> render_click()
+
+      lv
+      |> form("#admin-bots-form", bot: %{bio: "Typed bio", feed_url: "https://example.com/feed"})
+      |> render_change()
+
+      assert lv |> element("#admin-bots-bio-input") |> render() =~ "Typed bio"
+    end
+
     test "edit bot bio field is pre-filled with current bio", %{conn: conn} do
       admin = setup_user("admin")
       conn = log_in_admin(conn, admin)

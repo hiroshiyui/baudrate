@@ -28,10 +28,17 @@ defmodule BaudrateWeb.PasswordResetLive do
     {:ok, socket}
   end
 
+  # Every re-render patches the whole form, and LiveView resets an input to its
+  # rendered `value`, so the typed values are kept in `:form` and rendered
+  # back; otherwise typing the new password erased the username and code.
   @impl true
   def handle_event("validate", %{"reset" => params}, socket) do
     password = params["new_password"] || ""
-    {:noreply, assign(socket, :password_strength, password_strength(password))}
+
+    {:noreply,
+     socket
+     |> assign(:form, to_form(params, as: :reset))
+     |> assign(:password_strength, password_strength(password))}
   end
 
   @impl true

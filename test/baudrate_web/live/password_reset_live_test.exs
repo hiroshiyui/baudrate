@@ -37,6 +37,23 @@ defmodule BaudrateWeb.PasswordResetLiveTest do
     assert html =~ "Confirm New Password"
   end
 
+  # A re-render patches the whole form and LiveView resets every input to its
+  # rendered value; without echoing the params, typing the new password erased
+  # the username and recovery code in the browser.
+  test "renders typed values back while the form changes", %{conn: conn} do
+    {:ok, lv, _html} = live(conn, "/password-reset")
+
+    lv
+    |> form("#password-reset-form",
+      reset: %{username: "someone", recovery_code: "abcd-efgh", new_password: "Str0ng-Pass!x"}
+    )
+    |> render_change()
+
+    assert has_element?(lv, ~s(#reset_username[value="someone"]))
+    assert has_element?(lv, ~s(#reset_recovery_code[value="abcd-efgh"]))
+    assert has_element?(lv, ~s(#reset_new_password[value="Str0ng-Pass!x"]))
+  end
+
   test "successful password reset redirects to /login", %{conn: conn} do
     {_user, codes} = create_user_with_codes("resetlive_user")
     [code | _] = codes

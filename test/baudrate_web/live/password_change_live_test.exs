@@ -35,6 +35,33 @@ defmodule BaudrateWeb.PasswordChangeLiveTest do
              live(Phoenix.ConnTest.build_conn(), "/profile/password")
   end
 
+  # A re-render patches the whole form and LiveView resets every input to its
+  # rendered value; without echoing the params, typing the new password
+  # erased the current password in the browser.
+  test "renders typed values back while the form changes", %{conn: conn} do
+    {:ok, lv, _html} = live(conn, "/profile/password")
+
+    lv
+    |> form("#password-change-form",
+      password_change: %{current_password: @password, password: @new, password_confirmation: "N"}
+    )
+    |> render_change()
+
+    assert has_element?(lv, ~s(#password_change_current_password[value="#{@password}"]))
+    assert has_element?(lv, ~s(#password_change_password[value="#{@new}"]))
+    assert has_element?(lv, ~s(#password_change_password_confirmation[value="N"]))
+  end
+
+  test "clears the credentials after a failed re-authentication", %{conn: conn} do
+    {:ok, lv, _html} = live(conn, "/profile/password")
+    params = %{current_password: "wrong-Password1!", password: @new, password_confirmation: @new}
+
+    lv |> form("#password-change-form", password_change: params) |> render_change()
+    assert submit(lv, params) =~ "Invalid credentials"
+
+    refute has_element?(lv, "#password_change_current_password[value]")
+  end
+
   test "renders the form with requirements; no TOTP field without TOTP", %{conn: conn} do
     {:ok, lv, _html} = live(conn, "/profile/password")
 

@@ -54,7 +54,7 @@
               maxlength="500"
               placeholder={gettext("Bot description or disclaimer (max 500 characters)")}
               aria-label={gettext("Bio")}
-            >{if @editing_bot, do: (@editing_bot.user.bio || ""), else: ""}</textarea>
+            >{bio_value(@form, @editing_bot)}</textarea>
           </label>
           <p class="text-sm opacity-70 mt-1">
             {gettext("Defaults to the feed URL if left empty.")}
