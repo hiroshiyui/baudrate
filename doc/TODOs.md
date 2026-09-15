@@ -251,6 +251,7 @@ Needs an ADR.
 - [ ] Update the worker table in `doc/sysop.md` (add `FeedWorker` and every `SessionCleaner` job).
 - [ ] Fix the README clone URL and add `INSTALLATION_KEY` to its production environment list.
 - [ ] Remove the two link-preview images committed under `priv/static/uploads`.
+- [ ] **Production allows SSH login as root (key only).** `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets `PermitRootLogin yes`; sshd reads drop-ins first and keeps the first value, so the `common` role's `PermitRootLogin no` in `sshd_config` has no effect (`sshd -T` shows `permitrootlogin yes`, found 2026-09-15). Make the role manage the drop-ins and assert the effective value with `sshd -T`.
 
 ### Decisions needed
 
