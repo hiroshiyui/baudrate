@@ -96,6 +96,7 @@ defmodule BaudrateWeb do
       import Phoenix.HTML
       # Core UI components
       import BaudrateWeb.CoreComponents
+      import BaudrateWeb.ModerationComponents
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

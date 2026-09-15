@@ -64,10 +64,8 @@ Shipped on `current`; see "Recently completed". Blocking semantics are recorded 
 ### 1B — A report queue that works, including for board moderators (L)
 
 - [x] **Queue basics** (2026-09-16): `Moderation.paginate_reports/1` (20 a page, status and page in the URL), links to the reported content, account or actor, the full reported text, `other_open_report_counts/1` next to each report, and a required reason category (P1-D9) on every report made on this site.
-- [ ] **Scoped queue for board moderators.**
-  - Board moderators (role `user`) get a queue of reports about articles and comments in the boards they moderate.
-  - It is reachable from those boards, shows no admin navigation, and never shows reports about other boards, accounts or DMs.
-- [ ] **Who hears about a new report.** Admins and global moderators are notified of every report. A board moderator is notified of reports about their boards.
+- [x] **Scoped queue for board moderators** (2026-09-16): `/moderation` (`ModerationLive`), scoped by `Content.moderated_board_ids/1`, linked from each board they moderate, with every action re-checking `Moderation.report_in_boards?/2` and the delete permission.
+- [x] **Who hears about a new report** (2026-09-16): every admin and global moderator (`Setup.staff_user_ids/0`), plus the board moderators of the reported content's board.
 - [ ] **Outcome notices (P1-D4).**
   - The reporter is told their report was reviewed.
   - The author of removed content is told it was removed, with the reason.

@@ -1,0 +1,61 @@
+<div id="moderation-page" class="moderation-page space-y-6">
+  <header id="moderation-header" class="moderation-header">
+    <h1 id="moderation-heading" class="moderation-heading text-2xl font-bold">
+      {gettext("Reports about your boards")}
+    </h1>
+    <p id="moderation-subtitle" class="moderation-subtitle text-sm text-base-content/70 mt-1">
+      {gettext(
+        "Reports about articles and comments in the boards you moderate. Reports about accounts and messages go to the site's moderators."
+      )}
+    </p>
+  </header>
+
+  <nav
+    id="moderation-status-tabs"
+    class="moderation-status-tabs tabs tabs-box"
+    aria-label={gettext("Report status")}
+  >
+    <button
+      :for={status <- ["open", "resolved", "dismissed"]}
+      id={"moderation-tab-#{status}"}
+      class={["moderation-tab tab", @status_filter == status && "tab-active"]}
+      phx-click="filter"
+      phx-value-status={status}
+      aria-pressed={to_string(@status_filter == status)}
+    >
+      {translate_report_status(status)}
+    </button>
+  </nav>
+
+  <div id="moderation-reports" class="moderation-reports space-y-4" data-focus-target>
+    <div
+      :if={@reports == []}
+      id="moderation-empty"
+      class="moderation-empty text-center py-8 opacity-70"
+    >
+      {gettext("No reports with status \"%{status}\".",
+        status: translate_report_status(@status_filter)
+      )}
+    </div>
+
+    <div
+      :for={report <- @reports}
+      id={"moderation-report-#{report.id}"}
+      class="moderation-report report card bg-base-200 shadow-sm"
+    >
+      <.report_card
+        report={report}
+        others={Map.get(@other_reports, report.id, 0)}
+        prefix="moderation"
+        allow_delete
+      />
+    </div>
+  </div>
+
+  <.pagination
+    :if={@total_pages > 1}
+    page={@page}
+    total_pages={@total_pages}
+    path={~p"/moderation?status=#{@status_filter}"}
+  />
+</div>

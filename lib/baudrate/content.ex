@@ -67,6 +67,7 @@ defmodule Baudrate.Content do
   defdelegate get_board_by_slug(slug), to: Boards
   defdelegate get_board_by_slug!(slug), to: Boards
   defdelegate list_board_moderators(board), to: Boards
+  defdelegate moderated_board_ids(user), to: Boards
   defdelegate add_board_moderator(board_id, user_id), to: Boards
   defdelegate remove_board_moderator(board_id, user_id), to: Boards
   defdelegate seed_sysop_board(user), to: Boards

@@ -329,6 +329,9 @@ defmodule BaudrateWeb.Router do
       live "/following", FollowingLive
       live "/feed", FeedLive
       live "/bookmarks", BookmarksLive
+      # Board moderators are ordinary members, so their report queue lives
+      # outside /admin; the LiveView scopes it to the boards they moderate.
+      live "/moderation", ModerationLive
     end
 
     # Admin routes — separate live_session for TOTP re-verification (sudo mode).

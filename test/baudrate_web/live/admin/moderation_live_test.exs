@@ -486,7 +486,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
              |> render() =~ "/articles/#{article.slug}"
 
       # The whole reported text, not a preview.
-      assert has_element?(lv, ".admin-moderation-report-article-body", article.body)
+      assert has_element?(lv, ".moderation-report-article-body", article.body)
     end
 
     test "links a reported comment to its place on the article, and a reported user to their profile",

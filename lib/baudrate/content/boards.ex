@@ -297,6 +297,24 @@ defmodule Baudrate.Content.Boards do
   end
 
   @doc """
+  IDs of the boards `user` may moderate: the boards they are a moderator of,
+  and every board for staff (admins and global moderators moderate everywhere,
+  like `Permissions.board_moderator?/2`). `[]` for anyone else, including
+  guests.
+  """
+  @spec moderated_board_ids(map() | nil) :: [integer()]
+  def moderated_board_ids(nil), do: []
+
+  def moderated_board_ids(%{role: %{name: role_name}}) when role_name in ["admin", "moderator"],
+    do: Repo.all(from(b in Board, select: b.id))
+
+  def moderated_board_ids(%{id: user_id}) do
+    Repo.all(from(bm in BoardModerator, where: bm.user_id == ^user_id, select: bm.board_id))
+  end
+
+  def moderated_board_ids(_user), do: []
+
+  @doc """
   Assigns a user as board moderator.
   """
   def add_board_moderator(board_id, user_id) do

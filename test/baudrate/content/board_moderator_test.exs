@@ -85,4 +85,43 @@ defmodule Baudrate.Content.BoardModeratorTest do
       assert Content.list_board_moderators(board) == []
     end
   end
+
+  describe "moderated_board_ids/1" do
+    test "lists the boards a member moderates, and nothing else", %{
+      board: board,
+      user1: user1,
+      user2: user2
+    } do
+      {:ok, _} =
+        Content.create_board(%{
+          name: "Other",
+          slug: "other-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, _} = Content.add_board_moderator(board.id, user1.id)
+
+      user1 = Repo.preload(user1, :role)
+      user2 = Repo.preload(user2, :role)
+
+      assert Content.moderated_board_ids(user1) == [board.id]
+      assert Content.moderated_board_ids(user2) == []
+      assert Content.moderated_board_ids(nil) == []
+    end
+
+    test "staff moderate every board", %{board: board} do
+      admin_role = Repo.one!(from(r in Setup.Role, where: r.name == "admin"))
+
+      {:ok, admin} =
+        %Setup.User{}
+        |> Setup.User.registration_changeset(%{
+          "username" => "mod_admin_#{System.unique_integer([:positive])}",
+          "password" => "Password123!x",
+          "password_confirmation" => "Password123!x",
+          "role_id" => admin_role.id
+        })
+        |> Repo.insert()
+
+      assert board.id in Content.moderated_board_ids(Repo.preload(admin, :role))
+    end
+  end
 end

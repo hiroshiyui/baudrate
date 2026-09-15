@@ -235,7 +235,7 @@ lib/
 │   │   │   ├── federation_live.ex      # Admin federation dashboard
 │   │   │   ├── invites_live.ex         # Admin invite code management (generate, revoke, invite chain)
 │   │   │   ├── login_attempts_live.ex # Admin login attempts viewer (paginated, filterable)
-│   │   │   ├── moderation_live.ex     # Moderation queue (reports)
+│   │   │   ├── moderation_live.ex     # Admin moderation queue (every report)
 │   │   │   ├── moderation_log_live.ex # Moderation audit log (filterable, paginated)
 │   │   │   ├── bots_live.ex           # Admin bot management (create, edit, delete RSS/Atom feed bots)
 │   │   │   ├── pending_users_live.ex  # Admin approval of pending registrations
@@ -1208,6 +1208,22 @@ compares every target field, so reporting a post does not count as reporting
 its author). Report creation is rate-limited to 5 per 15 minutes per user.
 Reports target `article_id`, `comment_id`, `remote_actor_id`,
 `reported_user_id`, `feed_item_id` or `message_id`.
+
+**Board moderators** have their own queue at `/moderation`
+(`BaudrateWeb.ModerationLive`), outside `/admin` because they are ordinary
+members (role `user`). It lists only reports about articles in the boards
+they moderate and comments on those articles
+(`Moderation.paginate_reports(boards: …)`, scoped by
+`Content.moderated_board_ids/1`, which returns every board for staff): never
+reports about accounts, direct messages or feed items, and never another
+board's. Every action re-checks the scope (`Moderation.report_in_boards?/2`)
+and the delete permission, since the report id comes from the client. Boards
+link to it for their moderators. Both queues render a report through
+`BaudrateWeb.ModerationComponents.report_card/1`, so they cannot drift apart.
+
+A new report notifies every admin and global moderator, plus the board
+moderators of the board the reported article or comment is in
+(`Notification.Hooks.notify_report_created/1`).
 
 Each row in the queue shows the category, the full reported text, a link to
 the reported article, comment (at its place on the article), account or

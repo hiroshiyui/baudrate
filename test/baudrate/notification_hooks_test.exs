@@ -291,6 +291,51 @@ defmodule Baudrate.Notification.HooksTest do
       assert [_] = list_notifications_for(admin2.id, "moderation_report")
     end
 
+    test "sends moderation_report to global moderators too" do
+      moderator = create_moderator()
+
+      Hooks.notify_report_created(999)
+
+      assert [_] = list_notifications_for(moderator.id, "moderation_report")
+    end
+
+    test "sends moderation_report to the board moderators of the reported content" do
+      board_moderator = create_user("board_mod")
+      bystander = create_user("bystander")
+      author = create_user("author")
+
+      {:ok, board} =
+        Baudrate.Content.create_board(%{
+          name: "Reported board",
+          slug: "reported-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, _} = Baudrate.Content.add_board_moderator(board.id, board_moderator.id)
+
+      {:ok, %{article: article}} =
+        Baudrate.Content.create_article(
+          %{
+            title: "Reported",
+            body: "Body",
+            slug: "reported-art-#{System.unique_integer([:positive])}",
+            user_id: author.id
+          },
+          [board.id]
+        )
+
+      {:ok, report} =
+        Baudrate.Moderation.create_report(%{
+          category: "spam",
+          reason: "Spam",
+          reporter_id: bystander.id,
+          article_id: article.id
+        })
+
+      assert [_] = list_notifications_for(board_moderator.id, "moderation_report")
+      assert [] = list_notifications_for(bystander.id, "moderation_report")
+      assert report.id
+    end
+
     test "includes report_id in data" do
       admin = create_admin()
 
@@ -318,6 +363,23 @@ defmodule Baudrate.Notification.HooksTest do
       |> Repo.insert()
 
     user
+  end
+
+  defp create_moderator do
+    role = Repo.one!(from(r in Baudrate.Setup.Role, where: r.name == "moderator"))
+    uid = System.unique_integer([:positive])
+
+    {:ok, moderator} =
+      %Baudrate.Setup.User{}
+      |> Baudrate.Setup.User.registration_changeset(%{
+        "username" => "global_mod_#{uid}",
+        "password" => "Password123!x",
+        "password_confirmation" => "Password123!x",
+        "role_id" => role.id
+      })
+      |> Repo.insert()
+
+    moderator
   end
 
   defp create_admin do

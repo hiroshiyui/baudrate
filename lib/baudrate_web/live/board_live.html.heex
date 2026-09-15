@@ -41,6 +41,15 @@
     {gettext("New Article")}
   </.link>
   <.link
+    :if={@can_moderate}
+    id="board-reports"
+    navigate={~p"/moderation"}
+    class="board-action btn btn-sm btn-ghost"
+  >
+    <.icon name="hero-flag" class="size-4" />
+    {gettext("Reports")}
+  </.link>
+  <.link
     :if={@can_manage_follows}
     id="board-manage-follows"
     navigate={~p"/boards/#{@board.slug}/follows"}

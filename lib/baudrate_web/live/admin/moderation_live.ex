@@ -18,7 +18,6 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     only: [
       parse_id: 1,
       parse_page: 1,
-      translate_report_category: 1,
       translate_report_status: 1
     ]
 

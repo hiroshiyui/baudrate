@@ -17,6 +17,7 @@ defmodule Baudrate.Moderation do
 
   alias Baudrate.Pagination
   alias Baudrate.Repo
+  alias Baudrate.Content.{BoardArticle, Comment}
   alias Baudrate.Federation.{FeedItem, RemoteActor}
   alias Baudrate.Messaging.DirectMessage
   alias Baudrate.Moderation.{Log, Report}
@@ -257,20 +258,75 @@ defmodule Baudrate.Moderation do
   A page of reports with the same preloads as `list_reports/1`.
 
   Options: `:status` (default `"open"`), `:page`, `:per_page` (default 20,
-  at most 100). Returns `%{reports: […], page:, per_page:, total:,
-  total_pages:}`.
+  at most 100), and `:boards` — a list of board IDs, which narrows the page to
+  reports about articles in those boards and comments on them. A board
+  moderator sees nothing else: no reports about accounts, direct messages or
+  feed items, and none about other boards (`Content.moderated_board_ids/1`).
+
+  Returns `%{reports: […], page:, per_page:, total:, total_pages:}`.
   """
   @spec paginate_reports(keyword()) :: map()
   def paginate_reports(opts \\ []) do
     status = Keyword.get(opts, :status, "open")
 
     from(r in Report, where: r.status == ^status)
+    |> scope_to_boards(Keyword.get(opts, :boards))
     |> Pagination.paginate_query(Pagination.paginate_opts(opts, 20, max_per_page: 100),
       result_key: :reports,
       order_by: [desc: :inserted_at, desc: :id],
       preloads: @report_preloads
     )
   end
+
+  # Reports about content in these boards: the article itself, or a comment on
+  # an article in one of them.
+  defp scope_to_boards(query, nil), do: query
+
+  defp scope_to_boards(query, board_ids) when is_list(board_ids) do
+    article_ids =
+      from(ba in BoardArticle, where: ba.board_id in ^board_ids, select: ba.article_id)
+
+    comment_ids =
+      from(c in Comment,
+        join: ba in BoardArticle,
+        on: ba.article_id == c.article_id,
+        where: ba.board_id in ^board_ids,
+        select: c.id
+      )
+
+    from(r in query,
+      where:
+        r.article_id in subquery(article_ids) or
+          r.comment_id in subquery(comment_ids)
+    )
+  end
+
+  @doc """
+  Whether `report` is about an article in one of `board_ids`, or a comment on
+  one. The only reports a board moderator may see or act on; every action on
+  the board moderators' queue re-checks it, because the report id comes from
+  the client.
+  """
+  @spec report_in_boards?(Report.t(), [integer()]) :: boolean()
+  def report_in_boards?(_report, []), do: false
+
+  def report_in_boards?(%Report{article_id: article_id}, board_ids) when not is_nil(article_id) do
+    Repo.exists?(
+      from(ba in BoardArticle, where: ba.article_id == ^article_id and ba.board_id in ^board_ids)
+    )
+  end
+
+  def report_in_boards?(%Report{comment_id: comment_id}, board_ids) when not is_nil(comment_id) do
+    Repo.exists?(
+      from(c in Comment,
+        join: ba in BoardArticle,
+        on: ba.article_id == c.article_id,
+        where: c.id == ^comment_id and ba.board_id in ^board_ids
+      )
+    )
+  end
+
+  def report_in_boards?(_report, _board_ids), do: false
 
   @doc """
   How many **other** open reports each of `reports` shares a target with,
@@ -309,6 +365,18 @@ defmodule Baudrate.Moderation do
 
   # The report itself is in the count when it is still open.
   defp others(counts, value), do: max(Map.get(counts, value, 0) - 1, 0)
+
+  @doc """
+  Fetches a report by ID with all preloads, or `nil`. For ids that came from a
+  client, where a missing report is an ordinary outcome.
+  """
+  @spec get_report(integer()) :: Report.t() | nil
+  def get_report(id) do
+    case Repo.get(Report, id) do
+      nil -> nil
+      report -> Repo.preload(report, @report_preloads ++ [:message])
+    end
+  end
 
   @doc """
   Fetches a report by ID with all preloads, or raises.

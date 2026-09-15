@@ -443,7 +443,7 @@ msgstr "デバイスを紛失しましたか？リカバリーコードを使用
 msgid "Member Since"
 msgstr "登録日"
 
-#: lib/baudrate_web/live/board_live.html.heex:118
+#: lib/baudrate_web/live/board_live.html.heex:127
 #: lib/baudrate_web/live/user_content_live.html.heex:58
 #: lib/baudrate_web/live/user_profile_live.html.heex:473
 #, elixir-autogen, elixir-format
@@ -535,7 +535,7 @@ msgstr "アバターを更新しました。"
 #: lib/baudrate_web/components/core_components.ex:853
 #: lib/baudrate_web/live/admin/boards_live.html.heex:120
 #: lib/baudrate_web/live/admin/bots_live.html.heex:156
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:455
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:191
 #: lib/baudrate_web/live/admin/users_live.html.heex:324
 #: lib/baudrate_web/live/admin/users_live.html.heex:377
 #: lib/baudrate_web/live/article_live.html.heex:487
@@ -679,7 +679,7 @@ msgid "Pending Users"
 msgstr "承認待ちユーザー"
 
 #: lib/baudrate_web/live/article_live.html.heex:19
-#: lib/baudrate_web/live/board_live.html.heex:134
+#: lib/baudrate_web/live/board_live.html.heex:143
 #, elixir-autogen, elixir-format
 msgid "Pinned"
 msgstr "固定"
@@ -857,8 +857,9 @@ msgstr "許可ドメイン（連合）"
 msgid "Allowlist (allow only specific domains)"
 msgstr "許可リスト（指定ドメインのみ許可）"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:282
+#: lib/baudrate_web/live/admin/moderation_live.ex:281
 #: lib/baudrate_web/live/article_live.ex:839
+#: lib/baudrate_web/live/moderation_live.ex:107
 #, elixir-autogen, elixir-format
 msgid "Article deleted."
 msgstr "記事を削除しました。"
@@ -909,8 +910,9 @@ msgstr "許可するドメインのカンマ区切りリスト。許可リスト
 msgid "Comma-separated list of domains to block from federation."
 msgstr "連合からブロックするドメインのカンマ区切りリスト。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:306
+#: lib/baudrate_web/live/admin/moderation_live.ex:305
 #: lib/baudrate_web/live/article_live.ex:872
+#: lib/baudrate_web/live/moderation_live.ex:132
 #, elixir-autogen, elixir-format
 msgid "Comment deleted."
 msgstr "コメントを削除しました。"
@@ -922,24 +924,24 @@ msgstr "コメントを削除しました。"
 msgid "Content"
 msgstr "コンテンツ"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:220
+#: lib/baudrate_web/components/moderation_components.ex:134
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:65
 #, elixir-autogen, elixir-format
 msgid "Delete Article"
 msgstr "記事を削除"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:252
+#: lib/baudrate_web/components/moderation_components.ex:166
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:66
 #, elixir-autogen, elixir-format
 msgid "Delete Comment"
 msgstr "コメントを削除"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:217
+#: lib/baudrate_web/components/moderation_components.ex:131
 #, elixir-autogen, elixir-format
 msgid "Delete this article?"
 msgstr "この記事を削除しますか？"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:249
+#: lib/baudrate_web/components/moderation_components.ex:163
 #, elixir-autogen, elixir-format
 msgid "Delete this comment?"
 msgstr "このコメントを削除しますか？"
@@ -959,7 +961,7 @@ msgstr "配信キュー"
 msgid "Disable"
 msgstr "無効化"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:396
+#: lib/baudrate_web/components/moderation_components.ex:310
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "却下"
@@ -1003,24 +1005,28 @@ msgstr "エラー率（24時間）"
 msgid "Failed"
 msgstr "失敗"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:286
+#: lib/baudrate_web/live/admin/moderation_live.ex:285
 #: lib/baudrate_web/live/article_live.ex:843
+#: lib/baudrate_web/live/moderation_live.ex:110
 #, elixir-autogen, elixir-format
 msgid "Failed to delete article."
 msgstr "記事の削除に失敗しました。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:310
+#: lib/baudrate_web/live/admin/moderation_live.ex:309
 #: lib/baudrate_web/live/article_live.ex:875
+#: lib/baudrate_web/live/moderation_live.ex:135
 #, elixir-autogen, elixir-format
 msgid "Failed to delete comment."
 msgstr "コメントの削除に失敗しました。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:262
+#: lib/baudrate_web/live/admin/moderation_live.ex:261
+#: lib/baudrate_web/live/moderation_live.ex:87
 #, elixir-autogen, elixir-format
 msgid "Failed to dismiss report."
 msgstr "通報の却下に失敗しました。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:241
+#: lib/baudrate_web/live/admin/moderation_live.ex:240
+#: lib/baudrate_web/live/moderation_live.ex:73
 #, elixir-autogen, elixir-format
 msgid "Failed to resolve report."
 msgstr "通報の対処に失敗しました。"
@@ -1051,7 +1057,7 @@ msgstr "連合ダッシュボード"
 msgid "Federation Mode"
 msgstr "連合モード"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:347
+#: lib/baudrate_web/live/admin/moderation_live.ex:346
 #, elixir-autogen, elixir-format
 msgid "Flag sent to %{domain}."
 msgstr "%{domain} に通報を送信しました。"
@@ -1094,6 +1100,7 @@ msgstr "最終確認"
 
 #: lib/baudrate_web/components/layouts.ex:84
 #: lib/baudrate_web/components/layouts.ex:325
+#: lib/baudrate_web/live/moderation_live.ex:44
 #, elixir-autogen, elixir-format
 msgid "Moderation"
 msgstr "モデレーション"
@@ -1108,7 +1115,7 @@ msgstr "モデレーションキュー"
 msgid "No boards configured."
 msgstr "掲示板が設定されていません。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:350
+#: lib/baudrate_web/live/admin/moderation_live.ex:349
 #, elixir-autogen, elixir-format
 msgid "No remote actor to send flag to."
 msgstr "通報先のリモートアクターがありません。"
@@ -1119,6 +1126,7 @@ msgid "No remote instances discovered yet."
 msgstr "リモートインスタンスはまだ発見されていません。"
 
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:103
+#: lib/baudrate_web/live/moderation_live.html.heex:36
 #, elixir-autogen, elixir-format
 msgid "No reports with status \"%{status}\"."
 msgstr "ステータス「%{status}」の通報はありません。"
@@ -1133,7 +1141,7 @@ msgstr "ステータス「%{status}」の通報はありません。"
 msgid "Pending"
 msgstr "保留中"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:183
+#: lib/baudrate_web/components/moderation_components.ex:97
 #, elixir-autogen, elixir-format
 msgid "Reason:"
 msgstr "理由："
@@ -1145,38 +1153,40 @@ msgstr "理由："
 msgid "Register"
 msgstr "登録"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:257
+#: lib/baudrate_web/live/admin/moderation_live.ex:256
+#: lib/baudrate_web/live/moderation_live.ex:84
 #, elixir-autogen, elixir-format
 msgid "Report dismissed."
 msgstr "通報を却下しました。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:236
+#: lib/baudrate_web/live/admin/moderation_live.ex:235
+#: lib/baudrate_web/live/moderation_live.ex:70
 #, elixir-autogen, elixir-format
 msgid "Report resolved."
 msgstr "通報を対処しました。"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:301
+#: lib/baudrate_web/components/moderation_components.ex:215
 #, elixir-autogen, elixir-format
 msgid "Reported Actor:"
 msgstr "通報されたアクター："
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:199
+#: lib/baudrate_web/components/moderation_components.ex:113
 #, elixir-autogen, elixir-format
 msgid "Reported Article:"
 msgstr "通報された記事："
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:228
+#: lib/baudrate_web/components/moderation_components.ex:142
 #, elixir-autogen, elixir-format
 msgid "Reported Comment:"
 msgstr "通報されたコメント："
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:376
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:439
+#: lib/baudrate_web/components/moderation_components.ex:290
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "Resolution note (optional)"
 msgstr "対処メモ（任意）"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:386
+#: lib/baudrate_web/components/moderation_components.ex:300
 #, elixir-autogen, elixir-format
 msgid "Resolve"
 msgstr "対処"
@@ -1186,12 +1196,12 @@ msgstr "対処"
 msgid "Resolved"
 msgstr "対処済み"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:359
+#: lib/baudrate_web/components/moderation_components.ex:273
 #, elixir-autogen, elixir-format
 msgid "Send Flag to %{domain}"
 msgstr "%{domain} に通報を送信"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:356
+#: lib/baudrate_web/components/moderation_components.ex:270
 #, elixir-autogen, elixir-format
 msgid "Send a Flag report to %{domain}?"
 msgstr "%{domain} に通報レポートを送信しますか？"
@@ -1926,7 +1936,7 @@ msgstr "この招待コードを無効化しますか？"
 msgid "Revoked"
 msgstr "無効化済み"
 
-#: lib/baudrate_web/live/board_live.html.heex:88
+#: lib/baudrate_web/live/board_live.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Sub-boards"
 msgstr "サブ掲示板"
@@ -1980,8 +1990,8 @@ msgstr "使用回数"
 
 #: lib/baudrate_web/live/article_live.html.heex:28
 #: lib/baudrate_web/live/article_live.html.heex:46
-#: lib/baudrate_web/live/board_live.html.heex:167
-#: lib/baudrate_web/live/board_live.html.heex:186
+#: lib/baudrate_web/live/board_live.html.heex:176
+#: lib/baudrate_web/live/board_live.html.heex:195
 #: lib/baudrate_web/live/bookmarks_live.html.heex:39
 #: lib/baudrate_web/live/bookmarks_live.html.heex:42
 #: lib/baudrate_web/live/bookmarks_live.html.heex:93
@@ -2485,7 +2495,7 @@ msgstr "連合管理"
 msgid "Admin Invites"
 msgstr "招待コード管理"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:35
+#: lib/baudrate_web/live/admin/moderation_live.ex:34
 #, elixir-autogen, elixir-format
 msgid "Admin Moderation"
 msgstr "通報管理"
@@ -2569,6 +2579,7 @@ msgid "Filter by action"
 msgstr "操作で絞り込み"
 
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:11
+#: lib/baudrate_web/live/moderation_live.html.heex:16
 #, elixir-autogen, elixir-format
 msgid "Report status"
 msgstr "通報ステータス"
@@ -3234,13 +3245,13 @@ msgstr "オープン"
 msgid "resolved"
 msgstr "対処済み"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:204
+#: lib/baudrate_web/live/admin/moderation_live.ex:203
 #, elixir-autogen, elixir-format
 msgid "%{count} report dismissed."
 msgid_plural "%{count} reports dismissed."
 msgstr[0] "%{count} 件の通報を却下しました。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:165
+#: lib/baudrate_web/live/admin/moderation_live.ex:164
 #, elixir-autogen, elixir-format
 msgid "%{count} report resolved."
 msgid_plural "%{count} reports resolved."
@@ -3286,7 +3297,7 @@ msgstr[0] "%{count} 人のユーザーをBAN"
 msgid "Ban Selected"
 msgstr "選択をBAN"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:462
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:198
 #, elixir-autogen, elixir-format
 msgid "Confirm Resolve"
 msgstr "対処を確認"
@@ -3306,7 +3317,7 @@ msgstr "選択した通報をすべて却下しますか？"
 msgid "No users selected for ban."
 msgstr "BANするユーザーが選択されていません。"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:425
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:161
 #, elixir-autogen, elixir-format
 msgid "Resolve %{count} Report"
 msgid_plural "Resolve %{count} Reports"
@@ -3317,8 +3328,8 @@ msgstr[0] "%{count} 件の通報を対処"
 msgid "Resolve Selected"
 msgstr "選択を対処"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:383
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:460
+#: lib/baudrate_web/components/moderation_components.ex:297
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:196
 #, elixir-autogen, elixir-format
 msgid "Resolving..."
 msgstr "対処中…"
@@ -3594,10 +3605,10 @@ msgid "Feed"
 msgstr "フィード"
 
 #: lib/baudrate_web/components/comment_components.ex:83
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:279
+#: lib/baudrate_web/components/moderation_components.ex:193
 #: lib/baudrate_web/live/article_live.html.heex:76
 #: lib/baudrate_web/live/article_live.html.heex:291
-#: lib/baudrate_web/live/board_live.html.heex:216
+#: lib/baudrate_web/live/board_live.html.heex:225
 #: lib/baudrate_web/live/feed_live.html.heex:506
 #: lib/baudrate_web/live/feed_live.html.heex:507
 #: lib/baudrate_web/live/search_live.html.heex:288
@@ -3782,7 +3793,7 @@ msgstr "受け入れポリシーの更新に失敗しました。"
 msgid "Follow Remote Actor"
 msgstr "リモートアクターをフォロー"
 
-#: lib/baudrate_web/live/board_live.html.heex:49
+#: lib/baudrate_web/live/board_live.html.heex:58
 #, elixir-autogen, elixir-format
 msgid "Manage Follows"
 msgstr "フォロー管理"
@@ -3881,7 +3892,7 @@ msgstr "投稿"
 msgid "Oh! I just had a thought!"
 msgstr "あっ！ひらめいた！"
 
-#: lib/baudrate_web/live/board_live.html.heex:236
+#: lib/baudrate_web/live/board_live.html.heex:245
 #: lib/baudrate_web/live/feed_live.html.heex:867
 #, elixir-autogen, elixir-format
 msgid "1 comment"
@@ -3908,14 +3919,16 @@ msgstr "にコメントしました"
 msgid "Timezone"
 msgstr "タイムゾーン"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:269
+#: lib/baudrate_web/live/admin/moderation_live.ex:268
+#: lib/baudrate_web/live/moderation_live.ex:113
 #, elixir-autogen, elixir-format
 msgid "Article not found."
 msgstr "記事が見つかりません。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:294
+#: lib/baudrate_web/live/admin/moderation_live.ex:293
 #: lib/baudrate_web/live/article_live.ex:852
 #: lib/baudrate_web/live/article_live.ex:855
+#: lib/baudrate_web/live/moderation_live.ex:138
 #, elixir-autogen, elixir-format
 msgid "Comment not found."
 msgstr "コメントが見つかりません。"
@@ -4022,7 +4035,7 @@ msgstr[0] "%{count} 件の未読通知"
 msgid "Notifications"
 msgstr "通知"
 
-#: lib/baudrate_web/live/board_live.html.heex:59
+#: lib/baudrate_web/live/board_live.html.heex:68
 #: lib/baudrate_web/live/notifications_live.html.heex:16
 #, elixir-autogen, elixir-format
 msgid "Mark all as read"
@@ -4233,10 +4246,10 @@ msgstr "ブックマークはまだありません。"
 msgid "Remove bookmark"
 msgstr "ブックマークを解除"
 
-#: lib/baudrate_web/live/board_live.html.heex:104
-#: lib/baudrate_web/live/board_live.html.heex:106
-#: lib/baudrate_web/live/board_live.html.heex:140
-#: lib/baudrate_web/live/board_live.html.heex:142
+#: lib/baudrate_web/live/board_live.html.heex:113
+#: lib/baudrate_web/live/board_live.html.heex:115
+#: lib/baudrate_web/live/board_live.html.heex:149
+#: lib/baudrate_web/live/board_live.html.heex:151
 #: lib/baudrate_web/live/home_live.html.heex:50
 #: lib/baudrate_web/live/home_live.html.heex:52
 #: lib/baudrate_web/live/notifications_live.html.heex:77
@@ -4244,7 +4257,7 @@ msgstr "ブックマークを解除"
 msgid "Unread"
 msgstr "未読"
 
-#: lib/baudrate_web/live/board_live.html.heex:69
+#: lib/baudrate_web/live/board_live.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "Moderated by"
 msgstr "モデレーター"
@@ -4339,7 +4352,7 @@ msgstr "下書きを復元しました"
 msgid "Draft saved"
 msgstr "下書きを保存しました"
 
-#: lib/baudrate_web/live/board_live.html.heex:67
+#: lib/baudrate_web/live/board_live.html.heex:76
 #, elixir-autogen, elixir-format
 msgid "Board moderators"
 msgstr "掲示板モデレーター"
@@ -4865,7 +4878,7 @@ msgstr "ユーザーを通報"
 msgid "Report submitted. Thank you."
 msgstr "通報を送信しました。ありがとうございます。"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:320
+#: lib/baudrate_web/components/moderation_components.ex:234
 #, elixir-autogen, elixir-format
 msgid "Reported User:"
 msgstr "通報されたユーザー："
@@ -5300,14 +5313,14 @@ msgstr "%{date} に追加"
 #: lib/baudrate_web/live/admin/bots_live.html.heex:178
 #: lib/baudrate_web/live/admin/bots_live.html.heex:199
 #: lib/baudrate_web/live/article_live.html.heex:42
-#: lib/baudrate_web/live/board_live.html.heex:181
+#: lib/baudrate_web/live/board_live.html.heex:190
 #: lib/baudrate_web/live/user_profile_live.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "Bot"
 msgstr "ボット"
 
 #: lib/baudrate_web/live/article_live.html.heex:40
-#: lib/baudrate_web/live/board_live.html.heex:179
+#: lib/baudrate_web/live/board_live.html.heex:188
 #: lib/baudrate_web/live/user_profile_live.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "Bot account"
@@ -5805,7 +5818,7 @@ msgstr "%{domain} をブロック"
 msgid "Board search results"
 msgstr "掲示板の検索結果"
 
-#: lib/baudrate_web/live/board_live.html.heex:296
+#: lib/baudrate_web/live/board_live.html.heex:305
 #: lib/baudrate_web/live/feed_live.html.heex:923
 #: lib/baudrate_web/live/feed_live.html.heex:1046
 #: lib/baudrate_web/live/feed_live.html.heex:1274
@@ -5830,12 +5843,12 @@ msgstr "招待リンクをコピー %{code}"
 msgid "Deactivate bot %{username}"
 msgstr "ボット %{username} を無効化"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:218
+#: lib/baudrate_web/components/moderation_components.ex:132
 #, elixir-autogen, elixir-format
 msgid "Delete Article: %{title}"
 msgstr "記事を削除：%{title}"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:250
+#: lib/baudrate_web/components/moderation_components.ex:164
 #, elixir-autogen, elixir-format
 msgid "Delete Comment from report #%{id}"
 msgstr "コメントを削除（通報 #%{id}）"
@@ -5855,7 +5868,7 @@ msgstr "ボット %{username} を削除"
 msgid "Disable federation for board %{board}"
 msgstr "掲示板 %{board} の連合を無効化"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:394
+#: lib/baudrate_web/components/moderation_components.ex:308
 #, elixir-autogen, elixir-format
 msgid "Dismiss report #%{id}"
 msgstr "通報 #%{id} を却下"
@@ -5885,12 +5898,12 @@ msgstr "掲示板 %{name} のフォロー管理"
 msgid "Group"
 msgstr "グループ"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:345
+#: lib/baudrate_web/components/moderation_components.ex:259
 #, elixir-autogen, elixir-format
 msgid "Handled by %{name}"
 msgstr "対応者：%{name}"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:341
+#: lib/baudrate_web/components/moderation_components.ex:255
 #, elixir-autogen, elixir-format
 msgid "Handled by %{name} — %{note}"
 msgstr "対応者：%{name} — %{note}"
@@ -5900,7 +5913,7 @@ msgstr "対応者：%{name} — %{note}"
 msgid "In-App: %{type}"
 msgstr "アプリ内：%{type}"
 
-#: lib/baudrate_web/live/board_live.html.heex:257
+#: lib/baudrate_web/live/board_live.html.heex:266
 #: lib/baudrate_web/live/feed_live.html.heex:886
 #: lib/baudrate_web/live/feed_live.html.heex:1010
 #: lib/baudrate_web/live/feed_live.html.heex:1238
@@ -6012,7 +6025,7 @@ msgstr "削除："
 msgid "Replies to %{author}"
 msgstr "%{author} さんへの返信"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:168
+#: lib/baudrate_web/components/moderation_components.ex:82
 #, elixir-autogen, elixir-format
 msgid "Reported by %{name}"
 msgstr "通報者：%{name}"
@@ -6022,12 +6035,12 @@ msgstr "通報者：%{name}"
 msgid "Reset & Retry bot %{username}"
 msgstr "リセットして再試行（ボット %{username}）"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:377
+#: lib/baudrate_web/components/moderation_components.ex:291
 #, elixir-autogen, elixir-format
 msgid "Resolution note for report #%{id}"
 msgstr "通報 #%{id} の対応メモ"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:384
+#: lib/baudrate_web/components/moderation_components.ex:298
 #, elixir-autogen, elixir-format
 msgid "Resolve report #%{id}"
 msgstr "通報 #%{id} に対処"
@@ -7241,12 +7254,12 @@ msgstr "以前のメッセージを読み込む"
 msgid "Loading..."
 msgstr "読み込み中..."
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:190
+#: lib/baudrate_web/components/moderation_components.ex:104
 #, elixir-autogen, elixir-format
 msgid "No reason given."
 msgstr "理由は記載されていません。"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:175
+#: lib/baudrate_web/components/moderation_components.ex:89
 #, elixir-autogen, elixir-format
 msgid "Reported from %{domain} by %{name}"
 msgstr "通報者：%{name}（%{domain}）"
@@ -7347,7 +7360,7 @@ msgstr "アカウントをミュート"
 msgid "No blocked accounts."
 msgstr "ブロック中のアカウントはありません。"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:293
+#: lib/baudrate_web/components/moderation_components.ex:207
 #, elixir-autogen, elixir-format
 msgid "Only this message was shared with moderators, not the conversation."
 msgstr "モデレーターに共有されたのはこのメッセージのみで、会話全体は共有されていません。"
@@ -7387,12 +7400,12 @@ msgstr "投稿を通報"
 msgid "Report this message"
 msgstr "このメッセージを通報"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:288
+#: lib/baudrate_web/components/moderation_components.ex:202
 #, elixir-autogen, elixir-format
 msgid "Reported Direct Message:"
 msgstr "通報されたダイレクトメッセージ："
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:261
+#: lib/baudrate_web/components/moderation_components.ex:175
 #, elixir-autogen, elixir-format
 msgid "Reported Feed Item:"
 msgstr "通報されたフィード項目："
@@ -7453,7 +7466,7 @@ msgstr "ユーザーのブロックを解除しました。"
 msgid "You cannot interact with this account."
 msgstr "このアカウントとはやり取りできません。"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:156
+#: lib/baudrate_web/components/moderation_components.ex:70
 #, elixir-autogen, elixir-format
 msgid "%{count} other open report on this target"
 msgid_plural "%{count} other open reports on this target"
@@ -7494,7 +7507,7 @@ msgstr "その他"
 msgid "Spam"
 msgstr "スパム"
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:240
+#: lib/baudrate_web/components/moderation_components.ex:154
 #, elixir-autogen, elixir-format
 msgid "View in context"
 msgstr "元の場所で表示"
@@ -7503,3 +7516,28 @@ msgstr "元の場所で表示"
 #, elixir-autogen, elixir-format
 msgid "What is wrong?"
 msgstr "何が問題ですか？"
+
+#: lib/baudrate_web/live/moderation_live.ex:154
+#, elixir-autogen, elixir-format
+msgid "Report not found."
+msgstr "通報が見つかりません。"
+
+#: lib/baudrate_web/live/board_live.html.heex:50
+#, elixir-autogen, elixir-format
+msgid "Reports"
+msgstr "通報"
+
+#: lib/baudrate_web/live/moderation_live.html.heex:7
+#, elixir-autogen, elixir-format
+msgid "Reports about articles and comments in the boards you moderate. Reports about accounts and messages go to the site's moderators."
+msgstr "あなたが管理する掲示板の記事とコメントに関する通報です。アカウントやメッセージの通報はサイト管理者が対応します。"
+
+#: lib/baudrate_web/live/moderation_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Reports about your boards"
+msgstr "あなたの掲示板への通報"
+
+#: lib/baudrate_web/live/moderation_live.ex:32
+#, elixir-autogen, elixir-format
+msgid "You do not moderate any boards."
+msgstr "管理している掲示板がありません。"

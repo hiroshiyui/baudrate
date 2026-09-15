@@ -30,7 +30,8 @@ defmodule BaudrateWeb.BoardLive do
       if connected?(socket), do: ContentPubSub.subscribe_board(board.id)
 
       can_create = Content.can_post_in_board?(board, current_user)
-      can_manage_follows = board.ap_enabled && Content.board_moderator?(board, current_user)
+      can_moderate = Content.board_moderator?(board, current_user)
+      can_manage_follows = board.ap_enabled && can_moderate
       ancestors = Content.board_ancestors(board)
       sub_boards = Content.list_visible_sub_boards(board, current_user)
       board_moderators = Content.list_board_moderators(board)
@@ -56,6 +57,7 @@ defmodule BaudrateWeb.BoardLive do
          board: board,
          board_moderators: board_moderators,
          can_create: can_create,
+         can_moderate: can_moderate,
          can_manage_follows: can_manage_follows,
          ancestors: ancestors,
          sub_boards: sub_boards,

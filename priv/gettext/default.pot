@@ -443,7 +443,7 @@ msgstr ""
 msgid "Member Since"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:118
+#: lib/baudrate_web/live/board_live.html.heex:127
 #: lib/baudrate_web/live/user_content_live.html.heex:58
 #: lib/baudrate_web/live/user_profile_live.html.heex:473
 #, elixir-autogen, elixir-format
@@ -535,7 +535,7 @@ msgstr ""
 #: lib/baudrate_web/components/core_components.ex:853
 #: lib/baudrate_web/live/admin/boards_live.html.heex:120
 #: lib/baudrate_web/live/admin/bots_live.html.heex:156
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:455
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:191
 #: lib/baudrate_web/live/admin/users_live.html.heex:324
 #: lib/baudrate_web/live/admin/users_live.html.heex:377
 #: lib/baudrate_web/live/article_live.html.heex:487
@@ -679,7 +679,7 @@ msgid "Pending Users"
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:19
-#: lib/baudrate_web/live/board_live.html.heex:134
+#: lib/baudrate_web/live/board_live.html.heex:143
 #, elixir-autogen, elixir-format
 msgid "Pinned"
 msgstr ""
@@ -857,8 +857,9 @@ msgstr ""
 msgid "Allowlist (allow only specific domains)"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:282
+#: lib/baudrate_web/live/admin/moderation_live.ex:281
 #: lib/baudrate_web/live/article_live.ex:839
+#: lib/baudrate_web/live/moderation_live.ex:107
 #, elixir-autogen, elixir-format
 msgid "Article deleted."
 msgstr ""
@@ -909,8 +910,9 @@ msgstr ""
 msgid "Comma-separated list of domains to block from federation."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:306
+#: lib/baudrate_web/live/admin/moderation_live.ex:305
 #: lib/baudrate_web/live/article_live.ex:872
+#: lib/baudrate_web/live/moderation_live.ex:132
 #, elixir-autogen, elixir-format
 msgid "Comment deleted."
 msgstr ""
@@ -922,24 +924,24 @@ msgstr ""
 msgid "Content"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:220
+#: lib/baudrate_web/components/moderation_components.ex:134
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:65
 #, elixir-autogen, elixir-format
 msgid "Delete Article"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:252
+#: lib/baudrate_web/components/moderation_components.ex:166
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:66
 #, elixir-autogen, elixir-format
 msgid "Delete Comment"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:217
+#: lib/baudrate_web/components/moderation_components.ex:131
 #, elixir-autogen, elixir-format
 msgid "Delete this article?"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:249
+#: lib/baudrate_web/components/moderation_components.ex:163
 #, elixir-autogen, elixir-format
 msgid "Delete this comment?"
 msgstr ""
@@ -959,7 +961,7 @@ msgstr ""
 msgid "Disable"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:396
+#: lib/baudrate_web/components/moderation_components.ex:310
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr ""
@@ -1003,24 +1005,28 @@ msgstr ""
 msgid "Failed"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:286
+#: lib/baudrate_web/live/admin/moderation_live.ex:285
 #: lib/baudrate_web/live/article_live.ex:843
+#: lib/baudrate_web/live/moderation_live.ex:110
 #, elixir-autogen, elixir-format
 msgid "Failed to delete article."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:310
+#: lib/baudrate_web/live/admin/moderation_live.ex:309
 #: lib/baudrate_web/live/article_live.ex:875
+#: lib/baudrate_web/live/moderation_live.ex:135
 #, elixir-autogen, elixir-format
 msgid "Failed to delete comment."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:262
+#: lib/baudrate_web/live/admin/moderation_live.ex:261
+#: lib/baudrate_web/live/moderation_live.ex:87
 #, elixir-autogen, elixir-format
 msgid "Failed to dismiss report."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:241
+#: lib/baudrate_web/live/admin/moderation_live.ex:240
+#: lib/baudrate_web/live/moderation_live.ex:73
 #, elixir-autogen, elixir-format
 msgid "Failed to resolve report."
 msgstr ""
@@ -1051,7 +1057,7 @@ msgstr ""
 msgid "Federation Mode"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:347
+#: lib/baudrate_web/live/admin/moderation_live.ex:346
 #, elixir-autogen, elixir-format
 msgid "Flag sent to %{domain}."
 msgstr ""
@@ -1094,6 +1100,7 @@ msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:84
 #: lib/baudrate_web/components/layouts.ex:325
+#: lib/baudrate_web/live/moderation_live.ex:44
 #, elixir-autogen, elixir-format
 msgid "Moderation"
 msgstr ""
@@ -1108,7 +1115,7 @@ msgstr ""
 msgid "No boards configured."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:350
+#: lib/baudrate_web/live/admin/moderation_live.ex:349
 #, elixir-autogen, elixir-format
 msgid "No remote actor to send flag to."
 msgstr ""
@@ -1119,6 +1126,7 @@ msgid "No remote instances discovered yet."
 msgstr ""
 
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:103
+#: lib/baudrate_web/live/moderation_live.html.heex:36
 #, elixir-autogen, elixir-format
 msgid "No reports with status \"%{status}\"."
 msgstr ""
@@ -1133,7 +1141,7 @@ msgstr ""
 msgid "Pending"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:183
+#: lib/baudrate_web/components/moderation_components.ex:97
 #, elixir-autogen, elixir-format
 msgid "Reason:"
 msgstr ""
@@ -1145,38 +1153,40 @@ msgstr ""
 msgid "Register"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:257
+#: lib/baudrate_web/live/admin/moderation_live.ex:256
+#: lib/baudrate_web/live/moderation_live.ex:84
 #, elixir-autogen, elixir-format
 msgid "Report dismissed."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:236
+#: lib/baudrate_web/live/admin/moderation_live.ex:235
+#: lib/baudrate_web/live/moderation_live.ex:70
 #, elixir-autogen, elixir-format
 msgid "Report resolved."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:301
+#: lib/baudrate_web/components/moderation_components.ex:215
 #, elixir-autogen, elixir-format
 msgid "Reported Actor:"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:199
+#: lib/baudrate_web/components/moderation_components.ex:113
 #, elixir-autogen, elixir-format
 msgid "Reported Article:"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:228
+#: lib/baudrate_web/components/moderation_components.ex:142
 #, elixir-autogen, elixir-format
 msgid "Reported Comment:"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:376
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:439
+#: lib/baudrate_web/components/moderation_components.ex:290
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "Resolution note (optional)"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:386
+#: lib/baudrate_web/components/moderation_components.ex:300
 #, elixir-autogen, elixir-format
 msgid "Resolve"
 msgstr ""
@@ -1186,12 +1196,12 @@ msgstr ""
 msgid "Resolved"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:359
+#: lib/baudrate_web/components/moderation_components.ex:273
 #, elixir-autogen, elixir-format
 msgid "Send Flag to %{domain}"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:356
+#: lib/baudrate_web/components/moderation_components.ex:270
 #, elixir-autogen, elixir-format
 msgid "Send a Flag report to %{domain}?"
 msgstr ""
@@ -1927,7 +1937,7 @@ msgstr ""
 msgid "Revoked"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:88
+#: lib/baudrate_web/live/board_live.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Sub-boards"
 msgstr ""
@@ -1981,8 +1991,8 @@ msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:28
 #: lib/baudrate_web/live/article_live.html.heex:46
-#: lib/baudrate_web/live/board_live.html.heex:167
-#: lib/baudrate_web/live/board_live.html.heex:186
+#: lib/baudrate_web/live/board_live.html.heex:176
+#: lib/baudrate_web/live/board_live.html.heex:195
 #: lib/baudrate_web/live/bookmarks_live.html.heex:39
 #: lib/baudrate_web/live/bookmarks_live.html.heex:42
 #: lib/baudrate_web/live/bookmarks_live.html.heex:93
@@ -2486,7 +2496,7 @@ msgstr ""
 msgid "Admin Invites"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:35
+#: lib/baudrate_web/live/admin/moderation_live.ex:34
 #, elixir-autogen, elixir-format
 msgid "Admin Moderation"
 msgstr ""
@@ -2570,6 +2580,7 @@ msgid "Filter by action"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:11
+#: lib/baudrate_web/live/moderation_live.html.heex:16
 #, elixir-autogen, elixir-format
 msgid "Report status"
 msgstr ""
@@ -3235,14 +3246,14 @@ msgstr ""
 msgid "resolved"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:204
+#: lib/baudrate_web/live/admin/moderation_live.ex:203
 #, elixir-autogen, elixir-format
 msgid "%{count} report dismissed."
 msgid_plural "%{count} reports dismissed."
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:165
+#: lib/baudrate_web/live/admin/moderation_live.ex:164
 #, elixir-autogen, elixir-format
 msgid "%{count} report resolved."
 msgid_plural "%{count} reports resolved."
@@ -3294,7 +3305,7 @@ msgstr[1] ""
 msgid "Ban Selected"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:462
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:198
 #, elixir-autogen, elixir-format
 msgid "Confirm Resolve"
 msgstr ""
@@ -3314,7 +3325,7 @@ msgstr ""
 msgid "No users selected for ban."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:425
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:161
 #, elixir-autogen, elixir-format
 msgid "Resolve %{count} Report"
 msgid_plural "Resolve %{count} Reports"
@@ -3326,8 +3337,8 @@ msgstr[1] ""
 msgid "Resolve Selected"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:383
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:460
+#: lib/baudrate_web/components/moderation_components.ex:297
+#: lib/baudrate_web/live/admin/moderation_live.html.heex:196
 #, elixir-autogen, elixir-format
 msgid "Resolving..."
 msgstr ""
@@ -3604,10 +3615,10 @@ msgid "Feed"
 msgstr ""
 
 #: lib/baudrate_web/components/comment_components.ex:83
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:279
+#: lib/baudrate_web/components/moderation_components.ex:193
 #: lib/baudrate_web/live/article_live.html.heex:76
 #: lib/baudrate_web/live/article_live.html.heex:291
-#: lib/baudrate_web/live/board_live.html.heex:216
+#: lib/baudrate_web/live/board_live.html.heex:225
 #: lib/baudrate_web/live/feed_live.html.heex:506
 #: lib/baudrate_web/live/feed_live.html.heex:507
 #: lib/baudrate_web/live/search_live.html.heex:288
@@ -3792,7 +3803,7 @@ msgstr ""
 msgid "Follow Remote Actor"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:49
+#: lib/baudrate_web/live/board_live.html.heex:58
 #, elixir-autogen, elixir-format
 msgid "Manage Follows"
 msgstr ""
@@ -3891,7 +3902,7 @@ msgstr ""
 msgid "Oh! I just had a thought!"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:236
+#: lib/baudrate_web/live/board_live.html.heex:245
 #: lib/baudrate_web/live/feed_live.html.heex:867
 #, elixir-autogen, elixir-format
 msgid "1 comment"
@@ -3919,14 +3930,16 @@ msgstr ""
 msgid "Timezone"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:269
+#: lib/baudrate_web/live/admin/moderation_live.ex:268
+#: lib/baudrate_web/live/moderation_live.ex:113
 #, elixir-autogen, elixir-format
 msgid "Article not found."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:294
+#: lib/baudrate_web/live/admin/moderation_live.ex:293
 #: lib/baudrate_web/live/article_live.ex:852
 #: lib/baudrate_web/live/article_live.ex:855
+#: lib/baudrate_web/live/moderation_live.ex:138
 #, elixir-autogen, elixir-format
 msgid "Comment not found."
 msgstr ""
@@ -4034,7 +4047,7 @@ msgstr[1] ""
 msgid "Notifications"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:59
+#: lib/baudrate_web/live/board_live.html.heex:68
 #: lib/baudrate_web/live/notifications_live.html.heex:16
 #, elixir-autogen, elixir-format
 msgid "Mark all as read"
@@ -4245,10 +4258,10 @@ msgstr ""
 msgid "Remove bookmark"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:104
-#: lib/baudrate_web/live/board_live.html.heex:106
-#: lib/baudrate_web/live/board_live.html.heex:140
-#: lib/baudrate_web/live/board_live.html.heex:142
+#: lib/baudrate_web/live/board_live.html.heex:113
+#: lib/baudrate_web/live/board_live.html.heex:115
+#: lib/baudrate_web/live/board_live.html.heex:149
+#: lib/baudrate_web/live/board_live.html.heex:151
 #: lib/baudrate_web/live/home_live.html.heex:50
 #: lib/baudrate_web/live/home_live.html.heex:52
 #: lib/baudrate_web/live/notifications_live.html.heex:77
@@ -4256,7 +4269,7 @@ msgstr ""
 msgid "Unread"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:69
+#: lib/baudrate_web/live/board_live.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "Moderated by"
 msgstr ""
@@ -4351,7 +4364,7 @@ msgstr ""
 msgid "Draft saved"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:67
+#: lib/baudrate_web/live/board_live.html.heex:76
 #, elixir-autogen, elixir-format
 msgid "Board moderators"
 msgstr ""
@@ -4879,7 +4892,7 @@ msgstr ""
 msgid "Report submitted. Thank you."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:320
+#: lib/baudrate_web/components/moderation_components.ex:234
 #, elixir-autogen, elixir-format
 msgid "Reported User:"
 msgstr ""
@@ -5314,14 +5327,14 @@ msgstr ""
 #: lib/baudrate_web/live/admin/bots_live.html.heex:178
 #: lib/baudrate_web/live/admin/bots_live.html.heex:199
 #: lib/baudrate_web/live/article_live.html.heex:42
-#: lib/baudrate_web/live/board_live.html.heex:181
+#: lib/baudrate_web/live/board_live.html.heex:190
 #: lib/baudrate_web/live/user_profile_live.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "Bot"
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.html.heex:40
-#: lib/baudrate_web/live/board_live.html.heex:179
+#: lib/baudrate_web/live/board_live.html.heex:188
 #: lib/baudrate_web/live/user_profile_live.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "Bot account"
@@ -5824,7 +5837,7 @@ msgstr ""
 msgid "Board search results"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:296
+#: lib/baudrate_web/live/board_live.html.heex:305
 #: lib/baudrate_web/live/feed_live.html.heex:923
 #: lib/baudrate_web/live/feed_live.html.heex:1046
 #: lib/baudrate_web/live/feed_live.html.heex:1274
@@ -5850,12 +5863,12 @@ msgstr ""
 msgid "Deactivate bot %{username}"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:218
+#: lib/baudrate_web/components/moderation_components.ex:132
 #, elixir-autogen, elixir-format
 msgid "Delete Article: %{title}"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:250
+#: lib/baudrate_web/components/moderation_components.ex:164
 #, elixir-autogen, elixir-format
 msgid "Delete Comment from report #%{id}"
 msgstr ""
@@ -5875,7 +5888,7 @@ msgstr ""
 msgid "Disable federation for board %{board}"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:394
+#: lib/baudrate_web/components/moderation_components.ex:308
 #, elixir-autogen, elixir-format
 msgid "Dismiss report #%{id}"
 msgstr ""
@@ -5905,12 +5918,12 @@ msgstr ""
 msgid "Group"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:345
+#: lib/baudrate_web/components/moderation_components.ex:259
 #, elixir-autogen, elixir-format
 msgid "Handled by %{name}"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:341
+#: lib/baudrate_web/components/moderation_components.ex:255
 #, elixir-autogen, elixir-format
 msgid "Handled by %{name} — %{note}"
 msgstr ""
@@ -5920,7 +5933,7 @@ msgstr ""
 msgid "In-App: %{type}"
 msgstr ""
 
-#: lib/baudrate_web/live/board_live.html.heex:257
+#: lib/baudrate_web/live/board_live.html.heex:266
 #: lib/baudrate_web/live/feed_live.html.heex:886
 #: lib/baudrate_web/live/feed_live.html.heex:1010
 #: lib/baudrate_web/live/feed_live.html.heex:1238
@@ -6036,7 +6049,7 @@ msgstr ""
 msgid "Replies to %{author}"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:168
+#: lib/baudrate_web/components/moderation_components.ex:82
 #, elixir-autogen, elixir-format
 msgid "Reported by %{name}"
 msgstr ""
@@ -6046,12 +6059,12 @@ msgstr ""
 msgid "Reset & Retry bot %{username}"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:377
+#: lib/baudrate_web/components/moderation_components.ex:291
 #, elixir-autogen, elixir-format
 msgid "Resolution note for report #%{id}"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:384
+#: lib/baudrate_web/components/moderation_components.ex:298
 #, elixir-autogen, elixir-format
 msgid "Resolve report #%{id}"
 msgstr ""
@@ -7270,12 +7283,12 @@ msgstr ""
 msgid "Loading..."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:190
+#: lib/baudrate_web/components/moderation_components.ex:104
 #, elixir-autogen, elixir-format
 msgid "No reason given."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:175
+#: lib/baudrate_web/components/moderation_components.ex:89
 #, elixir-autogen, elixir-format
 msgid "Reported from %{domain} by %{name}"
 msgstr ""
@@ -7376,7 +7389,7 @@ msgstr ""
 msgid "No blocked accounts."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:293
+#: lib/baudrate_web/components/moderation_components.ex:207
 #, elixir-autogen, elixir-format
 msgid "Only this message was shared with moderators, not the conversation."
 msgstr ""
@@ -7416,12 +7429,12 @@ msgstr ""
 msgid "Report this message"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:288
+#: lib/baudrate_web/components/moderation_components.ex:202
 #, elixir-autogen, elixir-format
 msgid "Reported Direct Message:"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:261
+#: lib/baudrate_web/components/moderation_components.ex:175
 #, elixir-autogen, elixir-format
 msgid "Reported Feed Item:"
 msgstr ""
@@ -7482,7 +7495,7 @@ msgstr ""
 msgid "You cannot interact with this account."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:156
+#: lib/baudrate_web/components/moderation_components.ex:70
 #, elixir-autogen, elixir-format
 msgid "%{count} other open report on this target"
 msgid_plural "%{count} other open reports on this target"
@@ -7524,7 +7537,7 @@ msgstr ""
 msgid "Spam"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.html.heex:240
+#: lib/baudrate_web/components/moderation_components.ex:154
 #, elixir-autogen, elixir-format
 msgid "View in context"
 msgstr ""
@@ -7532,4 +7545,29 @@ msgstr ""
 #: lib/baudrate_web/components/core_components.ex:823
 #, elixir-autogen, elixir-format
 msgid "What is wrong?"
+msgstr ""
+
+#: lib/baudrate_web/live/moderation_live.ex:154
+#, elixir-autogen, elixir-format
+msgid "Report not found."
+msgstr ""
+
+#: lib/baudrate_web/live/board_live.html.heex:50
+#, elixir-autogen, elixir-format
+msgid "Reports"
+msgstr ""
+
+#: lib/baudrate_web/live/moderation_live.html.heex:7
+#, elixir-autogen, elixir-format
+msgid "Reports about articles and comments in the boards you moderate. Reports about accounts and messages go to the site's moderators."
+msgstr ""
+
+#: lib/baudrate_web/live/moderation_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Reports about your boards"
+msgstr ""
+
+#: lib/baudrate_web/live/moderation_live.ex:32
+#, elixir-autogen, elixir-format
+msgid "You do not moderate any boards."
 msgstr ""

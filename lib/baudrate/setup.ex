@@ -644,4 +644,18 @@ defmodule Baudrate.Setup do
     from(u in User, join: r in assoc(u, :role), where: r.name == "admin", select: u.id)
     |> Repo.all()
   end
+
+  @doc """
+  IDs of every admin and global moderator — the people who see every report
+  (1B), as opposed to board moderators, who see their own boards'.
+  """
+  @spec staff_user_ids() :: [integer()]
+  def staff_user_ids do
+    from(u in User,
+      join: r in assoc(u, :role),
+      where: r.name in ["admin", "moderator"],
+      select: u.id
+    )
+    |> Repo.all()
+  end
 end

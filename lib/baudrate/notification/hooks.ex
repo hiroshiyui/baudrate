@@ -34,7 +34,10 @@ defmodule Baudrate.Notification.Hooks do
   """
 
   alias Baudrate.{Auth, Notification, Repo, Setup}
-  alias Baudrate.Content.{Article, Comment, Markdown}
+  import Ecto.Query, only: [from: 2]
+
+  alias Baudrate.Content.{Article, BoardArticle, BoardModerator, Comment, Markdown}
+  alias Baudrate.Moderation.Report
 
   @doc """
   Notifies the article author of a reply, the parent comment author of a
@@ -250,15 +253,41 @@ defmodule Baudrate.Notification.Hooks do
   Notifies all admin users when a new moderation report is created.
   """
   def notify_report_created(report_id) do
-    admin_ids = Setup.admin_user_ids()
+    report = Repo.get(Report, report_id)
 
-    Enum.each(admin_ids, fn admin_id ->
+    (Setup.staff_user_ids() ++ board_moderator_ids(report))
+    |> Enum.uniq()
+    |> Enum.each(fn user_id ->
       Notification.create_notification(%{
         type: "moderation_report",
-        user_id: admin_id,
+        user_id: user_id,
         data: %{"report_id" => report_id}
       })
     end)
+  end
+
+  # Board moderators hear about reports on their own boards (1B); staff hear
+  # about every report.
+  defp board_moderator_ids(nil), do: []
+
+  defp board_moderator_ids(%Report{article_id: nil, comment_id: nil}), do: []
+
+  defp board_moderator_ids(%Report{article_id: article_id, comment_id: comment_id}) do
+    article_id =
+      article_id || Repo.one(from(c in Comment, where: c.id == ^comment_id, select: c.article_id))
+
+    if article_id do
+      Repo.all(
+        from(bm in BoardModerator,
+          join: ba in BoardArticle,
+          on: ba.board_id == bm.board_id,
+          where: ba.article_id == ^article_id,
+          select: bm.user_id
+        )
+      )
+    else
+      []
+    end
   end
 
   @doc """
