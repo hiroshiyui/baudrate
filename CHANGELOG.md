@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.19.5] — 2026-09-16
+
+Scheduled backups for Ansible installs, sized for a small server (ADR 0028).
+
+**Upgrading (Ansible):** the deploy applies a new `backup` role, which
+creates `/var/backups/baudrate` and a nightly `baudrate-backup.timer`, and
+takes a database dump before migrations. Settings are the `backup_*`
+variables in `inventory/group_vars/all.yml`. Remove any backup cron job set
+up from earlier versions of the SysOp guide.
+
+### Added
+
+- **Nightly backups** (`Baudrate.Release.snapshot_backup/2`), each a folder
+  with a database dump checked by `pg_restore --list`, a snapshot of the
+  uploads and a manifest. Uploads unchanged since the previous backup are
+  hard-linked, so a week of backups stores the images about once.
+- **Safe retention:** the newest 7 backups are kept, and older ones are
+  removed only after a new backup succeeded, so failed runs never delete the
+  last good copies. A backup refuses to start when it would leave less than
+  1 GiB or 10% of the disk free, and a half-written backup never counts.
+- **A database dump before every deploy's migrations,** keeping the last 3;
+  a failed dump stops the deploy before the database changes.
+- **Restore commands:** `Release.restore_snapshot/1` for a nightly backup
+  and `Release.restore_db/1` for a dump.
+- **Read-only pull access for off-host copies** (`backup_pull_public_key`):
+  a key that may only run a read-only rsync of the backup directory.
+
 ## [1.19.4] — 2026-09-15
 
 Fixes forms that erased what was typed, including password reset, password
