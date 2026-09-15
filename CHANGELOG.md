@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.19.3] — 2026-09-15
+
+Paging returns you to the list on every paginated page. CI now runs in the
+project's own verified image and runs the browser tests too.
+
+### Fixed
+
+- **Changing pages brings you back to the list.** Only board and search pages
+  scrolled back after paging. The feed, article comments, tags, bookmarks,
+  notifications, a user's content pages and the admin lists left you at the
+  bottom of the new page. Every paginated page now scrolls to its list (on an
+  article, to the comments) and moves keyboard focus into it, and a test fails
+  when a paginated page is added without this.
+
+### Security
+
+- **CI no longer runs third-party code to install its tools** (ADR 0027).
+  Jobs run in a Debian image built in this repository from checksum-pinned
+  inputs and published with a build provenance attestation. CI uses it only by
+  a reviewed digest, after verifying that attestation. Actions are GitHub's
+  own, pinned to commit SHAs, and the PostgreSQL service is pinned by digest.
+- **GeckoDriver is built from source.** Its 0.37.x release binaries are signed
+  only by a Mozilla signing subkey that Mozilla revoked on 2026-08-06 as
+  compromised. The CI image and `mix selenium.setup` build 0.37.1 from its
+  crates.io crate, with a pinned checksum and the `Cargo.lock` it ships.
+- **The browser tests start Selenium Server on loopback only.** It listened on
+  every interface, so anyone on a developer's network could drive a browser on
+  that machine.
+
+### Changed
+
+- **CI runs the browser tests** (Wallaby with headless Firefox ESR), the only
+  tests that run the JavaScript hooks. The page crawl signs an admin in with
+  TOTP, covers every admin page, and fails when a page redirects instead of
+  rendering.
+- `mix selenium.setup` installs Selenium Server 4.49.0 (was 4.27.0) and
+  GeckoDriver 0.37.1 (was 0.36.0), checking both against pinned SHA-256s. The
+  CI image uses Rust 1.98.1. Dependabot and the weekly drift report also watch
+  the CI image's base image and tools.
+
 ## [1.19.2] — 2026-09-15
 
 Fixes two bugs found by auditing recent accessibility changes; one of them
