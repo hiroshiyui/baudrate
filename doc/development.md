@@ -2356,7 +2356,9 @@ JS hooks have no other tests, so run the feature tests after changing
 `assets/js/` or a template's hooks. `js_errors_test.exs` crawls the member
 and public pages, re-mounts each through a live navigation, types into every
 textarea and opens every dropdown, and fails on any JavaScript error,
-`console.error` (e.g. an unregistered `phx-hook`) or LiveView crash. The admin
+`console.error` (e.g. an unregistered `phx-hook`) or LiveView crash. It also
+types into every `phx-change` form field by field and fails when a re-render
+erases a field that was already filled in. The admin
 crawl signs in with TOTP and passes sudo verification first, and every crawl
 fails if a page redirects instead of rendering. The regular suite still guards
 hook names: `js_hooks_registered_test.exs` fails when a template's `phx-hook`
@@ -2424,21 +2426,23 @@ to `tmp/wallaby_downloads` without a prompt.
 | `bookmarks_test.exs` | 2 | Bookmarks page and empty state |
 | `browsing_test.exs` | 3 | Home→board→article flow, empty board, article with author/comments |
 | `comments_test.exs` | 2 | Member posts a comment, guest cannot |
+| `composer_test.exs` | 4 | Markdown preview, draft kept and restored then cleared on posting, posting and voting on a poll, image upload attached to the article |
 | `data_export_test.exs` | 1 | Request an export, download the archive through the Fetch Metadata check once ready |
 | `feed_pagination_test.exs` | 3 | Pager (including from `?page=2`), scroll back to the list, `@mention` autocomplete |
 | `following_test.exs` | 2 | Following page and empty state |
 | `home_page_test.exs` | 4 | Guest welcome, board listing, personalized greeting, board navigation |
-| `invites_test.exs` | 2 | Invites page and generate button |
-| `js_errors_test.exs` | 3 | Member, guest and admin page crawls with no JS errors or LiveView crashes |
+| `invites_test.exs` | 3 | Invites page, generate button, generate a code and copy its link |
+| `js_errors_test.exs` | 3 | Member, guest and admin page crawls with no JS errors, LiveView crashes, or form fields erased by a re-render |
 | `login_test.exs` | 4 | Successful login, failed login, registration link, redirect if authenticated |
 | `logout_test.exs` | 1 | Sign out redirects to login |
-| `messages_test.exs` | 3 | Messages page, empty state, new message page |
+| `messages_test.exs` | 4 | Messages page, empty state, new message page, send a message that arrives on the recipient's open inbox |
 | `moderation_queue_test.exs` | 3 | Report an article from its menu, resolve with a note; delete reported content and dismiss; bulk resolve |
 | `notifications_test.exs` | 2 | Notifications page and empty state |
 | `password_change_test.exs` | 1 | Change the password; the old one is refused and the new one signs in |
 | `password_reset_test.exs` | 3 | Reset page from login, full reset with a recovery code then sign-in, required-field validation |
 | `registration_test.exs` | 2 | Registration with recovery codes, acknowledging codes |
 | `security_keys_test.exs` | 1 | Register a security key on `/profile`, then pass admin sudo verification with it |
+| `safety_test.exs` | 3 | Block from a profile (stops comments) and unblock from Blocked Accounts; mute hides a member's articles until unmuted; report and mute from a remote post's menu |
 | `search_test.exs` | 3 | Keyword search, no results, `author:` operator |
 | `sign_out_everywhere_test.exs` | 1 | Signing out everywhere else disconnects another browser's open page |
 | `setup_wizard_test.exs` | 1 | Full setup wizard flow (DB→Site Name→Admin→Recovery Codes) |

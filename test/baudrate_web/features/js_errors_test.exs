@@ -16,6 +16,12 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
   crash shows up: typing `@` in the `/profile` signature crashed
   `ProfileLive`, which had no handler for the event the autocomplete hook
   pushed. Textareas and dropdown menus are then exercised.
+
+  Every `phx-change` form is also typed into field by field, and the crawl
+  fails when a field loses what was typed: LiveView resets each input of a
+  re-rendered form to its rendered value, which erased the current password
+  on `/profile/password` and the username and recovery code on
+  `/password-reset` while the next field was typed.
   """
 
   use BaudrateWeb.FeatureCase, async: false
@@ -81,6 +87,46 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
     fire(b, "mousedown");
     b.blur();
   });
+  """
+
+  # Types into each text-like field of each phx-change form in turn, letting
+  # the change round-trip after each one, then records the fields that no
+  # longer hold what was typed. Results land in window.__formResets.
+  @form_resets """
+  window.__formResets = null;
+  (async () => {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const samples = {number: "7", email: "crawl@example.com", url: "https://example.com/crawl", tel: "12345"};
+    const textLike = ["text", "password", "search", "email", "url", "tel", "number"];
+    const lost = [];
+    for (const form of document.querySelectorAll("form[phx-change]")) {
+      const fields = [...form.querySelectorAll("input, textarea")].filter((el) =>
+        (el.tagName === "TEXTAREA" || textLike.includes(el.type)) &&
+        !el.disabled && !el.readOnly && el.getClientRects().length > 0
+      );
+      if (fields.length < 2) continue;
+      const typed = new Map();
+      for (const el of fields) {
+        const value = samples[el.type] || "crawl" + typed.size;
+        // Like typing: focus, input, key up (phx-keyup fields), then leave the
+        // field once a 300 ms phx-debounce has passed.
+        el.focus();
+        el.value = value;
+        typed.set(el, value);
+        el.dispatchEvent(new Event("input", {bubbles: true}));
+        el.dispatchEvent(new KeyboardEvent("keyup", {bubbles: true, key: value.slice(-1)}));
+        await sleep(400);
+        el.blur();
+      }
+      await sleep(600);
+      for (const [el, value] of typed) {
+        if (el.isConnected && el.value !== value) {
+          lost.push("form " + (form.id || "?") + " erased " + (el.id || el.name) + " after later typing");
+        }
+      }
+    }
+    window.__formResets = lost;
+  })();
   """
 
   setup do
@@ -179,7 +225,7 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
       end)
       |> Enum.reject(&String.ends_with?(&1, "/articles/new"))
 
-    assert crawl(session, public ++ ["/login", "/register"]) == []
+    assert crawl(session, public ++ ["/login", "/register", "/password-reset"]) == []
   end
 
   feature "admin pages run without JavaScript errors", %{session: session, user: user} do
@@ -256,7 +302,21 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
           1_000 -> ["no result"]
         end
 
-      Enum.map(errors, &"#{path} — #{&1}")
+      Enum.map(errors ++ form_resets(session), &"#{path} — #{&1}")
     end)
+  end
+
+  defp form_resets(session) do
+    execute_script(session, @form_resets)
+    wait_for_form_resets(session, 60)
+  end
+
+  defp wait_for_form_resets(_session, 0), do: ["form check did not finish"]
+
+  defp wait_for_form_resets(session, tries) do
+    case js_value(session, "return window.__formResets") do
+      nil -> Process.sleep(200) && wait_for_form_resets(session, tries - 1)
+      lost -> lost
+    end
   end
 end
