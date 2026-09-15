@@ -35,6 +35,10 @@ defmodule BaudrateWeb.FeatureCase do
       import BaudrateWeb.FeatureCase,
         only: [
           log_in_via_browser: 2,
+          submit_login_form: 3,
+          log_out_via_browser: 1,
+          start_another_session: 0,
+          wait_for_path: 2,
           log_in_with_totp_via_browser: 3,
           log_in_admin_via_browser: 1,
           visit_admin: 3,
@@ -42,7 +46,8 @@ defmodule BaudrateWeb.FeatureCase do
           totp_code: 2,
           create_board: 1,
           create_article: 3,
-          js_value: 2
+          js_value: 2,
+          add_virtual_authenticator: 1
         ]
     end
   end
@@ -64,6 +69,15 @@ defmodule BaudrateWeb.FeatureCase do
     # Ensure setup wizard doesn't redirect — insert setup_completed setting
     ensure_setup_completed()
 
+    {:ok, session: start_another_session()}
+  end
+
+  @doc """
+  Starts a browser session that shares the test's database sandbox and ends
+  when the test does. The setup creates the first one; call this for a second
+  browser, e.g. to watch another signed-in device.
+  """
+  def start_another_session do
     metadata = Phoenix.Ecto.SQL.Sandbox.metadata_for(Baudrate.Repo, self())
 
     {:ok, session} =
@@ -72,11 +86,8 @@ defmodule BaudrateWeb.FeatureCase do
         metadata: metadata
       )
 
-    on_exit(fn ->
-      Wallaby.end_session(session)
-    end)
-
-    {:ok, session: session}
+    ExUnit.Callbacks.on_exit(fn -> Wallaby.end_session(session) end)
+    session
   end
 
   @doc """
@@ -88,12 +99,30 @@ defmodule BaudrateWeb.FeatureCase do
   """
   def log_in_via_browser(session, user) do
     session
-    |> visit("/login")
-    |> fill_in(Query.css("#login_username"), with: user.username)
-    |> fill_in(Query.css("#login_password"), with: "Password123!x")
-    |> click(Query.button("Sign In"))
+    |> submit_login_form(user, "Password123!x")
     # Wait for redirect to complete — the home page h1 confirms full auth
     |> assert_has(Query.css("h1", text: "Welcome, #{user.username}!"))
+  end
+
+  @doc """
+  Fills in and submits the login form, without waiting for the outcome.
+  """
+  def submit_login_form(session, user, password) do
+    session
+    |> visit("/login")
+    |> fill_in(Query.css("#login_username"), with: user.username)
+    |> fill_in(Query.css("#login_password"), with: password)
+    |> click(Query.button("Sign In"))
+  end
+
+  @doc """
+  Signs out with the navigation's Sign Out link and waits for the login page.
+  The link sits in a menu that may be closed, so it is clicked from script.
+  """
+  def log_out_via_browser(session) do
+    session
+    |> execute_script("document.querySelector(\"a[href='/logout']\").click()")
+    |> wait_for_path("/login")
   end
 
   @doc """
@@ -124,10 +153,7 @@ defmodule BaudrateWeb.FeatureCase do
   """
   def log_in_with_totp_via_browser(session, user, secret) do
     session
-    |> visit("/login")
-    |> fill_in(Query.css("#login_username"), with: user.username)
-    |> fill_in(Query.css("#login_password"), with: "Password123!x")
-    |> click(Query.button("Sign In"))
+    |> submit_login_form(user, "Password123!x")
     |> assert_has(Query.css("#totp_code"))
     |> fill_in(Query.css("#totp_code"), with: totp_code(user, secret))
     |> click(Query.css("#totp-verify-submit"))
@@ -155,17 +181,23 @@ defmodule BaudrateWeb.FeatureCase do
       |> fill_in(Query.css("#admin_totp_code"), with: totp_code(user, secret))
       |> click(Query.css("#admin-totp-verify-submit"))
       # Sudo verification returns to the page that was asked for.
-      |> wait_for_path(path, 50)
+      |> wait_for_path(path)
     else
       session
     end
   end
 
+  @doc """
+  Waits up to 5 seconds for the browser to reach `path` (query string
+  ignored), for redirects that leave nothing on the page to assert on.
+  """
+  def wait_for_path(session, path), do: wait_for_path(session, URI.parse(path).path, 50)
+
   defp wait_for_path(session, path, 0),
     do: raise("not redirected to #{path}, at #{current_path(session)}")
 
   defp wait_for_path(session, path, tries) do
-    if current_path(session) == URI.parse(path).path do
+    if current_path(session) == path do
       session
     else
       Process.sleep(100)
@@ -187,6 +219,25 @@ defmodule BaudrateWeb.FeatureCase do
     after
       5_000 -> raise "no value returned from script"
     end
+  end
+
+  @doc """
+  Adds a WebDriver virtual authenticator (CTAP2, user present and verified) to
+  the browser session, so WebAuthn registration and assertions complete
+  without a physical key. Needs the WebAuthn prefs in `config/test.exs`.
+  """
+  def add_virtual_authenticator(session) do
+    {:ok, %{"value" => id}} =
+      Wallaby.HTTPClient.request(:post, "#{session.session_url}/webauthn/authenticator", %{
+        protocol: "ctap2",
+        transport: "usb",
+        hasResidentKey: true,
+        hasUserVerification: true,
+        isUserConsenting: true,
+        isUserVerified: true
+      })
+
+    {session, id}
   end
 
   @doc """

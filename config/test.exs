@@ -81,7 +81,19 @@ config :wallaby,
       "moz:firefoxOptions" => %{
         "args" => ["-headless"],
         "prefs" => %{
-          "general.useragent.override" => "Wallaby/Firefox"
+          "general.useragent.override" => "Wallaby/Firefox",
+          # Firefox answers WebAuthn from the WebDriver virtual authenticator
+          # (FeatureCase.add_virtual_authenticator/1) only with its software
+          # token on and USB tokens off; otherwise requests fail or hang.
+          "security.webauth.webauthn_enable_softtoken" => true,
+          "security.webauth.webauthn_enable_usbtoken" => false,
+          # Downloads (the data export archive) are saved without a prompt into
+          # tmp/wallaby_downloads, where data_export_test.exs looks for them.
+          "browser.download.folderList" => 2,
+          "browser.download.dir" => Path.expand("../tmp/wallaby_downloads", __DIR__),
+          "browser.download.useDownloadDir" => true,
+          "browser.download.always_ask_before_handling_new_types" => false,
+          "browser.helperApps.neverAsk.saveToDisk" => "application/zip"
         }
       }
     }

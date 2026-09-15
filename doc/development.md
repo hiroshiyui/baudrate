@@ -2382,12 +2382,24 @@ The Ecto SQL sandbox is shared with browser processes via:
 Each test partition gets its own HTTP port (`4002 + partition`) to avoid
 collisions when running tests in parallel.
 
+The Firefox preferences in `config/test.exs` turn on the WebAuthn software
+token and turn off USB tokens (Firefox answers from the WebDriver virtual
+authenticator only then; otherwise requests fail or hang), and save downloads
+to `tmp/wallaby_downloads` without a prompt.
+
 #### Feature Test Helpers
 
 `BaudrateWeb.FeatureCase` provides shared helpers:
 
 - **`log_in_via_browser/2`** — fills the login form and waits for redirect. Only
   works for `"user"` role (admin/moderator require TOTP).
+- **`submit_login_form/3`** — submits the login form with a given password,
+  without waiting for the outcome; **`log_out_via_browser/1`** signs out.
+- **`start_another_session/0`** — a second browser sharing the test's sandbox,
+  e.g. another signed-in device.
+- **`wait_for_path/2`** — waits for a redirect that leaves nothing to assert on.
+- **`add_virtual_authenticator/1`** — adds a WebDriver virtual authenticator, so
+  WebAuthn registration and assertions complete without a physical key.
 - **`enable_totp!/1`**, **`totp_code/2`** — give a user TOTP and produce a valid
   code (clearing the single-use marker, so a test can authenticate twice).
 - **`log_in_with_totp_via_browser/3`**, **`log_in_admin_via_browser/1`** — sign
@@ -2412,6 +2424,7 @@ collisions when running tests in parallel.
 | `bookmarks_test.exs` | 2 | Bookmarks page and empty state |
 | `browsing_test.exs` | 3 | Home→board→article flow, empty board, article with author/comments |
 | `comments_test.exs` | 2 | Member posts a comment, guest cannot |
+| `data_export_test.exs` | 1 | Request an export, download the archive through the Fetch Metadata check once ready |
 | `feed_pagination_test.exs` | 3 | Pager (including from `?page=2`), scroll back to the list, `@mention` autocomplete |
 | `following_test.exs` | 2 | Following page and empty state |
 | `home_page_test.exs` | 4 | Guest welcome, board listing, personalized greeting, board navigation |
@@ -2421,10 +2434,14 @@ collisions when running tests in parallel.
 | `logout_test.exs` | 1 | Sign out redirects to login |
 | `messages_test.exs` | 3 | Messages page, empty state, new message page |
 | `notifications_test.exs` | 2 | Notifications page and empty state |
-| `password_reset_test.exs` | 2 | Reset page from login, required-field validation |
+| `password_change_test.exs` | 1 | Change the password; the old one is refused and the new one signs in |
+| `password_reset_test.exs` | 3 | Reset page from login, full reset with a recovery code then sign-in, required-field validation |
 | `registration_test.exs` | 2 | Registration with recovery codes, acknowledging codes |
+| `security_keys_test.exs` | 1 | Register a security key on `/profile`, then pass admin sudo verification with it |
 | `search_test.exs` | 3 | Keyword search, no results, `author:` operator |
+| `sign_out_everywhere_test.exs` | 1 | Signing out everywhere else disconnects another browser's open page |
 | `setup_wizard_test.exs` | 1 | Full setup wizard flow (DB→Site Name→Admin→Recovery Codes) |
+| `two_factor_test.exs` | 3 | TOTP enrollment at first sign-in, wrong then right code, single-use recovery code |
 | `user_profile_test.exs` | 2 | Profile page with stats, author link navigates to profile |
 
 #### Key Files
