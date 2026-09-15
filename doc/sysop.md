@@ -1013,17 +1013,67 @@ reach or delete the copies.
    `--tags backup`. This installs `rsync` and creates the `baudrate-pull` user,
    whose key may only run a read-only rsync of the backup directory
    (`rrsync -ro`): no shell, no forwarding, no writes.
-3. Pull with rsync, **without `--delete`**, so backups the server has since
-   removed stay on the pulling machine and a compromised server cannot erase
-   what was already copied. `-H` keeps the hard links between backups, so the
-   copy is as compact as the server's:
+3. Pull with `scripts/pull-backups.sh` from the repository. It uses rsync
+   **without `--delete`**, so backups the server has since removed stay on the
+   pulling machine and a server someone took over cannot erase what it already
+   handed over. `-H` keeps the hard links, so the copy is as compact as the
+   server's. After copying it checks the newest dump against the SHA-256 in its
+   manifest and reads it with `pg_restore --list`, keeps the newest 30 copies,
+   and fails when the newest backup is older than 36 hours — which is how a
+   backup that quietly stopped running gets noticed.
 
    ```bash
-   rsync -aH -e 'ssh -i ~/.ssh/baudrate-backup-pull' \
-     baudrate-pull@your.server:daily/ ~/Backups/baudrate/daily/
+   BAUDRATE_BACKUP_HOST=baudrate-pull@your.server scripts/pull-backups.sh
    ```
 
-   Run it from a timer on that machine, and prune its old copies there.
+   Settings come from the environment: `BAUDRATE_BACKUP_HOST`, `_PORT`, `_KEY`
+   (default `~/.ssh/baudrate-backup-pull`), `_DEST` (default
+   `~/Backups/baudrate`), `_KEEP` (30) and `_STALE_HOURS` (36).
+
+4. Run it daily from a systemd **user** timer on that machine, so no root
+   access is needed:
+
+   ```ini
+   # ~/.config/systemd/user/baudrate-backup-pull.service
+   [Unit]
+   Description=Pull Baudrate backups from the server
+   After=network-online.target
+   Wants=network-online.target
+
+   [Service]
+   Type=oneshot
+   Environment=BAUDRATE_BACKUP_HOST=baudrate-pull@your.server
+   ExecStart=%h/path/to/baudrate/scripts/pull-backups.sh
+   Nice=10
+   IOSchedulingClass=idle
+   ```
+
+   ```ini
+   # ~/.config/systemd/user/baudrate-backup-pull.timer
+   [Unit]
+   Description=Daily pull of Baudrate backups
+
+   [Timer]
+   OnCalendar=*-*-* 05:30:00
+   RandomizedDelaySec=15min
+   Persistent=true
+
+   [Install]
+   WantedBy=timers.target
+   ```
+
+   ```bash
+   systemctl --user daemon-reload
+   systemctl --user enable --now baudrate-backup-pull.timer
+   systemctl --user list-timers baudrate-backup-pull.timer   # next run
+   systemctl --user --failed                                 # a failed or stale pull shows here
+   journalctl --user -u baudrate-backup-pull -n 20           # what the last pull did
+   ```
+
+   A user timer runs while that user has a session. `sudo loginctl enable-linger
+   $USER` lets it run without one; otherwise `Persistent=true` catches up after
+   the next login. Check the copies arrive: a missing day means either the
+   server's backup or this pull stopped.
 
 ### Restore
 

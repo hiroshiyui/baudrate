@@ -1,3 +1,7 @@
 ---
 # Production-specific overrides
 # domain and certbot_email are prompted at runtime
+
+# Off-host backup copies are pulled by the nanami workstation (ADR 0028).
+# A public key: it may only run `rrsync -ro` of the backup directory.
+backup_pull_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIASpHa0enVO2nWG8SqbiP/TXC03jY3T/UgGIqyoR67OU baudrate backup pull (nanami)"

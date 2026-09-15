@@ -189,7 +189,7 @@ built (ADR 0028: `Baudrate.Backup.Snapshots`, Ansible `backup` role).
 
 - [x] **Enabled on production** 2026-09-16 (v1.19.5): timer at 04:44 Asia/Taipei, first backup 448 MB (45 MB dump), a second one added 47 MB with all 11,861 uploads hard-linked.
 - [x] **Restore rehearsed** 2026-09-16 into a scratch database on the host; row counts, schema version, file count and sampled checksums all matched (`doc/sysop.md` → Restore). A rehearsal on a freshly provisioned host is still open.
-- [ ] **Pull machine for off-host copies:** choose it, set `backup_pull_public_key`, add its pull timer and its own retention.
+- [x] **Off-host copies pulled** to the nanami workstation 2026-09-16: restricted `baudrate-pull` key (`rrsync -ro`), `scripts/pull-backups.sh` on a systemd user timer at 05:30, keeping 30 copies in `~/Backups/baudrate`. Copies only arrive while that machine runs; an always-on puller would be better.
 - [ ] **Alert on a failed or stale backup** — today a failure only appears in the server's journal (see 2D).
 - [ ] **Backup freshness in health checks:** the time of the last successful backup (see 2D).
 - **Accepted when:** production has a backup less than 24 h old, and the rehearsal restored a working instance.
