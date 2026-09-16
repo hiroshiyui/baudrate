@@ -104,6 +104,85 @@ defmodule BaudrateWeb.PolicyLiveTest do
     end
   end
 
+  describe "the re-acceptance banner" do
+    setup do
+      Setup.update_eua("Be excellent to each other.")
+      :ok
+    end
+
+    test "is not shown to a member who is up to date", %{conn: conn} do
+      user = setup_user("user")
+      conn = log_in_user(conn, user)
+
+      {:ok, lv, _html} = live(conn, "/terms")
+
+      refute has_element?(lv, "#terms-banner")
+      refute has_element?(lv, "#policy-accept")
+    end
+
+    test "is not shown to a guest", %{conn: conn} do
+      {:ok, _} = Setup.publish_terms_version()
+
+      {:ok, lv, _html} = live(conn, "/terms")
+
+      refute has_element?(lv, "#terms-banner")
+    end
+
+    test "appears on every page once a new version is published", %{conn: conn} do
+      user = setup_user("user")
+      {:ok, _} = Setup.publish_terms_version()
+      conn = log_in_user(conn, user)
+
+      {:ok, home, _html} = live(conn, "/")
+      assert has_element?(home, "#terms-banner")
+      assert has_element?(home, "#terms-banner-link")
+    end
+
+    test "accepting on /terms clears it, and posting works again", %{conn: conn} do
+      user = setup_user("user")
+      {:ok, _} = Setup.publish_terms_version()
+      conn = log_in_user(conn, user)
+
+      {:ok, lv, _html} = live(conn, "/terms")
+      assert has_element?(lv, "#policy-accept-button")
+
+      html = lv |> element("#policy-accept-button") |> render_click()
+
+      assert html =~ "You can post again"
+      refute has_element?(lv, "#policy-accept")
+      refute has_element?(lv, "#terms-banner")
+      assert Baudrate.Auth.ensure_can_interact(Repo.reload(user)) == :ok
+    end
+
+    test "the composer turns a paused member away, saying which thing stands", %{conn: conn} do
+      # It used to say "Your account is pending approval" for every reason
+      # `can_create_content?/1` can refuse, which sends a member who only needs
+      # to click Accept off to wait for staff who are not coming.
+      user = setup_user("user")
+      {:ok, _} = Setup.publish_terms_version()
+      conn = log_in_user(conn, user)
+
+      assert {:error, {:redirect, %{to: "/", flash: %{"error" => message}}}} =
+               live(conn, "/articles/new")
+
+      assert message =~ "terms have changed"
+      refute message =~ "pending approval"
+    end
+
+    test "the accept button is offered only on /terms", %{conn: conn} do
+      user = setup_user("user")
+      Setup.update_policy(:rules, "Be kind.")
+      {:ok, _} = Setup.publish_terms_version()
+      conn = log_in_user(conn, user)
+
+      {:ok, lv, _html} = live(conn, "/rules")
+
+      # The banner follows them everywhere; accepting happens where the text is.
+      assert has_element?(lv, "#terms-banner")
+      refute has_element?(lv, "#policy-accept")
+    end
+  end
+
   describe "the admin editor" do
     test "saves the rules and the privacy policy, and logs both", %{conn: conn} do
       admin = setup_user("admin")
@@ -128,6 +207,43 @@ defmodule BaudrateWeb.PolicyLiveTest do
 
       assert "update_rules" in actions
       assert "update_privacy" in actions
+    end
+
+    test "saving the terms without ticking the box asks nobody to re-accept", %{conn: conn} do
+      admin = setup_user("admin")
+      member = setup_user("user")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/settings")
+
+      lv
+      |> form("#eua-form", eua_settings: %{eua: "Terms, with a typo fixed."})
+      |> render_submit()
+
+      assert Setup.current_terms_version() == 0
+      assert Baudrate.Auth.ensure_can_interact(Repo.reload(member)) == :ok
+    end
+
+    test "ticking the box publishes a new version and pauses posting", %{conn: conn} do
+      admin = setup_user("admin")
+      member = setup_user("user")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/settings")
+
+      html =
+        lv
+        |> form("#eua-form", eua_settings: %{eua: "Terms, with a new clause.", republish: "true"})
+        |> render_submit()
+
+      assert html =~ "Members will be asked to accept"
+      assert Setup.current_terms_version() == 1
+
+      assert Baudrate.Auth.ensure_can_interact(Repo.reload(member)) ==
+               {:error, :terms_not_accepted}
+
+      assert [%{details: %{"version" => 1}}] =
+               Baudrate.Moderation.list_moderation_logs(action: "publish_terms_version").logs
     end
 
     test "is refused to a non-admin", %{conn: conn} do

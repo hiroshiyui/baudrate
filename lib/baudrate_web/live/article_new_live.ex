@@ -31,7 +31,7 @@ defmodule BaudrateWeb.ArticleNewLive do
   alias Baudrate.Content
   alias Baudrate.Content.ArticleImageStorage
   alias BaudrateWeb.{PollComposer, RateLimits}
-  import BaudrateWeb.Helpers, only: [parse_id: 1]
+  import BaudrateWeb.Helpers, only: [parse_id: 1, interaction_refused_message: 2]
 
   @impl true
   def mount(params, _session, socket) do
@@ -40,7 +40,7 @@ defmodule BaudrateWeb.ArticleNewLive do
     unless Auth.can_create_content?(user) do
       {:ok,
        socket
-       |> put_flash(:error, gettext("Your account is pending approval."))
+       |> put_flash(:error, composer_refusal_message(user))
        |> redirect(to: ~p"/")}
     else
       fixed_board =
@@ -436,5 +436,16 @@ defmodule BaudrateWeb.ArticleNewLive do
   # and until when; anything else keeps the caller's own message (ADR 0029).
   defp refusal(socket, reason, fallback) do
     BaudrateWeb.Helpers.refusal_message(reason, socket.assigns[:current_user], fallback)
+  end
+
+  # `can_create_content?/1` bundles three conditions, and the member needs to
+  # know which one stands. A silenced member told "pending approval" waits for
+  # staff who are not coming, and one who is only behind on the terms never
+  # learns that a button on /terms would fix it (ADR 0029, ADR 0031).
+  defp composer_refusal_message(user) do
+    case Auth.ensure_can_interact(user) do
+      {:error, reason} -> interaction_refused_message(reason, user)
+      :ok -> gettext("Your account is pending approval.")
+    end
   end
 end

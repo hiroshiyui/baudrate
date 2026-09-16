@@ -151,6 +151,14 @@ defmodule BaudrateWeb.Features.LayoutTest do
     # Aqua themes clipped that menu).
     follow_remote_actor_with_posts(user, [long_token, "Short post"])
 
+    # The policy pages carry admin-written prose with an unbreakable URL in it,
+    # and the footer that links them appears on every page below. The version is
+    # deliberately *not* published here: a pending acceptance changes what these
+    # pages do (the composer redirects), which is the gate working, not layout.
+    Baudrate.Setup.update_eua("These are the terms. See https://#{long_token}.example/full-text")
+    Baudrate.Setup.update_policy(:rules, "Rule one: see https://#{long_token}.example/rules")
+    Baudrate.Setup.update_policy(:privacy, "We log. See https://#{long_token}.example/privacy")
+
     %{
       user: user,
       paths: [
@@ -174,7 +182,10 @@ defmodule BaudrateWeb.Features.LayoutTest do
         "/notifications",
         "/invites",
         "/bookmarks",
-        "/following"
+        "/following",
+        "/terms",
+        "/rules",
+        "/privacy"
       ]
     }
   end

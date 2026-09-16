@@ -33,6 +33,19 @@ defmodule Baudrate.Auth.Sanctions do
   A suspension is enforced at sign-in (`Baudrate.Auth.authenticate_by_password/2`)
   rather than per interaction, and re-checked in `BaudrateWeb.AuthHooks`.
 
+  ## Terms the member has not accepted
+
+  The same gate carries the pause that published terms put on posting (P1-D8,
+  ADR 0031), as `{:error, :terms_not_accepted}`. It is not a sanction — the
+  member clears it themselves on `/terms` — but it stops the same things, and
+  putting it here is what makes that true of every posting path at once rather
+  than of whichever ones someone remembered.
+
+  It is checked **last**, so a member who is silenced *and* behind on the terms
+  is told about the silence: that is the one they cannot lift alone. And bot
+  accounts are exempt, because they cannot sign in to accept and their posts go
+  through this gate too.
+
   ## Who may sanction whom
 
   The power is the `moderator.sanction_user` permission, so P1-D3 is
@@ -72,7 +85,12 @@ defmodule Baudrate.Auth.Sanctions do
   Why an account may not act. `:account_moved` keeps the shape callers and
   flashes already handle (ADR 0025).
   """
-  @type refusal :: :banned | :account_suspended | :account_silenced | :account_moved
+  @type refusal ::
+          :banned
+          | :account_suspended
+          | :account_silenced
+          | :account_moved
+          | :terms_not_accepted
 
   @doc """
   Returns `:ok` unless the account may not create content or interact.
@@ -115,12 +133,27 @@ defmodule Baudrate.Auth.Sanctions do
           "suspend" in state.kinds -> {:error, :account_suspended}
           "silence" in state.kinds -> {:error, :account_silenced}
           refuse_moved? and state.moved -> {:error, :account_moved}
+          terms_pending?(state) -> {:error, :terms_not_accepted}
           true -> :ok
         end
     end
   end
 
   def ensure_can_interact(_, _), do: :ok
+
+  # Published terms the account has not accepted yet (P1-D8). Last of the
+  # refusals because it is the mildest and the only one the member can clear
+  # themselves — someone who is silenced *and* behind on the terms should be
+  # told about the silence, which is what actually has to be lifted.
+  #
+  # Bots are exempt. A bot user cannot sign in, so it can never accept, and
+  # `Content.create_article/3` puts bot posts through this same gate: without
+  # this, publishing new terms would quietly stop every RSS feed on the site.
+  defp terms_pending?(%{is_bot: true}), do: false
+
+  defp terms_pending?(%{terms_version: accepted}) do
+    accepted < Setup.current_terms_version()
+  end
 
   # One query: the account's status and redirect, plus the kinds of sanction
   # active on it right now. "Active" is read from the clock here rather than
@@ -134,10 +167,12 @@ defmodule Baudrate.Auth.Sanctions do
         s.user_id == u.id and s.kind in ^@restricting_kinds and is_nil(s.lifted_at) and
           (is_nil(s.expires_at) or s.expires_at > ^now),
       where: u.id == ^user_id,
-      group_by: [u.id, u.status, u.moved_to],
+      group_by: [u.id, u.status, u.moved_to, u.terms_version, u.is_bot],
       select: %{
         status: u.status,
         moved: not is_nil(u.moved_to),
+        terms_version: u.terms_version,
+        is_bot: u.is_bot,
         kinds: fragment("array_remove(array_agg(DISTINCT ?), NULL)", s.kind)
       }
     )

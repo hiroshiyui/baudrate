@@ -102,15 +102,29 @@ The model is [ADR 0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md) (ac
 - [x] `remote_actors.domain` normalized to lowercase on write and backfilled — the filter compares it with SQL equality where the ETS lookup used to downcase its key.
 - **Accepted when:** blocking a domain stops inbound and outbound traffic at once, removes its follows, and hides its content everywhere a guest or member can look; unblocking restores the content. — met; `test/baudrate/federation/blocked_domain_hiding_test.exs` is the gate.
 
-### 1E — Rules and terms (S)
+### 1E — Rules and terms (S) — **done, unreleased**
 
-- [ ] **Admin-editable Rules and Privacy pages,** next to the existing End User Agreement (`Setup.get_eua/0`).
-  - Public at `/rules`, `/terms` and `/privacy`.
-  - Linked from the footer, which is empty today.
-- [ ] **Record acceptance.** Store `terms_accepted_at` and the terms version at registration; `terms_accepted` is only a virtual field today.
-- [ ] **Publishing a new terms version (P1-D8).** Existing users see a banner and must accept before they post or interact again; reading is unaffected.
-- [ ] Report categories can point to a rule (P1-D9).
-- **Accepted when:** a guest can read all three pages, and every account has an acceptance record for the current version before it can post.
+ADR 0031. Acceptance gate: `test/baudrate/auth/terms_gate_test.exs`.
+
+- [x] **Admin-editable Rules and Privacy pages,** next to the existing End User Agreement (`Setup.get_eua/0`).
+  - [x] Public at `/rules`, `/terms` and `/privacy`, in `live_session :public_browsable` — `:public` carries `:redirect_if_authenticated` and would bounce a member off the document they must accept.
+  - [x] Linked from the footer, which was an empty element. Only documents that have actually been written are linked.
+- [x] **Record acceptance.** `users.terms_accepted_at` and `users.terms_version`, written by `User.accept_terms/1` — validating the checkbox and recording it are one function, because they were two and that was the bug. Neither field is castable from params.
+- [x] **Publishing a new terms version (P1-D8).** `settings.eua_version`, moved only by a deliberate "require every member to accept again" checkbox; the pause is `{:error, :terms_not_accepted}` from `Auth.ensure_can_interact/1`, so it reaches all 29 posting paths and inherits their exemptions. Reading, undo, self-delete, reporting abuse and account security stay open. **Bots are exempt inside the gate query** — they cannot sign in to accept, and their posts go through the same gate, so without it publishing terms would silently stop every RSS feed.
+- [ ] Report categories can point to a rule (P1-D9). **Deferred** — the category already exists (`rule_violation`, shipped with the report work); what is missing is a rule to point *at*, which needs the rules stored as a list of records rather than one markdown document. Tracked separately below.
+- **Accepted when:** a guest can read all three pages, and every account has an acceptance record for the current version before it can post. — met.
+
+### 1F — Rules as records, so a report can cite one (S)
+
+Splits out of 1E (P1-D9). Needs a `rules` table (position, title, markdown body)
+in place of the single `rules` setting, `/rules` rendering them numbered with
+anchors, an admin list UI, and `reports.rule_id` with a rule picker shown in the
+report modal when the category is `rule_violation`.
+
+- [ ] Rules become records; the existing `rules` setting migrates into the first row.
+- [ ] `/rules` renders them numbered, each with a stable anchor.
+- [ ] A `rule_violation` report can name which rule, and the moderation queue shows it.
+- **Accepted when:** a reporter choosing "Breaks a rule" picks the rule from the list, and the moderator sees which one.
 
 ### Not in Phase 1
 
@@ -574,6 +588,23 @@ Kept so the review is complete. None of these are scheduled; propose moving one 
 ---
 
 ## Recently completed
+
+- **Phase 1E — rules and terms, minus the rule picker (unreleased).**
+  The terms, the site rules and a privacy policy are public pages linked from
+  a footer that used to be an empty element, and acceptance is recorded and
+  versioned instead of validated and discarded
+  ([ADR 0031](adr/0031-terms-acceptance-is-recorded-and-versioned.md)).
+  Publishing a new version pauses posting through the same gate that carries
+  sanctions, so it reaches every posting path and keeps every exemption —
+  reading, undo, self-delete, reporting abuse and account security all stay
+  open, and bots are exempt so RSS feeds keep running. P1-D9 split out as 1F.
+
+- **A composer that named the wrong reason (unreleased).**
+  `/articles/new` told every member it turned away "Your account is pending
+  approval", whichever of the three conditions in `can_create_content?/1`
+  actually stood — so a silenced member waited for staff who were not coming.
+  Found by the browser crawl while adding the terms pause. It now uses the
+  gate's own message.
 
 - **Phase 1D — instance-level federation moderation (unreleased).**
   Domain blocks are rows with a reason and an author, blocked and unblocked

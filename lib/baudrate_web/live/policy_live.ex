@@ -17,6 +17,7 @@ defmodule BaudrateWeb.PolicyLive do
 
   use BaudrateWeb, :live_view
 
+  alias Baudrate.Auth
   alias Baudrate.Setup
 
   @impl true
@@ -28,6 +29,31 @@ defmodule BaudrateWeb.PolicyLive do
      |> assign(:policy, name)
      |> assign(:page_title, title(name))
      |> assign(:body, Setup.get_policy(name))}
+  end
+
+  @impl true
+  def handle_event("accept_terms", _params, socket) do
+    # The version accepted is read at this moment inside the context, never
+    # carried in the form: this page may have been open since before the terms
+    # changed.
+    case socket.assigns[:current_user] do
+      nil ->
+        {:noreply, socket}
+
+      user ->
+        case Auth.accept_current_terms(user) do
+          {:ok, updated} ->
+            {:noreply,
+             socket
+             |> assign(current_user: updated, terms_pending: false)
+             |> put_flash(:info, gettext("Thank you. You can post again."))
+             |> push_event("focus", %{id: "policy-heading"})}
+
+          {:error, _changeset} ->
+            {:noreply,
+             put_flash(socket, :error, gettext("That could not be saved. Please try again."))}
+        end
+    end
   end
 
   @doc """

@@ -36,6 +36,7 @@ defmodule BaudrateWeb.Admin.SettingsLive do
       |> assign(form: to_form(changeset, as: :settings))
       |> assign(eua: eua)
       |> assign(eua_form: to_form(%{"eua" => eua}, as: :eua_settings))
+      |> assign(terms_version: Setup.current_terms_version())
       |> assign(rules_form: to_form(%{"text" => rules}, as: :rules_policy))
       |> assign(privacy_form: to_form(%{"text" => privacy}, as: :privacy_policy))
       |> assign(timezone_options: timezone_options)
@@ -83,7 +84,9 @@ defmodule BaudrateWeb.Admin.SettingsLive do
   end
 
   @impl true
-  def handle_event("save_eua", %{"eua_settings" => %{"eua" => eua_text}}, socket) do
+  def handle_event("save_eua", %{"eua_settings" => %{"eua" => eua_text} = params}, socket) do
+    republish? = params["republish"] == "true"
+
     case Setup.update_eua(eua_text) do
       {:ok, _} ->
         Moderation.log_action(socket.assigns.current_user.id, "update_eua")
@@ -91,7 +94,7 @@ defmodule BaudrateWeb.Admin.SettingsLive do
         {:noreply,
          socket
          |> assign(eua: eua_text)
-         |> put_flash(:info, gettext("End User Agreement saved."))}
+         |> maybe_publish_terms(republish?)}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to save End User Agreement."))}
@@ -140,6 +143,36 @@ defmodule BaudrateWeb.Admin.SettingsLive do
      |> assign(vapid_configured: true)
      |> assign(vapid_public_key: public_key_b64)
      |> put_flash(:info, gettext("VAPID keys generated successfully."))}
+  end
+
+  # A save is a quiet edit unless the admin says otherwise. Bumping the version
+  # on every save would mean a typo fix confronts the whole instance with a
+  # banner, and admins would learn to leave typos alone.
+  defp maybe_publish_terms(socket, false) do
+    put_flash(socket, :info, gettext("End User Agreement saved."))
+  end
+
+  defp maybe_publish_terms(socket, true) do
+    case Setup.publish_terms_version() do
+      {:ok, version} ->
+        Moderation.log_action(socket.assigns.current_user.id, "publish_terms_version",
+          details: %{version: version}
+        )
+
+        socket
+        |> assign(terms_version: version)
+        |> put_flash(
+          :info,
+          gettext("Agreement saved and published. Members will be asked to accept it.")
+        )
+
+      {:error, _} ->
+        put_flash(
+          socket,
+          :error,
+          gettext("The agreement was saved, but members were not asked to accept it again.")
+        )
+    end
   end
 
   # The action name is passed in as a literal from the call site rather than

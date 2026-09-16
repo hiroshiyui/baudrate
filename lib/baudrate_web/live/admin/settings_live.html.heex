@@ -198,6 +198,27 @@
           rows="8"
           placeholder={gettext("Enter your site-specific terms here...")}
         />
+        <label
+          id="eua-republish-label"
+          class="eua-republish-label label cursor-pointer gap-3 mt-2"
+        >
+          <input
+            type="checkbox"
+            name="eua_settings[republish]"
+            value="true"
+            class="eua-republish-checkbox checkbox checkbox-sm"
+          />
+          <span class="eua-republish-text label-text">
+            {gettext(
+              "Require every member to accept again. Leave this off for a typo or a reworded sentence."
+            )}
+          </span>
+        </label>
+        <p id="eua-version-note" class="eua-version-note text-sm opacity-70">
+          {gettext("Members are currently being asked to accept version %{version}.",
+            version: @terms_version
+          )}
+        </p>
         <div class="mt-4">
           <.button variant="primary" type="submit" phx-disable-with={gettext("Saving...")}>
             {gettext("Save Agreement")}

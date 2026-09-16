@@ -92,6 +92,7 @@ defmodule BaudrateWeb.Admin.ModerationLogLive do
   defp translate_action("update_eua"), do: gettext("Update End User Agreement")
   defp translate_action("update_rules"), do: gettext("Update Site Rules")
   defp translate_action("update_privacy"), do: gettext("Update Privacy Policy")
+  defp translate_action("publish_terms_version"), do: gettext("Publish New Terms Version")
   defp translate_action("generate_vapid_keys"), do: gettext("Generate Push Keys")
   defp translate_action("create_bot"), do: gettext("Create Bot")
   defp translate_action("update_bot"), do: gettext("Update Bot")

@@ -288,6 +288,34 @@ reader's browser from a third party. Editing a document takes effect at once;
 each save is recorded in the moderation log (`update_eua`, `update_rules`,
 `update_privacy`).
 
+#### Publishing new terms
+
+Saving the terms is a quiet edit. To require members to accept them again,
+tick **"Require every member to accept again"** before saving. That increments
+`eua_version` and is logged as `publish_terms_version`.
+
+Every member then sees a banner until they accept on `/terms`, and **posting
+and interacting are paused** — creating articles and comments, liking,
+boosting, forwarding, voting, following, direct messages and invites all
+return "The terms have changed."
+
+What a pause deliberately does *not* stop (ADR 0031):
+
+- **reading** anything, including the terms themselves;
+- undoing an earlier like or boost, and deleting their own content;
+- **reporting abuse** — a member who cannot report cannot ask for help;
+- anything about account security: password, second factors, sessions, export.
+- **bot accounts.** A bot cannot sign in to accept, and its posts go through
+  the same gate, so bots are exempt and RSS feeds keep running.
+
+Staff are paused like everyone else, though administration itself is not
+affected. Leave the box unticked for a typo or a reworded sentence: if every
+save prompts the whole instance, the prompt stops meaning anything.
+
+Upgrading to this version stamps existing accounts as having accepted version
+0, so nobody is prompted by the upgrade itself — only by your first deliberate
+publication.
+
 ### Invite Codes (`/admin/invites`)
 
 - Generate single-use or multi-use invite codes

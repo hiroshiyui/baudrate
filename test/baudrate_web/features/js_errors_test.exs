@@ -172,6 +172,13 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
         published_at: DateTime.utc_now() |> DateTime.truncate(:second)
       })
 
+    # The policy pages. The version is not published: a pending acceptance
+    # would redirect the composer and refuse the admin crawl's invite code,
+    # which is the gate working rather than anything this crawl checks.
+    Baudrate.Setup.update_eua("These are the terms.")
+    Baudrate.Setup.update_policy(:rules, "Rule one.")
+    Baudrate.Setup.update_policy(:privacy, "We keep logs.")
+
     %{
       user: user,
       paths: [
@@ -199,7 +206,10 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
         "/messages/#{conversation.id}",
         "/notifications",
         "/following",
-        "/bookmarks"
+        "/bookmarks",
+        "/terms",
+        "/rules",
+        "/privacy"
       ]
     }
   end

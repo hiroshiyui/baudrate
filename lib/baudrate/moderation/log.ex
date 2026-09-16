@@ -25,7 +25,7 @@ defmodule Baudrate.Moderation.Log do
     add_board_moderator remove_board_moderator
     block_user unblock_user block_domain unblock_domain rotate_keys
     suspend_remote_actor unsuspend_remote_actor
-    update_settings update_eua update_rules update_privacy generate_vapid_keys
+    update_settings update_eua update_rules update_privacy publish_terms_version generate_vapid_keys
     create_bot update_bot delete_bot toggle_bot reset_bot_errors refresh_bot_favicon
   )
 

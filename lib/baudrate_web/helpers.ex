@@ -454,7 +454,13 @@ defmodule BaudrateWeb.Helpers do
 
   # Everything `Auth.ensure_can_interact/1` can refuse with. Kept in one place
   # so a LiveView cannot handle three of the four and shrug at the fourth.
-  @gate_refusals [:account_moved, :account_silenced, :account_suspended, :banned]
+  @gate_refusals [
+    :account_moved,
+    :account_silenced,
+    :account_suspended,
+    :banned,
+    :terms_not_accepted
+  ]
 
   @doc """
   Flash text for a refused action: the gate's own explanation when the gate
@@ -489,6 +495,11 @@ defmodule BaudrateWeb.Helpers do
 
   def interaction_refused_message(:account_suspended, user),
     do: sanction_message(gettext("Your account is suspended."), user, "suspend")
+
+  # The one refusal the member clears themselves, so it says how instead of
+  # telling them to wait or to write to staff.
+  def interaction_refused_message(:terms_not_accepted, _user),
+    do: gettext("The terms have changed. Read and accept them to post again.")
 
   def interaction_refused_message(_reason, _user),
     do: gettext("You cannot do that right now.")

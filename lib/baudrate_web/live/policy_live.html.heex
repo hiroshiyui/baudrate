@@ -17,4 +17,32 @@
   >
     {empty_message(@policy)}
   </p>
+
+  <%!-- Accepting is offered only here, under the text itself, and only to a
+  member who actually owes an acceptance (P1-D8). --%>
+  <section
+    :if={@policy == :terms && @body && assigns[:terms_pending]}
+    id="policy-accept"
+    class="policy-accept card bg-base-200 shadow-sm"
+    aria-labelledby="policy-accept-heading"
+  >
+    <div class="card-body">
+      <h2 id="policy-accept-heading" class="policy-accept-heading card-title text-base">
+        {gettext("These terms have changed since you accepted them")}
+      </h2>
+      <p id="policy-accept-text" class="policy-accept-text text-sm opacity-80">
+        {gettext("Posting and interacting are paused until you accept. Reading is not.")}
+      </p>
+      <div class="card-actions">
+        <.button
+          id="policy-accept-button"
+          variant="primary"
+          phx-click="accept_terms"
+          phx-disable-with={gettext("Saving...")}
+        >
+          {gettext("I accept these terms")}
+        </.button>
+      </div>
+    </div>
+  </section>
 </article>

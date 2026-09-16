@@ -403,6 +403,7 @@ defmodule BaudrateWeb.Layouts do
         <.account_move_banner :if={assigns[:active_account_move]} summary={@active_account_move} />
         <.account_moved_notice :if={assigns[:current_user] && @current_user.moved_to} />
         <.sanction_notice :if={assigns[:active_sanction]} sanction={@active_sanction} />
+        <.terms_banner :if={assigns[:terms_pending]} />
         {@inner_content}
       </div>
     </main>
@@ -537,6 +538,39 @@ defmodule BaudrateWeb.Layouts do
         navigate={~p"/profile/move"}
         class="account-move-banner-link btn btn-sm"
       >
+        {gettext("Review")}
+      </.link>
+    </aside>
+    """
+  end
+
+  @doc """
+  Notice on every page while published terms are waiting to be accepted
+  (P1-D8).
+
+  It does not block reading, and it is not dismissible: the member is not
+  being punished, only asked, and the gate refuses posting until they answer.
+  The button leads to `/terms`, where accepting happens — a one-click "accept"
+  on the banner itself would let someone agree to a document without the page
+  ever showing it to them.
+  """
+  def terms_banner(assigns) do
+    ~H"""
+    <aside
+      id="terms-banner"
+      class="terms-banner alert alert-warning"
+      aria-labelledby="terms-banner-heading"
+    >
+      <.icon name="hero-document-text" class="size-5 shrink-0" />
+      <div class="min-w-0 space-y-1">
+        <h2 id="terms-banner-heading" class="terms-banner-heading font-semibold">
+          {gettext("The terms of service have changed")}
+        </h2>
+        <p id="terms-banner-text" class="terms-banner-text text-sm break-words">
+          {gettext("You can keep reading, but posting is paused until you accept them.")}
+        </p>
+      </div>
+      <.link id="terms-banner-link" navigate={~p"/terms"} class="terms-banner-link btn btn-sm">
         {gettext("Review")}
       </.link>
     </aside>

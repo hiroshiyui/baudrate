@@ -94,6 +94,8 @@ defmodule BaudrateWeb.AuthHooks do
                 # A restriction the member is under, so the banner can say
                 # what stands and until when (ADR 0029).
                 |> assign(:active_sanction, List.first(Auth.active_sanctions(user)))
+                # Published terms this member has not accepted yet (P1-D8).
+                |> assign(:terms_pending, Auth.terms_pending?(user))
                 |> MarkdownPreviewHook.attach()
                 |> AutocompleteSuggestHook.attach()
                 |> UnreadDmCountHook.attach(user)
@@ -144,6 +146,8 @@ defmodule BaudrateWeb.AuthHooks do
               # A restriction the member is under, so the banner can say what
               # stands and until when (ADR 0029).
               |> assign(:active_sanction, List.first(Auth.active_sanctions(user)))
+              # Published terms this member has not accepted yet (P1-D8).
+              |> assign(:terms_pending, Auth.terms_pending?(user))
               |> MarkdownPreviewHook.attach()
               |> AutocompleteSuggestHook.attach()
               |> UnreadDmCountHook.attach(user)
