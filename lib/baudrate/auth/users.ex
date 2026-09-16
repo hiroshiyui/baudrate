@@ -40,6 +40,36 @@ defmodule Baudrate.Auth.Users do
   end
 
   @doc """
+  Records that a member accepts the terms as they stand right now.
+
+  The version is read here rather than taken from the caller: a form carrying
+  the version could be submitted from a page left open since before the terms
+  changed, recording acceptance of something the member never saw.
+  """
+  @spec accept_current_terms(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def accept_current_terms(%User{} = user) do
+    user
+    |> Ecto.Changeset.change(
+      terms_accepted_at: DateTime.utc_now() |> DateTime.truncate(:second),
+      terms_version: Setup.current_terms_version()
+    )
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns true when published terms are waiting for this member's acceptance.
+
+  The boolean form of the gate's own check, for pages that show a banner.
+  """
+  @spec terms_pending?(User.t() | nil) :: boolean()
+  def terms_pending?(%User{is_bot: true}), do: false
+
+  def terms_pending?(%User{terms_version: accepted}),
+    do: accepted < Setup.current_terms_version()
+
+  def terms_pending?(_), do: false
+
+  @doc """
   Registers a new user with the `"user"` role.
 
   The account status depends on `Setup.registration_mode/0`:
@@ -75,7 +105,7 @@ defmodule Baudrate.Auth.Users do
     result =
       %User{}
       |> User.registration_changeset(Map.delete(attrs, "status"))
-      |> User.validate_terms()
+      |> User.accept_terms()
       |> Ecto.Changeset.put_change(:status, status)
       |> Repo.insert()
 
@@ -114,7 +144,7 @@ defmodule Baudrate.Auth.Users do
           changeset =
             %User{}
             |> User.registration_changeset(reg_attrs)
-            |> User.validate_terms()
+            |> User.accept_terms()
             |> Ecto.Changeset.put_change(:status, "active")
 
           Repo.transaction(fn ->

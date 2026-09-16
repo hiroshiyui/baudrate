@@ -320,6 +320,44 @@ defmodule Baudrate.Setup do
     set_setting("eua", text)
   end
 
+  @doc """
+  The version of the terms members are currently required to have accepted.
+
+  It moves only when an admin deliberately publishes (`publish_terms_version/0`),
+  never on an ordinary save: a typo fix must not confront a whole instance with
+  a banner, or admins learn to avoid correcting typos.
+
+  An unreadable value reads as 0 — nobody is asked to accept again. This is a
+  courtesy prompt, not an access control, and a malformed settings row is a
+  poor reason to pause every member on the site.
+  """
+  @spec current_terms_version() :: non_neg_integer()
+  def current_terms_version do
+    with value when is_binary(value) <- get_setting("eua_version"),
+         {n, _rest} when n >= 0 <- Integer.parse(value) do
+      n
+    else
+      _ -> 0
+    end
+  end
+
+  @doc """
+  Publishes the terms as a new version, so every member must accept them again
+  before posting or interacting. Reading is never affected.
+
+  Two admins publishing at once can both read the same version and write the
+  same next one; the result is what either intended, so the read is not locked.
+  """
+  @spec publish_terms_version() :: {:ok, pos_integer()} | {:error, Ecto.Changeset.t()}
+  def publish_terms_version do
+    next = current_terms_version() + 1
+
+    case set_setting("eua_version", Integer.to_string(next)) do
+      {:ok, _setting} -> {:ok, next}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
   # The public policy documents, as `live_action` => settings key. The terms
   # keep the historical `"eua"` key: renaming it would orphan the text every
   # existing instance has already written.

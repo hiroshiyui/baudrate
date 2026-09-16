@@ -128,6 +128,13 @@ defmodule Baudrate.Setup.User do
     field :is_bot, :boolean, default: false
     field :profile_fields, {:array, :map}, default: []
 
+    # Which version of the terms this account accepted, and when. Deliberately
+    # outside every `cast/3` list: a member who could set these in the
+    # registration params could accept a version that does not exist yet and
+    # never be asked again.
+    field :terms_accepted_at, :utc_datetime
+    field :terms_version, :integer, default: 0
+
     belongs_to :role, Baudrate.Setup.Role
     belongs_to :invited_by, __MODULE__
 
@@ -156,10 +163,27 @@ defmodule Baudrate.Setup.User do
   end
 
   @doc """
-  Validates that terms have been accepted. Used for public registration only.
+  Validates the registration checkbox and records what was accepted.
+
+  Checking the box and recording it are one step on purpose. They were two
+  before this existed — the box was validated and the answer thrown away — so
+  editing the terms silently changed what every member had agreed to. A
+  registration path that forgot the recording half would recreate exactly that,
+  and both callers in `Baudrate.Auth.Users` reach it through here.
   """
-  def validate_terms(changeset) do
-    validate_acceptance(changeset, :terms_accepted)
+  def accept_terms(changeset) do
+    changeset
+    |> validate_acceptance(:terms_accepted)
+    |> stamp_acceptance()
+  end
+
+  # Nothing to record on a changeset that is not going to be inserted.
+  defp stamp_acceptance(%Ecto.Changeset{valid?: false} = changeset), do: changeset
+
+  defp stamp_acceptance(changeset) do
+    changeset
+    |> put_change(:terms_accepted_at, DateTime.utc_now() |> DateTime.truncate(:second))
+    |> put_change(:terms_version, Baudrate.Setup.current_terms_version())
   end
 
   defp validate_username(changeset) do

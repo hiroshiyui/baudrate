@@ -47,6 +47,8 @@ defmodule Baudrate.Auth do
   defdelegate get_user_by_username(username), to: Users
   defdelegate get_user_by_username_ci(username), to: Users
   defdelegate register_user(attrs), to: Users
+  defdelegate accept_current_terms(user), to: Users
+  defdelegate terms_pending?(user), to: Users
   defdelegate approve_user(user), to: Users
   defdelegate list_pending_users, to: Users
   defdelegate list_invitees(user_id, limit \\ 20), to: Users
