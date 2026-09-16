@@ -103,6 +103,9 @@ defmodule Baudrate.Notification.Notification do
     data_export_ready
     data_export_downloaded
     data_export_cancelled
+    sanction_applied
+    sanction_lifted
+    sanction_ended
   )
 
   @security_types ~w(
@@ -126,10 +129,11 @@ defmodule Baudrate.Notification.Notification do
     data_export_cancelled
   )
 
-  # Moderation notices about the recipient's own content. Like account
-  # security notices they are always delivered: someone must not be able to
-  # switch off being told their post was removed (P1-D4).
-  @moderation_notice_types ~w(content_removed)
+  # Moderation notices about the recipient's own content or account. Like
+  # account security notices they are always delivered: someone must not be
+  # able to switch off being told their post was removed, or that their
+  # account was silenced, why and until when (P1-D4).
+  @moderation_notice_types ~w(content_removed sanction_applied sanction_lifted sanction_ended)
 
   @doc "Returns the list of valid notification type strings."
   def valid_types, do: @valid_types

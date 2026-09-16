@@ -160,6 +160,19 @@ defmodule BaudrateWeb.RateLimits do
     check("report_create:#{user_id}", 900_000, 5, :create_report)
   end
 
+  @doc """
+  Issuing or lifting a sanction: 20 per 5 minutes per moderator.
+
+  A stolen moderator session should not be able to suspend a hundred accounts
+  in a minute (ADR 0029). A moderator working through a spam wave issues a
+  handful; twenty in five minutes is well clear of real work and well short of
+  a scripted sweep.
+  """
+  @spec check_sanction(integer()) :: :ok | {:error, :rate_limited}
+  def check_sanction(user_id) do
+    check("sanction:#{user_id}", 300_000, 20, :sanction)
+  end
+
   @doc "Feed item reply: 20 per 5 minutes per user."
   @spec check_feed_reply(integer()) :: :ok | {:error, :rate_limited}
   def check_feed_reply(user_id) do

@@ -8,7 +8,7 @@ defmodule Baudrate.Auth.Passwords do
 
   alias Baudrate.Repo
   alias Baudrate.Setup.User
-  alias Baudrate.Auth.{Sessions, SecondFactor}
+  alias Baudrate.Auth.{Sanction, Sanctions, Sessions, SecondFactor}
   alias Baudrate.Notification.Hooks
 
   @doc """
@@ -19,9 +19,14 @@ defmodule Baudrate.Auth.Passwords do
   Uses `Bcrypt.no_user_verify/0` on failed lookups to maintain constant-time
   behavior regardless of whether the username exists, preventing timing-based
   user enumeration.
+
+  A suspension is refused here rather than per interaction, so every entry
+  point inherits it (ADR 0029). `{:error, {:suspended, sanction}}` carries the
+  row, because a member turned away must be told why and until when.
   """
   @spec authenticate_by_password(String.t(), String.t()) ::
-          {:ok, User.t()} | {:error, :invalid_credentials | :banned | :bot_account}
+          {:ok, User.t()}
+          | {:error, :invalid_credentials | :banned | :bot_account | {:suspended, Sanction.t()}}
   def authenticate_by_password(username, password) do
     user = Repo.one(from u in User, where: u.username == ^username, preload: :role)
 
@@ -29,11 +34,18 @@ defmodule Baudrate.Auth.Passwords do
       cond do
         user.is_bot -> {:error, :bot_account}
         user.status == "banned" -> {:error, :banned}
-        true -> {:ok, user}
+        true -> refuse_if_suspended(user)
       end
     else
       Bcrypt.no_user_verify()
       {:error, :invalid_credentials}
+    end
+  end
+
+  defp refuse_if_suspended(%User{} = user) do
+    case Sanctions.active_sanction(user, "suspend") do
+      nil -> {:ok, user}
+      sanction -> {:error, {:suspended, sanction}}
     end
   end
 

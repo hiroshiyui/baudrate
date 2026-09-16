@@ -19,6 +19,9 @@ defmodule Baudrate.Repo.Migrations.CreateSanctions do
       add :lifted_at, :utc_datetime
       add :lifted_by_id, references(:users, on_delete: :nilify_all)
       add :lift_reason, :text
+      # Set when the member was told the sanction ran out, so they are told
+      # once. Enforcement never reads it.
+      add :ended_notified_at, :utc_datetime
       # The report that prompted the sanction, when there was one.
       add :report_id, references(:reports, on_delete: :nilify_all)
 

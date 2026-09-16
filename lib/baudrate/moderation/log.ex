@@ -17,6 +17,7 @@ defmodule Baudrate.Moderation.Log do
   # checks every call site.
   @valid_actions ~w(
     ban_user unban_user update_role approve_user
+    warn_user silence_user suspend_user lift_sanction reject_user
     resolve_report dismiss_report send_flag
     delete_article delete_comment edit_article remove_article_from_board
     pin_article unpin_article lock_article unlock_article

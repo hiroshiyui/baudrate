@@ -95,6 +95,19 @@ defmodule BaudrateWeb.LoginLive do
 
             {:noreply, socket}
 
+          # The password was right, so there is nothing to enumerate: a
+          # suspended member is told what stands against them (ADR 0029).
+          {:error, {:suspended, sanction}} ->
+            Auth.record_login_attempt(username, ip, false)
+            Logger.warning("auth.suspended_login: username=#{username} ip=#{ip}")
+
+            socket =
+              socket
+              |> put_flash(:error, BaudrateWeb.Helpers.suspended_login_message(sanction))
+              |> assign(:form, to_form(%{"username" => username, "password" => ""}, as: :login))
+
+            {:noreply, socket}
+
           {:error, reason} when reason in [:banned, :invalid_credentials, :bot_account] ->
             Auth.record_login_attempt(username, ip, false)
 

@@ -81,7 +81,9 @@ defmodule BaudrateWeb.SessionController do
       {:ok, user_id} ->
         user = Auth.get_user(user_id)
 
-        if user && user.status != "banned" do
+        # The token is minted the moment the password verifies, so a
+        # suspension issued in between must still be caught here (ADR 0029).
+        if user && user.status != "banned" && not Auth.suspended?(user) do
           Logger.info(
             "auth.login_success: user_id=#{user.id} username=#{user.username} ip=#{remote_ip(conn)}"
           )

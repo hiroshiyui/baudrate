@@ -58,7 +58,7 @@ defmodule Baudrate.Setup do
         "moderator.manage_content",
         "moderator.manage_comments",
         "moderator.view_reports",
-        "moderator.mute_user",
+        "moderator.sanction_user",
         "user.create_content",
         "user.edit_own_content",
         "user.manage_profile",
@@ -68,7 +68,7 @@ defmodule Baudrate.Setup do
         "moderator.manage_content",
         "moderator.manage_comments",
         "moderator.view_reports",
-        "moderator.mute_user",
+        "moderator.sanction_user",
         "user.create_content",
         "user.edit_own_content",
         "user.manage_profile",
@@ -101,7 +101,7 @@ defmodule Baudrate.Setup do
     "moderator.manage_content" => "Edit and remove content",
     "moderator.manage_comments" => "Manage comments",
     "moderator.view_reports" => "View moderation reports",
-    "moderator.mute_user" => "Mute users",
+    "moderator.sanction_user" => "Warn, silence and suspend accounts",
     "user.create_content" => "Create new content",
     "user.edit_own_content" => "Edit own content",
     "user.manage_profile" => "Manage own profile",
@@ -554,18 +554,21 @@ defmodule Baudrate.Setup do
       |> List.flatten()
       |> Enum.uniq()
 
-    # Insert roles
+    # Seeding is idempotent. A migration that grants a newly introduced
+    # permission (as ADR 0029's did) runs before first-run setup on a fresh
+    # install, so seeding must be able to meet rows that already exist rather
+    # than crash on the unique index.
     roles =
       permissions_matrix
       |> Map.keys()
       |> Enum.map(fn name ->
         %Role{}
         |> Role.changeset(%{name: name, description: Map.get(@role_descriptions, name)})
-        |> Repo.insert!()
+        |> Repo.insert!(on_conflict: :nothing, conflict_target: :name)
+        |> reload_by_name(Role, name)
       end)
       |> Map.new(fn role -> {role.name, role} end)
 
-    # Insert permissions
     permissions =
       all_permission_names
       |> Enum.map(fn name ->
@@ -574,27 +577,35 @@ defmodule Baudrate.Setup do
           name: name,
           description: Map.get(@permission_descriptions, name)
         })
-        |> Repo.insert!()
+        |> Repo.insert!(on_conflict: :nothing, conflict_target: :name)
+        |> reload_by_name(Permission, name)
       end)
 
     permissions_by_name = Map.new(permissions, fn p -> {p.name, p} end)
 
-    # Insert role_permissions
     for {role_name, perm_names} <- permissions_matrix,
         perm_name <- perm_names do
       role = Map.fetch!(roles, role_name)
       permission = Map.fetch!(permissions_by_name, perm_name)
 
-      Repo.insert!(%RolePermission{
-        role_id: role.id,
-        permission_id: permission.id,
-        inserted_at: now,
-        updated_at: now
-      })
+      Repo.insert!(
+        %RolePermission{
+          role_id: role.id,
+          permission_id: permission.id,
+          inserted_at: now,
+          updated_at: now
+        },
+        on_conflict: :nothing
+      )
     end
 
     {:ok, %{roles: roles, permissions: permissions}}
   end
+
+  # `on_conflict: :nothing` returns a struct with a nil id when the row was
+  # already there, so read the real one back.
+  defp reload_by_name(%{id: nil}, schema, name), do: Repo.get_by!(schema, name: name)
+  defp reload_by_name(record, _schema, _name), do: record
 
   @doc """
   Returns true if the given role has the given permission.

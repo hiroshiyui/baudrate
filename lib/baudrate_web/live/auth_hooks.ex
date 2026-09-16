@@ -56,37 +56,48 @@ defmodule BaudrateWeb.AuthHooks do
     if session_token do
       case Auth.get_user_by_session_token(session_token) do
         {:ok, user} ->
-          if user.status == "banned" do
-            {:halt,
-             socket
-             |> put_flash(:error, gettext("Your account has been banned."))
-             |> redirect(to: "/login")}
-          else
-            locale = resolve_user_locale(user)
+          cond do
+            user.status == "banned" ->
+              {:halt,
+               socket
+               |> put_flash(:error, gettext("Your account has been banned."))
+               |> redirect(to: "/login")}
 
-            socket =
-              socket
-              |> assign(:current_user, user)
-              |> assign(:locale, locale)
-              |> assign(:unread_dm_count, Messaging.unread_count(user))
-              |> assign(:unread_notification_count, Notification.unread_count(user.id))
-              # Warning banner while a data export request is pending/ready (ADR 0023).
-              |> assign(
-                :active_data_export,
-                Baudrate.DataPortability.active_request_summary(user.id)
-              )
-              # Warning banner while an account move is pending (ADR 0025).
-              |> assign(
-                :active_account_move,
-                Baudrate.AccountMigration.active_move_summary(user.id)
-              )
-              |> MarkdownPreviewHook.attach()
-              |> AutocompleteSuggestHook.attach()
-              |> UnreadDmCountHook.attach(user)
-              |> UnreadNotificationCountHook.attach(user)
-              |> attach_current_path_hook()
+            # Defence in depth behind `authenticate_by_password/2`: a
+            # suspension issued mid-session revokes the sessions, but a
+            # session created before it must not survive either (ADR 0029).
+            suspended?(user) ->
+              {:halt,
+               socket
+               |> put_flash(:error, gettext("Your account is suspended."))
+               |> redirect(to: "/login")}
 
-            {:cont, socket}
+            true ->
+              locale = resolve_user_locale(user)
+
+              socket =
+                socket
+                |> assign(:current_user, user)
+                |> assign(:locale, locale)
+                |> assign(:unread_dm_count, Messaging.unread_count(user))
+                |> assign(:unread_notification_count, Notification.unread_count(user.id))
+                # Warning banner while a data export request is pending/ready (ADR 0023).
+                |> assign(
+                  :active_data_export,
+                  Baudrate.DataPortability.active_request_summary(user.id)
+                )
+                # Warning banner while an account move is pending (ADR 0025).
+                |> assign(
+                  :active_account_move,
+                  Baudrate.AccountMigration.active_move_summary(user.id)
+                )
+                |> MarkdownPreviewHook.attach()
+                |> AutocompleteSuggestHook.attach()
+                |> UnreadDmCountHook.attach(user)
+                |> UnreadNotificationCountHook.attach(user)
+                |> attach_current_path_hook()
+
+              {:cont, socket}
           end
 
         {:error, _reason} ->
@@ -159,7 +170,7 @@ defmodule BaudrateWeb.AuthHooks do
     if user_id do
       user = Auth.get_user(user_id)
 
-      if user && user.status != "banned" do
+      if user && user.status != "banned" && not suspended?(user) do
         locale = resolve_user_locale(user)
 
         socket =
@@ -291,6 +302,11 @@ defmodule BaudrateWeb.AuthHooks do
   # to the current LiveView process. Without this, anonymous LV mounts run
   # with the default Gettext locale ("en") and cause a visible locale flip
   # after the dead render.
+  # A suspended account cannot sign in, and cannot keep a session it already
+  # had. Checked by the clock, so it stops the moment the suspension ends
+  # without any sweep having to run (ADR 0029).
+  defp suspended?(user), do: Auth.suspended?(user)
+
   defp apply_session_locale(session) do
     case session["locale"] do
       locale when is_binary(locale) ->

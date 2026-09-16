@@ -69,6 +69,7 @@ defmodule Baudrate.Auth.SessionCleaner do
       sweep_data_exports: &sweep_data_exports/0,
       sweep_account_moves: &sweep_account_moves/0,
       cleanup_old_notifications: &cleanup_old_notifications/0,
+      notify_ended_sanctions: &notify_ended_sanctions/0,
       purge_closed_report_evidence: &Baudrate.Moderation.purge_closed_report_evidence/0
     ]
     |> Enum.each(fn {name, step} -> run_step(name, step) end)
@@ -107,6 +108,17 @@ defmodule Baudrate.Auth.SessionCleaner do
 
     if count > 0 do
       Logger.info("session_cleaner.export_requests_purged: count=#{count}")
+    end
+  end
+
+  # Tells members whose silence or suspension has just run out. Enforcement
+  # already stopped by the clock; this run only delivers the courtesy notice,
+  # so missing it costs nothing (ADR 0029).
+  defp notify_ended_sanctions do
+    count = Baudrate.Auth.notify_ended_sanctions()
+
+    if count > 0 do
+      Logger.info("session_cleaner.sanctions_ended: count=#{count}")
     end
   end
 

@@ -148,6 +148,11 @@ defmodule Baudrate.Auth do
   defdelegate silenced?(user), to: Sanctions
   defdelegate suspended?(user), to: Sanctions
   defdelegate list_sanctions(user), to: Sanctions
+  defdelegate issue_sanction(actor, target, kind, opts \\ []), to: Sanctions, as: :issue
+  defdelegate lift_sanction(actor, target, kind, opts \\ []), to: Sanctions, as: :lift
+  defdelegate authorize_sanction(actor, target, kind), to: Sanctions, as: :authorize
+  defdelegate max_sanction_expiry(actor), to: Sanctions, as: :max_expiry
+  defdelegate notify_ended_sanctions, to: Sanctions
 
   # --- Profiles & Preferences ---
   defdelegate update_preferred_locales(user, locales), to: Profiles

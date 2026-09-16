@@ -46,6 +46,9 @@ defmodule Baudrate.Auth.Sanction do
     field :expires_at, :utc_datetime
     field :lifted_at, :utc_datetime
     field :lift_reason, :string
+    # When the member was told the sanction ran out. Enforcement never reads
+    # it: a sanction ends by the clock whether or not the notice was sent.
+    field :ended_notified_at, :utc_datetime
 
     belongs_to :user, User
     belongs_to :issued_by, User

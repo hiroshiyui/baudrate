@@ -441,6 +441,56 @@ defmodule BaudrateWeb.Helpers do
     do: gettext("You cannot interact with this account.")
 
   @doc """
+  Flash text for an interaction the gate refused (ADR 0029).
+
+  A post that fails with a shrug is worse than the sanction, so a silenced or
+  suspended member is told what stands against them, why, and until when. The
+  staff-written reason is interpolated as data, never as markup. Pass the
+  current user so the active sanction can be quoted; without one the message
+  is still correct, only vaguer.
+  """
+  def interaction_refused_message(reason, user \\ nil)
+
+  def interaction_refused_message(:account_moved, _user), do: account_moved_message()
+
+  def interaction_refused_message(:banned, _user),
+    do: gettext("Your account has been banned.")
+
+  def interaction_refused_message(:account_silenced, user),
+    do: sanction_message(gettext("Your account is silenced and cannot post."), user, "silence")
+
+  def interaction_refused_message(:account_suspended, user),
+    do: sanction_message(gettext("Your account is suspended."), user, "suspend")
+
+  def interaction_refused_message(_reason, _user),
+    do: gettext("You cannot do that right now.")
+
+  @doc """
+  Flash text when a sign-in is refused because the account is suspended.
+  Takes the sanction, which `Auth.authenticate_by_password/2` returns for
+  exactly this purpose.
+  """
+  def suspended_login_message(sanction),
+    do: decorate_sanction(gettext("Your account is suspended."), sanction)
+
+  defp sanction_message(lead, nil, _kind), do: lead
+
+  defp sanction_message(lead, user, kind),
+    do: decorate_sanction(lead, Baudrate.Auth.active_sanction(user, kind))
+
+  defp decorate_sanction(lead, nil), do: lead
+
+  defp decorate_sanction(lead, sanction) do
+    [lead]
+    |> append_if(sanction.reason, &gettext("Reason: %{reason}", reason: &1))
+    |> append_if(sanction.expires_at, &gettext("It ends %{at}.", at: format_datetime(&1)))
+    |> Enum.join(" ")
+  end
+
+  defp append_if(parts, nil, _fun), do: parts
+  defp append_if(parts, value, fun), do: parts ++ [fun.(value)]
+
+  @doc """
   Whether to render an interactive like/boost toggle for `user` on content by
   `author_id`, given whether the user has already `active`-ly liked or boosted it.
 
