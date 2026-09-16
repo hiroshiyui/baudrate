@@ -1,6 +1,6 @@
 # 0029 — Sanctions are rows with an explicit end, enforced by one gate
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-09-16
 - **Deciders:** Baudrate maintainers
 - **Related:** builds on [0016](0016-authorization-at-the-context-boundary.md)
@@ -66,6 +66,18 @@ posting path that remembers one and forgets the other.
    call the moved check before; the existing `{:error, :account_moved}` shape
    is preserved so current callers and flashes keep working.
 
+   **The follow paths are the one place the two rules differ.** A move is a
+   redirect, not a punishment: [ADR 0025](0025-account-migration.md)
+   deliberately lets a moved account keep *following* people, so the person
+   can carry their reading list to the account they moved to. A sanction has
+   no such exception. The gate therefore takes a documented `moved: :allow`
+   option, which only `create_local_follow/2` and `create_user_follow/3` pass
+   — one gate with one exception, rather than a second gate with a second
+   list of call sites. `AccountMigration.ensure_not_moved/1` survives for the
+   *target* side of a follow ("this account is followed at its new address"),
+   which is a different question from "may this account act", and the guard
+   test allows it only there.
+
 4. **What each kind does.**
    - **Warn** — a notice to the member and an audit entry. Nothing is refused,
      and no acknowledgement is demanded: a "you must accept this to post again"
@@ -129,13 +141,20 @@ posting path that remembers one and forgets the other.
    wired to a real check or removed. A listed permission that enforces nothing
    is a false statement about who can do what.
 
-9. **The member is always told** (P1-D4). `sanction_applied` and
-   `sanction_lifted` notices are delivered whatever the notification
-   preferences say, like account security notices, and carry what, why and
-   until when. The refusal a silenced member meets when they try to post says
-   the same thing, with the end time: a post that fails with a shrug is worse
-   than the sanction. Notice text is built from the row through Gettext; the
-   staff-written `reason` is rendered as data, never as markup.
+9. **The member is always told** (P1-D4), in three places, because a post that
+   fails with a shrug is worse than the sanction and a control that simply
+   vanishes explains nothing:
+
+   - `sanction_applied`, `sanction_lifted` and `sanction_ended` notices,
+     delivered whatever the notification preferences say, like account
+     security notices;
+   - the refusal they meet when they try to act, which names the restriction,
+     the reason and the end time;
+   - a banner on every page while the restriction stands, beside the existing
+     moved-account and data-export banners.
+
+   Notice text is built from the row through Gettext; the staff-written
+   `reason` is rendered as data, never as markup.
 
 10. **Refusing a pending registration is a ban with a reason, not a new
     status.** A refused account must not sign in, which is precisely what
@@ -161,10 +180,12 @@ posting path that remembers one and forgets the other.
     in a minute.
 
 13. **The gate's completeness is tested, not remembered.** Besides a refusal
-    test per interaction path, a guard test fails if `ensure_not_moved/1` is
-    called anywhere outside the gate, so a new posting path cannot quietly
-    enforce the old, narrower rule. This is the same tactic as the moderation
-    log's call-site test and `no_hotlink_test.exs`.
+    test per interaction path, a guard test walks the AST of every file in
+    `lib/` and fails if `ensure_not_moved/1` is *called* anywhere outside the
+    two files allowed to ask about the followed account, so a new posting path
+    cannot quietly enforce the old, narrower rule. A second guard fails if any
+    permission in the catalogue is never checked (decision 8). This is the same
+    tactic as the moderation log's call-site test and `no_hotlink_test.exs`.
 
 14. **What a user detail page may show.** Global moderators and admins see
     role, status, sanction history, reports by and against the account, recent

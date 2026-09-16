@@ -92,6 +92,26 @@
       </button>
     </div>
 
+    <form id="admin-users-role-form" phx-change="filter_role" class="flex-shrink-0">
+      <label for="admin-users-role-filter" class="admin-users-role-filter-label sr-only">
+        {gettext("Filter by role")}
+      </label>
+      <select
+        id="admin-users-role-filter"
+        name="role"
+        class="admin-users-role-filter select select-bordered select-sm"
+      >
+        <option value="" selected={is_nil(@role_filter)}>{gettext("All roles")}</option>
+        <option
+          :for={role <- @roles}
+          value={role.name}
+          selected={@role_filter == role.name}
+        >
+          {translate_role(role.name)}
+        </option>
+      </select>
+    </form>
+
     <form id="admin-users-search-form" phx-change="search" class="flex-shrink-0">
       <input
         id="admin-users-search-input"
@@ -287,9 +307,9 @@
     total_pages={@total_pages}
     path={~p"/admin/users"}
     params={
-      %{}
-      |> then(fn p -> if @status_filter, do: Map.put(p, "status", @status_filter), else: p end)
-      |> then(fn p -> if @search != "", do: Map.put(p, "search", @search), else: p end)
+      %{"status" => @status_filter, "role" => @role_filter, "search" => @search}
+      |> Enum.reject(fn {_key, value} -> value in [nil, ""] end)
+      |> Map.new()
     }
   />
 </div>

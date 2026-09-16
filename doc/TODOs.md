@@ -73,28 +73,19 @@ Blocking semantics are recorded in [ADR 0026](adr/0026-blocks-stop-interaction-l
   - [ ] Articles an author deletes keep their body in the row (and in `article_revisions`); only comments are wiped. Worth revisiting with revision retention.
 - **Accepted 2026-09-16:** a board moderator resolves, dismisses and deletes from `/moderation` end to end (`moderation_live_test.exs`); `moderation_test.exs` proves at the context level that another board's reports, account reports and DM reports are neither listed nor actionable; resolve, dismiss and both deletions are logged.
 
-### 1C — Sanctions short of a ban (M)
+### 1C — Sanctions short of a ban (M) — done, unreleased
 
-The model is [ADR 0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md) (proposed 2026-09-16): sanctions are rows in a `sanctions` table with an explicit end, active by the clock rather than by a sweep, and enforced by one gate (`Auth.ensure_can_interact/1`) that replaces `AccountMigration.ensure_not_moved/1` at every call site.
+The model is [ADR 0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md) (accepted 2026-09-16): sanctions are rows in a `sanctions` table with an explicit end, active by the clock rather than by a sweep, and enforced by one gate (`Auth.ensure_can_interact/1`) that replaced `AccountMigration.ensure_not_moved/1` at every call site.
 
-- [ ] **The table and the gate.** `sanctions` rows (kind, reason, who, when, `expires_at`, `lifted_*`, optional `report_id`), and `Auth.ensure_can_interact/1` replacing every call site of `AccountMigration.ensure_not_moved/1`, with a guard test that fails if the old gate is called anywhere else.
-- [ ] **Warn.** A notice to the user plus an audit entry. No restriction, and no acknowledgement to demand.
-- [ ] **Silence.**
-  - A silenced account can read, but cannot post, interact, invite or change its profile (bio, display name, avatar, links). Undoing an earlier like or boost, deleting its own content, reporting abuse and account security settings all stay open.
-  - Optional end date; active by the clock, so no sweep can hold it past its time.
-  - Existing content stays up.
-- [ ] **Suspend.**
-  - A suspended account cannot sign in until a set date (required). Refused in `authenticate_by_password/2` and re-checked in `AuthHooks`; sessions are revoked and exports and moves cancelled, like a ban (`Auth.Sessions`, `cancel_active_exports/2`, `cancel_active_moves/2`). Invite codes are left alone.
-  - Lifts by itself; the hourly `SessionCleaner` only sends the "it has ended" notice.
-- [ ] **Reject pending registrations**, with a reason — a ban on an account that is still `pending`, logged as `reject_user`, which a global moderator may do — and notify admins of new pending registrations.
-- [ ] **User detail page** (`/admin/users/:id`).
-  - Role, status and sanction history.
-  - Reports against the user and reports the user filed.
-  - Recent content, inviter and invitees (`invited_by_id`), recent login attempts.
-- [ ] **Role filter** on the users list (the context already supports it).
-- [ ] **Enforce the defined permissions.** Either check `moderator.mute_user`, `admin.manage_roles` and `admin.view_dashboard`, or remove them. Global moderators get the sanction tools P1-D3 grants them.
-- [ ] Every sanction is audited, and the user is told what it is, why and until when (always delivered, like account security notices).
-- **Accepted when:** a silenced or suspended user is refused on every posting or interaction path and on sign-in respectively (tests per path), and sanctions expire on schedule.
+- [x] **The table and the gate.** `sanctions` rows (kind, reason, who, when, `expires_at`, `lifted_*`, optional `report_id`), and `Auth.ensure_can_interact/1` at every posting and interaction path, with an AST guard test that fails if the old gate is called anywhere but the two files that ask about the *followed* account. Follows are the one place the rules differ: a moved account may still follow (ADR 0025), so those paths pass `moved: :allow`.
+- [x] **Warn.** A notice to the user plus an audit entry. No restriction, and no acknowledgement to demand.
+- [x] **Silence.** Read-only, including the public parts of the profile; undo, self-delete, reporting abuse, account security and narrowing `dm_access` stay open. Optional end date, active by the clock. Existing content stays up.
+- [x] **Suspend.** Refused in `authenticate_by_password/2`, re-checked in `AuthHooks` and `SessionController`, and treated as signed-out by `:optional_auth`. Sessions revoked, exports and moves cancelled; invite codes left alone. `SessionCleaner` only sends the "it has ended" notice.
+- [x] **Reject pending registrations**, with a reason — a ban on an account that is still `pending`, logged as `reject_user`, which a global moderator may do — and notify staff of new pending registrations.
+- [x] **User detail page** (`/admin/users/:id`): role, status, sanction history, reports both ways, recent content, inviter and invitees. IP addresses and sign-in attempts are admin-only.
+- [x] **Role filter** on the users list, carried in the URL alongside the status filter and search.
+- [x] **Enforce the defined permissions.** `moderator.sanction_user` added; `moderator.mute_user` and `admin.view_dashboard` removed; `admin.manage_roles` wired into `Auth.update_user_role/3`. A guard test fails if any catalogued permission is never checked.
+- [x] Every sanction is audited, and the member is told what it is, why and until when — an always-delivered notice, the refusal message, and a page-wide banner.
 
 ### 1D — Instance-level federation moderation (M)
 

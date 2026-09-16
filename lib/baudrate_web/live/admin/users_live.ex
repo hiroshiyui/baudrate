@@ -32,6 +32,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
        total_pages: 1,
        status_counts: status_counts,
        status_filter: nil,
+       role_filter: nil,
        search: "",
        roles: roles,
        ban_target: nil,
@@ -56,31 +57,47 @@ defmodule BaudrateWeb.Admin.UsersLive do
       end
 
     search = params["search"] || ""
+    role_filter = valid_role(socket, params["role"])
 
     {:noreply,
      socket
      |> assign(
        page: page,
        status_filter: status_filter,
+       role_filter: role_filter,
        search: search,
        selected_ids: MapSet.new()
      )
      |> reload_users()}
   end
 
+  # Only a role that actually exists reaches the query. An unknown one falls
+  # back to "all roles", exactly as an unknown `?status=` does: a typo in the
+  # URL should show the unfiltered list, not an empty one the operator has to
+  # work out the cause of.
+  defp valid_role(socket, name) when is_binary(name) and name != "" do
+    if Enum.any?(socket.assigns.roles, &(&1.name == name)), do: name, else: nil
+  end
+
+  defp valid_role(_socket, _name), do: nil
+
   @impl true
   def handle_event("filter", %{"status" => status}, socket) do
-    status_filter =
-      cond do
-        status == "" -> nil
-        status in @valid_statuses -> status
-        true -> nil
-      end
+    status_filter = if status in @valid_statuses, do: status, else: nil
 
     {:noreply,
      socket
      |> assign(:status_filter, status_filter)
-     |> push_patch(to: users_path(socket.assigns, status_filter, socket.assigns.search, 1))}
+     |> push_patch(to: users_path(socket.assigns, %{status: status_filter, page: 1}))}
+  end
+
+  def handle_event("filter_role", %{"role" => role}, socket) do
+    role_filter = valid_role(socket, role)
+
+    {:noreply,
+     socket
+     |> assign(:role_filter, role_filter)
+     |> push_patch(to: users_path(socket.assigns, %{role: role_filter, page: 1}))}
   end
 
   @impl true
@@ -88,7 +105,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
     {:noreply,
      socket
      |> assign(:search, term)
-     |> push_patch(to: users_path(socket.assigns, socket.assigns.status_filter, term, 1))}
+     |> push_patch(to: users_path(socket.assigns, %{search: term, page: 1}))}
   end
 
   @impl true
@@ -433,36 +450,48 @@ defmodule BaudrateWeb.Admin.UsersLive do
 
   defp reload_users(socket) do
     opts =
-      [page: socket.assigns.page]
-      |> then(fn opts ->
-        case socket.assigns.status_filter do
-          nil -> opts
-          status -> Keyword.put(opts, :status, status)
-        end
-      end)
-      |> then(fn opts ->
-        case socket.assigns.search do
-          "" -> opts
-          term -> Keyword.put(opts, :search, term)
-        end
-      end)
+      [
+        page: socket.assigns.page,
+        status: socket.assigns.status_filter,
+        role: socket.assigns.role_filter,
+        search: presence(socket.assigns.search)
+      ]
+      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
 
     %{users: users, page: page, total_pages: total_pages} = Auth.paginate_users(opts)
 
     assign(socket, users: users, page: page, total_pages: total_pages)
   end
 
-  defp users_path(_assigns, status_filter, search, page) do
+  # The current filters, with `overrides` applied. Keeping every filter in the
+  # URL means a filtered page can be linked to and survives a reload; changing
+  # one filter must not silently drop the others.
+  defp users_path(assigns, overrides) do
+    current = %{
+      status: assigns.status_filter,
+      role: assigns.role_filter,
+      search: presence(assigns.search),
+      page: assigns.page
+    }
+
     params =
-      %{}
-      |> then(fn p -> if status_filter, do: Map.put(p, "status", status_filter), else: p end)
-      |> then(fn p -> if search != "", do: Map.put(p, "search", search), else: p end)
-      |> then(fn p -> if page > 1, do: Map.put(p, "page", page), else: p end)
+      current
+      |> Map.merge(overrides)
+      |> Enum.reject(fn
+        {_key, nil} -> true
+        {:page, page} -> page <= 1
+        {_key, ""} -> true
+        _ -> false
+      end)
+      |> Map.new(fn {key, value} -> {to_string(key), to_string(value)} end)
 
     if params == %{},
       do: ~p"/admin/users",
       else: ~p"/admin/users" <> "?" <> URI.encode_query(params)
   end
+
+  defp presence(""), do: nil
+  defp presence(value), do: value
 
   defp reload_counts(socket) do
     assign(socket, :status_counts, Auth.count_users_by_status())

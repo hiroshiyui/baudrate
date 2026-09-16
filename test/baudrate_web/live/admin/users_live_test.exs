@@ -482,4 +482,53 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
       refute html =~ "bulk-ban-modal-title"
     end
   end
+
+  describe "the role filter" do
+    test "narrows the list to one role, and keeps the status filter", %{conn: conn} do
+      admin = setup_user("admin")
+      moderator = setup_user("moderator")
+      member = setup_user("user")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, html} = live(conn, ~p"/admin/users")
+      assert html =~ moderator.username
+      assert html =~ member.username
+
+      html =
+        lv
+        |> form("#admin-users-role-form", %{"role" => "moderator"})
+        |> render_change()
+
+      assert html =~ moderator.username
+      refute html =~ member.username
+    end
+
+    test "an unknown role falls back to the unfiltered list, as an unknown status does",
+         %{conn: conn} do
+      admin = setup_user("admin")
+      member = setup_user("user")
+      moderator = setup_user("moderator")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, html} = live(conn, ~p"/admin/users?role=wizard")
+
+      assert html =~ member.username
+      assert html =~ moderator.username
+      # And the select shows "all", not a role that does not exist.
+      assert has_element?(lv, "#admin-users-role-filter option[value=''][selected]")
+    end
+
+    test "changing the search keeps the role filter", %{conn: conn} do
+      admin = setup_user("admin")
+      moderator = setup_user("moderator")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, ~p"/admin/users?role=moderator")
+
+      lv |> form("#admin-users-search-form", %{"search" => "test"}) |> render_change()
+
+      assert_patched(lv, ~p"/admin/users?role=moderator&search=test")
+      assert render(lv) =~ moderator.username
+    end
+  end
 end

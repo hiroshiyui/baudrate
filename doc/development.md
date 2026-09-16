@@ -323,6 +323,7 @@ and never need to know about the internal split.
 | `Auth.Invites` | Invite-only registration logic, quota management, and admin-issued invites |
 | `Auth.Profiles` | User preference updates: display name, bio, signature, profile fields, avatar association, and notification settings |
 | `Auth.Moderation` | Local user moderation: banning, blocking remote actors/users, and muting interactions |
+| `Auth.Sanctions` | Warnings, silences and suspensions, refusing a pending registration, and `ensure_can_interact/1` — the one gate every posting and interaction path calls (ADR 0029) |
 
 ### Authentication Flow
 
@@ -1190,6 +1191,84 @@ Every action name must be listed in `Moderation.Log`'s `@valid_actions`,
 or the insert fails. Callers do not check the result, so `log_action/3` logs
 a refused entry as an error, and `test/baudrate/moderation/log_test.exs`
 walks every `log_action` call in `lib/` to reject unknown names.
+
+#### Sanctions short of a ban
+
+[ADR 0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md). Before this,
+the only thing staff could do to an account was ban it permanently: a first
+offence either went unanswered or ended the account.
+
+A sanction is a **row in `sanctions`**, not a `users.status` value — `status`
+keeps exactly `active | pending | banned`, because several checks in the
+codebase ask `status != "banned"` and would silently admit a value they had
+never heard of. A row also carries what a status cannot: an end, an author, a
+reason and a history. Rows are append-only; a sanction is lifted, never
+deleted.
+
+| Kind | What it does | End date |
+|------|--------------|----------|
+| `warn` | A notice and an audit entry. Nothing is refused, and no acknowledgement is demanded — a "accept this to post again" gate is a silence wearing a different hat | none |
+| `silence` | The account becomes read-only, including the parts of its profile other people read | optional |
+| `suspend` | The account cannot sign in; sessions are revoked and exports and moves cancelled, as for a ban. Invite codes are left alone: they expire in seven days by themselves | **required** |
+
+**Active is decided by the clock**, never by a sweep:
+`lifted_at IS NULL AND (expires_at IS NULL OR expires_at > now())`. No
+background job sets or clears a flag, so a failed hourly run can neither hold
+a member past their time nor lift one early. `SessionCleaner` only sends the
+"it has ended" notice.
+
+**One gate.** `Auth.ensure_can_interact/1` returns `:ok` or
+`{:error, :banned | :account_suspended | :account_silenced | :account_moved}`
+in a single query, and is what every context function calls before it lets an
+account create content or interact — articles, edits, comments, feed replies,
+likes, boosts, forwards, poll votes, follows, DMs, invites, and display name,
+bio, avatar, signature and profile fields. It replaced
+`AccountMigration.ensure_not_moved/1` at every call site, because two parallel
+gates mean two lists of call sites and one of them goes stale.
+`test/baudrate/auth/sanctions_gate_test.exs` walks the AST of `lib/` and fails
+if the old check is called anywhere but the two files that legitimately ask
+about the *followed* account.
+
+Deliberately still allowed to a silenced member: undoing an earlier like or
+boost, deleting their own content, **reporting abuse**, every account-security
+action, and narrowing `dm_access` — a sanction must not stop someone making
+their account safer. Existing content stays up: removal is a per-item decision
+made through the report queue, where it leaves evidence (P1-D6).
+
+Sanctions **stack forward only**. Several active rows are harmless: the
+account is restricted while any is active and the end shown is the furthest
+away, so issuing can only extend. To shorten one, lift it — there is no
+partial unique index, because "active" depends on `now()`.
+
+**Who may do what** is the `moderator.sanction_user` permission, so P1-D3 is
+configuration and not a hard-coded role name, plus two rules checked in `Auth`
+whatever the roles say: nobody sanctions themselves, and nobody sanctions an
+account whose role level is at or above their own. Without
+`admin.manage_users` the duration is capped at 30 days, measured server-side
+against `issued_at`. Every issue and lift goes through `Moderation.log_action/3`
+(`warn_user`, `silence_user`, `suspend_user`, `lift_sanction`, `reject_user`)
+and `RateLimits.check_sanction/1`.
+
+**The member is always told** (P1-D4), three ways: an always-delivered
+`sanction_applied` / `sanction_lifted` / `sanction_ended` notice, the refusal
+they meet when they try to act (`Helpers.refusal_message/3`), and a banner on
+every page while the restriction stands. A post that fails with a shrug is
+worse than the sanction, and a composer that simply vanishes explains nothing.
+
+**Refusing a pending registration** is a ban with a reason on an account that
+is still `pending`, logged as `reject_user`. Approving stays an admin decision
+(`admin.manage_users`); refusing needs only `moderator.sanction_user`, which is
+why `/admin/pending-users` is open to moderators. Registration that leaves an
+account pending notifies staff.
+
+**The user detail page** (`/admin/users/:id`) gathers the record a moderator
+needs before deciding about a person rather than a post: role, status, sanction
+history, reports by and against the account, recent content, inviter and
+invitees — with the warn / silence / suspend / lift actions beside it. **IP
+addresses and sign-in attempts are admin-only**, and are not fetched at all for
+a moderator.
+
+Sanctions are **local**: nothing is sent over ActivityPub, following P1-D1.
 
 **User-facing reports:** Authenticated users can report articles, comments,
 other users, feed items, direct messages they received, and remote accounts

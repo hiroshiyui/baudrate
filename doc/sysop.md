@@ -449,7 +449,8 @@ The `sysop` board is a protected system board:
 
 Immutable audit trail of all administrative actions:
 
-- User bans/unbans, role changes, approvals
+- User bans/unbans, role changes, approvals, refused registrations
+- Warnings, silences, suspensions and lifted restrictions
 - Report resolution/dismissal, and Flags sent to remote instances
 - Content deletions (articles, comments), removing an article from a board,
   pin/lock changes, and admins editing other users' articles
@@ -466,15 +467,59 @@ Before v1.18.2, pin/lock changes and bot actions were silently not recorded.
 
 Filterable by action type, paginated (25 per page).
 
+### Acting on an account
+
+Four things can be done to an account, in order of severity. All but a ban are
+rows in the `sanctions` table with an explicit end, so each one has an author,
+a reason and a date, and the account's whole history is one query on
+`/admin/users/:id`.
+
+| Action | Effect | Who | Duration |
+|--------|--------|-----|----------|
+| **Warn** | A notice to the member and a log entry. Nothing is refused | `moderator.sanction_user` | — |
+| **Silence** | Read-only: no posts, comments, likes, boosts, forwards, votes, follows, DMs, invites, or changes to the public parts of their profile | `moderator.sanction_user` | optional |
+| **Suspend** | Cannot sign in. Sessions are revoked and data exports and account moves cancelled. Invite codes are left alone — they expire in seven days | `moderator.sanction_user` | **required** |
+| **Ban** | Permanent | `admin.manage_users` | permanent |
+
+A global moderator may issue any of the three sanctions for **at most 30
+days**; an admin has no cap and can silence indefinitely. Nobody can sanction
+themselves, and nobody can sanction an account at or above their own role
+level, whatever the permissions are configured to be.
+
+**Restrictions end by the clock, not by a job.** A silence set to end on
+Friday stops on Friday even if the hourly cleanup has not run for a week; the
+cleanup only delivers the "it has ended" notice.
+
+**Issuing only ever extends.** Adding a second silence while one is active
+leaves the account restricted until the later of the two. To shorten or cancel
+one, **lift** it — which clears every active restriction of that kind and
+records who lifted it and why.
+
+**A sanction does not touch existing content.** Removing a post is a separate,
+per-item decision made from the report queue, where it leaves evidence.
+
+The member is always told: an in-app notice they cannot switch off, a message
+explaining the refusal when they try to act, and a banner on every page while
+the restriction stands.
+
+**Refusing a registration** (`/admin/pending-users`) records a ban with a
+reason on an account that never became active; it appears in the log as
+"Refuse Registration". Approving a registration is an admin decision;
+refusing one can be done by a global moderator.
+
 ### User Blocks & Mutes
 
-**Blocks** prevent all interaction and are communicated to remote instances via
-`Block` / `Undo(Block)` activities. Blocked users' content is hidden from
-article listings, comments, and search results.
+These are **member** tools, not staff ones.
 
-**Mutes** are a lighter, purely local action — hidden from the muter's view
-without preventing interaction or sending any federation activity. DM
-conversations with muted users are visually de-emphasized rather than hidden.
+**Blocks** stop interaction in both directions between the two accounts, on
+this site only. No `Block` activity is ever sent to remote instances — a block
+is a local decision and telling the other server gains nothing. Blocking
+removes follows in both directions. Content stays publicly visible: a block
+controls interaction, not visibility.
+
+**Mutes** are lighter still — content is hidden from the muter's view without
+preventing interaction. DM conversations with muted users are visually
+de-emphasized rather than hidden.
 
 Both blocks and mutes support local users and remote actors.
 
