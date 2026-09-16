@@ -34,7 +34,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
-| **2** | **Operability** | 2A–2H | **Next.** Data loss and blind operations are the biggest risks |
+| **2** | **Operability** | 2A–2H | **In progress.** Data loss and blind operations are the biggest risks |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
@@ -81,7 +81,7 @@ out by P1-D1.
 
 **Done when:**
 - production takes verified backups on a schedule, and a restore has been rehearsed;
-- a delivery or inbound backlog, a stalled worker or a full disk shows up in health checks and metrics;
+- a delivery or inbound backlog, a stalled worker or a full disk shows up in the detailed health check;
 - no federated activity is lost to a restart;
 - the production host no longer compiles releases;
 - a release can be rolled back with one command.
@@ -122,30 +122,31 @@ open:
 
 ### 2D — Observability (M)
 
+No metrics endpoint (P2-D1) and no error reporting service (P2-D2): the
+detailed health view and the logs are the whole of it.
+
 - [ ] **Structured logs:** an optional JSON log format, off by default.
-- [ ] **Metrics:** a Prometheus text endpoint on a localhost-only port (P2-D1). It exports request, LiveView, Repo, delivery queue, inbound queue, media cache and bot fetch metrics from the existing `BaudrateWeb.Telemetry` definitions.
 - [ ] **Detailed health:** `/health` stays public and minimal, and a localhost-only detail view reports:
   - delivery backlog and the age of the oldest job;
   - inbound backlog;
   - worker liveness (`DeliveryWorker`, `SessionCleaner`, `FeedWorker`);
   - free disk space under `shared/uploads`;
   - the last successful backup.
-- [ ] **Error reporting (P2-D2).**
-- **Accepted when:** each detail check fails in a test when its condition is broken, and the sysop guide shows how to scrape and alert on it.
+- **Accepted when:** each detail check fails in a test when its condition is broken, and the sysop guide shows how to poll it and alert on a failing check.
 
 ### 2E — Deploy safety (M)
 
-- [ ] **Build releases in CI** on a Debian 12 image when a tag is pushed, and attach the tarball to the GitHub release (P2-D3).
-- [ ] **Deploy the artifact.** The deploy playbook installs the attached release instead of compiling, and Rust, build-essential and git leave the production host.
+- [ ] **Build releases in CI** on a project-owned Debian 12 image (the ADR 0027 rules apply) when a tag is pushed, and attach the tarball to the GitHub release with a provenance attestation (P2-D3).
+- [ ] **Deploy the artifact.** The deploy playbook verifies the attestation, then installs the attached release instead of compiling; Rust, build-essential and git leave the production host.
 - [ ] **Rollback playbook** that points `current` back at the previous release. It refuses when that release is older than the newest applied migration, unless forced, and documents why.
 - [ ] **Security checks in CI:** Sobelow and `mix_audit` on every PR, and a release-build smoke test (start the release and hit `/health`).
 
 ### 2F — Retention (S)
 
-- [ ] Purge on a schedule, with periods set by P2-D4:
-  - old `feed_items` nobody has bookmarked or interacted with;
-  - old `announces`;
-  - soft-deleted articles and comments past the evidence window (P1-D6).
+- [ ] Purge on a schedule, with the periods set by P2-D4:
+  - `feed_items` nobody has bookmarked or interacted with, after 90 days;
+  - `announces`, after 180 days;
+  - soft-deleted articles and comments, once past the 90-day evidence window (P1-D6).
 - [ ] Postgres guidance in `doc/sysop.md`: autovacuum, `shared_buffers` and connection pool sizing for a single host.
 
 ### 2G — Key separation (M)
@@ -161,14 +162,14 @@ Needs an ADR.
 - [ ] Update the worker table in `doc/sysop.md` (add `FeedWorker` and every `SessionCleaner` job).
 - [ ] Fix the README clone URL and add `INSTALLATION_KEY` to its production environment list.
 - [ ] Remove the two link-preview images committed under `priv/static/uploads`.
-- [ ] **Production allows SSH login as root (key only).** `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets `PermitRootLogin yes`; sshd reads drop-ins first and keeps the first value, so the `common` role's `PermitRootLogin no` in `sshd_config` has no effect (`sshd -T` shows `permitrootlogin yes`, found 2026-09-15). Make the role manage the drop-ins and assert the effective value with `sshd -T`.
+- [ ] **Deferred by the operator; not part of 2H.** **Production allows SSH login as root (key only).** `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets `PermitRootLogin yes`; sshd reads drop-ins first and keeps the first value, so the `common` role's `PermitRootLogin no` in `sshd_config` has no effect (`sshd -T` shows `permitrootlogin yes`, found 2026-09-15). Make the role manage the drop-ins and assert the effective value with `sshd -T`.
 
-### Decisions needed
+### Decisions (made 2026-09-17)
 
-- [ ] **P2-D1. Metrics stack.** [A Prometheus text endpoint with no third-party service, scraped by whatever the operator runs.]
-- [ ] **P2-D2. Error reporting.** [None built in; errors go to logs and metrics. Sending errors to a third party would leak request data.]
-- [ ] **P2-D3. Where releases are built.** [In GitHub Actions on a Debian 12 image matching production; deploy the artifact.]
-- [ ] **P2-D4. Retention periods.** [Uninteracted feed items 90 days; announces 180 days; soft-deleted rows after the 90-day evidence window.]
+- **P2-D1. No metrics endpoint.** The localhost-only detailed health view (2D) is the one place an operator polls. A metrics endpoint was declined: it is more surface to secure for history this instance does not yet need.
+- **P2-D2. No error reporting service.** Errors go to the logs. Sending them to a third party would leak request data, and with no metrics endpoint there is no error counter either.
+- **P2-D3. Releases are built in CI** on a project-owned Debian 12 image matching production, attached to the GitHub release with a provenance attestation, and verified by the deploy before it installs them.
+- **P2-D4. Retention periods:** feed items nobody interacted with, 90 days; announces, 180 days; soft-deleted rows, after the 90-day evidence window.
 
 ---
 
