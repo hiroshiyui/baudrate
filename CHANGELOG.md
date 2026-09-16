@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.22.1] — 2026-09-16
+
+### Fixed
+
+- **Publishing a new version of the terms could silently do nothing.** The
+  "require every member to accept again" checkbox took two clicks to tick: the
+  first re-rendered the form, which patched the box back to unchecked. An admin
+  who ticked once, saw it clear and saved anyway published nothing — the terms
+  text changed, no new version was issued, nobody was asked to accept, and no
+  error said so. The checkbox now keeps its state, so one click is enough.
+- **The same checkbox stayed ticked after saving**, so the next ordinary edit —
+  a typo fix — would have published another version and asked every member to
+  accept again for nothing. The form is reset after a save.
+
 ## [1.22.0] — 2026-09-16
 
 Backups that can prove they are intact, and two policy documents written from
