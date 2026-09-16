@@ -134,6 +134,7 @@ defmodule Baudrate.Content.Search do
       )
       |> apply_search_operators(operators)
       |> Filters.apply_hidden_filters(hidden_uids, hidden_ap_ids)
+      |> Filters.exclude_remote_nonpublic()
 
     Pagination.paginate_query(base_query, pagination,
       result_key: :articles,
@@ -337,9 +338,13 @@ defmodule Baudrate.Content.Search do
           is_nil(c.deleted_at) and is_nil(a.deleted_at) and
             b.min_role_to_view in ^allowed_roles,
         where: ilike(c.body, ^pattern),
+        # A public remote reply to a followers-only remote article would
+        # otherwise surface that article's title through the preload.
+        where: is_nil(a.remote_actor_id) or a.visibility in ["public", "unlisted"],
         distinct: c.id
       )
       |> Filters.apply_hidden_filters(hidden_uids, hidden_ap_ids)
+      |> Filters.exclude_remote_nonpublic()
 
     Pagination.paginate_query(base_query, pagination,
       result_key: :comments,

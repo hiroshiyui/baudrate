@@ -191,11 +191,7 @@ defmodule Baudrate.Content.Comments do
   # comment ingested as followers-only/direct (rows that predate the inbox
   # refusing them) must not be shown there. Local comments are board content
   # and are always listed.
-  defp exclude_remote_nonpublic(query) do
-    from(c in query,
-      where: is_nil(c.remote_actor_id) or c.visibility in ["public", "unlisted"]
-    )
-  end
+  defp exclude_remote_nonpublic(query), do: Filters.exclude_remote_nonpublic(query)
 
   @doc """
   Returns a paginated list of comments for an article, preserving thread integrity.

@@ -93,6 +93,26 @@ defmodule Baudrate.Content.Filters do
   end
 
   @doc """
+  Excludes remote rows whose `visibility` is not `public` or `unlisted`.
+
+  Applies to any query whose first binding has `remote_actor_id` and
+  `visibility` — articles and comments both qualify. Local rows are never
+  affected: their changesets only ever accept `public` or `unlisted`.
+
+  Ingest deliberately keeps whatever addressing a peer sent (a mis-addressed
+  object loses visibility here rather than being dropped), so this is the only
+  thing standing between a `followers_only` or `direct` remote object and a
+  public listing. It is unconditional: the row-level gate
+  (`ArticleHelpers.user_can_view_article?/2`) refuses these to everyone
+  including admins, so there is no viewer for whom listing them is correct.
+  """
+  def exclude_remote_nonpublic(query) do
+    from(x in query,
+      where: is_nil(x.remote_actor_id) or x.visibility in ["public", "unlisted"]
+    )
+  end
+
+  @doc """
   Returns the role names that the given user is allowed to view.
   """
   def allowed_view_roles(nil), do: ["guest"]

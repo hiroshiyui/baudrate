@@ -120,6 +120,9 @@ defmodule Baudrate.Content.ReadTracking do
         left_join: br in BoardRead,
         on: br.board_id == ba.board_id and br.user_id == ^user_id,
         where: ba.board_id in ^all_desc_ids and is_nil(a.deleted_at),
+        # An article nobody can open must not light up a board's unread badge:
+        # it discloses that something arrived, and the badge could never clear.
+        where: is_nil(a.remote_actor_id) or a.visibility in ["public", "unlisted"],
         where:
           a.last_activity_at >
             fragment(

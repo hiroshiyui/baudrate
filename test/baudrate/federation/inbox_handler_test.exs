@@ -1943,6 +1943,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "name" => "Cross-posted Article",
           "content" => "<p>Body</p>",
           "attributedTo" => remote_actor.ap_id,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
           "audience" => [board1_uri]
         }
       }
@@ -1964,6 +1965,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "name" => "Cross-posted Article",
           "content" => "<p>Body</p>",
           "attributedTo" => remote_actor.ap_id,
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
           "audience" => [board2_uri]
         }
       }
@@ -1999,6 +2001,10 @@ defmodule Baudrate.Federation.InboxHandlerTest do
           "name" => "Same Board Twice",
           "content" => "<p>Body</p>",
           "attributedTo" => remote_actor.ap_id,
+          # Real Group posts carry the public collection alongside `audience`;
+          # without it the object derives as `direct` and is correctly kept off
+          # every listing, which is not what this test is about.
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
           "audience" => [board_uri]
         }
       }

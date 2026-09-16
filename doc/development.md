@@ -742,6 +742,28 @@ addressing, so offering "Followers only" or "Direct" there promised a privacy
 the site never enforced. Direct messages are the private channel. Remote rows
 keep all four values.
 
+**Remote rows that are not `public` or `unlisted` are never listed.** Ingest
+deliberately keeps whatever addressing a peer sent — a mis-addressed object
+loses visibility rather than being dropped — so the query filter is the only
+thing keeping it off a page, and there is no single chokepoint to put it in:
+`Filters.apply_article_hidden_filters/3` returns the query untouched for guests
+and for users with no blocks or mutes, so the check cannot live there.
+`Filters.exclude_remote_nonpublic/1` is the one definition, applied per query
+(board listings, search, tag pages, bookmarks, profile boosts, unread badges,
+comment lists), with join-aware equivalents where the row is not the first
+binding. It is unconditional, matching the row-level gates
+(`ArticleHelpers.user_can_view_article?/2`,
+`ActivityPubController.publicly_servable?/1`), which refuse these rows to
+everyone including admins.
+
+Before v1.21.0 only comments had this filter. A `followers_only` remote article
+delivered to a board it follows was listed with its title and digest on the
+board page, in search (including the unauthenticated `/ap/search` collection),
+on tag pages and in bookmarks — while its own page returned "not found" — and
+`/ap/boards/:slug/outbox` re-published it to the fediverse wrapped in an
+Announce stamped `as#Public`. `test/baudrate/content/remote_visibility_test.exs`
+is the acceptance gate; every new listing query belongs in it.
+
 ### Article Images
 
 Articles support up to 4 image attachments displayed as a responsive media

@@ -119,6 +119,7 @@ defmodule Baudrate.Content.Tags do
         distinct: a.id
       )
       |> Filters.apply_hidden_filters(hidden_uids, hidden_ap_ids)
+      |> Filters.exclude_remote_nonpublic()
 
     Pagination.paginate_query(base_query, pagination,
       result_key: :articles,

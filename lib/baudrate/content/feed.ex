@@ -203,6 +203,8 @@ defmodule Baudrate.Content.Feed do
         as: :article,
         on: a.id == b.article_id,
         where: b.user_id == ^user_id and is_nil(a.deleted_at),
+        # Boosting does not make someone else's followers-only post public.
+        where: is_nil(a.remote_actor_id) or a.visibility in ["public", "unlisted"],
         order_by: [desc: b.inserted_at, desc: b.id],
         limit: ^limit,
         select: {b.inserted_at, a}
@@ -232,6 +234,8 @@ defmodule Baudrate.Content.Feed do
         as: :article,
         on: a.id == c.article_id,
         where: b.user_id == ^user_id and is_nil(c.deleted_at) and is_nil(a.deleted_at),
+        where: is_nil(c.remote_actor_id) or c.visibility in ["public", "unlisted"],
+        where: is_nil(a.remote_actor_id) or a.visibility in ["public", "unlisted"],
         order_by: [desc: b.inserted_at, desc: b.id],
         limit: ^limit,
         select: {b.inserted_at, c}

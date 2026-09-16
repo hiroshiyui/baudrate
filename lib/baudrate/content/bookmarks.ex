@@ -224,7 +224,11 @@ defmodule Baudrate.Content.Bookmarks do
         where: b.user_id == ^user_id,
         where:
           (not is_nil(b.article_id) and is_nil(a.deleted_at)) or
-            (not is_nil(b.comment_id) and is_nil(c.deleted_at))
+            (not is_nil(b.comment_id) and is_nil(c.deleted_at)),
+        # A bookmark made while a remote row was public keeps rendering it, so
+        # the visibility gate has to be here and not only at creation time.
+        where: is_nil(a.remote_actor_id) or a.visibility in ["public", "unlisted"],
+        where: is_nil(c.remote_actor_id) or c.visibility in ["public", "unlisted"]
       )
 
     total = Repo.one(from(b in subquery(base_query), select: count()))
@@ -237,6 +241,8 @@ defmodule Baudrate.Content.Bookmarks do
         where:
           (not is_nil(b.article_id) and is_nil(a.deleted_at)) or
             (not is_nil(b.comment_id) and is_nil(c.deleted_at)),
+        where: is_nil(a.remote_actor_id) or a.visibility in ["public", "unlisted"],
+        where: is_nil(c.remote_actor_id) or c.visibility in ["public", "unlisted"],
         order_by: [desc: b.inserted_at, desc: b.id],
         offset: ^offset,
         limit: ^per_page,
