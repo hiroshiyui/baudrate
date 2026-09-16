@@ -45,6 +45,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0027](0027-ci-runs-in-a-pinned-attested-image.md) | CI runs in a digest-pinned, attested image built from verified inputs | Accepted |
 | [0028](0028-backups-are-complete-folders-with-count-based-retention.md) | Backups are complete folders with count-based retention, pulled off-host | Accepted |
 | [0029](0029-sanctions-are-rows-with-an-explicit-end.md) | Sanctions are rows with an explicit end, enforced by one gate | Accepted |
+| [0030](0030-domain-blocks-are-rows-and-hiding-is-reversible.md) | Domain blocks are rows, and blocking hides content instead of deleting it | Accepted |
 
 ## Writing a new ADR
 
