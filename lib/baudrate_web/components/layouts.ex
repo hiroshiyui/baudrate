@@ -399,11 +399,11 @@ defmodule BaudrateWeb.Layouts do
       class="layout-main flex-1 px-4 pt-6 pb-24 lg:pt-10 lg:pb-20 sm:px-6 lg:px-8 outline-none"
     >
       <div class={["mx-auto space-y-4", if(assigns[:wide_layout], do: "max-w-7xl", else: "max-w-6xl")]}>
-        <.data_export_banner :if={assigns[:active_data_export]} request={@active_data_export} />
-        <.account_move_banner :if={assigns[:active_account_move]} summary={@active_account_move} />
+        <.data_export_notice :if={assigns[:active_data_export]} request={@active_data_export} />
+        <.account_move_notice :if={assigns[:active_account_move]} summary={@active_account_move} />
         <.account_moved_notice :if={assigns[:current_user] && @current_user.moved_to} />
         <.sanction_notice :if={assigns[:active_sanction]} sanction={@active_sanction} />
-        <.terms_banner :if={assigns[:terms_pending]} />
+        <.terms_notice :if={assigns[:terms_pending]} />
         {@inner_content}
       </div>
     </main>
@@ -458,19 +458,19 @@ defmodule BaudrateWeb.Layouts do
   """
   attr :request, :map, required: true
 
-  def data_export_banner(assigns) do
+  def data_export_notice(assigns) do
     ~H"""
     <aside
-      id="data-export-banner"
-      class="data-export-banner alert alert-warning"
-      aria-labelledby="data-export-banner-heading"
+      id="data-export-notice"
+      class="data-export-notice alert alert-warning"
+      aria-labelledby="data-export-notice-heading"
     >
       <.icon name="hero-shield-exclamation" class="size-5 shrink-0" />
       <div class="min-w-0 space-y-1">
-        <h2 id="data-export-banner-heading" class="data-export-banner-heading font-semibold">
+        <h2 id="data-export-notice-heading" class="data-export-notice-heading font-semibold">
           {gettext("A data export of your account is in progress")}
         </h2>
-        <p id="data-export-banner-text" class="data-export-banner-text text-sm break-words">
+        <p id="data-export-notice-text" class="data-export-notice-text text-sm break-words">
           <%= if @request.requested_user_agent_family do %>
             {gettext("Requested %{time} from %{browser}. If this was not you, cancel it now.",
               time: format_datetime(@request.requested_at),
@@ -484,9 +484,9 @@ defmodule BaudrateWeb.Layouts do
         </p>
       </div>
       <.link
-        id="data-export-banner-link"
+        id="data-export-notice-link"
         navigate={~p"/profile/export"}
-        class="data-export-banner-link btn btn-sm"
+        class="data-export-notice-link btn btn-sm"
       >
         {gettext("Review")}
       </.link>
@@ -504,19 +504,19 @@ defmodule BaudrateWeb.Layouts do
   """
   attr :summary, :map, required: true
 
-  def account_move_banner(assigns) do
+  def account_move_notice(assigns) do
     ~H"""
     <aside
-      id="account-move-banner"
-      class="account-move-banner alert alert-warning"
-      aria-labelledby="account-move-banner-heading"
+      id="account-move-notice"
+      class="account-move-notice alert alert-warning"
+      aria-labelledby="account-move-notice-heading"
     >
       <.icon name="hero-shield-exclamation" class="size-5 shrink-0" />
       <div class="min-w-0 space-y-1">
-        <h2 id="account-move-banner-heading" class="account-move-banner-heading font-semibold">
+        <h2 id="account-move-notice-heading" class="account-move-notice-heading font-semibold">
           {gettext("Your account is about to move to %{account}", account: @summary.label)}
         </h2>
-        <p id="account-move-banner-text" class="account-move-banner-text text-sm break-words">
+        <p id="account-move-notice-text" class="account-move-notice-text text-sm break-words">
           <%= if @summary.move.requested_user_agent_family do %>
             {gettext(
               "Requested %{time} from %{browser}. Your followers will be moved after %{send_time}. If this was not you, cancel it now.",
@@ -534,9 +534,9 @@ defmodule BaudrateWeb.Layouts do
         </p>
       </div>
       <.link
-        id="account-move-banner-link"
+        id="account-move-notice-link"
         navigate={~p"/profile/move"}
-        class="account-move-banner-link btn btn-sm"
+        class="account-move-notice-link btn btn-sm"
       >
         {gettext("Review")}
       </.link>
@@ -554,23 +554,23 @@ defmodule BaudrateWeb.Layouts do
   on the banner itself would let someone agree to a document without the page
   ever showing it to them.
   """
-  def terms_banner(assigns) do
+  def terms_notice(assigns) do
     ~H"""
     <aside
-      id="terms-banner"
-      class="terms-banner alert alert-warning"
-      aria-labelledby="terms-banner-heading"
+      id="terms-notice"
+      class="terms-notice alert alert-warning"
+      aria-labelledby="terms-notice-heading"
     >
       <.icon name="hero-document-text" class="size-5 shrink-0" />
       <div class="min-w-0 space-y-1">
-        <h2 id="terms-banner-heading" class="terms-banner-heading font-semibold">
+        <h2 id="terms-notice-heading" class="terms-notice-heading font-semibold">
           {gettext("The terms of service have changed")}
         </h2>
-        <p id="terms-banner-text" class="terms-banner-text text-sm break-words">
+        <p id="terms-notice-text" class="terms-notice-text text-sm break-words">
           {gettext("You can keep reading, but posting is paused until you accept them.")}
         </p>
       </div>
-      <.link id="terms-banner-link" navigate={~p"/terms"} class="terms-banner-link btn btn-sm">
+      <.link id="terms-notice-link" navigate={~p"/terms"} class="terms-notice-link btn btn-sm">
         {gettext("Review")}
       </.link>
     </aside>

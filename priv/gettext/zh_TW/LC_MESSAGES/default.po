@@ -3629,7 +3629,7 @@ msgstr "查看原文"
 #: lib/baudrate_web/live/feed_live.html.heex:364
 #, elixir-autogen, elixir-format
 msgid "Your feed is empty."
-msgstr "你的動態是空的。"
+msgstr "您的動態是空的。"
 
 #: lib/baudrate_web/live/search_live.ex:271
 #: lib/baudrate_web/live/user_profile_live.ex:146
@@ -3878,7 +3878,7 @@ msgstr "儲存顯示名稱"
 #: lib/baudrate_web/live/profile_live.html.heex:142
 #, elixir-autogen, elixir-format
 msgid "Your display name (max 64 characters)"
-msgstr "你的顯示名稱（最多 64 個字元）"
+msgstr "您的顯示名稱（最多 64 個字元）"
 
 #: lib/baudrate_web/live/feed_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -4727,7 +4727,7 @@ msgstr "無法對自己的留言按讚。"
 #: lib/baudrate_web/helpers.ex:349
 #, elixir-autogen, elixir-format
 msgid "liked your comment"
-msgstr "對你的留言按了讚"
+msgstr "對您的留言按了讚"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:231
 #, elixir-autogen, elixir-format
@@ -5066,12 +5066,12 @@ msgstr "無法轉發自己的留言。"
 #: lib/baudrate_web/helpers.ex:350
 #, elixir-autogen, elixir-format
 msgid "boosted your article"
-msgstr "轉發了你的文章"
+msgstr "轉發了您的文章"
 
 #: lib/baudrate_web/helpers.ex:351
 #, elixir-autogen, elixir-format
 msgid "boosted your comment"
-msgstr "轉發了你的留言"
+msgstr "轉發了您的留言"
 
 #: lib/baudrate_web/live/article_live.ex:201
 #, elixir-autogen, elixir-format
@@ -6109,7 +6109,7 @@ msgstr "檢視版本 #%{number}"
 #: lib/baudrate_web/live/article_live.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "Your vote"
-msgstr "你的投票"
+msgstr "您的投票"
 
 #: lib/baudrate_web/live/account_migration_live.html.heex:159
 #: lib/baudrate_web/live/profile_live.html.heex:454
@@ -8308,7 +8308,7 @@ msgstr "目前要求成員接受的是第 %{version} 版。"
 #: lib/baudrate_web/live/policy_live.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "Posting and interacting are paused until you accept. Reading is not."
-msgstr "在你接受之前，發文與互動會暫停；閱讀不受影響。"
+msgstr "在您接受之前，發文與互動會暫停；閱讀不受影響。"
 
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:99
 #, elixir-autogen, elixir-format
@@ -8323,7 +8323,7 @@ msgstr "要求每位成員重新接受。若只是修正錯字或調整措辭，
 #: lib/baudrate_web/live/policy_live.ex:52
 #, elixir-autogen, elixir-format
 msgid "Thank you. You can post again."
-msgstr "感謝你。你可以重新發文了。"
+msgstr "感謝您。您可以重新發文了。"
 
 #: lib/baudrate_web/live/policy_live.ex:57
 #, elixir-autogen, elixir-format
@@ -8348,12 +8348,12 @@ msgstr "服務條款已變更"
 #: lib/baudrate_web/live/policy_live.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "These terms have changed since you accepted them"
-msgstr "自你上次接受之後，這些條款已經變更"
+msgstr "自您上次接受之後，這些條款已經變更"
 
 #: lib/baudrate_web/components/layouts.ex:570
 #, elixir-autogen, elixir-format
 msgid "You can keep reading, but posting is paused until you accept them."
-msgstr "你仍然可以閱讀，但在你接受之前發文會暫停。"
+msgstr "您仍然可以閱讀，但在您接受之前發文會暫停。"
 
 #: lib/baudrate_web/components/core_components.ex:858
 #: lib/baudrate_web/live/admin/rules_live.html.heex:128

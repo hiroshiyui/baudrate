@@ -152,8 +152,8 @@ defmodule BaudrateWeb.PolicyLiveTest do
 
       {:ok, lv, _html} = live(conn, "/terms")
 
-      refute has_element?(lv, "#terms-banner")
-      refute has_element?(lv, "#policy-accept")
+      refute has_element?(lv, "#terms-notice")
+      refute has_element?(lv, "#terms-agreement")
     end
 
     test "is not shown to a guest", %{conn: conn} do
@@ -161,7 +161,7 @@ defmodule BaudrateWeb.PolicyLiveTest do
 
       {:ok, lv, _html} = live(conn, "/terms")
 
-      refute has_element?(lv, "#terms-banner")
+      refute has_element?(lv, "#terms-notice")
     end
 
     test "appears on every page once a new version is published", %{conn: conn} do
@@ -170,8 +170,8 @@ defmodule BaudrateWeb.PolicyLiveTest do
       conn = log_in_user(conn, user)
 
       {:ok, home, _html} = live(conn, "/")
-      assert has_element?(home, "#terms-banner")
-      assert has_element?(home, "#terms-banner-link")
+      assert has_element?(home, "#terms-notice")
+      assert has_element?(home, "#terms-notice-link")
     end
 
     test "accepting on /terms clears it, and posting works again", %{conn: conn} do
@@ -180,13 +180,13 @@ defmodule BaudrateWeb.PolicyLiveTest do
       conn = log_in_user(conn, user)
 
       {:ok, lv, _html} = live(conn, "/terms")
-      assert has_element?(lv, "#policy-accept-button")
+      assert has_element?(lv, "#terms-agreement-button")
 
-      html = lv |> element("#policy-accept-button") |> render_click()
+      html = lv |> element("#terms-agreement-button") |> render_click()
 
       assert html =~ "You can post again"
-      refute has_element?(lv, "#policy-accept")
-      refute has_element?(lv, "#terms-banner")
+      refute has_element?(lv, "#terms-agreement")
+      refute has_element?(lv, "#terms-notice")
       assert Baudrate.Auth.ensure_can_interact(Repo.reload(user)) == :ok
     end
 
@@ -214,8 +214,8 @@ defmodule BaudrateWeb.PolicyLiveTest do
       {:ok, lv, _html} = live(conn, "/rules")
 
       # The banner follows them everywhere; accepting happens where the text is.
-      assert has_element?(lv, "#terms-banner")
-      refute has_element?(lv, "#policy-accept")
+      assert has_element?(lv, "#terms-notice")
+      refute has_element?(lv, "#terms-agreement")
     end
   end
 

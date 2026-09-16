@@ -92,11 +92,11 @@ defmodule BaudrateWeb.DataExportLiveTest do
     {:ok, _} = DataPortability.request_export(user, creds(secret), ip_address: "203.0.113.9")
 
     {:ok, lv, _html} = live(conn, "/profile")
-    assert has_element?(lv, "#data-export-banner")
-    assert has_element?(lv, "#data-export-banner-link[href='/profile/export']")
+    assert has_element?(lv, "#data-export-notice")
+    assert has_element?(lv, "#data-export-notice-link[href='/profile/export']")
 
     {:ok, lv, _html} = live(conn, "/notifications")
-    assert has_element?(lv, "#data-export-banner")
+    assert has_element?(lv, "#data-export-notice")
   end
 
   test "cancelling removes the request and the banner", %{conn: conn} do
@@ -114,7 +114,7 @@ defmodule BaudrateWeb.DataExportLiveTest do
     assert has_element?(lv, "#data-export-history-#{request.id}", "Cancelled")
 
     {:ok, lv, _html} = live(conn, "/profile")
-    refute has_element?(lv, "#data-export-banner")
+    refute has_element?(lv, "#data-export-notice")
   end
 
   test "cancel and sign out everywhere else revokes other sessions", %{conn: conn} do

@@ -178,17 +178,17 @@ defmodule BaudrateWeb.AccountMigrationLiveTest do
       render_async(lv, 5_000)
 
       assert has_element?(lv, "#account-move-pending-target", "@me@new.example")
-      assert has_element?(lv, "#account-move-banner", "@me@new.example")
+      assert has_element?(lv, "#account-move-notice", "@me@new.example")
       assert %{status: "pending"} = move = AccountMigration.active_move(user.id)
 
       # Every other page shows the banner too.
       {:ok, other, _html} = live(conn, "/profile")
-      assert has_element?(other, "#account-move-banner-link[href='/profile/move']")
+      assert has_element?(other, "#account-move-notice-link[href='/profile/move']")
 
       lv |> element("#account-move-cancel") |> render_click()
 
       refute has_element?(lv, "#account-move-pending")
-      refute has_element?(lv, "#account-move-banner")
+      refute has_element?(lv, "#account-move-notice")
       assert %{status: "cancelled"} = Repo.reload!(move)
       assert has_element?(lv, "#account-move-history-#{move.id}", "Cancelled")
     end

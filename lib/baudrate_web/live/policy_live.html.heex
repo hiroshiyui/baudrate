@@ -47,20 +47,20 @@
   member who actually owes an acceptance (P1-D8). --%>
   <section
     :if={@policy == :terms && @body && assigns[:terms_pending]}
-    id="policy-accept"
-    class="policy-accept card bg-base-200 shadow-sm"
-    aria-labelledby="policy-accept-heading"
+    id="terms-agreement"
+    class="terms-agreement card bg-base-200 shadow-sm"
+    aria-labelledby="terms-agreement-heading"
   >
     <div class="card-body">
-      <h2 id="policy-accept-heading" class="policy-accept-heading card-title text-base">
+      <h2 id="terms-agreement-heading" class="terms-agreement-heading card-title text-base">
         {gettext("These terms have changed since you accepted them")}
       </h2>
-      <p id="policy-accept-text" class="policy-accept-text text-sm opacity-80">
+      <p id="terms-agreement-text" class="terms-agreement-text text-sm opacity-80">
         {gettext("Posting and interacting are paused until you accept. Reading is not.")}
       </p>
       <div class="card-actions">
         <.button
-          id="policy-accept-button"
+          id="terms-agreement-button"
           variant="primary"
           phx-click="accept_terms"
           phx-disable-with={gettext("Saving...")}
