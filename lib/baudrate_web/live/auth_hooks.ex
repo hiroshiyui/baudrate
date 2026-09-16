@@ -91,6 +91,9 @@ defmodule BaudrateWeb.AuthHooks do
                   :active_account_move,
                   Baudrate.AccountMigration.active_move_summary(user.id)
                 )
+                # A restriction the member is under, so the banner can say
+                # what stands and until when (ADR 0029).
+                |> assign(:active_sanction, List.first(Auth.active_sanctions(user)))
                 |> MarkdownPreviewHook.attach()
                 |> AutocompleteSuggestHook.attach()
                 |> UnreadDmCountHook.attach(user)
@@ -115,7 +118,9 @@ defmodule BaudrateWeb.AuthHooks do
     if session_token do
       case Auth.get_user_by_session_token(session_token) do
         {:ok, user} ->
-          if user.status == "banned" do
+          # A suspended account is signed out everywhere, not just kept off
+          # the authenticated pages: it browses as a guest would (ADR 0029).
+          if user.status == "banned" or suspended?(user) do
             {:cont, socket |> assign(:current_user, nil) |> assign(:locale, locale)}
           else
             locale = resolve_user_locale(user)
@@ -136,6 +141,9 @@ defmodule BaudrateWeb.AuthHooks do
                 :active_account_move,
                 Baudrate.AccountMigration.active_move_summary(user.id)
               )
+              # A restriction the member is under, so the banner can say what
+              # stands and until when (ADR 0029).
+              |> assign(:active_sanction, List.first(Auth.active_sanctions(user)))
               |> MarkdownPreviewHook.attach()
               |> AutocompleteSuggestHook.attach()
               |> UnreadDmCountHook.attach(user)

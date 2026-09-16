@@ -67,15 +67,21 @@ defmodule BaudrateWeb.InteractionHelpers do
           {:error, ^self_error} ->
             {:noreply, put_flash(socket, :error, opts[:self_message])}
 
-          {:error, :account_moved} ->
-            {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
-
           {:error, :blocked} ->
             {:noreply,
              put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
 
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, opts[:fail_message])}
+          {:error, reason} ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               BaudrateWeb.Helpers.refusal_message(
+                 reason,
+                 socket.assigns[:current_user],
+                 opts[:fail_message]
+               )
+             )}
         end
     end
   end
@@ -112,15 +118,21 @@ defmodule BaudrateWeb.InteractionHelpers do
 
             {:noreply, assign(socket, ids_assign, ids)}
 
-          {:error, :account_moved} ->
-            {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
-
           {:error, :blocked} ->
             {:noreply,
              put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
 
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, fail_message)}
+          {:error, reason} ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               BaudrateWeb.Helpers.refusal_message(
+                 reason,
+                 socket.assigns[:current_user],
+                 fail_message
+               )
+             )}
         end
     end
   end

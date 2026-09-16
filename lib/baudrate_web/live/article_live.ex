@@ -315,14 +315,12 @@ defmodule BaudrateWeb.ArticleLive do
       {:error, :self_like} ->
         {:noreply, put_flash(socket, :error, gettext("You cannot like your own article."))}
 
-      {:error, :account_moved} ->
-        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
-
       {:error, :blocked} ->
         {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to toggle like."))}
+      {:error, reason} ->
+        {:noreply,
+         put_flash(socket, :error, refusal(socket, reason, gettext("Failed to toggle like.")))}
     end
   end
 
@@ -340,14 +338,12 @@ defmodule BaudrateWeb.ArticleLive do
       {:error, :self_boost} ->
         {:noreply, put_flash(socket, :error, gettext("You cannot boost your own article."))}
 
-      {:error, :account_moved} ->
-        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
-
       {:error, :blocked} ->
         {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to toggle boost."))}
+      {:error, reason} ->
+        {:noreply,
+         put_flash(socket, :error, refusal(socket, reason, gettext("Failed to toggle boost.")))}
     end
   end
 
@@ -625,11 +621,9 @@ defmodule BaudrateWeb.ArticleLive do
            |> assign(:poll_closed, true)
            |> put_flash(:error, gettext("This poll has closed."))}
 
-        {:error, :account_moved} ->
-          {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
-
-        {:error, _reason} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to record vote."))}
+        {:error, reason} ->
+          {:noreply,
+           put_flash(socket, :error, refusal(socket, reason, gettext("Failed to record vote.")))}
       end
     end
   end
@@ -952,14 +946,15 @@ defmodule BaudrateWeb.ArticleLive do
          |> assign(:uploaded_comment_images, [])
          |> put_flash(:info, gettext("Comment posted."))}
 
-      {:error, :account_moved} ->
-        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
-
       {:error, :blocked} ->
         {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
 
-      {:error, changeset} ->
+      {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :comment_form, to_form(changeset, as: :comment))}
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(socket, :error, refusal(socket, reason, gettext("Failed to post comment.")))}
     end
   end
 
@@ -1107,5 +1102,11 @@ defmodule BaudrateWeb.ArticleLive do
     if Enum.any?(boards, &Board.federated?/1) do
       article.ap_id || Federation.actor_uri(:article, article.slug)
     end
+  end
+
+  # A member refused by the interaction gate is told which restriction stands
+  # and until when; anything else keeps the caller's own message (ADR 0029).
+  defp refusal(socket, reason, fallback) do
+    BaudrateWeb.Helpers.refusal_message(reason, socket.assigns[:current_user], fallback)
   end
 end

@@ -120,6 +120,9 @@ defmodule BaudrateWeb.UserProfileLive do
             {:error, :self_follow} ->
               {:noreply, put_flash(socket, :error, gettext("You cannot follow yourself."))}
 
+            # This is the *followed* account: a moved follower may still
+            # follow people (ADR 0025), so `:account_moved` here can only mean
+            # the target moved.
             {:error, :account_moved} ->
               {:noreply,
                put_flash(
@@ -132,8 +135,17 @@ defmodule BaudrateWeb.UserProfileLive do
               {:noreply,
                put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
 
-            {:error, _} ->
-              {:noreply, put_flash(socket, :error, gettext("Already following this user."))}
+            {:error, reason} ->
+              {:noreply,
+               put_flash(
+                 socket,
+                 :error,
+                 BaudrateWeb.Helpers.refusal_message(
+                   reason,
+                   socket.assigns[:current_user],
+                   gettext("Already following this user.")
+                 )
+               )}
           end
       end
     else

@@ -452,6 +452,22 @@ defmodule BaudrateWeb.Helpers do
   def blocked_interaction_message,
     do: gettext("You cannot interact with this account.")
 
+  # Everything `Auth.ensure_can_interact/1` can refuse with. Kept in one place
+  # so a LiveView cannot handle three of the four and shrug at the fourth.
+  @gate_refusals [:account_moved, :account_silenced, :account_suspended, :banned]
+
+  @doc """
+  Flash text for a refused action: the gate's own explanation when the gate
+  refused it (ADR 0029), and `fallback` for anything else.
+
+  Call it from the `{:error, reason}` catch-all of an interaction handler.
+  A member told only "that did not work" has no way to find out that they are
+  silenced, or until when.
+  """
+  def refusal_message(reason, user, fallback) do
+    if reason in @gate_refusals, do: interaction_refused_message(reason, user), else: fallback
+  end
+
   @doc """
   Flash text for an interaction the gate refused (ADR 0029).
 

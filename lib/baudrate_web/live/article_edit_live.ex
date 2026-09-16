@@ -138,14 +138,12 @@ defmodule BaudrateWeb.ArticleEditLive do
          |> put_flash(:info, gettext("Article updated successfully."))
          |> redirect(to: ~p"/articles/#{updated_article.slug}")}
 
-      {:error, :account_moved} ->
-        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
-
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset, as: :article))}
 
-      {:error, _reason} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to update article."))}
+      {:error, reason} ->
+        {:noreply,
+         put_flash(socket, :error, refusal(socket, reason, gettext("Failed to update article.")))}
     end
   end
 
@@ -184,4 +182,10 @@ defmodule BaudrateWeb.ArticleEditLive do
 
   defp upload_error_to_string(err),
     do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "8 MB", max_files: 4)
+
+  # A member refused by the interaction gate is told which restriction stands
+  # and until when; anything else keeps the caller's own message (ADR 0029).
+  defp refusal(socket, reason, fallback) do
+    BaudrateWeb.Helpers.refusal_message(reason, socket.assigns[:current_user], fallback)
+  end
 end

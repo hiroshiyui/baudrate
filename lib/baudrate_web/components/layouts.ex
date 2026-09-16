@@ -394,6 +394,7 @@ defmodule BaudrateWeb.Layouts do
         <.data_export_banner :if={assigns[:active_data_export]} request={@active_data_export} />
         <.account_move_banner :if={assigns[:active_account_move]} summary={@active_account_move} />
         <.account_moved_notice :if={assigns[:current_user] && @current_user.moved_to} />
+        <.sanction_notice :if={assigns[:active_sanction]} sanction={@active_sanction} />
         {@inner_content}
       </div>
     </main>
@@ -537,6 +538,43 @@ defmodule BaudrateWeb.Layouts do
       >
         {gettext("Review")}
       </.link>
+    </aside>
+    """
+  end
+
+  @doc """
+  Notice on every page for a member under an active restriction (ADR 0029).
+
+  A silenced member finds the composer simply gone, and a control that
+  vanishes explains nothing. The notice says which restriction stands, the
+  staff-written reason, and when it ends — the same thing the always-delivered
+  notification said, where they will actually be looking.
+  """
+  attr :sanction, :map, required: true
+
+  def sanction_notice(assigns) do
+    ~H"""
+    <aside
+      id="sanction-notice"
+      class="sanction-notice alert alert-warning"
+      aria-labelledby="sanction-notice-text"
+    >
+      <.icon name="hero-exclamation-triangle" class="size-5 shrink-0" />
+      <p id="sanction-notice-text" class="sanction-notice-text min-w-0 text-sm break-words">
+        <span class="sanction-notice-kind font-semibold">
+          <%= if @sanction.kind == "suspend" do %>
+            {gettext("Your account is suspended.")}
+          <% else %>
+            {gettext("Your account is silenced and cannot post.")}
+          <% end %>
+        </span>
+        <span :if={@sanction.reason} class="sanction-notice-reason">
+          {gettext("Reason: %{reason}", reason: @sanction.reason)}
+        </span>
+        <span :if={@sanction.expires_at} class="sanction-notice-until">
+          {gettext("It ends %{at}.", at: BaudrateWeb.Helpers.format_datetime(@sanction.expires_at))}
+        </span>
+      </p>
     </aside>
     """
   end

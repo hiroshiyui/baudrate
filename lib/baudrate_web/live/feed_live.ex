@@ -633,14 +633,12 @@ defmodule BaudrateWeb.FeedLive do
       {:error, :not_found} ->
         {:noreply, put_flash(socket, :error, gettext("Feed item not found."))}
 
-      {:error, :account_moved} ->
-        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
-
       {:error, :blocked} ->
         {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.blocked_interaction_message())}
 
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to send reply."))}
+      {:error, reason} ->
+        {:noreply,
+         put_flash(socket, :error, refusal(socket, reason, gettext("Failed to send reply.")))}
     end
   end
 
@@ -718,8 +716,9 @@ defmodule BaudrateWeb.FeedLive do
          )
          |> put_flash(:error, format_poll_errors(changeset))}
 
-      {:error, :account, :account_moved, _} ->
-        {:noreply, put_flash(socket, :error, BaudrateWeb.Helpers.account_moved_message())}
+      {:error, :account, reason, _} ->
+        {:noreply,
+         put_flash(socket, :error, refusal(socket, reason, gettext("Failed to create article.")))}
 
       {:error, _, _, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to create article."))}
@@ -924,4 +923,10 @@ defmodule BaudrateWeb.FeedLive do
 
   defp upload_error_to_string(err),
     do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "5 MB", max_files: 4)
+
+  # A member refused by the interaction gate is told which restriction stands
+  # and until when; anything else keeps the caller's own message (ADR 0029).
+  defp refusal(socket, reason, fallback) do
+    BaudrateWeb.Helpers.refusal_message(reason, socket.assigns[:current_user], fallback)
+  end
 end
