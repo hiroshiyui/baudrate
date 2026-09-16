@@ -57,11 +57,11 @@ Each phase settles its decisions and gets its own implementation plan before wor
 
 Work happens in five stages, each shipped and released on its own, in this order. Sizes are rough (S ≈ a day, M ≈ a few days, L ≈ a week).
 
-### 1A — Member self-protection (S) — done, unreleased
+### 1A — Member self-protection (S) — released in v1.19.0
 
-Shipped on `current`; see "Recently completed". Blocking semantics are recorded in [ADR 0026](adr/0026-blocks-stop-interaction-locally.md).
+Blocking semantics are recorded in [ADR 0026](adr/0026-blocks-stop-interaction-locally.md).
 
-### 1B — A report queue that works, including for board moderators (L) — done, unreleased
+### 1B — A report queue that works, including for board moderators (L) — released in v1.20.0
 
 - [x] **Queue basics** (2026-09-16): `Moderation.paginate_reports/1` (20 a page, status and page in the URL), links to the reported content, account or actor, the full reported text, `other_open_report_counts/1` next to each report, and a required reason category (P1-D9) on every report made on this site.
 - [x] **Scoped queue for board moderators** (2026-09-16): `/moderation` (`ModerationLive`), scoped by `Content.moderated_board_ids/1`, linked from each board they moderate, with every action re-checking `Moderation.report_in_boards?/2` and the delete permission.
