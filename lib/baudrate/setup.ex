@@ -320,6 +320,54 @@ defmodule Baudrate.Setup do
     set_setting("eua", text)
   end
 
+  # The public policy documents, as `live_action` => settings key. The terms
+  # keep the historical `"eua"` key: renaming it would orphan the text every
+  # existing instance has already written.
+  @policy_keys %{terms: "eua", rules: "rules", privacy: "privacy_policy"}
+
+  @doc """
+  Returns the names of the public policy documents, in the order they are
+  listed in the footer and the admin editor.
+  """
+  @spec policy_names() :: [atom()]
+  def policy_names, do: [:terms, :rules, :privacy]
+
+  @doc """
+  Returns one public policy document as markdown, or `nil` when the admin has
+  not written it yet. `BaudrateWeb.PolicyLive` renders the three of them.
+  """
+  @spec get_policy(atom()) :: String.t() | nil
+  def get_policy(name) when is_map_key(@policy_keys, name) do
+    get_setting(Map.fetch!(@policy_keys, name))
+  end
+
+  @doc """
+  Returns the policy documents an admin has actually written.
+
+  The footer links these and only these: a link to a page that says the
+  document has not been published yet is worse than no link, and on a fresh
+  instance all three are unwritten.
+  """
+  @spec published_policies() :: [atom()]
+  def published_policies do
+    Enum.filter(policy_names(), fn name ->
+      case get_policy(name) do
+        nil -> false
+        text -> String.trim(text) != ""
+      end
+    end)
+  end
+
+  @doc """
+  Saves one public policy document. The terms have their own writer
+  (`update_eua/1`) because publishing them can also require every member to
+  accept again; the other two are plain documents.
+  """
+  @spec update_policy(atom(), String.t()) :: {:ok, Setting.t()} | {:error, Ecto.Changeset.t()}
+  def update_policy(name, text) when name in [:rules, :privacy] and is_binary(text) do
+    set_setting(Map.fetch!(@policy_keys, name), text)
+  end
+
   @doc """
   Returns true if the setup wizard has been completed.
   """

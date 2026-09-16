@@ -206,4 +206,65 @@
       </.form>
     </div>
   </div>
+
+  <div id="rules-card" class="admin-settings-card card bg-base-200 shadow-sm">
+    <div class="card-body">
+      <h2 id="admin-settings-rules-heading" class="admin-settings-rules-heading card-title">
+        {gettext("Site Rules")}
+      </h2>
+      <p class="admin-settings-rules-hint text-sm text-base-content/70">
+        {gettext(
+          "What members may and may not do here, published at /rules and linked from the footer. Supports Markdown formatting."
+        )}
+      </p>
+      <.form for={@rules_form} id="rules-form" phx-change="validate_rules" phx-submit="save_rules">
+        <.input
+          field={@rules_form[:text]}
+          type="textarea"
+          label={gettext("Site Rules (Markdown)")}
+          toolbar
+          rows="8"
+          placeholder={gettext("Enter the rules of your site here...")}
+        />
+        <div class="mt-4">
+          <.button variant="primary" type="submit" phx-disable-with={gettext("Saving...")}>
+            {gettext("Save Rules")}
+          </.button>
+        </div>
+      </.form>
+    </div>
+  </div>
+
+  <div id="privacy-card" class="admin-settings-card card bg-base-200 shadow-sm">
+    <div class="card-body">
+      <h2 id="admin-settings-privacy-heading" class="admin-settings-privacy-heading card-title">
+        {gettext("Privacy Policy")}
+      </h2>
+      <p class="admin-settings-privacy-hint text-sm text-base-content/70">
+        {gettext(
+          "What this site records about its visitors and what happens to it, published at /privacy and linked from the footer. Supports Markdown formatting."
+        )}
+      </p>
+      <.form
+        for={@privacy_form}
+        id="privacy-form"
+        phx-change="validate_privacy"
+        phx-submit="save_privacy"
+      >
+        <.input
+          field={@privacy_form[:text]}
+          type="textarea"
+          label={gettext("Privacy Policy (Markdown)")}
+          toolbar
+          rows="8"
+          placeholder={gettext("Describe what your site records and why...")}
+        />
+        <div class="mt-4">
+          <.button variant="primary" type="submit" phx-disable-with={gettext("Saving...")}>
+            {gettext("Save Privacy Policy")}
+          </.button>
+        </div>
+      </.form>
+    </div>
+  </div>
 </div>

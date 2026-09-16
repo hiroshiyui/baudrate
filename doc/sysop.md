@@ -194,7 +194,9 @@ Configure at `/admin/settings`:
 |---------|------|---------|---------|
 | `site_name` | string | (set at setup) | Display name in headers and NodeInfo |
 | `registration_mode` | enum | `"approval_required"` | Registration policy (see [Registration Modes](#registration-modes)) |
-| `eua` | markdown | (empty) | End User Agreement shown at registration |
+| `eua` | markdown | (empty) | Terms of service — shown at registration, published at `/terms` |
+| `rules` | markdown | (empty) | Site rules, published at `/rules` |
+| `privacy_policy` | markdown | (empty) | Privacy policy, published at `/privacy` |
 | `ap_federation_enabled` | boolean | `"true"` | Federation kill switch |
 | `ap_federation_mode` | enum | `"blocklist"` | `blocklist` or `allowlist` |
 | `ap_domain_allowlist` | text | `""` | Comma-separated allowed domains |
@@ -263,6 +265,28 @@ Approve pending users at `/admin/pending-users`.
 Registration requires accepting terms: a system activity-logging notice (always
 shown) and an optional site-specific End User Agreement (configurable at
 `/admin/settings`, stored as markdown).
+
+### Policy Pages
+
+Three admin-authored markdown documents, each edited in its own card at
+`/admin/settings` and published on a public page any guest can read:
+
+| Page | Setting | What belongs in it |
+|------|---------|--------------------|
+| `/terms` | `eua` | The agreement a member accepts when registering |
+| `/rules` | `rules` | What members may and may not do here |
+| `/privacy` | `privacy_policy` | What the site records about visitors, and what happens to it |
+
+The footer links the documents you have actually written, and nothing while
+all three are empty — a link to a page saying "not published yet" is worse
+than no link. The registration form keeps showing the terms inline and now
+also links `/terms`, so a member can re-read afterwards what they agreed to.
+
+Markdown is rendered through the same sanitizer and media proxy as any post,
+so an image in a policy page is re-served locally rather than fetched by the
+reader's browser from a third party. Editing a document takes effect at once;
+each save is recorded in the moderation log (`update_eua`, `update_rules`,
+`update_privacy`).
 
 ### Invite Codes (`/admin/invites`)
 

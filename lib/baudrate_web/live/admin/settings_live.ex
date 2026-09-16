@@ -22,6 +22,8 @@ defmodule BaudrateWeb.Admin.SettingsLive do
   def mount(_params, _session, socket) do
     changeset = Setup.change_settings()
     eua = Setup.get_eua() || ""
+    rules = Setup.get_policy(:rules) || ""
+    privacy = Setup.get_policy(:privacy) || ""
 
     timezone_options =
       Baudrate.Timezone.identifiers()
@@ -34,6 +36,8 @@ defmodule BaudrateWeb.Admin.SettingsLive do
       |> assign(form: to_form(changeset, as: :settings))
       |> assign(eua: eua)
       |> assign(eua_form: to_form(%{"eua" => eua}, as: :eua_settings))
+      |> assign(rules_form: to_form(%{"text" => rules}, as: :rules_policy))
+      |> assign(privacy_form: to_form(%{"text" => privacy}, as: :privacy_policy))
       |> assign(timezone_options: timezone_options)
       |> assign(light_theme_options: Setup.light_theme_options())
       |> assign(dark_theme_options: Setup.dark_theme_options())
@@ -95,6 +99,32 @@ defmodule BaudrateWeb.Admin.SettingsLive do
   end
 
   @impl true
+  def handle_event("validate_rules", %{"rules_policy" => params}, socket) do
+    {:noreply, assign(socket, rules_form: to_form(params, as: :rules_policy))}
+  end
+
+  @impl true
+  def handle_event("save_rules", %{"rules_policy" => %{"text" => text}}, socket) do
+    {:noreply,
+     save_policy(socket, :rules, text, "update_rules", gettext("Site rules saved."),
+       error: gettext("Failed to save the site rules.")
+     )}
+  end
+
+  @impl true
+  def handle_event("validate_privacy", %{"privacy_policy" => params}, socket) do
+    {:noreply, assign(socket, privacy_form: to_form(params, as: :privacy_policy))}
+  end
+
+  @impl true
+  def handle_event("save_privacy", %{"privacy_policy" => %{"text" => text}}, socket) do
+    {:noreply,
+     save_policy(socket, :privacy, text, "update_privacy", gettext("Privacy policy saved."),
+       error: gettext("Failed to save the privacy policy.")
+     )}
+  end
+
+  @impl true
   def handle_event("generate_vapid_keys", _params, socket) do
     alias Baudrate.Notification.VAPID
 
@@ -110,6 +140,21 @@ defmodule BaudrateWeb.Admin.SettingsLive do
      |> assign(vapid_configured: true)
      |> assign(vapid_public_key: public_key_b64)
      |> put_flash(:info, gettext("VAPID keys generated successfully."))}
+  end
+
+  # The action name is passed in as a literal from the call site rather than
+  # built from `name`: `test/baudrate/moderation/log_test.exs` walks call sites
+  # against `Moderation.Log`'s allow-list, and an interpolated name would hide
+  # from it until the insert failed silently in production (bug B2).
+  defp save_policy(socket, name, text, action, ok_message, error: error_message) do
+    case Setup.update_policy(name, text) do
+      {:ok, _} ->
+        Moderation.log_action(socket.assigns.current_user.id, action)
+        put_flash(socket, :info, ok_message)
+
+      {:error, _} ->
+        put_flash(socket, :error, error_message)
+    end
   end
 
   # Versions of the running node, read at mount time. `otp_release` is only

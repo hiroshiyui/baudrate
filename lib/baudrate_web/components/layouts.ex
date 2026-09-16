@@ -6,6 +6,9 @@ defmodule BaudrateWeb.Layouts do
   use BaudrateWeb, :html
   import BaudrateWeb.Helpers, only: [translate_role: 1]
 
+  alias Baudrate.Setup
+  alias BaudrateWeb.PolicyLive
+
   # Embed all files in layouts/* within this module.
   # The default root.html.heex file contains the HTML
   # skeleton of your application, namely HTML headers
@@ -18,7 +21,8 @@ defmodule BaudrateWeb.Layouts do
   Applied automatically via `layout:` in `live_session`.
   Shows nav links and user menu when `@current_user` is present;
   otherwise shows only the logo and theme toggle.
-  The footer displays a link to the Baudrate project repository.
+  The footer links the policy documents an admin has published (`/terms`,
+  `/rules`, `/privacy`); it renders nothing while all three are unwritten.
 
   On mobile (below `lg` breakpoint), a fixed bottom dock provides quick
   one-tap navigation: Home, Feed, Search, Messages, Notifications for
@@ -30,6 +34,10 @@ defmodule BaudrateWeb.Layouts do
   attr :inner_content, :any, default: nil, doc: "the inner content rendered by the layout"
 
   def app(assigns) do
+    # Resolved once per render rather than twice in the footer markup. Reads
+    # hit the settings ETS cache, so this costs nothing per page.
+    assigns = assign_new(assigns, :published_policies, fn -> Setup.published_policies() end)
+
     ~H"""
     <header
       id="site-header"
@@ -399,7 +407,28 @@ defmodule BaudrateWeb.Layouts do
       </div>
     </main>
 
-    <footer id="site-footer" class="layout-footer py-6"></footer>
+    <%!-- Below `lg` the dock is fixed over the bottom of the viewport, so the
+    footer needs its own clearance: `main`'s padding does not cover a sibling. --%>
+    <footer id="site-footer" class="layout-footer pt-6 pb-24 lg:pb-6">
+      <nav
+        :if={@published_policies != []}
+        id="site-footer-policies"
+        aria-label={gettext("Site policies")}
+        class="site-footer-policies mx-auto max-w-6xl px-4 sm:px-6 lg:px-8"
+      >
+        <ul class="site-footer-policy-list flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm opacity-70">
+          <li :for={name <- @published_policies} class="site-footer-policy-item">
+            <.link
+              id={"site-footer-#{name}"}
+              navigate={policy_path(name)}
+              class="site-footer-policy-link link link-hover"
+            >
+              {PolicyLive.title(name)}
+            </.link>
+          </li>
+        </ul>
+      </nav>
+    </footer>
 
     <.mobile_bottom_nav
       current_user={@current_user}
@@ -893,4 +922,10 @@ defmodule BaudrateWeb.Layouts do
   end
 
   defp active_nav?(_, _), do: false
+
+  # Each policy document has its own literal route, so `Setup.policy_names/0`
+  # maps to a path here rather than being interpolated into one.
+  defp policy_path(:terms), do: ~p"/terms"
+  defp policy_path(:rules), do: ~p"/rules"
+  defp policy_path(:privacy), do: ~p"/privacy"
 end

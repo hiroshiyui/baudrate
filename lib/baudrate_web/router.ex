@@ -383,6 +383,11 @@ defmodule BaudrateWeb.Router do
       ] do
       live "/", HomeLive
       live "/search", SearchLive
+      # The policy documents are readable by guests, and by signed-in members:
+      # `live_session :public` would redirect the latter away.
+      live "/terms", PolicyLive, :terms
+      live "/rules", PolicyLive, :rules
+      live "/privacy", PolicyLive, :privacy
       live "/users/:username", UserProfileLive
       live "/users/:username/articles", UserContentLive, :articles
       live "/users/:username/comments", UserContentLive, :comments

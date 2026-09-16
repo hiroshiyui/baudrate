@@ -1,0 +1,20 @@
+<article id="policy-page" class="policy-page max-w-3xl mx-auto space-y-6">
+  <header id="policy-header" class="policy-header">
+    <h1 id="policy-heading" class="policy-title text-3xl font-bold break-words">
+      {title(@policy)}
+    </h1>
+  </header>
+
+  <div :if={@body} id="policy-body" class="policy-body prose max-w-none break-words">
+    {raw(Baudrate.Content.Markdown.to_html(@body))}
+  </div>
+
+  <p
+    :if={is_nil(@body)}
+    id="policy-empty"
+    class="policy-empty text-center py-8 opacity-70"
+    role="status"
+  >
+    {empty_message(@policy)}
+  </p>
+</article>
