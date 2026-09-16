@@ -165,12 +165,13 @@ defmodule Baudrate.Auth.Users do
 
   Requires all of:
     1. Account status is `"active"` (pending users cannot post)
-    2. The account has not moved away (`moved_to` is `nil`, ADR 0025)
+    2. The account is unrestricted — not moved, silenced or suspended
+       (`Auth.ensure_can_interact/1`, ADR 0029)
     3. Role has the `"user.create_content"` permission
   """
   @spec can_create_content?(User.t()) :: boolean()
   def can_create_content?(user) do
-    user_active?(user) && is_nil(Map.get(user, :moved_to)) &&
+    user_active?(user) && Baudrate.Auth.Sanctions.can_interact?(user) &&
       Setup.has_permission?(user.role.name, "user.create_content")
   end
 

@@ -24,12 +24,16 @@ defmodule Baudrate.Auth.Invites do
     2. Quota remaining > 0 within rolling #{@invite_quota_window_days}-day window
   """
   @spec can_generate_invite?(User.t()) ::
-          {:ok, integer() | :unlimited} | {:error, :invite_quota_exceeded | :account_moved}
+          {:ok, integer() | :unlimited}
+          | {:error, :invite_quota_exceeded | Baudrate.Auth.Sanctions.refusal()}
   def can_generate_invite?(%User{} = user) do
+    # Inviting is an interaction: a moved, silenced or suspended account
+    # cannot bring in new members (ADR 0029).
+    gate = Baudrate.Auth.ensure_can_interact(user)
+
     cond do
-      # A moved account is read-only (ADR 0025).
-      Baudrate.AccountMigration.moved?(user) ->
-        {:error, :account_moved}
+      gate != :ok ->
+        gate
 
       user.role.name == "admin" ->
         {:ok, :unlimited}

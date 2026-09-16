@@ -100,15 +100,28 @@ defmodule Baudrate.Federation.Follows do
   Inserts a `UserFollow` with state `"pending"`. The caller is responsible
   for building and delivering the Follow activity using the returned AP ID.
 
+  ## Options
+
+    * `:system` — `true` when the follow is not the user's own act. An
+      account migration re-points a follow the user already had
+      (`AccountMigration.follow_on_behalf/2`), so a sanction on the follower
+      must not erase the relationship. User-initiated follows leave this
+      unset and go through `Auth.ensure_can_interact/1` (ADR 0029).
+
   Returns `{:ok, %UserFollow{}}` or `{:error, changeset}`.
   """
-  @spec create_user_follow(Baudrate.Setup.User.t(), RemoteActor.t()) ::
-          {:ok, UserFollow.t()} | {:error, :blocked | Ecto.Changeset.t()}
-  def create_user_follow(user, remote_actor) do
-    if Baudrate.Auth.remote_actor_blocked_by?(remote_actor.id, user.id) do
-      {:error, :blocked}
-    else
-      insert_user_follow(user, remote_actor)
+  @spec create_user_follow(Baudrate.Setup.User.t(), RemoteActor.t(), keyword()) ::
+          {:ok, UserFollow.t()} | {:error, :blocked | atom() | Ecto.Changeset.t()}
+  def create_user_follow(user, remote_actor, opts \\ []) do
+    gate =
+      if Keyword.get(opts, :system, false),
+        do: :ok,
+        else: Baudrate.Auth.ensure_can_interact(user, moved: :allow)
+
+    cond do
+      gate != :ok -> gate
+      Baudrate.Auth.remote_actor_blocked_by?(remote_actor.id, user.id) -> {:error, :blocked}
+      true -> insert_user_follow(user, remote_actor)
     end
   end
 
@@ -566,6 +579,12 @@ defmodule Baudrate.Federation.Follows do
   `{:error, changeset}`.
   """
   def create_local_follow(%{id: follower_id} = follower, %{id: followed_id}) do
+    # Following is an interaction, so a silenced or suspended follower is
+    # refused (ADR 0029). A *moved* account may still follow: a move is a
+    # redirect, not a punishment, and ADR 0025 lets the person carry their
+    # reading list to their new home.
+    gate = Baudrate.Auth.ensure_can_interact(follower_id, moved: :allow)
+
     cond do
       follower_id == followed_id ->
         {:error, :self_follow}
@@ -573,7 +592,11 @@ defmodule Baudrate.Federation.Follows do
       Baudrate.Auth.blocked_between?(follower_id, followed_id) ->
         {:error, :blocked}
 
-      # A moved account is followed at its new address (ADR 0025).
+      gate != :ok ->
+        gate
+
+      # The *target* side of a move, which is a different rule: a moved
+      # account is followed at its new address (ADR 0025).
       Baudrate.AccountMigration.ensure_not_moved(followed_id) != :ok ->
         {:error, :account_moved}
 

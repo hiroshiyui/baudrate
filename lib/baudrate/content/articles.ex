@@ -139,14 +139,17 @@ defmodule Baudrate.Content.Articles do
   def create_article(attrs, board_ids, opts \\ []) when is_list(board_ids) do
     author_id = attrs[:user_id] || attrs["user_id"]
 
-    # A moved account is read-only (ADR 0025). A comment forwarded into a board
-    # by someone else keeps its author and is not new writing by that author.
-    # The error uses the Multi shape every caller already handles.
-    if Keyword.get(opts, :forwarded_comment, false) or
-         Baudrate.AccountMigration.ensure_not_moved(author_id) == :ok do
+    # A moved, silenced or suspended account cannot write (ADR 0029). A comment
+    # forwarded into a board by someone else keeps its author and is not new
+    # writing by that author. The error uses the Multi shape every caller
+    # already handles.
+    if Keyword.get(opts, :forwarded_comment, false) do
       do_create_article(attrs, board_ids, opts)
     else
-      {:error, :account, :account_moved, %{}}
+      case Baudrate.Auth.ensure_can_interact(author_id) do
+        :ok -> do_create_article(attrs, board_ids, opts)
+        {:error, reason} -> {:error, :account, reason, %{}}
+      end
     end
   end
 
@@ -252,8 +255,9 @@ defmodule Baudrate.Content.Articles do
   end
 
   def update_article(%Article{} = article, attrs, editor) do
-    # A moved account is read-only (ADR 0025); admins editing its articles are not.
-    case Baudrate.AccountMigration.ensure_not_moved(editor) do
+    # A restricted account cannot edit (ADR 0029); staff editing its articles
+    # are not restricted by it.
+    case Baudrate.Auth.ensure_can_interact(editor) do
       :ok -> do_update_article(article, attrs, editor)
       error -> error
     end

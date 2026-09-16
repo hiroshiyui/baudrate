@@ -325,10 +325,12 @@ defmodule Baudrate.Federation.Feed do
   blocked the item's author), or `{:error, changeset}`.
   """
   def create_feed_item_reply(feed_item, user, body, opts \\ []) do
+    # A moved, silenced or suspended account cannot reply (ADR 0029).
+    gate = Baudrate.Auth.ensure_can_interact(user)
+
     cond do
       not feed_item_accessible?(user, feed_item) -> {:error, :not_found}
-      # A moved account is read-only (ADR 0025).
-      Baudrate.AccountMigration.ensure_not_moved(user) != :ok -> {:error, :account_moved}
+      gate != :ok -> gate
       Baudrate.Auth.blocked_with_author?(user.id, feed_item) -> {:error, :blocked}
       true -> do_create_feed_item_reply(feed_item, user, body, opts)
     end
@@ -478,10 +480,10 @@ defmodule Baudrate.Federation.Feed do
 
     case Repo.get_by(FeedItemLike, user_id: user.id, feed_item_id: feed_item_id) do
       nil ->
-        # A moved account is read-only, and a blocked author cannot be
-        # interacted with: both can undo, not add (ADR 0025).
+        # A restricted account and a blocked author are the same shape here:
+        # both can undo an earlier like, not add a new one (ADR 0029).
         result =
-          with :ok <- Baudrate.AccountMigration.ensure_not_moved(user),
+          with :ok <- Baudrate.Auth.ensure_can_interact(user),
                :ok <- ensure_author_not_blocked(user, feed_item) do
             %FeedItemLike{}
             |> FeedItemLike.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
@@ -522,10 +524,10 @@ defmodule Baudrate.Federation.Feed do
 
     case Repo.get_by(FeedItemBoost, user_id: user.id, feed_item_id: feed_item_id) do
       nil ->
-        # A moved account is read-only, and a blocked author cannot be
-        # interacted with: both can undo, not add (ADR 0025).
+        # A restricted account and a blocked author are the same shape here:
+        # both can undo an earlier boost, not add a new one (ADR 0029).
         result =
-          with :ok <- Baudrate.AccountMigration.ensure_not_moved(user),
+          with :ok <- Baudrate.Auth.ensure_can_interact(user),
                :ok <- ensure_author_not_blocked(user, feed_item) do
             %FeedItemBoost{}
             |> FeedItemBoost.changeset(%{user_id: user.id, feed_item_id: feed_item_id})

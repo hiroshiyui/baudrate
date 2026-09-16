@@ -48,7 +48,8 @@ defmodule Baudrate.Messaging do
 
   Checks:
     1. Cannot message yourself
-    2. Sender must be active and must not have moved away (ADR 0025)
+    2. Sender must be active and unrestricted — not moved, silenced or
+       suspended (ADR 0029)
     3. Bidirectional block check
     4. Recipient's `dm_access` setting
   """
@@ -57,7 +58,7 @@ defmodule Baudrate.Messaging do
 
   def can_send_dm?(%User{} = sender, %User{} = recipient) do
     sender.status == "active" &&
-      is_nil(sender.moved_to) &&
+      Auth.can_interact?(sender) &&
       recipient.status == "active" &&
       !Auth.blocked?(sender, recipient) &&
       !Auth.blocked?(recipient, sender) &&
@@ -285,6 +286,7 @@ defmodule Baudrate.Messaging do
 
   defp can_send_dm_to_remote?(%User{} = sender, %RemoteActor{} = remote) do
     sender.status == "active" &&
+      Auth.can_interact?(sender) &&
       !Federation.Validator.domain_blocked?(remote.domain) &&
       !Auth.blocked?(sender, remote.ap_id)
   end

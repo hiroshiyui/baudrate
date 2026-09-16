@@ -626,7 +626,7 @@ defmodule Baudrate.AccountMigration do
       :already_following
     else
       with {:ok, follower} <- KeyStore.ensure_user_keypair(follower),
-           {:ok, follow} <- Federation.create_user_follow(follower, target) do
+           {:ok, follow} <- Federation.create_user_follow(follower, target, system: true) do
         {activity, actor_uri} = Publisher.build_follow(follower, target, follow.ap_id)
         Delivery.deliver_follow(activity, target, actor_uri)
         :followed

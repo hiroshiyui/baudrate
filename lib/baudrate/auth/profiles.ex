@@ -1,8 +1,20 @@
 defmodule Baudrate.Auth.Profiles do
   @moduledoc """
   Handles updates to user profiles, locale preferences, and notification settings.
+
+  ## What a sanction stops here
+
+  The parts of a profile other people read — display name, bio, avatar,
+  signature and profile fields — go through `Auth.ensure_can_interact/1`
+  (ADR 0029). A bio is a billboard, and silencing someone who is then free to
+  rewrite theirs at the person they were harassing achieves nothing.
+
+  The parts only the account itself sees or that make it *safer* — preferred
+  locales, notification preferences and `dm_access` — are deliberately left
+  open. Narrowing who may DM you is not something a sanction should prevent.
   """
 
+  alias Baudrate.Auth.Sanctions
   alias Baudrate.Repo
   alias Baudrate.Setup.User
 
@@ -23,9 +35,11 @@ defmodule Baudrate.Auth.Profiles do
   """
   @spec update_avatar(User.t(), integer() | nil) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_avatar(user, avatar_id) do
-    user
-    |> User.avatar_changeset(%{avatar_id: avatar_id})
-    |> Repo.update()
+    with_interaction(user, fn ->
+      user
+      |> User.avatar_changeset(%{avatar_id: avatar_id})
+      |> Repo.update()
+    end)
   end
 
   @doc """
@@ -33,36 +47,44 @@ defmodule Baudrate.Auth.Profiles do
   """
   @spec remove_avatar(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def remove_avatar(user) do
-    user
-    |> User.avatar_changeset(%{avatar_id: nil})
-    |> Repo.update()
+    with_interaction(user, fn ->
+      user
+      |> User.avatar_changeset(%{avatar_id: nil})
+      |> Repo.update()
+    end)
   end
 
   @doc """
   Updates a user's signature.
   """
   def update_signature(user, signature) do
-    user
-    |> User.signature_changeset(%{signature: signature})
-    |> Repo.update()
+    with_interaction(user, fn ->
+      user
+      |> User.signature_changeset(%{signature: signature})
+      |> Repo.update()
+    end)
   end
 
   @doc """
   Updates a user's display name. Pass `nil` or empty string to clear.
   """
   def update_display_name(user, display_name) do
-    user
-    |> User.display_name_changeset(%{display_name: display_name})
-    |> Repo.update()
+    with_interaction(user, fn ->
+      user
+      |> User.display_name_changeset(%{display_name: display_name})
+      |> Repo.update()
+    end)
   end
 
   @doc """
   Updates a user's bio.
   """
   def update_bio(user, bio) do
-    user
-    |> User.bio_changeset(%{bio: bio})
-    |> Repo.update()
+    with_interaction(user, fn ->
+      user
+      |> User.bio_changeset(%{bio: bio})
+      |> Repo.update()
+    end)
   end
 
   @doc """
@@ -96,8 +118,18 @@ defmodule Baudrate.Auth.Profiles do
   Returns `{:ok, user}` or `{:error, changeset}`.
   """
   def update_profile_fields(user, fields) when is_list(fields) do
-    user
-    |> User.profile_fields_changeset(%{profile_fields: fields})
-    |> Repo.update()
+    with_interaction(user, fn ->
+      user
+      |> User.profile_fields_changeset(%{profile_fields: fields})
+      |> Repo.update()
+    end)
+  end
+
+  # A restricted account cannot change what other people read on its profile.
+  defp with_interaction(user, fun) do
+    case Sanctions.ensure_can_interact(user) do
+      :ok -> fun.()
+      {:error, _reason} = error -> error
+    end
   end
 end

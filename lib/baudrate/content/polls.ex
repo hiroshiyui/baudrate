@@ -54,10 +54,12 @@ defmodule Baudrate.Content.Polls do
   Returns `{:ok, poll}` with updated counters or `{:error, reason}`.
   """
   def cast_vote(%Poll{} = poll, user, option_ids) when is_list(option_ids) do
+    # A moved, silenced or suspended account cannot vote (ADR 0029).
+    gate = Baudrate.Auth.ensure_can_interact(user)
+
     cond do
       Poll.closed?(poll) -> {:error, :poll_closed}
-      # A moved account is read-only (ADR 0025).
-      Baudrate.AccountMigration.ensure_not_moved(user) != :ok -> {:error, :account_moved}
+      gate != :ok -> gate
       true -> do_cast_vote(poll, user, option_ids)
     end
   end

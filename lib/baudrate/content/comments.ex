@@ -45,8 +45,8 @@ defmodule Baudrate.Content.Comments do
   def create_comment(attrs, opts \\ []) do
     attrs = attrs |> Map.new(fn {k, v} -> {to_string(k), v} end)
 
-    # A moved account is read-only (ADR 0025).
-    with :ok <- Baudrate.AccountMigration.ensure_not_moved(attrs["user_id"]),
+    # A moved, silenced or suspended account cannot comment (ADR 0029).
+    with :ok <- Baudrate.Auth.ensure_can_interact(attrs["user_id"]),
          :ok <- ensure_not_blocked(attrs) do
       do_create_comment(attrs, opts)
     end

@@ -7,6 +7,7 @@ defmodule Baudrate.Auth do
   - `SecondFactor` (TOTP and recovery codes)
   - `Invites` (Invitation system)
   - `Moderation` (Banning, blocking, and muting)
+  - `Sanctions` (Warnings, silences and suspensions, and the interaction gate)
   - `Users` (Registration, search, and retrieval)
   - `Profiles` (User preferences and profile updates)
   """
@@ -16,6 +17,7 @@ defmodule Baudrate.Auth do
     Moderation,
     Passwords,
     Profiles,
+    Sanctions,
     SecondFactor,
     Sessions,
     Users,
@@ -132,6 +134,20 @@ defmodule Baudrate.Auth do
   defdelegate muted_user_ids(user), to: Moderation
   defdelegate muted_actor_ap_ids(user), to: Moderation
   defdelegate hidden_ids(user), to: Moderation
+
+  # --- Sanctions (ADR 0029) ---
+  #
+  # `ensure_can_interact/1` is the one gate every context function calls
+  # before it lets an account create content or interact. It covers moved,
+  # silenced, suspended and banned accounts together, so a new posting path
+  # cannot enforce one rule and forget the others.
+  defdelegate ensure_can_interact(user, opts \\ []), to: Sanctions
+  defdelegate can_interact?(user, opts \\ []), to: Sanctions
+  defdelegate active_sanctions(user), to: Sanctions
+  defdelegate active_sanction(user, kind), to: Sanctions
+  defdelegate silenced?(user), to: Sanctions
+  defdelegate suspended?(user), to: Sanctions
+  defdelegate list_sanctions(user), to: Sanctions
 
   # --- Profiles & Preferences ---
   defdelegate update_preferred_locales(user, locales), to: Profiles

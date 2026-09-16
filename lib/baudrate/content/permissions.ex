@@ -273,12 +273,12 @@ defmodule Baudrate.Content.Permissions do
   `public` or `unlisted`.
   """
   def can_forward_article?(nil, _article), do: false
-  def can_forward_article?(%{moved_to: moved_to}, _article) when is_binary(moved_to), do: false
-  def can_forward_article?(%{role: %{name: "admin"}}, _article), do: true
-  def can_forward_article?(%{id: uid}, %{user_id: uid}), do: true
+  def can_forward_article?(%{role: %{name: "admin"}} = user, _article), do: unrestricted?(user)
+  def can_forward_article?(%{id: uid} = user, %{user_id: uid}), do: unrestricted?(user)
 
-  def can_forward_article?(_user, article) do
-    article.forwardable and article.visibility in ["public", "unlisted"]
+  def can_forward_article?(user, article) do
+    unrestricted?(user) and article.forwardable and
+      article.visibility in ["public", "unlisted"]
   end
 
   @doc """
@@ -292,15 +292,18 @@ defmodule Baudrate.Content.Permissions do
   """
   def can_forward_feed_item?(nil, _feed_item), do: false
 
-  def can_forward_feed_item?(%{moved_to: moved_to}, _feed_item) when is_binary(moved_to),
-    do: false
-
-  def can_forward_feed_item?(%{role: %{name: "admin"}}, _feed_item), do: true
+  def can_forward_feed_item?(%{role: %{name: "admin"}} = user, _feed_item),
+    do: unrestricted?(user)
 
   def can_forward_feed_item?(user, feed_item) do
-    feed_item.visibility in ["public", "unlisted"] and
+    unrestricted?(user) and feed_item.visibility in ["public", "unlisted"] and
       Baudrate.Federation.feed_item_accessible?(user, feed_item)
   end
+
+  # Forwarding republishes someone else's words under your name on another
+  # board, so it is an interaction: a moved, silenced or suspended account
+  # cannot do it (ADR 0029).
+  defp unrestricted?(user), do: Baudrate.Auth.can_interact?(user)
 
   @doc """
   Returns true if the user can forward a comment to a board.

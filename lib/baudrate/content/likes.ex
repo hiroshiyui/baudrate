@@ -128,6 +128,15 @@ defmodule Baudrate.Content.Likes do
   defp do_toggle_article_like(user_id, article) do
     article_id = article.id
 
+    liked? =
+      Repo.exists?(
+        from(l in ArticleLike, where: l.user_id == ^user_id and l.article_id == ^article_id)
+      )
+
+    # A moved, silenced or suspended account can undo an earlier like, not add
+    # a new one (ADR 0029), so the gate only runs when one is being added.
+    gate = if liked?, do: :ok, else: Baudrate.Auth.ensure_can_interact(user_id)
+
     cond do
       article.user_id == user_id ->
         {:error, :self_like}
@@ -138,15 +147,12 @@ defmodule Baudrate.Content.Likes do
       not Interactions.article_visible_to_user?(article_id, user_id) ->
         {:error, :not_found}
 
-      # A moved account is read-only: it can undo, not add (ADR 0025).
-      Baudrate.AccountMigration.ensure_not_moved(user_id) != :ok and
-          is_nil(Repo.get_by(ArticleLike, user_id: user_id, article_id: article_id)) ->
-        {:error, :account_moved}
+      gate != :ok ->
+        gate
 
       # A block between the user and the author refuses new interactions;
       # undoing an earlier one stays allowed.
-      Baudrate.Auth.blocked_with_author?(user_id, article) and
-          is_nil(Repo.get_by(ArticleLike, user_id: user_id, article_id: article_id)) ->
+      not liked? and Baudrate.Auth.blocked_with_author?(user_id, article) ->
         {:error, :blocked}
 
       true ->
@@ -327,6 +333,15 @@ defmodule Baudrate.Content.Likes do
   defp do_toggle_comment_like(user_id, comment) do
     comment_id = comment.id
 
+    liked? =
+      Repo.exists?(
+        from(l in CommentLike, where: l.user_id == ^user_id and l.comment_id == ^comment_id)
+      )
+
+    # A moved, silenced or suspended account can undo an earlier like, not add
+    # a new one (ADR 0029), so the gate only runs when one is being added.
+    gate = if liked?, do: :ok, else: Baudrate.Auth.ensure_can_interact(user_id)
+
     cond do
       comment.user_id == user_id ->
         {:error, :self_like}
@@ -337,15 +352,12 @@ defmodule Baudrate.Content.Likes do
       not Interactions.article_visible_to_user?(comment.article_id, user_id) ->
         {:error, :not_found}
 
-      # A moved account is read-only: it can undo, not add (ADR 0025).
-      Baudrate.AccountMigration.ensure_not_moved(user_id) != :ok and
-          is_nil(Repo.get_by(CommentLike, user_id: user_id, comment_id: comment_id)) ->
-        {:error, :account_moved}
+      gate != :ok ->
+        gate
 
       # A block between the user and the author refuses new interactions;
       # undoing an earlier one stays allowed.
-      Baudrate.Auth.blocked_with_author?(user_id, comment) and
-          is_nil(Repo.get_by(CommentLike, user_id: user_id, comment_id: comment_id)) ->
+      not liked? and Baudrate.Auth.blocked_with_author?(user_id, comment) ->
         {:error, :blocked}
 
       true ->
