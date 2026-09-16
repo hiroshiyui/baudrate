@@ -194,12 +194,17 @@ defmodule BaudrateWeb.Features.LayoutTest do
     {session, admin, secret} = log_in_admin_via_browser(session)
     session = visit_admin(session, "/admin/settings", {admin, secret})
 
+    # The user detail page carries the widest table in the admin area (six
+    # columns of staff-written text), so it is crawled with a real record.
+    member = sanctioned_member(admin)
+
     paths = [
       "/admin/settings",
       "/admin/federation",
       "/admin/moderation",
       "/admin/boards",
       "/admin/users",
+      "/admin/users/#{member.id}",
       "/admin/moderation-log",
       "/admin/invites",
       "/admin/login-attempts",
@@ -208,6 +213,22 @@ defmodule BaudrateWeb.Features.LayoutTest do
     ]
 
     assert check_layout(session, paths) == []
+  end
+
+  # A member with a sanction whose reason is long and unbreakable — the shape
+  # that widens a table before short test text ever does.
+  defp sanctioned_member(admin) do
+    member = setup_user("user")
+
+    {:ok, _} =
+      Baudrate.Auth.issue_sanction(admin, member, "silence",
+        reason:
+          "Repeatedly posted https://example.com/a-very-long-unbreakable-link-that-should-wrap-rather-than-widen-the-page",
+        expires_at:
+          DateTime.utc_now() |> DateTime.add(7 * 86_400, :second) |> DateTime.truncate(:second)
+      )
+
+    member
   end
 
   defp check_layout(session, paths) do
