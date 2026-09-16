@@ -47,6 +47,13 @@ defmodule Baudrate.Federation.RemoteActor do
     field :moved_to_ap_id, :string
     field :moved_at, :utc_datetime
 
+    # Instance-wide suspension of this one actor (ADR 0030). Like a domain
+    # block, it hides the actor's content at query time and is lifted by
+    # clearing the stamp — nothing is deleted.
+    field :suspended_at, :utc_datetime
+    field :suspend_reason, :string
+    belongs_to :suspended_by, Baudrate.Setup.User
+
     has_many :followers, Baudrate.Federation.Follower
 
     timestamps(type: :utc_datetime)
@@ -73,6 +80,19 @@ defmodule Baudrate.Federation.RemoteActor do
     |> validate_length(:moved_to_ap_id, max: 2048)
     |> unique_constraint(:ap_id)
     |> unique_constraint([:username, :domain])
+  end
+
+  @doc """
+  Suspends or lifts the suspension of this actor instance-wide (ADR 0030).
+
+  Kept apart from `changeset/2` so an actor refresh — which rewrites every
+  profile field from what the peer sends — can never clear a moderation
+  decision.
+  """
+  def suspension_changeset(remote_actor, attrs) do
+    remote_actor
+    |> cast(attrs, [:suspended_at, :suspend_reason, :suspended_by_id])
+    |> validate_length(:suspend_reason, max: 1000)
   end
 
   # `validate_required/2` is what refuses a missing domain; this only has to

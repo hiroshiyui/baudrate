@@ -138,7 +138,13 @@
                 scope="row"
                 class="admin-federation-instance-domain font-mono font-normal text-sm"
               >
-                {instance.domain}
+                <.link
+                  id={"admin-federation-instance-link-#{instance.domain}"}
+                  navigate={~p"/admin/federation/instances/#{instance.domain}"}
+                  class="admin-federation-instance-link link"
+                >
+                  {instance.domain}
+                </.link>
               </th>
               <td>{instance.actor_count}</td>
               <td>{instance.follower_count}</td>

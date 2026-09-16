@@ -1,0 +1,181 @@
+<div id="admin-instance-page" class="admin-instance-page space-y-6">
+  <nav id="instance-breadcrumb" class="admin-instance-breadcrumb text-sm breadcrumbs">
+    <ul>
+      <li>
+        <.link id="instance-breadcrumb-federation" navigate={~p"/admin/federation"}>
+          {gettext("Federation")}
+        </.link>
+      </li>
+      <li aria-current="page">{@domain}</li>
+    </ul>
+  </nav>
+
+  <h1 id="instance-heading" class="admin-instance-title text-2xl font-bold break-words">
+    {@domain}
+  </h1>
+
+  <div
+    :if={@domain_block}
+    id="instance-blocked-notice"
+    class="admin-instance-blocked alert alert-error"
+    role="status"
+  >
+    <div>
+      <p class="admin-instance-blocked-text font-semibold">
+        {gettext("This instance is blocked.")}
+      </p>
+      <p :if={@domain_block && @domain_block.reason} class="admin-instance-blocked-reason text-sm">
+        {@domain_block.reason}
+      </p>
+      <p class="admin-instance-blocked-hint text-sm opacity-80">
+        {gettext(
+          "Its content is hidden everywhere members can look. Unblock it on the Federation page."
+        )}
+      </p>
+    </div>
+  </div>
+
+  <div id="instance-actors-card" class="admin-instance-card card bg-base-200 shadow-sm">
+    <div class="card-body">
+      <h2 id="instance-actors-heading" class="admin-instance-card-title card-title" tabindex="-1">
+        {gettext("Known Accounts")}
+      </h2>
+
+      <p id="instance-actors-intro" class="admin-instance-hint text-sm opacity-70">
+        {gettext(
+          "Suspending one account hides its content and refuses its activities, without touching the rest of this instance. It is reversible, and nothing is deleted."
+        )}
+      </p>
+
+      <div
+        :if={@actors == []}
+        id="instance-actors-empty"
+        class="admin-instance-actors-empty text-center py-8 opacity-70"
+      >
+        {gettext("No accounts from this instance are known here.")}
+      </div>
+
+      <div :if={@actors != []} class="overflow-x-auto">
+        <table id="instance-actors-table" class="admin-instance-actors-table table table-zebra">
+          <thead>
+            <tr>
+              <th scope="col">{gettext("Account")}</th>
+              <th scope="col">{gettext("Type")}</th>
+              <th scope="col">{gettext("Status")}</th>
+              <th scope="col">{gettext("Actions")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              :for={actor <- @actors}
+              id={"instance-actor-#{actor.id}"}
+              class="admin-instance-actor-row"
+            >
+              <th
+                scope="row"
+                class="admin-instance-actor-handle font-mono font-normal text-sm break-all"
+              >
+                {handle(actor)}
+                <span
+                  :if={actor.display_name}
+                  class="admin-instance-actor-name block text-xs opacity-70 break-words"
+                >
+                  {actor.display_name}
+                </span>
+              </th>
+              <td class="admin-instance-actor-type text-sm">{actor.actor_type}</td>
+              <td>
+                <span
+                  :if={actor.suspended_at}
+                  id={"instance-actor-suspended-#{actor.id}"}
+                  class="admin-instance-actor-suspended badge badge-error badge-sm"
+                >
+                  {gettext("Suspended")}
+                </span>
+                <span
+                  :if={actor.suspended_at && actor.suspend_reason}
+                  class="admin-instance-actor-reason block text-xs opacity-70 break-words"
+                >
+                  {actor.suspend_reason}
+                </span>
+                <span
+                  :if={actor.suspended_at && actor.suspended_by}
+                  class="admin-instance-actor-author block text-xs opacity-70"
+                >
+                  {gettext("by %{admin}", admin: actor.suspended_by.username)}
+                </span>
+                <span
+                  :if={is_nil(actor.suspended_at)}
+                  class="admin-instance-actor-active badge badge-ghost badge-sm"
+                >
+                  {gettext("Active")}
+                </span>
+              </td>
+              <td>
+                <button
+                  :if={is_nil(actor.suspended_at) && @suspending_id != actor.id}
+                  id={"instance-actor-suspend-#{actor.id}"}
+                  phx-click="start_suspend"
+                  phx-value-id={actor.id}
+                  class="admin-instance-suspend-btn btn btn-error btn-sm"
+                  aria-label={gettext("Suspend %{actor}", actor: handle(actor))}
+                >
+                  {gettext("Suspend")}
+                </button>
+
+                <button
+                  :if={actor.suspended_at}
+                  id={"instance-actor-unsuspend-#{actor.id}"}
+                  phx-click="unsuspend_actor"
+                  phx-value-id={actor.id}
+                  class="admin-instance-unsuspend-btn btn btn-sm"
+                  aria-label={gettext("Lift the suspension of %{actor}", actor: handle(actor))}
+                >
+                  {gettext("Unsuspend")}
+                </button>
+
+                <form
+                  :if={@suspending_id == actor.id}
+                  id={"instance-actor-suspend-form-#{actor.id}"}
+                  phx-change="validate_suspend"
+                  phx-submit="suspend_actor"
+                  class="admin-instance-suspend-form flex flex-wrap items-end gap-2"
+                >
+                  <input type="hidden" name="actor_id" value={actor.id} />
+                  <label
+                    for={"suspend-reason-#{actor.id}"}
+                    class="admin-instance-suspend-label text-xs"
+                  >
+                    {gettext("Reason")}
+                    <input
+                      type="text"
+                      id={"suspend-reason-#{actor.id}"}
+                      name="reason"
+                      value={@suspend_reason}
+                      class="admin-instance-suspend-reason input input-sm input-bordered block"
+                    />
+                  </label>
+                  <button
+                    id={"instance-actor-suspend-confirm-#{actor.id}"}
+                    type="submit"
+                    class="admin-instance-suspend-confirm btn btn-sm btn-error"
+                  >
+                    {gettext("Confirm")}
+                  </button>
+                  <button
+                    id={"instance-actor-suspend-cancel-#{actor.id}"}
+                    type="button"
+                    phx-click="cancel_suspend"
+                    class="admin-instance-suspend-cancel btn btn-sm btn-ghost"
+                  >
+                    {gettext("Cancel")}
+                  </button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

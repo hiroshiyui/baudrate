@@ -84,13 +84,22 @@ defmodule Baudrate.Federation.DomainBlocks do
           boolean()
   def actor_hidden?(nil), do: false
 
+  def actor_hidden?(%RemoteActor{suspended_at: %DateTime{}}), do: true
+
   def actor_hidden?(%RemoteActor{domain: domain}) when is_binary(domain),
     do: DomainBlockCache.domain_blocked?(domain)
 
   def actor_hidden?(actor_id) when is_integer(actor_id) do
-    case Repo.one(from(ra in RemoteActor, where: ra.id == ^actor_id, select: ra.domain)) do
+    query =
+      from(ra in RemoteActor,
+        where: ra.id == ^actor_id,
+        select: {ra.domain, ra.suspended_at}
+      )
+
+    case Repo.one(query) do
       nil -> false
-      domain -> DomainBlockCache.domain_blocked?(domain)
+      {_domain, %DateTime{}} -> true
+      {domain, nil} -> DomainBlockCache.domain_blocked?(domain)
     end
   end
 

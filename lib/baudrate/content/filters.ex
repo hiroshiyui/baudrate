@@ -156,27 +156,37 @@ defmodule Baudrate.Content.Filters do
   end
 
   @doc """
-  A query selecting the ids of every remote actor hidden by the current
-  federation mode.
+  A query selecting the ids of every remote actor hidden by an instance-level
+  decision: its domain is blocked under the current federation mode, **or** the
+  actor itself is suspended (ADR 0030, decision 6).
 
-  In blocklist mode this is a semi-join against `domain_blocks`, so the blocked
-  set never travels through the query as a parameter list. In allowlist mode
-  the allowed domains are a setting and a small list, so they are passed in —
-  an empty allowlist hides every remote actor, matching
+  Both live in one predicate deliberately. They are the same decision at
+  different scales, and keeping them in one place is what stops them diverging
+  as listings are added.
+
+  In blocklist mode the domain half is a semi-join against `domain_blocks`, so
+  the blocked set never travels through the query as a parameter list. In
+  allowlist mode the allowed domains are a setting and a small list, so they
+  are passed in — an empty allowlist hides every remote actor, matching
   `DomainBlockCache.domain_blocked?/1`.
   """
   def hidden_actor_ids do
     case DomainBlockCache.config() do
       {:blocklist, _blocked} ->
         from(ra in RemoteActor,
-          join: db in DomainBlock,
+          left_join: db in DomainBlock,
           on: db.domain == ra.domain,
+          where: not is_nil(db.id) or not is_nil(ra.suspended_at),
           select: ra.id
         )
 
       {:allowlist, allowed} ->
         allowed = MapSet.to_list(allowed)
-        from(ra in RemoteActor, where: ra.domain not in ^allowed, select: ra.id)
+
+        from(ra in RemoteActor,
+          where: ra.domain not in ^allowed or not is_nil(ra.suspended_at),
+          select: ra.id
+        )
     end
   end
 

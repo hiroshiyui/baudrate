@@ -66,6 +66,7 @@ defmodule Baudrate.Federation.InboxHandler do
   def handle(activity, remote_actor, target) do
     with {:ok, activity} <- Validator.validate_activity(activity),
          :ok <- validate_domain(remote_actor),
+         :ok <- validate_not_suspended(remote_actor),
          :ok <- validate_not_local(activity),
          :ok <- validate_actor_match(activity, remote_actor) do
       dispatch(activity, remote_actor, target)
@@ -1707,6 +1708,17 @@ defmodule Baudrate.Federation.InboxHandler do
   defp validate_domain(remote_actor) do
     if Validator.domain_blocked?(remote_actor.domain) do
       {:error, :domain_blocked}
+    else
+      :ok
+    end
+  end
+
+  # A suspended actor is refused the same way its whole domain would be, so a
+  # report about one account has an answer that does not take out every other
+  # account on its instance (ADR 0030, decision 6).
+  defp validate_not_suspended(remote_actor) do
+    if Baudrate.Federation.RemoteActors.suspended?(remote_actor) do
+      {:error, :actor_suspended}
     else
       :ok
     end
