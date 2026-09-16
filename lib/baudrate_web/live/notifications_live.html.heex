@@ -100,6 +100,17 @@
             </time>
           </div>
 
+          <%!-- Why content was removed, when the removal came from a report --%>
+          <p
+            :if={notif.type == "content_removed" and notif.data["reason_category"]}
+            id={"notification-reason-#{notif.id}"}
+            class="notification-reason text-sm text-base-content/70 mt-1"
+          >
+            {gettext("Reported as: %{category}",
+              category: translate_report_category(notif.data["reason_category"])
+            )}
+          </p>
+
           <%!-- Target link (article title or announcement message) --%>
           <.link
             :if={target_link(notif) && target_title(notif)}

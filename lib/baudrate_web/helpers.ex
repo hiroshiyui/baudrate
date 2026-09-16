@@ -353,6 +353,15 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("moderation_report"), do: gettext("submitted a moderation report")
   def notification_text("admin_announcement"), do: gettext("posted an announcement")
 
+  # Moderation outcomes (P1-D4). The reporter learns only that staff looked at
+  # their report; the author of removed content is told, with the reason when
+  # the removal came from a report.
+  def notification_text("report_reviewed"),
+    do: gettext("Your report has been reviewed by the moderators.")
+
+  def notification_text("content_removed"),
+    do: gettext("A moderator removed your content.")
+
   # Account security notices have no actor, so these are full sentences.
   def notification_text("security_key_added"),
     do: gettext("A security key was added to your account.")
@@ -465,6 +474,8 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("article_forwarded"), do: "hero-arrow-uturn-right"
   def notification_icon("moderation_report"), do: "hero-flag"
   def notification_icon("admin_announcement"), do: "hero-megaphone"
+  def notification_icon("report_reviewed"), do: "hero-flag"
+  def notification_icon("content_removed"), do: "hero-trash"
   def notification_icon("security_key_added"), do: "hero-key"
   def notification_icon("security_key_removed"), do: "hero-key"
   def notification_icon("totp_enabled"), do: "hero-shield-check"

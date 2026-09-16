@@ -156,7 +156,7 @@ defmodule Baudrate.Notification.Hooks do
   """
   def notify_account_security(user_id, type, data \\ %{})
       when is_integer(user_id) and is_binary(type) and is_map(data) do
-    if type in Baudrate.Notification.Notification.security_types() do
+    if type in Baudrate.Notification.Notification.always_delivered_types() do
       Notification.create_notification(%{type: type, user_id: user_id, data: data})
     else
       {:error, :not_a_security_type}
@@ -288,6 +288,68 @@ defmodule Baudrate.Notification.Hooks do
     else
       []
     end
+  end
+
+  @doc """
+  Tells a reporter that their report was reviewed (P1-D4).
+
+  No details and no outcome: a reporter learns that staff looked at it,
+  nothing about the decision. Dismissed reports say nothing at all, so only
+  resolving calls this. Reports that arrived as federated Flags have no local
+  reporter, and nobody is told about their own report on their own content.
+  """
+  @spec notify_report_reviewed(Report.t()) :: :ok
+  def notify_report_reviewed(%Report{reporter_id: nil}), do: :ok
+
+  def notify_report_reviewed(%Report{} = report) do
+    Notification.create_notification(%{
+      type: "report_reviewed",
+      user_id: report.reporter_id,
+      data: %{"report_id" => report.id}
+    })
+
+    :ok
+  end
+
+  @doc """
+  Tells an author that a moderator removed their article or comment (P1-D4),
+  with the reason category of the report it came from when there was one.
+
+  Always delivered: this cannot be switched off in preferences. Content the
+  author deleted themselves says nothing (the remover is the actor, and a
+  notification is never sent to its own actor), and remote authors are not
+  local users to notify.
+  """
+  @spec notify_content_removed(Article.t() | Comment.t(), integer(), String.t() | nil) :: :ok
+  def notify_content_removed(content, removed_by_id, reason_category \\ nil)
+
+  def notify_content_removed(%Article{} = article, removed_by_id, reason_category) do
+    deliver_removal(article.user_id, removed_by_id, %{
+      "content_type" => "article",
+      "title" => article.title,
+      "reason_category" => reason_category
+    })
+  end
+
+  def notify_content_removed(%Comment{} = comment, removed_by_id, reason_category) do
+    deliver_removal(comment.user_id, removed_by_id, %{
+      "content_type" => "comment",
+      "article_id" => comment.article_id,
+      "reason_category" => reason_category
+    })
+  end
+
+  defp deliver_removal(nil, _removed_by_id, _data), do: :ok
+
+  defp deliver_removal(author_id, removed_by_id, data) do
+    Notification.create_notification(%{
+      type: "content_removed",
+      user_id: author_id,
+      actor_user_id: removed_by_id,
+      data: data
+    })
+
+    :ok
   end
 
   @doc """

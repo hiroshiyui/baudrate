@@ -1225,6 +1225,22 @@ A new report notifies every admin and global moderator, plus the board
 moderators of the board the reported article or comment is in
 (`Notification.Hooks.notify_report_created/1`).
 
+**Outcomes (P1-D4).** Resolving a report tells its reporter that it was
+reviewed, with no detail about the decision; dismissing tells nobody.
+Removing content tells its author (`notify_content_removed/3`), with the
+reason category of the report the removal came from. That notice is always
+delivered: `content_removed` is in
+`Notification.Notification.always_delivered_types/0`, so notification
+preferences cannot switch off being told your own post was removed, and
+`configurable_types/0` leaves it out of the preferences table. Deleting your
+own content notifies nobody (the remover is the notification's actor, and a
+notification is never delivered to its own actor).
+
+Deletions record who made them: articles already had `deleted_by_id`, and
+comments now do too. Moderators removing other people's content are not held
+to the author limit of 20 deletions per 5 minutes; they have
+`RateLimits.check_moderator_delete/1` (100 per 5 minutes).
+
 Each row in the queue shows the category, the full reported text, a link to
 the reported article, comment (at its place on the article), account or
 original post, and how many **other** open reports share that exact target

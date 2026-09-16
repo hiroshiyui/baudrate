@@ -18,6 +18,7 @@ defmodule BaudrateWeb.ArticleLive do
   alias Baudrate.Content.PubSub, as: ContentPubSub
   alias Baudrate.Federation
   alias Baudrate.Moderation
+  alias Baudrate.Notification.Hooks
   alias BaudrateWeb.LinkedData
   alias BaudrateWeb.OpenGraph
   alias BaudrateWeb.RateLimits
@@ -159,17 +160,13 @@ defmodule BaudrateWeb.ArticleLive do
     user = socket.assigns.current_user
 
     if socket.assigns.can_delete do
-      if user.role.name != "admin" do
-        case RateLimits.check_delete_content(user.id) do
-          {:error, :rate_limited} ->
-            {:noreply,
-             put_flash(socket, :error, gettext("Too many actions. Please try again later."))}
+      case check_delete_limit(user, article.user_id) do
+        {:error, :rate_limited} ->
+          {:noreply,
+           put_flash(socket, :error, gettext("Too many actions. Please try again later."))}
 
-          :ok ->
-            do_delete_article(socket, article, user)
-        end
-      else
-        do_delete_article(socket, article, user)
+        :ok ->
+          do_delete_article(socket, article, user)
       end
     else
       {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
@@ -379,20 +376,7 @@ defmodule BaudrateWeb.ArticleLive do
         {:noreply, socket}
 
       {:ok, comment_id} ->
-        user = socket.assigns.current_user
-
-        if user.role.name != "admin" do
-          case RateLimits.check_delete_content(user.id) do
-            {:error, :rate_limited} ->
-              {:noreply,
-               put_flash(socket, :error, gettext("Too many actions. Please try again later."))}
-
-            :ok ->
-              do_delete_comment(socket, comment_id, user)
-          end
-        else
-          do_delete_comment(socket, comment_id, user)
-        end
+        do_delete_comment(socket, comment_id, socket.assigns.current_user)
     end
   end
 
@@ -820,10 +804,23 @@ defmodule BaudrateWeb.ArticleLive do
   # hooks (e.g. :dm_received, :notification_created) for logged-in viewers.
   def handle_info(_msg, socket), do: {:noreply, socket}
 
+  # Authors are held to the ordinary deletion limit; moderators removing other
+  # people's content get their own, higher one (1B). Admins are unlimited, as
+  # everywhere else.
+  defp check_delete_limit(%{role: %{name: "admin"}}, _author_id), do: :ok
+
+  defp check_delete_limit(%{id: user_id}, author_id) when user_id == author_id,
+    do: RateLimits.check_delete_content(user_id)
+
+  defp check_delete_limit(%{id: user_id}, _author_id),
+    do: RateLimits.check_moderator_delete(user_id)
+
   defp do_delete_article(socket, article, user) do
     case Content.soft_delete_article(article, deleted_by: user.id) do
       {:ok, _} ->
         if user.id != article.user_id do
+          Hooks.notify_content_removed(article, user.id)
+
           Moderation.log_action(user.id, "delete_article",
             target_type: "article",
             target_id: article.id,
@@ -856,27 +853,40 @@ defmodule BaudrateWeb.ArticleLive do
 
       comment ->
         if Content.can_delete_comment?(user, comment, article) do
-          case Content.soft_delete_comment(comment) do
-            {:ok, _} ->
-              if user.id != comment.user_id do
-                Moderation.log_action(user.id, "delete_comment",
-                  target_type: "comment",
-                  target_id: comment.id,
-                  details: %{"article_title" => article.title}
-                )
-              end
-
+          case check_delete_limit(user, comment.user_id) do
+            {:error, :rate_limited} ->
               {:noreply,
-               socket
-               |> load_comments(socket.assigns.comment_page)
-               |> put_flash(:info, gettext("Comment deleted."))}
+               put_flash(socket, :error, gettext("Too many actions. Please try again later."))}
 
-            {:error, _} ->
-              {:noreply, put_flash(socket, :error, gettext("Failed to delete comment."))}
+            :ok ->
+              do_soft_delete_comment(socket, comment, article, user)
           end
         else
           {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
         end
+    end
+  end
+
+  defp do_soft_delete_comment(socket, comment, article, user) do
+    case Content.soft_delete_comment(comment, deleted_by: user.id) do
+      {:ok, _} ->
+        if user.id != comment.user_id do
+          Hooks.notify_content_removed(comment, user.id)
+
+          Moderation.log_action(user.id, "delete_comment",
+            target_type: "comment",
+            target_id: comment.id,
+            details: %{"article_title" => article.title}
+          )
+        end
+
+        {:noreply,
+         socket
+         |> load_comments(socket.assigns.comment_page)
+         |> put_flash(:info, gettext("Comment deleted."))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to delete comment."))}
     end
   end
 

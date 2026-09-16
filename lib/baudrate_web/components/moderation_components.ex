@@ -128,6 +128,7 @@ defmodule BaudrateWeb.ModerationComponents do
           phx-click="delete_content"
           phx-value-type="article"
           phx-value-id={@report.article.id}
+          phx-value-report={@report.id}
           data-confirm={gettext("Delete this article?")}
           aria-label={gettext("Delete Article: %{title}", title: @report.article.title)}
         >
@@ -160,6 +161,7 @@ defmodule BaudrateWeb.ModerationComponents do
           phx-click="delete_content"
           phx-value-type="comment"
           phx-value-id={@report.comment.id}
+          phx-value-report={@report.id}
           data-confirm={gettext("Delete this comment?")}
           aria-label={gettext("Delete Comment from report #%{id}", id: @report.id)}
         >

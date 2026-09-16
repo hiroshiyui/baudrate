@@ -142,7 +142,7 @@ defmodule Baudrate.Content do
   defdelegate create_remote_comment(attrs), to: Comments
   defdelegate get_comment(id), to: Comments
   defdelegate get_comment_by_ap_id(ap_id), to: Comments
-  defdelegate soft_delete_comment(comment), to: Comments
+  defdelegate soft_delete_comment(comment, opts \\ []), to: Comments
   defdelegate update_remote_comment(comment, attrs), to: Comments
   defdelegate count_comments_for_article(article), to: Comments
   defdelegate search_discussion_remote_actors(article_id, term, opts \\ []), to: Comments

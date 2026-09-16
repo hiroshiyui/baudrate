@@ -17,9 +17,12 @@ defmodule BaudrateWeb.NotificationsLive do
       parse_page: 1,
       notification_text: 1,
       notification_icon: 1,
+      translate_report_category: 1,
       format_relative_time: 1
     ]
 
+  # Account security notices link to /profile; moderation notices do not, so
+  # this is deliberately the security list, not always_delivered_types/0.
   @security_types Baudrate.Notification.Notification.security_types()
 
   @impl true

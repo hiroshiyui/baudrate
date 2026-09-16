@@ -22,8 +22,9 @@ defmodule Baudrate.Notification do
   @per_page 20
   @max_per_page 100
 
-  # Account security notices bypass notification preferences.
-  @security_types Notification.security_types()
+  # Account security notices and moderation notices about a member's own
+  # content bypass notification preferences.
+  @security_types Notification.always_delivered_types()
 
   @doc """
   Creates a notification for a user.

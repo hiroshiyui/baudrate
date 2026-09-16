@@ -12,6 +12,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
 
   alias Baudrate.Content
   alias Baudrate.Moderation
+  alias Baudrate.Notification.Hooks
 
   @statuses ~w(open resolved dismissed)
   import BaudrateWeb.Helpers,
@@ -70,18 +71,18 @@ defmodule BaudrateWeb.Admin.ModerationLive do
   end
 
   @impl true
-  def handle_event("delete_content", %{"type" => "article", "id" => id}, socket) do
+  def handle_event("delete_content", %{"type" => "article", "id" => id} = params, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}
-      {:ok, article_id} -> do_delete_article(socket, article_id)
+      {:ok, article_id} -> do_delete_article(socket, article_id, reason_category(socket, params))
     end
   end
 
   @impl true
-  def handle_event("delete_content", %{"type" => "comment", "id" => id}, socket) do
+  def handle_event("delete_content", %{"type" => "comment", "id" => id} = params, socket) do
     case parse_id(id) do
       :error -> {:noreply, socket}
-      {:ok, comment_id} -> do_delete_comment(socket, comment_id)
+      {:ok, comment_id} -> do_delete_comment(socket, comment_id, reason_category(socket, params))
     end
   end
 
@@ -138,7 +139,9 @@ defmodule BaudrateWeb.Admin.ModerationLive do
         report = Moderation.get_report!(report_id)
 
         case Moderation.resolve_report(report, admin_id, note) do
-          {:ok, _} ->
+          {:ok, resolved} ->
+            Hooks.notify_report_reviewed(resolved)
+
             Moderation.log_action(admin_id, "resolve_report",
               target_type: "report",
               target_id: report.id,
@@ -223,7 +226,9 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     report = Moderation.get_report!(report_id)
 
     case Moderation.resolve_report(report, socket.assigns.current_user.id, note) do
-      {:ok, _} ->
+      {:ok, resolved} ->
+        Hooks.notify_report_reviewed(resolved)
+
         Moderation.log_action(socket.assigns.current_user.id, "resolve_report",
           target_type: "report",
           target_id: report.id,
@@ -262,7 +267,20 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     end
   end
 
-  defp do_delete_article(socket, article_id) do
+  # The reason the author is told, from the report the deletion was made from.
+  # Only a report already on this page counts, so it never comes from the
+  # client.
+  defp reason_category(socket, params) do
+    with id when is_binary(id) <- params["report"],
+         {:ok, report_id} <- parse_id(id),
+         %{} = report <- Enum.find(socket.assigns.reports, &(&1.id == report_id)) do
+      report.category
+    else
+      _ -> nil
+    end
+  end
+
+  defp do_delete_article(socket, article_id, reason_category) do
     case Content.get_article(article_id) do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("Article not found."))}
@@ -270,6 +288,8 @@ defmodule BaudrateWeb.Admin.ModerationLive do
       article ->
         case Content.soft_delete_article(article, deleted_by: socket.assigns.current_user.id) do
           {:ok, _} ->
+            Hooks.notify_content_removed(article, socket.assigns.current_user.id, reason_category)
+
             Moderation.log_action(socket.assigns.current_user.id, "delete_article",
               target_type: "article",
               target_id: article.id,
@@ -287,14 +307,16 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     end
   end
 
-  defp do_delete_comment(socket, comment_id) do
+  defp do_delete_comment(socket, comment_id, reason_category) do
     case Content.get_comment(comment_id) do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("Comment not found."))}
 
       comment ->
-        case Content.soft_delete_comment(comment) do
+        case Content.soft_delete_comment(comment, deleted_by: socket.assigns.current_user.id) do
           {:ok, _} ->
+            Hooks.notify_content_removed(comment, socket.assigns.current_user.id, reason_category)
+
             Moderation.log_action(socket.assigns.current_user.id, "delete_comment",
               target_type: "comment",
               target_id: comment.id

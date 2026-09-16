@@ -18,6 +18,7 @@ defmodule BaudrateWeb.ModerationLive do
   use BaudrateWeb, :live_view
 
   alias Baudrate.{Content, Moderation}
+  alias Baudrate.Notification.Hooks
 
   import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1, translate_report_status: 1]
 
@@ -65,8 +66,9 @@ defmodule BaudrateWeb.ModerationLive do
   def handle_event("resolve", %{"report_id" => id, "note" => note}, socket) do
     with_report(socket, id, fn report ->
       case Moderation.resolve_report(report, socket.assigns.current_user.id, note) do
-        {:ok, _} ->
+        {:ok, resolved} ->
           log(socket, "resolve_report", report)
+          Hooks.notify_report_reviewed(resolved)
           {:noreply, socket |> put_flash(:info, gettext("Report resolved.")) |> load_reports()}
 
         {:error, _} ->
@@ -90,7 +92,7 @@ defmodule BaudrateWeb.ModerationLive do
   end
 
   @impl true
-  def handle_event("delete_content", %{"type" => "article", "id" => id}, socket) do
+  def handle_event("delete_content", %{"type" => "article", "id" => id} = params, socket) do
     user = socket.assigns.current_user
 
     with {:ok, article_id} <- parse_id(id),
@@ -98,6 +100,8 @@ defmodule BaudrateWeb.ModerationLive do
          true <- Content.can_delete_article?(user, article) do
       case Content.soft_delete_article(article, deleted_by: user.id) do
         {:ok, _} ->
+          Hooks.notify_content_removed(article, user.id, reason_category(socket, params))
+
           Moderation.log_action(user.id, "delete_article",
             target_type: "article",
             target_id: article.id,
@@ -115,15 +119,17 @@ defmodule BaudrateWeb.ModerationLive do
   end
 
   @impl true
-  def handle_event("delete_content", %{"type" => "comment", "id" => id}, socket) do
+  def handle_event("delete_content", %{"type" => "comment", "id" => id} = params, socket) do
     user = socket.assigns.current_user
 
     with {:ok, comment_id} <- parse_id(id),
          %{} = comment <- Content.get_comment(comment_id),
          %{} = article <- Content.get_article(comment.article_id),
          true <- Content.can_delete_comment?(user, comment, article) do
-      case Content.soft_delete_comment(comment) do
+      case Content.soft_delete_comment(comment, deleted_by: user.id) do
         {:ok, _} ->
+          Hooks.notify_content_removed(comment, user.id, reason_category(socket, params))
+
           Moderation.log_action(user.id, "delete_comment",
             target_type: "comment",
             target_id: comment.id
@@ -152,6 +158,19 @@ defmodule BaudrateWeb.ModerationLive do
       fun.(report)
     else
       _ -> {:noreply, put_flash(socket, :error, gettext("Report not found."))}
+    end
+  end
+
+  # The reason the author is told, taken from the report this deletion was made
+  # from. Only a report already on this page counts, so the value never comes
+  # from the client.
+  defp reason_category(socket, params) do
+    with id when is_binary(id) <- params["report"],
+         {:ok, report_id} <- parse_id(id),
+         %{} = report <- Enum.find(socket.assigns.reports, &(&1.id == report_id)) do
+      report.category
+    else
+      _ -> nil
     end
   end
 

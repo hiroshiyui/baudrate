@@ -80,6 +80,8 @@ defmodule Baudrate.Notification.Notification do
     comment_boosted
     article_forwarded
     moderation_report
+    report_reviewed
+    content_removed
     admin_announcement
     actor_moved
     board_actor_moved
@@ -124,6 +126,11 @@ defmodule Baudrate.Notification.Notification do
     data_export_cancelled
   )
 
+  # Moderation notices about the recipient's own content. Like account
+  # security notices they are always delivered: someone must not be able to
+  # switch off being told their post was removed (P1-D4).
+  @moderation_notice_types ~w(content_removed)
+
   @doc "Returns the list of valid notification type strings."
   def valid_types, do: @valid_types
 
@@ -134,15 +141,21 @@ defmodule Baudrate.Notification.Notification do
   def security_types, do: @security_types
 
   @doc """
+  Types that ignore notification preferences: account security notices and
+  moderation notices about the recipient's own content.
+  """
+  def always_delivered_types, do: @security_types ++ @moderation_notice_types
+
+  @doc """
   Returns the notification types a user can turn on or off in their
-  preferences: every valid type except the account security notices.
+  preferences: every valid type except the always-delivered ones.
 
   This is the single source for both the preferences changeset
   (`User.notification_preferences_changeset/2`) and the preferences table on
   `/profile`. The two used to be separate lists, and they drifted apart: the
   page offered toggles the changeset rejected.
   """
-  def configurable_types, do: @valid_types -- @security_types
+  def configurable_types, do: @valid_types -- always_delivered_types()
 
   schema "notifications" do
     field :type, :string

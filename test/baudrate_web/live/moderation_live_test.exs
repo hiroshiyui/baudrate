@@ -195,4 +195,52 @@ defmodule BaudrateWeb.ModerationLiveTest do
 
     assert has_element?(lv, "#moderation-report-#{report.id}")
   end
+
+  describe "outcome notices (P1-D4)" do
+    test "the reporter hears a resolved report was reviewed, but not a dismissed one", %{
+      conn: conn
+    } do
+      mine = board("notices")
+      author = setup_user("user")
+      reporter = setup_user("user")
+      moderator = moderator_of(mine)
+      resolved = report_article(article_in(mine, author, "Resolved"), reporter)
+      dismissed = report_article(article_in(mine, author, "Dismissed"), reporter)
+
+      {:ok, lv, _html} = live(log_in_user(conn, moderator), "/moderation")
+
+      lv |> form("#moderation-resolve-form-#{resolved.id}", %{"note" => ""}) |> render_submit()
+      lv |> element("#moderation-dismiss-#{dismissed.id}") |> render_click()
+
+      assert [notice] = notifications(reporter, "report_reviewed")
+      assert notice.data["report_id"] == resolved.id
+    end
+
+    test "the author hears their content was removed, with the report's reason", %{conn: conn} do
+      mine = board("removal")
+      author = setup_user("user")
+      reporter = setup_user("user")
+      moderator = moderator_of(mine)
+      article = article_in(mine, author, "Removed")
+      report = report_article(article, reporter)
+
+      {:ok, lv, _html} = live(log_in_user(conn, moderator), "/moderation")
+      lv |> element("#moderation-delete-article-#{report.id}") |> render_click()
+
+      assert [notice] = notifications(author, "content_removed")
+      assert notice.data["content_type"] == "article"
+      assert notice.data["reason_category"] == "spam"
+      assert notice.actor_user_id == moderator.id
+    end
+  end
+
+  defp notifications(user, type) do
+    import Ecto.Query
+
+    Repo.all(
+      from(n in Baudrate.Notification.Notification,
+        where: n.user_id == ^user.id and n.type == ^type
+      )
+    )
+  end
 end

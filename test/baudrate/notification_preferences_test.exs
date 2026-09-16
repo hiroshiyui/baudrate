@@ -61,14 +61,18 @@ defmodule Baudrate.NotificationPreferencesTest do
       assert changeset.valid?
     end
 
-    test "configurable types are every valid type except account security notices" do
+    test "configurable types are every valid type except the always-delivered ones" do
       alias Baudrate.Notification.Notification, as: Schema
 
-      assert Enum.sort(Schema.configurable_types() ++ Schema.security_types()) ==
+      assert Enum.sort(Schema.configurable_types() ++ Schema.always_delivered_types()) ==
                Enum.sort(Schema.valid_types())
 
-      assert Schema.configurable_types() -- Schema.security_types() ==
+      assert Schema.configurable_types() -- Schema.always_delivered_types() ==
                Schema.configurable_types()
+
+      # Being told your own content was removed cannot be switched off (P1-D4).
+      assert "content_removed" in Schema.always_delivered_types()
+      refute "content_removed" in Schema.configurable_types()
     end
 
     test "rejects unknown notification types", %{user: user} do

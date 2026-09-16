@@ -468,6 +468,55 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
     end
   end
 
+  describe "outcome notices (P1-D4)" do
+    test "resolving tells the reporter; deleting tells the author with the reason", %{conn: conn} do
+      admin = setup_user("admin")
+      reporter = setup_user("user")
+      {report, article} = create_report_with_article(reporter)
+
+      conn = log_in_admin(conn, admin)
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      lv |> element("#admin-moderation-delete-article-#{report.id}") |> render_click()
+
+      lv
+      |> form("#admin-moderation-resolve-form-#{report.id}", %{"note" => "Removed"})
+      |> render_submit()
+
+      assert [reviewed] = notifications_of(reporter, "report_reviewed")
+      assert reviewed.data["report_id"] == report.id
+
+      # The reporter here is also the author of the test article.
+      assert [removed] = notifications_of(article.user_id, "content_removed")
+      assert removed.data["reason_category"] == "spam"
+      assert removed.actor_user_id == admin.id
+    end
+
+    test "a comment deleted from the queue records who deleted it", %{conn: conn} do
+      admin = setup_user("admin")
+      reporter = setup_user("user")
+      {report, comment} = create_report_with_comment(reporter)
+
+      conn = log_in_admin(conn, admin)
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+      lv |> element("#admin-moderation-delete-comment-#{report.id}") |> render_click()
+
+      comment = Repo.reload!(comment)
+      assert comment.deleted_at
+      assert comment.deleted_by_id == admin.id
+    end
+  end
+
+  defp notifications_of(%{id: user_id}, type), do: notifications_of(user_id, type)
+
+  defp notifications_of(user_id, type) do
+    Repo.all(
+      from(n in Baudrate.Notification.Notification,
+        where: n.user_id == ^user_id and n.type == ^type
+      )
+    )
+  end
+
   describe "queue basics (1B)" do
     test "shows the category, links to the reported article and the reporter's text", %{
       conn: conn

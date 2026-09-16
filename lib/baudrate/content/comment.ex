@@ -29,6 +29,8 @@ defmodule Baudrate.Content.Comment do
     field :url, :string
     field :visibility, :string, default: "public"
     field :deleted_at, :utc_datetime
+    # Who deleted it: the author, or the moderator who removed it (1B).
+    field :deleted_by_id, :id
 
     belongs_to :article, Article
     belongs_to :parent, __MODULE__
@@ -88,10 +90,10 @@ defmodule Baudrate.Content.Comment do
   end
 
   @doc "Changeset for soft-deleting a comment."
-  def soft_delete_changeset(comment) do
+  def soft_delete_changeset(comment, deleted_by_id \\ nil) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     comment
-    |> change(deleted_at: now, body: "[deleted]", body_html: nil)
+    |> change(deleted_at: now, deleted_by_id: deleted_by_id, body: "[deleted]", body_html: nil)
   end
 end

@@ -18,6 +18,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_update_article/1`| `article_update:`  | 5 min   | 20    |
   | `check_create_comment/1`| `comment_create:`  | 5 min   | 30    |
   | `check_delete_content/1`| `delete_content:`  | 5 min   | 20    |
+  | `check_moderator_delete/1`| `moderator_delete:` | 5 min | 100   |
   | `check_mute_user/1`     | `mute_user:`       | 5 min   | 10    |
   | `check_search/1`        | `search:`          | 1 min   | 15    |
   | `check_search_by_ip/1`  | `search:ip:`       | 1 min   | 10    |
@@ -93,6 +94,18 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_delete_content(integer()) :: :ok | {:error, :rate_limited}
   def check_delete_content(user_id) do
     check("delete_content:#{user_id}", 300_000, 20, :delete_content)
+  end
+
+  @doc """
+  Content deletion by a moderator: 100 per 5 minutes per user (1B).
+
+  Moderators clearing a spam wave hit the author limit of 20, which is meant
+  to slow down someone wiping their own history, not moderation; they get
+  their own, higher limit instead.
+  """
+  @spec check_moderator_delete(integer()) :: :ok | {:error, :rate_limited}
+  def check_moderator_delete(user_id) do
+    check("moderator_delete:#{user_id}", 300_000, 100, :moderator_delete)
   end
 
   @doc "User muting: 10 per 5 minutes per user."

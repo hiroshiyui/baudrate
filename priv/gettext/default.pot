@@ -857,9 +857,9 @@ msgstr ""
 msgid "Allowlist (allow only specific domains)"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:281
-#: lib/baudrate_web/live/article_live.ex:839
-#: lib/baudrate_web/live/moderation_live.ex:107
+#: lib/baudrate_web/live/admin/moderation_live.ex:301
+#: lib/baudrate_web/live/article_live.ex:836
+#: lib/baudrate_web/live/moderation_live.ex:111
 #, elixir-autogen, elixir-format
 msgid "Article deleted."
 msgstr ""
@@ -910,9 +910,9 @@ msgstr ""
 msgid "Comma-separated list of domains to block from federation."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:305
-#: lib/baudrate_web/live/article_live.ex:872
-#: lib/baudrate_web/live/moderation_live.ex:132
+#: lib/baudrate_web/live/admin/moderation_live.ex:327
+#: lib/baudrate_web/live/article_live.ex:886
+#: lib/baudrate_web/live/moderation_live.ex:138
 #, elixir-autogen, elixir-format
 msgid "Comment deleted."
 msgstr ""
@@ -924,24 +924,24 @@ msgstr ""
 msgid "Content"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:134
+#: lib/baudrate_web/components/moderation_components.ex:135
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:65
 #, elixir-autogen, elixir-format
 msgid "Delete Article"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:166
+#: lib/baudrate_web/components/moderation_components.ex:168
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:66
 #, elixir-autogen, elixir-format
 msgid "Delete Comment"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:131
+#: lib/baudrate_web/components/moderation_components.ex:132
 #, elixir-autogen, elixir-format
 msgid "Delete this article?"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:163
+#: lib/baudrate_web/components/moderation_components.ex:165
 #, elixir-autogen, elixir-format
 msgid "Delete this comment?"
 msgstr ""
@@ -961,7 +961,7 @@ msgstr ""
 msgid "Disable"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:310
+#: lib/baudrate_web/components/moderation_components.ex:312
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr ""
@@ -1005,28 +1005,28 @@ msgstr ""
 msgid "Failed"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:285
-#: lib/baudrate_web/live/article_live.ex:843
-#: lib/baudrate_web/live/moderation_live.ex:110
+#: lib/baudrate_web/live/admin/moderation_live.ex:305
+#: lib/baudrate_web/live/article_live.ex:840
+#: lib/baudrate_web/live/moderation_live.ex:114
 #, elixir-autogen, elixir-format
 msgid "Failed to delete article."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:309
-#: lib/baudrate_web/live/article_live.ex:875
-#: lib/baudrate_web/live/moderation_live.ex:135
+#: lib/baudrate_web/live/admin/moderation_live.ex:331
+#: lib/baudrate_web/live/article_live.ex:889
+#: lib/baudrate_web/live/moderation_live.ex:141
 #, elixir-autogen, elixir-format
 msgid "Failed to delete comment."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:261
-#: lib/baudrate_web/live/moderation_live.ex:87
+#: lib/baudrate_web/live/admin/moderation_live.ex:266
+#: lib/baudrate_web/live/moderation_live.ex:89
 #, elixir-autogen, elixir-format
 msgid "Failed to dismiss report."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:240
-#: lib/baudrate_web/live/moderation_live.ex:73
+#: lib/baudrate_web/live/admin/moderation_live.ex:245
+#: lib/baudrate_web/live/moderation_live.ex:75
 #, elixir-autogen, elixir-format
 msgid "Failed to resolve report."
 msgstr ""
@@ -1057,7 +1057,7 @@ msgstr ""
 msgid "Federation Mode"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:346
+#: lib/baudrate_web/live/admin/moderation_live.ex:368
 #, elixir-autogen, elixir-format
 msgid "Flag sent to %{domain}."
 msgstr ""
@@ -1100,7 +1100,7 @@ msgstr ""
 
 #: lib/baudrate_web/components/layouts.ex:84
 #: lib/baudrate_web/components/layouts.ex:325
-#: lib/baudrate_web/live/moderation_live.ex:44
+#: lib/baudrate_web/live/moderation_live.ex:45
 #, elixir-autogen, elixir-format
 msgid "Moderation"
 msgstr ""
@@ -1115,7 +1115,7 @@ msgstr ""
 msgid "No boards configured."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:349
+#: lib/baudrate_web/live/admin/moderation_live.ex:371
 #, elixir-autogen, elixir-format
 msgid "No remote actor to send flag to."
 msgstr ""
@@ -1153,19 +1153,19 @@ msgstr ""
 msgid "Register"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:256
-#: lib/baudrate_web/live/moderation_live.ex:84
+#: lib/baudrate_web/live/admin/moderation_live.ex:261
+#: lib/baudrate_web/live/moderation_live.ex:86
 #, elixir-autogen, elixir-format
 msgid "Report dismissed."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:235
-#: lib/baudrate_web/live/moderation_live.ex:70
+#: lib/baudrate_web/live/admin/moderation_live.ex:240
+#: lib/baudrate_web/live/moderation_live.ex:72
 #, elixir-autogen, elixir-format
 msgid "Report resolved."
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:215
+#: lib/baudrate_web/components/moderation_components.ex:217
 #, elixir-autogen, elixir-format
 msgid "Reported Actor:"
 msgstr ""
@@ -1175,18 +1175,18 @@ msgstr ""
 msgid "Reported Article:"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:142
+#: lib/baudrate_web/components/moderation_components.ex:143
 #, elixir-autogen, elixir-format
 msgid "Reported Comment:"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:290
+#: lib/baudrate_web/components/moderation_components.ex:292
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "Resolution note (optional)"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:300
+#: lib/baudrate_web/components/moderation_components.ex:302
 #, elixir-autogen, elixir-format
 msgid "Resolve"
 msgstr ""
@@ -1196,12 +1196,12 @@ msgstr ""
 msgid "Resolved"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:273
+#: lib/baudrate_web/components/moderation_components.ex:275
 #, elixir-autogen, elixir-format
 msgid "Send Flag to %{domain}"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:270
+#: lib/baudrate_web/components/moderation_components.ex:272
 #, elixir-autogen, elixir-format
 msgid "Send a Flag report to %{domain}?"
 msgstr ""
@@ -1281,7 +1281,7 @@ msgstr ""
 msgid "Back to article"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:935
+#: lib/baudrate_web/live/article_live.ex:945
 #, elixir-autogen, elixir-format
 msgid "Comment posted."
 msgstr ""
@@ -1334,12 +1334,12 @@ msgid "No comments yet."
 msgstr ""
 
 #: lib/baudrate_web/live/article_edit_live.ex:93
-#: lib/baudrate_web/live/article_live.ex:175
-#: lib/baudrate_web/live/article_live.ex:228
-#: lib/baudrate_web/live/article_live.ex:259
-#: lib/baudrate_web/live/article_live.ex:529
-#: lib/baudrate_web/live/article_live.ex:592
-#: lib/baudrate_web/live/article_live.ex:878
+#: lib/baudrate_web/live/article_live.ex:172
+#: lib/baudrate_web/live/article_live.ex:225
+#: lib/baudrate_web/live/article_live.ex:256
+#: lib/baudrate_web/live/article_live.ex:513
+#: lib/baudrate_web/live/article_live.ex:576
+#: lib/baudrate_web/live/article_live.ex:865
 #: lib/baudrate_web/live/feed_live.ex:598
 #, elixir-autogen, elixir-format
 msgid "Not authorized."
@@ -2181,8 +2181,8 @@ msgid "Failed to add moderator."
 msgstr ""
 
 #: lib/baudrate_web/live/article_edit_live.ex:148
-#: lib/baudrate_web/live/article_live.ex:225
-#: lib/baudrate_web/live/article_live.ex:256
+#: lib/baudrate_web/live/article_live.ex:222
+#: lib/baudrate_web/live/article_live.ex:253
 #, elixir-autogen, elixir-format
 msgid "Failed to update article."
 msgstr ""
@@ -2284,7 +2284,7 @@ msgstr ""
 msgid "No comments found for \"%{query}\"."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:804
+#: lib/baudrate_web/live/article_live.ex:788
 #, elixir-autogen, elixir-format
 msgid "This article has been deleted."
 msgstr ""
@@ -2496,7 +2496,7 @@ msgstr ""
 msgid "Admin Invites"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:34
+#: lib/baudrate_web/live/admin/moderation_live.ex:35
 #, elixir-autogen, elixir-format
 msgid "Admin Moderation"
 msgstr ""
@@ -2680,17 +2680,17 @@ msgstr ""
 msgid "Markdown preview"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:556
+#: lib/baudrate_web/helpers.ex:567
 #, elixir-autogen, elixir-format
 msgid "%{count}d ago"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:555
+#: lib/baudrate_web/helpers.ex:566
 #, elixir-autogen, elixir-format
 msgid "%{count}h ago"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:554
+#: lib/baudrate_web/helpers.ex:565
 #, elixir-autogen, elixir-format
 msgid "%{count}m ago"
 msgstr ""
@@ -2837,7 +2837,7 @@ msgstr ""
 msgid "You cannot send messages to this user."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:553
+#: lib/baudrate_web/helpers.ex:564
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr ""
@@ -3113,17 +3113,17 @@ msgstr ""
 msgid "Unblock User"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:573
+#: lib/baudrate_web/helpers.ex:584
 #, elixir-autogen, elixir-format
 msgid "%{n} B"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:576
+#: lib/baudrate_web/helpers.ex:587
 #, elixir-autogen, elixir-format
 msgid "%{n} KB"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:579
+#: lib/baudrate_web/helpers.ex:590
 #, elixir-autogen, elixir-format
 msgid "%{n} MB"
 msgstr ""
@@ -3246,14 +3246,14 @@ msgstr ""
 msgid "resolved"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:203
+#: lib/baudrate_web/live/admin/moderation_live.ex:206
 #, elixir-autogen, elixir-format
 msgid "%{count} report dismissed."
 msgid_plural "%{count} reports dismissed."
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:164
+#: lib/baudrate_web/live/admin/moderation_live.ex:167
 #, elixir-autogen, elixir-format
 msgid "%{count} report resolved."
 msgid_plural "%{count} reports resolved."
@@ -3337,7 +3337,7 @@ msgstr[1] ""
 msgid "Resolve Selected"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:297
+#: lib/baudrate_web/components/moderation_components.ex:299
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:196
 #, elixir-autogen, elixir-format
 msgid "Resolving..."
@@ -3423,8 +3423,8 @@ msgid "Your account is too new to generate invite codes."
 msgstr ""
 
 #: lib/baudrate_web/live/article_live.ex:166
-#: lib/baudrate_web/live/article_live.ex:388
-#: lib/baudrate_web/live/article_live.ex:518
+#: lib/baudrate_web/live/article_live.ex:502
+#: lib/baudrate_web/live/article_live.ex:859
 #: lib/baudrate_web/live/safety_actions.ex:58
 #: lib/baudrate_web/live/user_profile_live.ex:174
 #: lib/baudrate_web/live/user_profile_live.ex:221
@@ -3437,7 +3437,7 @@ msgstr ""
 msgid "Too many searches. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:419
+#: lib/baudrate_web/live/article_live.ex:403
 #, elixir-autogen, elixir-format
 msgid "You are commenting too frequently. Please try again later."
 msgstr ""
@@ -3615,7 +3615,7 @@ msgid "Feed"
 msgstr ""
 
 #: lib/baudrate_web/components/comment_components.ex:83
-#: lib/baudrate_web/components/moderation_components.ex:193
+#: lib/baudrate_web/components/moderation_components.ex:195
 #: lib/baudrate_web/live/article_live.html.heex:76
 #: lib/baudrate_web/live/article_live.html.heex:291
 #: lib/baudrate_web/live/board_live.html.heex:225
@@ -3845,7 +3845,7 @@ msgid "You don't have permission to manage this board."
 msgstr ""
 
 #: lib/baudrate_web/live/article_edit_live.ex:66
-#: lib/baudrate_web/live/article_live.ex:460
+#: lib/baudrate_web/live/article_live.ex:444
 #: lib/baudrate_web/live/article_new_live.ex:162
 #: lib/baudrate_web/live/feed_live.ex:282
 #: lib/baudrate_web/live/feed_live.ex:503
@@ -3930,16 +3930,16 @@ msgstr ""
 msgid "Timezone"
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:268
-#: lib/baudrate_web/live/moderation_live.ex:113
+#: lib/baudrate_web/live/admin/moderation_live.ex:286
+#: lib/baudrate_web/live/moderation_live.ex:117
 #, elixir-autogen, elixir-format
 msgid "Article not found."
 msgstr ""
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:293
+#: lib/baudrate_web/live/admin/moderation_live.ex:313
+#: lib/baudrate_web/live/article_live.ex:849
 #: lib/baudrate_web/live/article_live.ex:852
-#: lib/baudrate_web/live/article_live.ex:855
-#: lib/baudrate_web/live/moderation_live.ex:138
+#: lib/baudrate_web/live/moderation_live.ex:144
 #, elixir-autogen, elixir-format
 msgid "Comment not found."
 msgstr ""
@@ -3950,12 +3950,12 @@ msgstr ""
 msgid "Too many requests. Please try again later."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:514
+#: lib/baudrate_web/live/article_live.ex:498
 #, elixir-autogen, elixir-format
 msgid "Article forwarded to board."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:532
+#: lib/baudrate_web/live/article_live.ex:516
 #, elixir-autogen, elixir-format
 msgid "Failed to forward article."
 msgstr ""
@@ -3995,8 +3995,8 @@ msgstr ""
 msgid "Search boards..."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:525
-#: lib/baudrate_web/live/article_live.ex:599
+#: lib/baudrate_web/live/article_live.ex:509
+#: lib/baudrate_web/live/article_live.ex:583
 #: lib/baudrate_web/live/feed_live.ex:605
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to post in this board."
@@ -4041,7 +4041,7 @@ msgstr[1] ""
 
 #: lib/baudrate_web/components/layouts.ex:228
 #: lib/baudrate_web/components/layouts.ex:788
-#: lib/baudrate_web/live/notifications_live.ex:33
+#: lib/baudrate_web/live/notifications_live.ex:36
 #: lib/baudrate_web/live/notifications_live.html.heex:7
 #, elixir-autogen, elixir-format
 msgid "Notifications"
@@ -4053,8 +4053,8 @@ msgstr ""
 msgid "Mark all as read"
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.html.heex:134
-#: lib/baudrate_web/live/notifications_live.html.heex:135
+#: lib/baudrate_web/live/notifications_live.html.heex:145
+#: lib/baudrate_web/live/notifications_live.html.heex:146
 #, elixir-autogen, elixir-format
 msgid "Mark as read"
 msgstr ""
@@ -4104,7 +4104,7 @@ msgstr ""
 msgid "replied to your comment"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:421
+#: lib/baudrate_web/helpers.ex:430
 #, elixir-autogen, elixir-format
 msgid "sent you a notification"
 msgstr ""
@@ -4418,7 +4418,7 @@ msgstr ""
 msgid "Add option"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:613
+#: lib/baudrate_web/live/article_live.ex:597
 #, elixir-autogen, elixir-format
 msgid "Cannot vote on this poll."
 msgstr ""
@@ -4450,7 +4450,7 @@ msgstr ""
 msgid "Failed to create poll."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:640
+#: lib/baudrate_web/live/article_live.ex:624
 #, elixir-autogen, elixir-format
 msgid "Failed to record vote."
 msgstr ""
@@ -4517,7 +4517,7 @@ msgstr ""
 msgid "Single choice"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:634
+#: lib/baudrate_web/live/article_live.ex:618
 #, elixir-autogen, elixir-format
 msgid "This poll has closed."
 msgstr ""
@@ -4527,7 +4527,7 @@ msgstr ""
 msgid "Vote"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:628
+#: lib/baudrate_web/live/article_live.ex:612
 #, elixir-autogen, elixir-format
 msgid "Vote recorded."
 msgstr ""
@@ -4648,8 +4648,8 @@ msgstr ""
 msgid "Failed to update avatar."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:274
-#: lib/baudrate_web/live/article_live.ex:295
+#: lib/baudrate_web/live/article_live.ex:271
+#: lib/baudrate_web/live/article_live.ex:292
 #, elixir-autogen, elixir-format
 msgid "Failed to toggle bookmark."
 msgstr ""
@@ -4703,7 +4703,7 @@ msgid_plural "%{count} Likes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/baudrate_web/live/article_live.ex:320
+#: lib/baudrate_web/live/article_live.ex:317
 #: lib/baudrate_web/live/feed_live.ex:469
 #: lib/baudrate_web/live/interaction_helpers.ex:135
 #: lib/baudrate_web/live/interaction_helpers.ex:157
@@ -4717,7 +4717,7 @@ msgstr ""
 msgid "Like"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:311
+#: lib/baudrate_web/live/article_live.ex:308
 #: lib/baudrate_web/live/interaction_helpers.ex:134
 #, elixir-autogen, elixir-format
 msgid "You cannot like your own article."
@@ -4830,8 +4830,8 @@ msgstr ""
 msgid "Enter the installation key to proceed with setup."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:720
-#: lib/baudrate_web/live/article_live.ex:739
+#: lib/baudrate_web/live/article_live.ex:704
+#: lib/baudrate_web/live/article_live.ex:723
 #: lib/baudrate_web/live/safety_actions.ex:142
 #: lib/baudrate_web/live/user_profile_live.ex:336
 #, elixir-autogen, elixir-format
@@ -4885,14 +4885,14 @@ msgstr ""
 msgid "Report User"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:736
+#: lib/baudrate_web/live/article_live.ex:720
 #: lib/baudrate_web/live/safety_actions.ex:133
 #: lib/baudrate_web/live/user_profile_live.ex:333
 #, elixir-autogen, elixir-format
 msgid "Report submitted. Thank you."
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:234
+#: lib/baudrate_web/components/moderation_components.ex:236
 #, elixir-autogen, elixir-format
 msgid "Reported User:"
 msgstr ""
@@ -4907,7 +4907,7 @@ msgstr ""
 msgid "Too many attempts. Please wait before trying again."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:708
+#: lib/baudrate_web/live/article_live.ex:692
 #: lib/baudrate_web/live/safety_actions.ex:136
 #: lib/baudrate_web/live/user_profile_live.ex:312
 #, elixir-autogen, elixir-format
@@ -4919,7 +4919,7 @@ msgstr ""
 msgid "Verification"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:726
+#: lib/baudrate_web/live/article_live.ex:710
 #: lib/baudrate_web/live/safety_actions.ex:139
 #: lib/baudrate_web/live/user_profile_live.ex:321
 #, elixir-autogen, elixir-format
@@ -5045,7 +5045,7 @@ msgstr[1] ""
 msgid "Boost"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:345
+#: lib/baudrate_web/live/article_live.ex:342
 #: lib/baudrate_web/live/feed_live.ex:479
 #: lib/baudrate_web/live/interaction_helpers.ex:146
 #: lib/baudrate_web/live/interaction_helpers.ex:168
@@ -5053,7 +5053,7 @@ msgstr ""
 msgid "Failed to toggle boost."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:336
+#: lib/baudrate_web/live/article_live.ex:333
 #: lib/baudrate_web/live/interaction_helpers.ex:145
 #, elixir-autogen, elixir-format
 msgid "You cannot boost your own article."
@@ -5074,12 +5074,12 @@ msgstr ""
 msgid "boosted your comment"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:196
+#: lib/baudrate_web/live/article_live.ex:193
 #, elixir-autogen, elixir-format
 msgid "Article removed from %{board}."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:203
+#: lib/baudrate_web/live/article_live.ex:200
 #, elixir-autogen, elixir-format
 msgid "Failed to remove article from board."
 msgstr ""
@@ -5129,12 +5129,12 @@ msgstr ""
 msgid "YouTube video"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:589
+#: lib/baudrate_web/live/article_live.ex:573
 #, elixir-autogen, elixir-format
 msgid "Comment forwarded to board."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:603
+#: lib/baudrate_web/live/article_live.ex:587
 #, elixir-autogen, elixir-format
 msgid "Failed to forward comment."
 msgstr ""
@@ -5723,12 +5723,12 @@ msgstr ""
 msgid "Feed item not found."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:901
+#: lib/baudrate_web/live/article_live.ex:911
 #, elixir-autogen, elixir-format
 msgid "Invalid reply target."
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:894
+#: lib/baudrate_web/live/article_live.ex:904
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to comment on this article."
 msgstr ""
@@ -5863,12 +5863,12 @@ msgstr ""
 msgid "Deactivate bot %{username}"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:132
+#: lib/baudrate_web/components/moderation_components.ex:133
 #, elixir-autogen, elixir-format
 msgid "Delete Article: %{title}"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:164
+#: lib/baudrate_web/components/moderation_components.ex:166
 #, elixir-autogen, elixir-format
 msgid "Delete Comment from report #%{id}"
 msgstr ""
@@ -5888,7 +5888,7 @@ msgstr ""
 msgid "Disable federation for board %{board}"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:308
+#: lib/baudrate_web/components/moderation_components.ex:310
 #, elixir-autogen, elixir-format
 msgid "Dismiss report #%{id}"
 msgstr ""
@@ -5918,12 +5918,12 @@ msgstr ""
 msgid "Group"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:259
+#: lib/baudrate_web/components/moderation_components.ex:261
 #, elixir-autogen, elixir-format
 msgid "Handled by %{name}"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:255
+#: lib/baudrate_web/components/moderation_components.ex:257
 #, elixir-autogen, elixir-format
 msgid "Handled by %{name} — %{note}"
 msgstr ""
@@ -5974,17 +5974,17 @@ msgstr ""
 msgid "Muted"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:1019
+#: lib/baudrate_web/live/article_live.ex:1029
 #, elixir-autogen, elixir-format
 msgid "New comment"
 msgstr ""
 
-#: lib/baudrate_web/live/article_live.ex:1015
+#: lib/baudrate_web/live/article_live.ex:1025
 #, elixir-autogen, elixir-format
 msgid "New comment by %{name}"
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:97
+#: lib/baudrate_web/live/notifications_live.ex:100
 #, elixir-autogen, elixir-format
 msgid "New notification. %{count} unread notification"
 msgid_plural "New notification. %{count} unread notifications"
@@ -6059,12 +6059,12 @@ msgstr ""
 msgid "Reset & Retry bot %{username}"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:291
+#: lib/baudrate_web/components/moderation_components.ex:293
 #, elixir-autogen, elixir-format
 msgid "Resolution note for report #%{id}"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:298
+#: lib/baudrate_web/components/moderation_components.ex:300
 #, elixir-autogen, elixir-format
 msgid "Resolve report #%{id}"
 msgstr ""
@@ -6194,37 +6194,37 @@ msgstr ""
 msgid "System Information"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:358
+#: lib/baudrate_web/helpers.ex:367
 #, elixir-autogen, elixir-format
 msgid "A security key was added to your account."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:361
+#: lib/baudrate_web/helpers.ex:370
 #, elixir-autogen, elixir-format
 msgid "A security key was removed from your account."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:168
+#: lib/baudrate_web/live/notifications_live.ex:171
 #, elixir-autogen, elixir-format
 msgid "If you did not make this change, check your security settings right away and contact an administrator."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:153
+#: lib/baudrate_web/live/notifications_live.ex:156
 #, elixir-autogen, elixir-format
 msgid "Review your security settings"
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:140
+#: lib/baudrate_web/live/notifications_live.ex:143
 #, elixir-autogen, elixir-format
 msgid "Security key: %{label}"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:364
+#: lib/baudrate_web/helpers.ex:373
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication (TOTP) was set up on your account."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:367
+#: lib/baudrate_web/helpers.ex:376
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication (TOTP) was turned off on your account."
 msgstr ""
@@ -6234,7 +6234,7 @@ msgstr ""
 msgid "Someone"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:373
+#: lib/baudrate_web/helpers.ex:382
 #, elixir-autogen, elixir-format
 msgid "All other sessions on your account were signed out."
 msgstr ""
@@ -6308,7 +6308,7 @@ msgstr[1] ""
 msgid "Signing out..."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:370
+#: lib/baudrate_web/helpers.ex:379
 #, elixir-autogen, elixir-format
 msgid "Your account password was changed."
 msgstr ""
@@ -6320,27 +6320,27 @@ msgstr ""
 msgid "Your session has expired. Please sign in again."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:410
+#: lib/baudrate_web/helpers.ex:419
 #, elixir-autogen, elixir-format
 msgid "A data export of your account was requested. It can be downloaded after 24 hours."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:419
+#: lib/baudrate_web/helpers.ex:428
 #, elixir-autogen, elixir-format
 msgid "A data export request on your account was cancelled."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:149
+#: lib/baudrate_web/live/notifications_live.ex:152
 #, elixir-autogen, elixir-format
 msgid "Review your data exports"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:413
+#: lib/baudrate_web/helpers.ex:422
 #, elixir-autogen, elixir-format
 msgid "Your data export is ready and can be downloaded for 48 hours."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:416
+#: lib/baudrate_web/helpers.ex:425
 #, elixir-autogen, elixir-format
 msgid "Your data export was downloaded."
 msgstr ""
@@ -6693,7 +6693,7 @@ msgstr ""
 msgid "The 100 most recent data export requests. Users download their own data; there is no way to export another user's data from here."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:150
+#: lib/baudrate_web/live/notifications_live.ex:153
 #, elixir-autogen, elixir-format
 msgid "Change your password"
 msgstr ""
@@ -6708,7 +6708,7 @@ msgstr ""
 msgid "Each code works only once. If you just used one, wait for the next code."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:162
+#: lib/baudrate_web/live/notifications_live.ex:165
 #, elixir-autogen, elixir-format
 msgid "If this was not you, your password is known to someone else. Change it right away and contact an administrator."
 msgstr ""
@@ -6718,7 +6718,7 @@ msgstr ""
 msgid "Re-authentication"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:377
+#: lib/baudrate_web/helpers.ex:386
 #, elixir-autogen, elixir-format
 msgid "Someone entered the correct password for your account but failed the two-factor code several times."
 msgstr ""
@@ -6768,7 +6768,7 @@ msgstr ""
 msgid "Alias removed."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:144
+#: lib/baudrate_web/live/notifications_live.ex:147
 #, elixir-autogen, elixir-format
 msgid "Alias: %{label}"
 msgstr ""
@@ -6788,12 +6788,12 @@ msgstr ""
 msgid "Aliases tell other servers that an account elsewhere is also yours. They are needed before an account can move."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:382
+#: lib/baudrate_web/helpers.ex:391
 #, elixir-autogen, elixir-format
 msgid "An account alias was added to your account."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:385
+#: lib/baudrate_web/helpers.ex:394
 #, elixir-autogen, elixir-format
 msgid "An account alias was removed from your account."
 msgstr ""
@@ -6889,12 +6889,12 @@ msgstr ""
 msgid "A move of this account is already pending."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:389
+#: lib/baudrate_web/helpers.ex:398
 #, elixir-autogen, elixir-format
 msgid "A move of your account to another server was requested. It will be sent after 24 hours unless you cancel it."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:394
+#: lib/baudrate_web/helpers.ex:403
 #, elixir-autogen, elixir-format
 msgid "A pending move of your account was cancelled."
 msgstr ""
@@ -6944,7 +6944,7 @@ msgstr ""
 msgid "Destination account"
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:147
+#: lib/baudrate_web/live/notifications_live.ex:150
 #, elixir-autogen, elixir-format
 msgid "Destination: %{label}"
 msgstr ""
@@ -7077,12 +7077,12 @@ msgstr[1] ""
 msgid "Your account is about to move to %{account}"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:397
+#: lib/baudrate_web/helpers.ex:406
 #, elixir-autogen, elixir-format
 msgid "A pending move of your account could not be sent and was stopped."
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:128
+#: lib/baudrate_web/live/notifications_live.ex:131
 #, elixir-autogen, elixir-format
 msgid "New account: %{label}"
 msgstr ""
@@ -7107,7 +7107,7 @@ msgstr ""
 msgid "Removing..."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:406
+#: lib/baudrate_web/helpers.ex:415
 #, elixir-autogen, elixir-format
 msgid "The redirect of your moved account was removed. It can post again."
 msgstr ""
@@ -7128,7 +7128,7 @@ msgstr ""
 msgid "This account has moved. New account:"
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:425
+#: lib/baudrate_web/helpers.ex:434
 #, elixir-autogen, elixir-format
 msgid "Your account has moved and is read-only. Remove the redirect to post again."
 msgstr ""
@@ -7138,7 +7138,7 @@ msgstr ""
 msgid "Your account has moved and is read-only. You can still read, export your data and manage your account."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:401
+#: lib/baudrate_web/helpers.ex:410
 #, elixir-autogen, elixir-format
 msgid "Your account has moved. Your followers were sent to your new account, and this account is now read-only."
 msgstr ""
@@ -7173,7 +7173,7 @@ msgstr ""
 msgid "this account was no longer eligible"
 msgstr ""
 
-#: lib/baudrate_web/live/notifications_live.ex:133
+#: lib/baudrate_web/live/notifications_live.ex:136
 #, elixir-autogen, elixir-format
 msgid "New account: %{label}. Boards: %{boards}"
 msgstr ""
@@ -7389,7 +7389,7 @@ msgstr ""
 msgid "No blocked accounts."
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:207
+#: lib/baudrate_web/components/moderation_components.ex:209
 #, elixir-autogen, elixir-format
 msgid "Only this message was shared with moderators, not the conversation."
 msgstr ""
@@ -7429,12 +7429,12 @@ msgstr ""
 msgid "Report this message"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:202
+#: lib/baudrate_web/components/moderation_components.ex:204
 #, elixir-autogen, elixir-format
 msgid "Reported Direct Message:"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:175
+#: lib/baudrate_web/components/moderation_components.ex:177
 #, elixir-autogen, elixir-format
 msgid "Reported Feed Item:"
 msgstr ""
@@ -7490,7 +7490,7 @@ msgstr ""
 msgid "User unblocked."
 msgstr ""
 
-#: lib/baudrate_web/helpers.ex:432
+#: lib/baudrate_web/helpers.ex:441
 #, elixir-autogen, elixir-format
 msgid "You cannot interact with this account."
 msgstr ""
@@ -7537,7 +7537,7 @@ msgstr ""
 msgid "Spam"
 msgstr ""
 
-#: lib/baudrate_web/components/moderation_components.ex:154
+#: lib/baudrate_web/components/moderation_components.ex:155
 #, elixir-autogen, elixir-format
 msgid "View in context"
 msgstr ""
@@ -7547,7 +7547,7 @@ msgstr ""
 msgid "What is wrong?"
 msgstr ""
 
-#: lib/baudrate_web/live/moderation_live.ex:154
+#: lib/baudrate_web/live/moderation_live.ex:160
 #, elixir-autogen, elixir-format
 msgid "Report not found."
 msgstr ""
@@ -7567,7 +7567,22 @@ msgstr ""
 msgid "Reports about your boards"
 msgstr ""
 
-#: lib/baudrate_web/live/moderation_live.ex:32
+#: lib/baudrate_web/live/moderation_live.ex:33
 #, elixir-autogen, elixir-format
 msgid "You do not moderate any boards."
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:363
+#, elixir-autogen, elixir-format
+msgid "A moderator removed your content."
+msgstr ""
+
+#: lib/baudrate_web/live/notifications_live.html.heex:109
+#, elixir-autogen, elixir-format
+msgid "Reported as: %{category}"
+msgstr ""
+
+#: lib/baudrate_web/helpers.ex:360
+#, elixir-autogen, elixir-format
+msgid "Your report has been reviewed by the moderators."
 msgstr ""

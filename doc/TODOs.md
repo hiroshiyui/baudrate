@@ -66,16 +66,11 @@ Shipped on `current`; see "Recently completed". Blocking semantics are recorded 
 - [x] **Queue basics** (2026-09-16): `Moderation.paginate_reports/1` (20 a page, status and page in the URL), links to the reported content, account or actor, the full reported text, `other_open_report_counts/1` next to each report, and a required reason category (P1-D9) on every report made on this site.
 - [x] **Scoped queue for board moderators** (2026-09-16): `/moderation` (`ModerationLive`), scoped by `Content.moderated_board_ids/1`, linked from each board they moderate, with every action re-checking `Moderation.report_in_boards?/2` and the delete permission.
 - [x] **Who hears about a new report** (2026-09-16): every admin and global moderator (`Setup.staff_user_ids/0`), plus the board moderators of the reported content's board.
-- [ ] **Outcome notices (P1-D4).**
-  - The reporter is told their report was reviewed.
-  - The author of removed content is told it was removed, with the reason.
-  - Neither is told about dismissed reports.
+- [x] **Outcome notices (P1-D4)** (2026-09-16): `report_reviewed` to the reporter on resolve, `content_removed` (always delivered) to the author with the report's reason category; dismissals notify nobody.
 - [ ] **Cross-posted articles (P1-D5).**
   - A board moderator can remove an article from *their* board.
   - Pin, lock and delete on an article in several boards need moderation rights on every one of them (admins and global moderators excepted).
-- [ ] **Moderator actions.**
-  - Moderators are not held to the author delete limit of 20 per 5 minutes, but get their own, higher limit.
-  - A deletion made from the queue records who deleted it.
+- [x] **Moderator actions** (2026-09-16): `RateLimits.check_moderator_delete/1` (100 per 5 minutes) for deleting other people's content, and `comments.deleted_by_id` records who deleted a comment, as articles already did.
 - [ ] **Evidence retention (P1-D6).** Content deleted by a moderator stays readable to staff in the report for 90 days, then it is purged. An author deleting their own content still wipes it at once. The message text copied into a DM report (`reports.message_body`, added in 1A) is purged on the same schedule once the report is closed.
 - **Accepted when:** a board moderator can resolve a report about their board end to end; a context-level test proves they cannot see or act on other boards' reports; every action is in the audit log.
 

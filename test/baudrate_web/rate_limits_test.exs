@@ -26,6 +26,26 @@ defmodule BaudrateWeb.RateLimitsTest do
     end
   end
 
+  describe "check_moderator_delete/1" do
+    test "gives moderators their own, higher bucket than authors (1B)" do
+      Sandbox.set_fun(fn bucket, scale, limit ->
+        send(self(), {:bucket, bucket, scale, limit})
+        {:allow, 1}
+      end)
+
+      assert :ok = RateLimits.check_moderator_delete(42)
+      assert_received {:bucket, "moderator_delete:42", 300_000, 100}
+
+      assert :ok = RateLimits.check_delete_content(42)
+      assert_received {:bucket, "delete_content:42", 300_000, 20}
+    end
+
+    test "denies over the limit" do
+      Sandbox.set_fun(fn _b, _s, _l -> {:deny, 300_000} end)
+      assert {:error, :rate_limited} = RateLimits.check_moderator_delete(1)
+    end
+  end
+
   describe "check_reauth/1" do
     test "allows attempts under the limit" do
       Sandbox.set_fun(fn _b, _s, _l -> {:allow, 1} end)

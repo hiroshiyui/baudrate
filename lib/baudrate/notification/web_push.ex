@@ -31,7 +31,7 @@ defmodule Baudrate.Notification.WebPush do
   alias Baudrate.Notification.PushSubscription
   alias Baudrate.Notification.VAPID
 
-  @security_types Baudrate.Notification.Notification.security_types()
+  @security_types Baudrate.Notification.Notification.always_delivered_types()
   alias Baudrate.Notification.VapidVault
   alias Baudrate.Repo
   alias Baudrate.Setup

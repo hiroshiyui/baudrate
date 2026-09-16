@@ -346,10 +346,10 @@ defmodule Baudrate.Content.Comments do
   Soft-deletes a comment by setting `deleted_at` and clearing body.
   """
   @spec soft_delete_comment(%Comment{}) :: {:ok, %Comment{}} | {:error, Ecto.Changeset.t()}
-  def soft_delete_comment(%Comment{} = comment) do
+  def soft_delete_comment(%Comment{} = comment, opts \\ []) do
     result =
       comment
-      |> Comment.soft_delete_changeset()
+      |> Comment.soft_delete_changeset(Keyword.get(opts, :deleted_by))
       |> Repo.update()
 
     with {:ok, deleted} <- result do
