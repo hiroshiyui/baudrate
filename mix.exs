@@ -63,7 +63,6 @@ defmodule Baudrate.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 1.0"},
       {:jason, "~> 1.2"},
-      {:dns_cluster, "~> 0.3.0"},
       {:bandit, "~> 1.5"},
       {:bcrypt_elixir, "~> 3.0"},
       {:nimble_totp, "~> 1.0"},

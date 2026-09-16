@@ -10,7 +10,9 @@ defmodule Baudrate.Application do
     children = [
       BaudrateWeb.Telemetry,
       Baudrate.Repo,
-      {DNSCluster, query: Application.get_env(:baudrate, :dns_cluster_query) || :ignore},
+      # Baudrate runs on one node (ADR 0033): the ETS caches, nonces,
+      # challenges and rate limits below are complete on their own, and every
+      # worker runs exactly once. There is deliberately no cluster discovery.
       {Phoenix.PubSub, name: Baudrate.PubSub},
       Baudrate.Auth.SessionCleaner,
       Baudrate.Auth.WebAuthnChallenges,

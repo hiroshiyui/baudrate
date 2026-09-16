@@ -109,8 +109,6 @@ if config_env() == :prod do
     origin: "https://#{host}",
     rp_id: host
 
-  config :baudrate, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
-
   config :baudrate, BaudrateWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
