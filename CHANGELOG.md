@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.20.0] — 2026-09-16
+
+A report queue board moderators can actually use, reason categories on
+reports, and notices telling people what happened to what they reported or
+posted (roadmap phase 1B).
+
+**Upgrading:** three migrations run (`reports.category`,
+`comments.deleted_by_id`, `reports.evidence_body` / `evidence_taken_at`).
+Existing reports keep an empty category and still show in the queue.
+
+### Added
+
+- **A moderation queue for board moderators** at `/moderation`, outside the
+  admin area. It lists only reports about articles in the boards they
+  moderate and comments on those articles — never accounts, messages, feed
+  items or another board's content. Resolving, dismissing and deleting are
+  re-checked on the server against the moderator's boards, so a report id
+  from the client grants nothing. Admins and global moderators see every
+  board here too, and each board page links its moderators to the queue.
+- **A reason category on every report** — spam, harassment, illegal content,
+  breaks a rule, or other — chosen when reporting and shown in both queues.
+- **Notices about outcomes:** resolving a report tells the reporter it was
+  reviewed, with no detail; removing content tells its author, with the
+  report's reason category. Removal notices cannot be switched off in
+  preferences, since they are about the member's own content.
+- **New reports now notify global moderators** as well as admins, plus the
+  board moderators of the board the content is in.
+- **Kept evidence:** removing reported content copies its text into the
+  report, so a closed report still explains itself. The copy is cleared 90
+  days after the report closes; an open report keeps it.
+- **Off-host backup copies:** `scripts/pull-backups.sh` pulls the nightly
+  backups to another machine over the read-only key from 1.19.5, verifies
+  each manifest's checksums and the dump, keeps the newest 30 and exits
+  non-zero when the newest copy is stale.
+
+### Changed
+
+- **The report queue shows the whole reported text** instead of a
+  200-character preview, links to the article, the comment at its place on
+  the article, the account or the original remote post, and says how many
+  other open reports share the same target. Both queues page 20 at a time.
+- **What happens to a cross-posted article needs rights on every board it is
+  in.** Deleting, pinning or locking it, and deleting a comment on it, now
+  require moderator rights on all of its boards; a moderator of one board
+  can instead take the article out of their own board. Authors, admins and
+  global moderators are unaffected.
+- **Moderator deletions are recorded** for comments as well as articles, and
+  moderators get their own delete limit of 100 per 5 minutes instead of the
+  author limit of 20.
+
+### Fixed
+
+- **Backup file permissions no longer depend on the caller's umask** — dumps
+  and snapshots are written `0640` in directories `0750` however the backup
+  was started.
+
 ## [1.19.5] — 2026-09-16
 
 Scheduled backups for Ansible installs, sized for a small server (ADR 0028).
