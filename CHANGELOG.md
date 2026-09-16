@@ -7,6 +7,110 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.21.0] — 2026-09-16
+
+The rest of roadmap phase 1: moderation levers between "nothing" and "a
+permanent ban", federation blocks that actually take effect, and the published
+rules and terms those decisions rest on.
+
+**Upgrading:** six migrations run, all automatic. Two settings become tables —
+`ap_domain_blocklist` moves into `domain_blocks` and `rules` becomes the first
+row of a `rules` table — and both settings are deleted, so there is one
+authority for each. Existing accounts are recorded as having accepted the terms
+as they stood, so nobody is prompted by the upgrade itself; the first time you
+tick "require every member to accept again", everyone is. No operator action is
+required.
+
+### Added
+
+- **Sanctions short of a ban.** Warn, silence (read-only, optional end date)
+  and suspend (no sign-in until a date, lifting by itself) sit alongside the
+  permanent ban. They are rows with an explicit end, active by the clock rather
+  than by a background job, so a missed run can never hold someone past their
+  time. Global moderators may sanction up to 30 days; admins are uncapped.
+  Nobody can sanction themselves or anyone at or above their own role level.
+  Every sanction reaches the member — a notice, the refusal message, and a
+  banner saying what stands and until when.
+- **A user detail page** at `/admin/users/:id`: role, status, sanction history,
+  reports in both directions, recent content, who invited them and whom they
+  invited. IP addresses and sign-in attempts stay admin-only.
+- **Refusing a pending registration**, with a reason, and staff are now told
+  when someone is waiting.
+- **Instance-level federation moderation.** Blocked domains are rows carrying a
+  reason, a public comment and the admin who decided, blocked *and unblocked*
+  from the Federation dashboard. A block now severs follows in both directions,
+  hides everything the domain has already sent, and stops this instance
+  reaching out to it. Nothing is deleted, so unblocking restores the content by
+  itself.
+- **Suspending one remote account** instance-wide, from a new instance page at
+  `/admin/federation/instances/:domain` — the lever between telling someone to
+  block an account personally and blocking its whole instance. A report about a
+  remote account links straight there.
+- **Public terms, rules and privacy pages** at `/terms`, `/rules` and
+  `/privacy`, linked from a footer that was previously empty. Only documents an
+  admin has actually written are linked.
+- **Terms acceptance is recorded and versioned.** Registration now stores when
+  a member accepted and which version; previously the checkbox was validated
+  and the answer discarded, so editing the terms silently changed what everyone
+  had agreed to. Ticking "require every member to accept again" publishes a new
+  version: members see a banner and posting pauses until they accept. Reading
+  is never affected, and neither are undoing a like, deleting your own content,
+  reporting abuse, or anything about account security. Bot accounts are exempt,
+  so RSS feeds keep running.
+- **Site rules are a numbered list** edited at `/admin/rules`, each with a
+  stable anchor, and a report can now say *which* rule it means — "Breaks a
+  rule" could previously only say that one was broken. Rules are retired rather
+  than deleted, so a report filed months ago still names the rule its author
+  meant. Citing a rule is always optional.
+
+### Security
+
+- **A followers-only or direct post from a remote instance was listed
+  publicly.** No listing query filtered non-public remote content, so such a
+  post appeared with its title and digest on board pages, search, tags,
+  bookmarks and feeds — and `/ap/boards/:slug/outbox` re-published it to the
+  fediverse stamped as public. Every listing now filters it, and
+  `test/baudrate/content/remote_visibility_test.exs` is the gate.
+- **A blocked domain still received requests from this instance.** The check
+  ran only on what a domain sent us, so actor lookups, object fetches, reply
+  chains and the media proxy went on contacting instances we had decided not to
+  federate with — disclosing readers' IP addresses and reading times to them.
+- **The stale-actor sweep deleted rows it was still referenced by.** It decided
+  an actor was unreferenced from six hand-written queries against nineteen
+  foreign keys, so sweeping an account quiet for 30 days could delete its
+  followers' follows and every feed item it had posted, and crash the run on
+  the first one with a conversation. It now reads the foreign keys from the
+  database catalog.
+
+### Changed
+
+- **A permission that enforces nothing is now a test failure.**
+  `moderator.mute_user` and `admin.view_dashboard` were defined and never
+  checked; both are gone, `admin.manage_roles` is wired up, and
+  `moderator.sanction_user` is new.
+- **`remote_actors.domain` is stored lowercase.** It is written from a
+  peer-supplied URI, and the domain-block filter compares it with SQL equality,
+  so an actor recorded as `Example.COM` would have stayed visible under a block
+  on `example.com`. Existing rows are backfilled.
+- **A role filter on the admin users list**, carried in the URL next to the
+  status filter and search.
+- **CI no longer runs where it proves nothing:** documentation-only pushes,
+  pushes to `main` (which only ever fast-forwards from `current`), and runs
+  superseded by a newer push.
+
+### Fixed
+
+- **The composer named the wrong reason when it turned someone away.**
+  `/articles/new` said "Your account is pending approval" whichever condition
+  actually stood, so a silenced member waited for staff who were not coming.
+- **A translation that referenced a variable that does not exist.** A fuzzy
+  gettext merge rendered "Move %{title} up" as "将 %{locale} 上移" in both
+  locales — a render-time fault rather than merely a bad string. A new test
+  fails on any translation interpolating a binding its source string does not
+  provide.
+- **The report detail view loaded fewer associations than the queue**, from a
+  second hand-written preload list that had drifted from the first.
+
 ## [1.20.0] — 2026-09-16
 
 A report queue board moderators can actually use, reason categories on
