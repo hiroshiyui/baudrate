@@ -87,21 +87,20 @@ The model is [ADR 0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md) (ac
 - [x] **Enforce the defined permissions.** `moderator.sanction_user` added; `moderator.mute_user` and `admin.view_dashboard` removed; `admin.manage_roles` wired into `Auth.update_user_role/3`. A guard test fails if any catalogued permission is never checked.
 - [x] Every sanction is audited, and the member is told what it is, why and until when — an always-delivered notice, the refusal message, and a page-wide banner.
 
-### 1D — Instance-level federation moderation (M)
+### 1D — Instance-level federation moderation (M) — **done, unreleased**
 
-Needs an ADR (domain blocks as rows), based on P1-D7.
+[ADR 0030](adr/0030-domain-blocks-are-rows-and-hiding-is-reversible.md) (Accepted).
 
-- [ ] **Move the domain blocklist from the comma-separated setting into a `domain_blocks` table:** domain, reason, public comment, who blocked it, when.
-  - Migrate existing entries.
-  - Keep `DomainBlockCache` as the single read path.
-  - Keep allowlist mode as it is.
-- [ ] **Block and unblock from the Federation dashboard,** with a reason; both audited.
-- [ ] **What a block does (P1-D7).**
-  - Removes followers and follows with that domain.
-  - Hides that domain's existing remote content (articles, comments, feed items) at query time, so an unblock restores it.
-- [ ] **Instance-wide suspension of a single remote actor:** refuse its activities and hide its content, without blocking its whole domain.
-- [ ] A read-only instance detail page: known actors, followers, content counts, delivery errors and block state.
-- **Accepted when:** blocking a domain stops inbound and outbound traffic at once, removes its follows, and hides its content everywhere a guest or member can look; unblocking restores the content.
+- [x] **Domain blocks moved from the comma-separated setting into a `domain_blocks` table:** domain, reason, public comment, who blocked it, when. Existing entries migrated and the setting deleted, so there is one authority; `DomainBlockCache` is still the only read path; allowlist mode unchanged.
+- [x] **Block and unblock from the Federation dashboard,** both with a reason, both audited. The instance list prefills the form rather than blocking on one click.
+- [x] **What a block does (P1-D7).**
+  - Severs follows in both directions for every actor on the domain, sending nothing.
+  - Hides the domain's existing articles, comments and feed items at query time, and stops serving them over AP, so an unblock restores them with no repair step.
+  - Stops us reaching out too: actors, objects, reply chains and proxied images.
+- [x] **Instance-wide suspension of a single remote actor,** through the same predicate and the same inbox refusal.
+- [x] An instance detail page (`/admin/federation/instances/:domain`): known accounts, block state, and per-account suspension. A remote-account report links to it.
+- [x] `remote_actors.domain` normalized to lowercase on write and backfilled — the filter compares it with SQL equality where the ETS lookup used to downcase its key.
+- **Accepted when:** blocking a domain stops inbound and outbound traffic at once, removes its follows, and hides its content everywhere a guest or member can look; unblocking restores the content. — met; `test/baudrate/federation/blocked_domain_hiding_test.exs` is the gate.
 
 ### 1E — Rules and terms (S)
 
@@ -575,6 +574,22 @@ Kept so the review is complete. None of these are scheduled; propose moving one 
 ---
 
 ## Recently completed
+
+- **Phase 1D — instance-level federation moderation (unreleased).**
+  Domain blocks are rows with a reason and an author, blocked and unblocked
+  from the Federation dashboard ([ADR 0030](adr/0030-domain-blocks-are-rows-and-hiding-is-reversible.md)).
+  A block severs follows both ways, hides the domain's existing content at
+  query time — reversibly, since nothing is deleted or stamped — and stops us
+  fetching from it. One remote account can be suspended instead, through the
+  same predicate, from the new instance detail page.
+
+- **Two federation bugs found while mapping 1D (unreleased).**
+  `StaleActorCleaner` decided an actor was unreferenced from six hand-written
+  queries against nineteen foreign keys, silently deleting followers' follows
+  and feed items and aborting the sweep on a conversation; it now reads the
+  catalog. And no listing query filtered non-public remote articles, so a
+  followers-only remote post was listed with its title and re-published to the
+  fediverse through the board outbox stamped `as#Public`.
 
 - **Phase 1A — member self-protection (unreleased).**
   - A block now stops replies, likes, boosts, forwards, follows and DMs in both
