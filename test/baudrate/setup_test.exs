@@ -79,13 +79,16 @@ defmodule Baudrate.SetupTest do
       assert Map.has_key?(roles, "guest")
     end
 
-    test "seeds all 12 permissions" do
+    # Counted from the catalogue rather than hard-coded: a magic number here
+    # only ever records how many permissions existed the day it was written.
+    test "seeds exactly the permissions in the catalogue" do
       assert {:ok, result} = Setup.complete_setup("My Site", @valid_user_attrs)
       %{permissions: permissions} = result.seed_permissions
-      assert length(permissions) == 12
+
+      assert Enum.map(permissions, & &1.name) |> Enum.sort() == catalogue_permissions()
     end
 
-    test "seeds 26 role_permission mappings" do
+    test "seeds one role_permission mapping per grant in the catalogue" do
       assert {:ok, _result} = Setup.complete_setup("My Site", @valid_user_attrs)
 
       count =
@@ -94,7 +97,10 @@ defmodule Baudrate.SetupTest do
             select: count(rp.id)
         )
 
-      assert count == 25
+      expected =
+        Setup.default_permissions() |> Map.values() |> Enum.map(&length/1) |> Enum.sum()
+
+      assert count == expected
     end
 
     test "assigns admin role to the created user" do
@@ -247,8 +253,8 @@ defmodule Baudrate.SetupTest do
       assert map_size(permissions) == 4
     end
 
-    test "admin has all 12 permissions" do
-      assert length(Setup.default_permissions()["admin"]) == 12
+    test "admin has every permission there is" do
+      assert Enum.sort(Setup.default_permissions()["admin"]) == catalogue_permissions()
     end
 
     test "guest has only view_content" do
@@ -305,14 +311,13 @@ defmodule Baudrate.SetupTest do
       :ok
     end
 
-    test "returns all 12 permissions for admin" do
-      perms = Setup.permissions_for_role("admin")
-      assert length(perms) == 12
+    test "returns every permission for admin" do
+      assert Enum.sort(Setup.permissions_for_role("admin")) == catalogue_permissions()
     end
 
-    test "returns 8 permissions for moderator" do
-      perms = Setup.permissions_for_role("moderator")
-      assert length(perms) == 8
+    test "returns the catalogue's moderator permissions" do
+      assert Enum.sort(Setup.permissions_for_role("moderator")) ==
+               Enum.sort(Setup.default_permissions()["moderator"])
     end
 
     test "returns 4 permissions for user" do
@@ -402,5 +407,9 @@ defmodule Baudrate.SetupTest do
       Repo.insert!(%Setting{key: "registration_mode", value: "invite_only"})
       assert Setup.registration_mode() == "invite_only"
     end
+  end
+
+  defp catalogue_permissions do
+    Setup.default_permissions() |> Map.values() |> List.flatten() |> Enum.uniq() |> Enum.sort()
   end
 end

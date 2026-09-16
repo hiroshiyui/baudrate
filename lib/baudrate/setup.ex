@@ -53,7 +53,6 @@ defmodule Baudrate.Setup do
       "admin" => [
         "admin.manage_users",
         "admin.manage_settings",
-        "admin.view_dashboard",
         "admin.manage_roles",
         "moderator.manage_content",
         "moderator.manage_comments",
@@ -96,7 +95,6 @@ defmodule Baudrate.Setup do
   @permission_descriptions %{
     "admin.manage_users" => "Create, edit, and delete users",
     "admin.manage_settings" => "Modify system settings",
-    "admin.view_dashboard" => "View admin dashboard",
     "admin.manage_roles" => "Manage roles and permissions",
     "moderator.manage_content" => "Edit and remove content",
     "moderator.manage_comments" => "Manage comments",

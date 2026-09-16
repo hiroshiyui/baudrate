@@ -336,12 +336,26 @@ defmodule Baudrate.Auth.Users do
 
   def update_user_role(%User{} = user, role_id, admin_id)
       when is_integer(admin_id) do
-    user
-    |> User.role_changeset(%{role_id: role_id})
-    |> Repo.update()
-    |> case do
-      {:ok, user} -> {:ok, Repo.preload(user, :role, force: true)}
-      error -> error
+    # Checked here rather than only in the LiveView (ADR 0016), and expressed
+    # as the `admin.manage_roles` permission that already existed and until
+    # now enforced nothing (ADR 0029).
+    if can_manage_roles?(admin_id) do
+      user
+      |> User.role_changeset(%{role_id: role_id})
+      |> Repo.update()
+      |> case do
+        {:ok, user} -> {:ok, Repo.preload(user, :role, force: true)}
+        error -> error
+      end
+    else
+      {:error, :unauthorized}
+    end
+  end
+
+  defp can_manage_roles?(admin_id) do
+    case get_user(admin_id) do
+      %User{role: %{name: name}} -> Setup.has_permission?(name, "admin.manage_roles")
+      _ -> false
     end
   end
 end
