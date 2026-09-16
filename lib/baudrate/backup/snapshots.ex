@@ -15,7 +15,10 @@ defmodule Baudrate.Backup.Snapshots do
       names and are never rewritten in place, so a week of backups costs
       about one copy of the uploads plus the files added since.
     * `MANIFEST.json` — application version, time, dump size and SHA-256,
-      and file counts.
+      file counts, and the SHA-256 of the checksum list below.
+    * `CHECKSUMS.sha256` — every file in the backup, the dump included, in
+      `sha256sum` format, so a copy on another machine is checked with one
+      standard command instead of trusting that `rsync` exited 0.
 
   `dump_database/2` writes single `<timestamp>-<label>.dump` files, used
   before migrations.
@@ -49,6 +52,7 @@ defmodule Baudrate.Backup.Snapshots do
   # readable by every local user, unlike the timer's (UMask=0027).
   @dir_mode 0o750
   @file_mode 0o640
+  @checksums_name "CHECKSUMS.sha256"
   # Assumed size of a first dump, before there is a previous one to measure.
   @first_dump_estimate 512 * 1024 * 1024
 
@@ -172,12 +176,15 @@ defmodule Baudrate.Backup.Snapshots do
     with {:ok, _} <- Backup.dump_db_to(dump),
          {:ok, _} <- Backup.verify_db_dump(dump),
          :ok <- File.chmod(dump, @file_mode),
-         {:ok, counts} <- snapshot(plan, Path.join(dir, "uploads")) do
+         {:ok, counts, stored} <- snapshot(plan, Path.join(dir, "uploads")) do
+      dump_sha256 = sha256(dump)
+
       manifest = %{
         version: to_string(Application.spec(:baudrate, :vsn) || "unknown"),
         created_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601(),
-        database: %{file: "db.dump", bytes: File.stat!(dump).size, sha256: sha256(dump)},
-        uploads: counts
+        database: %{file: "db.dump", bytes: File.stat!(dump).size, sha256: dump_sha256},
+        uploads: counts,
+        checksums: write_checksums(dir, dump_sha256, stored, plan.previous)
       }
 
       manifest_path = Path.join(dir, "MANIFEST.json")
@@ -245,26 +252,29 @@ defmodule Baudrate.Backup.Snapshots do
     File.mkdir_p!(dest)
     plan.dirs |> Enum.reverse() |> Enum.each(&File.mkdir_p!(Path.join(dest, &1)))
 
-    counts =
+    {counts, stored} =
       plan.files
       |> Enum.reverse()
-      |> Enum.reduce(%{files: 0, linked: 0, copied: 0, bytes: 0}, fn {rel, action, stat}, acc ->
+      |> Enum.reduce({%{files: 0, linked: 0, copied: 0, bytes: 0}, []}, fn {rel, action, stat},
+                                                                           {acc, stored} ->
         target = Path.join(dest, rel)
 
         case store(action, Path.join(plan.source, rel), plan.previous, rel, target, stat) do
           :linked ->
-            %{acc | files: acc.files + 1, linked: acc.linked + 1, bytes: acc.bytes + stat.size}
+            {%{acc | files: acc.files + 1, linked: acc.linked + 1, bytes: acc.bytes + stat.size},
+             [{rel, :linked} | stored]}
 
           :copied ->
-            %{acc | files: acc.files + 1, copied: acc.copied + 1, bytes: acc.bytes + stat.size}
+            {%{acc | files: acc.files + 1, copied: acc.copied + 1, bytes: acc.bytes + stat.size},
+             [{rel, :copied} | stored]}
 
           # Deleted between planning and copying: it is no longer an upload.
           :gone ->
-            acc
+            {acc, stored}
         end
       end)
 
-    {:ok, counts}
+    {:ok, counts, stored}
   rescue
     e in File.Error -> {:error, "Copying uploads failed: #{Exception.message(e)}"}
   end
@@ -463,6 +473,68 @@ defmodule Baudrate.Backup.Snapshots do
     opts
     |> Keyword.get_lazy(:now, &DateTime.utc_now/0)
     |> Calendar.strftime("%Y%m%dT%H%M%SZ")
+  end
+
+  # Writes `CHECKSUMS.sha256` over the dump and every stored upload, in the
+  # format `sha256sum -c` reads, so the copy on another machine is verified
+  # with one standard command rather than trusting that rsync exited 0.
+  #
+  # A hard-linked file keeps the checksum the previous backup recorded instead
+  # of being hashed again. That is cheaper — most of a nightly backup is
+  # hard links — but the reason it is *correct* is stronger: re-hashing would
+  # read the bytes as they are now and write a checksum that matches them, so a
+  # file that had rotted on disk would be certified intact by every backup
+  # after the rot. Carrying the original value forward makes the mismatch
+  # surface instead.
+  defp write_checksums(dir, dump_sha256, stored, previous_uploads) do
+    known = previous_checksums(previous_uploads)
+
+    uploads =
+      Enum.map(stored, fn {rel, action} ->
+        path = Path.join("uploads", rel)
+        full = Path.join(dir, path)
+
+        hash =
+          case action do
+            :linked -> Map.get_lazy(known, path, fn -> sha256(full) end)
+            :copied -> sha256(full)
+          end
+
+        {path, hash}
+      end)
+
+    file = Path.join(dir, @checksums_name)
+
+    contents =
+      [{"db.dump", dump_sha256} | uploads]
+      |> Enum.sort_by(&elem(&1, 0))
+      |> Enum.map(fn {path, hash} -> [hash, "  ", path, ?\n] end)
+
+    File.write!(file, contents)
+    File.chmod!(file, @file_mode)
+
+    %{file: @checksums_name, sha256: sha256(file), entries: length(uploads) + 1}
+  end
+
+  # The previous backup's list, as `path => sha256`. Empty for the first backup
+  # and for one taken before this file existed; those files are simply hashed.
+  defp previous_checksums(nil), do: %{}
+
+  defp previous_checksums(previous_uploads) do
+    path = Path.join(Path.dirname(previous_uploads), @checksums_name)
+
+    case File.read(path) do
+      {:ok, contents} ->
+        contents
+        |> String.split("\n", trim: true)
+        |> Enum.reduce(%{}, fn
+          <<hash::binary-size(64), "  ", file::binary>>, acc -> Map.put(acc, file, hash)
+          _malformed, acc -> acc
+        end)
+
+      {:error, _} ->
+        %{}
+    end
   end
 
   defp sha256(path) do

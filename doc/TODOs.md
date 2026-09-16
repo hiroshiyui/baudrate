@@ -97,7 +97,9 @@ open:
 
 - [ ] **Rehearse a restore onto a freshly provisioned host** — the rehearsal so far restored into a scratch database on the same machine, which does not prove the host can be rebuilt.
 - [ ] **An always-on puller.** Off-host copies only arrive while the workstation is running.
-- [ ] **Alert on a failed or stale backup** — today a failure only appears in the server's journal (see 2D).
+- [x] **Per-file checksums, verified off-host** (2026-09-16): each backup carries `CHECKSUMS.sha256` over the dump and every upload, and the puller verifies it — including the list against its own hash in the manifest, since `sha256sum -c` on a truncated list exits 0. A hard-linked file keeps the previous backup's recorded checksum rather than being re-hashed, so bit rot surfaces instead of being certified intact.
+- [ ] **Alert on a failed or stale backup** — the puller exits non-zero on a bad checksum, a failed pull or a stale copy, but today that only marks the systemd unit failed and lands in the journal. Nobody is told (see 2D).
+- [ ] **Verify older copies too.** Only the newest copy is checked; rot in a three-week-old backup goes unnoticed until it is needed. Verifying one older copy per run would cover all 30 in a month.
 - [ ] **Backup freshness in health checks:** the time of the last successful backup (see 2D).
 - **Accepted when:** production has a backup less than 24 h old, and the rehearsal restored a working instance.
 

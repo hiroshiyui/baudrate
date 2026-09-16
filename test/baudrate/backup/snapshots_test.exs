@@ -58,6 +58,118 @@ defmodule Baudrate.Backup.SnapshotsTest do
     assert Snapshots.list(root) == [result.path]
   end
 
+  describe "CHECKSUMS.sha256" do
+    test "covers the dump and every stored upload", %{uploads: uploads, root: root} do
+      {:ok, backup} = Snapshots.create(root, opts(uploads))
+
+      lines =
+        backup.path
+        |> Path.join("CHECKSUMS.sha256")
+        |> File.read!()
+        |> String.split("\n", trim: true)
+
+      assert length(lines) == 3
+      assert Enum.all?(lines, &(&1 =~ ~r/\A[0-9a-f]{64}  \S/))
+
+      paths = Enum.map(lines, fn <<_::binary-size(64), "  ", path::binary>> -> path end)
+      assert "db.dump" in paths
+      assert "uploads/avatars/abc/48.webp" in paths
+      assert "uploads/article_images/one.webp" in paths
+      # The media cache is not part of a backup, so it is not in the list.
+      refute Enum.any?(paths, &String.contains?(&1, "media_cache"))
+    end
+
+    test "records checksums that actually match the bytes", %{uploads: uploads, root: root} do
+      {:ok, backup} = Snapshots.create(root, opts(uploads))
+
+      for <<_::binary-size(64), "  ", _::binary>> = line <-
+            backup.path
+            |> Path.join("CHECKSUMS.sha256")
+            |> File.read!()
+            |> String.split("\n", trim: true) do
+        <<recorded::binary-size(64), "  ", rel::binary>> = line
+        assert recorded == sha256_of(Path.join(backup.path, rel)), "checksum wrong for #{rel}"
+      end
+    end
+
+    test "the manifest carries the list's own checksum, so a truncated list is caught", %{
+      uploads: uploads,
+      root: root
+    } do
+      {:ok, backup} = Snapshots.create(root, opts(uploads))
+
+      manifest = backup.path |> Path.join("MANIFEST.json") |> File.read!() |> Jason.decode!()
+
+      assert manifest["checksums"]["file"] == "CHECKSUMS.sha256"
+      assert manifest["checksums"]["entries"] == 3
+
+      assert manifest["checksums"]["sha256"] ==
+               sha256_of(Path.join(backup.path, "CHECKSUMS.sha256"))
+    end
+
+    test "is written with the same restricted mode as the rest", %{uploads: uploads, root: root} do
+      {:ok, backup} = Snapshots.create(root, opts(uploads))
+
+      assert mode(Path.join(backup.path, "CHECKSUMS.sha256")) == 0o640
+    end
+
+    test "carries a hard-linked file's checksum forward instead of re-reading it", %{
+      uploads: uploads,
+      root: root
+    } do
+      {:ok, first} = Snapshots.create(root, opts(uploads, now: at(10)))
+
+      # Rot in the *stored* copy: the bytes decay on the backup disk, with size
+      # and modification time unchanged, so the next backup still hard-links to
+      # it rather than noticing anything. This is the case the carry-forward
+      # exists for; corrupting the live source instead would prove nothing,
+      # because a hard link keeps the previous backup's bytes either way.
+      stored = Path.join(first.path, "uploads/avatars/abc/48.webp")
+      stat = File.stat!(stored, time: :posix)
+      File.write!(stored, "AVATAR")
+      File.touch!(stored, stat.mtime)
+
+      {:ok, second} = Snapshots.create(root, opts(uploads, now: at(20)))
+      assert second.linked > 0
+
+      # Re-hashing would have recorded the rotted bytes and certified them
+      # intact for ever after. Carrying the first backup's value forward means
+      # a verifier sees the mismatch.
+      assert checksum_for(first.path, "uploads/avatars/abc/48.webp") ==
+               checksum_for(second.path, "uploads/avatars/abc/48.webp")
+
+      refute checksum_for(second.path, "uploads/avatars/abc/48.webp") ==
+               sha256_of(Path.join(second.path, "uploads/avatars/abc/48.webp"))
+    end
+
+    test "hashes a file the previous backup had no checksum for", %{uploads: uploads, root: root} do
+      # A backup taken before this file existed, then one after.
+      {:ok, first} = Snapshots.create(root, opts(uploads, now: at(10)))
+      File.rm!(Path.join(first.path, "CHECKSUMS.sha256"))
+
+      {:ok, second} = Snapshots.create(root, opts(uploads, now: at(20)))
+
+      assert second.linked > 0
+
+      assert checksum_for(second.path, "uploads/avatars/abc/48.webp") ==
+               sha256_of(Path.join(second.path, "uploads/avatars/abc/48.webp"))
+    end
+  end
+
+  defp sha256_of(path) do
+    :crypto.hash(:sha256, File.read!(path)) |> Base.encode16(case: :lower)
+  end
+
+  defp checksum_for(backup, rel) do
+    backup
+    |> Path.join("CHECKSUMS.sha256")
+    |> File.read!()
+    |> String.split("\n", trim: true)
+    |> Enum.find_value(fn <<hash::binary-size(64), "  ", path::binary>> ->
+      path == rel && hash
+    end)
+  end
+
   # The pre-deploy dump runs from the deploy playbook, whose umask is not the
   # backup service's, and a dump holds every account's data.
   test "writes backups only the owner and the backup group can read", %{

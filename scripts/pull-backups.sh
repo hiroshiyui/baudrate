@@ -17,6 +17,10 @@
 # Exit codes: 0 all good, 1 the pull or a check failed, 2 the newest backup is
 # older than BAUDRATE_BACKUP_STALE_HOURS (backups may have stopped running).
 #
+# The newest copy is verified against the CHECKSUMS.sha256 the server wrote —
+# the dump and every upload — so corruption in transit, or bit rot on either
+# disk, shows up as a failure rather than as a backup nobody can restore.
+#
 # Needs rsync and GNU coreutils; pg_restore is used when present.
 set -eu
 
@@ -44,13 +48,44 @@ if [ -z "$newest" ]; then
   exit 1
 fi
 
-# The manifest records what the server wrote; checking it here proves the copy
-# arrived intact, not merely that rsync exited 0.
-recorded=$(sed -n 's/.*"sha256": *"\([0-9a-f]*\)".*/\1/p' "$newest/MANIFEST.json")
-copied=$(sha256sum "$newest/db.dump" | cut -d' ' -f1)
-if [ "$recorded" != "$copied" ]; then
-  echo "pull-backups: checksum mismatch for $newest/db.dump" >&2
-  exit 1
+# Reads one recorded hash out of the pretty-printed manifest, scoped to the
+# block it belongs to: the manifest holds more than one sha256, so matching the
+# first one in the file would silently compare the wrong thing.
+manifest_sha256() { # <manifest> <block>
+  sed -n "/\"$2\"/,/}/s/.*\"sha256\": *\"\([0-9a-f]\{64\}\)\".*/\1/p" "$1" | head -1
+}
+
+# The server records what it wrote; checking it here proves the copy arrived
+# intact, not merely that rsync exited 0 — and, run nightly, that it has stayed
+# intact since.
+checksums="$newest/CHECKSUMS.sha256"
+
+if [ -f "$checksums" ]; then
+  # Verify the list itself before trusting it. A truncated or rewritten list
+  # would otherwise happily certify a truncated backup.
+  recorded=$(manifest_sha256 "$newest/MANIFEST.json" checksums)
+  copied=$(sha256sum "$checksums" | cut -d' ' -f1)
+  if [ -z "$recorded" ] || [ "$recorded" != "$copied" ]; then
+    echo "pull-backups: CHECKSUMS.sha256 does not match the manifest in $newest" >&2
+    exit 1
+  fi
+
+  # Covers the dump and every upload, so a silently corrupted image is caught
+  # as readily as a truncated dump.
+  if ! (cd "$newest" && sha256sum --quiet -c CHECKSUMS.sha256); then
+    echo "pull-backups: files in $newest do not match their recorded checksums" >&2
+    exit 1
+  fi
+else
+  # A backup taken before the checksum list existed. The dump is all there is
+  # to check; its uploads are verified from the next backup onwards.
+  recorded=$(manifest_sha256 "$newest/MANIFEST.json" database)
+  copied=$(sha256sum "$newest/db.dump" | cut -d' ' -f1)
+  if [ "$recorded" != "$copied" ]; then
+    echo "pull-backups: checksum mismatch for $newest/db.dump" >&2
+    exit 1
+  fi
+  echo "pull-backups: $newest predates CHECKSUMS.sha256; only the dump was verified" >&2
 fi
 
 if command -v pg_restore >/dev/null 2>&1; then

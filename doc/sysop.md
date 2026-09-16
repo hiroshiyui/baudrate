@@ -1117,7 +1117,17 @@ seven (ADR 0028). Each backup is a folder,
   images, which are fetched again on demand. A file unchanged since the
   previous backup is hard-linked to its copy there, so each folder is complete
   while unchanged files are stored once.
-- `MANIFEST.json`: the version, time, dump size and SHA-256, and file counts.
+- `MANIFEST.json`: the version, time, dump size and SHA-256, file counts, and
+  the SHA-256 of the checksum list below.
+- `CHECKSUMS.sha256`: every file in the backup, the dump included, in
+  `sha256sum` format. Verify a backup anywhere with
+  `cd <backup> && sha256sum -c CHECKSUMS.sha256`.
+
+  A hard-linked file keeps the checksum the previous backup recorded rather
+  than being hashed again. That is not only cheaper — it is what makes rot
+  detectable. Re-hashing would read the bytes as they are *now* and record a
+  checksum matching them, so a file that had decayed on disk would be
+  certified intact by every backup taken after the decay.
 
 The backup is built under `.incomplete-…` and renamed only when every step
 has succeeded. It refuses to start when it would leave less than 1 GiB or 10%
@@ -1182,10 +1192,23 @@ reach or delete the copies.
    **without `--delete`**, so backups the server has since removed stay on the
    pulling machine and a server someone took over cannot erase what it already
    handed over. `-H` keeps the hard links, so the copy is as compact as the
-   server's. After copying it checks the newest dump against the SHA-256 in its
-   manifest and reads it with `pg_restore --list`, keeps the newest 30 copies,
-   and fails when the newest backup is older than 36 hours — which is how a
-   backup that quietly stopped running gets noticed.
+   server's.
+
+   After copying, it verifies the newest backup against the
+   `CHECKSUMS.sha256` the server wrote — the dump **and every upload** — so
+   corruption in transit, or bit rot on either disk, fails the run instead of
+   waiting to be discovered at restore time. The list is itself checked
+   against the hash in `MANIFEST.json` first: `sha256sum -c` on a truncated
+   list exits 0, so without that step a backup missing most of its files would
+   verify clean. The dump is then read with `pg_restore --list`.
+
+   It keeps the newest 30 copies and fails when the newest backup is older
+   than 36 hours — which is how a backup that quietly stopped running gets
+   noticed.
+
+   Exit codes: `0` all good, `1` the pull or a check failed, `2` the newest
+   backup is stale. Under a systemd timer, either non-zero code marks the unit
+   failed.
 
    ```bash
    BAUDRATE_BACKUP_HOST=baudrate-pull@your.server scripts/pull-backups.sh
