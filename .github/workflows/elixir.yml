@@ -7,12 +7,29 @@ name: Elixir CI
 
 on:
   push:
-    branches: [ "main", "current" ]
+    # `main` is never pushed to directly — it moves only by `--ff-only` merge
+    # from `current` at a release, so a push run there re-tests the SHA that
+    # passed minutes earlier. Documentation carries no test (nothing under
+    # `test/` reads `doc/**` or the repository README), and `paths-ignore`
+    # skips a push only when *every* changed file matches it, so a commit
+    # touching docs and code still runs.
+    branches: [ "current" ]
+    paths-ignore:
+      - "doc/**"
+      - "**.md"
+      - "LICENSE"
   pull_request:
     branches: [ "main", "current" ]
 
 permissions:
   contents: read
+
+# Development is a long series of pushes to `current`, and only the tip needs
+# to be green: a superseded run is cancelled rather than left to finish. The
+# cost is that an intermediate commit may carry no run of its own.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   image:

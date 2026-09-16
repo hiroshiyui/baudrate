@@ -2466,14 +2466,31 @@ in `mount/3`; the root layout renders them with the correct attribute
 
 ## Continuous Integration
 
-CI (`.github/workflows/elixir.yml`) runs two jobs on every push and pull
-request to `main` and `current`, both inside the project's own CI image
-([ADR 0027](adr/0027-ci-runs-in-a-pinned-attested-image.md)):
+CI (`.github/workflows/elixir.yml`) runs two jobs inside the project's own CI
+image ([ADR 0027](adr/0027-ci-runs-in-a-pinned-attested-image.md)):
 
 | Job | Runs |
 |-----|------|
 | Test (4 partitions) | format check, `compile --warnings-as-errors`, `mix lint`, `mix test --partitions 4 --seed 9527` |
 | Browser tests | `mix assets.build`, then `mix test --only feature` (Wallaby + Selenium + headless Firefox ESR); failure screenshots and the Selenium log are uploaded |
+
+**When it runs.** Pushes to `current`, and pull requests to `current` or
+`main`. Three things deliberately do *not* start a run:
+
+- **Pushes to `main`.** It moves only by `--ff-only` merge from `current` at a
+  release, so the SHA has already passed; a run there would only repeat it.
+- **Documentation-only pushes** (`paths-ignore`: `doc/**`, `**.md`, `LICENSE`).
+  Nothing under `test/` reads those files. The filter skips a push only when
+  *every* changed file matches, so a commit touching docs and code still runs —
+  and a release commit runs, because it also changes `mix.exs`.
+- **Superseded runs**, cancelled by the workflow's `concurrency` group
+  (`cancel-in-progress`). Development is a long series of pushes to `current`
+  and only the tip needs to be green; the cost is that an intermediate commit
+  may carry no run of its own.
+
+Neither branch has required status checks, so a skipped run blocks nothing. If
+that ever changes, `paths-ignore` reports *no* check rather than a passing one,
+and would need replacing with a placeholder job of the same name.
 
 The image (`ci/image/Dockerfile`) contains Erlang/OTP, Elixir, Rust, Firefox
 ESR, Java, the PostgreSQL client, esbuild, Tailwind, GeckoDriver and Selenium
