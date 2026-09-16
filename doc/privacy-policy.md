@@ -24,8 +24,14 @@
   gate), uploads are served with no access check, poll votes are attributable
   in the database, and there is still no self-service account deletion (6E).
 
-  Not legal advice. It is written to Taiwan PDPA structure; have someone
-  qualified read it against the 個人資料保護法 before relying on it.
+  JURISDICTION: section 6 is not a fill-in-the-blank. It is built on the five
+  rights the Taiwan 個人資料保護法 actually grants, so another jurisdiction
+  needs that section rewritten, not relabelled — GDPR, for instance, grants
+  portability, objection and restriction, which are not listed here. The rest
+  of the document describes the software and travels unchanged.
+
+  Not legal advice. Have someone qualified read it against the law that
+  applies before relying on it.
 -->
 
 **最後更新 Last updated: [EFFECTIVE DATE]**

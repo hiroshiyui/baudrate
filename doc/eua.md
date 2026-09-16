@@ -7,7 +7,11 @@
   Fill in, in BOTH languages:
     [OPERATOR]        who runs the site (a name or an organisation)
     [CONTACT]         how to reach them
+    [JURISDICTION]    whose law governs the agreement (section 11)
     [EFFECTIVE DATE]  the date it is published
+
+  The governing language clause names 台灣漢語 as prevailing. Change it, and
+  the language halves, if this instance serves a different audience.
 
   An email in angle brackets — <someone@example.org> — becomes a mailto link
   and survives sanitizing; that form is fine to use.
@@ -141,8 +145,8 @@ Changes to this agreement are published here with a new date. Material changes r
 
 ### 11. 法律管轄 Governing Law
 
-本協議受 **台灣** 法律管轄。
-This agreement shall be governed by the laws of **Taiwan**.
+本協議受 **[JURISDICTION]** 法律管轄。
+This agreement shall be governed by the laws of **[JURISDICTION]**.
 
 ---
 
