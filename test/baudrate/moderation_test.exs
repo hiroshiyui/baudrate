@@ -157,6 +157,110 @@ defmodule Baudrate.ModerationTest do
     end
   end
 
+  describe "paginate_reports/1 scoped to boards (1B)" do
+    setup %{user: user} do
+      uid = System.unique_integer([:positive])
+      {:ok, mine} = Baudrate.Content.create_board(%{name: "Mine", slug: "scope-mine-#{uid}"})
+
+      {:ok, theirs} =
+        Baudrate.Content.create_board(%{name: "Theirs", slug: "scope-theirs-#{uid}"})
+
+      article = fn board, n ->
+        {:ok, %{article: article}} =
+          Baudrate.Content.create_article(
+            %{title: "A#{n}", body: "Body", slug: "scope-#{uid}-#{n}", user_id: user.id},
+            [board.id]
+          )
+
+        article
+      end
+
+      %{mine: mine, theirs: theirs, article: article}
+    end
+
+    test "shows a board's own reports and nothing else", %{
+      user: user,
+      remote_actor: actor,
+      mine: mine,
+      theirs: theirs,
+      article: article
+    } do
+      ours = article.(mine, 1)
+      not_ours = article.(theirs, 2)
+
+      {:ok, comment} =
+        Baudrate.Content.create_comment(%{
+          "body" => "Comment",
+          "article_id" => ours.id,
+          "user_id" => user.id
+        })
+
+      report = fn attrs ->
+        {:ok, report} =
+          Moderation.create_report(
+            Map.merge(%{reason: "Spam", category: "spam", reporter_id: user.id}, attrs)
+          )
+
+        report
+      end
+
+      ours_report = report.(%{article_id: ours.id})
+      comment_report = report.(%{comment_id: comment.id})
+      other_board_report = report.(%{article_id: not_ours.id})
+      account_report = report.(%{reported_user_id: user.id})
+      actor_report = report.(%{remote_actor_id: actor.id})
+
+      %{reports: reports, total: total} = Moderation.paginate_reports(boards: [mine.id])
+      ids = Enum.map(reports, & &1.id)
+
+      assert total == 2
+      assert ours_report.id in ids
+      assert comment_report.id in ids
+      refute other_board_report.id in ids
+      refute account_report.id in ids
+      refute actor_report.id in ids
+
+      # Moderating nothing shows nothing, whatever is reported.
+      assert %{reports: [], total: 0} = Moderation.paginate_reports(boards: [])
+    end
+
+    test "report_in_boards?/2 answers for the same set", %{
+      user: user,
+      mine: mine,
+      theirs: theirs,
+      article: article
+    } do
+      {:ok, ours} =
+        Moderation.create_report(%{
+          reason: "Spam",
+          category: "spam",
+          reporter_id: user.id,
+          article_id: article.(mine, 3).id
+        })
+
+      {:ok, theirs_report} =
+        Moderation.create_report(%{
+          reason: "Spam",
+          category: "spam",
+          reporter_id: user.id,
+          article_id: article.(theirs, 4).id
+        })
+
+      {:ok, account_report} =
+        Moderation.create_report(%{
+          reason: "Rude",
+          category: "harassment",
+          reporter_id: user.id,
+          reported_user_id: user.id
+        })
+
+      assert Moderation.report_in_boards?(ours, [mine.id])
+      refute Moderation.report_in_boards?(theirs_report, [mine.id])
+      refute Moderation.report_in_boards?(account_report, [mine.id])
+      refute Moderation.report_in_boards?(ours, [])
+    end
+  end
+
   describe "other_open_report_counts/1" do
     test "counts other open reports about the same target", %{remote_actor: actor} do
       other_actor = create_remote_actor()

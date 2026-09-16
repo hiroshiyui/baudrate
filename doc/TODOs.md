@@ -61,7 +61,7 @@ Work happens in five stages, each shipped and released on its own, in this order
 
 Shipped on `current`; see "Recently completed". Blocking semantics are recorded in [ADR 0026](adr/0026-blocks-stop-interaction-locally.md).
 
-### 1B — A report queue that works, including for board moderators (L)
+### 1B — A report queue that works, including for board moderators (L) — done, unreleased
 
 - [x] **Queue basics** (2026-09-16): `Moderation.paginate_reports/1` (20 a page, status and page in the URL), links to the reported content, account or actor, the full reported text, `other_open_report_counts/1` next to each report, and a required reason category (P1-D9) on every report made on this site.
 - [x] **Scoped queue for board moderators** (2026-09-16): `/moderation` (`ModerationLive`), scoped by `Content.moderated_board_ids/1`, linked from each board they moderate, with every action re-checking `Moderation.report_in_boards?/2` and the delete permission.
@@ -71,7 +71,7 @@ Shipped on `current`; see "Recently completed". Blocking semantics are recorded 
 - [x] **Moderator actions** (2026-09-16): `RateLimits.check_moderator_delete/1` (100 per 5 minutes) for deleting other people's content, and `comments.deleted_by_id` records who deleted a comment, as articles already did.
 - [x] **Evidence retention (P1-D6)** (2026-09-16): a removal from a queue copies the text into `reports.evidence_body`; `Moderation.purge_closed_report_evidence/0` (hourly) clears it and `message_body` 90 days after the report closed. Author deletions still wipe at once.
   - [ ] Articles an author deletes keep their body in the row (and in `article_revisions`); only comments are wiped. Worth revisiting with revision retention.
-- **Accepted when:** a board moderator can resolve a report about their board end to end; a context-level test proves they cannot see or act on other boards' reports; every action is in the audit log.
+- **Accepted 2026-09-16:** a board moderator resolves, dismisses and deletes from `/moderation` end to end (`moderation_live_test.exs`); `moderation_test.exs` proves at the context level that another board's reports, account reports and DM reports are neither listed nor actionable; resolve, dismiss and both deletions are logged.
 
 ### 1C — Sanctions short of a ban (M)
 
