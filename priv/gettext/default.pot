@@ -2066,11 +2066,6 @@ msgstr ""
 msgid "I accept the above terms"
 msgstr ""
 
-#: lib/baudrate_web/live/register_live.html.heex:109
-#, elixir-autogen, elixir-format
-msgid "I acknowledge that my activities (including IP address, user-agent, and operation history) will be logged for at least 1 year, and I agree to comply with the laws of the country/region where this instance operates."
-msgstr ""
-
 #: lib/baudrate_web/live/register_live.html.heex:43
 #: lib/baudrate_web/live/setup_live.html.heex:333
 #, elixir-autogen, elixir-format
@@ -8568,4 +8563,9 @@ msgstr ""
 #: lib/baudrate_web/components/core_components.ex:849
 #, elixir-autogen, elixir-format
 msgid "Which rule? (optional)"
+msgstr ""
+
+#: lib/baudrate_web/live/register_live.html.heex:109
+#, elixir-autogen, elixir-format
+msgid "I acknowledge that my activities (including IP address, user-agent, and operation history) are recorded, and I agree to comply with the laws of the country/region where this instance operates."
 msgstr ""
