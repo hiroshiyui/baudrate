@@ -1358,7 +1358,7 @@ underlying logic.
 
 | Worker | Interval | Purpose |
 |--------|----------|---------|
-| `SessionCleaner` | 1 hour | Purge expired sessions, old login attempts (>7 days), orphan images (>24h), delivered/abandoned delivery jobs, stale link previews and media cache, notifications (>90 days); advance data export requests and due account moves |
+| `SessionCleaner` | 1 hour | Purge expired sessions, old login attempts (>7 days), orphan images (>24h), delivered/abandoned delivery jobs, stale link previews and media cache, notifications (>90 days); clear the evidence copies of reports closed over 90 days ago; advance data export requests and due account moves |
 | `DeliveryWorker` | 60 seconds | Poll and deliver pending federation jobs (50 per cycle) |
 | `StaleActorCleaner` | 24 hours | Refresh or delete stale remote actors (>30 days) |
 

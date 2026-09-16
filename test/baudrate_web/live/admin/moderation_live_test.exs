@@ -507,6 +507,86 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
     end
   end
 
+  describe "evidence retention (P1-D6)" do
+    test "a removal keeps a copy of the content for staff, and the queue shows it", %{
+      conn: conn
+    } do
+      admin = setup_user("admin")
+      reporter = setup_user("user")
+      {report, article} = create_report_with_article(reporter)
+
+      conn = log_in_admin(conn, admin)
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+      lv |> element("#admin-moderation-delete-article-#{report.id}") |> render_click()
+
+      report = Repo.reload!(report)
+      assert report.evidence_body == article.body
+      assert report.evidence_taken_at
+
+      # The article itself now reads as deleted, but the report still explains
+      # itself.
+      assert has_element?(
+               lv,
+               "#admin-moderation-report-article-evidence-#{report.id}",
+               article.body
+             )
+    end
+
+    test "evidence is cleared 90 days after the report was closed", %{conn: conn} do
+      admin = setup_user("admin")
+      reporter = setup_user("user")
+      {report, _article} = create_report_with_article(reporter)
+
+      conn = log_in_admin(conn, admin)
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+      lv |> element("#admin-moderation-delete-article-#{report.id}") |> render_click()
+
+      lv
+      |> form("#admin-moderation-resolve-form-#{report.id}", %{"note" => ""})
+      |> render_submit()
+
+      assert Repo.reload!(report).evidence_body
+
+      # Still inside the window.
+      assert Moderation.purge_closed_report_evidence() == 0
+      assert Repo.reload!(report).evidence_body
+
+      long_ago =
+        DateTime.utc_now() |> DateTime.add(-91 * 86_400, :second) |> DateTime.truncate(:second)
+
+      Repo.update_all(from(r in Baudrate.Moderation.Report, where: r.id == ^report.id),
+        set: [resolved_at: long_ago]
+      )
+
+      assert Moderation.purge_closed_report_evidence() == 1
+      report = Repo.reload!(report)
+      refute report.evidence_body
+      # The copy is gone; the report itself stays as the record of what happened.
+      assert report.status == "resolved"
+      assert report.evidence_taken_at
+    end
+
+    test "an open report's evidence is never purged, however old", %{conn: conn} do
+      admin = setup_user("admin")
+      reporter = setup_user("user")
+      {report, _article} = create_report_with_article(reporter)
+
+      conn = log_in_admin(conn, admin)
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+      lv |> element("#admin-moderation-delete-article-#{report.id}") |> render_click()
+
+      long_ago =
+        DateTime.utc_now() |> DateTime.add(-400 * 86_400, :second) |> DateTime.truncate(:second)
+
+      Repo.update_all(from(r in Baudrate.Moderation.Report, where: r.id == ^report.id),
+        set: [inserted_at: long_ago]
+      )
+
+      assert Moderation.purge_closed_report_evidence() == 0
+      assert Repo.reload!(report).evidence_body
+    end
+  end
+
   defp notifications_of(%{id: user_id}, type), do: notifications_of(user_id, type)
 
   defp notifications_of(user_id, type) do

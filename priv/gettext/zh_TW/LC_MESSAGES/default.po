@@ -857,9 +857,9 @@ msgstr "允許的網域（聯邦）"
 msgid "Allowlist (allow only specific domains)"
 msgstr "允許清單（僅允許指定網域）"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:301
-#: lib/baudrate_web/live/article_live.ex:836
-#: lib/baudrate_web/live/moderation_live.ex:111
+#: lib/baudrate_web/live/admin/moderation_live.ex:327
+#: lib/baudrate_web/live/article_live.ex:844
+#: lib/baudrate_web/live/moderation_live.ex:113
 #, elixir-autogen, elixir-format
 msgid "Article deleted."
 msgstr "文章已刪除。"
@@ -910,9 +910,9 @@ msgstr "以逗號分隔的允許網域清單。僅在允許清單模式下使用
 msgid "Comma-separated list of domains to block from federation."
 msgstr "以逗號分隔的聯邦封鎖網域清單。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:327
-#: lib/baudrate_web/live/article_live.ex:886
-#: lib/baudrate_web/live/moderation_live.ex:138
+#: lib/baudrate_web/live/admin/moderation_live.ex:355
+#: lib/baudrate_web/live/article_live.ex:894
+#: lib/baudrate_web/live/moderation_live.ex:142
 #, elixir-autogen, elixir-format
 msgid "Comment deleted."
 msgstr "留言已刪除。"
@@ -924,24 +924,24 @@ msgstr "留言已刪除。"
 msgid "Content"
 msgstr "內容"
 
-#: lib/baudrate_web/components/moderation_components.ex:135
+#: lib/baudrate_web/components/moderation_components.ex:143
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:65
 #, elixir-autogen, elixir-format
 msgid "Delete Article"
 msgstr "刪除文章"
 
-#: lib/baudrate_web/components/moderation_components.ex:168
+#: lib/baudrate_web/components/moderation_components.ex:184
 #: lib/baudrate_web/live/admin/moderation_log_live.ex:66
 #, elixir-autogen, elixir-format
 msgid "Delete Comment"
 msgstr "刪除留言"
 
-#: lib/baudrate_web/components/moderation_components.ex:132
+#: lib/baudrate_web/components/moderation_components.ex:140
 #, elixir-autogen, elixir-format
 msgid "Delete this article?"
 msgstr "確定要刪除此文章？"
 
-#: lib/baudrate_web/components/moderation_components.ex:165
+#: lib/baudrate_web/components/moderation_components.ex:181
 #, elixir-autogen, elixir-format
 msgid "Delete this comment?"
 msgstr "確定要刪除此留言？"
@@ -961,7 +961,7 @@ msgstr "遞送佇列"
 msgid "Disable"
 msgstr "停用"
 
-#: lib/baudrate_web/components/moderation_components.ex:312
+#: lib/baudrate_web/components/moderation_components.ex:328
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "駁回"
@@ -1005,27 +1005,27 @@ msgstr "錯誤率（24 小時）"
 msgid "Failed"
 msgstr "失敗"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:305
-#: lib/baudrate_web/live/article_live.ex:840
-#: lib/baudrate_web/live/moderation_live.ex:114
+#: lib/baudrate_web/live/admin/moderation_live.ex:331
+#: lib/baudrate_web/live/article_live.ex:848
+#: lib/baudrate_web/live/moderation_live.ex:116
 #, elixir-autogen, elixir-format
 msgid "Failed to delete article."
 msgstr "刪除文章失敗。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:331
-#: lib/baudrate_web/live/article_live.ex:889
-#: lib/baudrate_web/live/moderation_live.ex:141
+#: lib/baudrate_web/live/admin/moderation_live.ex:359
+#: lib/baudrate_web/live/article_live.ex:897
+#: lib/baudrate_web/live/moderation_live.ex:145
 #, elixir-autogen, elixir-format
 msgid "Failed to delete comment."
 msgstr "刪除留言失敗。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:266
+#: lib/baudrate_web/live/admin/moderation_live.ex:282
 #: lib/baudrate_web/live/moderation_live.ex:89
 #, elixir-autogen, elixir-format
 msgid "Failed to dismiss report."
 msgstr "駁回檢舉失敗。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:245
+#: lib/baudrate_web/live/admin/moderation_live.ex:261
 #: lib/baudrate_web/live/moderation_live.ex:75
 #, elixir-autogen, elixir-format
 msgid "Failed to resolve report."
@@ -1057,7 +1057,7 @@ msgstr "聯邦儀表板"
 msgid "Federation Mode"
 msgstr "聯邦模式"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:368
+#: lib/baudrate_web/live/admin/moderation_live.ex:396
 #, elixir-autogen, elixir-format
 msgid "Flag sent to %{domain}."
 msgstr "已向 %{domain} 發送檢舉。"
@@ -1115,7 +1115,7 @@ msgstr "審核佇列"
 msgid "No boards configured."
 msgstr "尚未設定任何看板。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:371
+#: lib/baudrate_web/live/admin/moderation_live.ex:399
 #, elixir-autogen, elixir-format
 msgid "No remote actor to send flag to."
 msgstr "沒有可發送檢舉的遠端參與者。"
@@ -1153,19 +1153,19 @@ msgstr "原因："
 msgid "Register"
 msgstr "註冊"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:261
+#: lib/baudrate_web/live/admin/moderation_live.ex:277
 #: lib/baudrate_web/live/moderation_live.ex:86
 #, elixir-autogen, elixir-format
 msgid "Report dismissed."
 msgstr "檢舉已駁回。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:240
+#: lib/baudrate_web/live/admin/moderation_live.ex:256
 #: lib/baudrate_web/live/moderation_live.ex:72
 #, elixir-autogen, elixir-format
 msgid "Report resolved."
 msgstr "檢舉已處理。"
 
-#: lib/baudrate_web/components/moderation_components.ex:217
+#: lib/baudrate_web/components/moderation_components.ex:233
 #, elixir-autogen, elixir-format
 msgid "Reported Actor:"
 msgstr "被檢舉的參與者："
@@ -1175,18 +1175,18 @@ msgstr "被檢舉的參與者："
 msgid "Reported Article:"
 msgstr "被檢舉的文章："
 
-#: lib/baudrate_web/components/moderation_components.ex:143
+#: lib/baudrate_web/components/moderation_components.ex:151
 #, elixir-autogen, elixir-format
 msgid "Reported Comment:"
 msgstr "被檢舉的留言："
 
-#: lib/baudrate_web/components/moderation_components.ex:292
+#: lib/baudrate_web/components/moderation_components.ex:308
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "Resolution note (optional)"
 msgstr "處理備註（選填）"
 
-#: lib/baudrate_web/components/moderation_components.ex:302
+#: lib/baudrate_web/components/moderation_components.ex:318
 #, elixir-autogen, elixir-format
 msgid "Resolve"
 msgstr "處理"
@@ -1196,12 +1196,12 @@ msgstr "處理"
 msgid "Resolved"
 msgstr "已處理"
 
-#: lib/baudrate_web/components/moderation_components.ex:275
+#: lib/baudrate_web/components/moderation_components.ex:291
 #, elixir-autogen, elixir-format
 msgid "Send Flag to %{domain}"
 msgstr "向 %{domain} 發送檢舉"
 
-#: lib/baudrate_web/components/moderation_components.ex:272
+#: lib/baudrate_web/components/moderation_components.ex:288
 #, elixir-autogen, elixir-format
 msgid "Send a Flag report to %{domain}?"
 msgstr "向 %{domain} 發送檢舉報告？"
@@ -1280,7 +1280,7 @@ msgstr "文章已成功更新。"
 msgid "Back to article"
 msgstr "返回文章"
 
-#: lib/baudrate_web/live/article_live.ex:945
+#: lib/baudrate_web/live/article_live.ex:953
 #, elixir-autogen, elixir-format
 msgid "Comment posted."
 msgstr "留言已發表。"
@@ -1333,12 +1333,12 @@ msgid "No comments yet."
 msgstr "目前沒有留言。"
 
 #: lib/baudrate_web/live/article_edit_live.ex:93
-#: lib/baudrate_web/live/article_live.ex:172
-#: lib/baudrate_web/live/article_live.ex:225
-#: lib/baudrate_web/live/article_live.ex:256
-#: lib/baudrate_web/live/article_live.ex:513
-#: lib/baudrate_web/live/article_live.ex:576
-#: lib/baudrate_web/live/article_live.ex:865
+#: lib/baudrate_web/live/article_live.ex:180
+#: lib/baudrate_web/live/article_live.ex:233
+#: lib/baudrate_web/live/article_live.ex:264
+#: lib/baudrate_web/live/article_live.ex:521
+#: lib/baudrate_web/live/article_live.ex:584
+#: lib/baudrate_web/live/article_live.ex:873
 #: lib/baudrate_web/live/feed_live.ex:598
 #, elixir-autogen, elixir-format
 msgid "Not authorized."
@@ -2180,8 +2180,8 @@ msgid "Failed to add moderator."
 msgstr "無法新增版主。"
 
 #: lib/baudrate_web/live/article_edit_live.ex:148
-#: lib/baudrate_web/live/article_live.ex:222
-#: lib/baudrate_web/live/article_live.ex:253
+#: lib/baudrate_web/live/article_live.ex:230
+#: lib/baudrate_web/live/article_live.ex:261
 #, elixir-autogen, elixir-format
 msgid "Failed to update article."
 msgstr "更新文章失敗。"
@@ -2283,7 +2283,7 @@ msgstr "檢視 / 發文"
 msgid "No comments found for \"%{query}\"."
 msgstr "找不到「%{query}」的相關評論。"
 
-#: lib/baudrate_web/live/article_live.ex:788
+#: lib/baudrate_web/live/article_live.ex:796
 #, elixir-autogen, elixir-format
 msgid "This article has been deleted."
 msgstr "這篇文章已被刪除。"
@@ -3245,13 +3245,13 @@ msgstr "開放"
 msgid "resolved"
 msgstr "已處理"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:206
+#: lib/baudrate_web/live/admin/moderation_live.ex:222
 #, elixir-autogen, elixir-format
 msgid "%{count} report dismissed."
 msgid_plural "%{count} reports dismissed."
 msgstr[0] "已駁回 %{count} 則檢舉。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:167
+#: lib/baudrate_web/live/admin/moderation_live.ex:183
 #, elixir-autogen, elixir-format
 msgid "%{count} report resolved."
 msgid_plural "%{count} reports resolved."
@@ -3328,7 +3328,7 @@ msgstr[0] "處理 %{count} 則檢舉"
 msgid "Resolve Selected"
 msgstr "處理所選"
 
-#: lib/baudrate_web/components/moderation_components.ex:299
+#: lib/baudrate_web/components/moderation_components.ex:315
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:196
 #, elixir-autogen, elixir-format
 msgid "Resolving..."
@@ -3413,9 +3413,9 @@ msgstr "您還沒有產生任何邀請碼。"
 msgid "Your account is too new to generate invite codes."
 msgstr "您的帳號太新，尚無法產生邀請碼。"
 
-#: lib/baudrate_web/live/article_live.ex:166
-#: lib/baudrate_web/live/article_live.ex:502
-#: lib/baudrate_web/live/article_live.ex:859
+#: lib/baudrate_web/live/article_live.ex:174
+#: lib/baudrate_web/live/article_live.ex:510
+#: lib/baudrate_web/live/article_live.ex:867
 #: lib/baudrate_web/live/safety_actions.ex:58
 #: lib/baudrate_web/live/user_profile_live.ex:174
 #: lib/baudrate_web/live/user_profile_live.ex:221
@@ -3428,7 +3428,7 @@ msgstr "操作過於頻繁，請稍後再試。"
 msgid "Too many searches. Please try again later."
 msgstr "搜尋過於頻繁，請稍後再試。"
 
-#: lib/baudrate_web/live/article_live.ex:403
+#: lib/baudrate_web/live/article_live.ex:411
 #, elixir-autogen, elixir-format
 msgid "You are commenting too frequently. Please try again later."
 msgstr "留言過於頻繁，請稍後再試。"
@@ -3605,7 +3605,7 @@ msgid "Feed"
 msgstr "動態"
 
 #: lib/baudrate_web/components/comment_components.ex:83
-#: lib/baudrate_web/components/moderation_components.ex:195
+#: lib/baudrate_web/components/moderation_components.ex:211
 #: lib/baudrate_web/live/article_live.html.heex:76
 #: lib/baudrate_web/live/article_live.html.heex:291
 #: lib/baudrate_web/live/board_live.html.heex:225
@@ -3835,7 +3835,7 @@ msgid "You don't have permission to manage this board."
 msgstr "您沒有管理此看板的權限。"
 
 #: lib/baudrate_web/live/article_edit_live.ex:66
-#: lib/baudrate_web/live/article_live.ex:444
+#: lib/baudrate_web/live/article_live.ex:452
 #: lib/baudrate_web/live/article_new_live.ex:162
 #: lib/baudrate_web/live/feed_live.ex:282
 #: lib/baudrate_web/live/feed_live.ex:503
@@ -3919,16 +3919,16 @@ msgstr "留言於"
 msgid "Timezone"
 msgstr "時區"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:286
-#: lib/baudrate_web/live/moderation_live.ex:117
+#: lib/baudrate_web/live/admin/moderation_live.ex:310
+#: lib/baudrate_web/live/moderation_live.ex:119
 #, elixir-autogen, elixir-format
 msgid "Article not found."
 msgstr "找不到文章。"
 
-#: lib/baudrate_web/live/admin/moderation_live.ex:313
-#: lib/baudrate_web/live/article_live.ex:849
-#: lib/baudrate_web/live/article_live.ex:852
-#: lib/baudrate_web/live/moderation_live.ex:144
+#: lib/baudrate_web/live/admin/moderation_live.ex:339
+#: lib/baudrate_web/live/article_live.ex:857
+#: lib/baudrate_web/live/article_live.ex:860
+#: lib/baudrate_web/live/moderation_live.ex:148
 #, elixir-autogen, elixir-format
 msgid "Comment not found."
 msgstr "找不到留言。"
@@ -3939,12 +3939,12 @@ msgstr "找不到留言。"
 msgid "Too many requests. Please try again later."
 msgstr "請求過於頻繁，請稍後再試。"
 
-#: lib/baudrate_web/live/article_live.ex:498
+#: lib/baudrate_web/live/article_live.ex:506
 #, elixir-autogen, elixir-format
 msgid "Article forwarded to board."
 msgstr "文章已轉發至看板。"
 
-#: lib/baudrate_web/live/article_live.ex:516
+#: lib/baudrate_web/live/article_live.ex:524
 #, elixir-autogen, elixir-format
 msgid "Failed to forward article."
 msgstr "轉發文章失敗。"
@@ -3984,8 +3984,8 @@ msgstr "搜尋看板"
 msgid "Search boards..."
 msgstr "搜尋看板..."
 
-#: lib/baudrate_web/live/article_live.ex:509
-#: lib/baudrate_web/live/article_live.ex:583
+#: lib/baudrate_web/live/article_live.ex:517
+#: lib/baudrate_web/live/article_live.ex:591
 #: lib/baudrate_web/live/feed_live.ex:605
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to post in this board."
@@ -4405,7 +4405,7 @@ msgstr "新增投票"
 msgid "Add option"
 msgstr "新增選項"
 
-#: lib/baudrate_web/live/article_live.ex:597
+#: lib/baudrate_web/live/article_live.ex:605
 #, elixir-autogen, elixir-format
 msgid "Cannot vote on this poll."
 msgstr "無法在此投票中投票。"
@@ -4437,7 +4437,7 @@ msgstr "期限（選填）"
 msgid "Failed to create poll."
 msgstr "建立投票失敗。"
 
-#: lib/baudrate_web/live/article_live.ex:624
+#: lib/baudrate_web/live/article_live.ex:632
 #, elixir-autogen, elixir-format
 msgid "Failed to record vote."
 msgstr "記錄投票失敗。"
@@ -4504,7 +4504,7 @@ msgstr "移除選項 %{number}"
 msgid "Single choice"
 msgstr "單選"
 
-#: lib/baudrate_web/live/article_live.ex:618
+#: lib/baudrate_web/live/article_live.ex:626
 #, elixir-autogen, elixir-format
 msgid "This poll has closed."
 msgstr "此投票已結束。"
@@ -4514,7 +4514,7 @@ msgstr "此投票已結束。"
 msgid "Vote"
 msgstr "投票"
 
-#: lib/baudrate_web/live/article_live.ex:612
+#: lib/baudrate_web/live/article_live.ex:620
 #, elixir-autogen, elixir-format
 msgid "Vote recorded."
 msgstr "已記錄投票。"
@@ -4635,8 +4635,8 @@ msgstr "移除頭像失敗。"
 msgid "Failed to update avatar."
 msgstr "更新頭像失敗。"
 
-#: lib/baudrate_web/live/article_live.ex:271
-#: lib/baudrate_web/live/article_live.ex:292
+#: lib/baudrate_web/live/article_live.ex:279
+#: lib/baudrate_web/live/article_live.ex:300
 #, elixir-autogen, elixir-format
 msgid "Failed to toggle bookmark."
 msgstr "書籤切換失敗。"
@@ -4689,7 +4689,7 @@ msgid "%{count} Like"
 msgid_plural "%{count} Likes"
 msgstr[0] "%{count} 讚"
 
-#: lib/baudrate_web/live/article_live.ex:317
+#: lib/baudrate_web/live/article_live.ex:325
 #: lib/baudrate_web/live/feed_live.ex:469
 #: lib/baudrate_web/live/interaction_helpers.ex:135
 #: lib/baudrate_web/live/interaction_helpers.ex:157
@@ -4703,7 +4703,7 @@ msgstr "切換按讚狀態失敗。"
 msgid "Like"
 msgstr "按讚"
 
-#: lib/baudrate_web/live/article_live.ex:308
+#: lib/baudrate_web/live/article_live.ex:316
 #: lib/baudrate_web/live/interaction_helpers.ex:134
 #, elixir-autogen, elixir-format
 msgid "You cannot like your own article."
@@ -4816,8 +4816,8 @@ msgstr "回覆 %{author}"
 msgid "Enter the installation key to proceed with setup."
 msgstr "請輸入安裝金鑰以繼續設定。"
 
-#: lib/baudrate_web/live/article_live.ex:704
-#: lib/baudrate_web/live/article_live.ex:723
+#: lib/baudrate_web/live/article_live.ex:712
+#: lib/baudrate_web/live/article_live.ex:731
 #: lib/baudrate_web/live/safety_actions.ex:142
 #: lib/baudrate_web/live/user_profile_live.ex:336
 #, elixir-autogen, elixir-format
@@ -4871,14 +4871,14 @@ msgstr "檢舉留言"
 msgid "Report User"
 msgstr "檢舉使用者"
 
-#: lib/baudrate_web/live/article_live.ex:720
+#: lib/baudrate_web/live/article_live.ex:728
 #: lib/baudrate_web/live/safety_actions.ex:133
 #: lib/baudrate_web/live/user_profile_live.ex:333
 #, elixir-autogen, elixir-format
 msgid "Report submitted. Thank you."
 msgstr "檢舉已提交，感謝您。"
 
-#: lib/baudrate_web/components/moderation_components.ex:236
+#: lib/baudrate_web/components/moderation_components.ex:252
 #, elixir-autogen, elixir-format
 msgid "Reported User:"
 msgstr "被檢舉的使用者："
@@ -4893,7 +4893,7 @@ msgstr "提交中..."
 msgid "Too many attempts. Please wait before trying again."
 msgstr "嘗試次數過多，請稍後再試。"
 
-#: lib/baudrate_web/live/article_live.ex:692
+#: lib/baudrate_web/live/article_live.ex:700
 #: lib/baudrate_web/live/safety_actions.ex:136
 #: lib/baudrate_web/live/user_profile_live.ex:312
 #, elixir-autogen, elixir-format
@@ -4905,7 +4905,7 @@ msgstr "檢舉次數過多，請稍後再試。"
 msgid "Verification"
 msgstr "驗證"
 
-#: lib/baudrate_web/live/article_live.ex:710
+#: lib/baudrate_web/live/article_live.ex:718
 #: lib/baudrate_web/live/safety_actions.ex:139
 #: lib/baudrate_web/live/user_profile_live.ex:321
 #, elixir-autogen, elixir-format
@@ -5031,7 +5031,7 @@ msgstr[1] "%{count} 次轉發"
 msgid "Boost"
 msgstr "轉發"
 
-#: lib/baudrate_web/live/article_live.ex:342
+#: lib/baudrate_web/live/article_live.ex:350
 #: lib/baudrate_web/live/feed_live.ex:479
 #: lib/baudrate_web/live/interaction_helpers.ex:146
 #: lib/baudrate_web/live/interaction_helpers.ex:168
@@ -5039,7 +5039,7 @@ msgstr "轉發"
 msgid "Failed to toggle boost."
 msgstr "轉發切換失敗。"
 
-#: lib/baudrate_web/live/article_live.ex:333
+#: lib/baudrate_web/live/article_live.ex:341
 #: lib/baudrate_web/live/interaction_helpers.ex:145
 #, elixir-autogen, elixir-format
 msgid "You cannot boost your own article."
@@ -5060,12 +5060,12 @@ msgstr "轉發了你的文章"
 msgid "boosted your comment"
 msgstr "轉發了你的留言"
 
-#: lib/baudrate_web/live/article_live.ex:193
+#: lib/baudrate_web/live/article_live.ex:201
 #, elixir-autogen, elixir-format
 msgid "Article removed from %{board}."
 msgstr "文章已從%{board}移除。"
 
-#: lib/baudrate_web/live/article_live.ex:200
+#: lib/baudrate_web/live/article_live.ex:208
 #, elixir-autogen, elixir-format
 msgid "Failed to remove article from board."
 msgstr "從看板移除文章失敗。"
@@ -5115,12 +5115,12 @@ msgstr "圖片附件"
 msgid "YouTube video"
 msgstr "YouTube 影片"
 
-#: lib/baudrate_web/live/article_live.ex:573
+#: lib/baudrate_web/live/article_live.ex:581
 #, elixir-autogen, elixir-format
 msgid "Comment forwarded to board."
 msgstr "留言已轉發至看板。"
 
-#: lib/baudrate_web/live/article_live.ex:587
+#: lib/baudrate_web/live/article_live.ex:595
 #, elixir-autogen, elixir-format
 msgid "Failed to forward comment."
 msgstr "轉發留言失敗。"
@@ -5708,12 +5708,12 @@ msgstr "分享此頁面"
 msgid "Feed item not found."
 msgstr "找不到摘要項目。"
 
-#: lib/baudrate_web/live/article_live.ex:911
+#: lib/baudrate_web/live/article_live.ex:919
 #, elixir-autogen, elixir-format
 msgid "Invalid reply target."
 msgstr "回覆目標無效。"
 
-#: lib/baudrate_web/live/article_live.ex:904
+#: lib/baudrate_web/live/article_live.ex:912
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to comment on this article."
 msgstr "您無權在此文章發表留言。"
@@ -5843,12 +5843,12 @@ msgstr "複製邀請連結 %{code}"
 msgid "Deactivate bot %{username}"
 msgstr "停用機器人 %{username}"
 
-#: lib/baudrate_web/components/moderation_components.ex:133
+#: lib/baudrate_web/components/moderation_components.ex:141
 #, elixir-autogen, elixir-format
 msgid "Delete Article: %{title}"
 msgstr "刪除文章：%{title}"
 
-#: lib/baudrate_web/components/moderation_components.ex:166
+#: lib/baudrate_web/components/moderation_components.ex:182
 #, elixir-autogen, elixir-format
 msgid "Delete Comment from report #%{id}"
 msgstr "刪除留言（檢舉 #%{id}）"
@@ -5868,7 +5868,7 @@ msgstr "刪除機器人 %{username}"
 msgid "Disable federation for board %{board}"
 msgstr "停用看板 %{board} 的聯邦"
 
-#: lib/baudrate_web/components/moderation_components.ex:310
+#: lib/baudrate_web/components/moderation_components.ex:326
 #, elixir-autogen, elixir-format
 msgid "Dismiss report #%{id}"
 msgstr "駁回檢舉 #%{id}"
@@ -5898,12 +5898,12 @@ msgstr "看板 %{name} 的追蹤管理"
 msgid "Group"
 msgstr "群組"
 
-#: lib/baudrate_web/components/moderation_components.ex:261
+#: lib/baudrate_web/components/moderation_components.ex:277
 #, elixir-autogen, elixir-format
 msgid "Handled by %{name}"
 msgstr "處理人：%{name}"
 
-#: lib/baudrate_web/components/moderation_components.ex:257
+#: lib/baudrate_web/components/moderation_components.ex:273
 #, elixir-autogen, elixir-format
 msgid "Handled by %{name} — %{note}"
 msgstr "處理人：%{name} — %{note}"
@@ -5952,12 +5952,12 @@ msgstr "看板 %{name} 的版主"
 msgid "Muted"
 msgstr "已靜音"
 
-#: lib/baudrate_web/live/article_live.ex:1029
+#: lib/baudrate_web/live/article_live.ex:1037
 #, elixir-autogen, elixir-format
 msgid "New comment"
 msgstr "新留言"
 
-#: lib/baudrate_web/live/article_live.ex:1025
+#: lib/baudrate_web/live/article_live.ex:1033
 #, elixir-autogen, elixir-format
 msgid "New comment by %{name}"
 msgstr "%{name} 發表了新留言"
@@ -6035,12 +6035,12 @@ msgstr "檢舉人：%{name}"
 msgid "Reset & Retry bot %{username}"
 msgstr "重設並重試（機器人 %{username}）"
 
-#: lib/baudrate_web/components/moderation_components.ex:293
+#: lib/baudrate_web/components/moderation_components.ex:309
 #, elixir-autogen, elixir-format
 msgid "Resolution note for report #%{id}"
 msgstr "檢舉 #%{id} 的處理備註"
 
-#: lib/baudrate_web/components/moderation_components.ex:300
+#: lib/baudrate_web/components/moderation_components.ex:316
 #, elixir-autogen, elixir-format
 msgid "Resolve report #%{id}"
 msgstr "處理檢舉 #%{id}"
@@ -7360,7 +7360,7 @@ msgstr "靜音帳號"
 msgid "No blocked accounts."
 msgstr "沒有已封鎖的帳號。"
 
-#: lib/baudrate_web/components/moderation_components.ex:209
+#: lib/baudrate_web/components/moderation_components.ex:225
 #, elixir-autogen, elixir-format
 msgid "Only this message was shared with moderators, not the conversation."
 msgstr "僅此則訊息提供給管理人員，不包含整段對話。"
@@ -7400,12 +7400,12 @@ msgstr "檢舉貼文"
 msgid "Report this message"
 msgstr "檢舉此訊息"
 
-#: lib/baudrate_web/components/moderation_components.ex:204
+#: lib/baudrate_web/components/moderation_components.ex:220
 #, elixir-autogen, elixir-format
 msgid "Reported Direct Message:"
 msgstr "被檢舉的私訊："
 
-#: lib/baudrate_web/components/moderation_components.ex:177
+#: lib/baudrate_web/components/moderation_components.ex:193
 #, elixir-autogen, elixir-format
 msgid "Reported Feed Item:"
 msgstr "被檢舉的摘要項目："
@@ -7507,7 +7507,7 @@ msgstr "其他"
 msgid "Spam"
 msgstr "垃圾訊息"
 
-#: lib/baudrate_web/components/moderation_components.ex:155
+#: lib/baudrate_web/components/moderation_components.ex:171
 #, elixir-autogen, elixir-format
 msgid "View in context"
 msgstr "在原文中檢視"
@@ -7517,7 +7517,7 @@ msgstr "在原文中檢視"
 msgid "What is wrong?"
 msgstr "發生什麼問題？"
 
-#: lib/baudrate_web/live/moderation_live.ex:160
+#: lib/baudrate_web/live/moderation_live.ex:164
 #, elixir-autogen, elixir-format
 msgid "Report not found."
 msgstr "找不到該檢舉。"
@@ -7556,3 +7556,9 @@ msgstr "檢舉類別：%{category}"
 #, elixir-autogen, elixir-format
 msgid "Your report has been reviewed by the moderators."
 msgstr "您的檢舉已由管理員審閱。"
+
+#: lib/baudrate_web/components/moderation_components.ex:129
+#: lib/baudrate_web/components/moderation_components.ex:160
+#, elixir-autogen, elixir-format
+msgid "Removed content, kept for 90 days:"
+msgstr "已移除的內容，保留 90 天："

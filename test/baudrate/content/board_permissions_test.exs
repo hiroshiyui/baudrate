@@ -364,6 +364,106 @@ defmodule Baudrate.Content.BoardPermissionsTest do
     end
   end
 
+  describe "cross-posted articles (P1-D5)" do
+    setup %{user: user} do
+      uid = System.unique_integer([:positive])
+      {:ok, mine} = Content.create_board(%{name: "Mine", slug: "cross-mine-#{uid}"})
+      {:ok, theirs} = Content.create_board(%{name: "Theirs", slug: "cross-theirs-#{uid}"})
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{title: "Cross", body: "Body", slug: "cross-#{uid}", user_id: user.id},
+          [mine.id, theirs.id]
+        )
+
+      role = Repo.one!(from(r in Setup.Role, where: r.name == "user"))
+
+      {:ok, moderator} =
+        %Setup.User{}
+        |> Setup.User.registration_changeset(%{
+          "username" => "cross_mod_#{uid}",
+          "password" => "Password123!x",
+          "password_confirmation" => "Password123!x",
+          "role_id" => role.id
+        })
+        |> Repo.insert()
+
+      moderator = Repo.preload(moderator, :role)
+      {:ok, _} = Content.add_board_moderator(mine.id, moderator.id)
+
+      article = Repo.preload(article, :boards)
+      {:ok, mine: mine, theirs: theirs, article: article, moderator: moderator}
+    end
+
+    test "moderating one board is not enough to delete, pin or lock it everywhere", %{
+      article: article,
+      moderator: moderator
+    } do
+      refute Content.can_delete_article?(moderator, article)
+      refute Content.can_pin_article?(moderator, article)
+      refute Content.can_lock_article?(moderator, article)
+    end
+
+    test "moderating every board it is in is enough", %{
+      article: article,
+      moderator: moderator,
+      theirs: theirs
+    } do
+      {:ok, _} = Content.add_board_moderator(theirs.id, moderator.id)
+
+      assert Content.can_delete_article?(moderator, article)
+      assert Content.can_pin_article?(moderator, article)
+    end
+
+    test "a board moderator may take it out of their own board only", %{
+      article: article,
+      moderator: moderator,
+      mine: mine,
+      theirs: theirs
+    } do
+      assert Content.can_remove_from_board?(moderator, article, mine)
+      refute Content.can_remove_from_board?(moderator, article, theirs)
+
+      assert {:ok, updated} = Content.remove_article_from_board(article, mine, moderator)
+      assert Enum.map(updated.boards, & &1.id) == [theirs.id]
+
+      assert {:error, :unauthorized} =
+               Content.remove_article_from_board(updated, theirs, moderator)
+    end
+
+    test "staff and the author are not held to the all-boards rule", %{
+      article: article,
+      admin: admin,
+      user: author,
+      moderator: moderator,
+      theirs: theirs
+    } do
+      assert Content.can_delete_article?(admin, article)
+      assert Content.can_delete_article?(author, article)
+      assert Content.can_remove_from_board?(admin, article, theirs)
+      assert Content.can_remove_from_board?(author, article, theirs)
+      refute Content.can_delete_article?(moderator, article)
+    end
+
+    test "a comment on a cross-posted article follows the same rule", %{
+      article: article,
+      moderator: moderator,
+      user: author,
+      theirs: theirs
+    } do
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "A comment",
+          "article_id" => article.id,
+          "user_id" => author.id
+        })
+
+      refute Content.can_delete_comment?(moderator, comment, article)
+      {:ok, _} = Content.add_board_moderator(theirs.id, moderator.id)
+      assert Content.can_delete_comment?(moderator, comment, article)
+    end
+  end
+
   describe "can_pin_article?/2 and can_lock_article?/2" do
     setup %{user: user} do
       {:ok, board} =

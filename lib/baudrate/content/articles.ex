@@ -629,7 +629,9 @@ defmodule Baudrate.Content.Articles do
     article = Permissions.ensure_boards_loaded(article)
 
     cond do
-      not Permissions.article_author_or_admin?(user, article) ->
+      # The author, staff, or a moderator of this board (P1-D5): taking the
+      # article out of one board is that board's business.
+      not Permissions.can_remove_from_board?(user, article, board) ->
         {:error, :unauthorized}
 
       not Enum.any?(article.boards, &(&1.id == board.id)) ->

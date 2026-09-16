@@ -47,6 +47,13 @@ defmodule BaudrateWeb.ArticleLive do
       can_lock =
         if current_user, do: Content.can_lock_article?(current_user, article), else: false
 
+      # Which boards this member may take the article out of (P1-D5): their
+      # own boards, or every board for the author and staff.
+      removable_board_ids =
+        for board <- article.boards,
+            current_user && Content.can_remove_from_board?(current_user, article, board),
+            do: board.id
+
       is_board_mod = Content.can_moderate_article?(current_user, article)
       can_comment = Content.can_comment_on_article?(current_user, article)
 
@@ -59,6 +66,7 @@ defmodule BaudrateWeb.ArticleLive do
         |> assign(:article, article)
         |> assign(:can_edit, can_edit)
         |> assign(:can_delete, can_delete)
+        |> assign(:removable_board_ids, removable_board_ids)
         |> assign(:can_pin, can_pin)
         |> assign(:can_lock, can_lock)
         |> assign(:is_board_mod, is_board_mod)
@@ -178,8 +186,8 @@ defmodule BaudrateWeb.ArticleLive do
     article = socket.assigns.article
     user = socket.assigns.current_user
 
-    with true <- socket.assigns.can_delete,
-         {:ok, board_id} <- parse_id(board_id_str),
+    with {:ok, board_id} <- parse_id(board_id_str),
+         true <- board_id in socket.assigns.removable_board_ids,
          board when not is_nil(board) <- Enum.find(article.boards, &(&1.id == board_id)),
          {:ok, updated} <- Content.remove_article_from_board(article, board, user) do
       Moderation.log_action(user.id, "remove_article_from_board",

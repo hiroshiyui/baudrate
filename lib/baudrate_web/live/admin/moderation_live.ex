@@ -73,16 +73,32 @@ defmodule BaudrateWeb.Admin.ModerationLive do
   @impl true
   def handle_event("delete_content", %{"type" => "article", "id" => id} = params, socket) do
     case parse_id(id) do
-      :error -> {:noreply, socket}
-      {:ok, article_id} -> do_delete_article(socket, article_id, reason_category(socket, params))
+      :error ->
+        {:noreply, socket}
+
+      {:ok, article_id} ->
+        do_delete_article(
+          socket,
+          article_id,
+          reason_category(socket, params),
+          report(socket, params)
+        )
     end
   end
 
   @impl true
   def handle_event("delete_content", %{"type" => "comment", "id" => id} = params, socket) do
     case parse_id(id) do
-      :error -> {:noreply, socket}
-      {:ok, comment_id} -> do_delete_comment(socket, comment_id, reason_category(socket, params))
+      :error ->
+        {:noreply, socket}
+
+      {:ok, comment_id} ->
+        do_delete_comment(
+          socket,
+          comment_id,
+          reason_category(socket, params),
+          report(socket, params)
+        )
     end
   end
 
@@ -271,21 +287,31 @@ defmodule BaudrateWeb.Admin.ModerationLive do
   # Only a report already on this page counts, so it never comes from the
   # client.
   defp reason_category(socket, params) do
+    case report(socket, params) do
+      %{category: category} -> category
+      nil -> nil
+    end
+  end
+
+  # The report this action was taken from, found among the ones on the page,
+  # so nothing here trusts an id from the client.
+  defp report(socket, params) do
     with id when is_binary(id) <- params["report"],
-         {:ok, report_id} <- parse_id(id),
-         %{} = report <- Enum.find(socket.assigns.reports, &(&1.id == report_id)) do
-      report.category
+         {:ok, report_id} <- parse_id(id) do
+      Enum.find(socket.assigns.reports, &(&1.id == report_id))
     else
       _ -> nil
     end
   end
 
-  defp do_delete_article(socket, article_id, reason_category) do
+  defp do_delete_article(socket, article_id, reason_category, report) do
     case Content.get_article(article_id) do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("Article not found."))}
 
       article ->
+        if report, do: Moderation.capture_evidence(report, article.body)
+
         case Content.soft_delete_article(article, deleted_by: socket.assigns.current_user.id) do
           {:ok, _} ->
             Hooks.notify_content_removed(article, socket.assigns.current_user.id, reason_category)
@@ -307,12 +333,14 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     end
   end
 
-  defp do_delete_comment(socket, comment_id, reason_category) do
+  defp do_delete_comment(socket, comment_id, reason_category, report) do
     case Content.get_comment(comment_id) do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("Comment not found."))}
 
       comment ->
+        if report, do: Moderation.capture_evidence(report, comment.body)
+
         case Content.soft_delete_comment(comment, deleted_by: socket.assigns.current_user.id) do
           {:ok, _} ->
             Hooks.notify_content_removed(comment, socket.assigns.current_user.id, reason_category)

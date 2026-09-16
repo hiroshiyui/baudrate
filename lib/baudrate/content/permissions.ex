@@ -116,6 +116,54 @@ defmodule Baudrate.Content.Permissions do
   def board_moderator_for_any?(_boards, _user), do: false
 
   @doc """
+  Whether the user moderates **every** one of these boards.
+
+  What happens to a cross-posted article happens in each board it is in, so
+  deleting, pinning or locking it needs moderation rights on all of them
+  (P1-D5); removing it from one board needs rights on that board only
+  (`can_remove_from_board?/3`). Admins and global moderators moderate
+  everywhere. A member with no boards at all is not a moderator of "all" of
+  them.
+  """
+  @spec board_moderator_for_all?([%Board{}], map() | nil) :: boolean()
+  def board_moderator_for_all?(boards, %{id: user_id, role: %{name: role_name}})
+      when is_list(boards) do
+    cond do
+      role_name in ["admin", "moderator"] ->
+        true
+
+      boards == [] ->
+        false
+
+      true ->
+        board_ids = Enum.map(boards, & &1.id)
+
+        moderated =
+          Repo.all(
+            from(bm in BoardModerator,
+              where: bm.board_id in ^board_ids and bm.user_id == ^user_id,
+              select: bm.board_id
+            )
+          )
+
+        MapSet.subset?(MapSet.new(board_ids), MapSet.new(moderated))
+    end
+  end
+
+  def board_moderator_for_all?(_boards, _user), do: false
+
+  @doc """
+  Whether the user may take this article out of one board: its author, staff,
+  or a moderator of that board (P1-D5). The article must be in the board.
+  """
+  @spec can_remove_from_board?(map() | nil, %Article{}, %Board{}) :: boolean()
+  def can_remove_from_board?(nil, _article, _board), do: false
+
+  def can_remove_from_board?(user, article, %Board{} = board) do
+    article_author_or_admin?(user, article) or board_moderator?(board, user)
+  end
+
+  @doc """
   Ensures the `:boards` association is loaded, skipping the query when already present.
   """
   def ensure_boards_loaded(article) do
@@ -174,7 +222,8 @@ defmodule Baudrate.Content.Permissions do
   def can_edit_article?(_, _), do: false
 
   @doc """
-  Returns true if the user can delete the article (author, admin, or board moderator).
+  Returns true if the user can delete the article: its author, an admin, or a
+  moderator of **every** board it is in (P1-D5).
   """
   @spec can_delete_article?(map(), %Article{}) :: boolean()
   def can_delete_article?(%{role: %{name: "admin"}}, _article), do: true
@@ -182,17 +231,18 @@ defmodule Baudrate.Content.Permissions do
 
   def can_delete_article?(user, article) do
     article = ensure_boards_loaded(article)
-    board_moderator_for_any?(article.boards, user)
+    board_moderator_for_all?(article.boards, user)
   end
 
   @doc """
-  Returns true if the user can pin the article (admin or board moderator).
+  Returns true if the user can pin the article: an admin, or a moderator of
+  **every** board it is in (P1-D5).
   """
   def can_pin_article?(%{role: %{name: "admin"}}, _article), do: true
 
   def can_pin_article?(user, article) do
     article = ensure_boards_loaded(article)
-    board_moderator_for_any?(article.boards, user)
+    board_moderator_for_all?(article.boards, user)
   end
 
   @doc """
@@ -207,9 +257,12 @@ defmodule Baudrate.Content.Permissions do
   def can_delete_comment?(%{role: %{name: "admin"}}, _comment, _article), do: true
   def can_delete_comment?(%{id: uid}, %{user_id: uid}, _article), do: true
 
+  # A comment belongs to the article, which may live in several boards, so
+  # removing it removes it from all of them: the same rule as the article
+  # (P1-D5).
   def can_delete_comment?(user, _comment, article) do
     article = ensure_boards_loaded(article)
-    board_moderator_for_any?(article.boards, user)
+    board_moderator_for_all?(article.boards, user)
   end
 
   @doc """

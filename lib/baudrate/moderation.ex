@@ -80,6 +80,11 @@ defmodule Baudrate.Moderation do
 
   @target_fields ~w(article_id comment_id remote_actor_id reported_user_id feed_item_id message_id)a
 
+  # How long a report keeps its copies of removed content and reported
+  # messages after it is closed (P1-D6), and how much of the text is kept.
+  @evidence_days 90
+  @evidence_limit 64_000
+
   # Every target except the reported message: a report carries its own copy of
   # that one message's text in `message_body`.
   @report_preloads [
@@ -299,6 +304,51 @@ defmodule Baudrate.Moderation do
         r.article_id in subquery(article_ids) or
           r.comment_id in subquery(comment_ids)
     )
+  end
+
+  @doc """
+  Keeps a copy of content a moderator is about to remove, so the report still
+  explains itself afterwards (P1-D6). Staff see it in the queue until the
+  report has been closed for 90 days, when `purge_closed_report_evidence/0`
+  clears it.
+
+  The text comes from the stored record, never from attributes, and is capped
+  at the content size limit.
+  """
+  @spec capture_evidence(Report.t(), String.t() | nil) :: :ok
+  def capture_evidence(%Report{} = report, body) when is_binary(body) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    from(r in Report, where: r.id == ^report.id)
+    |> Repo.update_all(
+      set: [evidence_body: String.slice(body, 0, @evidence_limit), evidence_taken_at: now]
+    )
+
+    :ok
+  end
+
+  def capture_evidence(_report, _body), do: :ok
+
+  @doc """
+  Clears the evidence copies of reports closed more than #{@evidence_days}
+  days ago: the copy of removed content and the copy of a reported direct
+  message (P1-D6). Runs hourly from `SessionCleaner`.
+
+  Returns the number of reports cleared.
+  """
+  @spec purge_closed_report_evidence() :: non_neg_integer()
+  def purge_closed_report_evidence do
+    cutoff = DateTime.utc_now() |> DateTime.add(-@evidence_days * 86_400, :second)
+
+    {count, _} =
+      from(r in Report,
+        where: r.status in ["resolved", "dismissed"],
+        where: r.resolved_at < ^cutoff,
+        where: not is_nil(r.evidence_body) or not is_nil(r.message_body)
+      )
+      |> Repo.update_all(set: [evidence_body: nil, message_body: nil])
+
+    count
   end
 
   @doc """

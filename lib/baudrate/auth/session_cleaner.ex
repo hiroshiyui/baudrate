@@ -68,7 +68,8 @@ defmodule Baudrate.Auth.SessionCleaner do
       purge_stale_media_cache: &purge_stale_media_cache/0,
       sweep_data_exports: &sweep_data_exports/0,
       sweep_account_moves: &sweep_account_moves/0,
-      cleanup_old_notifications: &cleanup_old_notifications/0
+      cleanup_old_notifications: &cleanup_old_notifications/0,
+      purge_closed_report_evidence: &Baudrate.Moderation.purge_closed_report_evidence/0
     ]
     |> Enum.each(fn {name, step} -> run_step(name, step) end)
 

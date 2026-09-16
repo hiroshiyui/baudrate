@@ -1236,6 +1236,25 @@ preferences cannot switch off being told your own post was removed, and
 own content notifies nobody (the remover is the notification's actor, and a
 notification is never delivered to its own actor).
 
+**Cross-posted articles (P1-D5).** Deleting, pinning or locking an article
+that lives in several boards needs moderation rights on **every** one of them
+(`Permissions.board_moderator_for_all?/2`); the same goes for deleting a
+comment on it, since a comment is removed from every board at once. A
+moderator of one board can still take the article out of *their* board
+(`can_remove_from_board?/3`, enforced in
+`Content.remove_article_from_board/3`), and the article page offers that for
+exactly the boards a member may remove it from. Authors, admins and global
+moderators are not held to the all-boards rule.
+
+**Evidence (P1-D6).** When content is removed from a queue, the report keeps a
+copy of its text (`reports.evidence_body`, `evidence_taken_at`, set by
+`Moderation.capture_evidence/2` from the stored record, never cast from
+attributes), so a closed report still explains itself once the content reads
+as deleted. `Moderation.purge_closed_report_evidence/0` clears that copy and
+the copied direct message 90 days after the report was closed, hourly from
+`SessionCleaner`; an open report keeps its evidence however old it is.
+Content an author deletes themselves is still wiped at once.
+
 Deletions record who made them: articles already had `deleted_by_id`, and
 comments now do too. Moderators removing other people's content are not held
 to the author limit of 20 deletions per 5 minutes; they have

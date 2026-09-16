@@ -240,4 +240,37 @@ defmodule Baudrate.Moderation.MemberReportsTest do
 
     assert id == report.id
   end
+
+  describe "purge_closed_report_evidence/0 (P1-D6)" do
+    test "clears the copied message text once the report has been closed for 90 days" do
+      user = create_user()
+      sender = create_user()
+      {:ok, conversation} = Baudrate.Messaging.find_or_create_conversation(user, sender)
+
+      {:ok, message} =
+        Baudrate.Messaging.create_message(conversation, sender, %{"body" => "Threat"})
+
+      {:ok, report} =
+        Moderation.report_message(user, message.id, %{
+          reason: "Harassment",
+          category: "harassment"
+        })
+
+      assert Repo.reload!(report).message_body == "Threat"
+      {:ok, report} = Moderation.resolve_report(report, user.id, "handled")
+
+      assert Moderation.purge_closed_report_evidence() == 0
+
+      long_ago =
+        DateTime.utc_now() |> DateTime.add(-91 * 86_400, :second) |> DateTime.truncate(:second)
+
+      Repo.update_all(
+        from(r in Baudrate.Moderation.Report, where: r.id == ^report.id),
+        set: [resolved_at: long_ago]
+      )
+
+      assert Moderation.purge_closed_report_evidence() == 1
+      refute Repo.reload!(report).message_body
+    end
+  end
 end

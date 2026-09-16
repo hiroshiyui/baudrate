@@ -98,6 +98,8 @@ defmodule BaudrateWeb.ModerationLive do
     with {:ok, article_id} <- parse_id(id),
          %{} = article <- Content.get_article(article_id),
          true <- Content.can_delete_article?(user, article) do
+      if report = report(socket, params), do: Moderation.capture_evidence(report, article.body)
+
       case Content.soft_delete_article(article, deleted_by: user.id) do
         {:ok, _} ->
           Hooks.notify_content_removed(article, user.id, reason_category(socket, params))
@@ -126,6 +128,8 @@ defmodule BaudrateWeb.ModerationLive do
          %{} = comment <- Content.get_comment(comment_id),
          %{} = article <- Content.get_article(comment.article_id),
          true <- Content.can_delete_comment?(user, comment, article) do
+      if report = report(socket, params), do: Moderation.capture_evidence(report, comment.body)
+
       case Content.soft_delete_comment(comment, deleted_by: user.id) do
         {:ok, _} ->
           Hooks.notify_content_removed(comment, user.id, reason_category(socket, params))
@@ -165,10 +169,16 @@ defmodule BaudrateWeb.ModerationLive do
   # from. Only a report already on this page counts, so the value never comes
   # from the client.
   defp reason_category(socket, params) do
+    case report(socket, params) do
+      %{category: category} -> category
+      nil -> nil
+    end
+  end
+
+  defp report(socket, params) do
     with id when is_binary(id) <- params["report"],
-         {:ok, report_id} <- parse_id(id),
-         %{} = report <- Enum.find(socket.assigns.reports, &(&1.id == report_id)) do
-      report.category
+         {:ok, report_id} <- parse_id(id) do
+      Enum.find(socket.assigns.reports, &(&1.id == report_id))
     else
       _ -> nil
     end

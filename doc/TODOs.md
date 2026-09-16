@@ -67,11 +67,10 @@ Shipped on `current`; see "Recently completed". Blocking semantics are recorded 
 - [x] **Scoped queue for board moderators** (2026-09-16): `/moderation` (`ModerationLive`), scoped by `Content.moderated_board_ids/1`, linked from each board they moderate, with every action re-checking `Moderation.report_in_boards?/2` and the delete permission.
 - [x] **Who hears about a new report** (2026-09-16): every admin and global moderator (`Setup.staff_user_ids/0`), plus the board moderators of the reported content's board.
 - [x] **Outcome notices (P1-D4)** (2026-09-16): `report_reviewed` to the reporter on resolve, `content_removed` (always delivered) to the author with the report's reason category; dismissals notify nobody.
-- [ ] **Cross-posted articles (P1-D5).**
-  - A board moderator can remove an article from *their* board.
-  - Pin, lock and delete on an article in several boards need moderation rights on every one of them (admins and global moderators excepted).
+- [x] **Cross-posted articles (P1-D5)** (2026-09-16): `board_moderator_for_all?/2` gates delete, pin, lock and comment deletion; `can_remove_from_board?/3` lets a board moderator take the article out of their own board.
 - [x] **Moderator actions** (2026-09-16): `RateLimits.check_moderator_delete/1` (100 per 5 minutes) for deleting other people's content, and `comments.deleted_by_id` records who deleted a comment, as articles already did.
-- [ ] **Evidence retention (P1-D6).** Content deleted by a moderator stays readable to staff in the report for 90 days, then it is purged. An author deleting their own content still wipes it at once. The message text copied into a DM report (`reports.message_body`, added in 1A) is purged on the same schedule once the report is closed.
+- [x] **Evidence retention (P1-D6)** (2026-09-16): a removal from a queue copies the text into `reports.evidence_body`; `Moderation.purge_closed_report_evidence/0` (hourly) clears it and `message_body` 90 days after the report closed. Author deletions still wipe at once.
+  - [ ] Articles an author deletes keep their body in the row (and in `article_revisions`); only comments are wiped. Worth revisiting with revision retention.
 - **Accepted when:** a board moderator can resolve a report about their board end to end; a context-level test proves they cannot see or act on other boards' reports; every action is in the audit log.
 
 ### 1C — Sanctions short of a ban (M)

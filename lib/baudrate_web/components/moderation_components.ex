@@ -121,6 +121,14 @@ defmodule BaudrateWeb.ModerationComponents do
         <p class="moderation-report-article-body text-sm whitespace-pre-wrap break-words max-h-64 overflow-y-auto mt-1">
           {@report.article.body}
         </p>
+        <p
+          :if={@report.article.deleted_at && @report.evidence_body}
+          id={"#{@prefix}-report-article-evidence-#{@report.id}"}
+          class="moderation-report-evidence text-sm whitespace-pre-wrap break-words max-h-64 overflow-y-auto mt-1 opacity-80"
+        >
+          {gettext("Removed content, kept for 90 days:")}
+          {@report.evidence_body}
+        </p>
         <button
           :if={@allow_delete and @report.status == "open" and is_nil(@report.article.deleted_at)}
           id={"#{@prefix}-delete-article-#{@report.id}"}
@@ -143,6 +151,14 @@ defmodule BaudrateWeb.ModerationComponents do
         <p class="text-sm font-semibold">{gettext("Reported Comment:")}</p>
         <p class="moderation-report-comment-body text-sm whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
           {@report.comment.body}
+        </p>
+        <p
+          :if={@report.comment.deleted_at && @report.evidence_body}
+          id={"#{@prefix}-report-comment-evidence-#{@report.id}"}
+          class="moderation-report-evidence text-sm whitespace-pre-wrap break-words max-h-64 overflow-y-auto opacity-80"
+        >
+          {gettext("Removed content, kept for 90 days:")}
+          {@report.evidence_body}
         </p>
         <.link
           :if={@report.comment.article}

@@ -426,8 +426,8 @@
               {gettext("Report")}
             </button>
           </li>
-          <%= if @can_delete && length(@article.boards) > 1 do %>
-            <li :for={board <- @article.boards}>
+          <%= if length(@article.boards) > 1 do %>
+            <li :for={board <- @article.boards} :if={board.id in @removable_board_ids}>
               <button
                 id={"article-menu-remove-board-#{board.id}"}
                 phx-click="remove_from_board"

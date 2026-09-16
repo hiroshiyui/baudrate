@@ -14,6 +14,10 @@ defmodule Baudrate.Moderation.Report do
       it a `Flag` ("Send Flag"). Never the reporter.
     * `article_id`, `comment_id`, `reported_user_id` — reported local records
     * `feed_item_id` — a reported feed item (its author is `remote_actor_id`)
+    * `evidence_body` and `evidence_taken_at` — a copy of the reported article
+      or comment, taken when a moderator removed it, so the report still
+      explains itself afterwards. Purged 90 days after the report was closed
+      (P1-D6); never cast from attributes.
     * `message_id` and `message_body` — a reported direct message and a copy
       of its text taken when the report was made. Only that one message is
       copied, never the rest of the conversation. The sender is
@@ -32,6 +36,10 @@ defmodule Baudrate.Moderation.Report do
     field :resolved_at, :utc_datetime
     field :resolution_note, :string
     field :message_body, :string
+    # A copy of removed content, kept for staff for 90 days (P1-D6). Like
+    # `message_body`, set by the context and never cast from attributes.
+    field :evidence_body, :string
+    field :evidence_taken_at, :utc_datetime
 
     belongs_to :reporter, Baudrate.Setup.User
     belongs_to :reporter_remote_actor, Baudrate.Federation.RemoteActor
