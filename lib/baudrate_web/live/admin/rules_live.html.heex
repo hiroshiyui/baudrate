@@ -1,0 +1,223 @@
+<div id="admin-rules-page" class="admin-rules-page space-y-6">
+  <h1 id="admin-rules-heading" class="admin-rules-title text-2xl font-bold" tabindex="-1">
+    {gettext("Site Rules")}
+  </h1>
+
+  <p id="admin-rules-intro" class="admin-rules-intro text-sm opacity-70">
+    {gettext(
+      "Published at /rules, numbered in this order. A member reporting something can point at the rule they say was broken."
+    )}
+  </p>
+
+  <section
+    id="admin-rules-new-card"
+    class="admin-rules-card card bg-base-200 shadow-sm"
+    aria-labelledby="admin-rules-new-heading"
+  >
+    <div class="card-body">
+      <h2 id="admin-rules-new-heading" class="admin-rules-new-heading card-title text-lg">
+        {gettext("Add a rule")}
+      </h2>
+      <.form
+        for={@new_form}
+        id="admin-rules-new-form"
+        phx-change="validate_new"
+        phx-submit="create"
+      >
+        <.input
+          field={@new_form[:title]}
+          type="text"
+          id="rule-new-title"
+          label={gettext("Rule")}
+          value={@new_form[:title].value}
+          placeholder={gettext("Be civil")}
+          required
+        />
+        <.input
+          field={@new_form[:body]}
+          type="textarea"
+          id="rule-new-body"
+          label={gettext("Detail (optional, Markdown)")}
+          value={@new_form[:body].value}
+          rows="3"
+        />
+        <div class="mt-4">
+          <.button variant="primary" type="submit" phx-disable-with={gettext("Saving...")}>
+            {gettext("Add Rule")}
+          </.button>
+        </div>
+      </.form>
+    </div>
+  </section>
+
+  <section
+    id="admin-rules-list-card"
+    class="admin-rules-card card bg-base-200 shadow-sm"
+    aria-labelledby="admin-rules-list-heading"
+  >
+    <div class="card-body">
+      <h2 id="admin-rules-list-heading" class="admin-rules-list-heading card-title text-lg">
+        {gettext("Published")}
+      </h2>
+
+      <p
+        :if={@rules == []}
+        id="admin-rules-empty"
+        class="admin-rules-empty text-center py-8 opacity-70"
+      >
+        {gettext("No rules yet. The /rules page says so, and reports cannot cite one.")}
+      </p>
+
+      <ol
+        :if={@rules != []}
+        id="admin-rules-list"
+        class="admin-rules-list space-y-4 list-none pl-0"
+      >
+        <li
+          :for={{rule, number} <- Enum.with_index(@rules, 1)}
+          id={"admin-rule-#{rule.id}"}
+          class="admin-rule rounded-lg bg-base-100 p-4"
+        >
+          <%= if @editing_id == rule.id do %>
+            <.form
+              for={@edit_form}
+              id={"admin-rule-edit-form-#{rule.id}"}
+              phx-change="validate_edit"
+              phx-submit="save_edit"
+            >
+              <input type="hidden" name="rule_id" value={rule.id} />
+              <.input
+                field={@edit_form[:title]}
+                type="text"
+                id={"rule-title-#{rule.id}"}
+                label={gettext("Rule")}
+                value={@edit_form[:title].value}
+                required
+              />
+              <.input
+                field={@edit_form[:body]}
+                type="textarea"
+                id={"rule-body-#{rule.id}"}
+                label={gettext("Detail (optional, Markdown)")}
+                value={@edit_form[:body].value}
+                rows="3"
+              />
+              <div class="mt-3 flex flex-wrap gap-2">
+                <.button
+                  id={"admin-rule-save-#{rule.id}"}
+                  variant="primary"
+                  type="submit"
+                  phx-disable-with={gettext("Saving...")}
+                >
+                  {gettext("Save")}
+                </.button>
+                <button
+                  id={"admin-rule-cancel-#{rule.id}"}
+                  type="button"
+                  phx-click="cancel_edit"
+                  class="admin-rule-cancel btn btn-ghost"
+                >
+                  {gettext("Cancel")}
+                </button>
+              </div>
+            </.form>
+          <% else %>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <h3 class="admin-rule-title font-semibold break-words">
+                  {gettext("%{number}. %{title}", number: number, title: rule.title)}
+                </h3>
+                <p :if={rule.body} class="admin-rule-body text-sm opacity-70 mt-1 break-words">
+                  {rule.body}
+                </p>
+              </div>
+              <div class="admin-rule-actions flex flex-wrap gap-1">
+                <button
+                  id={"rule-move-#{rule.id}-up"}
+                  phx-click="move"
+                  phx-value-id={rule.id}
+                  phx-value-direction="up"
+                  disabled={number == 1}
+                  class="admin-rule-move btn btn-sm btn-ghost"
+                  aria-label={gettext("Move %{title} up", title: rule.title)}
+                >
+                  <.icon name="hero-arrow-up" class="size-4" />
+                </button>
+                <button
+                  id={"rule-move-#{rule.id}-down"}
+                  phx-click="move"
+                  phx-value-id={rule.id}
+                  phx-value-direction="down"
+                  disabled={number == length(@rules)}
+                  class="admin-rule-move btn btn-sm btn-ghost"
+                  aria-label={gettext("Move %{title} down", title: rule.title)}
+                >
+                  <.icon name="hero-arrow-down" class="size-4" />
+                </button>
+                <button
+                  id={"admin-rule-edit-#{rule.id}"}
+                  phx-click="start_edit"
+                  phx-value-id={rule.id}
+                  class="admin-rule-edit btn btn-sm"
+                  aria-label={gettext("Edit %{title}", title: rule.title)}
+                >
+                  {gettext("Edit")}
+                </button>
+                <button
+                  id={"admin-rule-retire-#{rule.id}"}
+                  phx-click="retire"
+                  phx-value-id={rule.id}
+                  data-confirm={
+                    gettext(
+                      "Retire this rule? It leaves /rules and the report form. Reports that already cite it keep working."
+                    )
+                  }
+                  class="admin-rule-retire btn btn-sm btn-error"
+                  aria-label={gettext("Retire %{title}", title: rule.title)}
+                >
+                  {gettext("Retire")}
+                </button>
+              </div>
+            </div>
+          <% end %>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section
+    :if={@retired != []}
+    id="admin-rules-retired-card"
+    class="admin-rules-card card bg-base-200 shadow-sm"
+    aria-labelledby="admin-rules-retired-heading"
+  >
+    <div class="card-body">
+      <h2 id="admin-rules-retired-heading" class="admin-rules-retired-heading card-title text-lg">
+        {gettext("Retired")}
+      </h2>
+      <p class="admin-rules-retired-hint text-sm opacity-70">
+        {gettext(
+          "Not shown to members and not offered on the report form, but still named on reports that cited them."
+        )}
+      </p>
+      <ul id="admin-rules-retired-list" class="admin-rules-retired-list space-y-2">
+        <li
+          :for={rule <- @retired}
+          id={"admin-retired-rule-#{rule.id}"}
+          class="admin-retired-rule flex flex-wrap items-center justify-between gap-3 rounded-lg bg-base-100 p-3"
+        >
+          <span class="admin-retired-rule-title min-w-0 flex-1 break-words">{rule.title}</span>
+          <button
+            id={"admin-rule-restore-#{rule.id}"}
+            phx-click="restore"
+            phx-value-id={rule.id}
+            class="admin-rule-restore btn btn-sm"
+            aria-label={gettext("Restore %{title}", title: rule.title)}
+          >
+            {gettext("Restore")}
+          </button>
+        </li>
+      </ul>
+    </div>
+  </section>
+</div>

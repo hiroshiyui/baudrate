@@ -228,33 +228,31 @@
     </div>
   </div>
 
-  <div id="rules-card" class="admin-settings-card card bg-base-200 shadow-sm">
+  <section
+    id="rules-card"
+    class="admin-settings-card card bg-base-200 shadow-sm"
+    aria-labelledby="admin-settings-rules-heading"
+  >
     <div class="card-body">
       <h2 id="admin-settings-rules-heading" class="admin-settings-rules-heading card-title">
         {gettext("Site Rules")}
       </h2>
       <p class="admin-settings-rules-hint text-sm text-base-content/70">
         {gettext(
-          "What members may and may not do here, published at /rules and linked from the footer. Supports Markdown formatting."
+          "The rules are a numbered list rather than one document, so a report can point at the rule it says was broken."
         )}
       </p>
-      <.form for={@rules_form} id="rules-form" phx-change="validate_rules" phx-submit="save_rules">
-        <.input
-          field={@rules_form[:text]}
-          type="textarea"
-          label={gettext("Site Rules (Markdown)")}
-          toolbar
-          rows="8"
-          placeholder={gettext("Enter the rules of your site here...")}
-        />
-        <div class="mt-4">
-          <.button variant="primary" type="submit" phx-disable-with={gettext("Saving...")}>
-            {gettext("Save Rules")}
-          </.button>
-        </div>
-      </.form>
+      <div class="card-actions">
+        <.link
+          id="admin-settings-rules-link"
+          navigate={~p"/admin/rules"}
+          class="admin-settings-rules-link btn btn-sm"
+        >
+          {gettext("Edit Site Rules")}
+        </.link>
+      </div>
     </div>
-  </div>
+  </section>
 
   <div id="privacy-card" class="admin-settings-card card bg-base-200 shadow-sm">
     <div class="card-body">

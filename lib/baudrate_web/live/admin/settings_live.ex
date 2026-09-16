@@ -22,7 +22,6 @@ defmodule BaudrateWeb.Admin.SettingsLive do
   def mount(_params, _session, socket) do
     changeset = Setup.change_settings()
     eua = Setup.get_eua() || ""
-    rules = Setup.get_policy(:rules) || ""
     privacy = Setup.get_policy(:privacy) || ""
 
     timezone_options =
@@ -37,7 +36,6 @@ defmodule BaudrateWeb.Admin.SettingsLive do
       |> assign(eua: eua)
       |> assign(eua_form: to_form(%{"eua" => eua}, as: :eua_settings))
       |> assign(terms_version: Setup.current_terms_version())
-      |> assign(rules_form: to_form(%{"text" => rules}, as: :rules_policy))
       |> assign(privacy_form: to_form(%{"text" => privacy}, as: :privacy_policy))
       |> assign(timezone_options: timezone_options)
       |> assign(light_theme_options: Setup.light_theme_options())
@@ -99,19 +97,6 @@ defmodule BaudrateWeb.Admin.SettingsLive do
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to save End User Agreement."))}
     end
-  end
-
-  @impl true
-  def handle_event("validate_rules", %{"rules_policy" => params}, socket) do
-    {:noreply, assign(socket, rules_form: to_form(params, as: :rules_policy))}
-  end
-
-  @impl true
-  def handle_event("save_rules", %{"rules_policy" => %{"text" => text}}, socket) do
-    {:noreply,
-     save_policy(socket, :rules, text, "update_rules", gettext("Site rules saved."),
-       error: gettext("Failed to save the site rules.")
-     )}
   end
 
   @impl true

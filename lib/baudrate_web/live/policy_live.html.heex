@@ -9,8 +9,33 @@
     {raw(Baudrate.Content.Markdown.to_html(@body))}
   </div>
 
+  <%!-- Each rule keeps a stable anchor, so a moderator or a member can link to
+  the one they mean rather than to the page. --%>
+  <ol :if={@rules != []} id="policy-rules" class="policy-rules space-y-6 list-none pl-0">
+    <li
+      :for={{rule, number} <- Enum.with_index(@rules, 1)}
+      id={"rule-#{number}"}
+      class="policy-rule scroll-mt-20"
+    >
+      <h2 class="policy-rule-title text-lg font-semibold break-words">
+        <.link
+          navigate={"/rules#rule-#{number}"}
+          class="policy-rule-anchor link link-hover no-underline"
+        >
+          {gettext("%{number}. %{title}", number: number, title: rule.title)}
+        </.link>
+      </h2>
+      <div
+        :if={rule.body}
+        class="policy-rule-body prose max-w-none break-words mt-2"
+      >
+        {raw(Baudrate.Content.Markdown.to_html(rule.body))}
+      </div>
+    </li>
+  </ol>
+
   <p
-    :if={is_nil(@body)}
+    :if={is_nil(@body) && @rules == []}
     id="policy-empty"
     class="policy-empty text-center py-8 opacity-70"
     role="status"

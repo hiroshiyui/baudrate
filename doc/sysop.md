@@ -195,7 +195,6 @@ Configure at `/admin/settings`:
 | `site_name` | string | (set at setup) | Display name in headers and NodeInfo |
 | `registration_mode` | enum | `"approval_required"` | Registration policy (see [Registration Modes](#registration-modes)) |
 | `eua` | markdown | (empty) | Terms of service — shown at registration, published at `/terms` |
-| `rules` | markdown | (empty) | Site rules, published at `/rules` |
 | `privacy_policy` | markdown | (empty) | Privacy policy, published at `/privacy` |
 | `ap_federation_enabled` | boolean | `"true"` | Federation kill switch |
 | `ap_federation_mode` | enum | `"blocklist"` | `blocklist` or `allowlist` |
@@ -274,7 +273,7 @@ Three admin-authored markdown documents, each edited in its own card at
 | Page | Setting | What belongs in it |
 |------|---------|--------------------|
 | `/terms` | `eua` | The agreement a member accepts when registering |
-| `/rules` | `rules` | What members may and may not do here |
+| `/rules` | *(`rules` table)* | What members may and may not do here — a numbered list, edited at `/admin/rules` |
 | `/privacy` | `privacy_policy` | What the site records about visitors, and what happens to it |
 
 The footer links the documents you have actually written, and nothing while
@@ -282,11 +281,31 @@ all three are empty — a link to a page saying "not published yet" is worse
 than no link. The registration form keeps showing the terms inline and now
 also links `/terms`, so a member can re-read afterwards what they agreed to.
 
+#### Site Rules (`/admin/rules`)
+
+The rules are a numbered list rather than one document, so a member reporting
+something can point at the rule they say was broken — the `rule_violation`
+report category could previously only say *that* a rule was broken, never
+which. Each rule has a short title, an optional Markdown detail, and a stable
+anchor (`/rules#rule-3`) you can link to.
+
+Rules are **retired, not deleted**. A retired rule leaves `/rules` and the
+report form, but every report that already cited it still names it; deleting
+would quietly empty the citation on every past report. Retired rules are listed
+at the bottom of the page and can be restored, which puts them back at the end.
+
+Citing a rule is always optional, even for "Breaks a rule": a reporter who
+cannot find the right number must still be able to report.
+
+If you upgraded from a version where the rules were one document, that document
+is now the first rule, titled "Site rules" — split it up when convenient.
+
 Markdown is rendered through the same sanitizer and media proxy as any post,
 so an image in a policy page is re-served locally rather than fetched by the
 reader's browser from a third party. Editing a document takes effect at once;
-each save is recorded in the moderation log (`update_eua`, `update_rules`,
-`update_privacy`).
+each save is recorded in the moderation log (`update_eua`, `update_privacy`,
+and `create_rule` / `update_rule` / `retire_rule` / `restore_rule` /
+`reorder_rules` for the rules).
 
 #### Publishing new terms
 

@@ -33,7 +33,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
-| 1 | Trust and safety | 1A–1E (1A done) | A public hub can't grow without moderation reach |
+| 1 | Trust and safety | 1A–1F | A public hub can't grow without moderation reach |
 | 2 | Operability | 2A–2H | Data loss and blind operations are the biggest risks |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
@@ -111,20 +111,18 @@ ADR 0031. Acceptance gate: `test/baudrate/auth/terms_gate_test.exs`.
   - [x] Linked from the footer, which was an empty element. Only documents that have actually been written are linked.
 - [x] **Record acceptance.** `users.terms_accepted_at` and `users.terms_version`, written by `User.accept_terms/1` — validating the checkbox and recording it are one function, because they were two and that was the bug. Neither field is castable from params.
 - [x] **Publishing a new terms version (P1-D8).** `settings.eua_version`, moved only by a deliberate "require every member to accept again" checkbox; the pause is `{:error, :terms_not_accepted}` from `Auth.ensure_can_interact/1`, so it reaches all 29 posting paths and inherits their exemptions. Reading, undo, self-delete, reporting abuse and account security stay open. **Bots are exempt inside the gate query** — they cannot sign in to accept, and their posts go through the same gate, so without it publishing terms would silently stop every RSS feed.
-- [ ] Report categories can point to a rule (P1-D9). **Deferred** — the category already exists (`rule_violation`, shipped with the report work); what is missing is a rule to point *at*, which needs the rules stored as a list of records rather than one markdown document. Tracked separately below.
+- [x] Report categories can point to a rule (P1-D9) — split out as 1F and done.
 - **Accepted when:** a guest can read all three pages, and every account has an acceptance record for the current version before it can post. — met.
 
-### 1F — Rules as records, so a report can cite one (S)
+### 1F — Rules as records, so a report can cite one (S) — **done, unreleased**
 
-Splits out of 1E (P1-D9). Needs a `rules` table (position, title, markdown body)
-in place of the single `rules` setting, `/rules` rendering them numbered with
-anchors, an admin list UI, and `reports.rule_id` with a rule picker shown in the
-report modal when the category is `rule_violation`.
+ADR 0032. Acceptance gate: `test/baudrate/setup/rules_test.exs`.
 
-- [ ] Rules become records; the existing `rules` setting migrates into the first row.
-- [ ] `/rules` renders them numbered, each with a stable anchor.
-- [ ] A `rule_violation` report can name which rule, and the moderation queue shows it.
-- **Accepted when:** a reporter choosing "Breaks a rule" picks the rule from the list, and the moderator sees which one.
+- [x] Rules become records (`Setup.Rule`); the existing `rules` setting migrates into the first row. `position` is assigned by the context and swapped in a transaction, never cast from a form.
+- [x] `/rules` renders them numbered, each with a stable `#rule-N` anchor; `/admin/rules` edits, reorders and retires them.
+- [x] A `rule_violation` report can name which rule, and the queue shows it. **Retired, never deleted** — a report filed months ago still resolves to the rule its author meant.
+- [x] Citing a rule is always optional: reporting abuse stays easy, as it does under a sanction (ADR 0029) or a terms pause (ADR 0031).
+- **Accepted when:** a reporter choosing "Breaks a rule" picks the rule from the list, and the moderator sees which one. — met.
 
 ### Not in Phase 1
 
@@ -588,6 +586,20 @@ Kept so the review is complete. None of these are scheduled; propose moving one 
 ---
 
 ## Recently completed
+
+- **Phase 1F — rules as records, so a report can cite one (unreleased).**
+  The `rule_violation` category could only say *that* a rule was broken, never
+  which, because the rules were one markdown blob with no addressable parts.
+  They are now numbered records with stable anchors, edited at `/admin/rules`
+  ([ADR 0032](adr/0032-rules-are-records-and-retired-not-deleted.md)). Rules are
+  retired rather than deleted, so a report filed months ago still names the rule
+  its author meant, and citing one is always optional so reporting stays easy.
+
+- **A gettext interpolation guard (unreleased).**
+  A fuzzy merge rendered "Move %{title} up" as "将 %{locale} 上移" in both
+  locales — a translation referencing a binding that does not exist, which is a
+  runtime fault rather than merely a bad string. `gettext_interpolation_test.exs`
+  now fails on any translation using a placeholder its msgid does not provide.
 
 - **Phase 1E — rules and terms, minus the rule picker (unreleased).**
   The terms, the site rules and a privacy policy are public pages linked from

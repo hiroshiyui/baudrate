@@ -50,14 +50,19 @@ defmodule Baudrate.Moderation.Report do
     belongs_to :feed_item, Baudrate.Federation.FeedItem
     belongs_to :message, Baudrate.Messaging.DirectMessage
     belongs_to :resolved_by, Baudrate.Setup.User
+    # Which rule the reporter says was broken (P1-D9). Optional even when the
+    # category is "rule_violation": a reporter who cannot find the right number
+    # must still be able to report, and rules are retired rather than deleted
+    # so an old citation keeps resolving.
+    belongs_to :rule, Baudrate.Setup.Rule
 
     timestamps(type: :utc_datetime)
   end
 
   @valid_statuses ~w(open resolved dismissed)
-  # P1-D9. "rule_violation" will point at a rule once the Rules page exists
-  # (1E); inbound federated Flags carry no category, so it stays optional for
-  # them and for reports made before this field existed.
+  # P1-D9. "rule_violation" may carry a `rule_id` naming which rule; inbound
+  # federated Flags carry no category at all, so it stays optional for them and
+  # for reports made before this field existed.
   @valid_categories ~w(spam harassment illegal rule_violation other)
 
   @doc "Casts and validates fields for creating or updating a report."
@@ -76,7 +81,8 @@ defmodule Baudrate.Moderation.Report do
       :message_id,
       :resolved_by_id,
       :resolved_at,
-      :resolution_note
+      :resolution_note,
+      :rule_id
     ])
     |> validate_required([:reason])
     |> validate_length(:reason, min: 1, max: 2000)
@@ -129,6 +135,7 @@ defmodule Baudrate.Moderation.Report do
     |> foreign_key_constraint(:feed_item_id)
     |> foreign_key_constraint(:message_id)
     |> foreign_key_constraint(:resolved_by_id)
+    |> foreign_key_constraint(:rule_id)
   end
 
   @target_fields ~w(article_id comment_id remote_actor_id reported_user_id feed_item_id message_id)a

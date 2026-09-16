@@ -156,7 +156,15 @@ defmodule BaudrateWeb.Features.LayoutTest do
     # deliberately *not* published here: a pending acceptance changes what these
     # pages do (the composer redirects), which is the gate working, not layout.
     Baudrate.Setup.update_eua("These are the terms. See https://#{long_token}.example/full-text")
-    Baudrate.Setup.update_policy(:rules, "Rule one: see https://#{long_token}.example/rules")
+    # Two rules, so /rules renders a numbered list and the admin page renders
+    # its reorder controls with a long unbreakable title in the row.
+    {:ok, _} =
+      Baudrate.Setup.create_rule(%{
+        "title" => "Rule one: #{String.slice(long_token, 0, 120)}",
+        "body" => "See https://#{long_token}.example/rules"
+      })
+
+    {:ok, _} = Baudrate.Setup.create_rule(%{"title" => "Rule two"})
     Baudrate.Setup.update_policy(:privacy, "We log. See https://#{long_token}.example/privacy")
 
     %{
@@ -218,6 +226,7 @@ defmodule BaudrateWeb.Features.LayoutTest do
       "/admin/boards",
       "/admin/users",
       "/admin/users/#{member.id}",
+      "/admin/rules",
       "/admin/moderation-log",
       "/admin/invites",
       "/admin/login-attempts",

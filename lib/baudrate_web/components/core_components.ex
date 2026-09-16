@@ -799,7 +799,12 @@ defmodule BaudrateWeb.CoreComponents do
         _ -> gettext("Report")
       end
 
-    assigns = assign(assigns, :title, title)
+    # Read only while the dialog is open. The component is invoked on every
+    # render of the four pages that host it, and `:if={@show}` skips the markup
+    # but not this function body.
+    rules = if assigns.show, do: Baudrate.Setup.list_rules(), else: []
+
+    assigns = assigns |> assign(:title, title) |> assign(:rules, rules)
 
     ~H"""
     <div
@@ -836,6 +841,24 @@ defmodule BaudrateWeb.CoreComponents do
               {BaudrateWeb.Helpers.translate_report_category(category)}
             </option>
           </select>
+          <%!-- Offered whenever rules are published, and never required: a
+          reporter who cannot find the right number must still be able to
+          report. The category already says "breaks a rule"; this says which. --%>
+          <div :if={@rules != []} id="report-rule-field" class="report-modal-rule-field">
+            <label for="report-rule" class="label">
+              <span class="label-text">{gettext("Which rule? (optional)")}</span>
+            </label>
+            <select
+              id="report-rule"
+              name="rule_id"
+              class="report-modal-rule select select-bordered w-full"
+            >
+              <option value="" selected>{gettext("Not about a specific rule")}</option>
+              <option :for={{rule, index} <- Enum.with_index(@rules, 1)} value={rule.id}>
+                {gettext("%{number}. %{title}", number: index, title: rule.title)}
+              </option>
+            </select>
+          </div>
           <label for="report-reason" class="label">
             <span class="label-text">{gettext("Reason")}</span>
           </label>

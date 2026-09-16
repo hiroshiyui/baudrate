@@ -28,7 +28,10 @@ defmodule BaudrateWeb.PolicyLive do
      socket
      |> assign(:policy, name)
      |> assign(:page_title, title(name))
-     |> assign(:body, Setup.get_policy(name))}
+     # The rules are records so a report can cite one (P1-D9); the other two
+     # are single documents.
+     |> assign(:rules, if(name == :rules, do: Setup.list_rules(), else: []))
+     |> assign(:body, if(name == :rules, do: nil, else: Setup.get_policy(name)))}
   end
 
   @impl true

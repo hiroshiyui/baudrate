@@ -50,6 +50,87 @@ defmodule BaudrateWeb.ReportTest do
      comment: comment}
   end
 
+  describe "citing a rule (P1-D9)" do
+    test "the picker appears only once rules are published", %{conn: conn, article: article} do
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      lv
+      |> element("button[phx-click=open_report_modal][phx-value-type=article]")
+      |> render_click()
+
+      refute has_element?(lv, "#report-rule-field")
+    end
+
+    test "a reporter can name the rule they say was broken", %{
+      conn: conn,
+      article: article,
+      reporter: reporter
+    } do
+      {:ok, rule} = Baudrate.Setup.create_rule(%{"title" => "No spam"})
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      html =
+        lv
+        |> element("button[phx-click=open_report_modal][phx-value-type=article]")
+        |> render_click()
+
+      assert html =~ "Which rule?"
+      assert html =~ "1. No spam"
+
+      lv
+      |> form("#report-modal form", %{
+        reason: "Breaks rule one.",
+        category: "rule_violation",
+        rule_id: to_string(rule.id)
+      })
+      |> render_submit()
+
+      assert %{rule_id: rule_id, category: "rule_violation"} =
+               Repo.get_by(Moderation.Report, reporter_id: reporter.id)
+
+      assert rule_id == rule.id
+    end
+
+    test "naming no rule is allowed, so reporting stays easy", %{
+      conn: conn,
+      article: article,
+      reporter: reporter
+    } do
+      {:ok, _} = Baudrate.Setup.create_rule(%{"title" => "No spam"})
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      lv
+      |> element("button[phx-click=open_report_modal][phx-value-type=article]")
+      |> render_click()
+
+      lv
+      |> form("#report-modal form", %{
+        reason: "Not sure which rule, but this is wrong.",
+        category: "rule_violation",
+        rule_id: ""
+      })
+      |> render_submit()
+
+      assert %{rule_id: nil} = Repo.get_by(Moderation.Report, reporter_id: reporter.id)
+    end
+
+    test "a retired rule is no longer offered", %{conn: conn, article: article} do
+      {:ok, rule} = Baudrate.Setup.create_rule(%{"title" => "Retired rule"})
+      {:ok, _} = Baudrate.Setup.retire_rule(rule)
+
+      {:ok, lv, _html} = live(conn, "/articles/#{article.slug}")
+
+      html =
+        lv
+        |> element("button[phx-click=open_report_modal][phx-value-type=article]")
+        |> render_click()
+
+      refute html =~ "Retired rule"
+    end
+  end
+
   describe "report article" do
     test "authenticated user can report an article", %{conn: conn, article: article} do
       {:ok, lv, html} = live(conn, "/articles/#{article.slug}")

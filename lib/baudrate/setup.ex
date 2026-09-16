@@ -42,7 +42,7 @@ defmodule Baudrate.Setup do
   import Ecto.Query
   alias Baudrate.Repo
   alias Baudrate.Content
-  alias Baudrate.Setup.{Permission, Role, RolePermission, Setting, User}
+  alias Baudrate.Setup.{Permission, Role, RolePermission, Rule, Setting, User}
 
   @doc """
   Returns the permission matrix as a map of role name to list of permission names.
@@ -358,21 +358,22 @@ defmodule Baudrate.Setup do
     end
   end
 
-  # The public policy documents, as `live_action` => settings key. The terms
+  # The single-document policies, as `live_action` => settings key. The terms
   # keep the historical `"eua"` key: renaming it would orphan the text every
-  # existing instance has already written.
-  @policy_keys %{terms: "eua", rules: "rules", privacy: "privacy_policy"}
+  # existing instance has already written. The site rules are **not** here —
+  # they are records, so a report can cite one (P1-D9, `Setup.Rule`).
+  @policy_keys %{terms: "eua", privacy: "privacy_policy"}
 
   @doc """
-  Returns the names of the public policy documents, in the order they are
-  listed in the footer and the admin editor.
+  Returns the names of the public policy documents, in the order the footer
+  lists them.
   """
   @spec policy_names() :: [atom()]
   def policy_names, do: [:terms, :rules, :privacy]
 
   @doc """
-  Returns one public policy document as markdown, or `nil` when the admin has
-  not written it yet. `BaudrateWeb.PolicyLive` renders the three of them.
+  Returns one single-document policy as markdown, or `nil` when the admin has
+  not written it yet. The site rules are records; use `list_rules/0`.
   """
   @spec get_policy(atom()) :: String.t() | nil
   def get_policy(name) when is_map_key(@policy_keys, name) do
@@ -388,23 +389,153 @@ defmodule Baudrate.Setup do
   """
   @spec published_policies() :: [atom()]
   def published_policies do
-    Enum.filter(policy_names(), fn name ->
-      case get_policy(name) do
-        nil -> false
-        text -> String.trim(text) != ""
-      end
-    end)
+    Enum.filter(policy_names(), &policy_published?/1)
+  end
+
+  defp policy_published?(:rules), do: Repo.exists?(active_rules_query())
+
+  defp policy_published?(name) do
+    case get_policy(name) do
+      nil -> false
+      text -> String.trim(text) != ""
+    end
   end
 
   @doc """
-  Saves one public policy document. The terms have their own writer
+  Saves one single-document policy. The terms have their own writer
   (`update_eua/1`) because publishing them can also require every member to
-  accept again; the other two are plain documents.
+  accept again.
   """
   @spec update_policy(atom(), String.t()) :: {:ok, Setting.t()} | {:error, Ecto.Changeset.t()}
-  def update_policy(name, text) when name in [:rules, :privacy] and is_binary(text) do
+  def update_policy(name, text) when name == :privacy and is_binary(text) do
     set_setting(Map.fetch!(@policy_keys, name), text)
   end
+
+  ## Site rules (P1-D9)
+
+  defp active_rules_query do
+    from(r in Rule, where: is_nil(r.retired_at), order_by: [asc: r.position, asc: r.id])
+  end
+
+  @doc """
+  The published rules, in the order they are numbered on `/rules`.
+  """
+  @spec list_rules() :: [Rule.t()]
+  def list_rules, do: Repo.all(active_rules_query())
+
+  @doc """
+  Rules that have been retired, most recently retired first. Shown to admins so
+  a rule taken down by mistake can be put back.
+  """
+  @spec list_retired_rules() :: [Rule.t()]
+  def list_retired_rules do
+    Repo.all(from(r in Rule, where: not is_nil(r.retired_at), order_by: [desc: r.retired_at]))
+  end
+
+  @doc """
+  One rule by id, retired or not — a report may cite a rule that has since been
+  retired, and the moderator still needs to see which one.
+  """
+  @spec get_rule(integer()) :: Rule.t() | nil
+  def get_rule(id) when is_integer(id), do: Repo.get(Rule, id)
+  def get_rule(_), do: nil
+
+  @doc """
+  Adds a rule at the end of the list.
+
+  The position is assigned here and never comes from the form: an admin typing
+  a number is how two rules end up claiming the same place.
+  """
+  @spec create_rule(map()) :: {:ok, Rule.t()} | {:error, Ecto.Changeset.t()}
+  def create_rule(attrs) do
+    %Rule{}
+    |> Rule.changeset(attrs)
+    |> Ecto.Changeset.put_change(:position, next_rule_position())
+    |> Repo.insert()
+  end
+
+  # Counted over every row, retired ones included, so retiring a rule never
+  # hands its number to a different one.
+  defp next_rule_position do
+    (Repo.one(from(r in Rule, select: max(r.position))) || 0) + 1
+  end
+
+  @doc "Rewrites a rule's title and body."
+  @spec update_rule(Rule.t(), map()) :: {:ok, Rule.t()} | {:error, Ecto.Changeset.t()}
+  def update_rule(%Rule{} = rule, attrs) do
+    rule |> Rule.changeset(attrs) |> Repo.update()
+  end
+
+  @doc """
+  Retires a rule: it leaves `/rules` and the report dialog, and past reports
+  citing it still resolve. Returns `{:error, :already_retired}` so the original
+  decision keeps its date.
+  """
+  @spec retire_rule(Rule.t()) :: {:ok, Rule.t()} | {:error, :already_retired | Ecto.Changeset.t()}
+  def retire_rule(%Rule{retired_at: %DateTime{}}), do: {:error, :already_retired}
+
+  def retire_rule(%Rule{} = rule) do
+    rule
+    |> Ecto.Changeset.change(retired_at: DateTime.utc_now() |> DateTime.truncate(:second))
+    |> Repo.update()
+  end
+
+  @doc "Puts a retired rule back on the list, at the end."
+  @spec restore_rule(Rule.t()) :: {:ok, Rule.t()} | {:error, :not_retired | Ecto.Changeset.t()}
+  def restore_rule(%Rule{retired_at: nil}), do: {:error, :not_retired}
+
+  def restore_rule(%Rule{} = rule) do
+    rule
+    |> Ecto.Changeset.change(retired_at: nil, position: next_rule_position())
+    |> Repo.update()
+  end
+
+  @doc """
+  Moves a rule one place up or down the list.
+
+  The two rules swap positions inside a transaction: writing one and then the
+  other would leave the list briefly (or, on a failure, permanently) with two
+  rules claiming the same place.
+  """
+  @spec move_rule(Rule.t(), :up | :down) :: {:ok, Rule.t()} | {:error, :at_edge}
+  def move_rule(%Rule{} = rule, direction) when direction in [:up, :down] do
+    case neighbour(rule, direction) do
+      nil ->
+        {:error, :at_edge}
+
+      %Rule{} = other ->
+        Repo.transaction(fn ->
+          {:ok, _} = rule |> Ecto.Changeset.change(position: other.position) |> Repo.update()
+          {:ok, _} = other |> Ecto.Changeset.change(position: rule.position) |> Repo.update()
+          Repo.reload(rule)
+        end)
+    end
+  end
+
+  defp neighbour(%Rule{position: position}, :up) do
+    active_rules_query()
+    |> exclude(:order_by)
+    |> where([r], r.position < ^position)
+    |> order_by([r], desc: r.position)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  defp neighbour(%Rule{position: position}, :down) do
+    active_rules_query()
+    |> exclude(:order_by)
+    |> where([r], r.position > ^position)
+    |> order_by([r], asc: r.position)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  @doc """
+  Returns true when at least one rule is published, so a `rule_violation`
+  report has something to cite.
+  """
+  @spec rules_published?() :: boolean()
+  def rules_published?, do: Repo.exists?(active_rules_query())
 
   @doc """
   Returns true if the setup wizard has been completed.

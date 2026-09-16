@@ -94,6 +94,9 @@ defmodule Baudrate.Moderation do
     :remote_actor,
     :reported_user,
     :resolved_by,
+    # Which rule a `rule_violation` report cites, so the queue can name it.
+    :rule,
+    :message,
     # The article a reported comment is on, so the queue can link to it.
     comment: :article,
     feed_item: :remote_actor
@@ -212,7 +215,7 @@ defmodule Baudrate.Moderation do
     if has_open_report?(reporter.id, target) do
       {:error, :already_reported}
     else
-      details = Map.take(details, [:reason, :category])
+      details = Map.take(details, [:reason, :category, :rule_id])
       attrs = target |> Map.merge(details) |> Map.put(:reporter_id, reporter.id)
 
       result = report |> Report.changeset(attrs) |> Repo.insert()
@@ -467,19 +470,12 @@ defmodule Baudrate.Moderation do
   """
   @spec get_report!(integer()) :: Report.t()
   def get_report!(id) do
+    # The same preloads as the queue. This was a second, hand-written list that
+    # had already drifted from `@report_preloads` in both directions, so a field
+    # added for the queue arrived here unloaded.
     Report
     |> Repo.get!(id)
-    |> Repo.preload([
-      :reporter,
-      :reporter_remote_actor,
-      :article,
-      :comment,
-      :remote_actor,
-      :reported_user,
-      :resolved_by,
-      :message,
-      feed_item: :remote_actor
-    ])
+    |> Repo.preload(@report_preloads)
   end
 
   @doc """

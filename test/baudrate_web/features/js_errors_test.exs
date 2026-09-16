@@ -176,7 +176,8 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
     # would redirect the composer and refuse the admin crawl's invite code,
     # which is the gate working rather than anything this crawl checks.
     Baudrate.Setup.update_eua("These are the terms.")
-    Baudrate.Setup.update_policy(:rules, "Rule one.")
+    {:ok, _} = Baudrate.Setup.create_rule(%{"title" => "Rule one", "body" => "Be civil."})
+    {:ok, _} = Baudrate.Setup.create_rule(%{"title" => "Rule two"})
     Baudrate.Setup.update_policy(:privacy, "We keep logs.")
 
     %{
@@ -264,6 +265,7 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
       "/admin/moderation",
       "/admin/boards",
       "/admin/users",
+      "/admin/rules",
       "/admin/moderation-log",
       "/admin/invites",
       "/admin/login-attempts",

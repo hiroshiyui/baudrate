@@ -25,14 +25,36 @@ defmodule BaudrateWeb.SafetyActions do
   def report_types, do: @report_types
 
   @doc """
-  What the member filled in on the report dialog: the free-text reason and the
-  reason category (P1-D9). Only these two come from the client; the target is
-  always taken from server-side assigns.
+  What the member filled in on the report dialog: the free-text reason, the
+  reason category, and which rule they say was broken (P1-D9). Only these three
+  come from the client; the target is always taken from server-side assigns.
+
+  A rule id that is not a positive integer becomes `nil` rather than reaching
+  the changeset, and one that names no existing rule is refused by the foreign
+  key. Reporting is not the place to make someone fight a form.
   """
-  @spec report_details(map()) :: %{reason: String.t() | nil, category: String.t() | nil}
+  @spec report_details(map()) :: %{
+          reason: String.t() | nil,
+          category: String.t() | nil,
+          rule_id: integer() | nil
+        }
   def report_details(params) when is_map(params) do
-    %{reason: params["reason"], category: params["category"]}
+    %{
+      reason: params["reason"],
+      category: params["category"],
+      rule_id: parse_rule_id(params["rule_id"])
+    }
   end
+
+  defp parse_rule_id(value) when is_binary(value) do
+    case BaudrateWeb.Helpers.parse_id(value) do
+      {:ok, id} -> id
+      :error -> nil
+    end
+  end
+
+  defp parse_rule_id(value) when is_integer(value) and value > 0, do: value
+  defp parse_rule_id(_), do: nil
 
   @doc """
   Blocks, unblocks, mutes or unmutes the remote actor whose ID the client sent.

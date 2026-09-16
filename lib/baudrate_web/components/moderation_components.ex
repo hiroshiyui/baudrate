@@ -61,6 +61,16 @@ defmodule BaudrateWeb.ModerationComponents do
           >
             {translate_report_category(@report.category)}
           </span>
+          <%!-- Which rule the reporter cited (P1-D9). Rules are retired rather
+          than deleted, so this still resolves for an old report. --%>
+          <span
+            :if={@report.rule}
+            id={"#{@prefix}-report-rule-#{@report.id}"}
+            class="moderation-report-rule badge badge-sm badge-outline ml-2 max-w-full truncate"
+            title={@report.rule.title}
+          >
+            {@report.rule.title}
+          </span>
           <span class="text-sm opacity-70 ml-2">
             <time datetime={datetime_attr(@report.inserted_at)}>
               {format_datetime(@report.inserted_at)}

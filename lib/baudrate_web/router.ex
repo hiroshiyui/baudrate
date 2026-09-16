@@ -346,6 +346,7 @@ defmodule BaudrateWeb.Router do
         {BaudrateWeb.AuthHooks, :require_admin_totp}
       ] do
       live "/admin/settings", Admin.SettingsLive
+      live "/admin/rules", Admin.RulesLive
       live "/admin/pending-users", Admin.PendingUsersLive
       live "/admin/federation", Admin.FederationLive
       live "/admin/federation/instances/:domain", Admin.InstanceDetailLive

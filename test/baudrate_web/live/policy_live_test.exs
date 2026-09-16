@@ -19,10 +19,15 @@ defmodule BaudrateWeb.PolicyLiveTest do
     :ok
   end
 
+  defp rule(title) do
+    {:ok, created} = Setup.create_rule(%{"title" => title})
+    created
+  end
+
   describe "reading a policy" do
     test "a guest can read all three", %{conn: conn} do
       Setup.update_eua("The **terms** of service.")
-      Setup.update_policy(:rules, "Be kind.")
+      rule("Be kind.")
       Setup.update_policy(:privacy, "We keep logs for a year.")
 
       for {path, marker} <- [
@@ -49,12 +54,43 @@ defmodule BaudrateWeb.PolicyLiveTest do
     end
 
     test "renders markdown rather than its source", %{conn: conn} do
-      Setup.update_policy(:rules, "Rule **one**.")
+      Setup.update_policy(:privacy, "We log **everything**.")
+
+      {:ok, _lv, html} = live(conn, "/privacy")
+
+      assert html =~ "<strong>everything</strong>"
+      refute html =~ "log **everything**"
+    end
+
+    test "numbers the rules and gives each a stable anchor", %{conn: conn} do
+      rule("Be civil")
+      rule("Stay on topic")
+
+      {:ok, lv, html} = live(conn, "/rules")
+
+      assert has_element?(lv, "#rule-1")
+      assert has_element?(lv, "#rule-2")
+      assert html =~ "1. Be civil"
+      assert html =~ "2. Stay on topic"
+    end
+
+    test "a rule's markdown detail is rendered", %{conn: conn} do
+      {:ok, _} = Setup.create_rule(%{"title" => "Be civil", "body" => "No **insults**."})
 
       {:ok, _lv, html} = live(conn, "/rules")
 
-      assert html =~ "<strong>one</strong>"
-      refute html =~ "Rule **one**"
+      assert html =~ "<strong>insults</strong>"
+    end
+
+    test "a retired rule leaves the page", %{conn: conn} do
+      rule("Stays")
+      gone = rule("Goes")
+      {:ok, _} = Setup.retire_rule(gone)
+
+      {:ok, _lv, html} = live(conn, "/rules")
+
+      assert html =~ "Stays"
+      refute html =~ "Goes"
     end
 
     test "says so when a document has not been published", %{conn: conn} do
@@ -80,7 +116,7 @@ defmodule BaudrateWeb.PolicyLiveTest do
 
   describe "the footer" do
     test "links a published policy", %{conn: conn} do
-      Setup.update_policy(:rules, "Be kind.")
+      rule("Be kind.")
 
       {:ok, lv, _html} = live(conn, "/rules")
 
@@ -88,7 +124,7 @@ defmodule BaudrateWeb.PolicyLiveTest do
     end
 
     test "does not link a document nobody has written", %{conn: conn} do
-      Setup.update_policy(:rules, "Be kind.")
+      rule("Be kind.")
 
       {:ok, lv, _html} = live(conn, "/rules")
 
@@ -171,7 +207,7 @@ defmodule BaudrateWeb.PolicyLiveTest do
 
     test "the accept button is offered only on /terms", %{conn: conn} do
       user = setup_user("user")
-      Setup.update_policy(:rules, "Be kind.")
+      rule("Be kind.")
       {:ok, _} = Setup.publish_terms_version()
       conn = log_in_user(conn, user)
 
@@ -184,29 +220,29 @@ defmodule BaudrateWeb.PolicyLiveTest do
   end
 
   describe "the admin editor" do
-    test "saves the rules and the privacy policy, and logs both", %{conn: conn} do
+    test "saves the privacy policy and logs it", %{conn: conn} do
       admin = setup_user("admin")
       conn = log_in_admin(conn, admin)
 
       {:ok, lv, _html} = live(conn, "/admin/settings")
 
       assert lv
-             |> form("#rules-form", rules_policy: %{text: "Rule one."})
-             |> render_submit() =~ "Site rules saved"
-
-      assert lv
              |> form("#privacy-form", privacy_policy: %{text: "We log for a year."})
              |> render_submit() =~ "Privacy policy saved"
 
-      assert Setup.get_policy(:rules) == "Rule one."
       assert Setup.get_policy(:privacy) == "We log for a year."
 
-      actions =
-        Baudrate.Moderation.list_moderation_logs().logs
-        |> Enum.map(& &1.action)
-
-      assert "update_rules" in actions
+      actions = Baudrate.Moderation.list_moderation_logs().logs |> Enum.map(& &1.action)
       assert "update_privacy" in actions
+    end
+
+    test "sends an admin to the rules page rather than editing them here", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/settings")
+
+      assert has_element?(lv, "#admin-settings-rules-link")
     end
 
     test "saving the terms without ticking the box asks nobody to re-accept", %{conn: conn} do
