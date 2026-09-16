@@ -80,6 +80,11 @@ defmodule Baudrate.Auth.Users do
       |> Repo.insert()
 
     with {:ok, user} <- result do
+      # Staff cannot act on a queue they do not know has anything in it.
+      if user.status == "pending" do
+        Baudrate.Notification.Hooks.notify_pending_registration(user)
+      end
+
       codes = SecondFactor.generate_recovery_codes(user)
       {:ok, user, codes}
     end

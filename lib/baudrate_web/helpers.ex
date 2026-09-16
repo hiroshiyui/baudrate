@@ -362,6 +362,18 @@ defmodule BaudrateWeb.Helpers do
   def notification_text("content_removed"),
     do: gettext("A moderator removed your content.")
 
+  def notification_text("pending_registration"),
+    do: gettext("registered and is waiting to be let in")
+
+  def notification_text("sanction_applied"),
+    do: gettext("A moderator took action on your account.")
+
+  def notification_text("sanction_lifted"),
+    do: gettext("A restriction on your account was lifted.")
+
+  def notification_text("sanction_ended"),
+    do: gettext("A restriction on your account has ended.")
+
   # Account security notices have no actor, so these are full sentences.
   def notification_text("security_key_added"),
     do: gettext("A security key was added to your account.")
@@ -526,6 +538,10 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("admin_announcement"), do: "hero-megaphone"
   def notification_icon("report_reviewed"), do: "hero-flag"
   def notification_icon("content_removed"), do: "hero-trash"
+  def notification_icon("pending_registration"), do: "hero-user-plus"
+  def notification_icon("sanction_applied"), do: "hero-exclamation-triangle"
+  def notification_icon("sanction_lifted"), do: "hero-check-badge"
+  def notification_icon("sanction_ended"), do: "hero-check-badge"
   def notification_icon("security_key_added"), do: "hero-key"
   def notification_icon("security_key_removed"), do: "hero-key"
   def notification_icon("totp_enabled"), do: "hero-shield-check"

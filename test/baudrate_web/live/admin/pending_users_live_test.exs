@@ -93,4 +93,67 @@ defmodule BaudrateWeb.Admin.PendingUsersLiveTest do
 
     assert {:error, {:redirect, %{to: "/"}}} = live(conn, "/admin/pending-users")
   end
+
+  describe "refusing a registration (ADR 0029)" do
+    test "an admin can refuse one, with a reason", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+      pending = register("refuseduser")
+
+      {:ok, lv, _html} = live(conn, "/admin/pending-users")
+
+      lv |> element("#admin-pending-users-refuse-#{pending.id}") |> render_click()
+
+      html =
+        lv
+        |> form("#admin-pending-users-refuse-form-#{pending.id}", %{"reason" => "Obvious spam"})
+        |> render_submit()
+
+      assert html =~ "Registration refused"
+      refute html =~ "refuseduser"
+
+      refused = Auth.get_user(pending.id)
+      assert refused.status == "banned"
+      assert refused.ban_reason == "Obvious spam"
+    end
+
+    test "a moderator may refuse but not approve", %{conn: conn} do
+      moderator = setup_user("moderator")
+      conn = log_in_user(conn, moderator)
+      pending = register("modrefused")
+
+      {:ok, lv, _html} = live(conn, "/admin/pending-users")
+
+      refute has_element?(lv, "#admin-pending-users-approve-#{pending.id}")
+      assert has_element?(lv, "#admin-pending-users-refuse-#{pending.id}")
+    end
+
+    test "the refusal prompt can be cancelled", %{conn: conn} do
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+      pending = register("cancelleduser")
+
+      {:ok, lv, _html} = live(conn, "/admin/pending-users")
+
+      lv |> element("#admin-pending-users-refuse-#{pending.id}") |> render_click()
+      assert has_element?(lv, "#admin-pending-users-refuse-form-#{pending.id}")
+
+      lv |> element("#admin-pending-users-refuse-cancel-#{pending.id}") |> render_click()
+
+      refute has_element?(lv, "#admin-pending-users-refuse-form-#{pending.id}")
+      assert Auth.get_user(pending.id).status == "pending"
+    end
+  end
+
+  defp register(username) do
+    {:ok, user, _codes} =
+      Auth.register_user(%{
+        "username" => username,
+        "password" => "SecurePass1!!",
+        "password_confirmation" => "SecurePass1!!",
+        "terms_accepted" => "true"
+      })
+
+    user
+  end
 end

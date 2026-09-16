@@ -106,6 +106,7 @@ defmodule Baudrate.Notification.Notification do
     sanction_applied
     sanction_lifted
     sanction_ended
+    pending_registration
   )
 
   @security_types ~w(

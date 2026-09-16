@@ -154,6 +154,10 @@ defmodule Baudrate.Auth do
   defdelegate max_sanction_expiry(actor), to: Sanctions, as: :max_expiry
   defdelegate notify_ended_sanctions, to: Sanctions
 
+  defdelegate reject_pending_user(actor, target, reason \\ nil),
+    to: Sanctions,
+    as: :reject_pending
+
   # --- Profiles & Preferences ---
   defdelegate update_preferred_locales(user, locales), to: Profiles
   defdelegate update_avatar(user, avatar_id), to: Profiles

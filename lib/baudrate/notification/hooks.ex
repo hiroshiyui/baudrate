@@ -312,6 +312,25 @@ defmodule Baudrate.Notification.Hooks do
   end
 
   @doc """
+  Tells staff that someone registered and is waiting to be let in.
+
+  An approval queue nobody is told about is an approval queue nobody empties,
+  so this is sent whenever registration leaves an account `pending`.
+  """
+  @spec notify_pending_registration(Baudrate.Setup.User.t()) :: :ok
+  def notify_pending_registration(%Baudrate.Setup.User{} = user) do
+    Enum.each(Setup.staff_user_ids(), fn staff_id ->
+      Notification.create_notification(%{
+        type: "pending_registration",
+        user_id: staff_id,
+        actor_user_id: user.id
+      })
+    end)
+
+    :ok
+  end
+
+  @doc """
   Tells an author that a moderator removed their article or comment (P1-D4),
   with the reason category of the report it came from when there was one.
 

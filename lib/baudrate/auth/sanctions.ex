@@ -372,6 +372,55 @@ defmodule Baudrate.Auth.Sanctions do
   end
 
   @doc """
+  Refuses a registration that is still waiting to be let in, with a reason.
+
+  A refused account must not sign in, which is exactly what `banned` already
+  means and enforces everywhere. Adding a `rejected` status would have to be
+  learned by every `status != "banned"` check in the codebase, and the ones
+  that forgot would admit the account — so refusing is a ban, recorded as
+  `reject_user` so the two are told apart in the log (ADR 0029).
+
+  Authorization is on the act, not the state: `#{@sanction_permission}` is
+  enough to refuse an account that is still `pending`, while banning an active
+  member stays with `#{@unrestricted_permission}`. The row is not deleted:
+  there is no user-deletion path yet, and building one as a side effect of
+  this would decide account deletion by accident.
+
+  Returns `{:ok, user}`, or `{:error, :not_pending | :unauthorized |
+  :self_action | :role_too_high | changeset}`.
+  """
+  @spec reject_pending(User.t(), User.t(), String.t() | nil) ::
+          {:ok, User.t()} | {:error, term()}
+  def reject_pending(%User{} = actor, %User{} = target, reason \\ nil) do
+    with :ok <- ensure_pending(target),
+         :ok <- authorize(actor, target, "reject") do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      result =
+        target
+        |> User.ban_changeset(%{status: "banned", banned_at: now, ban_reason: reason})
+        |> Repo.update()
+
+      with {:ok, rejected} <- result do
+        Baudrate.Auth.Sessions.delete_all_sessions_for_user(rejected.id)
+
+        Moderation.log_action(actor.id, "reject_user",
+          target_type: "user",
+          target_id: rejected.id,
+          details: %{"reason" => reason}
+        )
+
+        Logger.info("auth.registration_rejected: user_id=#{rejected.id} by=#{actor.id}")
+
+        {:ok, rejected}
+      end
+    end
+  end
+
+  defp ensure_pending(%User{status: "pending"}), do: :ok
+  defp ensure_pending(_user), do: {:error, :not_pending}
+
+  @doc """
   Returns `:ok` when `actor` may sanction `target`, or `{:error, reason}`.
 
   Exposed so a LiveView can hide a control it would otherwise offer and then
