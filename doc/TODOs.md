@@ -75,17 +75,18 @@ Blocking semantics are recorded in [ADR 0026](adr/0026-blocks-stop-interaction-l
 
 ### 1C — Sanctions short of a ban (M)
 
-Needs an ADR (the sanctions model), based on P1-D2 and P1-D3.
+The model is [ADR 0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md) (proposed 2026-09-16): sanctions are rows in a `sanctions` table with an explicit end, active by the clock rather than by a sweep, and enforced by one gate (`Auth.ensure_can_interact/1`) that replaces `AccountMigration.ensure_not_moved/1` at every call site.
 
-- [ ] **Warn.** A notice to the user plus an audit entry. No restriction.
+- [ ] **The table and the gate.** `sanctions` rows (kind, reason, who, when, `expires_at`, `lifted_*`, optional `report_id`), and `Auth.ensure_can_interact/1` replacing every call site of `AccountMigration.ensure_not_moved/1`, with a guard test that fails if the old gate is called anywhere else.
+- [ ] **Warn.** A notice to the user plus an audit entry. No restriction, and no acknowledgement to demand.
 - [ ] **Silence.**
-  - A silenced account can read, but cannot post or interact. It is enforced at the context boundary by generalising the moved-account gate (`AccountMigration.ensure_not_moved/1`, ADR 0025).
-  - Optional end date.
+  - A silenced account can read, but cannot post, interact, invite or change its profile (bio, display name, avatar, links). Undoing an earlier like or boost, deleting its own content, reporting abuse and account security settings all stay open.
+  - Optional end date; active by the clock, so no sweep can hold it past its time.
   - Existing content stays up.
 - [ ] **Suspend.**
-  - A suspended account cannot sign in until a set date. Sessions are revoked and exports and moves cancelled, like a ban (`Auth.Sessions`, `cancel_active_exports/2`, `cancel_active_moves/2`).
-  - Lifts automatically; the hourly `SessionCleaner` clears expired sanctions.
-- [ ] **Reject pending registrations**, with a reason, and notify admins of new pending registrations.
+  - A suspended account cannot sign in until a set date (required). Refused in `authenticate_by_password/2` and re-checked in `AuthHooks`; sessions are revoked and exports and moves cancelled, like a ban (`Auth.Sessions`, `cancel_active_exports/2`, `cancel_active_moves/2`). Invite codes are left alone.
+  - Lifts by itself; the hourly `SessionCleaner` only sends the "it has ended" notice.
+- [ ] **Reject pending registrations**, with a reason — a ban on an account that is still `pending`, logged as `reject_user`, which a global moderator may do — and notify admins of new pending registrations.
 - [ ] **User detail page** (`/admin/users/:id`).
   - Role, status and sanction history.
   - Reports against the user and reports the user filed.
