@@ -15,7 +15,7 @@ See the [SysOp Guide](sysop.md) for the comprehensive operational reference.
 - [Federation](#federation)
 - [Authentication & Sessions](#authentication--sessions)
 - [Rate Limiting](#rate-limiting)
-- [Clustering](#clustering)
+- [A second node](#a-second-node)
 
 ---
 
@@ -471,16 +471,11 @@ If the ETS rate-limit backend encounters an error (e.g., table doesn't exist),
 requests are **allowed through** rather than blocked. This prevents an
 infrastructure failure from causing a denial of service.
 
-### Not distributed
+### Counters reset on restart
 
-The Hammer ETS backend is **node-local**. In a multi-node cluster, each node
-has its own rate-limit counters. This means:
-
-- Effective rate limits are multiplied by the number of nodes
-- An attacker could distribute requests across nodes to bypass limits
-
-For production clusters, consider switching to a distributed rate-limit
-backend (e.g., Redis).
+The Hammer ETS backend keeps its counters in the node's memory, so a restart
+starts every limit from zero. That is expected. The counters are complete
+because Baudrate runs on one node; see [A second node](#a-second-node).
 
 ### RealIp plug required in production
 
@@ -494,36 +489,54 @@ See [Reverse Proxy](#reverse-proxy) for configuration.
 
 ---
 
-## Clustering
+## A second node
 
-### PubSub
+Baudrate supports exactly one node per database
+([ADR 0033](adr/0033-baudrate-runs-on-one-node.md)). Its caches, security-key
+challenges, download tokens and rate limits are kept in memory, and its
+background workers assume nothing else is doing their job.
 
-Phoenix PubSub (`Baudrate.PubSub`) is used for real-time LiveView updates.
-In a single-node deployment, the default `Phoenix.PubSub.PG2` adapter works
-out of the box.
+### Symptoms
 
-For multi-node deployments, ensure nodes can discover each other via
-`DNS_CLUSTER_QUERY`:
+A second node running against the same database (a forgotten
+`bin/baudrate start`, or a copy of the release started on another host)
+shows up as:
+
+- remote instances receiving the same activity twice;
+- a domain block, or a change on `/admin/settings`, that works on some
+  requests and not others;
+- security-key sign-in or admin re-verification failing intermittently;
+- a data export download answering "not found" although it was just offered.
+
+### Checking
+
+`bin/baudrate eval` and the backup service are not second nodes: they load the
+application without starting it. On the host, look for more than one running
+node:
 
 ```bash
-export DNS_CLUSTER_QUERY="baudrate.example.com"
+pgrep -af 'beam.smp.*baudrate'
 ```
 
-### Background workers
+A backup or another `eval` task shows up here too while it runs; it exits on
+its own.
 
-The following GenServers run on **every node** in the cluster:
+On the database, the connections should come from one place and number about
+`POOL_SIZE`, plus your own session:
 
-| Worker | Interval | Purpose |
-|--------|----------|---------|
-| `SessionCleaner` | 1 hour | Purge expired sessions, old login attempts, orphan images |
-| `DeliveryWorker` | 60 seconds | Poll and deliver pending federation jobs |
-| `StaleActorCleaner` | 24 hours | Refresh or delete stale remote actors |
+```sql
+SELECT client_addr, count(*)
+FROM pg_stat_activity
+WHERE datname = current_database()
+GROUP BY client_addr;
+```
 
-In a multi-node cluster, these workers run independently on each node. This
-is generally safe (database operations are idempotent), but may result in
-slightly redundant work.
+### Fix
 
-### Hammer not distributed
+1. Stop the extra node.
+2. **Restart the remaining service** (`sudo systemctl restart baudrate`), even
+   though it looks healthy. A domain block or settings change made through the
+   node you stopped never reached this node's caches; a restart reloads them
+   from the database, which holds the change.
 
-As noted in [Rate Limiting](#rate-limiting), Hammer uses a node-local ETS
-backend. Rate-limit state is not shared across nodes.
+Deliveries already sent twice cannot be recalled.

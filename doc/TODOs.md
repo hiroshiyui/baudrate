@@ -105,9 +105,9 @@ open:
 
 ### 2B — Single-node stance, D2 (S)
 
-- [ ] Remove `DNS_CLUSTER_QUERY` from `config/runtime.exs` and `doc/sysop.md`, and drop `DNSCluster` from `application.ex` and `mix.exs`.
-- [ ] ADR: Baudrate runs on one node, so ETS caches, nonces, challenges, rate limits and local uploads are sound.
-- [ ] Rewrite the scaling section of `doc/sysop.md` around a bigger host, Postgres tuning and a CDN for static assets.
+- [x] Remove `DNS_CLUSTER_QUERY` from `config/runtime.exs` and `doc/sysop.md`, and drop `DNSCluster` from `application.ex` and `mix.exs`.
+- [x] ADR: Baudrate runs on one node, so ETS caches, nonces, challenges, rate limits and local uploads are sound — [ADR 0033](adr/0033-baudrate-runs-on-one-node.md).
+- [x] Rewrite the scaling section of `doc/sysop.md` around a bigger host, Postgres tuning and a CDN for static assets. The old section called duplicate workers "idempotent"; `DeliveryWorker` has no row locks, so it was wrong. `doc/troubleshooting.md` now covers diagnosing a second node.
 
 ### 2C — Delivery and inbound robustness (L)
 

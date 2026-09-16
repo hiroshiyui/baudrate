@@ -2125,21 +2125,30 @@ on backend errors. Admin users are exempt from per-user content rate limits.
 
 ```
 Baudrate.Supervisor (one_for_one)
-├── BaudrateWeb.Telemetry              # Telemetry metrics
-├── Baudrate.Repo                      # Ecto database connection pool
-├── DNSCluster                         # DNS-based cluster discovery
-├── Phoenix.PubSub                     # PubSub for LiveView
-├── Baudrate.Auth.SessionCleaner       # Hourly cleanup (sessions, login attempts, orphan images, export requests/temp, notifications >90 days)
+├── BaudrateWeb.Telemetry                   # Telemetry metrics
+├── Baudrate.Repo                           # Ecto database connection pool
+├── Phoenix.PubSub                          # PubSub for LiveView (local; no clustering, ADR 0033)
+├── Baudrate.Auth.SessionCleaner            # Hourly cleanup (sessions, login attempts, orphan images, export requests/temp, notifications >90 days)
+├── Baudrate.Auth.WebAuthnChallenges        # ETS store for pending WebAuthn challenges, swept by TTL
 ├── Baudrate.DataPortability.DownloadNonces # ETS single-use nonces for data export download tokens
-├── Baudrate.Setup.SettingsCache       # ETS cache for site settings (must start before DomainBlockCache)
-├── Baudrate.Content.BoardCache        # ETS cache for board lookups (by ID, slug, hierarchy)
-├── Baudrate.Federation.TaskSupervisor # Async federation delivery tasks
-├── Baudrate.Federation.DomainBlockCache  # ETS cache for domain blocking decisions
-├── Baudrate.Federation.DeliveryWorker     # Polls delivery queue every 60s
-├── Baudrate.Federation.StaleActorCleaner # Daily stale remote actor cleanup
-├── Baudrate.Bots.FeedWorker              # Polls RSS/Atom bots every 60s
-└── BaudrateWeb.Endpoint                  # HTTP server
+├── Baudrate.Setup.SettingsCache            # ETS cache for site settings (must start before DomainBlockCache)
+├── :installation_key_check (Task)          # Logs a banner when setup is locked by a missing INSTALLATION_KEY
+├── Baudrate.Content.BoardCache             # ETS cache for board lookups (by ID, slug, hierarchy)
+├── Baudrate.Media.NegativeCache            # ETS cache of media proxy fetch failures (1 h)
+├── BaudrateWeb.RateLimit                   # Hammer 7 ETS rate-limit store
+├── Baudrate.Federation.TaskSupervisor      # Async federation delivery tasks
+├── Baudrate.Federation.DomainBlockCache    # ETS cache for domain blocking decisions
+├── Baudrate.Federation.DeliveryWorker      # Polls delivery queue every 60s
+├── Baudrate.Federation.StaleActorCleaner   # Daily stale remote actor cleanup
+├── Baudrate.Bots.FeedWorker                # Polls RSS/Atom bots every 60s
+└── BaudrateWeb.Endpoint                    # HTTP server
 ```
+
+Every ETS table above, and every worker, assumes it is on the only node
+([ADR 0033](adr/0033-baudrate-runs-on-one-node.md)): a cache refreshed after a
+write is complete, and a periodic job runs once. Keep new in-memory state and
+new periodic jobs correct on *one* node; do not add cluster handling without
+superseding that ADR.
 
 **Startup order dependency:** `SettingsCache` must start before `DomainBlockCache`
 because `DomainBlockCache.init/1` calls `Setup.get_setting/1`, which reads from

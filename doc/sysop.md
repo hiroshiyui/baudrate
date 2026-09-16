@@ -21,7 +21,7 @@ Operational guide for installing, configuring, and maintaining a Baudrate
 - [Deployment](#deployment)
 - [Backup & Restore](#backup--restore)
 - [Maintenance](#maintenance)
-- [Clustering](#clustering)
+- [Scaling](#scaling)
 - [Admin Routes](#admin-routes)
 
 ---
@@ -159,7 +159,6 @@ mix ecto.reset  # Drop, recreate, re-migrate
 | `INSTALLATION_KEY` | unset | **Required until setup completes** — the app answers 503 without it. Safe to remove afterwards (see [Installation Key](#installation-key)) |
 | `BAUDRATE_TRUSTED_PROXIES` | `127.0.0.1,::1` | Comma-separated IPs/CIDRs whose `x-forwarded-for` is believed. Set this when the reverse proxy is not on the same host — the client IP is otherwise taken from the peer address |
 | `BAUDRATE_REAL_IP_HEADER` | `x-forwarded-for` | Header carrying the real client IP |
-| `DNS_CLUSTER_QUERY` | unset | DNS SRV record for Erlang clustering |
 
 ### SECRET_KEY_BASE — critical warning
 
@@ -804,9 +803,9 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 Per-user rate limits are managed by `BaudrateWeb.RateLimits`. Admin users are
 exempt from per-user content rate limits (their actions are already audit-logged).
 
-Rate limiting uses [Hammer](https://hexdocs.pm/hammer/) with an ETS backend
-(node-local). In multi-node clusters, effective limits are multiplied by node
-count. Consider a distributed backend (e.g., Redis) for production clusters.
+Rate limiting uses [Hammer](https://hexdocs.pm/hammer/) with an ETS backend:
+the counters live in the node's memory and start from zero after a restart.
+Because Baudrate runs on one node ([Scaling](#scaling)), they are complete.
 
 Rate limiting **fails open** — backend errors allow requests through rather
 than causing denial of service.
@@ -1550,8 +1549,8 @@ underlying logic.
 | `DeliveryWorker` | 60 seconds | Poll and deliver pending federation jobs (50 per cycle) |
 | `StaleActorCleaner` | 24 hours | Refresh or delete stale remote actors (>30 days) |
 
-In multi-node clusters, these run independently on each node. Operations are
-idempotent (safe but slightly redundant).
+Each worker runs exactly once, on the one node ([Scaling](#scaling)). They are
+not safe to run twice: two `DeliveryWorker`s would deliver the same jobs.
 
 ### Health Check
 
@@ -1587,27 +1586,69 @@ Increase `POOL_SIZE` if you see `DBConnection.ConnectionError` under load.
 
 ---
 
-## Clustering
+## Scaling
 
-### Multi-Node Discovery
+Baudrate runs on **one node**
+([ADR 0033](adr/0033-baudrate-runs-on-one-node.md)). Never start a second node
+against the same database, not even briefly. If you do:
 
-Configure DNS-based cluster discovery:
+- federation deliveries are sent twice;
+- a domain block or a settings change applies only on the node where it was
+  made;
+- security-key sign-ins and data export downloads fail whenever a request
+  reaches the other node;
+- every rate limit is multiplied by the number of nodes.
 
-```bash
-export DNS_CLUSTER_QUERY="baudrate.example.com"
-```
+To handle more load, give the one host more resources.
 
-PubSub (for LiveView real-time updates) works automatically once nodes
-discover each other via `Phoenix.PubSub.PG2`.
+### A bigger host
 
-### Limitations
+- **CPU.** The Erlang VM starts one scheduler per core, so extra cores are used
+  without any configuration. Re-encoding images and signing federation
+  requests are the heaviest regular work.
+- **Memory.** PostgreSQL uses spare memory as page cache. On a host running
+  both, more memory usually helps the database first.
+- **Disk.** Uploads, the media proxy cache and backups share the disk. A
+  nightly backup refuses to start when it would leave less than 1 GiB or 10% of
+  the disk free, so watch free space as uploads grow
+  ([Backup & Restore](#backup--restore)).
 
-- **Rate limiting** (Hammer ETS) is node-local — effective limits multiply by
-  node count
-- **Background workers** run on every node independently (idempotent, slightly
-  redundant)
-- Consider a distributed rate-limit backend (e.g., Redis) for production
-  clusters
+### PostgreSQL
+
+PostgreSQL's defaults suit a very small machine. On a host that runs both
+Baudrate and PostgreSQL (the Ansible layout), these are reasonable starting
+points in `postgresql.conf`:
+
+| Setting | Starting point | Why |
+|---------|----------------|-----|
+| `shared_buffers` | 25% of RAM | PostgreSQL's own buffer cache. Takes effect after a restart |
+| `effective_cache_size` | 50–75% of RAM | The query planner's estimate of memory available for caching data, the OS page cache included. Allocates nothing |
+| `max_connections` | the default (100) | Enough while it stays well above `POOL_SIZE` |
+
+Baudrate holds `POOL_SIZE` connections (default 10). Keep `max_connections`
+well above that, so backups (`pg_dump`), migrations and an administrator's
+`psql` session still get a connection. Raise `POOL_SIZE` when the logs show
+`DBConnection.ConnectionError` under load. A pool much larger than about twice
+the number of CPU cores rarely makes a single host faster.
+
+### Static assets and CDNs
+
+nginx serves `/assets/` straight from disk with `expires 1y` and
+`Cache-Control: public, immutable`. The files are fingerprinted, so a browser
+downloads each one once per release, and those requests never reach Baudrate.
+A CDN adds little on top of that.
+
+If you put one in front anyway:
+
+- **It must front the whole site, under the same hostname.** The Content
+  Security Policy allows scripts, styles, images and fonts only from the site
+  itself (`'self'`). Serving assets from a CDN hostname breaks the pages.
+- **It must not cache HTML.** Pages are rendered per visitor.
+- **Set `BAUDRATE_TRUSTED_PROXIES` and `BAUDRATE_REAL_IP_HEADER`**
+  ([Environment Variables](#environment-variables)). Otherwise every visitor
+  appears to come from the CDN's addresses and shares one rate-limit bucket.
+- **It sees everything.** A CDN that terminates TLS reads every request in
+  the clear, passwords and session cookies included.
 
 ---
 
