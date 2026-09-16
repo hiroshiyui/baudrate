@@ -3,8 +3,8 @@ defmodule Baudrate.Federation.BlocklistAudit do
   Audits the local domain blocklist against an external known-bad-actor list.
 
   Fetches a remote blocklist (JSON array or CSV/newline-separated) and compares
-  it to the local `ap_domain_blocklist` setting. Returns a diff showing which
-  domains are missing from the local blocklist and which are extra.
+  it to the local `domain_blocks` rows. Returns a diff showing which domains
+  are missing from the local blocklist and which are extra.
 
   Supports common blocklist formats:
     * JSON array of domain strings
@@ -22,7 +22,7 @@ defmodule Baudrate.Federation.BlocklistAudit do
   Runs the blocklist audit.
 
   Fetches the external blocklist configured in `ap_blocklist_audit_url`,
-  compares it to the local `ap_domain_blocklist`, and returns a diff.
+  compares it to the local domain blocks, and returns a diff.
 
   Returns `{:ok, audit_result}` or `{:error, reason}`.
   """
@@ -96,12 +96,5 @@ defmodule Baudrate.Federation.BlocklistAudit do
   end
 
   @doc false
-  def get_local_blocklist do
-    (Setup.get_setting("ap_domain_blocklist") || "")
-    |> String.split(",", trim: true)
-    |> Enum.map(&String.trim/1)
-    |> Enum.map(&String.downcase/1)
-    |> Enum.reject(&(&1 == ""))
-    |> MapSet.new()
-  end
+  def get_local_blocklist, do: Baudrate.Federation.DomainBlocks.blocked_domains()
 end

@@ -2,10 +2,17 @@ defmodule Baudrate.Federation.ValidatorTest do
   use Baudrate.DataCase, async: false
 
   alias Baudrate.Federation.{DomainBlockCache, Validator}
-  alias Baudrate.Setup
 
   defp refresh_domain_cache do
     DomainBlockCache.refresh()
+  end
+
+  defp block_domains(domains) do
+    Enum.each(domains, fn domain ->
+      {:ok, _} = Baudrate.Federation.DomainBlocks.block_domain(domain)
+    end)
+
+    refresh_domain_cache()
   end
 
   describe "valid_https_url?/1" do
@@ -266,23 +273,30 @@ defmodule Baudrate.Federation.ValidatorTest do
     end
 
     test "not blocked when domain is not in the list" do
-      Setup.set_setting("ap_domain_blocklist", "bad.example,evil.test")
-      refresh_domain_cache()
+      block_domains(["bad.example", "evil.test"])
       refute Validator.domain_blocked?("remote.example")
     end
 
     test "blocked when domain is in the list" do
-      Setup.set_setting("ap_domain_blocklist", "bad.example,evil.test")
-      refresh_domain_cache()
+      block_domains(["bad.example", "evil.test"])
       assert Validator.domain_blocked?("bad.example")
       assert Validator.domain_blocked?("evil.test")
     end
 
     test "domain blocking is case-insensitive" do
-      Setup.set_setting("ap_domain_blocklist", "Bad.Example,EVIL.test")
-      refresh_domain_cache()
+      block_domains(["Bad.Example", "EVIL.test"])
       assert Validator.domain_blocked?("bad.example")
       assert Validator.domain_blocked?("evil.test")
+    end
+
+    test "a lifted block stops blocking" do
+      block_domains(["bad.example"])
+      assert Validator.domain_blocked?("bad.example")
+
+      {:ok, _} = Baudrate.Federation.DomainBlocks.unblock_domain("bad.example")
+      refresh_domain_cache()
+
+      refute Validator.domain_blocked?("bad.example")
     end
   end
 

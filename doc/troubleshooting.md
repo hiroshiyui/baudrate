@@ -382,7 +382,7 @@ When `ap_federation_mode` is set to `"allowlist"`:
 
 ### Domain blocklist
 
-Domains in `ap_domain_blocklist` are:
+Domains with a row in `domain_blocks` (managed at `/admin/federation`) are:
 
 - Rejected at inbox (incoming activities return 202 but are silently dropped)
 - Skipped during delivery (jobs marked as abandoned with reason `"domain_blocked"`)

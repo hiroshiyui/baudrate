@@ -248,13 +248,14 @@ defmodule Baudrate.Setup do
     end
   end
 
-  @domain_block_keys ~w(ap_federation_mode ap_domain_blocklist ap_domain_allowlist)
+  @domain_block_keys ~w(ap_federation_mode ap_domain_allowlist)
 
   @doc """
   Upserts a setting by key. Creates or updates the setting.
 
-  Writing a federation mode, blocklist or allowlist key also refreshes
-  `Baudrate.Federation.DomainBlockCache`.
+  Writing the federation mode or the allowlist also refreshes
+  `Baudrate.Federation.DomainBlockCache`. Blocked domains are rows rather than
+  a setting (ADR 0030); `Federation.DomainBlocks` refreshes the cache for them.
   """
   @spec set_setting(String.t(), String.t()) :: {:ok, Setting.t()} | {:error, Ecto.Changeset.t()}
   def set_setting(key, value) when is_binary(key) and is_binary(value) do
@@ -369,7 +370,6 @@ defmodule Baudrate.Setup do
       site_name: :string,
       registration_mode: :string,
       timezone: :string,
-      ap_domain_blocklist: :string,
       ap_federation_enabled: :string,
       ap_federation_mode: :string,
       ap_domain_allowlist: :string,
@@ -383,7 +383,6 @@ defmodule Baudrate.Setup do
       site_name: get_setting("site_name") || "",
       registration_mode: registration_mode(),
       timezone: get_setting("timezone") || "Etc/UTC",
-      ap_domain_blocklist: get_setting("ap_domain_blocklist") || "",
       ap_federation_enabled: get_setting("ap_federation_enabled") || "true",
       ap_federation_mode: get_setting("ap_federation_mode") || "blocklist",
       ap_domain_allowlist: get_setting("ap_domain_allowlist") || "",
@@ -432,7 +431,6 @@ defmodule Baudrate.Setup do
         set_setting("site_name", changes.site_name)
         set_setting("registration_mode", changes.registration_mode)
         set_setting("timezone", changes.timezone || "Etc/UTC")
-        set_setting("ap_domain_blocklist", changes.ap_domain_blocklist || "")
         set_setting("ap_federation_enabled", changes.ap_federation_enabled || "true")
         set_setting("ap_federation_mode", changes.ap_federation_mode || "blocklist")
         set_setting("ap_domain_allowlist", changes.ap_domain_allowlist || "")

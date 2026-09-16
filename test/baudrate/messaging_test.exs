@@ -90,8 +90,7 @@ defmodule Baudrate.MessagingTest do
       user = create_user("user")
       remote_actor = create_remote_actor(%{domain: "blocked.example"})
 
-      Baudrate.Setup.set_setting("ap_domain_blocklist", "blocked.example")
-      Baudrate.Federation.DomainBlockCache.refresh()
+      {:ok, _} = Baudrate.Federation.DomainBlocks.block_domain("blocked.example")
 
       refute Messaging.can_receive_remote_dm?(user, remote_actor)
     end
@@ -382,8 +381,7 @@ defmodule Baudrate.MessagingTest do
       remote = create_remote_actor(%{domain: "bad.example"})
       {:ok, conv} = Messaging.find_or_create_remote_conversation(sender, remote)
 
-      Setup.set_setting("ap_domain_blocklist", "bad.example")
-      Baudrate.Federation.DomainBlockCache.refresh()
+      {:ok, _} = Baudrate.Federation.DomainBlocks.block_domain("bad.example")
 
       assert {:error, :not_allowed} = Messaging.create_message(conv, sender, %{body: "hi remote"})
     end

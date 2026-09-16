@@ -197,7 +197,6 @@ Configure at `/admin/settings`:
 | `eua` | markdown | (empty) | End User Agreement shown at registration |
 | `ap_federation_enabled` | boolean | `"true"` | Federation kill switch |
 | `ap_federation_mode` | enum | `"blocklist"` | `blocklist` or `allowlist` |
-| `ap_domain_blocklist` | text | `""` | Comma-separated blocked domains |
 | `ap_domain_allowlist` | text | `""` | Comma-separated allowed domains |
 | `ap_authorized_fetch` | boolean | `"false"` | Require HTTP Signatures on AP GET requests |
 | `ap_blocklist_audit_url` | string | `""` | External known-bad-actor list URL |
@@ -550,13 +549,15 @@ user and board keypairs (see [Key Rotation](#key-rotation)).
 
 | Mode | Behavior |
 |------|----------|
-| `blocklist` (default) | Accept all domains except those in `ap_domain_blocklist` |
+| `blocklist` (default) | Accept all domains except those with a row in `domain_blocks` |
 | `allowlist` | Accept **only** domains in `ap_domain_allowlist`; empty list blocks all |
 
 Domain filtering applies to both inbound (inbox) and outbound (delivery).
-Comparison is case-insensitive. Configure at `/admin/settings`.
-Domain lists are cached in ETS for high-throughput lookups and refreshed
-automatically when settings are saved.
+Comparison is case-insensitive. The mode and the allowlist are set at
+`/admin/settings`; blocked domains are managed at `/admin/federation`, where
+each block records who made it, when, and why, and can be lifted again
+(ADR 0030). Both lists are cached in ETS for high-throughput lookups and
+refreshed automatically whenever a block or a setting is written.
 
 ### Domain Blocklist / Allowlist
 

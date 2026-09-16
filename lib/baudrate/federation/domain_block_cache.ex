@@ -6,9 +6,15 @@ defmodule Baudrate.Federation.DomainBlockCache do
   corresponding domain set (blocklist or allowlist), avoiding repeated
   DB queries on every incoming/outgoing activity.
 
-  The cache is refreshed automatically whenever a federation mode, blocklist
-  or allowlist setting is written (`Setup.set_setting/2` calls `refresh/0`),
-  so every path that blocks a domain takes effect immediately.
+  In blocklist mode the set comes from the `domain_blocks` table
+  (`Federation.DomainBlocks`, ADR 0030); in allowlist mode it still comes from
+  the `ap_domain_allowlist` setting, which is configuration rather than a
+  record of moderation decisions.
+
+  The cache is refreshed automatically whenever a block is written or lifted
+  (`DomainBlocks` calls `refresh/0`) and whenever the federation mode or
+  allowlist setting is written (`Setup.set_setting/2` calls it), so every path
+  that blocks a domain takes effect immediately.
   """
 
   use GenServer
@@ -84,8 +90,7 @@ defmodule Baudrate.Federation.DomainBlockCache do
         {:allowlist, allowed}
 
       _ ->
-        blocked = parse_domain_list(Baudrate.Setup.get_setting("ap_domain_blocklist") || "")
-        {:blocklist, blocked}
+        {:blocklist, Baudrate.Federation.DomainBlocks.blocked_domains()}
     end
   end
 

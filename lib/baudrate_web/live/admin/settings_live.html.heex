@@ -70,14 +70,15 @@
             {gettext("Allowlist (allow only specific domains)"), "allowlist"}
           ]}
         />
-        <.input
-          field={@form[:ap_domain_blocklist]}
-          type="textarea"
-          label={gettext("Blocked Domains (federation)")}
-          placeholder={gettext("spam.example, bad-actor.example")}
-        />
-        <p class="text-sm opacity-70">
-          {gettext("Comma-separated list of domains to block from federation.")}
+        <p id="settings-domain-blocks-hint" class="settings-hint text-sm opacity-70">
+          {gettext("Blocked domains are managed on the Federation page, with a reason.")}
+          <.link
+            id="settings-domain-blocks-link"
+            navigate={~p"/admin/federation"}
+            class="settings-hint-link link link-primary"
+          >
+            {gettext("Go to Federation")}
+          </.link>
         </p>
         <.input
           field={@form[:ap_domain_allowlist]}

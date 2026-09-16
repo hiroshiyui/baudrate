@@ -124,8 +124,9 @@ defmodule BaudrateWeb.Admin.SettingsLive do
     }
   end
 
-  # Records which settings changed. Blocklist and allowlist edits also list the
-  # domains added and removed, so an unblock is as visible as a block.
+  # Records which settings changed. Allowlist edits also list the domains added
+  # and removed, so a domain losing its allowance is as visible as gaining one.
+  # Blocked domains are rows and are audited by `Federation.DomainBlocks`.
   defp log_settings_change(actor_id, before) do
     changed =
       before
@@ -135,8 +136,7 @@ defmodule BaudrateWeb.Admin.SettingsLive do
 
     if changed != [] do
       details =
-        Enum.reduce(~w(ap_domain_blocklist ap_domain_allowlist), %{changed: changed}, fn key,
-                                                                                         acc ->
+        Enum.reduce(~w(ap_domain_allowlist), %{changed: changed}, fn key, acc ->
           if key in changed do
             old = domain_set(before[key])
             new = domain_set(Setup.get_setting(key))

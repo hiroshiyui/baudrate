@@ -133,8 +133,10 @@ defmodule BaudrateWeb.Admin.FederationLiveTest do
     assert html =~ "evil.example"
     assert html =~ "has been blocked"
 
-    blocklist = Baudrate.Setup.get_setting("ap_domain_blocklist")
-    assert blocklist =~ "evil.example"
+    assert %{domain: "evil.example", blocked_by_id: blocked_by} =
+             Baudrate.Federation.DomainBlocks.get_domain_block("evil.example")
+
+    assert blocked_by == admin.id
 
     # The federation checks' cache sees the block at once, and it is audited.
     assert [{:domain_config, :blocklist, blocked}] =

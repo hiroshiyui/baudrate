@@ -63,7 +63,7 @@ surface.
 | **CORS** | `Access-Control-Allow-Origin: *` on all GET `/ap/*` responses. `OPTIONS` returns 204 with allowed methods `GET, HEAD, OPTIONS`. |
 | **Vary** | Content-negotiated endpoints include `Vary: Accept` for proper cache behavior. |
 | **Authorized fetch** | Optional setting `ap_authorized_fetch`. When enabled, unsigned GET requests to `/ap/*` return 401. Discovery endpoints are exempt. |
-| **Domain filtering** | `blocklist` mode (default): reject domains in `ap_domain_blocklist`. `allowlist` mode: only accept domains in `ap_domain_allowlist` (empty list blocks all). |
+| **Domain filtering** | `blocklist` mode (default): reject domains blocked at `/admin/federation`. `allowlist` mode: only accept domains in `ap_domain_allowlist` (empty list blocks all). |
 | **Payload size** | Inbox POST bodies capped at 256 KB (`413 Payload Too Large`). Content bodies capped at 64 KB. |
 | **JSON-LD contexts** | `https://www.w3.org/ns/activitystreams` and `https://w3id.org/security/v1` |
 

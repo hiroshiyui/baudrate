@@ -1,7 +1,7 @@
 defmodule Baudrate.Federation.DomainBlockCacheTest do
   use Baudrate.DataCase, async: false
 
-  alias Baudrate.Federation.DomainBlockCache
+  alias Baudrate.Federation.{DomainBlockCache, DomainBlocks}
   alias Baudrate.Setup
 
   setup do
@@ -13,13 +13,22 @@ defmodule Baudrate.Federation.DomainBlockCacheTest do
   # tests, so these read the ETS entry that production uses.
   defp cached_config, do: :ets.lookup(:domain_block_cache, :domain_config)
 
-  describe "cache refresh on setting writes" do
-    test "writing the blocklist updates the cache without an explicit refresh" do
+  describe "cache refresh on writes" do
+    test "blocking a domain updates the cache without an explicit refresh" do
       Setup.set_setting("ap_federation_mode", "blocklist")
-      Setup.set_setting("ap_domain_blocklist", "fresh-block.example")
+      {:ok, _} = DomainBlocks.block_domain("fresh-block.example")
 
       assert [{:domain_config, :blocklist, blocked}] = cached_config()
       assert MapSet.member?(blocked, "fresh-block.example")
+    end
+
+    test "unblocking a domain updates the cache without an explicit refresh" do
+      Setup.set_setting("ap_federation_mode", "blocklist")
+      {:ok, _} = DomainBlocks.block_domain("short-lived.example")
+      {:ok, _} = DomainBlocks.unblock_domain("short-lived.example")
+
+      assert [{:domain_config, :blocklist, blocked}] = cached_config()
+      refute MapSet.member?(blocked, "short-lived.example")
     end
 
     test "switching to allowlist mode updates the cache" do
@@ -32,14 +41,14 @@ defmodule Baudrate.Federation.DomainBlockCacheTest do
   end
 
   describe "domain_blocked?/1 with blocklist mode" do
-    test "returns false when domain is not in blocklist" do
+    test "returns false when domain is not blocked" do
       refute DomainBlockCache.domain_blocked?("example.com")
     end
 
-    test "returns true when domain is in blocklist" do
+    test "returns true when domain is blocked" do
       Setup.set_setting("ap_federation_mode", "blocklist")
-      Setup.set_setting("ap_domain_blocklist", "evil.example, spam.example")
-      DomainBlockCache.refresh()
+      {:ok, _} = DomainBlocks.block_domain("evil.example")
+      {:ok, _} = DomainBlocks.block_domain("spam.example")
 
       assert DomainBlockCache.domain_blocked?("evil.example")
       assert DomainBlockCache.domain_blocked?("spam.example")
@@ -48,9 +57,9 @@ defmodule Baudrate.Federation.DomainBlockCacheTest do
 
     test "is case-insensitive" do
       Setup.set_setting("ap_federation_mode", "blocklist")
-      Setup.set_setting("ap_domain_blocklist", "Evil.Example")
-      DomainBlockCache.refresh()
+      {:ok, block} = DomainBlocks.block_domain("Evil.Example")
 
+      assert block.domain == "evil.example"
       assert DomainBlockCache.domain_blocked?("evil.example")
       assert DomainBlockCache.domain_blocked?("EVIL.EXAMPLE")
     end
@@ -73,18 +82,28 @@ defmodule Baudrate.Federation.DomainBlockCacheTest do
 
       assert DomainBlockCache.domain_blocked?("any.example")
     end
+
+    test "a blocked domain row does not decide anything in allowlist mode" do
+      # Allowlist mode is a configuration choice about who may reach us at all
+      # (ADR 0030); the rows are moderation decisions and stay out of it.
+      {:ok, _} = DomainBlocks.block_domain("blocked.example")
+      Setup.set_setting("ap_domain_allowlist", "blocked.example")
+      Setup.set_setting("ap_federation_mode", "allowlist")
+
+      refute DomainBlockCache.domain_blocked?("blocked.example")
+    end
   end
 
   describe "refresh/0" do
-    test "updates cache after settings change" do
+    test "updates cache after a block is lifted" do
       Setup.set_setting("ap_federation_mode", "blocklist")
-      Setup.set_setting("ap_domain_blocklist", "bad.example")
+      {:ok, _} = DomainBlocks.block_domain("bad.example")
       DomainBlockCache.refresh()
 
       assert DomainBlockCache.domain_blocked?("bad.example")
 
-      # Update settings and refresh
-      Setup.set_setting("ap_domain_blocklist", "other.example")
+      {:ok, _} = DomainBlocks.unblock_domain("bad.example")
+      {:ok, _} = DomainBlocks.block_domain("other.example")
       DomainBlockCache.refresh()
 
       refute DomainBlockCache.domain_blocked?("bad.example")

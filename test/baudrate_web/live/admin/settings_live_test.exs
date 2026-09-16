@@ -84,9 +84,9 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
     assert Setup.get_setting("registration_mode") == "open"
   end
 
-  test "saving settings is audited, with domains added to and removed from the blocklist",
+  test "saving settings is audited, with domains added to and removed from the allowlist",
        %{conn: conn} do
-    Repo.insert!(%Setting{key: "ap_domain_blocklist", value: "old.example, kept.example"})
+    Repo.insert!(%Setting{key: "ap_domain_allowlist", value: "old.example, kept.example"})
     admin = setup_user("admin")
     conn = log_in_admin(conn, admin)
 
@@ -97,19 +97,31 @@ defmodule BaudrateWeb.Admin.SettingsLiveTest do
       settings: %{
         site_name: "Test Site",
         registration_mode: "approval_required",
-        ap_domain_blocklist: "kept.example, new.example"
+        ap_domain_allowlist: "kept.example, new.example"
       }
     )
     |> render_submit()
 
     assert [log] = Baudrate.Moderation.list_moderation_logs(action: "update_settings").logs
     assert log.actor_id == admin.id
-    assert "ap_domain_blocklist" in log.details["changed"]
+    assert "ap_domain_allowlist" in log.details["changed"]
 
-    assert log.details["ap_domain_blocklist"] == %{
+    assert log.details["ap_domain_allowlist"] == %{
              "added" => ["new.example"],
              "removed" => ["old.example"]
            }
+  end
+
+  test "the settings form offers no blocklist field", %{conn: conn} do
+    # Blocked domains are rows with an author and a reason (ADR 0030). Leaving
+    # the textarea here would let a save overwrite them from stale form state.
+    admin = setup_user("admin")
+    conn = log_in_admin(conn, admin)
+
+    {:ok, lv, _html} = live(conn, "/admin/settings")
+
+    refute has_element?(lv, "textarea[name=\"settings[ap_domain_blocklist]\"]")
+    assert has_element?(lv, "#settings-domain-blocks-link")
   end
 
   test "admin sees validation errors on invalid submit", %{conn: conn} do

@@ -1,7 +1,7 @@
 defmodule Baudrate.Federation.BlocklistAuditTest do
   use Baudrate.DataCase, async: true
 
-  alias Baudrate.Federation.BlocklistAudit
+  alias Baudrate.Federation.{BlocklistAudit, DomainBlocks}
   alias Baudrate.Setup.Setting
 
   describe "parse_list/1" do
@@ -108,8 +108,10 @@ defmodule Baudrate.Federation.BlocklistAuditTest do
       assert MapSet.size(result) == 0
     end
 
-    test "parses comma-separated blocklist from settings" do
-      Repo.insert!(%Setting{key: "ap_domain_blocklist", value: "bad.example, evil.org, spam.net"})
+    test "reads the blocked domains" do
+      for domain <- ["bad.example", "evil.org", "spam.net"] do
+        {:ok, _} = DomainBlocks.block_domain(domain)
+      end
 
       result = BlocklistAudit.get_local_blocklist()
       assert MapSet.size(result) == 3
@@ -118,8 +120,9 @@ defmodule Baudrate.Federation.BlocklistAuditTest do
       assert MapSet.member?(result, "spam.net")
     end
 
-    test "normalizes to lowercase and trims" do
-      Repo.insert!(%Setting{key: "ap_domain_blocklist", value: " Bad.Example , EVIL.ORG "})
+    test "domains are already normalized on the way in" do
+      {:ok, _} = DomainBlocks.block_domain(" Bad.Example ")
+      {:ok, _} = DomainBlocks.block_domain("EVIL.ORG")
 
       result = BlocklistAudit.get_local_blocklist()
       assert MapSet.member?(result, "bad.example")

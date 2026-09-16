@@ -144,15 +144,14 @@ defmodule Baudrate.SetupTest do
       assert changeset.valid?
       assert Ecto.Changeset.get_field(changeset, :site_name) == "Test Site"
       assert Ecto.Changeset.get_field(changeset, :registration_mode) == "approval_required"
-      assert Ecto.Changeset.get_field(changeset, :ap_domain_blocklist) == ""
     end
 
-    test "includes ap_domain_blocklist field" do
-      changeset = Setup.change_settings(%{"ap_domain_blocklist" => "spam.example, bad.example"})
-      assert changeset.valid?
+    test "does not carry a blocklist field — blocked domains are rows" do
+      changeset = Setup.change_settings(%{"ap_domain_blocklist" => "spam.example"})
 
-      assert Ecto.Changeset.get_field(changeset, :ap_domain_blocklist) ==
-               "spam.example, bad.example"
+      assert changeset.valid?
+      refute Map.has_key?(changeset.types, :ap_domain_blocklist)
+      assert Setup.get_setting("ap_domain_blocklist") == nil
     end
 
     test "returns valid changeset for valid attrs" do
@@ -218,7 +217,9 @@ defmodule Baudrate.SetupTest do
       refute changeset.valid?
     end
 
-    test "persists ap_domain_blocklist" do
+    test "ignores a blocklist submitted through the settings form" do
+      # Blocked domains moved to their own table (ADR 0030). A stale form, or a
+      # hand-made POST, must not resurrect the setting as a second authority.
       assert {:ok, changes} =
                Setup.save_settings(%{
                  "site_name" => "Test",
@@ -226,8 +227,8 @@ defmodule Baudrate.SetupTest do
                  "ap_domain_blocklist" => "spam.example, evil.example"
                })
 
-      assert changes.ap_domain_blocklist == "spam.example, evil.example"
-      assert Setup.get_setting("ap_domain_blocklist") == "spam.example, evil.example"
+      refute Map.has_key?(changes, :ap_domain_blocklist)
+      assert Setup.get_setting("ap_domain_blocklist") == nil
     end
   end
 

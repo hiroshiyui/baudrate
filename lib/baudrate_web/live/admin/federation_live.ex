@@ -10,10 +10,10 @@ defmodule BaudrateWeb.Admin.FederationLive do
 
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
-  alias Baudrate.{Auth, Content, Moderation, Setup}
+  alias Baudrate.{Auth, Content, Moderation}
   alias Baudrate.Content.Board
   alias Baudrate.Federation
-  alias Baudrate.Federation.{BlocklistAudit, DeliveryStats, InstanceStats}
+  alias Baudrate.Federation.{BlocklistAudit, DeliveryStats, DomainBlocks, InstanceStats}
   import BaudrateWeb.Helpers, only: [parse_id: 1, translate_role: 1, translate_delivery_status: 1]
 
   @impl true
@@ -65,32 +65,34 @@ defmodule BaudrateWeb.Admin.FederationLive do
 
   @impl true
   def handle_event("block_domain", %{"domain" => domain}, socket) do
-    current = Setup.get_setting("ap_domain_blocklist") || ""
+    case DomainBlocks.block_domain(domain, socket.assigns.current_user) do
+      {:ok, block} ->
+        Moderation.log_action(socket.assigns.current_user.id, "block_domain",
+          details: %{domain: block.domain, source: "instances"}
+        )
 
-    existing =
-      current
-      |> String.split(",", trim: true)
-      |> Enum.map(&String.trim/1)
-      |> Enum.map(&String.downcase/1)
-      |> MapSet.new()
+        {:noreply,
+         socket
+         |> put_flash(
+           :info,
+           gettext("Domain %{domain} has been blocked.", domain: block.domain)
+         )
+         |> load_dashboard()}
 
-    unless MapSet.member?(existing, String.downcase(domain)) do
-      new_list =
-        if current == "",
-          do: domain,
-          else: current <> ", " <> domain
+      {:error, :already_blocked} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Domain %{domain} is already blocked.", domain: domain))
+         |> load_dashboard()}
 
-      Setup.set_setting("ap_domain_blocklist", new_list)
-
-      Moderation.log_action(socket.assigns.current_user.id, "block_domain",
-        details: %{domain: domain, source: "instances"}
-      )
+      {:error, _changeset} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("%{domain} is not a domain we can block.", domain: domain)
+         )}
     end
-
-    {:noreply,
-     socket
-     |> put_flash(:info, gettext("Domain %{domain} has been blocked.", domain: domain))
-     |> load_dashboard()}
   end
 
   @impl true
@@ -145,11 +147,17 @@ defmodule BaudrateWeb.Admin.FederationLive do
 
   @impl true
   def handle_event("add_missing_domain", %{"domain" => domain}, socket) do
-    add_domain_to_blocklist(domain)
+    # Audit the block only when one happened. The old code logged an entry for
+    # a domain that was already blocked, and skipped one on the instance list.
+    case DomainBlocks.block_domain(domain, socket.assigns.current_user) do
+      {:ok, block} ->
+        Moderation.log_action(socket.assigns.current_user.id, "block_domain",
+          details: %{domain: block.domain, source: "audit"}
+        )
 
-    Moderation.log_action(socket.assigns.current_user.id, "block_domain",
-      details: %{domain: domain, source: "audit"}
-    )
+      _ ->
+        :ok
+    end
 
     # Re-run audit to refresh results
     case BlocklistAudit.audit() do
@@ -173,11 +181,19 @@ defmodule BaudrateWeb.Admin.FederationLive do
   def handle_event("add_all_missing", _params, socket) do
     case socket.assigns[:audit_result] do
       %{missing: missing} when missing != [] ->
-        Enum.each(missing, &add_domain_to_blocklist/1)
+        blocked =
+          Enum.flat_map(missing, fn domain ->
+            case DomainBlocks.block_domain(domain, socket.assigns.current_user) do
+              {:ok, block} -> [block.domain]
+              _ -> []
+            end
+          end)
 
-        Moderation.log_action(socket.assigns.current_user.id, "block_domain",
-          details: %{domains: missing, source: "audit_bulk", count: length(missing)}
-        )
+        if blocked != [] do
+          Moderation.log_action(socket.assigns.current_user.id, "block_domain",
+            details: %{domains: blocked, source: "audit_bulk", count: length(blocked)}
+          )
+        end
 
         case BlocklistAudit.audit() do
           {:ok, result} ->
@@ -185,7 +201,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
              socket
              |> put_flash(
                :info,
-               gettext("Added %{count} domains to blocklist.", count: length(missing))
+               gettext("Added %{count} domains to blocklist.", count: length(blocked))
              )
              |> assign(audit_result: result)
              |> push_event("focus", %{id: "blocklist-audit-heading"})}
@@ -195,7 +211,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
              socket
              |> put_flash(
                :info,
-               gettext("Added %{count} domains to blocklist.", count: length(missing))
+               gettext("Added %{count} domains to blocklist.", count: length(blocked))
              )
              |> assign(audit_result: nil)
              |> push_event("focus", %{id: "blocklist-audit-heading"})}
@@ -235,26 +251,6 @@ defmodule BaudrateWeb.Admin.FederationLive do
           {:error, _} ->
             {:noreply, put_flash(socket, :error, gettext("Failed to update board."))}
         end
-    end
-  end
-
-  defp add_domain_to_blocklist(domain) do
-    current = Setup.get_setting("ap_domain_blocklist") || ""
-
-    existing =
-      current
-      |> String.split(",", trim: true)
-      |> Enum.map(&String.trim/1)
-      |> Enum.map(&String.downcase/1)
-      |> MapSet.new()
-
-    unless MapSet.member?(existing, String.downcase(domain)) do
-      new_list =
-        if current == "",
-          do: domain,
-          else: current <> ", " <> domain
-
-      Setup.set_setting("ap_domain_blocklist", new_list)
     end
   end
 

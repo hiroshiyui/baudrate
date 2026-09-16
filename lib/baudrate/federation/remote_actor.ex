@@ -55,10 +55,18 @@ defmodule Baudrate.Federation.RemoteActor do
   @required_fields ~w(ap_id username domain public_key_pem inbox actor_type fetched_at)a
   @optional_fields ~w(display_name avatar_url summary shared_inbox url profile_fields also_known_as moved_to_ap_id)a
 
-  @doc "Casts and validates fields for creating or updating a remote actor cache entry."
+  @doc """
+  Casts and validates fields for creating or updating a remote actor cache entry.
+
+  `domain` is downcased on the way in. It is written from the host of the
+  actor's `ap_id`, which carries whatever case the peer used, and the domain
+  block filter compares it with SQL equality — an actor stored as `Example.COM`
+  would otherwise stay visible under a block on `example.com` (ADR 0030).
+  """
   def changeset(remote_actor, attrs) do
     remote_actor
     |> cast(attrs, @required_fields ++ @optional_fields)
+    |> update_change(:domain, &downcase_domain/1)
     |> validate_required(@required_fields)
     |> validate_inclusion(:actor_type, ~w(Person Group Organization Application Service))
     |> validate_format(:moved_to_ap_id, ~r{\Ahttps://})
@@ -66,4 +74,9 @@ defmodule Baudrate.Federation.RemoteActor do
     |> unique_constraint(:ap_id)
     |> unique_constraint([:username, :domain])
   end
+
+  # `validate_required/2` is what refuses a missing domain; this only has to
+  # survive being handed one.
+  defp downcase_domain(domain) when is_binary(domain), do: String.downcase(domain)
+  defp downcase_domain(domain), do: domain
 end
