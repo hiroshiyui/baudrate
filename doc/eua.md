@@ -5,10 +5,17 @@
   running their own instance.
 
   Fill in, in BOTH languages:
-    [OPERATOR]        who runs the site (a name or an organisation)
+    [SITE_NAME]       what the site is called
+    [SITE_URL]        its address
+    [OPERATOR]        who runs it (a name or an organisation)
     [CONTACT]         how to reach them
+    [SOURCE_URL]      where the running source can be obtained (section 3)
     [JURISDICTION]    whose law governs the agreement (section 11)
     [EFFECTIVE DATE]  the date it is published
+
+  [SOURCE_URL] is not decorative. The AGPL requires offering the source of the
+  version actually running, so an instance with local modifications must point
+  at its own repository, not at upstream.
 
   The governing language clause names 台灣漢語 as prevailing. Change it, and
   the language halves, if this instance serves a different audience.
@@ -34,8 +41,8 @@
 
 # 使用者協議 End User Agreement (EUA)
 
-歡迎來到 [Baudrate](https://baudrate.tw/)。本站由 **[OPERATOR]** 營運。在您註冊或使用本服務前，請仔細閱讀以下條款。
-Welcome to [Baudrate](https://baudrate.tw/). This site is operated by **[OPERATOR]**. Please read the following terms carefully before registering or using our services.
+歡迎來到 [[SITE_NAME]]([SITE_URL])。本站由 **[OPERATOR]** 營運。在您註冊或使用本服務前，請仔細閱讀以下條款。
+Welcome to [[SITE_NAME]]([SITE_URL]). This site is operated by **[OPERATOR]**. Please read the following terms carefully before registering or using our services.
 
 ---
 
@@ -68,8 +75,8 @@ This platform is committed to the spirit of open source:
 
 * **AGPL-3.0 授權：** 本站點運作所使用的軟體原始碼依據 **GNU AGPL-3.0** 條款授權。
     **AGPL-3.0 License:** The software source code powering this site is licensed under the **GNU AGPL-3.0**.
-* **原始碼取得：** 根據 AGPL-3.0 之規定，您可以透過以下連結取得本站點目前運作版本的完整原始碼：`https://github.com/hiroshiyui/baudrate/`。
-    **Source Code Availability:** In accordance with the AGPL-3.0, you may obtain the complete source code for the version currently running on this site via: `https://github.com/hiroshiyui/baudrate/`.
+* **原始碼取得：** 根據 AGPL-3.0 之規定，您可以透過以下連結取得本站點目前運作版本的完整原始碼：`[SOURCE_URL]`。
+    **Source Code Availability:** In accordance with the AGPL-3.0, you may obtain the complete source code for the version currently running on this site via: `[SOURCE_URL]`.
 * **第三方組件：** 本站可能包含受不同授權條款約束之第三方組件。
     **Third-party Components:** This site may contain third-party components governed by different license terms.
 
