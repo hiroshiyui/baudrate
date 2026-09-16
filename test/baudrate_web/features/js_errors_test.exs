@@ -244,10 +244,13 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
     _pending = setup_user_with_status("pending")
     {:ok, _code} = Baudrate.Auth.generate_invite_code(admin)
 
+    instance_domain = blocked_instance(admin)
+
     admin_paths = [
       "/admin/settings",
       "/admin/pending-users",
       "/admin/federation",
+      "/admin/federation/instances/#{instance_domain}",
       "/admin/moderation",
       "/admin/boards",
       "/admin/users",
@@ -263,6 +266,32 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
     session = visit_admin(session, "/admin/settings", {admin, secret})
 
     assert crawl(session, admin_paths) == []
+  end
+
+  # The instance page renders remote handles and staff-written reasons, both of
+  # which are long unbreakable tokens from elsewhere — the shape that widens a
+  # page rather than wrapping.
+  defp blocked_instance(admin) do
+    domain = "a-very-long-instance-name-from-the-fediverse.example"
+
+    Baudrate.Repo.insert!(%Baudrate.Federation.RemoteActor{
+      ap_id: "https://#{domain}/users/someone-with-a-very-long-handle-indeed",
+      username: "someone-with-a-very-long-handle-indeed",
+      domain: domain,
+      display_name: "Someone With A Rather Long Display Name Too",
+      public_key_pem: elem(Baudrate.Federation.KeyStore.generate_keypair(), 0),
+      inbox: "https://#{domain}/users/someone-with-a-very-long-handle-indeed/inbox",
+      actor_type: "Person",
+      fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+
+    {:ok, _} =
+      Baudrate.Federation.DomainBlocks.block_domain(domain, admin, %{
+        reason:
+          "Sustained harassment, see https://example.com/a-very-long-unbreakable-link-about-the-incident"
+      })
+
+    domain
   end
 
   defp setup_user_with_status(status), do: setup_user("user") |> then(&set_status(&1, status))

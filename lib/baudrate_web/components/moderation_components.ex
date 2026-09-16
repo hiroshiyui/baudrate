@@ -38,6 +38,10 @@ defmodule BaudrateWeb.ModerationComponents do
   attr :allow_delete, :boolean, default: false, doc: "may delete the reported content"
   attr :allow_flag, :boolean, default: false, doc: "may send a Flag to the remote instance"
 
+  attr :allow_instance_actions, :boolean,
+    default: false,
+    doc: "may reach the instance page, where suspending the actor and blocking the domain live"
+
   def report_card(assigns) do
     ~H"""
     <div class="card-body">
@@ -242,6 +246,17 @@ defmodule BaudrateWeb.ModerationComponents do
         </a>
         <p class="text-sm opacity-70">
           {display_name(@report.remote_actor)}@{@report.remote_actor.domain}
+        </p>
+        <p :if={@allow_instance_actions} class="moderation-report-actor-actions mt-2 text-sm">
+          <.link
+            id={"#{@prefix}-report-instance-link-#{@report.id}"}
+            navigate={~p"/admin/federation/instances/#{@report.remote_actor.domain}"}
+            class="moderation-report-instance-link link link-primary"
+          >
+            {gettext("Suspend this account or block %{domain}",
+              domain: @report.remote_actor.domain
+            )}
+          </.link>
         </p>
       </div>
 

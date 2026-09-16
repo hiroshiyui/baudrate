@@ -197,10 +197,12 @@ defmodule BaudrateWeb.Features.LayoutTest do
     # The user detail page carries the widest table in the admin area (six
     # columns of staff-written text), so it is crawled with a real record.
     member = sanctioned_member(admin)
+    domain = blocked_instance(admin)
 
     paths = [
       "/admin/settings",
       "/admin/federation",
+      "/admin/federation/instances/#{domain}",
       "/admin/moderation",
       "/admin/boards",
       "/admin/users",
@@ -217,6 +219,32 @@ defmodule BaudrateWeb.Features.LayoutTest do
 
   # A member with a sanction whose reason is long and unbreakable — the shape
   # that widens a table before short test text ever does.
+  # The instance page renders remote handles and staff-written reasons, both of
+  # which are long unbreakable tokens from elsewhere — the shape that widens a
+  # page rather than wrapping.
+  defp blocked_instance(admin) do
+    domain = "a-very-long-instance-name-from-the-fediverse.example"
+
+    Baudrate.Repo.insert!(%Baudrate.Federation.RemoteActor{
+      ap_id: "https://#{domain}/users/someone-with-a-very-long-handle-indeed",
+      username: "someone-with-a-very-long-handle-indeed",
+      domain: domain,
+      display_name: "Someone With A Rather Long Display Name Too",
+      public_key_pem: elem(Baudrate.Federation.KeyStore.generate_keypair(), 0),
+      inbox: "https://#{domain}/users/someone-with-a-very-long-handle-indeed/inbox",
+      actor_type: "Person",
+      fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+
+    {:ok, _} =
+      Baudrate.Federation.DomainBlocks.block_domain(domain, admin, %{
+        reason:
+          "Sustained harassment, see https://example.com/a-very-long-unbreakable-link-about-the-incident"
+      })
+
+    domain
+  end
+
   defp sanctioned_member(admin) do
     member = setup_user("user")
 

@@ -132,6 +132,7 @@
         prefix="admin-moderation"
         allow_delete
         allow_flag
+        allow_instance_actions={@current_user.role.name == "admin"}
       />
     </div>
   </div>

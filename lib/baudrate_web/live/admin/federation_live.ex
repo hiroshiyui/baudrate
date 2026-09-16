@@ -343,14 +343,26 @@ defmodule BaudrateWeb.Admin.FederationLive do
     )
   end
 
+  # Deliberately not built from the changeset's own message: that would splice
+  # an untranslated Ecto string into a translated sentence.
   defp changeset_message(changeset) do
-    case changeset.errors do
-      [{field, {msg, _}} | _] ->
-        gettext("%{field} %{message}", field: to_string(field), message: msg)
+    cond do
+      own_domain_error?(changeset) ->
+        gettext("That is this instance's own domain.")
 
-      _ ->
+      Keyword.has_key?(changeset.errors, :domain) ->
+        gettext("Enter a domain name such as spam.example.")
+
+      true ->
         gettext("That domain cannot be blocked.")
     end
+  end
+
+  defp own_domain_error?(changeset) do
+    Enum.any?(changeset.errors, fn
+      {:domain, {msg, _}} -> msg =~ "own domain"
+      _ -> false
+    end)
   end
 
   defp do_toggle_federation(socket, board_id) do

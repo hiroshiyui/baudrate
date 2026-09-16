@@ -559,14 +559,53 @@ each block records who made it, when, and why, and can be lifted again
 (ADR 0030). Both lists are cached in ETS for high-throughput lookups and
 refreshed automatically whenever a block or a setting is written.
 
-### Domain Blocklist / Allowlist
+### Blocking an Instance
 
-Configure at `/admin/settings` (comma-separated domains) or one-click block
-from the federation dashboard (`/admin/federation`).
+Block and unblock at `/admin/federation`. Both take a reason and both are
+written to the moderation log. A block is a row in `domain_blocks` carrying the
+reason, an optional public comment, and the admin who made it — see
+[ADR 0030](adr/0030-domain-blocks-are-rows-and-hiding-is-reversible.md) for why
+it is not a setting.
 
-Blocked domains:
-- **Inbound**: activities are accepted (202) but silently dropped
-- **Outbound**: delivery jobs are abandoned with reason `"domain_blocked"`
+Blocking a domain:
+
+- **Inbound**: activities are accepted (202) but dropped. Signature
+  verification does not even complete, because resolving the actor behind the
+  signature refuses the domain — so the instance gains no `remote_actors` row.
+- **Outbound**: delivery jobs are abandoned with reason `"domain_blocked"`, and
+  we stop fetching from the domain entirely: its actors, its objects, its reply
+  chains, and its images through the media proxy.
+- **Follows** in both directions are deleted, for every actor on the domain.
+  Nothing is sent — delivery to the domain is refused by our own gate. Follows
+  are **not** restored by unblocking.
+- **Existing content** — its articles, comments and feed items — is hidden
+  everywhere a guest or member can look, and stops being served over
+  ActivityPub. It is **not deleted**.
+
+Unblocking restores the hidden content by itself: hiding is computed when a
+page is rendered, not stamped on the rows, so there is no repair step.
+
+Staff surfaces deliberately keep showing hidden content — the moderation queue,
+report details and the instance page. Moderators cannot judge what they cannot
+see, and a block is often applied before the content has been reviewed.
+
+### Suspending One Remote Account
+
+Blocking a whole instance over one account takes every innocent account on it
+with it. To suspend just the one, open `/admin/federation`, follow the domain
+to its instance page, and suspend the account there with a reason. A report
+about a remote account links straight to that page.
+
+A suspended account's activities are refused at the inbox and its content is
+hidden, exactly as a domain block would do, and lifting the suspension brings
+it back. Nothing is deleted.
+
+### Allowlist Mode
+
+Set `ap_federation_mode` to `allowlist` and list the allowed domains in
+`ap_domain_allowlist` at `/admin/settings`. An empty allowlist blocks
+everything. Content from a domain that is not allowed is hidden the same way a
+blocked domain's content is.
 
 ### Authorized Fetch
 
@@ -582,9 +621,11 @@ endpoints. Toggle at `/admin/settings` -> `ap_authorized_fetch`.
 
 The federation dashboard shows:
 
-- **Known instances** — domains with delivery statistics and last contact time
+- **Known instances** — domains with delivery statistics and last contact time,
+  each linking to an instance page listing the accounts we know there
+- **Blocked instances** — with the reason, the admin who blocked it, and an
+  unblock control
 - **Delivery queue** — pending, failed, delivered, and abandoned jobs
-- **One-click domain blocking** from the instance list
 
 **Retry schedule for failed deliveries:**
 

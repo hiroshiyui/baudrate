@@ -707,4 +707,57 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
       assert has_element?(lv, "#admin-moderation-tab-resolved")
     end
   end
+
+  describe "a report about a remote account" do
+    defp create_remote_actor_report(reporter) do
+      n = System.unique_integer([:positive])
+
+      actor =
+        Repo.insert!(%Baudrate.Federation.RemoteActor{
+          ap_id: "https://spam.example/users/loud#{n}",
+          username: "loud#{n}",
+          domain: "spam.example",
+          public_key_pem: elem(Baudrate.Federation.KeyStore.generate_keypair(), 0),
+          inbox: "https://spam.example/users/loud#{n}/inbox",
+          actor_type: "Person",
+          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      {:ok, report} =
+        Moderation.create_report(%{
+          category: "harassment",
+          reason: "Sustained abuse",
+          reporter_id: reporter.id,
+          remote_actor_id: actor.id
+        })
+
+      {report, actor}
+    end
+
+    test "offers an admin somewhere to act on it", %{conn: conn} do
+      # Before this the queue showed the report and gave staff nothing to do
+      # with it but block the account's whole domain by hand.
+      admin = setup_user("admin")
+      {report, _actor} = create_remote_actor_report(admin)
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      assert has_element?(lv, "#admin-moderation-report-instance-link-#{report.id}")
+
+      assert lv
+             |> element("#admin-moderation-report-instance-link-#{report.id}")
+             |> render() =~ "/admin/federation/instances/spam.example"
+    end
+
+    test "does not offer it to a moderator, who cannot open that page", %{conn: conn} do
+      moderator = setup_user("moderator")
+      {report, _actor} = create_remote_actor_report(moderator)
+      conn = log_in_user(conn, moderator)
+
+      {:ok, lv, _html} = live(conn, "/admin/moderation")
+
+      refute has_element?(lv, "#admin-moderation-report-instance-link-#{report.id}")
+    end
+  end
 end

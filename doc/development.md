@@ -147,7 +147,9 @@ lib/
 │   │   ├── delivery_stats.ex    # Delivery queue stats and admin management
 │   │   ├── delivery_worker.ex   # GenServer: polls delivery queue, retries failed jobs
 │   │   ├── discovery.ex         # WebFinger and NodeInfo responses
+│   │   ├── domain_block.ex      # DomainBlock schema (one blocked domain, with reason and author)
 │   │   ├── domain_block_cache.ex # ETS-backed cache for domain blocking decisions
+│   │   ├── domain_blocks.ex     # Instance-level domain blocks: block, unblock, sever follows
 │   │   ├── feed.ex              # Personal feed logic: Create(Note/Article) routing, boost handling
 │   │   ├── feed_item.ex         # FeedItem schema (posts from followed remote actors)
 │   │   ├── feed_item_boost.ex   # FeedItemBoost schema (local boosts on remote feed items)
@@ -1803,8 +1805,30 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - Federation HTTP errors include response body (truncated to 4 KB) for diagnostics — delivery failures log the body
 
 **Admin controls:** See the [SysOp Guide](sysop.md#federation) for federation
-administration (kill switch, federation modes, domain blocklist/allowlist,
-per-board toggle, delivery queue management, key rotation, blocklist audit).
+administration (kill switch, federation modes, blocking an instance,
+suspending one remote account, per-board toggle, delivery queue management,
+key rotation, blocklist audit).
+
+**Instance blocks** ([ADR 0030](adr/0030-domain-blocks-are-rows-and-hiding-is-reversible.md)):
+
+A domain block is a row in `domain_blocks` with a reason and an author, not a
+setting, and it is reversible. `Federation.DomainBlocks` is the only write path
+and refreshes `DomainBlockCache`, which every per-activity check still reads.
+
+- Blocking severs follows in both directions for every actor on the domain and
+  sends nothing — delivery to a blocked domain is refused by our own gate, so
+  an `Undo`/`Reject` could only fail in the queue. Unblocking restores no
+  follows (as in ADR 0026).
+- Blocking hides the domain's existing content at query time through
+  `Content.Filters.hidden_actor_ids/0`, and stops it being served over AP.
+  Nothing is deleted or stamped, so unblocking restores it with no repair
+  step. `test/baudrate/federation/blocked_domain_hiding_test.exs` is the
+  acceptance gate — add every new listing query to it.
+- Blocking also stops us reaching out: `ActorResolver`, `ObjectResolver`, the
+  reply-chain walk and the media proxy all refuse a blocked domain.
+- `Federation.RemoteActors.suspend/3` applies the same hiding and the same
+  inbox refusal to **one** actor, so a report about a single remote account
+  does not have to be answered by blocking its whole instance.
 
 **User blocks** ([ADR 0026](adr/0026-blocks-stop-interaction-locally.md)):
 
@@ -1911,7 +1935,8 @@ Exposed via `Federation.fetch_remote_object/1` (preview) and `Federation.lookup_
 - Remote actor display name sanitization — strips all HTML (including script content), control characters, truncates to 100 chars
 - Attribution validation prevents impersonation
 - Content size limits (256 KB AP payload, 64 KB article body enforced in all changesets)
-- Domain blocklist (configurable via admin settings)
+- Instance blocks, with a reason and an author, applied to inbound activities,
+  outbound delivery, and every outbound fetch (ADR 0030)
 - SSRF-safe remote fetches — DNS-pinned connections prevent DNS rebinding; manual redirect following with IP validation at each hop; HTTPS only. `HTTPClient.private_ip?/1` rejects, across IPv4 and IPv6:
   - private, loopback, CGNAT, link-local, multicast and reserved space (`10/8`, `172.16/12`, `192.168/16`, `127/8`, `0/8`, `100.64/10`, `169.254/16`, `224/4` and above)
   - IPv4 special-purpose ranges that are not globally routable: IETF protocol assignments (`192.0.0/24`), TEST-NET-1/2/3 (`192.0.2/24`, `198.51.100/24`, `203.0.113/24`), and benchmarking (`198.18/15`, which is routed to lab equipment on some networks)
