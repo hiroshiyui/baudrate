@@ -125,15 +125,23 @@ defmodule BaudrateWeb.Admin.FederationLiveTest do
 
     {:ok, lv, _html} = live(conn, "/admin/federation")
 
+    # The instance list prefills the form rather than blocking outright: a
+    # block records why it was made.
+    lv
+    |> element("button[phx-click=\"start_block\"][phx-value-domain=\"evil.example\"]")
+    |> render_click()
+
     html =
       lv
-      |> element("button[phx-click=\"block_domain\"][phx-value-domain=\"evil.example\"]")
-      |> render_click()
+      |> form("#domain-block-form",
+        domain_block: %{domain: "evil.example", reason: "spam wave", public_comment: "spam"}
+      )
+      |> render_submit()
 
     assert html =~ "evil.example"
     assert html =~ "has been blocked"
 
-    assert %{domain: "evil.example", blocked_by_id: blocked_by} =
+    assert %{domain: "evil.example", blocked_by_id: blocked_by, reason: "spam wave"} =
              Baudrate.Federation.DomainBlocks.get_domain_block("evil.example")
 
     assert blocked_by == admin.id
@@ -144,8 +152,74 @@ defmodule BaudrateWeb.Admin.FederationLiveTest do
 
     assert MapSet.member?(blocked, "evil.example")
 
-    assert [%{details: %{"domain" => "evil.example"}}] =
+    assert [%{details: %{"domain" => "evil.example", "reason" => "spam wave"}}] =
              Baudrate.Moderation.list_moderation_logs(action: "block_domain").logs
+  end
+
+  test "blocking refuses to proceed without a reason", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_admin(conn, admin)
+
+    {:ok, lv, _html} = live(conn, "/admin/federation")
+
+    html =
+      lv
+      |> form("#domain-block-form", domain_block: %{domain: "evil.example", reason: "  "})
+      |> render_submit()
+
+    assert html =~ "Say why this domain is being blocked"
+    refute Baudrate.Federation.DomainBlocks.blocked?("evil.example")
+  end
+
+  test "blocking keeps what was typed when the domain is rejected", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_admin(conn, admin)
+
+    {:ok, lv, _html} = live(conn, "/admin/federation")
+
+    html =
+      lv
+      |> form("#domain-block-form",
+        domain_block: %{domain: "not a domain", reason: "typed this out"}
+      )
+      |> render_submit()
+
+    # LiveView patches every input back to what the server rendered, so a
+    # refusal that does not assign the params back erases the reason.
+    assert html =~ "typed this out"
+    assert html =~ "not a domain"
+  end
+
+  test "unblock a domain, with a reason", %{conn: conn} do
+    admin = setup_user("admin")
+    conn = log_in_admin(conn, admin)
+
+    {:ok, block} =
+      Baudrate.Federation.DomainBlocks.block_domain("evil.example", admin, %{reason: "spam"})
+
+    {:ok, lv, _html} = live(conn, "/admin/federation")
+
+    assert has_element?(lv, "#domain-block-#{block.id}")
+
+    lv |> element("#domain-unblock-#{block.id}") |> render_click()
+
+    html =
+      lv
+      |> form("#domain-unblock-form-#{block.id}", %{"reason" => "blocked by mistake"})
+      |> render_submit()
+
+    assert html =~ "no longer blocked"
+    refute Baudrate.Federation.DomainBlocks.blocked?("evil.example")
+
+    assert [%{details: %{"domain" => "evil.example", "reason" => "blocked by mistake"}}] =
+             Baudrate.Moderation.list_moderation_logs(action: "unblock_domain").logs
+
+    # The check that refuses activities has to see it immediately, exactly as
+    # blocking does — an unblock that waits for a restart is not reversible.
+    assert [{:domain_config, :blocklist, blocked}] =
+             :ets.lookup(:domain_block_cache, :domain_config)
+
+    refute MapSet.member?(blocked, "evil.example")
   end
 
   test "toggle board federation", %{conn: conn} do

@@ -264,6 +264,47 @@ defmodule Baudrate.Federation.Follows do
     :ok
   end
 
+  @doc """
+  Deletes every follow, in both directions, between this instance and any actor
+  on the given domain. Used when an admin blocks the domain (ADR 0030).
+
+  Nothing is sent. This differs deliberately from `sever_remote_follows/2`,
+  where a member's block queues `Undo(Follow)` and `Reject(Follow)`: delivery
+  to a blocked domain is refused by our own gate (`Delivery` checks
+  `domain_blocked?/1`), so those activities could only sit in the queue and
+  fail. The peers learn the follows are gone the next time they try to use
+  them.
+
+  Returns `%{user_follows: n, board_follows: n, followers: n}`.
+  """
+  @spec sever_domain_follows(String.t()) :: %{
+          user_follows: non_neg_integer(),
+          board_follows: non_neg_integer(),
+          followers: non_neg_integer()
+        }
+  def sever_domain_follows(domain) when is_binary(domain) do
+    domain = String.downcase(domain)
+
+    actor_ids =
+      from(ra in RemoteActor, where: ra.domain == ^domain, select: ra.id)
+      |> Repo.all()
+
+    if actor_ids == [] do
+      %{user_follows: 0, board_follows: 0, followers: 0}
+    else
+      {user_follows, _} =
+        from(uf in UserFollow, where: uf.remote_actor_id in ^actor_ids) |> Repo.delete_all()
+
+      {board_follows, _} =
+        from(bf in BoardFollow, where: bf.remote_actor_id in ^actor_ids) |> Repo.delete_all()
+
+      {followers, _} =
+        from(f in Follower, where: f.remote_actor_id in ^actor_ids) |> Repo.delete_all()
+
+      %{user_follows: user_follows, board_follows: board_follows, followers: followers}
+    end
+  end
+
   defp notify_remote(nil, _remote_actor, _build), do: :ok
 
   defp notify_remote(signer, remote_actor, build) do

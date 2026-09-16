@@ -113,6 +113,97 @@ defmodule Baudrate.Federation.DomainBlocksTest do
     end
   end
 
+  describe "block_domain/3 severs follows" do
+    setup do
+      Setup.seed_roles_and_permissions()
+      :ok
+    end
+
+    defp create_remote_actor(domain) do
+      n = System.unique_integer([:positive])
+
+      Repo.insert!(%Baudrate.Federation.RemoteActor{
+        ap_id: "https://#{domain}/users/a#{n}",
+        username: "a#{n}",
+        domain: domain,
+        public_key_pem: elem(Baudrate.Federation.KeyStore.generate_keypair(), 0),
+        inbox: "https://#{domain}/users/a#{n}/inbox",
+        actor_type: "Person",
+        fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+    end
+
+    defp create_member do
+      role = Repo.one!(from r in Setup.Role, where: r.name == "user")
+
+      {:ok, user} =
+        %Setup.User{}
+        |> Setup.User.registration_changeset(%{
+          "username" => "member_#{System.unique_integer([:positive])}",
+          "password" => "Password123!x",
+          "password_confirmation" => "Password123!x",
+          "role_id" => role.id
+        })
+        |> Repo.insert()
+
+      Repo.preload(user, :role)
+    end
+
+    test "removes follows in both directions, for every actor on the domain" do
+      alias Baudrate.Federation.{BoardFollow, Follower, Follows, UserFollow}
+
+      member = create_member()
+      actor_one = create_remote_actor("spam.example")
+      actor_two = create_remote_actor("spam.example")
+      bystander = create_remote_actor("friendly.example")
+
+      board =
+        Repo.insert!(%Baudrate.Content.Board{
+          name: "Board",
+          slug: "board-#{System.unique_integer([:positive])}"
+        })
+
+      {:ok, _} = Follows.create_user_follow(member, actor_one)
+      {:ok, _} = Follows.create_board_follow(board, actor_two)
+      {:ok, _} = Follows.create_follower("https://local.example/ap/users/x", actor_one, "act-1")
+      {:ok, _} = Follows.create_user_follow(member, bystander)
+
+      {:ok, _} = DomainBlocks.block_domain("spam.example")
+
+      refute Repo.exists?(from uf in UserFollow, where: uf.remote_actor_id == ^actor_one.id)
+      refute Repo.exists?(from bf in BoardFollow, where: bf.remote_actor_id == ^actor_two.id)
+      refute Repo.exists?(from f in Follower, where: f.remote_actor_id == ^actor_one.id)
+
+      # Another domain's follows are untouched.
+      assert Repo.exists?(from uf in UserFollow, where: uf.remote_actor_id == ^bystander.id)
+    end
+
+    test "sends nothing — delivery to the domain is refused anyway" do
+      alias Baudrate.Federation.{DeliveryJob, Follows}
+
+      member = create_member()
+      actor = create_remote_actor("spam.example")
+      {:ok, _} = Follows.create_user_follow(member, actor)
+
+      before = Repo.aggregate(DeliveryJob, :count, :id)
+      {:ok, _} = DomainBlocks.block_domain("spam.example")
+
+      # ADR 0030 decision 4: unlike a member's block (ADR 0026), an instance
+      # block queues no Undo/Reject — our own gate would refuse them.
+      assert Repo.aggregate(DeliveryJob, :count, :id) == before
+    end
+
+    test "leaves the actors and their content in place" do
+      actor = create_remote_actor("spam.example")
+
+      {:ok, _} = DomainBlocks.block_domain("spam.example")
+
+      # Hiding is a query-time filter, so the rows stay and unblocking restores
+      # them. Deleting would make the block irreversible.
+      assert Repo.get(Baudrate.Federation.RemoteActor, actor.id)
+    end
+  end
+
   describe "list_domain_blocks/0" do
     test "preloads the blocking admin" do
       admin = setup_admin()

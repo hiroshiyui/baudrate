@@ -63,35 +63,93 @@ defmodule BaudrateWeb.Admin.FederationLive do
     end
   end
 
+  # Blocking is a moderation decision, so it goes through the form that asks
+  # why (ADR 0030). The instance list prefills it rather than blocking outright.
   @impl true
-  def handle_event("block_domain", %{"domain" => domain}, socket) do
-    case DomainBlocks.block_domain(domain, socket.assigns.current_user) do
-      {:ok, block} ->
-        Moderation.log_action(socket.assigns.current_user.id, "block_domain",
-          details: %{domain: block.domain, source: "instances"}
-        )
+  def handle_event("start_block", %{"domain" => domain}, socket) do
+    {:noreply,
+     socket
+     |> assign(block_form: block_form(%{"domain" => domain}))
+     |> push_event("focus", %{id: "domain-block-reason"})}
+  end
 
+  @impl true
+  def handle_event("validate_block", %{"domain_block" => params}, socket) do
+    {:noreply, assign(socket, block_form: block_form(params))}
+  end
+
+  @impl true
+  def handle_event("block_domain", %{"domain_block" => params}, socket) do
+    %{"domain" => domain, "reason" => reason} = params
+    public_comment = Map.get(params, "public_comment", "")
+
+    cond do
+      String.trim(domain) == "" ->
+        {:noreply, block_error(socket, params, gettext("Enter a domain to block."))}
+
+      String.trim(reason) == "" ->
+        {:noreply, block_error(socket, params, gettext("Say why this domain is being blocked."))}
+
+      true ->
+        do_block(socket, params, domain, reason, public_comment)
+    end
+  end
+
+  @impl true
+  def handle_event("start_unblock", %{"id" => id}, socket) do
+    case parse_id(id) do
+      :error ->
+        {:noreply, socket}
+
+      {:ok, block_id} ->
         {:noreply,
          socket
-         |> put_flash(
-           :info,
-           gettext("Domain %{domain} has been blocked.", domain: block.domain)
+         |> assign(unblocking_id: block_id, unblock_reason: "")
+         |> push_event("focus", %{id: "domain-unblock-reason-#{block_id}"})}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_unblock", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(unblocking_id: nil, unblock_reason: "")
+     |> push_event("focus", %{id: "domain-blocks-heading"})}
+  end
+
+  @impl true
+  def handle_event("validate_unblock", %{"reason" => reason}, socket) do
+    {:noreply, assign(socket, unblock_reason: reason)}
+  end
+
+  @impl true
+  def handle_event("unblock_domain", %{"block_id" => id, "reason" => reason}, socket) do
+    with {:ok, block_id} <- parse_id(id),
+         %{} = block <- Enum.find(socket.assigns.domain_blocks, &(&1.id == block_id)),
+         {:ok, _} <- DomainBlocks.unblock_domain(block) do
+      Moderation.log_action(socket.assigns.current_user.id, "unblock_domain",
+        details: %{domain: block.domain, reason: String.trim(reason)}
+      )
+
+      {:noreply,
+       socket
+       |> put_flash(
+         :info,
+         gettext(
+           "%{domain} is no longer blocked. Content from it is visible again.",
+           domain: block.domain
          )
-         |> load_dashboard()}
-
-      {:error, :already_blocked} ->
+       )
+       |> assign(unblocking_id: nil, unblock_reason: "")
+       |> load_dashboard()
+       |> push_event("focus", %{id: "domain-blocks-heading"})}
+    else
+      _ ->
         {:noreply,
          socket
-         |> put_flash(:info, gettext("Domain %{domain} is already blocked.", domain: domain))
+         |> put_flash(:error, gettext("That domain is no longer blocked."))
+         |> assign(unblocking_id: nil, unblock_reason: "")
          |> load_dashboard()}
-
-      {:error, _changeset} ->
-        {:noreply,
-         put_flash(
-           socket,
-           :error,
-           gettext("%{domain} is not a domain we can block.", domain: domain)
-         )}
     end
   end
 
@@ -149,10 +207,10 @@ defmodule BaudrateWeb.Admin.FederationLive do
   def handle_event("add_missing_domain", %{"domain" => domain}, socket) do
     # Audit the block only when one happened. The old code logged an entry for
     # a domain that was already blocked, and skipped one on the instance list.
-    case DomainBlocks.block_domain(domain, socket.assigns.current_user) do
+    case DomainBlocks.block_domain(domain, socket.assigns.current_user, audit_attrs()) do
       {:ok, block} ->
         Moderation.log_action(socket.assigns.current_user.id, "block_domain",
-          details: %{domain: block.domain, source: "audit"}
+          details: %{domain: block.domain, reason: block.reason, source: "audit"}
         )
 
       _ ->
@@ -165,6 +223,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
         {:noreply,
          socket
          |> put_flash(:info, gettext("Domain %{domain} added to blocklist.", domain: domain))
+         |> load_dashboard()
          |> assign(audit_result: result)
          |> push_event("focus", %{id: "blocklist-audit-heading"})}
 
@@ -172,6 +231,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
         {:noreply,
          socket
          |> put_flash(:info, gettext("Domain %{domain} added to blocklist.", domain: domain))
+         |> load_dashboard()
          |> assign(audit_result: nil)
          |> push_event("focus", %{id: "blocklist-audit-heading"})}
     end
@@ -183,7 +243,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
       %{missing: missing} when missing != [] ->
         blocked =
           Enum.flat_map(missing, fn domain ->
-            case DomainBlocks.block_domain(domain, socket.assigns.current_user) do
+            case DomainBlocks.block_domain(domain, socket.assigns.current_user, audit_attrs()) do
               {:ok, block} -> [block.domain]
               _ -> []
             end
@@ -203,6 +263,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
                :info,
                gettext("Added %{count} domains to blocklist.", count: length(blocked))
              )
+             |> load_dashboard()
              |> assign(audit_result: result)
              |> push_event("focus", %{id: "blocklist-audit-heading"})}
 
@@ -213,12 +274,82 @@ defmodule BaudrateWeb.Admin.FederationLive do
                :info,
                gettext("Added %{count} domains to blocklist.", count: length(blocked))
              )
+             |> load_dashboard()
              |> assign(audit_result: nil)
              |> push_event("focus", %{id: "blocklist-audit-heading"})}
         end
 
       _ ->
         {:noreply, socket}
+    end
+  end
+
+  defp do_block(socket, params, domain, reason, public_comment) do
+    case DomainBlocks.block_domain(domain, socket.assigns.current_user, %{
+           reason: String.trim(reason),
+           public_comment: String.trim(public_comment)
+         }) do
+      {:ok, block} ->
+        Moderation.log_action(socket.assigns.current_user.id, "block_domain",
+          details: %{domain: block.domain, reason: block.reason, source: "federation"}
+        )
+
+        {:noreply,
+         socket
+         |> put_flash(
+           :info,
+           gettext("Domain %{domain} has been blocked.", domain: block.domain)
+         )
+         |> assign(block_form: block_form(%{}))
+         |> load_dashboard()
+         |> push_event("focus", %{id: "domain-blocks-heading"})}
+
+      {:error, :already_blocked} ->
+        {:noreply,
+         block_error(
+           socket,
+           params,
+           gettext("%{domain} is already blocked.", domain: String.trim(domain))
+         )}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, block_error(socket, params, changeset_message(changeset))}
+    end
+  end
+
+  # A bulk import still records why the block exists, so a domain blocked by an
+  # audit run is not indistinguishable from one an admin chose by hand.
+  defp audit_attrs do
+    %{reason: gettext("Imported from the external blocklist audit.")}
+  end
+
+  defp block_error(socket, params, message) do
+    socket
+    |> put_flash(:error, message)
+    |> assign(block_form: block_form(params))
+  end
+
+  # The form is a plain map rather than a changeset: it collects three strings
+  # and the context does the validating. Assigning the params back is what
+  # keeps typed input from being wiped on re-render.
+  defp block_form(params) do
+    to_form(
+      %{
+        "domain" => Map.get(params, "domain", ""),
+        "reason" => Map.get(params, "reason", ""),
+        "public_comment" => Map.get(params, "public_comment", "")
+      },
+      as: :domain_block
+    )
+  end
+
+  defp changeset_message(changeset) do
+    case changeset.errors do
+      [{field, {msg, _}} | _] ->
+        gettext("%{field} %{message}", field: to_string(field), message: msg)
+
+      _ ->
+        gettext("That domain cannot be blocked.")
     end
   end
 
@@ -299,6 +430,8 @@ defmodule BaudrateWeb.Admin.FederationLive do
     failed_jobs = DeliveryStats.list_actionable_jobs(20)
     error_rate = DeliveryStats.error_rate_24h()
     boards = Content.list_all_boards()
+    domain_blocks = DomainBlocks.list_domain_blocks()
+    blocked = MapSet.new(domain_blocks, & &1.domain)
 
     assign(socket,
       instances: instances,
@@ -306,6 +439,11 @@ defmodule BaudrateWeb.Admin.FederationLive do
       failed_jobs: failed_jobs,
       error_rate: error_rate,
       boards: boards,
+      domain_blocks: domain_blocks,
+      blocked_domains: blocked,
+      block_form: socket.assigns[:block_form] || block_form(%{}),
+      unblocking_id: socket.assigns[:unblocking_id],
+      unblock_reason: socket.assigns[:unblock_reason] || "",
       audit_result: socket.assigns[:audit_result]
     )
   end

@@ -153,18 +153,177 @@
                 <% end %>
               </td>
               <td>
+                <span
+                  :if={MapSet.member?(@blocked_domains, instance.domain)}
+                  id={"admin-federation-blocked-#{instance.domain}"}
+                  class="admin-federation-instance-blocked badge badge-error badge-sm"
+                >
+                  {gettext("Blocked")}
+                </span>
                 <button
+                  :if={!MapSet.member?(@blocked_domains, instance.domain)}
                   id={"admin-federation-block-#{instance.domain}"}
-                  phx-click="block_domain"
+                  phx-click="start_block"
                   phx-value-domain={instance.domain}
-                  data-confirm={
-                    gettext("Block all federation with %{domain}?", domain: instance.domain)
-                  }
                   class="admin-federation-block-btn btn btn-error btn-sm"
                   aria-label={gettext("Block %{domain}", domain: instance.domain)}
                 >
                   {gettext("Block")}
                 </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <%!-- Blocked Instances --%>
+  <div id="domain-blocks-card" class="admin-federation-card card bg-base-200 shadow-sm">
+    <div class="card-body">
+      <h2 id="domain-blocks-heading" class="admin-federation-card-title card-title" tabindex="-1">
+        {gettext("Blocked Instances")}
+      </h2>
+
+      <p id="domain-blocks-intro" class="admin-federation-hint text-sm opacity-70">
+        {gettext(
+          "Blocking refuses federation with a domain and hides the content it already sent. Nothing is deleted: unblocking brings that content back. Follows in both directions are removed and are not restored."
+        )}
+      </p>
+
+      <.form
+        for={@block_form}
+        id="domain-block-form"
+        phx-change="validate_block"
+        phx-submit="block_domain"
+        class="admin-federation-block-form grid gap-3 sm:grid-cols-2"
+      >
+        <.input
+          field={@block_form[:domain]}
+          value={@block_form[:domain].value}
+          type="text"
+          label={gettext("Domain")}
+          placeholder="spam.example"
+          autocomplete="off"
+        />
+        <.input
+          field={@block_form[:reason]}
+          value={@block_form[:reason].value}
+          id="domain-block-reason"
+          type="text"
+          label={gettext("Reason (staff only)")}
+          placeholder={gettext("Why is this domain being blocked?")}
+        />
+        <div class="sm:col-span-2">
+          <.input
+            field={@block_form[:public_comment]}
+            value={@block_form[:public_comment].value}
+            type="text"
+            label={gettext("Public comment (optional)")}
+            placeholder={gettext("What we are willing to say publicly")}
+          />
+        </div>
+        <div class="sm:col-span-2">
+          <button id="domain-block-submit" type="submit" class="btn btn-error btn-sm">
+            {gettext("Block Domain")}
+          </button>
+        </div>
+      </.form>
+
+      <div
+        :if={@domain_blocks == []}
+        id="domain-blocks-empty"
+        class="admin-federation-blocks-empty text-center py-8 opacity-70"
+      >
+        {gettext("No domains are blocked.")}
+      </div>
+
+      <div :if={@domain_blocks != []} class="overflow-x-auto">
+        <table id="domain-blocks-table" class="admin-federation-blocks-table table table-zebra">
+          <thead>
+            <tr>
+              <th scope="col">{gettext("Domain")}</th>
+              <th scope="col">{gettext("Reason")}</th>
+              <th scope="col">{gettext("Blocked By")}</th>
+              <th scope="col">{gettext("Blocked")}</th>
+              <th scope="col">{gettext("Actions")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              :for={block <- @domain_blocks}
+              id={"domain-block-#{block.id}"}
+              class="admin-federation-block-row"
+            >
+              <th scope="row" class="admin-federation-block-domain font-mono font-normal text-sm">
+                {block.domain}
+              </th>
+              <td class="admin-federation-block-reason text-sm break-words">
+                {block.reason || "—"}
+                <span
+                  :if={block.public_comment not in [nil, ""]}
+                  class="admin-federation-block-public-comment block text-xs opacity-70"
+                >
+                  {gettext("Public: %{comment}", comment: block.public_comment)}
+                </span>
+              </td>
+              <td class="admin-federation-block-author text-sm">
+                {(block.blocked_by && block.blocked_by.username) || gettext("Unknown")}
+              </td>
+              <td class="admin-federation-block-date text-sm opacity-70">
+                <time datetime={datetime_attr(block.inserted_at)}>
+                  {format_datetime(block.inserted_at)}
+                </time>
+              </td>
+              <td>
+                <button
+                  :if={@unblocking_id != block.id}
+                  id={"domain-unblock-#{block.id}"}
+                  phx-click="start_unblock"
+                  phx-value-id={block.id}
+                  class="admin-federation-unblock-btn btn btn-sm"
+                  aria-label={gettext("Unblock %{domain}", domain: block.domain)}
+                >
+                  {gettext("Unblock")}
+                </button>
+
+                <form
+                  :if={@unblocking_id == block.id}
+                  id={"domain-unblock-form-#{block.id}"}
+                  phx-change="validate_unblock"
+                  phx-submit="unblock_domain"
+                  class="admin-federation-unblock-form flex flex-wrap items-end gap-2"
+                >
+                  <input type="hidden" name="block_id" value={block.id} />
+                  <label
+                    for={"domain-unblock-reason-#{block.id}"}
+                    class="admin-federation-unblock-label text-xs"
+                  >
+                    {gettext("Reason for unblocking")}
+                    <input
+                      type="text"
+                      id={"domain-unblock-reason-#{block.id}"}
+                      name="reason"
+                      value={@unblock_reason}
+                      class="admin-federation-unblock-reason input input-sm input-bordered block"
+                    />
+                  </label>
+                  <button
+                    id={"domain-unblock-confirm-#{block.id}"}
+                    type="submit"
+                    class="admin-federation-unblock-confirm btn btn-sm btn-primary"
+                  >
+                    {gettext("Confirm")}
+                  </button>
+                  <button
+                    id={"domain-unblock-cancel-#{block.id}"}
+                    type="button"
+                    phx-click="cancel_unblock"
+                    class="admin-federation-unblock-cancel btn btn-sm btn-ghost"
+                  >
+                    {gettext("Cancel")}
+                  </button>
+                </form>
               </td>
             </tr>
           </tbody>

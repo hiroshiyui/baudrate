@@ -15,7 +15,7 @@ defmodule Baudrate.Federation.DomainBlocks do
 
   import Ecto.Query
 
-  alias Baudrate.Federation.{DomainBlock, DomainBlockCache}
+  alias Baudrate.Federation.{DomainBlock, DomainBlockCache, Follows}
   alias Baudrate.Repo
 
   @doc """
@@ -76,6 +76,11 @@ defmodule Baudrate.Federation.DomainBlocks do
   already blocked, so a caller can tell "nothing happened" from "the input was
   wrong" and log an audit entry only for a block that really happened.
 
+  Blocking severs every follow with the domain in both directions
+  (`Follows.sever_domain_follows/1`), in the same transaction as the block, and
+  sends nothing (ADR 0030, decision 4). Content from the domain is not touched:
+  hiding is a query-time filter, so lifting the block brings it back.
+
   The caller is responsible for the moderation log entry: this function has no
   opinion about which surface the block came from.
   """
@@ -88,9 +93,18 @@ defmodule Baudrate.Federation.DomainBlocks do
       |> Map.put("domain", domain)
       |> Map.put("blocked_by_id", blocked_by && blocked_by.id)
 
-    %DomainBlock{}
-    |> DomainBlock.changeset(attrs)
-    |> Repo.insert()
+    changeset = DomainBlock.changeset(%DomainBlock{}, attrs)
+
+    Repo.transaction(fn ->
+      case Repo.insert(changeset) do
+        {:ok, block} ->
+          Follows.sever_domain_follows(block.domain)
+          block
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
     |> case do
       {:ok, block} ->
         refresh_cache()
