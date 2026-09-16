@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.22.2] — 2026-09-17
+
+### Fixed
+
+- **Members running an ad blocker could not accept the terms.** The accept card
+  on `/terms` used the id `policy-accept`, which appears in the cosmetic-filter
+  lists shipped with uBlock Origin and similar extensions — alongside
+  cookie-consent and advertising selectors, because "policy…accept" is what a
+  consent bar looks like. The card was hidden with `display: none`, so a member
+  whose posting was paused had no way to clear it and nothing explaining why.
+  Nothing was wrong with the page itself, which is why no test caught it.
+- **Other notices could have been hidden the same way**, and two of them matter:
+  a hidden account-move notice would deny someone whose account was taken over
+  the warning that lets them cancel the move, and a hidden terms notice leaves a
+  member unable to see why posting stopped. Every affected control was renamed
+  away from words these lists target.
+
+### Changed
+
+- The interface now uses 您 rather than 你 throughout Taiwanese Mandarin
+  translations, matching the published policy documents.
+
 ## [1.22.1] — 2026-09-16
 
 ### Fixed
