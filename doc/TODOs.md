@@ -4,7 +4,7 @@ This list comes from a product review done on 2026-09-14, after v1.18.1, which l
 
 Paths are relative to the repository root. `lib/baudrate_web/…` is shortened to `web/…` and `lib/baudrate/…` to `core/…`. Line numbers were correct as of v1.18.1.
 
-Phase 0 (correctness bugs) shipped in v1.18.2. Every other open item is assigned to one of Phases 1–8 below, each with stages, acceptance criteria and the decisions it needs, or listed in the Backlog. Work phase by phase; within a phase, ship each stage as its own release.
+Phase 0 (correctness bugs) shipped in v1.18.2 and **Phase 1 completed in v1.21.0**; both are summarised rather than listed, since the detail now lives in the ADRs and `CHANGELOG.md`. Every open item is assigned to one of Phases 2–8 below, each with stages, acceptance criteria and the decisions it needs, or listed in the Backlog. Work phase by phase; within a phase, ship each stage as its own release.
 
 Baudrate is already strong on security engineering, ADRs, accessibility plumbing and test coverage. At review time, the gaps were:
 - **Broken promises:** the UI or docs say something happens and it doesn't.
@@ -33,8 +33,8 @@ Each phase settles its decisions and gets its own implementation plan before wor
 
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
-| 1 | Trust and safety | 1A–1F | A public hub can't grow without moderation reach |
-| 2 | Operability | 2A–2H | Data loss and blind operations are the biggest risks |
+| ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
+| **2** | **Operability** | 2A–2H | **Next.** Data loss and blind operations are the biggest risks |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
@@ -44,120 +44,34 @@ Each phase settles its decisions and gets its own implementation plan before wor
 
 ---
 
-## Phase 1 — Trust and safety (scope)
+## Phase 1 — Trust and safety — **complete**
 
-**Goal.** Everyone who has to act on abuse can act, at the right level, and everyone affected by a decision is told about it.
+Everyone who has to act on abuse can act at the right level, everyone affected
+by a decision is told about it, and the site publishes the rules those
+decisions rest on.
 
-**Done when:**
-- a member can protect themselves without asking staff;
-- a board moderator can handle reports about their board without the admin area;
-- a global moderator can sanction a user short of a permanent ban;
-- every sanction and report outcome is audited and reaches the people it concerns;
-- the site publishes the rules those decisions rest on.
+| Stage | What | Released | Recorded in |
+|-------|------|----------|-------------|
+| 1A | Member self-protection: blocks stop interaction both ways, locally only | v1.19.0 | [ADR 0026](adr/0026-blocks-stop-interaction-locally.md) |
+| 1B | A report queue board moderators can use, with reason categories and outcome notices | v1.20.0 | `doc/development.md` |
+| 1C | Sanctions short of a ban: warn, silence, suspend — rows with an explicit end, one gate | v1.21.0 | [ADR 0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md) |
+| 1D | Instance-level federation moderation: domain blocks as rows, reversible hiding, per-actor suspension | v1.21.0 | [ADR 0030](adr/0030-domain-blocks-are-rows-and-hiding-is-reversible.md) |
+| 1E | Rules, terms and privacy pages; terms acceptance recorded and versioned | v1.21.0 | [ADR 0031](adr/0031-terms-acceptance-is-recorded-and-versioned.md) |
+| 1F | Rules as records, so a report can cite one | v1.21.0 | [ADR 0032](adr/0032-rules-are-records-and-retired-not-deleted.md) |
 
-Work happens in five stages, each shipped and released on its own, in this order. Sizes are rough (S ≈ a day, M ≈ a few days, L ≈ a week).
+The decisions behind these (P1-D1 … P1-D9, made 2026-09-14) are all implemented
+and live in the ADRs above, in the `CLAUDE.md` invariants, and — for who hears
+about a report's outcome — in `doc/development.md`.
 
-### 1A — Member self-protection (S) — released in v1.19.0
+**Left open by 1B:** an article its author deletes keeps its body in the row
+and in `article_revisions`; only comments are wiped. Worth revisiting with
+revision retention (6A).
 
-Blocking semantics are recorded in [ADR 0026](adr/0026-blocks-stop-interaction-locally.md).
-
-### 1B — A report queue that works, including for board moderators (L) — released in v1.20.0
-
-- [x] **Queue basics** (2026-09-16): `Moderation.paginate_reports/1` (20 a page, status and page in the URL), links to the reported content, account or actor, the full reported text, `other_open_report_counts/1` next to each report, and a required reason category (P1-D9) on every report made on this site.
-- [x] **Scoped queue for board moderators** (2026-09-16): `/moderation` (`ModerationLive`), scoped by `Content.moderated_board_ids/1`, linked from each board they moderate, with every action re-checking `Moderation.report_in_boards?/2` and the delete permission.
-- [x] **Who hears about a new report** (2026-09-16): every admin and global moderator (`Setup.staff_user_ids/0`), plus the board moderators of the reported content's board.
-- [x] **Outcome notices (P1-D4)** (2026-09-16): `report_reviewed` to the reporter on resolve, `content_removed` (always delivered) to the author with the report's reason category; dismissals notify nobody.
-- [x] **Cross-posted articles (P1-D5)** (2026-09-16): `board_moderator_for_all?/2` gates delete, pin, lock and comment deletion; `can_remove_from_board?/3` lets a board moderator take the article out of their own board.
-- [x] **Moderator actions** (2026-09-16): `RateLimits.check_moderator_delete/1` (100 per 5 minutes) for deleting other people's content, and `comments.deleted_by_id` records who deleted a comment, as articles already did.
-- [x] **Evidence retention (P1-D6)** (2026-09-16): a removal from a queue copies the text into `reports.evidence_body`; `Moderation.purge_closed_report_evidence/0` (hourly) clears it and `message_body` 90 days after the report closed. Author deletions still wipe at once.
-  - [ ] Articles an author deletes keep their body in the row (and in `article_revisions`); only comments are wiped. Worth revisiting with revision retention.
-- **Accepted 2026-09-16:** a board moderator resolves, dismisses and deletes from `/moderation` end to end (`moderation_live_test.exs`); `moderation_test.exs` proves at the context level that another board's reports, account reports and DM reports are neither listed nor actionable; resolve, dismiss and both deletions are logged.
-
-### 1C — Sanctions short of a ban (M) — done, unreleased
-
-The model is [ADR 0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md) (accepted 2026-09-16): sanctions are rows in a `sanctions` table with an explicit end, active by the clock rather than by a sweep, and enforced by one gate (`Auth.ensure_can_interact/1`) that replaced `AccountMigration.ensure_not_moved/1` at every call site.
-
-- [x] **The table and the gate.** `sanctions` rows (kind, reason, who, when, `expires_at`, `lifted_*`, optional `report_id`), and `Auth.ensure_can_interact/1` at every posting and interaction path, with an AST guard test that fails if the old gate is called anywhere but the two files that ask about the *followed* account. Follows are the one place the rules differ: a moved account may still follow (ADR 0025), so those paths pass `moved: :allow`.
-- [x] **Warn.** A notice to the user plus an audit entry. No restriction, and no acknowledgement to demand.
-- [x] **Silence.** Read-only, including the public parts of the profile; undo, self-delete, reporting abuse, account security and narrowing `dm_access` stay open. Optional end date, active by the clock. Existing content stays up.
-- [x] **Suspend.** Refused in `authenticate_by_password/2`, re-checked in `AuthHooks` and `SessionController`, and treated as signed-out by `:optional_auth`. Sessions revoked, exports and moves cancelled; invite codes left alone. `SessionCleaner` only sends the "it has ended" notice.
-- [x] **Reject pending registrations**, with a reason — a ban on an account that is still `pending`, logged as `reject_user`, which a global moderator may do — and notify staff of new pending registrations.
-- [x] **User detail page** (`/admin/users/:id`): role, status, sanction history, reports both ways, recent content, inviter and invitees. IP addresses and sign-in attempts are admin-only.
-- [x] **Role filter** on the users list, carried in the URL alongside the status filter and search.
-- [x] **Enforce the defined permissions.** `moderator.sanction_user` added; `moderator.mute_user` and `admin.view_dashboard` removed; `admin.manage_roles` wired into `Auth.update_user_role/3`. A guard test fails if any catalogued permission is never checked.
-- [x] Every sanction is audited, and the member is told what it is, why and until when — an always-delivered notice, the refusal message, and a page-wide banner.
-
-### 1D — Instance-level federation moderation (M) — **done, unreleased**
-
-[ADR 0030](adr/0030-domain-blocks-are-rows-and-hiding-is-reversible.md) (Accepted).
-
-- [x] **Domain blocks moved from the comma-separated setting into a `domain_blocks` table:** domain, reason, public comment, who blocked it, when. Existing entries migrated and the setting deleted, so there is one authority; `DomainBlockCache` is still the only read path; allowlist mode unchanged.
-- [x] **Block and unblock from the Federation dashboard,** both with a reason, both audited. The instance list prefills the form rather than blocking on one click.
-- [x] **What a block does (P1-D7).**
-  - Severs follows in both directions for every actor on the domain, sending nothing.
-  - Hides the domain's existing articles, comments and feed items at query time, and stops serving them over AP, so an unblock restores them with no repair step.
-  - Stops us reaching out too: actors, objects, reply chains and proxied images.
-- [x] **Instance-wide suspension of a single remote actor,** through the same predicate and the same inbox refusal.
-- [x] An instance detail page (`/admin/federation/instances/:domain`): known accounts, block state, and per-account suspension. A remote-account report links to it.
-- [x] `remote_actors.domain` normalized to lowercase on write and backfilled — the filter compares it with SQL equality where the ETS lookup used to downcase its key.
-- **Accepted when:** blocking a domain stops inbound and outbound traffic at once, removes its follows, and hides its content everywhere a guest or member can look; unblocking restores the content. — met; `test/baudrate/federation/blocked_domain_hiding_test.exs` is the gate.
-
-### 1E — Rules and terms (S) — **done, unreleased**
-
-ADR 0031. Acceptance gate: `test/baudrate/auth/terms_gate_test.exs`.
-
-- [x] **Admin-editable Rules and Privacy pages,** next to the existing End User Agreement (`Setup.get_eua/0`).
-  - [x] Public at `/rules`, `/terms` and `/privacy`, in `live_session :public_browsable` — `:public` carries `:redirect_if_authenticated` and would bounce a member off the document they must accept.
-  - [x] Linked from the footer, which was an empty element. Only documents that have actually been written are linked.
-- [x] **Record acceptance.** `users.terms_accepted_at` and `users.terms_version`, written by `User.accept_terms/1` — validating the checkbox and recording it are one function, because they were two and that was the bug. Neither field is castable from params.
-- [x] **Publishing a new terms version (P1-D8).** `settings.eua_version`, moved only by a deliberate "require every member to accept again" checkbox; the pause is `{:error, :terms_not_accepted}` from `Auth.ensure_can_interact/1`, so it reaches all 29 posting paths and inherits their exemptions. Reading, undo, self-delete, reporting abuse and account security stay open. **Bots are exempt inside the gate query** — they cannot sign in to accept, and their posts go through the same gate, so without it publishing terms would silently stop every RSS feed.
-- [x] Report categories can point to a rule (P1-D9) — split out as 1F and done.
-- **Accepted when:** a guest can read all three pages, and every account has an acceptance record for the current version before it can post. — met.
-
-### 1F — Rules as records, so a report can cite one (S) — **done, unreleased**
-
-ADR 0032. Acceptance gate: `test/baudrate/setup/rules_test.exs`.
-
-- [x] Rules become records (`Setup.Rule`); the existing `rules` setting migrates into the first row. `position` is assigned by the context and swapped in a transaction, never cast from a form.
-- [x] `/rules` renders them numbered, each with a stable `#rule-N` anchor; `/admin/rules` edits, reorders and retires them.
-- [x] A `rule_violation` report can name which rule, and the queue shows it. **Retired, never deleted** — a report filed months ago still resolves to the rule its author meant.
-- [x] Citing a rule is always optional: reporting abuse stays easy, as it does under a sanction (ADR 0029) or a terms pause (ADR 0031).
-- **Accepted when:** a reporter choosing "Breaks a rule" picks the rule from the list, and the moderator sees which one. — met.
-
-### Not in Phase 1
-
-These are scheduled elsewhere:
-- **Anti-spam:** CAPTCHA, trust levels, new-account limits, keyword filters, first-post approval, IP bans → Phase 5.
-- **Content tools:** moving articles between boards → 7C; splitting or merging threads → Backlog.
-- **Admin surface:** an `/admin` dashboard with metrics, and a UI for admin announcements → 7A, 7B.
-- **Federation:** silence and reject-media domain levels (only full blocks in 1D) → Backlog; outbound `Block` activities were ruled out (P1-D1).
-- **Legal:** takedown workflow, age gating → Backlog; content warnings → 3E.
-
-### Decisions (made 2026-09-14)
-
-- **P1-D1. Blocking a remote account is enforced locally only.** No ActivityPub `Block` is sent; the blocked person's server is never told.
-- **P1-D2. Sanctions.**
-  - Warn: a notice only.
-  - Silence: read-only, with an optional end date.
-  - Suspend: no sign-in until a date; lifts automatically.
-  - Ban: permanent, unchanged.
-  - Stored as a sanctions history table; `users.status` gets no new values.
-- **P1-D3. Who may do what.**
-  - Board moderators: content in their boards only.
-  - Global moderators: warn, silence, suspend for up to 30 days, reject pending registrations.
-  - Admins: everything, plus ban and role changes.
-- **P1-D4. Who hears about outcomes.**
-  - The reporter is told the report was reviewed, with no details.
-  - The affected author is told about content removal (with the reason) and about every sanction.
-  - Nobody is told about dismissed reports.
-- **P1-D5. Cross-posted articles.** A board moderator can remove the article from their own board. Deleting, pinning or locking it everywhere needs moderation rights on every board it is in; admins and global moderators are exempt.
-- **P1-D6. Evidence.** Content a moderator deletes stays readable to staff for 90 days, then is purged. Content an author deletes is wiped at once.
-- **P1-D7. Domain blocks.**
-  - Remove follows both ways and hide the domain's existing content at query time.
-  - Unblocking restores the content; follows have to be made again.
-  - Full blocks only, with no silence or reject-media levels.
-- **P1-D8. Changed terms.** A banner on every page, and posting and interacting pause until the member accepts. Reading never requires it.
-- **P1-D9. Report categories.** Spam, harassment, illegal content, breaks a rule (choosing which rule from the Rules page), other. A free-text comment is optional for local reports.
+**Deliberately not in Phase 1:** anti-spam → Phase 5; moving articles between
+boards → 7C; an `/admin` dashboard and announcement UI → 7A, 7B; content
+warnings → 3E. Silence and reject-media domain levels, splitting threads,
+takedown workflow and age gating are in the Backlog; outbound `Block` was ruled
+out by P1-D1.
 
 ---
 
@@ -177,9 +91,12 @@ These are scheduled elsewhere:
 Scheduled backups, retention, the pre-deploy dump and restore commands are
 built (ADR 0028: `Baudrate.Backup.Snapshots`, Ansible `backup` role).
 
-- [x] **Enabled on production** 2026-09-16 (v1.19.5): timer at 04:44 Asia/Taipei, first backup 448 MB (45 MB dump), a second one added 47 MB with all 11,861 uploads hard-linked.
-- [x] **Restore rehearsed** 2026-09-16 into a scratch database on the host; row counts, schema version, file count and sampled checksums all matched (`doc/sysop.md` → Restore). A rehearsal on a freshly provisioned host is still open.
-- [x] **Off-host copies pulled** to the nanami workstation 2026-09-16: restricted `baudrate-pull` key (`rrsync -ro`), `scripts/pull-backups.sh` on a systemd user timer at 05:30, keeping 30 copies in `~/Backups/baudrate`. Copies only arrive while that machine runs; an always-on puller would be better.
+Enabled on production, restore rehearsed and off-host copies pulled, all
+2026-09-16 (v1.19.5); the setup is documented in `doc/sysop.md`. What is still
+open:
+
+- [ ] **Rehearse a restore onto a freshly provisioned host** — the rehearsal so far restored into a scratch database on the same machine, which does not prove the host can be rebuilt.
+- [ ] **An always-on puller.** Off-host copies only arrive while the workstation is running.
 - [ ] **Alert on a failed or stale backup** — today a failure only appears in the server's journal (see 2D).
 - [ ] **Backup freshness in health checks:** the time of the last successful backup (see 2D).
 - **Accepted when:** production has a backup less than 24 h old, and the rehearsal restored a working instance.
@@ -587,80 +504,21 @@ Kept so the review is complete. None of these are scheduled; propose moving one 
 
 ## Recently completed
 
-- **Phase 1F — rules as records, so a report can cite one (unreleased).**
-  The `rule_violation` category could only say *that* a rule was broken, never
-  which, because the rules were one markdown blob with no addressable parts.
-  They are now numbered records with stable anchors, edited at `/admin/rules`
-  ([ADR 0032](adr/0032-rules-are-records-and-retired-not-deleted.md)). Rules are
-  retired rather than deleted, so a report filed months ago still names the rule
-  its author meant, and citing one is always optional so reporting stays easy.
+Full detail is in `CHANGELOG.md`; this is the short version of where the
+project has been.
 
-- **A gettext interpolation guard (unreleased).**
-  A fuzzy merge rendered "Move %{title} up" as "将 %{locale} 上移" in both
-  locales — a translation referencing a binding that does not exist, which is a
-  runtime fault rather than merely a bad string. `gettext_interpolation_test.exs`
-  now fails on any translation using a placeholder its msgid does not provide.
-
-- **Phase 1E — rules and terms, minus the rule picker (unreleased).**
-  The terms, the site rules and a privacy policy are public pages linked from
-  a footer that used to be an empty element, and acceptance is recorded and
-  versioned instead of validated and discarded
-  ([ADR 0031](adr/0031-terms-acceptance-is-recorded-and-versioned.md)).
-  Publishing a new version pauses posting through the same gate that carries
-  sanctions, so it reaches every posting path and keeps every exemption —
-  reading, undo, self-delete, reporting abuse and account security all stay
-  open, and bots are exempt so RSS feeds keep running. P1-D9 split out as 1F.
-
-- **A composer that named the wrong reason (unreleased).**
-  `/articles/new` told every member it turned away "Your account is pending
-  approval", whichever of the three conditions in `can_create_content?/1`
-  actually stood — so a silenced member waited for staff who were not coming.
-  Found by the browser crawl while adding the terms pause. It now uses the
-  gate's own message.
-
-- **Phase 1D — instance-level federation moderation (unreleased).**
-  Domain blocks are rows with a reason and an author, blocked and unblocked
-  from the Federation dashboard ([ADR 0030](adr/0030-domain-blocks-are-rows-and-hiding-is-reversible.md)).
-  A block severs follows both ways, hides the domain's existing content at
-  query time — reversibly, since nothing is deleted or stamped — and stops us
-  fetching from it. One remote account can be suspended instead, through the
-  same predicate, from the new instance detail page.
-
-- **Two federation bugs found while mapping 1D (unreleased).**
-  `StaleActorCleaner` decided an actor was unreferenced from six hand-written
-  queries against nineteen foreign keys, silently deleting followers' follows
-  and feed items and aborting the sweep on a conversation; it now reads the
-  catalog. And no listing query filtered non-public remote articles, so a
-  followers-only remote post was listed with its title and re-published to the
-  fediverse through the board outbox stamped `as#Public`.
-
-- **Phase 1A — member self-protection (unreleased).**
-  - A block now stops replies, likes, boosts, forwards, follows and DMs in both
-    directions, locally and for inbound federation, and removes follows both
-    ways without sending `Block` ([ADR 0026](adr/0026-blocks-stop-interaction-locally.md)).
-  - Block and unblock on user profiles; a Blocked Accounts list on `/profile`;
-    remote actors in the blocked and muted lists shown as `@user@domain`.
-  - Mute, block and report remote accounts from feed items, remote comments
-    and remote conversations; report feed items and received DMs (a DM report
-    copies only that message).
-
-- **v1.18.2 — Phase 0 correctness bugs (B1–B12 of the 2026-09-14 review).**
-  Domain blocks from the Federation dashboard apply at once; the audit log no
-  longer drops entries and covers settings, federation and bot actions;
-  inbound `Flag` records reporter and target correctly; local composers offer
-  only Public/Unlisted (D1); long DM conversations show their newest messages;
-  interactions reach remote authors; comment authors can delete their comments
-  and replies to deleted comments stay visible; the theme bootstrap script runs
-  under the CSP; activity and follow ids are UUIDs; old notifications are
-  purged; reports about remote posts can be forwarded; backups work from a
-  release. See CHANGELOG.md.
-
-- **Data portability.**
-  - v1.17.0: account recovery prerequisites and self-service data export ([ADR 0023](adr/0023-data-export-threat-model.md)).
-  - v1.18.0: account migration with ActivityPub `Move` ([ADR 0025](adr/0025-account-migration.md)).
-  - Data import was dropped from the plan.
-- **v1.18.1.**
-  - Moved accounts no longer see post and interaction controls.
-  - Data export downloads are rate limited per IP.
-  - Admin sudo verification returns to the page that was asked for.
-  - One shared password requirements component is used everywhere.
+- **v1.21.0 — Phase 1C–1F.** Sanctions short of a ban; domain blocks as rows
+  with reversible hiding and a per-actor suspension; public terms, rules and
+  privacy pages with recorded, versioned acceptance; rules as citable records.
+  Plus four fixes found on the way: a followers-only remote post that was
+  listed publicly and re-published as `as#Public`, a stale-actor sweep deleting
+  rows it was still referenced by, a composer naming the wrong refusal reason,
+  and a gettext guard against translations interpolating bindings that do not
+  exist.
+- **v1.20.0 — Phase 1B.** A report queue board moderators can use, reason
+  categories, outcome notices, and kept evidence.
+- **v1.19.x — Phase 1A** (member self-protection) and production backups.
+- **v1.18.2 — Phase 0**, the twelve correctness bugs from the 2026-09-14 review.
+- **v1.17.0 / v1.18.0 — data portability:** self-service export
+  ([ADR 0023](adr/0023-data-export-threat-model.md)) and account migration
+  ([ADR 0025](adr/0025-account-migration.md)). Data import was dropped.
