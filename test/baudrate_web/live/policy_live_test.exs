@@ -260,6 +260,45 @@ defmodule BaudrateWeb.PolicyLiveTest do
       assert Baudrate.Auth.ensure_can_interact(Repo.reload(member)) == :ok
     end
 
+    test "the re-accept box stays ticked when the form re-renders", %{conn: conn} do
+      # It did not: the form re-renders on every phx-change, and a checkbox with
+      # no `checked` bound to the form is patched straight back to unchecked, so
+      # it took two clicks to tick. LiveView tests do not patch a DOM, so this
+      # asserts the value is rendered back.
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/settings")
+
+      html =
+        lv
+        |> form("#eua-form", eua_settings: %{eua: "Terms.", republish: "true"})
+        |> render_change()
+
+      assert html =~ ~r/id="eua-republish"[^>]*checked/
+    end
+
+    test "the re-accept box clears after saving, so the next save is quiet", %{conn: conn} do
+      # What matters is what the browser is left showing: if the box stays
+      # ticked after a save, the admin's next ordinary save silently publishes
+      # another version and asks all over again. Asserting on submitted params
+      # would prove nothing, since the test builds those itself.
+      admin = setup_user("admin")
+      conn = log_in_admin(conn, admin)
+
+      {:ok, lv, _html} = live(conn, "/admin/settings")
+
+      # Tick the box the way a browser does — phx-change first — so the form
+      # really holds republish=true when the save happens.
+      form = form(lv, "#eua-form", eua_settings: %{eua: "Terms, v1.", republish: "true"})
+      assert render_change(form) =~ ~r/id="eua-republish"[^>]*checked/
+
+      html = render_submit(form)
+
+      assert Setup.current_terms_version() == 1
+      refute html =~ ~r/id="eua-republish"[^>]*checked/
+    end
+
     test "ticking the box publishes a new version and pauses posting", %{conn: conn} do
       admin = setup_user("admin")
       member = setup_user("user")

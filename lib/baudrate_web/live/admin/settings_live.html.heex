@@ -198,22 +198,20 @@
           rows="8"
           placeholder={gettext("Enter your site-specific terms here...")}
         />
-        <label
-          id="eua-republish-label"
-          class="eua-republish-label label cursor-pointer gap-3 mt-2"
-        >
-          <input
-            type="checkbox"
-            name="eua_settings[republish]"
-            value="true"
-            class="eua-republish-checkbox checkbox checkbox-sm"
-          />
-          <span class="eua-republish-text label-text">
-            {gettext(
+        <%!-- Must go through `.input`, not a bare <input>: the form re-renders on
+        every phx-change, and a checkbox with no `checked` bound to the form is
+        patched straight back to unchecked. Its hidden "false" companion is also
+        what makes an unchecked box submit anything at all. --%>
+        <.input
+          field={@eua_form[:republish]}
+          type="checkbox"
+          id="eua-republish"
+          label={
+            gettext(
               "Require every member to accept again. Leave this off for a typo or a reworded sentence."
-            )}
-          </span>
-        </label>
+            )
+          }
+        />
         <p id="eua-version-note" class="eua-version-note text-sm opacity-70">
           {gettext("Members are currently being asked to accept version %{version}.",
             version: @terms_version

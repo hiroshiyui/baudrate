@@ -92,6 +92,10 @@ defmodule BaudrateWeb.Admin.SettingsLive do
         {:noreply,
          socket
          |> assign(eua: eua_text)
+         # Rebuild the form so "require every member to accept again" clears.
+         # Left ticked, the next ordinary save would publish another version
+         # and ask everyone again for nothing.
+         |> assign(eua_form: to_form(%{"eua" => eua_text}, as: :eua_settings))
          |> maybe_publish_terms(republish?)}
 
       {:error, _} ->
