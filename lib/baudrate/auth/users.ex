@@ -161,6 +161,24 @@ defmodule Baudrate.Auth.Users do
   end
 
   @doc """
+  Returns the accounts this user invited, newest first.
+
+  The invite chain is part of the record on a user detail page: an account
+  that invited five spammers is a different case from one that invited none
+  (ADR 0029).
+  """
+  @spec list_invitees(integer(), pos_integer()) :: [User.t()]
+  def list_invitees(user_id, limit \\ 20) when is_integer(user_id) do
+    from(u in User,
+      where: u.invited_by_id == ^user_id,
+      order_by: [desc: u.inserted_at, desc: u.id],
+      limit: ^limit,
+      preload: :role
+    )
+    |> Repo.all()
+  end
+
+  @doc """
   Returns `true` if the user's account is active.
   """
   def user_active?(user), do: user.status == "active"

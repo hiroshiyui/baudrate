@@ -351,6 +351,7 @@ defmodule BaudrateWeb.Router do
       live "/admin/moderation", Admin.ModerationLive
       live "/admin/boards", Admin.BoardsLive
       live "/admin/users", Admin.UsersLive
+      live "/admin/users/:id", Admin.UserDetailLive
       live "/admin/moderation-log", Admin.ModerationLogLive
       live "/admin/invites", Admin.InvitesLive
       live "/admin/login-attempts", Admin.LoginAttemptsLive

@@ -487,6 +487,7 @@ msgstr "救援碼"
 msgid "Reset Authenticator"
 msgstr "重設驗證器"
 
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:20
 #: lib/baudrate_web/live/admin/users_live.html.heex:167
 #: lib/baudrate_web/live/profile_live.html.heex:272
 #, elixir-autogen, elixir-format
@@ -537,8 +538,9 @@ msgstr "頭像已成功更新。"
 #: lib/baudrate_web/live/admin/bots_live.html.heex:156
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:191
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:104
-#: lib/baudrate_web/live/admin/users_live.html.heex:324
-#: lib/baudrate_web/live/admin/users_live.html.heex:377
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:242
+#: lib/baudrate_web/live/admin/users_live.html.heex:333
+#: lib/baudrate_web/live/admin/users_live.html.heex:386
 #: lib/baudrate_web/live/article_live.html.heex:487
 #: lib/baudrate_web/live/feed_live.html.heex:663
 #: lib/baudrate_web/live/feed_live.html.heex:787
@@ -576,7 +578,7 @@ msgstr "移除頭像"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:128
 #: lib/baudrate_web/live/admin/settings_live.html.heex:135
-#: lib/baudrate_web/live/admin/users_live.html.heex:219
+#: lib/baudrate_web/live/admin/users_live.html.heex:228
 #: lib/baudrate_web/live/profile_live.html.heex:92
 #, elixir-autogen, elixir-format
 msgid "Save"
@@ -602,7 +604,7 @@ msgid "Already have an account?"
 msgstr "已有帳號？"
 
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:56
-#: lib/baudrate_web/live/admin/users_live.html.heex:248
+#: lib/baudrate_web/live/admin/users_live.html.heex:257
 #, elixir-autogen, elixir-format
 msgid "Approve"
 msgstr "核准"
@@ -1212,6 +1214,7 @@ msgstr "向 %{domain} 發送檢舉報告？"
 #: lib/baudrate_web/live/admin/data_exports_live.html.heex:31
 #: lib/baudrate_web/live/admin/federation_live.html.heex:47
 #: lib/baudrate_web/live/admin/invites_live.html.heex:87
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:26
 #: lib/baudrate_web/live/admin/users_live.html.heex:168
 #: lib/baudrate_web/live/data_export_live.html.heex:208
 #: lib/baudrate_web/live/user_invites_live.html.heex:55
@@ -1424,7 +1427,7 @@ msgstr "全部"
 msgid "Are you sure you want to delete this board?"
 msgstr "確定要刪除這個看板嗎？"
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:258
+#: lib/baudrate_web/live/admin/users_live.html.heex:267
 #, elixir-autogen, elixir-format
 msgid "Ban"
 msgstr "停權"
@@ -1460,8 +1463,8 @@ msgstr "看板已成功更新。"
 msgid "Cannot delete board that has articles."
 msgstr "無法刪除含有文章的看板。"
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:332
-#: lib/baudrate_web/live/admin/users_live.html.heex:385
+#: lib/baudrate_web/live/admin/users_live.html.heex:341
+#: lib/baudrate_web/live/admin/users_live.html.heex:394
 #, elixir-autogen, elixir-format
 msgid "Confirm Ban"
 msgstr "確認停權"
@@ -1552,8 +1555,8 @@ msgstr "上層看板"
 msgid "Position"
 msgstr "排序"
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:307
-#: lib/baudrate_web/live/admin/users_live.html.heex:360
+#: lib/baudrate_web/live/admin/users_live.html.heex:316
+#: lib/baudrate_web/live/admin/users_live.html.heex:369
 #, elixir-autogen, elixir-format
 msgid "Reason (optional)"
 msgstr "原因（選填）"
@@ -1580,7 +1583,7 @@ msgstr "短網址建立後無法變更。"
 msgid "Total"
 msgstr "總計"
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:268
+#: lib/baudrate_web/live/admin/users_live.html.heex:277
 #, elixir-autogen, elixir-format
 msgid "Unban"
 msgstr "解除停權"
@@ -1616,13 +1619,13 @@ msgstr "您無法變更自己的角色。"
 msgid "Your account has been banned."
 msgstr "您的帳號已被停權。"
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:302
+#: lib/baudrate_web/live/admin/users_live.html.heex:311
 #, elixir-autogen, elixir-format
 msgid "Ban User: %{username}"
 msgstr "停權使用者：%{username}"
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:330
-#: lib/baudrate_web/live/admin/users_live.html.heex:383
+#: lib/baudrate_web/live/admin/users_live.html.heex:339
+#: lib/baudrate_web/live/admin/users_live.html.heex:392
 #, elixir-autogen, elixir-format
 msgid "Banning..."
 msgstr "停權中…"
@@ -1660,7 +1663,7 @@ msgstr "您無法停權自己。"
 msgid "Cannot delete board that has sub-boards."
 msgstr "無法刪除含有子看板的看板。"
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:203
+#: lib/baudrate_web/live/admin/users_live.html.heex:212
 #, elixir-autogen, elixir-format
 msgid "Change role for %{username}"
 msgstr "更改 %{username} 的角色"
@@ -1688,6 +1691,7 @@ msgstr "系統主題"
 #: lib/baudrate_web/live/admin/invites_live.ex:103
 #: lib/baudrate_web/live/admin/pending_users_live.ex:54
 #: lib/baudrate_web/live/admin/pending_users_live.ex:92
+#: lib/baudrate_web/live/admin/user_detail_live.ex:56
 #: lib/baudrate_web/live/admin/users_live.ex:103
 #: lib/baudrate_web/live/admin/users_live.ex:139
 #: lib/baudrate_web/live/admin/users_live.ex:170
@@ -1703,6 +1707,7 @@ msgid "User not found."
 msgstr "找不到使用者。"
 
 #: lib/baudrate_web/helpers.ex:255
+#: lib/baudrate_web/live/admin/user_detail_live.ex:182
 #, elixir-autogen, elixir-format
 msgid "active"
 msgstr "啟用中"
@@ -2889,6 +2894,7 @@ msgid "No login attempts recorded."
 msgstr "無登入嘗試紀錄。"
 
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:63
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:493
 #, elixir-autogen, elixir-format
 msgid "Result"
 msgstr "結果"
@@ -3289,7 +3295,7 @@ msgstr[0] "已選取 %{count} 位使用者"
 msgid "Approve Selected"
 msgstr "核准所選"
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:353
+#: lib/baudrate_web/live/admin/users_live.html.heex:362
 #, elixir-autogen, elixir-format
 msgid "Ban %{count} User"
 msgid_plural "Ban %{count} Users"
@@ -4845,6 +4851,7 @@ msgid "Please describe the issue..."
 msgstr "請描述問題..."
 
 #: lib/baudrate_web/components/core_components.ex:840
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:282
 #, elixir-autogen, elixir-format
 msgid "Reason"
 msgstr "原因"
@@ -5801,12 +5808,12 @@ msgid "Application"
 msgstr "應用程式"
 
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:54
-#: lib/baudrate_web/live/admin/users_live.html.heex:245
+#: lib/baudrate_web/live/admin/users_live.html.heex:254
 #, elixir-autogen, elixir-format
 msgid "Approve %{username}"
 msgstr "核准 %{username}"
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:255
+#: lib/baudrate_web/live/admin/users_live.html.heex:264
 #, elixir-autogen, elixir-format
 msgid "Ban %{username}"
 msgstr "停權 %{username}"
@@ -6064,7 +6071,7 @@ msgstr "撤銷邀請碼 %{code}"
 msgid "Rotate Keys for board %{board}"
 msgstr "輪替看板 %{board} 的金鑰"
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:217
+#: lib/baudrate_web/live/admin/users_live.html.heex:226
 #, elixir-autogen, elixir-format
 msgid "Save role for %{username}"
 msgstr "儲存 %{username} 的角色"
@@ -6091,7 +6098,7 @@ msgstr "顯示 QR 碼 %{code}"
 msgid "Suggestions: %{count}"
 msgstr "建議：%{count} 項"
 
-#: lib/baudrate_web/live/admin/users_live.html.heex:265
+#: lib/baudrate_web/live/admin/users_live.html.heex:274
 #, elixir-autogen, elixir-format
 msgid "Unban %{username}"
 msgstr "解除停權 %{username}"
@@ -7648,6 +7655,7 @@ msgid "That account is no longer waiting."
 msgstr "該帳號已不在待審核佇列中。"
 
 #: lib/baudrate_web/live/admin/pending_users_live.ex:95
+#: lib/baudrate_web/live/admin/user_detail_live.ex:226
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Too many actions. Try again shortly."
 msgstr "操作過於頻繁，請稍後再試。"
@@ -7664,6 +7672,7 @@ msgstr "您目前無法執行此操作。"
 
 #: lib/baudrate_web/live/admin/pending_users_live.ex:52
 #: lib/baudrate_web/live/admin/pending_users_live.ex:89
+#: lib/baudrate_web/live/admin/user_detail_live.ex:213
 #, elixir-autogen, elixir-format
 msgid "You cannot do that."
 msgstr "您無權執行此操作。"
@@ -7684,3 +7693,292 @@ msgstr "您的帳號已被停權。"
 #, elixir-autogen, elixir-format
 msgid "registered and is waiting to be let in"
 msgstr "已註冊，正等待審核放行"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:230
+#, elixir-autogen, elixir-format
+msgid "A suspension needs an end date."
+msgstr "停權必須設定結束日期。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:444
+#, elixir-autogen, elixir-format
+msgid "Accounts this member invited"
+msgstr "此使用者邀請的帳號"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:475
+#, elixir-autogen, elixir-format
+msgid "Admins only. Moderators do not see IP addresses."
+msgstr "僅管理員可見。審核人員看不到 IP 位址。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:281
+#, elixir-autogen, elixir-format
+msgid "By"
+msgstr "執行者"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:222
+#, elixir-autogen, elixir-format
+msgid "Choose an end within %{days} days."
+msgstr "請選擇 %{days} 天以內的結束時間。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:234
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Confirm"
+msgstr "確認"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:206
+#, elixir-autogen, elixir-format
+msgid "Days (leave empty for no end date)"
+msgstr "天數（留空表示無結束日期）"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:204
+#, elixir-autogen, elixir-format
+msgid "Days (required)"
+msgstr "天數（必填）"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:280
+#, elixir-autogen, elixir-format
+msgid "Ends"
+msgstr "結束於"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:492
+#, elixir-autogen, elixir-format, fuzzy
+msgid "IP address"
+msgstr "IP 位址"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:42
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Invited by"
+msgstr "邀請者"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:32
+#, elixir-autogen, elixir-format
+msgid "Joined"
+msgstr "加入於"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:147
+#, elixir-autogen, elixir-format
+msgid "Lift the silence"
+msgstr "解除禁言"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:156
+#, elixir-autogen, elixir-format
+msgid "Lift the suspension"
+msgstr "解除停權"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:83
+#, elixir-autogen, elixir-format
+msgid "No restriction is in force."
+msgstr "目前沒有生效中的限制。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:478
+#, elixir-autogen, elixir-format, fuzzy
+msgid "None recorded."
+msgstr "沒有紀錄。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:340
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:367
+#, elixir-autogen, elixir-format, fuzzy
+msgid "None."
+msgstr "無。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:267
+#, elixir-autogen, elixir-format
+msgid "Nothing has ever been issued against this account."
+msgstr "此帳號從未被施加任何處置。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:398
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Nothing posted yet."
+msgstr "尚未發表任何內容。"
+
+#: lib/baudrate_web/live/admin/users_live.html.heex:193
+#, elixir-autogen, elixir-format
+msgid "Open the record for %{username}"
+msgstr "開啟 %{username} 的紀錄"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:183
+#, elixir-autogen, elixir-format
+msgid "Reason (the member is told this)"
+msgstr "原因（會告知該使用者）"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:394
+#, elixir-autogen, elixir-format
+msgid "Recent content"
+msgstr "近期內容"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:469
+#, elixir-autogen, elixir-format
+msgid "Recent sign-in attempts"
+msgstr "近期登入嘗試"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:338
+#, elixir-autogen, elixir-format
+msgid "Reports about this account"
+msgstr "針對此帳號的檢舉"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:365
+#, elixir-autogen, elixir-format
+msgid "Reports made by this account"
+msgstr "此帳號提出的檢舉"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:259
+#, elixir-autogen, elixir-format
+msgid "Sanction history"
+msgstr "處置紀錄"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:165
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:130
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Silence"
+msgstr "禁言"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:75
+#, elixir-autogen, elixir-format
+msgid "Standing"
+msgstr "帳號狀態"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:283
+#, elixir-autogen, elixir-format, fuzzy
+msgid "State"
+msgstr "狀態"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:138
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Suspend"
+msgstr "停權"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:166
+#, elixir-autogen, elixir-format
+msgid "Suspension"
+msgstr "停權"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:218
+#, elixir-autogen, elixir-format, fuzzy
+msgid "That account is already banned."
+msgstr "該帳號已被停權封鎖。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:231
+#: lib/baudrate_web/live/admin/user_detail_live.ex:235
+#, elixir-autogen, elixir-format
+msgid "That did not work."
+msgstr "操作未能完成。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:209
+#, elixir-autogen, elixir-format
+msgid "The account was silenced."
+msgstr "已將此帳號禁言。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:210
+#, elixir-autogen, elixir-format
+msgid "The account was suspended."
+msgstr "已將此帳號停權。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:208
+#, elixir-autogen, elixir-format
+msgid "The member was warned."
+msgstr "已對此使用者發出警告。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:149
+#, elixir-autogen, elixir-format
+msgid "The restriction was lifted."
+msgstr "已解除該限制。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:144
+#, elixir-autogen, elixir-format
+msgid "There was nothing to lift."
+msgstr "沒有可解除的限制。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:60
+#, elixir-autogen, elixir-format
+msgid "This account moved to %{target}."
+msgstr "此帳號已搬遷至 %{target}。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:49
+#, elixir-autogen, elixir-format, fuzzy
+msgid "User: %{username}"
+msgstr "使用者：%{username}"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:122
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Warn"
+msgstr "警告"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:164
+#, elixir-autogen, elixir-format
+msgid "Warning"
+msgstr "警告"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:278
+#, elixir-autogen, elixir-format
+msgid "What"
+msgstr "處置"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:279
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:491
+#, elixir-autogen, elixir-format
+msgid "When"
+msgstr "時間"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:216
+#, elixir-autogen, elixir-format
+msgid "You cannot act on an account at or above your own role."
+msgstr "您無法對權限等於或高於自己的帳號採取行動。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:212
+#, elixir-autogen, elixir-format, fuzzy
+msgid "You cannot do that to your own account."
+msgstr "您無法對自己的帳號執行此操作。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:165
+#, elixir-autogen, elixir-format, fuzzy
+msgid "You cannot take action on this account."
+msgstr "您無法對此帳號採取行動。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:224
+#, elixir-autogen, elixir-format
+msgid "Your role can set an end up to 30 days away."
+msgstr "您的角色最多只能設定 30 天內的結束時間。"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:184
+#, elixir-autogen, elixir-format
+msgid "ended"
+msgstr "已結束"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:509
+#, elixir-autogen, elixir-format, fuzzy
+msgid "failure"
+msgstr "失敗"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:183
+#, elixir-autogen, elixir-format, fuzzy
+msgid "lifted"
+msgstr "已解除"
+
+#: lib/baudrate_web/live/admin/user_detail_live.ex:185
+#, elixir-autogen, elixir-format
+msgid "recorded"
+msgstr "已記錄"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:509
+#, elixir-autogen, elixir-format, fuzzy
+msgid "success"
+msgstr "成功"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:307
+#, elixir-autogen, elixir-format
+msgid "system"
+msgstr "系統"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:101
+#, elixir-autogen, elixir-format
+msgid "until %{at}"
+msgstr "至 %{at}"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:104
+#, elixir-autogen, elixir-format
+msgid "with no end date"
+msgstr "無結束日期"
+
+#: lib/baudrate_web/live/admin/user_detail_live.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "← All users"
+msgstr "← 所有使用者"

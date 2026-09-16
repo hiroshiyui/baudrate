@@ -49,6 +49,7 @@ defmodule Baudrate.Auth do
   defdelegate register_user(attrs), to: Users
   defdelegate approve_user(user), to: Users
   defdelegate list_pending_users, to: Users
+  defdelegate list_invitees(user_id, limit \\ 20), to: Users
   defdelegate user_active?(user), to: Users
   defdelegate can_create_content?(user), to: Users
   defdelegate can_upload_avatar?(user), to: Users

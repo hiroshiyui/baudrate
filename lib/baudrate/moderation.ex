@@ -260,6 +260,40 @@ defmodule Baudrate.Moderation do
   end
 
   @doc """
+  The most recent reports *about* an account, whatever their status.
+
+  Part of the record a moderator needs before deciding on a person rather
+  than a post (ADR 0029): three removals in a week look different from one.
+  """
+  @spec list_reports_about_user(integer(), pos_integer()) :: [Report.t()]
+  def list_reports_about_user(user_id, limit \\ 10) when is_integer(user_id) do
+    from(r in Report,
+      where: r.reported_user_id == ^user_id,
+      order_by: [desc: r.inserted_at, desc: r.id],
+      limit: ^limit,
+      preload: ^@report_preloads
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  The most recent reports *made by* an account, whatever their status.
+
+  Shown next to the reports against it: someone who reports constantly and
+  someone who is reported constantly are different problems.
+  """
+  @spec list_reports_by_user(integer(), pos_integer()) :: [Report.t()]
+  def list_reports_by_user(user_id, limit \\ 10) when is_integer(user_id) do
+    from(r in Report,
+      where: r.reporter_id == ^user_id,
+      order_by: [desc: r.inserted_at, desc: r.id],
+      limit: ^limit,
+      preload: ^@report_preloads
+    )
+    |> Repo.all()
+  end
+
+  @doc """
   A page of reports with the same preloads as `list_reports/1`.
 
   Options: `:status` (default `"open"`), `:page`, `:per_page` (default 20,

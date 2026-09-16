@@ -1,0 +1,516 @@
+<div id="admin-user-detail-page" class="admin-user-detail-page space-y-6">
+  <nav id="admin-user-detail-breadcrumb" class="admin-user-detail-breadcrumb text-sm">
+    <.link navigate={~p"/admin/users"} class="admin-user-detail-back link">
+      {gettext("← All users")}
+    </.link>
+  </nav>
+
+  <header id="admin-user-detail-header" class="admin-user-detail-header space-y-2">
+    <h1
+      id="admin-user-detail-heading"
+      class="admin-user-detail-heading text-2xl font-bold break-words"
+      tabindex="-1"
+    >
+      {@user.username}
+    </h1>
+
+    <dl class="admin-user-detail-facts flex flex-wrap gap-x-6 gap-y-1 text-sm">
+      <div class="admin-user-detail-fact">
+        <dt class="admin-user-detail-fact-label inline text-base-content/70">
+          {gettext("Role")}:
+        </dt>
+        <dd class="admin-user-detail-fact-value inline">{translate_role(@user.role.name)}</dd>
+      </div>
+      <div class="admin-user-detail-fact">
+        <dt class="admin-user-detail-fact-label inline text-base-content/70">
+          {gettext("Status")}:
+        </dt>
+        <dd class="admin-user-detail-fact-value inline">{translate_status(@user.status)}</dd>
+      </div>
+      <div class="admin-user-detail-fact">
+        <dt class="admin-user-detail-fact-label inline text-base-content/70">
+          {gettext("Joined")}:
+        </dt>
+        <dd class="admin-user-detail-fact-value inline">
+          <time datetime={datetime_attr(@user.inserted_at)}>
+            {format_datetime(@user.inserted_at)}
+          </time>
+        </dd>
+      </div>
+      <div :if={@user.invited_by_id} class="admin-user-detail-fact">
+        <dt class="admin-user-detail-fact-label inline text-base-content/70">
+          {gettext("Invited by")}:
+        </dt>
+        <dd class="admin-user-detail-fact-value inline">
+          <.link
+            navigate={~p"/admin/users/#{@user.invited_by_id}"}
+            class="admin-user-detail-inviter link"
+          >
+            #{@user.invited_by_id}
+          </.link>
+        </dd>
+      </div>
+    </dl>
+
+    <p
+      :if={@user.moved_to}
+      id="admin-user-detail-moved"
+      class="admin-user-detail-moved text-sm text-base-content/70 break-all"
+    >
+      {gettext("This account moved to %{target}.", target: @user.moved_to)}
+    </p>
+  </header>
+
+  <!-- What stands against the account right now -->
+  <section
+    id="admin-user-detail-standing"
+    class="admin-user-detail-standing card bg-base-200"
+    aria-labelledby="admin-user-detail-standing-heading"
+  >
+    <div class="card-body gap-4">
+      <h2
+        id="admin-user-detail-standing-heading"
+        class="admin-user-detail-standing-heading card-title text-lg"
+      >
+        {gettext("Standing")}
+      </h2>
+
+      <p
+        :if={@active_sanctions == []}
+        id="admin-user-detail-standing-clear"
+        class="admin-user-detail-standing-clear text-base-content/70"
+      >
+        {gettext("No restriction is in force.")}
+      </p>
+
+      <ul :if={@active_sanctions != []} class="admin-user-detail-active-list space-y-2">
+        <li
+          :for={sanction <- @active_sanctions}
+          id={"admin-user-detail-active-#{sanction.id}"}
+          class="admin-user-detail-active flex flex-wrap items-center gap-2"
+        >
+          <span class="admin-user-detail-active-kind badge badge-warning">
+            {kind_label(sanction.kind)}
+          </span>
+          <span :if={sanction.reason} class="admin-user-detail-active-reason break-words">
+            {sanction.reason}
+          </span>
+          <span class="admin-user-detail-active-until text-sm text-base-content/70">
+            <%= if sanction.expires_at do %>
+              <time datetime={datetime_attr(sanction.expires_at)}>
+                {gettext("until %{at}", at: format_datetime(sanction.expires_at))}
+              </time>
+            <% else %>
+              {gettext("with no end date")}
+            <% end %>
+          </span>
+        </li>
+      </ul>
+
+      <!-- Actions -->
+      <div
+        :if={@can_sanction? and is_nil(@sanction_form)}
+        id="admin-user-detail-actions"
+        class="admin-user-detail-actions flex flex-wrap gap-2"
+      >
+        <button
+          id="admin-user-detail-warn"
+          class="admin-user-detail-action btn btn-sm"
+          phx-click="sanction_prompt"
+          phx-value-kind="warn"
+        >
+          {gettext("Warn")}
+        </button>
+        <button
+          id="admin-user-detail-silence"
+          class="admin-user-detail-action btn btn-sm btn-warning"
+          phx-click="sanction_prompt"
+          phx-value-kind="silence"
+        >
+          {gettext("Silence")}
+        </button>
+        <button
+          id="admin-user-detail-suspend"
+          class="admin-user-detail-action btn btn-sm btn-error"
+          phx-click="sanction_prompt"
+          phx-value-kind="suspend"
+        >
+          {gettext("Suspend")}
+        </button>
+        <button
+          :if={Enum.any?(@active_sanctions, &(&1.kind == "silence"))}
+          id="admin-user-detail-lift-silence"
+          class="admin-user-detail-action btn btn-sm btn-ghost"
+          phx-click="lift"
+          phx-value-kind="silence"
+        >
+          {gettext("Lift the silence")}
+        </button>
+        <button
+          :if={Enum.any?(@active_sanctions, &(&1.kind == "suspend"))}
+          id="admin-user-detail-lift-suspend"
+          class="admin-user-detail-action btn btn-sm btn-ghost"
+          phx-click="lift"
+          phx-value-kind="suspend"
+        >
+          {gettext("Lift the suspension")}
+        </button>
+      </div>
+
+      <p
+        :if={not @can_sanction?}
+        id="admin-user-detail-no-actions"
+        class="admin-user-detail-no-actions text-sm text-base-content/70"
+      >
+        {gettext("You cannot take action on this account.")}
+      </p>
+
+      <!-- The reason is asked for before the act, not after -->
+      <form
+        :if={@sanction_form}
+        id="admin-user-detail-sanction-form"
+        class="admin-user-detail-sanction-form space-y-3"
+        phx-change="sanction_change"
+        phx-submit="sanction_submit"
+      >
+        <h3 id="admin-user-detail-sanction-form-heading" class="font-medium">
+          {kind_label(@sanction_form.kind)}
+        </h3>
+
+        <div class="admin-user-detail-sanction-reason-field form-control">
+          <label for="admin-user-detail-sanction-reason" class="label">
+            <span class="admin-user-detail-sanction-reason-label label-text">
+              {gettext("Reason (the member is told this)")}
+            </span>
+          </label>
+          <input
+            type="text"
+            id="admin-user-detail-sanction-reason"
+            name="reason"
+            maxlength="1000"
+            autofocus
+            value={@sanction_form.reason}
+            class="admin-user-detail-sanction-reason input input-bordered w-full"
+          />
+        </div>
+
+        <div
+          :if={@sanction_form.kind != "warn"}
+          class="admin-user-detail-sanction-days-field form-control"
+        >
+          <label for="admin-user-detail-sanction-days" class="label">
+            <span class="admin-user-detail-sanction-days-label label-text">
+              <%= if @sanction_form.kind == "suspend" do %>
+                {gettext("Days (required)")}
+              <% else %>
+                {gettext("Days (leave empty for no end date)")}
+              <% end %>
+            </span>
+          </label>
+          <input
+            type="number"
+            min="1"
+            max={if @max_expiry, do: 30, else: 3650}
+            id="admin-user-detail-sanction-days"
+            name="days"
+            value={@sanction_form.days}
+            class="admin-user-detail-sanction-days input input-bordered w-32"
+          />
+          <p
+            :if={@max_expiry}
+            id="admin-user-detail-sanction-cap"
+            class="admin-user-detail-sanction-cap text-sm text-base-content/70 mt-1"
+          >
+            {gettext("Your role can set an end up to 30 days away.")}
+          </p>
+        </div>
+
+        <div class="admin-user-detail-sanction-buttons flex gap-2">
+          <button
+            type="submit"
+            id="admin-user-detail-sanction-confirm"
+            class="admin-user-detail-sanction-confirm btn btn-sm btn-primary"
+          >
+            {gettext("Confirm")}
+          </button>
+          <button
+            type="button"
+            id="admin-user-detail-sanction-cancel"
+            class="admin-user-detail-sanction-cancel btn btn-sm btn-ghost"
+            phx-click="sanction_cancel"
+          >
+            {gettext("Cancel")}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- The record: never deleted, only lifted -->
+  <section
+    id="admin-user-detail-history"
+    class="admin-user-detail-history"
+    aria-labelledby="admin-user-detail-history-heading"
+  >
+    <h2
+      id="admin-user-detail-history-heading"
+      class="admin-user-detail-history-heading text-lg font-semibold mb-2"
+    >
+      {gettext("Sanction history")}
+    </h2>
+
+    <p
+      :if={@sanctions == []}
+      id="admin-user-detail-history-empty"
+      class="admin-user-detail-history-empty text-base-content/70"
+    >
+      {gettext("Nothing has ever been issued against this account.")}
+    </p>
+
+    <div :if={@sanctions != []} class="admin-user-detail-history-table-container overflow-x-auto">
+      <table
+        id="admin-user-detail-history-table"
+        class="admin-user-detail-history-table table table-sm"
+        aria-labelledby="admin-user-detail-history-heading"
+      >
+        <thead>
+          <tr>
+            <th scope="col">{gettext("What")}</th>
+            <th scope="col">{gettext("When")}</th>
+            <th scope="col">{gettext("Ends")}</th>
+            <th scope="col">{gettext("By")}</th>
+            <th scope="col">{gettext("Reason")}</th>
+            <th scope="col">{gettext("State")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            :for={sanction <- @sanctions}
+            id={"admin-user-detail-sanction-#{sanction.id}"}
+            class="admin-user-detail-sanction-row"
+          >
+            <th scope="row" class="admin-user-detail-sanction-kind">
+              {kind_label(sanction.kind)}
+            </th>
+            <td>
+              <time datetime={datetime_attr(sanction.issued_at)}>
+                {format_datetime(sanction.issued_at)}
+              </time>
+            </td>
+            <td>
+              <time :if={sanction.expires_at} datetime={datetime_attr(sanction.expires_at)}>
+                {format_datetime(sanction.expires_at)}
+              </time>
+              <span :if={is_nil(sanction.expires_at)} class="text-base-content/50">—</span>
+            </td>
+            <td class="admin-user-detail-sanction-by break-words">
+              {(sanction.issued_by && sanction.issued_by.username) || gettext("system")}
+            </td>
+            <td class="admin-user-detail-sanction-reason break-words">
+              {sanction.reason}
+            </td>
+            <td class="admin-user-detail-sanction-state">
+              {state_label(sanction_state(sanction))}
+              <span
+                :if={sanction.lifted_by}
+                class="admin-user-detail-sanction-lifted-by text-base-content/70"
+              >
+                ({sanction.lifted_by.username})
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Reports both ways -->
+  <div class="admin-user-detail-reports grid gap-6 md:grid-cols-2">
+    <section
+      id="admin-user-detail-reports-about"
+      class="admin-user-detail-reports-about"
+      aria-labelledby="admin-user-detail-reports-about-heading"
+    >
+      <h2
+        id="admin-user-detail-reports-about-heading"
+        class="admin-user-detail-reports-about-heading text-lg font-semibold mb-2"
+      >
+        {gettext("Reports about this account")}
+      </h2>
+      <p :if={@reports_about == []} class="text-base-content/70">{gettext("None.")}</p>
+      <ul :if={@reports_about != []} class="admin-user-detail-report-list space-y-1">
+        <li
+          :for={report <- @reports_about}
+          id={"admin-user-detail-report-about-#{report.id}"}
+          class="admin-user-detail-report text-sm break-words"
+        >
+          <span class="admin-user-detail-report-status badge badge-sm">{report.status}</span>
+          <time datetime={datetime_attr(report.inserted_at)}>
+            {format_datetime(report.inserted_at)}
+          </time>
+          — {report.reason}
+        </li>
+      </ul>
+    </section>
+
+    <section
+      id="admin-user-detail-reports-by"
+      class="admin-user-detail-reports-by"
+      aria-labelledby="admin-user-detail-reports-by-heading"
+    >
+      <h2
+        id="admin-user-detail-reports-by-heading"
+        class="admin-user-detail-reports-by-heading text-lg font-semibold mb-2"
+      >
+        {gettext("Reports made by this account")}
+      </h2>
+      <p :if={@reports_by == []} class="text-base-content/70">{gettext("None.")}</p>
+      <ul :if={@reports_by != []} class="admin-user-detail-report-list space-y-1">
+        <li
+          :for={report <- @reports_by}
+          id={"admin-user-detail-report-by-#{report.id}"}
+          class="admin-user-detail-report text-sm break-words"
+        >
+          <span class="admin-user-detail-report-status badge badge-sm">{report.status}</span>
+          <time datetime={datetime_attr(report.inserted_at)}>
+            {format_datetime(report.inserted_at)}
+          </time>
+          — {report.reason}
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <!-- Recent content -->
+  <section
+    id="admin-user-detail-content"
+    class="admin-user-detail-content"
+    aria-labelledby="admin-user-detail-content-heading"
+  >
+    <h2
+      id="admin-user-detail-content-heading"
+      class="admin-user-detail-content-heading text-lg font-semibold mb-2"
+    >
+      {gettext("Recent content")}
+    </h2>
+
+    <p :if={@articles == [] and @comments == []} class="text-base-content/70">
+      {gettext("Nothing posted yet.")}
+    </p>
+
+    <ul :if={@articles != []} class="admin-user-detail-article-list space-y-1 mb-4">
+      <li
+        :for={article <- @articles}
+        id={"admin-user-detail-article-#{article.id}"}
+        class="admin-user-detail-article text-sm break-words"
+      >
+        <.link
+          navigate={~p"/articles/#{article.slug}"}
+          class="admin-user-detail-article-link link"
+        >
+          {article.title}
+        </.link>
+        <time datetime={datetime_attr(article.inserted_at)} class="text-base-content/70">
+          {format_datetime(article.inserted_at)}
+        </time>
+      </li>
+    </ul>
+
+    <ul :if={@comments != []} class="admin-user-detail-comment-list space-y-1">
+      <li
+        :for={comment <- @comments}
+        id={"admin-user-detail-comment-#{comment.id}"}
+        class="admin-user-detail-comment text-sm break-words"
+      >
+        <time datetime={datetime_attr(comment.inserted_at)} class="text-base-content/70">
+          {format_datetime(comment.inserted_at)}
+        </time>
+        — {String.slice(comment.body || "", 0, 120)}
+      </li>
+    </ul>
+  </section>
+
+  <!-- The invite chain -->
+  <section
+    :if={@invitees != []}
+    id="admin-user-detail-invitees"
+    class="admin-user-detail-invitees"
+    aria-labelledby="admin-user-detail-invitees-heading"
+  >
+    <h2
+      id="admin-user-detail-invitees-heading"
+      class="admin-user-detail-invitees-heading text-lg font-semibold mb-2"
+    >
+      {gettext("Accounts this member invited")}
+    </h2>
+    <ul class="admin-user-detail-invitee-list flex flex-wrap gap-2">
+      <li :for={invitee <- @invitees} id={"admin-user-detail-invitee-#{invitee.id}"}>
+        <.link navigate={~p"/admin/users/#{invitee.id}"} class="admin-user-detail-invitee link">
+          {invitee.username}
+        </.link>
+        <span class="admin-user-detail-invitee-status text-base-content/70 text-sm">
+          ({translate_status(invitee.status)})
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Admin only: personal data that judging behaviour does not require -->
+  <section
+    :if={@admin?}
+    id="admin-user-detail-login-attempts"
+    class="admin-user-detail-login-attempts"
+    aria-labelledby="admin-user-detail-login-attempts-heading"
+  >
+    <h2
+      id="admin-user-detail-login-attempts-heading"
+      class="admin-user-detail-login-attempts-heading text-lg font-semibold mb-2"
+    >
+      {gettext("Recent sign-in attempts")}
+    </h2>
+    <p
+      id="admin-user-detail-login-attempts-note"
+      class="admin-user-detail-login-attempts-note text-sm text-base-content/70 mb-2"
+    >
+      {gettext("Admins only. Moderators do not see IP addresses.")}
+    </p>
+
+    <p :if={@login_attempts == []} class="text-base-content/70">{gettext("None recorded.")}</p>
+
+    <div
+      :if={@login_attempts != []}
+      class="admin-user-detail-login-table-container overflow-x-auto"
+    >
+      <table
+        id="admin-user-detail-login-table"
+        class="admin-user-detail-login-table table table-sm"
+        aria-labelledby="admin-user-detail-login-attempts-heading"
+      >
+        <thead>
+          <tr>
+            <th scope="col">{gettext("When")}</th>
+            <th scope="col">{gettext("IP address")}</th>
+            <th scope="col">{gettext("Result")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            :for={attempt <- @login_attempts}
+            id={"admin-user-detail-login-attempt-#{attempt.id}"}
+            class="admin-user-detail-login-attempt"
+          >
+            <th scope="row">
+              <time datetime={datetime_attr(attempt.inserted_at)}>
+                {format_datetime(attempt.inserted_at)}
+              </time>
+            </th>
+            <td class="admin-user-detail-login-ip break-all">{attempt.ip_address}</td>
+            <td class="admin-user-detail-login-result">
+              {if attempt.success, do: gettext("success"), else: gettext("failure")}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

@@ -185,7 +185,16 @@
               />
             </label>
           </td>
-          <th scope="row" class="admin-users-row-username font-medium">{user.username}</th>
+          <th scope="row" class="admin-users-row-username font-medium">
+            <.link
+              navigate={~p"/admin/users/#{user.id}"}
+              id={"admin-users-detail-link-#{user.id}"}
+              class="admin-users-detail-link link"
+              aria-label={gettext("Open the record for %{username}", username: user.username)}
+            >
+              {user.username}
+            </.link>
+          </th>
           <td>
             <%= if user.id == @current_user.id do %>
               <span class="badge badge-ghost">{translate_role(user.role.name)}</span>
