@@ -1849,6 +1849,16 @@ The `StaleActorCleaner` GenServer runs daily to clean up remote actors whose
 via `ActorResolver.refresh/1`; unreferenced actors are deleted. Processing is
 batched (50 per cycle) and skips when federation is disabled.
 
+`referencing_columns/0` reads every foreign key pointing at `remote_actors`
+from the PostgreSQL catalog, so the reference check cannot fall behind the
+schema; a new table referencing remote actors is covered as soon as its
+migration runs. This is deliberate rather than incidental — the check used to
+be six hand-written queries against nineteen foreign keys, and because most of
+those keys are `ON DELETE CASCADE`, deleting an actor one of the unchecked
+thirteen still pointed at silently removed members' follows, feed items,
+board follows, boosts, likes and poll votes. If the catalog query ever returns
+nothing the run is abandoned rather than treating every actor as unreferenced.
+
 > See the [SysOp Guide](sysop.md#stale-actor-cleanup) for configuration.
 
 **Remote Object Resolution (`ObjectResolver`):**

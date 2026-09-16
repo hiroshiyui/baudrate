@@ -635,10 +635,17 @@ The `StaleActorCleaner` GenServer runs daily (configurable via
 `stale_actor_cleanup_interval`, default 24h) and handles remote actors whose
 `fetched_at` exceeds the max age (`stale_actor_max_age`, default 30 days):
 
-- **Referenced actors** (with followers, articles, comments) -> refreshed
+- **Referenced actors** -> refreshed
 - **Unreferenced actors** -> deleted from the database
 - Batched: 50 actors per cycle
 - Skipped when federation is disabled
+
+"Referenced" means *anything in the database still points at the actor*, read
+from the database catalog rather than from a list in the code. Deleting an
+actor cascades, so an incomplete list loses real data: before v1.21.0 only six
+of the nineteen foreign keys were checked, and an account that had gone quiet
+for a month took its followers' follows and feed items with it when it was
+swept.
 
 ---
 

@@ -5,9 +5,18 @@ defmodule Baudrate.Federation.StaleActorCleaner do
   Remote actors are cached in `remote_actors` with `fetched_at` timestamps.
   Actors that haven't been refreshed within the configured max age are either:
 
-  - **Refreshed** — if they are still referenced by followers, articles,
-    comments, likes, announces, or reports
-  - **Deleted** — if they have no remaining references in the database
+  - **Refreshed** — if anything in the database still points at them
+  - **Deleted** — if nothing does
+
+  "Anything" is read from the database catalog (`referencing_columns/0`), not
+  from a list kept in this file. That is deliberate: the list used to be six
+  hand-written checks against nineteen foreign keys, and deleting an actor that
+  one of the other thirteen still pointed at took real data with it —
+  `user_follows`, `feed_items`, `board_follows`, boosts, likes and poll votes
+  cascade on delete, so a member simply lost a follow and every feed item from
+  an account that had gone quiet for a month, while conversations and direct
+  messages had their sender set to NULL. A reference added by a future
+  migration is covered the moment that migration runs.
 
   Runs every 24 hours (configurable via `stale_actor_cleanup_interval`).
   Actors older than 30 days are considered stale (configurable via
@@ -24,11 +33,27 @@ defmodule Baudrate.Federation.StaleActorCleaner do
   import Ecto.Query
 
   alias Baudrate.Repo
-  alias Baudrate.Federation.{ActorResolver, Announce, Follower, RemoteActor}
-  alias Baudrate.Content.{Article, ArticleLike, Comment}
-  alias Baudrate.Moderation.Report
+  alias Baudrate.Federation.{ActorResolver, RemoteActor}
 
   @batch_size 50
+
+  # Every single-column foreign key pointing at `remote_actors`, straight from
+  # the catalog. `conkey` is unnested so a (hypothetical) composite key lists
+  # each of its columns.
+  @referencing_columns_sql """
+  SELECT src.relname, att.attname
+  FROM pg_constraint c
+  JOIN pg_class src ON src.oid = c.conrelid
+  JOIN pg_class tgt ON tgt.oid = c.confrelid
+  JOIN unnest(c.conkey) AS k(attnum) ON true
+  JOIN pg_attribute att ON att.attrelid = src.oid AND att.attnum = k.attnum
+  WHERE c.contype = 'f' AND tgt.relname = 'remote_actors'
+  ORDER BY src.relname, att.attname
+  """
+
+  # Identifiers come from the catalog, never from a user, but they are
+  # interpolated into SQL, so they are checked rather than trusted.
+  @identifier ~r/\A[a-z_][a-z0-9_]*\z/
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -57,38 +82,58 @@ defmodule Baudrate.Federation.StaleActorCleaner do
   """
   @spec run_cleanup() :: {non_neg_integer(), non_neg_integer(), non_neg_integer()}
   def run_cleanup do
-    max_age = config(:stale_actor_max_age) || 2_592_000
-    cutoff = DateTime.utc_now() |> DateTime.add(-max_age, :second) |> DateTime.truncate(:second)
+    case referencing_columns() do
+      [] ->
+        # The catalog says nothing points at `remote_actors`, which cannot be
+        # true. Something is wrong with the query or the table; treating every
+        # actor as unreferenced would delete all of them, so do nothing.
+        Logger.error("federation.stale_actor_cleanup: no references found for remote_actors")
+        {0, 0, 0}
 
-    {refreshed, deleted, errors} = process_stale_batch(cutoff, MapSet.new(), {0, 0, 0})
+      columns ->
+        max_age = config(:stale_actor_max_age) || 2_592_000
 
-    if refreshed > 0 or deleted > 0 or errors > 0 do
-      Logger.info(
-        "federation.stale_actor_cleanup: refreshed=#{refreshed} deleted=#{deleted} errors=#{errors}"
-      )
+        cutoff =
+          DateTime.utc_now() |> DateTime.add(-max_age, :second) |> DateTime.truncate(:second)
+
+        {refreshed, deleted, errors} =
+          process_stale_batch(cutoff, columns, MapSet.new(), {0, 0, 0})
+
+        if refreshed > 0 or deleted > 0 or errors > 0 do
+          Logger.info(
+            "federation.stale_actor_cleanup: refreshed=#{refreshed} deleted=#{deleted} errors=#{errors}"
+          )
+        end
+
+        {refreshed, deleted, errors}
     end
-
-    {refreshed, deleted, errors}
   end
 
   @doc """
-  Checks whether a remote actor has any references in the database.
+  Every `{table, column}` in the database that points at `remote_actors`.
 
-  Returns `true` if the actor is referenced by any of:
-  followers, articles, comments, article likes, announces, or reports.
-  Short-circuits on the first match found.
+  Read from the catalog so that it cannot fall behind the schema. See the
+  module doc for why that matters.
+  """
+  @spec referencing_columns() :: [{String.t(), String.t()}]
+  def referencing_columns do
+    %{rows: rows} = Repo.query!(@referencing_columns_sql, [])
+    Enum.map(rows, fn [table, column] -> {table, column} end)
+  end
+
+  @doc """
+  Checks whether a remote actor is referenced anywhere in the database.
+
+  Returns `true` if any foreign key in any table points at it.
   """
   @spec has_references?(non_neg_integer()) :: boolean()
   def has_references?(remote_actor_id) do
-    Repo.exists?(from f in Follower, where: f.remote_actor_id == ^remote_actor_id) or
-      Repo.exists?(from a in Article, where: a.remote_actor_id == ^remote_actor_id) or
-      Repo.exists?(from c in Comment, where: c.remote_actor_id == ^remote_actor_id) or
-      Repo.exists?(from l in ArticleLike, where: l.remote_actor_id == ^remote_actor_id) or
-      Repo.exists?(from n in Announce, where: n.remote_actor_id == ^remote_actor_id) or
-      Repo.exists?(from r in Report, where: r.remote_actor_id == ^remote_actor_id)
+    referencing_columns()
+    |> referenced_ids([remote_actor_id])
+    |> MapSet.member?(remote_actor_id)
   end
 
-  defp process_stale_batch(cutoff, skip_ids, {refreshed, deleted, errors}) do
+  defp process_stale_batch(cutoff, columns, skip_ids, {refreshed, deleted, errors}) do
     skip_list = MapSet.to_list(skip_ids)
 
     batch =
@@ -102,9 +147,13 @@ defmodule Baudrate.Federation.StaleActorCleaner do
     if batch == [] do
       {refreshed, deleted, errors}
     else
+      # Resolved for the whole batch, so the number of queries follows the
+      # number of referencing columns rather than the number of actors.
+      referenced = referenced_ids(columns, Enum.map(batch, & &1.id))
+
       {batch_refreshed, batch_deleted, batch_errors, new_skip_ids} =
         Enum.reduce(batch, {0, 0, 0, skip_ids}, fn actor, {r, d, e, skips} ->
-          if has_references?(actor.id) do
+          if MapSet.member?(referenced, actor.id) do
             case ActorResolver.refresh(actor.ap_id) do
               {:ok, _} -> {r + 1, d, e, skips}
               {:error, _} -> {r, d, e + 1, MapSet.put(skips, actor.id)}
@@ -119,10 +168,42 @@ defmodule Baudrate.Federation.StaleActorCleaner do
 
       process_stale_batch(
         cutoff,
+        columns,
         new_skip_ids,
         {refreshed + batch_refreshed, deleted + batch_deleted, errors + batch_errors}
       )
     end
+  end
+
+  # Which of `ids` are pointed at by something. Stops as soon as every id is
+  # accounted for, so an actor with a follower costs one query, not nineteen.
+  defp referenced_ids(_columns, []), do: MapSet.new()
+
+  defp referenced_ids(columns, ids) do
+    Enum.reduce_while(columns, MapSet.new(), fn {table, column}, found ->
+      case Enum.reject(ids, &MapSet.member?(found, &1)) do
+        [] -> {:halt, found}
+        remaining -> {:cont, MapSet.union(found, ids_referenced_by(table, column, remaining))}
+      end
+    end)
+  end
+
+  defp ids_referenced_by(table, column, ids) do
+    sql =
+      "SELECT DISTINCT #{quote_identifier(column)} FROM #{quote_identifier(table)} " <>
+        "WHERE #{quote_identifier(column)} = ANY($1)"
+
+    %{rows: rows} = Repo.query!(sql, [ids])
+
+    rows |> List.flatten() |> Enum.reject(&is_nil/1) |> MapSet.new()
+  end
+
+  defp quote_identifier(name) do
+    unless Regex.match?(@identifier, name) do
+      raise ArgumentError, "unexpected identifier from the database catalog: #{inspect(name)}"
+    end
+
+    ~s("#{name}")
   end
 
   defp schedule_cleanup do
