@@ -147,9 +147,29 @@ defmodule Baudrate.Federation.ActorResolver do
 
   defp validate_fetchable(url) do
     cond do
-      not Validator.valid_https_url?(url) -> {:error, :invalid_actor_url}
-      Validator.local_actor?(url) -> {:error, :self_referencing}
-      true -> :ok
+      not Validator.valid_https_url?(url) ->
+        {:error, :invalid_actor_url}
+
+      Validator.local_actor?(url) ->
+        {:error, :self_referencing}
+
+      # A block stops us reaching out as well as listening (ADR 0030).
+      # Otherwise a blocked domain still got an outbound request from us — and
+      # a cached `remote_actors` row — every time anything mentioned one of its
+      # actors, which discloses our readers to an instance we have decided not
+      # to federate with.
+      domain_blocked?(url) ->
+        {:error, :domain_blocked}
+
+      true ->
+        :ok
+    end
+  end
+
+  defp domain_blocked?(url) do
+    case URI.parse(url).host do
+      host when is_binary(host) -> Validator.domain_blocked?(host)
+      _ -> false
     end
   end
 

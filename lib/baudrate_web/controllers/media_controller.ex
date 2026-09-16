@@ -66,7 +66,8 @@ defmodule BaudrateWeb.MediaController do
   defp fetch_and_serve(conn, url) do
     host = URI.parse(url).host
 
-    with :ok <- RateLimits.check_media_fetch_global(),
+    with :ok <- refuse_blocked_domain(host),
+         :ok <- RateLimits.check_media_fetch_global(),
          :ok <- RateLimits.check_media_fetch_ip(client_ip(conn)),
          :ok <- RateLimits.check_media_fetch_domain(host) do
       case Cache.fetch_and_store(url) do
@@ -80,12 +81,30 @@ defmodule BaudrateWeb.MediaController do
           placeholder(conn)
       end
     else
+      {:error, :domain_blocked} ->
+        placeholder(conn)
+
       {:error, :rate_limited} ->
         # Deliberately not negative-cached — the URL may be perfectly good.
         conn
         |> put_resp_header("retry-after", "60")
         |> put_resp_content_type("application/json")
         |> send_resp(429, Jason.encode!(%{error: "Too Many Requests"}))
+    end
+  end
+
+  # A block stops us reaching out, not only listening (ADR 0030). Without this
+  # the proxy kept fetching and caching a blocked instance's images, which is
+  # both traffic we have decided not to send and a way for its content to stay
+  # on the page. Deliberately not negative-cached: unblocking must work at
+  # once, and the cache would outlive the decision by an hour.
+  defp refuse_blocked_domain(nil), do: :ok
+
+  defp refuse_blocked_domain(host) do
+    if Baudrate.Federation.Validator.domain_blocked?(host) do
+      {:error, :domain_blocked}
+    else
+      :ok
     end
   end
 

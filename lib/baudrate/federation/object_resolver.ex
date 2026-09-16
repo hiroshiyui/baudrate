@@ -113,7 +113,18 @@ defmodule Baudrate.Federation.ObjectResolver do
     cond do
       not Validator.valid_https_url?(url) -> {:error, :invalid_url}
       Validator.local_actor?(url) -> {:error, :local_url}
+      # A block stops us reaching out (ADR 0030): importing an object from a
+      # blocked instance both sends it traffic and puts its content back on
+      # the page, where the hiding filter would then have to take it away.
+      domain_blocked?(url) -> {:error, :domain_blocked}
       true -> :ok
+    end
+  end
+
+  defp domain_blocked?(url) do
+    case URI.parse(url).host do
+      host when is_binary(host) -> Validator.domain_blocked?(host)
+      _ -> false
     end
   end
 

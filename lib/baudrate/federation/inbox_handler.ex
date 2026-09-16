@@ -1383,6 +1383,13 @@ defmodule Baudrate.Federation.InboxHandler do
       is_nil(host) ->
         {:error, :article_not_found}
 
+      # The walk follows attacker-supplied `inReplyTo` URIs, so it is exactly
+      # the path that would carry us into an instance we have blocked
+      # (ADR 0030).
+      Validator.domain_blocked?(host) ->
+        Logger.info("federation.reply_chain_domain_blocked: host=#{host}")
+        {:error, :article_not_found}
+
       MapSet.size(hosts) > @reply_chain_max_hosts ->
         Logger.info("federation.reply_chain_host_limit: sender=#{sender_domain}")
         {:error, :article_not_found}

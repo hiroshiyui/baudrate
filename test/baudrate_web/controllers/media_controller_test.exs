@@ -110,6 +110,32 @@ defmodule BaudrateWeb.MediaControllerTest do
       assert Agent.get(counter, & &1) == 1
     end
 
+    test "never fetches an image from a blocked domain", %{conn: conn} do
+      # A block stops us reaching out (ADR 0030). Left alone, the proxy kept
+      # fetching and caching a blocked instance's images, disclosing every
+      # viewer's IP and reading times to it.
+      {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+      stub(fn c ->
+        Agent.update(counter, &(&1 + 1))
+        Plug.Conn.send_resp(c, 200, @png)
+      end)
+
+      {:ok, _} = Baudrate.Federation.DomainBlocks.block_domain("blocked.example")
+      Baudrate.Federation.DomainBlockCache.refresh()
+      on_exit(fn -> Baudrate.Federation.DomainBlockCache.refresh() end)
+
+      url = "https://blocked.example/img-#{System.unique_integer([:positive])}.png"
+      conn = get(conn, Proxy.url(url))
+
+      assert redirected_to(conn) == "/images/media-unavailable.svg"
+      assert Agent.get(counter, & &1) == 0
+
+      # Not negative-cached: unblocking has to work at once, and a cached
+      # failure would outlive the decision by an hour.
+      refute NegativeCache.failed?(url)
+    end
+
     test "answers a JSON 429 when rate limited, without negative-caching", %{conn: conn} do
       {:ok, counter} = Agent.start_link(fn -> 0 end)
 
