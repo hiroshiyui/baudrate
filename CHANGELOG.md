@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.22.0] — 2026-09-16
+
+Backups that can prove they are intact, and two policy documents written from
+what the code actually does.
+
+**Upgrading:** no migrations. The first backup after upgrading writes a
+`CHECKSUMS.sha256` alongside the dump; backups taken before this are still
+verified, but only their database dump, and the puller says so.
+
+### Added
+
+- **A checksum for every file in a backup.** Each backup now carries
+  `CHECKSUMS.sha256` covering the database dump and every stored upload, in the
+  format `sha256sum -c` reads — so a copy can be verified anywhere with one
+  standard command and no knowledge of this project. Previously only the dump
+  had a checksum; the uploads, which are most of a backup, had none at all, and
+  `rsync` exiting 0 was the only assurance they had arrived intact.
+- **Off-host verification of the whole backup.** `scripts/pull-backups.sh` now
+  checks the newest copy against that list — the dump *and* every upload — so
+  corruption in transit, or bit rot on either disk, fails the nightly run
+  instead of being discovered at restore time. It verifies the list against its
+  own hash in `MANIFEST.json` first, because `sha256sum -c` on a truncated list
+  exits 0 and would otherwise certify a backup missing most of its files.
+- **A privacy policy and an end user agreement**, in `doc/`, bilingual
+  (台灣漢語 and English) and written from the code rather than from a template:
+  what federates and cannot be recalled, what the data export omits, which
+  third parties a visitor's browser reaches, and what each retention period
+  actually is. Both are templates, with the site name, operator, contact,
+  source URL and jurisdiction as placeholders.
+
+### Changed
+
+- **Registration no longer promises a year of logs.** The notice said activity
+  "will be logged for at least 1 year"; nothing implemented that, and the
+  database is the other way round — sign-in attempts are purged after 7 days,
+  while moderation records are kept indefinitely. It now says activities are
+  recorded, without a period the software does not keep.
+- A hard-linked file in a backup keeps the checksum the previous backup
+  recorded rather than being hashed again. This is cheaper, but the reason it is
+  correct is stronger: re-hashing would read the bytes as they are now and
+  certify them, so a file that had rotted on disk would be marked intact by
+  every later backup.
+
 ## [1.21.0] — 2026-09-16
 
 The rest of roadmap phase 1: moderation levers between "nothing" and "a
