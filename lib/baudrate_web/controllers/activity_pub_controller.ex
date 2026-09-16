@@ -394,7 +394,11 @@ defmodule BaudrateWeb.ActivityPubController do
     visibility_ok =
       is_nil(article.remote_actor_id) or article.visibility in ["public", "unlisted"]
 
-    board_ok and visibility_ok
+    # We do not re-publish an instance we have blocked (ADR 0030). Serving its
+    # content back out over AP would keep it circulating under our name.
+    not_hidden = not Baudrate.Federation.DomainBlocks.actor_hidden?(article.remote_actor_id)
+
+    board_ok and visibility_ok and not_hidden
   end
 
   defp not_found(conn), do: conn |> put_status(404) |> json(%{error: "Not Found"})

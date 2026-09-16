@@ -8,6 +8,7 @@ defmodule Baudrate.Content.Filters do
 
   import Ecto.Query
   alias Baudrate.{Auth, Repo, Setup}
+  alias Baudrate.Federation.{DomainBlock, DomainBlockCache, RemoteActor}
 
   @doc """
   Returns `{hidden_user_ids, hidden_ap_ids}` for the given user's
@@ -110,6 +111,73 @@ defmodule Baudrate.Content.Filters do
     from(x in query,
       where: is_nil(x.remote_actor_id) or x.visibility in ["public", "unlisted"]
     )
+  end
+
+  @doc """
+  Excludes every remote row a listing must not show, for either reason:
+
+    * its addressing was not public (`exclude_remote_nonpublic/1`), or
+    * its author is hidden by an instance-level block (`exclude_hidden_remote/1`).
+
+  This is the one call a listing query makes. The two reasons are separate
+  primitives because a few queries need them against a join binding rather than
+  the first one, but a listing that applies only one of them leaks — so the
+  default is both together.
+
+  `test/baudrate/content/remote_visibility_test.exs` and
+  `test/baudrate/federation/blocked_domain_hiding_test.exs` are the acceptance
+  gates. Add every new listing query to both.
+  """
+  def exclude_unservable_remote(query) do
+    query
+    |> exclude_remote_nonpublic()
+    |> exclude_hidden_remote()
+  end
+
+  @doc """
+  Excludes rows whose remote author is hidden by an instance-level decision
+  (ADR 0030): the actor's domain is blocked under the current federation mode.
+
+  Applies to any query whose first binding has `remote_actor_id`. Use
+  `hidden_remote_actor_ids/0` directly where the row is not the first binding,
+  or where a second column (a booster) needs the same test.
+
+  Hiding is computed at query time and never stamped on a row, so lifting a
+  block makes the content visible again by itself. It is unconditional: an
+  instance block is the site's decision about what it serves, so there is no
+  viewer for whom the content should still be listed. Staff surfaces that must
+  keep showing it (the moderation queue, report details) simply do not call
+  this.
+  """
+  def exclude_hidden_remote(query) do
+    from(x in query,
+      where: is_nil(x.remote_actor_id) or x.remote_actor_id not in subquery(hidden_actor_ids())
+    )
+  end
+
+  @doc """
+  A query selecting the ids of every remote actor hidden by the current
+  federation mode.
+
+  In blocklist mode this is a semi-join against `domain_blocks`, so the blocked
+  set never travels through the query as a parameter list. In allowlist mode
+  the allowed domains are a setting and a small list, so they are passed in —
+  an empty allowlist hides every remote actor, matching
+  `DomainBlockCache.domain_blocked?/1`.
+  """
+  def hidden_actor_ids do
+    case DomainBlockCache.config() do
+      {:blocklist, _blocked} ->
+        from(ra in RemoteActor,
+          join: db in DomainBlock,
+          on: db.domain == ra.domain,
+          select: ra.id
+        )
+
+      {:allowlist, allowed} ->
+        allowed = MapSet.to_list(allowed)
+        from(ra in RemoteActor, where: ra.domain not in ^allowed, select: ra.id)
+    end
   end
 
   @doc """

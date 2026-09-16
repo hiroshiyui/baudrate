@@ -170,7 +170,7 @@ defmodule Baudrate.Content.Comments do
       order_by: [asc: c.inserted_at, asc: c.id],
       preload: [:user, :remote_actor, :link_preview, :images]
     )
-    |> exclude_remote_nonpublic()
+    |> exclude_unservable_remote()
     |> Repo.all()
   end
 
@@ -182,7 +182,7 @@ defmodule Baudrate.Content.Comments do
       order_by: [asc: c.inserted_at, asc: c.id],
       preload: [:user, :remote_actor, :link_preview, :images]
     )
-    |> exclude_remote_nonpublic()
+    |> exclude_unservable_remote()
     |> Filters.apply_hidden_filters(hidden_uids, hidden_ap_ids)
     |> Repo.all()
   end
@@ -191,7 +191,7 @@ defmodule Baudrate.Content.Comments do
   # comment ingested as followers-only/direct (rows that predate the inbox
   # refusing them) must not be shown there. Local comments are board content
   # and are always listed.
-  defp exclude_remote_nonpublic(query), do: Filters.exclude_remote_nonpublic(query)
+  defp exclude_unservable_remote(query), do: Filters.exclude_unservable_remote(query)
 
   @doc """
   Returns a paginated list of comments for an article, preserving thread integrity.
@@ -228,7 +228,7 @@ defmodule Baudrate.Content.Comments do
         where: c.article_id == ^article_id and is_nil(c.parent_id),
         where: is_nil(c.deleted_at) or c.id in ^placeholder_ids
       )
-      |> exclude_remote_nonpublic()
+      |> exclude_unservable_remote()
       |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
 
     total_roots = Repo.one(from(q in root_count_query, select: count(q.id)))
@@ -243,7 +243,7 @@ defmodule Baudrate.Content.Comments do
         limit: ^per_page,
         preload: [:user, :remote_actor, :link_preview, :images]
       )
-      |> exclude_remote_nonpublic()
+      |> exclude_unservable_remote()
       |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
 
     roots = Repo.all(root_query)
@@ -277,7 +277,7 @@ defmodule Baudrate.Content.Comments do
         order_by: [asc: c.inserted_at, asc: c.id],
         preload: [:user, :remote_actor, :link_preview, :images]
       )
-      |> exclude_remote_nonpublic()
+      |> exclude_unservable_remote()
       |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
 
     children = Repo.all(child_query)
@@ -309,7 +309,7 @@ defmodule Baudrate.Content.Comments do
           where: c.article_id == ^article_id and is_nil(c.deleted_at),
           select: {c.id, c.parent_id}
         )
-        |> exclude_remote_nonpublic()
+        |> exclude_unservable_remote()
         |> Filters.apply_hidden_filters(blocked_uids, blocked_ap_ids)
         |> Repo.all()
 

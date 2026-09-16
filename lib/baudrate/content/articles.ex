@@ -44,7 +44,7 @@ defmodule Baudrate.Content.Articles do
       order_by: [desc: a.pinned, desc: a.inserted_at, desc: a.id],
       preload: :user
     )
-    |> Filters.exclude_remote_nonpublic()
+    |> Filters.exclude_unservable_remote()
     |> Repo.all()
   end
 
@@ -72,7 +72,7 @@ defmodule Baudrate.Content.Articles do
         where: ba.board_id == ^board_id and is_nil(a.deleted_at)
       )
       |> Filters.apply_article_hidden_filters(current_user, board)
-      |> Filters.exclude_remote_nonpublic()
+      |> Filters.exclude_unservable_remote()
 
     total = Repo.one(from(q in base_query, select: count(q.id)))
 

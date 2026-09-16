@@ -134,7 +134,7 @@ defmodule Baudrate.Content.Search do
       )
       |> apply_search_operators(operators)
       |> Filters.apply_hidden_filters(hidden_uids, hidden_ap_ids)
-      |> Filters.exclude_remote_nonpublic()
+      |> Filters.exclude_unservable_remote()
 
     Pagination.paginate_query(base_query, pagination,
       result_key: :articles,
@@ -341,10 +341,13 @@ defmodule Baudrate.Content.Search do
         # A public remote reply to a followers-only remote article would
         # otherwise surface that article's title through the preload.
         where: is_nil(a.remote_actor_id) or a.visibility in ["public", "unlisted"],
+        where:
+          is_nil(a.remote_actor_id) or
+            a.remote_actor_id not in subquery(Filters.hidden_actor_ids()),
         distinct: c.id
       )
       |> Filters.apply_hidden_filters(hidden_uids, hidden_ap_ids)
-      |> Filters.exclude_remote_nonpublic()
+      |> Filters.exclude_unservable_remote()
 
     Pagination.paginate_query(base_query, pagination,
       result_key: :comments,

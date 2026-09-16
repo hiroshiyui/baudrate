@@ -11,6 +11,7 @@ defmodule BaudrateWeb.ArticleHelpers do
   import Phoenix.Component, only: [assign: 3]
 
   alias Baudrate.Content
+  alias Baudrate.Federation.DomainBlocks
   alias BaudrateWeb.RateLimits
 
   @doc """
@@ -39,11 +40,27 @@ defmodule BaudrateWeb.ArticleHelpers do
       when not is_nil(rid) and vis not in ["public", "unlisted"],
       do: false
 
-  def user_can_view_article?(article, _user) when article.boards == [], do: true
+  # An instance block hides the domain's content (ADR 0030). Hiding it from
+  # listings while the permalink still renders it would be no block at all:
+  # the link is what gets passed around.
+  def user_can_view_article?(%{remote_actor_id: rid} = article, user) when not is_nil(rid) do
+    not remote_author_hidden?(article) and boards_visible?(article, user)
+  end
 
-  def user_can_view_article?(article, user) do
+  def user_can_view_article?(article, user), do: boards_visible?(article, user)
+
+  defp boards_visible?(article, _user) when article.boards == [], do: true
+
+  defp boards_visible?(article, user) do
     Enum.any?(article.boards, &Content.can_view_board?(&1, user))
   end
+
+  # Prefers the preloaded actor; falls back to the id so a caller that did not
+  # preload gets the right answer rather than a visible one.
+  defp remote_author_hidden?(%{remote_actor: %Baudrate.Federation.RemoteActor{} = actor}),
+    do: DomainBlocks.actor_hidden?(actor)
+
+  defp remote_author_hidden?(%{remote_actor_id: rid}), do: DomainBlocks.actor_hidden?(rid)
 
   @doc """
   Splits a flat list of comments into `{roots, children_map}`.

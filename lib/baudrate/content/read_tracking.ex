@@ -14,7 +14,8 @@ defmodule Baudrate.Content.ReadTracking do
     ArticleRead,
     BoardArticle,
     BoardCache,
-    BoardRead
+    BoardRead,
+    Filters
   }
 
   # UTC epoch used as default when no read record exists
@@ -123,6 +124,9 @@ defmodule Baudrate.Content.ReadTracking do
         # An article nobody can open must not light up a board's unread badge:
         # it discloses that something arrived, and the badge could never clear.
         where: is_nil(a.remote_actor_id) or a.visibility in ["public", "unlisted"],
+        where:
+          is_nil(a.remote_actor_id) or
+            a.remote_actor_id not in subquery(Filters.hidden_actor_ids()),
         where:
           a.last_activity_at >
             fragment(

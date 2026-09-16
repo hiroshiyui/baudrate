@@ -19,6 +19,7 @@ defmodule Baudrate.Federation.Feed do
   alias Baudrate.Repo
 
   alias Baudrate.Federation.{
+    DomainBlockCache,
     FeedItem,
     FeedItemBoost,
     FeedItemLike,
@@ -88,7 +89,15 @@ defmodule Baudrate.Federation.Feed do
         join: ra in RemoteActor,
         on: ra.id == fi.remote_actor_id,
         where: uf.user_id == ^user.id and uf.state == @state_accepted,
-        where: is_nil(fi.deleted_at)
+        where: is_nil(fi.deleted_at),
+        # An instance block hides what the domain already sent (ADR 0030).
+        # Blocking severs the follows, so most of this disappears anyway — but
+        # a boost carries an author the follower never followed, and that
+        # author can be on the blocked domain while the booster is not.
+        where: fi.remote_actor_id not in subquery(Filters.hidden_actor_ids()),
+        where:
+          is_nil(fi.boosted_by_actor_id) or
+            fi.boosted_by_actor_id not in subquery(Filters.hidden_actor_ids())
       )
 
     remote_query =
@@ -606,6 +615,13 @@ defmodule Baudrate.Federation.Feed do
     hidden_ap_ids_param = if hidden_ap_ids == [], do: nil, else: hidden_ap_ids
     hidden_user_ids_param = if hidden_user_ids == [], do: nil, else: hidden_user_ids
 
+    # Instance-level hiding, in the same shape as `Filters.hidden_actor_ids/0`.
+    # The domains are a parameter, never interpolated. An empty array gives the
+    # right answer in both modes: nothing blocked, or everything not allowed.
+    {mode, domains} = DomainBlockCache.config()
+    blocklist_mode = mode == :blocklist
+    domains_param = MapSet.to_list(domains)
+
     %{rows: [[remote_total, local_total, comment_total]]} =
       Repo.query!(
         """
@@ -618,7 +634,13 @@ defmodule Baudrate.Federation.Feed do
              JOIN remote_actors ra ON ra.id = fi.remote_actor_id
              WHERE uf.user_id = $1 AND uf.state = 'accepted'
                AND fi.deleted_at IS NULL
-               AND ($2::text[] IS NULL OR ra.ap_id != ALL($2))),
+               AND ($2::text[] IS NULL OR ra.ap_id != ALL($2))
+               AND NOT EXISTS (
+                 SELECT 1 FROM remote_actors hra
+                 WHERE hra.id IN (fi.remote_actor_id, fi.boosted_by_actor_id)
+                   AND (CASE WHEN $5::boolean
+                             THEN hra.domain = ANY($6::text[])
+                             ELSE hra.domain <> ALL($6::text[]) END))),
           (SELECT count(*) FROM articles a
              LEFT JOIN user_follows uf ON uf.followed_user_id = a.user_id
                AND uf.user_id = $1 AND uf.state = 'accepted'
@@ -636,7 +658,14 @@ defmodule Baudrate.Federation.Feed do
                AND c.deleted_at IS NULL AND a.deleted_at IS NULL
                AND ($3::bigint[] IS NULL OR c.user_id != ALL($3)))
         """,
-        [user_id, hidden_ap_ids_param, hidden_user_ids_param, allowed_roles]
+        [
+          user_id,
+          hidden_ap_ids_param,
+          hidden_user_ids_param,
+          allowed_roles,
+          blocklist_mode,
+          domains_param
+        ]
       )
 
     {remote_total, local_total, comment_total}

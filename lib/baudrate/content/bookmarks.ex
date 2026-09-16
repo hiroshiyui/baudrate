@@ -16,7 +16,7 @@ defmodule Baudrate.Content.Bookmarks do
 
   import Ecto.Query
   alias Baudrate.Repo
-  alias Baudrate.Content.{Article, Bookmark, Comment, Interactions}
+  alias Baudrate.Content.{Article, Bookmark, Comment, Filters, Interactions}
 
   @bookmarks_per_page 20
   @max_bookmarks_per_page 100
@@ -217,6 +217,9 @@ defmodule Baudrate.Content.Bookmarks do
     per_page = opts |> Keyword.get(:per_page, @bookmarks_per_page) |> min(@max_bookmarks_per_page)
     offset = (page - 1) * per_page
 
+    # Resolved once: both the count and the page need the same set.
+    hidden_actors = Filters.hidden_actor_ids()
+
     base_query =
       from(b in Bookmark,
         left_join: a in assoc(b, :article),
@@ -228,7 +231,9 @@ defmodule Baudrate.Content.Bookmarks do
         # A bookmark made while a remote row was public keeps rendering it, so
         # the visibility gate has to be here and not only at creation time.
         where: is_nil(a.remote_actor_id) or a.visibility in ["public", "unlisted"],
-        where: is_nil(c.remote_actor_id) or c.visibility in ["public", "unlisted"]
+        where: is_nil(c.remote_actor_id) or c.visibility in ["public", "unlisted"],
+        where: is_nil(a.remote_actor_id) or a.remote_actor_id not in subquery(hidden_actors),
+        where: is_nil(c.remote_actor_id) or c.remote_actor_id not in subquery(hidden_actors)
       )
 
     total = Repo.one(from(b in subquery(base_query), select: count()))
@@ -243,6 +248,8 @@ defmodule Baudrate.Content.Bookmarks do
             (not is_nil(b.comment_id) and is_nil(c.deleted_at)),
         where: is_nil(a.remote_actor_id) or a.visibility in ["public", "unlisted"],
         where: is_nil(c.remote_actor_id) or c.visibility in ["public", "unlisted"],
+        where: is_nil(a.remote_actor_id) or a.remote_actor_id not in subquery(hidden_actors),
+        where: is_nil(c.remote_actor_id) or c.remote_actor_id not in subquery(hidden_actors),
         order_by: [desc: b.inserted_at, desc: b.id],
         offset: ^offset,
         limit: ^per_page,

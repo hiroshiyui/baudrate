@@ -56,6 +56,26 @@ defmodule Baudrate.Federation.DomainBlockCache do
   end
 
   @doc """
+  Returns the current `{mode, domain_set}` — `{:blocklist, blocked}` or
+  `{:allowlist, allowed}`.
+
+  Query-time hiding needs the whole set, not one answer, so that it can build a
+  predicate instead of asking per row. Reads the same way `domain_blocked?/1`
+  does: ETS when the cache is on, the database otherwise.
+  """
+  @spec config() :: {:blocklist | :allowlist, MapSet.t(String.t())}
+  def config do
+    if cache_enabled?() do
+      case :ets.lookup(@table, @key) do
+        [{@key, mode, domain_set}] -> {mode, domain_set}
+        [] -> read_from_db()
+      end
+    else
+      read_from_db()
+    end
+  end
+
+  @doc """
   Reloads the domain block configuration from the database.
 
   The DB read happens in the calling process (important for Ecto sandbox

@@ -15,7 +15,7 @@ defmodule Baudrate.Federation.DomainBlocks do
 
   import Ecto.Query
 
-  alias Baudrate.Federation.{DomainBlock, DomainBlockCache, Follows}
+  alias Baudrate.Federation.{DomainBlock, DomainBlockCache, Follows, RemoteActor}
   alias Baudrate.Repo
 
   @doc """
@@ -67,6 +67,34 @@ defmodule Baudrate.Federation.DomainBlocks do
   """
   @spec blocked?(String.t()) :: boolean()
   def blocked?(domain) when is_binary(domain), do: get_domain_block(domain) != nil
+
+  @doc """
+  Returns true if content by this remote actor is hidden by an instance-level
+  decision (ADR 0030).
+
+  The row-level companion to `Content.Filters.hidden_actor_ids/0`: listings use
+  the query, single pages use this. It reads the ETS cache rather than the
+  table, so a page render costs no query when the actor is already loaded.
+
+  Accepts a `RemoteActor`, a remote actor id, `nil` (local content is never
+  hidden), or an unloaded association — an association that was never preloaded
+  is looked up rather than assumed visible.
+  """
+  @spec actor_hidden?(RemoteActor.t() | integer() | nil | Ecto.Association.NotLoaded.t()) ::
+          boolean()
+  def actor_hidden?(nil), do: false
+
+  def actor_hidden?(%RemoteActor{domain: domain}) when is_binary(domain),
+    do: DomainBlockCache.domain_blocked?(domain)
+
+  def actor_hidden?(actor_id) when is_integer(actor_id) do
+    case Repo.one(from(ra in RemoteActor, where: ra.id == ^actor_id, select: ra.domain)) do
+      nil -> false
+      domain -> DomainBlockCache.domain_blocked?(domain)
+    end
+  end
+
+  def actor_hidden?(_), do: false
 
   @doc """
   Blocks a domain.
