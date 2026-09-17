@@ -75,7 +75,7 @@ out by P1-D1.
 
 ---
 
-## Phase 2 — Operability (scope)
+## Phase 2 — Operability — in progress
 
 **Goal.** No data loss goes unnoticed, the operator hears about problems before users do, and a bad deploy can be undone.
 
@@ -85,6 +85,23 @@ out by P1-D1.
 - no federated activity is lost to a restart;
 - the production host no longer compiles releases;
 - a release can be rolled back with one command.
+
+### Done
+
+| Stage | What | Released | Recorded in |
+|-------|------|----------|-------------|
+| 2B | One node (D2): cluster discovery removed; the scaling guide rewritten around a bigger host, PostgreSQL tuning and a CDN that fronts the whole site; troubleshooting for an accidental second node | v1.23.0 | [ADR 0033](adr/0033-baudrate-runs-on-one-node.md) |
+| 2C | Federation work committed before it is acknowledged: delivery jobs in the change's transaction, wake on commit, delivery deadlines, a per-domain circuit breaker, and an inbound queue processed one activity per remote account | v1.24.0 | [ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md) |
+| 2H | Drift: CI runs production's PostgreSQL 15, server and client, held together with Ansible by `verify-toolchain.sh`; the worker table, README clone URL and `INSTALLATION_KEY` fixed; stray committed uploads removed | v1.23.0 | `ci/image/README.md`, `doc/sysop.md` |
+
+"No federated activity is lost to a restart" is met by 2C
+(`test/baudrate/federation/durable_delivery_test.exs`).
+
+**Deferred by the operator, outside 2H:** production allows SSH login as root
+(key only). `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets
+`PermitRootLogin yes`, and sshd keeps the first value it reads, so the `common`
+role's `PermitRootLogin no` has no effect (`sshd -T`, found 2026-09-15). The fix
+would be for the role to manage the drop-ins and assert the effective value.
 
 ### 2A — Backups and recovery (M)
 
@@ -102,24 +119,6 @@ open:
 - [x] **Verify older copies too** (v1.23.0). Each pull also verifies the older copy that has gone longest without a successful check, so all 30 are re-checked in about a month; stamps live in `<dest>/.verified`. The same change stopped half-built `.incomplete-…` backups from being pulled and counted as copies. `test/scripts/pull_backups_test.exs` runs the script against backups written by `Snapshots.create/2`.
 - [ ] **Backup freshness in health checks:** the time of the last successful backup (see 2D).
 - **Accepted when:** production has a backup less than 24 h old, and the rehearsal restored a working instance.
-
-### 2B — Single-node stance, D2 (S) — released in v1.23.0
-
-- [x] Remove `DNS_CLUSTER_QUERY` from `config/runtime.exs` and `doc/sysop.md`, and drop `DNSCluster` from `application.ex` and `mix.exs`.
-- [x] ADR: Baudrate runs on one node, so ETS caches, nonces, challenges, rate limits and local uploads are sound — [ADR 0033](adr/0033-baudrate-runs-on-one-node.md).
-- [x] Rewrite the scaling section of `doc/sysop.md` around a bigger host, Postgres tuning and a CDN for static assets. The old section called duplicate workers "idempotent"; `DeliveryWorker` has no row locks, so it was wrong. `doc/troubleshooting.md` now covers diagnosing a second node.
-
-### 2C — Delivery and inbound robustness (L) — released in v1.24.0
-
-Decided 2026-09-17: extend our own queue rather than adopt Oban
-([ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md)).
-
-- [x] **Enqueue delivery jobs in the same transaction as the change that causes them.** Publishers run as a step of the change's `Ecto.Multi` or through `Federation.federate/2`; `Accept`/`Reject(Follow)` are queued too, instead of a one-off POST from a task. `durable_delivery_test.exs` discards every background task and requires each kind of change to leave its job, and fails on any task that publishes.
-- [x] **Wake the delivery worker on enqueue.** `pg_notify`, delivered by PostgreSQL on commit; `DeliveryWorker` listens on its own connection and keeps up to 10 deliveries in flight. A delivery past its deadline is killed and counted (it used to be retried every poll forever).
-- [x] **Per-domain circuit breaker** (`DeliveryCircuits`): 5 unreachable results open a domain's circuit, then one probe at a time with growing waits; held jobs expire after 7 days. A final 4xx abandons a job at once.
-- [x] **Inbound queue.** `Inbound.accept/4` admits (same checks, same order), stores (unique per signer and activity id) and answers 202; `InboundWorker` processes 4 at a time, one per remote actor in order, re-checking admission; bodies are cleared after processing.
-- **Accepted when:** killing the node between a post and its delivery loses nothing (test), and a remote instance posting many activities cannot use up the web request pool.
-- Found on the way and fixed: forwarding a local comment into a board sent its Create and Announce twice; the retry tables in the docs listed a sixth retry that never happens.
 
 ### 2D — Observability (M)
 
@@ -148,7 +147,7 @@ detailed health view and the logs are the whole of it.
   - `feed_items` nobody has bookmarked or interacted with, after 90 days;
   - `announces`, after 180 days;
   - soft-deleted articles and comments, once past the 90-day evidence window (P1-D6).
-- [ ] Postgres guidance in `doc/sysop.md`: autovacuum for the tables the purges churn. (`shared_buffers`, `effective_cache_size` and pool sizing for a single host arrived with 2B's Scaling section.)
+- [ ] Postgres guidance in `doc/sysop.md`: autovacuum for the tables the purges churn. (`shared_buffers`, `effective_cache_size` and pool sizing for a single host are in the Scaling section, from 2B.)
 
 ### 2G — Key separation (M)
 
@@ -156,14 +155,6 @@ Needs an ADR.
 
 - [ ] Separate encryption keys for TOTP secrets and federation private keys, apart from `SECRET_KEY_BASE`. Today one secret derives every key and cannot be rotated.
 - [ ] A release task that re-encrypts the stored secrets under a new key, so any key can be rotated.
-
-### 2H — Drift (S) — released in v1.23.0
-
-- [x] Run the same PostgreSQL major version in Ansible and CI. CI now runs production's 15, server and client: the client comes from `apt.postgresql.org` (Debian trixie carries only 17, whose `pg_dump` writes `SET transaction_timeout`, which a 15 server rejects). `verify-toolchain.sh` fails when Ansible, the image and the service images disagree. Live since CI image `20260917-5253d73` (#23), whose first run passed all 4,175 tests and 78 browser features on 15.
-- [x] Update the worker table in `doc/sysop.md` (add `FeedWorker` and every `SessionCleaner` job).
-- [x] Fix the README clone URL and add `INSTALLATION_KEY` to its production environment list.
-- [x] Remove the two link-preview images committed under `priv/static/uploads`.
-- [ ] **Deferred by the operator; not part of 2H.** **Production allows SSH login as root (key only).** `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets `PermitRootLogin yes`; sshd reads drop-ins first and keeps the first value, so the `common` role's `PermitRootLogin no` in `sshd_config` has no effect (`sshd -T` shows `permitrootlogin yes`, found 2026-09-15). Make the role manage the drop-ins and assert the effective value with `sshd -T`.
 
 ### Decisions (made 2026-09-17)
 
