@@ -1554,11 +1554,30 @@ underlying logic.
 
 ### Background Workers
 
-| Worker | Interval | Purpose |
-|--------|----------|---------|
-| `SessionCleaner` | 1 hour | Purge expired sessions, old login attempts (>7 days), orphan images (>24h), delivered/abandoned delivery jobs, stale link previews and media cache, notifications (>90 days); clear the evidence copies of reports closed over 90 days ago; advance data export requests and due account moves |
-| `DeliveryWorker` | 60 seconds | Poll and deliver pending federation jobs (50 per cycle) |
-| `StaleActorCleaner` | 24 hours | Refresh or delete stale remote actors (>30 days) |
+| Worker | Interval | What it does |
+|--------|----------|--------------|
+| `SessionCleaner` | 1 hour | The housekeeping jobs listed below |
+| `DeliveryWorker` | 60 s ± 10% | Delivers due federation jobs: 50 per cycle, 10 at a time |
+| `FeedWorker` | 60 s ± 10% | Fetches due RSS/Atom bot feeds, 5 bots at a time |
+| `StaleActorCleaner` | 24 hours | Remote actors not re-fetched for 30 days: refreshes them if anything in the database still references them, deletes them otherwise. Batches of 50; skipped while federation is off |
+
+`SessionCleaner` runs its jobs one after another, each on its own: a job that
+fails is logged and the rest still run.
+
+| Job | What it does |
+|-----|--------------|
+| `purge_expired_sessions` | Revokes sessions past their expiry and disconnects the pages still open on them |
+| `purge_old_login_attempts` | Deletes login attempt records older than 7 days |
+| `cleanup_orphan_article_images`, `cleanup_orphan_comment_images`, `cleanup_orphan_reply_images` | Deletes uploaded images that were never attached to a post, once they are 24 hours old |
+| `cleanup_delivery_jobs` | Deletes delivered jobs after 7 days and abandoned jobs after 30 days |
+| `refresh_stale_link_previews` | Re-fetches link previews older than 7 days |
+| `purge_orphan_link_previews` | Deletes link previews fetched more than 30 days ago that no article, comment, direct message or feed item references, with their images |
+| `purge_stale_media_cache` | Evicts media proxy cache files older than 30 days, then the oldest until the cache is under 2 GiB (`media_cache_ttl_days`, `media_cache_max_bytes`). A removed image is fetched again when next viewed |
+| `sweep_data_exports` | Marks export requests ready or expired as their windows pass, removes archive staging left by a crash, and deletes finished request history after 365 days |
+| `sweep_account_moves` | Sends account moves whose 24-hour cooling-off has passed |
+| `cleanup_old_notifications` | Deletes notifications older than 90 days |
+| `notify_ended_sanctions` | Tells members their silence or suspension has ended. Enforcement already stopped on its own, so a missed run only delays the notice |
+| `purge_closed_report_evidence` | Clears the evidence copies of reports closed more than 90 days ago |
 
 Each worker runs exactly once, on the one node ([Scaling](#scaling)). They are
 not safe to run twice: two `DeliveryWorker`s would deliver the same jobs.

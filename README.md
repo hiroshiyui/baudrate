@@ -69,7 +69,7 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
 
 ```bash
 # Clone the repository
-git clone https://github.com/user/baudrate.git
+git clone https://github.com/hiroshiyui/baudrate.git
 cd baudrate
 
 # Install dependencies
@@ -93,6 +93,9 @@ For production, you will need to configure:
 - `DATABASE_URL` -- PostgreSQL connection string
 - `SECRET_KEY_BASE` -- at least 64 bytes of random data (`mix phx.gen.secret`)
 - `PHX_HOST` -- your production hostname
+- `INSTALLATION_KEY` -- required until the setup wizard is completed; without
+  it every page answers 503 (see the
+  [SysOp Guide](doc/sysop.md#installation-key))
 
 Note: Both TOTP secrets and federation private keys are encrypted at rest
 using keys derived from `SECRET_KEY_BASE`, so no additional environment

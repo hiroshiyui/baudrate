@@ -99,7 +99,7 @@ open:
 - [ ] **An always-on puller.** Off-host copies only arrive while the workstation is running.
 - [x] **Per-file checksums, verified off-host** (2026-09-16): each backup carries `CHECKSUMS.sha256` over the dump and every upload, and the puller verifies it — including the list against its own hash in the manifest, since `sha256sum -c` on a truncated list exits 0. A hard-linked file keeps the previous backup's recorded checksum rather than being re-hashed, so bit rot surfaces instead of being certified intact.
 - [ ] **Alert on a failed or stale backup** — the puller exits non-zero on a bad checksum, a failed pull or a stale copy, but today that only marks the systemd unit failed and lands in the journal. Nobody is told (see 2D).
-- [ ] **Verify older copies too.** Only the newest copy is checked; rot in a three-week-old backup goes unnoticed until it is needed. Verifying one older copy per run would cover all 30 in a month.
+- [x] **Verify older copies too** (2026-09-17). Each pull also verifies the older copy that has gone longest without a successful check, so all 30 are re-checked in about a month; stamps live in `<dest>/.verified`. The same change stopped half-built `.incomplete-…` backups from being pulled and counted as copies. `test/scripts/pull_backups_test.exs` runs the script against backups written by `Snapshots.create/2`.
 - [ ] **Backup freshness in health checks:** the time of the last successful backup (see 2D).
 - **Accepted when:** production has a backup less than 24 h old, and the rehearsal restored a working instance.
 
@@ -158,10 +158,10 @@ Needs an ADR.
 
 ### 2H — Drift (S)
 
-- [ ] Run the same PostgreSQL major version in Ansible and CI (15 in Ansible, 17 in CI today).
-- [ ] Update the worker table in `doc/sysop.md` (add `FeedWorker` and every `SessionCleaner` job).
-- [ ] Fix the README clone URL and add `INSTALLATION_KEY` to its production environment list.
-- [ ] Remove the two link-preview images committed under `priv/static/uploads`.
+- [x] Run the same PostgreSQL major version in Ansible and CI. CI now runs production's 15, server and client: the client comes from `apt.postgresql.org` (Debian trixie carries only 17, whose `pg_dump` writes `SET transaction_timeout`, which a 15 server rejects). `verify-toolchain.sh` fails when Ansible, the image and the service images disagree. Needs the rebuilt CI image's `image.lock` merged before CI passes.
+- [x] Update the worker table in `doc/sysop.md` (add `FeedWorker` and every `SessionCleaner` job).
+- [x] Fix the README clone URL and add `INSTALLATION_KEY` to its production environment list.
+- [x] Remove the two link-preview images committed under `priv/static/uploads`.
 - [ ] **Deferred by the operator; not part of 2H.** **Production allows SSH login as root (key only).** `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets `PermitRootLogin yes`; sshd reads drop-ins first and keeps the first value, so the `common` role's `PermitRootLogin no` in `sshd_config` has no effect (`sshd -T` shows `permitrootlogin yes`, found 2026-09-15). Make the role manage the drop-ins and assert the effective value with `sshd -T`.
 
 ### Decisions (made 2026-09-17)
