@@ -55,6 +55,11 @@ defmodule Baudrate.Backup.SnapshotsTest do
     assert manifest["database"]["bytes"] == File.stat!(Path.join(result.path, "db.dump")).size
     assert manifest["database"]["sha256"] =~ ~r/\A[0-9a-f]{64}\z/
     assert manifest["uploads"]["files"] == 2
+
+    # Which key set the ciphertext in the dump needs (ADR 0038): ids only.
+    assert manifest["encryption_keys"]["auth"]["separated"] == true
+    assert manifest["encryption_keys"]["auth"]["configured"] == ["testauth"]
+    assert manifest["encryption_keys"]["signing"]["configured"] == ["testsign"]
     assert Snapshots.list(root) == [result.path]
   end
 

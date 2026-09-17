@@ -226,6 +226,88 @@ defmodule Baudrate.Release do
   end
 
   @doc """
+  Re-encrypts stored secrets under the current encryption key (ADR 0038).
+
+  Run it after configuring `BAUDRATE_AUTH_KEYS` / `BAUDRATE_SIGNING_KEYS`, and
+  again after putting a new key in front of them. It is safe to run against
+  the live node, safe to interrupt and safe to repeat: each row is rewritten
+  on its own, only when it is not already on the current key, and only while
+  it still holds what was read.
+
+      bin/baudrate rpc "Baudrate.Release.rotate_keys(dry_run: true)"
+      bin/baudrate rpc "Baudrate.Release.rotate_keys()"
+      bin/baudrate rpc "Baudrate.Release.rotate_keys(only: [:signing], batch: 50)"
+
+  It ends with a census of how many stored values sit under each key. A
+  retired key may be removed from the configuration only once nothing is
+  listed under it — including `recovery_codes.code_hash`, which cannot be
+  re-encrypted at all: those rows move to the current key only when a member
+  generates new codes, and dropping their key takes away that member's way
+  back into their account.
+
+  ## Options
+
+    * `:dry_run` — report what would change and write nothing
+    * `:only` — `[:auth]` or `[:signing]`; both by default
+    * `:batch` — rows read at a time (200 by default)
+  """
+  @spec rotate_keys(keyword()) :: Baudrate.Crypto.Rekey.result()
+  def rotate_keys(opts \\ []) do
+    load_app()
+    [repo] = repos()
+
+    separated =
+      Enum.filter(Baudrate.Crypto.Keyring.classes(), &Baudrate.Crypto.Keyring.separated?(&1))
+
+    if separated == [] do
+      IO.puts("""
+      No encryption keys are configured, so there is nothing to rotate: every
+      secret is protected by the key derived from SECRET_KEY_BASE, which is
+      what this task moves away from.
+
+      Generate a key per class:
+
+          openssl rand -base64 32
+
+      set BAUDRATE_AUTH_KEYS="k1:<key>" and BAUDRATE_SIGNING_KEYS="k1:<key>",
+      restart, then run this again. See doc/sysop.md, "Rotating an encryption
+      key".
+      """)
+    end
+
+    {:ok, result, _} =
+      Ecto.Migrator.with_repo(repo, fn _repo ->
+        Baudrate.Crypto.Rekey.run(opts)
+      end)
+
+    result
+  end
+
+  @doc """
+  Prints how many stored secrets sit under each encryption key (ADR 0038).
+
+  The same census `rotate_keys/1` ends with, and what the detailed health
+  report's `encryption_keys` check reads.
+
+      bin/baudrate rpc "Baudrate.Release.key_census()"
+  """
+  @spec key_census() :: Baudrate.Crypto.Rekey.usage()
+  def key_census do
+    load_app()
+    [repo] = repos()
+
+    {:ok, usage, _} =
+      Ecto.Migrator.with_repo(repo, fn _repo -> Baudrate.Crypto.Rekey.usage() end)
+
+    for {target, counts} <- Enum.sort(usage), counts != %{} do
+      inner = Enum.map_join(counts, " ", fn {id, count} -> "#{id}=#{count}" end)
+      IO.puts("#{target}: #{inner}")
+    end
+
+    usage
+  end
+
+  @doc """
   Backs up the database and the uploads directory into `output_dir`
   (`Baudrate.Backup.backup/2`). Mix is not available in a release, so this is
   how an Ansible install takes a backup:

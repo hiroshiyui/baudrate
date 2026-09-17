@@ -16,7 +16,15 @@ defmodule Baudrate.HealthTest do
       assert %{status: :ok, checks: checks} = Health.report(healthy())
 
       assert Map.keys(checks) |> Enum.sort() ==
-               [:backup, :database, :delivery_queue, :disk, :inbound_queue, :workers]
+               [
+                 :backup,
+                 :database,
+                 :delivery_queue,
+                 :disk,
+                 :encryption_keys,
+                 :inbound_queue,
+                 :workers
+               ]
 
       assert %{status: :fail, checks: %{database: %{status: :fail}}} =
                Health.report(Keyword.put(healthy(), :database, fn -> {:error, :down} end))
@@ -176,12 +184,53 @@ defmodule Baudrate.HealthTest do
     Health.report(Keyword.merge(healthy(), [only: [name]] ++ opts)).checks[name]
   end
 
+  describe "encryption keys" do
+    test "is ok when every stored secret names a key this instance has" do
+      opts = Keyword.put(healthy(), :key_usage, %{"users.totp_secret" => %{"testauth" => 2}})
+
+      assert %{status: :ok, checks: %{encryption_keys: %{status: :ok} = check}} =
+               Health.report(opts)
+
+      assert check.separated == %{auth: true, signing: true}
+      assert check.keys == %{"users.totp_secret" => %{"testauth" => 2}}
+    end
+
+    test "fails when a stored secret needs a key that is not configured" do
+      opts =
+        Keyword.put(healthy(), :key_usage, %{
+          "users.totp_secret" => %{"testauth" => 1, "dropped" => 3}
+        })
+
+      assert %{status: :fail, checks: %{encryption_keys: check}} = Health.report(opts)
+      assert check.status == :fail
+      assert check.reason =~ "not configured"
+      assert check.missing_keys == ["dropped"]
+    end
+
+    test "counts values still protected by the secret_key_base fallback without failing" do
+      opts = Keyword.put(healthy(), :key_usage, %{"users.totp_secret" => %{"legacy" => 4}})
+
+      assert %{status: :ok, checks: %{encryption_keys: %{status: :ok} = check}} =
+               Health.report(opts)
+
+      assert check.keys == %{"users.totp_secret" => %{"legacy" => 4}}
+    end
+
+    test "counts a value nobody can read as a missing key" do
+      opts = Keyword.put(healthy(), :key_usage, %{"users.totp_secret" => %{"unreadable" => 1}})
+
+      assert %{checks: %{encryption_keys: %{status: :fail, missing_keys: ["unreadable"]}}} =
+               Health.report(opts)
+    end
+  end
+
   defp healthy do
     [
       free_space: fn _ -> {:ok, space(50, 100)} end,
       last_beat: fn _ -> System.monotonic_time(:millisecond) end,
       backup_dir: nil,
-      federation_enabled?: true
+      federation_enabled?: true,
+      key_usage: %{"users.totp_secret" => %{"testauth" => 1}}
     ]
   end
 

@@ -15,6 +15,7 @@ defmodule Baudrate.Backup.Snapshots do
       names and are never rewritten in place, so a week of backups costs
       about one copy of the uploads plus the files added since.
     * `MANIFEST.json` — application version, time, dump size and SHA-256,
+      the ids of the encryption keys that were current (ADR 0038),
       file counts, and the SHA-256 of the checksum list below.
     * `CHECKSUMS.sha256` — every file in the backup, the dump included, in
       `sha256sum` format, so a copy on another machine is checked with one
@@ -187,6 +188,7 @@ defmodule Baudrate.Backup.Snapshots do
         created_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601(),
         database: %{file: "db.dump", bytes: File.stat!(dump).size, sha256: dump_sha256},
         uploads: counts,
+        encryption_keys: encryption_keys(),
         checksums: write_checksums(dir, dump_sha256, stored, plan.previous)
       }
 
@@ -196,6 +198,21 @@ defmodule Baudrate.Backup.Snapshots do
 
       {:ok, Map.merge(counts, %{db_bytes: manifest.database.bytes})}
     end
+  end
+
+  # Which encryption keys were current when the dump was taken (ADR 0038) —
+  # ids only, never key material. The dump holds the ciphertext and none of
+  # the keys, so restoring it needs the same key set; recording the ids makes
+  # a restore against the wrong one visible before anyone wonders why no one
+  # can pass 2FA.
+  defp encryption_keys do
+    Map.new(Baudrate.Crypto.Keyring.classes(), fn class ->
+      {class,
+       %{
+         separated: Baudrate.Crypto.Keyring.separated?(class),
+         configured: Baudrate.Crypto.Keyring.configured_ids(class)
+       }}
+    end)
   end
 
   # Walks the uploads once to decide, per file, between a hard link to the

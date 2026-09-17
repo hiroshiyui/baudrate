@@ -18,6 +18,7 @@ defmodule Baudrate.Health do
   | `workers` | `DeliveryWorker`, `InboundWorker`, `FeedWorker` or `SessionCleaner` has not completed a run for three of its intervals (at least 5 minutes), counting from boot for a worker that has not run yet |
   | `disk` | free space under the uploads directory is below 1 GiB or 10% of the filesystem, the floor backups also keep |
   | `backup` | the newest complete backup in `BAUDRATE_BACKUP_DIR` is more than 26 hours old, or there is none. Skipped when no backup directory is configured |
+  | `encryption_keys` | a stored secret names an encryption key this instance does not have, so it cannot be read (ADR 0038). Skipped while the keys are still derived from `SECRET_KEY_BASE` |
 
   The queue checks are skipped while federation is switched off. Each check
   runs with a 5-second limit; one that runs out fails, so a hung database or
@@ -31,6 +32,7 @@ defmodule Baudrate.Health do
 
   alias Baudrate.Backup
   alias Baudrate.Backup.Snapshots
+  alias Baudrate.Crypto.{Keyring, Rekey}
   alias Baudrate.Federation.{DeliveryCircuit, DeliveryJob, InboundActivity}
   alias Baudrate.Health.Heartbeat
   alias Baudrate.Repo
@@ -42,7 +44,7 @@ defmodule Baudrate.Health do
   @backup_max_age_seconds 26 * 3600
   @min_stale_ms 5 * 60_000
 
-  @checks [:database, :delivery_queue, :inbound_queue, :workers, :disk, :backup]
+  @checks [:database, :delivery_queue, :inbound_queue, :workers, :disk, :backup, :encryption_keys]
 
   @type status :: :ok | :fail | :skipped
   @type report :: %{status: :ok | :fail, checks: %{atom() => map()}}
@@ -256,6 +258,37 @@ defmodule Baudrate.Health do
               do: fail("the newest backup is more than 26 hours old", details),
               else: ok(details)
         end
+    end
+  end
+
+  # --- encryption keys ---
+
+  defp check(:encryption_keys, opts) do
+    usage = Keyword.get_lazy(opts, :key_usage, &Rekey.usage/0)
+    separated = Map.new(Keyring.classes(), &{&1, Keyring.separated?(&1)})
+    unknown = Rekey.unknown_key_ids(usage)
+
+    counts =
+      Map.new(usage, fn {target, per_key} ->
+        {target, Map.new(per_key, fn {id, count} -> {id, count} end)}
+      end)
+
+    details = %{separated: separated, keys: counts}
+
+    cond do
+      unknown != [] ->
+        # Those rows cannot be decrypted at all: a key was dropped while
+        # values still referenced it, and putting it back is the fix.
+        fail(
+          "a stored secret needs an encryption key that is not configured",
+          Map.put(details, :missing_keys, unknown)
+        )
+
+      not Enum.any?(Map.values(separated)) ->
+        skipped("encryption keys are still derived from SECRET_KEY_BASE")
+
+      true ->
+        ok(details)
     end
   end
 
