@@ -34,7 +34,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
-| **2** | **Operability** | 2A–2H | **In progress.** Data loss and blind operations are the biggest risks |
+| **2** | **Operability** | 2A–2H | **In progress** (2B, 2H in v1.23.0). Data loss and blind operations are the biggest risks |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
@@ -99,11 +99,11 @@ open:
 - [ ] **An always-on puller.** Off-host copies only arrive while the workstation is running.
 - [x] **Per-file checksums, verified off-host** (2026-09-16): each backup carries `CHECKSUMS.sha256` over the dump and every upload, and the puller verifies it — including the list against its own hash in the manifest, since `sha256sum -c` on a truncated list exits 0. A hard-linked file keeps the previous backup's recorded checksum rather than being re-hashed, so bit rot surfaces instead of being certified intact.
 - [ ] **Alert on a failed or stale backup** — the puller exits non-zero on a bad checksum, a failed pull or a stale copy, but today that only marks the systemd unit failed and lands in the journal. Nobody is told (see 2D).
-- [x] **Verify older copies too** (2026-09-17). Each pull also verifies the older copy that has gone longest without a successful check, so all 30 are re-checked in about a month; stamps live in `<dest>/.verified`. The same change stopped half-built `.incomplete-…` backups from being pulled and counted as copies. `test/scripts/pull_backups_test.exs` runs the script against backups written by `Snapshots.create/2`.
+- [x] **Verify older copies too** (v1.23.0). Each pull also verifies the older copy that has gone longest without a successful check, so all 30 are re-checked in about a month; stamps live in `<dest>/.verified`. The same change stopped half-built `.incomplete-…` backups from being pulled and counted as copies. `test/scripts/pull_backups_test.exs` runs the script against backups written by `Snapshots.create/2`.
 - [ ] **Backup freshness in health checks:** the time of the last successful backup (see 2D).
 - **Accepted when:** production has a backup less than 24 h old, and the rehearsal restored a working instance.
 
-### 2B — Single-node stance, D2 (S)
+### 2B — Single-node stance, D2 (S) — released in v1.23.0
 
 - [x] Remove `DNS_CLUSTER_QUERY` from `config/runtime.exs` and `doc/sysop.md`, and drop `DNSCluster` from `application.ex` and `mix.exs`.
 - [x] ADR: Baudrate runs on one node, so ETS caches, nonces, challenges, rate limits and local uploads are sound — [ADR 0033](adr/0033-baudrate-runs-on-one-node.md).
@@ -147,7 +147,7 @@ detailed health view and the logs are the whole of it.
   - `feed_items` nobody has bookmarked or interacted with, after 90 days;
   - `announces`, after 180 days;
   - soft-deleted articles and comments, once past the 90-day evidence window (P1-D6).
-- [ ] Postgres guidance in `doc/sysop.md`: autovacuum, `shared_buffers` and connection pool sizing for a single host.
+- [ ] Postgres guidance in `doc/sysop.md`: autovacuum for the tables the purges churn. (`shared_buffers`, `effective_cache_size` and pool sizing for a single host arrived with 2B's Scaling section.)
 
 ### 2G — Key separation (M)
 
@@ -156,9 +156,9 @@ Needs an ADR.
 - [ ] Separate encryption keys for TOTP secrets and federation private keys, apart from `SECRET_KEY_BASE`. Today one secret derives every key and cannot be rotated.
 - [ ] A release task that re-encrypts the stored secrets under a new key, so any key can be rotated.
 
-### 2H — Drift (S)
+### 2H — Drift (S) — released in v1.23.0
 
-- [x] Run the same PostgreSQL major version in Ansible and CI. CI now runs production's 15, server and client: the client comes from `apt.postgresql.org` (Debian trixie carries only 17, whose `pg_dump` writes `SET transaction_timeout`, which a 15 server rejects). `verify-toolchain.sh` fails when Ansible, the image and the service images disagree. Needs the rebuilt CI image's `image.lock` merged before CI passes.
+- [x] Run the same PostgreSQL major version in Ansible and CI. CI now runs production's 15, server and client: the client comes from `apt.postgresql.org` (Debian trixie carries only 17, whose `pg_dump` writes `SET transaction_timeout`, which a 15 server rejects). `verify-toolchain.sh` fails when Ansible, the image and the service images disagree. Live since CI image `20260917-5253d73` (#23), whose first run passed all 4,175 tests and 78 browser features on 15.
 - [x] Update the worker table in `doc/sysop.md` (add `FeedWorker` and every `SessionCleaner` job).
 - [x] Fix the README clone URL and add `INSTALLATION_KEY` to its production environment list.
 - [x] Remove the two link-preview images committed under `priv/static/uploads`.
@@ -510,6 +510,18 @@ Kept so the review is complete. None of these are scheduled; propose moving one 
 Full detail is in `CHANGELOG.md`; this is the short version of where the
 project has been.
 
+- **v1.23.0 — Phase 2B and 2H.** Baudrate officially runs on one node
+  ([ADR 0033](adr/0033-baudrate-runs-on-one-node.md)); the old guide had called
+  running several "idempotent" when it would have delivered every job twice
+  and applied a domain block on one node only. CI tests production's
+  PostgreSQL 15, server and client. The backup puller verifies one older copy
+  per run, and no longer pulls a backup still being built.
+- **v1.22.x — backups that prove they are intact, and policy documents.**
+  Per-file checksums verified off-host (v1.22.0); bilingual privacy policy and
+  end user agreement templates written from the code (v1.22.0); the re-accept
+  checkbox that took two clicks, so publishing new terms could silently do
+  nothing (v1.22.1); and the accept card that ad blockers hid, because
+  `#policy-accept` looks like a cookie-consent bar (v1.22.2).
 - **v1.21.0 — Phase 1C–1F.** Sanctions short of a ban; domain blocks as rows
   with reversible hiding and a per-actor suspension; public terms, rules and
   privacy pages with recorded, versioned acceptance; rules as citable records.
