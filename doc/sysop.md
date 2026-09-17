@@ -1504,9 +1504,25 @@ readable by another account.
 For a remote console, or `rpc`, as root:
 
 ```bash
-sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; exec /opt/baudrate/current/bin/baudrate remote'
-sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; exec /opt/baudrate/current/bin/baudrate rpc "IO.puts(node())"'
+sudo -u baudrate sh -c 'cd /opt/baudrate && set -a; . /opt/baudrate/env/baudrate.env; exec /opt/baudrate/current/bin/baudrate remote'
+sudo -u baudrate sh -c 'cd /opt/baudrate && set -a; . /opt/baudrate/env/baudrate.env; exec /opt/baudrate/current/bin/baudrate rpc "IO.puts(node())"'
 ```
+
+**The `cd` matters.** `sudo` keeps root's working directory, and a node that
+cannot stat its own cwd dies before it can say why: the whole error is
+`Kernel pid terminated (logger)` and a `badarg` inside `persistent_term`,
+which looks like a broken release rather than a shell problem.
+
+**To run a script this way, put the file under `/opt/baudrate`**, not in
+`/tmp`. The unit sets `PrivateTmp`, so the running node has a `/tmp` of its
+own and `Code.eval_file/1` through `rpc` fails with `enoent` on a file you can
+see from your own shell. Remove it afterwards — anything readable by the
+service account is worth keeping short-lived.
+
+**`eval` is not a substitute for `rpc` here.** It loads the application
+without starting it (ADR 0033), so any code that reads a setting finds an
+empty ETS table and raises. Use `rpc` for anything touching settings, and for
+work whose effects the live node must see, like a cache refresh.
 
 `RELEASE_DISTRIBUTION=none` runs the node without distribution at all, if you
 never use `remote` or `rpc`.
@@ -1722,18 +1738,32 @@ the moment a key is set, what is written afterwards needs it.
    Nothing is re-encrypted yet, and every existing secret still reads through
    the old derivation.
 
-4. Re-encrypt, dry run first:
+4. Re-encrypt, dry run first. As root, with a wrapper for the invocation
+   ([Erlang distribution](#erlang-distribution-and-the-remote-console)
+   explains why the `cd` and the sourced environment are both needed):
 
    ```bash
-   set -a; . /opt/baudrate/env/baudrate.env; set +a
-   bin/baudrate rpc "Baudrate.Release.rotate_keys(dry_run: true)"
-   bin/baudrate rpc "Baudrate.Release.rotate_keys()"
+   brpc() { sudo -u baudrate sh -c "cd /opt/baudrate && set -a; . /opt/baudrate/env/baudrate.env; set +a; exec /opt/baudrate/current/bin/baudrate rpc \"$1\""; }
+
+   brpc "Baudrate.Release.rotate_keys(dry_run: true)"
+   brpc "Baudrate.Release.rotate_keys()"
    ```
+
+   It logs one line per value and ends with a summary — from the run that
+   separated this instance's own keys:
+
+   ```
+   rotate_keys: recovery_codes.code_hash cannot be re-keyed (current=202609) — legacy=130.
+   rotate_keys: complete — rekeyed=117 undecryptable=0 skipped_concurrent=0
+   ```
+
+   Run it again and `rekeyed` should be `0`: that is the check that it
+   finished, and it is safe to interrupt and repeat at any point.
 
 5. Check what is left:
 
    ```bash
-   bin/baudrate rpc "Baudrate.Release.key_census()"
+   brpc "Baudrate.Release.key_census()"
    curl -s http://127.0.0.1:4001/health | jq .checks.encryption_keys
    ```
 
