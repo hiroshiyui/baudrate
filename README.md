@@ -101,9 +101,10 @@ For production, you will need to configure:
   with the public one it ships (see the
   [SysOp Guide](doc/sysop.md#erlang-distribution-and-the-remote-console))
 
-Production releases are built, smoke-tested and attested in CI and attached to
-each GitHub release; the Ansible deploy verifies the attestation before
-installing one (see the [SysOp Guide](doc/sysop.md#release-artifacts)).
+Every release is also built, smoke-tested and attested in CI and attached to
+its GitHub release, for installing on a host without a toolchain; the Ansible
+deploy builds the tag on the server (see the
+[SysOp Guide](doc/sysop.md#release-artifacts)).
 
 Recommended for operations: `HEALTH_DETAIL_PORT` serves a detailed health
 report (queues, workers, disk, backup age) on `127.0.0.1` only, for a monitor on

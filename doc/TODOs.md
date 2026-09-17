@@ -93,7 +93,7 @@ out by P1-D1.
 | 2B | One node (D2): cluster discovery removed; the scaling guide rewritten around a bigger host, PostgreSQL tuning and a CDN that fronts the whole site; troubleshooting for an accidental second node | v1.23.0 | [ADR 0033](adr/0033-baudrate-runs-on-one-node.md) |
 | 2C | Federation work committed before it is acknowledged: delivery jobs in the change's transaction, wake on commit, delivery deadlines, a per-domain circuit breaker, and an inbound queue processed one activity per remote account | v1.24.0 | [ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md) |
 | 2D | Observability: a detailed health report on a loopback-only listener (queues, worker heartbeats, disk, backup age; 503 when a check fails) and optional JSON logs with a metadata allow-list. Alerting stays with the operator: the sysop guide shows polling with a systemd timer or a host monitor | v1.25.0 | [ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md) |
-| 2E | Deploy safety: releases built on Debian 12 in CI, smoke-tested on every push, attested and attached to the GitHub release; the deploy verifies the attestation on the controller and installs the tarball; a rollback playbook that refuses an incompatible schema; the Erlang cookie per server and distribution on loopback; Sobelow and mix_audit in CI | v1.26.0 | [ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md) |
+| 2E | Deploy safety: releases built on Debian 12 in CI, smoke-tested on every push, attested and attached to the GitHub release; a rollback playbook that refuses an incompatible schema; the Erlang cookie per server and distribution on loopback; Sobelow and mix_audit in CI. The deploy installed that tarball in v1.26.0 and builds on the server again since (ADR 0037) | v1.26.0 | [ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md), [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md) |
 | 2H | Drift: CI runs production's PostgreSQL 15, server and client, held together with Ansible by `verify-toolchain.sh`; the worker table, README clone URL and `INSTALLATION_KEY` fixed; stray committed uploads removed | v1.23.0 | `ci/image/README.md`, `doc/sysop.md` |
 
 "No federated activity is lost to a restart" is met by 2C
@@ -101,7 +101,9 @@ out by P1-D1.
 inbound backlog, a stalled worker or a full disk shows up in the detailed
 health check" by 2D (`test/baudrate/health_test.exs`). "The production host no
 longer compiles releases" and "a release can be rolled back with one command"
-are met by 2E (`ci/release/smoke-test.sh`, `rollback-baudrate.yml`).
+are met by 2E for rollback (`rollback-baudrate.yml`); the production host still
+compiles releases, by the operator's choice (ADR 0037), and CI builds and
+smoke-tests one for every change (`ci/release/smoke-test.sh`).
 
 **Deferred by the operator, outside 2H:** production allows SSH login as root
 (key only). `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets
@@ -109,11 +111,13 @@ are met by 2E (`ci/release/smoke-test.sh`, `rollback-baudrate.yml`).
 role's `PermitRootLogin no` has no effect (`sshd -T`, found 2026-09-15). The fix
 would be for the role to manage the drop-ins and assert the effective value.
 
-**Deferred by the operator, outside 2E:** the build toolchains stay installed on
-the production server (asdf with Erlang and Elixir, rustup, `build-essential`,
-git, and the `src/` checkout), although deploys no longer use them. The server
-also hosts another application that may build there. `setup-server.yml` still
-installs them; `ansible/README.md` says what can be removed by hand.
+**Reversed by the operator, 2026-09-18 (ADR 0037):** the deploy builds the tag
+on the server again. Installing the CI-built tarball took 13 minutes against 2
+for an incremental build, because 46 MB had to come down from GitHub and go up
+to the server over the operator's link. The build toolchains therefore stay on
+the server. Still open, if the transfer is ever worth solving: publish the
+release to a registry so the operator's machine verifies only a digest and the
+server pulls the bytes over its own link.
 
 ### 2A — Backups and recovery (M)
 

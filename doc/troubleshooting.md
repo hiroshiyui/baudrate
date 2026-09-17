@@ -621,34 +621,22 @@ The report is on the server only: `curl -s http://127.0.0.1:4001/health | jq`
 
 ## Deploys, releases and rollback
 
-Production installs the release CI built for a tag, never one compiled on the
-server ([ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md);
-[SysOp Guide](sysop.md#release-artifacts)).
+The Ansible deploy builds the release tag on the server
+([ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md)). CI also
+builds, smoke-tests and attests a release for each tag, for installing by hand
+([SysOp Guide](sysop.md#release-artifacts)).
 
-### The deploy stops at "Could not fetch or verify"
+### Installing a CI-built tarball by hand fails to verify
 
-The control machine could not download or verify the tarball. In order:
+Do not install it. `gh attestation verify` failing means the tarball was not
+built by this repository's `release.yml` from that tag's commit on a
+GitHub-hosted runner. Check also that:
 
-- **`gh auth status` fails.** Run `gh auth login`.
-- **The tag is not in your clone.** Run `git fetch --tags`. The deploy compares
-  the attestation with the commit the tag names *in your clone*, so a tag that
-  was moved on GitHub after you fetched it also fails here. That is the check
-  working: find out why the tag moved before deploying it.
-- **The release has no tarball.** Publishing the GitHub release starts the
-  Release workflow, which takes several minutes. Check
-  `gh run list --workflow release.yml`; if the run failed, fix the cause and
-  re-run it. Releases published before ADR 0036 have no tarball at all; roll
-  back to one still on the server instead.
-- **`gh attestation verify` fails** for a tarball that exists. Do not install
-  it. It was not built by this repository's `release.yml` from that tag's
-  commit on a GitHub-hosted runner.
-
-### The deploy refuses the host
-
-"Releases are built for Debian 12 on x86_64": the release carries its own
-Erlang runtime and NIFs and does not start on another Debian release or
-architecture. Upgrading the server's Debian release needs `debian_version` and
-the CI images changed together ([ci/image/README.md](../ci/image/README.md)).
+- `gh auth status` succeeds, and the tag is in your clone (`git fetch --tags`),
+  since the check compares the attestation with the commit the tag names *in
+  your clone*;
+- the release has a tarball at all — the Release workflow takes several
+  minutes, and releases published before v1.26.0 have none.
 
 ### "RELEASE_COOKIE must be set to this server's own secret cookie"
 
@@ -671,6 +659,15 @@ With the cookie set, check the name: the node is `baudrate@127.0.0.1`, reached
 over loopback. A release from before ADR 0036 is named `baudrate@<hostname>`
 instead; after a rollback to one, set `RELEASE_NODE=baudrate@$(hostname -s)`
 and `RELEASE_DISTRIBUTION=sname` for the command.
+
+### A deploy fails while building on the server
+
+The server builds the tag with the Erlang and Elixir versions that tag pins in
+`.tool-versions`. Install them first
+(`ansible-playbook playbooks/setup-server.yml --tags elixir`), or the build
+fails; this is what makes deploying a very old tag awkward, and why the
+rollback playbook exists. The deploy wipes `_build/prod` by itself when the
+tag's toolchain differs from the last build's.
 
 ### The rollback playbook refuses
 

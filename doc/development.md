@@ -2608,9 +2608,13 @@ read-only token and no caches. Its publish job checks the tarball's digest,
 records a build-provenance attestation and attaches
 `baudrate-<version>-debian12-x86_64.tar.gz` and its `.sigstore.json` bundle to
 the release; it runs no third-party code. The build refuses a tag that does not
-match the version in `mix.exs`. The Ansible deploy installs only a tarball
-whose attestation names `release.yml`, the tag, and the commit the tag names in
-the operator's clone.
+match the version in `mix.exs`.
+
+The Ansible deploy builds the tag on the server rather than installing that
+tarball ([ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md)): the
+transfer cost more on the operator's link than the build costs the server. The
+release build here is therefore a gate — it catches a release that cannot start
+before a tag exists — and the attached tarball is for installing by hand.
 
 The release is built with a fixed, public cookie (`releases/0` in `mix.exs`),
 and `rel/env.sh.eex` refuses to join the Erlang distribution with it: a server

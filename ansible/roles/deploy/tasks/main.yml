@@ -1,21 +1,18 @@
 ---
 # Baudrate — Deploy role
 #
-# Installs the release CI built for a tag (ADR 0036): downloads the tarball
-# attached to the GitHub release, verifies on the controller that
-# .github/workflows/release.yml built it from the tag's commit, installs it
-# into a timestamped release directory, runs migrations, swaps the `current`
-# symlink and restarts the service. Nothing is compiled on the server.
+# Builds Baudrate from a git release tag on the server, creates an OTP release,
+# manages symlink-based releases, runs migrations, and restarts the service.
+#
+# Releases are also built, smoke-tested and attested in CI (ADR 0036) and
+# attached to each GitHub release, but the deploy builds here: moving a 46 MB
+# tarball down from GitHub and up to the server cost more on the operator's
+# link than an incremental build costs the server (ADR 0037). The attached
+# tarball remains for installing by hand.
 
 # ============================================================
 # Phase 1: Pre-flight checks
 # ============================================================
-
-- name: Verify baudrate user exists
-  ansible.builtin.getent:
-    database: passwd
-    key: "{{ baudrate_user }}"
-  register: baudrate_user_check
 
 - name: Validate the release tag
   ansible.builtin.assert:
@@ -23,24 +20,24 @@
       - release_tag is match('^v[0-9]+\.[0-9]+\.[0-9]+$')
     fail_msg: "release_tag must look like v1.2.3, got '{{ release_tag }}'."
 
-# A release carries its own Erlang runtime and NIFs, built for production's
-# Debian release on x86_64 (ci/image/Dockerfile); it does not start elsewhere.
-- name: Check the host runs what releases are built for
+- name: Verify baudrate user exists
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ baudrate_user }}"
+  register: baudrate_user_check
+
+- name: Verify asdf is installed
+  ansible.builtin.stat:
+    path: "{{ baudrate_home }}/.asdf/bin/asdf"
+  register: asdf_check
+
+- name: Fail if asdf is not installed
   ansible.builtin.assert:
     that:
-      - ansible_facts.distribution == 'Debian'
-      - ansible_facts.distribution_major_version == (debian_version | string)
-      - ansible_facts.architecture == 'x86_64'
-    fail_msg: >-
-      Releases are built for Debian {{ debian_version }} on x86_64, and this host
-      runs {{ ansible_facts.distribution }} {{ ansible_facts.distribution_major_version }}
-      on {{ ansible_facts.architecture }}. Change debian_version and the CI
-      image together (ci/image/README.md) before deploying here.
-
-- name: Set release facts
-  ansible.builtin.set_fact:
-    release_version: "{{ release_tag | regex_replace('^v', '') }}"
-    release_artifact: "baudrate-{{ release_tag | regex_replace('^v', '') }}-debian{{ debian_version }}-x86_64.tar.gz"
+      - asdf_check.stat.exists
+    fail_msg: >
+      asdf is not installed for {{ baudrate_user }}.
+      Run setup-server.yml first to provision the server.
 
 - name: Check for currently deployed release
   ansible.builtin.stat:
@@ -80,7 +77,7 @@
 
               To return to a release still on the server, use
               playbooks/rollback-baudrate.yml instead: it checks the
-              database schema first.
+              database schema first, and builds nothing.
               ============================================================
 
         - name: Confirm rollback
@@ -88,97 +85,7 @@
             prompt: "Press Enter to continue with rollback, or Ctrl+C to abort"
 
 # ============================================================
-# Phase 2: Fetch and verify the release (on the controller)
-# ============================================================
-# The attestation is checked here, before anything reaches the server: the
-# tarball must have been signed by this repository's release workflow, on a
-# GitHub-hosted runner, for this tag, at the commit the tag names in the
-# controller's own clone. A tag moved on GitHub after you fetched it therefore
-# fails, as does a tarball built by any other workflow or from any other
-# commit. The server receives only the verified file, and checks its digest.
-
-- name: Fetch and verify the release on the controller
-  delegate_to: localhost
-  become: false
-  run_once: true
-  block:
-    - name: Check the GitHub CLI can authenticate
-      ansible.builtin.command:
-        cmd: gh auth status --hostname github.com
-      changed_when: false
-      register: gh_auth
-      failed_when: gh_auth.rc != 0
-
-    - name: Resolve the tag in the local clone
-      ansible.builtin.command:
-        cmd: git -C "{{ playbook_dir }}/../.." rev-parse --verify --quiet "refs/tags/{{ release_tag }}^{commit}"
-      changed_when: false
-      register: release_commit
-      failed_when: release_commit.rc != 0 or (release_commit.stdout | trim | length) != 40
-
-    - name: Create a temporary directory for the release
-      ansible.builtin.tempfile:
-        state: directory
-        prefix: baudrate-deploy-
-      register: release_download
-
-    - name: Download the release tarball
-      ansible.builtin.command:
-        argv:
-          - gh
-          - release
-          - download
-          - "{{ release_tag }}"
-          - --repo
-          - "{{ release_repo }}"
-          - --pattern
-          - "{{ release_artifact }}"
-          - --dir
-          - "{{ release_download.path }}"
-      changed_when: true
-
-    - name: Verify the release was built by the release workflow from the tag
-      ansible.builtin.command:
-        argv:
-          - gh
-          - attestation
-          - verify
-          - "{{ release_download.path }}/{{ release_artifact }}"
-          - --repo
-          - "{{ release_repo }}"
-          - --signer-workflow
-          - "{{ release_repo }}/.github/workflows/release.yml"
-          - --source-ref
-          - "refs/tags/{{ release_tag }}"
-          - --source-digest
-          - "{{ release_commit.stdout | trim }}"
-          - --deny-self-hosted-runners
-      changed_when: false
-
-    - name: Record the verified digest
-      ansible.builtin.stat:
-        path: "{{ release_download.path }}/{{ release_artifact }}"
-        get_checksum: true
-        checksum_algorithm: sha256
-      register: release_verified
-
-  rescue:
-    - name: Remove the temporary directory
-      ansible.builtin.file:
-        path: "{{ release_download.path }}"
-        state: absent
-      when: release_download.path is defined
-
-    - name: Stop the deploy
-      ansible.builtin.fail:
-        msg: >-
-          Could not fetch or verify {{ release_artifact }} for {{ release_tag }}.
-          Check that `gh auth status` succeeds, that the tag is in this clone
-          (`git fetch --tags`) at the commit GitHub has, and that the Release
-          workflow finished attaching the tarball to the GitHub release.
-
-# ============================================================
-# Phase 3: Create directory structure
+# Phase 2: Create directory structure
 # ============================================================
 
 - name: Create deployment directories
@@ -202,61 +109,115 @@
     mode: "0700"
 
 # ============================================================
-# Phase 4: Install release
+# Phase 3: Source checkout
 # ============================================================
 
 - name: Set release timestamp
   ansible.builtin.set_fact:
     release_timestamp: "{{ ansible_facts.date_time.date | replace('-', '') }}_{{ ansible_facts.date_time.time | replace(':', '') }}"
 
-- name: Install the verified release
-  block:
-    - name: Copy the verified tarball to the server
-      ansible.builtin.copy:
-        src: "{{ release_download.path }}/{{ release_artifact }}"
-        dest: "{{ deploy_path }}/releases/{{ release_timestamp }}.tar.gz"
-        mode: "0600"
+- name: Clone or update source repository
+  ansible.builtin.git:
+    repo: "{{ git_repo }}"
+    dest: "{{ deploy_path }}/src"
+    version: "{{ release_tag }}"
+    force: true
 
-    - name: Check the tarball arrived intact
-      ansible.builtin.stat:
-        path: "{{ deploy_path }}/releases/{{ release_timestamp }}.tar.gz"
-        get_checksum: true
-        checksum_algorithm: sha256
-      register: release_copied
-      failed_when: release_copied.stat.checksum != release_verified.stat.checksum
+# ============================================================
+# Phase 4: Build OTP release
+# ============================================================
 
-    - name: Create the release directory
-      ansible.builtin.file:
-        path: "{{ deploy_path }}/releases/{{ release_timestamp }}"
-        state: directory
-        mode: "0755"
+# Compiled BEAM files and Rust NIFs in _build/prod belong to the Erlang/Elixir
+# toolchain that built them. A stamp copy of .tool-versions is written after
+# each successful compile; when the checked-out tag pins a different toolchain
+# (or no stamp exists yet), _build/prod is wiped so nothing built by the old
+# toolchain is reused in the release.
+- name: Read toolchain pins of the checked-out tag
+  ansible.builtin.slurp:
+    src: "{{ deploy_path }}/src/.tool-versions"
+  register: tool_versions_current
 
-    - name: Unpack the release
-      ansible.builtin.unarchive:
-        src: "{{ deploy_path }}/releases/{{ release_timestamp }}.tar.gz"
-        dest: "{{ deploy_path }}/releases/{{ release_timestamp }}"
-        remote_src: true
-        extra_opts: [--no-same-owner]
-
-  always:
-    - name: Remove the tarball from the server
-      ansible.builtin.file:
-        path: "{{ deploy_path }}/releases/{{ release_timestamp }}.tar.gz"
-        state: absent
-
-    - name: Remove the temporary directory on the controller
-      delegate_to: localhost
-      become: false
-      run_once: true
-      ansible.builtin.file:
-        path: "{{ release_download.path }}"
-        state: absent
-
-- name: Check the release is the version the tag names
+- name: Check toolchain stamp of the previous build
   ansible.builtin.stat:
-    path: "{{ deploy_path }}/releases/{{ release_timestamp }}/releases/{{ release_version }}/start.boot"
-  register: release_boot
-  failed_when: not release_boot.stat.exists
+    path: "{{ deploy_path }}/src/_build/prod/.tool-versions.stamp"
+    get_checksum: true
+    checksum_algorithm: sha256
+  register: tool_versions_stamp
+
+- name: Remove build artifacts from a different Erlang/Elixir toolchain
+  ansible.builtin.file:
+    path: "{{ deploy_path }}/src/_build/prod"
+    state: absent
+  when: >-
+    not tool_versions_stamp.stat.exists
+    or tool_versions_stamp.stat.checksum != (tool_versions_current.content | b64decode | hash('sha256'))
+
+- name: Install mix dependencies (prod only)
+  ansible.builtin.command:
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix deps.get --only prod"
+    chdir: "{{ deploy_path }}/src"
+  environment:
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
+    CARGO_HOME: "{{ baudrate_home }}/.cargo"
+    RUSTUP_HOME: "{{ baudrate_home }}/.rustup"
+    MIX_ENV: prod
+  changed_when: true
+
+- name: Compile application
+  ansible.builtin.command:
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix compile"
+    chdir: "{{ deploy_path }}/src"
+  environment:
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ baudrate_home }}/.cargo/bin:{{ ansible_facts.env.PATH }}"
+    CARGO_HOME: "{{ baudrate_home }}/.cargo"
+    RUSTUP_HOME: "{{ baudrate_home }}/.rustup"
+    MIX_ENV: prod
+  changed_when: true
+
+- name: Record toolchain stamp for this build
+  ansible.builtin.copy:
+    src: "{{ deploy_path }}/src/.tool-versions"
+    dest: "{{ deploy_path }}/src/_build/prod/.tool-versions.stamp"
+    remote_src: true
+    mode: "0644"
+
+- name: Deploy assets
+  ansible.builtin.command:
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix assets.deploy"
+    chdir: "{{ deploy_path }}/src"
+  environment:
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
+    MIX_ENV: prod
+  changed_when: true
+
+- name: Remove stale release directory from previous builds
+  ansible.builtin.file:
+    path: "{{ deploy_path }}/src/_build/prod/rel"
+    state: absent
+
+- name: Build OTP release
+  ansible.builtin.command:
+    cmd: "{{ baudrate_home }}/.asdf/bin/asdf exec mix release --overwrite"
+    chdir: "{{ deploy_path }}/src"
+  environment:
+    ASDF_DATA_DIR: "{{ baudrate_home }}/.asdf"
+    PATH: "{{ baudrate_home }}/.asdf/bin:{{ baudrate_home }}/.asdf/shims:{{ ansible_facts.env.PATH }}"
+    MIX_ENV: prod
+  changed_when: true
+
+# ============================================================
+# Phase 5: Install release
+# ============================================================
+
+- name: Copy release to timestamped directory
+  ansible.builtin.copy:
+    src: "{{ deploy_path }}/src/_build/prod/rel/baudrate/"
+    dest: "{{ deploy_path }}/releases/{{ release_timestamp }}"
+    remote_src: true
+    mode: preserve
 
 - name: Write release tag file
   ansible.builtin.copy:
@@ -298,13 +259,13 @@
     - "'/priv/static' in item.path"
 
 # ============================================================
-# Phase 5: Environment file
+# Phase 6: Environment file
 # ============================================================
 
-# The release's own releases/COOKIE is published with it, so the release
-# refuses to join the Erlang distribution with it (rel/env.sh.eex). Each
-# server gets a cookie generated on it, once, readable only by the service
-# user; it is never sent to the controller's disk or to GitHub.
+# The release's own releases/COOKIE is the public placeholder every build
+# carries, and the release refuses to join the Erlang distribution with it
+# (rel/env.sh.eex). Each server gets a cookie generated on it, once, readable
+# only by the service user.
 - name: Generate this server's Erlang distribution cookie (once)
   ansible.builtin.shell:
     cmd: umask 077 && head -c 48 /dev/urandom | base64 | tr -d '/+=\n' > release_cookie
@@ -332,7 +293,7 @@
   notify: Restart baudrate
 
 # ============================================================
-# Phase 6: Systemd service
+# Phase 7: Systemd service
 # ============================================================
 
 - name: Deploy systemd service unit
@@ -352,7 +313,7 @@
     enabled: true
 
 # ============================================================
-# Phase 7: Database migration (BEFORE symlink swap)
+# Phase 8: Database migration (BEFORE symlink swap)
 # ============================================================
 # Migrations run from the new release directory (not "current")
 # so the DB is ready before the app restarts. Ecto migrations
@@ -401,7 +362,7 @@
   changed_when: "'already up' not in migration_result.stdout"
 
 # ============================================================
-# Phase 8: Activate release (atomic symlink swap)
+# Phase 9: Activate release (atomic symlink swap)
 # ============================================================
 
 - name: Activate release — update current symlink
@@ -426,7 +387,7 @@
     force: true
 
 # ============================================================
-# Phase 9: Restart and health check
+# Phase 10: Restart and health check
 # ============================================================
 
 - name: Flush handlers to restart service
@@ -443,7 +404,7 @@
   delay: 2
 
 # ============================================================
-# Phase 10: Cleanup old releases
+# Phase 11: Cleanup old releases
 # ============================================================
 
 - name: List all releases

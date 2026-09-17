@@ -1,6 +1,10 @@
 # 0036 — Production runs releases built and attested in CI
 
-- **Status:** Accepted
+- **Status:** Accepted, except decision 3 (the deploy installs the tarball),
+  superseded by [0037](0037-the-deploy-builds-on-the-server-again.md): the
+  deploy builds on the server again, because the tarball cost more on the
+  operator's link than the build costs the server. The release is still built,
+  smoke-tested and attested in CI, and the cookie and rollback decisions stand.
 - **Date:** 2026-09-17
 - **Deciders:** Baudrate maintainers
 - **Related:** implements Phase 2E and decision P2-D3 (made 2026-09-17);

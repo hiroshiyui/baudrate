@@ -51,7 +51,8 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0033](0033-baudrate-runs-on-one-node.md) | Baudrate runs on one node | Accepted |
 | [0034](0034-federation-work-is-committed-before-it-is-acknowledged.md) | Federation work is committed before it is acknowledged | Accepted |
 | [0035](0035-operational-visibility-stays-on-the-host.md) | Operational visibility stays on the host | Accepted |
-| [0036](0036-production-runs-releases-built-and-attested-in-ci.md) | Production runs releases built and attested in CI | Accepted |
+| [0036](0036-production-runs-releases-built-and-attested-in-ci.md) | Production runs releases built and attested in CI | Accepted; decision 3 superseded by [0037](0037-the-deploy-builds-on-the-server-again.md) |
+| [0037](0037-the-deploy-builds-on-the-server-again.md) | The deploy builds on the server again | Accepted |
 
 ## Writing a new ADR
 

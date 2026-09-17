@@ -28,9 +28,10 @@ Operational guide for installing, configuring, and maintaining a Baudrate
 
 ## Prerequisites
 
-To build and run from source. A server running a [release built in
-CI](#release-artifacts) needs only PostgreSQL, the PostgreSQL client and the
-Debian 12 base system: the release carries its own Erlang runtime and NIFs.
+The deploy builds on the server, so a server needs all of these. A host that
+installs a [release built in CI](#release-artifacts) by hand needs only
+PostgreSQL, its client and the Debian 12 base system: the release carries its
+own Erlang runtime and NIFs.
 
 | Requirement | Version | Purpose |
 |-------------|---------|---------|
@@ -1417,9 +1418,10 @@ matching the server version).
 
 ### Release artifacts
 
-Production installs a release built in CI, not one compiled on the server
-(ADR 0036). Publishing a GitHub release starts `.github/workflows/release.yml`,
-which:
+The Ansible deploy builds the release tag on the server (ADR 0037). CI also
+builds one for every release, which you can install by hand instead — on a
+host with no toolchain, or to install exactly what CI tested. Publishing a
+GitHub release starts `.github/workflows/release.yml`, which:
 
 1. builds the release in the project's build image (`ci/image/`, Debian 12 on
    x86-64, like production) from the release's tag, without caches;
@@ -1438,8 +1440,7 @@ Erlang, Elixir nor Rust, only the system libraries a Debian 12 install has
 (`libssl3`, `libtinfo6`) and the PostgreSQL client for backups. It runs only
 on the Debian release it was built for.
 
-The Ansible deploy verifies and installs it for you. To install one by hand,
-verify it first. `--source-digest` is the commit the tag names in your own
+To install it by hand, verify it first. `--source-digest` is the commit the tag names in your own
 clone, so a tag moved on GitHub after you fetched it fails verification:
 
 ```bash
@@ -1515,12 +1516,12 @@ it discards whatever the migration added.
 
 ### Building a release yourself
 
-The Ansible deploy never builds on the server. To build a release yourself (a
-fork, or a server Ansible does not manage), build on the same Debian release
-and CPU architecture the server runs: the release carries its own Erlang
-runtime, and the HTML sanitizer, HTML parser and feed parser NIFs are compiled
-to native code. `ci/release/build.sh` is the script CI runs; it expects the
-toolchain in `ci/image/Dockerfile` (Erlang, Elixir, Rust, esbuild, Tailwind).
+This is what the Ansible deploy does on the server, and what you do for a fork
+or a host Ansible does not manage. Build on the same Debian release and CPU
+architecture the server runs: the release carries its own Erlang runtime, and
+the HTML sanitizer, HTML parser and feed parser NIFs are compiled to native
+code. `ci/release/build.sh` is the script CI runs; it expects the toolchain in
+`ci/image/Dockerfile` (Erlang, Elixir, Rust, esbuild, Tailwind).
 
 ### Asset Build
 
@@ -1548,11 +1549,16 @@ BEAM code, the Ammonia NIF `.so`, ERTS, and the overlay convenience scripts
 
 > **Note:** When upgrading versions, remove `_build/prod/rel/` before running
 > `mix release` to avoid stale `lib/baudrate-<old-version>/` directories
-> accumulating alongside the new version (`ci/release/build.sh` does).
+> accumulating alongside the new version. The Ansible deploy playbook and
+> `ci/release/build.sh` both do this.
 >
 > When `.tool-versions` changes the Erlang/OTP or Elixir version, remove all of
 > `_build/prod/` instead. Compiled BEAM files and Rust NIFs belong to the
-> toolchain that built them. CI always builds from a clean checkout.
+> toolchain that built them. The Ansible deploy playbook does this
+> automatically: it compares the tag's `.tool-versions` with a
+> `_build/prod/.tool-versions.stamp` written after each successful compile.
+> Install the new toolchain first (`setup-server.yml --tags elixir`), or the
+> build fails. CI always builds from a clean checkout.
 
 ### Uploads Directory
 

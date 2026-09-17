@@ -7,9 +7,6 @@ Ansible automation for provisioning Baudrate servers.
 - **Ansible 2.14+** on the control machine
 - **[SOPS](https://github.com/getsops/sops)** for secrets management
 - **GPG key** for encrypting/decrypting secrets
-- **[GitHub CLI](https://cli.github.com/)**, signed in (`gh auth login`), and
-  this repository cloned with its tags (`git fetch --tags`): the deploy
-  verifies the release's build attestation on the control machine (ADR 0036)
 - **Ansible collections:**
   ```bash
   ansible-galaxy collection install community.general community.postgresql community.sops
@@ -74,19 +71,12 @@ Ansible automation for provisioning Baudrate servers.
 
 Provisions infrastructure only — does **not** deploy the application.
 
-Releases are built in CI and installed as a tarball (ADR 0036), so the `elixir`
-and `rust` roles and the build packages in `common` are no longer needed to
-deploy. They still run, and nothing removes them from a server: on a server
-Baudrate has to itself you may remove `/opt/baudrate/.asdf`, `.cargo`,
-`.rustup` and `src/`, and the build packages, by hand. On a shared server,
-check first whether another application builds there.
-
 | Role | Tag | Purpose |
 |------|-----|---------|
 | `common` | `common` | System packages, `baudrate` user, UFW firewall, SSH hardening, fail2ban, NTP |
 | `postgresql` | `postgresql` | PostgreSQL 15, database + user, `pg_trgm` extension |
-| `elixir` | `elixir` | asdf + Erlang 28.5.0.6 + Elixir 1.19.5 + Hex/Rebar. Deploys no longer use it (ADR 0036) |
-| `rust` | `rust` | rustup with minimal profile. Deploys no longer use it (ADR 0036) |
+| `elixir` | `elixir` | asdf + Erlang 28.5.0.6 + Elixir 1.19.5 + Hex/Rebar |
+| `rust` | `rust` | rustup with minimal profile (for the Rust NIFs) |
 | `nginx` | `nginx` | nginx, Let's Encrypt SSL via certbot, reverse proxy config |
 
 ## Deploying Baudrate
@@ -100,13 +90,12 @@ ansible-playbook playbooks/deploy-baudrate.yml
 You will be prompted for:
 - **Site domain** (or set `BAUDRATE_DOMAIN` env var)
 - **Release tag** — a git tag like `v1.0.0` (required, no default)
-- **Release repository** — `owner/name` on GitHub, defaulting to
-  `release_repo` (the upstream repository); set it for a fork
+- **Git repository** — defaults to the upstream repo; override for forks
 
-The release must already have its tarball: publishing a GitHub release starts
-`.github/workflows/release.yml`, which builds, smoke-tests and attests the
-release and attaches `baudrate-<version>-debian12-x86_64.tar.gz` to it. Wait
-for that run to finish before deploying.
+The deploy builds the tag on the server (ADR 0037). CI also builds,
+smoke-tests and attests the release and attaches
+`baudrate-<version>-debian12-x86_64.tar.gz` to the GitHub release; that
+tarball is for installing by hand (`doc/sysop.md`), not for this playbook.
 
 If `secret_key_base` is not in your SOPS secrets file, the playbook
 auto-generates one and pauses so you can save it.
@@ -133,10 +122,11 @@ root.
 
 | Phase | Description |
 |-------|-------------|
-| Pre-flight | Verify the `baudrate` user exists and the host runs Debian `debian_version` on x86_64; warn if deploying an older version |
-| Fetch and verify (control machine) | Resolve the tag in this clone, download the release tarball with `gh release download`, and run `gh attestation verify`: it must have been signed by this repository's `release.yml`, on a GitHub-hosted runner, for `refs/tags/<tag>` at the commit the tag names here |
+| Pre-flight | Verify the `baudrate` user and asdf exist; warn if deploying an older version |
 | Directories | Create `releases/`, `shared/uploads/`, `env/` |
-| Install | Copy the verified tarball, check its SHA-256 on the server, unpack it into `releases/<timestamp>/`, check it is the tag's version, symlink shared uploads |
+| Source | Clone repo and checkout the prompted release tag |
+| Build | Wipe `_build/prod` if the tag's `.tool-versions` differs from the last build → `mix deps.get` → `mix compile` → `mix assets.deploy` → clean stale rel → `mix release` |
+| Install | Copy release to `releases/<timestamp>/`, symlink shared uploads |
 | Env file | Generate this server's Erlang cookie once (`env/release_cookie`), then template `baudrate.env` with `DATABASE_URL`, `SECRET_KEY_BASE`, `RELEASE_COOKIE`, `HEALTH_DETAIL_PORT` (`health_detail_port`, default 4001), `BAUDRATE_BACKUP_DIR`, and `LOG_FORMAT` when `log_format` is set |
 | Systemd | Install and enable `baudrate.service` |
 | Pre-deploy dump | Dump the database with the new release into `/var/backups/baudrate/predeploy/`, keeping `backup_keep_predeploy` (3); a failure stops the deploy |
@@ -149,6 +139,7 @@ root.
 
 ```
 /opt/baudrate/
+  src/                                      # Git checkout (build workspace)
   releases/
     20260302_150000/                        # Timestamped release
       bin/server, bin/migrate, bin/baudrate
@@ -208,10 +199,11 @@ taken before those migrations and then roll back (`doc/sysop.md`, "Rolling
 back a deploy"). `-e force=true` rolls back anyway, once you have checked the
 older code works with the newer schema.
 
-Re-deploying an older tag with `deploy-baudrate.yml` also works while its
-release on GitHub carries a tarball (releases made after ADR 0036), but it runs that
-release's migrations step and takes a pre-deploy dump; prefer the rollback
-playbook for a release still on the server.
+Re-deploying an older tag with `deploy-baudrate.yml` also works, but it rebuilds
+that tag from source with the Erlang/Elixir versions pinned in *that tag's*
+`.tool-versions` (install them first, or the build fails), and it runs its
+migrations step; prefer the rollback playbook for a release still on the
+server.
 
 ## Selective Execution
 
@@ -314,7 +306,7 @@ ansible/
     elixir/                                # asdf + Erlang/Elixir
     rust/                                  # rustup + Rust toolchain
     nginx/                                 # nginx + Let's Encrypt SSL
-    deploy/                                # Verify, install, and activate a CI-built release
+    deploy/                                # Build, release, and activate Baudrate
     rollback/                              # Point current back at a kept release
     backup/                                # Nightly backup timer, backup dirs, pull access
 ```
