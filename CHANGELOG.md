@@ -7,6 +7,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.24.0] — 2026-09-17
+
+Phase 2, stage 2C: federation work is saved before it is acknowledged. A post
+and its outgoing activities are committed together, deliveries start as soon as
+they are saved, a server that is down no longer holds up everyone else's, and
+the inbox stores an activity and answers at once instead of making the sender
+wait while it is processed. See
+[ADR 0034](doc/adr/0034-federation-work-is-committed-before-it-is-acknowledged.md).
+
+**Upgrading:** two migrations (`delivery_circuits`, and `inbound_activities`),
+both additive and quick. Baudrate now holds one database connection beyond
+`POOL_SIZE`, for `LISTEN`; connect it to PostgreSQL directly, since a pooler in
+transaction mode (PgBouncer) cannot carry `LISTEN` and deliveries would fall
+back to the one-minute poll. `delivery_batch_size` is no longer read.
+
+### Added
+
+- **An inbound queue.** The inbox checks an activity in the same order as
+  before (well-formed, domain not blocked, account not suspended, signed by the
+  actor it names), stores it and answers `202`; a redelivery is recognised and
+  not stored again. A worker then processes stored activities, 4 at a time and
+  one at a time per remote account in the order they arrived, so a `Create`
+  never runs after the `Delete` that followed it, and it repeats the domain and
+  suspension checks, so a block applies to activities already waiting. A
+  refused activity is recorded with its reason; one that crashes or runs past
+  5 minutes is retried, up to 3 attempts. Processing used to happen while the
+  sender's request waited, holding a web process and database connections
+  through actor lookups and reply-chain fetches, so a busy remote instance
+  could slow the site for everyone.
+- **A per-instance circuit breaker for deliveries.** After 5 consecutive
+  failures that say a server is unreachable (connection errors, timeouts, 5xx,
+  429), its deliveries pause together, and one is sent at a time as a probe,
+  with waits growing from 5 minutes to 24 hours. The first response showing the
+  server is up releases the rest. Deliveries held for 7 days are abandoned.
+  Before, every job for a dead server waited out its own timeout while
+  deliveries to healthy servers queued behind them.
+- **[ADR 0034](doc/adr/0034-federation-work-is-committed-before-it-is-acknowledged.md)**,
+  and sysop and troubleshooting entries for open circuits, missed wake-ups and
+  inbound activities that did not take effect.
+
+### Changed
+
+- **A change and its outgoing activities are saved together.** Posts, edits,
+  deletions, comments, likes, boosts, forwards, poll votes, follows, direct
+  messages, account moves and key rotations write their delivery jobs in the
+  same database transaction as the change. They used to be queued by a
+  background task started afterwards, so a restart or deploy at the wrong
+  moment saved the post and silently dropped its activities. If building an
+  activity fails, the change now fails with it instead of saving unfederated. A
+  test runs every kind of change with all background work discarded, and fails
+  on any code that sends activities from a background task.
+- **Deliveries start within moments.** Saving a change sends a PostgreSQL
+  notification, delivered only when the transaction commits, and the delivery
+  worker wakes on it instead of waiting up to a minute for its next poll. It
+  keeps up to 10 deliveries in flight and starts the next as soon as one ends.
+- **Answers to follow requests are queued.** `Accept` and `Reject` were sent
+  once from a background task; a failed request left the remote side's follow
+  pending for good. They are now retried like any other delivery.
+- **A final error response ends a delivery at once.** A `4xx` other than
+  `401`, `408` and `429` means a retry cannot succeed, so the job is abandoned
+  instead of being tried five more times over fifteen hours, as Mastodon does.
+
+### Fixed
+
+- **A slow server's delivery was retried every minute, forever.** A delivery
+  task was stopped after 45 seconds, shorter than the 60-second request
+  deadline, and a stopped task left its job untouched, so the job never used up
+  its attempts. Deliveries now get the request deadline plus 15 seconds, and a
+  stopped or crashed one counts as a failed attempt.
+- **Forwarding a local comment into a board sent its `Create` and `Announce`
+  twice**, under different activity ids.
+- **An activity or object id over 2048 bytes caused a server error on every
+  retry** instead of a refusal: the id goes into a unique index, which
+  PostgreSQL cannot hold past about 2.7 KB. Such ids are now refused.
+- The retry schedule in the sysop and troubleshooting guides listed a 24-hour
+  sixth retry that never happens: a job is abandoned when its sixth attempt
+  fails. The development guide said reply chains are followed 10 hops; the
+  limit is 5.
+
 ## [1.23.0] — 2026-09-17
 
 The first of Phase 2, operability: Baudrate officially runs on one node, CI
