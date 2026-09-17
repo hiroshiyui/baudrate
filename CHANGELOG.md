@@ -7,6 +7,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.27.0] — 2026-09-18
+
+Phase 2, stage 2G: every secret Baudrate keeps at rest gets a key of its own,
+and any of those keys can be rotated. Until now all of them were derived from
+`SECRET_KEY_BASE`, which therefore could never be changed. See
+[ADR 0038](doc/adr/0038-encryption-keys-are-separate-and-rotatable.md).
+
+**Upgrading:** one migration (`recovery_codes.key_id`), additive and quick.
+**Nothing to configure, and nothing changes on disk:** with no keys set the app
+derives today's keys from `SECRET_KEY_BASE` exactly as before *and keeps writing
+the old format*, so this release can be rolled back. Setting the keys is a
+separate, deliberate change after the deploy has settled — values written
+afterwards carry a key id that an older release knows nothing about. Both steps
+are in the sysop guide ("Encryption keys", "Rotating an encryption key"). A boot
+log line and the detailed health report say which classes are still on the
+fallback.
+
+### Security
+
+- **`SECRET_KEY_BASE` could never be rotated, and four stored secrets depended
+  on it.** If it ever leaked — a copied env file, a log line, an operator's old
+  laptop, a backup left somewhere — there was nothing to be done about it. Two
+  of those dependencies were not written down anywhere: the **recovery-code
+  hashes**, which made the documented remedy circular (a member locked out of
+  TOTP is told to use a recovery code, which the same rotation invalidated), and
+  the **Web Push key**. Stored secrets now sit under an `:auth` key (TOTP
+  secrets, recovery-code hashes) or a `:signing` key (user, board and site actor
+  private keys, the Web Push key), each rotatable on its own; `SECRET_KEY_BASE`
+  becomes rotatable once nothing is left on the old derivation.
+- **A stored secret was portable between rows.** The ciphertext was bound only
+  to its vault, so anyone able to write one row — SQL injection, a selective
+  restore, a careless support script — could transplant a member's second factor
+  onto another account, or an actor's private key onto another actor. Each value
+  is now bound to the row it belongs to, by that row's immutable id, and no
+  longer decrypts anywhere else.
+- Every failure here is fail-closed: a wrong or missing key refuses the right
+  person and never admits the wrong one, and no key problem raises inside a
+  request.
+
+### Added
+
+- **Two keyrings, read from the environment.** `BAUDRATE_AUTH_KEYS` and
+  `BAUDRATE_SIGNING_KEYS`, each a list of `id:key` entries with the current key
+  first and retired keys after it, kept in SOPS like `SECRET_KEY_BASE`. A
+  malformed entry stops the boot, naming the problem and the command that
+  generates a key, and never echoing key material. Ansible renders them when
+  they are set and — unlike `secret_key_base` — never generates one: a key the
+  operator did not save would encrypt secrets on one deploy and be gone on the
+  next, and what was written in between would be unrecoverable.
+- **A rotation task.** `Baudrate.Release.rotate_keys/1` re-encrypts whatever is
+  not on the current key, in batches, with `dry_run: true` to see the work
+  first. What is left is read from the data rather than a bookmark, so it
+  resumes by being run again and running it twice changes nothing. Each write
+  lands only if the row still holds what was read, so a member enrolling TOTP
+  mid-run keeps their new secret. A value it cannot decrypt is counted and
+  logged, never written and never raised.
+- **A key census.** `Baudrate.Release.key_census/0`, and the end of every
+  rotation, lists how many values sit under each key id, per column — so a
+  retired key is dropped only once nothing needs it.
+- **A health check for a key that is gone.** The detailed report's
+  `encryption_keys` check fails when a stored value names a key that is not
+  configured, which means rows nobody can read, and stays quiet about an
+  instance still on the fallback.
+- **Key ids in the backup manifest.** `MANIFEST.json` records the ids that were
+  current, never key material, so restoring a dump against the wrong key set is
+  diagnosable instead of looking like everyone's second factor broke at once.
+- **[ADR 0038](doc/adr/0038-encryption-keys-are-separate-and-rotatable.md)**,
+  sysop guide sections on the key set and how to rotate one, and a
+  troubleshooting section on the keys that protect stored secrets.
+
+### Changed
+
+- **Recovery codes record which key hashed them.** Only the member's own code
+  can produce its hash, so a rotation cannot move it: verification now tries
+  every configured key, and codes issued under a retired key keep working until
+  the member generates new ones. The rotation deliberately does not regenerate
+  anyone's codes — that would void a printed sheet without telling them.
+- **Stored values say which key wrote them**, in a self-describing format that
+  also authenticates the key id and the row. Values in the old format are still
+  read, permanently.
+- **The deploy builds the release on the server again**
+  ([ADR 0037](doc/adr/0037-the-deploy-builds-on-the-server-again.md)), reversing
+  one decision from 1.26.0: installing the CI tarball moved 46 MB down from
+  GitHub and 46 MB back up to the server, and took 13 minutes against 2 for an
+  incremental build. CI still builds, smoke-tests and attests the tarball on
+  every push and every release — it is the gate that catches a release that
+  cannot start, and it is what a manual install uses.
+- Key derivation is cached, taking 1,000 PBKDF2 rounds off every TOTP
+  verification, every outbound signature and every push delivery.
+
+### Fixed
+
+- `mix backfill_remote_urls` read a setting name that has never existed, so it
+  could never decrypt the site's signing key and silently fetched nothing. It
+  now goes through the one function that knows how that key is stored.
+
 ## [1.26.0] — 2026-09-18
 
 Phase 2, stage 2E: a deploy installs a release that CI built, tested and
