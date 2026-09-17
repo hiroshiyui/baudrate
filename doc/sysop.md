@@ -159,6 +159,9 @@ mix ecto.reset  # Drop, recreate, re-migrate
 | `INSTALLATION_KEY` | unset | **Required until setup completes** — the app answers 503 without it. Safe to remove afterwards (see [Installation Key](#installation-key)) |
 | `BAUDRATE_TRUSTED_PROXIES` | `127.0.0.1,::1` | Comma-separated IPs/CIDRs whose `x-forwarded-for` is believed. Set this when the reverse proxy is not on the same host — the client IP is otherwise taken from the peer address |
 | `BAUDRATE_REAL_IP_HEADER` | `x-forwarded-for` | Header carrying the real client IP |
+| `HEALTH_DETAIL_PORT` | unset (Ansible: `4001`) | Serves the [detailed health report](#detailed-health-report) on `127.0.0.1` at this port. Unset: no listener. Only the port is configurable, never the address |
+| `BAUDRATE_BACKUP_DIR` | unset (Ansible: `/var/backups/baudrate/daily`) | Where nightly backups are written, for the report's backup check. Unset: that check is skipped |
+| `LOG_FORMAT` | unset | `json` writes one JSON object per log line ([Logs](#logs)); anything else keeps the text format |
 
 ### SECRET_KEY_BASE — critical warning
 
@@ -1658,6 +1661,121 @@ Use it as a health check target for load balancers and monitoring systems.
 ```bash
 curl http://localhost:4000/health
 ```
+
+It only says whether the application can reach its database, and it is public,
+so it says nothing more.
+
+### Detailed Health Report
+
+The detailed report answers whether the site is working, not just running. It
+is served by a separate listener bound to `127.0.0.1` (`HEALTH_DETAIL_PORT`,
+4001 on an Ansible install). nginx does not proxy it and the firewall does not
+open it, so it can only be read from the server itself
+([ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md)).
+
+```bash
+curl -s http://127.0.0.1:4001/health | jq
+```
+
+It answers `200` when every check passes and `503` when one fails, with the
+report as JSON either way:
+
+```json
+{
+  "status": "fail",
+  "checks": {
+    "database": {"status": "ok"},
+    "delivery_queue": {"status": "ok", "waiting": 3, "oldest_due_seconds": 12, "open_circuits": 1},
+    "inbound_queue": {"status": "ok", "pending": 0, "oldest_waiting_seconds": 0, "failed_last_24h": 0},
+    "workers": {"status": "ok", "workers": {"delivery_worker": {"status": "ok", "last_run_seconds": 41}, "…": {}}},
+    "disk": {"status": "ok", "free_bytes": 21474836480, "total_bytes": 42949672960, "floor_bytes": 4294967296},
+    "backup": {"status": "fail", "reason": "the newest backup is more than 26 hours old", "newest_age_seconds": 97200, "count": 7}
+  }
+}
+```
+
+| Check | Fails when | Look at |
+|-------|------------|---------|
+| `database` | `SELECT 1` does not answer | `systemctl status postgresql`, `POOL_SIZE` |
+| `delivery_queue` | a delivery has been due for more than 15 minutes. Jobs held back by an [open circuit](#delivery-queue-adminfederation) are waiting on purpose and not counted | `DeliveryWorker` in `journalctl -u baudrate` |
+| `inbound_queue` | an inbox activity has waited more than 10 minutes. `failed_last_24h` counts activities that crashed three times | [Inbound Queue](#inbound-queue) |
+| `workers` | `DeliveryWorker`, `InboundWorker`, `FeedWorker` or `SessionCleaner` has not completed a run for three of its intervals (at least 5 minutes; 3 hours for the hourly `SessionCleaner`). A worker that keeps crashing and being restarted counts as stopped | the log for crashes of that worker |
+| `disk` | free space under `shared/uploads` is below 1 GiB or 10% of the filesystem, the floor backups keep | `df -h`, the media cache size |
+| `backup` | the newest complete backup is more than 26 hours old, or there is none; skipped when `BAUDRATE_BACKUP_DIR` is unset | `journalctl -u baudrate-backup` |
+
+The queue checks are `skipped` while federation is switched off. Each check has
+5 seconds; one that runs out fails, so a hung database or disk shows up instead
+of a report that never comes. The report holds counts, ages and statuses only:
+no content, account names or remote domains.
+
+**Alerting.** Baudrate does not send notifications; poll the report with
+whatever already watches the server, and alert on a status other than `200`.
+Some ways to do it:
+
+- **A systemd timer.** `curl -fsS` exits non-zero on `503`, so the unit fails
+  and `OnFailure=` can run any notifier you use (a mail command, a push
+  service, a chat webhook):
+
+  ```ini
+  # /etc/systemd/system/baudrate-healthcheck.service
+  [Unit]
+  Description=Baudrate detailed health check
+  OnFailure=notify-admin@%n.service
+
+  [Service]
+  Type=oneshot
+  ExecStart=/usr/bin/curl -fsS -o /dev/null --max-time 30 http://127.0.0.1:4001/health
+
+  # /etc/systemd/system/baudrate-healthcheck.timer
+  [Timer]
+  OnBootSec=5min
+  OnUnitActiveSec=5min
+
+  [Install]
+  WantedBy=timers.target
+  ```
+
+- **A monitor running on the host** (monit, Uptime Kuma, a cron job): an HTTP
+  check on `http://127.0.0.1:4001/health` expecting `200`.
+- **A monitor elsewhere** can reach it only through something that runs on the
+  host, such as an SSH command. Do not proxy the port or open it in the
+  firewall.
+
+To see which checks fail:
+
+```bash
+curl -s http://127.0.0.1:4001/health | jq -r '.checks | to_entries[] | select(.value.status == "fail") | "\(.key): \(.value.reason)"'
+```
+
+The backup check covers the server side of backups. A copy that fails
+verification on the machine that pulls backups is reported by
+`scripts/pull-backups.sh` exiting non-zero there; alert on that unit too.
+
+### Logs
+
+Baudrate logs to standard output, which systemd sends to the journal
+(`journalctl -u baudrate`). The default text format is one event per line:
+
+```
+10:15:02.114 request_id=F1abc [info] federation.delivery_ok: inbox=https://…
+```
+
+With `LOG_FORMAT=json` (Ansible: `log_format: json`), each event is one JSON
+object, for a log shipper or `jq`:
+
+```bash
+journalctl -u baudrate -o cat --since "1 hour ago" | jq -c 'select(.level == "error")'
+```
+
+```json
+{"time":"2026-09-17T10:15:02.114Z","level":"info","message":"federation.delivery_ok: inbox=https://…","request_id":"F1abc","module":"Baudrate.Federation.Delivery","function":"deliver_one/1"}
+```
+
+The fields are `time` (UTC), `level`, `message`, and, when present,
+`request_id`, `module` and `function`. No other metadata is written, so JSON
+logs never show more than the text format. A newline inside a message is
+escaped, so a message cannot fake a second log line. Errors are not sent to any
+error-reporting service; the log is where they go.
 
 ### Delivery Job Purge
 

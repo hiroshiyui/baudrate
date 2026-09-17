@@ -98,6 +98,11 @@ For production, you will need to configure:
   it every page answers 503 (see the
   [SysOp Guide](doc/sysop.md#installation-key))
 
+Recommended for operations: `HEALTH_DETAIL_PORT` serves a detailed health
+report (queues, workers, disk, backup age) on `127.0.0.1` only, for a monitor on
+the server to poll, and `LOG_FORMAT=json` switches the logs to one JSON object
+per line (see the [SysOp Guide](doc/sysop.md#detailed-health-report)).
+
 Note: Both TOTP secrets and federation private keys are encrypted at rest
 using keys derived from `SECRET_KEY_BASE`, so no additional environment
 variables are needed for encryption.

@@ -180,6 +180,11 @@ lib/
 │   │   ├── user_follow.ex       # UserFollow schema (outbound follows: remote actors + local users)
 │   │   ├── validator.ex         # AP input validation (URLs, sizes, attribution, allowlist/blocklist)
 │   │   └── visibility.ex        # ActivityPub visibility derivation from addressing
+│   ├── health.ex                # Detailed health report: queues, workers, disk, backups (ADR 0035)
+│   ├── health/
+│   │   └── heartbeat.ex         # ETS record of each worker's last completed run (monotonic ms)
+│   ├── logger/
+│   │   └── json_formatter.ex    # Optional JSON log format (LOG_FORMAT=json), metadata allow-list
 │   ├── moderation.ex            # Moderation context: reports, resolve/dismiss, audit log
 │   ├── moderation/
 │   │   ├── log.ex               # ModerationLog schema (audit trail of moderation actions)
@@ -300,6 +305,7 @@ lib/
 │   │   └── verify_http_signature.ex  # HTTP Signature verification for AP inboxes
 │   ├── endpoint.ex              # HTTP entry point, session config
 │   ├── gettext.ex               # Gettext i18n configuration
+│   ├── health_detail.ex         # Loopback-only listener serving Baudrate.Health (HEALTH_DETAIL_PORT)
 │   ├── helpers.ex               # Shared translation helpers (translate_role/1, translate_status/1, etc.)
 │   ├── locale.ex                # Locale resolution (Accept-Language + user prefs)
 │   ├── linked_data.ex          # JSON-LD + Dublin Core metadata builders (SIOC/FOAF/DC)
@@ -2169,6 +2175,7 @@ Baudrate.Supervisor (one_for_one)
 ├── BaudrateWeb.Telemetry                   # Telemetry metrics
 ├── Baudrate.Repo                           # Ecto database connection pool
 ├── Phoenix.PubSub                          # PubSub for LiveView (local; no clustering, ADR 0033)
+├── Baudrate.Health.Heartbeat               # ETS table of workers' last completed runs (before the workers)
 ├── Baudrate.Auth.SessionCleaner            # Hourly cleanup (sessions, login attempts, orphan images, export requests/temp, notifications >90 days)
 ├── Baudrate.Auth.WebAuthnChallenges        # ETS store for pending WebAuthn challenges, swept by TTL
 ├── Baudrate.DataPortability.DownloadNonces # ETS single-use nonces for data export download tokens
@@ -2183,8 +2190,22 @@ Baudrate.Supervisor (one_for_one)
 ├── Baudrate.Federation.InboundWorker       # Inbound queue: woken by the inbox, polls every 30s
 ├── Baudrate.Federation.StaleActorCleaner   # Daily stale remote actor cleanup
 ├── Baudrate.Bots.FeedWorker                # Polls RSS/Atom bots every 60s
+├── BaudrateWeb.HealthDetail (Bandit)       # 127.0.0.1:HEALTH_DETAIL_PORT, only when the port is set (ADR 0035)
 └── BaudrateWeb.Endpoint                    # HTTP server
 ```
+
+`Baudrate.Logger.JSONFormatter.install_if_configured/0` runs first in
+`Application.start/2`, so with `LOG_FORMAT=json` the rest of the boot is logged
+as JSON.
+
+**Health.** `DeliveryWorker`, `InboundWorker`, `FeedWorker` and `SessionCleaner`
+call `Baudrate.Health.Heartbeat.beat/1` at the end of each completed run, and
+`Baudrate.Health.report/1` counts a worker stale after three of its intervals
+(at least five minutes). A new periodic worker needs both: a beat after a
+successful run, and an entry in `Health`'s worker list. The report is served
+only by `BaudrateWeb.HealthDetail` on `127.0.0.1` (ADR 0035); its checks take
+their probes as options (`:free_space`, `:last_beat`, `:database`, `:now`, …)
+so each can be broken in a test without touching the system.
 
 Every ETS table above, and every worker, assumes it is on the only node
 ([ADR 0033](adr/0033-baudrate-runs-on-one-node.md)): a cache refreshed after a

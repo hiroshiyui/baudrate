@@ -34,7 +34,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
-| **2** | **Operability** | 2A–2H | **In progress** (2B, 2H in v1.23.0; 2C in v1.24.0). Data loss and blind operations are the biggest risks |
+| **2** | **Operability** | 2A–2H | **In progress** (2B, 2H in v1.23.0; 2C in v1.24.0; 2D done). Data loss and blind operations are the biggest risks |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
@@ -92,10 +92,13 @@ out by P1-D1.
 |-------|------|----------|-------------|
 | 2B | One node (D2): cluster discovery removed; the scaling guide rewritten around a bigger host, PostgreSQL tuning and a CDN that fronts the whole site; troubleshooting for an accidental second node | v1.23.0 | [ADR 0033](adr/0033-baudrate-runs-on-one-node.md) |
 | 2C | Federation work committed before it is acknowledged: delivery jobs in the change's transaction, wake on commit, delivery deadlines, a per-domain circuit breaker, and an inbound queue processed one activity per remote account | v1.24.0 | [ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md) |
+| 2D | Observability: a detailed health report on a loopback-only listener (queues, worker heartbeats, disk, backup age; 503 when a check fails) and optional JSON logs with a metadata allow-list. Alerting stays with the operator: the sysop guide shows polling with a systemd timer or a host monitor | not yet released | [ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md) |
 | 2H | Drift: CI runs production's PostgreSQL 15, server and client, held together with Ansible by `verify-toolchain.sh`; the worker table, README clone URL and `INSTALLATION_KEY` fixed; stray committed uploads removed | v1.23.0 | `ci/image/README.md`, `doc/sysop.md` |
 
 "No federated activity is lost to a restart" is met by 2C
-(`test/baudrate/federation/durable_delivery_test.exs`).
+(`test/baudrate/federation/durable_delivery_test.exs`), and "a delivery or
+inbound backlog, a stalled worker or a full disk shows up in the detailed
+health check" by 2D (`test/baudrate/health_test.exs`).
 
 **Deferred by the operator, outside 2H:** production allows SSH login as root
 (key only). `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets
@@ -115,24 +118,10 @@ open:
 - [ ] **Rehearse a restore onto a freshly provisioned host** — the rehearsal so far restored into a scratch database on the same machine, which does not prove the host can be rebuilt.
 - [ ] **An always-on puller.** Off-host copies only arrive while the workstation is running.
 - [x] **Per-file checksums, verified off-host** (2026-09-16): each backup carries `CHECKSUMS.sha256` over the dump and every upload, and the puller verifies it — including the list against its own hash in the manifest, since `sha256sum -c` on a truncated list exits 0. A hard-linked file keeps the previous backup's recorded checksum rather than being re-hashed, so bit rot surfaces instead of being certified intact.
-- [ ] **Alert on a failed or stale backup** — the puller exits non-zero on a bad checksum, a failed pull or a stale copy, but today that only marks the systemd unit failed and lands in the journal. Nobody is told (see 2D).
+- [ ] **Alert on a failed or stale backup.** A stale or missing backup now fails the detailed health report (2D), and the puller exits non-zero on a bad checksum, a failed pull or a stale copy. Neither notifies anyone by itself: for 2D the operator chose to document polling rather than ship a notifier (ADR 0035). Open until something polls both and tells a person.
 - [x] **Verify older copies too** (v1.23.0). Each pull also verifies the older copy that has gone longest without a successful check, so all 30 are re-checked in about a month; stamps live in `<dest>/.verified`. The same change stopped half-built `.incomplete-…` backups from being pulled and counted as copies. `test/scripts/pull_backups_test.exs` runs the script against backups written by `Snapshots.create/2`.
-- [ ] **Backup freshness in health checks:** the time of the last successful backup (see 2D).
+- [x] **Backup freshness in health checks** (2D): the report's `backup` check fails when the newest complete backup is over 26 hours old.
 - **Accepted when:** production has a backup less than 24 h old, and the rehearsal restored a working instance.
-
-### 2D — Observability (M)
-
-No metrics endpoint (P2-D1) and no error reporting service (P2-D2): the
-detailed health view and the logs are the whole of it.
-
-- [ ] **Structured logs:** an optional JSON log format, off by default.
-- [ ] **Detailed health:** `/health` stays public and minimal, and a localhost-only detail view reports:
-  - delivery backlog and the age of the oldest job, and open circuits (`DeliveryCircuits.list_tripped/0`);
-  - inbound backlog (`Inbound.pending_count/0`) and failed inbound activities;
-  - worker liveness (`DeliveryWorker`, `SessionCleaner`, `FeedWorker`);
-  - free disk space under `shared/uploads`;
-  - the last successful backup.
-- **Accepted when:** each detail check fails in a test when its condition is broken, and the sysop guide shows how to poll it and alert on a failing check.
 
 ### 2E — Deploy safety (M)
 

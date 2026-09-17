@@ -16,6 +16,7 @@ See the [SysOp Guide](sysop.md) for the comprehensive operational reference.
 - [Authentication & Sessions](#authentication--sessions)
 - [Rate Limiting](#rate-limiting)
 - [A second node](#a-second-node)
+- [Detailed health report](#detailed-health-report)
 
 ---
 
@@ -576,3 +577,41 @@ GROUP BY client_addr;
    from the database, which holds the change.
 
 Deliveries already sent twice cannot be recalled.
+
+---
+
+## Detailed health report
+
+The report is on the server only: `curl -s http://127.0.0.1:4001/health | jq`
+(see the sysop guide's Detailed Health Report section and
+[ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md)).
+
+### Nothing answers on port 4001
+
+- `HEALTH_DETAIL_PORT` is not in the environment. It is set by the Ansible env
+  template; a hand-made install has to add it. Check with
+  `grep HEALTH_DETAIL_PORT /opt/baudrate/env/baudrate.env`.
+- The listener binds `127.0.0.1` only. From another machine it is unreachable
+  by design; run the request on the server.
+
+### A check fails
+
+- `delivery_queue` — deliveries are due but not being sent. Look for
+  `federation.delivery_crashed` or `federation.delivery_timeout` in
+  `journalctl -u baudrate`, and check that the `workers` check shows
+  `delivery_worker` running. A backlog towards one instance that is down does
+  not fail this check: its circuit holds those jobs on purpose.
+- `inbound_queue` — see [Inbound activities not taking effect](#inbound-activities-not-taking-effect).
+- `workers` — a worker has not completed a run for three intervals. A crash
+  loop looks the same as a stopped worker; search the log for the module name.
+  Right after a restart, a worker that has not run yet counts as healthy until
+  three intervals have passed.
+- `disk` — below 1 GiB or 10% free under the uploads directory. Backups stop
+  at the same floor. The media cache is safe to shrink (it is re-fetched on
+  demand); backups in `/var/backups/baudrate` are not.
+- `backup` — the newest backup is over 26 hours old, or there is none:
+  `systemctl list-timers baudrate-backup` and `journalctl -u baudrate-backup`.
+  A backup refused for lack of disk space shows both this and `disk` failing.
+- A check reports `raised an error` — the check itself failed (for example a
+  table missing because migrations did not run). The reason is deliberately
+  generic; the log has the error.
