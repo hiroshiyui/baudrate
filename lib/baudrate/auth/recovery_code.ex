@@ -3,9 +3,17 @@ defmodule Baudrate.Auth.RecoveryCode do
   Schema for one-time recovery codes stored in the `recovery_codes` table.
 
   Each code is a cryptographically random 8-character base32 string (~41 bits
-  of entropy), stored as an HMAC-SHA256 hash keyed with a server-side secret
-  derived from `secret_key_base`. Codes are generated in batches of 10 and
+  of entropy), stored as an HMAC-SHA256 hash keyed with a server-side key
+  (`Baudrate.Crypto.Keyring`'s `:auth` class, or `secret_key_base` while that
+  class has no keys of its own). Codes are generated in batches of 10 and
   each can only be used once (`used_at` is set on use).
+
+  `key_id` records which key hashed the row. A keyed hash cannot be re-keyed
+  without the code itself, so codes issued under a retired key keep working
+  and the rotation task counts what still depends on it (ADR 0038). It is
+  advisory: verification tries every configured key and never filters on this
+  column, so a wrong value cannot lock anyone out. It is set when the batch is
+  written, never from a form.
 
   Old codes are deleted whenever new ones are generated (e.g., on TOTP reset).
   """
@@ -15,6 +23,7 @@ defmodule Baudrate.Auth.RecoveryCode do
 
   schema "recovery_codes" do
     field :code_hash, :binary
+    field :key_id, :string
     field :used_at, :utc_datetime
 
     belongs_to :user, Baudrate.Setup.User

@@ -15,6 +15,7 @@ defmodule Baudrate.Auth.SecondFactor do
   import Ecto.Query
   alias Baudrate.Repo
   alias Baudrate.Auth.{LoginAttempt, RecoveryCode, Sessions, TotpVault}
+  alias Baudrate.Crypto.Keyring
   alias Baudrate.Notification.Hooks
   alias Baudrate.Notification.Notification, as: NotificationSchema
   alias Baudrate.Setup.User
@@ -338,11 +339,14 @@ defmodule Baudrate.Auth.SecondFactor do
         |> Base.encode32(case: :lower, padding: false)
       end)
 
+    {key_id, key} = Keyring.current(:recovery_code)
+
     entries =
       Enum.map(raw_codes, fn code ->
         %{
           user_id: user.id,
-          code_hash: hmac_recovery_code(code),
+          code_hash: hmac_recovery_code(code, key),
+          key_id: key_id,
           inserted_at: now
         }
       end)
@@ -362,12 +366,19 @@ defmodule Baudrate.Auth.SecondFactor do
   """
   @spec verify_recovery_code(User.t(), String.t() | any()) :: :ok | :error
   def verify_recovery_code(user, code) when is_binary(code) do
-    code_hash = hmac_recovery_code(normalize_recovery_code(code))
+    normalized = normalize_recovery_code(code)
+
+    # Every key the row could have been hashed under, current first, ending
+    # with the secret_key_base fallback: a code issued before a rotation still
+    # verifies (ADR 0038). `key_id` is not part of the lookup — a 32-byte HMAC
+    # does not collide across keys, and leaving the label out is what makes a
+    # wrong label harmless.
+    hashes = Enum.map(Keyring.candidates(:recovery_code), &hmac_recovery_code(normalized, &1))
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     query =
       from(rc in RecoveryCode,
-        where: rc.user_id == ^user.id and rc.code_hash == ^code_hash and is_nil(rc.used_at)
+        where: rc.user_id == ^user.id and rc.code_hash in ^hashes and is_nil(rc.used_at)
       )
 
     case Repo.update_all(query, set: [used_at: now]) do
@@ -386,14 +397,7 @@ defmodule Baudrate.Auth.SecondFactor do
     String.slice(code, 0, 4) <> "-" <> String.slice(code, 4, 4)
   end
 
-  defp hmac_recovery_code(code) do
-    :crypto.mac(:hmac, :sha256, recovery_code_hmac_key(), code)
-  end
-
-  defp recovery_code_hmac_key do
-    secret_key_base =
-      Application.get_env(:baudrate, BaudrateWeb.Endpoint)[:secret_key_base]
-
-    Plug.Crypto.KeyGenerator.generate(secret_key_base, "recovery_code_hmac_key", length: 32)
+  defp hmac_recovery_code(code, key) do
+    :crypto.mac(:hmac, :sha256, key, code)
   end
 end

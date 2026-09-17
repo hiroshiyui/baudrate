@@ -118,6 +118,22 @@ defmodule Baudrate.Crypto.Keyring do
   def fetch(_purpose, _id), do: :error
 
   @doc """
+  Every key a stored value for this purpose might have been made with:
+  the current key, the retired ones, then the `secret_key_base` fallback.
+
+  For the recovery-code HMAC, which cannot be re-keyed without the code
+  itself: a code is verified by hashing it under each of these, so codes
+  issued under a retired key keep working. Work is the same whatever the
+  input, so there is nothing to time.
+  """
+  @spec candidates(purpose()) :: [binary()]
+  def candidates(purpose) do
+    configured = Enum.map(configured(class_of(purpose)), &subkey(&1, purpose))
+
+    Enum.uniq(configured ++ [legacy_key(purpose)])
+  end
+
+  @doc """
   The ids configured for a class, current first, or `[]` for the fallback.
   """
   @spec configured_ids(class()) :: [id()]
