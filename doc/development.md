@@ -63,7 +63,7 @@ lib/
 │   │   ├── second_factor.ex     # TOTP enrollment, verification, and recovery
 │   │   ├── session_cleaner.ex   # GenServer: hourly cleanup (sessions, login attempts, orphan images)
 │   │   ├── sessions.ex          # Session lifecycle: creation, rotation, eviction
-│   │   ├── totp_vault.ex        # AES-256-GCM encryption for TOTP secrets
+│   │   ├── totp_vault.ex        # TOTP secrets, encrypted with the :auth key
 │   │   ├── user_block.ex        # UserBlock schema (local + remote actor blocks)
 │   │   ├── user_mute.ex         # UserMute schema (local-only soft-mute/ignore)
 │   │   ├── user_session.ex      # Ecto schema for server-side sessions
@@ -2373,7 +2373,10 @@ beyond OTP `:crypto`.
 
 | Module | Purpose |
 |--------|---------|
-| `Notification.VapidVault` | AES-256-GCM encryption for VAPID private keys at rest |
+| `Notification.VapidVault` | The VAPID private key, encrypted with the `:signing` key |
+| `Crypto.Keyring` | Which key protects which class of secret, and which one is current (ADR 0038) |
+| `Crypto.Vault` | The one AES-256-GCM implementation: the stored format, the key id it records, and the row it is bound to |
+| `Crypto.Rekey` | Re-encrypts stored secrets under the current key, and counts what sits under each one |
 | `Notification.VAPID` | ECDSA P-256 keypair generation, ES256 JWT signing |
 | `Notification.WebPush` | RFC 8291 encryption (ECDH + HKDF + AES-128-GCM) + delivery |
 | `Notification.PushSubscription` | Ecto schema for browser push endpoints |

@@ -62,23 +62,36 @@ See [Database](#database) section below for resolution.
 > **See the [SysOp Guide](sysop.md#environment-variables) for the complete
 > reference of all environment variables and their defaults.**
 
-### SECRET_KEY_BASE — critical warning
+### The keys that protect stored secrets
 
-`SECRET_KEY_BASE` is used to derive encryption keys for:
+TOTP secrets, recovery-code hashes, actor private keys and the Web Push key
+are encrypted or hashed with a key — `BAUDRATE_AUTH_KEYS` and
+`BAUDRATE_SIGNING_KEYS`, or, until you set those, one derived from
+`SECRET_KEY_BASE` (ADR 0038).
 
-- **Session cookies** (signing + encryption)
-- **TOTP secrets** (AES-256-GCM via TotpVault, salt: `"totp_encryption_key"`)
-- **Federation private keys** (AES-256-GCM via KeyVault, salt: `"federation_key_encryption"`)
+Until they are separated, **`SECRET_KEY_BASE` cannot be changed**: doing so
+locks every member out of 2FA *and* out of their recovery codes, and makes
+every actor identity and the push key unreadable. The boot log says whether
+they are separated, and so does the detailed health report:
 
-**Never change `SECRET_KEY_BASE` after deployment.** Changing it will:
+```bash
+curl -s http://127.0.0.1:4001/health | jq .checks.encryption_keys
+```
 
-1. Invalidate all existing sessions (users must re-login)
-2. Make all TOTP secrets undecryptable (users locked out of 2FA)
-3. Make all federation private keys undecryptable (federation breaks until keys are rotated)
+The [SysOp Guide](sysop.md#rotating-an-encryption-key) has the procedure for
+separating and rotating them. Two rules matter most:
 
-If you must change it, you will need to:
-- Have all users with TOTP re-enroll their authenticator apps
-- Rotate all federation keys via the admin panel
+- **Never remove a key while stored values still reference it.** The census
+  (`bin/baudrate rpc "Baudrate.Release.key_census()"`) says what is left, and
+  the health report fails when something needs a key that is gone.
+- **Recovery codes cannot be re-encrypted.** They move to a new key only when
+  a member generates new codes, so the key that hashed them stays configured
+  until then — they are also how a member without their authenticator gets
+  back in.
+
+After the keys are separated and nothing is left under `legacy`, changing
+`SECRET_KEY_BASE` costs only in-flight things: sessions end, open pages
+reconnect, and rendered image URLs re-sign.
 
 ---
 
@@ -460,9 +473,13 @@ If users report "invalid TOTP code" errors with correct codes:
    30-second period and the one after it, but never before its period starts,
    so a device clock running ahead fails first. Ensure both server and user's
    device have accurate time (NTP on server, auto time on device)
-3. **SECRET_KEY_BASE changed** — TOTP secrets are encrypted with a key
-   derived from `SECRET_KEY_BASE`. If it changed, all TOTP secrets are
-   unrecoverable. Users must use recovery codes to log in and re-enroll TOTP.
+3. **The key changed, or was dropped** — TOTP secrets are encrypted with the
+   `BAUDRATE_AUTH_KEYS` key, or one derived from `SECRET_KEY_BASE` while that
+   is unset. If a key was removed while stored secrets still needed it, those
+   secrets are unreadable: `jq .checks.encryption_keys` on the detailed health
+   report names the missing id, and putting that key back fixes it. If the key
+   is genuinely gone, members use recovery codes (only while the key that
+   hashed *those* is still configured) and re-enrol.
 
 ### Login throttling
 

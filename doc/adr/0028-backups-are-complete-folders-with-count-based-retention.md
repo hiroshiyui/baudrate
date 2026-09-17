@@ -1,6 +1,9 @@
 # 0028 — Backups are complete folders with count-based retention, pulled off-host
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by
+  [0038](0038-encryption-keys-are-separate-and-rotatable.md): restoring the
+  data needs the matching key *set*, not only `SECRET_KEY_BASE`, and
+  `MANIFEST.json` records which key ids were current.
 - **Date:** 2026-09-15
 - **Deciders:** Baudrate maintainers
 - **Related:** [0023](0023-data-export-threat-model.md)

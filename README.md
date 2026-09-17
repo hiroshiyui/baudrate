@@ -111,9 +111,11 @@ report (queues, workers, disk, backup age) on `127.0.0.1` only, for a monitor on
 the server to poll, and `LOG_FORMAT=json` switches the logs to one JSON object
 per line (see the [SysOp Guide](doc/sysop.md#detailed-health-report)).
 
-Note: Both TOTP secrets and federation private keys are encrypted at rest
-using keys derived from `SECRET_KEY_BASE`, so no additional environment
-variables are needed for encryption.
+TOTP secrets, recovery-code hashes, ActivityPub actor private keys and the Web
+Push key are encrypted or hashed at rest. Their keys default to being derived
+from `SECRET_KEY_BASE`, which then cannot be rotated; `BAUDRATE_AUTH_KEYS` and
+`BAUDRATE_SIGNING_KEYS` give each class its own rotatable key (see the
+[SysOp Guide](doc/sysop.md#encryption-keys)).
 
 ## Documentation
 

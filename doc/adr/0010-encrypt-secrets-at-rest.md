@@ -1,6 +1,13 @@
 # 0010 — Encrypt TOTP secrets and federation private keys at rest
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by
+  [0038](0038-encryption-keys-are-separate-and-rotatable.md). The keys still
+  come from application configuration, but no longer from `SECRET_KEY_BASE`:
+  each class of secret has its own, rotatable key. Two things this record
+  omits are also covered there — the Web Push VAPID key, encrypted the same
+  way, and the recovery-code HMAC, which depends on the same secret. Its
+  closing claim that "encryption is transparent at the schema boundary" was
+  never true: the vaults are called from contexts, not from an Ecto type.
 - **Date:** Recorded retroactively 2026-08-09
 
 ## Context

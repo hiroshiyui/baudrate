@@ -149,7 +149,7 @@ mix ecto.reset  # Drop, recreate, re-migrate
 | Variable | Description | How to generate |
 |----------|-------------|-----------------|
 | `DATABASE_URL` | PostgreSQL connection string | `ecto://USER:PASS@HOST/DATABASE` |
-| `SECRET_KEY_BASE` | Signing + encryption key derivation | `mix phx.gen.secret` |
+| `SECRET_KEY_BASE` | Signs and encrypts session cookies, LiveView and short-lived tokens, and media-proxy URLs. Also derives the keys for stored secrets, until you separate them ([Encryption keys](#encryption-keys)) | `mix phx.gen.secret` |
 | `PHX_HOST` | Public hostname for URL generation | Your domain (e.g., `forum.example.com`) |
 | `PHX_SERVER` | Enable HTTP server in releases | Set to `"true"` |
 | `RELEASE_COOKIE` | This server's Erlang distribution cookie. A release refuses to start, and `remote`/`rpc` refuse to run, without one, or with the public cookie shipped in `releases/COOKIE` ([Erlang distribution](#erlang-distribution-and-the-remote-console)) | `head -c 48 /dev/urandom \| base64 \| tr -d '/+=\n'`; Ansible generates one per server |
@@ -168,23 +168,41 @@ mix ecto.reset  # Drop, recreate, re-migrate
 | `HEALTH_DETAIL_PORT` | unset (Ansible: `4001`) | Serves the [detailed health report](#detailed-health-report) on `127.0.0.1` at this port. Unset: no listener. Only the port is configurable, never the address |
 | `BAUDRATE_BACKUP_DIR` | unset (Ansible: `/var/backups/baudrate/daily`) | Where nightly backups are written, for the report's backup check. Unset: that check is skipped |
 | `LOG_FORMAT` | unset | `json` writes one JSON object per log line ([Logs](#logs)); anything else keeps the text format |
+| `BAUDRATE_AUTH_KEYS` | unset | Keys for TOTP secrets and recovery-code hashes: `id:key` entries, current first ([Encryption keys](#encryption-keys)). Unset: derived from `SECRET_KEY_BASE` |
+| `BAUDRATE_SIGNING_KEYS` | unset | The same, for the ActivityPub actor private keys and the Web Push key |
 
-### SECRET_KEY_BASE — critical warning
+### Encryption keys
 
-`SECRET_KEY_BASE` derives encryption keys for:
+Four things are protected by a key rather than stored in the clear:
 
-- **Session cookies** (signing + encryption)
-- **TOTP secrets** (AES-256-GCM via TotpVault, salt: `"totp_encryption_key"`)
-- **Federation private keys** (AES-256-GCM via KeyVault, salt: `"federation_key_encryption"`)
+| Stored value | Where | Key |
+|---|---|---|
+| TOTP secrets | `users.totp_secret` | `BAUDRATE_AUTH_KEYS` |
+| Recovery-code hashes | `recovery_codes.code_hash` | `BAUDRATE_AUTH_KEYS` |
+| Actor private keys | `users`, `boards`, and the site's settings row | `BAUDRATE_SIGNING_KEYS` |
+| Web Push (VAPID) private key | the `vapid_private_key_encrypted` setting | `BAUDRATE_SIGNING_KEYS` |
 
-**Never change `SECRET_KEY_BASE` after deployment.** Changing it will:
+**Until you set those variables, all four keys are derived from
+`SECRET_KEY_BASE`**, as they always were, and `SECRET_KEY_BASE` therefore
+cannot be changed: doing so locks every member out of 2FA (and out of their
+recovery codes, the way back), and makes every actor identity and the push key
+unreadable. The boot log says so, and the [detailed health
+report](#detailed-health-report) has an `encryption_keys` check.
 
-1. Invalidate all existing sessions (users must re-login)
-2. Make all TOTP secrets undecryptable (users locked out of 2FA)
-3. Make all federation private keys undecryptable (federation breaks)
+Separating them takes one deploy and one command — see [Rotating an encryption
+key](#rotating-an-encryption-key). Afterwards each key can be rotated on its
+own, and changing `SECRET_KEY_BASE` costs only in-flight things: every member
+signs in again, open pages reconnect, and already-rendered image URLs re-sign
+on the next render.
 
-If you must change it: have all TOTP users re-enroll their authenticator apps,
-and rotate all federation keys via the admin panel.
+A value written with a separated key records which key wrote it and is
+authenticated against the row it belongs to, so a secret copied onto another
+account no longer decrypts (ADR 0038).
+
+**Keep every key offline.** A database dump carries the ciphertext and none of
+the keys — which is the point — so a restore needs the same key set. Back up
+your SOPS secrets file and its GPG key somewhere other than the server;
+`MANIFEST.json` in each backup records which key ids it needs.
 
 ### PHX_HOST must match your public hostname
 
@@ -392,8 +410,8 @@ recovery codes when displayed. Each code can only be used once.
   completes)
 - **Optional** for user role (enable at `/profile`)
 - **Disabled** for guest role
-- Secrets encrypted at rest with AES-256-GCM (key derived from
-  `SECRET_KEY_BASE`)
+- Secrets encrypted at rest with AES-256-GCM, keyed by `BAUDRATE_AUTH_KEYS`
+  or, until that is set, by `SECRET_KEY_BASE` ([Encryption keys](#encryption-keys))
 - Recovery codes: 10 per user, HMAC-SHA256 hashed, one-time use
 - Codes are accepted for the current 30-second period and for 30 seconds after
   they roll over. A code from a device clock running ahead is not accepted, so
@@ -411,8 +429,12 @@ recovery codes when displayed. Each code can only be used once.
   every other session from `/profile` → Sessions. Both require the password (plus
   TOTP when enabled), close the other sessions' open pages immediately, and send
   a security notice that cannot be turned off.
-- If `SECRET_KEY_BASE` changes, all TOTP secrets become unrecoverable — users
-  must use recovery codes and re-enroll
+- If the key that encrypts TOTP secrets changes without the stored secrets
+  being re-encrypted first, they become unreadable and members must re-enrol.
+  Recovery codes are keyed by the same class, so they can be the way back only
+  while the key that hashed them is still configured — which is why a retired
+  key stays listed until the census shows nothing under it
+  ([Rotating an encryption key](#rotating-an-encryption-key))
 
 ### WebAuthn / FIDO2 Hardware Security Keys
 
@@ -1202,8 +1224,12 @@ so failed runs never delete the last good copies.
 
 The dump contains every account's data, including encrypted TOTP secrets and
 federation keys. The backup directory is readable only by the `baudrate` user
-and the `baudrate-backup` group. Restoring also needs the same
-`SECRET_KEY_BASE`: keep an offline copy of your SOPS secrets file and its key.
+and the `baudrate-backup` group. Restoring also needs the matching **key set**
+— `SECRET_KEY_BASE` plus `BAUDRATE_AUTH_KEYS` and `BAUDRATE_SIGNING_KEYS` if
+you have separated them — so keep an offline copy of your SOPS secrets file
+and its GPG key. Each backup's `MANIFEST.json` records the key ids that were
+current when it was taken, so a restore against the wrong set is recognisable
+rather than looking like everyone's 2FA broke at once.
 
 > **Before v1.18.2** backups were only available as Mix tasks, which are not
 > part of a release, and on an Ansible install `mix backup` archived an almost
@@ -1665,6 +1691,89 @@ bin/baudrate eval "Baudrate.Release.rollback(Baudrate.Repo, 20260101000000)"
 
 Replace `20260101000000` with the migration version to roll back to.
 
+### Rotating an encryption key
+
+The secrets in the database are protected by two keys you can set and change
+([Encryption keys](#encryption-keys)); everything here is safe to run on a
+live site, and safe to interrupt.
+
+**Separating the keys for the first time.** Do this in a change of its own,
+after the deploy has settled: while no key is configured the app writes
+exactly what older releases wrote, so the deploy stays reversible, and from
+the moment a key is set, what is written afterwards needs it.
+
+1. Generate one key per class:
+
+   ```bash
+   openssl rand -base64 32   # for auth_keys
+   openssl rand -base64 32   # for signing_keys
+   ```
+
+2. Put them in SOPS with an id you will recognise later — the month is a good
+   one:
+
+   ```bash
+   sops inventory/group_vars/all.sops.yml
+   # auth_keys: "202609:<first key>"
+   # signing_keys: "202609:<second key>"
+   ```
+
+3. Deploy. The boot log should stop saying `crypto.keys_not_separated`.
+   Nothing is re-encrypted yet, and every existing secret still reads through
+   the old derivation.
+
+4. Re-encrypt, dry run first:
+
+   ```bash
+   set -a; . /opt/baudrate/env/baudrate.env; set +a
+   bin/baudrate rpc "Baudrate.Release.rotate_keys(dry_run: true)"
+   bin/baudrate rpc "Baudrate.Release.rotate_keys()"
+   ```
+
+5. Check what is left:
+
+   ```bash
+   bin/baudrate rpc "Baudrate.Release.key_census()"
+   curl -s http://127.0.0.1:4001/health | jq .checks.encryption_keys
+   ```
+
+   Everything should sit under your new ids, except
+   `recovery_codes.code_hash` — see below.
+
+**Rotating a key later** (a suspected leak, or just because it is time):
+generate a new key, put it **in front** of the old one, keep the old one
+listed, deploy, run `rotate_keys()`, wait until the census shows nothing under
+the old id, then remove it and deploy again.
+
+```
+auth_keys: "202703:<new key>,202609:<old key>"
+```
+
+**Never remove a key while the census still lists values under it.** Those
+values become unreadable, which for TOTP secrets and recovery codes means
+members locked out of their own accounts. The health report fails while any
+stored value needs a key that is not configured, which is the last warning you
+get.
+
+**Recovery codes are the exception.** They are stored as a one-way hash of
+something only the member has, so a rotation cannot move them: each row keeps
+the id of the key that hashed it, and codes issued under a retired key keep
+working while that key stays listed. They move when a member generates new
+codes at `/profile`. Until the census shows nothing under the old id, keep it:
+recovery codes are also how a member without their authenticator gets back in,
+and Baudrate sends no email.
+
+**Rotating `SECRET_KEY_BASE`** is possible once the census shows nothing under
+`legacy`. It ends every session (members sign in again), breaks open LiveView
+pages until they reconnect, and makes already-rendered image URLs re-sign on
+the next render. Nothing stored is lost.
+
+**If a value cannot be decrypted**, the task says which one and leaves it
+alone; it never overwrites something it could not read. For an actor's private
+key the fix is rotating that keypair from `/admin/federation`, which
+republishes the public key to the fediverse. For a TOTP secret it is the
+member re-enrolling.
+
 ### One-Shot Data Repair: `ap_id` Backfill
 
 Until v1.8.2, ActivityPub canonical IDs were stamped with a separate
@@ -1794,7 +1903,8 @@ report as JSON either way:
     "inbound_queue": {"status": "ok", "pending": 0, "oldest_waiting_seconds": 0, "failed_last_24h": 0},
     "workers": {"status": "ok", "workers": {"delivery_worker": {"status": "ok", "last_run_seconds": 41}, "…": {}}},
     "disk": {"status": "ok", "free_bytes": 21474836480, "total_bytes": 42949672960, "floor_bytes": 4294967296},
-    "backup": {"status": "fail", "reason": "the newest backup is more than 26 hours old", "newest_age_seconds": 97200, "count": 7}
+    "backup": {"status": "fail", "reason": "the newest backup is more than 26 hours old", "newest_age_seconds": 97200, "count": 7},
+    "encryption_keys": {"status": "ok", "separated": {"auth": true, "signing": true}, "keys": {"users.totp_secret": {"202609": 12}}}
   }
 }
 ```
@@ -1804,6 +1914,7 @@ report as JSON either way:
 | `database` | `SELECT 1` does not answer | `systemctl status postgresql`, `POOL_SIZE` |
 | `delivery_queue` | a delivery has been due for more than 15 minutes. Jobs held back by an [open circuit](#delivery-queue-adminfederation) are waiting on purpose and not counted | `DeliveryWorker` in `journalctl -u baudrate` |
 | `inbound_queue` | an inbox activity has waited more than 10 minutes. `failed_last_24h` counts activities that crashed three times | [Inbound Queue](#inbound-queue) |
+| `encryption_keys` | a stored secret needs an encryption key that is not configured, so those rows cannot be read. `keys` counts values per key id, and `legacy` means still keyed off `SECRET_KEY_BASE`. Skipped while neither class is separated | [Rotating an encryption key](#rotating-an-encryption-key) |
 | `workers` | `DeliveryWorker`, `InboundWorker`, `FeedWorker` or `SessionCleaner` has not completed a run for three of its intervals (at least 5 minutes; 3 hours for the hourly `SessionCleaner`). A worker that keeps crashing and being restarted counts as stopped | the log for crashes of that worker |
 | `disk` | free space under `shared/uploads` is below 1 GiB or 10% of the filesystem, the floor backups keep | `df -h`, the media cache size |
 | `backup` | the newest complete backup is more than 26 hours old, or there is none; skipped when `BAUDRATE_BACKUP_DIR` is unset | `journalctl -u baudrate-backup` |

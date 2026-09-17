@@ -34,7 +34,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
-| **2** | **Operability** | 2A–2H | **In progress** (2B, 2H in v1.23.0; 2C in v1.24.0; 2D in v1.25.0; 2E in v1.26.0). Data loss and blind operations are the biggest risks |
+| **2** | **Operability** | 2A–2H | **In progress** (2B, 2H in v1.23.0; 2C in v1.24.0; 2D in v1.25.0; 2E in v1.26.0; 2G done). Data loss and blind operations are the biggest risks |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
@@ -93,6 +93,7 @@ out by P1-D1.
 | 2B | One node (D2): cluster discovery removed; the scaling guide rewritten around a bigger host, PostgreSQL tuning and a CDN that fronts the whole site; troubleshooting for an accidental second node | v1.23.0 | [ADR 0033](adr/0033-baudrate-runs-on-one-node.md) |
 | 2C | Federation work committed before it is acknowledged: delivery jobs in the change's transaction, wake on commit, delivery deadlines, a per-domain circuit breaker, and an inbound queue processed one activity per remote account | v1.24.0 | [ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md) |
 | 2D | Observability: a detailed health report on a loopback-only listener (queues, worker heartbeats, disk, backup age; 503 when a check fails) and optional JSON logs with a metadata allow-list. Alerting stays with the operator: the sysop guide shows polling with a systemd timer or a host monitor | v1.25.0 | [ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md) |
+| 2G | Key separation: an `:auth` key (TOTP secrets, recovery-code hashes) and a `:signing` key (actor private keys, the Web Push key), read from the environment, each with retired keys kept for reading; stored values record their key and are bound to their row; a resumable rotation task with a census, a health check for a key that is gone, and key ids in the backup manifest. `SECRET_KEY_BASE` becomes rotatable | not yet released | [ADR 0038](adr/0038-encryption-keys-are-separate-and-rotatable.md) |
 | 2E | Deploy safety: releases built on Debian 12 in CI, smoke-tested on every push, attested and attached to the GitHub release; a rollback playbook that refuses an incompatible schema; the Erlang cookie per server and distribution on loopback; Sobelow and mix_audit in CI. The deploy installed that tarball in v1.26.0 and builds on the server again since (ADR 0037) | v1.26.0 | [ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md), [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md) |
 | 2H | Drift: CI runs production's PostgreSQL 15, server and client, held together with Ansible by `verify-toolchain.sh`; the worker table, README clone URL and `INSTALLATION_KEY` fixed; stray committed uploads removed | v1.23.0 | `ci/image/README.md`, `doc/sysop.md` |
 
@@ -143,13 +144,6 @@ open:
   - `announces`, after 180 days;
   - soft-deleted articles and comments, once past the 90-day evidence window (P1-D6).
 - [ ] Postgres guidance in `doc/sysop.md`: autovacuum for the tables the purges churn. (`shared_buffers`, `effective_cache_size` and pool sizing for a single host are in the Scaling section, from 2B.)
-
-### 2G — Key separation (M)
-
-Needs an ADR.
-
-- [ ] Separate encryption keys for TOTP secrets and federation private keys, apart from `SECRET_KEY_BASE`. Today one secret derives every key and cannot be rotated.
-- [ ] A release task that re-encrypts the stored secrets under a new key, so any key can be rotated.
 
 ### Decisions (made 2026-09-17)
 
