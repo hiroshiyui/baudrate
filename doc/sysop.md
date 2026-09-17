@@ -39,7 +39,7 @@ own Erlang runtime and NIFs.
 | Erlang/OTP | 26+ | VM |
 | PostgreSQL | 15+ | Database (requires `pg_trgm` extension) |
 | libvips | any | Avatar and image processing |
-| Rust toolchain | stable | HTML sanitizer NIF (Ammonia via Rustler) |
+| Rust toolchain | stable | Three Rustler NIFs: HTML sanitizer (Ammonia), HTML parser (scraper), feed parser (feedparser-rs) |
 
 ### Installing build dependencies
 
@@ -1471,7 +1471,7 @@ To install it by hand, verify it first. `--source-digest` is the commit the tag 
 clone, so a tag moved on GitHub after you fetched it fails verification:
 
 ```bash
-TAG=v1.26.0
+TAG=v1.27.0
 gh release download "$TAG" --repo hiroshiyui/baudrate --pattern "baudrate-${TAG#v}-debian12-x86_64.tar.gz"
 gh attestation verify "baudrate-${TAG#v}-debian12-x86_64.tar.gz" --repo hiroshiyui/baudrate \
   --signer-workflow hiroshiyui/baudrate/.github/workflows/release.yml \
@@ -1587,7 +1587,7 @@ MIX_ENV=prod mix release
 ```
 
 The release is written to `_build/prod/rel/baudrate/`. It includes the compiled
-BEAM code, the Ammonia NIF `.so`, ERTS, and the overlay convenience scripts
+BEAM code, the three Rust NIF `.so` files, ERTS, and the overlay scripts
 (`bin/server`, `bin/migrate`).
 
 > **Note:** When upgrading versions, remove `_build/prod/rel/` before running
