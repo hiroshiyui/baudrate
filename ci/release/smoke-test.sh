@@ -101,16 +101,35 @@ RELEASE_COOKIE="$cookie" "$rel/bin/baudrate" rpc 'IO.puts("rpc ok from #{node()}
 grep -q "rpc ok from baudrate@127.0.0.1" "$work/rpc.log" || fail "unexpected rpc output: $(cat "$work/rpc.log")"
 
 step "6. listeners beyond loopback"
+# The process that owns a socket inode, for the report.
+owner() {
+  for fd in /proc/[0-9]*/fd/*; do
+    if [ "$(readlink "$fd" 2>/dev/null)" = "socket:[$1]" ]; then
+      pid="${fd#/proc/}"
+      pid="${pid%%/*}"
+      tr '\0' ' ' < "/proc/$pid/cmdline" | cut -c1-160
+      return
+    fi
+  done
+  echo "(owner not found)"
+}
 exposed="$port"
+report=""
 for table in /proc/net/tcp /proc/net/tcp6; do
   [ -r "$table" ] || continue
-  while read -r _ local _ state _; do
+  # sl local remote state tx:rx timer:when retransmit uid timeout inode
+  while read -r _ local _ state _ _ _ _ _ inode; do
     [ "$state" = 0A ] || continue # LISTEN
     case "${local%:*}" in
       # 127.0.0.1, ::1 and ::ffff:127.0.0.1, as /proc writes them
       0100007F | 00000000000000000000000001000000 | 0000000000000000FFFF00000100007F) continue ;;
     esac
-    exposed="$exposed $(printf '%d' "0x${local##*:}")"
+    listen_port="$(printf '%d' "0x${local##*:}")"
+    exposed="$exposed $listen_port"
+    if [ "$listen_port" != "$port" ]; then
+      report="$report
+  port $listen_port, address ${local%:*} ($table): $(owner "$inode")"
+    fi
   done < "$table"
 done
 exposed="$(echo $exposed | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/ $//')"
@@ -118,7 +137,7 @@ echo "listening beyond loopback: $exposed"
 if [ "${SMOKE_LISTENERS:-}" = skip ]; then
   echo "(not checked: SMOKE_LISTENERS=skip)"
 elif [ "$exposed" != "$port" ]; then
-  fail "expected only port $port beyond loopback, found: $exposed"
+  fail "expected only port $port beyond loopback, found: $exposed$report"
 fi
 
 step "7. stop"
