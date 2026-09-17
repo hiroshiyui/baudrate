@@ -34,7 +34,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
-| **2** | **Operability** | 2A–2H | **In progress** (2B, 2H in v1.23.0; 2C done). Data loss and blind operations are the biggest risks |
+| **2** | **Operability** | 2A–2H | **In progress** (2B, 2H in v1.23.0; 2C in v1.24.0). Data loss and blind operations are the biggest risks |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
@@ -109,7 +109,7 @@ open:
 - [x] ADR: Baudrate runs on one node, so ETS caches, nonces, challenges, rate limits and local uploads are sound — [ADR 0033](adr/0033-baudrate-runs-on-one-node.md).
 - [x] Rewrite the scaling section of `doc/sysop.md` around a bigger host, Postgres tuning and a CDN for static assets. The old section called duplicate workers "idempotent"; `DeliveryWorker` has no row locks, so it was wrong. `doc/troubleshooting.md` now covers diagnosing a second node.
 
-### 2C — Delivery and inbound robustness (L) — done, not yet released
+### 2C — Delivery and inbound robustness (L) — released in v1.24.0
 
 Decided 2026-09-17: extend our own queue rather than adopt Oban
 ([ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md)).
@@ -512,6 +512,12 @@ Kept so the review is complete. None of these are scheduled; propose moving one 
 Full detail is in `CHANGELOG.md`; this is the short version of where the
 project has been.
 
+- **v1.24.0 — Phase 2C.** A change and its outgoing activities commit together
+  ([ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md)),
+  so a restart no longer drops them; deliveries wake on commit, a server that is
+  down pauses behind a per-domain circuit breaker, and the inbox stores an
+  activity and answers at once while a worker processes it, one per remote
+  account in order.
 - **v1.23.0 — Phase 2B and 2H.** Baudrate officially runs on one node
   ([ADR 0033](adr/0033-baudrate-runs-on-one-node.md)); the old guide had called
   running several "idempotent" when it would have delivered every job twice
