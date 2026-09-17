@@ -120,9 +120,11 @@ for table in /proc/net/tcp /proc/net/tcp6; do
   # sl local remote state tx:rx timer:when retransmit uid timeout inode
   while read -r _ local _ state _ _ _ _ _ inode; do
     [ "$state" = 0A ] || continue # LISTEN
+    # Loopback: 127.0.0.0/8, ::1 and ::ffff:127.0.0.0/104, as /proc writes
+    # them (each 32-bit word in host byte order, so 127 is the last byte).
+    # In a container, Docker's DNS resolver listens on 127.0.0.11.
     case "${local%:*}" in
-      # 127.0.0.1, ::1 and ::ffff:127.0.0.1, as /proc writes them
-      0100007F | 00000000000000000000000001000000 | 0000000000000000FFFF00000100007F) continue ;;
+      ??????7F | 00000000000000000000000001000000 | 0000000000000000FFFF0000??????7F) continue ;;
     esac
     listen_port="$(printf '%d' "0x${local##*:}")"
     exposed="$exposed $listen_port"
