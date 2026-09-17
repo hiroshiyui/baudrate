@@ -220,7 +220,7 @@ When creating a new release (on `current`):
 3. Commit the release on `current` and push `current`
 4. Merge into `main`: `git switch main && git merge --ff-only current && git push origin main`, then `git switch current`
 5. Create the annotated git tag on the release commit (e.g. `v1.1.21`) and push it (`git push --tags`)
-6. Create the GitHub release via `gh release create`. Publishing it starts `release.yml`, which attaches the attested tarball; wait for that run to succeed before deploying (ADR 0036)
+6. Create the GitHub release via `gh release create`. Publishing it starts `release.yml`, which attests the tarball and attaches it for installing by hand (ADR 0036). Since the deploy builds on the server (ADR 0037) it does not need that tarball, so this run does not gate the deploy — but read its result, because a red build means the release could not start in CI. What gates the deploy is `elixir.yml` on the release commit, whose Release build job runs the same build and smoke test
 
 ### Code Organization
 
