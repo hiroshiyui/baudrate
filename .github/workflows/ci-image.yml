@@ -1,8 +1,9 @@
-# Builds the CI image (ci/image/Dockerfile), publishes it to GHCR with a
-# build-provenance attestation, and proposes it to CI by changing the pinned
-# digest in ci/image/image.lock. CI only runs images whose digest was merged
-# there and whose attestation says this workflow built them. See
-# ci/image/README.md.
+# Builds the CI images (ci/image/Dockerfile): `baudrate-build`, which builds
+# the production release, and `baudrate-ci`, which runs the tests. Publishes
+# both to GHCR with build-provenance attestations, and proposes them to CI by
+# changing the pinned digests in ci/image/build-image.lock and
+# ci/image/image.lock. CI only runs images whose digest was merged there and
+# whose attestation says this workflow built them. See ci/image/README.md.
 
 name: CI image
 
@@ -34,7 +35,8 @@ jobs:
       pull-requests: write  # open the update PR (when the repository allows it)
       issues: write         # otherwise, open an issue with the compare link
     env:
-      IMAGE: ghcr.io/${{ github.repository_owner }}/baudrate-ci
+      CI_IMAGE: ghcr.io/${{ github.repository_owner }}/baudrate-ci
+      BUILD_IMAGE: ghcr.io/${{ github.repository_owner }}/baudrate-build
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -60,26 +62,50 @@ jobs:
           check selenium "$(arg SELENIUM_VERSION)" "$(sed -nE 's/^\s*@selenium_version "([^"]+)"/\1/p' lib/mix/tasks/selenium_setup.ex)"
           check geckodriver "$(arg GECKODRIVER_VERSION)" "$(sed -nE 's/^\s*@geckodriver_version "([^"]+)"/\1/p' lib/mix/tasks/selenium_setup.ex)"
           check postgres "$(arg POSTGRES_MAJOR)" "$(sed -nE 's/^postgres_version: "?([0-9]+)"?.*/\1/p' ansible/inventory/group_vars/all.yml)"
+          # The base must be production's Debian release: the release carries
+          # its own Erlang runtime and NIFs, linked against this system.
+          case "$(sed -nE 's/^debian_version: "?([0-9]+)"?.*/\1/p' ansible/inventory/group_vars/all.yml)" in
+            12) codename=bookworm ;;
+            13) codename=trixie ;;
+            *) codename=unknown ;;
+          esac
+          if [ "$(grep -cE "^FROM debian:${codename}-slim@sha256:[0-9a-f]{64} AS " ci/image/Dockerfile)" != 2 ]; then
+            echo "::error::ci/image/Dockerfile must build both base stages FROM debian:${codename}-slim (Ansible debian_version)"; fail=1
+          fi
           if grep -q '__[A-Z_]*SHA256__' ci/image/Dockerfile; then echo "::error::unfilled checksum placeholder"; fail=1; fi
           exit $fail
 
       - name: Build
         run: |
           set -eu
-          docker build --pull --no-cache \
-            --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" \
-            --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            -t baudrate-ci:candidate ci/image
+          labels="--label org.opencontainers.image.revision=$(git rev-parse HEAD) --label org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          # The runner starts with no build cache, so both builds are fresh;
+          # the second reuses the first's layers from this run only.
+          docker build --pull --no-cache $labels --target build -t baudrate-build:candidate ci/image
+          docker build $labels --target ci -t baudrate-ci:candidate ci/image
 
-      - name: Smoke test the image
+      - name: Smoke test the images
         run: |
+          set -eu
+          debian="$(sed -nE 's/^debian_version: "?([0-9]+)"?.*/\1/p' ansible/inventory/group_vars/all.yml)"
+          for image in baudrate-build:candidate baudrate-ci:candidate; do
+            docker run --rm -e DEBIAN="$debian" "$image" sh -euxc '
+              . /etc/os-release; test "$VERSION_ID" = "$DEBIAN"
+              elixir --version
+              mix hex.info >/dev/null
+              rustc --version
+            '
+          done
+          docker run --rm baudrate-build:candidate sh -euxc '
+            test "$BAUDRATE_IMAGE" = build
+            if command -v firefox; then echo "the build image must not carry test tools"; exit 1; fi
+          '
           docker run --rm baudrate-ci:candidate sh -euxc '
-            elixir --version
-            mix hex.info >/dev/null
-            rustc --version
+            test "$BAUDRATE_IMAGE" = ci
             firefox --version
             java -version
             pg_dump --version
+            echo "mix_audit advisories: $(cat /opt/mix-audit/ADVISORIES_COMMIT) ($(cat /opt/mix-audit/ADVISORIES_DATE))"
           '
 
       - name: Push to GHCR
@@ -90,51 +116,72 @@ jobs:
           set -eu
           tag="$(date -u +%Y%m%d)-$(git rev-parse --short=7 HEAD)"
           echo "$GH_TOKEN" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
-          docker tag baudrate-ci:candidate "${IMAGE}:${tag}"
-          docker push "${IMAGE}:${tag}"
-          digest="$(docker inspect --format '{{index .RepoDigests 0}}' "${IMAGE}:${tag}" | cut -d@ -f2)"
-          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
-          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
-          echo "Pushed \`${IMAGE}@${digest}\` (tag \`${tag}\`)" >> "$GITHUB_STEP_SUMMARY"
+          push() {
+            docker tag "$1" "$2:${tag}"
+            docker push -q "$2:${tag}" > /dev/null
+            docker inspect --format '{{index .RepoDigests 0}}' "$2:${tag}" | cut -d@ -f2
+          }
+          ci_digest="$(push baudrate-ci:candidate "$CI_IMAGE")"
+          build_digest="$(push baudrate-build:candidate "$BUILD_IMAGE")"
+          {
+            echo "tag=${tag}"
+            echo "ci_digest=${ci_digest}"
+            echo "build_digest=${build_digest}"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "Pushed \`${CI_IMAGE}@${ci_digest}\` and \`${BUILD_IMAGE}@${build_digest}\` (tag \`${tag}\`)"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Attest build provenance
+      - name: Attest build provenance (CI image)
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-name: ${{ env.IMAGE }}
-          subject-digest: ${{ steps.push.outputs.digest }}
+          subject-name: ${{ env.CI_IMAGE }}
+          subject-digest: ${{ steps.push.outputs.ci_digest }}
           push-to-registry: true
 
-      - name: Propose the new digest to CI
+      - name: Attest build provenance (build image)
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-name: ${{ env.BUILD_IMAGE }}
+          subject-digest: ${{ steps.push.outputs.build_digest }}
+          push-to-registry: true
+
+      - name: Propose the new digests to CI
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.push.outputs.tag }}
-          DIGEST: ${{ steps.push.outputs.digest }}
+          CI_DIGEST: ${{ steps.push.outputs.ci_digest }}
+          BUILD_DIGEST: ${{ steps.push.outputs.build_digest }}
         run: |
           set -eu
-          ref="${IMAGE}@${DIGEST}"
-          if [ "$(cat ci/image/image.lock)" = "$ref" ]; then
-            echo "CI already uses ${ref}" >> "$GITHUB_STEP_SUMMARY"
+          ci_ref="${CI_IMAGE}@${CI_DIGEST}"
+          build_ref="${BUILD_IMAGE}@${BUILD_DIGEST}"
+          if [ "$(cat ci/image/image.lock)" = "$ci_ref" ] && [ "$(cat ci/image/build-image.lock 2>/dev/null)" = "$build_ref" ]; then
+            echo "CI already uses ${ci_ref} and ${build_ref}" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           source_sha="$(git rev-parse HEAD)"
           branch="ci-image/${TAG}"
-          echo "$ref" > ci/image/image.lock
+          echo "$ci_ref" > ci/image/image.lock
+          echo "$build_ref" > ci/image/build-image.lock
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$branch"
-          git commit -q -am "ci: use CI image ${TAG}"
+          git add ci/image/image.lock ci/image/build-image.lock
+          git commit -q -m "ci: use CI images ${TAG}"
           git push -q "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$branch"
           body="Built by ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} from ${source_sha}.
 
-          Image: \`${ref}\`
+          CI image: \`${ci_ref}\`
+          Build image: \`${build_ref}\`
 
-          Merging changes ci/image/image.lock, so CI runs this image. CI verifies its provenance attestation first."
+          Merging changes ci/image/image.lock and ci/image/build-image.lock, so the tests and the release build run these images. CI verifies their provenance attestations first."
           compare="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/current...${branch}?expand=1"
-          if gh pr create --base current --head "$branch" --title "ci: use CI image ${TAG}" --body "$body"; then
+          if gh pr create --base current --head "$branch" --title "ci: use CI images ${TAG}" --body "$body"; then
             echo "Opened a pull request for ${branch}" >> "$GITHUB_STEP_SUMMARY"
           else
             # The repository does not let Actions open pull requests.
-            gh issue create --title "CI image ${TAG} is ready" \
+            gh issue create --title "CI images ${TAG} are ready" \
               --body "${body}
 
           Open the pull request: ${compare}"

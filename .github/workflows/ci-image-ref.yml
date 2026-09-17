@@ -1,12 +1,20 @@
-# Reusable: reads the CI image digest pinned in ci/image/image.lock and
-# verifies, before any job runs inside it, that the image was built and
-# attested by this repository's CI image workflow. Jobs use the `ref` output
-# as their container image.
+# Reusable: reads a CI image digest pinned in ci/image/ and verifies, before
+# any job runs inside it, that the image was built and attested by this
+# repository's CI image workflow. Jobs use the `ref` output as their container
+# image.
+#
+#   image: ci    → ci/image/image.lock        (baudrate-ci, the test jobs)
+#   image: build → ci/image/build-image.lock  (baudrate-build, the release build)
 
 name: CI image reference
 
 on:
   workflow_call:
+    inputs:
+      image:
+        description: "Which image: ci (tests) or build (release build)"
+        type: string
+        default: ci
     outputs:
       ref:
         description: "Digest-pinned CI image reference"
@@ -28,17 +36,26 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          sparse-checkout: ci/image/image.lock
+          sparse-checkout: |
+            ci/image/image.lock
+            ci/image/build-image.lock
           sparse-checkout-cone-mode: false
 
       - name: Read the pinned digest
         id: lock
+        env:
+          IMAGE: ${{ inputs.image }}
         run: |
           set -eu
-          ref="$(cat ci/image/image.lock)"
-          pattern="^ghcr\.io/${GITHUB_REPOSITORY_OWNER}/baudrate-ci@sha256:[0-9a-f]{64}$"
+          case "$IMAGE" in
+            ci) lock=ci/image/image.lock; name=baudrate-ci ;;
+            build) lock=ci/image/build-image.lock; name=baudrate-build ;;
+            *) echo "::error::unknown image '$IMAGE' (expected ci or build)"; exit 1 ;;
+          esac
+          ref="$(cat "$lock")"
+          pattern="^ghcr\.io/${GITHUB_REPOSITORY_OWNER}/${name}@sha256:[0-9a-f]{64}$"
           if ! printf '%s' "$ref" | grep -Eq "$pattern"; then
-            echo "::error file=ci/image/image.lock::expected ghcr.io/${GITHUB_REPOSITORY_OWNER}/baudrate-ci@sha256:<digest>, got '$ref'"
+            echo "::error file=${lock}::expected ghcr.io/${GITHUB_REPOSITORY_OWNER}/${name}@sha256:<digest>, got '$ref'"
             exit 1
           fi
           echo "ref=$ref" >> "$GITHUB_OUTPUT"

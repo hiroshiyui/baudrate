@@ -1,5 +1,11 @@
 ---
 # System
+# Production's Debian release. Releases are built on it in CI
+# (ci/image/Dockerfile) because they carry their own Erlang runtime and NIFs,
+# linked against this system's glibc and OpenSSL; the image workflow and
+# ci/image/verify-toolchain.sh check the two agree, and the deploy refuses a
+# host that runs anything else.
+debian_version: "12"
 baudrate_user: baudrate
 baudrate_home: /opt/baudrate
 
