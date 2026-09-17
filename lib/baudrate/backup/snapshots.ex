@@ -64,6 +64,7 @@ defmodule Baudrate.Backup.Snapshots do
   (a function like `Baudrate.Backup.free_space/1`).
   """
   @spec create(String.t(), keyword()) :: {:ok, map()} | {:error, String.t()}
+  # sobelow_skip ["Traversal.FileModule"]
   def create(root, opts \\ []) do
     keep = Keyword.get(opts, :keep, 7)
 
@@ -101,6 +102,7 @@ defmodule Baudrate.Backup.Snapshots do
   letters, digits, `.`, `_` and `-`, e.g. the release tag.
   """
   @spec dump_database(String.t(), keyword()) :: {:ok, map()} | {:error, String.t()}
+  # sobelow_skip ["Traversal.FileModule"]
   def dump_database(root, opts \\ []) do
     keep = Keyword.get(opts, :keep, 3)
     label = Keyword.get(opts, :label)
@@ -169,6 +171,7 @@ defmodule Baudrate.Backup.Snapshots do
 
   # -- building -------------------------------------------------------------
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp build(dir, plan) do
     dump = Path.join(dir, "db.dump")
     File.mkdir_p!(dir)
@@ -248,6 +251,7 @@ defmodule Baudrate.Backup.Snapshots do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp snapshot(plan, dest) do
     File.mkdir_p!(dest)
     plan.dirs |> Enum.reverse() |> Enum.each(&File.mkdir_p!(Path.join(dest, &1)))
@@ -279,6 +283,7 @@ defmodule Baudrate.Backup.Snapshots do
     e in File.Error -> {:error, "Copying uploads failed: #{Exception.message(e)}"}
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp store(:link, source, previous, rel, target, stat) do
     case File.ln(Path.join(previous, rel), target) do
       :ok -> :linked
@@ -286,6 +291,7 @@ defmodule Baudrate.Backup.Snapshots do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp store(:copy, source, _previous, _rel, target, stat) do
     case File.cp(source, target) do
       :ok ->
@@ -301,6 +307,7 @@ defmodule Baudrate.Backup.Snapshots do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp copy_tree(from, to) do
     from
     |> walk("")
@@ -347,6 +354,7 @@ defmodule Baudrate.Backup.Snapshots do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp with_lock(root, fun) do
     lock = Path.join(root, ".lock")
 
@@ -363,6 +371,7 @@ defmodule Baudrate.Backup.Snapshots do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp take_lock(lock) do
     case File.open(lock, [:write, :exclusive]) do
       {:ok, io} ->
@@ -383,6 +392,7 @@ defmodule Baudrate.Backup.Snapshots do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp take_lock_once(lock) do
     case File.open(lock, [:write, :exclusive]) do
       {:ok, io} ->
@@ -395,6 +405,7 @@ defmodule Baudrate.Backup.Snapshots do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp lock_holder_alive?(lock) do
     case File.read(lock) do
       {:ok, pid} ->
@@ -486,6 +497,7 @@ defmodule Baudrate.Backup.Snapshots do
   # file that had rotted on disk would be certified intact by every backup
   # after the rot. Carrying the original value forward makes the mismatch
   # surface instead.
+  # sobelow_skip ["Traversal.FileModule"]
   defp write_checksums(dir, dump_sha256, stored, previous_uploads) do
     known = previous_checksums(previous_uploads)
 
@@ -520,6 +532,7 @@ defmodule Baudrate.Backup.Snapshots do
   # and for one taken before this file existed; those files are simply hashed.
   defp previous_checksums(nil), do: %{}
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp previous_checksums(previous_uploads) do
     path = Path.join(Path.dirname(previous_uploads), @checksums_name)
 
@@ -537,6 +550,7 @@ defmodule Baudrate.Backup.Snapshots do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp sha256(path) do
     path
     |> File.stream!(65_536)

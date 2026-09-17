@@ -136,6 +136,7 @@ defmodule BaudrateWeb.FeedController do
     end
   end
 
+  # sobelow_skip ["XSS.ContentType", "XSS.SendResp"]
   defp render_feed(conn, format, articles, meta) do
     last_modified = newest_date(articles)
 

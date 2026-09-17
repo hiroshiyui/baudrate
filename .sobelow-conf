@@ -1,0 +1,20 @@
+# Sobelow, run by the Security job in CI (`mix sobelow --config`).
+#
+# Any finding fails the job, at every confidence level. A finding that has been
+# reviewed and is not a vulnerability is marked where it is, with
+# `# sobelow_skip ["Check"]` directly above the function (or router pipeline),
+# never here: skip means "someone checked this function", and a new function
+# is checked again. See doc/development.md, "Security checks".
+[
+  verbose: false,
+  private: true,
+  skip: true,
+  router: nil,
+  exit: "low",
+  format: "txt",
+  out: nil,
+  threshold: "low",
+  ignore: [],
+  ignore_files: [],
+  version: false
+]

@@ -110,6 +110,7 @@ defmodule BaudrateWeb.ExportController do
 
   defp match_claims(_claims, _request_id, _user_id, _session_id), do: :error
 
+  # sobelow_skip ["Traversal.SendFile"]
   defp build_and_send(conn, user, request_id) do
     case Archive.build(user, base_url: BaudrateWeb.Endpoint.url()) do
       {:ok, info} ->

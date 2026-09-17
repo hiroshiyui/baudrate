@@ -99,6 +99,7 @@ defmodule Baudrate.Media.Cache do
   within `max_bytes`. Returns the number of files removed.
   """
   @spec purge_stale(non_neg_integer() | nil, non_neg_integer() | nil) :: non_neg_integer()
+  # sobelow_skip ["Traversal.FileModule"]
   def purge_stale(ttl_days \\ nil, max_bytes \\ nil) do
     ttl_days = ttl_days || config(:media_cache_ttl_days, 30)
     max_bytes = max_bytes || config(:media_cache_max_bytes, 2 * 1024 * 1024 * 1024)
@@ -154,6 +155,7 @@ defmodule Baudrate.Media.Cache do
     binary_part(body, 0, 4) == "RIFF" and binary_part(body, 8, 4) == "WEBP"
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp reencode_and_store(body, url) do
     dest = path_for(url)
     File.mkdir_p!(Path.dirname(dest))
@@ -217,6 +219,7 @@ defmodule Baudrate.Media.Cache do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp evict_to_size(entries, max_bytes) do
     total = Enum.reduce(entries, 0, &(&1.size + &2))
 

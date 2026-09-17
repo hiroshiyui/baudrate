@@ -188,6 +188,7 @@ defmodule Baudrate.Federation.StaleActorCleaner do
     end)
   end
 
+  # sobelow_skip ["SQL.Query"]
   defp ids_referenced_by(table, column, ids) do
     sql =
       "SELECT DISTINCT #{quote_identifier(column)} FROM #{quote_identifier(table)} " <>

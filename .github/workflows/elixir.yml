@@ -2,6 +2,8 @@
 # ci/image/image.lock and checked for build provenance before use, so no
 # toolchain, browser or third-party action is fetched at run time. Only
 # GitHub-owned actions are used, pinned to commit SHAs.
+#
+# Besides the tests, the Security job runs Sobelow and mix_audit.
 
 name: Elixir CI
 
@@ -103,6 +105,62 @@ jobs:
       run: mix test --partitions 4 --seed 9527
       env:
         MIX_TEST_PARTITION: ${{ matrix.partition }}
+
+  security:
+
+    # Sobelow (static analysis for Phoenix) and mix_audit (known advisories in
+    # mix.lock). Every Sobelow finding fails the job; a reviewed false positive
+    # is marked with `# sobelow_skip` above its function (.sobelow-conf).
+    name: Security checks
+    needs: image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    container:
+      image: ${{ needs.image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    env:
+      MIX_ENV: test
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        persist-credentials: false
+    - name: Check the CI image matches the pinned toolchain
+      run: ci/image/verify-toolchain.sh
+    - name: Restore dependency and build caches
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: |
+          deps
+          native/*/target
+          /opt/cargo/registry
+        key: ${{ runner.os }}-${{ hashFiles('ci/image/image.lock') }}-${{ hashFiles('**/mix.lock', 'native/*/Cargo.lock') }}
+    - name: Install dependencies
+      run: mix deps.get
+    - name: Sobelow
+      run: mix sobelow --config
+    # The advisory list is the image's (ci/image/README.md): mix_audit reads it
+    # under $HOME and finds no checkout to pull, so nothing is fetched. The
+    # list must be unchanged afterwards, or the run used something else.
+    - name: mix_audit
+      run: |
+        set -eu
+        list="$MIX_AUDIT_HOME/.local/share/elixir-security-advisories-mirego"
+        before="$(find "$list" -type f | sort | xargs sha256sum | sha256sum)"
+        echo "Advisories at $(cat /opt/mix-audit/ADVISORIES_COMMIT) ($(cat /opt/mix-audit/ADVISORIES_DATE))"
+        HOME="$MIX_AUDIT_HOME" GIT_CEILING_DIRECTORIES=/opt mix deps.audit
+        after="$(find "$list" -type f | sort | xargs sha256sum | sha256sum)"
+        test ! -e "$list/.git"
+        if [ "$before" != "$after" ]; then
+          echo "::error::the advisory list changed during mix deps.audit; it must come from the image"
+          exit 1
+        fi
 
   feature:
 

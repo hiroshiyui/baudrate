@@ -114,6 +114,7 @@ defmodule Baudrate.DataPortability.Archive do
 
   @doc "Deletes a built archive and its staging directory."
   @spec cleanup(map()) :: :ok
+  # sobelow_skip ["Traversal.FileModule"]
   def cleanup(%{dir: dir}) do
     File.rm_rf(dir)
     :ok
@@ -124,6 +125,7 @@ defmodule Baudrate.DataPortability.Archive do
   Returns the number removed.
   """
   @spec sweep_temp() :: non_neg_integer()
+  # sobelow_skip ["Traversal.FileModule"]
   def sweep_temp do
     tmp = System.tmp_dir!()
     cutoff = System.os_time(:second) - @stale_temp_seconds
@@ -146,6 +148,7 @@ defmodule Baudrate.DataPortability.Archive do
 
   # ---------------------------------------------------------------------------
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp do_build(user, base_url, deadline, max_bytes, opts) do
     user = Repo.preload(user, :role, force: true)
     dir = make_private_dir()
@@ -176,6 +179,7 @@ defmodule Baudrate.DataPortability.Archive do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp make_private_dir do
     name = @temp_prefix <> Base.url_encode64(:crypto.strong_rand_bytes(12), padding: false)
     dir = Path.join(System.tmp_dir!(), name)
@@ -184,6 +188,7 @@ defmodule Baudrate.DataPortability.Archive do
     dir
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp stage_documents(staging, documents, user, opts) do
     readme = readme(user, Keyword.get(opts, :generated_at, DateTime.utc_now()))
 
@@ -199,6 +204,7 @@ defmodule Baudrate.DataPortability.Archive do
     end)
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp stage_media(staging, media, names, bytes, max_bytes, deadline) do
     Enum.reduce_while(media, {:ok, names, bytes}, fn {entry, source}, {:ok, names, bytes} ->
       with :ok <- check_deadline(deadline),

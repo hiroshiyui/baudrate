@@ -45,6 +45,7 @@ defmodule Baudrate.Backup do
   @spec backup_db(String.t(), String.t()) :: {:ok, String.t()} | {:error, String.t()}
   def backup_db(output_dir, format \\ "custom")
 
+  # sobelow_skip ["Traversal.FileModule"]
   def backup_db(output_dir, format) when format in @formats do
     File.mkdir_p!(output_dir)
     extension = if format == "custom", do: ".dump", else: ".sql"
@@ -91,6 +92,7 @@ defmodule Baudrate.Backup do
 
   @doc "Archives the uploads directory (without `media_cache/`) into `output_dir`."
   @spec backup_files(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  # sobelow_skip ["Traversal.FileModule"]
   def backup_files(output_dir) do
     with {:ok, uploads} <- uploads_dir() do
       File.mkdir_p!(output_dir)
@@ -237,6 +239,7 @@ defmodule Baudrate.Backup do
     with {:ok, _output} <- capture(cmd, args, env), do: {:ok, result_path}
   end
 
+  # sobelow_skip ["CI.System"]
   defp capture(cmd, args, env \\ []) do
     case System.find_executable(cmd) do
       nil ->

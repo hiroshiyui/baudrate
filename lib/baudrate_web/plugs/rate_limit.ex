@@ -54,6 +54,7 @@ defmodule BaudrateWeb.Plugs.RateLimit do
   def init(opts), do: opts
 
   @impl true
+  # sobelow_skip ["XSS.SendResp"]
   def call(conn, opts) do
     action = Keyword.fetch!(opts, :action)
     {scale_ms, limit} = Map.fetch!(@limits, action)

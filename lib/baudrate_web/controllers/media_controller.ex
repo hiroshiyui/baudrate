@@ -108,6 +108,7 @@ defmodule BaudrateWeb.MediaController do
     end
   end
 
+  # sobelow_skip ["Traversal.SendFile"]
   defp send_image(conn, path, url) do
     etag = ~s("#{Cache.digest(url)}")
 

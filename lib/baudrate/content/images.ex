@@ -226,6 +226,7 @@ defmodule Baudrate.Content.Images do
 
   Returns `:ok`.
   """
+  # sobelow_skip ["Traversal.FileModule"]
   def fetch_and_store_remote_images(article_id, attachments) when is_list(attachments) do
     File.mkdir_p!(ArticleImageStorage.upload_dir())
 
@@ -275,6 +276,7 @@ defmodule Baudrate.Content.Images do
 
   defp validate_image_size(_body), do: :ok
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp process_image_binary(body) do
     # Write to temp file for ArticleImageStorage-compatible processing
     tmp_path =

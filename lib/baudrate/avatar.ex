@@ -29,6 +29,7 @@ defmodule Baudrate.Avatar do
 
   Returns `{:ok, avatar_id}` or `{:error, reason}`.
   """
+  # sobelow_skip ["Traversal.FileModule"]
   def process_upload(upload_path, crop_params) do
     with :ok <- validate_magic_bytes(upload_path),
          {:ok, image} <- Image.open(upload_path, access: :random),
@@ -102,6 +103,7 @@ defmodule Baudrate.Avatar do
 
   # --- Private ---
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp validate_magic_bytes(path) do
     case File.read(path) do
       {:ok, data} when byte_size(data) >= 12 ->

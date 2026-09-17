@@ -276,6 +276,7 @@ defmodule Baudrate.Bots.FaviconFetcher do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp process_favicon(image_data) do
     tmp_path =
       System.tmp_dir!() |> Path.join("favicon_#{:erlang.unique_integer([:positive])}")

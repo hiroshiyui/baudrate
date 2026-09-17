@@ -19,11 +19,13 @@ defmodule BaudrateWeb.SafeHTML do
   @spec body_html(String.t() | nil) :: Phoenix.HTML.safe()
   def body_html(nil), do: Phoenix.HTML.raw("")
 
+  # sobelow_skip ["XSS.Raw"]
   def body_html(html) when is_binary(html) do
     html
     |> Baudrate.Media.Rewriter.rewrite_img_src()
     |> Phoenix.HTML.raw()
   end
 
+  # sobelow_skip ["XSS.Raw"]
   def body_html(other), do: Phoenix.HTML.raw(other)
 end

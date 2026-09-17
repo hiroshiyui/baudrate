@@ -199,6 +199,7 @@ defmodule Baudrate.Auth.SessionCleaner do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp purge_orphan_link_previews do
     paths = Baudrate.Content.purge_stale_link_previews()
 
@@ -214,6 +215,7 @@ defmodule Baudrate.Auth.SessionCleaner do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp cleanup_orphan_article_images do
     cutoff = DateTime.utc_now() |> DateTime.add(-24, :hour)
     paths = Baudrate.Content.delete_orphan_article_images(cutoff)
@@ -227,6 +229,7 @@ defmodule Baudrate.Auth.SessionCleaner do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp cleanup_orphan_comment_images do
     cutoff = DateTime.utc_now() |> DateTime.add(-24, :hour)
     paths = Baudrate.Content.delete_orphan_comment_images(cutoff)
@@ -245,6 +248,7 @@ defmodule Baudrate.Auth.SessionCleaner do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp cleanup_orphan_reply_images do
     cutoff = DateTime.utc_now() |> DateTime.add(-24, :hour)
     paths = Baudrate.Federation.delete_orphan_reply_images(cutoff)

@@ -592,6 +592,7 @@ defmodule Baudrate.DataPortability do
     end
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp copy_exclusive(source, dest) do
     case File.open(dest, [:write, :exclusive, :binary]) do
       {:ok, device} ->

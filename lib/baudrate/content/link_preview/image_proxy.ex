@@ -53,6 +53,7 @@ defmodule Baudrate.Content.LinkPreview.ImageProxy do
   """
   def delete_image(nil), do: :ok
 
+  # sobelow_skip ["Traversal.FileModule"]
   def delete_image(image_path) when is_binary(image_path) do
     abs_path = abs_path(image_path)
 
@@ -98,6 +99,7 @@ defmodule Baudrate.Content.LinkPreview.ImageProxy do
       binary_part(body, 8, 4) == "WEBP"
   end
 
+  # sobelow_skip ["Traversal.FileModule"]
   defp reencode_and_store(body, url_hash) do
     hash_hex = Base.encode16(url_hash, case: :lower)
     serving_path = "/uploads/link_preview_images/#{hash_hex}.webp"

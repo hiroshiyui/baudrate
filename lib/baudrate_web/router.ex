@@ -111,6 +111,7 @@ defmodule BaudrateWeb.Router do
 
   # Share target pipeline — identical to :browser but without CSRF protection.
   # The OS POST from PWA Web Share Target has no CSRF token.
+  # sobelow_skip ["Config.CSRF"]
   pipeline :share_target do
     plug :accepts, ["html"]
     plug :fetch_session
