@@ -61,4 +61,9 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 2. Status starts at `Proposed`, becomes `Accepted` when merged.
 3. To reverse a decision, write a **new** ADR and mark the old one
    `Superseded by NNNN` — never rewrite an accepted record.
-4. Add a row to the index above.
+4. When only part of a record is reversed, say which part, and leave the rest
+   standing: [0036](0036-production-runs-releases-built-and-attested-in-ci.md)
+   reads `Accepted, except decision 3 …, superseded by 0037`. Naming the
+   decision matters more than the wording — a bare `Superseded by` would retire
+   an ADR whose other decisions are still load-bearing.
+5. Add a row to the index above, matching the record's own Status line.
