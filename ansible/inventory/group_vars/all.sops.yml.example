@@ -13,3 +13,18 @@
 postgres_db_password: "CHANGE_ME"
 secret_key_base: "CHANGE_ME"
 installation_key: "CHANGE_ME"
+
+# Keys for the secrets kept in the database (ADR 0038), one per class:
+# auth_keys protects TOTP secrets and recovery-code hashes, signing_keys the
+# ActivityPub actor private keys and the Web Push key. Optional — without them
+# both are derived from secret_key_base, which then cannot be rotated.
+#
+# `id:key` entries, current key first, each key 32 random bytes:
+#
+#     openssl rand -base64 32
+#
+# Set them, deploy, then run the rotation task (doc/sysop.md, "Rotating an
+# encryption key"). Nothing generates these for you: a key that was never
+# saved here would encrypt secrets on one deploy and be gone on the next.
+# auth_keys: "k1:CHANGE_ME"
+# signing_keys: "k1:CHANGE_ME"

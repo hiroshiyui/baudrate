@@ -127,7 +127,7 @@ root.
 | Source | Clone repo and checkout the prompted release tag |
 | Build | Wipe `_build/prod` if the tag's `.tool-versions` differs from the last build → `mix deps.get` → `mix compile` → `mix assets.deploy` → clean stale rel → `mix release` |
 | Install | Copy release to `releases/<timestamp>/`, symlink shared uploads |
-| Env file | Generate this server's Erlang cookie once (`env/release_cookie`), then template `baudrate.env` with `DATABASE_URL`, `SECRET_KEY_BASE`, `RELEASE_COOKIE`, `HEALTH_DETAIL_PORT` (`health_detail_port`, default 4001), `BAUDRATE_BACKUP_DIR`, and `LOG_FORMAT` when `log_format` is set |
+| Env file | Generate this server's Erlang cookie once (`env/release_cookie`), then template `baudrate.env` with `DATABASE_URL`, `SECRET_KEY_BASE`, `RELEASE_COOKIE`, `HEALTH_DETAIL_PORT` (`health_detail_port`, default 4001), `BAUDRATE_BACKUP_DIR`, `LOG_FORMAT` when `log_format` is set, and `BAUDRATE_AUTH_KEYS` / `BAUDRATE_SIGNING_KEYS` when `auth_keys` / `signing_keys` are set (ADR 0038) |
 | Systemd | Install and enable `baudrate.service` |
 | Pre-deploy dump | Dump the database with the new release into `/var/backups/baudrate/predeploy/`, keeping `backup_keep_predeploy` (3); a failure stops the deploy |
 | Migrate | Run `bin/migrate` from the new release |

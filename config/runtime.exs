@@ -129,6 +129,90 @@ if config_env() == :prod do
     header: System.get_env("BAUDRATE_REAL_IP_HEADER", "x-forwarded-for"),
     trusted_proxies: trusted_proxies
 
+  # Keys for the secrets kept in the database (ADR 0038), one variable per
+  # class: BAUDRATE_AUTH_KEYS protects TOTP secrets and recovery-code hashes,
+  # BAUDRATE_SIGNING_KEYS the actor private keys and the Web Push key.
+  #
+  # Each is a comma-separated list of `id:key` entries, **current first**, with
+  # retired keys after it so values written under them can still be read. A
+  # retired key may be dropped once `Baudrate.Release.rotate_keys/1` reports
+  # nothing left under it.
+  #
+  # Unset means the keys are derived from SECRET_KEY_BASE, as they always were
+  # — nothing breaks, but SECRET_KEY_BASE then cannot be rotated. Raising on a
+  # malformed entry is safe: a static configuration error, not a transient
+  # condition, and starting with the wrong keys would write secrets nobody can
+  # read later.
+  parse_keyring = fn var ->
+    case System.get_env(var) do
+      blank when blank in [nil, ""] ->
+        []
+
+      raw ->
+        entries =
+          raw
+          |> String.split(",")
+          |> Enum.map(&String.trim/1)
+          |> Enum.reject(&(&1 == ""))
+          |> Enum.with_index(1)
+          |> Enum.map(fn {entry, position} ->
+            malformed = fn problem ->
+              raise """
+              #{var} is malformed at entry #{position}: #{problem}
+
+              Expected a comma-separated list of `id:key` entries, the current
+              key first, where each key is 32 random bytes in Base64:
+
+                  #{var}="k1:$(openssl rand -base64 32)"
+
+              An id is 1-16 characters of [A-Za-z0-9_-] and labels the key in
+              stored values, so it must not change once anything is written
+              with it. Leave the variable unset to keep deriving the keys from
+              SECRET_KEY_BASE. See doc/sysop.md, "Rotating an encryption key".
+              """
+            end
+
+            case String.split(entry, ":", parts: 2) do
+              [id, encoded] ->
+                unless id =~ ~r/^[A-Za-z0-9_-]{1,16}$/, do: malformed.("bad id #{inspect(id)}")
+
+                key =
+                  case Base.decode64(String.trim(encoded), padding: false) do
+                    {:ok, key} -> key
+                    :error -> malformed.("the key for id #{inspect(id)} is not Base64")
+                  end
+
+                if byte_size(key) != 32 do
+                  malformed.(
+                    "the key for id #{inspect(id)} decodes to #{byte_size(key)} bytes, not 32"
+                  )
+                end
+
+                %{id: id, key: key}
+
+              _ ->
+                malformed.("expected `id:key`")
+            end
+          end)
+
+        ids = Enum.map(entries, & &1.id)
+
+        if ids != Enum.uniq(ids) do
+          raise """
+          #{var} lists the same id twice: #{inspect(ids -- Enum.uniq(ids))}
+
+          An id identifies one key in stored values, so each must appear once.
+          """
+        end
+
+        entries
+    end
+  end
+
+  config :baudrate, Baudrate.Crypto.Keyring,
+    auth_keys: parse_keyring.("BAUDRATE_AUTH_KEYS"),
+    signing_keys: parse_keyring.("BAUDRATE_SIGNING_KEYS")
+
   config :wax_,
     origin: "https://#{host}",
     rp_id: host
