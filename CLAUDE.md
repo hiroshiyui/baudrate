@@ -156,6 +156,7 @@ new ADR; accepted ADRs are superseded, never rewritten.
 ### CI
 
 - **CI runs only in the project's CI image** (ADR 0027, `ci/image/`). Jobs use the digest in `ci/image/image.lock` after `ci-image-ref.yml` verifies its provenance attestation. Never add a third-party action, `curl | sh`, or an unpinned download to a workflow: put the tool in `ci/image/Dockerfile` with a SHA-256 cross-checked against upstream's published checksum. Use only GitHub-owned actions, pinned to a commit SHA with a `# vN` comment. Bumping Erlang/Elixir (`.tool-versions`), esbuild/Tailwind (`config/config.exs`) or Selenium/GeckoDriver also needs the Dockerfile `ARG`s and checksums updated; CI's `verify-toolchain.sh` fails until the image is rebuilt and the proposed `image.lock` change is merged.
+- **CI tests production's PostgreSQL major version, server and client both.** Production is Debian 12 with PostgreSQL 15, while development machines and Debian trixie run newer versions. The version is set in three places that `verify-toolchain.sh` holds together: `postgres_version` in `ansible/inventory/group_vars/all.yml`, `POSTGRES_MAJOR` in `ci/image/Dockerfile` (the client, the one package the image takes from `apt.postgresql.org`), and the digest-pinned `postgres:<major>` service images in `elixir.yml`. The client matters as much as the server: `pg_dump`/`pg_restore` 17+ write `SET transaction_timeout`, which a 15 server rejects, so a newer client fails the backup restore test against a correct backup. Do not "upgrade" CI's PostgreSQL ahead of production. SQL that needs a newer server (`MERGE … RETURNING`, `JSON_TABLE`, `any_value()`) passes on a development machine and fails in CI, which is the point.
 
 ## Project Conventions
 
@@ -241,6 +242,7 @@ When creating a new release (on `current`):
 ## Testing
 
 - **Always use seed 9527 and 4 partitions** when running the full test suite
+- **Running the suite against another PostgreSQL server** (e.g. production's major version in a container on port 5433): set `PGHOST` and `PGPORT`, which `config/test.exs` passes to the Repo. Before that change, `PGPORT` in the environment reached raw Postgrex connections (lock-holder tests, `ecto.create`) but not the Repo, so one run silently spread across two servers and failed in confusing ways. Confirm with `SELECT version()` from the Repo, not from how the databases got created. The backup restore test also needs a client of the same major version on `PATH` (see the CI bullet).
 - **Always run the full test suite without asking** — never ask for permission to run tests
 - `use BaudrateWeb.ConnCase` for LiveView/controller tests; `use Baudrate.DataCase` for context tests
 - `setup_user("role_name")` — creates a test user with the given role (seeds roles if needed)

@@ -8,8 +8,13 @@ import Config
 config :baudrate, Baudrate.Repo,
   username: "baudrate_db_user",
   password: "baudrate_database",
-  # PGHOST lets CI reach the Postgres service container by name.
+  # PGHOST lets CI reach the Postgres service container by name. PGPORT runs
+  # the suite against a second server, such as production's major version in
+  # a container. Both must be set here: the Repo does not pick up PGPORT on its
+  # own, while raw Postgrex connections do, so setting it only in the
+  # environment splits one test run across two servers.
   hostname: System.get_env("PGHOST", "localhost"),
+  port: String.to_integer(System.get_env("PGPORT", "5432")),
   database: "baudrate_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2

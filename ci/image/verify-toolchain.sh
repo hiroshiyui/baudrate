@@ -45,4 +45,26 @@ check tailwind "$tailwind_version" "$(pinned_asset tailwind)"
 check geckodriver "$geckodriver_version" "$(pinned_selenium_setup geckodriver)"
 check selenium "$selenium_version" "$(pinned_selenium_setup selenium)"
 
+# PostgreSQL: CI tests production's major version, taken from the Ansible
+# inventory. The client lives in the image; the server is the workflow's
+# service container, so a mismatch there means editing the workflow, not
+# rebuilding the image.
+pinned_postgres="$(sed -nE 's/^postgres_version: "?([0-9]+)"?.*/\1/p' ansible/inventory/group_vars/all.yml)"
+pg_client_major="$(pg_dump --version | sed -nE 's/^pg_dump \(PostgreSQL\) ([0-9]+)\..*/\1/p')"
+check postgresql-client "$pg_client_major" "$pinned_postgres"
+
+service_majors="$(sed -nE 's/^[[:space:]]*image: postgres:([0-9]+)@sha256:[0-9a-f]{64}[[:space:]]*$/\1/p' .github/workflows/elixir.yml)"
+if [ -z "$service_majors" ]; then
+  echo "::error::no digest-pinned postgres service image found in .github/workflows/elixir.yml"
+  fail=1
+fi
+for major in $service_majors; do
+  if [ "$major" = "$pinned_postgres" ]; then
+    echo "ok   postgres-service $major"
+  else
+    echo "::error::the CI postgres service is $major but production runs $pinned_postgres (ansible postgres_version); update the image in .github/workflows/elixir.yml"
+    fail=1
+  fi
+done
+
 exit "$fail"

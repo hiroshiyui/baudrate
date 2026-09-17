@@ -20,7 +20,8 @@ token. The image moves all of that to one reviewed, reproducible build.
 | Input | Source | Verification |
 |---|---|---|
 | Base OS | `debian:trixie-slim` | pinned by digest; Dependabot proposes updates |
-| Build tools, Firefox ESR, OpenJDK 21, PostgreSQL client, libssl, ncurses | Debian apt | Debian's signed repositories |
+| Build tools, Firefox ESR, OpenJDK 21, libssl, ncurses | Debian apt | Debian's signed repositories |
+| PostgreSQL client, production's major version (`postgresql-client-15`) | the PostgreSQL project's apt repository (`apt.postgresql.org`, `trixie-pgdg`) | its signing key is the copy Debian ships in `postgresql-client-common`, checked by SHA-256; the repository is pinned below Debian, so it supplies only that one package |
 | Erlang/OTP | upstream source tarball, built in the image | SHA-256 |
 | Elixir | upstream precompiled release (`elixir-otp-28.zip`, BEAM bytecode) | SHA-256 |
 | Hex, Rebar | `mix local.hex` / `mix local.rebar` | Mix checks the signed installer index |
@@ -28,6 +29,14 @@ token. The image moves all of that to one reviewed, reproducible build.
 | esbuild | npm registry package | SHA-256 |
 | Tailwind CSS, Selenium Server | GitHub releases | SHA-256 |
 | GeckoDriver | crates.io source crate, built in the image with its `Cargo.lock` | SHA-256; `cargo build --locked` checks every dependency's checksum |
+
+The PostgreSQL client is the one package not taken from Debian. Tests must use
+production's major version (Ansible's `postgres_version`, Debian 12's 15), and
+trixie carries only 17, whose `pg_dump` and `pg_restore` write
+`SET transaction_timeout` — a setting a 15 server rejects, which fails the
+backup restore test. The key Debian ships (`apt.postgresql.org.asc`,
+fingerprint `B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8`) was also compared byte
+for byte with the one `postgresql.org` serves, and they are identical.
 
 Every SHA-256 was cross-checked against the checksums the project publishes
 (OTP `MD5.txt`, Elixir `.sha256sum`, rustup `.sha256`, npm `integrity`,
@@ -88,6 +97,14 @@ user already has passwordless `sudo` on it.
    the version (`https://crates.io/api/v1/crates/geckodriver/versions`).
 3. Push to `current`; merge the proposed `image.lock` change once the image
    build has passed.
+
+**PostgreSQL** follows production, not upstream. When production moves to a new
+major version, change `postgres_version` in `ansible/inventory/group_vars/all.yml`,
+`POSTGRES_MAJOR` in `Dockerfile`, and both `postgres:<major>@sha256:…` service
+images in `.github/workflows/elixir.yml`, pinning the tag's current index digest.
+`verify-toolchain.sh` fails while any of the three disagree. If Debian changes
+`apt.postgresql.org.asc`, the build stops at its checksum. Compare the new file
+with the key `postgresql.org` serves before updating `PGDG_KEY_SHA256`.
 
 To inspect an image locally:
 

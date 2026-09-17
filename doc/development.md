@@ -2515,6 +2515,15 @@ pinned by digest. Inside the container the database is reached as `postgres`
 
 Changing Erlang, Elixir, Rust, esbuild, Tailwind, GeckoDriver or Selenium needs
 the Dockerfile's version and SHA-256 updated too; see `ci/image/README.md`.
+
+**PostgreSQL in CI is production's major version (15), server and client.**
+Development machines usually run something newer, which is exactly why CI must
+not: SQL that needs a newer server passes locally and has to fail somewhere
+before production. The client matters too, since `pg_dump`/`pg_restore` 17+
+write `SET transaction_timeout`, which a 15 server rejects. The image takes
+`postgresql-client-15` from `apt.postgresql.org` (the one non-Debian package),
+and `verify-toolchain.sh` fails when the client, the service images or
+Ansible's `postgres_version` disagree.
 `.github/workflows/ci-image.yml` rebuilds the image on Dockerfile changes and
 weekly, and proposes the new digest.
 
@@ -2541,6 +2550,25 @@ The drift check is a plain script (`.github/scripts/dependency-drift.sh`, needs 
 ```bash
 mix test
 ```
+
+### Against production's PostgreSQL version
+
+CI does this on every push. To reproduce a CI-only database failure locally,
+run production's major version in a container and point the suite at it with
+`PGHOST` and `PGPORT`; `config/test.exs` passes both to the Repo:
+
+```bash
+podman run -d --rm --name baudrate-pg15 -p 127.0.0.1:5433:5432 \
+  -e POSTGRES_USER=baudrate_db_user -e POSTGRES_PASSWORD=baudrate_database \
+  postgres:15 -c max_connections=400    # 4 local partitions exceed the default 100
+
+for p in 1 2 3 4; do PGHOST=localhost PGPORT=5433 MIX_TEST_PARTITION=$p \
+  mix test --partitions 4 --seed 9527 & done; wait
+```
+
+With a newer local client, the backup restore test fails on
+`transaction_timeout`. That is a client mismatch rather than a bug; put a
+client of the same major version on `PATH` to run it.
 
 ### Browser Testing (Wallaby + Selenium)
 

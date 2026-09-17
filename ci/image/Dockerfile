@@ -65,6 +65,10 @@ ARG GECKODRIVER_VERSION=0.37.1
 ARG GECKODRIVER_CRATE_SHA256=79f38cf1541aaf57f6f7eb270f691bcb702485a95dbaaefe740141a8ea46f0ef
 ARG SELENIUM_VERSION=4.49.0
 ARG SELENIUM_SHA256=8221cb7bf687b8ca13c31c2bca9fb8cc12e9d4c808baff670c66cb0e450ceb35
+# Production's PostgreSQL major version (`postgres_version` in Ansible). The
+# key is the copy Debian ships in postgresql-client-common, not a download.
+ARG POSTGRES_MAJOR=15
+ARG PGDG_KEY_SHA256=0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76
 
 LABEL org.opencontainers.image.title="baudrate-ci" \
       org.opencontainers.image.description="Toolchain for Baudrate's CI test and browser-test jobs" \
@@ -82,17 +86,48 @@ ENV LANG=C.UTF-8 \
     MIX_TAILWIND_PATH=/opt/assets/tailwind \
     BAUDRATE_SELENIUM_DIR=/opt/selenium
 
-# Signed Debian packages only. `upgrade` picks up security fixes released
-# after the base image digest was pinned; the weekly rebuild relies on it.
+# Signed Debian packages. `upgrade` picks up security fixes released after the
+# base image digest was pinned; the weekly rebuild relies on it.
 RUN apt-get update \
  && apt-get upgrade -y \
  && apt-get install -y --no-install-recommends \
-      ca-certificates curl git unzip xz-utils \
+      ca-certificates curl git rsync unzip xz-utils \
       build-essential pkg-config libncurses-dev libssl-dev \
-      postgresql-client \
+      postgresql-client-common \
       firefox-esr openjdk-21-jre-headless \
  && ln -s /usr/bin/firefox-esr /usr/local/bin/firefox \
  && rm -rf /var/lib/apt/lists/*
+
+# The PostgreSQL client must be production's major version, not Debian's:
+# pg_dump and pg_restore 17 write `SET transaction_timeout`, which a
+# PostgreSQL 15 server rejects, so the backup restore test cannot pass with a
+# newer client. Debian trixie carries only 17, so this one package comes from
+# the PostgreSQL project's repository.
+#
+# - The signing key is the copy Debian itself ships, checked by SHA-256, so
+#   trust starts from Debian's signed archive rather than a download.
+# - The repository is pinned below Debian (priority 100). Apt takes only
+#   packages Debian does not have from it: libpq5 and the common scripts
+#   stay Debian's.
+RUN set -eux; \
+    key=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc; \
+    echo "${PGDG_KEY_SHA256}  ${key}" | sha256sum -c -; \
+    printf '%s\n' \
+      'Types: deb' \
+      'URIs: https://apt.postgresql.org/pub/repos/apt' \
+      'Suites: trixie-pgdg' \
+      'Components: main' \
+      "Signed-By: ${key}" \
+      > /etc/apt/sources.list.d/pgdg.sources; \
+    printf '%s\n' \
+      'Package: *' \
+      'Pin: origin apt.postgresql.org' \
+      'Pin-Priority: 100' \
+      > /etc/apt/preferences.d/pgdg; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends "postgresql-client-${POSTGRES_MAJOR}"; \
+    rm -rf /var/lib/apt/lists/*; \
+    pg_dump --version | grep -q " ${POSTGRES_MAJOR}\."
 
 COPY --from=otp /opt/erlang /opt/erlang
 

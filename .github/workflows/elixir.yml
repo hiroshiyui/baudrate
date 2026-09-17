@@ -66,7 +66,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:17@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675
+        image: postgres:15@sha256:9b1d34adbce1dd07ee6e94b4a2cf698884b89bd44a6c9c12f5da8f3acbfe4957
         env:
           POSTGRES_USER: baudrate_db_user
           POSTGRES_PASSWORD: baudrate_database
@@ -129,7 +129,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:17@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675
+        image: postgres:15@sha256:9b1d34adbce1dd07ee6e94b4a2cf698884b89bd44a6c9c12f5da8f3acbfe4957
         env:
           POSTGRES_USER: baudrate_db_user
           POSTGRES_PASSWORD: baudrate_database

@@ -59,6 +59,7 @@ jobs:
           check tailwind "$(arg TAILWIND_VERSION)" "$(cfg tailwind)"
           check selenium "$(arg SELENIUM_VERSION)" "$(sed -nE 's/^\s*@selenium_version "([^"]+)"/\1/p' lib/mix/tasks/selenium_setup.ex)"
           check geckodriver "$(arg GECKODRIVER_VERSION)" "$(sed -nE 's/^\s*@geckodriver_version "([^"]+)"/\1/p' lib/mix/tasks/selenium_setup.ex)"
+          check postgres "$(arg POSTGRES_MAJOR)" "$(sed -nE 's/^postgres_version: "?([0-9]+)"?.*/\1/p' ansible/inventory/group_vars/all.yml)"
           if grep -q '__[A-Z_]*SHA256__' ci/image/Dockerfile; then echo "::error::unfilled checksum placeholder"; fail=1; fi
           exit $fail
 
