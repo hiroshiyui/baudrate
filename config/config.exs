@@ -92,6 +92,12 @@ config :baudrate, Baudrate.Federation,
   delivery_circuit_schedule: [300, 1800, 7200, 21600, 43200, 86400],
   # Waiting jobs older than this (seconds) are abandoned.
   delivery_max_age: 604_800,
+  # Inbound queue (`Federation.InboundWorker`). Keep the concurrency below the
+  # database pool size, so web requests always find a connection.
+  inbound_max_concurrency: 4,
+  inbound_max_attempts: 3,
+  inbound_poll_interval: 30_000,
+  inbound_task_timeout: 300_000,
   # 24 hours in ms (Process.send_after)
   stale_actor_cleanup_interval: 86_400_000,
   # 30 days in seconds (matches actor_cache_ttl convention)

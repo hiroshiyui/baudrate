@@ -359,18 +359,19 @@ defmodule BaudrateWeb.ActivityPubController do
     end
   end
 
+  # The activity is admitted and stored here, and processed afterwards by
+  # `Federation.InboundWorker` (Phase 2C, ADR 0034), so the sender's request
+  # never waits for reply-chain walks or object fetches. What the handler makes
+  # of the activity is logged rather than returned: senders do not act on it.
   defp handle_inbox(conn, target) do
     raw_body = conn.assigns[:raw_body] || ""
     remote_actor = conn.assigns[:remote_actor]
 
     case Jason.decode(raw_body) do
       {:ok, activity} ->
-        case Baudrate.Federation.InboxHandler.handle(activity, remote_actor, target) do
+        case Baudrate.Federation.Inbound.accept(activity, raw_body, remote_actor, target) do
           :ok ->
             conn |> put_status(202) |> json(%{status: "accepted"})
-
-          {:error, :not_found} ->
-            not_found(conn)
 
           {:error, reason} ->
             Logger.warning("federation.inbox_error: reason=#{inspect(reason)}")

@@ -60,15 +60,33 @@ defmodule Baudrate.Federation.InboxHandler do
   alias BaudrateWeb.RateLimits
 
   @doc """
-  Handles an incoming activity from a verified remote actor.
-  Returns `:ok` or `{:error, reason}`.
+  The checks an activity must pass before the inbox stores it
+  (`Federation.Inbound`): well-formed with an id on the actor's host, from a
+  domain that is not blocked, from an actor that is not suspended, not claiming
+  to be a local actor, and signed by the actor it names.
+
+  Returns `{:ok, activity}` or `{:error, reason}`.
   """
-  def handle(activity, remote_actor, target) do
+  def admit(activity, remote_actor) do
     with {:ok, activity} <- Validator.validate_activity(activity),
          :ok <- validate_domain(remote_actor),
          :ok <- validate_not_suspended(remote_actor),
          :ok <- validate_not_local(activity),
          :ok <- validate_actor_match(activity, remote_actor) do
+      {:ok, activity}
+    end
+  end
+
+  @doc """
+  Handles an incoming activity from a verified remote actor.
+
+  Repeats `admit/2` first: the inbox stored the activity earlier, and the
+  domain may have been blocked or the actor suspended since.
+
+  Returns `:ok` or `{:error, reason}`.
+  """
+  def handle(activity, remote_actor, target) do
+    with {:ok, activity} <- admit(activity, remote_actor) do
       dispatch(activity, remote_actor, target)
     end
   end

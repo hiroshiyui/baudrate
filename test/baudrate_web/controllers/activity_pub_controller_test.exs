@@ -824,6 +824,50 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
   # pre-assigned conn values, bypassing the plug pipeline.
 
   describe "shared_inbox" do
+    # The plugs have verified the signature by the time the action runs; the
+    # activity is admitted, stored and answered, then processed (in tests, at
+    # once) by the inbound queue.
+    test "stores an admitted activity and answers 202", %{conn: conn} do
+      user = setup_user("user")
+      remote = inbox_remote_actor()
+      local = Baudrate.Federation.actor_uri(:user, user.username)
+      activity = inbox_follow(remote, local)
+
+      conn = inbox_post(conn, remote, activity)
+
+      assert json_response(conn, 202)["status"] == "accepted"
+
+      assert [%Baudrate.Federation.InboundActivity{status: "processed", activity_id: id}] =
+               Repo.all(Baudrate.Federation.InboundActivity)
+
+      assert id == activity["id"]
+      assert Baudrate.Federation.follower_exists?(local, remote.ap_id)
+    end
+
+    test "answers 422 for an activity that fails admission, and stores nothing", %{conn: conn} do
+      remote = inbox_remote_actor()
+
+      activity =
+        inbox_follow(remote, "https://local.example/ap/users/x")
+        |> Map.put("actor", "https://remote.example/users/impostor")
+
+      conn = inbox_post(conn, remote, activity)
+
+      assert json_response(conn, 422)["error"] == "Unprocessable"
+      assert Repo.aggregate(Baudrate.Federation.InboundActivity, :count) == 0
+    end
+
+    test "answers 202 to a redelivery without storing it again", %{conn: conn} do
+      user = setup_user("user")
+      remote = inbox_remote_actor()
+      activity = inbox_follow(remote, Baudrate.Federation.actor_uri(:user, user.username))
+
+      assert json_response(inbox_post(conn, remote, activity), 202)
+      assert json_response(inbox_post(build_conn(), remote, activity), 202)
+
+      assert Repo.aggregate(Baudrate.Federation.InboundActivity, :count) == 1
+    end
+
     test "returns 400 for invalid JSON body", %{conn: conn} do
       conn =
         conn
@@ -949,6 +993,38 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
   end
 
   # --- Test Helpers ---
+
+  defp inbox_remote_actor do
+    uid = System.unique_integer([:positive])
+
+    %Baudrate.Federation.RemoteActor{}
+    |> Baudrate.Federation.RemoteActor.changeset(%{
+      ap_id: "https://remote.example/users/inbox-#{uid}",
+      username: "inbox_#{uid}",
+      domain: "remote.example",
+      public_key_pem: elem(Baudrate.Federation.KeyStore.generate_keypair(), 0),
+      inbox: "https://remote.example/users/inbox-#{uid}/inbox",
+      actor_type: "Person",
+      fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.insert!()
+  end
+
+  defp inbox_follow(remote, object) do
+    %{
+      "id" => "#{remote.ap_id}/follows/#{System.unique_integer([:positive])}",
+      "type" => "Follow",
+      "actor" => remote.ap_id,
+      "object" => object
+    }
+  end
+
+  defp inbox_post(conn, remote, activity) do
+    conn
+    |> assign(:raw_body, Jason.encode!(activity))
+    |> assign(:remote_actor, remote)
+    |> BaudrateWeb.ActivityPubController.shared_inbox(%{})
+  end
 
   defp setup_board(attrs \\ %{}) do
     alias Baudrate.Content.Board

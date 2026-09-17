@@ -19,6 +19,8 @@ defmodule Baudrate.Auth.SessionCleaner do
       an open circuit), purges delivered jobs older than 7 days and abandoned
       jobs older than 30 days, and removes circuit breaker rows not updated
       for 30 days
+    * Inbound activities — deletes processed, rejected and failed rows older
+      than 7 days (`Federation.Inbound.purge_finished/0`)
     * Media cache — evicts proxied remote images untouched for 30 days, then
       oldest-first until under the configured size ceiling
     * Data export requests — applies due `pending → ready → expired`
@@ -65,6 +67,7 @@ defmodule Baudrate.Auth.SessionCleaner do
       cleanup_orphan_comment_images: &cleanup_orphan_comment_images/0,
       cleanup_orphan_reply_images: &cleanup_orphan_reply_images/0,
       cleanup_delivery_jobs: &cleanup_delivery_jobs/0,
+      purge_inbound_activities: &purge_inbound_activities/0,
       refresh_stale_link_previews: &refresh_stale_link_previews/0,
       purge_orphan_link_previews: &purge_orphan_link_previews/0,
       purge_stale_media_cache: &purge_stale_media_cache/0,
@@ -172,6 +175,14 @@ defmodule Baudrate.Auth.SessionCleaner do
 
     if circuits > 0 do
       Logger.info("session_cleaner.delivery_circuits_purged: count=#{circuits}")
+    end
+  end
+
+  defp purge_inbound_activities do
+    count = Baudrate.Federation.Inbound.purge_finished()
+
+    if count > 0 do
+      Logger.info("session_cleaner.inbound_activities_purged: count=#{count}")
     end
   end
 

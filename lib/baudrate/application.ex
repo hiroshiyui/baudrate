@@ -32,6 +32,7 @@ defmodule Baudrate.Application do
       {Task.Supervisor, name: Baudrate.Federation.TaskSupervisor},
       Baudrate.Federation.DomainBlockCache,
       Baudrate.Federation.DeliveryWorker,
+      Baudrate.Federation.InboundWorker,
       Baudrate.Federation.StaleActorCleaner,
       Baudrate.Bots.FeedWorker,
       # Start to serve requests, typically the last entry
