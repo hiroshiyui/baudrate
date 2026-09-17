@@ -1,0 +1,31 @@
+---
+# Baudrate — Rollback playbook
+#
+# Points `current` back at a release that is still on the server (the deploy
+# keeps `keep_releases`), and restarts the app. It does not download or build
+# anything, and it does not touch the database (ADR 0036).
+#
+# It refuses when the database has migrations the target release does not
+# know: rolling back code does not roll back the schema, and the older code
+# may fail against it, or write data the newer schema expects to be shaped
+# differently. See doc/sysop.md, "Rolling back a deploy", for what to do then.
+# `-e force=true` rolls back anyway.
+#
+# Usage:
+#   ansible-playbook playbooks/rollback-baudrate.yml                    # the release before current
+#   ansible-playbook playbooks/rollback-baudrate.yml -e rollback_to=v1.24.0
+#   ansible-playbook playbooks/rollback-baudrate.yml -e rollback_to=20260917_094509
+#   ansible-playbook playbooks/rollback-baudrate.yml --check            # check only, change nothing
+#
+- name: Roll back Baudrate
+  hosts: production
+  become: true
+
+  vars:
+    rollback_to: ""
+    force: false
+
+  roles:
+    - role: rollback
+      become_user: "{{ baudrate_user }}"
+      tags: [rollback]

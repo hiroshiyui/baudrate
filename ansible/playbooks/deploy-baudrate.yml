@@ -1,12 +1,16 @@
 ---
 # Baudrate — Application deployment playbook
 #
-# Builds Baudrate from a git release tag on the server, creates an OTP release,
-# manages symlink-based releases for rollback, runs migrations, and (re)starts
-# the app via systemd.
+# Installs the release CI built and attested for a tag (ADR 0036): verifies
+# the tarball attached to the GitHub release on this machine, installs it
+# into a timestamped release directory, runs migrations, swaps the `current`
+# symlink and (re)starts the app via systemd. Nothing is compiled on the
+# server. To return to a release already on the server, use
+# rollback-baudrate.yml.
 #
-# Requires setup-server.yml to have been run first (server must already have
-# Erlang, Elixir, Rust, PostgreSQL, nginx, and the baudrate system user).
+# Requires setup-server.yml to have been run first (PostgreSQL, nginx, the
+# baudrate system user), and on this machine: the GitHub CLI signed in
+# (`gh auth login`), and the tag fetched into this clone (`git fetch --tags`).
 #
 # Secrets are decrypted automatically from all.sops.yml via your GPG key.
 #
@@ -28,9 +32,9 @@
       prompt: "GitHub release tag to deploy (e.g. v1.0.0)"
       private: false
 
-    - name: git_repo
-      prompt: "Git repository URL"
-      default: "{{ git_repo | default('https://github.com/hiroshiyui/baudrate.git') }}"
+    - name: release_repo
+      prompt: "GitHub repository the release comes from (owner/name)"
+      default: "{{ release_repo | default('hiroshiyui/baudrate') }}"
       private: false
 
   pre_tasks:
@@ -45,6 +49,12 @@
         that:
           - release_tag | length > 0
         fail_msg: "release_tag is required. Specify a git tag (e.g. v1.0.0)."
+
+    - name: Validate release_repo
+      ansible.builtin.assert:
+        that:
+          - release_repo is match('^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')
+        fail_msg: "release_repo must be owner/name, got '{{ release_repo }}'."
 
     - name: Generate secret key base (not found in all.sops.yml)
       when: secret_key_base is not defined

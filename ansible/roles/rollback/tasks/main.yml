@@ -1,0 +1,189 @@
+---
+# Baudrate — Rollback role (ADR 0036)
+#
+# Everything up to "Activate" only reads, and runs in --check mode too, so
+# `--check` reports which release would be restored and whether the schema
+# allows it.
+
+# ============================================================
+# Phase 1: Choose the release to restore
+# ============================================================
+
+- name: Read the active release
+  ansible.builtin.command:
+    cmd: readlink -f "{{ deploy_path }}/current"
+  register: rollback_current
+  changed_when: false
+  check_mode: false
+
+- name: List the releases on the server
+  ansible.builtin.shell:
+    cmd: |
+      set -eu
+      for dir in "{{ deploy_path }}"/releases/*/; do
+        name="$(basename "$dir")"
+        tag="$(cat "$dir/.release_tag" 2>/dev/null || echo unknown)"
+        printf '%s %s\n' "$name" "$tag"
+      done
+  register: rollback_releases
+  changed_when: false
+  check_mode: false
+
+- name: Name the active release
+  ansible.builtin.set_fact:
+    rollback_current_name: "{{ rollback_current.stdout | trim | basename }}"
+    rollback_all: []
+
+- name: Index the releases
+  ansible.builtin.set_fact:
+    rollback_all: "{{ rollback_all + [{'name': item.split(' ')[0], 'tag': item.split(' ')[1]}] }}"
+  loop: "{{ rollback_releases.stdout_lines }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Choose the release before the active one
+  when: rollback_to | length == 0
+  ansible.builtin.set_fact:
+    rollback_candidates: "{{ rollback_all | selectattr('name', 'lt', rollback_current_name) | list }}"
+
+- name: Choose the named release
+  when: rollback_to | length > 0
+  ansible.builtin.set_fact:
+    rollback_candidates: >-
+      {{ (rollback_all | selectattr('name', 'equalto', rollback_to) | list)
+         + (rollback_all | selectattr('tag', 'equalto', rollback_to) | list) }}
+
+- name: Check there is a release to restore
+  ansible.builtin.assert:
+    that:
+      - rollback_candidates | length > 0
+      - (rollback_candidates | sort(attribute='name') | last).name != rollback_current_name
+    fail_msg: >-
+      No release to roll back to{{ ' matching ' ~ rollback_to if rollback_to else '' }}
+      other than the active one ({{ rollback_current_name }}). Releases on the
+      server: {{ rollback_all | map(attribute='name') | zip(rollback_all | map(attribute='tag')) | map('join', ' ') | join(', ') }}.
+
+- name: Set the target release
+  ansible.builtin.set_fact:
+    rollback_target: "{{ rollback_candidates | sort(attribute='name') | last }}"
+    rollback_active: "{{ rollback_all | selectattr('name', 'equalto', rollback_current_name) | first | default({'name': rollback_current_name, 'tag': 'unknown'}) }}"
+
+# ============================================================
+# Phase 2: Compare the schema with what the target knows
+# ============================================================
+
+- name: Read the migrations applied to the database
+  become_user: postgres
+  ansible.builtin.command:
+    argv:
+      - psql
+      - --no-psqlrc
+      - --tuples-only
+      - --no-align
+      - --dbname={{ postgres_db_name }}
+      - --command=SELECT version FROM schema_migrations ORDER BY version
+  register: rollback_applied
+  changed_when: false
+  check_mode: false
+
+- name: Read the migrations the target release contains
+  ansible.builtin.shell:
+    cmd: |
+      set -eu
+      find "{{ deploy_path }}/releases/{{ rollback_target.name }}/lib" \
+        -path '*/priv/repo/migrations/*.exs' -printf '%f\n' \
+        | sed -nE 's/^([0-9]+)_.*/\1/p' | sort -u
+  register: rollback_known
+  changed_when: false
+  check_mode: false
+
+- name: Find migrations the target release does not know
+  ansible.builtin.set_fact:
+    rollback_unknown: >-
+      {{ rollback_applied.stdout_lines | map('trim') | reject('equalto', '') | list
+         | difference(rollback_known.stdout_lines | map('trim') | list) }}
+
+- name: Refuse when the schema is newer than the target release
+  when:
+    - rollback_unknown | length > 0
+    - not (force | bool)
+  ansible.builtin.fail:
+    msg: |
+      Not rolling back to {{ rollback_target.tag }} ({{ rollback_target.name }}).
+
+      The database has {{ rollback_unknown | length }} migration(s) that release
+      does not contain: {{ rollback_unknown | join(', ') }}
+
+      Rolling back the code does not roll back the schema. The older release
+      may fail against it, or write data the newer schema expects in another
+      shape. Instead, either:
+        - fix forward: deploy a new release with the fix; or
+        - restore the pre-deploy dump taken before those migrations
+          ({{ backup_path }}/predeploy), losing what was written since, and
+          then roll back (doc/sysop.md, "Rolling back a deploy").
+
+      If you have checked that the older code works with this schema,
+      re-run with -e force=true.
+
+- name: Warn that the schema is newer than the target release
+  when:
+    - rollback_unknown | length > 0
+    - force | bool
+  ansible.builtin.debug:
+    msg: >-
+      force=true: rolling back to {{ rollback_target.tag }} although the database has
+      migrations it does not contain: {{ rollback_unknown | join(', ') }}.
+
+- name: Show the rollback
+  ansible.builtin.debug:
+    msg: >-
+      Rolling back from {{ rollback_active.tag }} ({{ rollback_active.name }})
+      to {{ rollback_target.tag }} ({{ rollback_target.name }}).
+      {{ 'The schema is compatible.' if rollback_unknown | length == 0 else '' }}
+
+# ============================================================
+# Phase 3: Activate
+# ============================================================
+
+- name: Point current at the target release
+  ansible.builtin.file:
+    src: "{{ deploy_path }}/releases/{{ rollback_target.name }}"
+    dest: "{{ deploy_path }}/current"
+    state: link
+    force: true
+
+- name: Find priv/static in the target release
+  ansible.builtin.shell:
+    cmd: "readlink -f {{ deploy_path }}/releases/{{ rollback_target.name }}/lib/baudrate-*/priv/static | tail -1"
+  register: rollback_static
+  changed_when: false
+  check_mode: false
+
+- name: Point the static symlink at the target release
+  ansible.builtin.file:
+    src: "{{ rollback_static.stdout | trim }}"
+    dest: "{{ deploy_path }}/static"
+    state: link
+    force: true
+
+- name: Restart baudrate
+  become_user: root
+  ansible.builtin.systemd:
+    name: baudrate
+    state: restarted
+
+- name: Wait for the application to become healthy
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ app_port }}/health"
+    method: GET
+    status_code: 200
+  register: rollback_health
+  until: rollback_health.status == 200
+  retries: 30
+  delay: 2
+
+- name: Report
+  ansible.builtin.debug:
+    msg: >-
+      {{ 'Check mode: nothing changed. Would roll back' if ansible_check_mode else 'Rolled back' }}
+      to {{ rollback_target.tag }} ({{ rollback_target.name }}).

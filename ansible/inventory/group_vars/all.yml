@@ -26,11 +26,15 @@ ssh_port: 22
 deploy_path: /opt/baudrate
 static_path: "{{ deploy_path }}/static"
 
-# Deployment (HTTPS clone, public repo)
-git_repo: "https://github.com/hiroshiyui/baudrate.git"
+# Deployment: the GitHub repository whose releases carry the tarball the
+# release workflow built and attested (ADR 0036). The deploy verifies the
+# attestation on the controller, so this needs `gh auth login` there.
+release_repo: "hiroshiyui/baudrate"
 keep_releases: 5
 
-# asdf version manager
+# asdf version manager. Releases are no longer built on the server (ADR 0036);
+# setup-server.yml still installs this toolchain, and removing it from a
+# server is left to the operator.
 asdf_version: "0.16.7"
 
 # Erlang/Elixir versions (match .tool-versions)

@@ -16,10 +16,9 @@ Restart=on-failure
 RestartSec=5
 
 # No ExecStop: systemd stops the node with SIGTERM, which the BEAM turns into
-# an orderly init:stop(). `bin/baudrate stop` must not be used here. It runs
-# from the `current` symlink, which a deploy has already swapped to the new
-# release, and each release build has its own random cookie, so the old node
-# rejects the connection ("Invalid challenge reply").
+# an orderly init:stop(). `bin/baudrate stop` is not used here: it runs from
+# the `current` symlink, which a deploy has already swapped to the new
+# release, and it needs Erlang distribution, which a signal does not.
 #
 # Allow 35s for graceful shutdown — Bandit drains in-flight requests
 # for up to 30s (shutdown_timeout in runtime.exs), plus 5s margin.
