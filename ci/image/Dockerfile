@@ -198,10 +198,10 @@ RUN set -eux; \
 # job to print. Advisories are YAML data, never executed.
 RUN set -eux; \
     dest="${MIX_AUDIT_HOME}/.local/share/elixir-security-advisories-mirego"; \
+    mkdir -p "$(dirname "$dest")"; \
     git clone --quiet --depth 1 https://github.com/mirego/elixir-security-advisories.git /tmp/advisories; \
     git -C /tmp/advisories rev-parse HEAD > /opt/mix-audit/ADVISORIES_COMMIT; \
     git -C /tmp/advisories log -1 --format=%cI > /opt/mix-audit/ADVISORIES_DATE; \
-    mkdir -p "$(dirname "$dest")"; \
     rm -rf /tmp/advisories/.git; \
     mv /tmp/advisories "$dest"; \
     test -n "$(find "$dest/packages" -name '*.yml' | head -n1)"
