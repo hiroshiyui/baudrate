@@ -64,6 +64,10 @@ defmodule Baudrate.Federation.Validator do
 
   def validate_object_id(_), do: {:error, :invalid_object_id}
 
+  # Activity and object ids are stored in unique indexes; PostgreSQL refuses an
+  # index entry over about 2.7 KB.
+  @max_activity_id_bytes 2048
+
   @doc """
   Case-insensitive host equality for two absolute URIs. Returns `false` when
   either is missing or unparseable (fail closed). This is the origin-binding
@@ -87,13 +91,19 @@ defmodule Baudrate.Federation.Validator do
   Validates that an object's `id` lives on the signing actor's host.
 
   Used on every `Create`/`Update` path where the object is claimed to be
-  authored by the signer. Returns `:ok` or `{:error, :object_origin_mismatch}`.
+  authored by the signer. Returns `:ok`, `{:error, :object_origin_mismatch}`,
+  or `{:error, :object_id_too_long}` for an id no unique `ap_id` index could
+  store (the same bound as an activity id).
   """
   @spec validate_object_origin(map(), %{ap_id: String.t()}) ::
-          :ok | {:error, :object_origin_mismatch}
+          :ok | {:error, :object_origin_mismatch | :object_id_too_long}
   def validate_object_origin(%{"id" => id}, %{ap_id: actor_ap_id})
       when is_binary(id) and is_binary(actor_ap_id) do
-    if same_host?(id, actor_ap_id), do: :ok, else: {:error, :object_origin_mismatch}
+    cond do
+      not same_host?(id, actor_ap_id) -> {:error, :object_origin_mismatch}
+      byte_size(id) > @max_activity_id_bytes -> {:error, :object_id_too_long}
+      true -> :ok
+    end
   end
 
   def validate_object_origin(_, _), do: {:error, :object_origin_mismatch}
@@ -107,6 +117,13 @@ defmodule Baudrate.Federation.Validator do
     cond do
       not is_binary(activity["id"]) or not valid_https_url?(activity["id"]) ->
         {:error, :missing_activity_id}
+
+      # The id is stored in unique indexes (`inbound_activities`, and the
+      # `ap_id` columns). PostgreSQL refuses an index entry over about 2.7 KB,
+      # so a longer id would fail the insert with a 500 on every retry instead
+      # of being refused here.
+      byte_size(activity["id"]) > @max_activity_id_bytes ->
+        {:error, :activity_id_too_long}
 
       not valid_https_url?(actor) ->
         {:error, :invalid_actor_url}

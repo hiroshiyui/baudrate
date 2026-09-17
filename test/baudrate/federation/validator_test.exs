@@ -134,6 +134,26 @@ defmodule Baudrate.Federation.ValidatorTest do
     end
   end
 
+  describe "validate_activity/1 id length" do
+    test "refuses an id longer than 2048 bytes, which no unique index could store" do
+      activity = %{
+        "id" => "https://remote.example/activities/" <> String.duplicate("a", 2048),
+        "type" => "Like",
+        "actor" => "https://remote.example/users/alice",
+        "object" => "https://local.example/ap/articles/x"
+      }
+
+      assert {:error, :activity_id_too_long} = Validator.validate_activity(activity)
+
+      ok = %{
+        activity
+        | "id" => "https://remote.example/activities/" <> String.duplicate("a", 1900)
+      }
+
+      assert {:ok, _} = Validator.validate_activity(ok)
+    end
+  end
+
   describe "validate_activity/1 origin binding" do
     test "rejects an activity id on a different host than the actor" do
       activity = %{
@@ -164,6 +184,12 @@ defmodule Baudrate.Federation.ValidatorTest do
                )
 
       assert {:error, :object_origin_mismatch} = Validator.validate_object_origin(%{}, actor)
+
+      assert {:error, :object_id_too_long} =
+               Validator.validate_object_origin(
+                 %{"id" => "https://remote.example/notes/" <> String.duplicate("n", 2048)},
+                 actor
+               )
     end
   end
 
