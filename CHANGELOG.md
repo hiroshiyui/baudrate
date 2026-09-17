@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.23.0] — 2026-09-17
+
+The first of Phase 2, operability: Baudrate officially runs on one node, CI
+tests the PostgreSQL version production actually runs, and the backup puller
+checks older copies, not only the newest.
+
+**Upgrading:** no migrations. `DNS_CLUSTER_QUERY` is no longer read; remove it
+from the environment if it is set. A machine that pulls backups runs
+`scripts/pull-backups.sh` from a checkout, so update that checkout; its first
+run starts recording verification stamps in `<dest>/.verified`.
+
+### Added
+
+- **Each backup pull also verifies one older copy.** The puller checked only
+  the newest backup, and every database dump belongs to one copy only, so a
+  dump was verified once, on the day it was newest, and rot in a three-week-old
+  backup would have waited to be discovered at restore time. Each run now also
+  checks the copy that has gone longest without a successful check,
+  never-checked copies first; with 30 copies, each is re-checked about once a
+  month. The summary line names it (`also verified …`), and a failure names the
+  copy that failed.
+- **[ADR 0033](doc/adr/0033-baudrate-runs-on-one-node.md): Baudrate runs on one
+  node**, recording what depends on it — in-memory caches, security-key
+  challenges, download tokens, rate limits, and every background job running
+  exactly once.
+- **A Scaling section in the sysop guide** — a bigger host, PostgreSQL starting
+  points, and what a CDN must respect if one is used (it must front the whole
+  site, since the Content Security Policy allows assets only from the site
+  itself) — and a troubleshooting entry for recognising and removing an
+  accidental second node.
+- **Tests for the backup puller**, run against backups written by the real
+  backup code, so both ends of the checksum contract are exercised.
+
+### Changed
+
+- **CI tests against PostgreSQL 15, server and client**, the version
+  production runs. CI had a 17 server and client and development machines run
+  newer still, so SQL needing a newer server could pass every check and fail on
+  deploy. The client matters as much as the server: `pg_dump`/`pg_restore` 17
+  and later write `SET transaction_timeout`, which a 15 server rejects. The CI
+  image takes that one package from the PostgreSQL project's repository —
+  trusting the signing key Debian itself ships, and pinned below Debian so
+  nothing else comes from there — and CI fails whenever Ansible, the image and
+  the workflow disagree on the version.
+- **The test suite can target another PostgreSQL server** with `PGHOST` and
+  `PGPORT`. `PGPORT` set only in the environment reached some connections but
+  not the Repo, so such a run silently split across two servers.
+- **The sysop guide's worker table is complete:** all four workers, and each of
+  `SessionCleaner`'s fourteen jobs with the period the code actually uses.
+
+### Fixed
+
+- **A backup pull could copy a backup that was still being built.** The server
+  builds each one under `.incomplete-…` and renames it when complete; a pull
+  that overlapped (a workstation catching up after being off, say) brought the
+  half-built folder along, and because pulls never delete, it stayed for good
+  and was counted as a backup. Such folders are no longer pulled, and any left
+  behind are removed.
+- **The sysop guide said running several nodes was safe.** It described workers
+  on every node as "idempotent (safe but slightly redundant)"; in fact two nodes
+  would deliver every federation job twice, apply a domain block or a settings
+  change on one node only, and fail security-key sign-ins at random.
+- The README's clone URL was a placeholder, and it omitted `INSTALLATION_KEY`,
+  without which every page answers 503 until setup completes.
+- Two link-preview images committed to the repository by accident are no
+  longer tracked.
+
+### Removed
+
+- **`DNSCluster` and the `DNS_CLUSTER_QUERY` variable.** Nothing supported more
+  than one node, so the switch could only turn on a broken mode. Production
+  never set it, and nothing changes at runtime.
+
 ## [1.22.2] — 2026-09-17
 
 ### Fixed
