@@ -49,6 +49,9 @@ lib/
 │   ├── application.ex           # Supervision tree
 │   ├── repo.ex                  # Ecto repository + sanitize_like/1 helper
 │   ├── pagination.ex            # Shared pagination (paginate_opts/3, paginate_query/3)
+│   ├── account_migration.ex     # AccountMigration context: aliases (alsoKnownAs) and moving with Move (ADR 0025)
+│   ├── account_migration/
+│   │   └── account_move.ex      # AccountMove schema: a pending move, its 24-hour delay and cancellation
 │   ├── auth.ex                  # Auth context facade: defdelegate to focused sub-modules
 │   ├── auth/
 │   │   ├── invite_code.ex       # InviteCode schema (invite-only registration)
@@ -129,6 +132,14 @@ lib/
 │   │   ├── keyring.ex           # Key material per class (:auth, :signing), subkeys, secret_key_base fallback (ADR 0038)
 │   │   ├── rekey.ex             # Resumable re-encryption to the current key, and the key census
 │   │   └── vault.ex             # AES-256-GCM with a self-describing header, bound to the owning row
+│   ├── data_portability.ex      # DataPortability context: export eligibility, cooling-off, download cap (ADR 0023)
+│   ├── data_portability/
+│   │   ├── archive.ex           # Builds the archive at download time; none is ever stored
+│   │   ├── collector.ex         # What goes into an export, from explicit field allow-lists
+│   │   ├── download_nonces.ex   # Single-use download tokens, bound to the session row
+│   │   ├── export_request.ex    # ExportRequest schema: request, claim, cancel
+│   │   ├── files.ex             # Confines export reads below the resolved uploads root
+│   │   └── user_agent.ex        # User-Agent reduced to a coarse, display-only family
 │   ├── sanitizer/
 │   │   └── native.ex            # Rustler NIF bindings to Ammonia HTML sanitizer
 │   ├── messaging.ex             # Messaging context: 1-on-1 DMs, conversations, DM access control
@@ -187,8 +198,16 @@ lib/
 │   ├── health.ex                # Detailed health report: queues, workers, disk, backups, encryption keys (ADR 0035, ADR 0038)
 │   ├── health/
 │   │   └── heartbeat.ex         # ETS record of each worker's last completed run (monotonic ms)
+│   ├── html_parser/
+│   │   └── native.ex            # Rustler NIF bindings to the HTML parser (html5ever via scraper)
 │   ├── logger/
 │   │   └── json_formatter.ex    # Optional JSON log format (LOG_FORMAT=json), metadata allow-list
+│   ├── media/
+│   │   ├── cache.ex             # Content-addressed local cache of remote images
+│   │   ├── negative_cache.ex    # Short-lived record of media URLs that failed to fetch
+│   │   ├── proxy.ex             # Signs and verifies media proxy URLs, so no page hotlinks a third party
+│   │   ├── rewriter.ex          # Rewrites remote <img src> in stored HTML to proxied paths
+│   │   └── warmer.ex            # Pre-populates the cache at ingest, so the first viewer waits less
 │   ├── moderation.ex            # Moderation context: reports, resolve/dismiss, audit log
 │   ├── moderation/
 │   │   ├── log.ex               # ModerationLog schema (audit trail of moderation actions)
@@ -202,6 +221,7 @@ lib/
 │   │   ├── vapid.ex             # VAPID key generation (ECDSA P-256) + ES256 JWT signing
 │   │   ├── vapid_vault.ex       # The VAPID private key, encrypted with the :signing key
 │   │   └── web_push.ex          # RFC 8291 content encryption + push delivery via Req
+│   ├── release.ex               # Release tasks: migrate, rollback, rotate_keys, key_census, backups, backfills
 │   ├── setup.ex                 # Setup context: first-run wizard, RBAC seeding, settings
 │   ├── timezone.ex              # IANA timezone identifiers (compiled from tz library data)
 │   └── setup/
@@ -319,7 +339,9 @@ lib/
 │   │   └── hammer.ex            # Hammer-based rate limiter backend
 │   ├── rate_limits.ex           # Per-user rate limit checks (Hammer, fail-open)
 │   ├── router.ex                # Route scopes and pipelines
-│   └── telemetry.ex             # Telemetry metrics configuration
+│   ├── safe_html.ex             # Renders stored HTML, applying the media-proxy rewrite (use instead of raw/1)
+│   ├── telemetry.ex             # Telemetry metrics configuration
+│   └── theme_bootstrap.ex       # Inline script applying the stored theme before the stylesheet parses
 ```
 
 ### Auth Architecture
