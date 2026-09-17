@@ -8,7 +8,7 @@ should remain visible to all; blocking controls interaction, not visibility.
 ## Quick Reference
 
 ```bash
-# Requires: Elixir 1.15+, PostgreSQL, libvips, Rust toolchain (Ammonia, html5ever, feedparser-rs NIFs)
+# Requires: Elixir 1.17+, PostgreSQL, libvips, Rust toolchain (Ammonia, html5ever, feedparser-rs NIFs)
 mix setup              # Install deps, create DB, build assets
 mix phx.server         # Start dev server (https://localhost:4001)
 mix test --seed 9527   # Run all tests (use seed 9527 for deterministic order)
@@ -24,7 +24,7 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Elixir 1.15+ / OTP 26+ |
+| Language | Elixir 1.17+ / OTP 26+ |
 | Web | Phoenix 1.8 / LiveView 1.2 |
 | HTTP server | Bandit |
 | Database | PostgreSQL (Ecto) |

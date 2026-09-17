@@ -35,7 +35,7 @@ own Erlang runtime and NIFs.
 
 | Requirement | Version | Purpose |
 |-------------|---------|---------|
-| Elixir | 1.15+ | Application runtime |
+| Elixir | 1.17+ | Application runtime |
 | Erlang/OTP | 26+ | VM |
 | PostgreSQL | 15+ | Database (requires `pg_trgm` extension) |
 | libvips | any | Avatar and image processing |

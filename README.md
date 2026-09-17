@@ -60,7 +60,7 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
 
 ### Prerequisites
 
-- Elixir 1.15+
+- Elixir 1.17+
 - Erlang/OTP 26+
 - PostgreSQL 15+
 - libvips (for image processing)
