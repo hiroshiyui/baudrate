@@ -3,7 +3,11 @@
 # toolchain, browser or third-party action is fetched at run time. Only
 # GitHub-owned actions are used, pinned to commit SHAs.
 #
-# Besides the tests, the Security job runs Sobelow and mix_audit.
+# Besides the tests: the Security job runs Sobelow and mix_audit, and the
+# Release job builds the production release in the build image
+# (ci/image/build-image.lock) and smoke-tests it, the way release.yml does
+# for a published release, so a change that breaks the release fails here
+# rather than after tagging (ADR 0036).
 
 name: Elixir CI
 
@@ -41,6 +45,16 @@ jobs:
       packages: read
       attestations: read
     uses: ./.github/workflows/ci-image-ref.yml
+
+  build-image:
+    name: Build image
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
+    uses: ./.github/workflows/ci-image-ref.yml
+    with:
+      image: build
 
   build:
 
@@ -161,6 +175,59 @@ jobs:
           echo "::error::the advisory list changed during mix deps.audit; it must come from the image"
           exit 1
         fi
+
+  release:
+
+    # The production release, built and smoke-tested exactly as release.yml
+    # does for a published release, but not attested or published.
+    name: Release build
+    needs: build-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    container:
+      image: ${{ needs.build-image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    services:
+      postgres:
+        image: postgres:15@sha256:9b1d34adbce1dd07ee6e94b4a2cf698884b89bd44a6c9c12f5da8f3acbfe4957
+        env:
+          POSTGRES_USER: baudrate_smoke
+          POSTGRES_PASSWORD: baudrate_smoke
+          POSTGRES_DB: baudrate_smoke
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        persist-credentials: false
+    - name: Check the build image matches the pinned toolchain
+      run: ci/image/verify-toolchain.sh
+    - name: Restore dependency and build caches
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: |
+          deps
+          native/*/target
+          /opt/cargo/registry
+        key: ${{ runner.os }}-release-${{ hashFiles('ci/image/build-image.lock') }}-${{ hashFiles('**/mix.lock', 'native/*/Cargo.lock') }}
+    - name: Build the release
+      env:
+        OUT_DIR: dist
+      run: ci/release/build.sh
+    - name: Smoke-test the release
+      env:
+        SMOKE_DATABASE_URL: ecto://baudrate_smoke:baudrate_smoke@postgres/baudrate_smoke
+      run: ci/release/smoke-test.sh "dist/$(cat dist/.tarball)"
 
   feature:
 

@@ -11,7 +11,22 @@ defmodule Baudrate.MixProject do
       aliases: aliases(),
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+      releases: releases()
+    ]
+  end
+
+  # Releases are built in CI and published (ADR 0036). The cookie written into
+  # releases/COOKIE is therefore public, and fixed here rather than random so
+  # every build of a commit is the same: rel/env.sh.eex refuses to join the
+  # Erlang distribution with it, and the server provides its own
+  # RELEASE_COOKIE.
+  defp releases do
+    [
+      baudrate: [
+        include_executables_for: [:unix],
+        cookie: "public-not-a-secret-set-RELEASE_COOKIE"
+      ]
     ]
   end
 

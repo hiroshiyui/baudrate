@@ -1,0 +1,7 @@
+## Flags for the VM that `remote` and `rpc` run:
+## https://www.erlang.org/doc/man/erl.html
+## -mode/-name/-sname/-setcookie are configured via env vars (rel/env.sh.eex).
+
+## The short-lived node `remote` and `rpc` start also listens on 127.0.0.1
+## only (ADR 0036).
+-kernel inet_dist_use_interface {127,0,0,1}

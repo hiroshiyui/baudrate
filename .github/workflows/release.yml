@@ -1,0 +1,157 @@
+# Builds the production release when a GitHub release is published, and
+# attaches it to that release with a build-provenance attestation (ADR 0036).
+# The deploy playbook installs only a tarball whose attestation says this
+# workflow built it from the release's tag.
+#
+# The build runs in the project's build image (ci/image/, Debian 12 like
+# production), without caches, and is smoke-tested against PostgreSQL before
+# anything is published. Building and publishing are separate jobs: the build
+# runs code from Hex packages and crates, so it gets a read-only token, and the
+# job that can sign attestations and write to the release runs only GitHub's
+# own actions and `gh`.
+#
+# To rebuild the tarball for an existing release (a failed run), re-run this
+# workflow's run for it, or dispatch it on the release's tag.
+
+name: Release
+
+on:
+  release:
+    types: [ published ]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  image:
+    name: Build image
+    if: ${{ github.ref_type == 'tag' }}
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
+    uses: ./.github/workflows/ci-image-ref.yml
+    with:
+      image: build
+
+  build:
+    name: Build and smoke-test
+    needs: image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    container:
+      image: ${{ needs.image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    services:
+      postgres:
+        image: postgres:15@sha256:9b1d34adbce1dd07ee6e94b4a2cf698884b89bd44a6c9c12f5da8f3acbfe4957
+        env:
+          POSTGRES_USER: baudrate_smoke
+          POSTGRES_PASSWORD: baudrate_smoke
+          POSTGRES_DB: baudrate_smoke
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    outputs:
+      name: ${{ steps.build.outputs.name }}
+      sha256: ${{ steps.build.outputs.sha256 }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Check the build image matches the pinned toolchain
+        run: ci/image/verify-toolchain.sh
+
+      - name: Build the release
+        id: build
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          OUT_DIR: dist
+        run: |
+          set -eu
+          ci/release/build.sh
+          name="$(cat "$OUT_DIR/.tarball")"
+          sha256="$(sha256sum "$OUT_DIR/$name" | cut -d' ' -f1)"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
+          echo "Built \`$name\` (sha256 \`$sha256\`)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Smoke-test the release
+        env:
+          SMOKE_DATABASE_URL: ecto://baudrate_smoke:baudrate_smoke@postgres/baudrate_smoke
+        run: ci/release/smoke-test.sh "dist/${{ steps.build.outputs.name }}"
+
+      - name: Hand the tarball to the publish job
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-tarball
+          path: dist/${{ steps.build.outputs.name }}
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Attest and attach to the release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # upload the release asset
+      id-token: write      # sign the attestation
+      attestations: write
+
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: release-tarball
+          path: dist
+
+      - name: Check it is the tarball the build job produced
+        env:
+          NAME: ${{ needs.build.outputs.name }}
+          SHA256: ${{ needs.build.outputs.sha256 }}
+        run: |
+          set -eu
+          printf '%s' "$NAME" | grep -Eq '^baudrate-[0-9][0-9A-Za-z.+-]*-debian[0-9]+-x86_64\.tar\.gz$'
+          echo "$SHA256  dist/$NAME" | sha256sum -c -
+
+      - name: Attest build provenance
+        id: attest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-path: dist/${{ needs.build.outputs.name }}
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          NAME: ${{ needs.build.outputs.name }}
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          set -eu
+          cp "$BUNDLE" "dist/${NAME}.sigstore.json"
+          gh release upload "$TAG" "dist/${NAME}" "dist/${NAME}.sigstore.json" \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          {
+            echo "Attached \`${NAME}\` to ${TAG}. Verify with:"
+            echo
+            echo '```sh'
+            echo "gh release download ${TAG} --repo ${GITHUB_REPOSITORY} --pattern '${NAME}'"
+            echo "gh attestation verify ${NAME} --repo ${GITHUB_REPOSITORY} \\"
+            echo "  --signer-workflow ${GITHUB_REPOSITORY}/.github/workflows/release.yml \\"
+            echo "  --source-ref refs/tags/${TAG} --source-digest ${GITHUB_SHA} --deny-self-hosted-runners"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

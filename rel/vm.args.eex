@@ -1,0 +1,7 @@
+## Flags for the VM that `start`, `daemon` and `eval` run:
+## https://www.erlang.org/doc/man/erl.html
+## -mode/-name/-sname/-setcookie are configured via env vars (rel/env.sh.eex).
+
+## Erlang distribution listens on 127.0.0.1 only (ADR 0036). Other local
+## users still reach loopback, so the per-server cookie is what keeps them out.
+-kernel inet_dist_use_interface {127,0,0,1}

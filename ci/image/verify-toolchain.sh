@@ -1,8 +1,9 @@
 #!/bin/sh
-# Run inside the CI image, from the repository root. Fails when the image's
-# tools differ from what the project pins, so a version bump in
-# .tool-versions, config/config.exs or lib/mix/tasks/selenium_setup.ex cannot
-# silently run on an old image.
+# Run inside a CI image (baudrate-ci or baudrate-build), from the repository
+# root. Fails when the image's tools differ from what the project pins, so a
+# version bump in .tool-versions, config/config.exs,
+# lib/mix/tasks/selenium_setup.ex or the Ansible inventory cannot silently run
+# on an old image. The test tools are checked only in baudrate-ci.
 set -eu
 
 fail=0
@@ -35,36 +36,48 @@ if [ -z "$tailwind_version" ]; then
   printf '%s\n' "$tailwind_output" | head -n 20
 fi
 
-geckodriver_version="$("$BAUDRATE_SELENIUM_DIR/geckodriver" --version | sed -nE '1s/^geckodriver ([^ ]+).*/\1/p')"
-selenium_version="$(ls "$BAUDRATE_SELENIUM_DIR" | sed -nE 's/^selenium-server-(.+)\.jar$/\1/p' | paste -sd ' ' -)"
-
 check erlang "$otp_version" "$(pinned_tool erlang)"
 check elixir "$elixir_version" "$(pinned_tool elixir)"
 check esbuild "$esbuild_version" "$(pinned_asset esbuild)"
 check tailwind "$tailwind_version" "$(pinned_asset tailwind)"
-check geckodriver "$geckodriver_version" "$(pinned_selenium_setup geckodriver)"
-check selenium "$selenium_version" "$(pinned_selenium_setup selenium)"
+
+# Debian: production's release, because the release built here carries its
+# own Erlang runtime and NIFs linked against this system (ADR 0036).
+pinned_debian="$(sed -nE 's/^debian_version: "?([0-9]+)"?.*/\1/p' ansible/inventory/group_vars/all.yml)"
+image_debian="$(. /etc/os-release && echo "${VERSION_ID:-}")"
+check debian "$image_debian" "$pinned_debian"
+
+if [ "${BAUDRATE_IMAGE:-}" = ci ]; then
+  geckodriver_version="$("$BAUDRATE_SELENIUM_DIR/geckodriver" --version | sed -nE '1s/^geckodriver ([^ ]+).*/\1/p')"
+  selenium_version="$(ls "$BAUDRATE_SELENIUM_DIR" | sed -nE 's/^selenium-server-(.+)\.jar$/\1/p' | paste -sd ' ' -)"
+  check geckodriver "$geckodriver_version" "$(pinned_selenium_setup geckodriver)"
+  check selenium "$selenium_version" "$(pinned_selenium_setup selenium)"
+fi
 
 # PostgreSQL: CI tests production's major version, taken from the Ansible
-# inventory. The client lives in the image; the server is the workflow's
+# inventory. The client lives in the ci image; the server is each workflow's
 # service container, so a mismatch there means editing the workflow, not
 # rebuilding the image.
 pinned_postgres="$(sed -nE 's/^postgres_version: "?([0-9]+)"?.*/\1/p' ansible/inventory/group_vars/all.yml)"
-pg_client_major="$(pg_dump --version | sed -nE 's/^pg_dump \(PostgreSQL\) ([0-9]+)\..*/\1/p')"
-check postgresql-client "$pg_client_major" "$pinned_postgres"
-
-service_majors="$(sed -nE 's/^[[:space:]]*image: postgres:([0-9]+)@sha256:[0-9a-f]{64}[[:space:]]*$/\1/p' .github/workflows/elixir.yml)"
-if [ -z "$service_majors" ]; then
-  echo "::error::no digest-pinned postgres service image found in .github/workflows/elixir.yml"
-  fail=1
+if [ "${BAUDRATE_IMAGE:-}" = ci ]; then
+  pg_client_major="$(pg_dump --version | sed -nE 's/^pg_dump \(PostgreSQL\) ([0-9]+)\..*/\1/p')"
+  check postgresql-client "$pg_client_major" "$pinned_postgres"
 fi
-for major in $service_majors; do
-  if [ "$major" = "$pinned_postgres" ]; then
-    echo "ok   postgres-service $major"
-  else
-    echo "::error::the CI postgres service is $major but production runs $pinned_postgres (ansible postgres_version); update the image in .github/workflows/elixir.yml"
+
+for workflow in .github/workflows/elixir.yml .github/workflows/release.yml; do
+  service_majors="$(sed -nE 's/^[[:space:]]*image: postgres:([0-9]+)@sha256:[0-9a-f]{64}[[:space:]]*$/\1/p' "$workflow")"
+  if [ -z "$service_majors" ]; then
+    echo "::error::no digest-pinned postgres service image found in $workflow"
     fail=1
   fi
+  for major in $service_majors; do
+    if [ "$major" = "$pinned_postgres" ]; then
+      echo "ok   postgres-service $major ($workflow)"
+    else
+      echo "::error::the postgres service in $workflow is $major but production runs $pinned_postgres (ansible postgres_version); update its image"
+      fail=1
+    fi
+  done
 done
 
 exit "$fail"
