@@ -27,7 +27,8 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
   - WebFinger and NodeInfo discovery
   - Incoming follows, comments, likes, boosts, updates, deletes, and Flag reports
   - Outbound delivery of articles, deletes, announces, and Flag reports to remote instances
-  - DB-backed delivery queue with exponential backoff retry
+  - DB-backed delivery queue written in the same transaction as the post, sent as soon as it commits, with exponential backoff retry and a per-instance circuit breaker
+  - Inbound activities stored and acknowledged at once, then processed in order per remote account with bounded concurrency
   - Shared inbox deduplication for efficient delivery
   - HTTP Signature verification and signing, HTML sanitization, SSRF-safe fetches
   - Domain blocklist and allowlist modes for instance-level federation control

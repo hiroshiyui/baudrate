@@ -49,6 +49,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0031](0031-terms-acceptance-is-recorded-and-versioned.md) | Terms acceptance is recorded and versioned, and the pause runs through the interaction gate | Accepted |
 | [0032](0032-rules-are-records-and-retired-not-deleted.md) | Site rules are records, retired rather than deleted, and a report may cite one | Accepted |
 | [0033](0033-baudrate-runs-on-one-node.md) | Baudrate runs on one node | Accepted |
+| [0034](0034-federation-work-is-committed-before-it-is-acknowledged.md) | Federation work is committed before it is acknowledged | Accepted |
 
 ## Writing a new ADR
 

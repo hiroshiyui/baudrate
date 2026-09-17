@@ -2,9 +2,10 @@ defmodule Baudrate.Content.LinkPreview.Worker do
   @moduledoc """
   Schedules async link preview fetches after content creation.
 
-  Uses `Task.Supervisor` (async in prod, sync in test via `federation_async`
-  config) to avoid blocking content saves. After fetching, updates the
-  content record's `link_preview_id` and broadcasts a PubSub event.
+  Runs through `Baudrate.Federation.schedule_federation_task/1` (async in prod,
+  sync in test via `federation_async`) to avoid blocking content saves. A lost
+  fetch only means a missing preview. After fetching, updates the content
+  record's `link_preview_id` and broadcasts a PubSub event.
   """
 
   require Logger

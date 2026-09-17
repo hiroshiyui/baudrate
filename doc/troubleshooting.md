@@ -334,34 +334,70 @@ outgoing activity URLs. If it doesn't match your actual public hostname:
 
 ### Delivery queue
 
-The `DeliveryWorker` polls the `delivery_jobs` table every 60 seconds,
-processing up to 50 jobs per cycle.
+Delivery jobs are written in the same transaction as the post, like or follow
+that causes them, and the `DeliveryWorker` is woken when it commits (see
+[ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md)
+and the sysop guide's Delivery Queue section). The 60-second poll only picks up
+retries and anything missed.
 
-**Backoff schedule for failed deliveries:**
+**Retry schedule for failed deliveries:**
 
-| Attempt | Retry after |
-|---------|-------------|
-| 1 | 60 seconds |
-| 2 | 5 minutes |
-| 3 | 30 minutes |
-| 4 | 2 hours |
-| 5 | 12 hours |
-| 6 | 24 hours |
-| 7+ | Abandoned |
+| Failed attempt | Next try |
+|----------------|----------|
+| 1 | after 60 seconds |
+| 2 | after 5 minutes |
+| 3 | after 30 minutes |
+| 4 | after 2 hours |
+| 5 | after 12 hours |
+| 6 | abandoned |
 
-After 6 failed attempts, jobs are marked as abandoned. You can retry
-abandoned jobs from the admin federation dashboard (`/admin/federation`).
+A final `4xx` response other than `401`, `408` and `429` abandons a job at
+once. You can retry abandoned jobs from the admin federation dashboard
+(`/admin/federation`).
 
 **Symptom of stuck delivery:** Check the federation dashboard for jobs in
 `failed` or `pending` state. Common causes:
 
-- Remote instance is down (will retry automatically)
+- Remote instance is down (will retry automatically). After 5 unreachable
+  results in a row its circuit opens and its jobs wait together, with one probe
+  per interval; look for `federation.delivery_circuit_open` in the log and
+  `SELECT * FROM delivery_circuits WHERE trips > 0;`. Jobs held for 7 days are
+  abandoned.
+- Deliveries only go out once a minute — the worker is not receiving
+  notifications. Baudrate must connect to PostgreSQL directly, not through a
+  pooler in transaction mode, which cannot carry `LISTEN`.
+- Jobs with `last_error: ":timeout"` — the remote server did not answer within
+  the request deadline; the attempt counts like any other failure.
 - Clock skew causing signature rejection (fix NTP)
 - Domain is blocked by the remote instance
 - DNS resolution failure
 - Board follow 422 errors — check delivery job `last_error` for the response body (includes remote server's rejection reason since v1.1.17)
 - Jobs with `last_error: ":unknown_actor"` — the local user or board referenced by `actor_uri` was deleted after the job was queued. Since v1.5.9 these jobs are marked `failed` (and eventually `abandoned` via the normal retry schedule) rather than causing Task crashes that left the job stuck in `pending` forever.
 - Jobs that previously crash-looped with a `CaseClauseError` from `Delivery.do_deliver/1` — caused by a local actor that existed but had no RSA keypair (e.g. a new user whose user-signed Like was delivered to a *board's* remote followers before their own actor was ever fetched). `Delivery.get_private_key/1` now self-heals: it lazily generates the keypair at signing time and normalizes the missing-key case to `{:error, :no_private_key}`, so such jobs deliver on the next worker pass instead of crashing.
+
+### Inbound activities not taking effect
+
+The inbox answers `202` once an activity is stored; the work happens afterwards
+in `InboundWorker`. A remote follow, reply or like that does not show up has
+left a row behind:
+
+```sql
+SELECT id, activity_type, status, attempts, last_error, inserted_at
+FROM inbound_activities
+ORDER BY id DESC LIMIT 20;
+```
+
+- `pending` for long — the worker is busy or stopped. Processing is 4 at a time
+  and one per remote account, so one account's backlog does not delay others.
+  With federation switched off, nothing is processed.
+- `rejected` — the handler refused it; `last_error` gives the reason, such as
+  `:not_found` (the local account or board does not exist) or `:domain_blocked`
+  (the domain was blocked after the activity arrived).
+- `failed` — processing crashed or ran past 5 minutes three times; the log has
+  `federation.inbound_crashed` or `federation.inbound_timeout` with the id.
+
+An activity refused at the door is answered `422` and never stored: the log
+line is `federation.inbox_error` with the reason (for example `:actor_mismatch`).
 
 ### Federation kill switch
 

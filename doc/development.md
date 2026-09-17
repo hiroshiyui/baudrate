@@ -142,10 +142,12 @@ lib/
 │   │   ├── blocklist_audit.ex   # Audit local blocklist against external known-bad-actor lists
 │   │   ├── board_follow.ex      # BoardFollow schema (outbound board follows)
 │   │   ├── collections.ex       # ActivityPub collection builders (Outbox, Followers, Following)
-│   │   ├── delivery.ex          # Outgoing activity delivery (Accept, queue, retry, block delivery)
+│   │   ├── delivery.ex          # Outgoing activity delivery (enqueue on commit, sign + POST, retry, block delivery)
+│   │   ├── delivery_circuit.ex  # DeliveryCircuit schema (per-domain breaker state)
+│   │   ├── delivery_circuits.ex # Per-domain circuit breaker: classify outcomes, open/probe/close
 │   │   ├── delivery_job.ex      # DeliveryJob schema (delivery queue records)
 │   │   ├── delivery_stats.ex    # Delivery queue stats and admin management
-│   │   ├── delivery_worker.ex   # GenServer: polls delivery queue, retries failed jobs
+│   │   ├── delivery_worker.ex   # GenServer: woken on commit (LISTEN), keeps deliveries in flight, deadlines, probes
 │   │   ├── discovery.ex         # WebFinger and NodeInfo responses
 │   │   ├── domain_block.ex      # DomainBlock schema (one blocked domain, with reason and author)
 │   │   ├── domain_block_cache.ex # ETS-backed cache for domain blocking decisions
@@ -161,6 +163,9 @@ lib/
 │   │   ├── follows.ex           # Local/remote follow logic, acceptance, and migration
 │   │   ├── http_client.ex       # SSRF-safe HTTP client for remote fetches (unsigned + signed GET)
 │   │   ├── http_signature.ex    # HTTP Signature signing and verification (POST + GET)
+│   │   ├── inbound.ex           # Inbound queue: admit + store at the inbox, process afterwards
+│   │   ├── inbound_activity.ex  # InboundActivity schema (stored inbox activities)
+│   │   ├── inbound_worker.ex    # GenServer: processes stored activities, one per remote actor
 │   │   ├── inbox_handler.ex     # Incoming activity dispatch (Follow, Create, Like, Flag, etc.)
 │   │   ├── instance_stats.ex    # Per-domain instance statistics
 │   │   ├── key_store.ex         # RSA-2048 keypair management for actors (generate, ensure, rotate)
@@ -1684,9 +1689,27 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `/ap/users/:username/inbox` — user inbox
 - `/ap/boards/:slug/inbox` — board inbox
 
+**The inbound queue** (ADR 0034). The inbox does not process an activity while
+the sender waits. `Federation.Inbound.accept/4` runs `InboxHandler.admit/2`
+(`Validator.validate_activity/1`, domain block, suspension, not a local actor,
+actor matches the signer — the order the checks always ran in), stores the
+activity in `inbound_activities`, and the controller answers `202` (`422` when
+admission fails). The row is unique per `(remote_actor_id, activity_id)`, so a
+redelivery is answered and dropped. `InboundWorker` then runs
+`Inbound.process/1`: it claims the row (counting the attempt first), calls
+`InboxHandler.handle/3` — which repeats `admit/2`, because a domain may have
+been blocked since — and marks the row `processed` or `rejected` (with the
+reason), clearing `activity_json` either way. At most `inbound_max_concurrency`
+(4) run at once, one per remote actor, oldest first; a crash or a timeout
+(`inbound_task_timeout`, 5 min) is retried after 30 s and 5 min, then marked
+`failed`. In tests (`federation_async: false`) `accept/4` processes the
+activity before returning, so controller and handler tests see its effects at
+once; `:discard` stores it without processing. Handler tests call
+`InboxHandler.handle/3` directly.
+
 **Incoming activities handled** (via `InboxHandler`):
 - `Follow` / `Undo(Follow)` — follower management with auto-accept. Follow activities targeting a non-federated board actor (`ap_enabled: false`) are answered with `Reject(Follow)` — the board inbox controller already returns 404 for such boards, but the shared inbox path also applies the guard so that a Follow addressed directly to a board actor URI cannot create a spurious follower record.
-- `Create(Note)` — stored as threaded comments on local articles (with remote reply chain walking up to 10 hops to resolve intermediate replies), or as DMs if privately addressed (no `as:Public`, no followers collection)
+- `Create(Note)` — stored as threaded comments on local articles (with remote reply chain walking up to 5 hops across at most 3 hosts, rate-limited, to resolve intermediate replies), or as DMs if privately addressed (no `as:Public`, no followers collection)
 - `Create(Article)` / `Create(Page)` — stored as remote articles in target boards (Page for Lemmy interop)
 - `Like` / `Undo(Like)` — article favorites. Remote articles (`remote_actor_id` set) always accept likes regardless of their board's `ap_enabled`; local articles require membership in at least one public, AP-enabled board (enforced by `article_federated?/1` in `InboxHandler`).
 - `Announce` / `Undo(Announce)` — boosts/shares (bare URI or embedded object map); routes boosted Article/Page to boards following the booster, creates feed items for user followers with boost attribution (loop-safe). Article-target boosts follow the same remote-vs-local federation rule as Likes.
@@ -1701,6 +1724,20 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `Move` — handled by `AccountMigration.handle_inbound_move/2` (ADR 0025). Authorized only when the signer matches the Move `actor` and `object`, **and** the target claims the moving actor in `alsoKnownAs` (force-refreshed with `ActorResolver.refresh/1`; a local target is checked against `users.also_known_as`), otherwise `{:error, :move_not_authorized}`, so a remote actor cannot redirect its local followers onto a non-consenting target. Each active local follower sends `Undo(Follow)` to the old actor and a pending `Follow` to the new one (a local target gets a local follow), with an `actor_moved` notice. Feed items are repointed (`migrate_feed_items/2`, both `remote_actor_id` and `boosted_by_actor_id`) so history shows again once the new follow is accepted. Board follows are not repointed; admins get `board_actor_moved`. A target that has itself moved is ignored, and one Move per origin is processed every 30 days (`remote_actors.moved_at`). Articles and comments keep their original `remote_actor_id`: they are board content with their own permalinks and remain published under the old actor upstream.
 
 **Outbound delivery** (via `Publisher` + `Delivery` + `DeliveryWorker`):
+
+Every publisher runs **inside the transaction that makes the change** (ADR
+0034): as a step of the change's `Ecto.Multi` (article create/update, comment
+create, DM send, poll vote) or through `Federation.federate/2`, which runs the
+change, calls the publisher with its result, and commits both or neither
+(likes, boosts, deletions, forwards, follows, feed item interactions, key
+rotation). A publisher that raises rolls the change back. Never publish from
+`schedule_federation_task/1` or a `Task`: a restart between the commit and the
+task silently loses the activity, which is exactly what this replaced.
+`test/baudrate/federation/durable_delivery_test.exs` walks `lib/` for that and
+runs each kind of change with every background task discarded.
+`schedule_federation_task/1` remains for best-effort work (remote image
+fetches, media cache warming, link previews).
+
 - `Create(Article)` — automatically enqueued when a local user publishes an article
 - `Delete` with `Tombstone` (includes `formerType`) — enqueued when an article is soft-deleted
 - `Announce` (board actor) — board announces articles to board followers
@@ -1713,8 +1750,11 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `Update(Person/Group/Organization)` — distributed to followers on key rotation or profile changes
 - Delivery targets vary by activity type: `Create`/`Update`/`Delete` go to followers of the article's author + followers of all public boards the article is in; user `Announce`/`Undo(Announce)` (boosts) go to the **booster's** followers via `enqueue_for_followers/2`
 - Shared inbox deduplication: multiple followers at the same instance → one delivery
-- DB-backed queue (`delivery_jobs` table) with `DeliveryWorker` GenServer polling (graceful shutdown via `terminate/2`)
-- Exponential backoff: 1m → 5m → 30m → 2h → 12h → 24h, then abandoned after 6 attempts
+- DB-backed queue (`delivery_jobs` table). `Delivery.enqueue/3` inserts all of an activity's jobs in one statement and calls `pg_notify` on `DeliveryWorker.channel/0`; PostgreSQL delivers the notification on commit, and `DeliveryWorker` (listening through `Postgrex.Notifications` on its own connection) starts delivering at once. It also polls every 60 s for retries
+- `DeliveryWorker` keeps up to `delivery_max_concurrency` (10) deliveries in flight as tasks under `Federation.TaskSupervisor` and starts the next when one finishes. A task still running `http_request_timeout` + 15 s after it started is killed; a killed or crashed task is recorded as a failed attempt (`Delivery.record_interrupted/2`)
+- Exponential backoff: 1m → 5m → 30m → 2h → 12h; abandoned when the sixth attempt fails. A final 4xx (not 401/408/429) abandons a job at once (`Delivery.unsalvageable?/1`)
+- Per-domain circuit breaker (`DeliveryCircuits`, `delivery_circuits` table, keyed by `delivery_jobs.domain`): 5 consecutive unreachable results (connection/TLS errors, timeouts, DNS failures, 5xx, 429) open the circuit; its jobs are left out of selection until `open_until`, then sent one probe at a time (probes take at most half the slots). A failed probe reopens it for 5 min → 30 min → 2 h → 6 h → 12 h → 24 h; any response showing the server is reachable deletes the row. Held jobs keep their attempts and are abandoned 7 days after they were queued (`Delivery.expire_held_jobs/0`, hourly)
+- `Accept(Follow)` / `Reject(Follow)` answers are queued too (`Delivery.enqueue_accept/3`, `enqueue_reject/3`), in the transaction that writes the follower row
 - Domain blocklist respected: deliveries to blocked domains are skipped
 - Job deduplication: partial unique index on `(inbox_url, actor_uri, activity_id)` for pending/failed jobs, so the same activity is queued once per inbox while different activities are all queued. `activity_id` is the activity's `id` (MD5 of the JSON when absent), set by `DeliveryJob.create_changeset/2`. The index once omitted `activity_id` and silently dropped every later activity from an actor to an inbox while one job was pending or retrying
 - `KeyStore.ensure_user_keypair/1` must be called before enqueuing any signed delivery — ensures the user has an RSA keypair for HTTP Signature signing
@@ -1729,6 +1769,7 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 
 **User outbound follows**:
 - `Federation.lookup_remote_actor/1` — WebFinger + actor fetch by `@user@domain` or actor URL
+- `Federation.follow_remote_actor/3` / `unfollow_remote_actor/2` (and `follow_remote_actor_as_board/2` / `unfollow_remote_actor_as_board/2`) — create or delete the follow and queue `Follow` / `Undo(Follow)` in one transaction; what the LiveViews call
 - `Federation.create_user_follow/2` — create pending follow record, returns AP ID
 - `Federation.accept_user_follow/1` / `reject_user_follow/1` — state transitions on Accept/Reject
 - `Federation.delete_user_follow/2` — delete follow record (unfollow)
@@ -2136,9 +2177,10 @@ Baudrate.Supervisor (one_for_one)
 ├── Baudrate.Content.BoardCache             # ETS cache for board lookups (by ID, slug, hierarchy)
 ├── Baudrate.Media.NegativeCache            # ETS cache of media proxy fetch failures (1 h)
 ├── BaudrateWeb.RateLimit                   # Hammer 7 ETS rate-limit store
-├── Baudrate.Federation.TaskSupervisor      # Async federation delivery tasks
+├── Baudrate.Federation.TaskSupervisor      # Delivery and inbound processing tasks, best-effort background work
 ├── Baudrate.Federation.DomainBlockCache    # ETS cache for domain blocking decisions
-├── Baudrate.Federation.DeliveryWorker      # Polls delivery queue every 60s
+├── Baudrate.Federation.DeliveryWorker      # Delivery queue: woken on commit (own LISTEN connection), polls every 60s
+├── Baudrate.Federation.InboundWorker       # Inbound queue: woken by the inbox, polls every 30s
 ├── Baudrate.Federation.StaleActorCleaner   # Daily stale remote actor cleanup
 ├── Baudrate.Bots.FeedWorker                # Polls RSS/Atom bots every 60s
 └── BaudrateWeb.Endpoint                    # HTTP server

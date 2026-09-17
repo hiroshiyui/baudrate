@@ -34,7 +34,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
-| **2** | **Operability** | 2A–2H | **In progress** (2B, 2H in v1.23.0). Data loss and blind operations are the biggest risks |
+| **2** | **Operability** | 2A–2H | **In progress** (2B, 2H in v1.23.0; 2C done). Data loss and blind operations are the biggest risks |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
@@ -109,16 +109,17 @@ open:
 - [x] ADR: Baudrate runs on one node, so ETS caches, nonces, challenges, rate limits and local uploads are sound — [ADR 0033](adr/0033-baudrate-runs-on-one-node.md).
 - [x] Rewrite the scaling section of `doc/sysop.md` around a bigger host, Postgres tuning and a CDN for static assets. The old section called duplicate workers "idempotent"; `DeliveryWorker` has no row locks, so it was wrong. `doc/troubleshooting.md` now covers diagnosing a second node.
 
-### 2C — Delivery and inbound robustness (L)
+### 2C — Delivery and inbound robustness (L) — done, not yet released
 
-- [ ] **Enqueue delivery jobs in the same transaction as the change that causes them.** Today a task inserts them after the commit (`core/federation.ex:367`), so a restart in between loses the activity.
-- [ ] **Wake the delivery worker on enqueue** instead of waiting up to 60 s.
-- [ ] **Per-domain circuit breaker:** after N consecutive failures a domain's jobs back off together instead of taking worker slots one by one.
-- [ ] **Inbound queue.**
-  - After signature verification, store the activity and answer `202`.
-  - Process it with bounded concurrency outside the request.
-  - Keep today's validation order, and reject oversized or duplicate activities before storing them.
+Decided 2026-09-17: extend our own queue rather than adopt Oban
+([ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md)).
+
+- [x] **Enqueue delivery jobs in the same transaction as the change that causes them.** Publishers run as a step of the change's `Ecto.Multi` or through `Federation.federate/2`; `Accept`/`Reject(Follow)` are queued too, instead of a one-off POST from a task. `durable_delivery_test.exs` discards every background task and requires each kind of change to leave its job, and fails on any task that publishes.
+- [x] **Wake the delivery worker on enqueue.** `pg_notify`, delivered by PostgreSQL on commit; `DeliveryWorker` listens on its own connection and keeps up to 10 deliveries in flight. A delivery past its deadline is killed and counted (it used to be retried every poll forever).
+- [x] **Per-domain circuit breaker** (`DeliveryCircuits`): 5 unreachable results open a domain's circuit, then one probe at a time with growing waits; held jobs expire after 7 days. A final 4xx abandons a job at once.
+- [x] **Inbound queue.** `Inbound.accept/4` admits (same checks, same order), stores (unique per signer and activity id) and answers 202; `InboundWorker` processes 4 at a time, one per remote actor in order, re-checking admission; bodies are cleared after processing.
 - **Accepted when:** killing the node between a post and its delivery loses nothing (test), and a remote instance posting many activities cannot use up the web request pool.
+- Found on the way and fixed: forwarding a local comment into a board sent its Create and Announce twice; the retry tables in the docs listed a sixth retry that never happens.
 
 ### 2D — Observability (M)
 
@@ -127,8 +128,8 @@ detailed health view and the logs are the whole of it.
 
 - [ ] **Structured logs:** an optional JSON log format, off by default.
 - [ ] **Detailed health:** `/health` stays public and minimal, and a localhost-only detail view reports:
-  - delivery backlog and the age of the oldest job;
-  - inbound backlog;
+  - delivery backlog and the age of the oldest job, and open circuits (`DeliveryCircuits.list_tripped/0`);
+  - inbound backlog (`Inbound.pending_count/0`) and failed inbound activities;
   - worker liveness (`DeliveryWorker`, `SessionCleaner`, `FeedWorker`);
   - free disk space under `shared/uploads`;
   - the last successful backup.
@@ -451,6 +452,7 @@ Needs an ADR.
 ### 7E — Delivery dashboard (S)
 
 - [ ] **Page through actionable jobs** (only 20 are shown today), filter by domain, and retry or abandon in bulk per domain.
+- [ ] **Show open delivery circuits** (`DeliveryCircuits.list_tripped/0`) with their next probe time, and let an admin close one after fixing a problem on our side.
 
 ---
 

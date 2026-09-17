@@ -697,17 +697,47 @@ The federation dashboard shows:
   unblock control
 - **Delivery queue** — pending, failed, delivered, and abandoned jobs
 
+**When a delivery is sent.** Posts, comments, likes, follows and direct
+messages write their delivery jobs in the same database transaction as the
+change itself, so a restart can never save a post and lose its activities
+([ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md)).
+The `DeliveryWorker` is woken by a PostgreSQL notification when that transaction
+commits, and starts sending within moments. It keeps up to 10 deliveries in
+flight (`delivery_max_concurrency`). A delivery still running 15 seconds after
+the 60-second HTTP deadline is stopped and counts as a failed attempt.
+`Accept` and `Reject` answers to remote follow requests go through the same
+queue.
+
 **Retry schedule for failed deliveries:**
 
-| Attempt | Retry after |
-|---------|-------------|
-| 1 | 60 seconds |
-| 2 | 5 minutes |
-| 3 | 30 minutes |
-| 4 | 2 hours |
-| 5 | 12 hours |
-| 6 | 24 hours |
-| 7+ | Abandoned |
+| Failed attempt | Next try |
+|----------------|----------|
+| 1 | after 60 seconds |
+| 2 | after 5 minutes |
+| 3 | after 30 minutes |
+| 4 | after 2 hours |
+| 5 | after 12 hours |
+| 6 | abandoned |
+
+A final `4xx` response (anything but `401`, `408` and `429`) abandons the job
+at once: the remote server has said a retry cannot succeed.
+
+**Instances that are down.** Every result is also counted against the inbox's
+domain (the `delivery_circuits` table). After 5 consecutive failures that say
+the server is unreachable (connection errors, timeouts, `5xx`, `429`), the
+domain's circuit opens. None of its jobs is attempted until the wait ends,
+and then a single job is sent as a probe. A failed probe waits longer before
+the next one: 5 minutes, 30 minutes, 2 hours, 6 hours, 12 hours, then every
+24 hours. The first response that shows the server is up closes the circuit,
+and the jobs held back go out. Held jobs keep their attempts, so any job still
+waiting 7 days after it was queued is abandoned (`delivery_max_age`). The log
+shows `federation.delivery_circuit_open` and
+`federation.delivery_circuit_closed`. To list the open circuits:
+
+```sql
+SELECT domain, failures, trips, open_until, last_error
+FROM delivery_circuits WHERE trips > 0 ORDER BY open_until;
+```
 
 Admin actions:
 - **Retry** abandoned jobs
@@ -719,6 +749,34 @@ activity_id)` for pending/failed jobs queues the same activity once per inbox.
 Up to v1.17.0 the index omitted `activity_id`, so while one job for an inbox was
 pending or retrying, later activities from the same actor to that inbox were
 silently dropped (for example during a remote instance's outage).
+
+### Inbound Queue
+
+Inboxes answer quickly and do the work afterwards
+([ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md)).
+Each request's signature is verified, it is rate-limited per domain and capped
+at 256 KB, and the activity passes the admission checks: well-formed, from a
+domain that is not blocked and an account that is not suspended, signed by the
+actor it names. Then it is stored in `inbound_activities` and answered `202`.
+A redelivery of an activity already stored is answered the same way and
+dropped.
+
+`InboundWorker` processes stored activities, at most 4 at a time
+(`inbound_max_concurrency`, kept below `POOL_SIZE`) and one at a time per
+remote account, in the order they arrived. The domain and suspension checks
+run again at that point, so a block takes effect for activities that are
+already queued.
+
+| Status | Meaning |
+|--------|---------|
+| `pending` | Waiting, or being processed |
+| `processed` | Handled |
+| `rejected` | Refused by the handler; `last_error` says why (for example `:not_found` for a follow of an account that does not exist) |
+| `failed` | Crashed or ran past 5 minutes on all 3 attempts (`inbound_max_attempts`); logged as `federation.inbound_failed` |
+
+The stored JSON is cleared as soon as an activity leaves `pending`, since it
+can be a direct message. Finished rows are deleted after 7 days. The backlog
+is `SELECT count(*) FROM inbound_activities WHERE status = 'pending';`.
 
 ### Key Rotation
 
@@ -1557,7 +1615,8 @@ underlying logic.
 | Worker | Interval | What it does |
 |--------|----------|--------------|
 | `SessionCleaner` | 1 hour | The housekeeping jobs listed below |
-| `DeliveryWorker` | 60 s ± 10% | Delivers due federation jobs: 50 per cycle, 10 at a time |
+| `DeliveryWorker` | On commit, and every 60 s ± 10% | Delivers due federation jobs, 10 at a time, with a per-domain circuit breaker ([Delivery Queue](#delivery-queue-adminfederation)) |
+| `InboundWorker` | On arrival, and every 30 s | Processes stored inbox activities, 4 at a time and one per remote account ([Inbound Queue](#inbound-queue)) |
 | `FeedWorker` | 60 s ± 10% | Fetches due RSS/Atom bot feeds, 5 bots at a time |
 | `StaleActorCleaner` | 24 hours | Remote actors not re-fetched for 30 days: refreshes them if anything in the database still references them, deletes them otherwise. Batches of 50; skipped while federation is off |
 
@@ -1569,7 +1628,8 @@ fails is logged and the rest still run.
 | `purge_expired_sessions` | Revokes sessions past their expiry and disconnects the pages still open on them |
 | `purge_old_login_attempts` | Deletes login attempt records older than 7 days |
 | `cleanup_orphan_article_images`, `cleanup_orphan_comment_images`, `cleanup_orphan_reply_images` | Deletes uploaded images that were never attached to a post, once they are 24 hours old |
-| `cleanup_delivery_jobs` | Deletes delivered jobs after 7 days and abandoned jobs after 30 days |
+| `cleanup_delivery_jobs` | Abandons jobs still waiting after 7 days, deletes delivered jobs after 7 days and abandoned jobs after 30 days, and removes circuit breaker rows not updated for 30 days |
+| `purge_inbound_activities` | Deletes processed, rejected and failed inbox activities after 7 days |
 | `refresh_stale_link_previews` | Re-fetches link previews older than 7 days |
 | `purge_orphan_link_previews` | Deletes link previews fetched more than 30 days ago that no article, comment, direct message or feed item references, with their images |
 | `purge_stale_media_cache` | Evicts media proxy cache files older than 30 days, then the oldest until the cache is under 2 GiB (`media_cache_ttl_days`, `media_cache_max_bytes`). A removed image is fetched again when next viewed |
@@ -1580,7 +1640,8 @@ fails is logged and the rest still run.
 | `purge_closed_report_evidence` | Clears the evidence copies of reports closed more than 90 days ago |
 
 Each worker runs exactly once, on the one node ([Scaling](#scaling)). They are
-not safe to run twice: two `DeliveryWorker`s would deliver the same jobs.
+not safe to run twice: two `DeliveryWorker`s would deliver the same jobs, and
+two `InboundWorker`s would process one account's activities out of order.
 
 ### Health Check
 
@@ -1603,6 +1664,9 @@ curl http://localhost:4000/health
 Completed delivery jobs are automatically purged:
 - `delivered` jobs older than 7 days
 - `abandoned` jobs older than 30 days
+
+Jobs still `pending` or `failed` 7 days after they were queued (held back by an
+open circuit) are abandoned first.
 
 ### Database Maintenance
 
@@ -1655,9 +1719,12 @@ points in `postgresql.conf`:
 | `effective_cache_size` | 50–75% of RAM | The query planner's estimate of memory available for caching data, the OS page cache included. Allocates nothing |
 | `max_connections` | the default (100) | Enough while it stays well above `POOL_SIZE` |
 
-Baudrate holds `POOL_SIZE` connections (default 10). Keep `max_connections`
+Baudrate holds `POOL_SIZE` connections (default 10), plus one more that the
+`DeliveryWorker` keeps open to `LISTEN` for new jobs. Keep `max_connections`
 well above that, so backups (`pg_dump`), migrations and an administrator's
-`psql` session still get a connection. Raise `POOL_SIZE` when the logs show
+`psql` session still get a connection. Connect Baudrate to PostgreSQL directly:
+a pooler in transaction mode (PgBouncer) cannot carry `LISTEN`, and deliveries
+would then wait for the 60-second poll. Raise `POOL_SIZE` when the logs show
 `DBConnection.ConnectionError` under load. A pool much larger than about twice
 the number of CPU cores rarely makes a single host faster.
 
