@@ -12,9 +12,11 @@
 postgres_db_password: ENC[AES256_GCM,data:OAPd8IxczLOerzplgk/zRQ==,iv:jBYMM8bu7Oe8Ezqbws4OefPgUOG7o0rXDhHRndrT16c=,tag:JMOXzwsTI1VcLxwUrwejCA==,type:str]
 secret_key_base: ENC[AES256_GCM,data:7zYFfQaVWo7wwdPVT8HR1FlX1bDlZkU62Ta6Ujc777pktVZxv+4xifEYXK2Fn+FrvHaAiEg7hOdAzUJrmnJKhg==,iv:CMwmCARaIuvmdyh88qi1y0xFBBrI0MqJi2pCFEgV1Ws=,tag:xi84dWjlGFSL7ZMEiVJgAQ==,type:str]
 installation_key: ENC[AES256_GCM,data:vi7CdS3KozGwVm++g3A08Q==,iv:BVZMQxpmllmS/+eQvKPmCQClZo1zWtT/xbQ9xoHnPBI=,tag:I39p818ZkRqxKcMEXWQcXQ==,type:str]
+auth_keys: ENC[AES256_GCM,data:QGb+fOt5OK11i3qJb7+222nAL/wcHN8iam2trIGlKS2vz5Z290NxIYDz74ehSIBfBe40,iv:wQgMLOLLsa49GDqciWrm8fi3f3elc9gch06W4eDDjaU=,tag:ByJH94M0nCahrl9UML8jcA==,type:str]
+signing_keys: ENC[AES256_GCM,data:Y3CF/7lmxr2eTHLn/b7BfmBY1CBPxQRrN/8vW3kqE3So9NfEDbTBKeZLTH2v3fYxyUZO,iv:mfbPgkHZ8AJLbDjccj7lm0CcMcYIREVz8W/0giyAluQ=,tag:ugWpL0cVKULOdwYc9AFdsg==,type:str]
 sops:
-    lastmodified: "2026-03-02T12:32:56Z"
-    mac: ENC[AES256_GCM,data:EUTVtDsYJpLEL7ml3wvInuN0yAyGuJ/Sa0804gyBUTY0mdTt5KTm2R+wZ5ReKWl8lNrtrRDeGdaYDQkPXXWaHLfjHgAZ5nNKx9zsPcaGOx47rTuLwQjzJ0oCTWNVoXbazAhLsJu9qfTRlYmC40qdVhNlEmHmJe+GJfxBvJvFQNo=,iv:JcXrcUT7Q/bYF2ACRPmfug/1ls+XM/DiHlqiz6PpEf8=,tag:sYRhVUmkeDuvc7oTmqmfcQ==,type:str]
+    lastmodified: "2026-09-17T20:30:05Z"
+    mac: ENC[AES256_GCM,data:I0GdU0Lf3GHyiy9pdu6yF1aCbu1HXaLLzzS+Ro1vjeFNzhuK2hBy6i/bYP6KoLCYjo60lxRNJ0USEW172PPfUERJnng+P70ow/15IXcasgezg4jLs1SpgMg+BkuYlNi2XYRNugACC2MANRFCO5ECwwWD9QFA+mTvFYcqMCPJZ5E=,iv:ZLvKjyQAoP1elmKULVTrJ3n1IxhJVAMuI+aa748aJc4=,tag:5Qm+PNyJLb8DNhPf69bJZQ==,type:str]
     pgp:
         - created_at: "2026-03-02T12:32:56Z"
           enc: |-
@@ -28,4 +30,4 @@ sops:
             -----END PGP MESSAGE-----
           fp: 9F353471AF05D276
     unencrypted_suffix: _unencrypted
-    version: 3.12.1
+    version: 3.13.1
