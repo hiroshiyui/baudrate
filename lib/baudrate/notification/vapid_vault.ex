@@ -1,67 +1,39 @@
 defmodule Baudrate.Notification.VapidVault do
   @moduledoc """
-  Encrypts and decrypts VAPID private keys using AES-256-GCM.
+  Encrypts and decrypts the Web Push VAPID private key with AES-256-GCM.
 
-  The encryption key is derived from the application's `secret_key_base`
-  via `Plug.Crypto.KeyGenerator` (PBKDF2) with the salt
-  `"vapid_key_encryption"`, producing a 32-byte AES-256 key.
+  The key comes from `Baudrate.Crypto.Keyring`'s `:signing` class
+  (`BAUDRATE_SIGNING_KEYS`), the same class as the ActivityPub actor keys:
+  both are instance signing material, whose loss breaks what remote parties
+  expect (signature checks, push subscriptions) rather than a member's own
+  access. While that class has no keys of its own the value is protected by
+  `secret_key_base`, as before (ADR 0038).
 
-  ## Storage Format
-
-  The encrypted blob is a single binary:
-
-      <<iv::12-bytes, tag::16-bytes, ciphertext::rest>>
-
-    * **IV** — 12-byte random nonce, generated fresh for each encryption
-    * **Tag** — 16-byte GCM authentication tag
-    * **Ciphertext** — the encrypted VAPID private key
-
-  ## Additional Authenticated Data (AAD)
-
-  The string `"Baudrate.Notification.VapidVault"` is used as AAD. This binds
-  the ciphertext to this specific module, preventing ciphertext from being
-  valid if decrypted by a different context using the same key.
+  There is one VAPID key per instance, in the `vapid_private_key_encrypted`
+  setting, so the value is bound to that settings row.
   """
 
-  @aad "Baudrate.Notification.VapidVault"
+  alias Baudrate.Crypto.Vault
 
-  @doc """
-  Encrypts a binary VAPID private key using AES-256-GCM.
+  @purpose :vapid
 
-  Returns a single binary in the format `<<iv::12, tag::16, ciphertext::rest>>`.
-  A fresh 12-byte IV is generated for each call.
-  """
+  @setting "vapid_private_key_encrypted"
+
+  @doc "Encrypts the VAPID private key."
+  @spec encrypt(binary()) :: binary()
   def encrypt(plaintext) when is_binary(plaintext) do
-    key = derive_key()
-    iv = :crypto.strong_rand_bytes(12)
-
-    {ciphertext, tag} = :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, plaintext, @aad, true)
-
-    iv <> tag <> ciphertext
+    Vault.encrypt(@purpose, plaintext, {:setting, @setting})
   end
 
   @doc """
-  Decrypts an encrypted VAPID private key previously produced by `encrypt/1`.
+  Decrypts the stored VAPID private key.
 
-  Pattern-matches the `<<iv::12, tag::16, ciphertext::rest>>` format and
-  verifies the AAD. Returns `{:ok, plaintext}` on success or `:error` if
-  decryption or authentication fails (e.g., wrong key, tampered data).
+  Returns `{:ok, private_key}` or `:error`.
   """
-  def decrypt(<<iv::binary-12, tag::binary-16, ciphertext::binary>>) do
-    key = derive_key()
+  @spec decrypt(binary() | any()) :: {:ok, binary()} | :error
+  def decrypt(blob), do: Vault.decrypt(@purpose, blob, {:setting, @setting})
 
-    case :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, ciphertext, @aad, tag, false) do
-      plaintext when is_binary(plaintext) -> {:ok, plaintext}
-      :error -> :error
-    end
-  end
-
-  def decrypt(_), do: :error
-
-  defp derive_key do
-    secret_key_base =
-      Application.get_env(:baudrate, BaudrateWeb.Endpoint)[:secret_key_base]
-
-    Plug.Crypto.KeyGenerator.generate(secret_key_base, "vapid_key_encryption", length: 32)
-  end
+  @doc "The settings key the VAPID private key is stored under."
+  @spec setting() :: String.t()
+  def setting, do: @setting
 end

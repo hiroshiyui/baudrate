@@ -2,96 +2,84 @@ defmodule Baudrate.Auth.TotpVaultTest do
   use ExUnit.Case, async: true
 
   alias Baudrate.Auth.TotpVault
+  alias Baudrate.Crypto.Vault
 
-  describe "encrypt/1 and decrypt/1" do
+  # A user struct is all the vault needs: it binds a secret to the member id.
+  @user %Baudrate.Setup.User{id: 4242}
+
+  describe "encrypt/2 and decrypt/2" do
     test "round-trip preserves plaintext" do
       secret = :crypto.strong_rand_bytes(20)
-      encrypted = TotpVault.encrypt(secret)
-      assert {:ok, ^secret} = TotpVault.decrypt(encrypted)
+      encrypted = TotpVault.encrypt(secret, @user)
+      assert {:ok, ^secret} = TotpVault.decrypt(encrypted, @user)
     end
 
     test "encrypted output differs from plaintext" do
       secret = :crypto.strong_rand_bytes(20)
-      encrypted = TotpVault.encrypt(secret)
+      encrypted = TotpVault.encrypt(secret, @user)
       refute encrypted == secret
     end
 
-    test "encrypted output has correct structure (12 IV + 16 tag + ciphertext)" do
+    test "records which key encrypted it, so a rotation knows what to rewrite" do
       secret = :crypto.strong_rand_bytes(20)
-      encrypted = TotpVault.encrypt(secret)
-      # 12 (IV) + 16 (tag) + 20 (ciphertext for 20-byte secret)
-      assert byte_size(encrypted) == 48
+
+      assert {:ok, "testauth"} = Vault.key_id(TotpVault.encrypt(secret, @user))
+    end
+
+    test "a secret written for one member does not decrypt for another" do
+      secret = :crypto.strong_rand_bytes(20)
+      encrypted = TotpVault.encrypt(secret, @user)
+
+      assert :error = TotpVault.decrypt(encrypted, %Baudrate.Setup.User{id: @user.id + 1})
     end
 
     test "each encryption produces a unique ciphertext (random IV)" do
       secret = :crypto.strong_rand_bytes(20)
-      encrypted1 = TotpVault.encrypt(secret)
-      encrypted2 = TotpVault.encrypt(secret)
+      encrypted1 = TotpVault.encrypt(secret, @user)
+      encrypted2 = TotpVault.encrypt(secret, @user)
       refute encrypted1 == encrypted2
     end
 
     test "both decrypt to the same plaintext" do
       secret = :crypto.strong_rand_bytes(20)
-      encrypted1 = TotpVault.encrypt(secret)
-      encrypted2 = TotpVault.encrypt(secret)
-      assert {:ok, ^secret} = TotpVault.decrypt(encrypted1)
-      assert {:ok, ^secret} = TotpVault.decrypt(encrypted2)
+      encrypted1 = TotpVault.encrypt(secret, @user)
+      encrypted2 = TotpVault.encrypt(secret, @user)
+      assert {:ok, ^secret} = TotpVault.decrypt(encrypted1, @user)
+      assert {:ok, ^secret} = TotpVault.decrypt(encrypted2, @user)
     end
   end
 
-  describe "decrypt/1 tamper detection" do
-    test "returns :error when ciphertext is tampered" do
+  describe "decrypt/2 tamper detection" do
+    test "returns :error when any byte of the stored value is flipped" do
       secret = :crypto.strong_rand_bytes(20)
-      encrypted = TotpVault.encrypt(secret)
+      blob = TotpVault.encrypt(secret, @user)
 
-      # Flip a bit in the ciphertext portion (after IV + tag = 28 bytes)
-      <<iv_tag::binary-28, ciphertext::binary>> = encrypted
-      tampered_byte = :crypto.exor(binary_part(ciphertext, 0, 1), <<0x01>>)
-      tampered = iv_tag <> tampered_byte <> binary_part(ciphertext, 1, byte_size(ciphertext) - 1)
+      for offset <- [0, 4, div(byte_size(blob), 2), byte_size(blob) - 1] do
+        <<before::binary-size(offset), byte::8, rest::binary>> = blob
+        tampered = <<before::binary, Bitwise.bxor(byte, 1)::8, rest::binary>>
 
-      assert :error = TotpVault.decrypt(tampered)
-    end
-
-    test "returns :error when tag is tampered" do
-      secret = :crypto.strong_rand_bytes(20)
-      encrypted = TotpVault.encrypt(secret)
-
-      <<iv::binary-12, tag::binary-16, ciphertext::binary>> = encrypted
-      tampered_tag = :crypto.exor(binary_part(tag, 0, 1), <<0x01>>)
-      tampered = iv <> tampered_tag <> binary_part(tag, 1, 15) <> ciphertext
-
-      assert :error = TotpVault.decrypt(tampered)
-    end
-
-    test "returns :error when IV is tampered" do
-      secret = :crypto.strong_rand_bytes(20)
-      encrypted = TotpVault.encrypt(secret)
-
-      <<iv::binary-12, rest::binary>> = encrypted
-      tampered_iv = :crypto.exor(binary_part(iv, 0, 1), <<0x01>>)
-      tampered = tampered_iv <> binary_part(iv, 1, 11) <> rest
-
-      assert :error = TotpVault.decrypt(tampered)
+        assert :error = TotpVault.decrypt(tampered, @user), "flipping byte #{offset} was accepted"
+      end
     end
 
     test "returns :error for truncated input" do
       secret = :crypto.strong_rand_bytes(20)
-      encrypted = TotpVault.encrypt(secret)
+      encrypted = TotpVault.encrypt(secret, @user)
       truncated = binary_part(encrypted, 0, 20)
 
-      assert :error = TotpVault.decrypt(truncated)
+      assert :error = TotpVault.decrypt(truncated, @user)
     end
 
     test "returns :error for empty binary" do
-      assert :error = TotpVault.decrypt(<<>>)
+      assert :error = TotpVault.decrypt(<<>>, @user)
     end
 
     test "returns :error for nil" do
-      assert :error = TotpVault.decrypt(nil)
+      assert :error = TotpVault.decrypt(nil, @user)
     end
 
     test "returns :error for non-binary input" do
-      assert :error = TotpVault.decrypt(12_345)
+      assert :error = TotpVault.decrypt(12_345, @user)
     end
   end
 end

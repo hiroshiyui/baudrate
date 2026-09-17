@@ -111,11 +111,14 @@ defmodule Mix.Tasks.BackfillRemoteUrls do
 
   defp fetch_url(ap_id, _dry_run) do
     alias Baudrate.Federation.{HTTPClient, KeyStore}
-    alias Baudrate.Setup
 
+    # KeyStore is the one place that reads the site key: it knows the setting's
+    # name, its Base64 wrapper and which key decrypts it. Reaching past it here
+    # looked right and never worked — the setting is called
+    # `ap_site_private_key_encrypted`, so the `with` always fell through and
+    # every fetch was skipped.
     with {:ok, _} <- KeyStore.ensure_site_keypair(),
-         private_pem when is_binary(private_pem) <- Setup.get_setting("ap_site_private_key"),
-         {:ok, private_pem} <- Baudrate.Federation.KeyVault.decrypt(private_pem) do
+         {:ok, private_pem} <- KeyStore.decrypt_site_private_key() do
       site_uri = Baudrate.Federation.actor_uri(:site, nil)
       key_id = "#{site_uri}#main-key"
 

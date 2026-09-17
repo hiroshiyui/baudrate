@@ -184,12 +184,14 @@ defmodule Baudrate.Notification.WebPush do
         {:error, :vapid_not_configured}
 
       true ->
-        # The encrypted private key is stored as base64
-        encrypted_binary = Base.decode64!(encrypted_private)
-
-        case VapidVault.decrypt(encrypted_binary) do
-          {:ok, private_key} -> {:ok, public_key_b64, private_key}
-          :error -> {:error, :vapid_decrypt_failed}
+        # The encrypted private key is stored as base64. A settings row that
+        # is not valid Base64 is as unusable as one that fails to decrypt, and
+        # push is a background job: report it, never raise.
+        with {:ok, encrypted_binary} <- Base.decode64(encrypted_private),
+             {:ok, private_key} <- VapidVault.decrypt(encrypted_binary) do
+          {:ok, public_key_b64, private_key}
+        else
+          _ -> {:error, :vapid_decrypt_failed}
         end
     end
   end

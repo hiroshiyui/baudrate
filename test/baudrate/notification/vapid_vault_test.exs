@@ -1,6 +1,7 @@
 defmodule Baudrate.Notification.VapidVaultTest do
   use ExUnit.Case, async: true
 
+  alias Baudrate.Crypto.Vault
   alias Baudrate.Notification.VapidVault
 
   describe "encrypt/1 and decrypt/1" do
@@ -16,11 +17,8 @@ defmodule Baudrate.Notification.VapidVaultTest do
       refute encrypted == key
     end
 
-    test "encrypted output has correct structure (12 IV + 16 tag + ciphertext)" do
-      plaintext = :crypto.strong_rand_bytes(32)
-      encrypted = VapidVault.encrypt(plaintext)
-      # 12 (IV) + 16 (tag) + 32 (ciphertext for 32-byte plaintext)
-      assert byte_size(encrypted) == 60
+    test "records which key encrypted it, so a rotation knows what to rewrite" do
+      assert {:ok, "testsign"} = Vault.key_id(VapidVault.encrypt(:crypto.strong_rand_bytes(32)))
     end
 
     test "each encryption produces a unique ciphertext (random IV)" do
@@ -40,37 +38,15 @@ defmodule Baudrate.Notification.VapidVaultTest do
   end
 
   describe "decrypt/1 tamper detection" do
-    test "returns :error when ciphertext is tampered" do
-      plaintext = :crypto.strong_rand_bytes(32)
-      encrypted = VapidVault.encrypt(plaintext)
+    test "returns :error when any byte of the stored value is flipped" do
+      blob = VapidVault.encrypt(:crypto.strong_rand_bytes(32))
 
-      <<iv_tag::binary-28, ciphertext::binary>> = encrypted
-      tampered_byte = :crypto.exor(binary_part(ciphertext, 0, 1), <<0x01>>)
-      tampered = iv_tag <> tampered_byte <> binary_part(ciphertext, 1, byte_size(ciphertext) - 1)
+      for offset <- [0, 4, div(byte_size(blob), 2), byte_size(blob) - 1] do
+        <<before::binary-size(offset), byte::8, rest::binary>> = blob
+        tampered = <<before::binary, Bitwise.bxor(byte, 1)::8, rest::binary>>
 
-      assert :error = VapidVault.decrypt(tampered)
-    end
-
-    test "returns :error when tag is tampered" do
-      plaintext = :crypto.strong_rand_bytes(32)
-      encrypted = VapidVault.encrypt(plaintext)
-
-      <<iv::binary-12, tag::binary-16, ciphertext::binary>> = encrypted
-      tampered_tag = :crypto.exor(binary_part(tag, 0, 1), <<0x01>>)
-      tampered = iv <> tampered_tag <> binary_part(tag, 1, 15) <> ciphertext
-
-      assert :error = VapidVault.decrypt(tampered)
-    end
-
-    test "returns :error when IV is tampered" do
-      plaintext = :crypto.strong_rand_bytes(32)
-      encrypted = VapidVault.encrypt(plaintext)
-
-      <<iv::binary-12, rest::binary>> = encrypted
-      tampered_iv = :crypto.exor(binary_part(iv, 0, 1), <<0x01>>)
-      tampered = tampered_iv <> binary_part(iv, 1, 11) <> rest
-
-      assert :error = VapidVault.decrypt(tampered)
+        assert :error = VapidVault.decrypt(tampered), "flipping byte #{offset} was accepted"
+      end
     end
 
     test "returns :error for truncated input" do

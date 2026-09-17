@@ -1,73 +1,40 @@
 defmodule Baudrate.Auth.TotpVault do
   @moduledoc """
-  Encrypts and decrypts TOTP secrets using AES-256-GCM.
+  Encrypts and decrypts TOTP secrets with AES-256-GCM.
 
-  The encryption key is derived from the application's `secret_key_base`
-  via `Plug.Crypto.KeyGenerator` (PBKDF2) with the salt `"totp_encryption_key"`,
-  producing a 32-byte AES-256 key.
+  The key comes from `Baudrate.Crypto.Keyring`'s `:auth` class
+  (`BAUDRATE_AUTH_KEYS`), or from `secret_key_base` while that class has no
+  keys of its own (ADR 0038). `Baudrate.Crypto.Vault` holds the format and
+  the cipher; this module fixes the purpose and binds each secret to the
+  member it belongs to, so a secret copied into another member's row does not
+  decrypt.
 
-  ## Storage Format
-
-  The encrypted blob stored in `users.totp_secret` is a single binary:
-
-      <<iv::12-bytes, tag::16-bytes, ciphertext::rest>>
-
-    * **IV** — 12-byte random nonce, generated fresh for each encryption
-    * **Tag** — 16-byte GCM authentication tag
-    * **Ciphertext** — the encrypted TOTP secret (typically 20 bytes)
-
-  ## Additional Authenticated Data (AAD)
-
-  The module name `"Baudrate.Auth.TotpVault"` is used as AAD. This binds the
-  ciphertext to this specific module, preventing ciphertext from being valid
-  if decrypted by a different context using the same key.
-
-  ## SECRET_KEY_BASE Dependency
-
-  Changing `SECRET_KEY_BASE` invalidates **all** stored TOTP secrets — users
-  will be locked out of 2FA and must re-enroll their authenticator apps.
-  See the "SECRET_KEY_BASE — critical warning" section in `doc/sysop.md`.
+  A secret that cannot be read comes back as `:error`, never as an exception:
+  a member is told their code is wrong, and the rest of the site keeps
+  working. `Baudrate.Health`'s `encryption_keys` check is what reports a key
+  that configuration no longer has.
   """
 
-  @aad "Baudrate.Auth.TotpVault"
+  alias Baudrate.Crypto.Vault
+
+  @purpose :totp
 
   @doc """
-  Encrypts a binary TOTP secret using AES-256-GCM.
-
-  Returns a single binary in the format `<<iv::12, tag::16, ciphertext::rest>>`.
-  A fresh 12-byte IV is generated for each call.
+  Encrypts a TOTP secret for `owner` (a user struct or a user id).
   """
-  def encrypt(plaintext) when is_binary(plaintext) do
-    key = derive_key()
-    iv = :crypto.strong_rand_bytes(12)
-
-    {ciphertext, tag} = :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, plaintext, @aad, true)
-
-    iv <> tag <> ciphertext
+  @spec encrypt(binary(), map() | integer()) :: binary()
+  def encrypt(plaintext, owner) when is_binary(plaintext) do
+    Vault.encrypt(@purpose, plaintext, context(owner))
   end
 
   @doc """
-  Decrypts an encrypted TOTP secret previously produced by `encrypt/1`.
+  Decrypts a stored TOTP secret belonging to `owner`.
 
-  Pattern-matches the `<<iv::12, tag::16, ciphertext::rest>>` format and
-  verifies the AAD. Returns `{:ok, plaintext}` on success or `:error` if
-  decryption or authentication fails (e.g., wrong key, tampered data).
+  Returns `{:ok, secret}` or `:error`.
   """
-  def decrypt(<<iv::binary-12, tag::binary-16, ciphertext::binary>>) do
-    key = derive_key()
+  @spec decrypt(binary() | any(), map() | integer()) :: {:ok, binary()} | :error
+  def decrypt(blob, owner), do: Vault.decrypt(@purpose, blob, context(owner))
 
-    case :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, ciphertext, @aad, tag, false) do
-      plaintext when is_binary(plaintext) -> {:ok, plaintext}
-      :error -> :error
-    end
-  end
-
-  def decrypt(_), do: :error
-
-  defp derive_key do
-    secret_key_base =
-      Application.get_env(:baudrate, BaudrateWeb.Endpoint)[:secret_key_base]
-
-    Plug.Crypto.KeyGenerator.generate(secret_key_base, "totp_encryption_key", length: 32)
-  end
+  defp context(%{id: id}) when is_integer(id), do: {:user, id}
+  defp context(id) when is_integer(id), do: {:user, id}
 end

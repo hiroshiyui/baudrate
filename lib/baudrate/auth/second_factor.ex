@@ -234,7 +234,7 @@ defmodule Baudrate.Auth.SecondFactor do
   @spec enable_totp(User.t(), binary(), keyword()) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def enable_totp(user, secret, opts \\ []) do
-    encrypted = TotpVault.encrypt(secret)
+    encrypted = TotpVault.encrypt(secret, user)
 
     user
     |> User.totp_changeset(%{
@@ -278,8 +278,8 @@ defmodule Baudrate.Auth.SecondFactor do
   @spec decrypt_totp_secret(User.t()) :: binary() | nil
   def decrypt_totp_secret(%User{totp_secret: nil}), do: nil
 
-  def decrypt_totp_secret(%User{totp_secret: encrypted}) do
-    case TotpVault.decrypt(encrypted) do
+  def decrypt_totp_secret(%User{totp_secret: encrypted} = user) do
+    case TotpVault.decrypt(encrypted, user) do
       {:ok, secret} -> secret
       :error -> nil
     end

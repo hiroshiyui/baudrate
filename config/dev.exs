@@ -102,3 +102,15 @@ config :phoenix_live_view,
   debug_attributes: true,
   # Enable helpful, but potentially expensive runtime checks
   enable_expensive_runtime_checks: true
+
+# Fixed, checked-in keys, so this environment exercises the keyring write path
+# (ADR 0038): values are written self-describing and bound to their row. These
+# are not secrets: production reads BAUDRATE_AUTH_KEYS and
+# BAUDRATE_SIGNING_KEYS from the environment.
+config :baudrate, Baudrate.Crypto.Keyring,
+  auth_keys: [
+    %{id: "devauth", key: Base.decode64!("263eW6QuK7k9t/dk1RVn6GQrPicaMWpwJhvzoN0m/X4=")}
+  ],
+  signing_keys: [
+    %{id: "devsign", key: Base.decode64!("qL8cEIbJs1PbNjx5TPiss93RBkteg0ePekGlonyy02c=")}
+  ]

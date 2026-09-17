@@ -109,3 +109,15 @@ config :wallaby,
 # Media cache warming is opportunistic; disable it in tests so an incidental
 # outbound fetch does not make unrelated tests depend on the HTTP stub.
 config :baudrate, :media_warm_enabled, false
+
+# Fixed, checked-in keys, so this environment exercises the keyring write path
+# (ADR 0038): values are written self-describing and bound to their row. These
+# are not secrets: production reads BAUDRATE_AUTH_KEYS and
+# BAUDRATE_SIGNING_KEYS from the environment.
+config :baudrate, Baudrate.Crypto.Keyring,
+  auth_keys: [
+    %{id: "testauth", key: Base.decode64!("TtVvLIlfpz47PogOCeFazt+f9V8oH0Npx2mLKIRuHbA=")}
+  ],
+  signing_keys: [
+    %{id: "testsign", key: Base.decode64!("SwzYivkJMfXxkkSKv3DK0LXgDGIpjPSD/r05mrcQqdE=")}
+  ]

@@ -18,8 +18,9 @@ defmodule Baudrate.Notification.VAPIDTest do
       {_public_key_b64, encrypted_private} = VAPID.generate_keypair()
 
       assert is_binary(encrypted_private)
-      # Encrypted format: 12 (IV) + 16 (tag) + 32 (ciphertext) = 60 bytes
-      assert byte_size(encrypted_private) == 60
+      # The stored value records which key wrote it (ADR 0038); its size
+      # depends on that key's id, so the round trip is what matters here.
+      assert {:ok, _key_id} = Baudrate.Crypto.Vault.key_id(encrypted_private)
 
       # Can be decrypted
       assert {:ok, private_key} = VapidVault.decrypt(encrypted_private)

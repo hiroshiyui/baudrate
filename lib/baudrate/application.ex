@@ -10,6 +10,10 @@ defmodule Baudrate.Application do
     # First, so the rest of the boot is logged in the configured format.
     Baudrate.Logger.JSONFormatter.install_if_configured()
 
+    # Says so when secrets at rest are still keyed off SECRET_KEY_BASE, which
+    # is what stops it being rotated (ADR 0038).
+    Baudrate.Crypto.Keyring.warn_unseparated()
+
     children =
       [
         BaudrateWeb.Telemetry,

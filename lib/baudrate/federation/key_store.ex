@@ -8,6 +8,11 @@ defmodule Baudrate.Federation.KeyStore do
 
   Site-level keys are stored in the `settings` table via `Setup.set_setting/2`,
   with the encrypted private key Base64-encoded for string storage.
+
+  This module is the only caller of `KeyVault`, so every actor private key is
+  encrypted and decrypted in one place. Each key is bound to its actor
+  (ADR 0038): the value stored for a user does not decrypt for a board or for
+  another user.
   """
 
   alias Baudrate.Repo
@@ -43,7 +48,7 @@ defmodule Baudrate.Federation.KeyStore do
 
   def ensure_user_keypair(user) do
     {public_pem, private_pem} = generate_keypair()
-    encrypted = KeyVault.encrypt(private_pem)
+    encrypted = KeyVault.encrypt(private_pem, user)
 
     user
     |> Baudrate.Setup.User.ap_key_changeset(%{
@@ -63,7 +68,7 @@ defmodule Baudrate.Federation.KeyStore do
 
   def ensure_board_keypair(board) do
     {public_pem, private_pem} = generate_keypair()
-    encrypted = KeyVault.encrypt(private_pem)
+    encrypted = KeyVault.encrypt(private_pem, board)
 
     board
     |> Baudrate.Content.Board.ap_key_changeset(%{
@@ -82,11 +87,11 @@ defmodule Baudrate.Federation.KeyStore do
     case Setup.get_setting("ap_site_public_key") do
       nil ->
         {public_pem, private_pem} = generate_keypair()
-        encrypted = KeyVault.encrypt(private_pem)
+        encrypted = KeyVault.encrypt(private_pem, :site)
         encoded = Base.encode64(encrypted)
 
         {:ok, _} = Setup.set_setting("ap_site_public_key", public_pem)
-        {:ok, _} = Setup.set_setting("ap_site_private_key_encrypted", encoded)
+        {:ok, _} = Setup.set_setting(KeyVault.site_setting(), encoded)
         Baudrate.Setup.SettingsCache.refresh()
         {:ok, %{public_pem: public_pem}}
 
@@ -105,7 +110,7 @@ defmodule Baudrate.Federation.KeyStore do
   """
   def rotate_user_keypair(user) do
     {public_pem, private_pem} = generate_keypair()
-    encrypted = KeyVault.encrypt(private_pem)
+    encrypted = KeyVault.encrypt(private_pem, user)
 
     user
     |> Baudrate.Setup.User.ap_key_changeset(%{
@@ -123,7 +128,7 @@ defmodule Baudrate.Federation.KeyStore do
   """
   def rotate_board_keypair(board) do
     {public_pem, private_pem} = generate_keypair()
-    encrypted = KeyVault.encrypt(private_pem)
+    encrypted = KeyVault.encrypt(private_pem, board)
 
     board
     |> Baudrate.Content.Board.ap_key_changeset(%{
@@ -141,11 +146,11 @@ defmodule Baudrate.Federation.KeyStore do
   """
   def rotate_site_keypair do
     {public_pem, private_pem} = generate_keypair()
-    encrypted = KeyVault.encrypt(private_pem)
+    encrypted = KeyVault.encrypt(private_pem, :site)
     encoded = Base.encode64(encrypted)
 
     {:ok, _} = Setup.set_setting("ap_site_public_key", public_pem)
-    {:ok, _} = Setup.set_setting("ap_site_private_key_encrypted", encoded)
+    {:ok, _} = Setup.set_setting(KeyVault.site_setting(), encoded)
     Baudrate.Setup.SettingsCache.refresh()
     {:ok, %{public_pem: public_pem}}
   end
@@ -168,8 +173,9 @@ defmodule Baudrate.Federation.KeyStore do
 
   Returns `{:ok, private_pem}` or `:error`.
   """
-  def decrypt_private_key(%{ap_private_key_encrypted: encrypted}) when is_binary(encrypted) do
-    KeyVault.decrypt(encrypted)
+  def decrypt_private_key(%{ap_private_key_encrypted: encrypted} = actor)
+      when is_binary(encrypted) do
+    KeyVault.decrypt(encrypted, actor)
   end
 
   def decrypt_private_key(_), do: :error
@@ -180,13 +186,13 @@ defmodule Baudrate.Federation.KeyStore do
   Returns `{:ok, private_pem}` or `:error`.
   """
   def decrypt_site_private_key do
-    case Setup.get_setting("ap_site_private_key_encrypted") do
+    case Setup.get_setting(KeyVault.site_setting()) do
       nil ->
         :error
 
       encoded ->
         case Base.decode64(encoded) do
-          {:ok, encrypted} -> KeyVault.decrypt(encrypted)
+          {:ok, encrypted} -> KeyVault.decrypt(encrypted, :site)
           :error -> :error
         end
     end

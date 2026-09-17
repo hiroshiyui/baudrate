@@ -38,8 +38,9 @@ defmodule Baudrate.Federation.KeyStoreTest do
       assert updated.ap_public_key =~ "BEGIN PUBLIC KEY"
       assert is_binary(updated.ap_private_key_encrypted)
 
-      # Verify decryption round-trip
-      {:ok, private_pem} = KeyVault.decrypt(updated.ap_private_key_encrypted)
+      # Verify decryption round-trip. The key is bound to its actor (ADR 0038),
+      # so the user row is part of what authenticates it.
+      {:ok, private_pem} = KeyVault.decrypt(updated.ap_private_key_encrypted, updated)
       assert private_pem =~ "BEGIN RSA PRIVATE KEY"
     end
 
@@ -86,9 +87,11 @@ defmodule Baudrate.Federation.KeyStoreTest do
           from s in Setting, where: s.key == "ap_site_private_key_encrypted", select: s.value
         )
 
+      # Still Base64 of the ciphertext in a string column: the envelope is
+      # self-describing inside the blob, so the storage shape is unchanged.
       assert is_binary(encrypted_b64)
       {:ok, encrypted} = Base.decode64(encrypted_b64)
-      {:ok, private_pem} = KeyVault.decrypt(encrypted)
+      {:ok, private_pem} = KeyVault.decrypt(encrypted, :site)
       assert private_pem =~ "BEGIN RSA PRIVATE KEY"
     end
 
