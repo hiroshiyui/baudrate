@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.25.0] — 2026-09-17
+
+Phase 2, stage 2D: an operator can find out that something is wrong before the
+members do. A detailed health report on the host's loopback interface says
+whether the site actually works (queues moving, workers running, disk space,
+a recent backup), and logs can be written as JSON. See
+[ADR 0035](doc/adr/0035-operational-visibility-stays-on-the-host.md).
+
+**Upgrading:** no migrations. The report is served only when
+`HEALTH_DETAIL_PORT` is set; Ansible sets it to `4001`, and sets
+`BAUDRATE_BACKUP_DIR` to the nightly backup folder. Nothing is opened in the
+firewall or proxied by nginx. On a manual install, set both yourself (see the
+sysop guide), then poll `curl -s http://127.0.0.1:4001/health`.
+
+### Added
+
+- **A detailed health report.** `GET /health` on its own listener, bound to
+  `127.0.0.1` in code so no configuration can expose it, answers `200` when
+  every check passes and `503` when one fails, with a JSON report either way:
+  - **database:** it answers;
+  - **delivery queue:** no delivery has been due for more than 15 minutes
+    (deliveries held by an open circuit are waiting on purpose and do not
+    count);
+  - **inbound queue:** no inbox activity has waited more than 10 minutes;
+  - **workers:** the delivery, inbound, feed and cleanup workers have each
+    completed a run within three of their intervals;
+  - **disk:** free space under the uploads directory is above 1 GiB and 10%,
+    the floor backups keep;
+  - **backup:** the newest complete backup is under 26 hours old.
+
+  Each check has 5 seconds; one that hangs or raises fails with a fixed reason
+  instead of hanging the report or leaking the error. The report holds counts,
+  ages and statuses only, with no content, account names or remote domains.
+  The public `/health` is unchanged. Before this, a stopped queue, a worker
+  crashing on every run, a filling disk or a backup that had not run for days
+  all answered `ok`.
+- **Worker liveness means a completed run.** Periodic workers record a
+  heartbeat at the end of each successful run. A worker that crashes on every
+  run and is restarted has a live process almost all the time, but never beats.
+- **JSON logs.** `LOG_FORMAT=json` (Ansible: `log_format: json`) writes one
+  JSON object per line with the time, level, message, request id and the
+  calling module and function, and no other metadata. A newline in a message
+  cannot forge a second entry, invalid UTF-8 is replaced, and the formatter
+  never raises, since a formatter that raises silently ends all logging.
+- **[ADR 0035](doc/adr/0035-operational-visibility-stays-on-the-host.md)**, a
+  sysop guide section on polling the report and alerting from a systemd timer
+  or a host monitor (Baudrate sends no alerts itself), and a troubleshooting
+  entry for each failing check.
+
 ## [1.24.0] — 2026-09-17
 
 Phase 2, stage 2C: federation work is saved before it is acknowledged. A post
