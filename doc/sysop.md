@@ -1201,6 +1201,17 @@ reach or delete the copies.
    list exits 0, so without that step a backup missing most of its files would
    verify clean. The dump is then read with `pg_restore --list`.
 
+   Each run also verifies **one older copy**: the one that has gone longest
+   without a successful check, never-checked copies first. Every dump belongs
+   to one copy only, and without this it would be checked only on the day it
+   was newest; with 30 copies, each is re-checked about once a month.
+   Successful checks are recorded as stamp files in `<dest>/.verified`. The
+   summary line names the older copy (`also verified …`), and a failure names
+   the copy that failed. A copy taken before checksum lists existed has only
+   its dump checked.
+
+   Backups still being built on the server (`.incomplete-…`) are never pulled.
+
    It keeps the newest 30 copies and fails when the newest backup is older
    than 36 hours — which is how a backup that quietly stopped running gets
    noticed.
