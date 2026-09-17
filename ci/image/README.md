@@ -65,11 +65,14 @@ The only actions used are GitHub's own, pinned to commit SHAs.
    against `.tool-versions` and `config/config.exs`, smoke-tests it, pushes it,
    and records a build-provenance attestation.
 2. It pushes a branch `ci-image/<date>-<commit>` that changes `image.lock` to
-   the new digest and opens a pull request into `current`. The repository does
-   not allow Actions to open pull requests, so it opens an issue with the
-   compare link instead; open the pull request from there. A pull request
-   created by a workflow does not start CI by itself; close and reopen it, or
-   let CI run when it is merged.
+   the new digest and opens a pull request into `current` ("ci: use CI image
+   …"). If the repository setting that lets Actions create pull requests is
+   off, it opens a "CI image … is ready" issue with the compare link instead;
+   open the pull request from there. A pull request created by a workflow does
+   not start CI by itself; close and reopen it, or let CI run when it is
+   merged. Before merging, `gh attestation verify oci://<image.lock value>
+   --repo hiroshiyui/baudrate` should report one SLSA provenance attestation
+   signed by `ci-image.yml` on `refs/heads/current`.
 3. `ci-image-ref.yml` (called by every workflow that uses the image) reads
    `image.lock` and runs `gh attestation verify` before any job starts in the
    container: the digest must have been attested by `ci-image.yml` in this
