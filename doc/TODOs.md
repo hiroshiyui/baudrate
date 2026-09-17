@@ -1,29 +1,32 @@
 # TODOs
 
-This list comes from a product review done on 2026-09-14, after v1.18.1, which looked at every role: guests, members, board moderators, admins, sysops, remote instances and contributors. Items marked **(confirmed)** were checked against the code, and "absent" claims were checked with grep.
+From a product review on 2026-09-14 (after v1.18.1) that looked at every role:
+guests, members, board moderators, admins, sysops, remote instances and
+contributors. Items marked **(confirmed)** were checked against the code, and
+"absent" claims with grep. Paths are relative to the repository root, with
+`lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
+line numbers were correct as of v1.18.1.
 
-Paths are relative to the repository root. `lib/baudrate_web/…` is shortened to `web/…` and `lib/baudrate/…` to `core/…`. Line numbers were correct as of v1.18.1.
+Every open item belongs to one of Phases 2–8 below, or to the Backlog. Work
+phase by phase; within a phase, ship each stage as its own release. A completed
+phase is summarised rather than listed — the detail lives in its ADRs and in
+`CHANGELOG.md`.
 
-Phase 0 (correctness bugs) shipped in v1.18.2 and **Phase 1 completed in v1.21.0**; both are summarised rather than listed, since the detail now lives in the ADRs and `CHANGELOG.md`. Every open item is assigned to one of Phases 2–8 below, each with stages, acceptance criteria and the decisions it needs, or listed in the Backlog. Work phase by phase; within a phase, ship each stage as its own release.
-
-Baudrate is already strong on security engineering, ADRs, accessibility plumbing and test coverage. At review time, the gaps were:
-- **Broken promises:** the UI or docs say something happens and it doesn't.
-- **Moderation reach:** tools exist but not for the right people.
-- **Operability:** backups, observability, and an unclear single-node stance.
-- **Federation reach:** our interactions don't reach remote authors.
-- **Discovery and onboarding** for new visitors.
+The review found Baudrate already strong on security engineering, ADRs,
+accessibility plumbing and test coverage, and named five gaps: broken promises
+(the UI or docs saying something happens when it does not), moderation reach,
+operability, federation reach, and discovery and onboarding. The first three
+are closed or nearly so — Phase 0 in v1.18.2, Phase 1 in v1.21.0, Phase 2 bar
+one stage. Phases 3–8 carry the rest.
 
 ---
 
 ## Decisions (made 2026-09-14)
 
-- **D1. Local post visibility.** Remove "Followers only" and "Direct" from local composers and keep Public and Unlisted.
-  - Boards are public spaces whose audience is set by the board's view role, and direct messages are the private channel.
-  - Implemented by B4.
-- **D2. Scale target: one server.** Baudrate officially supports a single node. Implemented by 2B.
-- **D3. Email: stay without email.** Recovery is covered by three additions instead: 4D.
-- **D4. Data export and move gate: keep "TOTP enabled for ≥ 7 days"** (ADR 0023, ADR 0025), and improve the path for members: 6E.
-  - Accepting WebAuthn in step-up re-authentication remains a separate possible feature.
+- **D1. Local post visibility:** keep Public and Unlisted; drop "Followers only" and "Direct" from local composers, because boards are public spaces whose audience is set by the board's view role, and direct messages are the private channel. Done (B4).
+- **D2. Scale target: one server.** Done (2B, [ADR 0033](adr/0033-baudrate-runs-on-one-node.md)).
+- **D3. Email: stay without it.** Recovery is covered by 4D instead.
+- **D4. Data export and move gate: keep "TOTP enabled for ≥ 7 days"** ([ADR 0023](adr/0023-data-export-threat-model.md), [ADR 0025](adr/0025-account-migration.md)), and improve the path for members in 6E. Accepting WebAuthn in step-up re-authentication stays a separate possible feature.
 
 ---
 
@@ -34,7 +37,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
-| **2** | **Operability** | 2A–2H | **In progress** (2B, 2H in v1.23.0; 2C in v1.24.0; 2D in v1.25.0; 2E in v1.26.0; 2G in v1.27.0). Data loss and blind operations are the biggest risks |
+| **2** | **Operability** | 2A–2H | **Nearly complete** (v1.23.0 – v1.27.0). 2F is left, plus three 2A items that need another machine or a notifier |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
@@ -48,7 +51,9 @@ Each phase settles its decisions and gets its own implementation plan before wor
 
 Everyone who has to act on abuse can act at the right level, everyone affected
 by a decision is told about it, and the site publishes the rules those
-decisions rest on.
+decisions rest on. The decisions behind it (P1-D1 … P1-D9, made 2026-09-14)
+are all implemented; they live in the ADRs below, the `CLAUDE.md` invariants
+and — for who hears about a report's outcome — `doc/development.md`.
 
 | Stage | What | Released | Recorded in |
 |-------|------|----------|-------------|
@@ -58,10 +63,6 @@ decisions rest on.
 | 1D | Instance-level federation moderation: domain blocks as rows, reversible hiding, per-actor suspension | v1.21.0 | [ADR 0030](adr/0030-domain-blocks-are-rows-and-hiding-is-reversible.md) |
 | 1E | Rules, terms and privacy pages; terms acceptance recorded and versioned | v1.21.0 | [ADR 0031](adr/0031-terms-acceptance-is-recorded-and-versioned.md) |
 | 1F | Rules as records, so a report can cite one | v1.21.0 | [ADR 0032](adr/0032-rules-are-records-and-retired-not-deleted.md) |
-
-The decisions behind these (P1-D1 … P1-D9, made 2026-09-14) are all implemented
-and live in the ADRs above, in the `CLAUDE.md` invariants, and — for who hears
-about a report's outcome — in `doc/development.md`.
 
 **Left open by 1B:** an article its author deletes keeps its body in the row
 and in `article_revisions`; only comments are wiped. Worth revisiting with
@@ -75,36 +76,28 @@ out by P1-D1.
 
 ---
 
-## Phase 2 — Operability — in progress
+## Phase 2 — Operability — one stage left
 
 **Goal.** No data loss goes unnoticed, the operator hears about problems before users do, and a bad deploy can be undone.
 
-**Done when:**
-- production takes verified backups on a schedule, and a restore has been rehearsed;
-- a delivery or inbound backlog, a stalled worker or a full disk shows up in the detailed health check;
-- no federated activity is lost to a restart;
-- the production host no longer compiles releases;
-- a release can be rolled back with one command.
+**Done when:** production takes verified backups on a schedule and a restore has been rehearsed on a fresh host; a delivery or inbound backlog, a stalled worker or a full disk shows up in the detailed health report; no federated activity is lost to a restart; a release can be rolled back with one command. A fifth criterion — "the production host no longer compiles releases" — was withdrawn by [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md): moving the artifact cost more than compiling it.
 
 ### Done
 
 | Stage | What | Released | Recorded in |
 |-------|------|----------|-------------|
-| 2B | One node (D2): cluster discovery removed; the scaling guide rewritten around a bigger host, PostgreSQL tuning and a CDN that fronts the whole site; troubleshooting for an accidental second node | v1.23.0 | [ADR 0033](adr/0033-baudrate-runs-on-one-node.md) |
-| 2C | Federation work committed before it is acknowledged: delivery jobs in the change's transaction, wake on commit, delivery deadlines, a per-domain circuit breaker, and an inbound queue processed one activity per remote account | v1.24.0 | [ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md) |
-| 2D | Observability: a detailed health report on a loopback-only listener (queues, worker heartbeats, disk, backup age; 503 when a check fails) and optional JSON logs with a metadata allow-list. Alerting stays with the operator: the sysop guide shows polling with a systemd timer or a host monitor | v1.25.0 | [ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md) |
-| 2G | Key separation: an `:auth` key (TOTP secrets, recovery-code hashes) and a `:signing` key (actor private keys, the Web Push key), read from the environment, each with retired keys kept for reading; stored values record their key and are bound to their row; a resumable rotation task with a census, a health check for a key that is gone, and key ids in the backup manifest. `SECRET_KEY_BASE` becomes rotatable | v1.27.0 | [ADR 0038](adr/0038-encryption-keys-are-separate-and-rotatable.md) |
-| 2E | Deploy safety: releases built on Debian 12 in CI, smoke-tested on every push, attested and attached to the GitHub release; a rollback playbook that refuses an incompatible schema; the Erlang cookie per server and distribution on loopback; Sobelow and mix_audit in CI. The deploy installed that tarball in v1.26.0 and builds on the server again since (ADR 0037) | v1.26.0 | [ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md), [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md) |
-| 2H | Drift: CI runs production's PostgreSQL 15, server and client, held together with Ansible by `verify-toolchain.sh`; the worker table, README clone URL and `INSTALLATION_KEY` fixed; stray committed uploads removed | v1.23.0 | `ci/image/README.md`, `doc/sysop.md` |
+| 2B | One node (D2): cluster discovery removed, the scaling guide rewritten around a bigger host, PostgreSQL tuning and a CDN | v1.23.0 | [ADR 0033](adr/0033-baudrate-runs-on-one-node.md) |
+| 2C | Federation work committed before it is acknowledged: delivery jobs inside the change's transaction, wake on commit, delivery deadlines, a per-domain circuit breaker, an inbound queue ordered per remote account | v1.24.0 | [ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md) |
+| 2D | Observability: a loopback-only detailed health report (queues, worker heartbeats, disk, backup age; 503 on failure) and optional JSON logs with a metadata allow-list | v1.25.0 | [ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md) |
+| 2E | Deploy safety: releases built on Debian 12 in CI, smoke-tested on every push and attested; a rollback playbook that refuses an incompatible schema; a per-server Erlang cookie with distribution on loopback; Sobelow and mix_audit in CI | v1.26.0 | [ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md), [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md) |
+| 2G | Key separation: an `:auth` and a `:signing` key read from the environment, retired keys kept for reading, stored values that name their key and are bound to their row, a resumable rotation task with a census, a health check for a key that is gone, and key ids in the backup manifest | v1.27.0 | [ADR 0038](adr/0038-encryption-keys-are-separate-and-rotatable.md) |
+| 2H | Drift: CI runs production's PostgreSQL 15, server and client, held together with Ansible by `verify-toolchain.sh`; the worker table, README clone URL and `INSTALLATION_KEY` fixed | v1.23.0 | `ci/image/README.md`, `doc/sysop.md` |
 
-"No federated activity is lost to a restart" is met by 2C
-(`test/baudrate/federation/durable_delivery_test.exs`), and "a delivery or
-inbound backlog, a stalled worker or a full disk shows up in the detailed
-health check" by 2D (`test/baudrate/health_test.exs`). "The production host no
-longer compiles releases" and "a release can be rolled back with one command"
-are met by 2E for rollback (`rollback-baudrate.yml`); the production host still
-compiles releases, by the operator's choice (ADR 0037), and CI builds and
-smoke-tests one for every change (`ci/release/smoke-test.sh`).
+Production separated its keys on 2026-09-18, the day 2G shipped: 117 stored
+secrets moved to the new keys, with none left unreadable. `SECRET_KEY_BASE` is
+**not** rotatable yet — the 130 recovery-code hashes still ride the old
+derivation and move only as members regenerate their codes, which is what
+`Baudrate.Release.key_census/0` is for.
 
 **Deferred by the operator, outside 2H:** production allows SSH login as root
 (key only). `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets
@@ -112,32 +105,24 @@ smoke-tests one for every change (`ci/release/smoke-test.sh`).
 role's `PermitRootLogin no` has no effect (`sshd -T`, found 2026-09-15). The fix
 would be for the role to manage the drop-ins and assert the effective value.
 
-**Reversed by the operator, 2026-09-18 (ADR 0037):** the deploy builds the tag
-on the server again. Installing the CI-built tarball took 13 minutes against 2
-for an incremental build, because 46 MB had to come down from GitHub and go up
-to the server over the operator's link. The build toolchains therefore stay on
-the server. Still open, if the transfer is ever worth solving: publish the
-release to a registry so the operator's machine verifies only a digest and the
-server pulls the bytes over its own link.
+**Left open by ADR 0037:** publishing the release to a registry, so the
+operator's machine verifies a digest and the server pulls the bytes over its
+own link. Only worth doing if the built artifact ever has to reach the server
+again.
 
 ### 2A — Backups and recovery (M)
 
-Scheduled backups, retention, the pre-deploy dump and restore commands are
-built (ADR 0028: `Baudrate.Backup.Snapshots`, Ansible `backup` role).
+Scheduled backups, retention, the pre-deploy dump, restore commands, per-file
+checksums verified off-host, and backup age in the health report are all built
+and running on production since 2026-09-16 (ADR 0028, `doc/sysop.md`). What is
+left needs a second machine, or someone to notify:
 
-Enabled on production, restore rehearsed and off-host copies pulled, all
-2026-09-16 (v1.19.5); the setup is documented in `doc/sysop.md`. What is still
-open:
-
-- [ ] **Rehearse a restore onto a freshly provisioned host** — the rehearsal so far restored into a scratch database on the same machine, which does not prove the host can be rebuilt.
+- [ ] **Rehearse a restore onto a freshly provisioned host.** The rehearsal so far restored into a scratch database on the same machine, which does not prove the host can be rebuilt.
 - [ ] **An always-on puller.** Off-host copies only arrive while the workstation is running.
-- [x] **Per-file checksums, verified off-host** (2026-09-16): each backup carries `CHECKSUMS.sha256` over the dump and every upload, and the puller verifies it — including the list against its own hash in the manifest, since `sha256sum -c` on a truncated list exits 0. A hard-linked file keeps the previous backup's recorded checksum rather than being re-hashed, so bit rot surfaces instead of being certified intact.
-- [ ] **Alert on a failed or stale backup.** A stale or missing backup now fails the detailed health report (2D), and the puller exits non-zero on a bad checksum, a failed pull or a stale copy. Neither notifies anyone by itself: for 2D the operator chose to document polling rather than ship a notifier (ADR 0035). Open until something polls both and tells a person.
-- [x] **Verify older copies too** (v1.23.0). Each pull also verifies the older copy that has gone longest without a successful check, so all 30 are re-checked in about a month; stamps live in `<dest>/.verified`. The same change stopped half-built `.incomplete-…` backups from being pulled and counted as copies. `test/scripts/pull_backups_test.exs` runs the script against backups written by `Snapshots.create/2`.
-- [x] **Backup freshness in health checks** (2D): the report's `backup` check fails when the newest complete backup is over 26 hours old.
+- [ ] **Alert on a failed or stale backup.** The health report fails on a stale backup and the puller exits non-zero on a bad checksum, a failed pull or a stale copy, but neither tells a person: for 2D the operator chose to document polling rather than ship a notifier (ADR 0035).
 - **Accepted when:** production has a backup less than 24 h old, and the rehearsal restored a working instance.
 
-### 2F — Retention (S)
+### 2F — Retention (S) — next
 
 - [ ] Purge on a schedule, with the periods set by P2-D4:
   - `feed_items` nobody has bookmarked or interacted with, after 90 days;
@@ -149,7 +134,7 @@ open:
 
 - **P2-D1. No metrics endpoint.** The localhost-only detailed health view (2D) is the one place an operator polls. A metrics endpoint was declined: it is more surface to secure for history this instance does not yet need.
 - **P2-D2. No error reporting service.** Errors go to the logs. Sending them to a third party would leak request data, and with no metrics endpoint there is no error counter either.
-- **P2-D3. Releases are built in CI** on a project-owned Debian 12 image matching production, attached to the GitHub release with a provenance attestation, and verified by the deploy before it installs them.
+- **P2-D3. Releases are built in CI** on a project-owned Debian 12 image matching production, and attached to the GitHub release with a provenance attestation. **Amended by ADR 0037:** the deploy no longer installs that tarball — it builds the tag on the server — so the attestation now guards a manual install rather than the deploy.
 - **P2-D4. Retention periods:** feed items nobody interacted with, 90 days; announces, 180 days; soft-deleted rows, after the 90-day evidence window.
 
 ---
@@ -492,6 +477,29 @@ Kept so the review is complete. None of these are scheduled; propose moving one 
 Full detail is in `CHANGELOG.md`; this is the short version of where the
 project has been.
 
+- **v1.27.0 — Phase 2G.** Secrets at rest are keyed per class, and every key
+  can be rotated
+  ([ADR 0038](adr/0038-encryption-keys-are-separate-and-rotatable.md)).
+  `SECRET_KEY_BASE` had keyed all four at-rest secrets and could never be
+  changed; two of the four were written down nowhere — the recovery-code
+  hashes, which made the documented remedy for a lost TOTP secret circular,
+  and the Web Push key. Stored values now name the key that wrote them and are
+  bound to their row, so a ciphertext copied onto another account no longer
+  decrypts.
+- **v1.26.0 — Phase 2E.** Releases are built, smoke-tested and attested in CI
+  on production's Debian release
+  ([ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md)),
+  with a rollback playbook that refuses a release the database has outgrown. It
+  also closed a live hole: the co-hosted account could read Baudrate's Erlang
+  cookie while distribution listened on every interface, which was remote code
+  execution as the service account. Installing the tarball then turned out to
+  cost 13 minutes against 2 for an incremental build, so
+  [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md) reversed that
+  one decision and the deploy compiles on the server again.
+- **v1.25.0 — Phase 2D.** A detailed health report on a loopback-only listener
+  ([ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md)) — queues,
+  worker heartbeats, disk and backup age, 503 when a check fails — and optional
+  JSON logs with a metadata allow-list.
 - **v1.24.0 — Phase 2C.** A change and its outgoing activities commit together
   ([ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md)),
   so a restart no longer drops them; deliveries wake on commit, a server that is
@@ -505,23 +513,18 @@ project has been.
   PostgreSQL 15, server and client. The backup puller verifies one older copy
   per run, and no longer pulls a backup still being built.
 - **v1.22.x — backups that prove they are intact, and policy documents.**
-  Per-file checksums verified off-host (v1.22.0); bilingual privacy policy and
-  end user agreement templates written from the code (v1.22.0); the re-accept
-  checkbox that took two clicks, so publishing new terms could silently do
-  nothing (v1.22.1); and the accept card that ad blockers hid, because
-  `#policy-accept` looks like a cookie-consent bar (v1.22.2).
-- **v1.21.0 — Phase 1C–1F.** Sanctions short of a ban; domain blocks as rows
-  with reversible hiding and a per-actor suspension; public terms, rules and
-  privacy pages with recorded, versioned acceptance; rules as citable records.
-  Plus four fixes found on the way: a followers-only remote post that was
-  listed publicly and re-published as `as#Public`, a stale-actor sweep deleting
-  rows it was still referenced by, a composer naming the wrong refusal reason,
-  and a gettext guard against translations interpolating bindings that do not
-  exist.
-- **v1.20.0 — Phase 1B.** A report queue board moderators can use, reason
-  categories, outcome notices, and kept evidence.
-- **v1.19.x — Phase 1A** (member self-protection) and production backups.
-- **v1.18.2 — Phase 0**, the twelve correctness bugs from the 2026-09-14 review.
-- **v1.17.0 / v1.18.0 — data portability:** self-service export
-  ([ADR 0023](adr/0023-data-export-threat-model.md)) and account migration
-  ([ADR 0025](adr/0025-account-migration.md)). Data import was dropped.
+  Per-file checksums verified off-host; bilingual privacy policy and end user
+  agreement written from the code; plus two ways the accept card failed
+  silently — a re-accept checkbox that took two clicks, and an id ad blockers
+  hid because `#policy-accept` looks like a cookie-consent bar.
+- **v1.19.x – v1.21.0 — Phase 1**, trust and safety: blocks that stop
+  interaction both ways, a report queue board moderators can use, sanctions
+  with an explicit end, domain blocks as reversible rows with per-actor
+  suspension, and public terms and rules with recorded, versioned acceptance
+  (ADRs [0026](adr/0026-blocks-stop-interaction-locally.md),
+  [0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md)–[0032](adr/0032-rules-are-records-and-retired-not-deleted.md)).
+  Production backups started in v1.19.5.
+- **v1.17.0 – v1.18.2 — data portability** (self-service export,
+  [ADR 0023](adr/0023-data-export-threat-model.md), and account migration,
+  [ADR 0025](adr/0025-account-migration.md); import was dropped) and **Phase
+  0**, the twelve correctness bugs from the 2026-09-14 review.
