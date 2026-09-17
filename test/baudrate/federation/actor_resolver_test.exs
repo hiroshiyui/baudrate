@@ -187,6 +187,29 @@ defmodule Baudrate.Federation.ActorResolverTest do
       assert {:error, _} = ActorResolver.resolve("https://remote.example/users/bad-json")
     end
 
+    test "names the required field an actor document lacks" do
+      {public_pem, _private_pem} = KeyStore.generate_keypair()
+      ap_id = "https://remote.example/users/incomplete"
+
+      complete = %{
+        "id" => ap_id,
+        "type" => "Person",
+        "inbox" => "#{ap_id}/inbox",
+        "publicKey" => %{"id" => "#{ap_id}#main-key", "publicKeyPem" => public_pem}
+      }
+
+      for {field, reason} <- [
+            {"id", :missing_id},
+            {"type", :missing_type},
+            {"inbox", :missing_inbox}
+          ] do
+        body = complete |> Map.put(field, "") |> Jason.encode!()
+        Req.Test.stub(HTTPClient, fn conn -> Plug.Conn.send_resp(conn, 200, body) end)
+
+        assert {:error, ^reason} = ActorResolver.resolve(ap_id), "blank #{field}"
+      end
+    end
+
     test "returns error on HTTP failure" do
       Req.Test.stub(HTTPClient, fn conn ->
         Plug.Conn.send_resp(conn, 500, "Internal Server Error")

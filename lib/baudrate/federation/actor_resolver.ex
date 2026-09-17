@@ -174,9 +174,9 @@ defmodule Baudrate.Federation.ActorResolver do
   end
 
   defp extract_actor_attrs(json) do
-    with {:ok, ap_id} <- required_string(json, "id"),
-         {:ok, actor_type} <- required_string(json, "type"),
-         {:ok, inbox} <- required_string(json, "inbox"),
+    with {:ok, ap_id} <- required_string(json, "id", :missing_id),
+         {:ok, actor_type} <- required_string(json, "type", :missing_type),
+         {:ok, inbox} <- required_string(json, "inbox", :missing_inbox),
          {:ok, public_key_pem} <- extract_public_key(json) do
       username =
         Sanitizer.sanitize_username(json["preferredUsername"]) ||
@@ -301,10 +301,10 @@ defmodule Baudrate.Federation.ActorResolver do
     Sanitizer.sanitize_username(derived) || "unknown"
   end
 
-  defp required_string(json, key) do
+  defp required_string(json, key, missing) do
     case json[key] do
       value when is_binary(value) and value != "" -> {:ok, value}
-      _ -> {:error, :"missing_#{key}"}
+      _ -> {:error, missing}
     end
   end
 

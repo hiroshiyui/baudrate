@@ -68,7 +68,9 @@ defmodule Baudrate.DataPortability.Archive do
         fn ->
           case Repo.query!("SELECT pg_try_advisory_xact_lock($1)", [@lock_key]) do
             %{rows: [[true]]} ->
-              Repo.query!("SET LOCAL statement_timeout = #{max(timeout_ms, 1)}")
+              Repo.query!("SELECT set_config('statement_timeout', $1, true)", [
+                Integer.to_string(max(timeout_ms, 1))
+              ])
 
               case do_build(user, base_url, deadline, max_bytes, opts) do
                 {:ok, info} -> info
