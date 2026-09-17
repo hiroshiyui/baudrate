@@ -42,7 +42,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0024](0024-totp-codes-are-single-use-with-a-one-period-grace-window.md) | TOTP codes are single-use, with a one-period grace window | Accepted |
 | [0025](0025-account-migration.md) | Account migration (ActivityPub Move) is gated, delayed and reversible | Accepted |
 | [0026](0026-blocks-stop-interaction-locally.md) | A block stops interaction in both directions, enforced on this site only | Accepted |
-| [0027](0027-ci-runs-in-a-pinned-attested-image.md) | CI runs in a digest-pinned, attested image built from verified inputs | Accepted |
+| [0027](0027-ci-runs-in-a-pinned-attested-image.md) | CI runs in a digest-pinned, attested image built from verified inputs | Accepted; amended by [0036](0036-production-runs-releases-built-and-attested-in-ci.md) |
 | [0028](0028-backups-are-complete-folders-with-count-based-retention.md) | Backups are complete folders with count-based retention, pulled off-host | Accepted |
 | [0029](0029-sanctions-are-rows-with-an-explicit-end.md) | Sanctions are rows with an explicit end, enforced by one gate | Accepted |
 | [0030](0030-domain-blocks-are-rows-and-hiding-is-reversible.md) | Domain blocks are rows, and blocking hides content instead of deleting it | Accepted |
@@ -51,6 +51,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0033](0033-baudrate-runs-on-one-node.md) | Baudrate runs on one node | Accepted |
 | [0034](0034-federation-work-is-committed-before-it-is-acknowledged.md) | Federation work is committed before it is acknowledged | Accepted |
 | [0035](0035-operational-visibility-stays-on-the-host.md) | Operational visibility stays on the host | Accepted |
+| [0036](0036-production-runs-releases-built-and-attested-in-ci.md) | Production runs releases built and attested in CI | Accepted |
 
 ## Writing a new ADR
 

@@ -2538,13 +2538,16 @@ in `mount/3`; the root layout renders them with the correct attribute
 
 ## Continuous Integration
 
-CI (`.github/workflows/elixir.yml`) runs two jobs inside the project's own CI
-image ([ADR 0027](adr/0027-ci-runs-in-a-pinned-attested-image.md)):
+CI (`.github/workflows/elixir.yml`) runs its jobs inside the project's own CI
+images ([ADR 0027](adr/0027-ci-runs-in-a-pinned-attested-image.md),
+[ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md)):
 
-| Job | Runs |
-|-----|------|
-| Test (4 partitions) | format check, `compile --warnings-as-errors`, `mix lint`, `mix test --partitions 4 --seed 9527` |
-| Browser tests | `mix assets.build`, then `mix test --only feature` (Wallaby + Selenium + headless Firefox ESR); failure screenshots and the Selenium log are uploaded |
+| Job | Image | Runs |
+|-----|-------|------|
+| Test (4 partitions) | `baudrate-ci` | format check, `compile --warnings-as-errors`, `mix lint`, `mix test --partitions 4 --seed 9527` |
+| Browser tests | `baudrate-ci` | `mix assets.build`, then `mix test --only feature` (Wallaby + Selenium + headless Firefox ESR); failure screenshots and the Selenium log are uploaded |
+| Security checks | `baudrate-ci` | `mix sobelow --config` and `mix deps.audit` ([Security checks](#security-checks)) |
+| Release build | `baudrate-build` | `ci/release/build.sh`, then `ci/release/smoke-test.sh` against PostgreSQL 15: the production release, built and started exactly as `release.yml` does before publishing one |
 
 **When it runs.** Pushes to `current`, and pull requests to `current` or
 `main`. Three things deliberately do *not* start a run:
@@ -2564,31 +2567,94 @@ Neither branch has required status checks, so a skipped run blocks nothing. If
 that ever changes, `paths-ignore` reports *no* check rather than a passing one,
 and would need replacing with a placeholder job of the same name.
 
-The image (`ci/image/Dockerfile`) contains Erlang/OTP, Elixir, Rust, Firefox
-ESR, Java, the PostgreSQL client, esbuild, Tailwind, GeckoDriver and Selenium
-Server, all from pinned, checksum-verified inputs. GeckoDriver is built from
-its crates.io source crate: its 0.37.x release binaries are signed only by a
-Mozilla subkey revoked as compromised. Jobs use it only through the
-digest in `ci/image/image.lock`, after `ci-image-ref.yml` verifies its build
-provenance, and each job first runs `ci/image/verify-toolchain.sh`. Only
-GitHub-owned actions are used, pinned to commit SHAs; the PostgreSQL service is
-pinned by digest. Inside the container the database is reached as `postgres`
-(`PGHOST`), and esbuild, Tailwind and Selenium come from the image
-(`MIX_ESBUILD_PATH`, `MIX_TAILWIND_PATH`, `BAUDRATE_SELENIUM_DIR`).
+**The images.** `ci/image/Dockerfile` has two targets on Debian 12, production's
+release: `build` (`baudrate-build`: Erlang/OTP, Elixir, Rust, esbuild,
+Tailwind) and `ci` (`baudrate-ci`: the same layers plus Firefox ESR, Java, the
+PostgreSQL client, GeckoDriver, Selenium Server and the mix_audit advisory
+list), all from pinned, checksum-verified inputs. Releases carry their own
+Erlang runtime and NIFs, linked against the system that built them, so the
+base follows production (`debian_version` in the Ansible inventory), and the
+tests run on the same system. GeckoDriver is built from its crates.io source
+crate: its 0.37.x release binaries are signed only by a Mozilla subkey revoked
+as compromised. Jobs use the images only through the digests in
+`ci/image/image.lock` and `ci/image/build-image.lock`, after `ci-image-ref.yml`
+verifies their build provenance, and each job first runs
+`ci/image/verify-toolchain.sh`. Only GitHub-owned actions are used, pinned to
+commit SHAs; the PostgreSQL service is pinned by digest. Inside the container
+the database is reached as `postgres` (`PGHOST`), and esbuild, Tailwind and
+Selenium come from the image (`MIX_ESBUILD_PATH`, `MIX_TAILWIND_PATH`,
+`BAUDRATE_SELENIUM_DIR`).
 
-Changing Erlang, Elixir, Rust, esbuild, Tailwind, GeckoDriver or Selenium needs
-the Dockerfile's version and SHA-256 updated too; see `ci/image/README.md`.
+Changing Erlang, Elixir, Rust, esbuild, Tailwind, GeckoDriver, Selenium or the
+Debian release needs the Dockerfile updated too; see `ci/image/README.md`.
 
 **PostgreSQL in CI is production's major version (15), server and client.**
 Development machines usually run something newer, which is exactly why CI must
 not: SQL that needs a newer server passes locally and has to fail somewhere
 before production. The client matters too, since `pg_dump`/`pg_restore` 17+
-write `SET transaction_timeout`, which a 15 server rejects. The image takes
-`postgresql-client-15` from `apt.postgresql.org` (the one non-Debian package),
-and `verify-toolchain.sh` fails when the client, the service images or
-Ansible's `postgres_version` disagree.
-`.github/workflows/ci-image.yml` rebuilds the image on Dockerfile changes and
-weekly, and proposes the new digest.
+write `SET transaction_timeout`, which a 15 server rejects. Debian 12 ships
+`postgresql-client-15` itself, and `verify-toolchain.sh` fails when the client,
+the service images in `elixir.yml` and `release.yml`, or Ansible's
+`postgres_version` disagree.
+`.github/workflows/ci-image.yml` rebuilds both images on Dockerfile changes and
+weekly, and proposes the new digests.
+
+### Releases
+
+Publishing a GitHub release starts `.github/workflows/release.yml`
+([ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md)).
+Its build job builds and smoke-tests the release in `baudrate-build`, with a
+read-only token and no caches. Its publish job checks the tarball's digest,
+records a build-provenance attestation and attaches
+`baudrate-<version>-debian12-x86_64.tar.gz` and its `.sigstore.json` bundle to
+the release; it runs no third-party code. The build refuses a tag that does not
+match the version in `mix.exs`. The Ansible deploy installs only a tarball
+whose attestation names `release.yml`, the tag, and the commit the tag names in
+the operator's clone.
+
+The release is built with a fixed, public cookie (`releases/0` in `mix.exs`),
+and `rel/env.sh.eex` refuses to join the Erlang distribution with it: a server
+provides its own `RELEASE_COOKIE`. Distribution listens on `127.0.0.1` only
+(`rel/vm.args.eex`, `rel/remote.vm.args.eex`). `eval` needs no cookie.
+
+To try a release build locally, outside the image, point esbuild and Tailwind at
+your binaries and build in a separate worktree, since `mix assets.deploy`
+leaves digested assets in `priv/static`
+([Browser Testing](#browser-testing-wallaby--selenium) explains why that
+matters):
+
+```bash
+MIX_ESBUILD_PATH=... MIX_TAILWIND_PATH=... ci/release/build.sh
+SMOKE_DATABASE_URL=ecto://user:pass@localhost/baudrate_smoke SMOKE_PORT=4100 \
+  SMOKE_HEALTH_PORT=4101 SMOKE_LISTENERS=skip ci/release/smoke-test.sh _build/artifacts/baudrate-*.tar.gz
+```
+
+### Security checks
+
+The Security checks job fails on any Sobelow finding, at every confidence
+level (`.sobelow-conf`). Sobelow does no taint analysis: it flags every file
+operation, `send_file` or raw HTML that takes a variable, so most findings are
+not vulnerabilities. A finding that has been reviewed and is not a
+vulnerability is marked directly above the function (or router pipeline) that
+triggers it:
+
+```elixir
+# sobelow_skip ["Traversal.FileModule"]
+defp store(source, target) do
+```
+
+The comment asserts that the function was checked: for a file operation, that
+the path is built by the server (a digest, a generated name, a configured
+directory) and never from request input. Never add one without checking.
+Prefer fixing the code when the fix is simple: an interpolated SQL fragment or
+atom became a parameter or a literal rather than a skip. Sobelow's own skip
+file (`--mark-skip-all`) is not used, because its fingerprints include line
+numbers.
+
+`mix deps.audit` (mix_audit) checks `mix.lock` against the advisory list built
+into `baudrate-ci`, recorded in `/opt/mix-audit/ADVISORIES_COMMIT`, without a
+network fetch. Locally, `mix deps.audit` clones or updates the list under
+`~/.local/share` instead.
 
 ## Dependency Monitoring
 

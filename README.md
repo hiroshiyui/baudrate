@@ -97,6 +97,13 @@ For production, you will need to configure:
 - `INSTALLATION_KEY` -- required until the setup wizard is completed; without
   it every page answers 503 (see the
   [SysOp Guide](doc/sysop.md#installation-key))
+- `RELEASE_COOKIE` -- the server's own Erlang cookie; a release refuses to start
+  with the public one it ships (see the
+  [SysOp Guide](doc/sysop.md#erlang-distribution-and-the-remote-console))
+
+Production releases are built, smoke-tested and attested in CI and attached to
+each GitHub release; the Ansible deploy verifies the attestation before
+installing one (see the [SysOp Guide](doc/sysop.md#release-artifacts)).
 
 Recommended for operations: `HEALTH_DETAIL_PORT` serves a detailed health
 report (queues, workers, disk, backup age) on `127.0.0.1` only, for a monitor on

@@ -17,6 +17,7 @@ See the [SysOp Guide](sysop.md) for the comprehensive operational reference.
 - [Rate Limiting](#rate-limiting)
 - [A second node](#a-second-node)
 - [Detailed health report](#detailed-health-report)
+- [Deploys, releases and rollback](#deploys-releases-and-rollback)
 
 ---
 
@@ -615,3 +616,81 @@ The report is on the server only: `curl -s http://127.0.0.1:4001/health | jq`
 - A check reports `raised an error` — the check itself failed (for example a
   table missing because migrations did not run). The reason is deliberately
   generic; the log has the error.
+
+---
+
+## Deploys, releases and rollback
+
+Production installs the release CI built for a tag, never one compiled on the
+server ([ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md);
+[SysOp Guide](sysop.md#release-artifacts)).
+
+### The deploy stops at "Could not fetch or verify"
+
+The control machine could not download or verify the tarball. In order:
+
+- **`gh auth status` fails.** Run `gh auth login`.
+- **The tag is not in your clone.** Run `git fetch --tags`. The deploy compares
+  the attestation with the commit the tag names *in your clone*, so a tag that
+  was moved on GitHub after you fetched it also fails here. That is the check
+  working: find out why the tag moved before deploying it.
+- **The release has no tarball.** Publishing the GitHub release starts the
+  Release workflow, which takes several minutes. Check
+  `gh run list --workflow release.yml`; if the run failed, fix the cause and
+  re-run it. Releases published before ADR 0036 have no tarball at all; roll
+  back to one still on the server instead.
+- **`gh attestation verify` fails** for a tarball that exists. Do not install
+  it. It was not built by this repository's `release.yml` from that tag's
+  commit on a GitHub-hosted runner.
+
+### The deploy refuses the host
+
+"Releases are built for Debian 12 on x86_64": the release carries its own
+Erlang runtime and NIFs and does not start on another Debian release or
+architecture. Upgrading the server's Debian release needs `debian_version` and
+the CI images changed together ([ci/image/README.md](../ci/image/README.md)).
+
+### "RELEASE_COOKIE must be set to this server's own secret cookie"
+
+The release refuses to join the Erlang distribution with the cookie it ships,
+which is public. The systemd service gets `RELEASE_COOKIE` from
+`/opt/baudrate/env/baudrate.env`; a shell does not. For `remote` or `rpc`,
+source the file first, as the service user:
+
+```bash
+sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; exec /opt/baudrate/current/bin/baudrate remote'
+```
+
+`bin/baudrate eval` (migrations, backups, dumps) needs no cookie. If the
+service itself fails with this message, the environment file lacks the line:
+re-run the deploy, which generates the cookie once per server.
+
+### `remote` or `rpc` cannot reach the node
+
+With the cookie set, check the name: the node is `baudrate@127.0.0.1`, reached
+over loopback. A release from before ADR 0036 is named `baudrate@<hostname>`
+instead; after a rollback to one, set `RELEASE_NODE=baudrate@$(hostname -s)`
+and `RELEASE_DISTRIBUTION=sname` for the command.
+
+### The rollback playbook refuses
+
+"The database has N migration(s) that release does not contain": rolling back
+the code would leave the schema newer than the code. Fix forward, or restore
+the pre-deploy dump taken before those migrations and then roll back, as the
+[SysOp Guide](sysop.md#rolling-back-a-deploy) describes. Use `-e force=true`
+only after checking the older release works with the newer schema. Run the
+playbook with `--check` first to see the target and the verdict without
+changing anything.
+
+### The Release build or Security checks job fails in CI
+
+- **Release build:** the smoke test prints which step failed and the tail of
+  the server log. It is the same script `release.yml` runs before publishing,
+  so a red job here means the next release would not publish.
+- **Security checks, Sobelow:** a new finding. Fix it, or check it and mark the
+  function with `# sobelow_skip ["Check"]`
+  ([development guide](development.md#security-checks)).
+- **Security checks, mix_audit:** a dependency in `mix.lock` has a published
+  advisory. Upgrade it; the list comes from the CI image, recorded by commit in
+  the job output.
+

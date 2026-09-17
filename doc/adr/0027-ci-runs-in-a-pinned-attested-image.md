@@ -1,6 +1,9 @@
 # 0027 — CI runs in a digest-pinned, attested image built from verified inputs
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by
+  [0036](0036-production-runs-releases-built-and-attested-in-ci.md), which
+  splits the image into a release build image and a test image on
+  production's Debian release
 - **Date:** 2026-09-15
 - **Deciders:** Baudrate maintainers
 - **Related:** [0020](0020-testing-strategy.md) (testing strategy)

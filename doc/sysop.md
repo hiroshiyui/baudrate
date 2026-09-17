@@ -28,6 +28,10 @@ Operational guide for installing, configuring, and maintaining a Baudrate
 
 ## Prerequisites
 
+To build and run from source. A server running a [release built in
+CI](#release-artifacts) needs only PostgreSQL, the PostgreSQL client and the
+Debian 12 base system: the release carries its own Erlang runtime and NIFs.
+
 | Requirement | Version | Purpose |
 |-------------|---------|---------|
 | Elixir | 1.15+ | Application runtime |
@@ -147,6 +151,7 @@ mix ecto.reset  # Drop, recreate, re-migrate
 | `SECRET_KEY_BASE` | Signing + encryption key derivation | `mix phx.gen.secret` |
 | `PHX_HOST` | Public hostname for URL generation | Your domain (e.g., `forum.example.com`) |
 | `PHX_SERVER` | Enable HTTP server in releases | Set to `"true"` |
+| `RELEASE_COOKIE` | This server's Erlang distribution cookie. A release refuses to start, and `remote`/`rpc` refuse to run, without one, or with the public cookie shipped in `releases/COOKIE` ([Erlang distribution](#erlang-distribution-and-the-remote-console)) | `head -c 48 /dev/urandom \| base64 \| tr -d '/+=\n'`; Ansible generates one per server |
 
 ### Optional
 
@@ -1410,17 +1415,112 @@ matching the server version).
 
 ## Deployment
 
-### Build Dependencies
+### Release artifacts
 
-Before deploying, ensure:
+Production installs a release built in CI, not one compiled on the server
+(ADR 0036). Publishing a GitHub release starts `.github/workflows/release.yml`,
+which:
 
-1. **Rust toolchain** installed (for HTML sanitizer NIF compilation)
-2. **libvips** installed (for image processing)
-3. **Node.js** not required (esbuild is fetched by Mix)
+1. builds the release in the project's build image (`ci/image/`, Debian 12 on
+   x86-64, like production) from the release's tag, without caches;
+2. smoke-tests it: the cookie guard, migrations, `/health`, the detailed
+   report, `rpc`, and that nothing but the web port listens beyond loopback;
+3. records a build-provenance attestation and attaches
+   `baudrate-<version>-debian12-x86_64.tar.gz` (and its
+   `.sigstore.json` bundle) to the release.
 
-> **Important:** The build machine must match the target OS and CPU architecture,
-> because the Ammonia HTML sanitizer NIF is compiled to native code via Rustler.
-> Cross-compilation is not supported out of the box.
+The same build and smoke test run on every push to `current`, so a change that
+breaks the release fails there rather than after tagging.
+
+The tarball holds the release directory itself (`bin/`, `erts-*/`, `lib/`,
+`releases/`), including its own Erlang runtime, so the server needs neither
+Erlang, Elixir nor Rust, only the system libraries a Debian 12 install has
+(`libssl3`, `libtinfo6`) and the PostgreSQL client for backups. It runs only
+on the Debian release it was built for.
+
+The Ansible deploy verifies and installs it for you. To install one by hand,
+verify it first. `--source-digest` is the commit the tag names in your own
+clone, so a tag moved on GitHub after you fetched it fails verification:
+
+```bash
+TAG=v1.26.0
+gh release download "$TAG" --repo hiroshiyui/baudrate --pattern "baudrate-${TAG#v}-debian12-x86_64.tar.gz"
+gh attestation verify "baudrate-${TAG#v}-debian12-x86_64.tar.gz" --repo hiroshiyui/baudrate \
+  --signer-workflow hiroshiyui/baudrate/.github/workflows/release.yml \
+  --source-ref "refs/tags/$TAG" --source-digest "$(git rev-parse "$TAG^{commit}")" \
+  --deny-self-hosted-runners
+DIR="releases/$(date -u +%Y%m%d_%H%M%S)"
+mkdir "$DIR" && tar -xzf "baudrate-${TAG#v}-debian12-x86_64.tar.gz" -C "$DIR"
+```
+
+Then link `lib/baudrate-*/priv/static/uploads` to your persistent uploads directory,
+run `bin/migrate`, and point your service at the new directory.
+
+### Erlang distribution and the remote console
+
+A release built in CI is public, and so is the cookie `mix release` writes into
+`releases/COOKIE`. The release therefore refuses to join the Erlang
+distribution with it: `start`, `daemon`, `remote`, `rpc`, `stop`, `restart` and
+`pid` fail unless `RELEASE_COOKIE` is set to a cookie of the server's own
+(`rel/env.sh.eex`). `eval` and `version` start no distribution and need none,
+so migrations, backups and the pre-deploy dump are unaffected. Ansible
+generates the cookie once per server into `/opt/baudrate/env/release_cookie`
+(mode 0600, in the 0700 `env/` directory) and writes it into `baudrate.env`.
+
+Distribution listens on `127.0.0.1` only. The node is named
+`baudrate@127.0.0.1`, an epmd the release starts binds to loopback
+(`ERL_EPMD_ADDRESS`), and the distribution port is bound to loopback in
+`vm.args`. Other local users can still reach loopback, so on a shared server
+the cookie is what keeps them out: never make `env/` or the cookie file
+readable by another account.
+
+For a remote console, or `rpc`, as root:
+
+```bash
+sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; exec /opt/baudrate/current/bin/baudrate remote'
+sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; exec /opt/baudrate/current/bin/baudrate rpc "IO.puts(node())"'
+```
+
+`RELEASE_DISTRIBUTION=none` runs the node without distribution at all, if you
+never use `remote` or `rpc`.
+
+### Rolling back a deploy
+
+`ansible/playbooks/rollback-baudrate.yml` points `current` and `static` back at
+a release still on the server (the deploy keeps five), restarts the service
+and waits for `/health`. With no arguments it restores the release before the
+active one; `-e rollback_to=v1.24.0` (a tag or a release directory name)
+chooses another, and `--check` only reports which release it would restore and
+whether the schema allows it.
+
+It refuses when the database has migrations the target release does not
+contain, and names them. Rolling back code does not roll back the schema: the
+older release may fail against columns or constraints it does not know, or
+write rows the newer code then misreads. When it refuses:
+
+1. **Prefer fixing forward.** Revert the change on `current` and release again.
+2. **Or restore the pre-deploy dump, then roll back.** The deploy dumped the
+   database right before those migrations ran, into
+   `/var/backups/baudrate/predeploy/<time>-<tag>.dump`. Stop the service,
+   restore that dump ([Restore](#restore)), and run the rollback playbook:
+   the schema now matches the older release. Everything written since the dump
+   is lost.
+3. **Or force it** (`-e force=true`), only after checking that the older code
+   works with the newer schema (for example, a migration that only added an
+   index).
+
+`Baudrate.Release.rollback/2` (below) can run a migration's `down` from the
+**newer** release before rolling back, but only for a reversible migration, and
+it discards whatever the migration added.
+
+### Building a release yourself
+
+The Ansible deploy never builds on the server. To build a release yourself (a
+fork, or a server Ansible does not manage), build on the same Debian release
+and CPU architecture the server runs: the release carries its own Erlang
+runtime, and the HTML sanitizer, HTML parser and feed parser NIFs are compiled
+to native code. `ci/release/build.sh` is the script CI runs; it expects the
+toolchain in `ci/image/Dockerfile` (Erlang, Elixir, Rust, esbuild, Tailwind).
 
 ### Asset Build
 
@@ -1431,7 +1531,7 @@ MIX_ENV=prod mix assets.deploy   # Tailwind (minified) + esbuild (minified) + ph
 Generates fingerprinted files and `priv/static/cache_manifest.json`. Without
 this step, pages load without CSS styling and JavaScript doesn't execute.
 
-### Building a Release
+#### Build steps
 
 **Before building**, ensure the `version` in `mix.exs` matches the release tag
 (e.g. `"1.1.21"` for tag `v1.1.21`). This version appears in the release
@@ -1448,16 +1548,11 @@ BEAM code, the Ammonia NIF `.so`, ERTS, and the overlay convenience scripts
 
 > **Note:** When upgrading versions, remove `_build/prod/rel/` before running
 > `mix release` to avoid stale `lib/baudrate-<old-version>/` directories
-> accumulating alongside the new version. The Ansible deploy playbook handles
-> this automatically.
+> accumulating alongside the new version (`ci/release/build.sh` does).
 >
 > When `.tool-versions` changes the Erlang/OTP or Elixir version, remove all of
 > `_build/prod/` instead. Compiled BEAM files and Rust NIFs belong to the
-> toolchain that built them. The Ansible deploy playbook does this
-> automatically: it compares the tag's `.tool-versions` with a
-> `_build/prod/.tool-versions.stamp` written after each successful compile.
-> Install the new toolchain first (`setup-server.yml --tags elixir`), or the
-> build fails.
+> toolchain that built them. CI always builds from a clean checkout.
 
 ### Uploads Directory
 
@@ -1510,7 +1605,7 @@ not the release directory, causing writes to go to the wrong location.
 # With mix (development / staging)
 PHX_SERVER=true mix phx.server
 
-# With releases — convenience script
+# With releases — convenience script (RELEASE_COOKIE must be set)
 bin/server
 
 # With releases — manual
@@ -1532,10 +1627,10 @@ The Ansible deploy playbook minimises downtime through three mechanisms:
    drains in-flight HTTP requests for up to 30 seconds on SIGTERM. The systemd
    `TimeoutStopSec=35` gives it 5 extra seconds of margin. The unit deliberately
    has no `ExecStop=bin/baudrate stop`. By stop time the `current` symlink
-   already points at the new release, whose per-build cookie the old node
-   rejects. SIGTERM needs no cookie and triggers the same orderly `init:stop()`.
-   If you write your own unit file, do not add an `ExecStop` that uses the
-   release's `stop` command.
+   already points at the new release, and `stop` needs Erlang distribution and
+   the cookie. SIGTERM needs neither and triggers the same orderly
+   `init:stop()`. If you write your own unit file, do not add an `ExecStop`
+   that uses the release's `stop` command.
 
 3. **Nginx request buffering** — `proxy_next_upstream error timeout http_502`
    tells nginx to hold incoming requests and retry up to 3 times over 30 seconds
@@ -1579,9 +1674,13 @@ fits your operational comfort:
 
 **Against the running production node (recommended)** — `rpc` executes
 the function inside the live VM, so the repo and config are already
-running. No env file to source, no port collision:
+running, with no port collision. It needs the server's `RELEASE_COOKIE`
+([Erlang distribution](#erlang-distribution-and-the-remote-console)), so
+source the env file, as the service user:
 
 ```bash
+set -a; . /opt/baudrate/env/baudrate.env; set +a
+
 # Inspect what would be stamped, without writing
 bin/baudrate rpc "Baudrate.Release.backfill_ap_ids(dry_run: true)"
 

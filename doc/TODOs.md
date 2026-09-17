@@ -34,7 +34,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
-| **2** | **Operability** | 2A–2H | **In progress** (2B, 2H in v1.23.0; 2C in v1.24.0; 2D in v1.25.0). Data loss and blind operations are the biggest risks |
+| **2** | **Operability** | 2A–2H | **In progress** (2B, 2H in v1.23.0; 2C in v1.24.0; 2D in v1.25.0; 2E done). Data loss and blind operations are the biggest risks |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
@@ -93,18 +93,27 @@ out by P1-D1.
 | 2B | One node (D2): cluster discovery removed; the scaling guide rewritten around a bigger host, PostgreSQL tuning and a CDN that fronts the whole site; troubleshooting for an accidental second node | v1.23.0 | [ADR 0033](adr/0033-baudrate-runs-on-one-node.md) |
 | 2C | Federation work committed before it is acknowledged: delivery jobs in the change's transaction, wake on commit, delivery deadlines, a per-domain circuit breaker, and an inbound queue processed one activity per remote account | v1.24.0 | [ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md) |
 | 2D | Observability: a detailed health report on a loopback-only listener (queues, worker heartbeats, disk, backup age; 503 when a check fails) and optional JSON logs with a metadata allow-list. Alerting stays with the operator: the sysop guide shows polling with a systemd timer or a host monitor | v1.25.0 | [ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md) |
+| 2E | Deploy safety: releases built on Debian 12 in CI, smoke-tested on every push, attested and attached to the GitHub release; the deploy verifies the attestation on the controller and installs the tarball; a rollback playbook that refuses an incompatible schema; the Erlang cookie per server and distribution on loopback; Sobelow and mix_audit in CI | not yet released | [ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md) |
 | 2H | Drift: CI runs production's PostgreSQL 15, server and client, held together with Ansible by `verify-toolchain.sh`; the worker table, README clone URL and `INSTALLATION_KEY` fixed; stray committed uploads removed | v1.23.0 | `ci/image/README.md`, `doc/sysop.md` |
 
 "No federated activity is lost to a restart" is met by 2C
 (`test/baudrate/federation/durable_delivery_test.exs`), and "a delivery or
 inbound backlog, a stalled worker or a full disk shows up in the detailed
-health check" by 2D (`test/baudrate/health_test.exs`).
+health check" by 2D (`test/baudrate/health_test.exs`). "The production host no
+longer compiles releases" and "a release can be rolled back with one command"
+are met by 2E (`ci/release/smoke-test.sh`, `rollback-baudrate.yml`).
 
 **Deferred by the operator, outside 2H:** production allows SSH login as root
 (key only). `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets
 `PermitRootLogin yes`, and sshd keeps the first value it reads, so the `common`
 role's `PermitRootLogin no` has no effect (`sshd -T`, found 2026-09-15). The fix
 would be for the role to manage the drop-ins and assert the effective value.
+
+**Deferred by the operator, outside 2E:** the build toolchains stay installed on
+the production server (asdf with Erlang and Elixir, rustup, `build-essential`,
+git, and the `src/` checkout), although deploys no longer use them. The server
+also hosts another application that may build there. `setup-server.yml` still
+installs them; `ansible/README.md` says what can be removed by hand.
 
 ### 2A — Backups and recovery (M)
 
@@ -122,13 +131,6 @@ open:
 - [x] **Verify older copies too** (v1.23.0). Each pull also verifies the older copy that has gone longest without a successful check, so all 30 are re-checked in about a month; stamps live in `<dest>/.verified`. The same change stopped half-built `.incomplete-…` backups from being pulled and counted as copies. `test/scripts/pull_backups_test.exs` runs the script against backups written by `Snapshots.create/2`.
 - [x] **Backup freshness in health checks** (2D): the report's `backup` check fails when the newest complete backup is over 26 hours old.
 - **Accepted when:** production has a backup less than 24 h old, and the rehearsal restored a working instance.
-
-### 2E — Deploy safety (M)
-
-- [ ] **Build releases in CI** on a project-owned Debian 12 image (the ADR 0027 rules apply) when a tag is pushed, and attach the tarball to the GitHub release with a provenance attestation (P2-D3).
-- [ ] **Deploy the artifact.** The deploy playbook verifies the attestation, then installs the attached release instead of compiling; Rust, build-essential and git leave the production host.
-- [ ] **Rollback playbook** that points `current` back at the previous release. It refuses when that release is older than the newest applied migration, unless forced, and documents why.
-- [ ] **Security checks in CI:** Sobelow and `mix_audit` on every PR, and a release-build smoke test (start the release and hit `/health`).
 
 ### 2F — Retention (S)
 

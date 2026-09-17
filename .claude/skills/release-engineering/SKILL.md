@@ -29,3 +29,5 @@ When performing release engineering, always follow these steps:
 6. **Tag the release** — create an annotated Git tag (e.g., `git tag -a v1.2.3 -m "v1.2.3"`) and push it to the remote (`git push --tags`).
 
 7. **Create a GitHub release** — use `gh release create vX.Y.Z` with the corresponding `CHANGELOG.md` section as the release body.
+
+8. **Wait for the release tarball** — publishing the GitHub release starts `.github/workflows/release.yml` (ADR 0036), which builds, smoke-tests and attests the production release and attaches `baudrate-X.Y.Z-debian12-x86_64.tar.gz` to it. Watch it (`gh run list --workflow release.yml`, then `gh run watch <id>`) and do not deploy until it succeeds: the deploy playbook installs only that attested tarball. If it fails, fix the cause on `current`; a rebuild for the same tag is a re-run of that workflow run.
