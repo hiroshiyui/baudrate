@@ -158,14 +158,15 @@ defmodule Baudrate.Content.Likes do
       true ->
         case Repo.get_by(ArticleLike, user_id: user_id, article_id: article_id) do
           nil ->
-            case like_article(user_id, article_id) do
+            # The activity's delivery jobs commit with the like (Phase 2C).
+            case Baudrate.Federation.federate(
+                   fn -> like_article(user_id, article_id) end,
+                   fn _ ->
+                     Baudrate.Federation.Publisher.publish_article_liked(user_id, article)
+                   end
+                 ) do
               {:ok, like} ->
                 Baudrate.Notification.Hooks.notify_local_article_liked(article_id, user_id)
-
-                Interactions.schedule_federation_task(fn ->
-                  Baudrate.Federation.Publisher.publish_article_liked(user_id, article)
-                end)
-
                 {:ok, like}
 
               {:error, %Ecto.Changeset{} = cs} ->
@@ -179,11 +180,17 @@ defmodule Baudrate.Content.Likes do
 
           like ->
             like_ap_id = like.ap_id
-            unlike_article(user_id, article_id)
 
-            Interactions.schedule_federation_task(fn ->
-              Baudrate.Federation.Publisher.publish_article_unliked(user_id, article, like_ap_id)
-            end)
+            {:ok, _} =
+              Repo.transaction(fn ->
+                unlike_article(user_id, article_id)
+
+                Baudrate.Federation.Publisher.publish_article_unliked(
+                  user_id,
+                  article,
+                  like_ap_id
+                )
+              end)
 
             {:ok, :removed}
         end
@@ -363,14 +370,15 @@ defmodule Baudrate.Content.Likes do
       true ->
         case Repo.get_by(CommentLike, user_id: user_id, comment_id: comment_id) do
           nil ->
-            case like_comment(user_id, comment_id) do
+            # The activity's delivery jobs commit with the like (Phase 2C).
+            case Baudrate.Federation.federate(
+                   fn -> like_comment(user_id, comment_id) end,
+                   fn _ ->
+                     Baudrate.Federation.Publisher.publish_comment_liked(user_id, comment)
+                   end
+                 ) do
               {:ok, like} ->
                 Baudrate.Notification.Hooks.notify_local_comment_liked(comment_id, user_id)
-
-                Interactions.schedule_federation_task(fn ->
-                  Baudrate.Federation.Publisher.publish_comment_liked(user_id, comment)
-                end)
-
                 {:ok, like}
 
               {:error, %Ecto.Changeset{} = cs} ->
@@ -384,15 +392,17 @@ defmodule Baudrate.Content.Likes do
 
           like ->
             like_ap_id = like.ap_id
-            unlike_comment(user_id, comment_id)
 
-            Interactions.schedule_federation_task(fn ->
-              Baudrate.Federation.Publisher.publish_comment_unliked(
-                user_id,
-                comment,
-                like_ap_id
-              )
-            end)
+            {:ok, _} =
+              Repo.transaction(fn ->
+                unlike_comment(user_id, comment_id)
+
+                Baudrate.Federation.Publisher.publish_comment_unliked(
+                  user_id,
+                  comment,
+                  like_ap_id
+                )
+              end)
 
             {:ok, :removed}
         end

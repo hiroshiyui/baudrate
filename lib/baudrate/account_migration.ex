@@ -533,13 +533,16 @@ defmodule Baudrate.AccountMigration do
 
       if count != 1, do: Repo.rollback(:not_pending)
 
-      user |> User.moved_changeset(target.ap_id, now) |> Repo.update!()
+      moved_user = user |> User.moved_changeset(target.ap_id, now) |> Repo.update!()
+
+      # The Update and Move jobs, and the local followers' new follows, commit
+      # with the move itself (Phase 2C): a restart in between used to leave an
+      # account marked moved that no follower had heard about.
+      publish_move(moved_user, target)
+      {moved_user, migrate_local_followers(moved_user, target)}
     end)
     |> case do
-      {:ok, moved_user} ->
-        publish_move(moved_user, target)
-        migrated = migrate_local_followers(moved_user, target)
-
+      {:ok, {_moved_user, migrated}} ->
         Hooks.notify_account_security(user.id, "account_moved", %{"label" => handle(target)})
 
         Logger.warning(
@@ -604,8 +607,11 @@ defmodule Baudrate.AccountMigration do
     |> Enum.map(&Repo.get(User, &1))
     |> Enum.filter(&match?(%User{status: "active", is_bot: false}, &1))
     |> Enum.count(fn follower ->
-      Federation.delete_local_follow(follower, moved_user)
-      follow_on_behalf(follower, target)
+      {:ok, _} =
+        Repo.transaction(fn ->
+          Federation.delete_local_follow(follower, moved_user)
+          follow_on_behalf(follower, target)
+        end)
 
       Hooks.notify_actor_moved(follower.id, %{actor_user_id: moved_user.id}, %{
         "label" => handle(target),
@@ -625,13 +631,22 @@ defmodule Baudrate.AccountMigration do
     if Federation.user_follows?(follower.id, target.id) do
       :already_following
     else
-      with {:ok, follower} <- KeyStore.ensure_user_keypair(follower),
-           {:ok, follow} <- Federation.create_user_follow(follower, target, system: true) do
-        {activity, actor_uri} = Publisher.build_follow(follower, target, follow.ap_id)
-        Delivery.deliver_follow(activity, target, actor_uri)
-        :followed
-      else
-        _ -> :error
+      # One transaction for the follow and its `Follow` job. A refusal returns
+      # `:error` rather than rolling back, because callers run this inside a
+      # larger transaction that a rollback here would abort as a whole.
+      Repo.transaction(fn ->
+        with {:ok, follower} <- KeyStore.ensure_user_keypair(follower),
+             {:ok, follow} <- Federation.create_user_follow(follower, target, system: true) do
+          {activity, actor_uri} = Publisher.build_follow(follower, target, follow.ap_id)
+          Delivery.deliver_follow(activity, target, actor_uri)
+          :followed
+        else
+          _ -> :error
+        end
+      end)
+      |> case do
+        {:ok, result} -> result
+        {:error, _} -> :error
       end
     end
   end
@@ -695,11 +710,15 @@ defmodule Baudrate.AccountMigration do
              Keyword.fetch!(opts, :ip_address),
              :account_redirect
            ),
-         {:ok, updated} <- user |> User.moved_changeset(nil, nil) |> Repo.update() do
-      {:ok, updated} = KeyStore.ensure_user_keypair(updated)
-      {update, actor_uri} = Publisher.build_update_actor(:user, updated)
-      Delivery.enqueue_for_followers(update, actor_uri)
-
+         {:ok, updated} <-
+           Federation.federate(
+             fn -> user |> User.moved_changeset(nil, nil) |> Repo.update() end,
+             fn updated ->
+               {:ok, updated} = KeyStore.ensure_user_keypair(updated)
+               {update, actor_uri} = Publisher.build_update_actor(:user, updated)
+               Delivery.enqueue_for_followers(update, actor_uri)
+             end
+           ) do
       Hooks.notify_account_security(user.id, "account_redirect_removed", %{
         "label" => alias_label(user.moved_to)
       })
@@ -809,7 +828,12 @@ defmodule Baudrate.AccountMigration do
 
             migrated =
               refollow(origin, data, fn follower ->
-                if follower.id != target.id, do: Federation.create_local_follow(follower, target)
+                # Checked first: a duplicate insert would abort the transaction
+                # `refollow/3` runs this in.
+                if follower.id != target.id and
+                     not Federation.local_follows?(follower.id, target.id) do
+                  Federation.create_local_follow(follower, target)
+                end
               end)
 
             notify_board_admins(origin, "@#{target.username}")
@@ -860,9 +884,15 @@ defmodule Baudrate.AccountMigration do
     |> Enum.filter(&match?(%User{status: "active"}, &1.user))
     |> Enum.count(fn follow ->
       follower = follow.user
-      undo_remote_follow(follower, follow, origin)
-      Repo.delete(follow)
-      follow_new.(follower)
+
+      # Undo the old follow and start the new one together (Phase 2C).
+      {:ok, _} =
+        Repo.transaction(fn ->
+          undo_remote_follow(follower, follow, origin)
+          Repo.delete(follow, allow_stale: true)
+          follow_new.(follower)
+        end)
+
       Hooks.notify_actor_moved(follower.id, %{actor_remote_actor_id: origin.id}, data)
       true
     end)

@@ -86,18 +86,23 @@ defmodule Baudrate.Federation.InboxHandler do
       # A user who has blocked the actor refuses its follow, as Mastodon does.
       if non_federated_board_actor?(actor_uri, target) or
            follow_blocked_by_target?(actor_uri, remote_actor) do
-        send_reject_async(activity, actor_uri, remote_actor)
+        Delivery.enqueue_reject(activity, actor_uri, remote_actor)
         :ok
       else
-        case Federation.create_follower(actor_uri, remote_actor, activity["id"]) do
+        # The follower row and its Accept commit together (Phase 2C).
+        Federation.federate(
+          fn -> Federation.create_follower(actor_uri, remote_actor, activity["id"]) end,
+          fn _follower -> Delivery.enqueue_accept(activity, actor_uri, remote_actor) end
+        )
+        |> case do
           {:ok, _follower} ->
-            send_accept_async(activity, actor_uri, remote_actor)
             notify_follow_target(target, remote_actor)
             :ok
 
           {:error, %Ecto.Changeset{} = changeset} ->
             if has_unique_error?(changeset) do
-              send_accept_async(activity, actor_uri, remote_actor)
+              # Already a follower: the remote side asked again, so answer again.
+              Delivery.enqueue_accept(activity, actor_uri, remote_actor)
               :ok
             else
               {:error, :follow_failed}
@@ -1639,38 +1644,6 @@ defmodule Baudrate.Federation.InboxHandler do
   end
 
   defp resolve_target_uri(_, _), do: nil
-
-  defp send_accept_async(follow_activity, actor_uri, remote_actor) do
-    fun = fn ->
-      case Delivery.send_accept(follow_activity, actor_uri, remote_actor) do
-        {:ok, _} ->
-          Logger.info("federation.accept_sent: to=#{remote_actor.inbox}")
-
-        {:error, reason} ->
-          Logger.warning(
-            "federation.accept_failed: to=#{remote_actor.inbox} reason=#{inspect(reason)}"
-          )
-      end
-    end
-
-    Baudrate.Federation.schedule_federation_task(fun)
-  end
-
-  defp send_reject_async(follow_activity, actor_uri, remote_actor) do
-    fun = fn ->
-      case Delivery.send_reject(follow_activity, actor_uri, remote_actor) do
-        {:ok, _} ->
-          Logger.info("federation.reject_sent: to=#{remote_actor.inbox}")
-
-        {:error, reason} ->
-          Logger.warning(
-            "federation.reject_failed: to=#{remote_actor.inbox} reason=#{inspect(reason)}"
-          )
-      end
-    end
-
-    Baudrate.Federation.schedule_federation_task(fun)
-  end
 
   # Returns true when the URI is a local board actor for a non-federated board
   # (ap_enabled: false or min_role_to_view != "guest"). Only used on the shared

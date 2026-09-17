@@ -19,7 +19,7 @@ defmodule BaudrateWeb.BoardFollowsLive do
   alias Baudrate.Content
   alias Baudrate.Content.Board
   alias Baudrate.Federation
-  alias Baudrate.Federation.{Delivery, KeyStore, Publisher}
+  alias Baudrate.Federation.KeyStore
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -133,12 +133,7 @@ defmodule BaudrateWeb.BoardFollowsLive do
     with remote_actor when not is_nil(remote_actor) <-
            Federation.get_remote_actor(id),
          {:ok, board} <- KeyStore.ensure_board_keypair(board),
-         {:ok, board_follow} <- Federation.create_board_follow(board, remote_actor) do
-      {activity, actor_uri} =
-        Publisher.build_board_follow(board, remote_actor, board_follow.ap_id)
-
-      Delivery.deliver_follow(activity, remote_actor, actor_uri)
-
+         {:ok, _board_follow} <- Federation.follow_remote_actor_as_board(board, remote_actor) do
       follows = Federation.list_board_follows(board.id)
 
       {:noreply,
@@ -164,12 +159,7 @@ defmodule BaudrateWeb.BoardFollowsLive do
     with remote_actor when not is_nil(remote_actor) <-
            Federation.get_remote_actor(id),
          {:ok, board} <- KeyStore.ensure_board_keypair(board),
-         follow when not is_nil(follow) <-
-           Federation.get_board_follow_with_actor(board.id, remote_actor.id) do
-      {activity, actor_uri} = Publisher.build_board_undo_follow(board, follow)
-      Delivery.deliver_follow(activity, remote_actor, actor_uri)
-      Federation.delete_board_follow(board, remote_actor)
-
+         {:ok, _follow} <- Federation.unfollow_remote_actor_as_board(board, remote_actor) do
       follows = Federation.list_board_follows(board.id)
 
       {:noreply,

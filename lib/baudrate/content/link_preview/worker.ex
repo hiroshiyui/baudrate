@@ -29,12 +29,7 @@ defmodule Baudrate.Content.LinkPreview.Worker do
       do_fetch(content_type, content_id, html, user_id)
     end
 
-    if Application.get_env(:baudrate, :federation_async, true) do
-      Task.Supervisor.start_child(Baudrate.Federation.TaskSupervisor, fun)
-    else
-      fun.()
-    end
-
+    Baudrate.Federation.schedule_federation_task(fun)
     :ok
   end
 

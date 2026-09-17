@@ -313,12 +313,18 @@ defmodule Baudrate.Messaging do
         :conversation,
         Ecto.Changeset.change(conversation, last_message_at: now)
       )
+      # Stamp the canonical AP ID so remote instances can reference this DM
+      |> Ecto.Multi.run(:stamped, fn _repo, %{message: message} ->
+        {:ok, stamp_dm_ap_id(message, sender)}
+      end)
+      # A remote participant's delivery job commits with the message (Phase 2C).
+      |> Ecto.Multi.run(:federation, fn _repo, %{stamped: message} ->
+        maybe_federate_dm(message, conversation, sender)
+        {:ok, :enqueued}
+      end)
 
     case Repo.transaction(multi) do
-      {:ok, %{message: message}} ->
-        # Stamp the canonical AP ID so remote instances can reference this DM
-        message = stamp_dm_ap_id(message, sender)
-
+      {:ok, %{stamped: message}} ->
         # Broadcast to both conversation and user topics
         PubSub.broadcast_to_conversation(conversation.id, :dm_message_created, %{
           message_id: message.id
@@ -331,9 +337,6 @@ defmodule Baudrate.Messaging do
             conversation_id: conversation.id
           })
         end
-
-        # Schedule federation delivery if other participant is remote
-        maybe_federate_dm(message, conversation, sender)
 
         Baudrate.Content.LinkPreview.Worker.schedule_preview_fetch(
           :direct_message,
@@ -465,17 +468,18 @@ defmodule Baudrate.Messaging do
   def soft_delete_message(%DirectMessage{} = message, %User{id: user_id}) do
     if message.sender_user_id == user_id do
       result =
-        message
-        |> DirectMessage.soft_delete_changeset()
-        |> Repo.update()
+        Federation.federate(
+          fn -> message |> DirectMessage.soft_delete_changeset() |> Repo.update() end,
+          fn deleted_message ->
+            conversation = Repo.get!(Conversation, message.conversation_id)
+            maybe_federate_dm_delete(deleted_message, conversation, user_id)
+          end
+        )
 
       with {:ok, deleted_message} <- result do
         PubSub.broadcast_to_conversation(message.conversation_id, :dm_message_deleted, %{
           message_id: message.id
         })
-
-        conversation = Repo.get!(Conversation, message.conversation_id)
-        maybe_federate_dm_delete(deleted_message, conversation, user_id)
 
         {:ok, deleted_message}
       end
@@ -609,9 +613,7 @@ defmodule Baudrate.Messaging do
     conversation = Repo.preload(conversation, [:remote_actor_b])
 
     if conversation.remote_actor_b do
-      schedule_federation_task(fn ->
-        Federation.Publisher.publish_dm_created(message, conversation, sender)
-      end)
+      Federation.Publisher.publish_dm_created(message, conversation, sender)
     end
   end
 
@@ -620,10 +622,7 @@ defmodule Baudrate.Messaging do
 
     if conversation.remote_actor_b do
       sender = Auth.get_user(sender_user_id)
-
-      schedule_federation_task(fn ->
-        Federation.Publisher.publish_dm_deleted(message, sender, conversation)
-      end)
+      Federation.Publisher.publish_dm_deleted(message, sender, conversation)
     end
   end
 
@@ -636,6 +635,4 @@ defmodule Baudrate.Messaging do
   end
 
   defp stamp_dm_ap_id(message, _sender), do: message
-
-  defdelegate schedule_federation_task(fun), to: Baudrate.Federation
 end

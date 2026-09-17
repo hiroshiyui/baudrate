@@ -289,16 +289,4 @@ defmodule Baudrate.Content.InteractionsTest do
       assert result == record
     end
   end
-
-  describe "schedule_federation_task/1" do
-    test "executes the given function synchronously in test" do
-      test_pid = self()
-
-      Interactions.schedule_federation_task(fn ->
-        send(test_pid, :task_executed)
-      end)
-
-      assert_receive :task_executed
-    end
-  end
 end

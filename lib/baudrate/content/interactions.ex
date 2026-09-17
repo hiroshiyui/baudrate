@@ -88,12 +88,4 @@ defmodule Baudrate.Content.Interactions do
   end
 
   def stamp_ap_id(record, _fragment), do: record
-
-  @doc """
-  Schedules an async federation task.
-  Delegates to `Baudrate.Federation.schedule_federation_task/1`.
-  """
-  def schedule_federation_task(fun) do
-    Baudrate.Federation.schedule_federation_task(fun)
-  end
 end

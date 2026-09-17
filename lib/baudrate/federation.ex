@@ -167,6 +167,8 @@ defmodule Baudrate.Federation do
   # --- User Follows (Outbound) ---
 
   defdelegate create_user_follow(user, remote_actor, opts \\ []), to: Follows
+  defdelegate follow_remote_actor(user, remote_actor, opts \\ []), to: Follows
+  defdelegate unfollow_remote_actor(user, remote_actor), to: Follows
   defdelegate accept_user_follow(follow_ap_id, signer \\ nil), to: Follows
   defdelegate reject_user_follow(follow_ap_id, signer \\ nil), to: Follows
   defdelegate delete_user_follow(user, remote_actor), to: Follows
@@ -182,6 +184,8 @@ defmodule Baudrate.Federation do
   # --- Board Follows ---
 
   defdelegate create_board_follow(board, remote_actor), to: Follows
+  defdelegate follow_remote_actor_as_board(board, remote_actor), to: Follows
+  defdelegate unfollow_remote_actor_as_board(board, remote_actor), to: Follows
   defdelegate accept_board_follow(follow_ap_id, signer \\ nil), to: Follows
   defdelegate reject_board_follow(follow_ap_id, signer \\ nil), to: Follows
   defdelegate delete_board_follow(board, remote_actor), to: Follows
@@ -348,31 +352,78 @@ defmodule Baudrate.Federation do
   """
   @spec rotate_keys(:user | :board | :site, term()) :: {:ok, term()} | {:error, term()}
   def rotate_keys(actor_type, entity) do
-    with {:ok, updated} <- do_rotate(actor_type, entity) do
-      Publisher.publish_key_rotation(actor_type, updated)
-      {:ok, updated}
-    end
+    federate(
+      fn -> do_rotate(actor_type, entity) end,
+      &Publisher.publish_key_rotation(actor_type, &1)
+    )
   end
 
   defp do_rotate(:user, user), do: KeyStore.rotate_user_keypair(user)
   defp do_rotate(:board, board), do: KeyStore.rotate_board_keypair(board)
   defp do_rotate(:site, _), do: KeyStore.rotate_site_keypair()
 
+  # --- Durable publishing ---
+
+  @doc """
+  Makes a change and enqueues the federation it causes in one transaction.
+
+  `change` returns `{:ok, result}` or `{:error, reason}`. On success, `publish`
+  is called with the result inside the same transaction, so the delivery jobs
+  it enqueues commit or roll back with the change. A restart can no longer fall
+  between saving something and queueing its activities (Phase 2C, ADR 0034),
+  and a publisher that raises rolls the change back instead of leaving it
+  silently unfederated.
+
+  Returns `{:ok, result}` or `{:error, reason}`, as `change` did.
+
+  Every publisher and `Delivery` enqueue must run this way (or as a step of
+  the change's own `Ecto.Multi`) — never inside `schedule_federation_task/1`.
+  `test/baudrate/federation/durable_delivery_test.exs` enforces it.
+  """
+  @spec federate((-> {:ok, term()} | {:error, term()}), (term() -> term())) ::
+          {:ok, term()} | {:error, term()}
+  def federate(change, publish) when is_function(change, 0) and is_function(publish, 1) do
+    Repo.transaction(fn ->
+      case change.() do
+        {:ok, result} ->
+          publish.(result)
+          result
+
+        {:error, reason} ->
+          Repo.rollback(reason)
+      end
+    end)
+  end
+
   # --- Task Scheduling ---
 
   @doc """
-  Schedules a federation task for async delivery.
+  Runs best-effort background work: fetching remote images, warming the media
+  cache, link previews.
 
-  In production, starts the task under `Baudrate.Federation.TaskSupervisor`.
-  In test (when `federation_async: false`), runs synchronously to avoid
-  sandbox ownership errors.
+  Never use it to publish an activity: a task still waiting when the node
+  stops is lost. Publishing goes through `federate/2`.
+
+  Controlled by `:federation_async`:
+
+    * `true` (production) — starts the task under
+      `Baudrate.Federation.TaskSupervisor`.
+    * `false` (tests) — runs it synchronously, avoiding sandbox ownership
+      errors.
+    * `:discard` — drops it, as a restart would. The durability test uses this
+      to prove nothing that must survive depends on a task.
   """
   def schedule_federation_task(fun) do
-    if Application.get_env(:baudrate, :federation_async, true) do
-      Task.Supervisor.start_child(Baudrate.Federation.TaskSupervisor, fun)
-    else
-      fun.()
-      :ok
+    case Application.get_env(:baudrate, :federation_async, true) do
+      false ->
+        fun.()
+        :ok
+
+      :discard ->
+        :ok
+
+      _ ->
+        Task.Supervisor.start_child(Baudrate.Federation.TaskSupervisor, fun)
     end
   end
 end

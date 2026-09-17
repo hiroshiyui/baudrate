@@ -83,9 +83,15 @@ config :baudrate, Baudrate.Federation,
   max_redirects: 3,
   delivery_max_attempts: 6,
   delivery_poll_interval: 60_000,
-  delivery_batch_size: 50,
   delivery_max_concurrency: 10,
   delivery_backoff_schedule: [60, 300, 1800, 7200, 43200, 86400],
+  # Per-domain circuit breaker (`Federation.DeliveryCircuits`): consecutive
+  # unreachable results that open a domain's circuit, and how long each
+  # successive opening lasts, in seconds.
+  delivery_circuit_threshold: 5,
+  delivery_circuit_schedule: [300, 1800, 7200, 21600, 43200, 86400],
+  # Waiting jobs older than this (seconds) are abandoned.
+  delivery_max_age: 604_800,
   # 24 hours in ms (Process.send_after)
   stale_actor_cleanup_interval: 86_400_000,
   # 30 days in seconds (matches actor_cache_ttl convention)

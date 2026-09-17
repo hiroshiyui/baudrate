@@ -15,6 +15,17 @@ defmodule Baudrate.Federation.DeliveryJobTest do
       assert changeset.valid?
     end
 
+    test "derives the domain from the inbox URL, downcased" do
+      changeset =
+        DeliveryJob.create_changeset(%{
+          activity_json: ~s({"type":"Create"}),
+          inbox_url: "https://Remote.Example:8443/users/a/inbox",
+          actor_uri: "https://local.example/ap/users/alice"
+        })
+
+      assert Ecto.Changeset.get_change(changeset, :domain) == "remote.example"
+    end
+
     test "missing activity_json is invalid" do
       changeset =
         DeliveryJob.create_changeset(%{

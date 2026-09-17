@@ -128,26 +128,6 @@ defmodule BaudrateWeb.ArticleHelpers do
   end
 
   @doc """
-  Schedules federation delivery of a poll vote for remote articles.
-
-  Only federated when the article has a `remote_actor_id` (i.e., the article
-  originated on a remote instance).
-  """
-  def schedule_federation_vote(user, article, poll, option_ids) do
-    if article.remote_actor_id do
-      poll = Content.preload_poll_options(poll)
-
-      voted_options =
-        poll.options
-        |> Enum.filter(&(&1.id in option_ids))
-
-      Content.schedule_federation_task(fn ->
-        Baudrate.Federation.Publisher.publish_vote(user, article, voted_options)
-      end)
-    end
-  end
-
-  @doc """
   Returns the percentage (0.0–100.0) of votes for an option.
 
   Returns `0` when `total` is zero to avoid division by zero.

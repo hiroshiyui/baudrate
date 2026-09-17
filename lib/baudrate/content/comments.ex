@@ -80,14 +80,27 @@ defmodule Baudrate.Content.Comments do
         Comment.changeset(%Comment{}, Map.put(attrs, "body_html", body_html))
       )
       |> Ecto.Multi.update(:comment_with_ap_id, &comment_ap_id_changeset(&1.comment))
+      # Images are attached before publishing, since the Note carries them.
+      |> Ecto.Multi.run(:images, fn _repo, %{comment_with_ap_id: comment} ->
+        if image_ids != [] and comment.user_id do
+          Baudrate.Content.Images.associate_comment_images(comment.id, image_ids, comment.user_id)
+        end
+
+        {:ok, :done}
+      end)
+      # The Create(Note) jobs commit with the comment (Phase 2C).
+      |> Ecto.Multi.run(:federation, fn _repo, %{comment_with_ap_id: comment} ->
+        if comment.user_id do
+          comment = Repo.preload(comment, [:user, :images])
+          article = Repo.get!(Article, comment.article_id) |> Repo.preload([:boards, :user])
+          Baudrate.Federation.Publisher.publish_comment_created(comment, article)
+        end
+
+        {:ok, :enqueued}
+      end)
       |> Repo.transaction()
 
     with {:ok, %{comment_with_ap_id: comment}} <- multi_result |> flatten_create_comment_result() do
-      # Associate uploaded images with the comment
-      if image_ids != [] and comment.user_id do
-        Baudrate.Content.Images.associate_comment_images(comment.id, image_ids, comment.user_id)
-      end
-
       touch_article_activity(comment.article_id)
 
       ContentPubSub.broadcast_to_article(comment.article_id, :comment_created, %{
@@ -96,12 +109,6 @@ defmodule Baudrate.Content.Comments do
 
       if comment.user_id do
         Baudrate.Notification.Hooks.notify_comment_created(comment)
-
-        schedule_federation_task(fn ->
-          comment = Repo.preload(comment, [:user, :images])
-          article = Repo.get!(Article, comment.article_id) |> Repo.preload([:boards, :user])
-          Baudrate.Federation.Publisher.publish_comment_created(comment, article)
-        end)
       end
 
       PreviewWorker.schedule_preview_fetch(:comment, comment.id, body_html, comment.user_id)
@@ -344,9 +351,21 @@ defmodule Baudrate.Content.Comments do
   @spec soft_delete_comment(%Comment{}) :: {:ok, %Comment{}} | {:error, Ecto.Changeset.t()}
   def soft_delete_comment(%Comment{} = comment, opts \\ []) do
     result =
-      comment
-      |> Comment.soft_delete_changeset(Keyword.get(opts, :deleted_by))
-      |> Repo.update()
+      Baudrate.Federation.federate(
+        fn ->
+          comment
+          |> Comment.soft_delete_changeset(Keyword.get(opts, :deleted_by))
+          |> Repo.update()
+        end,
+        fn deleted ->
+          # Only local comments (those with a user_id) publish their deletion.
+          if deleted.user_id do
+            deleted = Repo.preload(deleted, [:user])
+            article = Repo.get!(Article, deleted.article_id) |> Repo.preload([:boards, :user])
+            Baudrate.Federation.Publisher.publish_comment_deleted(deleted, article)
+          end
+        end
+      )
 
     with {:ok, deleted} <- result do
       recalculate_article_activity(deleted.article_id)
@@ -354,15 +373,6 @@ defmodule Baudrate.Content.Comments do
       ContentPubSub.broadcast_to_article(deleted.article_id, :comment_deleted, %{
         comment_id: deleted.id
       })
-
-      # Only publish deletion for local comments (those with a user_id)
-      if deleted.user_id do
-        schedule_federation_task(fn ->
-          deleted = Repo.preload(deleted, [:user])
-          article = Repo.get!(Article, deleted.article_id) |> Repo.preload([:boards, :user])
-          Baudrate.Federation.Publisher.publish_comment_deleted(deleted, article)
-        end)
-      end
 
       result
     end
@@ -509,6 +519,4 @@ defmodule Baudrate.Content.Comments do
     |> Enum.sort_by(& &1.username)
     |> Enum.take(limit)
   end
-
-  defp schedule_federation_task(fun), do: Baudrate.Federation.schedule_federation_task(fun)
 end

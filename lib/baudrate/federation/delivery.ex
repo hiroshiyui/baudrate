@@ -2,9 +2,9 @@ defmodule Baudrate.Federation.Delivery do
   @moduledoc """
   Outgoing activity delivery for ActivityPub federation.
 
-  Handles both immediate delivery (e.g., `Accept(Follow)`) and queued
-  delivery via `DeliveryJob` records. The queue provides retry with
-  exponential backoff for reliable delivery to remote inboxes.
+  Every outgoing activity, `Accept(Follow)` included, goes through the
+  `DeliveryJob` queue, which retries with exponential backoff and survives a
+  restart.
 
   ## Delivery Flow
 
@@ -16,9 +16,11 @@ defmodule Baudrate.Federation.Delivery do
      queued once per inbox; different activities from the same actor to the
      same inbox are all queued. (The index once omitted `activity_id`, which
      silently dropped every later activity while one was pending or retrying.)
-  4. `DeliveryWorker` polls and calls `deliver_one/1` for each job
+  4. `DeliveryWorker` is woken when the transaction commits, and calls
+     `deliver_one/1` for each job
   5. Job is signed with the actor's private key and POSTed to the inbox
-  6. On failure, job is rescheduled with exponential backoff
+  6. On failure, job is rescheduled with exponential backoff; the outcome is
+     also recorded against the inbox's domain (`DeliveryCircuits`)
   """
 
   require Logger
@@ -30,6 +32,7 @@ defmodule Baudrate.Federation.Delivery do
   alias Baudrate.Federation
 
   alias Baudrate.Federation.{
+    DeliveryCircuits,
     DeliveryJob,
     Follower,
     HTTPClient,
@@ -40,23 +43,18 @@ defmodule Baudrate.Federation.Delivery do
 
   @as_context "https://www.w3.org/ns/activitystreams"
 
-  # --- Immediate Delivery (Accept) ---
+  # --- Follow responses ---
 
   @doc """
-  Sends an Accept(Follow) activity to the remote actor's inbox.
+  Queues an `Accept(Follow)` to the remote actor's inbox.
 
-  Builds the JSON-LD, signs it with the local actor's private key,
-  and POSTs to `remote_actor.inbox`.
+  It used to be POSTed once from a background task, so a failed request, or a
+  restart before the task ran, left the remote side's follow pending for good.
+  Queued, it is retried like any other delivery and commits with the follower
+  row (Phase 2C). Signed with the local actor's key at delivery time.
   """
-  def send_accept(follow_activity, local_actor_uri, remote_actor) do
-    accept = build_accept(follow_activity, local_actor_uri)
-    body = Jason.encode!(accept)
-
-    with {:ok, private_key_pem} <- get_private_key(local_actor_uri),
-         key_id = "#{local_actor_uri}#main-key",
-         headers = HTTPSignature.sign(:post, remote_actor.inbox, body, private_key_pem, key_id) do
-      HTTPClient.post(remote_actor.inbox, body, Map.to_list(headers))
-    end
+  def enqueue_accept(follow_activity, local_actor_uri, remote_actor) do
+    enqueue(build_accept(follow_activity, local_actor_uri), local_actor_uri, [remote_actor.inbox])
   end
 
   defp build_accept(follow_activity, local_actor_uri) do
@@ -70,20 +68,14 @@ defmodule Baudrate.Federation.Delivery do
   end
 
   @doc """
-  Sends a Reject(Follow) activity to the remote actor's inbox.
+  Queues a `Reject(Follow)` to the remote actor's inbox.
 
-  Used when a Follow targets a non-federated board actor so the remote
-  actor learns the follow was declined rather than silently timing out.
+  Used when a Follow targets a non-federated board actor, or a user who has
+  blocked the actor, so the remote actor learns the follow was declined
+  rather than silently timing out.
   """
-  def send_reject(follow_activity, local_actor_uri, remote_actor) do
-    reject = build_reject(follow_activity, local_actor_uri)
-    body = Jason.encode!(reject)
-
-    with {:ok, private_key_pem} <- get_private_key(local_actor_uri),
-         key_id = "#{local_actor_uri}#main-key",
-         headers = HTTPSignature.sign(:post, remote_actor.inbox, body, private_key_pem, key_id) do
-      HTTPClient.post(remote_actor.inbox, body, Map.to_list(headers))
-    end
+  def enqueue_reject(follow_activity, local_actor_uri, remote_actor) do
+    enqueue(build_reject(follow_activity, local_actor_uri), local_actor_uri, [remote_actor.inbox])
   end
 
   defp build_reject(follow_activity, local_actor_uri) do
@@ -99,10 +91,17 @@ defmodule Baudrate.Federation.Delivery do
   # --- Queued Delivery ---
 
   @doc """
-  Creates `DeliveryJob` records for each unique inbox URL.
+  Creates `DeliveryJob` records for each unique inbox URL, in one statement.
 
   Deduplicates by inbox URL so that multiple followers on the same
   instance sharing an inbox only result in one delivery.
+
+  Call it inside the transaction that makes the change being federated: the
+  jobs then commit or roll back with it, and a restart can never fall between
+  the two (Phase 2C). It also sends a PostgreSQL notification on
+  `DeliveryWorker.channel/0`. PostgreSQL delivers a notification only when the
+  sending transaction commits, so the worker wakes exactly when the jobs
+  become visible, and a rolled-back change wakes nobody.
   """
   def enqueue(activity_json, actor_uri, inboxes) when is_list(inboxes) do
     activity_text =
@@ -111,22 +110,36 @@ defmodule Baudrate.Federation.Delivery do
         map when is_map(map) -> Jason.encode!(map)
       end
 
-    unique_inboxes = Enum.uniq(inboxes)
+    unique_inboxes = inboxes |> Enum.filter(&(is_binary(&1) and &1 != "")) |> Enum.uniq()
 
-    Enum.each(unique_inboxes, fn inbox_url ->
-      %DeliveryJob{}
-      |> DeliveryJob.create_changeset(%{
-        activity_json: activity_text,
-        inbox_url: inbox_url,
-        actor_uri: actor_uri
-      })
-      |> Repo.insert(
+    if unique_inboxes != [] do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      activity_id = DeliveryJob.activity_id_for(activity_text)
+
+      rows =
+        Enum.map(unique_inboxes, fn inbox_url ->
+          %{
+            activity_json: activity_text,
+            activity_id: activity_id,
+            inbox_url: inbox_url,
+            domain: DeliveryJob.domain_of(inbox_url),
+            actor_uri: actor_uri,
+            status: "pending",
+            attempts: 0,
+            inserted_at: now,
+            updated_at: now
+          }
+        end)
+
+      Repo.insert_all(DeliveryJob, rows,
         on_conflict: :nothing,
         conflict_target:
           {:unsafe_fragment,
            ~s|("inbox_url", "actor_uri", "activity_id") WHERE status IN ('pending', 'failed')|}
       )
-    end)
+
+      Repo.query!("SELECT pg_notify($1, '')", [Baudrate.Federation.DeliveryWorker.channel()])
+    end
 
     {:ok, length(unique_inboxes)}
   end
@@ -134,8 +147,10 @@ defmodule Baudrate.Federation.Delivery do
   @doc """
   Signs and POSTs a delivery job to its target inbox.
 
-  On success, marks the job as delivered. On failure, marks it as
-  failed with exponential backoff scheduling.
+  On success, marks the job as delivered. On failure, marks it as failed with
+  exponential backoff scheduling, or abandons it at once when the response
+  says a retry cannot help (`unsalvageable?/1`). Every HTTP outcome is also
+  recorded against the inbox's domain (`DeliveryCircuits`).
   """
   def deliver_one(%DeliveryJob{} = job) do
     start_time = System.monotonic_time()
@@ -164,7 +179,15 @@ defmodule Baudrate.Federation.Delivery do
       |> DeliveryJob.mark_abandoned("domain_blocked")
       |> Repo.update()
     else
-      case do_deliver(job) do
+      result = do_deliver(job)
+
+      DeliveryCircuits.record(
+        job.domain || DeliveryJob.domain_of(job.inbox_url),
+        DeliveryCircuits.outcome(result),
+        elem(result, 1)
+      )
+
+      case result do
         {:ok, _response} ->
           duration = System.monotonic_time() - start_time
           Logger.info("federation.delivery_ok: inbox=#{job.inbox_url}")
@@ -201,11 +224,82 @@ defmodule Baudrate.Federation.Delivery do
             Map.merge(metadata, %{status: :failed, error: error_msg})
           )
 
-          job
-          |> DeliveryJob.mark_failed(error_msg)
-          |> Repo.update()
+          if unsalvageable?(reason) do
+            job |> DeliveryJob.mark_abandoned(error_msg) |> Repo.update()
+          else
+            job |> DeliveryJob.mark_failed(error_msg) |> Repo.update()
+          end
       end
     end
+  end
+
+  @doc """
+  Records a delivery whose task was killed or crashed before `deliver_one/1`
+  could record it, so the job counts an attempt like any other failure.
+
+  Without this a killed task left its job untouched: a server slower than the
+  task deadline had the same job retried on every poll, forever, and it was
+  never abandoned.
+  """
+  @spec record_interrupted(integer(), :timeout | term()) :: :ok
+  def record_interrupted(job_id, reason) do
+    case Repo.get(DeliveryJob, job_id) do
+      %DeliveryJob{status: status} = job when status in ["pending", "failed"] ->
+        if reason == :timeout do
+          DeliveryCircuits.record(job.domain, :unreachable, :timeout)
+        end
+
+        job |> DeliveryJob.mark_failed(inspect(reason)) |> Repo.update()
+        :ok
+
+      _ ->
+        :ok
+    end
+  end
+
+  @doc """
+  Returns true when retrying a failed delivery cannot help: a 4xx response
+  other than 401 (the remote server may not have fetched our key yet), 408 and
+  429. Mastodon applies the same rule. Such a job is abandoned at once instead
+  of taking five more attempts over fifteen hours.
+  """
+  @spec unsalvageable?(term()) :: boolean()
+  def unsalvageable?({:http_error, status, _body})
+      when status in 400..499 and status not in [401, 408, 429],
+      do: true
+
+  def unsalvageable?(_reason), do: false
+
+  @doc """
+  Abandons waiting jobs older than `delivery_max_age` (default 7 days).
+
+  A job whose domain's circuit is open is held back without using up its
+  attempts, so this is what eventually ends it when the server never comes
+  back. Under ordinary retries a job is abandoned well before this age.
+  Returns the number of jobs abandoned.
+  """
+  @spec expire_held_jobs() :: non_neg_integer()
+  def expire_held_jobs do
+    max_age =
+      Application.get_env(:baudrate, Baudrate.Federation, [])
+      |> Keyword.get(:delivery_max_age, 604_800)
+
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+    cutoff = DateTime.add(now, -max_age, :second)
+
+    {count, _} =
+      from(j in DeliveryJob,
+        where: j.status in ["pending", "failed"] and j.inserted_at < ^cutoff
+      )
+      |> Repo.update_all(
+        set: [
+          status: "abandoned",
+          last_error: "expired: not delivered within the maximum age",
+          updated_at: now
+        ]
+      )
+
+    count
   end
 
   defp do_deliver(%DeliveryJob{} = job) do

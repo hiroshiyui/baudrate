@@ -139,6 +139,56 @@ defmodule Baudrate.Federation.Follows do
     |> Repo.insert()
   end
 
+  @doc """
+  Follows `remote_actor` as `user`: inserts the pending follow and queues the
+  `Follow` activity in one transaction, so a follow never waits for an
+  `Accept` that was never asked for (Phase 2C).
+
+  Takes the options of `create_user_follow/3`. Returns `{:ok, %UserFollow{}}`
+  or `{:error, reason}` as `create_user_follow/3` does.
+  """
+  @spec follow_remote_actor(Baudrate.Setup.User.t(), RemoteActor.t(), keyword()) ::
+          {:ok, UserFollow.t()} | {:error, term()}
+  def follow_remote_actor(user, %RemoteActor{} = remote_actor, opts \\ []) do
+    alias Baudrate.Federation.{Delivery, KeyStore, Publisher}
+
+    with {:ok, user} <- KeyStore.ensure_user_keypair(user) do
+      Baudrate.Federation.federate(
+        fn -> create_user_follow(user, remote_actor, opts) end,
+        fn follow ->
+          {activity, actor_uri} = Publisher.build_follow(user, remote_actor, follow.ap_id)
+          Delivery.deliver_follow(activity, remote_actor, actor_uri)
+        end
+      )
+    end
+  end
+
+  @doc """
+  Stops `user` following `remote_actor`: deletes the follow and queues
+  `Undo(Follow)` in one transaction.
+
+  Returns `{:ok, %UserFollow{}}` or `{:error, :not_found}`.
+  """
+  @spec unfollow_remote_actor(Baudrate.Setup.User.t(), RemoteActor.t()) ::
+          {:ok, UserFollow.t()} | {:error, term()}
+  def unfollow_remote_actor(user, %RemoteActor{} = remote_actor) do
+    alias Baudrate.Federation.{Delivery, KeyStore, Publisher}
+
+    with %UserFollow{} = follow <- get_user_follow_with_actor(user.id, remote_actor.id),
+         {:ok, user} <- KeyStore.ensure_user_keypair(user) do
+      Baudrate.Federation.federate(
+        fn -> Repo.delete(follow) end,
+        fn _deleted ->
+          {activity, actor_uri} = Publisher.build_undo_follow(user, follow)
+          Delivery.deliver_follow(activity, remote_actor, actor_uri)
+        end
+      )
+    else
+      nil -> {:error, :not_found}
+      {:error, _} = error -> error
+    end
+  end
+
   # Looks up a follow by its Follow activity ap_id. When `signer` (the remote
   # actor that sent the Accept/Reject) is given, the row must also belong to
   # that actor — follow ap_ids are minted locally and are not secret, so an
@@ -251,15 +301,19 @@ defmodule Baudrate.Federation.Follows do
         _ -> nil
       end
 
-    if outbound do
-      notify_remote(signer, remote_actor, &Publisher.build_undo_follow(&1, outbound))
-      Repo.delete(outbound)
-    end
+    # The deletions and their Undo/Reject jobs commit together (Phase 2C).
+    {:ok, _} =
+      Repo.transaction(fn ->
+        if outbound do
+          notify_remote(signer, remote_actor, &Publisher.build_undo_follow(&1, outbound))
+          Repo.delete(outbound, allow_stale: true)
+        end
 
-    if inbound do
-      notify_remote(signer, remote_actor, &Publisher.build_reject_follow(&1, inbound))
-      Repo.delete(inbound)
-    end
+        if inbound do
+          notify_remote(signer, remote_actor, &Publisher.build_reject_follow(&1, inbound))
+          Repo.delete(inbound, allow_stale: true)
+        end
+      end)
 
     :ok
   end
@@ -475,6 +529,54 @@ defmodule Baudrate.Federation.Follows do
           rejected_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
         |> Repo.update()
+    end
+  end
+
+  @doc """
+  Follows `remote_actor` as `board`: inserts the pending board follow and
+  queues the `Follow` activity in one transaction (Phase 2C).
+
+  Returns `{:ok, %BoardFollow{}}` or `{:error, reason}`.
+  """
+  @spec follow_remote_actor_as_board(Baudrate.Content.Board.t(), RemoteActor.t()) ::
+          {:ok, BoardFollow.t()} | {:error, term()}
+  def follow_remote_actor_as_board(board, %RemoteActor{} = remote_actor) do
+    alias Baudrate.Federation.{Delivery, KeyStore, Publisher}
+
+    with {:ok, board} <- KeyStore.ensure_board_keypair(board) do
+      Baudrate.Federation.federate(
+        fn -> create_board_follow(board, remote_actor) end,
+        fn follow ->
+          {activity, actor_uri} = Publisher.build_board_follow(board, remote_actor, follow.ap_id)
+          Delivery.deliver_follow(activity, remote_actor, actor_uri)
+        end
+      )
+    end
+  end
+
+  @doc """
+  Stops `board` following `remote_actor`: deletes the board follow and queues
+  `Undo(Follow)` in one transaction.
+
+  Returns `{:ok, %BoardFollow{}}` or `{:error, :not_found}`.
+  """
+  @spec unfollow_remote_actor_as_board(Baudrate.Content.Board.t(), RemoteActor.t()) ::
+          {:ok, BoardFollow.t()} | {:error, term()}
+  def unfollow_remote_actor_as_board(board, %RemoteActor{} = remote_actor) do
+    alias Baudrate.Federation.{Delivery, KeyStore, Publisher}
+
+    with %BoardFollow{} = follow <- get_board_follow_with_actor(board.id, remote_actor.id),
+         {:ok, board} <- KeyStore.ensure_board_keypair(board) do
+      Baudrate.Federation.federate(
+        fn -> Repo.delete(follow) end,
+        fn _deleted ->
+          {activity, actor_uri} = Publisher.build_board_undo_follow(board, follow)
+          Delivery.deliver_follow(activity, remote_actor, actor_uri)
+        end
+      )
+    else
+      nil -> {:error, :not_found}
+      {:error, _} = error -> error
     end
   end
 

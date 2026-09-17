@@ -606,8 +606,6 @@ defmodule BaudrateWeb.ArticleLive do
         {:ok, updated_poll} ->
           user_votes = Content.get_user_poll_votes(updated_poll.id, user.id)
 
-          schedule_federation_vote(user, socket.assigns.article, updated_poll, option_ids)
-
           {:noreply,
            socket
            |> assign(:poll, updated_poll)

@@ -147,14 +147,15 @@ defmodule Baudrate.Content.Boosts do
       true ->
         case Repo.get_by(ArticleBoost, user_id: user_id, article_id: article_id) do
           nil ->
-            case boost_article(user_id, article_id) do
+            # The activity's delivery jobs commit with the boost (Phase 2C).
+            case Baudrate.Federation.federate(
+                   fn -> boost_article(user_id, article_id) end,
+                   fn _ ->
+                     Baudrate.Federation.Publisher.publish_article_boosted(user_id, article)
+                   end
+                 ) do
               {:ok, boost} ->
                 Baudrate.Notification.Hooks.notify_local_article_boosted(article_id, user_id)
-
-                Interactions.schedule_federation_task(fn ->
-                  Baudrate.Federation.Publisher.publish_article_boosted(user_id, article)
-                end)
-
                 {:ok, boost}
 
               {:error, %Ecto.Changeset{} = cs} ->
@@ -168,15 +169,17 @@ defmodule Baudrate.Content.Boosts do
 
           boost ->
             boost_ap_id = boost.ap_id
-            unboost_article(user_id, article_id)
 
-            Interactions.schedule_federation_task(fn ->
-              Baudrate.Federation.Publisher.publish_article_unboosted(
-                user_id,
-                article,
-                boost_ap_id
-              )
-            end)
+            {:ok, _} =
+              Repo.transaction(fn ->
+                unboost_article(user_id, article_id)
+
+                Baudrate.Federation.Publisher.publish_article_unboosted(
+                  user_id,
+                  article,
+                  boost_ap_id
+                )
+              end)
 
             {:ok, :removed}
         end
@@ -342,14 +345,15 @@ defmodule Baudrate.Content.Boosts do
       true ->
         case Repo.get_by(CommentBoost, user_id: user_id, comment_id: comment_id) do
           nil ->
-            case boost_comment(user_id, comment_id) do
+            # The activity's delivery jobs commit with the boost (Phase 2C).
+            case Baudrate.Federation.federate(
+                   fn -> boost_comment(user_id, comment_id) end,
+                   fn _ ->
+                     Baudrate.Federation.Publisher.publish_comment_boosted(user_id, comment)
+                   end
+                 ) do
               {:ok, boost} ->
                 Baudrate.Notification.Hooks.notify_local_comment_boosted(comment_id, user_id)
-
-                Interactions.schedule_federation_task(fn ->
-                  Baudrate.Federation.Publisher.publish_comment_boosted(user_id, comment)
-                end)
-
                 {:ok, boost}
 
               {:error, %Ecto.Changeset{} = cs} ->
@@ -363,15 +367,17 @@ defmodule Baudrate.Content.Boosts do
 
           boost ->
             boost_ap_id = boost.ap_id
-            unboost_comment(user_id, comment_id)
 
-            Interactions.schedule_federation_task(fn ->
-              Baudrate.Federation.Publisher.publish_comment_unboosted(
-                user_id,
-                comment,
-                boost_ap_id
-              )
-            end)
+            {:ok, _} =
+              Repo.transaction(fn ->
+                unboost_comment(user_id, comment_id)
+
+                Baudrate.Federation.Publisher.publish_comment_unboosted(
+                  user_id,
+                  comment,
+                  boost_ap_id
+                )
+              end)
 
             {:ok, :removed}
         end

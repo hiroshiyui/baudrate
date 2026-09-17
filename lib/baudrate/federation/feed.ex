@@ -360,22 +360,20 @@ defmodule Baudrate.Federation.Feed do
       ap_id: ap_id
     }
 
-    case %FeedItemReply{} |> FeedItemReply.changeset(attrs) |> Repo.insert() do
-      {:ok, reply} ->
-        if image_ids != [] do
-          ReplyImages.associate_reply_images(reply.id, image_ids, user.id)
+    # The reply, its images and its Create(Note) jobs commit together
+    # (Phase 2C); the Note carries the images, so they are attached first.
+    Baudrate.Federation.federate(
+      fn ->
+        with {:ok, reply} <- %FeedItemReply{} |> FeedItemReply.changeset(attrs) |> Repo.insert() do
+          if image_ids != [] do
+            ReplyImages.associate_reply_images(reply.id, image_ids, user.id)
+          end
+
+          {:ok, reply}
         end
-
-        Baudrate.Federation.schedule_federation_task(fn ->
-          reply = Repo.preload(reply, :images)
-          Publisher.publish_feed_item_reply(reply, feed_item)
-        end)
-
-        {:ok, reply}
-
-      error ->
-        error
-    end
+      end,
+      &Publisher.publish_feed_item_reply(Repo.preload(&1, :images), feed_item)
+    )
   end
 
   @doc """
@@ -491,38 +489,33 @@ defmodule Baudrate.Federation.Feed do
       nil ->
         # A restricted account and a blocked author are the same shape here:
         # both can undo an earlier like, not add a new one (ADR 0029).
-        result =
-          with :ok <- Baudrate.Auth.ensure_can_interact(user),
-               :ok <- ensure_author_not_blocked(user, feed_item) do
-            %FeedItemLike{}
-            |> FeedItemLike.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
-            |> Repo.insert()
-          end
+        with :ok <- Baudrate.Auth.ensure_can_interact(user),
+             :ok <- ensure_author_not_blocked(user, feed_item) do
+          Baudrate.Federation.federate(
+            fn ->
+              with {:ok, like} <-
+                     %FeedItemLike{}
+                     |> FeedItemLike.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
+                     |> Repo.insert() do
+                ap_id =
+                  Baudrate.Federation.actor_uri(:user, user.username) <>
+                    "#feed-like-#{like.id}"
 
-        with {:ok, like} <- result do
-          ap_id =
-            Baudrate.Federation.actor_uri(:user, user.username) <>
-              "#feed-like-#{like.id}"
-
-          like =
-            like
-            |> Ecto.Changeset.change(ap_id: ap_id)
-            |> Repo.update!()
-
-          Baudrate.Federation.schedule_federation_task(fn ->
-            Publisher.publish_feed_item_liked(user, feed_item)
-          end)
-
-          {:ok, like}
+                {:ok, like |> Ecto.Changeset.change(ap_id: ap_id) |> Repo.update!()}
+              end
+            end,
+            fn _like -> Publisher.publish_feed_item_liked(user, feed_item) end
+          )
         end
 
       like ->
         like_ap_id = like.ap_id
-        Repo.delete!(like)
 
-        Baudrate.Federation.schedule_federation_task(fn ->
-          Publisher.publish_feed_item_unliked(user, feed_item, like_ap_id)
-        end)
+        {:ok, _} =
+          Repo.transaction(fn ->
+            Repo.delete!(like)
+            Publisher.publish_feed_item_unliked(user, feed_item, like_ap_id)
+          end)
 
         {:ok, :removed}
     end
@@ -535,38 +528,33 @@ defmodule Baudrate.Federation.Feed do
       nil ->
         # A restricted account and a blocked author are the same shape here:
         # both can undo an earlier boost, not add a new one (ADR 0029).
-        result =
-          with :ok <- Baudrate.Auth.ensure_can_interact(user),
-               :ok <- ensure_author_not_blocked(user, feed_item) do
-            %FeedItemBoost{}
-            |> FeedItemBoost.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
-            |> Repo.insert()
-          end
+        with :ok <- Baudrate.Auth.ensure_can_interact(user),
+             :ok <- ensure_author_not_blocked(user, feed_item) do
+          Baudrate.Federation.federate(
+            fn ->
+              with {:ok, boost} <-
+                     %FeedItemBoost{}
+                     |> FeedItemBoost.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
+                     |> Repo.insert() do
+                ap_id =
+                  Baudrate.Federation.actor_uri(:user, user.username) <>
+                    "#feed-announce-#{boost.id}"
 
-        with {:ok, boost} <- result do
-          ap_id =
-            Baudrate.Federation.actor_uri(:user, user.username) <>
-              "#feed-announce-#{boost.id}"
-
-          boost =
-            boost
-            |> Ecto.Changeset.change(ap_id: ap_id)
-            |> Repo.update!()
-
-          Baudrate.Federation.schedule_federation_task(fn ->
-            Publisher.publish_feed_item_boosted(user, feed_item)
-          end)
-
-          {:ok, boost}
+                {:ok, boost |> Ecto.Changeset.change(ap_id: ap_id) |> Repo.update!()}
+              end
+            end,
+            fn _boost -> Publisher.publish_feed_item_boosted(user, feed_item) end
+          )
         end
 
       boost ->
         boost_ap_id = boost.ap_id
-        Repo.delete!(boost)
 
-        Baudrate.Federation.schedule_federation_task(fn ->
-          Publisher.publish_feed_item_unboosted(user, feed_item, boost_ap_id)
-        end)
+        {:ok, _} =
+          Repo.transaction(fn ->
+            Repo.delete!(boost)
+            Publisher.publish_feed_item_unboosted(user, feed_item, boost_ap_id)
+          end)
 
         {:ok, :removed}
     end

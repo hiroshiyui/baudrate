@@ -406,8 +406,4 @@ defmodule Baudrate.Content do
 
     image_paths
   end
-
-  # --- Federation Hooks ---
-
-  defdelegate schedule_federation_task(fun), to: Baudrate.Federation
 end

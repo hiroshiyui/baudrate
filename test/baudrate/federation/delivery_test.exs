@@ -2,7 +2,7 @@ defmodule Baudrate.Federation.DeliveryTest do
   use Baudrate.DataCase, async: false
 
   alias Baudrate.Federation
-  alias Baudrate.Federation.{Delivery, DeliveryJob, KeyStore, RemoteActor}
+  alias Baudrate.Federation.{Delivery, DeliveryCircuit, DeliveryJob, KeyStore, RemoteActor}
 
   setup do
     Baudrate.Setup.seed_roles_and_permissions()
@@ -174,6 +174,157 @@ defmodule Baudrate.Federation.DeliveryTest do
 
       assert length(jobs) == 2
     end
+  end
+
+  describe "enqueue/3 storage" do
+    test "records each inbox's domain, downcased, for the circuit breaker" do
+      Delivery.enqueue(%{"type" => "Create", "id" => "https://local/x"}, "https://local/a", [
+        "https://Mixed.Example:8443/inbox",
+        "https://b.example/users/b/inbox"
+      ])
+
+      assert DeliveryJob |> select([j], j.domain) |> Repo.all() |> Enum.sort() ==
+               ["b.example", "mixed.example"]
+    end
+
+    test "ignores blank and missing inboxes" do
+      assert {:ok, 1} =
+               Delivery.enqueue(%{"type" => "Create"}, "https://local/a", [
+                 nil,
+                 "",
+                 "https://a.example/inbox"
+               ])
+
+      assert {:ok, 0} = Delivery.enqueue(%{"type" => "Create"}, "https://local/a", [nil])
+      assert Repo.aggregate(DeliveryJob, :count) == 1
+    end
+  end
+
+  describe "deliver_one/1 outcomes" do
+    setup do
+      user = create_user()
+      %{actor_uri: Federation.actor_uri(:user, user.username)}
+    end
+
+    test "a final 4xx response abandons the job at once", %{actor_uri: actor_uri} do
+      stub_status(404)
+      job = queued_job(actor_uri, "https://gone.example/inbox")
+
+      assert {:ok, %DeliveryJob{status: "abandoned", attempts: 1}} = Delivery.deliver_one(job)
+    end
+
+    test "401, 408 and 429 are retried", %{actor_uri: actor_uri} do
+      for status <- [401, 408, 429] do
+        stub_status(status)
+        job = queued_job(actor_uri, "https://retry-#{status}.example/inbox")
+
+        assert {:ok, %DeliveryJob{status: "failed", attempts: 1}} = Delivery.deliver_one(job),
+               "status #{status}"
+      end
+    end
+
+    test "5xx counts against the domain's circuit and a success clears it",
+         %{actor_uri: actor_uri} do
+      stub_status(503)
+      Delivery.deliver_one(queued_job(actor_uri, "https://wobbly.example/inbox"))
+
+      assert %DeliveryCircuit{failures: 1} = Repo.get(DeliveryCircuit, "wobbly.example")
+
+      stub_status(202)
+      Delivery.deliver_one(queued_job(actor_uri, "https://wobbly.example/inbox"))
+
+      refute Repo.get(DeliveryCircuit, "wobbly.example")
+    end
+
+    test "a 404 shows the server is up and does not count against it", %{actor_uri: actor_uri} do
+      stub_status(404)
+      Delivery.deliver_one(queued_job(actor_uri, "https://up.example/inbox"))
+
+      refute Repo.get(DeliveryCircuit, "up.example")
+    end
+  end
+
+  describe "record_interrupted/2" do
+    test "a timed-out delivery uses an attempt and counts against the domain" do
+      job = queued_job("https://local.example/ap/users/nobody", "https://hang.example/inbox")
+
+      assert :ok = Delivery.record_interrupted(job.id, :timeout)
+
+      assert %DeliveryJob{status: "failed", attempts: 1, last_error: ":timeout"} =
+               Repo.get!(DeliveryJob, job.id)
+
+      assert %DeliveryCircuit{failures: 1} = Repo.get(DeliveryCircuit, "hang.example")
+    end
+
+    test "a crash uses an attempt without blaming the domain" do
+      job = queued_job("https://local.example/ap/users/nobody", "https://fine.example/inbox")
+
+      assert :ok = Delivery.record_interrupted(job.id, {:crashed, :oops})
+
+      assert %DeliveryJob{status: "failed", attempts: 1} = Repo.get!(DeliveryJob, job.id)
+      refute Repo.get(DeliveryCircuit, "fine.example")
+    end
+
+    test "a job already finished is left alone" do
+      job = queued_job("https://local.example/ap/users/nobody", "https://done.example/inbox")
+      job |> DeliveryJob.mark_delivered() |> Repo.update!()
+
+      assert :ok = Delivery.record_interrupted(job.id, :timeout)
+      assert %DeliveryJob{status: "delivered", attempts: 1} = Repo.get!(DeliveryJob, job.id)
+    end
+  end
+
+  describe "expire_held_jobs/0" do
+    test "abandons waiting jobs older than the maximum age and nothing else" do
+      old = DateTime.utc_now() |> DateTime.add(-8, :day) |> DateTime.truncate(:second)
+      actor = "https://local.example/ap/users/nobody"
+
+      stale_pending = queued_job(actor, "https://a.example/inbox")
+      stale_failed = queued_job(actor, "https://b.example/inbox")
+      stale_delivered = queued_job(actor, "https://c.example/inbox")
+      fresh = queued_job(actor, "https://d.example/inbox")
+
+      Repo.update_all(from(j in DeliveryJob, where: j.id == ^stale_failed.id),
+        set: [status: "failed"]
+      )
+
+      Repo.update_all(from(j in DeliveryJob, where: j.id == ^stale_delivered.id),
+        set: [status: "delivered"]
+      )
+
+      Repo.update_all(
+        from(j in DeliveryJob,
+          where: j.id in ^[stale_pending.id, stale_failed.id, stale_delivered.id]
+        ),
+        set: [inserted_at: old]
+      )
+
+      assert Delivery.expire_held_jobs() == 2
+
+      assert %{status: "abandoned", last_error: "expired" <> _} =
+               Repo.get!(DeliveryJob, stale_pending.id)
+
+      assert %{status: "abandoned"} = Repo.get!(DeliveryJob, stale_failed.id)
+      assert %{status: "delivered"} = Repo.get!(DeliveryJob, stale_delivered.id)
+      assert %{status: "pending"} = Repo.get!(DeliveryJob, fresh.id)
+    end
+  end
+
+  defp queued_job(actor_uri, inbox_url) do
+    %DeliveryJob{}
+    |> DeliveryJob.create_changeset(%{
+      activity_json:
+        Jason.encode!(%{"id" => "#{actor_uri}#t-#{System.unique_integer([:positive])}"}),
+      inbox_url: inbox_url,
+      actor_uri: actor_uri
+    })
+    |> Repo.insert!()
+  end
+
+  defp stub_status(status) do
+    Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
+      Plug.Conn.send_resp(conn, status, "")
+    end)
   end
 
   describe "resolve_follower_inboxes/1" do
@@ -731,16 +882,8 @@ defmodule Baudrate.Federation.DeliveryTest do
     end
   end
 
-  describe "send_accept/3" do
-    setup do
-      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
-        Plug.Conn.send_resp(conn, 202, "Accepted")
-      end)
-
-      :ok
-    end
-
-    test "sends Accept(Follow) signed POST to remote actor inbox" do
+  describe "enqueue_accept/3 and enqueue_reject/3" do
+    test "queue the response to the remote actor's own inbox, embedding the Follow" do
       user = create_user()
       remote = create_remote_actor()
       actor_uri = Federation.actor_uri(:user, user.username)
@@ -752,52 +895,17 @@ defmodule Baudrate.Federation.DeliveryTest do
         "object" => actor_uri
       }
 
-      assert {:ok, _} = Delivery.send_accept(follow_activity, actor_uri, remote)
-    end
+      assert {:ok, 1} = Delivery.enqueue_accept(follow_activity, actor_uri, remote)
+      assert {:ok, 1} = Delivery.enqueue_reject(follow_activity, actor_uri, remote)
 
-    test "returns error when actor has no keypair" do
-      remote = create_remote_actor()
-      actor_uri = Federation.actor_uri(:user, "nonexistent_#{System.unique_integer([:positive])}")
+      jobs = Repo.all(from(j in DeliveryJob, order_by: j.id))
+      assert Enum.map(jobs, & &1.inbox_url) == [remote.inbox, remote.inbox]
+      assert Enum.all?(jobs, &(&1.actor_uri == actor_uri and &1.status == "pending"))
 
-      follow_activity = %{"type" => "Follow", "id" => "https://remote.example/f/1"}
-
-      assert {:error, :unknown_actor} = Delivery.send_accept(follow_activity, actor_uri, remote)
-    end
-  end
-
-  describe "send_reject/3" do
-    setup do
-      Req.Test.stub(Baudrate.Federation.HTTPClient, fn conn ->
-        Plug.Conn.send_resp(conn, 202, "Accepted")
-      end)
-
-      :ok
-    end
-
-    test "sends Reject(Follow) signed POST to remote actor inbox" do
-      user = create_user()
-      remote = create_remote_actor()
-      actor_uri = Federation.actor_uri(:user, user.username)
-
-      follow_activity = %{
-        "type" => "Follow",
-        "id" => "https://remote.example/activities/follow-#{System.unique_integer([:positive])}",
-        "actor" => remote.ap_id,
-        "object" => actor_uri
-      }
-
-      assert {:ok, _} = Delivery.send_reject(follow_activity, actor_uri, remote)
-    end
-
-    test "returns error when actor has no keypair" do
-      remote = create_remote_actor()
-
-      actor_uri =
-        Federation.actor_uri(:board, "nonexistent-#{System.unique_integer([:positive])}")
-
-      follow_activity = %{"type" => "Follow", "id" => "https://remote.example/f/1"}
-
-      assert {:error, :unknown_actor} = Delivery.send_reject(follow_activity, actor_uri, remote)
+      assert [
+               %{"type" => "Accept", "actor" => ^actor_uri, "object" => ^follow_activity},
+               %{"type" => "Reject", "actor" => ^actor_uri, "object" => ^follow_activity}
+             ] = Enum.map(jobs, &Jason.decode!(&1.activity_json))
     end
   end
 end

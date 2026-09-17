@@ -23,6 +23,9 @@ defmodule Baudrate.Federation.DeliveryJob do
     # failed jobs are unique per (inbox_url, actor_uri, activity_id).
     field :activity_id, :string
     field :inbox_url, :string
+    # The inbox's host, downcased: the key of the per-domain circuit breaker
+    # (`DeliveryCircuits`).
+    field :domain, :string
     field :actor_uri, :string
     field :status, :string, default: "pending"
     field :attempts, :integer, default: 0
@@ -40,28 +43,52 @@ defmodule Baudrate.Federation.DeliveryJob do
 
   `activity_id` is derived from `activity_json`: the activity's `id`, or an
   MD5 of the JSON when it has none. It is the dedup key alongside the inbox
-  and actor.
+  and actor. `domain` is derived from `inbox_url`.
   """
   def create_changeset(job \\ %__MODULE__{}, attrs) do
     job
     |> cast(attrs, @required_fields)
     |> validate_required(@required_fields)
     |> put_activity_id()
+    |> put_domain()
   end
 
+  @doc """
+  Returns the activity id used as the dedup key for `activity_json`: its `id`,
+  or an MD5 of the JSON when it has none.
+  """
+  @spec activity_id_for(String.t()) :: String.t()
+  def activity_id_for(json) when is_binary(json) do
+    case Jason.decode(json) do
+      {:ok, %{"id" => id}} when is_binary(id) and id != "" -> id
+      _ -> :crypto.hash(:md5, json) |> Base.encode16(case: :lower)
+    end
+  end
+
+  @doc """
+  Returns the downcased host of an inbox URL, or `nil` when it has none.
+  """
+  @spec domain_of(term()) :: String.t() | nil
+  def domain_of(url) when is_binary(url) do
+    case URI.parse(url) do
+      %URI{host: host} when is_binary(host) and host != "" -> String.downcase(host)
+      _ -> nil
+    end
+  end
+
+  def domain_of(_), do: nil
+
   defp put_activity_id(%Ecto.Changeset{valid?: true} = changeset) do
-    json = get_field(changeset, :activity_json)
-
-    id =
-      case Jason.decode(json) do
-        {:ok, %{"id" => id}} when is_binary(id) and id != "" -> id
-        _ -> :crypto.hash(:md5, json) |> Base.encode16(case: :lower)
-      end
-
-    put_change(changeset, :activity_id, id)
+    put_change(changeset, :activity_id, activity_id_for(get_field(changeset, :activity_json)))
   end
 
   defp put_activity_id(changeset), do: changeset
+
+  defp put_domain(%Ecto.Changeset{valid?: true} = changeset) do
+    put_change(changeset, :domain, domain_of(get_field(changeset, :inbox_url)))
+  end
+
+  defp put_domain(changeset), do: changeset
 
   @doc """
   Marks a job as successfully delivered.

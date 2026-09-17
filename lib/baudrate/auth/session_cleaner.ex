@@ -15,8 +15,10 @@ defmodule Baudrate.Auth.SessionCleaner do
       but never associated with a comment (older than 24 hours)
     * Orphan reply images — deletes images uploaded during feed reply composition
       but never associated with a reply (older than 24 hours)
-    * Delivery jobs — purges delivered jobs older than 7 days and abandoned
-      jobs older than 30 days
+    * Delivery jobs — abandons jobs still waiting after 7 days (held back by
+      an open circuit), purges delivered jobs older than 7 days and abandoned
+      jobs older than 30 days, and removes circuit breaker rows not updated
+      for 30 days
     * Media cache — evicts proxied remote images untouched for 30 days, then
       oldest-first until under the configured size ceiling
     * Data export requests — applies due `pending → ready → expired`
@@ -154,10 +156,22 @@ defmodule Baudrate.Auth.SessionCleaner do
   end
 
   defp cleanup_delivery_jobs do
+    expired = Baudrate.Federation.Delivery.expire_held_jobs()
+
+    if expired > 0 do
+      Logger.warning("session_cleaner.delivery_jobs_expired: count=#{expired}")
+    end
+
     count = Baudrate.Federation.Delivery.purge_completed_jobs()
 
     if count > 0 do
       Logger.info("session_cleaner.delivery_jobs_purged: count=#{count}")
+    end
+
+    circuits = Baudrate.Federation.DeliveryCircuits.purge_idle()
+
+    if circuits > 0 do
+      Logger.info("session_cleaner.delivery_circuits_purged: count=#{circuits}")
     end
   end
 

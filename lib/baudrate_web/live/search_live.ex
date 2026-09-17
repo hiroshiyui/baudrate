@@ -21,7 +21,6 @@ defmodule BaudrateWeb.SearchLive do
   alias Baudrate.Auth
   alias Baudrate.Content
   alias Baudrate.Federation
-  alias Baudrate.Federation.{Delivery, KeyStore, Publisher}
   alias BaudrateWeb.RateLimits
 
   import BaudrateWeb.Helpers,
@@ -173,11 +172,7 @@ defmodule BaudrateWeb.SearchLive do
              remote_actor when not is_nil(remote_actor) <-
                Federation.get_remote_actor(remote_actor_id),
              :ok <- RateLimits.check_outbound_follow(user.id),
-             {:ok, user} <- KeyStore.ensure_user_keypair(user),
-             {:ok, follow} <- Federation.create_user_follow(user, remote_actor) do
-          {activity, actor_uri} = Publisher.build_follow(user, remote_actor, follow.ap_id)
-          Delivery.deliver_follow(activity, remote_actor, actor_uri)
-
+             {:ok, _follow} <- Federation.follow_remote_actor(user, remote_actor) do
           {:noreply,
            socket
            |> assign(:follow_state, "pending")
@@ -214,13 +209,7 @@ defmodule BaudrateWeb.SearchLive do
         with {:ok, remote_actor_id} <- parse_id(id),
              remote_actor when not is_nil(remote_actor) <-
                Federation.get_remote_actor(remote_actor_id),
-             follow when not is_nil(follow) <-
-               Federation.get_user_follow_with_actor(user.id, remote_actor_id),
-             {:ok, user} <- KeyStore.ensure_user_keypair(user) do
-          {activity, actor_uri} = Publisher.build_undo_follow(user, follow)
-          Delivery.deliver_follow(activity, remote_actor, actor_uri)
-          Federation.delete_user_follow(user, remote_actor)
-
+             {:ok, _follow} <- Federation.unfollow_remote_actor(user, remote_actor) do
           {:noreply,
            socket
            |> assign(:follow_state, nil)

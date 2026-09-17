@@ -118,6 +118,9 @@ defmodule Baudrate.Content.Polls do
           |> Ecto.Multi.run(:recalc_counts, fn repo, _ ->
             do_recalc_poll_counts(repo, poll.id)
           end)
+          |> Ecto.Multi.run(:federation, fn repo, _ ->
+            federate_vote(repo, poll, user, option_ids)
+          end)
           |> Repo.transaction()
 
         case result do
@@ -125,6 +128,28 @@ defmodule Baudrate.Content.Polls do
           {:error, :lock_poll, :poll_closed, _} -> {:error, :poll_closed}
           {:error, _, reason, _} -> {:error, reason}
         end
+    end
+  end
+
+  # A vote on a remote article's poll is sent to its author, and its delivery
+  # job commits with the vote (Phase 2C). Votes on local polls are not
+  # federated one by one.
+  defp federate_vote(repo, poll, user, option_ids) do
+    case repo.get(Baudrate.Content.Article, poll.article_id) do
+      %{remote_actor_id: remote_actor_id} = article when not is_nil(remote_actor_id) ->
+        voted_options =
+          repo.all(
+            from(o in PollOption,
+              where: o.poll_id == ^poll.id and o.id in ^option_ids,
+              order_by: [asc: o.position]
+            )
+          )
+
+        Baudrate.Federation.Publisher.publish_vote(user, article, voted_options)
+        {:ok, :enqueued}
+
+      _ ->
+        {:ok, :local}
     end
   end
 

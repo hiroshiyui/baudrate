@@ -196,6 +196,16 @@ defmodule Baudrate.Content.Articles do
       end)
       |> Polls.maybe_insert_poll(poll_attrs)
       |> stamp_poll_ap_id_step(poll_attrs)
+      # The Create/Announce jobs commit with the article (Phase 2C).
+      |> Ecto.Multi.run(:federation, fn _repo, %{article_with_ap_id: article} ->
+        if article.user_id do
+          article
+          |> Repo.preload([:boards, :user])
+          |> Baudrate.Federation.Publisher.publish_article_created()
+        end
+
+        {:ok, :enqueued}
+      end)
       |> Repo.transaction()
 
     with {:ok, multi_result} <- result do
@@ -214,11 +224,6 @@ defmodule Baudrate.Content.Articles do
       if article.user_id do
         Baudrate.Notification.Hooks.notify_article_created(article)
       end
-
-      schedule_federation_task(fn ->
-        article = Repo.preload(article, [:boards, :user])
-        Baudrate.Federation.Publisher.publish_article_created(article)
-      end)
 
       body_html = Baudrate.Content.Markdown.to_html(article.body || "")
       PreviewWorker.schedule_preview_fetch(:article, article.id, body_html, article.user_id)
@@ -270,6 +275,13 @@ defmodule Baudrate.Content.Articles do
       Ecto.Multi.new()
       |> maybe_snapshot_revision(article, editor)
       |> Ecto.Multi.update(:article, Article.update_changeset(article, attrs))
+      |> Ecto.Multi.run(:federation, fn _repo, %{article: updated} ->
+        if updated.user_id do
+          Baudrate.Federation.Publisher.publish_article_updated(updated)
+        end
+
+        {:ok, :enqueued}
+      end)
       |> Repo.transaction()
 
     with {:ok, %{article: updated_article}} <- result do
@@ -285,13 +297,6 @@ defmodule Baudrate.Content.Articles do
       ContentPubSub.broadcast_to_article(updated_article.id, :article_updated, %{
         article_id: updated_article.id
       })
-
-      if updated_article.user_id do
-        schedule_federation_task(fn ->
-          updated_article = Repo.preload(updated_article, [:user])
-          Baudrate.Federation.Publisher.publish_article_updated(updated_article)
-        end)
-      end
 
       maybe_update_article_preview(article, updated_article)
 
@@ -373,20 +378,21 @@ defmodule Baudrate.Content.Articles do
         {:error, :cannot_post}
 
       true ->
-        case add_article_to_board(article, board.id) do
-          {:ok, _} ->
-            article = Repo.preload(article, :boards, force: true)
-
+        Baudrate.Federation.federate(
+          fn ->
+            with {:ok, _} <- add_article_to_board(article, board.id) do
+              {:ok, Repo.preload(article, :boards, force: true)}
+            end
+          end,
+          &Baudrate.Federation.Publisher.publish_article_forwarded(&1, board)
+        )
+        |> case do
+          {:ok, article} ->
             ContentPubSub.broadcast_to_board(board.id, :article_created, %{
               article_id: article.id
             })
 
             Baudrate.Notification.Hooks.notify_article_forwarded(article, user.id)
-
-            schedule_federation_task(fn ->
-              Baudrate.Federation.Publisher.publish_article_forwarded(article, board)
-            end)
-
             {:ok, article}
 
           {:error, _} = err ->
@@ -466,12 +472,11 @@ defmodule Baudrate.Content.Articles do
             visibility: feed_item.visibility || "public"
           }
 
-          case create_remote_article(attrs, [board.id], image_attachments: feed_item.attachments) do
+          case create_remote_article(attrs, [board.id],
+                 image_attachments: feed_item.attachments,
+                 publish: &Baudrate.Federation.Publisher.publish_article_forwarded(&1, board)
+               ) do
             {:ok, %{article: article}} ->
-              schedule_federation_task(fn ->
-                Baudrate.Federation.Publisher.publish_article_forwarded(article, board)
-              end)
-
               {:ok, article}
 
             {:error, :article, %Ecto.Changeset{} = changeset, _} ->
@@ -577,12 +582,10 @@ defmodule Baudrate.Content.Articles do
         visibility: comment.visibility || "public"
       }
 
-      case create_remote_article(attrs, [board.id]) do
+      case create_remote_article(attrs, [board.id],
+             publish: &Baudrate.Federation.Publisher.publish_article_forwarded(&1, board)
+           ) do
         {:ok, %{article: article}} ->
-          schedule_federation_task(fn ->
-            Baudrate.Federation.Publisher.publish_article_forwarded(article, board)
-          end)
-
           {:ok, article}
 
         {:error, :article, %Ecto.Changeset{} = changeset, _} ->
@@ -604,12 +607,11 @@ defmodule Baudrate.Content.Articles do
         visibility: if(comment.visibility == "public", do: "public", else: "unlisted")
       }
 
+      # `create_article/3` publishes the article's Create and the board's
+      # Announce itself. This used to publish them a second time as well,
+      # under new activity ids, so the board's followers received both twice.
       case Baudrate.Content.create_article(attrs, [board.id], forwarded_comment: true) do
         {:ok, %{article: article}} ->
-          schedule_federation_task(fn ->
-            Baudrate.Federation.Publisher.publish_article_forwarded(article, board)
-          end)
-
           {:ok, article}
 
         {:error, :article, %Ecto.Changeset{} = changeset, _} ->
@@ -663,10 +665,20 @@ defmodule Baudrate.Content.Articles do
 
   @doc """
   Creates a remote article and links it to the given board IDs in a transaction.
+
+  ## Options
+
+    * `:poll` — attributes of an attached poll
+    * `:image_attachments` — remote images to fetch after the insert
+    * `:publish` — a function called with the article inside the transaction,
+      for a local action that federates it (a member forwarding the item into
+      a board). Its delivery jobs commit with the article. Inbound activities
+      never pass one, which is what keeps boosts loop-safe.
   """
   def create_remote_article(attrs, board_ids, opts \\ []) when is_list(board_ids) do
     poll_attrs = Keyword.get(opts, :poll)
     image_attachments = Keyword.get(opts, :image_attachments, [])
+    publish = Keyword.get(opts, :publish)
 
     result =
       Ecto.Multi.new()
@@ -688,6 +700,7 @@ defmodule Baudrate.Content.Articles do
         end
       end)
       |> Polls.maybe_insert_poll(poll_attrs)
+      |> maybe_publish_step(publish)
       |> Repo.transaction()
 
     with {:ok, %{article: article}} <- result do
@@ -736,9 +749,19 @@ defmodule Baudrate.Content.Articles do
           {:ok, %Article{}} | {:error, Ecto.Changeset.t()}
   def soft_delete_article(%Article{} = article, opts \\ []) do
     result =
-      article
-      |> Article.soft_delete_changeset(Keyword.get(opts, :deleted_by))
-      |> Repo.update()
+      Baudrate.Federation.federate(
+        fn ->
+          article
+          |> Article.soft_delete_changeset(Keyword.get(opts, :deleted_by))
+          |> Repo.update()
+        end,
+        fn deleted ->
+          # Only local articles (those with a user_id) publish their deletion.
+          if deleted.user_id do
+            Baudrate.Federation.Publisher.publish_article_deleted(deleted)
+          end
+        end
+      )
 
     with {:ok, deleted_article} <- result do
       deleted_article = Repo.preload(deleted_article, :boards)
@@ -752,14 +775,6 @@ defmodule Baudrate.Content.Articles do
       ContentPubSub.broadcast_to_article(deleted_article.id, :article_deleted, %{
         article_id: deleted_article.id
       })
-
-      # Only publish deletion for local articles (those with a user_id)
-      if deleted_article.user_id do
-        schedule_federation_task(fn ->
-          deleted_article = Repo.preload(deleted_article, [:user])
-          Baudrate.Federation.Publisher.publish_article_deleted(deleted_article)
-        end)
-      end
 
       result
     end
@@ -948,5 +963,12 @@ defmodule Baudrate.Content.Articles do
 
   defp maybe_promote_stamped_poll(multi_result), do: multi_result
 
-  defp schedule_federation_task(fun), do: Baudrate.Federation.schedule_federation_task(fun)
+  defp maybe_publish_step(multi, nil), do: multi
+
+  defp maybe_publish_step(multi, publish) when is_function(publish, 1) do
+    Ecto.Multi.run(multi, :federation, fn _repo, %{article: article} ->
+      publish.(article)
+      {:ok, :enqueued}
+    end)
+  end
 end
