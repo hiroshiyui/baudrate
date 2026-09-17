@@ -125,6 +125,10 @@ lib/
 │   │   ├── poll_option.ex       # PollOption schema (poll choices with denormalized votes_count)
 │   │   ├── poll_vote.ex         # PollVote schema (local + remote votes, anonymous dedup)
 │   │   └── pubsub.ex            # PubSub helpers for real-time content updates
+│   ├── crypto/
+│   │   ├── keyring.ex           # Key material per class (:auth, :signing), subkeys, secret_key_base fallback (ADR 0038)
+│   │   ├── rekey.ex             # Resumable re-encryption to the current key, and the key census
+│   │   └── vault.ex             # AES-256-GCM with a self-describing header, bound to the owning row
 │   ├── sanitizer/
 │   │   └── native.ex            # Rustler NIF bindings to Ammonia HTML sanitizer
 │   ├── messaging.ex             # Messaging context: 1-on-1 DMs, conversations, DM access control
@@ -169,7 +173,7 @@ lib/
 │   │   ├── inbox_handler.ex     # Incoming activity dispatch (Follow, Create, Like, Flag, etc.)
 │   │   ├── instance_stats.ex    # Per-domain instance statistics
 │   │   ├── key_store.ex         # RSA-2048 keypair management for actors (generate, ensure, rotate)
-│   │   ├── key_vault.ex         # AES-256-GCM encryption for private keys at rest
+│   │   ├── key_vault.ex         # Actor private keys, encrypted with the :signing key
 │   │   ├── object_builder.ex    # ActivityStreams JSON builders for articles, comments, polls
 │   │   ├── object_resolver.ex   # Two-phase remote object resolution (fetch/resolve)
 │   │   ├── publisher.ex         # High-level activity publishing API
@@ -180,7 +184,7 @@ lib/
 │   │   ├── user_follow.ex       # UserFollow schema (outbound follows: remote actors + local users)
 │   │   ├── validator.ex         # AP input validation (URLs, sizes, attribution, allowlist/blocklist)
 │   │   └── visibility.ex        # ActivityPub visibility derivation from addressing
-│   ├── health.ex                # Detailed health report: queues, workers, disk, backups (ADR 0035)
+│   ├── health.ex                # Detailed health report: queues, workers, disk, backups, encryption keys (ADR 0035, ADR 0038)
 │   ├── health/
 │   │   └── heartbeat.ex         # ETS record of each worker's last completed run (monotonic ms)
 │   ├── logger/
@@ -196,7 +200,7 @@ lib/
 │   │   ├── pubsub.ex            # PubSub helpers for real-time notification updates
 │   │   ├── push_subscription.ex # PushSubscription schema (endpoint, p256dh, auth, user_id)
 │   │   ├── vapid.ex             # VAPID key generation (ECDSA P-256) + ES256 JWT signing
-│   │   ├── vapid_vault.ex       # AES-256-GCM encryption for VAPID private keys
+│   │   ├── vapid_vault.ex       # The VAPID private key, encrypted with the :signing key
 │   │   └── web_push.ex          # RFC 8291 content encryption + push delivery via Req
 │   ├── setup.ex                 # Setup context: first-run wizard, RBAC seeding, settings
 │   ├── timezone.ex              # IANA timezone identifiers (compiled from tz library data)
@@ -2196,7 +2200,10 @@ Baudrate.Supervisor (one_for_one)
 
 `Baudrate.Logger.JSONFormatter.install_if_configured/0` runs first in
 `Application.start/2`, so with `LOG_FORMAT=json` the rest of the boot is logged
-as JSON.
+as JSON. `Baudrate.Crypto.Keyring.warn_unseparated/0` runs immediately after
+it, logging `crypto.keys_not_separated` for each class still deriving its key
+from `SECRET_KEY_BASE` (ADR 0038) — the line an operator watches for going
+quiet after setting the keys.
 
 **Health.** `DeliveryWorker`, `InboundWorker`, `FeedWorker` and `SessionCleaner`
 call `Baudrate.Health.Heartbeat.beat/1` at the end of each completed run, and

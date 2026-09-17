@@ -1205,8 +1205,9 @@ seven (ADR 0028). Each backup is a folder,
   images, which are fetched again on demand. A file unchanged since the
   previous backup is hard-linked to its copy there, so each folder is complete
   while unchanged files are stored once.
-- `MANIFEST.json`: the version, time, dump size and SHA-256, file counts, and
-  the SHA-256 of the checksum list below.
+- `MANIFEST.json`: the version, time, dump size and SHA-256, file counts, the
+  ids of the encryption keys that were current, and the SHA-256 of the
+  checksum list below.
 - `CHECKSUMS.sha256`: every file in the backup, the dump included, in
   `sha256sum` format. Verify a backup anywhere with
   `cd <backup> && sha256sum -c CHECKSUMS.sha256`.

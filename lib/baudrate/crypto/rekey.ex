@@ -30,7 +30,7 @@ defmodule Baudrate.Crypto.Rekey do
   bookmark: the task resumes by being run again, and running it twice changes
   nothing.
 
-  Each write is conditional on the value the row still holding what was read
+  Each write is conditional on the row still holding the value that was read
   (`UPDATE … WHERE column = <old value>`). The documented way to run this is
   against the live node, where a member may enrol TOTP or an admin may rotate
   an actor key mid-run; that row now holds a newer secret under the current
