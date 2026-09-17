@@ -7,6 +7,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.26.0] — 2026-09-18
+
+Phase 2, stage 2E: a deploy installs a release that CI built, tested and
+attested, instead of compiling one on the server, and a bad deploy can be undone
+with one command. See
+[ADR 0036](doc/adr/0036-production-runs-releases-built-and-attested-in-ci.md).
+
+**Upgrading:** no migrations. This is the first release built by CI, and the
+first the Ansible deploy installs as a tarball:
+
+- **Wait for the tarball.** Publishing the GitHub release starts the Release
+  workflow, which attaches `baudrate-1.26.0-debian12-x86_64.tar.gz`. The deploy
+  fails until it has.
+- **On the control machine:** sign in the GitHub CLI (`gh auth login`) and fetch
+  the tag (`git fetch --tags`). The playbook's `git_repo` prompt is now
+  `release_repo` (`owner/name`).
+- **On the server:** the deploy generates the server's own Erlang cookie. A
+  manual install must set `RELEASE_COOKIE`, or the release refuses to start.
+  The node is now named `baudrate@127.0.0.1`, and `bin/baudrate remote` and
+  `rpc` need the environment file sourced (see the sysop guide).
+- **Releases before this one have no tarball**, so the deploy cannot install
+  them; a release still on the server can be rolled back to.
+
+### Security
+
+- **Another local account could run code inside Baudrate.** A release built
+  with `mix release` keeps its Erlang cookie in `releases/COOKIE`, readable by
+  every local user, and the node listened for Erlang distribution on all
+  interfaces. On a server that also runs other software under another account,
+  that account could connect to Baudrate's node and read its database
+  credentials and `SECRET_KEY_BASE`. The firewall kept this off the internet,
+  not off the host. Each server now has its own cookie, generated once and
+  readable only by the service account. The release refuses to start, or open
+  a console, with the cookie it ships with or with none, and distribution
+  listens on `127.0.0.1` only.
+- **Nothing is compiled on the production server any more.** Building there
+  ran every dependency's compile-time code and build scripts on the host that
+  holds the site's secrets, from a toolchain installed without checksums.
+- **The deploy verifies where a release came from.** On the control machine,
+  before anything reaches the server, `gh attestation verify` requires that the
+  tarball was built by this repository's Release workflow, on a GitHub-hosted
+  runner, from the tag's commit as it is in the operator's own clone. A tarball
+  from another workflow or commit, or for a tag moved on GitHub, is refused.
+  The server then checks the file's SHA-256.
+- The data export's statement timeout is passed as a query parameter instead of
+  being interpolated into SQL, and remote actor documents with a missing field
+  are refused with literal error atoms instead of atoms built from the field
+  name. Neither was reachable from request input.
+
+### Added
+
+- **Releases built in CI.** Publishing a GitHub release builds the release in
+  a project image running Debian 12, like production. It then starts the
+  release the way production does and checks the cookie guard, migrations,
+  `/health`, the detailed report, `rpc`, and that nothing but the web port
+  listens beyond loopback. Only then does a separate job, which runs no
+  third-party code, attest the tarball and attach it with its Sigstore bundle.
+  The same build and smoke test run on every push.
+- **A rollback playbook.** `rollback-baudrate.yml` switches back to a release
+  still on the server (the previous one, or `rollback_to=<tag>`), restarts,
+  and waits for `/health`. It refuses when the database has migrations that
+  release does not contain, since rolling back code does not roll back the
+  schema, unless `force=true`. `--check` reports the target and the verdict
+  without changing anything.
+- **Security checks in CI.** Sobelow fails the build on any finding; each
+  reviewed false positive is marked where it occurs. mix_audit checks
+  `mix.lock` against an advisory list built into the CI image, fetching nothing
+  at run time.
+- **[ADR 0036](doc/adr/0036-production-runs-releases-built-and-attested-in-ci.md)**,
+  sysop guide sections on release artifacts, the Erlang cookie and remote
+  console, and rolling back a deploy, and troubleshooting entries for each.
+
+### Changed
+
+- **CI runs on Debian 12**, production's release, in two images built from one
+  Dockerfile: one builds releases, the other runs the tests. A release carries
+  its own Erlang runtime and NIFs, linked against the system that built it, so
+  it must be built on the system it runs on. The PostgreSQL 15 client now comes
+  from Debian itself.
+- **The deploy refuses a host** that is not Debian 12 on x86-64.
+- The build toolchains stay installed on servers that have them: deploys no
+  longer use them, and the Ansible README explains what can be removed by hand.
+
 ## [1.25.0] — 2026-09-17
 
 Phase 2, stage 2D: an operator can find out that something is wrong before the
