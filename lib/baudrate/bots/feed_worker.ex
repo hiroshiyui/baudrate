@@ -36,6 +36,7 @@ defmodule Baudrate.Bots.FeedWorker do
 
   def handle_info(:poll, state) do
     process_due_bots()
+    Baudrate.Health.Heartbeat.beat(:feed_worker)
     schedule_poll()
     {:noreply, state}
   end

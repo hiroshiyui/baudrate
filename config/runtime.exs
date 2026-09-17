@@ -23,6 +23,30 @@ end
 if config_env() != :test do
   config :baudrate, BaudrateWeb.Endpoint,
     http: [port: String.to_integer(System.get_env("PORT", "4000"))]
+
+  # Detailed health report on 127.0.0.1 (`BaudrateWeb.HealthDetail`). Unset:
+  # no listener. The address is not configurable, only the port.
+  case System.get_env("HEALTH_DETAIL_PORT") do
+    blank when blank in [nil, ""] ->
+      :ok
+
+    port ->
+      config :baudrate, BaudrateWeb.HealthDetail, port: String.to_integer(port)
+  end
+
+  # Where nightly backups are written, for the health report's backup check.
+  # Unset: that check is skipped.
+  case System.get_env("BAUDRATE_BACKUP_DIR") do
+    blank when blank in [nil, ""] -> :ok
+    dir -> config :baudrate, Baudrate.Health, backup_dir: dir
+  end
+
+  # `LOG_FORMAT=json` writes one JSON object per log line
+  # (`Baudrate.Logger.JSONFormatter`); anything else keeps the text format.
+  case System.get_env("LOG_FORMAT") do
+    "json" -> config :baudrate, :log_format, :json
+    _ -> :ok
+  end
 end
 
 if config_env() == :prod do

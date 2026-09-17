@@ -7,37 +7,46 @@ defmodule Baudrate.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      BaudrateWeb.Telemetry,
-      Baudrate.Repo,
-      # Baudrate runs on one node (ADR 0033): the ETS caches, nonces,
-      # challenges and rate limits below are complete on their own, and every
-      # worker runs exactly once. There is deliberately no cluster discovery.
-      {Phoenix.PubSub, name: Baudrate.PubSub},
-      Baudrate.Auth.SessionCleaner,
-      Baudrate.Auth.WebAuthnChallenges,
-      Baudrate.DataPortability.DownloadNonces,
-      Baudrate.Setup.SettingsCache,
-      # Logs a banner when the setup wizard is locked by a missing
-      # INSTALLATION_KEY. Logging only — never raises, so a database blip
-      # cannot turn a warning into a failed boot.
-      Supervisor.child_spec(
-        {Task, &Baudrate.Setup.InstallationKey.log_boot_status/0},
-        id: :installation_key_check,
-        restart: :temporary
-      ),
-      Baudrate.Content.BoardCache,
-      Baudrate.Media.NegativeCache,
-      {BaudrateWeb.RateLimit, [clean_period: :timer.minutes(5)]},
-      {Task.Supervisor, name: Baudrate.Federation.TaskSupervisor},
-      Baudrate.Federation.DomainBlockCache,
-      Baudrate.Federation.DeliveryWorker,
-      Baudrate.Federation.InboundWorker,
-      Baudrate.Federation.StaleActorCleaner,
-      Baudrate.Bots.FeedWorker,
-      # Start to serve requests, typically the last entry
-      BaudrateWeb.Endpoint
-    ]
+    # First, so the rest of the boot is logged in the configured format.
+    Baudrate.Logger.JSONFormatter.install_if_configured()
+
+    children =
+      [
+        BaudrateWeb.Telemetry,
+        Baudrate.Repo,
+        # Baudrate runs on one node (ADR 0033): the ETS caches, nonces,
+        # challenges and rate limits below are complete on their own, and every
+        # worker runs exactly once. There is deliberately no cluster discovery.
+        {Phoenix.PubSub, name: Baudrate.PubSub},
+        # Before the workers that beat into it.
+        Baudrate.Health.Heartbeat,
+        Baudrate.Auth.SessionCleaner,
+        Baudrate.Auth.WebAuthnChallenges,
+        Baudrate.DataPortability.DownloadNonces,
+        Baudrate.Setup.SettingsCache,
+        # Logs a banner when the setup wizard is locked by a missing
+        # INSTALLATION_KEY. Logging only — never raises, so a database blip
+        # cannot turn a warning into a failed boot.
+        Supervisor.child_spec(
+          {Task, &Baudrate.Setup.InstallationKey.log_boot_status/0},
+          id: :installation_key_check,
+          restart: :temporary
+        ),
+        Baudrate.Content.BoardCache,
+        Baudrate.Media.NegativeCache,
+        {BaudrateWeb.RateLimit, [clean_period: :timer.minutes(5)]},
+        {Task.Supervisor, name: Baudrate.Federation.TaskSupervisor},
+        Baudrate.Federation.DomainBlockCache,
+        Baudrate.Federation.DeliveryWorker,
+        Baudrate.Federation.InboundWorker,
+        Baudrate.Federation.StaleActorCleaner,
+        Baudrate.Bots.FeedWorker,
+        # The detailed health report on 127.0.0.1, when HEALTH_DETAIL_PORT is set.
+        BaudrateWeb.HealthDetail.child_spec(),
+        # Start to serve requests, typically the last entry
+        BaudrateWeb.Endpoint
+      ]
+      |> Enum.reject(&is_nil/1)
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

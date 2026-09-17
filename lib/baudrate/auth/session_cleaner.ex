@@ -79,9 +79,14 @@ defmodule Baudrate.Auth.SessionCleaner do
     ]
     |> Enum.each(fn {name, step} -> run_step(name, step) end)
 
+    Baudrate.Health.Heartbeat.beat(:session_cleaner)
     schedule_cleanup()
     {:noreply, state}
   end
+
+  @doc "How often the cleanup runs, in milliseconds."
+  @spec interval_ms() :: pos_integer()
+  def interval_ms, do: @interval
 
   @doc false
   # Runs one cleanup step, logging instead of crashing when it raises or exits.

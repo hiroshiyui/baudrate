@@ -88,8 +88,9 @@ defmodule Baudrate.Federation.DeliveryWorker do
   end
 
   def handle_info(:poll, state) do
-    state = schedule_poll(state)
-    {:noreply, fill(state)}
+    state = state |> schedule_poll() |> fill()
+    Baudrate.Health.Heartbeat.beat(:delivery_worker)
+    {:noreply, state}
   end
 
   def handle_info({ref, _result}, %{running: running} = state)
