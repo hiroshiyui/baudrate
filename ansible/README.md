@@ -122,7 +122,7 @@ root.
 | Source | Clone repo and checkout the prompted release tag |
 | Build | Wipe `_build/prod` if the tag's `.tool-versions` differs from the last build → `mix deps.get` → `mix compile` → `mix assets.deploy` → clean stale rel → `mix release` |
 | Install | Copy release to `releases/<timestamp>/`, symlink shared uploads |
-| Env file | Template `baudrate.env` with `DATABASE_URL`, `SECRET_KEY_BASE`, etc. |
+| Env file | Template `baudrate.env` with `DATABASE_URL`, `SECRET_KEY_BASE`, `HEALTH_DETAIL_PORT` (`health_detail_port`, default 4001), `BAUDRATE_BACKUP_DIR`, and `LOG_FORMAT` when `log_format` is set |
 | Systemd | Install and enable `baudrate.service` |
 | Pre-deploy dump | Dump the database with the new release into `/var/backups/baudrate/predeploy/`, keeping `backup_keep_predeploy` (3); a failure stops the deploy |
 | Migrate | Run `bin/migrate` from the new release |

@@ -11,6 +11,9 @@ postgres_db_user: baudrate
 
 # Networking
 app_port: 4000
+# Detailed health report (BaudrateWeb.HealthDetail), bound to 127.0.0.1 only.
+# The firewall and nginx never expose it; poll it from the host.
+health_detail_port: 4001
 ssh_port: 22
 
 # Deployment paths (used in nginx templates)
