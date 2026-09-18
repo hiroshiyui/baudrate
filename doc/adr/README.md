@@ -16,7 +16,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | # | Decision | Status |
 |---|---|---|
 | [0000](0000-use-architecture-decision-records.md) | Use Architecture Decision Records | Accepted |
-| [0001](0001-elixir-phoenix-liveview-platform.md) | Elixir / Phoenix / LiveView on Bandit as the application platform | Accepted |
+| [0001](0001-elixir-phoenix-liveview-platform.md) | Elixir / Phoenix / LiveView on Bandit as the application platform | Accepted; `FeedWorker` renamed by [0041](0041-rss-and-atom-are-syndication.md) |
 | [0002](0002-context-facades.md) | Context facades over focused sub-modules | Accepted |
 | [0003](0003-activitypub-federation.md) | Federate over ActivityPub, mapping boards to Group actors | Accepted |
 | [0004](0004-federation-gate-for-non-public-boards.md) | A single federation gate for every inbound interaction | Accepted; the outbound half is [0043](0043-the-outbound-federation-gate-and-withdrawals.md) |
@@ -48,14 +48,14 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0030](0030-domain-blocks-are-rows-and-hiding-is-reversible.md) | Domain blocks are rows, and blocking hides content instead of deleting it | Accepted |
 | [0031](0031-terms-acceptance-is-recorded-and-versioned.md) | Terms acceptance is recorded and versioned, and the pause runs through the interaction gate | Accepted |
 | [0032](0032-rules-are-records-and-retired-not-deleted.md) | Site rules are records, retired rather than deleted, and a report may cite one | Accepted |
-| [0033](0033-baudrate-runs-on-one-node.md) | Baudrate runs on one node | Accepted |
+| [0033](0033-baudrate-runs-on-one-node.md) | Baudrate runs on one node | Accepted; `FeedWorker` renamed by [0041](0041-rss-and-atom-are-syndication.md) |
 | [0034](0034-federation-work-is-committed-before-it-is-acknowledged.md) | Federation work is committed before it is acknowledged | Accepted |
 | [0035](0035-operational-visibility-stays-on-the-host.md) | Operational visibility stays on the host | Accepted, except decision 5 ("Baudrate does not notify"), amended by [0044](0044-the-instance-tells-its-admins-when-it-is-unwell.md) |
 | [0036](0036-production-runs-releases-built-and-attested-in-ci.md) | Production runs releases built and attested in CI | Accepted; decision 3 superseded by [0037](0037-the-deploy-builds-on-the-server-again.md) |
 | [0037](0037-the-deploy-builds-on-the-server-again.md) | The deploy builds on the server again | Accepted |
 | [0038](0038-encryption-keys-are-separate-and-rotatable.md) | Encryption keys are separate, and rotatable | Accepted |
 | [0039](0039-the-personal-stream-is-a-timeline.md) | The personal stream is a timeline, not a feed | Accepted, except the RSS carve-out, superseded by [0041](0041-rss-and-atom-are-syndication.md) |
-| [0040](0040-retention-deletes-what-nobody-touched.md) | Retention deletes what nobody touched | Accepted |
+| [0040](0040-retention-deletes-what-nobody-touched.md) | Retention deletes what nobody touched | Accepted; `bot_feed_items` renamed by [0041](0041-rss-and-atom-are-syndication.md) |
 | [0041](0041-rss-and-atom-are-syndication.md) | RSS and Atom are syndication, not feeds | Accepted |
 | [0042](0042-roles-are-ordered-and-capabilities-are-not-configurable.md) | Roles are ordered, and capabilities are not configurable | Accepted |
 | [0043](0043-the-outbound-federation-gate-and-withdrawals.md) | The outbound federation gate, and the withdrawals it must not touch | Accepted |

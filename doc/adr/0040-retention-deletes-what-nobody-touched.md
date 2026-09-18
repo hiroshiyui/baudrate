@@ -1,6 +1,6 @@
 # 0040 — Retention deletes what nobody touched
 
-- **Status:** Accepted
+- **Status:** Accepted; the names in this record predate [0041](0041-rss-and-atom-are-syndication.md), which renamed `bot_feed_items` to `bot_syndication_items`
 - **Date:** 2026-09-18
 - **Deciders:** Baudrate maintainers
 - **Related:** completes Phase 2F and the periods set by P2-D4; depends on the

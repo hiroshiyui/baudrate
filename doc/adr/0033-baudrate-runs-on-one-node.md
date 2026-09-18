@@ -1,6 +1,6 @@
 # 0033 — Baudrate runs on one node
 
-- **Status:** Accepted
+- **Status:** Accepted; the names in this record predate [0041](0041-rss-and-atom-are-syndication.md), which renamed `FeedWorker` to `SyndicationFeedWorker`
 - **Date:** 2026-09-17
 - **Deciders:** Baudrate maintainers
 - **Related:** implements D2 (made 2026-09-14) from the product review;

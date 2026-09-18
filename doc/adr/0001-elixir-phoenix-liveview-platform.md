@@ -1,6 +1,6 @@
 # 0001 — Elixir / Phoenix / LiveView on Bandit as the application platform
 
-- **Status:** Accepted
+- **Status:** Accepted; the names in this record predate [0041](0041-rss-and-atom-are-syndication.md), which renamed `FeedWorker` to `SyndicationFeedWorker`
 - **Date:** Project inception (recorded retroactively 2026-08-09)
 
 ## Context
