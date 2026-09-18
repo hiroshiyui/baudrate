@@ -18,9 +18,17 @@ defmodule Baudrate.Content.Feed do
   lives in `Baudrate.Federation.Timeline`. This module only ever meant "recent
   content on this site", and nothing here touches either of those.
 
-  The name is the last unresolved one, deliberately: no single word covers
-  listings *and* statistics, which is a hint that this is two modules. ADR 0041
-  records it as an open question rather than answering it in passing.
+  **The name stays, and that is a decision rather than an omission.** ADR 0041
+  left it open; the answer is no change. Once the RSS senses became
+  syndication, this became the only `Feed` in `lib/` — the WAI-ARIA
+  `role="feed"` and the `/feeds/*` URLs are the only others anywhere — so it no
+  longer collides with anything, and a rename would buy nothing. The candidates
+  were all worse: a verb (`Provide`) would be the only one among these sibling
+  modules and says nothing a module name should say, `Listings` overclaims
+  because search and tag pages live elsewhere, and no single noun covers
+  listings *and* statistics. That last point is the real observation — this is
+  arguably two modules — but splitting it is a cohesion change, not a naming
+  one, and nothing here is misleading once the paragraph above is read.
   """
 
   import Ecto.Query
