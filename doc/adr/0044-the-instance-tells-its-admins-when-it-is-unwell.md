@@ -23,9 +23,16 @@ for a monitor the operator has to build and maintain separately.
 
 Decision 5 of 0035 recorded that as deliberate, on three grounds: the instance
 had no email (D3), no push channel, and no stored notification credentials.
-Two of those stopped being true in Phase 2G, which shipped Web Push with a
-VAPID key of its own. The third was never an obstacle for this particular
-audience: the people who need to hear it already have accounts here.
+
+**The second of those was not true when it was written.** Web Push — service
+worker, `PushManagerHook`, subscription controller, VAPID signing — shipped on
+2026-02-27, seven months before 0035 was accepted, and `create_notification/1`
+has been delivering through it ever since; Phase 2G only moved its key into the
+keyring. So the premise that made "do not ship a notifier" look obligatory was
+mistaken, and nobody noticed because nothing had a reason to look. The third
+ground never applied to this audience either: the people who need to hear it
+already have accounts here. Only the first, no email, still holds — and it is
+irrelevant to admins of the instance itself.
 
 So the gap was not really "we have no way to tell anyone". It was that the
 only thing standing between a silently dead backup and a person was a piece of
@@ -48,8 +55,9 @@ instance no longer has are each as urgent and were each as silent. The alert
 names which checks are failing.
 
 **3. Admins, in-app, and by Web Push for those who subscribed.** No new
-channel, no new credential, no third party beyond the push endpoint Phase 2G
-already uses, and nothing to configure — it works on a fresh install.
+channel, no new credential, no third party beyond the push endpoint every
+other notification already uses, and nothing to configure — it works on a
+fresh install.
 Moderators are not told: a moderator cannot fix a full disk, and an alert sent
 to people who cannot act on it is how alerts get ignored. This keeps P2-D2
 (no error reporting service) and D3 (no email) intact.

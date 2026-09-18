@@ -9,8 +9,9 @@ defmodule Baudrate.Health.Alerts do
   non-zero, and both wait for a monitor the operator has to build. ADR 0035
   recorded that as a deliberate gap ("Baudrate does not notify") on the grounds
   that the instance had no email (D3), no push channel and no stored
-  credentials. Two of those three stopped being true when Web Push shipped in
-  Phase 2G, and the third never applied to the instance's own admins.
+  credentials. The middle one was already untrue when it was written — Web Push
+  shipped in February 2026 and every notification has gone through it since —
+  and the third never applied to the instance's own admins.
 
   So this runs hourly from `Baudrate.Auth.SessionCleaner` and notifies every
   admin — in-app, and by Web Push for admins who subscribed, since
