@@ -19,8 +19,11 @@ defmodule BaudrateWeb.PageController do
   asking. The query string carries over, because the pager puts `?page` here.
   """
   def feed_redirect(conn, params) do
-    query = Map.drop(params, ~w(controller action)) |> URI.encode_query()
-    target = if query == "", do: ~p"/timeline", else: ~p"/timeline?#{query}"
+    # `~p` encodes what it interpolates, so hand it the params themselves: a
+    # string pre-encoded with `URI.encode_query/1` comes back escaped again as
+    # one opaque value, turning `?page=3` into `?page%3D3`.
+    params = Map.drop(params, ~w(controller action))
+    target = if params == %{}, do: ~p"/timeline", else: ~p"/timeline?#{params}"
 
     conn
     |> put_status(:moved_permanently)

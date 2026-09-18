@@ -34,7 +34,7 @@ defmodule Baudrate.Federation.Timeline do
   alias Baudrate.Federation.PubSub, as: FederationPubSub
 
   @state_accepted "accepted"
-  @feed_per_page 20
+  @timeline_per_page 20
 
   @doc """
   Creates a timeline item and broadcasts to all local followers of the source actor.
@@ -75,7 +75,7 @@ defmodule Baudrate.Federation.Timeline do
   """
   def list_timeline_items(user, opts \\ []) do
     page = max(Keyword.get(opts, :page, 1), 1)
-    per_page = Keyword.get(opts, :per_page, @feed_per_page)
+    per_page = Keyword.get(opts, :per_page, @timeline_per_page)
     offset = (page - 1) * per_page
 
     {hidden_user_ids, hidden_ap_ids} = Auth.hidden_ids(user)
@@ -107,11 +107,12 @@ defmodule Baudrate.Federation.Timeline do
         remote_query
       end
 
-    # A followed user's articles are only feed-visible when the follower could
+    # A followed user's articles are only timeline-visible when the follower
     # open them on the board: board-less (remote import) articles are public;
     # otherwise one of the article's boards must be at or below the
     # follower's role. Without this, following an admin surfaced titles,
-    # digests and images from admin-only boards in the follower's feed.
+    # could open them; digests and images from admin-only boards otherwise
+    # surfaced in the follower's timeline.
     allowed_roles = Filters.allowed_view_roles(user)
 
     local_query =
@@ -346,9 +347,10 @@ defmodule Baudrate.Federation.Timeline do
   end
 
   defp do_create_timeline_item_reply(timeline_item, user, body, opts) do
-    # Replies written before the rename keep their `#feed-reply-` fragment: an
-    # `ap_id` is immutable once published, and remote servers hold it. Nothing
-    # parses the fragment, so the two forms coexist harmlessly.
+    # Likes, boosts and replies written before the rename keep their
+    # `#feed-*` fragments: an `ap_id` is immutable once published, and remote
+    # servers hold it. Undo reads the stored value rather than rebuilding it
+    # (see `toggle_timeline_item_like/2`), so the two forms coexist harmlessly.
     ap_id =
       "#{Baudrate.Federation.actor_uri(:user, user.username)}#timeline-reply-#{Ecto.UUID.generate()}"
 
@@ -506,7 +508,7 @@ defmodule Baudrate.Federation.Timeline do
                      |> Repo.insert() do
                 ap_id =
                   Baudrate.Federation.actor_uri(:user, user.username) <>
-                    "#feed-like-#{like.id}"
+                    "#timeline-like-#{like.id}"
 
                 {:ok, like |> Ecto.Changeset.change(ap_id: ap_id) |> Repo.update!()}
               end
@@ -548,7 +550,7 @@ defmodule Baudrate.Federation.Timeline do
                      |> Repo.insert() do
                 ap_id =
                   Baudrate.Federation.actor_uri(:user, user.username) <>
-                    "#feed-announce-#{boost.id}"
+                    "#timeline-announce-#{boost.id}"
 
                 {:ok, boost |> Ecto.Changeset.change(ap_id: ap_id) |> Repo.update!()}
               end
@@ -571,7 +573,7 @@ defmodule Baudrate.Federation.Timeline do
   end
 
   @doc """
-  Returns true if `timeline_item` is reachable from `user`'s feed.
+  Returns true if `timeline_item` is reachable from `user`'s timeline.
 
   Mirrors the membership conditions of `list_timeline_items/2` exactly: the item
   must not be soft-deleted, and the user must have an `accepted` follow on

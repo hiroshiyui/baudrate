@@ -1,6 +1,6 @@
 defmodule BaudrateWeb.TimelineLive do
   @moduledoc """
-  LiveView for the personal feed page.
+  LiveView for the personal timeline page.
 
   Displays incoming posts from remote actors the user follows, local articles
   from followed users, and comments (both local and from remote actors) on

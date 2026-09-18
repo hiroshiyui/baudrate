@@ -918,7 +918,7 @@ defmodule Baudrate.Federation.Publisher do
 
     activity = %{
       "@context" => @ap_context,
-      "id" => "#{actor_uri}#feed-like-#{Ecto.UUID.generate()}",
+      "id" => "#{actor_uri}#timeline-like-#{Ecto.UUID.generate()}",
       "type" => "Like",
       "actor" => actor_uri,
       "object" => timeline_item.ap_id,
@@ -938,7 +938,7 @@ defmodule Baudrate.Federation.Publisher do
 
     activity = %{
       "@context" => @ap_context,
-      "id" => "#{actor_uri}#undo-feed-like-#{Ecto.UUID.generate()}",
+      "id" => "#{actor_uri}#undo-timeline-like-#{Ecto.UUID.generate()}",
       "type" => "Undo",
       "actor" => actor_uri,
       "object" => %{
@@ -963,7 +963,7 @@ defmodule Baudrate.Federation.Publisher do
 
     activity = %{
       "@context" => @ap_context,
-      "id" => "#{actor_uri}#feed-announce-#{Ecto.UUID.generate()}",
+      "id" => "#{actor_uri}#timeline-announce-#{Ecto.UUID.generate()}",
       "type" => "Announce",
       "actor" => actor_uri,
       "object" => timeline_item.ap_id,
@@ -984,7 +984,7 @@ defmodule Baudrate.Federation.Publisher do
 
     activity = %{
       "@context" => @ap_context,
-      "id" => "#{actor_uri}#undo-feed-announce-#{Ecto.UUID.generate()}",
+      "id" => "#{actor_uri}#undo-timeline-announce-#{Ecto.UUID.generate()}",
       "type" => "Undo",
       "actor" => actor_uri,
       "object" => %{

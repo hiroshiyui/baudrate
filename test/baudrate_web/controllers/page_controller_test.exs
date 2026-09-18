@@ -18,4 +18,33 @@ defmodule BaudrateWeb.PageControllerTest do
     conn = conn |> log_in_user(user) |> get(~p"/")
     assert html_response(conn, 200) =~ "Welcome"
   end
+
+  # The personal stream moved to /timeline (ADR 0039) and members bookmark it,
+  # so the old path has to keep working — including the pager's `?page`, which
+  # is the link most likely to have been saved.
+  describe "GET /feed" do
+    setup do
+      Baudrate.Repo.insert!(%Baudrate.Setup.Setting{key: "setup_completed", value: "true"})
+      :ok
+    end
+
+    test "redirects permanently to /timeline", %{conn: conn} do
+      conn = get(conn, "/feed")
+
+      assert conn.status == 301
+      assert redirected_to(conn, 301) == "/timeline"
+    end
+
+    test "carries the query string over", %{conn: conn} do
+      conn = get(conn, "/feed?page=3")
+
+      assert redirected_to(conn, 301) == "/timeline?page=3"
+    end
+
+    test "redirects a guest too, rather than 404ing before the login check", %{conn: conn} do
+      conn = get(conn, "/feed")
+
+      assert redirected_to(conn, 301) == "/timeline"
+    end
+  end
 end

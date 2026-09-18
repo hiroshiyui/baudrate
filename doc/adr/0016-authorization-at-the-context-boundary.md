@@ -1,6 +1,6 @@
 # 0016 — Enforce authorization at the context boundary, not in LiveViews
 
-- **Status:** Accepted
+- **Status:** Accepted; the `feed_items` tables and `feed_item_*` functions named below were renamed to `timeline_*` by [0039](0039-the-personal-stream-is-a-timeline.md)
 - **Date:** Recorded retroactively 2026-08-09
 
 ## Context

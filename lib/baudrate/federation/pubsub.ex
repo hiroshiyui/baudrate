@@ -1,6 +1,6 @@
 defmodule Baudrate.Federation.PubSub do
   @moduledoc """
-  Centralized PubSub helpers for real-time federation feed updates.
+  Centralized PubSub helpers for real-time federation timeline updates.
 
   ## Topics
 

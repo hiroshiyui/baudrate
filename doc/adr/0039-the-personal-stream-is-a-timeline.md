@@ -60,12 +60,16 @@ Postgrex error instead of returning a changeset error. The rename walks
 
 - **`role="feed"`** in the template. That is the WAI-ARIA role for a stream of
   articles and means something to a screen reader that our vocabulary does not.
-- **`ap_id` fragments already published.** Replies written before this keep
-  `#feed-reply-…`; an `ap_id` is immutable once a remote server holds it.
-  Nothing parses the fragment, so both forms coexist.
-- **ADRs 0015, 0016 and 0025**, which name `feed_items`. Accepted records are
-  not rewritten ([0000](0000-use-architecture-decision-records.md)); this one
-  is the pointer that explains the old names.
+- **`ap_id` fragments already published.** Likes, boosts and replies written
+  before this keep their `#feed-like-…`, `#feed-announce-…` and
+  `#feed-reply-…`; an `ap_id` is immutable once a remote server holds it. New
+  activities use `#timeline-…`, and undo reads the stored value rather than
+  rebuilding the fragment, so both forms coexist.
+- **ADRs 0015, 0016 and 0025**, whose bodies name `feed_items` and
+  `feed_item_accessible?/2`. Accepted records are not rewritten
+  ([0000](0000-use-architecture-decision-records.md)), so only their Status
+  lines gained a pointer here — a reader meeting a function that no longer
+  exists should not have to guess whether it was renamed or removed.
 
 ## Consequences
 
@@ -91,8 +95,9 @@ Postgrex error instead of returning a changeset error. The rename walks
 
 ## Acceptance gate
 
-The suite, unchanged in count: the rename touched 65 files and 4,292 tests
-still pass. `test/baudrate/federation/timeline_item_test.exs`,
+The suite: the rename touched 65 files and the 4,292 existing tests still
+pass, plus three for the `/feed` redirect — which caught `~p` double-encoding
+a pre-encoded query string, so a bookmarked `?page=3` arrived as `?page%3D3`. `test/baudrate/federation/timeline_item_test.exs`,
 `timeline_item_context_test.exs` and `timeline_item_reply_test.exs` carry the
 schema behaviour; `test/baudrate_web/live/timeline_live_test.exs` covers the
 page and its pager.

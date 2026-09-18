@@ -30,8 +30,8 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0012](0012-rate-limiting-behaviour-and-failure-modes.md) | Hammer/ETS rate limiting behind a behaviour, with explicit failure modes | Accepted |
 | [0013](0013-database-backed-delivery-queue.md) | A database-backed delivery queue instead of a job framework | Accepted |
 | [0014](0014-ets-caches-for-settings-and-boards.md) | ETS caches for settings, boards and domain blocks | Accepted |
-| [0015](0015-soft-deletion.md) | Soft deletion via `deleted_at` | Accepted |
-| [0016](0016-authorization-at-the-context-boundary.md) | Enforce authorization at the context boundary, not in LiveViews | Accepted |
+| [0015](0015-soft-deletion.md) | Soft deletion via `deleted_at` | Accepted; tables renamed by [0039](0039-the-personal-stream-is-a-timeline.md) |
+| [0016](0016-authorization-at-the-context-boundary.md) | Enforce authorization at the context boundary, not in LiveViews | Accepted; tables renamed by [0039](0039-the-personal-stream-is-a-timeline.md) |
 | [0017](0017-tailwind-daisyui-esbuild-asset-pipeline.md) | Tailwind + DaisyUI + esbuild, with no Node.js in the build | Accepted |
 | [0018](0018-semantic-ids-and-classes-for-accessibility.md) | Every meaningful element carries a semantic `id` / `class` | Accepted |
 | [0019](0019-gettext-i18n-no-bare-strings.md) | All user-visible text goes through Gettext | Accepted |
@@ -40,7 +40,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0022](0022-step-up-reauthentication-for-second-factor-changes.md) | Changing an account's second factors requires step-up re-authentication | Accepted |
 | [0023](0023-data-export-threat-model.md) | Self-service data export is designed against data leakage first | Accepted |
 | [0024](0024-totp-codes-are-single-use-with-a-one-period-grace-window.md) | TOTP codes are single-use, with a one-period grace window | Accepted |
-| [0025](0025-account-migration.md) | Account migration (ActivityPub Move) is gated, delayed and reversible | Accepted |
+| [0025](0025-account-migration.md) | Account migration (ActivityPub Move) is gated, delayed and reversible | Accepted; tables renamed by [0039](0039-the-personal-stream-is-a-timeline.md) |
 | [0026](0026-blocks-stop-interaction-locally.md) | A block stops interaction in both directions, enforced on this site only | Accepted |
 | [0027](0027-ci-runs-in-a-pinned-attested-image.md) | CI runs in a digest-pinned, attested image built from verified inputs | Accepted; amended by [0036](0036-production-runs-releases-built-and-attested-in-ci.md) |
 | [0028](0028-backups-are-complete-folders-with-count-based-retention.md) | Backups are complete folders with count-based retention, pulled off-host | Accepted; amended by [0038](0038-encryption-keys-are-separate-and-rotatable.md) |

@@ -1,6 +1,6 @@
 # 0025 — Account migration (ActivityPub Move) is gated, delayed and reversible
 
-- **Status:** Accepted
+- **Status:** Accepted; the `feed_items` tables and `feed_item_*` functions named below were renamed to `timeline_*` by [0039](0039-the-personal-stream-is-a-timeline.md)
 - **Date:** 2026-09-14
 - **Deciders:** Baudrate maintainers
 - **Related:** builds on [0022](0022-step-up-reauthentication-for-second-factor-changes.md) (step-up re-authentication), [0023](0023-data-export-threat-model.md) (data export: cooling-off, eligibility), [0024](0024-totp-codes-are-single-use-with-a-one-period-grace-window.md) (TOTP)
