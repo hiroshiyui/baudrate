@@ -36,6 +36,7 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
   - Cross-post deduplication for articles arriving via multiple board inboxes
   - Mastodon compatibility: `attributedTo` arrays, `sensitive`/`summary` content warnings, `to`/`cc` addressing, `<span>` tag preservation, article summary and hashtag tags
   - Lemmy compatibility: `Page` object type, `Announce` with embedded objects, `!board@host` WebFinger
+- **Personal timeline** -- follow remote accounts and local users from `/following`, and read their posts at `/timeline`, merged with local articles from people you follow and with comments on threads you took part in; reply, like, boost, or forward an item to a board. Non-public posts stay out: a boost of a followers-only post is never shown, and a direct message never appears
 - **Link previews** -- server-side Open Graph / Twitter Card metadata fetching with image proxy for articles, comments, and DMs
 - **User public profiles** -- public profile pages with stats, recent articles, and clickable author names
 - **Avatar system** -- upload, crop, WebP conversion with server-side security
@@ -43,6 +44,7 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
 - **Admin dashboard** -- site settings, registration mode, pending user approval, federation dashboard, moderation queue, moderation log, invite code management
 - **Rate limiting** on login, TOTP, registration, avatar uploads, and federation endpoints
 - **Security hardened** -- HSTS, CSP, signed + encrypted cookies, and secrets encrypted at rest under per-class keys that can be rotated without locking anyone out
+- **Retention** -- hourly purges destroy a deleted article or comment, its revisions and its image files 90 days after deletion, untouched timeline items after 90 days, and remote boost records after 180 days; anything a moderation report points at is kept at any age
 - **Notifications** -- real-time in-app notifications for replies, mentions, follows, likes, boosts, and moderator actions
 - **Direct messages** -- 1-on-1 conversations with read cursors, mute controls, and federated delivery
 - **Search** -- full-text search across articles and comments with CJK support and search operators
