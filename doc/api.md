@@ -127,7 +127,7 @@ GET /.well-known/webfinger?resource=acct:alice@example.com
 | Status | Condition |
 |--------|-----------|
 | 400 | Missing `resource` parameter or invalid format |
-| 404 | User/board not found, or board is private (`min_role_to_view != "guest"`) |
+| 404 | User/board not found, or the board is not federated — private (`min_role_to_view != "guest"`) **or** `ap_enabled == false` |
 
 **Board WebFinger example:**
 
@@ -202,7 +202,7 @@ GET /nodeinfo/2.1
   "version": "2.1",
   "software": {
     "name": "baudrate",
-    "version": "1.28.0",
+    "version": "1.28.1",
     "repository": "https://github.com/hiroshiyui/baudrate"
   },
   "protocols": ["activitypub"],
@@ -653,6 +653,7 @@ Items are remote actor URIs (strings) and local user actor URIs.
 
 ```
 GET /ap/boards/:slug/following
+GET /ap/boards/:slug/following?page=1
 ```
 
 **Auth:** HTTP Signature required if authorized fetch is enabled
@@ -660,10 +661,11 @@ GET /ap/boards/:slug/following
 **Access control:** Returns 404 if board is private or AP disabled.
 
 Returns an `OrderedCollection` root whose `totalItems` counts the remote actors
-the board follows (accepted board follows — this is how remote content is routed
-into a board). Unlike the other collections this endpoint **ignores `?page`** and
-always answers the root document, so its `first` link does not lead to a page of
-items.
+the board follows — accepted board follows only, which is how remote content is
+routed into a board — and `?page=N` returns an `OrderedCollectionPage` of their
+actor URIs, 20 per page, newest follow first. Paginated like every other
+collection. It is **not** empty: a board following remote actors is the
+mechanism, not an edge case.
 
 ---
 
@@ -735,8 +737,15 @@ GET /ap/search?q=elixir&page=1
 **Auth:** HTTP Signature required if authorized fetch is enabled
 **Rate limit:** 120 req/min per IP
 
-Full-text search across articles in public boards. Returns a paginated
-`OrderedCollection` of Article objects.
+Full-text search across articles in **federated** boards — `min_role_to_view
+== "guest"` *and* `ap_enabled == true`, the same gate
+`GET /ap/articles/:slug` applies. Returns a paginated `OrderedCollection` of
+Article objects.
+
+**Access control:** an article in a guest-readable board whose federation is
+switched off is absent from these results, as it is from every other AP
+surface ([ADR 0043](adr/0043-the-outbound-federation-gate-and-withdrawals.md)).
+The site's own search is unaffected by `ap_enabled`.
 
 **Query parameters:**
 

@@ -30,13 +30,13 @@ defmodule BaudrateWeb.ActivityPubController do
   ### Collections (paginated with `?page=N`, 20 items/page)
     * `GET /ap/users/:username/outbox` — user outbox (Create activities)
     * `GET /ap/users/:username/followers` — user followers
-    * `GET /ap/users/:username/following` — user following (always empty)
+    * `GET /ap/users/:username/following` — remote actors the user follows
     * `GET /ap/boards/:slug/outbox` — board outbox (Announce activities, public only)
     * `GET /ap/boards/:slug/followers` — board followers (public only)
-    * `GET /ap/boards/:slug/following` — board following (always empty)
+    * `GET /ap/boards/:slug/following` — remote actors the board follows, which is how remote content reaches it
     * `GET /ap/boards` — index of public AP-enabled boards
     * `GET /ap/articles/:slug/replies` — article comments as Note objects
-    * `GET /ap/search?q=...` — full-text article search
+    * `GET /ap/search?q=...` — full-text search over articles in federated boards
 
   ### Objects (content-negotiated)
     * `GET /ap/articles/:slug` — Article object (requires public board)
