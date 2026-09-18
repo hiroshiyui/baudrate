@@ -136,6 +136,15 @@ instance, recorded so a later reader can tell a decision from an oversight.
   - `feed_items` nobody has bookmarked or interacted with, after 90 days;
   - `announces`, after 180 days;
   - soft-deleted articles and comments, once past the 90-day evidence window (P1-D6).
+- **Never purge `bot_feed_items`, and never purge articles a bot created.**
+  `feed_items` is the personal fediverse feed — `Create` and `Announce` from
+  followed remote actors, whose originals still live on their own servers.
+  RSS and Atom entries are not in it: `Bots.FeedWorker` turns a feed entry into
+  an ordinary **article** in the bot's boards, which is permanent board
+  content. The similarly named `bot_feed_items` holds no content at all, only
+  the `(bot_id, guid)` ledger of what a bot has already posted; delete a row
+  and that bot re-posts the entry as a new article, so a retention job that
+  matched on the name would flood every board with its own back catalogue.
 - [ ] Postgres guidance in `doc/sysop.md`: autovacuum for the tables the purges churn. (`shared_buffers`, `effective_cache_size` and pool sizing for a single host are in the Scaling section, from 2B.)
 
 ### Decisions (made 2026-09-17)
