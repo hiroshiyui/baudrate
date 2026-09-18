@@ -16,8 +16,8 @@ The review found Baudrate already strong on security engineering, ADRs,
 accessibility plumbing and test coverage, and named five gaps: broken promises
 (the UI or docs saying something happens when it does not), moderation reach,
 operability, federation reach, and discovery and onboarding. The first three
-are closed or nearly so — Phase 0 in v1.18.2, Phase 1 in v1.21.0, Phase 2 bar
-one stage. Phases 3–8 carry the rest.
+are closed — Phase 0 in v1.18.2, Phase 1 in v1.21.0, Phase 2 bar one 2A item
+that needs a notifier. Phases 3–8 carry the rest.
 
 ---
 
@@ -224,7 +224,7 @@ backfills the grants, not just a check.
 ### 3E — Content warnings and media (M)
 
 - [ ] **Inbound:** store `summary` and `sensitive` in their own fields on articles, comments and timeline items, and render the content collapsed behind its warning. Today they are merged into the body (`core/federation/inbox_handler.ex:1219`).
-- [ ] **Outbound:** an optional content warning in the local composer (articles, comments, feed replies), sent as `summary` and `sensitive`.
+- [ ] **Outbound:** an optional content warning in the local composer (articles, comments, timeline replies), sent as `summary` and `sensitive`.
 - [ ] **Video and audio attachments** render as a link card to the original, never embedded, following the no-third-party rule. They are dropped today.
 
 ### 3F — Protocol hygiene (S)
@@ -491,8 +491,8 @@ backfills the grants, not just a check.
 ### 8D — Performance (M)
 
 - [ ] **Outbox and collection pages:** batch the per-item preloads and counts (about 160 queries per page today; `core/federation/collections.ex:49,218`).
-- [ ] **Large lists:** keyset pagination for the outbox and feeds, where `core/pagination.ex:88-93` runs a full count every page.
-- [ ] **LiveView streams** for the feed, board, notification and conversation lists.
+- [ ] **Large lists:** keyset pagination for the outbox and the long listings, where `core/pagination.ex:88-93` runs a full count every page.
+- [ ] **LiveView streams** for the timeline, board, notification and conversation lists.
 - [ ] **Cropper.js** loads only on the avatar editor.
 
 ---
