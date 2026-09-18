@@ -216,7 +216,17 @@ defmodule Baudrate.Federation.Collections do
     page = parse_page(page_params) || 1
     search_uri = "#{base_url()}/ap/search"
 
-    result = Content.search_articles(query, page: page, per_page: @items_per_page, user: nil)
+    # `federated_only: true` is the outbound board gate: this collection is
+    # unauthenticated and each item is a full Article object addressed
+    # `as:Public`, so `ap_enabled` is required as well as guest-readability —
+    # the same predicate `publicly_servable?/1` applies to a permalink.
+    result =
+      Content.search_articles(query,
+        page: page,
+        per_page: @items_per_page,
+        user: nil,
+        federated_only: true
+      )
 
     items = Enum.map(result.articles, &ObjectBuilder.article_object/1)
     has_next = page < result.total_pages

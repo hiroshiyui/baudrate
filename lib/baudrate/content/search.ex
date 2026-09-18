@@ -97,12 +97,34 @@ defmodule Baudrate.Content.Search do
     * `:page` — page number (default 1)
     * `:per_page` — articles per page (default #{@per_page})
     * `:user` — current user (nil for guests)
+    * `:federated_only` — also require `ap_enabled` on the board (default
+      `false`); see below
 
   Returns `%{articles, total, page, per_page, total_pages}`.
+
+  ## `:federated_only`
+
+  This function backs two surfaces with different rules. The site's own search
+  (`SearchLive`) must list an article in any board the viewer can open, whether
+  or not that board federates — turning federation off is not meant to hide
+  content from the site. The unauthenticated `/ap/search`
+  (`Federation.Collections.search_collection/2`) serves each result as a full
+  Article object stamped `as:Public`, so it needs the *whole* outbound gate:
+  `min_role_to_view == "guest"` **and** `ap_enabled`, the same predicate
+  `ActivityPubController.publicly_servable?/1` applies to
+  `GET /ap/articles/:slug`. Without it, an article in a guest-readable board
+  whose federation an admin had switched off was still served — with its title,
+  body and attachments — to anyone who guessed a search term, while its own
+  permalink answered 404.
+
+  The condition belongs in the query rather than in a filter over the results:
+  `search_collection/2` reports `totalItems` and pages from the same result, so
+  a post-filter would advertise a count the pages could not fill.
   """
   def search_articles(query_string, opts \\ []) do
     pagination = Pagination.paginate_opts(opts, @per_page)
     user = Keyword.get(opts, :user)
+    federated_only = Keyword.get(opts, :federated_only, false)
     allowed_roles = Filters.allowed_view_roles(user)
     {hidden_uids, hidden_ap_ids} = Filters.hidden_filters(user)
 
@@ -128,7 +150,8 @@ defmodule Baudrate.Content.Search do
               on: b.id == ba.board_id,
               where:
                 ba.article_id == parent_as(:article).id and
-                  b.min_role_to_view in ^allowed_roles
+                  b.min_role_to_view in ^allowed_roles and
+                  (not (^federated_only) or b.ap_enabled)
             )
           )
       )

@@ -747,6 +747,72 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       conn = conn |> json_conn() |> get("/ap/search?q=")
       assert json_response(conn, 400)["error"] == "Missing q parameter"
     end
+
+    # The whole outbound gate, not half of it: this collection is
+    # unauthenticated and each item is a full Article object stamped
+    # `as:Public`, so `ap_enabled` is required as well as guest-readability.
+    # The query filtered `min_role_to_view` only, so an article in a board
+    # whose federation an admin had switched off was served here with its
+    # title and body while its own permalink answered 404.
+    test "excludes an article whose only board has federation disabled", %{conn: conn} do
+      user = setup_user("user")
+      board = setup_board(%{ap_enabled: false})
+      article = setup_article(user, board)
+
+      conn = conn |> json_conn() |> get("/ap/search?q=Test+Article&page=1")
+      body = json_response(conn, 200)
+
+      ids = Enum.map(body["orderedItems"], & &1["id"])
+      refute article.ap_id in ids
+      refute Enum.any?(body["orderedItems"], &(&1["name"] == article.title))
+
+      # The permalink already refused it; the collection now agrees.
+      assert conn
+             |> recycle()
+             |> ap_conn()
+             |> get("/ap/articles/#{article.slug}")
+             |> Map.get(:status) ==
+               404
+    end
+
+    test "still includes an article in a guest-readable federated board", %{conn: conn} do
+      user = setup_user("user")
+      board = setup_board(%{ap_enabled: true, min_role_to_view: "guest"})
+      article = setup_article(user, board)
+
+      conn = conn |> json_conn() |> get("/ap/search?q=Test+Article&page=1")
+      body = json_response(conn, 200)
+
+      assert article.ap_id in Enum.map(body["orderedItems"], & &1["id"])
+    end
+
+    # `totalItems` and the page come from one result, so the gate has to be in
+    # the query. A filter over the items would advertise a count the pages
+    # cannot fill, and offer a `next` page that renders empty.
+    test "totalItems agrees with the items it can serve", %{conn: conn} do
+      user = setup_user("user")
+      open = setup_board(%{ap_enabled: true, min_role_to_view: "guest"})
+      closed = setup_board(%{ap_enabled: false})
+      _served = setup_article(user, open)
+      _withheld = setup_article(user, closed)
+
+      conn = conn |> json_conn() |> get("/ap/search?q=Test+Article&page=1")
+      body = json_response(conn, 200)
+
+      assert body["totalItems"] == length(body["orderedItems"])
+    end
+
+    # The site is not the fediverse: turning a board's federation off must not
+    # remove its articles from the instance's own search.
+    test "the site's own search is unaffected by ap_enabled" do
+      user = setup_user("user")
+      board = setup_board(%{ap_enabled: false})
+      article = setup_article(user, board)
+
+      result = Baudrate.Content.search_articles("Test Article", user: user)
+
+      assert article.id in Enum.map(result.articles, & &1.id)
+    end
   end
 
   # --- Federation Kill Switch ---
