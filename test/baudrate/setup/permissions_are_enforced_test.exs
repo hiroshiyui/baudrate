@@ -25,24 +25,47 @@ defmodule Baudrate.Setup.PermissionsAreEnforcedTest do
   # in the context — so none of these is an open door; the permission row
   # simply is not what closes it. That still makes the catalogue a misleading
   # answer to "who can do what", which ADR 0029 says is the thing to avoid, so
-  # each needs wiring to a real check or removing. Tracked in `doc/TODOs.md`.
+  # each needs wiring to a real check or removing. See ADR 0042, which records
+  # the decision about the catalogue as a whole.
   #
   # This list is deliberately explicit rather than a relaxed assertion: adding
-  # a sixth unenforced permission fails the build.
+  # an eighth unenforced permission fails the build.
+  #
+  # It was five until documentation was stripped from the search (below).
+  # `moderator.manage_content` and `guest.view_content` passed only because
+  # `lib/baudrate/setup/permission.ex` quotes them as examples in its
+  # `@moduledoc` — so the gate reported them enforced while nothing checked
+  # them, which is the same vacuity the `@catalogue` exclusion was added to fix.
   @known_unenforced ~w(
     admin.manage_settings
+    guest.view_content
     moderator.manage_comments
+    moderator.manage_content
     moderator.view_reports
     user.edit_own_content
     user.manage_profile
   )
+
+  # Documentation is not enforcement. A permission named in a `@moduledoc`,
+  # a `@doc` or any heredoc does not gate anything, so those are removed before
+  # the search — otherwise one illustrative mention anywhere in `lib/` hides a
+  # dead permission from this gate for good. Stripping the whole class beats
+  # excluding files one at a time, which is how two of them got through.
+  #
+  # If a permission string ever does live inside a heredoc *and* do real work,
+  # this reports it as unenforced — the safe direction to be wrong in.
+  defp code_only(source) do
+    source
+    |> String.replace(~r/"""[\s\S]*?"""/, "")
+    |> String.replace(~r/@(?:module)?doc\s+"(?:[^"\\]|\\.)*"/, "")
+  end
 
   defp unchecked_permissions(permissions) do
     sources =
       "lib/**/*.ex"
       |> Path.wildcard()
       |> Enum.reject(&(&1 == @catalogue))
-      |> Enum.map_join("\n", &File.read!/1)
+      |> Enum.map_join("\n", &(&1 |> File.read!() |> code_only()))
 
     Enum.reject(permissions, &String.contains?(sources, "\"#{&1}\""))
   end

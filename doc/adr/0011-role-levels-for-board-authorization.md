@@ -1,6 +1,9 @@
 # 0011 — Ordered role levels plus per-board minimums for authorization
 
-- **Status:** Accepted
+- **Status:** Accepted, except the configurable-capabilities half,
+  superseded by [0042](0042-roles-are-ordered-and-capabilities-are-not-configurable.md).
+  The per-board half — ordered role levels, `min_role_to_view`/`min_role_to_post`,
+  board moderators — stands.
 - **Date:** Recorded retroactively 2026-08-09
 
 ## Context

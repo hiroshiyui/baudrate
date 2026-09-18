@@ -160,29 +160,40 @@ ADRs and in the retention module, not left to the names.
 - **P2-D3. Releases are built in CI** on a project-owned Debian 12 image matching production, and attached to the GitHub release with a provenance attestation. **Amended by ADR 0037:** the deploy no longer installs that tarball — it builds the tag on the server — so the attestation now guards a manual install rather than the deploy.
 - **P2-D4. Retention periods:** timeline items nobody interacted with, 90 days; announces, 180 days; soft-deleted rows, after the 90-day evidence window.
 
-### Open — five permissions that enforce nothing
+### Settled — the permission catalogue is documentation (ADR 0042)
 
-`Setup.default_permissions/0` grants `admin.manage_settings`,
-`moderator.manage_comments`, `moderator.view_reports`,
-`user.edit_own_content` and `user.manage_profile`, and no code consults any of
-them. Each capability *is* guarded — by the route's role hook and an
-authorship or role check in the context — so none is an open door; the
-permission row simply is not what closes it. But ADR 0029 says a permission
-that enforces nothing is a false statement to the operator about who can do
-what: revoking `moderator.view_reports` from the moderator role changes
-nothing, and nothing says so.
+Investigated 2026-09-18, and the answer is *neither wire them nor delete them*:
+[ADR 0042](adr/0042-roles-are-ordered-and-capabilities-are-not-configurable.md)
+records that roles are a fixed, totally ordered set and capabilities are not
+configurable.
 
-Its acceptance gate (`test/baudrate/setup/permissions_are_enforced_test.exs`)
-was a tautology — it searched `lib/**/*.ex`, which includes the file that
-*defines* the catalogue, so every permission was always "found". The gate now
-excludes that file, has an anti-vacuity test, and names these five
-explicitly, so a sixth fails the build.
+What the audit found. `role_permissions` has **no write path** — nothing
+outside `Setup.seed_roles_and_permissions/0` edits it, and there is no roles
+admin UI — so `Setup.has_permission?/2` is a constant function of the
+hard-coded map, and every permission check is an indirect way of asking
+whether a role is `admin`. **Seven** of the eleven permissions enforce
+nothing, not five: `moderator.manage_content` and `guest.view_content` passed
+the acceptance gate only because `lib/baudrate/setup/permission.ex` quotes
+them as examples in its `@moduledoc`. The gate now strips heredocs and `@doc`
+strings before searching, so documentation can never again stand in for
+enforcement, and it names all seven.
 
-Each needs a decision: wire it to a real `Setup.has_permission?/2` check, or
-remove it from the catalogue. Wiring is the riskier half — gating
-`/admin/settings` on a permission an existing role row happens to lack would
-lock an operator out of their own instance — so it wants a migration that
-backfills the grants, not just a check.
+The dominant mechanism is the **role name**: 29 authorization decisions
+compare `role.name` against `"admin"` or `["admin", "moderator"]` — more than
+the sanctions gate, the role-level system and the permission system combined.
+ADR 0042 accepts that as legitimate rather than something to refactor away.
+
+Still open, deliberately, and each needs its own decision rather than a sweep:
+
+- Whether to ever build `/admin/roles` and wire the seven. Not foreclosed; it
+  would supersede 0042. Note the hazard the earlier draft of this entry
+  identified: gating `/admin/settings` on a permission an existing role row
+  happens to lack locks an operator out of their own instance, so wiring wants
+  a migration that backfills grants, not just a check.
+- Whether `Baudrate.Content.Feed` should be renamed or split — a fifth sense
+  of "feed" (recent-content listings plus per-user statistics), left alone on
+  2026-09-18 because after ADR 0041 it collides with nothing and no single
+  noun covers both halves.
 
 ---
 

@@ -26,7 +26,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0008](0008-server-side-dual-token-sessions.md) | Server-side sessions with dual rotating tokens | Accepted |
 | [0009](0009-mandatory-2fa-and-admin-sudo-mode.md) | Mandatory 2FA for privileged roles, plus admin sudo mode | Accepted |
 | [0010](0010-encrypt-secrets-at-rest.md) | Encrypt TOTP secrets and federation private keys at rest | Accepted; amended by [0038](0038-encryption-keys-are-separate-and-rotatable.md) |
-| [0011](0011-role-levels-for-board-authorization.md) | Ordered role levels plus per-board minimums for authorization | Accepted |
+| [0011](0011-role-levels-for-board-authorization.md) | Ordered role levels plus per-board minimums for authorization | Accepted, except the configurable-capabilities half, superseded by [0042](0042-roles-are-ordered-and-capabilities-are-not-configurable.md) |
 | [0012](0012-rate-limiting-behaviour-and-failure-modes.md) | Hammer/ETS rate limiting behind a behaviour, with explicit failure modes | Accepted |
 | [0013](0013-database-backed-delivery-queue.md) | A database-backed delivery queue instead of a job framework | Accepted |
 | [0014](0014-ets-caches-for-settings-and-boards.md) | ETS caches for settings, boards and domain blocks | Accepted |
@@ -57,6 +57,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0039](0039-the-personal-stream-is-a-timeline.md) | The personal stream is a timeline, not a feed | Accepted, except the RSS carve-out, superseded by [0041](0041-rss-and-atom-are-syndication.md) |
 | [0040](0040-retention-deletes-what-nobody-touched.md) | Retention deletes what nobody touched | Accepted |
 | [0041](0041-rss-and-atom-are-syndication.md) | RSS and Atom are syndication, not feeds | Accepted |
+| [0042](0042-roles-are-ordered-and-capabilities-are-not-configurable.md) | Roles are ordered, and capabilities are not configurable | Accepted |
 
 ## Writing a new ADR
 

@@ -568,8 +568,8 @@ the WebSocket session without re-prompting.
 > **See the [SysOp Guide](sysop.md#roles--permissions-rbac) for role
 > management and user administration.**
 
-Roles and permissions use a normalized 3-table design. Higher roles inherit
-all permissions of lower roles:
+Roles and permissions use a normalized 3-table design, seeded from
+`Setup.default_permissions/0`:
 
 | Role | Permissions |
 |------|-------------|
@@ -580,6 +580,20 @@ all permissions of lower roles:
 
 Permission names follow a `scope.action` convention (e.g., `admin.manage_users`,
 `user.create_content`).
+
+**Read that table as the seed, not as inheritance.** Each row is written out in
+full by `seed_roles_and_permissions/0`; `Setup.has_permission?/2` does an exact
+`(role_name, permission_name)` join with no level fallback, so nothing is
+inherited at runtime. Nothing outside seeding writes `role_permissions` — there
+is no roles admin UI — so the matrix is fixed at compile time, and only four
+permissions are consulted anywhere: `admin.manage_roles` (role reassignment,
+the one with no role-name alternative), `moderator.sanction_user`,
+`admin.manage_users` and `user.create_content`. The rest describe capabilities
+that role hooks and authorship checks actually enforce.
+[ADR 0042](adr/0042-roles-are-ordered-and-capabilities-are-not-configurable.md)
+records that as a decision — roles are a fixed ordered set and capabilities are
+not configurable — and supersedes the capabilities half of
+[ADR 0011](adr/0011-role-levels-for-board-authorization.md).
 
 #### Role Level Comparison
 

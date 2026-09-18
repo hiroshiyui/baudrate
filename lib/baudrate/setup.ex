@@ -17,10 +17,25 @@ defmodule Baudrate.Setup do
 
   ## Permission Hierarchy
 
-  Permissions follow a `scope.action` naming convention. Higher roles inherit
-  all permissions of lower roles:
+  Permissions follow a `scope.action` naming convention. Roles are a fixed,
+  totally ordered set (ADR 0042):
 
       admin > moderator > user > guest
+
+  **There is no runtime inheritance.** `has_permission?/2` does an exact
+  `(role_name, permission_name)` join, so a higher role holds a lower role's
+  permission only because `default_permissions/0` lists it again — the counts
+  are flattened copies, written once by `seed_roles_and_permissions/0`. Adding
+  a permission to `user` here does not give it to `admin`.
+
+  The matrix has no write path: nothing outside seeding edits
+  `role_permissions`, so `has_permission?/2` is a constant function of the map
+  below. Four of the eleven permissions are consulted at runtime
+  (`admin.manage_roles`, `moderator.sanction_user`, `admin.manage_users`,
+  `user.create_content`); the rest are documentation, and
+  `test/baudrate/setup/permissions_are_enforced_test.exs` names them so the
+  gap cannot widen unnoticed. ADR 0042 records why this is the accepted state
+  rather than a bug to fix.
 
   The full matrix is defined in `default_permissions/0`.
 
