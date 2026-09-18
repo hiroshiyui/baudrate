@@ -14,11 +14,13 @@ defmodule Baudrate.Federation.BlockedDomainHidingTest do
   """
   use Baudrate.DataCase, async: false
 
+  alias Baudrate.Auth
   alias Baudrate.Content
   alias Baudrate.Content.{Article, ArticleBoost, ArticleTag, Board, Bookmark, Comment}
-  alias Baudrate.Content.{Bookmarks, ReadTracking, Search, Tags}
+  alias Baudrate.Content.{Bookmarks, CommentBoost, ReadTracking, Search, Tags}
   alias Baudrate.Federation
   alias Baudrate.Federation.{DomainBlockCache, DomainBlocks, TimelineItem, Follows, RemoteActor}
+  alias Baudrate.Federation.RemoteActors
   alias Baudrate.Setup
 
   @blocked "blocked.example"
@@ -171,6 +173,74 @@ defmodule Baudrate.Federation.BlockedDomainHidingTest do
       bodies = Content.list_comments_for_article(ctx.shown, nil) |> Enum.map(& &1.body)
       refute Enum.any?(bodies, &String.contains?(&1, ctx.marker))
     end
+
+    # `paginate_comments_for_article/3` is what the article page actually
+    # renders, and it applies the filter in four separate places: the root
+    # count, the root page, `fetch_descendants/4` and `deleted_ancestor_ids/3`.
+    # One test per place, because each is its own query.
+    test "paginate_comments_for_article/3 hides a root comment, in the page and the count", ctx do
+      create_remote_comment(ctx.shown, ctx.friendly_actor, "friendly root #{ctx.safe}")
+      create_remote_comment(ctx.shown, ctx.blocked_actor, "blocked root #{ctx.marker}")
+      block!()
+
+      result = Content.paginate_comments_for_article(ctx.shown, ctx.user)
+
+      refute mentions?(result.comments, ctx.marker)
+      assert mentions?(result.comments, ctx.safe)
+
+      assert result.total_roots == 1,
+             "the root count is a separate query from the root page: a count " <>
+               "that forgot the filter offers a pager page that renders empty"
+    end
+
+    test "paginate_comments_for_article/3 hides a reply from the blocked domain", ctx do
+      root = create_remote_comment(ctx.shown, ctx.friendly_actor, "friendly root #{ctx.safe}")
+
+      create_remote_comment(ctx.shown, ctx.blocked_actor, "blocked reply #{ctx.marker}",
+        parent: root
+      )
+
+      block!()
+
+      result = Content.paginate_comments_for_article(ctx.shown, ctx.user)
+
+      refute mentions?(result.comments, ctx.marker),
+             "descendants are fetched by a separate query per thread level"
+
+      assert mentions?(result.comments, ctx.safe)
+    end
+
+    test "paginate_comments_for_article/3 raises no placeholder for a hidden reply", ctx do
+      # A soft-deleted comment is rendered as a placeholder only when a visible
+      # reply sits below it. The scan that decides that is its own query, so if
+      # it forgets the filter the placeholder appears — telling the reader that
+      # someone on the blocked domain replied here, and keeping a deleted
+      # comment on the page for the sake of a reply nobody can see.
+      root = create_remote_comment(ctx.shown, ctx.friendly_actor, "withdrawn #{ctx.safe}")
+
+      create_remote_comment(ctx.shown, ctx.blocked_actor, "blocked reply #{ctx.marker}",
+        parent: root
+      )
+
+      soft_delete_comment!(root)
+      block!()
+
+      result = Content.paginate_comments_for_article(ctx.shown, ctx.user)
+
+      assert result.comments == []
+      assert result.total_roots == 0
+    end
+
+    test "count_comments_for_article/1 does not count a comment from the blocked domain", ctx do
+      create_remote_comment(ctx.shown, ctx.friendly_actor, "friendly #{ctx.safe}")
+      create_remote_comment(ctx.shown, ctx.blocked_actor, "blocked #{ctx.marker}")
+      block!()
+
+      # Both callers are public surfaces — the AP `Article` object and the
+      # JSON-LD block on the article page — so a count that includes hidden
+      # replies tells a guest they exist and lets them be counted.
+      assert Content.count_comments_for_article(ctx.shown) == 1
+    end
   end
 
   describe "tag pages" do
@@ -232,6 +302,22 @@ defmodule Baudrate.Federation.BlockedDomainHidingTest do
       refute ctx.marker in boosted
       assert ctx.safe in boosted
     end
+
+    test "boosting a comment does not keep it visible", ctx do
+      friendly = create_remote_comment(ctx.shown, ctx.friendly_actor, "friendly #{ctx.safe}")
+      blocked = create_remote_comment(ctx.shown, ctx.blocked_actor, "blocked #{ctx.marker}")
+
+      for comment <- [friendly, blocked], do: boost_comment!(ctx.user, comment)
+
+      block!()
+
+      boosted =
+        Content.list_recent_boosted_comments_by_user(ctx.user.id, 10, viewer: nil)
+        |> Enum.map(fn {_ts, c} -> c end)
+
+      refute mentions?(boosted, ctx.marker)
+      assert mentions?(boosted, ctx.safe)
+    end
   end
 
   describe "unread badges" do
@@ -276,6 +362,59 @@ defmodule Baudrate.Federation.BlockedDomainHidingTest do
       # The pager count is hand-written SQL that mirrors the query; if it does
       # not mirror this too, the feed offers a page that renders empty.
       assert Federation.list_timeline_items(ctx.user).total == 0
+    end
+
+    test "suspending one actor empties the feed page and its count", ctx do
+      # A suspension is the same predicate as a domain block
+      # (`Filters.hidden_actor_ids/0` matches either), which is what stops the
+      # two diverging as listings are added — so it belongs in this gate.
+      {:ok, _} = Follows.create_user_follow(ctx.user, ctx.friendly_actor)
+      accept_follow(ctx.user, ctx.friendly_actor)
+
+      item = create_timeline_item(ctx.friendly_actor, ctx.safe, [])
+
+      assert item.id in timeline_item_ids(ctx.user)
+      assert Federation.list_timeline_items(ctx.user).total == 1
+
+      {:ok, _} = RemoteActors.suspend(ctx.friendly_actor, nil, "acceptance test")
+
+      result = Federation.list_timeline_items(ctx.user)
+
+      assert result.items == []
+
+      assert result.total == 0,
+             "the count is hand-written SQL beside the Ecto query: with only " <>
+               "the domain half of the predicate, suspending an actor left " <>
+               "its items in `total` and offered a page that renders empty"
+    end
+
+    test "muting a followed actor hides their boosts as well as their own posts", ctx do
+      {:ok, _} = Follows.create_user_follow(ctx.user, ctx.friendly_actor)
+      accept_follow(ctx.user, ctx.friendly_actor)
+
+      own = create_timeline_item(ctx.friendly_actor, ctx.safe, [])
+
+      # On an Announce, `remote_actor_id` is the boosted *author* — someone the
+      # muter need not follow — and `boosted_by_actor_id` is the actor they do
+      # follow and have just muted. Testing the author column alone left a
+      # muted account's boosts in the feed, which is the one thing a mute is
+      # asked to stop. A block would sever the follow and make the join drop
+      # these rows; a mute deliberately severs nothing.
+      elsewhere = create_remote_actor("elsewhere.example")
+
+      boost =
+        create_timeline_item(elsewhere, "#{ctx.safe}boosted", boosted_by: ctx.friendly_actor)
+
+      assert own.id in timeline_item_ids(ctx.user)
+      assert boost.id in timeline_item_ids(ctx.user)
+      assert Federation.list_timeline_items(ctx.user).total == 2
+
+      {:ok, _} = Auth.mute_remote_actor(ctx.user, ctx.friendly_actor.ap_id)
+
+      result = Federation.list_timeline_items(ctx.user)
+
+      assert timeline_item_ids(ctx.user) == []
+      assert result.total == 0
     end
   end
 
@@ -345,17 +484,43 @@ defmodule Baudrate.Federation.BlockedDomainHidingTest do
     Repo.preload(user, :role)
   end
 
-  defp create_remote_comment(article, actor, body) do
+  defp create_remote_comment(article, actor, body, opts \\ []) do
+    parent = Keyword.get(opts, :parent)
+
     %Comment{}
     |> Ecto.Changeset.change(%{
       body: body,
       ap_id: "https://#{actor.domain}/comments/#{System.unique_integer([:positive])}",
       article_id: article.id,
+      parent_id: parent && parent.id,
       remote_actor_id: actor.id,
       visibility: "public"
     })
     |> Repo.insert!()
   end
+
+  defp soft_delete_comment!(comment) do
+    Repo.update_all(from(c in Comment, where: c.id == ^comment.id),
+      set: [deleted_at: DateTime.utc_now() |> DateTime.truncate(:second)]
+    )
+
+    comment
+  end
+
+  defp boost_comment!(user, comment) do
+    %CommentBoost{}
+    |> Ecto.Changeset.change(%{
+      user_id: user.id,
+      comment_id: comment.id,
+      ap_id: "https://local.example/ap/boosts/#{System.unique_integer([:positive])}"
+    })
+    |> Repo.insert!()
+  end
+
+  defp bodies(comments), do: Enum.map(comments, & &1.body)
+
+  defp mentions?(comments, marker),
+    do: Enum.any?(bodies(comments), &String.contains?(&1, marker))
 
   defp create_timeline_item(actor, marker, opts) do
     booster = Keyword.get(opts, :boosted_by)

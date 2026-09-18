@@ -90,6 +90,22 @@ defmodule Baudrate.Federation.Timeline do
         on: ra.id == fi.remote_actor_id,
         where: uf.user_id == ^user.id and uf.state == @state_accepted,
         where: is_nil(fi.deleted_at),
+        # Non-public content stays off this surface too, and the rule turns on
+        # the activity type because that is what decides whose audience the
+        # viewer is in.
+        #
+        # For a `Create` the follow-join matched `remote_actor_id`, the author
+        # — so the viewer *is* a follower and `followers_only` is theirs to
+        # read. For an `Announce` the join matched `boosted_by_actor_id`, the
+        # booster, and proves nothing about the author: a hostile instance
+        # that Announces a victim's `followers_only` post to a booster local
+        # people follow otherwise put that post — title, body, attachments —
+        # into the feed of everyone who was never in its audience. `direct` is
+        # refused either way: a DM is the Messaging context's channel, never a
+        # timeline row.
+        where:
+          fi.visibility in ["public", "unlisted"] or
+            (fi.activity_type == "Create" and fi.visibility == "followers_only"),
         # An instance block hides what the domain already sent (ADR 0030).
         # Blocking severs the follows, so most of this disappears anyway — but
         # a boost carries an author the follower never followed, and that
@@ -102,7 +118,20 @@ defmodule Baudrate.Federation.Timeline do
 
     remote_query =
       if hidden_ap_ids != [] do
-        from([fi, _uf, ra] in remote_query, where: ra.ap_id not in ^hidden_ap_ids)
+        # `ra` is joined on `remote_actor_id`, the *author*. For an Announce
+        # that is the boosted account, not the booster — so muting someone you
+        # follow hid their own posts and left their boosts in place, which is
+        # the one thing a mute is for. (A block severs the follow, so the join
+        # drops those rows anyway; a mute deliberately severs nothing.)
+        hidden_by_ap_id =
+          from(hra in RemoteActor, where: hra.ap_id in ^hidden_ap_ids, select: hra.id)
+
+        from([fi, _uf, ra] in remote_query,
+          where: ra.ap_id not in ^hidden_ap_ids,
+          where:
+            is_nil(fi.boosted_by_actor_id) or
+              fi.boosted_by_actor_id not in subquery(hidden_by_ap_id)
+        )
       else
         remote_query
       end
@@ -165,7 +194,13 @@ defmodule Baudrate.Federation.Timeline do
 
     comment_query =
       if hidden_user_ids != [] do
-        from([c, _a] in comment_query, where: c.user_id not in ^hidden_user_ids)
+        # `is_nil(c.user_id) or …`: a remote comment has no local author, and
+        # `NULL not in (…)` is NULL, so every federated reply disappeared from
+        # the strand as soon as the viewer blocked or muted one person —
+        # silently, and for content the block has nothing to do with.
+        from([c, _a] in comment_query,
+          where: is_nil(c.user_id) or c.user_id not in ^hidden_user_ids
+        )
       else
         comment_query
       end
@@ -635,13 +670,19 @@ defmodule Baudrate.Federation.Timeline do
              JOIN remote_actors ra ON ra.id = fi.remote_actor_id
              WHERE uf.user_id = $1 AND uf.state = 'accepted'
                AND fi.deleted_at IS NULL
+               AND (fi.visibility IN ('public', 'unlisted')
+                    OR (fi.activity_type = 'Create' AND fi.visibility = 'followers_only'))
                AND ($2::text[] IS NULL OR ra.ap_id != ALL($2))
+               AND ($2::text[] IS NULL OR NOT EXISTS (
+                 SELECT 1 FROM remote_actors bra
+                 WHERE bra.id = fi.boosted_by_actor_id AND bra.ap_id = ANY($2)))
                AND NOT EXISTS (
                  SELECT 1 FROM remote_actors hra
                  WHERE hra.id IN (fi.remote_actor_id, fi.boosted_by_actor_id)
-                   AND (CASE WHEN $5::boolean
-                             THEN hra.domain = ANY($6::text[])
-                             ELSE hra.domain <> ALL($6::text[]) END))),
+                   AND (hra.suspended_at IS NOT NULL
+                        OR (CASE WHEN $5::boolean
+                                 THEN hra.domain = ANY($6::text[])
+                                 ELSE hra.domain <> ALL($6::text[]) END)))),
           (SELECT count(*) FROM articles a
              LEFT JOIN user_follows uf ON uf.followed_user_id = a.user_id
                AND uf.user_id = $1 AND uf.state = 'accepted'
@@ -657,7 +698,7 @@ defmodule Baudrate.Federation.Timeline do
              WHERE (a.user_id = $1 OR EXISTS(
                SELECT 1 FROM comments oc WHERE oc.article_id = a.id AND oc.user_id = $1))
                AND c.deleted_at IS NULL AND a.deleted_at IS NULL
-               AND ($3::bigint[] IS NULL OR c.user_id != ALL($3)))
+               AND ($3::bigint[] IS NULL OR c.user_id IS NULL OR c.user_id != ALL($3)))
         """,
         [
           user_id,
