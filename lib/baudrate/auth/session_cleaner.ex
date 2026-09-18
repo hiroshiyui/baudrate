@@ -75,7 +75,8 @@ defmodule Baudrate.Auth.SessionCleaner do
       sweep_account_moves: &sweep_account_moves/0,
       cleanup_old_notifications: &cleanup_old_notifications/0,
       notify_ended_sanctions: &notify_ended_sanctions/0,
-      purge_closed_report_evidence: &Baudrate.Moderation.purge_closed_report_evidence/0
+      purge_closed_report_evidence: &Baudrate.Moderation.purge_closed_report_evidence/0,
+      retention: &retention/0
     ]
     |> Enum.each(fn {name, step} -> run_step(name, step) end)
 
@@ -139,6 +140,15 @@ defmodule Baudrate.Auth.SessionCleaner do
     if count > 0 do
       Logger.info("session_cleaner.account_moves_processed: count=#{count}")
     end
+  end
+
+  # Retention deletes permanently (Phase 2F, ADR 0040). It lives here rather
+  # than in a worker of its own because this one already has a heartbeat the
+  # health report watches, and `run_step/2` isolates a failure so a bad pass
+  # cannot take the other fifteen with it.
+  defp retention do
+    counts = Baudrate.Retention.run()
+    counts.timeline_items + counts.announces + counts.articles + counts.comments
   end
 
   defp cleanup_old_notifications do
