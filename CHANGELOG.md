@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.28.1] — 2026-09-18
+
+Two authorization fixes found by an investigation into the permission system,
+plus the decision records that investigation produced.
+
+**Upgrading:** no migrations, no configuration changes. One behaviour change,
+below.
+
+**An admin can no longer ban another admin.** ADR 0029 has always said nobody
+sanctions an account at or above their own role level, and every other sanction
+applied it; a ban did not. It does now, so removing a peer admin is
+demote-then-ban — two deliberate acts instead of one. That is also what stops a
+single compromised admin session removing the other admins. Unban is
+deliberately *not* rank-checked, so a banned account is always restorable.
+
+### Security
+
+- **A ban checked neither the permission nor the rank rule.** A ban is the
+  harshest thing this system does to an account — permanent, revokes every
+  session, cancels active data exports and account moves, revokes invite codes
+  — and `Auth.ban_user/3` guarded only against banning yourself, against an
+  admin id it never loaded. So the sanction ladder ADR 0029 built was gated at
+  every rung except the top: a moderator could not silence a peer for an hour,
+  while this function would permanently ban an admin for any caller that
+  reached it. Authorization now runs at the context boundary
+  (`Sanctions.authorize_ban/2`), in the module that already owns the rank rule,
+  rather than relying on the route hook in front of it — which is what ADR 0016
+  asks for and why the route hook was never enough on its own.
+- **"May this user see this article?" had three implementations, and two were
+  wrong.** The canonical one lived in the web layer and refused a remote row
+  ingested as followers-only or direct, and an author whose domain is blocked
+  or whose actor is suspended. The context's copy checked neither, and kept its
+  own hand-written copy of the role hierarchy; the article-history page had a
+  third. Since the interaction paths use the context's copy, a remote
+  followers-only article in a guest-readable board was refused by
+  `/articles/:slug` and **accepted by like, boost, bookmark and both forward
+  paths** — and `can_forward_article?/2` gave admins a clause that returned
+  before any visibility test, so an admin could forward such a row into a board
+  whose outbox then re-publishes it stamped `as:Public`. Re-publishing someone
+  else's followers-only post is not a trust question, which is why ADR 0030 and
+  the invariants file both say these rows are refused to everyone including
+  admins. There is now one definition,
+  `Content.Interactions.remote_servable?/1`, in the context.
+- An article id that resolved to nothing counted as **visible**, because the
+  board count came back zero — which is also how a legitimate board-less quick
+  post looks.
+
+### Changed
+
+- The acceptance gate for the permission catalogue had a second hole beneath
+  the one closed in 1.28.0: it searched raw file text, so two permissions looked
+  enforced on the strength of a moduledoc quoting them as examples. It now
+  strips every heredoc and `@doc` before searching — the class rather than the
+  two instances — and names **seven** unenforced permissions, not five.
+
+### Added
+
+- **[ADR 0042](doc/adr/0042-roles-are-ordered-and-capabilities-are-not-configurable.md)**
+  — roles are a fixed, totally ordered set of four, and capabilities are not
+  configurable. An audit of the whole authorization surface found that the
+  permission matrix has no write path (nothing outside first-run seeding writes
+  it, and there is no roles screen), so `has_permission?/2` is a constant
+  function of a compile-time map; that only four of eleven permissions are
+  consulted anywhere; that the dominant mechanism is the role name, in 29
+  authorization decisions; and that the documented "higher roles inherit
+  lower-role permissions" was never implemented. The record accepts that state
+  rather than leaving it as an unexplained gap, and supersedes only the
+  capabilities half of [ADR 0011](doc/adr/0011-role-levels-for-board-authorization.md).
+- **[ADR 0043](doc/adr/0043-the-outbound-federation-gate-and-withdrawals.md)**
+  — the outbound federation gate, and the withdrawals it must not touch.
+  [ADR 0004](doc/adr/0004-federation-gate-for-non-public-boards.md) recorded the
+  inbound half and its reasoning assumed an outbound half that no record ever
+  described. It names all five surfaces that leaked in 1.28.0 and, more
+  importantly, why gating a `Delete` is the wrong instinct: the gate exists to
+  stop content leaving, a withdrawal carries no content, so refusing one cannot
+  protect anything and can only strand a retracted post on every follower's
+  server. That is the mistake closing the leak made first, and the one someone
+  will reach for again.
+
+### Fixed
+
+- The operator guide still promised permission inheritance, and the SysOp guide
+  is where that belief would be acted on. It now says what is true, including
+  the practical consequence: editing the role/permission tables by hand does
+  not change authority — change the account's role.
+- `Content.Feed`'s docstring described its queries as "public timeline
+  queries", which after 1.28.0's rename named a different subsystem entirely.
+  The module keeps its name, deliberately, and now says why.
+
 ## [1.28.0] — 2026-09-18
 
 Phase 2, stage 2F: Baudrate now deletes what it has agreed not to keep. Until
