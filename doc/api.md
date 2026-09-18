@@ -80,7 +80,7 @@ perform content negotiation on the `Accept` header:
 | `application/activity+json` | JSON-LD (AP object) |
 | `application/ld+json` | JSON-LD (AP object) |
 | `application/json` | JSON-LD (AP object) |
-| `text/html` or other | 302 redirect to web UI |
+| `text/html` or other | 302 redirect to the matching page: `/boards/:slug` for a board, `/articles/:slug` for an article. The Person and site actors redirect to `/` |
 
 Machine-only endpoints (collections, inboxes, discovery) always return JSON.
 
@@ -202,7 +202,7 @@ GET /nodeinfo/2.1
   "version": "2.1",
   "software": {
     "name": "baudrate",
-    "version": "1.28.1",
+    "version": "1.28.2",
     "repository": "https://github.com/hiroshiyui/baudrate"
   },
   "protocols": ["activitypub"],
@@ -480,7 +480,7 @@ requester, signed or not, including one whose signature belongs to an admin.
 | `source` | object | Original Markdown body with `mediaType: "text/markdown"` |
 | `attributedTo` | URI | Author's Person actor URI |
 | `published` | ISO 8601 | Creation timestamp |
-| `updated` | ISO 8601 | Last modification timestamp |
+| `updated` | ISO 8601 | Last modification timestamp (optional — omitted unless the article was edited more than 5 s after it was created, so peers do not mark a freshly posted article as edited) |
 | `to` | array | Always `["https://www.w3.org/ns/activitystreams#Public"]` |
 | `cc` | array of URIs | Actor URIs of the article's **federated** boards only (`min_role_to_view == "guest"` and `ap_enabled == true`); private and AP-disabled boards are filtered out, so this can be empty |
 | `audience` | array of URIs | Same as `cc`, filtered the same way |
@@ -494,10 +494,14 @@ requester, signed or not, including one whose signature belongs to an admin.
 | `baudrate:likeCount` | integer | Number of likes |
 
 **Hashtag extraction:**
-- Pattern: `#[a-zA-Z][a-zA-Z0-9_]*` (1-64 chars after `#`)
+- Pattern: `#` then a Unicode letter (`\p{L}`) and up to 63 further word
+  characters — so `#日本語` and `#Élan` are hashtags, not just ASCII. The `#`
+  must follow the start of the text, whitespace, or a non-word character
+  other than `&` (so `&#8212;` is not a tag)
 - Code blocks and inline code are excluded
-- Case-insensitive deduplication, case-preserving output
-- Links to `/tags/:hashtag` (lowercase)
+- Tags are **lowercased** on extraction, then deduplicated: `#Elixir`
+  federates as `"name": "#elixir"`
+- Links to `/tags/:hashtag`
 
 **Errors:**
 
@@ -799,7 +803,8 @@ for reply-chain walks or object fetches.
 
 | Status | Body | Condition |
 |--------|------|-----------|
-| 202 | `{"status": "accepted"}` | Stored for processing — or already stored (a redelivery of the same activity id from the same signing actor), or dropped on purpose (a blocked domain is answered 202, not 401, so the sender stops retrying) |
+| 202 | `{"status": "accepted"}` | Stored for processing, or already stored (a redelivery of the same activity id from the same signing actor) |
+| 202 | *(empty)* | Dropped on purpose: a blocked domain is answered 202 rather than 401 so the sender stops retrying. This comes from `VerifyHTTPSignature`, before the controller runs, so it carries no body |
 | 400 | `{"error": "Invalid JSON"}` | Body is not valid JSON |
 | 401 | `{"error": "Invalid signature"}` | HTTP Signature missing or invalid |
 | 413 | `{"error": "Payload too large"}` | Body over 256 KB |
@@ -886,9 +891,11 @@ verification.
 without error.
 
 **Peer-supplied `published` dates are clamped.** A `published` value in the
-future is replaced with the time of arrival (60 s of slack for clock skew): the
-timeline orders on it, so a date years ahead would pin an item to the top of
-every follower's timeline.
+future is replaced with the time of arrival — any value past "now", by however
+little: the timeline orders on it, so a date years ahead would pin an item to
+the top of every follower's timeline. (A changeset backstop separately refuses
+to store a `published_at` more than 60 s ahead, which is where the allowance
+for clock skew lives.)
 
 **Refusals are not errors.** An activity a handler declines — a non-federated
 board, a locked or deleted article, a block, a suspended actor — is dropped with
