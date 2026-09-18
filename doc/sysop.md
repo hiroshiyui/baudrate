@@ -876,9 +876,11 @@ brpc "Baudrate.Retention.run(dry_run: true)"
 
 (`brpc` is the wrapper from
 [Rotating an encryption key](#rotating-an-encryption-key).) It logs one line
-per pass — `retention: timeline_items=… announces=… articles=… comments=…
-files=…` — and each pass is batched and safe to interrupt; the next hour picks
-up where it stopped.
+per run, not per pass — `retention: timeline_items=… announces=… articles=…
+comments=… files=…` — and **nothing at all when every count is zero**, so
+silence in the log means there was nothing to remove rather than that the run
+did not happen. Each pass is batched and safe to interrupt; the next hour
+picks up where it stopped.
 
 The periods are module attributes in `lib/baudrate/retention.ex`, not
 settings. Changing them means editing and redeploying, which is deliberate:
@@ -1928,6 +1930,7 @@ fails is logged and the rest still run.
 | `cleanup_old_notifications` | Deletes notifications older than 90 days |
 | `notify_ended_sanctions` | Tells members their silence or suspension has ended. Enforcement already stopped on its own, so a missed run only delays the notice |
 | `purge_closed_report_evidence` | Clears the evidence copies of reports closed more than 90 days ago |
+| `retention` | Deletes timeline items older than 90 days that nobody liked, boosted or replied to, `announces` older than 180 days, and articles and comments 90 days after `deleted_at` — with their image files. Nothing a report points at is deleted. See [Retention](#retention) |
 
 Each worker runs exactly once, on the one node ([Scaling](#scaling)). They are
 not safe to run twice: two `DeliveryWorker`s would deliver the same jobs, and

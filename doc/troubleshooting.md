@@ -456,11 +456,44 @@ Domains with a row in `domain_blocks` (managed at `/admin/federation`) are:
 
 ### Session cleanup
 
-The `SessionCleaner` GenServer runs every hour and:
+The `SessionCleaner` GenServer runs every hour and carries sixteen steps —
+expired sessions, old login attempts, orphan images, delivery and inbox queue
+hygiene, link previews, the media cache, the data-export and account-move
+sweeps, old notifications, ended-sanction notices, closed-report evidence, and
+the retention purges below. `doc/sysop.md` has the full table. Each step is
+isolated, so one failing step no longer skips the rest of the hour.
 
-1. Purges expired user sessions (older than 14 days)
-2. Purges old login attempts (older than 7 days)
-3. Deletes orphan article images (older than 24 hours)
+### Content disappeared from the database
+
+Expected, if it was deleted more than 90 days ago. `Baudrate.Retention`
+([ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md)) hard-deletes:
+
+| What | When |
+|------|------|
+| Articles and comments with `deleted_at` set | 90 days after deletion, with their revisions, images and the image files |
+| Timeline items nobody liked, boosted or replied to | 90 days after they arrived |
+| `announces` | 180 days |
+
+**Nothing a report points at is deleted, at any age** — so "why is *this* one
+still here?" is usually a report referencing it.
+
+A boost count that fell on old remote content is the `announces` purge:
+`Federation.count_announces/1` reads that table, and the ADR records the
+trade-off as accepted.
+
+To see what a run would remove without removing it, and to check whether one
+ran:
+
+```bash
+brpc "Baudrate.Retention.run(dry_run: true)"
+journalctl -u baudrate | grep retention:
+```
+
+It logs one line per run and **nothing when every count is zero**, so silence
+means there was nothing to remove.
+
+**A purge is not an erasure request.** The rows remain in backups until those
+rotate out ([ADR 0028](adr/0028-backups-are-complete-folders-with-count-based-retention.md)).
 
 ### TOTP issues
 

@@ -353,6 +353,9 @@ defmodule Baudrate.Content.Comments do
 
   @doc """
   Soft-deletes a comment by setting `deleted_at` and clearing body.
+
+  The row is removed for good 90 days later (`Baudrate.Retention`, ADR 0040),
+  or with its article, unless a report points at it.
   """
   @spec soft_delete_comment(%Comment{}) :: {:ok, %Comment{}} | {:error, Ecto.Changeset.t()}
   def soft_delete_comment(%Comment{} = comment, opts \\ []) do

@@ -2,11 +2,11 @@ defmodule Baudrate.Moderation do
   @moduledoc """
   The Moderation context manages content reports and moderation actions.
 
-  Reports can target articles, comments, remote actors, local users, feed
+  Reports can target articles, comments, remote actors, local users, timeline
   items, or received direct messages. Admins and moderators can review,
   resolve, or dismiss reports through the moderation queue. Authenticated
   users can submit reports from article pages, comment threads, user profile
-  pages, their feed, and their conversations. `report_timeline_item/3`,
+  pages, their timeline, and their conversations. `report_timeline_item/3`,
   `report_message/3` and `report_remote_actor/3` check that the reporter can
   see what they report.
   """

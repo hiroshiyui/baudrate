@@ -1,7 +1,8 @@
 defmodule Baudrate.Auth.SessionCleaner do
   @moduledoc """
-  GenServer that periodically purges expired sessions, old login attempts,
-  and orphan article images.
+  GenServer that runs every periodic cleanup this instance has: expired
+  sessions, old login attempts, orphan images, queue hygiene, the data-export
+  and account-move sweeps, and the retention purges.
 
   Runs every hour (see `@interval`). Started as part of the application
   supervision tree (`Baudrate.Application`).
@@ -13,7 +14,7 @@ defmodule Baudrate.Auth.SessionCleaner do
       but never associated with an article (older than 24 hours)
     * Orphan comment images — deletes images uploaded during comment composition
       but never associated with a comment (older than 24 hours)
-    * Orphan reply images — deletes images uploaded during feed reply composition
+    * Orphan reply images — deletes images uploaded during timeline reply composition
       but never associated with a reply (older than 24 hours)
     * Delivery jobs — abandons jobs still waiting after 7 days (held back by
       an open circuit), purges delivered jobs older than 7 days and abandoned
@@ -30,6 +31,21 @@ defmodule Baudrate.Auth.SessionCleaner do
       marks them failed when the send-time re-check refuses them (ADR 0025)
     * Notifications — deletes notifications older than 90 days
       (`Notification.cleanup_old_notifications/1`)
+    * Stale link previews — refreshes previews older than 7 days
+    * Orphan link previews — purges unreferenced previews older than 30 days
+    * Ended sanctions — sends the "it has ended" notice (ADR 0029)
+    * Closed report evidence — clears the kept copy 90 days after a report
+      closes (P1-D6, `Moderation.purge_closed_report_evidence/0`)
+    * **Retention** — deletes timeline items older than 90 days that nobody
+      touched, `announces` older than 180 days, and articles and comments 90
+      days after `deleted_at`, with their image files
+      (`Baudrate.Retention.run/1`, ADR 0040). This one destroys member
+      content, so its rules live in the ADR and its acceptance gate is
+      `test/baudrate/retention_test.exs`.
+
+  Every step runs through `run_step/2`, which isolates a failure: a crash used
+  to abort the whole hour, so one failing link-preview refetch silently skipped
+  every purge after it.
 
   The first cleanup is scheduled on `init/1`, so it runs one interval after
   the application boots — not immediately — to avoid slowing startup.

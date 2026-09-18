@@ -37,7 +37,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
-| ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0), bar one 2A item that needs a notifier |
+| ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0, pending release), bar one 2A item that needs a notifier |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
@@ -64,9 +64,9 @@ and — for who hears about a report's outcome — `doc/development.md`.
 | 1E | Rules, terms and privacy pages; terms acceptance recorded and versioned | v1.21.0 | [ADR 0031](adr/0031-terms-acceptance-is-recorded-and-versioned.md) |
 | 1F | Rules as records, so a report can cite one | v1.21.0 | [ADR 0032](adr/0032-rules-are-records-and-retired-not-deleted.md) |
 
-**Left open by 1B:** an article its author deletes keeps its body in the row
-and in `article_revisions`; only comments are wiped. Worth revisiting with
-revision retention (6A).
+**Closed by 2F:** an article its author deletes used to keep its body in the
+row and in `article_revisions` indefinitely; both are destroyed 90 days later
+([ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md)).
 
 **Deliberately not in Phase 1:** anti-spam → Phase 5; moving articles between
 boards → 7C; an `/admin` dashboard and announcement UI → 7A, 7B; content
@@ -91,6 +91,7 @@ out by P1-D1.
 | 2D | Observability: a loopback-only detailed health report (queues, worker heartbeats, disk, backup age; 503 on failure) and optional JSON logs with a metadata allow-list | v1.25.0 | [ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md) |
 | 2E | Deploy safety: releases built on Debian 12 in CI, smoke-tested on every push and attested; a rollback playbook that refuses an incompatible schema; a per-server Erlang cookie with distribution on loopback; Sobelow and mix_audit in CI | v1.26.0 | [ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md), [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md) |
 | 2G | Key separation: an `:auth` and a `:signing` key read from the environment, retired keys kept for reading, stored values that name their key and are bound to their row, a resumable rotation task with a census, a health check for a key that is gone, and key ids in the backup manifest | v1.27.0 | [ADR 0038](adr/0038-encryption-keys-are-separate-and-rotatable.md) |
+| 2F | Retention: hourly purges of untouched timeline items (90 days), `announces` (180 days) and soft-deleted articles and comments (90 days past `deleted_at`, with their image files); nothing a report references is deleted; autovacuum guidance for the two tables emptied in bulk | v1.28.0 (pending) | [ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md) |
 | 2H | Drift: CI runs production's PostgreSQL 15, server and client, held together with Ansible by `verify-toolchain.sh`; the worker table, README clone URL and `INSTALLATION_KEY` fixed | v1.23.0 | `ci/image/README.md`, `doc/sysop.md` |
 
 Production separated its keys on 2026-09-18, the day 2G shipped: 117 stored

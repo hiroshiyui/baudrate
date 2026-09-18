@@ -30,7 +30,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0012](0012-rate-limiting-behaviour-and-failure-modes.md) | Hammer/ETS rate limiting behind a behaviour, with explicit failure modes | Accepted |
 | [0013](0013-database-backed-delivery-queue.md) | A database-backed delivery queue instead of a job framework | Accepted |
 | [0014](0014-ets-caches-for-settings-and-boards.md) | ETS caches for settings, boards and domain blocks | Accepted |
-| [0015](0015-soft-deletion.md) | Soft deletion via `deleted_at` | Accepted; tables renamed by [0039](0039-the-personal-stream-is-a-timeline.md) |
+| [0015](0015-soft-deletion.md) | Soft deletion via `deleted_at` | Accepted; tables renamed by [0039](0039-the-personal-stream-is-a-timeline.md); rows purged after 90 days by [0040](0040-retention-deletes-what-nobody-touched.md) |
 | [0016](0016-authorization-at-the-context-boundary.md) | Enforce authorization at the context boundary, not in LiveViews | Accepted; tables renamed by [0039](0039-the-personal-stream-is-a-timeline.md) |
 | [0017](0017-tailwind-daisyui-esbuild-asset-pipeline.md) | Tailwind + DaisyUI + esbuild, with no Node.js in the build | Accepted |
 | [0018](0018-semantic-ids-and-classes-for-accessibility.md) | Every meaningful element carries a semantic `id` / `class` | Accepted |

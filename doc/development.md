@@ -67,7 +67,7 @@ lib/
 │   │   ├── sanction.ex          # Sanction schema: a warning, silence or suspension with an explicit end (ADR 0029)
 │   │   ├── sanctions.ex         # Issuing and lifting sanctions, and the active-sanction query behind the gate
 │   │   ├── second_factor.ex     # TOTP enrollment, verification, and recovery
-│   │   ├── session_cleaner.ex   # GenServer: hourly cleanup (sessions, login attempts, orphan images)
+│   │   ├── session_cleaner.ex   # GenServer: hourly cleanup — sessions, login attempts, orphan images, retention (ADR 0040)
 │   │   ├── sessions.ex          # Session lifecycle: creation, rotation, eviction
 │   │   ├── totp_vault.ex        # TOTP secrets, encrypted with the :auth key
 │   │   ├── user_block.ex        # UserBlock schema (local + remote actor blocks)
@@ -1028,7 +1028,11 @@ Authors and admins can remove an article from specific boards via
 Comments are threaded via `parent_id` (self-referential) and belong to an
 article. Both articles and comments can originate locally (via `user_id`) or
 from remote ActivityPub actors (via `remote_actor_id`). Soft-delete is
-implemented via `deleted_at` timestamps on both articles and comments.
+implemented via `deleted_at` timestamps on both articles and comments — and
+"soft" means deferred, not permanent: `Baudrate.Retention` hard-deletes the row
+90 days later, with its revisions, images and the image files on disk
+([ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md)). Anything a
+report points at is exempt, whatever its age.
 Articles also record `deleted_by_id` (the local author or moderator who deleted
 it, via `Content.soft_delete_article(article, deleted_by: user_id)`). Remote
 deletions and rows deleted before the column existed stay `nil`, meaning
@@ -1878,7 +1882,7 @@ fetches, media cache warming, link previews).
 - `/following` — shows both local and remote follows with Local/Remote badges
 - User profile — follow/unfollow button next to mute button
 - `following_collection/2` — includes local follow actor URIs
-- Feed includes articles from locally-followed users and comments on authored/participated articles via union query
+- The timeline includes articles from locally-followed users and comments on authored/participated articles via union query
 
 **Board-level remote follows** (moderator-managed):
 - `boards.ap_accept_policy` — `"open"` (accept from anyone) or `"followers_only"` (only accept from actors the board follows); default: `"followers_only"`
@@ -2101,7 +2105,7 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 - Skip-to-content link (`<a href="#main-content">`) at top of `<body>` in `root.html.heex`
 - `id="main-content"` and `tabindex="-1"` on `<main>` in both app and setup layouts — enables the skip-to-content link to move keyboard focus (not just scroll) to the main content area
 - `aria-haspopup="true"` and `aria-expanded` on all dropdown trigger buttons (mobile hamburger, desktop user menu, language picker, article/profile menus); `aria-expanded` is driven only by `focusin`/`focusout` delegation in `app.js` (no click toggle), and Escape closes the dropdown and returns focus to its trigger. Dropdown menus must not carry `tabindex="0"`
-- **Live regions announce summaries, never whole lists.** Flashes use `role="alert"` (the flash group itself is not `aria-live`, which double-announced). PubSub-driven pages render a dedicated `sr-only` `role="status"` node whose text the server sets on the event: `#comments-live-status` ("New comment by …"), `#feed-live-status`, `#notifications-live-status`, `#conversations-live-status`. Never put `aria-live` on `#comments`, `#feed-items`, or a `<tbody>` — every re-render would be read out
+- **Live regions announce summaries, never whole lists.** Flashes use `role="alert"` (the flash group itself is not `aria-live`, which double-announced). PubSub-driven pages render a dedicated `sr-only` `role="status"` node whose text the server sets on the event: `#comments-live-status` ("New comment by …"), `#timeline-live-status`, `#notifications-live-status`, `#conversations-live-status`. Never put `aria-live` on `#comments`, `#timeline-items`, or a `<tbody>` — every re-render would be read out
 - Toggle buttons (like, boost, bookmark, admin filters) expose state with `aria-pressed`; when a button has visible text, that text is its accessible name (no overriding `aria-label`, WCAG 2.5.3). Repeated row actions name their subject (`gettext("Ban %{username}", …)`), starting with the visible verb
 - Button-based search pickers (board picker, forward-to-board, DM recipient search) are plain `<button>`s in a labelled `<ul>` with the result count in a sibling `role="status"` node — not a half-implemented `combobox`/`listbox`
 - Hidden file inputs use `sr-only peer` (never `hidden`) so the styled `<label for>` stays keyboard-operable, with `peer-focus-visible:outline…` on the label
@@ -2129,7 +2133,7 @@ The setup wizard uses a separate `:setup` layout (minimal, no navigation).
 
 - A fixed DaisyUI `dock` component (`id="mobile-bottom-nav"`) appears below `lg` breakpoint (< 1024px), hidden on desktop via `lg:hidden`; background matches the top navbar (`bg-base-200 border-t border-base-300`)
 - Icon-only items with `aria-label` for accessibility (no text labels)
-- Authenticated users see 5 items: Home (`hero-home`), Feed (`hero-rss`), Search (`hero-magnifying-glass`), Messages (`hero-chat-bubble-left-right` + unread badge), Notifications (`hero-bell` + unread badge)
+- Authenticated users see 5 items: Home (`hero-home`), Timeline (`hero-rss`), Search (`hero-magnifying-glass`), Messages (`hero-chat-bubble-left-right` + unread badge), Notifications (`hero-bell` + unread badge)
 - Guests see 4 items: Home (`hero-home`), Search (`hero-magnifying-glass`), Sign In (`hero-arrow-right-on-rectangle`), Register (`hero-user-plus`)
 - Mobile hamburger menu only shows for authenticated users (admin/user sections); guest nav items are exclusively in the bottom dock
 - Active item gets `dock-active` class and `aria-current="page"` based on `@current_path` (exact match for `/`, prefix match for others)
@@ -2236,7 +2240,7 @@ Baudrate.Supervisor (one_for_one)
 ├── Baudrate.Repo                           # Ecto database connection pool
 ├── Phoenix.PubSub                          # PubSub for LiveView (local; no clustering, ADR 0033)
 ├── Baudrate.Health.Heartbeat               # ETS table of workers' last completed runs (before the workers)
-├── Baudrate.Auth.SessionCleaner            # Hourly cleanup (sessions, login attempts, orphan images, export requests/temp, notifications >90 days)
+├── Baudrate.Auth.SessionCleaner            # Hourly: sessions, login attempts, orphan images, queues, exports, notifications, retention (ADR 0040)
 ├── Baudrate.Auth.WebAuthnChallenges        # ETS store for pending WebAuthn challenges, swept by TTL
 ├── Baudrate.DataPortability.DownloadNonces # ETS single-use nonces for data export download tokens
 ├── Baudrate.Setup.SettingsCache            # ETS cache for site settings (must start before DomainBlockCache)
@@ -2736,6 +2740,41 @@ Dependency updates are watched from two places, which together cover every pin:
 | Dependency drift workflow (`.github/workflows/dependency-drift.yml`) | Pins Dependabot cannot read: the esbuild/Tailwind binary `version:` in `config/config.exs`, vendored assets in `assets/vendor/` (daisyUI version; `daisyui-theme.js` byte-compared against the matching daisyUI release; topbar; Cropper.js), Erlang/Elixir in `.tool-versions`, and retired Hex packages via `mix hex.audit`. Runs weekly (and on manual dispatch) and keeps one rolling "Dependency drift report" issue, closed automatically once everything is current. |
 
 The drift check is a plain script (`.github/scripts/dependency-drift.sh`, needs `curl` and `jq`) that also runs locally; in CI, `mix hex.audit` runs inside the CI image while the script runs on the runner; it exits non-zero when anything is outdated. Upgrading is still a manual step — the `check-updates` skill walks through risk-grouping the results.
+
+## Retention
+
+`Baudrate.Retention` runs hourly from `Baudrate.Auth.SessionCleaner` and is the
+only code in the project that destroys member content
+([ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md)).
+
+| Pass | Deletes | Keeps |
+|------|---------|-------|
+| `purge_timeline_items/1` | `timeline_items` older than 90 days | anything with a like, boost or reply, and anything a report points at |
+| `purge_announces/1` | `announces` older than 180 days | — |
+| `purge_soft_deleted/1` | articles and comments 90 days past `deleted_at`, and their image files | anything a report points at, at any age |
+
+Four things to know before changing it:
+
+- **Cutoffs use `inserted_at`, never `published_at`.** A peer sets the latter,
+  so a date in the future would pin a row forever and one in the past would
+  drop it the hour it arrived.
+- **`reports.timeline_item_id`, `article_id` and `comment_id` are all
+  `nilify_all`**, so deleting a report's subject empties the moderation record
+  rather than refusing. Every pass therefore excludes reported rows — and
+  because `comments.article_id` is `ON DELETE CASCADE`, a report on any
+  *comment* protects its article too.
+- **A cascade does not remove uploaded files.** `SessionCleaner`'s orphan
+  sweeps look for image rows whose parent is gone, not files whose row is
+  gone, so paths are collected before the delete and unlinked after.
+- **`bot_feed_items` is never purged.** It is the `(bot_id, guid)` ledger that
+  stops a feed bot re-posting; deleting a row republishes that entry. Its
+  `article_id` is `nilify_all` so purging a bot's article cannot take the
+  ledger row with it.
+
+Adding a table to the purges means adding it to
+`test/baudrate/retention_test.exs`, the acceptance gate. Periods are module
+attributes, not settings: they decide when member content is destroyed, so
+changing one is a deploy.
 
 ## Further Reading
 

@@ -740,6 +740,10 @@ defmodule Baudrate.Content.Articles do
   @doc """
   Soft-deletes an article by setting `deleted_at`.
 
+  The row is removed for good 90 days later, with its revisions, images and
+  the image files on disk (`Baudrate.Retention`, ADR 0040) — unless a report
+  points at it.
+
   ## Options
 
     * `:deleted_by` — id of the local user performing the deletion (the author
