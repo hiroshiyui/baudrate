@@ -43,6 +43,11 @@
   --color-success-content: #ffffff;
   --color-warning: #f5a623;
   --color-warning-content: #1d1d1f;
+  /* `--color-warning` is a background token: 8.30:1 against its -content, but
+     only 1.89:1 as text on base-100, which fails 1.4.3 badly. Foreground uses
+     take this darker amber instead — 6.07:1 on base-100, 5.44:1 on base-200.
+     The dark theme needs no equivalent: #f5b342 on #2b2f36 is 7.30:1. */
+  --color-warning-fg: #8a5000;
   --color-error: #d41e24;
   --color-error-content: #ffffff;
   --radius-selector: 1rem;

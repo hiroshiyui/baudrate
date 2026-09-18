@@ -67,6 +67,7 @@ defmodule BaudrateWeb.ConversationLive do
       |> assign(:new_conversation, false)
       |> assign(:page_title, participant_name(other))
       |> assign(:message_form, to_form(%{"body" => ""}, as: :message))
+      |> assign(:history_announcement, "")
       |> assign_other_safety_state()
       |> SafetyActions.assign_report_modal()
 
@@ -85,6 +86,7 @@ defmodule BaudrateWeb.ConversationLive do
         |> assign(:new_conversation, true)
         |> assign(:page_title, gettext("New Message"))
         |> assign(:message_form, to_form(%{"body" => ""}, as: :message))
+        |> assign(:history_announcement, "")
 
       {:ok, socket}
     else
@@ -130,7 +132,8 @@ defmodule BaudrateWeb.ConversationLive do
               {:noreply,
                socket
                |> assign_messages(messages)
-               |> assign(:message_form, to_form(%{"body" => ""}, as: :message))}
+               |> assign(:message_form, to_form(%{"body" => ""}, as: :message))
+               |> assign(:history_announcement, "")}
 
             {:error, :not_allowed} ->
               {:noreply,
@@ -178,7 +181,23 @@ defmodule BaudrateWeb.ConversationLive do
       %{conversation: %{} = conversation, messages: [oldest | _] = messages} ->
         older = Messaging.list_messages(conversation, before_id: oldest.id, limit: @page_size)
         loaded = Enum.take(older ++ messages, @max_loaded)
-        {:noreply, assign_messages(socket, loaded)}
+        added = length(loaded) - length(messages)
+
+        {:noreply,
+         socket
+         |> assign_messages(loaded)
+         # Announced as a count, because the messages themselves are no longer
+         # inside the live region — reading twenty of them aloud took the page
+         # away from a screen-reader user for as long as it lasted.
+         |> assign(
+           :history_announcement,
+           ngettext(
+             "%{count} earlier message loaded",
+             "%{count} earlier messages loaded",
+             added,
+             count: added
+           )
+         )}
 
       _ ->
         {:noreply, socket}

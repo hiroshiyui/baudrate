@@ -1,5 +1,9 @@
 <div id="admin-instance-page" class="admin-instance-page space-y-6">
-  <nav id="instance-breadcrumb" class="admin-instance-breadcrumb text-sm breadcrumbs">
+  <nav
+    id="instance-breadcrumb"
+    class="admin-instance-breadcrumb text-sm breadcrumbs"
+    aria-label={gettext("Breadcrumb")}
+  >
     <ul>
       <li>
         <.link id="instance-breadcrumb-federation" navigate={~p"/admin/federation"}>

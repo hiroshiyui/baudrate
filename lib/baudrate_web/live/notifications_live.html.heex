@@ -60,7 +60,7 @@
             name={notification_icon(notif.type)}
             class={[
               "size-5",
-              if(notif.read, do: "text-base-content/50", else: "text-primary")
+              if(notif.read, do: "text-base-content/70", else: "text-primary")
             ]}
           />
         </div>
@@ -93,7 +93,7 @@
               <span class="notification-text text-base-content/70">{notification_text(notif.type)}</span>
             </p>
             <time
-              class="text-xs text-base-content/50 shrink-0 whitespace-nowrap"
+              class="text-xs text-base-content/70 shrink-0 whitespace-nowrap"
               datetime={DateTime.to_iso8601(notif.inserted_at)}
             >
               {format_relative_time(notif.inserted_at)}

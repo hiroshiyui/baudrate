@@ -13,7 +13,9 @@
       <div class="stats stats-vertical sm:stats-horizontal shadow w-full">
         <div class="stat">
           <div class="stat-title">{gettext("Pending")}</div>
-          <div class="stat-value text-warning">{Map.get(@delivery_counts, "pending", 0)}</div>
+          <div class="admin-federation-stat-warning stat-value">
+            {Map.get(@delivery_counts, "pending", 0)}
+          </div>
         </div>
         <div class="stat">
           <div class="stat-title">{gettext("Delivered")}</div>
@@ -390,7 +392,7 @@
                 class="admin-federation-board-key-row"
               >
                 <th scope="row" class="admin-federation-board-key-name font-normal">
-                  <span :if={board.parent} class="text-base-content/50">
+                  <span :if={board.parent} class="text-base-content/70">
                     {board.parent.name} /
                   </span>
                   {board.name}
@@ -447,7 +449,7 @@
               class="admin-federation-board-row"
             >
               <th scope="row" class="admin-federation-board-name font-normal">
-                <span :if={board.parent} class="text-base-content/50">
+                <span :if={board.parent} class="text-base-content/70">
                   {board.parent.name} /
                 </span>
                 {board.name}
@@ -533,7 +535,9 @@
           </div>
           <div class="stat">
             <div class="stat-title">{gettext("Missing")}</div>
-            <div class="stat-value text-sm text-warning">{length(@audit_result.missing)}</div>
+            <div class="admin-federation-stat-warning stat-value text-sm">
+              {length(@audit_result.missing)}
+            </div>
           </div>
         </div>
 

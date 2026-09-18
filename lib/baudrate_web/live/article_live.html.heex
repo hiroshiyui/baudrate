@@ -63,7 +63,7 @@
               class="size-5 opacity-50"
             />
           </span>
-          {display_name(@article.remote_actor)}<span class="text-base-content/50">@{@article.remote_actor.domain}</span>
+          {display_name(@article.remote_actor)}<span class="text-base-content/70">@{@article.remote_actor.domain}</span>
         </a>
       </span>
       <span :if={@article.user || @article.remote_actor}>&middot;</span>
@@ -433,7 +433,7 @@
                 phx-click="remove_from_board"
                 phx-value-board-id={board.id}
                 data-confirm={gettext("Remove this article from %{board}?", board: board.name)}
-                class="article-menu-remove-board text-warning"
+                class="article-menu-remove-board"
               >
                 <.icon name="hero-minus-circle" class="size-4" />
                 {gettext("Remove from %{board}", board: board.name)}

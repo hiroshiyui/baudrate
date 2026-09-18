@@ -1,5 +1,9 @@
 <div id="admin-user-detail-page" class="admin-user-detail-page space-y-6">
-  <nav id="admin-user-detail-breadcrumb" class="admin-user-detail-breadcrumb text-sm">
+  <nav
+    id="admin-user-detail-breadcrumb"
+    class="admin-user-detail-breadcrumb text-sm"
+    aria-label={gettext("Breadcrumb")}
+  >
     <.link navigate={~p"/admin/users"} class="admin-user-detail-back link">
       {gettext("← All users")}
     </.link>
@@ -301,7 +305,7 @@
               <time :if={sanction.expires_at} datetime={datetime_attr(sanction.expires_at)}>
                 {format_datetime(sanction.expires_at)}
               </time>
-              <span :if={is_nil(sanction.expires_at)} class="text-base-content/50">—</span>
+              <span :if={is_nil(sanction.expires_at)} class="text-base-content/70">—</span>
             </td>
             <td class="admin-user-detail-sanction-by break-words">
               {(sanction.issued_by && sanction.issued_by.username) || gettext("system")}

@@ -150,14 +150,27 @@
     </div>
 
     <div class="card bg-base-200 shadow-sm">
+      <%!-- `role="log"` carries an implicit `aria-live="polite"` with
+            `aria-relevant="additions"`, which is right for a message arriving
+            — and wrong for "Load older messages", which prepends a whole page
+            into the same region and had every one of them read out. The
+            control and the empty state now sit outside the log, and the load
+            is announced as a count instead. --%>
       <div
         class="message-list card-body p-4 space-y-3 max-h-[60vh] overflow-y-auto"
         id="message-list"
         phx-hook="ScrollBottomHook"
-        role="log"
         aria-label={gettext("Messages")}
         tabindex="0"
       >
+        <p
+          id="conversation-history-status"
+          class="conversation-history-status sr-only"
+          role="status"
+        >
+          {@history_announcement}
+        </p>
+
         <div
           :if={@has_older_messages}
           id="conversation-load-older"
@@ -182,66 +195,68 @@
           {gettext("No messages yet. Send the first one!")}
         </div>
 
-        <div
-          :for={msg <- @messages}
-          id={"message-#{msg.id}"}
-          class={[
-            "message chat",
-            if(msg.sender_user_id == @current_user.id, do: "chat-end", else: "chat-start")
-          ]}
-        >
-          <div class="chat-header text-xs text-base-content/70 mb-1">
-            <%= if msg.sender_user_id == @current_user.id do %>
-              {gettext("You")}
-            <% else %>
-              {participant_name(@other_participant)}
-            <% end %>
-            <time datetime={datetime_attr(msg.inserted_at)} class="ml-1">
-              {format_datetime(msg.inserted_at, "%H:%M")}
-            </time>
-          </div>
-          <div class={[
-            "chat-bubble",
-            if(msg.sender_user_id == @current_user.id, do: "chat-bubble-primary", else: "")
-          ]}>
-            <%= if msg.body_html do %>
-              <div class="prose prose-sm max-w-none">
-                {BaudrateWeb.SafeHTML.body_html(msg.body_html)}
-              </div>
-            <% else %>
-              <p class="whitespace-pre-wrap break-words">{msg.body}</p>
-            <% end %>
-            <.link_preview
-              :if={msg.link_preview && msg.link_preview.status in ["fetched", "failed"]}
-              preview={msg.link_preview}
-            />
-          </div>
-          <div :if={msg.sender_user_id != @current_user.id} class="chat-footer">
-            <button
-              id={"message-report-#{msg.id}"}
-              type="button"
-              class="message-report btn btn-ghost btn-xs"
-              phx-click="open_report_modal"
-              phx-value-type="message"
-              phx-value-id={msg.id}
-              phx-value-label={String.slice(msg.body || "", 0..100)}
-              aria-label={gettext("Report this message")}
-            >
-              <.icon name="hero-flag" class="size-3" />
-              {gettext("Report")}
-            </button>
-          </div>
-          <div :if={msg.sender_user_id == @current_user.id} class="chat-footer">
-            <button
-              id={"message-delete-#{msg.id}"}
-              type="button"
-              class="message-delete btn btn-ghost btn-xs text-error"
-              phx-click="delete_message"
-              phx-value-id={msg.id}
-              data-confirm={gettext("Delete this message?")}
-            >
-              {gettext("Delete")}
-            </button>
+        <div id="message-log" class="message-log space-y-3" role="log">
+          <div
+            :for={msg <- @messages}
+            id={"message-#{msg.id}"}
+            class={[
+              "message chat",
+              if(msg.sender_user_id == @current_user.id, do: "chat-end", else: "chat-start")
+            ]}
+          >
+            <div class="chat-header text-xs text-base-content/70 mb-1">
+              <%= if msg.sender_user_id == @current_user.id do %>
+                {gettext("You")}
+              <% else %>
+                {participant_name(@other_participant)}
+              <% end %>
+              <time datetime={datetime_attr(msg.inserted_at)} class="ml-1">
+                {format_datetime(msg.inserted_at, "%H:%M")}
+              </time>
+            </div>
+            <div class={[
+              "chat-bubble",
+              if(msg.sender_user_id == @current_user.id, do: "chat-bubble-primary", else: "")
+            ]}>
+              <%= if msg.body_html do %>
+                <div class="prose prose-sm max-w-none">
+                  {BaudrateWeb.SafeHTML.body_html(msg.body_html)}
+                </div>
+              <% else %>
+                <p class="whitespace-pre-wrap break-words">{msg.body}</p>
+              <% end %>
+              <.link_preview
+                :if={msg.link_preview && msg.link_preview.status in ["fetched", "failed"]}
+                preview={msg.link_preview}
+              />
+            </div>
+            <div :if={msg.sender_user_id != @current_user.id} class="chat-footer">
+              <button
+                id={"message-report-#{msg.id}"}
+                type="button"
+                class="message-report btn btn-ghost btn-xs"
+                phx-click="open_report_modal"
+                phx-value-type="message"
+                phx-value-id={msg.id}
+                phx-value-label={String.slice(msg.body || "", 0..100)}
+                aria-label={gettext("Report this message")}
+              >
+                <.icon name="hero-flag" class="size-3" />
+                {gettext("Report")}
+              </button>
+            </div>
+            <div :if={msg.sender_user_id == @current_user.id} class="chat-footer">
+              <button
+                id={"message-delete-#{msg.id}"}
+                type="button"
+                class="message-delete btn btn-ghost btn-xs text-error"
+                phx-click="delete_message"
+                phx-value-id={msg.id}
+                data-confirm={gettext("Delete this message?")}
+              >
+                {gettext("Delete")}
+              </button>
+            </div>
           </div>
         </div>
       </div>

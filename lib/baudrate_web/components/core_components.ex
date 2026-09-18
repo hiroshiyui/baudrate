@@ -1095,7 +1095,7 @@ defmodule BaudrateWeb.CoreComponents do
     >
       <div class="card-body p-3">
         <span class="link-preview-url text-sm text-base-content/70 truncate">{@preview.url}</span>
-        <span class="link-preview-domain text-xs text-base-content/50">{@preview.domain}</span>
+        <span class="link-preview-domain text-xs text-base-content/70">{@preview.domain}</span>
       </div>
     </a>
     """
@@ -1129,7 +1129,7 @@ defmodule BaudrateWeb.CoreComponents do
         >
           {@preview.description}
         </p>
-        <span class="link-preview-domain text-xs text-base-content/50">{@preview.domain}</span>
+        <span class="link-preview-domain text-xs text-base-content/70">{@preview.domain}</span>
       </div>
     </a>
     """

@@ -200,6 +200,19 @@ a:focus-visible {
   outline-offset: -2px;
 }
 
+/* Warning-coloured *text*. `--color-warning` is tuned as a background (it
+   pairs with --color-warning-content at 8.30:1); as a foreground on base-100
+   it is 1.89:1, which fails WCAG 1.4.3 — worst on the destructive "Remove
+   from board" item, whose only distinguishing signal was that colour.
+   `--color-warning-fg` is the foreground-safe amber; the fallback keeps other
+   themes unchanged. */
+.article-menu-remove-board,
+.admin-federation-stat-warning,
+.admin-users-stat-value-warning,
+.admin-totp-verify-icon {
+  color: var(--color-warning-fg, var(--color-warning));
+}
+
 /* Touch/tap feedback for interactive cards (mirrors focus-visible highlight).
    On release the shadow blurs outward and fades to transparent. */
 a.card,

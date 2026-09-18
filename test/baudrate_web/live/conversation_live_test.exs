@@ -123,11 +123,24 @@ defmodule BaudrateWeb.ConversationLiveTest do
       assert has_element?(view, "#conversation-compose-input[value='']")
     end
 
-    test "message list is exposed as a labelled log", %{conn: conn, user: user, other: other} do
+    test "the log covers the messages, not the load-older control", %{
+      conn: conn,
+      user: user,
+      other: other
+    } do
       conn = log_in_user(conn, user)
       {:ok, view, _html} = live(conn, "/messages/new?to=#{other.username}")
 
-      assert has_element?(view, "#message-list[role='log'][aria-label='Messages']")
+      # `role="log"` implies `aria-live="polite"` with `aria-relevant="additions"`.
+      # While it wrapped the whole list, "Load older messages" prepended a page
+      # of history into the live region and every message was read out — the
+      # `CLAUDE.md` rule about never making a whole list live.
+      assert has_element?(view, "#message-list[aria-label='Messages']")
+      assert has_element?(view, "#message-log[role='log']")
+      refute has_element?(view, "#message-list[role='log']")
+
+      # The control and the status node sit outside the log.
+      assert has_element?(view, "#conversation-history-status[role='status']")
     end
   end
 
