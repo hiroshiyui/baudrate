@@ -52,7 +52,10 @@ See [`doc/adr/`](doc/adr/README.md) for the Architecture Decision Records — th
 fail-closed proxy trust, context-boundary authorization, …), including the
 alternatives that were rejected. Before "simplifying" any gotcha in this file,
 check whether an ADR explains what it defends. New architectural decisions get a
-new ADR; accepted ADRs are superseded, never rewritten.
+new ADR; accepted ADRs are superseded, never rewritten. When a new record
+supersedes, amends or refines an old one, update the old one's Status line
+**and** its row in `doc/adr/README.md` — `test/doc/adr_index_test.exs` fails
+when the row drops an ADR number or a relationship verb the Status line uses.
 
 ### Contexts
 

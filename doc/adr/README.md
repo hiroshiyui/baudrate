@@ -73,4 +73,40 @@ template and conventions. ADRs 0001–0021 were written retroactively on
    reads `Accepted, except decision 3 …, superseded by 0037`. Naming the
    decision matters more than the wording — a bare `Superseded by` would retire
    an ADR whose other decisions are still load-bearing.
-5. Add a row to the index above, matching the record's own Status line.
+5. Add a row to the index above. It may abbreviate a long Status line — the
+   index is a table, and 0010's runs to six lines — but it must keep the
+   relationship verb and **every ADR number the record's Status refers to**.
+   The index is where a reader looks first; a row that drops the link to the
+   record that changed this one sends them off with the superseded answer.
+   `test/doc/adr_index_test.exs` enforces both halves.
+
+## How records relate
+
+Four verbs, used deliberately. The record's own Status line says which one
+applies, and its index row repeats it:
+
+| Verb | What it means |
+|---|---|
+| **superseded by** | the decision is reversed — [0011](0011-role-levels-for-board-authorization.md) → [0042](0042-roles-are-ordered-and-capabilities-are-not-configurable.md) |
+| **amended by** | one decision inside it changed; the rest stands — [0035](0035-operational-visibility-stays-on-the-host.md) → [0044](0044-the-instance-tells-its-admins-when-it-is-unwell.md) |
+| **refined by** | it stands, with a bounded exception — [0006](0006-media-proxy-no-third-party-subresources.md) → [0045](0045-the-video-player-loads-on-a-click.md) |
+| **renamed by** | prose drift only: names used in the record predate a rename and the decision is untouched — [0040](0040-retention-deletes-what-nobody-touched.md) → [0041](0041-rss-and-atom-are-syndication.md) |
+
+A record whose whole purpose is to change an older one also carries an
+**Amends** / **Refines** header field naming it (see 0044 and 0045). That is
+the forward pointer; the older record's Status line is the backward one, and
+both have to be written — a reader arrives from either end.
+
+Two statuses deliberately do **not** exist. Nothing is `Deprecated`: every
+reversal here has a replacement, and a status value nothing ever takes is the
+same false catalogue entry that
+[0042](0042-roles-are-ordered-and-capabilities-are-not-configurable.md) is
+about. Nothing is wholly `Superseded` either — all three supersessions are
+partial, which is what rule 4 is defending.
+
+That last point refines rule 1 of
+[0000](0000-use-architecture-decision-records.md), which says to set a
+superseded record's status to a bare `Superseded by NNNN`. Practice never did:
+no record has ever carried that form, because each reversal left decisions
+standing that a bare status would have retired. 0000 is accepted and not
+rewritten, so this paragraph is where that lives.
