@@ -346,6 +346,7 @@ lib/
 │   │   ├── unread_dm_count_hook.ex         # Real-time @unread_dm_count via PubSub
 │   │   └── unread_notification_count_hook.ex # Real-time @unread_notification_count via PubSub
 │   ├── plugs/
+│   │   ├── api_headers.ex       # Baseline security headers for non-browser responses (api, feeds, AP, media)
 │   │   ├── article_ap_content_neg.ex # Content-negotiates /articles/:slug so remote AP can discover it
 │   │   ├── authorized_fetch.ex  # Optional HTTP Signature verification on AP GET requests
 │   │   ├── cache_body.ex        # Cache raw request body (for HTTP signature verification)
@@ -611,7 +612,10 @@ Key functions in `Content`:
 - `can_post_in_board?(board, user)` — checks `min_role_to_post` + active status + `user.create_content` permission
 - `list_visible_top_boards(user)` / `list_visible_sub_boards(board, user)` — role-filtered board listings
 
-Only boards with `min_role_to_view == "guest"` are federated.
+Only boards with `min_role_to_view == "guest"` **and** `ap_enabled == true` are
+federated. That pair is `Content.Board.federated?/1`, and it is the single
+predicate every federation path uses, in both directions — never `public?/1`,
+which asks only about the view role.
 
 ### Board Moderators
 
@@ -657,6 +661,17 @@ modes controlled by the `registration_mode` setting (`approval_required`,
 
 Registration is rate-limited to 5 attempts per hour per IP. The same password
 policy as the setup wizard applies (12+ chars, complexity requirements).
+
+Usernames are unique **without regard to case** (migration
+`20260918160000_unique_username_case_insensitively`), on top of
+`Auth.ReservedHandle`'s list. A plain unique index let `Admin` be registered
+beside `admin`, which is a distinct fediverse actor — `user_actor/2` and
+WebFinger both match the name exactly — and it also broke mentions for good:
+`get_user_by_username_ci/1` matches `lower(username)` and raised
+`Ecto.MultipleResultsError` from `notify_mentions/4`, which runs after the
+insert transaction, so it killed the socket of anyone who wrote `@admin` in a
+post. The migration renames the newer row of an existing collision rather than
+refusing to deploy; the oldest row keeps its name.
 
 Registration requires accepting terms: a system activity-logging notice (always
 shown) and an optional site-specific End User Agreement (admin-configurable via
@@ -824,7 +839,16 @@ and for users with no blocks or mutes, so the check cannot live there.
 `Filters.exclude_remote_nonpublic/1` is the one definition, applied per query
 (board listings, search, tag pages, bookmarks, profile boosts, unread badges,
 comment lists), with join-aware equivalents where the row is not the first
-binding. It is unconditional, matching the row-level gates
+binding. The **personal timeline** carries its own form of the same rule,
+because there the activity type decides whose audience the viewer is in: a
+`Create` may be `followers_only` (the follow join matched the author, so the
+viewer really is a follower), an `Announce` may not (the join matched the
+booster and says nothing about the author's audience — otherwise a hostile
+instance could Announce a victim's followers-only post into the timeline of
+everyone who follows the booster), and `direct` never appears at all.
+`Federation.Timeline.list_timeline_items/2` and its hand-written count SQL both
+carry that clause; a count that disagrees with the page offers a pager page that
+renders empty. It is unconditional, matching the row-level gates
 (`ArticleHelpers.user_can_view_article?/2`,
 `ActivityPubController.publicly_servable?/1`), which refuse these rows to
 everyone including admins.
@@ -979,8 +1003,9 @@ Hashtags (`#tag`) in article bodies are extracted, stored, and linkified:
    respecting board visibility and block/mute filters.
 5. **Autocomplete**: Article editors include a `HashtagAutocompleteHook` that
    suggests existing tags as the user types `#prefix`.
-6. **Federation**: `Federation.extract_hashtags/1` delegates to
-   `Content.extract_tags/1` for consistent hashtag parsing.
+6. **Federation**: `ObjectBuilder`'s private `extract_hashtags/1` delegates to
+   `Content.extract_tags/1`, so an outbound Article's `tag` array is parsed the
+   same way as the local tag pages.
 
 Key modules:
 - `Content.ArticleTag` — schema (`article_tags` table)
@@ -1156,8 +1181,9 @@ Key functions in `Content`:
 - `search_articles/2` — dual-path article search with pagination and board visibility
 - `search_comments/2` — trigram ILIKE comment search with pagination and board visibility
 - `search_visible_boards/2` — board search by name/description with pagination and view-role visibility
-- `contains_cjk?/1` — detects CJK characters in search query (private)
-- `sanitize_like/1` — escapes `%`, `_`, `\` for safe ILIKE queries (private)
+- `Content.Filters.contains_cjk?/1` — detects CJK characters in a search query
+- `Repo.sanitize_like/1` — escapes `%`, `_`, `\` for safe ILIKE queries (also
+  reachable as `Content.Filters.sanitize_like/1`, which delegates to it)
 
 User input is escaped via `sanitize_like/1` before interpolation into ILIKE
 patterns to prevent SQL wildcard injection.
@@ -1317,7 +1343,7 @@ a member past their time nor lift one early. `SessionCleaner` only sends the
 "it has ended" notice.
 
 **One gate.** `Auth.ensure_can_interact/1` returns `:ok` or
-`{:error, :banned | :account_suspended | :account_silenced | :account_moved}`
+`{:error, :banned | :account_suspended | :account_silenced | :account_moved | :terms_not_accepted}`
 in a single query, and is what every context function calls before it lets an
 account create content or interact — articles, edits, comments, timeline replies,
 likes, boosts, forwards, poll votes, follows, DMs, invites, and display name,
@@ -1455,6 +1481,58 @@ one message's text in `reports.message_body`, taken when the report is made and
 never cast from attributes: moderators see the reported message and nothing
 else from the conversation, and the copy survives the sender deleting it.
 
+### Terms and Site Rules
+
+The three public documents live in `live_session :public_browsable` (`/terms`,
+`/rules`, `/privacy`, all `PolicyLive`), never `:public`:
+`:redirect_if_authenticated` would bounce a member off the very document they
+are being asked to accept. The terms and the privacy policy are single markdown
+settings (`Setup.get_policy/1`, keys `eua` and `privacy_policy` — the historical
+`eua` name is kept so no instance loses the text it has written). The site rules
+are records, so `get_policy/1` deliberately covers only `:terms` and `:privacy`.
+
+**Accepting the terms is recorded and versioned**
+([ADR 0031](adr/0031-terms-acceptance-is-recorded-and-versioned.md)).
+`Setup.User.accept_terms/1` validates the registration checkbox **and** stamps
+`users.terms_accepted_at` and `users.terms_version` in one function, because
+they used to be two — the box was validated and the answer thrown away. Neither
+field is castable from params: a member who could set `terms_version` would
+accept a version that does not exist yet. The published version is
+`settings.eua_version` (`Setup.current_terms_version/0`), moved only by
+`Setup.publish_terms_version/0` behind a deliberate checkbox — never derived
+from a hash of the text, which cannot tell a new clause from a corrected typo
+and would prompt the whole instance on every edit.
+
+The pause is `{:error, :terms_not_accepted}` from `Auth.ensure_can_interact/1`,
+so it covers every posting path at once. It is checked **last**, after the
+sanctions: a member who is also silenced is told about the silence, which is the
+one they cannot lift alone. It inherits that gate's exemptions — undo, deleting
+your own content, **reporting abuse** and every account-security action stay
+open, and reading is never affected. **Bot accounts are exempt inside the gate's
+own query** (`Auth.terms_pending?/1` likewise): a bot cannot sign in to accept,
+and `Content.create_article/3` puts bot posts through this gate, so without the
+exemption publishing new terms would silently stop every RSS feed. A signed-in
+member clears it on `/terms` (`Auth.accept_current_terms/1`, the
+`#terms-agreement` card — `-agreement`, never `-accept`, which content blockers
+hide). `test/baudrate/auth/terms_gate_test.exs` is the acceptance gate; every
+new posting path belongs in it.
+
+**Site rules are records, and a report may cite one**
+([ADR 0032](adr/0032-rules-are-records-and-retired-not-deleted.md)).
+`Setup.Rule` rows carry `position`, `title`, a markdown `body` and `retired_at`;
+`/rules` numbers them with stable `#rule-N` anchors and `/admin/rules` edits
+them. `position` is assigned by `Setup.create_rule/1` and swapped by
+`Setup.move_rule/2` inside a transaction, never cast from a form — an admin
+typing a number is how two rules claim the same place. A rule is **retired,
+never deleted** (`Setup.retire_rule/1`): it leaves `/rules` and the report
+dialog, but every report that cited it still resolves, where a hard delete would
+empty the citation on every past report. `reports.rule_id` is always optional,
+even for the `rule_violation` category, because reporting abuse stays open to
+members under sanction and behind on the terms — making someone find the right
+rule number first would contradict that. The client value arrives through
+`SafetyActions.report_details/1`, the one place report fields come from the
+client.
+
 ### Notifications
 
 In-app notification system with real-time delivery via PubSub.
@@ -1524,7 +1602,7 @@ holds every rule; the web layer only collects credentials.
 | `DataPortability.DownloadNonces` | ETS single-use nonces for download tokens (per node, 90 s) |
 | `DataExportLive` (`/profile/export`) | Eligibility, request, cancel, "cancel and sign out everywhere else", download (re-auth → token → `phx-trigger-action`), history |
 | `ExportController` (`POST /exports/:id/download`) | Per-IP rate limit (10 / 15 min, `:data_export_download`, 429), Fetch Metadata (`same-origin`/`navigate`/`document`), session-bound 60 s token, nonce consumed once, then build → claim → `send_file` with `attachment`/`no-store`/`nosniff` and cleanup. Any other failure is the same 404; a busy slot is 503 + `Retry-After` |
-| `Layouts.data_export_banner/1` | Warning on every page while a request is pending/ready (`AuthHooks` assigns `:active_data_export`) |
+| `Layouts.data_export_notice/1` | Warning on every page while a request is pending/ready (`AuthHooks` assigns `:active_data_export`). Named `-notice`, never `-banner`: content blockers hide selectors that look like a consent bar, and a warning the member cannot see is worse than none |
 | `DataPortability.sysop_export/3` / `Release.export_user_data/3` | Audited SysOp export for users who cannot self-serve. Requires operator and reason; output directory owner-only and outside web roots; `O_EXCL` + `0600`; records a `sysop` request row and a notice |
 | `Admin.DataExportsLive` (`/admin/data-exports`) | Admin-only, read-only history (not moderators, not the moderation log); no export-on-behalf |
 
@@ -1552,10 +1630,10 @@ rules; `/profile/move` (`AccountMigrationLive`) only collects input.
 | `AccountMigration.request_move/4` | Eligibility → no pending move → target (network) → step-up re-authentication inside the context → `account_moves` row (`pending`, `send_after` = +24 h) → `account_move_requested` notice |
 | `AccountMove` | `account_moves` rows: `pending`/`sent`/`cancelled`/`failed`, one pending per user (partial unique index), browser family but never an IP |
 | Cancellation | `cancel_move/3` (owner, any session) and `cancel_active_moves/2`, called next to `cancel_active_exports/2` on password change, TOTP disable, sign out everywhere and ban; `account_move_cancelled` notice |
-| Banner | `Layouts.account_move_banner/1` on every page while a move is pending (`:active_account_move`, from `active_move_summary/1` in `AuthHooks`) |
+| Notice | `Layouts.account_move_notice/1` on every page while a move is pending (`:active_account_move`, from `active_move_summary/1` in `AuthHooks`) — `-notice`, not `-banner`, because ADR 0025 relies on this reaching a hijacked account's owner |
 | `AccountMigration.sweep_due_moves/0` / `send_move/1` | Hourly (`SessionCleaner`). Re-checks eligibility and the target at send time; failures mark the move `failed` (`failure_reason`) with an `account_move_failed` notice. Success: one transaction marks it `sent` (conditional on `pending`, so a concurrent cancel wins) and sets `moved_to`/`moved_at`; then an actor `Update` (with `movedTo`) and `Publisher.build_move/2` go to remote followers, local followers are moved, and `account_moved` is sent |
 | `AccountMigration.migrate_local_followers/2` | Each active local follower: remove the local follow, `follow_on_behalf/2` (pending `UserFollow` + `Follow` delivery, skipped if already following), `actor_moved` notice (configurable type) |
-| Read-only | `AccountMigration.ensure_not_moved/1` at the context boundary: `Content.create_article/3` (Multi-shaped `{:error, :account, :account_moved, _}`; `forwarded_comment: true` exempts a comment forwarded by someone else), `update_article/3` (editor), `create_comment/2`, the create branch of article/comment like and boost toggles and timeline item like/boost, `create_timeline_item_reply/4`, `cast_vote/3`, `Messaging.can_send_dm?/2`, `Auth.can_generate_invite?/1`, and `can_create_content?/1` (so board posting and forwards). `create_local_follow/2` refuses following a moved account. Undoing, deleting, following and reading stay allowed |
+| Read-only | `Auth.ensure_can_interact/1` at the context boundary ([ADR 0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md)) refuses a moved account with `{:error, :account_moved}` next to bans, suspensions and silences, at every posting and interaction path: `Content.create_article/3` (Multi-shaped `{:error, :account, :account_moved, _}`; `forwarded_comment: true` exempts a comment forwarded by someone else), `update_article/3` (editor), `create_comment/2`, the create branch of article/comment like and boost toggles and timeline item like/boost, `create_timeline_item_reply/4`, `cast_vote/3`, `Messaging.can_send_dm?/2`, `Auth.can_generate_invite?/1`, and `can_create_content?/1` (so board posting and forwards). The follow paths pass `moved: :allow` — a move is a redirect, not a punishment — while `Federation.Follows` still refuses following a moved *target*, which is the one remaining `AccountMigration.ensure_not_moved/1` call site in `lib/`. Undoing, deleting, following and reading stay allowed |
 | After the move | `Layouts.account_moved_notice/1` for the owner; `/users/:name` shows "moved" with a link and no Follow/Message; `AccountMigration.remove_redirect/3` (step-up) clears the redirect, publishes an actor `Update`, sends `account_redirect_removed`; the move still counts toward 30 days |
 | Inbound `Move` | `AccountMigration.handle_inbound_move/2` (called by `InboxHandler`): alias check, `Undo(Follow)` + pending `Follow` per local follower (`follow_on_behalf/2`), `actor_moved` notices, timeline item migration, `board_actor_moved` to admins, 30-day bound per origin |
 
@@ -1627,7 +1705,7 @@ Each bot consists of:
    `Content.create_article/2` with the bot user as author. The `published_at`
    field on the article records the original feed entry publication date.
 6. On success, `Bots.mark_fetch_success/1` schedules the next fetch. On failure,
-   `Bots.mark_fetch_error/1` applies exponential backoff (5 min → 10 min → 20 min,
+   `Bots.mark_fetch_error/2` applies exponential backoff (5 min → 10 min → 20 min,
    capped at 24 hours).
 
 **FaviconFetcher:** Scans the site HTML for `<link rel="apple-touch-icon">` and
@@ -1662,7 +1740,7 @@ regular user profile fields).
 - `list_due_bots/0` — bots with `next_fetch_at` nil or in the past
 - `already_posted?/2` — GUID dedup check
 - `record_timeline_item/3` — records a posted entry
-- `mark_fetch_success/1` / `mark_fetch_error/1` — update fetch state with backoff
+- `mark_fetch_success/1` / `mark_fetch_error/2` — update fetch state with backoff
 - `avatar_needs_refresh?/1` / `mark_avatar_refreshed/1` — favicon refresh tracking (gate + 7-day cooldown)
 - `increment_favicon_fail_count/1` — increments consecutive failure counter
 
@@ -1748,7 +1826,7 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `/ap/site` — Organization actor (instance actor, discoverable as `acct:site@host`)
 - `/ap/articles/:slug` — Article object with replies link and `baudrate:*` extensions
 - `/articles/:slug` — content-negotiated: AP `Accept` headers (`application/activity+json`, `application/ld+json`, `application/json`) are forwarded to the AS2 article endpoint by `BaudrateWeb.Plugs.ArticleApContentNeg`; browser requests fall through to `ArticleLive`. The article LiveView also emits `<link rel="alternate" type="application/activity+json" href="…/ap/articles/:slug">` for federated articles, so remote implementations can discover the AP `id` from the human URL when content negotiation isn't attempted
-- `/ap/users/:username/outbox` — paginated `OrderedCollection` of `Create(Article)`
+- `/ap/users/:username/outbox` — paginated `OrderedCollection` of `Create(Article)`, counting and listing only the user's articles in **federated** boards (`min_role_to_view == "guest"` and `ap_enabled`); a board-less article is not in the outbox at all, because the query joins `board_articles`
 - `/ap/boards/:slug/outbox` — paginated `OrderedCollection` of `Announce(Article)`
 - `/ap/boards` — `OrderedCollection` of all public AP-enabled boards
 - `/ap/articles/:slug/replies` — `OrderedCollection` of comments as Note objects
@@ -1779,9 +1857,9 @@ once; `:discard` stores it without processing. Handler tests call
 
 **Incoming activities handled** (via `InboxHandler`):
 - `Follow` / `Undo(Follow)` — follower management with auto-accept. Follow activities targeting a non-federated board actor (`ap_enabled: false`) are answered with `Reject(Follow)` — the board inbox controller already returns 404 for such boards, but the shared inbox path also applies the guard so that a Follow addressed directly to a board actor URI cannot create a spurious follower record.
-- `Create(Note)` — stored as threaded comments on local articles (with remote reply chain walking up to 5 hops across at most 3 hosts, rate-limited, to resolve intermediate replies), or as DMs if privately addressed (no `as:Public`, no followers collection)
+- `Create(Note)` — stored as threaded comments on local articles (with remote reply chain walking up to 5 hops across at most 3 hosts, rate-limited, to resolve intermediate replies), or as DMs if privately addressed (no `as:Public`, no followers collection). Dropped with `:ok` and a log line — never a 4xx, so the sender does not retry — when the target article fails `article_federated?/1`, when it is **locked** (a lock is a moderation decision and has to hold on the side most of the traffic comes from) or when it is **soft-deleted** (the reply-target resolvers use a bare `Repo.get/2`, which does not filter `deleted_at`, so otherwise the author kept being notified about a post they had withdrawn)
 - `Create(Article)` / `Create(Page)` — stored as remote articles in target boards (Page for Lemmy interop)
-- `Like` / `Undo(Like)` — article favorites. Remote articles (`remote_actor_id` set) always accept likes regardless of their board's `ap_enabled`; local articles require membership in at least one public, AP-enabled board (enforced by `article_federated?/1` in `InboxHandler`).
+- `Like` / `Undo(Like)` — article favorites, gated by `article_federated?/1` in `InboxHandler`. Remote articles (`remote_actor_id` set) always qualify: they already exist on the fediverse under their own `ap_id`. A **local** article qualifies when it is in at least one public, AP-enabled board **or** its author has remote followers — user-actor fan-out may already have published it — and is refused when it has neither.
 - `Announce` / `Undo(Announce)` — boosts/shares (bare URI or embedded object map); routes boosted Article/Page to boards following the booster, creates timeline items for user followers with boost attribution (loop-safe). Article-target boosts follow the same remote-vs-local federation rule as Likes.
 - `Update(Note/Article/Page)` — content updates with authorship check
 - `Update(Person/Group)` — actor profile refresh
@@ -1818,7 +1896,7 @@ fetches, media cache warming, link previews).
 - `Reject(Follow)` / `Undo(Follow)` — sent when a user blocks a remote actor, to end the actor's follow of the user and the user's follow of the actor (`Federation.sever_remote_follows/2`). No `Block` activity is ever sent (ADR 0026)
 - `Follow` / `Undo(Follow)` — sent when a local user follows/unfollows a remote actor
 - `Update(Person/Group/Organization)` — distributed to followers on key rotation or profile changes
-- Delivery targets vary by activity type: `Create`/`Update`/`Delete` go to followers of the article's author + followers of all public boards the article is in; user `Announce`/`Undo(Announce)` (boosts) go to the **booster's** followers via `enqueue_for_followers/2`
+- Delivery targets vary by activity type: `Create`/`Update` go to followers of the article's author plus followers of every **federated** board the article is in, and the author's own followers are included only when `Delivery.article_boards_federated?/1` holds (a board-less article counts as public); user `Announce`/`Undo(Announce)` (boosts) go to the **booster's** followers via `enqueue_for_followers/2`, under the same gate. `Delete` and `Undo` pass `intent: :withdraw` and are never gated — a retraction has to reach every server that may already hold the object
 - Shared inbox deduplication: multiple followers at the same instance → one delivery
 - DB-backed queue (`delivery_jobs` table). `Delivery.enqueue/3` inserts all of an activity's jobs in one statement and calls `pg_notify` on `DeliveryWorker.channel/0`; PostgreSQL delivers the notification on commit, and `DeliveryWorker` (listening through `Postgrex.Notifications` on its own connection) starts delivering at once. It also polls every 60 s for retries
 - `DeliveryWorker` keeps up to `delivery_max_concurrency` (10) deliveries in flight as tasks under `Federation.TaskSupervisor` and starts the next when one finishes. A task still running `http_request_timeout` + 15 s after it started is killed; a killed or crashed task is recorded as a failed attempt (`Delivery.record_interrupted/2`)
@@ -1858,7 +1936,7 @@ fetches, media cache warming, link previews).
 - Announce → timeline item: when a followed actor boosts content, the boosted object is fetched and stored as a timeline item with `activity_type: "Announce"` and `boosted_by_actor_id` pointing to the booster. Original author is resolved via `attributedTo`. Board routing: if the booster is followed by a board, boosted Article/Page content is also routed to that board (loop-safe: `create_remote_article` does not trigger outbound federation).
 - Delete propagation: soft-deletes timeline items on content or actor deletion
 - `Federation.migrate_timeline_items/2` — Move activity support (repoint timeline items to the new actor)
-- `/timeline` LiveView — paginated personal timeline with real-time PubSub updates
+- `/timeline` LiveView (`TimelineLive`) — paginated personal timeline with real-time PubSub updates. The page, its tables and `Federation.Timeline` were called "feed" until [ADR 0039](adr/0039-the-personal-stream-is-a-timeline.md): "feed" also names the RSS/Atom the bots read and this instance publishes, so the stream every other implementation calls a timeline is called one here too. `GET /feed` answers 301 to `/timeline` (`PageController.feed_redirect/2`, carrying `?page` across from an allow-list, because `~p` raises on some query shapes a URL can decode to), since members bookmark it. The RSS vocabulary deliberately keeps the word: `bot_feed_items`, `Bots.FeedParser`, `FeedController`, `/feeds/*` and the WAI-ARIA `role="feed"`
 
 **Timeline item replies**:
 - `timeline_item_replies` table — local users can reply to remote timeline items inline
@@ -2057,7 +2135,7 @@ Exposed via `Federation.fetch_remote_object/1` (preview) and `Federation.lookup_
 - Real client IP extraction — `RealIp` plug reads from configurable proxy header (e.g., `x-forwarded-for`) for accurate per-IP rate limiting behind reverse proxies; honored only when the immediate peer matches the `trusted_proxies` allow-list (exact IPs or CIDR ranges) so untrusted peers cannot spoof their IP. Fail closed: an unconfigured allow-list defaults to loopback only and an empty list trusts nobody, configurable at runtime via `BAUDRATE_TRUSTED_PROXIES`
 - Private keys encrypted at rest with AES-256-GCM
 - Recovery codes verified atomically via `Repo.update_all` to prevent TOCTOU race conditions
-- Non-guest boards (`min_role_to_view != "guest"`) hidden from all AP endpoints (actor, outbox, inbox, WebFinger, audience resolution)
+- Boards federate only when `min_role_to_view == "guest"` **and** `ap_enabled == true` (`Board.federated?/1`), and that predicate applies in **both** directions. Inbound: the board actor, inbox, outbox, following/followers endpoints and WebFinger all 404, and a `Follow` of such a board is answered `Reject(Follow)`. Outbound: `ActivityPubController.publicly_servable?/1` refuses to serve the article object and its replies collection, the user outbox counts and lists only articles in federated boards, the board `Announce` and boost fan-outs skip them, `Delivery.enqueue_for_article/4` withholds even the *author's own* followers, and `ObjectBuilder` names only federated boards in `cc`/`audience`, so a private slug never leaves the instance. A `Delete` or `Undo` is never gated (`intent: :withdraw`), or turning `ap_enabled` off would strand an already-published post on the fediverse for good
 - Optional authorized fetch mode — require HTTP signatures on GET requests to AP endpoints (exempt: WebFinger, NodeInfo)
 - Signed outbound GET requests — actor resolution falls back to signed GET when remote instances require authorized fetch
 - Session cookie `secure` flag handled by `force_ssl` / `Plug.SSL` in production
@@ -2180,6 +2258,7 @@ SetTheme (inject admin-configured DaisyUI themes) → RefreshSession (token rota
 ActivityPub GET requests use the `:activity_pub` pipeline:
 
 ```
+ApiHeaders (nosniff, DENY, no-referrer, default-src 'none') →
 RateLimit (120/min per IP) → CORS → AuthorizedFetch (optional sig verify) →
 ActivityPubController (content-negotiated response)
 ```
@@ -2187,7 +2266,8 @@ ActivityPubController (content-negotiated response)
 ActivityPub inbox (POST) requests use a separate pipeline:
 
 ```
-RateLimit (120/min per IP) → RequireAPContentType (415 on non-AP types) →
+ApiHeaders → RateLimit (120/min per IP) →
+RequireAPContentType (415 on non-AP types) →
 CacheBody (256 KB max) → VerifyHttpSignature →
 RateLimitDomain (60/min per domain) →
 ActivityPubController (dispatch to InboxHandler)
@@ -2196,8 +2276,15 @@ ActivityPubController (dispatch to InboxHandler)
 Feed requests use a lightweight pipeline (no session, no CSRF):
 
 ```
-RateLimit (30/min per IP) → FeedController (XML response)
+ApiHeaders → RateLimit (30/min per IP) → FeedController (XML response)
 ```
+
+`BaudrateWeb.Plugs.ApiHeaders` heads the `:api`, `:feeds`, `:activity_pub` and
+`:activity_pub_inbox` pipelines and the `/media` scope, because
+`put_secure_browser_headers/1` is in `:browser` only — those responses carried
+no `x-content-type-options`, no `x-frame-options` and no CSP at all. Its policy
+denies everything (`default-src 'none'`) rather than allowing `'self'`: none of
+these responses loads a subresource.
 
 ### Rate Limiting
 
@@ -2932,7 +3019,7 @@ to `tmp/wallaby_downloads` without a prompt.
 | `comments_test.exs` | 2 | Member posts a comment, guest cannot |
 | `composer_test.exs` | 4 | Markdown preview, draft kept and restored then cleared on posting, posting and voting on a poll, image upload attached to the article |
 | `data_export_test.exs` | 1 | Request an export, download the archive through the Fetch Metadata check once ready |
-| `feed_pagination_test.exs` | 3 | Pager (including from `?page=2`), scroll back to the list, `@mention` autocomplete |
+| `timeline_pagination_test.exs` | 3 | Pager (including from `?page=2`), scroll back to the list, `@mention` autocomplete |
 | `following_test.exs` | 2 | Following page and empty state |
 | `home_page_test.exs` | 4 | Guest welcome, board listing, personalized greeting, board navigation |
 | `invites_test.exs` | 3 | Invites page, generate button, generate a code and copy its link |
@@ -2950,6 +3037,7 @@ to `tmp/wallaby_downloads` without a prompt.
 | `safety_test.exs` | 3 | Block from a profile (stops comments) and unblock from Blocked Accounts; mute hides a member's articles until unmuted; report and mute from a remote post's menu |
 | `search_test.exs` | 3 | Keyword search, no results, `author:` operator |
 | `sign_out_everywhere_test.exs` | 1 | Signing out everywhere else disconnects another browser's open page |
+| `terms_accept_test.exs` | 1 | A member behind on the published terms can see and press the accept control on `/terms` |
 | `setup_wizard_test.exs` | 1 | Full setup wizard flow (DB→Site Name→Admin→Recovery Codes) |
 | `two_factor_test.exs` | 3 | TOTP enrollment at first sign-in, wrong then right code, single-use recovery code |
 | `user_profile_test.exs` | 2 | Profile page with stats, author link navigates to profile |
