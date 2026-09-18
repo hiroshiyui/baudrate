@@ -390,7 +390,14 @@ defmodule BaudrateWeb.ActivityPubController do
   # followers-only/direct. `ObjectBuilder` stamps `to: as:Public`, so leaking a
   # followers-only Note here would re-publish it to the whole fediverse.
   defp publicly_servable?(article) do
-    board_ok = article.boards == [] or Enum.any?(article.boards, &Board.public?/1)
+    # `federated?/1`, not `public?/1`: the documented gate is
+    # `min_role_to_view == "guest"` *and* `ap_enabled`. With `public?/1` an
+    # article in a guest-readable board whose federation the admin had turned
+    # off was still served as an AP object and listed in the user outbox — and
+    # since no publisher ever announces such an article, the only way to reach
+    # it was to guess the slug. Nothing is hidden from the web by this; it is
+    # the `ap_enabled` switch meaning what it says.
+    board_ok = article.boards == [] or Enum.any?(article.boards, &Board.federated?/1)
 
     visibility_ok =
       is_nil(article.remote_actor_id) or article.visibility in ["public", "unlisted"]

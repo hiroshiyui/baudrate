@@ -270,13 +270,19 @@ defmodule Baudrate.Federation.Collections do
     }
   end
 
+  # `ap_enabled` as well as `min_role_to_view`, which is the documented
+  # federation gate. Both queries carry the same clause: a count that
+  # disagrees with the page hands a remote crawler an outbox page that
+  # renders empty.
   defp count_public_user_articles(user_id) do
     from(a in Baudrate.Content.Article,
       join: ba in Baudrate.Content.BoardArticle,
       on: ba.article_id == a.id,
       join: b in Board,
       on: b.id == ba.board_id,
-      where: a.user_id == ^user_id and is_nil(a.deleted_at) and b.min_role_to_view == "guest",
+      where:
+        a.user_id == ^user_id and is_nil(a.deleted_at) and
+          b.min_role_to_view == "guest" and b.ap_enabled,
       select: count(a.id, :distinct)
     )
     |> Repo.one() || 0
@@ -290,7 +296,9 @@ defmodule Baudrate.Federation.Collections do
       on: ba.article_id == a.id,
       join: b in Board,
       on: b.id == ba.board_id,
-      where: a.user_id == ^user_id and is_nil(a.deleted_at) and b.min_role_to_view == "guest",
+      where:
+        a.user_id == ^user_id and is_nil(a.deleted_at) and
+          b.min_role_to_view == "guest" and b.ap_enabled,
       distinct: a.id,
       order_by: [desc: a.inserted_at, desc: a.id],
       offset: ^offset,

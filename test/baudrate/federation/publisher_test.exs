@@ -1371,4 +1371,253 @@ defmodule Baudrate.Federation.PublisherTest do
       assert body["object"]["type"] == "Announce"
     end
   end
+
+  # --- The board gate, and the withdrawals it must not touch ---
+
+  defp create_private_board do
+    board =
+      %Baudrate.Content.Board{}
+      |> Baudrate.Content.Board.changeset(%{
+        name: "Staff Only",
+        slug: "pub-private-#{System.unique_integer([:positive])}",
+        min_role_to_view: "admin"
+      })
+      |> Repo.insert!()
+
+    {:ok, board} = KeyStore.ensure_board_keypair(board)
+    board
+  end
+
+  defp create_comment(article, user) do
+    {:ok, comment} =
+      %Comment{}
+      |> Comment.changeset(%{
+        body: "Test comment",
+        body_html: "<p>Test comment</p>",
+        article_id: article.id,
+        user_id: user.id
+      })
+      |> Repo.insert()
+
+    comment
+  end
+
+  defp inbox_urls do
+    Baudrate.Federation.DeliveryJob |> Repo.all() |> Enum.map(& &1.inbox_url)
+  end
+
+  describe "withdrawals are never gated by the board" do
+    setup do
+      # The article's only board is private: the gate answers "do not
+      # federate". Everything here is about what must happen anyway, because
+      # a `Delete`/`Undo` carries no content — refusing to send one cannot
+      # protect anything, and leaves the post published on every follower's
+      # server forever.
+      user = create_user()
+      board = create_private_board()
+      remote = create_remote_actor()
+      create_follower(Baudrate.Federation.actor_uri(:user, user.username), remote)
+
+      article = create_article(user, board)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      {:ok, user: user, remote: remote, article: article}
+    end
+
+    test "the gate itself is real: an Update does not go out", %{article: article} do
+      assert {:ok, 0} = Publisher.publish_article_updated(article)
+      assert inbox_urls() == []
+    end
+
+    test "publish_article_deleted/1 delivers the Delete(Tombstone)", %{
+      article: article,
+      remote: remote
+    } do
+      assert {:ok, 1} = Publisher.publish_article_deleted(article)
+      assert inbox_urls() == [remote.inbox]
+
+      body = Repo.all(Baudrate.Federation.DeliveryJob) |> hd() |> Map.fetch!(:activity_json)
+      body = Jason.decode!(body)
+      assert body["type"] == "Delete"
+      assert body["object"]["type"] == "Tombstone"
+    end
+
+    test "publish_comment_deleted/2 delivers the Delete", %{
+      article: article,
+      user: user,
+      remote: remote
+    } do
+      comment = create_comment(article, user)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      assert {:ok, 1} = Publisher.publish_comment_deleted(comment, article)
+      assert inbox_urls() == [remote.inbox]
+    end
+
+    test "publish_article_unliked/3 delivers the Undo(Like)", %{
+      article: article,
+      user: user,
+      remote: remote
+    } do
+      assert {:ok, 1} = Publisher.publish_article_unliked(user.id, article)
+      assert inbox_urls() == [remote.inbox]
+    end
+
+    test "publish_comment_unliked/3 delivers the Undo(Like)", %{
+      article: article,
+      user: user,
+      remote: remote
+    } do
+      comment = create_comment(article, user)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      assert {:ok, 1} = Publisher.publish_comment_unliked(user.id, comment)
+      assert inbox_urls() == [remote.inbox]
+    end
+  end
+
+  describe "the boost fan-out honours the board gate" do
+    test "publish_article_boosted/2 tells the booster's followers nothing about a private board" do
+      # An `Announce` names `<base>/ap/articles/<slug>`, and the slug is
+      # derived from the title — so boosting a private-board post told the
+      # booster's remote followers that the post exists and roughly what it
+      # is called. This path does not go through `enqueue_for_article/4`, so
+      # it needs the gate explicitly.
+      author = create_user()
+      booster = create_user()
+      board = create_private_board()
+
+      booster_remote = create_remote_actor()
+      create_follower(Baudrate.Federation.actor_uri(:user, booster.username), booster_remote)
+
+      article = create_article(author, board)
+      {:ok, _boost} = Baudrate.Content.Boosts.boost_article(booster.id, article.id)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      assert {:ok, 0} = Publisher.publish_article_boosted(booster.id, article)
+      refute booster_remote.inbox in inbox_urls()
+    end
+
+    test "publish_comment_boosted/2 is gated the same way" do
+      author = create_user()
+      booster = create_user()
+      board = create_private_board()
+
+      booster_remote = create_remote_actor()
+      create_follower(Baudrate.Federation.actor_uri(:user, booster.username), booster_remote)
+
+      article = create_article(author, board)
+      comment = create_comment(article, author)
+      {:ok, _boost} = Baudrate.Content.Boosts.boost_comment(booster.id, comment.id)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      assert {:ok, 0} = Publisher.publish_comment_boosted(booster.id, comment)
+      refute booster_remote.inbox in inbox_urls()
+    end
+
+    test "the remote author of a remote article still gets the Announce" do
+      # The documented exception: a remote article already exists on the
+      # fediverse with its own `ap_id`, so its author's instance must still
+      # be told — only the booster's follower fan-out is withheld.
+      booster = create_user()
+      board = create_private_board()
+
+      author_remote = create_remote_actor()
+      booster_remote = create_remote_actor()
+      create_follower(Baudrate.Federation.actor_uri(:user, booster.username), booster_remote)
+
+      n = System.unique_integer([:positive])
+
+      {:ok, %{article: article}} =
+        Baudrate.Content.create_remote_article(
+          %{
+            title: "Remote post #{n}",
+            body: "body",
+            slug: "pub-remote-#{n}",
+            ap_id: "https://remote.example/articles/#{n}",
+            remote_actor_id: author_remote.id,
+            visibility: "public"
+          },
+          [board.id]
+        )
+
+      {:ok, _boost} = Baudrate.Content.Boosts.boost_article(booster.id, article.id)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      assert {:ok, 1} = Publisher.publish_article_boosted(booster.id, article)
+
+      urls = inbox_urls()
+      assert author_remote.inbox in urls
+      refute booster_remote.inbox in urls
+    end
+
+    test "publish_article_unboosted/3 is a withdrawal and still goes out" do
+      author = create_user()
+      booster = create_user()
+      board = create_private_board()
+
+      booster_remote = create_remote_actor()
+      create_follower(Baudrate.Federation.actor_uri(:user, booster.username), booster_remote)
+
+      article = create_article(author, board)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      assert {:ok, 1} = Publisher.publish_article_unboosted(booster.id, article)
+      assert inbox_urls() == [booster_remote.inbox]
+
+      body = Repo.all(Baudrate.Federation.DeliveryJob) |> hd() |> Map.fetch!(:activity_json)
+      assert Jason.decode!(body)["type"] == "Undo"
+    end
+
+    test "publish_comment_unboosted/3 likewise" do
+      author = create_user()
+      booster = create_user()
+      board = create_private_board()
+
+      booster_remote = create_remote_actor()
+      create_follower(Baudrate.Federation.actor_uri(:user, booster.username), booster_remote)
+
+      article = create_article(author, board)
+      comment = create_comment(article, author)
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+
+      assert {:ok, 1} = Publisher.publish_comment_unboosted(booster.id, comment)
+      assert inbox_urls() == [booster_remote.inbox]
+    end
+  end
+
+  describe "build_create_article/1 addressing" do
+    test "carries no private board slug in cc or audience" do
+      # `article_addressing/2` overwrites `cc` on the activity and on the
+      # object, but `audience` comes from the object builder — which is the
+      # field the earlier partial fix missed, and it reaches every recipient.
+      user = create_user()
+      public_board = create_board()
+      private_board = create_private_board()
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Cross-posted",
+            body: "Body text",
+            slug: "art-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [public_board.id, private_board.id]
+        )
+
+      {activity, _actor_uri} = Publisher.build_create_article(article)
+
+      public_uri = Baudrate.Federation.actor_uri(:board, public_board.slug)
+      private_uri = Baudrate.Federation.actor_uri(:board, private_board.slug)
+
+      assert public_uri in activity["cc"]
+      assert activity["object"]["audience"] == [public_uri]
+
+      refute private_uri in activity["cc"]
+      refute private_uri in activity["object"]["cc"]
+      refute private_uri in activity["object"]["audience"]
+      refute Jason.encode!(activity) =~ private_board.slug
+    end
+  end
 end

@@ -54,7 +54,18 @@ defmodule Baudrate.Federation.ObjectBuilderTest do
     |> Repo.insert!()
   end
 
-  defp create_article(user, board, attrs \\ %{}) do
+  defp create_private_board do
+    %Board{}
+    |> Board.changeset(%{
+      name: "Staff Only",
+      slug: "obj-private-#{System.unique_integer([:positive])}",
+      ap_enabled: true,
+      min_role_to_view: "admin"
+    })
+    |> Repo.insert!()
+  end
+
+  defp create_article(user, board, attrs \\ %{}, board_ids \\ nil) do
     {:ok, %{article: article}} =
       Content.create_article(
         Map.merge(
@@ -66,7 +77,7 @@ defmodule Baudrate.Federation.ObjectBuilderTest do
           },
           attrs
         ),
-        [board.id]
+        board_ids || [board.id]
       )
 
     article
@@ -210,6 +221,59 @@ defmodule Baudrate.Federation.ObjectBuilderTest do
     } do
       article = create_article(user, board)
       refute Map.has_key?(ObjectBuilder.article_object(article), "attachment")
+    end
+
+    test "names only federated boards in cc and audience", %{user: user, board: board} do
+      # A board's actor URI carries its slug, and this object is served
+      # verbatim by three unauthenticated endpoints (`GET /ap/articles/:slug`,
+      # the user outbox, `/ap/search`) for any article that is in at least one
+      # public board. Listing a private board here disclosed that the board
+      # exists and what it is called.
+      private = create_private_board()
+      article = create_article(user, board, %{}, [board.id, private.id])
+
+      object = ObjectBuilder.article_object(article)
+
+      public_uri = Federation.actor_uri(:board, board.slug)
+      private_uri = Federation.actor_uri(:board, private.slug)
+
+      assert object["cc"] == [public_uri]
+      assert object["audience"] == [public_uri]
+
+      refute private_uri in object["cc"]
+      refute private_uri in object["audience"]
+      refute Jason.encode!(object) =~ private.slug
+    end
+
+    test "an AP-disabled board is left out too", %{user: user, board: board} do
+      # `Board.federated?/1`, not `public?/1`: a guest-viewable board with
+      # federation switched off does not belong in the addressing either.
+      disabled =
+        %Board{}
+        |> Board.changeset(%{
+          name: "Local Only",
+          slug: "obj-localonly-#{System.unique_integer([:positive])}",
+          min_role_to_view: "guest",
+          ap_enabled: false
+        })
+        |> Repo.insert!()
+
+      article = create_article(user, board, %{}, [board.id, disabled.id])
+      object = ObjectBuilder.article_object(article)
+
+      assert object["audience"] == [Federation.actor_uri(:board, board.slug)]
+      refute Jason.encode!(object) =~ disabled.slug
+    end
+
+    test "an article only in a private board names no board at all", %{user: user} do
+      private = create_private_board()
+      article = create_article(user, private, %{}, [private.id])
+
+      object = ObjectBuilder.article_object(article)
+
+      assert object["cc"] == []
+      assert object["audience"] == []
+      refute Jason.encode!(object) =~ private.slug
     end
   end
 end

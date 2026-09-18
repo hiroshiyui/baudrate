@@ -26,6 +26,7 @@ defmodule Baudrate.Federation.Publisher do
   alias Baudrate.Content.Board
   alias Baudrate.Federation
   alias Baudrate.Federation.Delivery
+  alias Baudrate.Federation.{TimelineItemBoost, TimelineItemLike}
   alias Baudrate.Repo
 
   @as_context "https://www.w3.org/ns/activitystreams"
@@ -451,8 +452,11 @@ defmodule Baudrate.Federation.Publisher do
     {activity, actor_uri} = build_create_article(article)
     Delivery.enqueue_for_article(activity, actor_uri, article)
 
-    # Announce from each public board → board's followers
-    for board <- article.boards, Board.public?(board) do
+    # Announce from each federated board → board's followers.
+    # `federated?/1`, not `public?/1`: turning `ap_enabled` off does not
+    # remove the followers a board already has, so a guest-viewable board
+    # with federation switched off went on announcing to them.
+    for board <- article.boards, Board.federated?(board) do
       {announce, board_uri} = build_announce_article(article, board)
       Delivery.enqueue_for_followers(announce, board_uri)
     end
@@ -493,7 +497,7 @@ defmodule Baudrate.Federation.Publisher do
   def publish_article_deleted(article) do
     article = Repo.preload(article, [:boards, :user])
     {activity, actor_uri} = build_delete_article(article)
-    Delivery.enqueue_for_article(activity, actor_uri, article)
+    Delivery.enqueue_for_article(activity, actor_uri, article, intent: :withdraw)
   end
 
   @doc """
@@ -516,7 +520,8 @@ defmodule Baudrate.Federation.Publisher do
     {activity, actor_uri} = build_delete_comment(comment, article)
 
     Delivery.enqueue_for_article(activity, actor_uri, article,
-      remote_authors: reply_authors(comment, article)
+      remote_authors: reply_authors(comment, article),
+      intent: :withdraw
     )
   end
 
@@ -635,7 +640,8 @@ defmodule Baudrate.Federation.Publisher do
     {activity, actor_uri} = build_undo_like_article(user, article, like_ap_id)
 
     Delivery.enqueue_for_article(activity, actor_uri, article,
-      remote_authors: remote_author(article)
+      remote_authors: remote_author(article),
+      intent: :withdraw
     )
   end
 
@@ -718,7 +724,8 @@ defmodule Baudrate.Federation.Publisher do
     {activity, actor_uri} = build_undo_like_comment(user, comment, like_ap_id)
 
     Delivery.enqueue_for_article(activity, actor_uri, comment.article,
-      remote_authors: remote_author(comment)
+      remote_authors: remote_author(comment),
+      intent: :withdraw
     )
   end
 
@@ -791,7 +798,10 @@ defmodule Baudrate.Federation.Publisher do
     boost_ap_id = boost && boost.ap_id
 
     {activity, actor_uri} = build_user_announce_article(user, article, boost_ap_id)
-    enqueue_for_followers_and_authors(activity, actor_uri, remote_author(article))
+
+    enqueue_for_followers_and_authors(activity, actor_uri, remote_author(article),
+      article: article
+    )
   end
 
   @doc """
@@ -803,7 +813,11 @@ defmodule Baudrate.Federation.Publisher do
     user = Repo.get!(Baudrate.Setup.User, user_id)
     article = Repo.preload(article, [:boards, :user])
     {activity, actor_uri} = build_undo_user_announce_article(user, article, boost_ap_id)
-    enqueue_for_followers_and_authors(activity, actor_uri, remote_author(article))
+
+    enqueue_for_followers_and_authors(activity, actor_uri, remote_author(article),
+      article: article,
+      intent: :withdraw
+    )
   end
 
   # --- Comment Boost (User Announce) ---
@@ -878,7 +892,10 @@ defmodule Baudrate.Federation.Publisher do
     boost_ap_id = boost && boost.ap_id
 
     {activity, actor_uri} = build_user_announce_comment(user, comment, boost_ap_id)
-    enqueue_for_followers_and_authors(activity, actor_uri, remote_author(comment))
+
+    enqueue_for_followers_and_authors(activity, actor_uri, remote_author(comment),
+      article: comment.article
+    )
   end
 
   @doc """
@@ -890,13 +907,33 @@ defmodule Baudrate.Federation.Publisher do
     user = Repo.get!(Baudrate.Setup.User, user_id)
     comment = Repo.preload(comment, article: [:boards, :user])
     {activity, actor_uri} = build_undo_user_announce_comment(user, comment, boost_ap_id)
-    enqueue_for_followers_and_authors(activity, actor_uri, remote_author(comment))
+
+    enqueue_for_followers_and_authors(activity, actor_uri, remote_author(comment),
+      article: comment.article,
+      intent: :withdraw
+    )
   end
 
   # A boost goes to the booster's followers, and also to the boosted post's
   # remote author so their instance counts it.
-  defp enqueue_for_followers_and_authors(activity, actor_uri, authors) do
-    follower_inboxes = Delivery.resolve_follower_inboxes(actor_uri)
+  #
+  # `:article` and `:intent` carry the same board gate `enqueue_for_article/4`
+  # applies, because this path does not go through it: an `Announce` names
+  # `<base>/ap/articles/<slug>`, and the slug is derived from the title, so a
+  # member who can read a private board and boosts a post there was telling
+  # their remote followers that the post exists and approximately what it is
+  # called. The remote author is never gated, and an `Undo` never is either —
+  # withdrawing a boost that did go out must always be possible.
+  defp enqueue_for_followers_and_authors(activity, actor_uri, authors, opts) do
+    article = Keyword.get(opts, :article)
+    gated? = Keyword.get(opts, :intent, :publish) == :publish
+
+    follower_inboxes =
+      if gated? and not Delivery.article_boards_federated?(article) do
+        []
+      else
+        Delivery.resolve_follower_inboxes(actor_uri)
+      end
 
     author_inboxes =
       for %{shared_inbox: shared, inbox: inbox} <- authors,
@@ -917,12 +954,12 @@ defmodule Baudrate.Federation.Publisher do
 
   Returns `{activity_map, actor_uri}`.
   """
-  def build_like_timeline_item(user, timeline_item) do
+  def build_like_timeline_item(user, timeline_item, like_ap_id \\ nil) do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
       "@context" => @ap_context,
-      "id" => "#{actor_uri}#timeline-like-#{Ecto.UUID.generate()}",
+      "id" => like_ap_id || "#{actor_uri}#timeline-like-#{Ecto.UUID.generate()}",
       "type" => "Like",
       "actor" => actor_uri,
       "object" => timeline_item.ap_id,
@@ -962,12 +999,12 @@ defmodule Baudrate.Federation.Publisher do
 
   Returns `{activity_map, actor_uri}`.
   """
-  def build_announce_timeline_item(user, timeline_item) do
+  def build_announce_timeline_item(user, timeline_item, boost_ap_id \\ nil) do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
       "@context" => @ap_context,
-      "id" => "#{actor_uri}#timeline-announce-#{Ecto.UUID.generate()}",
+      "id" => boost_ap_id || "#{actor_uri}#timeline-announce-#{Ecto.UUID.generate()}",
       "type" => "Announce",
       "actor" => actor_uri,
       "object" => timeline_item.ap_id,
@@ -1010,7 +1047,21 @@ defmodule Baudrate.Federation.Publisher do
   """
   def publish_timeline_item_liked(user, timeline_item) do
     timeline_item = Repo.preload(timeline_item, [:remote_actor])
-    {activity, actor_uri} = build_like_timeline_item(user, timeline_item)
+
+    # The stored row's `ap_id`, not a fresh UUID. The `Undo` sends the stored
+    # value, so minting a different id here published a `Like` the remote
+    # server knew by one id and then withdrew by another — Mastodon matches an
+    # `Undo(Like)` on actor + object and so tolerated it, but a peer that
+    # matches on the Like's own `id` would keep the like forever. The article
+    # path (`build_like_article/3`) already threads the stored id through;
+    # this is the same shape.
+    {activity, actor_uri} =
+      build_like_timeline_item(
+        user,
+        timeline_item,
+        stored_interaction_ap_id(TimelineItemLike, user, timeline_item)
+      )
+
     inbox = timeline_item.remote_actor.shared_inbox || timeline_item.remote_actor.inbox
 
     if inbox do
@@ -1041,7 +1092,15 @@ defmodule Baudrate.Federation.Publisher do
   """
   def publish_timeline_item_boosted(user, timeline_item) do
     timeline_item = Repo.preload(timeline_item, [:remote_actor])
-    {activity, actor_uri} = build_announce_timeline_item(user, timeline_item)
+
+    # As for the like above: the id the `Undo` will name.
+    {activity, actor_uri} =
+      build_announce_timeline_item(
+        user,
+        timeline_item,
+        stored_interaction_ap_id(TimelineItemBoost, user, timeline_item)
+      )
+
     inbox = timeline_item.remote_actor.shared_inbox || timeline_item.remote_actor.inbox
 
     if inbox do
@@ -1063,6 +1122,16 @@ defmodule Baudrate.Federation.Publisher do
       Delivery.enqueue(activity, actor_uri, [inbox])
     else
       {:ok, 0}
+    end
+  end
+
+  # The `ap_id` stamped on the like/boost row that was just inserted. Both
+  # publishers run inside the transaction that created and stamped it
+  # (ADR 0034), so it is there to be read.
+  defp stored_interaction_ap_id(schema, user, timeline_item) do
+    case Repo.get_by(schema, user_id: user.id, timeline_item_id: timeline_item.id) do
+      %{ap_id: ap_id} when is_binary(ap_id) -> ap_id
+      _ -> nil
     end
   end
 

@@ -8,6 +8,7 @@ defmodule Baudrate.Federation.ObjectBuilder do
   """
 
   alias Baudrate.Content
+  alias Baudrate.Content.Board
   alias Baudrate.Content.Markdown
   alias Baudrate.Repo
 
@@ -21,10 +22,18 @@ defmodule Baudrate.Federation.ObjectBuilder do
     article =
       Repo.preload(article, [:boards, :user, :link_preview, :article_images, poll: :options])
 
+    # Only federated boards are named. A board's actor URI carries its slug,
+    # so listing a private or AP-disabled board here disclosed that the board
+    # exists and what it is called — and this object is served verbatim by
+    # three unauthenticated endpoints (`GET /ap/articles/:slug`, the user
+    # outbox and `/ap/search`) for any article that is in at least one public
+    # board. `Publisher.article_addressing/2` was filtered, but it only
+    # overwrites `cc` on the outbound activity, so `audience` still carried
+    # the private slug to every recipient.
     board_uris =
-      Enum.map(article.boards, fn board ->
-        actor_uri(:board, board.slug)
-      end)
+      article.boards
+      |> Enum.filter(&Board.federated?/1)
+      |> Enum.map(&actor_uri(:board, &1.slug))
 
     tags = extract_hashtags(article.body)
 

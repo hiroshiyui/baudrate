@@ -364,6 +364,10 @@ defmodule Baudrate.Federation.Delivery do
       liked or replied to. Their followers are not involved, so without this
       an interaction with a remote post never reached its author. `nil`
       entries are ignored.
+    * `:intent` — `:publish` (the default) applies the board federation gate
+      to the author's own followers; `:withdraw` does not. Pass `:withdraw`
+      for `Delete` and `Undo`, which must reach anyone who may hold the
+      object even once the article no longer sits in a federated board.
   """
   def enqueue_for_article(activity_json, actor_uri, article, opts \\ []) do
     article = Repo.preload(article, [:boards, :user])
@@ -377,8 +381,17 @@ defmodule Baudrate.Federation.Delivery do
     # "public"`. One unsolicited Follow of a local user was enough to receive
     # every private-board post they wrote. A board-less article stays public,
     # matching `ArticleHelpers.user_can_view_article?/2`.
+    # A withdrawal is never gated. `Delete(Tombstone)` and `Undo` carry no
+    # content — their whole purpose is to retract something a remote server
+    # may already hold — so refusing to send one cannot protect anything, and
+    # does real harm: when moderation took an article out of its last public
+    # board, or an admin turned `ap_enabled` off, the author's later delete
+    # was dropped and the post stayed published on every follower's server
+    # forever. If a peer never had the object, the Delete is a no-op there.
+    gated? = Keyword.get(opts, :intent, :publish) == :publish
+
     user_inboxes =
-      if article.user && article_boards_federated?(article) do
+      if article.user && (not gated? or article_boards_federated?(article)) do
         user_uri = Federation.actor_uri(:user, article.user.username)
         resolve_follower_inboxes(user_uri)
       else
@@ -414,17 +427,30 @@ defmodule Baudrate.Federation.Delivery do
     end
   end
 
-  # Whether an article may leave this instance at all: board-less (a personal
-  # post, public by definition here) or in at least one federated board.
-  # `author_inboxes` is deliberately not gated by this — a reply to a remote
-  # author must still reach them, since their article already exists on the
-  # fediverse with its own `ap_id` (the exception in CLAUDE.md's federation
-  # gate).
-  defp article_boards_federated?(%{boards: boards}) when is_list(boards) do
+  @doc """
+  Whether an article's content may leave this instance at all: board-less (a
+  personal post, public by definition here) or in at least one federated
+  board.
+
+  Public because the boost fan-out (`Publisher.publish_article_boosted/2`)
+  does not go through `enqueue_for_article/4` and needs the same predicate —
+  an `Announce` names the article's URI, whose slug is derived from its
+  title, so boosting a private-board post told the booster's remote
+  followers the post exists and roughly what it is called.
+
+  Remote authors are deliberately *not* gated by this — a reply or like on
+  their article must still reach them, since it already exists on the
+  fediverse with its own `ap_id` (the exception in CLAUDE.md's federation
+  gate).
+  """
+  def article_boards_federated?(%{boards: boards}) when is_list(boards) do
     boards == [] or Enum.any?(boards, &Board.federated?/1)
   end
 
-  defp article_boards_federated?(_article), do: true
+  # Fails closed. `enqueue_for_article/4` preloads `:boards`, so the clause
+  # above always matches today; a caller that somehow arrives without the
+  # association must not be answered "yes, federate it" by default.
+  def article_boards_federated?(_article), do: false
 
   # --- Flag Delivery ---
 

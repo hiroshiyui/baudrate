@@ -684,6 +684,141 @@ defmodule Baudrate.Federation.DeliveryTest do
       assert {:ok, 1} = Delivery.enqueue_for_article(activity, user_uri, article),
              "a board-less article is public by definition here"
     end
+
+    test "treats a guest-viewable board with ap_enabled: false as non-federated" do
+      # `Board.federated?/1` has two halves and only the `min_role_to_view`
+      # one was covered here. `ap_enabled: false` is the switch an admin
+      # flips to take a board off the fediverse, so an article that lives
+      # only there must not reach the author's own followers either.
+      user = create_user()
+
+      board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Local Only",
+          slug: "localonly-#{System.unique_integer([:positive])}",
+          min_role_to_view: "guest",
+          ap_enabled: false
+        })
+        |> Repo.insert!()
+
+      {:ok, _} = KeyStore.ensure_board_keypair(board)
+
+      user_uri = Federation.actor_uri(:user, user.username)
+      remote = create_remote_actor()
+      create_follower(user_uri, remote)
+
+      {:ok, %{article: article}} =
+        Baudrate.Content.create_article(
+          %{
+            title: "Off the fediverse",
+            body: "Body",
+            slug: "art-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      Repo.delete_all(DeliveryJob)
+
+      article = Repo.preload(article, [:boards, :user])
+      activity = Jason.encode!(%{"type" => "Create"})
+
+      assert {:ok, 0} = Delivery.enqueue_for_article(activity, user_uri, article),
+             "ap_enabled: false is half of Board.federated?/1 — a guest-viewable " <>
+               "board with federation switched off is not federated"
+    end
+
+    test "intent: :withdraw is never gated, so a Delete still leaves the instance" do
+      # The regression the `:intent` option fixes. Moderation took the article
+      # out of its last public board (or an admin turned `ap_enabled` off), so
+      # the gate now answers "no" — and the author's later delete was dropped,
+      # leaving the post published on every follower's server forever. A
+      # `Delete`/`Undo` carries no content, so refusing to send one cannot
+      # protect anything.
+      user = create_user()
+      public_board = create_board()
+
+      private_board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Staff Only",
+          slug: "staff-#{System.unique_integer([:positive])}",
+          min_role_to_view: "admin"
+        })
+        |> Repo.insert!()
+
+      {:ok, _} = KeyStore.ensure_board_keypair(private_board)
+
+      user_uri = Federation.actor_uri(:user, user.username)
+      remote = create_remote_actor()
+      create_follower(user_uri, remote)
+
+      {:ok, %{article: article}} =
+        Baudrate.Content.create_article(
+          %{
+            title: "Published, then pulled",
+            body: "Body",
+            slug: "art-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [public_board.id, private_board.id]
+        )
+
+      # The last public board is removed: only the private one is left.
+      Repo.delete_all(
+        from(ba in Baudrate.Content.BoardArticle,
+          where: ba.article_id == ^article.id and ba.board_id == ^public_board.id
+        )
+      )
+
+      Repo.delete_all(DeliveryJob)
+      article = Repo.preload(article, [:boards, :user], force: true)
+
+      assert [private_board.id] == Enum.map(article.boards, & &1.id)
+
+      publish = Jason.encode!(%{"type" => "Create", "id" => "https://local.example/act/create-1"})
+
+      assert {:ok, 0} = Delivery.enqueue_for_article(publish, user_uri, article),
+             "the default intent is :publish and stays gated"
+
+      withdraw =
+        Jason.encode!(%{"type" => "Delete", "id" => "https://local.example/act/delete-1"})
+
+      assert {:ok, 1} =
+               Delivery.enqueue_for_article(withdraw, user_uri, article, intent: :withdraw),
+             "a withdrawal must reach anyone who may already hold the object"
+
+      assert [job] = Repo.all(DeliveryJob)
+      assert job.inbox_url == remote.inbox
+    end
+  end
+
+  describe "article_boards_federated?/1" do
+    test "a board-less article may leave the instance" do
+      assert Delivery.article_boards_federated?(%{boards: []})
+    end
+
+    test "one federated board is enough" do
+      federated = %Baudrate.Content.Board{min_role_to_view: "guest", ap_enabled: true}
+      private = %Baudrate.Content.Board{min_role_to_view: "admin", ap_enabled: true}
+
+      assert Delivery.article_boards_federated?(%{boards: [private, federated]})
+      refute Delivery.article_boards_federated?(%{boards: [private]})
+    end
+
+    test "an AP-disabled board does not count" do
+      refute Delivery.article_boards_federated?(%{
+               boards: [%Baudrate.Content.Board{min_role_to_view: "guest", ap_enabled: false}]
+             })
+    end
+
+    test "fails closed when :boards was not preloaded" do
+      # A caller that arrives without the association must not be answered
+      # "yes, federate it" by default.
+      refute Delivery.article_boards_federated?(%Baudrate.Content.Article{}),
+             "an unloaded :boards association must fail closed"
+    end
   end
 
   describe "purge_completed_jobs/0" do
