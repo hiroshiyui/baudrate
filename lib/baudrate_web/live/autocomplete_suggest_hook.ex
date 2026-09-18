@@ -25,6 +25,7 @@ defmodule BaudrateWeb.AutocompleteSuggestHook do
   import Phoenix.LiveView
 
   alias Baudrate.{Auth, Content}
+  alias BaudrateWeb.RateLimits
 
   @limit 10
 
@@ -41,23 +42,37 @@ defmodule BaudrateWeb.AutocompleteSuggestHook do
   def attach(socket), do: socket
 
   @doc false
+  # Two bounds, because these are attached to every authenticated LiveView and
+  # a suggest is an ILIKE over `users` or `tags`: a per-user rate limit, and a
+  # minimum prefix length, since `%a%` is a sequential scan and one socket
+  # walking `a`, `b`, …, `aa` enumerated the whole member roster.
+  @min_prefix 2
+
   def handle_event("hashtag_suggest", %{"prefix" => prefix}, socket) when is_binary(prefix) do
-    tags = Content.search_tags(prefix, limit: @limit)
-    {:halt, push_event(socket, "hashtag_suggestions", %{tags: tags})}
+    if suggest_allowed?(socket, prefix) do
+      tags = Content.search_tags(prefix, limit: @limit)
+      {:halt, push_event(socket, "hashtag_suggestions", %{tags: tags})}
+    else
+      {:halt, push_event(socket, "hashtag_suggestions", %{tags: []})}
+    end
   end
 
   def handle_event("mention_suggest", %{"prefix" => prefix}, socket) when is_binary(prefix) do
     current_user = socket.assigns[:current_user]
 
-    local_users =
-      prefix
-      |> Auth.search_users(limit: @limit, exclude_id: current_user && current_user.id)
-      |> Enum.map(&%{username: &1.username, type: "local"})
+    if suggest_allowed?(socket, prefix) do
+      local_users =
+        prefix
+        |> Auth.search_users(limit: @limit, exclude_id: current_user && current_user.id)
+        |> Enum.map(&%{username: &1.username, type: "local"})
 
-    {:halt,
-     push_event(socket, "mention_suggestions", %{
-       users: local_users ++ remote_actors(socket, prefix)
-     })}
+      {:halt,
+       push_event(socket, "mention_suggestions", %{
+         users: local_users ++ remote_actors(socket, prefix)
+       })}
+    else
+      {:halt, push_event(socket, "mention_suggestions", %{users: []})}
+    end
   end
 
   # A malformed suggest event is dropped rather than crashing the LiveView.
@@ -65,6 +80,17 @@ defmodule BaudrateWeb.AutocompleteSuggestHook do
     do: {:halt, socket}
 
   def handle_event(_event, _params, socket), do: {:cont, socket}
+
+  defp suggest_allowed?(socket, prefix) do
+    trimmed = String.trim(prefix)
+
+    cond do
+      String.length(trimmed) < @min_prefix -> false
+      String.length(trimmed) > 64 -> false
+      is_nil(socket.assigns[:current_user]) -> false
+      true -> RateLimits.check_suggest(socket.assigns.current_user.id) == :ok
+    end
+  end
 
   defp remote_actors(socket, prefix) do
     case socket.assigns[:article] do

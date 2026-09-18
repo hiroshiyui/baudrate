@@ -34,6 +34,7 @@ defmodule Baudrate.Notification.Hooks do
   """
 
   alias Baudrate.{Auth, Notification, Repo, Setup}
+  alias BaudrateWeb.ArticleHelpers
   import Ecto.Query, only: [from: 2]
 
   alias Baudrate.Content.{Article, BoardArticle, BoardModerator, Comment, Markdown}
@@ -458,21 +459,40 @@ defmodule Baudrate.Notification.Hooks do
 
   defp notify_mentions(body, actor_user_id, article_id, comment_id) do
     usernames = Markdown.extract_mentions(body)
+    article = mentioned_article(article_id)
 
     Enum.each(usernames, fn username ->
       case Auth.get_user_by_username_ci(username) do
-        %{id: user_id} ->
-          Notification.create_notification(%{
-            type: "mention",
-            user_id: user_id,
-            actor_user_id: actor_user_id,
-            article_id: article_id,
-            comment_id: comment_id
-          })
+        %{id: user_id} = mentioned ->
+          # A notification renders the article's title and a working permalink
+          # (`NotificationsLive.target_title/1`), so mentioning someone from a
+          # `min_role_to_view: "moderator"` board handed them the restricted
+          # title — the same leak CLAUDE.md records as closed for
+          # `/users/:name`, reached through another surface. The row-level
+          # gate is the one to use, so it also covers boards whose role
+          # changed after the mention was written.
+          if is_nil(article) or ArticleHelpers.user_can_view_article?(article, mentioned) do
+            Notification.create_notification(%{
+              type: "mention",
+              user_id: user_id,
+              actor_user_id: actor_user_id,
+              article_id: article_id,
+              comment_id: comment_id
+            })
+          end
 
         nil ->
           :ok
       end
     end)
+  end
+
+  defp mentioned_article(nil), do: nil
+
+  defp mentioned_article(article_id) do
+    case Repo.get(Article, article_id) do
+      nil -> nil
+      article -> Repo.preload(article, [:boards, :remote_actor])
+    end
   end
 end

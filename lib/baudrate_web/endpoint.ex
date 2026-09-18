@@ -12,10 +12,18 @@ defmodule BaudrateWeb.Endpoint do
     * `max_age: 14 days` — cookie expiry matching the server-side session TTL
     * Signing and encryption salts are configured separately for defense in depth
 
-  The `secure` flag is not set here because `force_ssl` in `config/prod.exs`
-  configures `Plug.SSL` which sets `secure: true` on all cookies in production.
-  In dev/test, cookies must work over plain HTTP (localhost), so omitting
-  `secure` globally is correct.
+    * `secure: true` in production — set explicitly, not inherited
+
+  The moduledoc used to claim `Plug.SSL` sets `secure: true` on all cookies.
+  It does not: it adds HSTS and redirects http→https. What actually set the
+  flag was `Plug.Conn.put_resp_cookie/4` looking at `conn.scheme`, which
+  depends entirely on `rewrite_on: [:x_forwarded_proto]` and therefore on the
+  proxy sending that header. The shipped nginx template does send it, so the
+  flag was present in the supported deployment — but an operator fronting the
+  app with a terminator that omits the header got a session cookie with no
+  `Secure` attribute, silently, with a green test suite. Set it here so it
+  does not depend on a header. Dev and test stay without it, because cookies
+  must work over plain HTTP on localhost.
 
   The LiveView socket also receives session data via `connect_info`, enabling
   `on_mount` hooks to access session tokens.
@@ -30,7 +38,8 @@ defmodule BaudrateWeb.Endpoint do
     signing_salt: "mse//7wp",
     encryption_salt: "rK3nP+Qb",
     same_site: "Lax",
-    max_age: 14 * 86_400
+    max_age: 14 * 86_400,
+    secure: Mix.env() == :prod
   ]
 
   socket "/live", Phoenix.LiveView.Socket,

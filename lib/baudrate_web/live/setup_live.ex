@@ -28,6 +28,8 @@ defmodule BaudrateWeb.SetupLive do
 
   use BaudrateWeb, :live_view
 
+  alias BaudrateWeb.RateLimits
+
   alias Baudrate.Setup
   alias Baudrate.Setup.InstallationKey
   import BaudrateWeb.Helpers, only: [password_strength: 1]
@@ -67,6 +69,9 @@ defmodule BaudrateWeb.SetupLive do
       |> assign(:key_error, nil)
       |> assign(:key_attempts, 0)
       |> assign(:key_locked_until, nil)
+      # Captured at mount: `connect_info` is only readable here, and the
+      # per-IP limit on key attempts has to survive into the handler.
+      |> assign(:client_ip, BaudrateWeb.Helpers.extract_peer_ip(socket) || "unknown")
       |> assign(:db_status, db_status)
       |> assign(:migrations_status, migrations_status)
       |> assign(:site_name, "Baudrate")
@@ -81,7 +86,11 @@ defmodule BaudrateWeb.SetupLive do
 
   @impl true
   def handle_event("verify_key", %{"key" => %{"installation_key" => submitted_key}}, socket) do
-    if key_locked?(socket) do
+    # Two bounds. The socket-assigns lockout below stays for the friendly
+    # message, but it is reset by opening another socket, so the real limit is
+    # keyed on the client IP in Hammer.
+    if key_locked?(socket) or
+         RateLimits.check_installation_key(socket.assigns.client_ip) != :ok do
       {:noreply,
        assign(socket, :key_error, gettext("Too many attempts. Please wait before trying again."))}
     else

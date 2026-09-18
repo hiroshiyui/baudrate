@@ -35,8 +35,18 @@ defmodule BaudrateWeb.MarkdownPreviewHook do
   end
 
   defp handle_event("markdown_preview", %{"body" => body}, socket) do
-    html = Baudrate.Content.Markdown.to_html(body)
-    {:halt, %{html: html}, socket}
+    # Rendering runs MDEx and the Ammonia NIF over up to 64 KB, and the hook is
+    # attached to every authenticated LiveView, so one socket looping this
+    # could pin schedulers in NIF work. The size cap above bounds each call;
+    # this bounds how many.
+    user = socket.assigns[:current_user]
+
+    if user && BaudrateWeb.RateLimits.check_preview(user.id) == :ok do
+      html = Baudrate.Content.Markdown.to_html(body)
+      {:halt, %{html: html}, socket}
+    else
+      {:halt, %{error: "rate_limited"}, socket}
+    end
   end
 
   defp handle_event(_event, _params, socket) do

@@ -19,6 +19,7 @@ defmodule BaudrateWeb.ModerationLive do
 
   alias Baudrate.{Content, Moderation}
   alias Baudrate.Notification.Hooks
+  alias BaudrateWeb.RateLimits
 
   import BaudrateWeb.Helpers, only: [parse_id: 1, parse_page: 1, translate_report_status: 1]
 
@@ -95,7 +96,8 @@ defmodule BaudrateWeb.ModerationLive do
   def handle_event("delete_content", %{"type" => "article", "id" => id} = params, socket) do
     user = socket.assigns.current_user
 
-    with {:ok, article_id} <- parse_id(id),
+    with :ok <- RateLimits.check_moderator_delete(user.id),
+         {:ok, article_id} <- parse_id(id),
          %{} = article <- Content.get_article(article_id),
          true <- Content.can_delete_article?(user, article) do
       if report = report(socket, params), do: Moderation.capture_evidence(report, article.body)
@@ -124,7 +126,8 @@ defmodule BaudrateWeb.ModerationLive do
   def handle_event("delete_content", %{"type" => "comment", "id" => id} = params, socket) do
     user = socket.assigns.current_user
 
-    with {:ok, comment_id} <- parse_id(id),
+    with :ok <- RateLimits.check_moderator_delete(user.id),
+         {:ok, comment_id} <- parse_id(id),
          %{} = comment <- Content.get_comment(comment_id),
          %{} = article <- Content.get_article(comment.article_id),
          true <- Content.can_delete_comment?(user, comment, article) do

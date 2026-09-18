@@ -120,6 +120,40 @@ defmodule BaudrateWeb.RateLimits do
     check("search:#{user_id}", 60_000, 15, :search)
   end
 
+  @doc """
+  Installation key attempts: 10 per 15 minutes per IP address.
+
+  `SetupLive` kept a three-strikes lockout in socket assigns, which an
+  attacker resets by opening another socket — "a lockout kept in socket
+  assigns or the cookie is resettable by the attacker" (ADR 0022). `/setup`
+  also sits outside every `live_session`, so `:rate_limit_mount` never bounded
+  the sockets either.
+  """
+  @spec check_installation_key(String.t()) :: :ok | {:error, :rate_limited}
+  def check_installation_key(ip) do
+    check("installation_key:#{ip}", 900_000, 10, :installation_key)
+  end
+
+  @doc """
+  Autocomplete suggest: 60 per minute per user.
+
+  These fire on keystrokes, so the ceiling is higher than `check_search/1`'s —
+  but not absent, which is what it was. The hooks are attached to every
+  authenticated LiveView, and `mention_suggest` is an ILIKE over `users`, so
+  one socket could walk the whole member roster with prefixes `a`, `b`, …
+  while completely bypassing the search limit.
+  """
+  @spec check_suggest(integer()) :: :ok | {:error, :rate_limited}
+  def check_suggest(user_id) do
+    check("suggest:#{user_id}", 60_000, 60, :suggest)
+  end
+
+  @doc "Markdown preview: 60 per minute per user."
+  @spec check_preview(integer()) :: :ok | {:error, :rate_limited}
+  def check_preview(user_id) do
+    check("preview:#{user_id}", 60_000, 60, :preview)
+  end
+
   @doc "Search (guest): 10 per minute per IP address."
   @spec check_search_by_ip(String.t()) :: :ok | {:error, :rate_limited}
   def check_search_by_ip(ip) do

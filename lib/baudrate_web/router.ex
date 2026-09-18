@@ -87,12 +87,20 @@ defmodule BaudrateWeb.Router do
   end
 
   pipeline :api do
+    plug BaudrateWeb.Plugs.ApiHeaders
     plug :accepts, ["json"]
   end
 
-  # Health check (no auth, no CSRF)
+  # Health check (no auth, no CSRF). Rate limited generously: it runs a
+  # `SELECT 1` per request and was the only public route without a bucket, so
+  # anyone could consume a pool connection per request. Load-balancer probes
+  # come from a fixed address and stay well inside this.
+  pipeline :rate_limit_health do
+    plug BaudrateWeb.Plugs.RateLimit, action: :health
+  end
+
   scope "/", BaudrateWeb do
-    pipe_through :api
+    pipe_through [:api, :rate_limit_health]
 
     get "/health", HealthController, :check
   end
@@ -149,18 +157,20 @@ defmodule BaudrateWeb.Router do
   # able to render pages) but only reachable with a valid HMAC signature over a
   # URL this instance itself emitted. See `Baudrate.Media.Proxy`.
   scope "/media", BaudrateWeb do
-    pipe_through [:rate_limit_media]
+    pipe_through [:rate_limit_media, BaudrateWeb.Plugs.ApiHeaders]
 
     get "/:sig/:encoded", MediaController, :show
   end
 
   pipeline :activity_pub do
+    plug BaudrateWeb.Plugs.ApiHeaders
     plug BaudrateWeb.Plugs.RateLimit, action: :activity_pub
     plug BaudrateWeb.Plugs.CORS
     plug BaudrateWeb.Plugs.AuthorizedFetch
   end
 
   pipeline :activity_pub_inbox do
+    plug BaudrateWeb.Plugs.ApiHeaders
     plug BaudrateWeb.Plugs.RateLimit, action: :activity_pub
     plug BaudrateWeb.Plugs.RequireAPContentType
     plug BaudrateWeb.Plugs.CacheBody
@@ -219,6 +229,7 @@ defmodule BaudrateWeb.Router do
 
   # Syndication feeds (RSS 2.0 / Atom 1.0)
   pipeline :feeds do
+    plug BaudrateWeb.Plugs.ApiHeaders
     plug BaudrateWeb.Plugs.RateLimit, action: :feeds
   end
 

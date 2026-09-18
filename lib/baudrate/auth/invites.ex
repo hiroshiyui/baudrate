@@ -8,6 +8,10 @@ defmodule Baudrate.Auth.Invites do
   alias Baudrate.Auth.InviteCode
   alias Baudrate.Setup.User
 
+  # Arbitrary but fixed: advisory locks are global, so the class keeps this
+  # from colliding with the data-export lock or any future one.
+  @invite_lock_class 8_421_001
+
   @invite_quota_limit 5
   @invite_quota_window_days 30
   @invite_default_expiry_days 7
@@ -109,13 +113,25 @@ defmodule Baudrate.Auth.Invites do
           {:ok, InviteCode.t()}
           | {:error, Ecto.Changeset.t() | :invite_quota_exceeded}
   def generate_invite_code(%User{} = user, opts \\ []) do
-    case can_generate_invite?(user) do
-      {:ok, _remaining} ->
-        do_generate_invite_code(user, opts)
+    # Counting and inserting in one transaction, under an advisory lock on the
+    # user. They used to be two statements with nothing between them, so a
+    # member with several `/invites` sockets could fire `generate`
+    # concurrently: each passed the count check before any insert committed,
+    # and the quota — the only bound on invite minting — was exceeded.
+    Repo.transaction(fn ->
+      Repo.query!("SELECT pg_advisory_xact_lock($1, $2)", [@invite_lock_class, user.id])
 
-      {:error, reason} ->
-        {:error, reason}
-    end
+      case can_generate_invite?(user) do
+        {:ok, _remaining} ->
+          case do_generate_invite_code(user, opts) do
+            {:ok, code} -> code
+            {:error, reason} -> Repo.rollback(reason)
+          end
+
+        {:error, reason} ->
+          Repo.rollback(reason)
+      end
+    end)
   end
 
   @doc """

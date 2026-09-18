@@ -13,6 +13,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
   alias Baudrate.Content
   alias Baudrate.Moderation
   alias Baudrate.Notification.Hooks
+  alias BaudrateWeb.RateLimits
 
   @statuses ~w(open resolved dismissed)
   import BaudrateWeb.Helpers,
@@ -304,7 +305,35 @@ defmodule BaudrateWeb.Admin.ModerationLive do
     end
   end
 
+  # Two things this path lacked: the 100-per-5-minutes bucket that exists so a
+  # stolen moderator session cannot script deletions as fast as the database
+  # allows, and any permission check at all — it deleted by client-supplied
+  # id, so a role later added to `:require_admin_or_moderator` would inherit
+  # unrestricted delete. The sibling queue at `BaudrateWeb.ModerationLive`
+  # already checks `can_delete_article?/2`.
   defp do_delete_article(socket, article_id, reason_category, report) do
+    user = socket.assigns.current_user
+
+    cond do
+      RateLimits.check_moderator_delete(user.id) != :ok ->
+        {:noreply, put_flash(socket, :error, gettext("Too many actions. Try again shortly."))}
+
+      not deletable_article?(user, article_id) ->
+        {:noreply, put_flash(socket, :error, gettext("You are not allowed to do that."))}
+
+      true ->
+        delete_article_now(socket, article_id, reason_category, report)
+    end
+  end
+
+  defp deletable_article?(user, article_id) do
+    case Content.get_article(article_id) do
+      nil -> true
+      article -> Content.can_delete_article?(user, article)
+    end
+  end
+
+  defp delete_article_now(socket, article_id, reason_category, report) do
     case Content.get_article(article_id) do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("Article not found."))}
@@ -334,6 +363,36 @@ defmodule BaudrateWeb.Admin.ModerationLive do
   end
 
   defp do_delete_comment(socket, comment_id, reason_category, report) do
+    user = socket.assigns.current_user
+
+    cond do
+      RateLimits.check_moderator_delete(user.id) != :ok ->
+        {:noreply, put_flash(socket, :error, gettext("Too many actions. Try again shortly."))}
+
+      not deletable_comment?(user, comment_id) ->
+        {:noreply, put_flash(socket, :error, gettext("You are not allowed to do that."))}
+
+      true ->
+        delete_comment_now(socket, comment_id, reason_category, report)
+    end
+  end
+
+  # Deleting a comment needs rights on every board its article is in (P1-D5),
+  # which is why the predicate takes the article too.
+  defp deletable_comment?(user, comment_id) do
+    case Content.get_comment(comment_id) do
+      nil ->
+        true
+
+      comment ->
+        case Content.get_article(comment.article_id) do
+          nil -> true
+          article -> Content.can_delete_comment?(user, comment, article)
+        end
+    end
+  end
+
+  defp delete_comment_now(socket, comment_id, reason_category, report) do
     case Content.get_comment(comment_id) do
       nil ->
         {:noreply, put_flash(socket, :error, gettext("Comment not found."))}

@@ -13,6 +13,7 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     * `:totp` — 15 attempts per 5 minutes per IP
     * `:activity_pub` — 120 requests per minute per IP
     * `:feeds` — 30 requests per minute per IP
+    * `:health` — 120 requests per minute per IP
     * `:push_subscription` — 10 requests per minute per IP
     * `:share_target` — 10 requests per minute per IP
     * `:media` — 300 requests per minute per IP (media proxy, cache hits included)
@@ -47,7 +48,10 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     push_subscription: {60_000, 10},
     share_target: {60_000, 10},
     media: {60_000, 300},
-    data_export_download: {900_000, 10}
+    data_export_download: {900_000, 10},
+    # Generous: a load balancer probing every few seconds stays well inside it,
+    # and it was the only public route with no bucket at all.
+    health: {60_000, 120}
   }
 
   @impl true
