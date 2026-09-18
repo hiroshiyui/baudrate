@@ -12,7 +12,7 @@
 </div>
 
 <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-6 lg:items-start">
-  <div class="space-y-6 min-w-0" aria-label={gettext("Timeline")}>
+  <div class="space-y-6 min-w-0">
     <div :if={@can_post} id="quick-post" class="card bg-base-200 shadow-sm">
       <div class="card-body p-4">
         <div class="flex gap-3">
@@ -374,11 +374,13 @@
       id="timeline-items"
       class="space-y-4"
       role="feed"
-      aria-label={gettext("Timeline")}
+      aria-labelledby="timeline-heading"
       data-focus-target
     >
       <article
-        :for={item <- @items}
+        :for={{item, idx} <- Enum.with_index(@items)}
+        aria-posinset={(@page - 1) * @per_page + idx + 1}
+        aria-setsize={@total}
         id={
           "timeline-item-" <>
             case item.source do

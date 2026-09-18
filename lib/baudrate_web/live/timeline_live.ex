@@ -129,6 +129,8 @@ defmodule BaudrateWeb.TimelineLive do
      |> assign(:page, result.page)
      |> assign(:total_pages, result.total_pages)
      |> assign(:total, result.total)
+     # `aria-setsize`/`aria-posinset` on the feed articles need the page size.
+     |> assign(:per_page, result.per_page)
      |> assign(:reply_counts, reply_counts)
      |> assign(:replies, %{})
      |> assign(:replying_to, nil)
@@ -168,6 +170,8 @@ defmodule BaudrateWeb.TimelineLive do
      |> assign(:items, result.items)
      |> assign(:total_pages, result.total_pages)
      |> assign(:total, result.total)
+     # `aria-setsize`/`aria-posinset` on the feed articles need the page size.
+     |> assign(:per_page, result.per_page)
      |> assign(:reply_counts, reply_counts)
      |> announce_new_items(new_count)}
   end
@@ -723,6 +727,8 @@ defmodule BaudrateWeb.TimelineLive do
          |> assign(:items, result.items)
          |> assign(:total_pages, result.total_pages)
          |> assign(:total, result.total)
+         # `aria-setsize`/`aria-posinset` on the feed articles need the page size.
+         |> assign(:per_page, result.per_page)
          |> assign(:article_count, Content.count_articles_by_user(user.id))}
 
       {:error, :article, changeset, _} ->

@@ -242,6 +242,26 @@ defmodule BaudrateWeb.TimelineLiveTest do
     end
   end
 
+  describe "feed accessibility (ADR 0018, WAI-ARIA feed pattern)" do
+    test "the stream is a labelled feed whose items say where they are",
+         %{conn: conn, user: user} do
+      actor = create_remote_actor()
+      create_accepted_follow(user, actor)
+      create_timeline_item(actor)
+
+      {:ok, lv, _html} = live(conn, "/timeline")
+
+      # Named by the heading rather than a repeated literal, so the two cannot
+      # drift apart in any locale.
+      assert has_element?(lv, "#timeline-items[role=feed][aria-labelledby=timeline-heading]")
+
+      # `role="feed"` exists to answer "where am I in the stream?" — without
+      # these a screen-reader user hears 20 articles and cannot tell there are
+      # more.
+      assert has_element?(lv, "#timeline-items article[aria-posinset='1'][aria-setsize]")
+    end
+  end
+
   describe "pagination" do
     test "pagination works", %{conn: conn, user: user} do
       actor = create_remote_actor()
