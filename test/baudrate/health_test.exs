@@ -128,6 +128,29 @@ defmodule Baudrate.HealthTest do
       refute :session_cleaner in stale
       assert :delivery_worker in stale
     end
+
+    # The fifth periodic worker. It never called `Heartbeat.beat/1` and was
+    # absent from `worker_intervals/0`, so this check could not see it stop —
+    # while `doc/sysop.md` listed it as a worker, making the report narrower
+    # than an operator would read it as.
+    test "the daily stale-actor cleaner is monitored, on a 72-hour threshold" do
+      now = 10_000_000
+      fresh = fn _ -> now - 1_000 end
+
+      assert %{workers: workers} = check(:workers, last_beat: fresh, monotonic_now_ms: now)
+      assert Map.has_key?(workers, :stale_actor_cleaner)
+
+      never = fn _ -> nil end
+
+      # Silent for two days is fine for a daily worker; four days is not.
+      assert %{stale: stale} = check(:workers, last_beat: never, uptime_ms: 2 * 86_400_000)
+      refute :stale_actor_cleaner in stale
+
+      assert %{status: :fail, stale: stale} =
+               check(:workers, last_beat: never, uptime_ms: 4 * 86_400_000)
+
+      assert :stale_actor_cleaner in stale
+    end
   end
 
   describe "disk" do

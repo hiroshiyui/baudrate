@@ -71,6 +71,15 @@ defmodule Baudrate.Federation.StaleActorCleaner do
       run_cleanup()
     end
 
+    # After the work, not before: a worker that crash-loops is alive and must
+    # not look healthy (ADR 0035). This is the fifth periodic worker and was
+    # the only one that never beat, so `Baudrate.Health`'s `workers` check
+    # could not see it stop — it is documented as a worker in `doc/sysop.md`,
+    # which made the report quietly narrower than an operator would read it as.
+    # A beat with no entry in `Health.worker_intervals/0` would be equally
+    # useless, so the two go together.
+    Baudrate.Health.Heartbeat.beat(:stale_actor_cleaner)
+
     schedule_cleanup()
     {:noreply, state}
   end

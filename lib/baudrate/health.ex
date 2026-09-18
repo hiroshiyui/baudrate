@@ -15,7 +15,7 @@ defmodule Baudrate.Health do
   | `database` | `SELECT 1` does not answer |
   | `delivery_queue` | a delivery has been due for more than 15 minutes. Jobs held back by an open circuit are not counted: they are waiting on purpose |
   | `inbound_queue` | an inbox activity has been waiting for more than 10 minutes |
-  | `workers` | `DeliveryWorker`, `InboundWorker`, `SyndicationFeedWorker` or `SessionCleaner` has not completed a run for three of its intervals (at least 5 minutes), counting from boot for a worker that has not run yet |
+  | `workers` | `DeliveryWorker`, `InboundWorker`, `SyndicationFeedWorker`, `SessionCleaner` or `StaleActorCleaner` has not completed a run for three of its intervals (at least 5 minutes), counting from boot for a worker that has not run yet. `StaleActorCleaner` runs daily, so its threshold is 72 hours |
   | `disk` | free space under the uploads directory is below 1 GiB or 10% of the filesystem, the floor backups also keep |
   | `backup` | the newest complete backup in `BAUDRATE_BACKUP_DIR` is more than 26 hours old, or there is none. Skipped when no backup directory is configured |
   | `encryption_keys` | a stored secret names an encryption key this instance does not have, so it cannot be read (ADR 0038). Skipped while the keys are still derived from `SECRET_KEY_BASE` |
@@ -310,7 +310,8 @@ defmodule Baudrate.Health do
       delivery_worker: Keyword.get(federation, :delivery_poll_interval, 60_000),
       inbound_worker: Keyword.get(federation, :inbound_poll_interval, 30_000),
       syndication_feed_worker: bots[:bots_poll_interval] || 60_000,
-      session_cleaner: Baudrate.Auth.SessionCleaner.interval_ms()
+      session_cleaner: Baudrate.Auth.SessionCleaner.interval_ms(),
+      stale_actor_cleaner: Keyword.get(federation, :stale_actor_cleanup_interval, 86_400_000)
     ]
   end
 
