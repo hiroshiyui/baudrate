@@ -379,6 +379,12 @@ defmodule Baudrate.SetupTest do
     test "returns only guest for unknown role" do
       assert Setup.roles_at_or_below("unknown") == ["guest"]
     end
+
+    # Coverage moved here from `Content.Interactions.accessible_roles/1`, a
+    # duplicate of this function that was deleted once it read this one.
+    test "returns only guest for a nil role" do
+      assert Setup.roles_at_or_below(nil) == ["guest"]
+    end
   end
 
   describe "get_eua/0" do

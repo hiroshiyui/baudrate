@@ -52,29 +52,56 @@ defmodule Baudrate.Content.InteractionsTest do
     article
   end
 
-  describe "accessible_roles/1" do
-    test "admin can access all roles" do
-      assert Interactions.accessible_roles("admin") == ~w(guest user moderator admin)
+  # `accessible_roles/1` used to live here: a third hand-written copy of the
+  # role hierarchy, after `@role_levels` and `roles_at_or_below/1`. It is gone,
+  # and `article_visible_to_user?/2` reads `Setup.roles_at_or_below/1`, which
+  # `test/baudrate/setup_test.exs` covers.
+
+  describe "article_visible_to_user?/2 refuses remote rows" do
+    # A remote article ingested as followers-only/direct keeps that visibility
+    # (ADR 0030 loses visibility rather than data), and it is refused to
+    # everyone including admins: re-publishing someone else's followers-only
+    # post is not a trust question. This check lived only in the web layer,
+    # so the article page refused such a row while like, boost, bookmark and
+    # forward all accepted it.
+    test "a followers-only remote article is refused, even to an admin" do
+      admin = create_user("admin")
+      board = create_board(%{min_role_to_view: "guest"})
+      article = remote_article(board, "followers_only")
+
+      refute Interactions.article_visible_to_user?(article.id, admin.id)
     end
 
-    test "moderator can access guest, user, and moderator" do
-      assert Interactions.accessible_roles("moderator") == ~w(guest user moderator)
+    test "a direct remote article is refused" do
+      user = create_user("user")
+      board = create_board(%{min_role_to_view: "guest"})
+      article = remote_article(board, "direct")
+
+      refute Interactions.article_visible_to_user?(article.id, user.id)
     end
 
-    test "user can access guest and user" do
-      assert Interactions.accessible_roles("user") == ~w(guest user)
+    test "a public remote article in a readable board is allowed" do
+      user = create_user("user")
+      board = create_board(%{min_role_to_view: "guest"})
+      article = remote_article(board, "public")
+
+      assert Interactions.article_visible_to_user?(article.id, user.id)
     end
 
-    test "guest can access only guest" do
-      assert Interactions.accessible_roles("guest") == ~w(guest)
+    # The board check still applies on top of the remote one.
+    test "a public remote article in an unreadable board is refused" do
+      user = create_user("user")
+      board = create_board(%{min_role_to_view: "admin"})
+      article = remote_article(board, "public")
+
+      refute Interactions.article_visible_to_user?(article.id, user.id)
     end
 
-    test "unknown role defaults to guest-level access" do
-      assert Interactions.accessible_roles("unknown") == ~w(guest)
-    end
-
-    test "nil role defaults to guest-level access" do
-      assert Interactions.accessible_roles(nil) == ~w(guest)
+    # An id that resolves to nothing used to count as visible: the board count
+    # came back 0, which is also how a legitimate quick post looks.
+    test "an article id that does not exist is refused" do
+      user = create_user("user")
+      refute Interactions.article_visible_to_user?(-1, user.id)
     end
   end
 
@@ -288,5 +315,29 @@ defmodule Baudrate.Content.InteractionsTest do
 
       assert result == record
     end
+  end
+
+  defp remote_article(board, visibility) do
+    actor =
+      Repo.insert!(%Baudrate.Federation.RemoteActor{
+        ap_id: "https://remote.example/users/a#{System.unique_integer([:positive])}",
+        username: "a#{System.unique_integer([:positive])}",
+        domain: "remote.example",
+        inbox: "https://remote.example/inbox",
+        actor_type: "Person",
+        public_key_pem: "-----BEGIN PUBLIC KEY-----\nstub\n-----END PUBLIC KEY-----",
+        fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+
+    author = create_user("user")
+    article = create_article(author, board)
+
+    article
+    |> Ecto.Changeset.change(%{
+      remote_actor_id: actor.id,
+      user_id: nil,
+      visibility: visibility
+    })
+    |> Repo.update!()
   end
 end

@@ -273,13 +273,33 @@ defmodule Baudrate.Content.Permissions do
   `public` or `unlisted`.
   """
   def can_forward_article?(nil, _article), do: false
-  def can_forward_article?(%{role: %{name: "admin"}} = user, _article), do: unrestricted?(user)
-  def can_forward_article?(%{id: uid} = user, %{user_id: uid}), do: unrestricted?(user)
 
+  # The admin and author exemptions cover `forwardable` and a *local* article's
+  # visibility, which are the author's own choices about their own post. They
+  # deliberately do **not** cover a remote row that arrived addressed to
+  # followers or to one person: forwarding re-publishes it to a board, and the
+  # board's outbox stamps it `as:Public`. That is someone else's audience
+  # decision on someone else's instance, so it is refused to everyone —
+  # including admins, as CLAUDE.md and ADR 0030 both say — and it was not,
+  # because this clause matched first and returned before any visibility test.
   def can_forward_article?(user, article) do
-    unrestricted?(user) and article.forwardable and
-      article.visibility in ["public", "unlisted"]
+    cond do
+      not remote_public?(article) -> false
+      match?(%{role: %{name: "admin"}}, user) -> unrestricted?(user)
+      article.user_id == user.id -> unrestricted?(user)
+      true -> unrestricted?(user) and article.forwardable and local_public?(article)
+    end
   end
+
+  # A remote row keeps the visibility it was ingested with; a local one is
+  # public on this site whatever its addressing, so only remote rows are
+  # gated here.
+  defp remote_public?(%{remote_actor_id: rid, visibility: vis}) when not is_nil(rid),
+    do: vis in ["public", "unlisted"]
+
+  defp remote_public?(_article), do: true
+
+  defp local_public?(article), do: article.visibility in ["public", "unlisted"]
 
   @doc """
   Returns true if the user can forward a timeline item to a board.

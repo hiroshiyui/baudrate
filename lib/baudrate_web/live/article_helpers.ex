@@ -11,7 +11,7 @@ defmodule BaudrateWeb.ArticleHelpers do
   import Phoenix.Component, only: [assign: 3]
 
   alias Baudrate.Content
-  alias Baudrate.Federation.DomainBlocks
+  alias Baudrate.Content.Interactions
   alias BaudrateWeb.RateLimits
 
   @doc """
@@ -34,33 +34,27 @@ defmodule BaudrateWeb.ArticleHelpers do
   An article with no boards is always visible. Otherwise at least one board
   must be visible to the user.
   """
-  # A remote article that was ingested as followers-only/direct (rows that
-  # predate the ingest refusing them) is never a public page.
-  def user_can_view_article?(%{remote_actor_id: rid, visibility: vis}, _user)
-      when not is_nil(rid) and vis not in ["public", "unlisted"],
-      do: false
-
-  # An instance block hides the domain's content (ADR 0030). Hiding it from
-  # listings while the permalink still renders it would be no block at all:
-  # the link is what gets passed around.
-  def user_can_view_article?(%{remote_actor_id: rid} = article, user) when not is_nil(rid) do
-    not remote_author_hidden?(article) and boards_visible?(article, user)
+  # The two remote refusals — a row ingested as followers-only/direct, and an
+  # author whose domain is blocked or whose actor is suspended (ADR 0030) —
+  # come from `Content.Interactions.remote_servable?/1`, which is also what the
+  # like, boost, bookmark and forward paths check. They were defined here, in
+  # the web layer, and the context had a weaker copy that omitted both: a
+  # followers-only remote article was refused by this page and accepted by
+  # every interaction with it. ADR 0016 puts the definition in the context; the
+  # LiveView asks.
+  #
+  # The board check stays here because this caller already has `boards`
+  # preloaded, so it costs no query — and `can_view_board?/2` and the
+  # context's query both read `Setup.role_level/1`, so they cannot disagree.
+  def user_can_view_article?(article, user) do
+    Interactions.remote_servable?(article) and boards_visible?(article, user)
   end
-
-  def user_can_view_article?(article, user), do: boards_visible?(article, user)
 
   defp boards_visible?(article, _user) when article.boards == [], do: true
 
   defp boards_visible?(article, user) do
     Enum.any?(article.boards, &Content.can_view_board?(&1, user))
   end
-
-  # Prefers the preloaded actor; falls back to the id so a caller that did not
-  # preload gets the right answer rather than a visible one.
-  defp remote_author_hidden?(%{remote_actor: %Baudrate.Federation.RemoteActor{} = actor}),
-    do: DomainBlocks.actor_hidden?(actor)
-
-  defp remote_author_hidden?(%{remote_actor_id: rid}), do: DomainBlocks.actor_hidden?(rid)
 
   @doc """
   Splits a flat list of comments into `{roots, children_map}`.
