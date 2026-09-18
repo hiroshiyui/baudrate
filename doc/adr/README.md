@@ -50,7 +50,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0032](0032-rules-are-records-and-retired-not-deleted.md) | Site rules are records, retired rather than deleted, and a report may cite one | Accepted |
 | [0033](0033-baudrate-runs-on-one-node.md) | Baudrate runs on one node | Accepted |
 | [0034](0034-federation-work-is-committed-before-it-is-acknowledged.md) | Federation work is committed before it is acknowledged | Accepted |
-| [0035](0035-operational-visibility-stays-on-the-host.md) | Operational visibility stays on the host | Accepted |
+| [0035](0035-operational-visibility-stays-on-the-host.md) | Operational visibility stays on the host | Accepted, except decision 5 ("Baudrate does not notify"), amended by [0044](0044-the-instance-tells-its-admins-when-it-is-unwell.md) |
 | [0036](0036-production-runs-releases-built-and-attested-in-ci.md) | Production runs releases built and attested in CI | Accepted; decision 3 superseded by [0037](0037-the-deploy-builds-on-the-server-again.md) |
 | [0037](0037-the-deploy-builds-on-the-server-again.md) | The deploy builds on the server again | Accepted |
 | [0038](0038-encryption-keys-are-separate-and-rotatable.md) | Encryption keys are separate, and rotatable | Accepted |
@@ -59,6 +59,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0041](0041-rss-and-atom-are-syndication.md) | RSS and Atom are syndication, not feeds | Accepted |
 | [0042](0042-roles-are-ordered-and-capabilities-are-not-configurable.md) | Roles are ordered, and capabilities are not configurable | Accepted |
 | [0043](0043-the-outbound-federation-gate-and-withdrawals.md) | The outbound federation gate, and the withdrawals it must not touch | Accepted |
+| [0044](0044-the-instance-tells-its-admins-when-it-is-unwell.md) | The instance tells its admins when it is unwell | Accepted |
 
 ## Writing a new ADR
 

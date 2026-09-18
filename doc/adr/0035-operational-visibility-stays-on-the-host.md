@@ -1,6 +1,7 @@
 # 0035 — Operational visibility stays on the host
 
-- **Status:** Accepted
+- **Status:** Accepted, except decision 5 ("Baudrate does not notify"),
+  amended by [0044](0044-the-instance-tells-its-admins-when-it-is-unwell.md)
 - **Date:** 2026-09-17
 - **Deciders:** Baudrate maintainers
 - **Related:** implements Phase 2D and decisions P2-D1 (no metrics endpoint)
