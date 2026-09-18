@@ -12,8 +12,8 @@ defmodule Baudrate.Federation.StaleActorCleaner do
   from a list kept in this file. That is deliberate: the list used to be six
   hand-written checks against nineteen foreign keys, and deleting an actor that
   one of the other thirteen still pointed at took real data with it —
-  `user_follows`, `feed_items`, `board_follows`, boosts, likes and poll votes
-  cascade on delete, so a member simply lost a follow and every feed item from
+  `user_follows`, `timeline_items`, `board_follows`, boosts, likes and poll votes
+  cascade on delete, so a member simply lost a follow and every timeline item from
   an account that had gone quiet for a month, while conversations and direct
   messages had their sender set to NULL. A reference added by a future
   migration is covered the moment that migration runs.

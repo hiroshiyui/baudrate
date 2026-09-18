@@ -50,7 +50,7 @@ defmodule Baudrate.ContentTest do
     |> Repo.insert!()
   end
 
-  # Feed items are only forwardable/repliable when they are reachable from the
+  # Timeline items are only forwardable/repliable when they are reachable from the
   # acting user's feed — i.e. an accepted follow on the source actor.
   defp follow_remote_actor!(user, actor) do
     %Baudrate.Federation.UserFollow{}
@@ -64,9 +64,9 @@ defmodule Baudrate.ContentTest do
     |> Repo.insert!()
   end
 
-  defp build_feed_item!(actor, visibility) do
-    {:ok, feed_item} =
-      Baudrate.Federation.create_feed_item(%{
+  defp build_timeline_item!(actor, visibility) do
+    {:ok, timeline_item} =
+      Baudrate.Federation.create_timeline_item(%{
         remote_actor_id: actor.id,
         activity_type: "Create",
         object_type: "Note",
@@ -77,7 +77,7 @@ defmodule Baudrate.ContentTest do
         published_at: DateTime.utc_now() |> DateTime.truncate(:second)
       })
 
-    feed_item
+    timeline_item
   end
 
   # --- Boards ---
@@ -2557,7 +2557,7 @@ defmodule Baudrate.ContentTest do
 
   # --- Forward Feed Item to Board ---
 
-  describe "forward_feed_item_to_board/3" do
+  describe "forward_timeline_item_to_board/3" do
     setup do
       user = create_user("user")
 
@@ -2580,8 +2580,8 @@ defmodule Baudrate.ContentTest do
 
       follow_remote_actor!(user, remote_actor)
 
-      {:ok, feed_item} =
-        Baudrate.Federation.create_feed_item(%{
+      {:ok, timeline_item} =
+        Baudrate.Federation.create_timeline_item(%{
           remote_actor_id: remote_actor.id,
           activity_type: "Create",
           object_type: "Note",
@@ -2593,17 +2593,17 @@ defmodule Baudrate.ContentTest do
           published_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
 
-      %{user: user, board: board, feed_item: feed_item, remote_actor: remote_actor}
+      %{user: user, board: board, timeline_item: timeline_item, remote_actor: remote_actor}
     end
 
     test "materializes feed item as article in board", %{
       user: user,
       board: board,
-      feed_item: feed_item
+      timeline_item: timeline_item
     } do
-      assert {:ok, article} = Content.forward_feed_item_to_board(feed_item, board, user)
-      assert article.ap_id == feed_item.ap_id
-      assert article.remote_actor_id == feed_item.remote_actor_id
+      assert {:ok, article} = Content.forward_timeline_item_to_board(timeline_item, board, user)
+      assert article.ap_id == timeline_item.ap_id
+      assert article.remote_actor_id == timeline_item.remote_actor_id
       assert article.visibility == "public"
 
       article = Baudrate.Repo.preload(article, :boards)
@@ -2614,7 +2614,7 @@ defmodule Baudrate.ContentTest do
     test "links existing article to board on duplicate ap_id", %{
       user: user,
       board: board,
-      feed_item: feed_item,
+      timeline_item: timeline_item,
       remote_actor: remote_actor
     } do
       # Pre-create article with same ap_id
@@ -2630,13 +2630,13 @@ defmodule Baudrate.ContentTest do
             title: "Existing",
             body: "body",
             slug: "existing-fi-#{System.unique_integer([:positive])}",
-            ap_id: feed_item.ap_id,
+            ap_id: timeline_item.ap_id,
             remote_actor_id: remote_actor.id
           },
           [board2.id]
         )
 
-      assert {:ok, article} = Content.forward_feed_item_to_board(feed_item, board, user)
+      assert {:ok, article} = Content.forward_timeline_item_to_board(timeline_item, board, user)
       article = Baudrate.Repo.preload(article, :boards)
       board_ids = Enum.map(article.boards, & &1.id) |> Enum.sort()
       assert board.id in board_ids
@@ -2658,7 +2658,7 @@ defmodule Baudrate.ContentTest do
         |> Baudrate.Repo.insert!()
 
       {:ok, fo_item} =
-        Baudrate.Federation.create_feed_item(%{
+        Baudrate.Federation.create_timeline_item(%{
           remote_actor_id: remote_actor.id,
           activity_type: "Create",
           object_type: "Note",
@@ -2669,7 +2669,7 @@ defmodule Baudrate.ContentTest do
         })
 
       assert {:error, :unauthorized} =
-               Content.forward_feed_item_to_board(fo_item, board, user)
+               Content.forward_timeline_item_to_board(fo_item, board, user)
     end
 
     test "admin can forward followers_only feed item", %{board: board} do
@@ -2690,7 +2690,7 @@ defmodule Baudrate.ContentTest do
         |> Baudrate.Repo.insert!()
 
       {:ok, fo_item} =
-        Baudrate.Federation.create_feed_item(%{
+        Baudrate.Federation.create_timeline_item(%{
           remote_actor_id: remote_actor.id,
           activity_type: "Create",
           object_type: "Note",
@@ -2700,33 +2700,33 @@ defmodule Baudrate.ContentTest do
           published_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
 
-      assert {:ok, _article} = Content.forward_feed_item_to_board(fo_item, board, admin)
+      assert {:ok, _article} = Content.forward_timeline_item_to_board(fo_item, board, admin)
     end
 
     test "refuses to forward a feed item from an actor the user does not follow", %{
       board: board,
-      feed_item: feed_item
+      timeline_item: timeline_item
     } do
       stranger = create_user("user")
 
       assert {:error, :unauthorized} =
-               Content.forward_feed_item_to_board(feed_item, board, stranger)
+               Content.forward_timeline_item_to_board(timeline_item, board, stranger)
     end
 
     test "refuses to resurrect a soft-deleted feed item", %{
       user: user,
       board: board,
-      feed_item: feed_item
+      timeline_item: timeline_item
     } do
       {:ok, deleted} =
-        feed_item
+        timeline_item
         |> Ecto.Changeset.change(%{
           deleted_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
         |> Baudrate.Repo.update()
 
       assert {:error, :not_found} =
-               Content.forward_feed_item_to_board(deleted, board, user)
+               Content.forward_timeline_item_to_board(deleted, board, user)
     end
   end
 
@@ -3278,9 +3278,9 @@ defmodule Baudrate.ContentTest do
     end
   end
 
-  # --- can_forward_feed_item?/2 ---
+  # --- can_forward_timeline_item?/2 ---
 
-  describe "can_forward_feed_item?/2" do
+  describe "can_forward_timeline_item?/2" do
     setup do
       user = create_user("user")
       actor = create_feed_remote_actor()
@@ -3290,28 +3290,31 @@ defmodule Baudrate.ContentTest do
     end
 
     test "nil user cannot forward", %{actor: actor} do
-      refute Content.can_forward_feed_item?(nil, build_feed_item!(actor, "public"))
+      refute Content.can_forward_timeline_item?(nil, build_timeline_item!(actor, "public"))
     end
 
     test "admin can forward any feed item", %{actor: actor} do
       admin = create_user("admin")
-      assert Content.can_forward_feed_item?(admin, build_feed_item!(actor, "direct"))
+      assert Content.can_forward_timeline_item?(admin, build_timeline_item!(actor, "direct"))
     end
 
     test "user can forward public feed item", %{user: user, actor: actor} do
-      assert Content.can_forward_feed_item?(user, build_feed_item!(actor, "public"))
+      assert Content.can_forward_timeline_item?(user, build_timeline_item!(actor, "public"))
     end
 
     test "user can forward unlisted feed item", %{user: user, actor: actor} do
-      assert Content.can_forward_feed_item?(user, build_feed_item!(actor, "unlisted"))
+      assert Content.can_forward_timeline_item?(user, build_timeline_item!(actor, "unlisted"))
     end
 
     test "user cannot forward followers_only feed item", %{user: user, actor: actor} do
-      refute Content.can_forward_feed_item?(user, build_feed_item!(actor, "followers_only"))
+      refute Content.can_forward_timeline_item?(
+               user,
+               build_timeline_item!(actor, "followers_only")
+             )
     end
 
     test "user cannot forward direct feed item", %{user: user, actor: actor} do
-      refute Content.can_forward_feed_item?(user, build_feed_item!(actor, "direct"))
+      refute Content.can_forward_timeline_item?(user, build_timeline_item!(actor, "direct"))
     end
 
     test "user cannot forward a public feed item from an actor they do not follow", %{
@@ -3319,14 +3322,14 @@ defmodule Baudrate.ContentTest do
     } do
       stranger = create_feed_remote_actor()
 
-      refute Content.can_forward_feed_item?(user, build_feed_item!(stranger, "public"))
+      refute Content.can_forward_timeline_item?(user, build_timeline_item!(stranger, "public"))
     end
 
     test "user can forward a boost from a followed booster", %{user: user, actor: booster} do
       author = create_feed_remote_actor()
 
       {:ok, boost_item} =
-        Baudrate.Federation.create_feed_item(%{
+        Baudrate.Federation.create_timeline_item(%{
           remote_actor_id: author.id,
           boosted_by_actor_id: booster.id,
           activity_type: "Announce",
@@ -3338,7 +3341,7 @@ defmodule Baudrate.ContentTest do
           published_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
 
-      assert Content.can_forward_feed_item?(user, boost_item)
+      assert Content.can_forward_timeline_item?(user, boost_item)
     end
   end
 

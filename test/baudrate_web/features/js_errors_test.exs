@@ -161,7 +161,7 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
     {:ok, _} = Federation.accept_user_follow(follow.ap_id)
 
     {:ok, _} =
-      Federation.create_feed_item(%{
+      Federation.create_timeline_item(%{
         remote_actor_id: actor.id,
         activity_type: "Create",
         object_type: "Note",
@@ -184,7 +184,7 @@ defmodule BaudrateWeb.Features.JsErrorsTest do
       user: user,
       paths: [
         "/",
-        "/feed",
+        "/timeline",
         "/search?q=test",
         "/users/#{other.username}",
         "/users/#{user.username}/articles",

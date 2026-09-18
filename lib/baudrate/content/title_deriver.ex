@@ -51,7 +51,7 @@ defmodule Baudrate.Content.TitleDeriver do
   `max_len` to avoid mid-word cuts.
 
   `max_len` is a hard ceiling, not an approximation: the result feeds
-  `Article.remote_changeset/2` and `Federation.FeedItem.changeset/2`, both of
+  `Article.remote_changeset/2` and `Federation.TimelineItem.changeset/2`, both of
   which cap `:title` at 255. Counting the ellipsis on top of `max_len` would
   make a 255-grapheme CJK title fail validation and silently drop the inbound
   article.

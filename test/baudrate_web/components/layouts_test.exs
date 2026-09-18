@@ -78,7 +78,7 @@ defmodule BaudrateWeb.LayoutsTest do
     test "marks the current page link with aria-current", %{conn: conn} do
       {:ok, _lv, html} = live(conn, "/search")
       [search_tag] = Regex.run(~r/<a[^>]*id="nav-search"[^>]*>/, html)
-      [feed_tag] = Regex.run(~r/<a[^>]*id="nav-feed"[^>]*>/, html)
+      [feed_tag] = Regex.run(~r/<a[^>]*id="nav-timeline"[^>]*>/, html)
       assert search_tag =~ ~s(aria-current="page")
       refute feed_tag =~ ~s(aria-current="page")
     end

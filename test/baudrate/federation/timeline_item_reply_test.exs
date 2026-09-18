@@ -1,8 +1,8 @@
-defmodule Baudrate.Federation.FeedItemReplyTest do
+defmodule Baudrate.Federation.TimelineItemReplyTest do
   use Baudrate.DataCase, async: false
 
   alias Baudrate.Federation
-  alias Baudrate.Federation.{FeedItemReply, KeyStore, RemoteActor}
+  alias Baudrate.Federation.{TimelineItemReply, KeyStore, RemoteActor}
 
   setup do
     Baudrate.Setup.seed_roles_and_permissions()
@@ -62,11 +62,11 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
     follow
   end
 
-  defp create_feed_item(actor) do
+  defp create_timeline_item(actor) do
     uid = System.unique_integer([:positive])
 
     {:ok, item} =
-      Federation.create_feed_item(%{
+      Federation.create_timeline_item(%{
         remote_actor_id: actor.id,
         activity_type: "Create",
         object_type: "Note",
@@ -80,12 +80,12 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
     item
   end
 
-  describe "FeedItemReply changeset" do
+  describe "TimelineItemReply changeset" do
     test "valid changeset with all required fields" do
       changeset =
-        FeedItemReply.changeset(%FeedItemReply{}, %{
+        TimelineItemReply.changeset(%TimelineItemReply{}, %{
           body: "Great post!",
-          feed_item_id: 1,
+          timeline_item_id: 1,
           user_id: 1,
           ap_id: "https://example.com/replies/1"
         })
@@ -95,8 +95,8 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
 
     test "requires body" do
       changeset =
-        FeedItemReply.changeset(%FeedItemReply{}, %{
-          feed_item_id: 1,
+        TimelineItemReply.changeset(%TimelineItemReply{}, %{
+          timeline_item_id: 1,
           user_id: 1,
           ap_id: "https://example.com/replies/1"
         })
@@ -104,22 +104,22 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
       assert %{body: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "requires feed_item_id" do
+    test "requires timeline_item_id" do
       changeset =
-        FeedItemReply.changeset(%FeedItemReply{}, %{
+        TimelineItemReply.changeset(%TimelineItemReply{}, %{
           body: "Test",
           user_id: 1,
           ap_id: "https://example.com/replies/1"
         })
 
-      assert %{feed_item_id: ["can't be blank"]} = errors_on(changeset)
+      assert %{timeline_item_id: ["can't be blank"]} = errors_on(changeset)
     end
 
     test "requires user_id" do
       changeset =
-        FeedItemReply.changeset(%FeedItemReply{}, %{
+        TimelineItemReply.changeset(%TimelineItemReply{}, %{
           body: "Test",
-          feed_item_id: 1,
+          timeline_item_id: 1,
           ap_id: "https://example.com/replies/1"
         })
 
@@ -128,9 +128,9 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
 
     test "requires ap_id" do
       changeset =
-        FeedItemReply.changeset(%FeedItemReply{}, %{
+        TimelineItemReply.changeset(%TimelineItemReply{}, %{
           body: "Test",
-          feed_item_id: 1,
+          timeline_item_id: 1,
           user_id: 1
         })
 
@@ -141,9 +141,9 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
       long_body = String.duplicate("x", 10_001)
 
       changeset =
-        FeedItemReply.changeset(%FeedItemReply{}, %{
+        TimelineItemReply.changeset(%TimelineItemReply{}, %{
           body: long_body,
-          feed_item_id: 1,
+          timeline_item_id: 1,
           user_id: 1,
           ap_id: "https://example.com/replies/1"
         })
@@ -156,25 +156,25 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
       user = create_user()
       actor = create_remote_actor()
       follow!(user, actor)
-      feed_item = create_feed_item(actor)
+      timeline_item = create_timeline_item(actor)
 
       ap_id = "https://example.com/replies/unique-#{System.unique_integer([:positive])}"
 
       {:ok, _} =
-        %FeedItemReply{}
-        |> FeedItemReply.changeset(%{
+        %TimelineItemReply{}
+        |> TimelineItemReply.changeset(%{
           body: "First reply",
-          feed_item_id: feed_item.id,
+          timeline_item_id: timeline_item.id,
           user_id: user.id,
           ap_id: ap_id
         })
         |> Repo.insert()
 
       {:error, changeset} =
-        %FeedItemReply{}
-        |> FeedItemReply.changeset(%{
+        %TimelineItemReply{}
+        |> TimelineItemReply.changeset(%{
           body: "Duplicate reply",
-          feed_item_id: feed_item.id,
+          timeline_item_id: timeline_item.id,
           user_id: user.id,
           ap_id: ap_id
         })
@@ -184,20 +184,20 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
     end
   end
 
-  describe "create_feed_item_reply/3" do
+  describe "create_timeline_item_reply/3" do
     test "creates a reply with generated AP ID and HTML body" do
       user = create_user()
       actor = create_remote_actor()
       follow!(user, actor)
-      feed_item = create_feed_item(actor)
+      timeline_item = create_timeline_item(actor)
 
-      {:ok, reply} = Federation.create_feed_item_reply(feed_item, user, "Nice post!")
+      {:ok, reply} = Federation.create_timeline_item_reply(timeline_item, user, "Nice post!")
 
       assert reply.body == "Nice post!"
       assert reply.body_html =~ "Nice post!"
-      assert reply.feed_item_id == feed_item.id
+      assert reply.timeline_item_id == timeline_item.id
       assert reply.user_id == user.id
-      assert reply.ap_id =~ "#feed-reply-"
+      assert reply.ap_id =~ "#timeline-reply-"
       assert reply.ap_id =~ user.username
     end
 
@@ -205,9 +205,9 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
       user = create_user()
       actor = create_remote_actor()
       follow!(user, actor)
-      feed_item = create_feed_item(actor)
+      timeline_item = create_timeline_item(actor)
 
-      {:error, changeset} = Federation.create_feed_item_reply(feed_item, user, "")
+      {:error, changeset} = Federation.create_timeline_item_reply(timeline_item, user, "")
 
       assert %{body: ["can't be blank"]} = errors_on(changeset)
     end
@@ -215,29 +215,29 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
     test "refuses to reply to a feed item the user does not follow" do
       user = create_user()
       actor = create_remote_actor()
-      feed_item = create_feed_item(actor)
+      timeline_item = create_timeline_item(actor)
 
       assert {:error, :not_found} =
-               Federation.create_feed_item_reply(feed_item, user, "Uninvited reply")
+               Federation.create_timeline_item_reply(timeline_item, user, "Uninvited reply")
 
-      assert Federation.list_feed_item_replies(feed_item.id) == []
+      assert Federation.list_timeline_item_replies(timeline_item.id) == []
     end
 
     test "refuses to reply to a soft-deleted feed item" do
       user = create_user()
       actor = create_remote_actor()
       follow!(user, actor)
-      feed_item = create_feed_item(actor)
+      timeline_item = create_timeline_item(actor)
 
       {:ok, deleted} =
-        feed_item
+        timeline_item
         |> Ecto.Changeset.change(%{
           deleted_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
         |> Repo.update()
 
       assert {:error, :not_found} =
-               Federation.create_feed_item_reply(deleted, user, "Reply to withdrawn post")
+               Federation.create_timeline_item_reply(deleted, user, "Reply to withdrawn post")
     end
 
     test "allows replying to a boost from a followed booster" do
@@ -247,7 +247,7 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
       follow!(user, booster)
 
       {:ok, boost_item} =
-        Federation.create_feed_item(%{
+        Federation.create_timeline_item(%{
           remote_actor_id: author.id,
           boosted_by_actor_id: booster.id,
           activity_type: "Announce",
@@ -259,34 +259,34 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
         })
 
       assert {:ok, reply} =
-               Federation.create_feed_item_reply(boost_item, user, "Seen via the booster")
+               Federation.create_timeline_item_reply(boost_item, user, "Seen via the booster")
 
-      assert reply.feed_item_id == boost_item.id
+      assert reply.timeline_item_id == boost_item.id
     end
   end
 
-  describe "list_feed_item_replies/1" do
+  describe "list_timeline_item_replies/1" do
     test "returns replies ordered by inserted_at ascending" do
       user = create_user()
       actor = create_remote_actor()
       follow!(user, actor)
-      feed_item = create_feed_item(actor)
+      timeline_item = create_timeline_item(actor)
 
-      {:ok, r1} = Federation.create_feed_item_reply(feed_item, user, "First reply")
-      {:ok, r2} = Federation.create_feed_item_reply(feed_item, user, "Second reply")
+      {:ok, r1} = Federation.create_timeline_item_reply(timeline_item, user, "First reply")
+      {:ok, r2} = Federation.create_timeline_item_reply(timeline_item, user, "Second reply")
 
       # Ensure distinct timestamps
       Repo.update_all(
-        from(r in FeedItemReply, where: r.id == ^r1.id),
+        from(r in TimelineItemReply, where: r.id == ^r1.id),
         set: [inserted_at: ~U[2026-01-01 00:00:00Z]]
       )
 
       Repo.update_all(
-        from(r in FeedItemReply, where: r.id == ^r2.id),
+        from(r in TimelineItemReply, where: r.id == ^r2.id),
         set: [inserted_at: ~U[2026-01-01 00:01:00Z]]
       )
 
-      replies = Federation.list_feed_item_replies(feed_item.id)
+      replies = Federation.list_timeline_item_replies(timeline_item.id)
 
       assert length(replies) == 2
       assert hd(replies).id == r1.id
@@ -297,50 +297,50 @@ defmodule Baudrate.Federation.FeedItemReplyTest do
       user = create_user()
       actor = create_remote_actor()
       follow!(user, actor)
-      feed_item = create_feed_item(actor)
+      timeline_item = create_timeline_item(actor)
 
-      {:ok, _} = Federation.create_feed_item_reply(feed_item, user, "Test reply")
+      {:ok, _} = Federation.create_timeline_item_reply(timeline_item, user, "Test reply")
 
-      [reply] = Federation.list_feed_item_replies(feed_item.id)
+      [reply] = Federation.list_timeline_item_replies(timeline_item.id)
       assert reply.user.id == user.id
       assert reply.user.role != nil
     end
 
     test "returns empty list for feed item with no replies" do
       actor = create_remote_actor()
-      feed_item = create_feed_item(actor)
+      timeline_item = create_timeline_item(actor)
 
-      assert Federation.list_feed_item_replies(feed_item.id) == []
+      assert Federation.list_timeline_item_replies(timeline_item.id) == []
     end
   end
 
-  describe "count_feed_item_replies/1" do
-    test "returns correct counts grouped by feed_item_id" do
+  describe "count_timeline_item_replies/1" do
+    test "returns correct counts grouped by timeline_item_id" do
       user = create_user()
       actor = create_remote_actor()
       follow!(user, actor)
-      fi1 = create_feed_item(actor)
-      fi2 = create_feed_item(actor)
+      fi1 = create_timeline_item(actor)
+      fi2 = create_timeline_item(actor)
 
-      {:ok, _} = Federation.create_feed_item_reply(fi1, user, "Reply 1 to fi1")
-      {:ok, _} = Federation.create_feed_item_reply(fi1, user, "Reply 2 to fi1")
-      {:ok, _} = Federation.create_feed_item_reply(fi2, user, "Reply 1 to fi2")
+      {:ok, _} = Federation.create_timeline_item_reply(fi1, user, "Reply 1 to fi1")
+      {:ok, _} = Federation.create_timeline_item_reply(fi1, user, "Reply 2 to fi1")
+      {:ok, _} = Federation.create_timeline_item_reply(fi2, user, "Reply 1 to fi2")
 
-      counts = Federation.count_feed_item_replies([fi1.id, fi2.id])
+      counts = Federation.count_timeline_item_replies([fi1.id, fi2.id])
 
       assert counts[fi1.id] == 2
       assert counts[fi2.id] == 1
     end
 
     test "returns empty map for empty input" do
-      assert Federation.count_feed_item_replies([]) == %{}
+      assert Federation.count_timeline_item_replies([]) == %{}
     end
 
     test "omits feed items with zero replies" do
       actor = create_remote_actor()
-      fi = create_feed_item(actor)
+      fi = create_timeline_item(actor)
 
-      counts = Federation.count_feed_item_replies([fi.id])
+      counts = Federation.count_timeline_item_replies([fi.id])
       refute Map.has_key?(counts, fi.id)
     end
   end

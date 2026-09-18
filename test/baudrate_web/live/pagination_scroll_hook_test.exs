@@ -43,7 +43,7 @@ defmodule BaudrateWeb.PaginationScrollHookTest do
 
     for n <- 1..25 do
       {:ok, _} =
-        Federation.create_feed_item(%{
+        Federation.create_timeline_item(%{
           remote_actor_id: actor.id,
           activity_type: "Create",
           object_type: "Note",
@@ -54,16 +54,16 @@ defmodule BaudrateWeb.PaginationScrollHookTest do
         })
     end
 
-    {:ok, lv, _html} = live(conn, "/feed")
+    {:ok, lv, _html} = live(conn, "/timeline")
     refute_push_event(lv, "scroll-to-top", %{})
 
     lv |> element(".pagination-page", "2") |> render_click()
     assert_push_event(lv, "scroll-to-top", %{})
 
-    render_patch(lv, "/feed?page=2")
+    render_patch(lv, "/timeline?page=2")
     refute_push_event(lv, "scroll-to-top", %{})
 
-    render_patch(lv, "/feed")
+    render_patch(lv, "/timeline")
     assert_push_event(lv, "scroll-to-top", %{})
   end
 

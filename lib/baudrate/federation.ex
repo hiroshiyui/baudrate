@@ -18,7 +18,7 @@ defmodule Baudrate.Federation do
   - **User follows** — local users can follow remote actors via Follow/Undo(Follow)
     and local users via auto-accepted follows; both share the `user_follows` table
   - **Personal feed** — incoming Create activities from followed actors stored as
-    `FeedItem` records; union query merges remote feed, local articles from
+    `TimelineItem` records; union query merges remote feed, local articles from
     followed users, and comment participation
   - **Public API** — AP endpoints double as public API; accepts `application/json`,
     CORS enabled on GET, `Vary: Accept` on content-negotiated endpoints
@@ -62,7 +62,7 @@ defmodule Baudrate.Federation do
     * `Federation.ObjectBuilder` — JSON-LD article object serialization
     * `Federation.Collections` — outbox, followers/following, boards, search collections
     * `Federation.Follows` — inbound followers, user/board follows, local follows
-    * `Federation.Feed` — feed items CRUD, feed item replies, likes, boosts
+    * `Federation.Timeline` — timeline items CRUD, timeline item replies, likes, boosts
     * `Federation.InboxHandler` — inbound activity dispatch
     * `Federation.Publisher` — outbound activity building and delivery enqueuing
     * `Federation.Delivery` / `DeliveryWorker` — retry queue and HTTP delivery
@@ -88,7 +88,7 @@ defmodule Baudrate.Federation do
     ActorRenderer,
     Collections,
     Discovery,
-    Feed,
+    Timeline,
     Follows,
     ObjectBuilder,
     ReplyImages
@@ -206,19 +206,19 @@ defmodule Baudrate.Federation do
   defdelegate batch_local_follow_states(follower_user_id, followed_user_ids), to: Follows
   defdelegate local_follows?(user_id, followed_user_id), to: Follows
   defdelegate local_followers_of_user(followed_user_id), to: Follows
-  defdelegate migrate_feed_items(old_actor_id, new_actor_id), to: Feed
+  defdelegate migrate_timeline_items(old_actor_id, new_actor_id), to: Timeline
 
   # --- Feed Items ---
 
-  defdelegate create_feed_item(attrs), to: Feed
-  defdelegate list_feed_items(user, opts \\ []), to: Feed
-  defdelegate get_feed_item_by_ap_id(ap_id), to: Feed
-  defdelegate soft_delete_feed_item_by_ap_id(ap_id, remote_actor_id), to: Feed
-  defdelegate cleanup_feed_items_for_actor(remote_actor_id), to: Feed
-  defdelegate feed_item_accessible?(user, feed_item), to: Feed
-  defdelegate create_feed_item_reply(feed_item, user, body, opts \\ []), to: Feed
-  defdelegate list_feed_item_replies(feed_item_id), to: Feed
-  defdelegate count_feed_item_replies(feed_item_ids), to: Feed
+  defdelegate create_timeline_item(attrs), to: Timeline
+  defdelegate list_timeline_items(user, opts \\ []), to: Timeline
+  defdelegate get_timeline_item_by_ap_id(ap_id), to: Timeline
+  defdelegate soft_delete_timeline_item_by_ap_id(ap_id, remote_actor_id), to: Timeline
+  defdelegate cleanup_timeline_items_for_actor(remote_actor_id), to: Timeline
+  defdelegate timeline_item_accessible?(user, timeline_item), to: Timeline
+  defdelegate create_timeline_item_reply(timeline_item, user, body, opts \\ []), to: Timeline
+  defdelegate list_timeline_item_replies(timeline_item_id), to: Timeline
+  defdelegate count_timeline_item_replies(timeline_item_ids), to: Timeline
 
   # --- Reply Images ---
 
@@ -226,10 +226,10 @@ defmodule Baudrate.Federation do
   defdelegate delete_reply_image(image), to: ReplyImages
   defdelegate get_reply_image!(id), to: ReplyImages
   defdelegate delete_orphan_reply_images(cutoff), to: ReplyImages
-  defdelegate toggle_feed_item_like(user, feed_item_id), to: Feed
-  defdelegate feed_item_likes_by_user(user_id, feed_item_ids), to: Feed
-  defdelegate toggle_feed_item_boost(user, feed_item_id), to: Feed
-  defdelegate feed_item_boosts_by_user(user_id, feed_item_ids), to: Feed
+  defdelegate toggle_timeline_item_like(user, timeline_item_id), to: Timeline
+  defdelegate timeline_item_likes_by_user(user_id, timeline_item_ids), to: Timeline
+  defdelegate toggle_timeline_item_boost(user, timeline_item_id), to: Timeline
+  defdelegate timeline_item_boosts_by_user(user_id, timeline_item_ids), to: Timeline
 
   # --- Announces ---
 
@@ -331,7 +331,7 @@ defmodule Baudrate.Federation do
         )
         |> Repo.update_all(set: [deleted_at: now])
 
-        Feed.cleanup_feed_items_for_actor(actor.id)
+        Timeline.cleanup_timeline_items_for_actor(actor.id)
 
         :ok
     end

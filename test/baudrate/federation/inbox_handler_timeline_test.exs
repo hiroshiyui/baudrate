@@ -118,7 +118,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       ap_id = activity["object"]["id"]
 
       assert :ok = InboxHandler.handle(activity, actor, :shared)
-      assert Federation.get_feed_item_by_ap_id(ap_id) != nil
+      assert Federation.get_timeline_item_by_ap_id(ap_id) != nil
     end
 
     test "drops a non-https object url instead of storing it as source_url", %{
@@ -130,7 +130,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       ap_id = activity["object"]["id"]
 
       assert :ok = InboxHandler.handle(activity, actor, :shared)
-      item = Federation.get_feed_item_by_ap_id(ap_id)
+      item = Federation.get_timeline_item_by_ap_id(ap_id)
       assert item.source_url == ap_id
 
       list_activity =
@@ -139,7 +139,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
         })
 
       assert :ok = InboxHandler.handle(list_activity, actor, :shared)
-      item = Federation.get_feed_item_by_ap_id(list_activity["object"]["id"])
+      item = Federation.get_timeline_item_by_ap_id(list_activity["object"]["id"])
       assert item.source_url == list_activity["object"]["id"]
     end
 
@@ -148,7 +148,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       ap_id = activity["object"]["id"]
 
       assert :ok = InboxHandler.handle(activity, actor, :shared)
-      assert Federation.get_feed_item_by_ap_id(ap_id) == nil
+      assert Federation.get_timeline_item_by_ap_id(ap_id) == nil
     end
 
     test "note replying to local article becomes comment, not feed item", %{
@@ -184,7 +184,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       assert :ok = InboxHandler.handle(activity, actor, :shared)
 
       # Should be a comment, not a feed item
-      assert Federation.get_feed_item_by_ap_id(activity["object"]["id"]) == nil
+      assert Federation.get_timeline_item_by_ap_id(activity["object"]["id"]) == nil
       assert Baudrate.Content.get_comment_by_ap_id(activity["object"]["id"]) != nil
     end
 
@@ -199,7 +199,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
         })
 
       assert :ok = InboxHandler.handle(activity, actor, :shared)
-      assert Federation.get_feed_item_by_ap_id(activity["object"]["id"]) == nil
+      assert Federation.get_timeline_item_by_ap_id(activity["object"]["id"]) == nil
     end
   end
 
@@ -213,7 +213,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       ap_id = activity["object"]["id"]
 
       assert :ok = InboxHandler.handle(activity, actor, :shared)
-      assert item = Federation.get_feed_item_by_ap_id(ap_id)
+      assert item = Federation.get_timeline_item_by_ap_id(ap_id)
       assert item.object_type == "Article"
       assert item.title =~ "Test Article"
     end
@@ -227,7 +227,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       ap_id = activity["object"]["id"]
 
       assert :ok = InboxHandler.handle(activity, actor, :shared)
-      assert item = Federation.get_feed_item_by_ap_id(ap_id)
+      assert item = Federation.get_timeline_item_by_ap_id(ap_id)
       assert String.length(item.title) <= 255
       assert String.ends_with?(item.title, "…")
     end
@@ -247,7 +247,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       assert :ok = InboxHandler.handle(activity, actor, :shared)
 
       # Should be a board article, not a feed item
-      assert Federation.get_feed_item_by_ap_id(activity["object"]["id"]) == nil
+      assert Federation.get_timeline_item_by_ap_id(activity["object"]["id"]) == nil
       assert Baudrate.Content.get_article_by_ap_id(activity["object"]["id"]) != nil
     end
   end
@@ -259,7 +259,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       ap_id = activity["object"]["id"]
 
       :ok = InboxHandler.handle(activity, actor, :shared)
-      assert Federation.get_feed_item_by_ap_id(ap_id) != nil
+      assert Federation.get_timeline_item_by_ap_id(ap_id) != nil
 
       delete_activity = %{
         "type" => "Delete",
@@ -270,7 +270,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
 
       assert :ok = InboxHandler.handle(delete_activity, actor, :shared)
 
-      item = Federation.get_feed_item_by_ap_id(ap_id)
+      item = Federation.get_timeline_item_by_ap_id(ap_id)
       assert item.deleted_at != nil
     end
   end
@@ -295,8 +295,8 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
 
       assert :ok = InboxHandler.handle(delete_activity, actor, :shared)
 
-      item1 = Federation.get_feed_item_by_ap_id(activity1["object"]["id"])
-      item2 = Federation.get_feed_item_by_ap_id(activity2["object"]["id"])
+      item1 = Federation.get_timeline_item_by_ap_id(activity1["object"]["id"])
+      item2 = Federation.get_timeline_item_by_ap_id(activity2["object"]["id"])
       assert item1.deleted_at != nil
       assert item2.deleted_at != nil
     end
@@ -341,7 +341,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
 
       # Should create both announce record and feed item
       assert Federation.count_announces(object_uri) == 1
-      item = Federation.get_feed_item_by_ap_id(announce_ap_id)
+      item = Federation.get_timeline_item_by_ap_id(announce_ap_id)
       assert item != nil
       assert item.activity_type == "Announce"
       assert item.boosted_by_actor_id == actor.id
@@ -387,7 +387,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
 
       assert :ok = InboxHandler.handle(announce_activity, actor, :shared)
 
-      item = Federation.get_feed_item_by_ap_id(announce_ap_id)
+      item = Federation.get_timeline_item_by_ap_id(announce_ap_id)
       assert item != nil
       assert length(item.attachments) == 2
       assert Enum.at(item.attachments, 0)["url"] == "https://remote.example/media/photo1.jpg"
@@ -418,7 +418,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
 
       assert :ok = InboxHandler.handle(activity, actor, :shared)
 
-      item = Federation.get_feed_item_by_ap_id(activity["object"]["id"])
+      item = Federation.get_timeline_item_by_ap_id(activity["object"]["id"])
       assert item != nil
       # Only images, not video
       assert length(item.attachments) == 1
@@ -442,7 +442,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
 
       # Announce record created but no feed item (no followers)
       assert Federation.count_announces(object_uri) == 1
-      assert Federation.get_feed_item_by_ap_id(announce_ap_id) == nil
+      assert Federation.get_timeline_item_by_ap_id(announce_ap_id) == nil
     end
 
     test "creates feed item from embedded Announce object (Lemmy interop)", %{
@@ -473,7 +473,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       assert :ok = InboxHandler.handle(announce_activity, actor, :shared)
 
       # Should create a feed item with Announce type
-      item = Federation.get_feed_item_by_ap_id(announce_ap_id)
+      item = Federation.get_timeline_item_by_ap_id(announce_ap_id)
       assert item != nil
       assert item.activity_type == "Announce"
       assert item.boosted_by_actor_id == actor.id
@@ -488,8 +488,8 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       announce_ap_id = "https://remote.example/activities/announce-feed-#{uid}"
 
       # Directly create an Announce feed item
-      {:ok, _feed_item} =
-        Federation.create_feed_item(%{
+      {:ok, _timeline_item} =
+        Federation.create_timeline_item(%{
           remote_actor_id: content_author.id,
           boosted_by_actor_id: actor.id,
           activity_type: "Announce",
@@ -502,20 +502,20 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
           published_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
 
-      result = Federation.list_feed_items(user)
+      result = Federation.list_timeline_items(user)
 
       assert Enum.any?(result.items, fn item ->
-               item.source == :remote and item.feed_item.ap_id == announce_ap_id
+               item.source == :remote and item.timeline_item.ap_id == announce_ap_id
              end)
 
       # Verify boost attribution is preloaded
       boost_item =
         Enum.find(result.items, fn item ->
-          item.source == :remote and item.feed_item.ap_id == announce_ap_id
+          item.source == :remote and item.timeline_item.ap_id == announce_ap_id
         end)
 
-      assert boost_item.feed_item.boosted_by_actor != nil
-      assert boost_item.feed_item.boosted_by_actor.id == actor.id
+      assert boost_item.timeline_item.boosted_by_actor != nil
+      assert boost_item.timeline_item.boosted_by_actor.id == actor.id
     end
   end
 

@@ -368,7 +368,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
       # The reported objects that live on the remote server, so it can find
       # them: a reported message is one it delivered to us.
       content_ap_ids =
-        [report.comment, report.article, report.feed_item, report.message]
+        [report.comment, report.article, report.timeline_item, report.message]
         |> Enum.flat_map(fn
           %{ap_id: ap_id} when is_binary(ap_id) -> [ap_id]
           _ -> []

@@ -1,4 +1,4 @@
-defmodule BaudrateWeb.FeedLiveTest do
+defmodule BaudrateWeb.TimelineLiveTest do
   use BaudrateWeb.ConnCase, async: false
 
   import Ecto.Query
@@ -45,7 +45,7 @@ defmodule BaudrateWeb.FeedLiveTest do
     {:ok, _follow} = Federation.accept_user_follow(follow.ap_id)
   end
 
-  defp create_feed_item(actor, extra \\ %{}) do
+  defp create_timeline_item(actor, extra \\ %{}) do
     uid = System.unique_integer([:positive])
 
     attrs =
@@ -63,7 +63,7 @@ defmodule BaudrateWeb.FeedLiveTest do
         extra
       )
 
-    {:ok, item} = Federation.create_feed_item(attrs)
+    {:ok, item} = Federation.create_timeline_item(attrs)
     item
   end
 
@@ -76,11 +76,11 @@ defmodule BaudrateWeb.FeedLiveTest do
     test "reports the post", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
-      lv |> element("#feed-item-report-#{item.id}") |> render_click()
+      lv |> element("#timeline-item-report-#{item.id}") |> render_click()
       assert has_element?(lv, "#report-modal-title", "Report Post")
 
       lv
@@ -88,7 +88,7 @@ defmodule BaudrateWeb.FeedLiveTest do
       |> render_submit()
 
       assert [report] = Baudrate.Moderation.list_reports(status: "open")
-      assert report.feed_item_id == item.id
+      assert report.timeline_item_id == item.id
       assert report.remote_actor_id == actor.id
       refute has_element?(lv, "#report-modal")
     end
@@ -96,17 +96,17 @@ defmodule BaudrateWeb.FeedLiveTest do
     test "reports the author", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
-      lv |> element("#feed-item-#{item.id}-report-actor") |> render_click()
+      lv |> element("#timeline-item-#{item.id}-report-actor") |> render_click()
 
       lv
       |> form("#report-modal form", %{"reason" => "Fake account", "category" => "spam"})
       |> render_submit()
 
-      assert [%{remote_actor_id: actor_id, feed_item_id: nil}] =
+      assert [%{remote_actor_id: actor_id, timeline_item_id: nil}] =
                Baudrate.Moderation.list_reports(status: "open")
 
       assert actor_id == actor.id
@@ -116,33 +116,33 @@ defmodule BaudrateWeb.FeedLiveTest do
          %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
-      {:ok, lv, _html} = live(conn, "/feed")
-      assert has_element?(lv, "#feed-item-fi-#{item.id}")
+      {:ok, lv, _html} = live(conn, "/timeline")
+      assert has_element?(lv, "#timeline-item-fi-#{item.id}")
 
-      lv |> element("#feed-item-#{item.id}-block-actor") |> render_click()
+      lv |> element("#timeline-item-#{item.id}-block-actor") |> render_click()
 
       assert Baudrate.Auth.blocked?(user, actor.ap_id)
       refute Federation.user_follows?(user.id, actor.id)
-      refute has_element?(lv, "#feed-item-fi-#{item.id}")
-      assert_push_event(lv, "focus", %{id: "feed-heading"})
+      refute has_element?(lv, "#timeline-item-fi-#{item.id}")
+      assert_push_event(lv, "focus", %{id: "timeline-heading"})
     end
 
     test "blocks and reports are refused when rate limited", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
       BaudrateWeb.RateLimiter.Sandbox.set_global_response({:deny, 1_000})
 
-      assert lv |> element("#feed-item-#{item.id}-block-actor") |> render_click() =~
+      assert lv |> element("#timeline-item-#{item.id}-block-actor") |> render_click() =~
                "Too many actions"
 
       refute Baudrate.Auth.blocked?(user, actor.ap_id)
 
-      lv |> element("#feed-item-report-#{item.id}") |> render_click()
+      lv |> element("#timeline-item-report-#{item.id}") |> render_click()
 
       assert lv
              |> form("#report-modal form", %{"reason" => "Spam", "category" => "spam"})
@@ -156,25 +156,25 @@ defmodule BaudrateWeb.FeedLiveTest do
          %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
-      {:ok, lv, _html} = live(conn, "/feed")
-      lv |> element("#feed-item-#{item.id}-mute-actor") |> render_click()
+      {:ok, lv, _html} = live(conn, "/timeline")
+      lv |> element("#timeline-item-#{item.id}-mute-actor") |> render_click()
 
       assert Baudrate.Auth.muted?(user, actor.ap_id)
       assert Federation.user_follows?(user.id, actor.id)
-      refute has_element?(lv, "#feed-item-fi-#{item.id}")
+      refute has_element?(lv, "#timeline-item-fi-#{item.id}")
     end
   end
 
   describe "page loads" do
     test "authenticated user sees feed page", %{conn: conn} do
-      {:ok, _lv, html} = live(conn, "/feed")
-      assert html =~ "Feed"
+      {:ok, _lv, html} = live(conn, "/timeline")
+      assert html =~ "Timeline"
     end
 
     test "shows personal info sidebar with user details", %{conn: conn, user: user} do
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ user.username
       assert html =~ "Member since"
       assert html =~ "Articles"
@@ -188,22 +188,22 @@ defmodule BaudrateWeb.FeedLiveTest do
     } do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      create_feed_item(actor)
+      create_timeline_item(actor)
 
-      {:ok, lv, _html} = live(conn, "/feed")
-      assert has_element?(lv, "#feed-items[role='feed']")
-      refute has_element?(lv, "#feed-items[aria-live]")
-      assert has_element?(lv, "#feed-live-status[role='status']")
+      {:ok, lv, _html} = live(conn, "/timeline")
+      assert has_element?(lv, "#timeline-items[role='feed']")
+      refute has_element?(lv, "#timeline-items[aria-live]")
+      assert has_element?(lv, "#timeline-live-status[role='status']")
 
-      create_feed_item(actor)
-      send(lv.pid, {:feed_item_created, %{}})
+      create_timeline_item(actor)
+      send(lv.pid, {:timeline_item_created, %{}})
 
-      assert has_element?(lv, "#feed-live-status", "1 new feed item")
+      assert has_element?(lv, "#timeline-live-status", "1 new timeline item")
     end
 
     test "shows empty state when no items", %{conn: conn} do
-      {:ok, _lv, html} = live(conn, "/feed")
-      assert html =~ "feed is empty"
+      {:ok, _lv, html} = live(conn, "/timeline")
+      assert html =~ "timeline is empty"
       assert html =~ "/search"
     end
 
@@ -212,9 +212,9 @@ defmodule BaudrateWeb.FeedLiveTest do
         create_remote_actor(%{username: "alice", domain: "example.org", display_name: "Alice"})
 
       create_accepted_follow(user, actor)
-      create_feed_item(actor, %{body_html: "<p>Test post content</p>"})
+      create_timeline_item(actor, %{body_html: "<p>Test post content</p>"})
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ "Alice"
       assert html =~ "alice"
       assert html =~ "example.org"
@@ -224,9 +224,9 @@ defmodule BaudrateWeb.FeedLiveTest do
     test "shows article titles", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      create_feed_item(actor, %{object_type: "Article", title: "My Great Article"})
+      create_timeline_item(actor, %{object_type: "Article", title: "My Great Article"})
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ "My Great Article"
       assert html =~ "Article"
     end
@@ -234,9 +234,9 @@ defmodule BaudrateWeb.FeedLiveTest do
     test "shows View original link", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      create_feed_item(actor, %{source_url: "https://remote.example/notes/original"})
+      create_timeline_item(actor, %{source_url: "https://remote.example/notes/original"})
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ "remote.example/notes/original"
       assert html =~ "hero-link"
     end
@@ -248,15 +248,15 @@ defmodule BaudrateWeb.FeedLiveTest do
       create_accepted_follow(user, actor)
 
       for _ <- 1..25 do
-        create_feed_item(actor)
+        create_timeline_item(actor)
       end
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       # Should show pagination when more than 20 items
       assert html =~ "Pagination"
 
-      {:ok, _lv, html2} = live(conn, "/feed?page=2")
-      assert html2 =~ "Feed"
+      {:ok, _lv, html2} = live(conn, "/timeline?page=2")
+      assert html2 =~ "Timeline"
     end
 
     test "the pager switches pages in place", %{conn: conn, user: user} do
@@ -266,25 +266,25 @@ defmodule BaudrateWeb.FeedLiveTest do
 
       items =
         for n <- 1..25 do
-          create_feed_item(actor, %{published_at: DateTime.add(now, -n * 60, :second)})
+          create_timeline_item(actor, %{published_at: DateTime.add(now, -n * 60, :second)})
         end
 
       oldest = List.last(items)
       newest = hd(items)
 
-      {:ok, lv, _html} = live(conn, "/feed")
-      assert has_element?(lv, "#feed-item-fi-#{newest.id}")
-      refute has_element?(lv, "#feed-item-fi-#{oldest.id}")
+      {:ok, lv, _html} = live(conn, "/timeline")
+      assert has_element?(lv, "#timeline-item-fi-#{newest.id}")
+      refute has_element?(lv, "#timeline-item-fi-#{oldest.id}")
 
       lv |> element(".pagination-page", "2") |> render_click()
-      assert_patch(lv, "/feed?page=2")
-      assert has_element?(lv, "#feed-item-fi-#{oldest.id}")
-      refute has_element?(lv, "#feed-item-fi-#{newest.id}")
+      assert_patch(lv, "/timeline?page=2")
+      assert has_element?(lv, "#timeline-item-fi-#{oldest.id}")
+      refute has_element?(lv, "#timeline-item-fi-#{newest.id}")
       assert has_element?(lv, ".pagination-current[aria-current=page]", "2")
 
       lv |> element(".pagination-prev") |> render_click()
-      assert_patch(lv, "/feed?page=1")
-      assert has_element?(lv, "#feed-item-fi-#{newest.id}")
+      assert_patch(lv, "/timeline?page=1")
+      assert has_element?(lv, "#timeline-item-fi-#{newest.id}")
     end
   end
 
@@ -297,7 +297,7 @@ defmodule BaudrateWeb.FeedLiveTest do
       board = create_board()
       create_article(followed_user, board, %{title: "Local Followed Article"})
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ "Local Followed Article"
       assert html =~ followed_user.username
       assert html =~ "Local"
@@ -308,20 +308,20 @@ defmodule BaudrateWeb.FeedLiveTest do
       board = create_board()
       create_article(unfollowed_user, board, %{title: "Unfollowed Article"})
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       refute html =~ "Unfollowed Article"
     end
   end
 
   describe "quick-post composer" do
     test "composer card renders for authenticated users", %{conn: conn} do
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ "Oh! I just had a thought!"
       assert html =~ "Post"
     end
 
     test "validates form fields", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       html =
         lv
@@ -332,7 +332,7 @@ defmodule BaudrateWeb.FeedLiveTest do
     end
 
     test "successfully creates an article with no boards", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       html =
         lv
@@ -346,7 +346,7 @@ defmodule BaudrateWeb.FeedLiveTest do
     end
 
     test "resets form after successful submission and article appears in feed", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       lv
       |> form("form", article: %{title: "Quick Post", body: "Body text"})
@@ -369,7 +369,7 @@ defmodule BaudrateWeb.FeedLiveTest do
         BaudrateWeb.RateLimits.check_create_article(user.id)
       end
 
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       html =
         lv
@@ -381,7 +381,7 @@ defmodule BaudrateWeb.FeedLiveTest do
 
     test "composer does not render for guests" do
       conn = build_conn()
-      {:error, {:redirect, %{to: to}}} = live(conn, "/feed")
+      {:error, {:redirect, %{to: to}}} = live(conn, "/timeline")
       assert to =~ "/login"
     end
   end
@@ -400,7 +400,7 @@ defmodule BaudrateWeb.FeedLiveTest do
 
     test "short query does not show result list", %{conn: conn} do
       _board = create_search_board(%{name: "FeedSearch"})
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       html =
         lv
@@ -414,7 +414,7 @@ defmodule BaudrateWeb.FeedLiveTest do
       board =
         create_search_board(%{name: "FeedSearchMatch-#{System.unique_integer([:positive])}"})
 
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       html =
         lv
@@ -430,7 +430,7 @@ defmodule BaudrateWeb.FeedLiveTest do
 
     test "selecting a board adds a chip and clears results", %{conn: conn} do
       board = create_search_board(%{name: "SelectMe-#{System.unique_integer([:positive])}"})
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       lv
       |> element(~s|#quick-post-boards input[name="post_board_search_query"]|)
@@ -448,7 +448,7 @@ defmodule BaudrateWeb.FeedLiveTest do
 
     test "removing a selected board removes the chip", %{conn: conn} do
       board = create_search_board(%{name: "DropMe-#{System.unique_integer([:positive])}"})
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       lv
       |> element(~s|#quick-post-boards input[name="post_board_search_query"]|)
@@ -466,7 +466,7 @@ defmodule BaudrateWeb.FeedLiveTest do
 
     test "submitting with a selected board creates article attached to that board", %{conn: conn} do
       board = create_search_board(%{name: "PostHere-#{System.unique_integer([:positive])}"})
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       lv
       |> element(~s|#quick-post-boards input[name="post_board_search_query"]|)
@@ -499,7 +499,7 @@ defmodule BaudrateWeb.FeedLiveTest do
           min_role_to_post: "moderator"
         })
 
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       html =
         lv
@@ -520,7 +520,7 @@ defmodule BaudrateWeb.FeedLiveTest do
           min_role_to_post: "moderator"
         })
 
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       html = render_hook(lv, "add_post_board", %{"board-id" => "#{hidden_board.id}"})
 
@@ -533,9 +533,9 @@ defmodule BaudrateWeb.FeedLiveTest do
     test "reply button appears on remote feed items", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      create_feed_item(actor)
+      create_timeline_item(actor)
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ "Reply"
       assert html =~ "hero-chat-bubble-left"
     end
@@ -543,9 +543,9 @@ defmodule BaudrateWeb.FeedLiveTest do
     test "toggle_reply shows and hides the reply form", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
-      {:ok, lv, html} = live(conn, "/feed")
+      {:ok, lv, html} = live(conn, "/timeline")
       refute html =~ "Write a reply..."
 
       # Click Reply to show form
@@ -568,12 +568,12 @@ defmodule BaudrateWeb.FeedLiveTest do
     } do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
       # Ensure user has a keypair for federation delivery
       Baudrate.Federation.KeyStore.ensure_user_keypair(user)
 
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       # Open reply form
       lv
@@ -585,14 +585,14 @@ defmodule BaudrateWeb.FeedLiveTest do
         lv
         |> form("form[phx-submit='submit_reply']",
           reply: %{body: "Hello from test!"},
-          feed_item_id: item.id
+          timeline_item_id: item.id
         )
         |> render_submit()
 
       assert html =~ "Reply sent!"
 
       # Verify record was created
-      replies = Baudrate.Federation.list_feed_item_replies(item.id)
+      replies = Baudrate.Federation.list_timeline_item_replies(item.id)
       assert length(replies) == 1
       assert hd(replies).body == "Hello from test!"
     end
@@ -600,11 +600,11 @@ defmodule BaudrateWeb.FeedLiveTest do
     test "reply count badge shows after submitting", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
       Baudrate.Federation.KeyStore.ensure_user_keypair(user)
 
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       lv
       |> element("button[phx-click='toggle_reply'][phx-value-id='#{item.id}']")
@@ -613,7 +613,7 @@ defmodule BaudrateWeb.FeedLiveTest do
       lv
       |> form("form[phx-submit='submit_reply']",
         reply: %{body: "Counting reply"},
-        feed_item_id: item.id
+        timeline_item_id: item.id
       )
       |> render_submit()
 
@@ -624,17 +624,17 @@ defmodule BaudrateWeb.FeedLiveTest do
     test "rate-limited reply shows error flash", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
       # Use real Hammer backend
       BaudrateWeb.RateLimiter.Sandbox.set_fun(&BaudrateWeb.RateLimiter.Hammer.check_rate/3)
 
       # Exhaust the rate limit (20 per 5 min)
       for _ <- 1..20 do
-        BaudrateWeb.RateLimits.check_feed_reply(user.id)
+        BaudrateWeb.RateLimits.check_timeline_reply(user.id)
       end
 
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       lv
       |> element("button[phx-click='toggle_reply'][phx-value-id='#{item.id}']")
@@ -644,7 +644,7 @@ defmodule BaudrateWeb.FeedLiveTest do
         lv
         |> form("form[phx-submit='submit_reply']",
           reply: %{body: "Should be rate limited"},
-          feed_item_id: item.id
+          timeline_item_id: item.id
         )
         |> render_submit()
 
@@ -654,19 +654,19 @@ defmodule BaudrateWeb.FeedLiveTest do
 
   describe "quick-post markdown toolbar" do
     test "composer textarea has markdown toolbar", %{conn: conn} do
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ "MarkdownToolbarHook"
     end
   end
 
   describe "quick-post poll" do
     test "poll toggle button renders", %{conn: conn} do
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ "Add Poll"
     end
 
     test "toggling poll shows poll options", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       html =
         lv
@@ -681,7 +681,7 @@ defmodule BaudrateWeb.FeedLiveTest do
     end
 
     test "can add and remove poll options", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       lv
       |> element("button[phx-click='toggle_poll']")
@@ -707,11 +707,11 @@ defmodule BaudrateWeb.FeedLiveTest do
     # See the article composer test: poll edits arrive with the form's change
     # event, which must keep them or the re-render erases the typed options.
     test "poll options typed into the form are rendered back after a change", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
       lv |> element("button[phx-click='toggle_poll']") |> render_click()
 
       lv
-      |> form("#feed-quick-post-form",
+      |> form("#timeline-quick-post-form",
         article: %{title: "Lunch"},
         poll_options: %{"0" => "Noodles", "1" => "Curry"},
         poll_mode: "single",
@@ -719,12 +719,12 @@ defmodule BaudrateWeb.FeedLiveTest do
       )
       |> render_change()
 
-      assert has_element?(lv, ~s(#feed-poll-option-0[value="Noodles"]))
-      assert has_element?(lv, ~s(#feed-poll-option-1[value="Curry"]))
+      assert has_element?(lv, ~s(#timeline-poll-option-0[value="Noodles"]))
+      assert has_element?(lv, ~s(#timeline-poll-option-1[value="Curry"]))
     end
 
     test "creates article with poll", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       # Enable poll
       lv
@@ -756,7 +756,7 @@ defmodule BaudrateWeb.FeedLiveTest do
   describe "mention autocomplete" do
     test "mention_suggest returns matching users", %{conn: conn, user: _user} do
       other = setup_user("user")
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       render_hook(lv, "mention_suggest", %{"prefix" => String.slice(other.username, 0, 4)})
 
@@ -766,7 +766,7 @@ defmodule BaudrateWeb.FeedLiveTest do
     end
 
     test "mention_suggest excludes current user", %{conn: conn, user: user} do
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       render_hook(lv, "mention_suggest", %{"prefix" => String.slice(user.username, 0, 4)})
 
@@ -778,15 +778,15 @@ defmodule BaudrateWeb.FeedLiveTest do
 
   describe "quick-post image upload" do
     test "image upload input renders", %{conn: conn} do
-      {:ok, _lv, html} = live(conn, "/feed")
-      assert html =~ "feed-images-section"
+      {:ok, _lv, html} = live(conn, "/timeline")
+      assert html =~ "timeline-images-section"
     end
   end
 
   describe "requires authentication" do
     test "redirects unauthenticated user to login" do
       conn = build_conn()
-      {:error, {:redirect, %{to: to}}} = live(conn, "/feed")
+      {:error, {:redirect, %{to: to}}} = live(conn, "/timeline")
       assert to =~ "/login"
     end
   end
@@ -804,7 +804,7 @@ defmodule BaudrateWeb.FeedLiveTest do
           "user_id" => other_user.id
         })
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ "Great article!"
       assert html =~ "commented on"
       assert html =~ "My Own Article"
@@ -836,7 +836,7 @@ defmodule BaudrateWeb.FeedLiveTest do
           "user_id" => third_user.id
         })
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ "Another perspective here"
       assert html =~ "commented on"
       assert html =~ "Interesting Discussion"
@@ -853,7 +853,7 @@ defmodule BaudrateWeb.FeedLiveTest do
           "user_id" => user.id
         })
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ "My own comment on my article"
       assert html =~ "Self Comment Test"
     end
@@ -878,7 +878,7 @@ defmodule BaudrateWeb.FeedLiveTest do
           remote_actor_id: actor.id
         })
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ "Hello from the fediverse!"
       assert html =~ "commented on"
       assert html =~ "Federated Replies"
@@ -909,7 +909,7 @@ defmodule BaudrateWeb.FeedLiveTest do
           remote_actor_id: actor.id
         })
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ "Comment without avatar"
       assert html =~ "No Avatar Actor"
       assert html =~ "hero-user-circle"
@@ -929,7 +929,7 @@ defmodule BaudrateWeb.FeedLiveTest do
 
       {:ok, _} = Baudrate.Auth.block_user(user, blocked_user)
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       refute html =~ "Comment from blocked person"
     end
   end
@@ -938,12 +938,12 @@ defmodule BaudrateWeb.FeedLiveTest do
     test "like button appears on remote feed items", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
 
       assert html =~
-               ~s(phx-click="toggle_feed_item_like" phx-value-id="#{item.id}")
+               ~s(phx-click="toggle_timeline_item_like" phx-value-id="#{item.id}")
 
       assert html =~ "hero-heart"
     end
@@ -951,12 +951,12 @@ defmodule BaudrateWeb.FeedLiveTest do
     test "boost button appears on remote feed items", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
 
       assert html =~
-               ~s(phx-click="toggle_feed_item_boost" phx-value-id="#{item.id}")
+               ~s(phx-click="toggle_timeline_item_boost" phx-value-id="#{item.id}")
 
       assert html =~ "hero-arrow-path-rounded-square"
     end
@@ -964,21 +964,26 @@ defmodule BaudrateWeb.FeedLiveTest do
     test "clicking like toggles feed item like", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
       Baudrate.Federation.KeyStore.ensure_user_keypair(user)
 
-      {:ok, lv, html} = live(conn, "/feed")
+      {:ok, lv, html} = live(conn, "/timeline")
 
       # Constant "Like" name; state is conveyed by aria-pressed
       assert html =~ ~s(aria-label="Like")
-      assert has_element?(lv, ~s(button[phx-click="toggle_feed_item_like"][aria-pressed="false"]))
+
+      assert has_element?(
+               lv,
+               ~s(button[phx-click="toggle_timeline_item_like"][aria-pressed="false"])
+             )
+
       refute html =~ "hero-heart-solid"
 
       # Click like button
       html =
         lv
-        |> element(~s(button[phx-click="toggle_feed_item_like"][phx-value-id="#{item.id}"]))
+        |> element(~s(button[phx-click="toggle_timeline_item_like"][phx-value-id="#{item.id}"]))
         |> render_click()
 
       # After clicking, should show solid heart with text-error class
@@ -988,25 +993,25 @@ defmodule BaudrateWeb.FeedLiveTest do
 
       assert has_element?(
                lv,
-               ~s(button[phx-click="toggle_feed_item_like"][phx-value-id="#{item.id}"][aria-pressed="true"])
+               ~s(button[phx-click="toggle_timeline_item_like"][phx-value-id="#{item.id}"][aria-pressed="true"])
              )
     end
 
     test "clicking boost toggles feed item boost", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
       Baudrate.Federation.KeyStore.ensure_user_keypair(user)
 
-      {:ok, lv, html} = live(conn, "/feed")
+      {:ok, lv, html} = live(conn, "/timeline")
 
       # Constant "Boost" name; state is conveyed by aria-pressed
       assert html =~ ~s(aria-label="Boost")
 
       assert has_element?(
                lv,
-               ~s(button[phx-click="toggle_feed_item_boost"][aria-pressed="false"])
+               ~s(button[phx-click="toggle_timeline_item_boost"][aria-pressed="false"])
              )
 
       refute html =~ "hero-arrow-path-rounded-square-solid"
@@ -1014,7 +1019,7 @@ defmodule BaudrateWeb.FeedLiveTest do
       # Click boost button
       html =
         lv
-        |> element(~s(button[phx-click="toggle_feed_item_boost"][phx-value-id="#{item.id}"]))
+        |> element(~s(button[phx-click="toggle_timeline_item_boost"][phx-value-id="#{item.id}"]))
         |> render_click()
 
       # After clicking, should show solid icon with text-success class
@@ -1024,7 +1029,7 @@ defmodule BaudrateWeb.FeedLiveTest do
 
       assert has_element?(
                lv,
-               ~s(button[phx-click="toggle_feed_item_boost"][phx-value-id="#{item.id}"][aria-pressed="true"])
+               ~s(button[phx-click="toggle_timeline_item_boost"][phx-value-id="#{item.id}"][aria-pressed="true"])
              )
     end
 
@@ -1038,7 +1043,7 @@ defmodule BaudrateWeb.FeedLiveTest do
       board = create_board()
       create_article(followed_user, board, %{title: "Followed User Article"})
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
 
       assert html =~ "Followed User Article"
       assert html =~ ~s(phx-click="toggle_article_like")
@@ -1048,7 +1053,7 @@ defmodule BaudrateWeb.FeedLiveTest do
     end
 
     test "like/boost buttons do not appear on own articles", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, "/feed")
+      {:ok, lv, _html} = live(conn, "/timeline")
 
       # Create own article via the quick-post composer so it appears in the feed
       lv

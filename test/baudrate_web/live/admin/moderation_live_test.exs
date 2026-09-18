@@ -433,7 +433,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
       {:ok, _} = Baudrate.Federation.accept_user_follow(follow.ap_id)
 
       {:ok, item} =
-        Baudrate.Federation.create_feed_item(%{
+        Baudrate.Federation.create_timeline_item(%{
           remote_actor_id: actor.id,
           activity_type: "Create",
           object_type: "Note",
@@ -445,7 +445,7 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
         })
 
       {:ok, feed_report} =
-        Moderation.report_feed_item(member, item.id, %{reason: "Spam post", category: "spam"})
+        Moderation.report_timeline_item(member, item.id, %{reason: "Spam post", category: "spam"})
 
       {:ok, conversation} = Baudrate.Messaging.find_or_create_conversation(sender, member)
       {:ok, _} = Baudrate.Messaging.create_message(conversation, sender, %{"body" => "Earlier"})

@@ -147,7 +147,7 @@ defmodule Baudrate.Bots.FeedWorker do
         # Feed bodies are the highest-volume source of remote images; warm the
         # media cache so the first reader does not wait on the publisher's CDN.
         Baudrate.Media.Warmer.warm_html(entry.body)
-        Bots.record_feed_item(bot, entry.guid, article.id)
+        Bots.record_timeline_item(bot, entry.guid, article.id)
         Logger.debug("bots.feed_worker: posted article #{article.id} for bot #{bot.id}")
 
       error ->
@@ -168,7 +168,7 @@ defmodule Baudrate.Bots.FeedWorker do
         )
 
         # Still record the item so we don't retry forever on permanent failures
-        Bots.record_feed_item(bot, entry.guid, nil)
+        Bots.record_timeline_item(bot, entry.guid, nil)
     end
   end
 

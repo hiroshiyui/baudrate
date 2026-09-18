@@ -261,7 +261,7 @@ defmodule Baudrate.Auth.BlockEnforcementTest do
       uid = System.unique_integer([:positive])
 
       {:ok, item} =
-        Federation.create_feed_item(%{
+        Federation.create_timeline_item(%{
           remote_actor_id: actor.id,
           activity_type: "Create",
           object_type: "Note",
@@ -272,14 +272,14 @@ defmodule Baudrate.Auth.BlockEnforcementTest do
           published_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
 
-      {:ok, _} = Federation.toggle_feed_item_like(author, item.id)
+      {:ok, _} = Federation.toggle_timeline_item_like(author, item.id)
 
       Repo.insert!(%Baudrate.Auth.UserBlock{user_id: author.id, blocked_actor_ap_id: actor.ap_id})
 
-      assert {:error, :blocked} = Federation.toggle_feed_item_boost(author, item.id)
-      assert {:error, :blocked} = Federation.create_feed_item_reply(item, author, "Hi")
-      assert {:ok, :removed} = Federation.toggle_feed_item_like(author, item.id)
-      assert {:error, :blocked} = Federation.toggle_feed_item_like(author, item.id)
+      assert {:error, :blocked} = Federation.toggle_timeline_item_boost(author, item.id)
+      assert {:error, :blocked} = Federation.create_timeline_item_reply(item, author, "Hi")
+      assert {:ok, :removed} = Federation.toggle_timeline_item_like(author, item.id)
+      assert {:error, :blocked} = Federation.toggle_timeline_item_like(author, item.id)
 
       Federation.delete_user_follow(author, actor)
       assert {:error, :blocked} = Federation.create_user_follow(author, actor)

@@ -26,7 +26,7 @@ defmodule Baudrate.Content do
     * `Content.Images` — article image management
     * `Content.Tags` — hashtag extraction, syncing, and querying
     * `Content.Search` — full-text search across articles, comments, and boards
-    * `Content.Feed` — public feed queries, user content statistics
+    * `Content.Feed` — public timeline queries, user content statistics
     * `Content.ReadTracking` — per-user read state for articles and boards
     * `Content.Polls` — poll creation, voting, and counter management
   """
@@ -90,7 +90,7 @@ defmodule Baudrate.Content do
   defdelegate can_lock_article?(user, article), to: Permissions
   defdelegate can_delete_comment?(user, comment, article), to: Permissions
   defdelegate can_forward_article?(user, article), to: Permissions
-  defdelegate can_forward_feed_item?(user, feed_item), to: Permissions
+  defdelegate can_forward_timeline_item?(user, timeline_item), to: Permissions
   defdelegate can_forward_comment?(user, comment), to: Permissions
   defdelegate generate_slug(title), to: Permissions
 
@@ -101,7 +101,7 @@ defmodule Baudrate.Content do
   defdelegate create_article(attrs, board_ids, opts), to: Articles
   defdelegate add_article_to_board(article, board_id), to: Articles
   defdelegate forward_article_to_board(article, board, user), to: Articles
-  defdelegate forward_feed_item_to_board(feed_item, board, user), to: Articles
+  defdelegate forward_timeline_item_to_board(timeline_item, board, user), to: Articles
   defdelegate forward_comment_to_board(comment, board, user), to: Articles
   defdelegate remove_article_from_board(article, board, user), to: Articles
   defdelegate create_remote_article(attrs, board_ids, opts), to: Articles
@@ -382,7 +382,7 @@ defmodule Baudrate.Content do
         where: lp.fetched_at < ^cutoff,
         where:
           fragment(
-            "NOT EXISTS (SELECT 1 FROM articles WHERE link_preview_id = ?) AND NOT EXISTS (SELECT 1 FROM comments WHERE link_preview_id = ?) AND NOT EXISTS (SELECT 1 FROM direct_messages WHERE link_preview_id = ?) AND NOT EXISTS (SELECT 1 FROM feed_items WHERE link_preview_id = ?) AND NOT EXISTS (SELECT 1 FROM feed_item_replies WHERE link_preview_id = ?)",
+            "NOT EXISTS (SELECT 1 FROM articles WHERE link_preview_id = ?) AND NOT EXISTS (SELECT 1 FROM comments WHERE link_preview_id = ?) AND NOT EXISTS (SELECT 1 FROM direct_messages WHERE link_preview_id = ?) AND NOT EXISTS (SELECT 1 FROM timeline_items WHERE link_preview_id = ?) AND NOT EXISTS (SELECT 1 FROM timeline_item_replies WHERE link_preview_id = ?)",
             lp.id,
             lp.id,
             lp.id,

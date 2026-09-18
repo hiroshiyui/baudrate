@@ -56,7 +56,7 @@ defmodule Baudrate.Content.TitleDeriverTest do
     test "max_len is a hard ceiling, so a truncated title still passes a max_len validation" do
       # Regression: the ellipsis used to be appended *on top of* max_len, so a
       # 255-grapheme CJK cut produced 256 characters and failed the :title
-      # length validation on both Article and FeedItem — dropping the object.
+      # length validation on both Article and TimelineItem — dropping the object.
       for max <- [10, 80, 255] do
         assert String.length(TitleDeriver.truncate_title(String.duplicate("漢", 500), max)) <= max
 

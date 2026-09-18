@@ -54,11 +54,11 @@ defmodule Baudrate.DataPortability.Collector do
   }
 
   alias Baudrate.Federation.{
-    FeedItem,
-    FeedItemBoost,
-    FeedItemLike,
-    FeedItemReply,
-    FeedItemReplyImage,
+    TimelineItem,
+    TimelineItemBoost,
+    TimelineItemLike,
+    TimelineItemReply,
+    TimelineItemReplyImage,
     Follower,
     RemoteActor,
     UserFollow
@@ -83,13 +83,13 @@ defmodule Baudrate.DataPortability.Collector do
     articles = own_articles(user)
     article_ids = Enum.map(articles, & &1.id)
     comments = own_comments(user)
-    replies = own_feed_replies(user)
+    replies = own_timeline_replies(user)
 
     documents = %{
       "profile.json" => profile(user),
       "articles.json" => Enum.map(articles, &article(&1, user, base_url)),
       "comments.json" => Enum.map(comments, &comment(&1, base_url)),
-      "feed_replies.json" => Enum.map(replies, &feed_reply/1),
+      "timeline_replies.json" => Enum.map(replies, &timeline_reply/1),
       "interactions.json" => interactions(user, base_url),
       "relationships.json" => relationships(user, base_url),
       "messages.json" => messages(user, base_url),
@@ -107,11 +107,11 @@ defmodule Baudrate.DataPortability.Collector do
           "comment_images"
         ) ++
         image_media(
-          FeedItemReplyImage,
+          TimelineItemReplyImage,
           :reply_id,
           Enum.map(replies, & &1.id),
           user,
-          "feed_reply_images"
+          "timeline_reply_images"
         )
 
     {documents, media}
@@ -312,21 +312,21 @@ defmodule Baudrate.DataPortability.Collector do
     }
   end
 
-  defp own_feed_replies(user) do
+  defp own_timeline_replies(user) do
     Repo.all(
-      from(r in FeedItemReply,
-        join: f in assoc(r, :feed_item),
+      from(r in TimelineItemReply,
+        join: f in assoc(r, :timeline_item),
         where: r.user_id == ^user.id and is_nil(f.deleted_at),
         order_by: [asc: r.inserted_at, asc: r.id],
-        preload: [feed_item: f]
+        preload: [timeline_item: f]
       )
     )
   end
 
-  defp feed_reply(r) do
+  defp timeline_reply(r) do
     image_ids =
       Repo.all(
-        from(i in FeedItemReplyImage,
+        from(i in TimelineItemReplyImage,
           where: i.reply_id == ^r.id and i.user_id == ^r.user_id,
           order_by: i.id,
           select: i.id
@@ -338,8 +338,8 @@ defmodule Baudrate.DataPortability.Collector do
       "uri" => r.ap_id,
       "body" => r.body,
       "created_at" => iso(r.inserted_at),
-      "in_reply_to" => r.feed_item.ap_id,
-      "images" => Enum.map(image_ids, &"media/feed_reply_images/#{&1}.webp")
+      "in_reply_to" => r.timeline_item.ap_id,
+      "images" => Enum.map(image_ids, &"media/timeline_reply_images/#{&1}.webp")
     }
   end
 
@@ -355,8 +355,8 @@ defmodule Baudrate.DataPortability.Collector do
       "article_boosts" => article_targets(ArticleBoost, user, visible, base_url),
       "comment_likes" => comment_targets(CommentLike, user, visible),
       "comment_boosts" => comment_targets(CommentBoost, user, visible),
-      "feed_item_likes" => feed_item_targets(FeedItemLike, user),
-      "feed_item_boosts" => feed_item_targets(FeedItemBoost, user),
+      "timeline_item_likes" => timeline_item_targets(TimelineItemLike, user),
+      "timeline_item_boosts" => timeline_item_targets(TimelineItemBoost, user),
       "poll_votes" => poll_votes(user, visible, base_url),
       "bookmarks" => bookmarks(user, visible, base_url)
     }
@@ -392,11 +392,11 @@ defmodule Baudrate.DataPortability.Collector do
     |> Enum.map(fn {at, uri} -> %{"target" => uri, "created_at" => iso(at)} end)
   end
 
-  defp feed_item_targets(schema, user) do
+  defp timeline_item_targets(schema, user) do
     Repo.all(
       from(x in schema,
-        join: f in FeedItem,
-        on: f.id == x.feed_item_id,
+        join: f in TimelineItem,
+        on: f.id == x.timeline_item_id,
         where: x.user_id == ^user.id and is_nil(f.deleted_at),
         order_by: [asc: x.inserted_at, asc: x.id],
         select: {x.inserted_at, f.ap_id}

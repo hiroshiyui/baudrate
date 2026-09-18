@@ -200,24 +200,24 @@ defmodule BaudrateWeb.ModerationComponents do
       </div>
 
       <div
-        :if={@report.feed_item}
+        :if={@report.timeline_item}
         id={"#{@prefix}-report-feed-item-#{@report.id}"}
         class="moderation-report-feed-item mt-2 p-3 bg-base-300 rounded-lg"
       >
-        <p class="text-sm font-semibold">{gettext("Reported Feed Item:")}</p>
+        <p class="text-sm font-semibold">{gettext("Reported Timeline Item:")}</p>
         <p
-          :if={@report.feed_item.title}
+          :if={@report.timeline_item.title}
           class="moderation-report-feed-item-title break-words"
         >
-          {@report.feed_item.title}
+          {@report.timeline_item.title}
         </p>
         <p class="moderation-report-feed-item-body text-sm whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
-          {@report.feed_item.body}
+          {@report.timeline_item.body}
         </p>
         <a
-          :if={@report.feed_item.source_url}
+          :if={@report.timeline_item.source_url}
           id={"#{@prefix}-report-feed-item-link-#{@report.id}"}
-          href={@report.feed_item.source_url}
+          href={@report.timeline_item.source_url}
           target="_blank"
           rel="noopener noreferrer nofollow"
           class="moderation-report-feed-item-link link link-primary text-sm break-all"

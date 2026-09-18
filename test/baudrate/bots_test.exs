@@ -198,7 +198,7 @@ defmodule Baudrate.BotsTest do
         })
 
       guid = "https://example.com/item/#{System.unique_integer([:positive])}"
-      {:ok, _} = Bots.record_feed_item(bot, guid, nil)
+      {:ok, _} = Bots.record_timeline_item(bot, guid, nil)
       assert Bots.already_posted?(bot, guid, nil)
     end
 

@@ -1,15 +1,15 @@
-defmodule Baudrate.Federation.Feed do
+defmodule Baudrate.Federation.Timeline do
   @moduledoc """
-  Feed item management and interactions for the Federation context.
+  Timeline item management and interactions for the Federation context.
 
   Handles:
 
-  - Feed item creation and soft-deletion (remote Create/Announce activities
-    stored as `FeedItem` records).
-  - Paginated feed queries merging remote items, local articles from followed
+  - Timeline item creation and soft-deletion (remote Create/Announce activities
+    stored as `TimelineItem` records).
+  - Paginated timeline queries merging remote items, local articles from followed
     users, and comment participation threads.
-  - Feed item replies (local `FeedItemReply` records with AP delivery).
-  - Like and boost toggles on feed items, with AP Like/Announce delivery.
+  - Timeline item replies (local `TimelineItemReply` records with AP delivery).
+  - Like and boost toggles on timeline items, with AP Like/Announce delivery.
   """
 
   import Ecto.Query
@@ -20,10 +20,10 @@ defmodule Baudrate.Federation.Feed do
 
   alias Baudrate.Federation.{
     DomainBlockCache,
-    FeedItem,
-    FeedItemBoost,
-    FeedItemLike,
-    FeedItemReply,
+    TimelineItem,
+    TimelineItemBoost,
+    TimelineItemLike,
+    TimelineItemReply,
     Follows,
     Publisher,
     RemoteActor,
@@ -37,24 +37,24 @@ defmodule Baudrate.Federation.Feed do
   @feed_per_page 20
 
   @doc """
-  Creates a feed item and broadcasts to all local followers of the source actor.
+  Creates a timeline item and broadcasts to all local followers of the source actor.
 
-  Returns `{:ok, %FeedItem{}}` or `{:error, changeset}`.
+  Returns `{:ok, %TimelineItem{}}` or `{:error, changeset}`.
   """
-  def create_feed_item(attrs) do
-    case %FeedItem{} |> FeedItem.changeset(attrs) |> Repo.insert() do
-      {:ok, feed_item} ->
-        remote_actor_id = feed_item.remote_actor_id
+  def create_timeline_item(attrs) do
+    case %TimelineItem{} |> TimelineItem.changeset(attrs) |> Repo.insert() do
+      {:ok, timeline_item} ->
+        remote_actor_id = timeline_item.remote_actor_id
 
         for user_id <- Follows.local_followers_of_remote_actor(remote_actor_id) do
-          FederationPubSub.broadcast_to_user_feed(
+          FederationPubSub.broadcast_to_user_timeline(
             user_id,
-            :feed_item_created,
-            %{feed_item_id: feed_item.id}
+            :timeline_item_created,
+            %{timeline_item_id: timeline_item.id}
           )
         end
 
-        {:ok, feed_item}
+        {:ok, timeline_item}
 
       error ->
         error
@@ -62,9 +62,9 @@ defmodule Baudrate.Federation.Feed do
   end
 
   @doc """
-  Lists paginated feed items for a user.
+  Lists paginated timeline items for a user.
 
-  Includes the user's own articles, remote feed items and local articles
+  Includes the user's own articles, remote timeline items and local articles
   from accepted follows, and comments on articles the user authored or
   previously commented on (including the user's own comments). Excludes
   soft-deleted items and items from blocked/muted actors. Local article
@@ -73,7 +73,7 @@ defmodule Baudrate.Federation.Feed do
 
   Returns `%{items: [...], total: n, page: n, per_page: n, total_pages: n}`.
   """
-  def list_feed_items(user, opts \\ []) do
+  def list_timeline_items(user, opts \\ []) do
     page = max(Keyword.get(opts, :page, 1), 1)
     per_page = Keyword.get(opts, :per_page, @feed_per_page)
     offset = (page - 1) * per_page
@@ -81,7 +81,7 @@ defmodule Baudrate.Federation.Feed do
     {hidden_user_ids, hidden_ap_ids} = Auth.hidden_ids(user)
 
     remote_query =
-      from(fi in FeedItem,
+      from(fi in TimelineItem,
         join: uf in UserFollow,
         on:
           (fi.activity_type == "Create" and uf.remote_actor_id == fi.remote_actor_id) or
@@ -170,7 +170,7 @@ defmodule Baudrate.Federation.Feed do
       end
 
     {remote_total, local_total, comment_total} =
-      count_feed_totals(user.id, hidden_user_ids, hidden_ap_ids, allowed_roles)
+      count_timeline_totals(user.id, hidden_user_ids, hidden_ap_ids, allowed_roles)
 
     total = remote_total + local_total + comment_total
 
@@ -182,7 +182,7 @@ defmodule Baudrate.Federation.Feed do
       )
       |> Repo.all()
       |> Enum.map(fn fi ->
-        %{source: :remote, feed_item: fi, sorted_at: fi.published_at}
+        %{source: :remote, timeline_item: fi, sorted_at: fi.published_at}
       end)
 
     local_articles =
@@ -247,21 +247,21 @@ defmodule Baudrate.Federation.Feed do
   end
 
   @doc """
-  Returns a feed item by its ActivityPub ID, or nil.
+  Returns a timeline item by its ActivityPub ID, or nil.
   """
-  def get_feed_item_by_ap_id(ap_id) when is_binary(ap_id) do
-    Repo.one(from(fi in FeedItem, where: fi.ap_id == ^ap_id))
+  def get_timeline_item_by_ap_id(ap_id) when is_binary(ap_id) do
+    Repo.one(from(fi in TimelineItem, where: fi.ap_id == ^ap_id))
   end
 
   @doc """
-  Soft-deletes a feed item by AP ID, scoped to a remote actor.
+  Soft-deletes a timeline item by AP ID, scoped to a remote actor.
 
   Returns `{count, nil}`.
   """
-  def soft_delete_feed_item_by_ap_id(ap_id, remote_actor_id) when is_binary(ap_id) do
+  def soft_delete_timeline_item_by_ap_id(ap_id, remote_actor_id) when is_binary(ap_id) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    from(fi in FeedItem,
+    from(fi in TimelineItem,
       where:
         fi.ap_id == ^ap_id and fi.remote_actor_id == ^remote_actor_id and is_nil(fi.deleted_at)
     )
@@ -269,91 +269,94 @@ defmodule Baudrate.Federation.Feed do
   end
 
   @doc """
-  Bulk soft-deletes all feed items from a given remote actor.
+  Bulk soft-deletes all timeline items from a given remote actor.
 
   Used when a remote actor is deleted. Returns `{count, nil}`.
   """
-  def cleanup_feed_items_for_actor(remote_actor_id) do
+  def cleanup_timeline_items_for_actor(remote_actor_id) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    from(fi in FeedItem,
+    from(fi in TimelineItem,
       where: fi.remote_actor_id == ^remote_actor_id and is_nil(fi.deleted_at)
     )
     |> Repo.update_all(set: [deleted_at: now])
   end
 
   @doc """
-  Repoints feed items from a migrated remote actor to its new identity.
+  Repoints timeline items from a migrated remote actor to its new identity.
 
   Called after a verified inbound `Move`. Feed membership is a query-time join
   on `user_follows`, so migrating the follow without migrating the items would
   make every item the actor had already published vanish from its followers'
-  feeds — and, because `feed_item_accessible?/2` resolves the same source
+  feeds — and, because `timeline_item_accessible?/2` resolves the same source
   actor, become un-likeable, un-boostable, un-repliable, and un-forwardable.
 
   Both roles are repointed: `remote_actor_id` (the author of a `Create`, or the
   original author of an `Announce`) and `boosted_by_actor_id` (the booster,
-  which is what `Announce` feed membership keys on).
+  which is what `Announce` timeline membership keys on).
 
-  Only feed items move. Articles and comments keep their original
+  Only timeline items move. Articles and comments keep their original
   `remote_actor_id`: they are board content with their own permalinks and
   `ap_id`s, and rewriting their authorship would retroactively reattribute
   posts that remain published under the old actor on its own instance.
 
   Returns `{create_count, announce_count}`.
   """
-  @spec migrate_feed_items(integer(), integer()) :: {non_neg_integer(), non_neg_integer()}
-  def migrate_feed_items(old_actor_id, new_actor_id)
+  @spec migrate_timeline_items(integer(), integer()) :: {non_neg_integer(), non_neg_integer()}
+  def migrate_timeline_items(old_actor_id, new_actor_id)
       when is_integer(old_actor_id) and is_integer(new_actor_id) do
     {authored, _} =
-      from(fi in FeedItem, where: fi.remote_actor_id == ^old_actor_id)
+      from(fi in TimelineItem, where: fi.remote_actor_id == ^old_actor_id)
       |> Repo.update_all(set: [remote_actor_id: new_actor_id])
 
     {boosted, _} =
-      from(fi in FeedItem, where: fi.boosted_by_actor_id == ^old_actor_id)
+      from(fi in TimelineItem, where: fi.boosted_by_actor_id == ^old_actor_id)
       |> Repo.update_all(set: [boosted_by_actor_id: new_actor_id])
 
     {authored, boosted}
   end
 
   @doc """
-  Creates a reply to a remote feed item and schedules federation delivery.
+  Creates a reply to a remote timeline item and schedules federation delivery.
 
   Renders the body as Markdown → HTML, generates an AP ID, inserts the
-  `FeedItemReply` record, and enqueues a `Create(Note)` activity for
+  `TimelineItemReply` record, and enqueues a `Create(Note)` activity for
   delivery to the remote actor's inbox and the replying user's AP followers.
 
-  The feed item must be reachable from the user's feed
-  (`feed_item_accessible?/2`) — consistent with liking and boosting. Callers
+  The timeline item must be reachable from the user's timeline
+  (`timeline_item_accessible?/2`) — consistent with liking and boosting. Callers
   resolve the item from a client-supplied ID, so replying to a soft-deleted
   or non-followed item is refused here at the context boundary rather than
   federating a `Create(Note)` to an unrelated remote inbox.
 
-  Returns `{:ok, %FeedItemReply{}}`, `{:error, :not_found}`,
+  Returns `{:ok, %TimelineItemReply{}}`, `{:error, :not_found}`,
   `{:error, :account_moved}` (ADR 0025), `{:error, :blocked}` (the user has
   blocked the item's author), or `{:error, changeset}`.
   """
-  def create_feed_item_reply(feed_item, user, body, opts \\ []) do
+  def create_timeline_item_reply(timeline_item, user, body, opts \\ []) do
     # A moved, silenced or suspended account cannot reply (ADR 0029).
     gate = Baudrate.Auth.ensure_can_interact(user)
 
     cond do
-      not feed_item_accessible?(user, feed_item) -> {:error, :not_found}
+      not timeline_item_accessible?(user, timeline_item) -> {:error, :not_found}
       gate != :ok -> gate
-      Baudrate.Auth.blocked_with_author?(user.id, feed_item) -> {:error, :blocked}
-      true -> do_create_feed_item_reply(feed_item, user, body, opts)
+      Baudrate.Auth.blocked_with_author?(user.id, timeline_item) -> {:error, :blocked}
+      true -> do_create_timeline_item_reply(timeline_item, user, body, opts)
     end
   end
 
-  defp do_create_feed_item_reply(feed_item, user, body, opts) do
+  defp do_create_timeline_item_reply(timeline_item, user, body, opts) do
+    # Replies written before the rename keep their `#feed-reply-` fragment: an
+    # `ap_id` is immutable once published, and remote servers hold it. Nothing
+    # parses the fragment, so the two forms coexist harmlessly.
     ap_id =
-      "#{Baudrate.Federation.actor_uri(:user, user.username)}#feed-reply-#{Ecto.UUID.generate()}"
+      "#{Baudrate.Federation.actor_uri(:user, user.username)}#timeline-reply-#{Ecto.UUID.generate()}"
 
     body_html = Markdown.to_html(body)
     image_ids = Keyword.get(opts, :image_ids, [])
 
     attrs = %{
-      feed_item_id: feed_item.id,
+      timeline_item_id: timeline_item.id,
       user_id: user.id,
       body: body,
       body_html: body_html,
@@ -364,7 +367,8 @@ defmodule Baudrate.Federation.Feed do
     # (Phase 2C); the Note carries the images, so they are attached first.
     Baudrate.Federation.federate(
       fn ->
-        with {:ok, reply} <- %FeedItemReply{} |> FeedItemReply.changeset(attrs) |> Repo.insert() do
+        with {:ok, reply} <-
+               %TimelineItemReply{} |> TimelineItemReply.changeset(attrs) |> Repo.insert() do
           if image_ids != [] do
             ReplyImages.associate_reply_images(reply.id, image_ids, user.id)
           end
@@ -372,18 +376,18 @@ defmodule Baudrate.Federation.Feed do
           {:ok, reply}
         end
       end,
-      &Publisher.publish_feed_item_reply(Repo.preload(&1, :images), feed_item)
+      &Publisher.publish_timeline_item_reply(Repo.preload(&1, :images), timeline_item)
     )
   end
 
   @doc """
-  Lists replies for a feed item, ordered by insertion time ascending.
+  Lists replies for a timeline item, ordered by insertion time ascending.
 
   Preloads the `:user` association (with `:role`).
   """
-  def list_feed_item_replies(feed_item_id) do
-    from(r in FeedItemReply,
-      where: r.feed_item_id == ^feed_item_id,
+  def list_timeline_item_replies(timeline_item_id) do
+    from(r in TimelineItemReply,
+      where: r.timeline_item_id == ^timeline_item_id,
       order_by: [asc: r.inserted_at, asc: r.id],
       preload: [:images, user: :role]
     )
@@ -391,19 +395,19 @@ defmodule Baudrate.Federation.Feed do
   end
 
   @doc """
-  Batch-counts replies grouped by feed item ID.
+  Batch-counts replies grouped by timeline item ID.
 
-  Accepts a list of feed item IDs and returns a map of
-  `%{feed_item_id => count}`.
+  Accepts a list of timeline item IDs and returns a map of
+  `%{timeline_item_id => count}`.
   """
-  def count_feed_item_replies(feed_item_ids) when is_list(feed_item_ids) do
-    if feed_item_ids == [] do
+  def count_timeline_item_replies(timeline_item_ids) when is_list(timeline_item_ids) do
+    if timeline_item_ids == [] do
       %{}
     else
-      from(r in FeedItemReply,
-        where: r.feed_item_id in ^feed_item_ids,
-        group_by: r.feed_item_id,
-        select: {r.feed_item_id, count(r.id)}
+      from(r in TimelineItemReply,
+        where: r.timeline_item_id in ^timeline_item_ids,
+        group_by: r.timeline_item_id,
+        select: {r.timeline_item_id, count(r.id)}
       )
       |> Repo.all()
       |> Map.new()
@@ -411,64 +415,64 @@ defmodule Baudrate.Federation.Feed do
   end
 
   @doc """
-  Toggles a like on a remote feed item — creates if not exists, removes if exists.
+  Toggles a like on a remote timeline item — creates if not exists, removes if exists.
   Sends AP Like/Undo(Like) to the remote actor's inbox.
   """
-  def toggle_feed_item_like(user, feed_item_id) do
-    case Repo.get(FeedItem, feed_item_id) do
+  def toggle_timeline_item_like(user, timeline_item_id) do
+    case Repo.get(TimelineItem, timeline_item_id) do
       nil ->
         {:error, :not_found}
 
-      feed_item ->
-        if not feed_item_accessible?(user, feed_item) do
+      timeline_item ->
+        if not timeline_item_accessible?(user, timeline_item) do
           {:error, :not_found}
         else
-          do_toggle_feed_item_like(user, feed_item)
+          do_toggle_timeline_item_like(user, timeline_item)
         end
     end
   end
 
   @doc """
-  Returns a MapSet of feed item IDs that the given user has liked.
+  Returns a MapSet of timeline item IDs that the given user has liked.
   """
-  def feed_item_likes_by_user(_user_id, []), do: MapSet.new()
+  def timeline_item_likes_by_user(_user_id, []), do: MapSet.new()
 
-  def feed_item_likes_by_user(user_id, feed_item_ids) do
-    from(l in FeedItemLike,
-      where: l.user_id == ^user_id and l.feed_item_id in ^feed_item_ids,
-      select: l.feed_item_id
+  def timeline_item_likes_by_user(user_id, timeline_item_ids) do
+    from(l in TimelineItemLike,
+      where: l.user_id == ^user_id and l.timeline_item_id in ^timeline_item_ids,
+      select: l.timeline_item_id
     )
     |> Repo.all()
     |> MapSet.new()
   end
 
   @doc """
-  Toggles a boost on a remote feed item — creates if not exists, removes if exists.
+  Toggles a boost on a remote timeline item — creates if not exists, removes if exists.
   Sends AP Announce/Undo(Announce) to the remote actor's inbox.
   """
-  def toggle_feed_item_boost(user, feed_item_id) do
-    case Repo.get(FeedItem, feed_item_id) do
+  def toggle_timeline_item_boost(user, timeline_item_id) do
+    case Repo.get(TimelineItem, timeline_item_id) do
       nil ->
         {:error, :not_found}
 
-      feed_item ->
-        if not feed_item_accessible?(user, feed_item) do
+      timeline_item ->
+        if not timeline_item_accessible?(user, timeline_item) do
           {:error, :not_found}
         else
-          do_toggle_feed_item_boost(user, feed_item)
+          do_toggle_timeline_item_boost(user, timeline_item)
         end
     end
   end
 
   @doc """
-  Returns a MapSet of feed item IDs that the given user has boosted.
+  Returns a MapSet of timeline item IDs that the given user has boosted.
   """
-  def feed_item_boosts_by_user(_user_id, []), do: MapSet.new()
+  def timeline_item_boosts_by_user(_user_id, []), do: MapSet.new()
 
-  def feed_item_boosts_by_user(user_id, feed_item_ids) do
-    from(b in FeedItemBoost,
-      where: b.user_id == ^user_id and b.feed_item_id in ^feed_item_ids,
-      select: b.feed_item_id
+  def timeline_item_boosts_by_user(user_id, timeline_item_ids) do
+    from(b in TimelineItemBoost,
+      where: b.user_id == ^user_id and b.timeline_item_id in ^timeline_item_ids,
+      select: b.timeline_item_id
     )
     |> Repo.all()
     |> MapSet.new()
@@ -476,26 +480,29 @@ defmodule Baudrate.Federation.Feed do
 
   # --- Private ---
 
-  defp ensure_author_not_blocked(user, feed_item) do
-    if Baudrate.Auth.blocked_with_author?(user.id, feed_item),
+  defp ensure_author_not_blocked(user, timeline_item) do
+    if Baudrate.Auth.blocked_with_author?(user.id, timeline_item),
       do: {:error, :blocked},
       else: :ok
   end
 
-  defp do_toggle_feed_item_like(user, feed_item) do
-    feed_item_id = feed_item.id
+  defp do_toggle_timeline_item_like(user, timeline_item) do
+    timeline_item_id = timeline_item.id
 
-    case Repo.get_by(FeedItemLike, user_id: user.id, feed_item_id: feed_item_id) do
+    case Repo.get_by(TimelineItemLike, user_id: user.id, timeline_item_id: timeline_item_id) do
       nil ->
         # A restricted account and a blocked author are the same shape here:
         # both can undo an earlier like, not add a new one (ADR 0029).
         with :ok <- Baudrate.Auth.ensure_can_interact(user),
-             :ok <- ensure_author_not_blocked(user, feed_item) do
+             :ok <- ensure_author_not_blocked(user, timeline_item) do
           Baudrate.Federation.federate(
             fn ->
               with {:ok, like} <-
-                     %FeedItemLike{}
-                     |> FeedItemLike.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
+                     %TimelineItemLike{}
+                     |> TimelineItemLike.changeset(%{
+                       user_id: user.id,
+                       timeline_item_id: timeline_item_id
+                     })
                      |> Repo.insert() do
                 ap_id =
                   Baudrate.Federation.actor_uri(:user, user.username) <>
@@ -504,7 +511,7 @@ defmodule Baudrate.Federation.Feed do
                 {:ok, like |> Ecto.Changeset.change(ap_id: ap_id) |> Repo.update!()}
               end
             end,
-            fn _like -> Publisher.publish_feed_item_liked(user, feed_item) end
+            fn _like -> Publisher.publish_timeline_item_liked(user, timeline_item) end
           )
         end
 
@@ -514,27 +521,30 @@ defmodule Baudrate.Federation.Feed do
         {:ok, _} =
           Repo.transaction(fn ->
             Repo.delete!(like)
-            Publisher.publish_feed_item_unliked(user, feed_item, like_ap_id)
+            Publisher.publish_timeline_item_unliked(user, timeline_item, like_ap_id)
           end)
 
         {:ok, :removed}
     end
   end
 
-  defp do_toggle_feed_item_boost(user, feed_item) do
-    feed_item_id = feed_item.id
+  defp do_toggle_timeline_item_boost(user, timeline_item) do
+    timeline_item_id = timeline_item.id
 
-    case Repo.get_by(FeedItemBoost, user_id: user.id, feed_item_id: feed_item_id) do
+    case Repo.get_by(TimelineItemBoost, user_id: user.id, timeline_item_id: timeline_item_id) do
       nil ->
         # A restricted account and a blocked author are the same shape here:
         # both can undo an earlier boost, not add a new one (ADR 0029).
         with :ok <- Baudrate.Auth.ensure_can_interact(user),
-             :ok <- ensure_author_not_blocked(user, feed_item) do
+             :ok <- ensure_author_not_blocked(user, timeline_item) do
           Baudrate.Federation.federate(
             fn ->
               with {:ok, boost} <-
-                     %FeedItemBoost{}
-                     |> FeedItemBoost.changeset(%{user_id: user.id, feed_item_id: feed_item_id})
+                     %TimelineItemBoost{}
+                     |> TimelineItemBoost.changeset(%{
+                       user_id: user.id,
+                       timeline_item_id: timeline_item_id
+                     })
                      |> Repo.insert() do
                 ap_id =
                   Baudrate.Federation.actor_uri(:user, user.username) <>
@@ -543,7 +553,7 @@ defmodule Baudrate.Federation.Feed do
                 {:ok, boost |> Ecto.Changeset.change(ap_id: ap_id) |> Repo.update!()}
               end
             end,
-            fn _boost -> Publisher.publish_feed_item_boosted(user, feed_item) end
+            fn _boost -> Publisher.publish_timeline_item_boosted(user, timeline_item) end
           )
         end
 
@@ -553,7 +563,7 @@ defmodule Baudrate.Federation.Feed do
         {:ok, _} =
           Repo.transaction(fn ->
             Repo.delete!(boost)
-            Publisher.publish_feed_item_unboosted(user, feed_item, boost_ap_id)
+            Publisher.publish_timeline_item_unboosted(user, timeline_item, boost_ap_id)
           end)
 
         {:ok, :removed}
@@ -561,28 +571,29 @@ defmodule Baudrate.Federation.Feed do
   end
 
   @doc """
-  Returns true if `feed_item` is reachable from `user`'s feed.
+  Returns true if `timeline_item` is reachable from `user`'s feed.
 
-  Mirrors the membership conditions of `list_feed_items/2` exactly: the item
+  Mirrors the membership conditions of `list_timeline_items/2` exactly: the item
   must not be soft-deleted, and the user must have an `accepted` follow on
   the item's **source** actor — the author for `Create` activities, or the
   booster for `Announce` activities (for a boost, `remote_actor_id` is the
   original author, whom the user need not follow).
 
-  `feed_items` rows are global — feed membership is a query-time join on
-  `user_follows` — so every entry point that resolves a feed item from a
+  `timeline_items` rows are global — timeline membership is a query-time join on
+  `user_follows` — so every entry point that resolves a timeline item from a
   client-supplied ID (like, boost, reply, forward-to-board) must call this
   before acting on it.
   """
-  @spec feed_item_accessible?(map(), %FeedItem{}) :: boolean()
-  def feed_item_accessible?(_user, %FeedItem{deleted_at: deleted_at}) when not is_nil(deleted_at),
-    do: false
+  @spec timeline_item_accessible?(map(), %TimelineItem{}) :: boolean()
+  def timeline_item_accessible?(_user, %TimelineItem{deleted_at: deleted_at})
+      when not is_nil(deleted_at),
+      do: false
 
-  def feed_item_accessible?(user, %FeedItem{} = feed_item) do
+  def timeline_item_accessible?(user, %TimelineItem{} = timeline_item) do
     source_actor_id =
-      case feed_item.activity_type do
-        "Announce" -> feed_item.boosted_by_actor_id
-        _ -> feed_item.remote_actor_id
+      case timeline_item.activity_type do
+        "Announce" -> timeline_item.boosted_by_actor_id
+        _ -> timeline_item.remote_actor_id
       end
 
     not is_nil(source_actor_id) and
@@ -596,10 +607,10 @@ defmodule Baudrate.Federation.Feed do
       )
   end
 
-  # Counts remote feed items, local articles, and comments in a single SQL
+  # Counts remote timeline items, local articles, and comments in a single SQL
   # round-trip using 3 scalar subqueries. The conditions exactly mirror the
-  # Ecto queries in `list_feed_items/2`.
-  defp count_feed_totals(user_id, hidden_user_ids, hidden_ap_ids, allowed_roles) do
+  # Ecto queries in `list_timeline_items/2`.
+  defp count_timeline_totals(user_id, hidden_user_ids, hidden_ap_ids, allowed_roles) do
     hidden_ap_ids_param = if hidden_ap_ids == [], do: nil, else: hidden_ap_ids
     hidden_user_ids_param = if hidden_user_ids == [], do: nil, else: hidden_user_ids
 
@@ -614,7 +625,7 @@ defmodule Baudrate.Federation.Feed do
       Repo.query!(
         """
         SELECT
-          (SELECT count(*) FROM feed_items fi
+          (SELECT count(*) FROM timeline_items fi
              JOIN user_follows uf ON (
                (fi.activity_type = 'Create' AND uf.remote_actor_id = fi.remote_actor_id) OR
                (fi.activity_type = 'Announce' AND uf.remote_actor_id = fi.boosted_by_actor_id)

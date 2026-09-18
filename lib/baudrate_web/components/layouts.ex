@@ -25,7 +25,7 @@ defmodule BaudrateWeb.Layouts do
   `/rules`, `/privacy`); it renders nothing while all three are unwritten.
 
   On mobile (below `lg` breakpoint), a fixed bottom dock provides quick
-  one-tap navigation: Home, Feed, Search, Messages, Notifications for
+  one-tap navigation: Home, Timeline, Search, Messages, Notifications for
   authenticated users; Home, Search, Sign In, Register for guests. The active
   item is highlighted based on `@current_path`.
   """
@@ -180,12 +180,12 @@ defmodule BaudrateWeb.Layouts do
             </li>
             <li>
               <.link
-                navigate="/feed"
-                id="nav-feed"
+                navigate="/timeline"
+                id="nav-timeline"
                 class="nav-link btn btn-ghost"
-                aria-current={if active_nav?(assigns[:current_path], "/feed"), do: "page"}
+                aria-current={if active_nav?(assigns[:current_path], "/timeline"), do: "page"}
               >
-                {gettext("Feed")}
+                {gettext("Timeline")}
               </.link>
             </li>
             <li>
@@ -829,11 +829,11 @@ defmodule BaudrateWeb.Layouts do
           <.icon name="hero-home" class="size-[1.2em]" />
         </.link>
         <.link
-          navigate="/feed"
-          id="dock-feed"
-          aria-label={gettext("Feed")}
-          aria-current={if active_nav?(@current_path, "/feed"), do: "page"}
-          class={["dock-link", if(active_nav?(@current_path, "/feed"), do: "dock-active")]}
+          navigate="/timeline"
+          id="dock-timeline"
+          aria-label={gettext("Timeline")}
+          aria-current={if active_nav?(@current_path, "/timeline"), do: "page"}
+          class={["dock-link", if(active_nav?(@current_path, "/timeline"), do: "dock-active")]}
         >
           <.icon name="hero-rss" class="size-[1.2em]" />
         </.link>

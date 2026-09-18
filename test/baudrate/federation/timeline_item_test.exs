@@ -1,7 +1,7 @@
-defmodule Baudrate.Federation.FeedItemTest do
+defmodule Baudrate.Federation.TimelineItemTest do
   use Baudrate.DataCase, async: true
 
-  alias Baudrate.Federation.FeedItem
+  alias Baudrate.Federation.TimelineItem
   alias Baudrate.Federation.RemoteActor
   alias Baudrate.Repo
 
@@ -34,7 +34,7 @@ defmodule Baudrate.Federation.FeedItemTest do
         published_at: DateTime.utc_now() |> DateTime.truncate(:second)
       }
 
-      changeset = FeedItem.changeset(%FeedItem{}, attrs)
+      changeset = TimelineItem.changeset(%TimelineItem{}, attrs)
       assert changeset.valid?
     end
 
@@ -51,12 +51,12 @@ defmodule Baudrate.Federation.FeedItemTest do
         published_at: DateTime.utc_now() |> DateTime.truncate(:second)
       }
 
-      changeset = FeedItem.changeset(%FeedItem{}, attrs)
+      changeset = TimelineItem.changeset(%TimelineItem{}, attrs)
       assert changeset.valid?
     end
 
     test "invalid without required fields" do
-      changeset = FeedItem.changeset(%FeedItem{}, %{})
+      changeset = TimelineItem.changeset(%TimelineItem{}, %{})
       refute changeset.valid?
 
       errors = errors_on(changeset)
@@ -74,7 +74,7 @@ defmodule Baudrate.Federation.FeedItemTest do
         published_at: DateTime.utc_now() |> DateTime.truncate(:second)
       }
 
-      changeset = FeedItem.changeset(%FeedItem{}, attrs)
+      changeset = TimelineItem.changeset(%TimelineItem{}, attrs)
       refute changeset.valid?
       assert errors_on(changeset)[:activity_type]
     end
@@ -88,7 +88,7 @@ defmodule Baudrate.Federation.FeedItemTest do
         published_at: DateTime.utc_now() |> DateTime.truncate(:second)
       }
 
-      changeset = FeedItem.changeset(%FeedItem{}, attrs)
+      changeset = TimelineItem.changeset(%TimelineItem{}, attrs)
       refute changeset.valid?
       assert errors_on(changeset)[:object_type]
     end
@@ -105,7 +105,7 @@ defmodule Baudrate.Federation.FeedItemTest do
         published_at: DateTime.utc_now() |> DateTime.truncate(:second)
       }
 
-      changeset = FeedItem.changeset(%FeedItem{}, attrs)
+      changeset = TimelineItem.changeset(%TimelineItem{}, attrs)
       refute changeset.valid?
       assert errors_on(changeset)[:body]
     end
@@ -123,11 +123,11 @@ defmodule Baudrate.Federation.FeedItemTest do
         published_at: DateTime.utc_now() |> DateTime.truncate(:second)
       }
 
-      changeset = FeedItem.changeset(%FeedItem{}, attrs)
+      changeset = TimelineItem.changeset(%TimelineItem{}, attrs)
       refute changeset.valid?
       assert errors_on(changeset)[:title]
 
-      assert FeedItem.changeset(%FeedItem{}, %{attrs | title: String.duplicate("x", 255)}).valid?
+      assert TimelineItem.changeset(%TimelineItem{}, %{attrs | title: String.duplicate("x", 255)}).valid?
     end
 
     test "unique ap_id constraint", %{actor: actor} do
@@ -139,8 +139,8 @@ defmodule Baudrate.Federation.FeedItemTest do
         published_at: DateTime.utc_now() |> DateTime.truncate(:second)
       }
 
-      {:ok, _} = %FeedItem{} |> FeedItem.changeset(attrs) |> Repo.insert()
-      {:error, changeset} = %FeedItem{} |> FeedItem.changeset(attrs) |> Repo.insert()
+      {:ok, _} = %TimelineItem{} |> TimelineItem.changeset(attrs) |> Repo.insert()
+      {:error, changeset} = %TimelineItem{} |> TimelineItem.changeset(attrs) |> Repo.insert()
 
       refute changeset.valid?
       assert errors_on(changeset)[:ap_id]
@@ -169,7 +169,7 @@ defmodule Baudrate.Federation.FeedItemTest do
         published_at: DateTime.utc_now() |> DateTime.truncate(:second)
       }
 
-      changeset = FeedItem.changeset(%FeedItem{}, attrs)
+      changeset = TimelineItem.changeset(%TimelineItem{}, attrs)
       assert changeset.valid?
     end
 
@@ -182,7 +182,7 @@ defmodule Baudrate.Federation.FeedItemTest do
         published_at: DateTime.utc_now() |> DateTime.truncate(:second)
       }
 
-      changeset = FeedItem.changeset(%FeedItem{}, attrs)
+      changeset = TimelineItem.changeset(%TimelineItem{}, attrs)
       assert changeset.valid?
     end
   end

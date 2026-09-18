@@ -21,7 +21,7 @@ defmodule Baudrate.Content.LinkPreview.Worker do
   Schedules a link preview fetch for the given content.
 
   `content_type` is one of `:article`, `:comment`, `:direct_message`,
-  `:feed_item`, `:feed_item_reply`.
+  `:timeline_item`, `:timeline_item_reply`.
   """
   @spec schedule_preview_fetch(atom(), integer(), String.t(), integer() | nil) :: :ok
   def schedule_preview_fetch(content_type, content_id, html, user_id \\ nil)
@@ -127,8 +127,8 @@ defmodule Baudrate.Content.LinkPreview.Worker do
   defp content_schema(:article), do: {"articles", Baudrate.Content.Article}
   defp content_schema(:comment), do: {"comments", Baudrate.Content.Comment}
   defp content_schema(:direct_message), do: {"direct_messages", Baudrate.Messaging.DirectMessage}
-  defp content_schema(:feed_item), do: {"feed_items", Baudrate.Federation.FeedItem}
+  defp content_schema(:timeline_item), do: {"timeline_items", Baudrate.Federation.TimelineItem}
 
-  defp content_schema(:feed_item_reply),
-    do: {"feed_item_replies", Baudrate.Federation.FeedItemReply}
+  defp content_schema(:timeline_item_reply),
+    do: {"timeline_item_replies", Baudrate.Federation.TimelineItemReply}
 end

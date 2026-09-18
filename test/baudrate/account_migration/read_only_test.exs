@@ -170,7 +170,7 @@ defmodule Baudrate.AccountMigration.ReadOnlyTest do
     uid = System.unique_integer([:positive])
 
     {:ok, item} =
-      Federation.create_feed_item(%{
+      Federation.create_timeline_item(%{
         remote_actor_id: actor.id,
         activity_type: "Create",
         object_type: "Note",
@@ -181,9 +181,9 @@ defmodule Baudrate.AccountMigration.ReadOnlyTest do
         published_at: DateTime.utc_now() |> DateTime.truncate(:second)
       })
 
-    assert {:error, :account_moved} = Federation.toggle_feed_item_like(mover, item.id)
-    assert {:error, :account_moved} = Federation.toggle_feed_item_boost(mover, item.id)
-    assert {:error, :account_moved} = Federation.create_feed_item_reply(item, mover, "Hi")
+    assert {:error, :account_moved} = Federation.toggle_timeline_item_like(mover, item.id)
+    assert {:error, :account_moved} = Federation.toggle_timeline_item_boost(mover, item.id)
+    assert {:error, :account_moved} = Federation.create_timeline_item_reply(item, mover, "Hi")
   end
 
   test "a moved account cannot be followed locally", %{author: author, mover: mover} do

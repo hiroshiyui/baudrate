@@ -48,11 +48,11 @@ defmodule Baudrate.Moderation.MemberReportsTest do
     |> Repo.insert!()
   end
 
-  defp create_feed_item(actor) do
+  defp create_timeline_item(actor) do
     uid = System.unique_integer([:positive])
 
     {:ok, item} =
-      Federation.create_feed_item(%{
+      Federation.create_timeline_item(%{
         remote_actor_id: actor.id,
         activity_type: "Create",
         object_type: "Note",
@@ -71,41 +71,41 @@ defmodule Baudrate.Moderation.MemberReportsTest do
     {:ok, _} = Federation.accept_user_follow(follow.ap_id)
   end
 
-  describe "report_feed_item/3" do
+  describe "report_timeline_item/3" do
     test "records the item and its remote author", %{user: user, actor: actor} do
       follow!(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
       assert {:ok, %Report{} = report} =
-               Moderation.report_feed_item(user, to_string(item.id), %{
+               Moderation.report_timeline_item(user, to_string(item.id), %{
                  reason: "Spam",
                  category: "spam"
                })
 
-      assert report.feed_item_id == item.id
+      assert report.timeline_item_id == item.id
       assert report.remote_actor_id == actor.id
       assert report.reporter_id == user.id
     end
 
     test "refuses an item outside the reporter's feed", %{user: user, actor: actor} do
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
       assert {:error, :not_found} =
-               Moderation.report_feed_item(user, item.id, %{reason: "Spam", category: "spam"})
+               Moderation.report_timeline_item(user, item.id, %{reason: "Spam", category: "spam"})
 
       assert {:error, :not_found} =
-               Moderation.report_feed_item(user, "nope", %{reason: "Spam", category: "spam"})
+               Moderation.report_timeline_item(user, "nope", %{reason: "Spam", category: "spam"})
     end
 
     test "refuses a second open report of the same item", %{user: user, actor: actor} do
       follow!(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
       assert {:ok, _} =
-               Moderation.report_feed_item(user, item.id, %{reason: "Spam", category: "spam"})
+               Moderation.report_timeline_item(user, item.id, %{reason: "Spam", category: "spam"})
 
       assert {:error, :already_reported} =
-               Moderation.report_feed_item(user, item.id, %{reason: "Again", category: "spam"})
+               Moderation.report_timeline_item(user, item.id, %{reason: "Again", category: "spam"})
     end
   end
 
@@ -200,7 +200,7 @@ defmodule Baudrate.Moderation.MemberReportsTest do
                })
 
       assert report.remote_actor_id == actor.id
-      assert is_nil(report.feed_item_id)
+      assert is_nil(report.timeline_item_id)
     end
 
     test "refuses an unknown actor", %{user: user} do
@@ -211,10 +211,10 @@ defmodule Baudrate.Moderation.MemberReportsTest do
     test "a report about one of the account's posts is not a report about the account",
          %{user: user, actor: actor} do
       follow!(user, actor)
-      item = create_feed_item(actor)
+      item = create_timeline_item(actor)
 
       assert {:ok, _} =
-               Moderation.report_feed_item(user, item.id, %{reason: "Spam", category: "spam"})
+               Moderation.report_timeline_item(user, item.id, %{reason: "Spam", category: "spam"})
 
       assert {:ok, _} =
                Moderation.report_remote_actor(user, actor.id, %{
@@ -230,12 +230,12 @@ defmodule Baudrate.Moderation.MemberReportsTest do
   test "a feed item report appears in the queue with its author",
        %{user: user, actor: actor} do
     follow!(user, actor)
-    item = create_feed_item(actor)
+    item = create_timeline_item(actor)
 
     {:ok, report} =
-      Moderation.report_feed_item(user, item.id, %{reason: "Spam", category: "spam"})
+      Moderation.report_timeline_item(user, item.id, %{reason: "Spam", category: "spam"})
 
-    assert [%{id: id, feed_item: %{remote_actor: %RemoteActor{}}}] =
+    assert [%{id: id, timeline_item: %{remote_actor: %RemoteActor{}}}] =
              Moderation.list_reports(status: "open")
 
     assert id == report.id

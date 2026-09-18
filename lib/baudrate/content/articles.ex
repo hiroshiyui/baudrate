@@ -412,8 +412,8 @@ defmodule Baudrate.Content.Articles do
   Returns `{:ok, article}` on success, `{:error, :not_found}` if the feed
   item is soft-deleted, or `{:error, reason}`.
   """
-  def forward_feed_item_to_board(
-        %Baudrate.Federation.FeedItem{} = feed_item,
+  def forward_timeline_item_to_board(
+        %Baudrate.Federation.TimelineItem{} = timeline_item,
         %Board{} = board,
         user
       ) do
@@ -422,13 +422,13 @@ defmodule Baudrate.Content.Articles do
     cond do
       # A soft-deleted feed item (e.g. withdrawn by its remote author via
       # `Delete`) must not be resurrected as a board article.
-      not is_nil(feed_item.deleted_at) ->
+      not is_nil(timeline_item.deleted_at) ->
         {:error, :not_found}
 
-      not Permissions.can_forward_feed_item?(user, feed_item) ->
+      not Permissions.can_forward_timeline_item?(user, timeline_item) ->
         {:error, :unauthorized}
 
-      Baudrate.Auth.blocked_with_author?(user.id, feed_item) ->
+      Baudrate.Auth.blocked_with_author?(user.id, timeline_item) ->
         {:error, :unauthorized}
 
       not Permissions.can_post_in_board?(board, user) ->
@@ -436,7 +436,7 @@ defmodule Baudrate.Content.Articles do
 
       true ->
         # Check if an article with the same ap_id already exists
-        existing = Repo.get_by(Article, ap_id: feed_item.ap_id)
+        existing = Repo.get_by(Article, ap_id: timeline_item.ap_id)
 
         if existing do
           existing = Permissions.ensure_boards_loaded(existing)
@@ -459,21 +459,21 @@ defmodule Baudrate.Content.Articles do
             end
           end
         else
-          title = TitleDeriver.derive_title_from_body(feed_item.body)
+          title = TitleDeriver.derive_title_from_body(timeline_item.body)
           slug = Baudrate.Content.generate_slug(title)
 
           attrs = %{
             title: title,
-            body: feed_item.body || "",
+            body: timeline_item.body || "",
             slug: slug,
-            ap_id: feed_item.ap_id,
-            url: feed_item.source_url,
-            remote_actor_id: feed_item.remote_actor_id,
-            visibility: feed_item.visibility || "public"
+            ap_id: timeline_item.ap_id,
+            url: timeline_item.source_url,
+            remote_actor_id: timeline_item.remote_actor_id,
+            visibility: timeline_item.visibility || "public"
           }
 
           case create_remote_article(attrs, [board.id],
-                 image_attachments: feed_item.attachments,
+                 image_attachments: timeline_item.attachments,
                  publish: &Baudrate.Federation.Publisher.publish_article_forwarded(&1, board)
                ) do
             {:ok, %{article: article}} ->

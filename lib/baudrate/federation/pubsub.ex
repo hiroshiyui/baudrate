@@ -4,7 +4,7 @@ defmodule Baudrate.Federation.PubSub do
 
   ## Topics
 
-    * `"feed:user:<user_id>"` — user-level feed events (new feed item created)
+    * `"timeline:user:<user_id>"` — user-level timeline events (new timeline item created)
 
   ## Messages
 
@@ -15,22 +15,22 @@ defmodule Baudrate.Federation.PubSub do
   ## Usage
 
       # In a LiveView mount:
-      if connected?(socket), do: FederationPubSub.subscribe_user_feed(user.id)
+      if connected?(socket), do: FederationPubSub.subscribe_user_timeline(user.id)
 
       # In a Federation context mutation:
-      FederationPubSub.broadcast_to_user_feed(user_id, :feed_item_created, %{feed_item_id: id})
+      FederationPubSub.broadcast_to_user_timeline(user_id, :timeline_item_created, %{timeline_item_id: id})
   """
 
   @pubsub Baudrate.PubSub
 
-  @doc "Returns the PubSub topic string for a user's feed."
-  def user_feed_topic(user_id), do: "feed:user:#{user_id}"
+  @doc "Returns the PubSub topic string for a user's timeline."
+  def user_timeline_topic(user_id), do: "timeline:user:#{user_id}"
 
-  @doc "Subscribes the caller to feed events for the given user."
-  def subscribe_user_feed(user_id),
-    do: Phoenix.PubSub.subscribe(@pubsub, user_feed_topic(user_id))
+  @doc "Subscribes the caller to timeline events for the given user."
+  def subscribe_user_timeline(user_id),
+    do: Phoenix.PubSub.subscribe(@pubsub, user_timeline_topic(user_id))
 
-  @doc "Broadcasts an event to all subscribers of a user's feed topic."
-  def broadcast_to_user_feed(user_id, event, payload),
-    do: Phoenix.PubSub.broadcast(@pubsub, user_feed_topic(user_id), {event, payload})
+  @doc "Broadcasts an event to all subscribers of a user's timeline topic."
+  def broadcast_to_user_timeline(user_id, event, payload),
+    do: Phoenix.PubSub.broadcast(@pubsub, user_timeline_topic(user_id), {event, payload})
 end

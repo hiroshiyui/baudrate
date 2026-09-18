@@ -92,7 +92,7 @@ defmodule BaudrateWeb.NoHotlinkTest do
         %{
           title: "Feed Article",
           body: ~s(<p>Inline</p><p><img src="https://cdn.example/tracker.png" alt="t"></p>),
-          slug: "feed-hot-#{System.unique_integer([:positive])}",
+          slug: "timeline-hot-#{System.unique_integer([:positive])}",
           user_id: user.id
         },
         [b.id]
@@ -110,8 +110,8 @@ defmodule BaudrateWeb.NoHotlinkTest do
       })
 
     # 4. A feed item with remote attachments.
-    {:ok, feed_item} =
-      Federation.create_feed_item(%{
+    {:ok, timeline_item} =
+      Federation.create_timeline_item(%{
         remote_actor_id: actor.id,
         activity_type: "Create",
         object_type: "Note",
@@ -126,7 +126,7 @@ defmodule BaudrateWeb.NoHotlinkTest do
 
     {:ok, follow} = Federation.create_user_follow(user, actor)
     {:ok, _accepted} = Federation.accept_user_follow(follow.ap_id)
-    _ = feed_item
+    _ = timeline_item
 
     conn = log_in_user(conn, user)
 
@@ -135,7 +135,7 @@ defmodule BaudrateWeb.NoHotlinkTest do
       {"/boards/#{b.slug}", "board"},
       {"/articles/#{remote_article.slug}", "remote article"},
       {"/articles/#{bot_article.slug}", "feed article"},
-      {"/feed", "feed"},
+      {"/timeline", "feed"},
       {"/search?q=article", "search"},
       {"/users/#{user.username}", "user profile"}
     ]

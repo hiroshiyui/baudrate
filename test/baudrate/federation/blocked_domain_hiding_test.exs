@@ -18,7 +18,7 @@ defmodule Baudrate.Federation.BlockedDomainHidingTest do
   alias Baudrate.Content.{Article, ArticleBoost, ArticleTag, Board, Bookmark, Comment}
   alias Baudrate.Content.{Bookmarks, ReadTracking, Search, Tags}
   alias Baudrate.Federation
-  alias Baudrate.Federation.{DomainBlockCache, DomainBlocks, FeedItem, Follows, RemoteActor}
+  alias Baudrate.Federation.{DomainBlockCache, DomainBlocks, TimelineItem, Follows, RemoteActor}
   alias Baudrate.Setup
 
   @blocked "blocked.example"
@@ -265,17 +265,17 @@ defmodule Baudrate.Federation.BlockedDomainHidingTest do
       {:ok, _} = Follows.create_user_follow(ctx.user, ctx.friendly_actor)
       accept_follow(ctx.user, ctx.friendly_actor)
 
-      feed_item =
-        create_feed_item(ctx.blocked_actor, ctx.marker, boosted_by: ctx.friendly_actor)
+      timeline_item =
+        create_timeline_item(ctx.blocked_actor, ctx.marker, boosted_by: ctx.friendly_actor)
 
-      assert feed_item.id in feed_item_ids(ctx.user)
+      assert timeline_item.id in timeline_item_ids(ctx.user)
 
       block!()
 
-      refute feed_item.id in feed_item_ids(ctx.user)
+      refute timeline_item.id in timeline_item_ids(ctx.user)
       # The pager count is hand-written SQL that mirrors the query; if it does
       # not mirror this too, the feed offers a page that renders empty.
-      assert Federation.list_feed_items(ctx.user).total == 0
+      assert Federation.list_timeline_items(ctx.user).total == 0
     end
   end
 
@@ -357,10 +357,10 @@ defmodule Baudrate.Federation.BlockedDomainHidingTest do
     |> Repo.insert!()
   end
 
-  defp create_feed_item(actor, marker, opts) do
+  defp create_timeline_item(actor, marker, opts) do
     booster = Keyword.get(opts, :boosted_by)
 
-    %FeedItem{}
+    %TimelineItem{}
     |> Ecto.Changeset.change(%{
       ap_id: "https://#{actor.domain}/notes/#{System.unique_integer([:positive])}",
       remote_actor_id: actor.id,
@@ -382,10 +382,10 @@ defmodule Baudrate.Federation.BlockedDomainHidingTest do
     )
   end
 
-  defp feed_item_ids(user) do
-    Federation.list_feed_items(user).items
+  defp timeline_item_ids(user) do
+    Federation.list_timeline_items(user).items
     |> Enum.flat_map(fn
-      %{source: :remote, feed_item: fi} -> [fi.id]
+      %{source: :remote, timeline_item: fi} -> [fi.id]
       _ -> []
     end)
   end

@@ -1,9 +1,9 @@
 <div class="flex items-center justify-between mb-6">
-  <h1 id="feed-heading" class="feed-heading text-2xl font-bold">
-    {gettext("Feed")}
+  <h1 id="timeline-heading" class="timeline-heading text-2xl font-bold">
+    {gettext("Timeline")}
     <span
       :if={@total > 0}
-      class="feed-count badge badge-neutral ml-2"
+      class="timeline-count badge badge-neutral ml-2"
       aria-label={gettext("%{count} items", count: @total)}
     >
       {@total}
@@ -12,7 +12,7 @@
 </div>
 
 <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-6 lg:items-start">
-  <div class="space-y-6 min-w-0" aria-label={gettext("Feed")}>
+  <div class="space-y-6 min-w-0" aria-label={gettext("Timeline")}>
     <div :if={@can_post} id="quick-post" class="card bg-base-200 shadow-sm">
       <div class="card-body p-4">
         <div class="flex gap-3">
@@ -21,10 +21,10 @@
           </div>
           <.form
             for={@form}
-            id="feed-quick-post-form"
+            id="timeline-quick-post-form"
             phx-change="validate_post"
             phx-submit="submit_post"
-            class="feed-quick-post-form flex-1 space-y-3"
+            class="timeline-quick-post-form flex-1 space-y-3"
           >
             <.input
               field={@form[:title]}
@@ -46,9 +46,9 @@
               <.live_file_input upload={@uploads.article_images} class="hidden" />
               <label
                 :if={length(@uploaded_images) < 4}
-                id="feed-add-images-label"
+                id="timeline-add-images-label"
                 for={@uploads.article_images.ref}
-                class="feed-add-images btn btn-sm btn-ghost gap-1 cursor-pointer"
+                class="timeline-add-images btn btn-sm btn-ghost gap-1 cursor-pointer"
                 aria-label={gettext("Add Images")}
               >
                 <.icon name="hero-photo" class="size-5" />
@@ -56,10 +56,10 @@
               </label>
               <button
                 type="button"
-                id="feed-toggle-poll"
+                id="timeline-toggle-poll"
                 phx-click="toggle_poll"
                 class={[
-                  "feed-toggle-poll btn btn-sm",
+                  "timeline-toggle-poll btn btn-sm",
                   (@poll_enabled && "btn-error btn-outline") || "btn-ghost"
                 ]}
               >
@@ -69,7 +69,7 @@
             </div>
 
             <%!-- Image Upload Section --%>
-            <div id="feed-images-section">
+            <div id="timeline-images-section">
               <%!-- Uploaded image thumbnails --%>
               <div
                 :if={@uploaded_images != []}
@@ -86,7 +86,7 @@
                     type="button"
                     phx-click="remove_image"
                     phx-value-id={img.id}
-                    class="feed-remove-image absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
+                    class="timeline-remove-image absolute top-1 right-1 btn btn-circle btn-error min-h-[44px] min-w-[44px] opacity-80 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity"
                     aria-label={gettext("Remove image")}
                   >
                     <.icon name="hero-x-mark" class="size-4" />
@@ -145,7 +145,7 @@
             </div>
 
             <%!-- Poll Section --%>
-            <div id="feed-poll-section">
+            <div id="timeline-poll-section">
               <fieldset :if={@poll_enabled} class="space-y-3">
                 <legend class="sr-only">{gettext("Poll")}</legend>
 
@@ -155,12 +155,12 @@
                     class="flex items-center gap-2"
                   >
                     <input
-                      id={"feed-poll-option-#{idx}"}
+                      id={"timeline-poll-option-#{idx}"}
                       type="text"
                       name={"poll_options[#{idx}]"}
                       value={opt}
                       placeholder={gettext("Option %{number}", number: idx + 1)}
-                      class="feed-poll-option-input input input-bordered input-sm w-full"
+                      class="timeline-poll-option-input input input-bordered input-sm w-full"
                       aria-label={gettext("Option %{number}", number: idx + 1)}
                       maxlength="200"
                     />
@@ -219,11 +219,11 @@
                 </div>
 
                 <div class="form-control w-full max-w-xs">
-                  <label class="label" for="feed-poll-expires">
+                  <label class="label" for="timeline-poll-expires">
                     <span class="label-text">{gettext("Expires (optional)")}</span>
                   </label>
                   <select
-                    id="feed-poll-expires"
+                    id="timeline-poll-expires"
                     name="poll_expires"
                     class="select select-bordered select-sm"
                   >
@@ -340,8 +340,8 @@
               />
               <button
                 type="submit"
-                id="feed-post-submit"
-                class="feed-post-submit btn btn-primary btn-sm"
+                id="timeline-post-submit"
+                class="timeline-post-submit btn btn-primary btn-sm"
                 phx-disable-with={gettext("Posting...")}
               >
                 {gettext("Post")}
@@ -352,18 +352,18 @@
       </div>
     </div>
 
-    <p id="feed-live-status" class="feed-live-status sr-only" role="status">
+    <p id="timeline-live-status" class="timeline-live-status sr-only" role="status">
       {@feed_live_status}
     </p>
 
     <div
       :if={@items == []}
-      id="feed-empty"
-      class="feed-empty text-base-content/70 text-center py-8"
+      id="timeline-empty"
+      class="timeline-empty text-base-content/70 text-center py-8"
     >
-      {gettext("Your feed is empty.")}
+      {gettext("Your timeline is empty.")}
       <div class="mt-2">
-        <.link id="feed-empty-search-link" navigate="/search" class="link link-primary">
+        <.link id="timeline-empty-search-link" navigate="/search" class="link link-primary">
           {gettext("Search for users or remote actors to follow")}
         </.link>
       </div>
@@ -371,41 +371,44 @@
 
     <div
       :if={@items != []}
-      id="feed-items"
+      id="timeline-items"
       class="space-y-4"
       role="feed"
-      aria-label={gettext("Feed")}
+      aria-label={gettext("Timeline")}
       data-focus-target
     >
       <article
         :for={item <- @items}
         id={
-          "feed-item-" <>
+          "timeline-item-" <>
             case item.source do
-              :remote -> "fi-#{item.feed_item.id}"
+              :remote -> "fi-#{item.timeline_item.id}"
               :local -> "a-#{item.article.id}"
               :local_comment -> "c-#{item.comment.id}"
             end
         }
-        class="feed-item card bg-base-200 shadow-sm"
-        aria-label={feed_item_label(item)}
+        class="timeline-item card bg-base-200 shadow-sm"
+        aria-label={timeline_item_label(item)}
       >
-        <%!-- Remote feed item --%>
+        <%!-- Remote timeline item --%>
         <div :if={item.source == :remote} class="card-body p-4">
           <%!-- Boost attribution --%>
           <div
-            :if={item.feed_item.activity_type == "Announce" && item.feed_item.boosted_by_actor}
+            :if={
+              item.timeline_item.activity_type == "Announce" &&
+                item.timeline_item.boosted_by_actor
+            }
             class="flex items-center gap-1.5 text-xs text-base-content/60 mb-2"
           >
             <.icon name="hero-arrow-path-rounded-square" class="size-3.5" />
             <a
-              href={remote_actor_profile_url(item.feed_item.boosted_by_actor)}
+              href={remote_actor_profile_url(item.timeline_item.boosted_by_actor)}
               target="_blank"
               rel="nofollow noopener noreferrer"
               class="link link-hover font-semibold break-words"
             >
-              {item.feed_item.boosted_by_actor.display_name ||
-                item.feed_item.boosted_by_actor.username}
+              {item.timeline_item.boosted_by_actor.display_name ||
+                item.timeline_item.boosted_by_actor.username}
             </a>
             {gettext("boosted")}
           </div>
@@ -415,19 +418,19 @@
               class="avatar"
               role="img"
               aria-label={
-                item.feed_item.remote_actor.display_name ||
-                  item.feed_item.remote_actor.username
+                item.timeline_item.remote_actor.display_name ||
+                  item.timeline_item.remote_actor.username
               }
             >
               <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center">
                 <img
-                  :if={item.feed_item.remote_actor.avatar_url}
-                  src={Baudrate.Media.Proxy.url(item.feed_item.remote_actor.avatar_url)}
+                  :if={item.timeline_item.remote_actor.avatar_url}
+                  src={Baudrate.Media.Proxy.url(item.timeline_item.remote_actor.avatar_url)}
                   alt=""
                   class="rounded-full"
                 />
                 <.icon
-                  :if={!item.feed_item.remote_actor.avatar_url}
+                  :if={!item.timeline_item.remote_actor.avatar_url}
                   name="hero-user-circle"
                   class="size-7 opacity-50"
                 />
@@ -435,54 +438,54 @@
             </div>
             <div class="flex-1 min-w-0">
               <a
-                href={remote_actor_profile_url(item.feed_item.remote_actor)}
+                href={remote_actor_profile_url(item.timeline_item.remote_actor)}
                 target="_blank"
                 rel="nofollow noopener noreferrer"
                 class="link link-hover"
               >
                 <div class="font-bold text-sm truncate">
-                  {item.feed_item.remote_actor.display_name ||
-                    item.feed_item.remote_actor.username}
+                  {item.timeline_item.remote_actor.display_name ||
+                    item.timeline_item.remote_actor.username}
                 </div>
                 <div class="text-xs text-base-content/60 truncate">
-                  @{item.feed_item.remote_actor.username}@{item.feed_item.remote_actor.domain}
+                  @{item.timeline_item.remote_actor.username}@{item.timeline_item.remote_actor.domain}
                 </div>
               </a>
             </div>
             <div class="flex flex-col items-end flex-shrink-0">
               <time
                 class="text-xs text-base-content/70"
-                datetime={DateTime.to_iso8601(item.feed_item.published_at)}
+                datetime={DateTime.to_iso8601(item.timeline_item.published_at)}
               >
-                {format_datetime(item.feed_item.published_at)}
+                {format_datetime(item.timeline_item.published_at)}
               </time>
               <span class={[
                 "badge badge-xs",
-                item.feed_item.object_type == "Note" && "badge-info",
-                item.feed_item.object_type in ["Article", "Page"] && "badge-accent"
+                item.timeline_item.object_type == "Note" && "badge-info",
+                item.timeline_item.object_type in ["Article", "Page"] && "badge-accent"
               ]}>
-                {translate_object_type(item.feed_item.object_type)}
+                {translate_object_type(item.timeline_item.object_type)}
               </span>
             </div>
           </div>
 
           <h2
-            :if={item.feed_item.title}
-            class="feed-item-title font-semibold text-lg mb-1 break-words"
+            :if={item.timeline_item.title}
+            class="timeline-item-title font-semibold text-lg mb-1 break-words"
           >
-            {item.feed_item.title}
+            {item.timeline_item.title}
           </h2>
 
-          <p class="feed-item-body text-sm text-base-content/80 line-clamp-3 break-words">
-            {digest(item.feed_item.body_html)}
+          <p class="timeline-item-body text-sm text-base-content/80 line-clamp-3 break-words">
+            {digest(item.timeline_item.body_html)}
           </p>
 
           <div
-            :if={item.feed_item.attachments != []}
+            :if={item.timeline_item.attachments != []}
             class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"
           >
             <a
-              :for={att <- item.feed_item.attachments}
+              :for={att <- item.timeline_item.attachments}
               href={att["url"]}
               target="_blank"
               rel="nofollow noopener noreferrer"
@@ -498,11 +501,11 @@
 
           <div class="flex items-center gap-1 mt-2">
             <a
-              :if={item.feed_item.source_url}
-              href={item.feed_item.source_url}
+              :if={item.timeline_item.source_url}
+              href={item.timeline_item.source_url}
               target="_blank"
               rel="nofollow noopener noreferrer"
-              class="feed-item-source-link btn btn-ghost btn-xs"
+              class="timeline-item-source-link btn btn-ghost btn-xs"
               title={gettext("View original")}
               aria-label={gettext("View original")}
             >
@@ -510,16 +513,16 @@
             </a>
             <button
               phx-click="toggle_reply"
-              phx-value-id={item.feed_item.id}
-              class="feed-item-reply btn btn-ghost btn-xs"
+              phx-value-id={item.timeline_item.id}
+              class="timeline-item-reply btn btn-ghost btn-xs"
             >
               <.icon name="hero-chat-bubble-left" class="size-4" />
               {gettext("Reply")}
               <span
-                :if={reply_count(assigns, item.feed_item.id) > 0}
+                :if={reply_count(assigns, item.timeline_item.id) > 0}
                 class="badge badge-xs"
               >
-                {reply_count(assigns, item.feed_item.id)}
+                {reply_count(assigns, item.timeline_item.id)}
               </span>
             </button>
             <button
@@ -527,24 +530,26 @@
                 interaction_toggle?(
                   @current_user,
                   nil,
-                  MapSet.member?(@feed_item_liked_ids, item.feed_item.id)
+                  MapSet.member?(@timeline_item_liked_ids, item.timeline_item.id)
                 )
               }
-              phx-click="toggle_feed_item_like"
-              phx-value-id={item.feed_item.id}
-              class="feed-item-like btn btn-ghost btn-xs"
+              phx-click="toggle_timeline_item_like"
+              phx-value-id={item.timeline_item.id}
+              class="timeline-item-like btn btn-ghost btn-xs"
               aria-label={gettext("Like")}
-              aria-pressed={to_string(MapSet.member?(@feed_item_liked_ids, item.feed_item.id))}
+              aria-pressed={
+                to_string(MapSet.member?(@timeline_item_liked_ids, item.timeline_item.id))
+              }
             >
               <.icon
                 name={
-                  if MapSet.member?(@feed_item_liked_ids, item.feed_item.id),
+                  if MapSet.member?(@timeline_item_liked_ids, item.timeline_item.id),
                     do: "hero-heart-solid",
                     else: "hero-heart"
                 }
                 class={[
                   "size-4",
-                  MapSet.member?(@feed_item_liked_ids, item.feed_item.id) && "text-error"
+                  MapSet.member?(@timeline_item_liked_ids, item.timeline_item.id) && "text-error"
                 ]}
               />
             </button>
@@ -553,50 +558,53 @@
                 interaction_toggle?(
                   @current_user,
                   nil,
-                  MapSet.member?(@feed_item_boosted_ids, item.feed_item.id)
+                  MapSet.member?(@timeline_item_boosted_ids, item.timeline_item.id)
                 )
               }
-              phx-click="toggle_feed_item_boost"
-              phx-value-id={item.feed_item.id}
-              class="feed-item-boost btn btn-ghost btn-xs"
+              phx-click="toggle_timeline_item_boost"
+              phx-value-id={item.timeline_item.id}
+              class="timeline-item-boost btn btn-ghost btn-xs"
               aria-label={gettext("Boost")}
-              aria-pressed={to_string(MapSet.member?(@feed_item_boosted_ids, item.feed_item.id))}
+              aria-pressed={
+                to_string(MapSet.member?(@timeline_item_boosted_ids, item.timeline_item.id))
+              }
             >
               <.icon
                 name={
-                  if MapSet.member?(@feed_item_boosted_ids, item.feed_item.id),
+                  if MapSet.member?(@timeline_item_boosted_ids, item.timeline_item.id),
                     do: "hero-arrow-path-rounded-square-solid",
                     else: "hero-arrow-path-rounded-square"
                 }
                 class={[
                   "size-4",
-                  MapSet.member?(@feed_item_boosted_ids, item.feed_item.id) && "text-success"
+                  MapSet.member?(@timeline_item_boosted_ids, item.timeline_item.id) &&
+                    "text-success"
                 ]}
               />
             </button>
             <button
               :if={
                 !moved_account?(@current_user) and
-                  item.feed_item.visibility in ["public", "unlisted"]
+                  item.timeline_item.visibility in ["public", "unlisted"]
               }
               phx-click="toggle_forward_search"
-              phx-value-id={item.feed_item.id}
-              phx-value-type="feed_item"
-              class="feed-item-forward btn btn-ghost btn-xs"
+              phx-value-id={item.timeline_item.id}
+              phx-value-type="timeline_item"
+              class="timeline-item-forward btn btn-ghost btn-xs"
               aria-label={gettext("Forward to Board")}
               title={gettext("Forward to Board")}
             >
               <.icon name="hero-arrow-uturn-right" class="size-4" />
             </button>
             <div
-              id={"feed-item-actions-menu-#{item.feed_item.id}"}
-              class="feed-item-actions-menu dropdown dropdown-end ml-auto"
+              id={"timeline-item-actions-menu-#{item.timeline_item.id}"}
+              class="timeline-item-actions-menu dropdown dropdown-end ml-auto"
             >
               <button
                 type="button"
                 tabindex="0"
-                id={"feed-item-actions-menu-toggle-#{item.feed_item.id}"}
-                class="feed-item-actions-menu-toggle btn btn-ghost btn-xs btn-circle"
+                id={"timeline-item-actions-menu-toggle-#{item.timeline_item.id}"}
+                class="timeline-item-actions-menu-toggle btn btn-ghost btn-xs btn-circle"
                 aria-haspopup="true"
                 aria-expanded="false"
                 aria-label={gettext("More actions")}
@@ -605,18 +613,21 @@
               </button>
               <ul
                 tabindex="0"
-                class="feed-item-actions-menu-list dropdown-content menu bg-base-200 rounded-box z-10 w-56 p-2 shadow-sm"
+                class="timeline-item-actions-menu-list dropdown-content menu bg-base-200 rounded-box z-10 w-56 p-2 shadow-sm"
               >
                 <li>
                   <button
                     type="button"
-                    id={"feed-item-report-#{item.feed_item.id}"}
-                    class="feed-item-report"
+                    id={"timeline-item-report-#{item.timeline_item.id}"}
+                    class="timeline-item-report"
                     phx-click="open_report_modal"
-                    phx-value-type="feed_item"
-                    phx-value-id={item.feed_item.id}
+                    phx-value-type="timeline_item"
+                    phx-value-id={item.timeline_item.id}
                     phx-value-label={
-                      String.slice(item.feed_item.title || item.feed_item.body || "", 0..100)
+                      String.slice(
+                        item.timeline_item.title || item.timeline_item.body || "",
+                        0..100
+                      )
                     }
                   >
                     <.icon name="hero-flag" class="size-4" />
@@ -624,8 +635,8 @@
                   </button>
                 </li>
                 <BaudrateWeb.SafetyComponents.remote_actor_safety_items
-                  actor={item.feed_item.remote_actor}
-                  id_prefix={"feed-item-#{item.feed_item.id}"}
+                  actor={item.timeline_item.remote_actor}
+                  id_prefix={"timeline-item-#{item.timeline_item.id}"}
                 />
               </ul>
             </div>
@@ -634,15 +645,16 @@
           <%!-- Forward search panel --%>
           <div
             :if={
-              @forwarding_item_id == item.feed_item.id and @forwarding_item_type == "feed_item"
+              @forwarding_item_id == item.timeline_item.id and
+                @forwarding_item_type == "timeline_item"
             }
-            id={"forward-search-#{item.feed_item.id}"}
+            id={"forward-search-#{item.timeline_item.id}"}
             class="flex items-center gap-2 text-sm mt-2"
           >
             <div class="w-full max-w-md">
               <.form
                 for={%{}}
-                id={"feed-forward-form-#{item.feed_item.id}"}
+                id={"timeline-forward-form-#{item.timeline_item.id}"}
                 phx-change="search_forward_board"
                 class="flex items-center gap-2"
               >
@@ -666,8 +678,8 @@
                 </button>
               </.form>
               <p
-                id={"forward-board-results-status-#{item.feed_item.id}"}
-                class="feed-forward-results-status sr-only"
+                id={"forward-board-results-status-#{item.timeline_item.id}"}
+                class="timeline-forward-results-status sr-only"
                 role="status"
               >
                 {if String.length(String.trim(@forward_search_query)) >= 2,
@@ -682,14 +694,14 @@
               </p>
               <ul
                 :if={@forward_search_results != []}
-                id={"forward-board-results-#{item.feed_item.id}"}
+                id={"forward-board-results-#{item.timeline_item.id}"}
                 aria-label={gettext("Matching boards")}
-                class="feed-forward-results menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+                class="timeline-forward-results menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
               >
                 <li :for={board <- @forward_search_results}>
                   <button
                     type="button"
-                    class="feed-forward-result"
+                    class="timeline-forward-result"
                     phx-click="forward_to_board"
                     phx-value-board-id={board.id}
                   >
@@ -701,14 +713,17 @@
           </div>
 
           <%!-- Inline reply form --%>
-          <div :if={@replying_to == item.feed_item.id} class="mt-3 border-t border-base-300 pt-3">
+          <div
+            :if={@replying_to == item.timeline_item.id}
+            class="mt-3 border-t border-base-300 pt-3"
+          >
             <%!-- Existing replies --%>
             <div
-              :if={Map.get(@replies, item.feed_item.id, []) != []}
+              :if={Map.get(@replies, item.timeline_item.id, []) != []}
               class="space-y-2 mb-3"
             >
               <div
-                :for={reply <- Map.get(@replies, item.feed_item.id, [])}
+                :for={reply <- Map.get(@replies, item.timeline_item.id, [])}
                 class="flex gap-2 items-start"
               >
                 <.avatar user={reply.user} size={24} />
@@ -760,12 +775,12 @@
             <.form
               :if={!moved_account?(@current_user)}
               for={@reply_form}
-              id={"feed-reply-form-#{item.feed_item.id}"}
+              id={"timeline-reply-form-#{item.timeline_item.id}"}
               phx-change="validate_reply"
               phx-submit="submit_reply"
-              class="feed-reply-form space-y-2"
+              class="timeline-reply-form space-y-2"
             >
-              <input type="hidden" name="feed_item_id" value={item.feed_item.id} />
+              <input type="hidden" name="timeline_item_id" value={item.timeline_item.id} />
               <.input
                 field={@reply_form[:body]}
                 type="textarea"
@@ -781,14 +796,14 @@
               <div class="flex justify-end gap-2 mt-2">
                 <button
                   type="button"
-                  class="feed-reply-cancel btn btn-ghost btn-sm"
+                  class="timeline-reply-cancel btn btn-ghost btn-sm"
                   phx-click="cancel_reply"
                 >
                   {gettext("Cancel")}
                 </button>
                 <button
                   type="submit"
-                  class="feed-reply-submit btn btn-primary btn-sm"
+                  class="timeline-reply-submit btn btn-primary btn-sm"
                   phx-disable-with={gettext("Sending...")}
                 >
                   {gettext("Reply")}
@@ -830,12 +845,12 @@
 
           <.link
             navigate={~p"/articles/#{item.article.slug}"}
-            class="feed-item-title font-semibold text-lg mb-1 link link-hover break-words"
+            class="timeline-item-title font-semibold text-lg mb-1 link link-hover break-words"
           >
             {item.article.title}
           </.link>
 
-          <p class="feed-item-body text-sm text-base-content/80 line-clamp-3 break-words">
+          <p class="timeline-item-body text-sm text-base-content/80 line-clamp-3 break-words">
             {digest(item.article.body)}
           </p>
 
@@ -863,7 +878,7 @@
             <.link
               :if={item.comment_count > 0}
               navigate={~p"/articles/#{item.article.slug}"}
-              class="feed-item-comments inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-base-content"
+              class="timeline-item-comments inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-base-content"
               aria-label={ngettext("1 comment", "%{count} comments", item.comment_count)}
             >
               <.icon name="hero-chat-bubble-left-ellipsis" class="size-4" />
@@ -880,7 +895,7 @@
               }
               phx-click="toggle_article_like"
               phx-value-id={item.article.id}
-              class="feed-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
+              class="timeline-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
               aria-pressed={to_string(MapSet.member?(@article_liked_ids, item.article.id))}
               aria-label={
                 ngettext(
@@ -917,7 +932,7 @@
               }
               phx-click="toggle_article_boost"
               phx-value-id={item.article.id}
-              class="feed-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
+              class="timeline-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
               aria-pressed={to_string(MapSet.member?(@article_boosted_ids, item.article.id))}
               aria-label={
                 ngettext(
@@ -980,13 +995,13 @@
             {gettext("commented on")}
             <.link
               navigate={~p"/articles/#{item.comment.article.slug}"}
-              class="feed-item-comment-article link link-hover font-semibold break-words"
+              class="timeline-item-comment-article link link-hover font-semibold break-words"
             >
               {item.comment.article.title}
             </.link>
           </div>
 
-          <p class="feed-item-body text-sm text-base-content/80 line-clamp-3 break-words">
+          <p class="timeline-item-body text-sm text-base-content/80 line-clamp-3 break-words">
             {digest(item.comment.body)}
           </p>
 
@@ -1004,7 +1019,7 @@
               }
               phx-click="toggle_comment_like"
               phx-value-id={item.comment.id}
-              class="feed-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
+              class="timeline-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
               aria-pressed={to_string(MapSet.member?(@comment_liked_ids, item.comment.id))}
               aria-label={
                 ngettext(
@@ -1040,7 +1055,7 @@
               }
               phx-click="toggle_comment_boost"
               phx-value-id={item.comment.id}
-              class="feed-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
+              class="timeline-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
               aria-pressed={to_string(MapSet.member?(@comment_boosted_ids, item.comment.id))}
               aria-label={
                 ngettext(
@@ -1074,7 +1089,7 @@
               phx-click="toggle_forward_search"
               phx-value-id={item.comment.id}
               phx-value-type="comment"
-              class="feed-item-forward inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-primary cursor-pointer"
+              class="timeline-item-forward inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-primary cursor-pointer"
               aria-label={gettext("Forward to Board")}
               title={gettext("Forward to Board")}
             >
@@ -1091,7 +1106,7 @@
             <div class="w-full max-w-md">
               <.form
                 for={%{}}
-                id={"feed-comment-forward-form-#{item.comment.id}"}
+                id={"timeline-comment-forward-form-#{item.comment.id}"}
                 phx-change="search_forward_board"
                 class="flex items-center gap-2"
               >
@@ -1116,7 +1131,7 @@
               </.form>
               <p
                 id={"forward-board-results-status-comment-#{item.comment.id}"}
-                class="feed-forward-results-status sr-only"
+                class="timeline-forward-results-status sr-only"
                 role="status"
               >
                 {if String.length(String.trim(@forward_search_query)) >= 2,
@@ -1133,12 +1148,12 @@
                 :if={@forward_search_results != []}
                 id={"forward-board-results-comment-#{item.comment.id}"}
                 aria-label={gettext("Matching boards")}
-                class="feed-forward-results menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+                class="timeline-forward-results menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
               >
                 <li :for={board <- @forward_search_results}>
                   <button
                     type="button"
-                    class="feed-forward-result"
+                    class="timeline-forward-result"
                     phx-click="forward_to_board"
                     phx-value-board-id={board.id}
                   >
@@ -1211,13 +1226,13 @@
             {gettext("commented on")}
             <.link
               navigate={~p"/articles/#{item.comment.article.slug}"}
-              class="feed-item-comment-article link link-hover font-semibold break-words"
+              class="timeline-item-comment-article link link-hover font-semibold break-words"
             >
               {item.comment.article.title}
             </.link>
           </div>
 
-          <p class="feed-item-body text-sm text-base-content/80 line-clamp-3 break-words">
+          <p class="timeline-item-body text-sm text-base-content/80 line-clamp-3 break-words">
             {digest(item.comment.body)}
           </p>
 
@@ -1232,7 +1247,7 @@
               }
               phx-click="toggle_comment_like"
               phx-value-id={item.comment.id}
-              class="feed-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
+              class="timeline-item-like inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-error cursor-pointer"
               aria-pressed={to_string(MapSet.member?(@comment_liked_ids, item.comment.id))}
               aria-label={
                 ngettext(
@@ -1268,7 +1283,7 @@
               }
               phx-click="toggle_comment_boost"
               phx-value-id={item.comment.id}
-              class="feed-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
+              class="timeline-item-boost inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-success cursor-pointer"
               aria-pressed={to_string(MapSet.member?(@comment_boosted_ids, item.comment.id))}
               aria-label={
                 ngettext(
@@ -1302,7 +1317,7 @@
               phx-click="toggle_forward_search"
               phx-value-id={item.comment.id}
               phx-value-type="comment"
-              class="feed-item-forward inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-primary cursor-pointer"
+              class="timeline-item-forward inline-flex items-center gap-1 text-xs text-base-content/60 hover:text-primary cursor-pointer"
               aria-label={gettext("Forward to Board")}
               title={gettext("Forward to Board")}
             >
@@ -1319,7 +1334,7 @@
             <div class="w-full max-w-md">
               <.form
                 for={%{}}
-                id={"feed-rcomment-forward-form-#{item.comment.id}"}
+                id={"timeline-rcomment-forward-form-#{item.comment.id}"}
                 phx-change="search_forward_board"
                 class="flex items-center gap-2"
               >
@@ -1344,7 +1359,7 @@
               </.form>
               <p
                 id={"forward-board-results-status-rcomment-#{item.comment.id}"}
-                class="feed-forward-results-status sr-only"
+                class="timeline-forward-results-status sr-only"
                 role="status"
               >
                 {if String.length(String.trim(@forward_search_query)) >= 2,
@@ -1361,12 +1376,12 @@
                 :if={@forward_search_results != []}
                 id={"forward-board-results-rcomment-#{item.comment.id}"}
                 aria-label={gettext("Matching boards")}
-                class="feed-forward-results menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
+                class="timeline-forward-results menu bg-base-200 rounded-box mt-1 shadow-lg max-h-48 overflow-y-auto"
               >
                 <li :for={board <- @forward_search_results}>
                   <button
                     type="button"
-                    class="feed-forward-result"
+                    class="timeline-forward-result"
                     phx-click="forward_to_board"
                     phx-value-board-id={board.id}
                   >
@@ -1384,19 +1399,19 @@
       :if={@items != []}
       page={@page}
       total_pages={@total_pages}
-      path={~p"/feed"}
+      path={~p"/timeline"}
     />
   </div>
 
   <aside
     id="profile-sidebar"
-    class="feed-profile-sidebar hidden lg:block"
+    class="timeline-profile-sidebar hidden lg:block"
     aria-label={gettext("Profile")}
   >
     <div class="card bg-base-200 shadow-sm sticky top-24">
       <div class="card-body p-4 items-center text-center">
         <.avatar user={@current_user} size={48} />
-        <h2 id="feed-profile-name" class="feed-profile-name font-bold truncate max-w-full">
+        <h2 id="timeline-profile-name" class="timeline-profile-name font-bold truncate max-w-full">
           {display_name(@current_user)}
         </h2>
         <div
@@ -1413,29 +1428,29 @@
           </time>
         </p>
 
-        <div id="feed-profile-stats" class="stats stats-vertical shadow w-full mt-2">
+        <div id="timeline-profile-stats" class="stats stats-vertical shadow w-full mt-2">
           <.link
-            id="feed-profile-articles-link"
+            id="timeline-profile-articles-link"
             navigate={~p"/users/#{@current_user.username}/articles"}
-            class="feed-profile-stat stat py-2 hover:bg-base-200 transition-colors cursor-pointer"
+            class="timeline-profile-stat stat py-2 hover:bg-base-200 transition-colors cursor-pointer"
           >
             <div class="stat-title">{gettext("Articles")}</div>
-            <div class="feed-profile-article-count stat-value text-lg">{@article_count}</div>
+            <div class="timeline-profile-article-count stat-value text-lg">{@article_count}</div>
           </.link>
           <.link
-            id="feed-profile-comments-link"
+            id="timeline-profile-comments-link"
             navigate={~p"/users/#{@current_user.username}/comments"}
-            class="feed-profile-stat stat py-2 hover:bg-base-200 transition-colors cursor-pointer"
+            class="timeline-profile-stat stat py-2 hover:bg-base-200 transition-colors cursor-pointer"
           >
             <div class="stat-title">{gettext("Comments")}</div>
-            <div class="feed-profile-comment-count stat-value text-lg">{@comment_count}</div>
+            <div class="timeline-profile-comment-count stat-value text-lg">{@comment_count}</div>
           </.link>
         </div>
 
         <.link
-          id="feed-profile-link"
+          id="timeline-profile-link"
           navigate={~p"/profile"}
-          class="feed-profile-link btn btn-sm btn-outline w-full mt-2"
+          class="timeline-profile-link btn btn-sm btn-outline w-full mt-2"
         >
           <.icon name="hero-user-circle" class="size-4" />
           {gettext("Profile")}

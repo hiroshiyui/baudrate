@@ -198,9 +198,9 @@ defmodule Baudrate.Bots do
   end
 
   @doc "Records that a feed item was posted (or attempted)."
-  @spec record_feed_item(Bot.t(), String.t(), integer() | nil) ::
+  @spec record_timeline_item(Bot.t(), String.t(), integer() | nil) ::
           {:ok, BotFeedItem.t()} | {:error, Ecto.Changeset.t()}
-  def record_feed_item(%Bot{id: bot_id}, guid, article_id) do
+  def record_timeline_item(%Bot{id: bot_id}, guid, article_id) do
     %BotFeedItem{}
     |> Ecto.Changeset.cast(%{bot_id: bot_id, guid: guid, article_id: article_id}, [
       :bot_id,

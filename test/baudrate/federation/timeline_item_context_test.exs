@@ -1,4 +1,4 @@
-defmodule Baudrate.Federation.FeedItemContextTest do
+defmodule Baudrate.Federation.TimelineItemContextTest do
   use Baudrate.DataCase, async: false
 
   alias Baudrate.Federation
@@ -63,7 +63,7 @@ defmodule Baudrate.Federation.FeedItemContextTest do
     follow
   end
 
-  defp feed_item_attrs(actor, extra \\ %{}) do
+  defp timeline_item_attrs(actor, extra \\ %{}) do
     uid = System.unique_integer([:positive])
 
     Map.merge(
@@ -81,10 +81,10 @@ defmodule Baudrate.Federation.FeedItemContextTest do
     )
   end
 
-  describe "create_feed_item/1" do
+  describe "create_timeline_item/1" do
     test "creates a feed item", %{actor: actor} do
-      attrs = feed_item_attrs(actor)
-      {:ok, item} = Federation.create_feed_item(attrs)
+      attrs = timeline_item_attrs(actor)
+      {:ok, item} = Federation.create_timeline_item(attrs)
 
       assert item.ap_id == attrs.ap_id
       assert item.remote_actor_id == actor.id
@@ -93,73 +93,73 @@ defmodule Baudrate.Federation.FeedItemContextTest do
 
     test "broadcasts to followers of the actor", %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
-      PubSub.subscribe_user_feed(user.id)
+      PubSub.subscribe_user_timeline(user.id)
 
-      attrs = feed_item_attrs(actor)
-      {:ok, item} = Federation.create_feed_item(attrs)
+      attrs = timeline_item_attrs(actor)
+      {:ok, item} = Federation.create_timeline_item(attrs)
       expected_id = item.id
 
-      assert_receive {:feed_item_created, %{feed_item_id: ^expected_id}}
+      assert_receive {:timeline_item_created, %{timeline_item_id: ^expected_id}}
     end
 
     test "does not broadcast when no followers", %{user: user, actor: actor} do
       # No follow created
-      PubSub.subscribe_user_feed(user.id)
+      PubSub.subscribe_user_timeline(user.id)
 
-      attrs = feed_item_attrs(actor)
-      {:ok, _item} = Federation.create_feed_item(attrs)
+      attrs = timeline_item_attrs(actor)
+      {:ok, _item} = Federation.create_timeline_item(attrs)
 
-      refute_receive {:feed_item_created, _}
+      refute_receive {:timeline_item_created, _}
     end
 
     test "returns error for duplicate ap_id", %{actor: actor} do
-      attrs = feed_item_attrs(actor)
-      {:ok, _} = Federation.create_feed_item(attrs)
-      {:error, changeset} = Federation.create_feed_item(attrs)
+      attrs = timeline_item_attrs(actor)
+      {:ok, _} = Federation.create_timeline_item(attrs)
+      {:error, changeset} = Federation.create_timeline_item(attrs)
       assert errors_on(changeset)[:ap_id]
     end
   end
 
-  describe "list_feed_items/2" do
+  describe "list_timeline_items/2" do
     test "returns items from followed actors only", %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
       other_actor = create_remote_actor()
 
-      {:ok, item} = Federation.create_feed_item(feed_item_attrs(actor))
-      {:ok, _other} = Federation.create_feed_item(feed_item_attrs(other_actor))
+      {:ok, item} = Federation.create_timeline_item(timeline_item_attrs(actor))
+      {:ok, _other} = Federation.create_timeline_item(timeline_item_attrs(other_actor))
 
-      result = Federation.list_feed_items(user)
+      result = Federation.list_timeline_items(user)
       assert length(result.items) == 1
-      assert hd(result.items).feed_item.id == item.id
+      assert hd(result.items).timeline_item.id == item.id
     end
 
     test "excludes soft-deleted items", %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
-      attrs = feed_item_attrs(actor)
-      {:ok, _item} = Federation.create_feed_item(attrs)
-      Federation.soft_delete_feed_item_by_ap_id(attrs.ap_id, actor.id)
+      attrs = timeline_item_attrs(actor)
+      {:ok, _item} = Federation.create_timeline_item(attrs)
+      Federation.soft_delete_timeline_item_by_ap_id(attrs.ap_id, actor.id)
 
-      result = Federation.list_feed_items(user)
+      result = Federation.list_timeline_items(user)
       assert result.items == []
     end
 
     test "excludes items from pending follows", %{user: user, actor: actor} do
       # Create follow but don't accept it
       {:ok, _follow} = Federation.create_user_follow(user, actor)
-      {:ok, _item} = Federation.create_feed_item(feed_item_attrs(actor))
+      {:ok, _item} = Federation.create_timeline_item(timeline_item_attrs(actor))
 
-      result = Federation.list_feed_items(user)
+      result = Federation.list_timeline_items(user)
       assert result.items == []
     end
 
     test "filters blocked/muted actors", %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
-      {:ok, _item} = Federation.create_feed_item(feed_item_attrs(actor))
+      {:ok, _item} = Federation.create_timeline_item(timeline_item_attrs(actor))
 
       # Block the actor
       Baudrate.Auth.block_remote_actor(user, actor.ap_id)
 
-      result = Federation.list_feed_items(user)
+      result = Federation.list_timeline_items(user)
       assert result.items == []
     end
 
@@ -167,20 +167,20 @@ defmodule Baudrate.Federation.FeedItemContextTest do
       create_accepted_follow(user, actor)
 
       for _ <- 1..25 do
-        Federation.create_feed_item(feed_item_attrs(actor))
+        Federation.create_timeline_item(timeline_item_attrs(actor))
       end
 
-      result = Federation.list_feed_items(user, page: 1)
+      result = Federation.list_timeline_items(user, page: 1)
       assert length(result.items) == 20
       assert result.total == 25
       assert result.total_pages == 2
 
-      result2 = Federation.list_feed_items(user, page: 2)
+      result2 = Federation.list_timeline_items(user, page: 2)
       assert length(result2.items) == 5
     end
   end
 
-  describe "list_feed_items/2 local follows" do
+  describe "list_timeline_items/2 local follows" do
     test "hides a followed user's articles from boards the follower cannot view", %{user: user} do
       author = setup_user_with_role("admin")
       {:ok, _} = Federation.create_local_follow(user, author)
@@ -227,56 +227,56 @@ defmodule Baudrate.Federation.FeedItemContextTest do
           [public_board.id]
         )
 
-      result = Federation.list_feed_items(user)
+      result = Federation.list_timeline_items(user)
       local_ids = for %{source: :local, article: a} <- result.items, do: a.id
       assert local_ids == [open.id]
       assert result.total == 1
     end
   end
 
-  describe "get_feed_item_by_ap_id/1" do
+  describe "get_timeline_item_by_ap_id/1" do
     test "returns item when found", %{actor: actor} do
-      attrs = feed_item_attrs(actor)
-      {:ok, item} = Federation.create_feed_item(attrs)
+      attrs = timeline_item_attrs(actor)
+      {:ok, item} = Federation.create_timeline_item(attrs)
 
-      found = Federation.get_feed_item_by_ap_id(attrs.ap_id)
+      found = Federation.get_timeline_item_by_ap_id(attrs.ap_id)
       assert found.id == item.id
     end
 
     test "returns nil when not found" do
-      assert Federation.get_feed_item_by_ap_id("https://nonexistent/note/999") == nil
+      assert Federation.get_timeline_item_by_ap_id("https://nonexistent/note/999") == nil
     end
   end
 
-  describe "soft_delete_feed_item_by_ap_id/2" do
+  describe "soft_delete_timeline_item_by_ap_id/2" do
     test "soft-deletes matching item", %{actor: actor} do
-      attrs = feed_item_attrs(actor)
-      {:ok, _item} = Federation.create_feed_item(attrs)
+      attrs = timeline_item_attrs(actor)
+      {:ok, _item} = Federation.create_timeline_item(attrs)
 
-      {1, _} = Federation.soft_delete_feed_item_by_ap_id(attrs.ap_id, actor.id)
+      {1, _} = Federation.soft_delete_timeline_item_by_ap_id(attrs.ap_id, actor.id)
 
-      item = Federation.get_feed_item_by_ap_id(attrs.ap_id)
+      item = Federation.get_timeline_item_by_ap_id(attrs.ap_id)
       assert item.deleted_at != nil
     end
 
     test "does not delete if actor mismatch", %{actor: actor} do
       other_actor = create_remote_actor()
-      attrs = feed_item_attrs(actor)
-      {:ok, _item} = Federation.create_feed_item(attrs)
+      attrs = timeline_item_attrs(actor)
+      {:ok, _item} = Federation.create_timeline_item(attrs)
 
-      {0, _} = Federation.soft_delete_feed_item_by_ap_id(attrs.ap_id, other_actor.id)
+      {0, _} = Federation.soft_delete_timeline_item_by_ap_id(attrs.ap_id, other_actor.id)
 
-      item = Federation.get_feed_item_by_ap_id(attrs.ap_id)
+      item = Federation.get_timeline_item_by_ap_id(attrs.ap_id)
       assert item.deleted_at == nil
     end
   end
 
-  describe "cleanup_feed_items_for_actor/1" do
+  describe "cleanup_timeline_items_for_actor/1" do
     test "soft-deletes all items from actor", %{actor: actor} do
-      {:ok, _} = Federation.create_feed_item(feed_item_attrs(actor))
-      {:ok, _} = Federation.create_feed_item(feed_item_attrs(actor))
+      {:ok, _} = Federation.create_timeline_item(timeline_item_attrs(actor))
+      {:ok, _} = Federation.create_timeline_item(timeline_item_attrs(actor))
 
-      {2, _} = Federation.cleanup_feed_items_for_actor(actor.id)
+      {2, _} = Federation.cleanup_timeline_items_for_actor(actor.id)
     end
   end
 

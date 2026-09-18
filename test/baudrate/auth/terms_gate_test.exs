@@ -161,7 +161,7 @@ defmodule Baudrate.Auth.TermsGateTest do
                  %{
                    "title" => "From a feed",
                    "body" => "Words.",
-                   "slug" => "feed-#{System.unique_integer([:positive])}",
+                   "slug" => "timeline-#{System.unique_integer([:positive])}",
                    "user_id" => bot.id
                  },
                  [board.id],

@@ -909,11 +909,11 @@ defmodule Baudrate.Federation.Publisher do
   # --- Feed Item Like/Boost ---
 
   @doc """
-  Builds a `Like` activity for a local user liking a remote feed item.
+  Builds a `Like` activity for a local user liking a remote timeline item.
 
   Returns `{activity_map, actor_uri}`.
   """
-  def build_like_feed_item(user, feed_item) do
+  def build_like_timeline_item(user, timeline_item) do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
@@ -921,7 +921,7 @@ defmodule Baudrate.Federation.Publisher do
       "id" => "#{actor_uri}#feed-like-#{Ecto.UUID.generate()}",
       "type" => "Like",
       "actor" => actor_uri,
-      "object" => feed_item.ap_id,
+      "object" => timeline_item.ap_id,
       "to" => [@as_public]
     }
 
@@ -929,11 +929,11 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
-  Builds an `Undo(Like)` activity for unliking a remote feed item.
+  Builds an `Undo(Like)` activity for unliking a remote timeline item.
 
   Returns `{activity_map, actor_uri}`.
   """
-  def build_undo_like_feed_item(user, feed_item, like_ap_id) do
+  def build_undo_like_timeline_item(user, timeline_item, like_ap_id) do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
@@ -945,7 +945,7 @@ defmodule Baudrate.Federation.Publisher do
         "id" => like_ap_id,
         "type" => "Like",
         "actor" => actor_uri,
-        "object" => feed_item.ap_id
+        "object" => timeline_item.ap_id
       },
       "to" => [@as_public]
     }
@@ -954,11 +954,11 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
-  Builds an `Announce` activity for a local user boosting a remote feed item.
+  Builds an `Announce` activity for a local user boosting a remote timeline item.
 
   Returns `{activity_map, actor_uri}`.
   """
-  def build_announce_feed_item(user, feed_item) do
+  def build_announce_timeline_item(user, timeline_item) do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
@@ -966,7 +966,7 @@ defmodule Baudrate.Federation.Publisher do
       "id" => "#{actor_uri}#feed-announce-#{Ecto.UUID.generate()}",
       "type" => "Announce",
       "actor" => actor_uri,
-      "object" => feed_item.ap_id,
+      "object" => timeline_item.ap_id,
       "to" => [@as_public],
       "cc" => ["#{actor_uri}/followers"]
     }
@@ -975,11 +975,11 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
-  Builds an `Undo(Announce)` activity for unboosting a remote feed item.
+  Builds an `Undo(Announce)` activity for unboosting a remote timeline item.
 
   Returns `{activity_map, actor_uri}`.
   """
-  def build_undo_announce_feed_item(user, feed_item, boost_ap_id) do
+  def build_undo_announce_timeline_item(user, timeline_item, boost_ap_id) do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
@@ -991,7 +991,7 @@ defmodule Baudrate.Federation.Publisher do
         "id" => boost_ap_id,
         "type" => "Announce",
         "actor" => actor_uri,
-        "object" => feed_item.ap_id
+        "object" => timeline_item.ap_id
       },
       "to" => [@as_public],
       "cc" => ["#{actor_uri}/followers"]
@@ -1001,13 +1001,13 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
-  Publishes a `Like` activity for a local user liking a remote feed item.
+  Publishes a `Like` activity for a local user liking a remote timeline item.
   Delivers to the remote actor's inbox.
   """
-  def publish_feed_item_liked(user, feed_item) do
-    feed_item = Repo.preload(feed_item, [:remote_actor])
-    {activity, actor_uri} = build_like_feed_item(user, feed_item)
-    inbox = feed_item.remote_actor.shared_inbox || feed_item.remote_actor.inbox
+  def publish_timeline_item_liked(user, timeline_item) do
+    timeline_item = Repo.preload(timeline_item, [:remote_actor])
+    {activity, actor_uri} = build_like_timeline_item(user, timeline_item)
+    inbox = timeline_item.remote_actor.shared_inbox || timeline_item.remote_actor.inbox
 
     if inbox do
       Delivery.enqueue(activity, actor_uri, [inbox])
@@ -1017,12 +1017,12 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
-  Publishes an `Undo(Like)` activity for unliking a remote feed item.
+  Publishes an `Undo(Like)` activity for unliking a remote timeline item.
   """
-  def publish_feed_item_unliked(user, feed_item, like_ap_id) do
-    feed_item = Repo.preload(feed_item, [:remote_actor])
-    {activity, actor_uri} = build_undo_like_feed_item(user, feed_item, like_ap_id)
-    inbox = feed_item.remote_actor.shared_inbox || feed_item.remote_actor.inbox
+  def publish_timeline_item_unliked(user, timeline_item, like_ap_id) do
+    timeline_item = Repo.preload(timeline_item, [:remote_actor])
+    {activity, actor_uri} = build_undo_like_timeline_item(user, timeline_item, like_ap_id)
+    inbox = timeline_item.remote_actor.shared_inbox || timeline_item.remote_actor.inbox
 
     if inbox do
       Delivery.enqueue(activity, actor_uri, [inbox])
@@ -1032,13 +1032,13 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
-  Publishes an `Announce` activity for a local user boosting a remote feed item.
+  Publishes an `Announce` activity for a local user boosting a remote timeline item.
   Delivers to the remote actor's inbox.
   """
-  def publish_feed_item_boosted(user, feed_item) do
-    feed_item = Repo.preload(feed_item, [:remote_actor])
-    {activity, actor_uri} = build_announce_feed_item(user, feed_item)
-    inbox = feed_item.remote_actor.shared_inbox || feed_item.remote_actor.inbox
+  def publish_timeline_item_boosted(user, timeline_item) do
+    timeline_item = Repo.preload(timeline_item, [:remote_actor])
+    {activity, actor_uri} = build_announce_timeline_item(user, timeline_item)
+    inbox = timeline_item.remote_actor.shared_inbox || timeline_item.remote_actor.inbox
 
     if inbox do
       Delivery.enqueue(activity, actor_uri, [inbox])
@@ -1048,12 +1048,12 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
-  Publishes an `Undo(Announce)` activity for unboosting a remote feed item.
+  Publishes an `Undo(Announce)` activity for unboosting a remote timeline item.
   """
-  def publish_feed_item_unboosted(user, feed_item, boost_ap_id) do
-    feed_item = Repo.preload(feed_item, [:remote_actor])
-    {activity, actor_uri} = build_undo_announce_feed_item(user, feed_item, boost_ap_id)
-    inbox = feed_item.remote_actor.shared_inbox || feed_item.remote_actor.inbox
+  def publish_timeline_item_unboosted(user, timeline_item, boost_ap_id) do
+    timeline_item = Repo.preload(timeline_item, [:remote_actor])
+    {activity, actor_uri} = build_undo_announce_timeline_item(user, timeline_item, boost_ap_id)
+    inbox = timeline_item.remote_actor.shared_inbox || timeline_item.remote_actor.inbox
 
     if inbox do
       Delivery.enqueue(activity, actor_uri, [inbox])
@@ -1128,14 +1128,14 @@ defmodule Baudrate.Federation.Publisher do
   # --- Feed Item Reply Builders ---
 
   @doc """
-  Builds a `Create(Note)` activity for a local user's reply to a remote feed item.
+  Builds a `Create(Note)` activity for a local user's reply to a remote timeline item.
 
-  The Note's `inReplyTo` points to the feed item's AP ID so that the remote
+  The Note's `inReplyTo` points to the timeline item's AP ID so that the remote
   instance threads the reply correctly.
 
   Returns `{activity_map, actor_uri}`.
   """
-  def build_create_feed_item_reply(reply, feed_item, user) do
+  def build_create_timeline_item_reply(reply, timeline_item, user) do
     reply = Repo.preload(reply, :images)
     actor_uri = Federation.actor_uri(:user, user.username)
 
@@ -1145,7 +1145,7 @@ defmodule Baudrate.Federation.Publisher do
         "type" => "Note",
         "content" => reply.body_html || reply.body,
         "attributedTo" => actor_uri,
-        "inReplyTo" => feed_item.ap_id,
+        "inReplyTo" => timeline_item.ap_id,
         "published" => DateTime.to_iso8601(reply.inserted_at),
         "to" => [@as_public],
         "cc" => ["#{actor_uri}/followers"]
@@ -1167,23 +1167,23 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
-  Publishes a `Create(Note)` reply to a remote feed item.
+  Publishes a `Create(Note)` reply to a remote timeline item.
 
   Ensures the replying user has an RSA keypair, builds the activity,
   resolves the remote actor's inbox plus the user's AP follower inboxes,
   deduplicates, and enqueues for delivery.
   """
-  def publish_feed_item_reply(reply, feed_item) do
+  def publish_timeline_item_reply(reply, timeline_item) do
     reply = Repo.preload(reply, user: :role)
-    feed_item = Repo.preload(feed_item, [:remote_actor])
+    timeline_item = Repo.preload(timeline_item, [:remote_actor])
     user = reply.user
 
     {:ok, user} = Baudrate.Federation.KeyStore.ensure_user_keypair(user)
 
-    {activity, actor_uri} = build_create_feed_item_reply(reply, feed_item, user)
+    {activity, actor_uri} = build_create_timeline_item_reply(reply, timeline_item, user)
 
     # Remote actor inbox
-    remote_inbox = feed_item.remote_actor.shared_inbox || feed_item.remote_actor.inbox
+    remote_inbox = timeline_item.remote_actor.shared_inbox || timeline_item.remote_actor.inbox
 
     # User's AP follower inboxes
     follower_inboxes = Delivery.resolve_follower_inboxes(actor_uri)

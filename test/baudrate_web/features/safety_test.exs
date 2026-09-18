@@ -80,24 +80,26 @@ defmodule BaudrateWeb.Features.SafetyTest do
     session =
       session
       |> log_in_via_browser(member)
-      |> visit("/feed")
-      |> click(Query.css("#feed-item-actions-menu-toggle-#{item.id}"))
-      |> click(Query.css("#feed-item-report-#{item.id}"))
+      |> visit("/timeline")
+      |> click(Query.css("#timeline-item-actions-menu-toggle-#{item.id}"))
+      |> click(Query.css("#timeline-item-report-#{item.id}"))
       |> click(Query.css("#report-category option[value=harassment]"))
       |> fill_in(Query.css("#report-reason"), with: "Harassment")
       |> click(Query.css("#report-modal .report-modal-submit"))
       |> assert_has(Query.text("Report submitted. Thank you."))
 
     assert Repo.exists?(
-             from(r in Report, where: r.feed_item_id == ^item.id and r.reporter_id == ^member.id)
+             from(r in Report,
+               where: r.timeline_item_id == ^item.id and r.reporter_id == ^member.id
+             )
            )
 
     session
     |> accept_confirms()
-    |> click(Query.css("#feed-item-actions-menu-toggle-#{item.id}"))
-    |> click(Query.css("#feed-item-#{item.id}-mute-actor"))
+    |> click(Query.css("#timeline-item-actions-menu-toggle-#{item.id}"))
+    |> click(Query.css("#timeline-item-#{item.id}-mute-actor"))
     |> assert_has(Query.text("Account muted."))
-    |> refute_has(Query.css("#feed-item-fi-#{item.id}"))
+    |> refute_has(Query.css("#timeline-item-fi-#{item.id}"))
 
     assert Repo.get_by(UserMute, user_id: member.id, muted_actor_ap_id: actor.ap_id)
   end
@@ -127,7 +129,7 @@ defmodule BaudrateWeb.Features.SafetyTest do
     items =
       for n <- 1..2 do
         {:ok, item} =
-          Federation.create_feed_item(%{
+          Federation.create_timeline_item(%{
             remote_actor_id: actor.id,
             activity_type: "Create",
             object_type: "Note",

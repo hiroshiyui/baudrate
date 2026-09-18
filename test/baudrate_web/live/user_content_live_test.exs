@@ -140,7 +140,7 @@ defmodule BaudrateWeb.UserContentLiveTest do
       user = setup_user("user")
       conn = log_in_user(conn, user)
 
-      {:ok, _lv, html} = live(conn, "/feed")
+      {:ok, _lv, html} = live(conn, "/timeline")
       assert html =~ ~s(href="/users/#{user.username}/articles")
       assert html =~ ~s(href="/users/#{user.username}/comments")
     end

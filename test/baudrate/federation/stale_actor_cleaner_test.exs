@@ -3,7 +3,7 @@ defmodule Baudrate.Federation.StaleActorCleanerTest do
 
   alias Baudrate.Federation.{
     Announce,
-    FeedItem,
+    TimelineItem,
     Follower,
     HTTPClient,
     RemoteActor,
@@ -304,7 +304,7 @@ defmodule Baudrate.Federation.StaleActorCleanerTest do
             {"board_follows", "remote_actor_id"},
             {"comment_boosts", "remote_actor_id"},
             {"comment_likes", "remote_actor_id"},
-            {"feed_items", "remote_actor_id"},
+            {"timeline_items", "remote_actor_id"},
             {"poll_votes", "remote_actor_id"},
             {"user_follows", "remote_actor_id"}
           ] do
@@ -316,7 +316,7 @@ defmodule Baudrate.Federation.StaleActorCleanerTest do
             {"conversations", "remote_actor_a_id"},
             {"conversations", "remote_actor_b_id"},
             {"direct_messages", "sender_remote_actor_id"},
-            {"feed_items", "boosted_by_actor_id"},
+            {"timeline_items", "boosted_by_actor_id"},
             {"notifications", "actor_remote_actor_id"},
             {"reports", "reporter_remote_actor_id"}
           ] do
@@ -348,8 +348,8 @@ defmodule Baudrate.Federation.StaleActorCleanerTest do
       actor = create_remote_actor(%{fetched_at: stale_fetched_at()})
 
       item =
-        %FeedItem{}
-        |> FeedItem.changeset(%{
+        %TimelineItem{}
+        |> TimelineItem.changeset(%{
           remote_actor_id: actor.id,
           activity_type: "Create",
           object_type: "Note",
@@ -362,7 +362,7 @@ defmodule Baudrate.Federation.StaleActorCleanerTest do
       StaleActorCleaner.run_cleanup()
 
       assert Repo.get(RemoteActor, actor.id)
-      assert Repo.get(FeedItem, item.id)
+      assert Repo.get(TimelineItem, item.id)
     end
 
     test "a conversation with a quiet actor survives the sweep" do
@@ -401,8 +401,8 @@ defmodule Baudrate.Federation.StaleActorCleanerTest do
       })
       |> Repo.insert!()
 
-      %FeedItem{}
-      |> FeedItem.changeset(%{
+      %TimelineItem{}
+      |> TimelineItem.changeset(%{
         remote_actor_id: poster.id,
         activity_type: "Create",
         object_type: "Note",

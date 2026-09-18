@@ -259,7 +259,7 @@ defmodule Baudrate.DataPortability.Archive do
         ),
         "\n",
         gettext(
-          "- articles.json, comments.json, feed_replies.json: what you wrote and can still see, including your own article revisions and polls"
+          "- articles.json, comments.json, timeline_replies.json: what you wrote and can still see, including your own article revisions and polls"
         ),
         "\n",
         gettext(

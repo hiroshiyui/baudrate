@@ -755,7 +755,7 @@ defmodule Baudrate.AccountMigration do
     * the follower gets an `actor_moved` notice.
 
   Feed items are repointed to a remote destination
-  (`Federation.migrate_feed_items/2`), so the history shows again once the
+  (`Federation.migrate_timeline_items/2`), so the history shows again once the
   new follow is accepted. Board follows are never repointed: admins get a
   `board_actor_moved` notice instead.
   """
@@ -795,11 +795,11 @@ defmodule Baudrate.AccountMigration do
                 follow_on_behalf(follower, target)
               end)
 
-            {authored, boosted} = Federation.migrate_feed_items(origin.id, target.id)
+            {authored, boosted} = Federation.migrate_timeline_items(origin.id, target.id)
             notify_board_admins(origin, label)
 
             Logger.info(
-              "federation.move_complete: from=#{origin.ap_id} to=#{target.ap_id} followers=#{migrated} feed_items_authored=#{authored} feed_items_boosted=#{boosted}"
+              "federation.move_complete: from=#{origin.ap_id} to=#{target.ap_id} followers=#{migrated} timeline_items_authored=#{authored} timeline_items_boosted=#{boosted}"
             )
 
             :ok

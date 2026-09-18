@@ -26,7 +26,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_dm_send/1`       | `dm_send:`         | 1 min   | 20    |
   | `check_outbound_follow/1`| `outbound_follow:` | 1 hour  | 10    |
   | `check_create_report/1` | `report_create:`   | 15 min  | 5     |
-  | `check_feed_reply/1`   | `feed_reply:`      | 5 min   | 20    |
+  | `check_timeline_reply/1`   | `timeline_reply:`      | 5 min   | 20    |
   | `check_link_preview_domain/1` | `lp_domain:` | 1 min   | 10    |
   | `check_link_preview_user/1`   | `lp_user:`   | 1 min   | 5     |
   | `check_reply_chain_fetch/1`   | `reply_chain:` | 1 min | 10    |
@@ -174,9 +174,9 @@ defmodule BaudrateWeb.RateLimits do
   end
 
   @doc "Feed item reply: 20 per 5 minutes per user."
-  @spec check_feed_reply(integer()) :: :ok | {:error, :rate_limited}
-  def check_feed_reply(user_id) do
-    check("feed_reply:#{user_id}", 300_000, 20, :feed_reply)
+  @spec check_timeline_reply(integer()) :: :ok | {:error, :rate_limited}
+  def check_timeline_reply(user_id) do
+    check("timeline_reply:#{user_id}", 300_000, 20, :timeline_reply)
   end
 
   @doc "Link preview domain fetch: 10 per minute per domain."

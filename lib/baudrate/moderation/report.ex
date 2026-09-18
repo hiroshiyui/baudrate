@@ -13,7 +13,7 @@ defmodule Baudrate.Moderation.Report do
     * `remote_actor_id` — the **reported** remote actor. Moderators can send
       it a `Flag` ("Send Flag"). Never the reporter.
     * `article_id`, `comment_id`, `reported_user_id` — reported local records
-    * `feed_item_id` — a reported feed item (its author is `remote_actor_id`)
+    * `timeline_item_id` — a reported feed item (its author is `remote_actor_id`)
     * `evidence_body` and `evidence_taken_at` — a copy of the reported article
       or comment, taken when a moderator removed it, so the report still
       explains itself afterwards. Purged 90 days after the report was closed
@@ -47,7 +47,7 @@ defmodule Baudrate.Moderation.Report do
     belongs_to :comment, Baudrate.Content.Comment
     belongs_to :remote_actor, Baudrate.Federation.RemoteActor
     belongs_to :reported_user, Baudrate.Setup.User
-    belongs_to :feed_item, Baudrate.Federation.FeedItem
+    belongs_to :timeline_item, Baudrate.Federation.TimelineItem
     belongs_to :message, Baudrate.Messaging.DirectMessage
     belongs_to :resolved_by, Baudrate.Setup.User
     # Which rule the reporter says was broken (P1-D9). Optional even when the
@@ -77,7 +77,7 @@ defmodule Baudrate.Moderation.Report do
       :comment_id,
       :remote_actor_id,
       :reported_user_id,
-      :feed_item_id,
+      :timeline_item_id,
       :message_id,
       :resolved_by_id,
       :resolved_at,
@@ -132,13 +132,13 @@ defmodule Baudrate.Moderation.Report do
     |> foreign_key_constraint(:comment_id)
     |> foreign_key_constraint(:remote_actor_id)
     |> foreign_key_constraint(:reported_user_id)
-    |> foreign_key_constraint(:feed_item_id)
+    |> foreign_key_constraint(:timeline_item_id)
     |> foreign_key_constraint(:message_id)
     |> foreign_key_constraint(:resolved_by_id)
     |> foreign_key_constraint(:rule_id)
   end
 
-  @target_fields ~w(article_id comment_id remote_actor_id reported_user_id feed_item_id message_id)a
+  @target_fields ~w(article_id comment_id remote_actor_id reported_user_id timeline_item_id message_id)a
 
   defp validate_has_target(changeset) do
     if Enum.all?(@target_fields, &is_nil(get_field(changeset, &1))) do

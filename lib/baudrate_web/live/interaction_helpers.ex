@@ -3,7 +3,7 @@ defmodule BaudrateWeb.InteractionHelpers do
   Shared LiveView helpers for like/boost toggle event handlers.
 
   Eliminates duplication of toggle-and-update-assigns logic across
-  `FeedLive`, `BoardLive`, and `ArticleLive`.
+  `TimelineLive`, `BoardLive`, and `ArticleLive`.
   """
 
   import Phoenix.LiveView, only: [put_flash: 3]
@@ -94,8 +94,8 @@ defmodule BaudrateWeb.InteractionHelpers do
 
     * `socket` — the LiveView socket
     * `id_string` — the raw ID string from `phx-value-id`
-    * `toggle_fn` — `fn user, feed_item_id -> {:ok, _} | {:error, _} end`
-    * `ids_assign` — the assign key for the MapSet (e.g., `:feed_item_liked_ids`)
+    * `toggle_fn` — `fn user, timeline_item_id -> {:ok, _} | {:error, _} end`
+    * `ids_assign` — the assign key for the MapSet (e.g., `:timeline_item_liked_ids`)
     * `fail_message` — the flash message for failure
 
   """

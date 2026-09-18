@@ -16,7 +16,7 @@ defmodule Baudrate.Federation.InboxHandler do
     * `Like` — create article like for target article
     * `Announce` — record boost/share (bare URI or embedded object map);
       when the booster is followed by boards, routes Article/Page content to
-      those boards; when followed by local users, creates a feed item with
+      those boards; when followed by local users, creates a timeline item with
       `activity_type: "Announce"` and boost attribution. No outbound re-announce
       is triggered (loop-safe).
     * `Update(Article/Note/Page)` — update remote content with authorship check
@@ -198,7 +198,7 @@ defmodule Baudrate.Federation.InboxHandler do
               :ok
 
             {:error, reason} when reason in [:article_not_found, :missing_in_reply_to] ->
-              # Try auto-routing to boards that follow this actor, then fall back to feed item
+              # Try auto-routing to boards that follow this actor, then fall back to timeline item
               maybe_auto_route_to_boards(object, remote_actor, "Note")
 
             other ->
@@ -703,10 +703,10 @@ defmodule Baudrate.Federation.InboxHandler do
           {:error, :unauthorized}
         end
 
-      feed_item = Federation.get_feed_item_by_ap_id(object_uri) ->
-        if feed_item.remote_actor_id == remote_actor.id do
-          Federation.soft_delete_feed_item_by_ap_id(object_uri, remote_actor.id)
-          Logger.info("federation.activity: type=Delete(FeedItem) ap_id=#{object_uri}")
+      timeline_item = Federation.get_timeline_item_by_ap_id(object_uri) ->
+        if timeline_item.remote_actor_id == remote_actor.id do
+          Federation.soft_delete_timeline_item_by_ap_id(object_uri, remote_actor.id)
+          Logger.info("federation.activity: type=Delete(TimelineItem) ap_id=#{object_uri}")
           :ok
         else
           {:error, :unauthorized}
@@ -867,10 +867,10 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
-  # --- Feed item fallback ---
+  # --- Timeline item fallback ---
 
-  defp maybe_create_feed_item(object, remote_actor, object_type) do
-    # Only create feed items if at least one local user follows this actor
+  defp maybe_create_timeline_item(object, remote_actor, object_type) do
+    # Only create timeline items if at least one local user follows this actor
     case Federation.local_followers_of_remote_actor(remote_actor.id) do
       [] ->
         :ok
@@ -879,17 +879,17 @@ defmodule Baudrate.Federation.InboxHandler do
         with {:ok, ap_id} <- Validator.validate_object_id(object),
              :ok <- Validator.validate_object_origin(object, remote_actor) do
           # Idempotency check
-          if Federation.get_feed_item_by_ap_id(ap_id) do
+          if Federation.get_timeline_item_by_ap_id(ap_id) do
             :ok
           else
             with :ok <- validate_attribution_match(object, remote_actor),
                  {:ok, body, body_html} <- sanitize_content(object) do
               published_at = parse_published(object["published"])
-              title = feed_item_title(object_type, object)
+              title = timeline_item_title(object_type, object)
               source_url = extract_url(object) || object["id"]
               visibility = Visibility.from_addressing(object)
 
-              case Federation.create_feed_item(%{
+              case Federation.create_timeline_item(%{
                      remote_actor_id: remote_actor.id,
                      activity_type: "Create",
                      object_type: object_type,
@@ -902,9 +902,9 @@ defmodule Baudrate.Federation.InboxHandler do
                      visibility: visibility,
                      published_at: published_at
                    }) do
-                {:ok, _feed_item} ->
+                {:ok, _timeline_item} ->
                   Logger.info(
-                    "federation.activity: type=Create(#{object_type}/FeedItem) ap_id=#{ap_id}"
+                    "federation.activity: type=Create(#{object_type}/TimelineItem) ap_id=#{ap_id}"
                   )
 
                   :ok
@@ -912,7 +912,7 @@ defmodule Baudrate.Federation.InboxHandler do
                 {:error, %Ecto.Changeset{} = changeset} ->
                   if has_unique_error?(changeset),
                     do: :ok,
-                    else: {:error, :create_feed_item_failed}
+                    else: {:error, :create_timeline_item_failed}
               end
             end
           end
@@ -1018,8 +1018,8 @@ defmodule Baudrate.Federation.InboxHandler do
         # Route to boards that follow the booster
         maybe_route_announce_to_boards(object, booster_actor, object_type)
 
-        # Create feed item for users that follow the booster
-        maybe_create_announce_feed_item(announce_ap_id, object, booster_actor, object_type)
+        # Create timeline item for users that follow the booster
+        maybe_create_announce_timeline_item(announce_ap_id, object, booster_actor, object_type)
     end
   end
 
@@ -1047,7 +1047,7 @@ defmodule Baudrate.Federation.InboxHandler do
   defp same_host?(_, _), do: false
 
   # Routes boosted Article/Page content to boards that follow the booster.
-  # Notes are not routed to boards (they become feed items only).
+  # Notes are not routed to boards (they become timeline items only).
   defp maybe_route_announce_to_boards(object, booster_actor, object_type)
        when object_type in ["Article", "Page"] do
     case Federation.boards_following_actor(booster_actor.id) do
@@ -1129,13 +1129,13 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp maybe_route_announce_to_boards(_object, _booster_actor, _object_type), do: :ok
 
-  defp maybe_create_announce_feed_item(announce_ap_id, object, booster_actor, object_type) do
+  defp maybe_create_announce_timeline_item(announce_ap_id, object, booster_actor, object_type) do
     case Federation.local_followers_of_remote_actor(booster_actor.id) do
       [] ->
         :ok
 
       _followers ->
-        if Federation.get_feed_item_by_ap_id(announce_ap_id) do
+        if Federation.get_timeline_item_by_ap_id(announce_ap_id) do
           :ok
         else
           with {:ok, body, body_html} <- sanitize_content(object) do
@@ -1149,11 +1149,11 @@ defmodule Baudrate.Federation.InboxHandler do
               end
 
             published_at = parse_published(object["published"])
-            title = feed_item_title(object_type, object)
+            title = timeline_item_title(object_type, object)
             source_url = extract_url(object) || object["id"]
             visibility = Visibility.from_addressing(object)
 
-            case Federation.create_feed_item(%{
+            case Federation.create_timeline_item(%{
                    remote_actor_id: content_actor_id,
                    boosted_by_actor_id: booster_actor.id,
                    activity_type: "Announce",
@@ -1167,9 +1167,9 @@ defmodule Baudrate.Federation.InboxHandler do
                    visibility: visibility,
                    published_at: published_at
                  }) do
-              {:ok, _feed_item} ->
+              {:ok, _timeline_item} ->
                 Logger.info(
-                  "federation.activity: type=Announce(#{object_type}/FeedItem) ap_id=#{announce_ap_id}"
+                  "federation.activity: type=Announce(#{object_type}/TimelineItem) ap_id=#{announce_ap_id}"
                 )
 
                 :ok
@@ -1177,7 +1177,7 @@ defmodule Baudrate.Federation.InboxHandler do
               {:error, %Ecto.Changeset{} = changeset} ->
                 if has_unique_error?(changeset),
                   do: :ok,
-                  else: {:error, :create_feed_item_failed}
+                  else: {:error, :create_timeline_item_failed}
             end
           else
             _ -> :ok
@@ -1275,12 +1275,12 @@ defmodule Baudrate.Federation.InboxHandler do
   defp derive_title(object, body),
     do: Baudrate.Content.TitleDeriver.derive_title(object, body)
 
-  # A feed item's title is the remote object's `name` verbatim. Unlike
+  # A timeline item's title is the remote object's `name` verbatim. Unlike
   # `content` it never passes through `Validator.validate_content_size/1`, so
   # without this an `Article`/`Page` could park a payload-sized string in the
   # column and render it on every viewer's `/feed`. Truncating (rather than
   # rejecting in the changeset) keeps a merely over-long legitimate title.
-  defp feed_item_title(object_type, object) when object_type in ["Article", "Page"] do
+  defp timeline_item_title(object_type, object) when object_type in ["Article", "Page"] do
     case object["name"] do
       name when is_binary(name) and name != "" ->
         Baudrate.Content.TitleDeriver.truncate_title(name, 255)
@@ -1290,7 +1290,7 @@ defmodule Baudrate.Federation.InboxHandler do
     end
   end
 
-  defp feed_item_title(_object_type, _object), do: nil
+  defp timeline_item_title(_object_type, _object), do: nil
 
   defp strip_html(html) when is_binary(html) do
     html
@@ -1572,7 +1572,7 @@ defmodule Baudrate.Federation.InboxHandler do
   defp maybe_auto_route_to_boards(object, remote_actor, type) do
     case Federation.boards_following_actor(remote_actor.id) do
       [] ->
-        maybe_create_feed_item(object, remote_actor, type)
+        maybe_create_timeline_item(object, remote_actor, type)
 
       boards ->
         with :ok <- validate_attribution_match(object, remote_actor),

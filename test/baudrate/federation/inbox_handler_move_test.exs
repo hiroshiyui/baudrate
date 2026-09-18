@@ -188,7 +188,7 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
       new_actor = create_remote_actor(%{domain: "new.example"})
 
       {:ok, authored} =
-        Federation.create_feed_item(%{
+        Federation.create_timeline_item(%{
           remote_actor_id: actor.id,
           activity_type: "Create",
           object_type: "Note",
@@ -201,7 +201,7 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
       author = create_remote_actor(%{domain: "third.example"})
 
       {:ok, boosted} =
-        Federation.create_feed_item(%{
+        Federation.create_timeline_item(%{
           remote_actor_id: author.id,
           boosted_by_actor_id: actor.id,
           activity_type: "Announce",
@@ -211,16 +211,16 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
           published_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
 
-      assert Federation.feed_item_accessible?(user, authored)
-      assert Federation.feed_item_accessible?(user, boosted)
+      assert Federation.timeline_item_accessible?(user, authored)
+      assert Federation.timeline_item_accessible?(user, boosted)
 
       stub_target_actor(new_actor, [actor.ap_id])
       assert :ok = InboxHandler.handle(move_activity(actor, new_actor.ap_id), actor, :shared)
 
       # The follow moved to the new actor, so items still pointing at the old
       # one would fail the accessibility join and vanish from the feed.
-      authored = Repo.get!(Baudrate.Federation.FeedItem, authored.id)
-      boosted = Repo.get!(Baudrate.Federation.FeedItem, boosted.id)
+      authored = Repo.get!(Baudrate.Federation.TimelineItem, authored.id)
+      boosted = Repo.get!(Baudrate.Federation.TimelineItem, boosted.id)
 
       assert authored.remote_actor_id == new_actor.id
       assert boosted.boosted_by_actor_id == new_actor.id
@@ -228,14 +228,14 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
       assert boosted.remote_actor_id == author.id
 
       # Pending until the new actor accepts the Follow sent on the user's behalf.
-      refute Federation.feed_item_accessible?(user, authored)
+      refute Federation.timeline_item_accessible?(user, authored)
       follow = Federation.get_user_follow(user.id, new_actor.id)
       {:ok, _} = Federation.accept_user_follow(follow.ap_id)
 
-      assert Federation.feed_item_accessible?(user, authored)
-      assert Federation.feed_item_accessible?(user, boosted)
+      assert Federation.timeline_item_accessible?(user, authored)
+      assert Federation.timeline_item_accessible?(user, boosted)
 
-      ids = Enum.map(Federation.list_feed_items(user).items, & &1.feed_item.id)
+      ids = Enum.map(Federation.list_timeline_items(user).items, & &1.timeline_item.id)
       assert authored.id in ids
       assert boosted.id in ids
     end
@@ -246,7 +246,7 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
       new_actor = create_remote_actor(%{domain: "new.example"})
 
       {:ok, item} =
-        Federation.create_feed_item(%{
+        Federation.create_timeline_item(%{
           remote_actor_id: actor.id,
           activity_type: "Create",
           object_type: "Note",
@@ -260,8 +260,8 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
       assert {:error, :move_not_authorized} =
                InboxHandler.handle(move_activity(actor, new_actor.ap_id), actor, :shared)
 
-      assert Repo.get!(Baudrate.Federation.FeedItem, item.id).remote_actor_id == actor.id
-      assert Federation.feed_item_accessible?(user, item)
+      assert Repo.get!(Baudrate.Federation.TimelineItem, item.id).remote_actor_id == actor.id
+      assert Federation.timeline_item_accessible?(user, item)
     end
 
     test "rejects Move with actor mismatch", %{actor: actor} do

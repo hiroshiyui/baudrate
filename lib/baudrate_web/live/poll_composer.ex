@@ -3,7 +3,7 @@ defmodule BaudrateWeb.PollComposer do
   Keeps a composer's poll inputs in socket assigns while the form is edited.
 
   The poll inputs (`poll_options[i]`, `poll_mode`, `poll_expires`) sit inside
-  the article form of `ArticleNewLive` and `FeedLive`, so their changes arrive
+  the article form of `ArticleNewLive` and `TimelineLive`, so their changes arrive
   with the form's own change event: LiveView honours `phx-change` only on a
   form or an input, not on the `<fieldset>` around the poll. Every change
   re-renders the form, and LiveView resets each input to its rendered value,

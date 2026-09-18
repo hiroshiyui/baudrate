@@ -328,7 +328,7 @@ defmodule BaudrateWeb.Router do
       live "/messages/:id", ConversationLive
       live "/notifications", NotificationsLive
       live "/following", FollowingLive
-      live "/feed", FeedLive
+      live "/timeline", TimelineLive
       live "/bookmarks", BookmarksLive
       # Board moderators are ordinary members, so their report queue lives
       # outside /admin; the LiveView scopes it to the boards they moderate.
@@ -371,6 +371,9 @@ defmodule BaudrateWeb.Router do
     pipe_through :browser
 
     get "/@:handle", HandleRedirectController, :show
+
+    # The personal stream moved from /feed to /timeline; members bookmark it.
+    get "/feed", PageController, :feed_redirect
   end
 
   # Public browsable routes (accessible to guests and authenticated users)

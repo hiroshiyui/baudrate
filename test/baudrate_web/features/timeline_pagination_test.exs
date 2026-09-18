@@ -29,7 +29,7 @@ defmodule BaudrateWeb.Features.FeedPaginationTest do
 
     for n <- 1..45 do
       {:ok, _} =
-        Federation.create_feed_item(%{
+        Federation.create_timeline_item(%{
           remote_actor_id: actor.id,
           activity_type: "Create",
           object_type: "Note",
@@ -50,11 +50,11 @@ defmodule BaudrateWeb.Features.FeedPaginationTest do
   feature "the pager switches pages, including from ?page=2", %{session: session, user: user} do
     session
     |> log_in_via_browser(user)
-    |> visit("/feed")
+    |> visit("/timeline")
     |> click(Query.css(".pagination-page", text: "2"))
     |> assert_has(Query.css(".pagination-current", text: "2"))
     |> assert_has(Query.text("Post number 21"))
-    |> visit("/feed?page=2")
+    |> visit("/timeline?page=2")
     |> click(Query.css(".pagination-page", text: "3"))
     |> assert_has(Query.css(".pagination-current", text: "3"))
     |> assert_has(Query.text("Post number 41"))
@@ -69,7 +69,7 @@ defmodule BaudrateWeb.Features.FeedPaginationTest do
     session =
       session
       |> log_in_via_browser(user)
-      |> visit("/feed")
+      |> visit("/timeline")
       |> execute_script("window.scrollTo(0, document.body.scrollHeight)")
       |> click(Query.css(".pagination-page", text: "2"))
       |> assert_has(Query.css(".pagination-current", text: "2"))
@@ -80,7 +80,7 @@ defmodule BaudrateWeb.Features.FeedPaginationTest do
     execute_script(
       session,
       """
-      const list = document.getElementById("feed-items");
+      const list = document.getElementById("timeline-items");
       const header = document.getElementById("site-header");
       return [Math.round(list.getBoundingClientRect().top - (header ? header.offsetHeight : 0)),
               list.contains(document.activeElement)];
@@ -99,7 +99,7 @@ defmodule BaudrateWeb.Features.FeedPaginationTest do
 
     session
     |> log_in_via_browser(user)
-    |> visit("/feed")
+    |> visit("/timeline")
     |> fill_in(Query.css("#quick-post textarea"), with: "Hello @#{prefix}")
     |> assert_has(Query.css("[role=option]", text: other.username))
   end

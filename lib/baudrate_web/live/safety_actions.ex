@@ -4,7 +4,7 @@ defmodule BaudrateWeb.SafetyActions do
   themselves: blocking and muting remote accounts, and reporting feed items,
   received direct messages and remote accounts.
 
-  Used by `FeedLive`, `ArticleLive` (remote comments) and `ConversationLive`
+  Used by `TimelineLive`, `ArticleLive` (remote comments) and `ConversationLive`
   together with `BaudrateWeb.SafetyComponents`. Every action is authorized in
   its context (`Baudrate.Auth` for blocks and mutes, `Baudrate.Moderation`
   for reports); these handlers only add rate limiting and flash messages.
@@ -19,7 +19,7 @@ defmodule BaudrateWeb.SafetyActions do
   alias Baudrate.{Auth, Federation, Moderation}
   alias BaudrateWeb.RateLimits
 
-  @report_types ~w(feed_item message remote_actor)
+  @report_types ~w(timeline_item message remote_actor)
 
   @doc "The report target types handled by `submit_report/2`."
   def report_types, do: @report_types
@@ -165,8 +165,8 @@ defmodule BaudrateWeb.SafetyActions do
     end
   end
 
-  defp file_report("feed_item", user, id, details),
-    do: Moderation.report_feed_item(user, id, details)
+  defp file_report("timeline_item", user, id, details),
+    do: Moderation.report_timeline_item(user, id, details)
 
   defp file_report("message", user, id, details), do: Moderation.report_message(user, id, details)
 

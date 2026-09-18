@@ -1,10 +1,10 @@
-defmodule Baudrate.Federation.FeedItem do
+defmodule Baudrate.Federation.TimelineItem do
   @moduledoc """
   Schema for storing incoming posts from followed remote actors.
 
-  Feed items capture `Create` and `Announce` activities that don't land in a
+  Timeline items capture `Create` and `Announce` activities that don't land in a
   local board, article comment thread, or DM conversation. They are keyed by
-  `ap_id` (one row per activity) and feed membership is determined at query
+  `ap_id` (one row per activity) and timeline membership is determined at query
   time by JOINing with `user_follows`. The `visibility` field records the
   ActivityPub visibility derived from `to`/`cc` addressing (`public`,
   `unlisted`, `followers_only`, or `direct`).
@@ -31,7 +31,7 @@ defmodule Baudrate.Federation.FeedItem do
   # this is the boundary backstop.
   @max_title_length 255
 
-  schema "feed_items" do
+  schema "timeline_items" do
     belongs_to :remote_actor, RemoteActor
     belongs_to :boosted_by_actor, RemoteActor
     belongs_to :link_preview, LinkPreview
@@ -55,10 +55,10 @@ defmodule Baudrate.Federation.FeedItem do
   @optional_fields ~w(title body body_html source_url attachments visibility deleted_at boosted_by_actor_id)a
 
   @doc """
-  Builds a changeset for a feed item.
+  Builds a changeset for a timeline item.
   """
-  def changeset(feed_item, attrs) do
-    feed_item
+  def changeset(timeline_item, attrs) do
+    timeline_item
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_inclusion(:activity_type, ~w(Create Announce))

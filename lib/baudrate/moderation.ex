@@ -6,7 +6,7 @@ defmodule Baudrate.Moderation do
   items, or received direct messages. Admins and moderators can review,
   resolve, or dismiss reports through the moderation queue. Authenticated
   users can submit reports from article pages, comment threads, user profile
-  pages, their feed, and their conversations. `report_feed_item/3`,
+  pages, their feed, and their conversations. `report_timeline_item/3`,
   `report_message/3` and `report_remote_actor/3` check that the reporter can
   see what they report.
   """
@@ -18,7 +18,7 @@ defmodule Baudrate.Moderation do
   alias Baudrate.Pagination
   alias Baudrate.Repo
   alias Baudrate.Content.{BoardArticle, Comment}
-  alias Baudrate.Federation.{FeedItem, RemoteActor}
+  alias Baudrate.Federation.{TimelineItem, RemoteActor}
   alias Baudrate.Messaging.DirectMessage
   alias Baudrate.Moderation.{Log, Report}
   alias Baudrate.Setup.User
@@ -78,7 +78,7 @@ defmodule Baudrate.Moderation do
   defp same_target(field, nil), do: dynamic([r], is_nil(field(r, ^field)))
   defp same_target(field, id), do: dynamic([r], field(r, ^field) == ^id)
 
-  @target_fields ~w(article_id comment_id remote_actor_id reported_user_id feed_item_id message_id)a
+  @target_fields ~w(article_id comment_id remote_actor_id reported_user_id timeline_item_id message_id)a
 
   # How long a report keeps its copies of removed content and reported
   # messages after it is closed (P1-D6), and how much of the text is kept.
@@ -99,13 +99,13 @@ defmodule Baudrate.Moderation do
     :message,
     # The article a reported comment is on, so the queue can link to it.
     comment: :article,
-    feed_item: :remote_actor
+    timeline_item: :remote_actor
   ]
 
   @doc """
   Checks whether the given reporter already has an open report for exactly
   the same target: every target field (`article_id`, `comment_id`,
-  `remote_actor_id`, `reported_user_id`, `feed_item_id`, `message_id`) must
+  `remote_actor_id`, `reported_user_id`, `timeline_item_id`, `message_id`) must
   match, and a field missing from `target_attrs` must be empty. So a report
   about one of an account's posts does not count as a report about the
   account. Returns `true` if a duplicate exists.
@@ -123,8 +123,8 @@ defmodule Baudrate.Moderation do
   end
 
   @doc """
-  Reports a feed item on behalf of a member. The member must be able to see
-  the item (`Federation.feed_item_accessible?/2`); its remote author is
+  Reports a timeline item on behalf of a member. The member must be able to see
+  the item (`Federation.timeline_item_accessible?/2`); its remote author is
   recorded as the reported actor, so moderators can "Send Flag".
 
   `details` is what the member filled in: `%{reason: …, category: …}`.
@@ -132,14 +132,14 @@ defmodule Baudrate.Moderation do
   Returns `{:ok, report}`, `{:error, :not_found}`, `{:error, :already_reported}`
   or `{:error, changeset}`.
   """
-  @spec report_feed_item(User.t(), term(), map()) ::
+  @spec report_timeline_item(User.t(), term(), map()) ::
           {:ok, Report.t()} | {:error, :not_found | :already_reported | Ecto.Changeset.t()}
-  def report_feed_item(%User{} = reporter, feed_item_id, details) do
-    with %FeedItem{} = item <- get_by_id(FeedItem, feed_item_id),
-         true <- Baudrate.Federation.feed_item_accessible?(reporter, item) do
+  def report_timeline_item(%User{} = reporter, timeline_item_id, details) do
+    with %TimelineItem{} = item <- get_by_id(TimelineItem, timeline_item_id),
+         true <- Baudrate.Federation.timeline_item_accessible?(reporter, item) do
       file_report(
         reporter,
-        %{feed_item_id: item.id, remote_actor_id: item.remote_actor_id},
+        %{timeline_item_id: item.id, remote_actor_id: item.remote_actor_id},
         details
       )
     else
@@ -303,7 +303,7 @@ defmodule Baudrate.Moderation do
   at most 100), and `:boards` — a list of board IDs, which narrows the page to
   reports about articles in those boards and comments on them. A board
   moderator sees nothing else: no reports about accounts, direct messages or
-  feed items, and none about other boards (`Content.moderated_board_ids/1`).
+  timeline items, and none about other boards (`Content.moderated_board_ids/1`).
 
   Returns `%{reports: […], page:, per_page:, total:, total_pages:}`.
   """

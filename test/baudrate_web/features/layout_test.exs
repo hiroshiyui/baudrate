@@ -171,7 +171,7 @@ defmodule BaudrateWeb.Features.LayoutTest do
       user: user,
       paths: [
         "/",
-        "/feed",
+        "/timeline",
         "/search?q=layout",
         "/boards/#{board.slug}",
         "/articles/#{article.slug}",
@@ -338,7 +338,7 @@ defmodule BaudrateWeb.Features.LayoutTest do
 
     for {body, n} <- Enum.with_index(bodies) do
       {:ok, _} =
-        Federation.create_feed_item(%{
+        Federation.create_timeline_item(%{
           remote_actor_id: actor.id,
           activity_type: "Create",
           object_type: "Note",
