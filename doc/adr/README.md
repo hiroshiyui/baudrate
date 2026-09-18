@@ -38,13 +38,13 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0020](0020-testing-strategy.md) | Deterministic, partitioned tests with a stubbable rate limiter | Accepted |
 | [0021](0021-setup-wizard-and-installation-key-gate.md) | First-run setup wizard gated by `INSTALLATION_KEY` | Accepted |
 | [0022](0022-step-up-reauthentication-for-second-factor-changes.md) | Changing an account's second factors requires step-up re-authentication | Accepted |
-| [0023](0023-data-export-threat-model.md) | Self-service data export is designed against data leakage first | Accepted |
+| [0023](0023-data-export-threat-model.md) | Self-service data export is designed against data leakage first | Accepted; names renamed by [0039](0039-the-personal-stream-is-a-timeline.md) |
 | [0024](0024-totp-codes-are-single-use-with-a-one-period-grace-window.md) | TOTP codes are single-use, with a one-period grace window | Accepted |
 | [0025](0025-account-migration.md) | Account migration (ActivityPub Move) is gated, delayed and reversible | Accepted; tables renamed by [0039](0039-the-personal-stream-is-a-timeline.md) |
-| [0026](0026-blocks-stop-interaction-locally.md) | A block stops interaction in both directions, enforced on this site only | Accepted |
+| [0026](0026-blocks-stop-interaction-locally.md) | A block stops interaction in both directions, enforced on this site only | Accepted; names renamed by [0039](0039-the-personal-stream-is-a-timeline.md) |
 | [0027](0027-ci-runs-in-a-pinned-attested-image.md) | CI runs in a digest-pinned, attested image built from verified inputs | Accepted; amended by [0036](0036-production-runs-releases-built-and-attested-in-ci.md) |
 | [0028](0028-backups-are-complete-folders-with-count-based-retention.md) | Backups are complete folders with count-based retention, pulled off-host | Accepted; amended by [0038](0038-encryption-keys-are-separate-and-rotatable.md) |
-| [0029](0029-sanctions-are-rows-with-an-explicit-end.md) | Sanctions are rows with an explicit end, enforced by one gate | Accepted |
+| [0029](0029-sanctions-are-rows-with-an-explicit-end.md) | Sanctions are rows with an explicit end, enforced by one gate | Accepted; names renamed by [0039](0039-the-personal-stream-is-a-timeline.md) |
 | [0030](0030-domain-blocks-are-rows-and-hiding-is-reversible.md) | Domain blocks are rows, and blocking hides content instead of deleting it | Accepted |
 | [0031](0031-terms-acceptance-is-recorded-and-versioned.md) | Terms acceptance is recorded and versioned, and the pause runs through the interaction gate | Accepted |
 | [0032](0032-rules-are-records-and-retired-not-deleted.md) | Site rules are records, retired rather than deleted, and a report may cite one | Accepted |

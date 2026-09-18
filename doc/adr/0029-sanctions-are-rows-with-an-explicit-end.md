@@ -1,6 +1,6 @@
 # 0029 — Sanctions are rows with an explicit end, enforced by one gate
 
-- **Status:** Accepted
+- **Status:** Accepted; the "feed replies" named below were renamed to timeline replies by [0039](0039-the-personal-stream-is-a-timeline.md)
 - **Date:** 2026-09-16
 - **Deciders:** Baudrate maintainers
 - **Related:** builds on [0016](0016-authorization-at-the-context-boundary.md)

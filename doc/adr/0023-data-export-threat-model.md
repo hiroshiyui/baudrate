@@ -1,6 +1,6 @@
 # 0023 — Self-service data export is designed against data leakage first
 
-- **Status:** Accepted
+- **Status:** Accepted; the `feed_item*` names used below were renamed to `timeline_*` by [0039](0039-the-personal-stream-is-a-timeline.md)
 - **Date:** 2026-09-14
 - **Deciders:** Baudrate maintainers
 - **Related:** builds on [0022](0022-step-up-reauthentication-for-second-factor-changes.md)

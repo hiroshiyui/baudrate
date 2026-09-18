@@ -1,6 +1,6 @@
 # 0026 — A block stops interaction in both directions, enforced on this site only
 
-- **Status:** Accepted
+- **Status:** Accepted; the `feed item` functions named below were renamed to `timeline_item_*` by [0039](0039-the-personal-stream-is-a-timeline.md)
 - **Date:** 2026-09-14
 - **Deciders:** Baudrate maintainers
 - **Related:** builds on [0016](0016-authorization-at-the-context-boundary.md) (authorization at the context boundary); follows the pattern of [0025](0025-account-migration.md) (read-only moved accounts)
