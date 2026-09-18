@@ -7,17 +7,18 @@ contributors. Items marked **(confirmed)** were checked against the code, and
 `lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
 line numbers were correct as of v1.18.1.
 
-Every open item belongs to one of Phases 2–8 below, or to the Backlog. Work
+**Current state (v1.28.1).** The review named five gaps: broken promises (the
+UI or docs saying something happens when it does not), moderation reach,
+operability, federation reach, and discovery and onboarding. The first three
+are closed — Phase 0 in v1.18.2, Phase 1 in v1.21.0, Phase 2 in v1.28.0 bar
+one 2A item that needs a notifier. **Phase 3 is next.**
+
+Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
 phase is summarised rather than listed — the detail lives in its ADRs and in
-`CHANGELOG.md`.
-
-The review found Baudrate already strong on security engineering, ADRs,
-accessibility plumbing and test coverage, and named five gaps: broken promises
-(the UI or docs saying something happens when it does not), moderation reach,
-operability, federation reach, and discovery and onboarding. The first three
-are closed — Phase 0 in v1.18.2, Phase 1 in v1.21.0, Phase 2 bar one 2A item
-that needs a notifier. Phases 3–8 carry the rest.
+`CHANGELOG.md`, and this file keeps only what is recorded nowhere else: the
+numbered decisions, the open items, and the risks the operator accepted
+knowingly.
 
 ---
 
@@ -37,7 +38,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
-| ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0, pending release), bar one 2A item that needs a notifier |
+| ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0), bar one 2A item that needs a notifier |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
@@ -91,14 +92,19 @@ out by P1-D1.
 | 2D | Observability: a loopback-only detailed health report (queues, worker heartbeats, disk, backup age; 503 on failure) and optional JSON logs with a metadata allow-list | v1.25.0 | [ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md) |
 | 2E | Deploy safety: releases built on Debian 12 in CI, smoke-tested on every push and attested; a rollback playbook that refuses an incompatible schema; a per-server Erlang cookie with distribution on loopback; Sobelow and mix_audit in CI | v1.26.0 | [ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md), [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md) |
 | 2G | Key separation: an `:auth` and a `:signing` key read from the environment, retired keys kept for reading, stored values that name their key and are bound to their row, a resumable rotation task with a census, a health check for a key that is gone, and key ids in the backup manifest | v1.27.0 | [ADR 0038](adr/0038-encryption-keys-are-separate-and-rotatable.md) |
-| 2F | Retention: hourly purges of untouched timeline items (90 days), `announces` (180 days) and soft-deleted articles and comments (90 days past `deleted_at`, with their image files); nothing a report references is deleted; autovacuum guidance for the two tables emptied in bulk | v1.28.0 (pending) | [ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md) |
+| 2F | Retention: hourly purges of untouched timeline items (90 days), `announces` (180 days) and soft-deleted articles and comments (90 days past `deleted_at`, with their image files); nothing a report references is deleted | v1.28.0 | [ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md) |
 | 2H | Drift: CI runs production's PostgreSQL 15, server and client, held together with Ansible by `verify-toolchain.sh`; the worker table, README clone URL and `INSTALLATION_KEY` fixed | v1.23.0 | `ci/image/README.md`, `doc/sysop.md` |
 
-Production separated its keys on 2026-09-18, the day 2G shipped: 117 stored
-secrets moved to the new keys, with none left unreadable. `SECRET_KEY_BASE` is
-**not** rotatable yet — the 130 recovery-code hashes still ride the old
-derivation and move only as members regenerate their codes, which is what
-`Baudrate.Release.key_census/0` is for.
+Production separated its keys on 2026-09-18 and has since rotated them once,
+end to end: 117 stored secrets re-keyed with none left unreadable, the retired
+key dropped from configuration, `encryption_keys` reporting `ok`. So the
+rotation path in `doc/sysop.md` is exercised, not theoretical.
+
+`SECRET_KEY_BASE` is **not** rotatable yet, and this is why: 130
+recovery-code hashes still ride the old `SECRET_KEY_BASE` derivation. A
+recovery code is a keyed HMAC and cannot be re-keyed without the code, so they
+move only as members regenerate theirs. `Baudrate.Release.key_census/0` is how
+to tell when that number reaches zero.
 
 **Deferred by the operator, outside 2H:** production allows SSH login as root
 (key only). `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets
@@ -133,25 +139,22 @@ instance, recorded so a later reader can tell a decision from an oversight.
 
 ### 2F — Retention — done
 
-Purges run hourly from `SessionCleaner`
-([ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md)): timeline items
-older than 90 days with no like, boost or reply; `announces` older than 180
-days; and articles and comments hard-deleted 90 days after `deleted_at`, with
-their image files unlinked. Nothing a report points at is deleted at any age.
-Autovacuum guidance for the two tables the purges empty in bulk is in
-`doc/sysop.md`.
+Shipped in v1.28.0; the design and its reasoning are in
+[ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md), the periods and
+the dry run in `doc/sysop.md`. First production pass 2026-09-18: 717 timeline
+items, 93 announces, 48 articles, 287 comments, 14 files, then steady state.
 
-P2-D4 said "nobody has bookmarked or interacted with", but `bookmarks` only
-targets articles and comments — a timeline item cannot be bookmarked — so the
-keep rule is likes, boosts and replies.
-**Still never purge `bot_syndication_items`, or the articles a bot created.** The
-ledger holds the `(bot_id, guid)` record of what each bot has posted; delete a
-row and that bot republishes the entry. The two tables were `feed_items` and
-`bot_feed_items`, one character apart, until
-[ADR 0039](adr/0039-the-personal-stream-is-a-timeline.md) renamed the first to
-`timeline_items` and [ADR 0041](adr/0041-rss-and-atom-are-syndication.md) the
-second to `bot_syndication_items`. The near-miss is why this is written in the
-ADRs and in the retention module, not left to the names.
+Two things this roadmap is the only record of:
+
+- **P2-D4 said "nobody has bookmarked or interacted with", but `bookmarks`
+  only targets articles and comments** — a timeline item cannot be bookmarked
+  — so the keep rule is likes, boosts and replies.
+- **Never purge `bot_syndication_items`,** the `(bot_id, guid)` ledger of what
+  each bot has posted: delete a row and that bot republishes the entry. It was
+  one character from `feed_items` until ADRs
+  [0039](adr/0039-the-personal-stream-is-a-timeline.md) and
+  [0041](adr/0041-rss-and-atom-are-syndication.md) renamed both, and the
+  near-miss is why the exclusion is written down rather than left to the names.
 
 ### Decisions (made 2026-09-17)
 
@@ -162,38 +165,27 @@ ADRs and in the retention module, not left to the names.
 
 ### Settled — the permission catalogue is documentation (ADR 0042)
 
-Investigated 2026-09-18, and the answer is *neither wire them nor delete them*:
+Investigated 2026-09-18. The answer was *neither wire the unenforced
+permissions nor delete them*:
 [ADR 0042](adr/0042-roles-are-ordered-and-capabilities-are-not-configurable.md)
-records that roles are a fixed, totally ordered set and capabilities are not
-configurable.
+records that roles are a fixed, totally ordered set of four and that
+capabilities are not configurable — the matrix has no write path, there is no
+roles screen, and only four of eleven permissions are consulted anywhere. Two
+authorization defects the audit turned up were fixed in v1.28.1 (a ban checked
+neither the permission nor the rank rule; article visibility had three
+implementations, two of them missing the remote refusals).
 
-What the audit found. `role_permissions` has **no write path** — nothing
-outside `Setup.seed_roles_and_permissions/0` edits it, and there is no roles
-admin UI — so `Setup.has_permission?/2` is a constant function of the
-hard-coded map, and every permission check is an indirect way of asking
-whether a role is `admin`. **Seven** of the eleven permissions enforce
-nothing, not five: `moderator.manage_content` and `guest.view_content` passed
-the acceptance gate only because `lib/baudrate/setup/permission.ex` quotes
-them as examples in its `@moduledoc`. The gate now strips heredocs and `@doc`
-strings before searching, so documentation can never again stand in for
-enforcement, and it names all seven.
+Left open, each needing its own decision rather than a sweep:
 
-The dominant mechanism is the **role name**: 29 authorization decisions
-compare `role.name` against `"admin"` or `["admin", "moderator"]` — more than
-the sanctions gate, the role-level system and the permission system combined.
-ADR 0042 accepts that as legitimate rather than something to refactor away.
-
-Still open, deliberately, and each needs its own decision rather than a sweep:
-
-- Whether to ever build `/admin/roles` and wire the seven. Not foreclosed; it
-  would supersede 0042. Note the hazard the earlier draft of this entry
-  identified: gating `/admin/settings` on a permission an existing role row
-  happens to lack locks an operator out of their own instance, so wiring wants
-  a migration that backfills grants, not just a check.
-- Whether `Baudrate.Content.Feed` should be renamed or split — a fifth sense
-  of "feed" (recent-content listings plus per-user statistics), left alone on
-  2026-09-18 because after ADR 0041 it collides with nothing and no single
-  noun covers both halves.
+- [ ] **Build `/admin/roles` and wire the seven dead permissions.** Not
+  foreclosed; it would supersede 0042. Hazard to design around: gating
+  `/admin/settings` on a permission an existing role row happens to lack locks
+  an operator out of their own instance, so wiring wants a migration that
+  backfills grants, not just a check.
+- [ ] **Rename or split `Baudrate.Content.Feed`** — recent-content listings
+  plus per-user statistics, a fifth sense of "feed". Left alone because after
+  ADR 0041 it collides with nothing and no single noun covers both halves;
+  splitting it is a cohesion change, not a naming one.
 
 ---
 
@@ -532,58 +524,18 @@ Kept so the review is complete. None of these are scheduled; propose moving one 
 
 ## Recently completed
 
-Full detail is in `CHANGELOG.md`; this is the short version of where the
-project has been.
+`CHANGELOG.md` has the detail and each ADR has the reasoning; this is only the
+shape of where the project has been.
 
-- **v1.27.0 — Phase 2G.** Secrets at rest are keyed per class, and every key
-  can be rotated
-  ([ADR 0038](adr/0038-encryption-keys-are-separate-and-rotatable.md)).
-  `SECRET_KEY_BASE` had keyed all four at-rest secrets and could never be
-  changed; two of the four were written down nowhere — the recovery-code
-  hashes, which made the documented remedy for a lost TOTP secret circular,
-  and the Web Push key. Stored values now name the key that wrote them and are
-  bound to their row, so a ciphertext copied onto another account no longer
-  decrypts.
-- **v1.26.0 — Phase 2E.** Releases are built, smoke-tested and attested in CI
-  on production's Debian release
-  ([ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md)),
-  with a rollback playbook that refuses a release the database has outgrown. It
-  also closed a live hole: the co-hosted account could read Baudrate's Erlang
-  cookie while distribution listened on every interface, which was code
-  execution as the service account for any other account on the host — the
-  firewall kept it off the internet, not off the machine. Installing the tarball then turned out to
-  cost 13 minutes against 2 for an incremental build, so
-  [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md) reversed that
-  one decision and the deploy compiles on the server again.
-- **v1.25.0 — Phase 2D.** A detailed health report on a loopback-only listener
-  ([ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md)) — queues,
-  worker heartbeats, disk and backup age, 503 when a check fails — and optional
-  JSON logs with a metadata allow-list.
-- **v1.24.0 — Phase 2C.** A change and its outgoing activities commit together
-  ([ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md)),
-  so a restart no longer drops them; deliveries wake on commit, a server that is
-  down pauses behind a per-domain circuit breaker, and the inbox stores an
-  activity and answers at once while a worker processes it, one per remote
-  account in order.
-- **v1.23.0 — Phase 2B and 2H.** Baudrate officially runs on one node
-  ([ADR 0033](adr/0033-baudrate-runs-on-one-node.md)); the old guide had called
-  running several "idempotent" when it would have delivered every job twice
-  and applied a domain block on one node only. CI tests production's
-  PostgreSQL 15, server and client. The backup puller verifies one older copy
-  per run, and no longer pulls a backup still being built.
-- **v1.22.x — backups that prove they are intact, and policy documents.**
-  Per-file checksums verified off-host; bilingual privacy policy and end user
-  agreement written from the code; plus two ways the accept card failed
-  silently — a re-accept checkbox that took two clicks, and an id ad blockers
-  hid because `#policy-accept` looks like a cookie-consent bar.
-- **v1.19.x – v1.21.0 — Phase 1**, trust and safety: blocks that stop
-  interaction both ways, a report queue board moderators can use, sanctions
-  with an explicit end, domain blocks as reversible rows with per-actor
-  suspension, and public terms and rules with recorded, versioned acceptance
-  (ADRs [0026](adr/0026-blocks-stop-interaction-locally.md),
-  [0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md)–[0032](adr/0032-rules-are-records-and-retired-not-deleted.md)).
-  Production backups started in v1.19.5.
-- **v1.17.0 – v1.18.2 — data portability** (self-service export,
-  [ADR 0023](adr/0023-data-export-threat-model.md), and account migration,
-  [ADR 0025](adr/0025-account-migration.md); import was dropped) and **Phase
-  0**, the twelve correctness bugs from the 2026-09-14 review.
+| Release | What | Recorded in |
+|---|---|---|
+| v1.28.1 | Two authorization fixes from the RBAC investigation: a ban checked neither the permission nor the rank rule; article visibility had three implementations, two missing the remote refusals | [0042](adr/0042-roles-are-ordered-and-capabilities-are-not-configurable.md), [0043](adr/0043-the-outbound-federation-gate-and-withdrawals.md) |
+| v1.28.0 | Phase 2F retention; the personal stream became the timeline and RSS/Atom became syndication; the outbound board gate completed at five surfaces; a security audit, an a11y sweep and a code review | [0039](adr/0039-the-personal-stream-is-a-timeline.md), [0040](adr/0040-retention-deletes-what-nobody-touched.md), [0041](adr/0041-rss-and-atom-are-syndication.md) |
+| v1.27.0 | Phase 2G: secrets at rest keyed per class and every key rotatable. `SECRET_KEY_BASE` had keyed all four at-rest secrets and could never be changed; two were written down nowhere — the recovery-code hashes, which made the documented remedy for a lost TOTP secret circular, and the Web Push key | [0038](adr/0038-encryption-keys-are-separate-and-rotatable.md) |
+| v1.26.0 | Phase 2E: releases built, smoke-tested and attested in CI on production's Debian. Closed a live hole — the co-hosted account could read the Erlang cookie while distribution listened on every interface. Installing the tarball then cost 13 minutes against 2 for an incremental build, so the deploy compiles on the server again | [0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md), [0037](adr/0037-the-deploy-builds-on-the-server-again.md) |
+| v1.25.0 | Phase 2D: a loopback-only detailed health report, and optional JSON logs with a metadata allow-list | [0035](adr/0035-operational-visibility-stays-on-the-host.md) |
+| v1.24.0 | Phase 2C: a change and its outgoing activities commit together, so a restart no longer drops them; deliveries wake on commit, a per-domain circuit breaker, an inbound queue ordered per remote account | [0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md) |
+| v1.23.0 | Phase 2B and 2H: one node officially — the old guide called running several "idempotent" when it would have delivered every job twice; CI tests production's PostgreSQL 15, server and client | [0033](adr/0033-baudrate-runs-on-one-node.md) |
+| v1.22.x | Backups that prove they are intact (per-file checksums verified off-host); bilingual privacy policy and EUA; two ways the accept card failed silently, including an id ad blockers hid because `#policy-accept` looks like a cookie bar | [0028](adr/0028-backups-are-complete-folders-with-count-based-retention.md) |
+| v1.19.x–v1.21.0 | Phase 1, trust and safety: blocks that stop interaction both ways, a report queue board moderators can use, sanctions with an explicit end, domain blocks as reversible rows, public terms and rules with versioned acceptance. Production backups started in v1.19.5 | [0026](adr/0026-blocks-stop-interaction-locally.md), [0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md)–[0032](adr/0032-rules-are-records-and-retired-not-deleted.md) |
+| v1.17.0–v1.18.2 | Data portability (self-service export and account migration; import was dropped) and Phase 0, the twelve correctness bugs from the 2026-09-14 review | [0023](adr/0023-data-export-threat-model.md), [0025](adr/0025-account-migration.md) |
