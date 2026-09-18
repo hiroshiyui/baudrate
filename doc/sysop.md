@@ -35,8 +35,8 @@ own Erlang runtime and NIFs.
 
 | Requirement | Version | Purpose |
 |-------------|---------|---------|
-| Elixir | 1.17+ | Application runtime |
-| Erlang/OTP | 26+ | VM |
+| Elixir | 1.17+ to run; **build with the version in `.tool-versions`** | Application runtime |
+| Erlang/OTP | 26+ to run; **build with the version in `.tool-versions`** | VM |
 | PostgreSQL | 15+ | Database (requires `pg_trgm` extension) |
 | libvips | any | Avatar and image processing |
 | Rust toolchain | stable | Three Rustler NIFs: HTML sanitizer (Ammonia), HTML parser (scraper), feed parser (feedparser-rs) |
@@ -523,14 +523,15 @@ Passkey, Touch ID) as an additional second factor at `/profile`.
 | Key | Value |
 |-----|-------|
 | `origin` | Full origin including scheme and port, e.g. `"https://forum.example.com"` |
-| `rp_id` | eTLD+1 of your domain, e.g. `"example.com"` |
-| `attestation` | `:none` (no attestation verification required) |
-| `user_presence` | `true` |
-| `user_verification` | `:preferred` |
+| `rp_id` | The host, taken verbatim from `PHX_HOST` |
 
-`origin` and `rp_id` are read from `runtime.exs` and default to the value of
+Those are the only two keys Baudrate sets, both in `runtime.exs`, both from
 `PHX_HOST`. They must match `window.location.origin` as seen by the browser —
 a mismatch causes all WebAuthn operations to fail with a client-side error.
+
+Attestation, user presence and user verification are left at the `wax_`
+library's own defaults and are not configured here; do not expect to find them
+in any config file.
 
 ---
 
@@ -638,7 +639,7 @@ a reason and a date, and the account's whole history is one query on
 A global moderator may issue any of the three sanctions for **at most 30
 days**; an admin has no cap and can silence indefinitely. Nobody can sanction
 themselves, and nobody can sanction an account at or above their own role
-level, whatever the permissions are configured to be.
+level — and both rules hold in the context, not the UI.
 
 **Restrictions end by the clock, not by a job.** A silence set to end on
 Friday stops on Friday even if the hourly cleanup has not run for a week; the
@@ -1574,7 +1575,7 @@ A one-off backup as two files, a dump and a `.tar.gz` of the uploads:
 ```bash
 cd /opt/baudrate/current
 sudo -u baudrate sh -c 'set -a; . /opt/baudrate/env/baudrate.env; set +a;
-  ./bin/baudrate eval "Baudrate.Release.backup(\"/root/manual-backup\")"'
+  ./bin/baudrate eval "Baudrate.Release.backup(\"/var/backups/baudrate/manual\")"'
 #   format: "sql" writes plain SQL instead of pg_restore's custom format
 ```
 
@@ -1625,7 +1626,7 @@ To install it by hand, verify it first. `--source-digest` is the commit the tag 
 clone, so a tag moved on GitHub after you fetched it fails verification:
 
 ```bash
-TAG=v1.28.0
+TAG=v1.28.1
 gh release download "$TAG" --repo hiroshiyui/baudrate --pattern "baudrate-${TAG#v}-debian12-x86_64.tar.gz"
 gh attestation verify "baudrate-${TAG#v}-debian12-x86_64.tar.gz" --repo hiroshiyui/baudrate \
   --signer-workflow hiroshiyui/baudrate/.github/workflows/release.yml \
@@ -1732,7 +1733,7 @@ this step, pages load without CSS styling and JavaScript doesn't execute.
 #### Build steps
 
 **Before building**, ensure the `version` in `mix.exs` matches the release tag
-(e.g. `"1.28.0"` for tag `v1.28.0`). This version appears in the release
+(e.g. `"1.28.1"` for tag `v1.28.1`). This version appears in the release
 directory name (`lib/baudrate-<version>/`) and in runtime diagnostics.
 
 ```bash
@@ -1839,9 +1840,11 @@ The Ansible deploy playbook minimises downtime through three mechanisms:
    running code tolerates, so only the swap and restart are visible. A migration
    that **renames or removes** something is different: between the migration and
    the restart the old code queries objects that are gone, and the affected pages
-   error. v1.28.0's rename of `feed_items` to `timeline_items` and its four
-   satellite tables is such a migration — the personal timeline and its likes,
-   boosts and replies error for the length of that window. Nothing is lost, but
+   error. v1.28.0 shipped **two** such migrations: `feed_items` to
+   `timeline_items` with its four satellite tables (so the personal timeline and
+   its likes, boosts and replies error for the length of the window), and
+   `bot_feed_items` to `bot_syndication_items` (so the syndication worker,
+   which writes that ledger, errors too). Nothing is lost, but
    for a release whose notes mention a rename, expect a moment's disruption, and
    note that rolling back across one needs the pre-deploy dump
    ([Rolling back a deploy](#rolling-back-a-deploy)): `-e force=true` does not
@@ -2375,7 +2378,10 @@ If you put one in front anyway:
 | `/admin/data-exports` | Data export request history (admin-only, read-only; no export-on-behalf) |
 | `/admin/verify` | Admin TOTP re-verification (sudo mode, 10-min timeout) |
 
-Every `/admin` page needs sudo mode. Most are admin-only; `/admin/moderation`,
+Every `/admin` page needs sudo mode **except `/admin/verify`**, which is where
+you go to satisfy it — it sits in the `:authenticated` live session, not
+`:admin`, deliberately, because gating the verification page on verification is
+a redirect loop (ADR 0009). Most are admin-only; `/admin/moderation`,
 `/admin/pending-users` (refusing a registration, not approving one) and
 `/admin/users/:id` are also open to global moderators, whose individual actions
 are checked against their permissions. Board moderators have their own queue at

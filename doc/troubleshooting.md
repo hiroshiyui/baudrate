@@ -475,6 +475,52 @@ moderators cannot judge what they cannot see.
 
 ---
 
+## Syndication bots
+
+### The feeds stopped
+
+A bot that fails backs off **exponentially, up to a day**:
+`min(5 × 2^(errors−1), 1440)` minutes, so the fifth consecutive failure pushes
+the next attempt out by 80 minutes and the ninth by the full 24 hours
+(`Bots.mark_fetch_error/2`). A bot that has been failing for a while therefore
+looks idle rather than broken — check `error_count` and `last_error` on
+`/admin/bots` before assuming the worker is stuck.
+
+Two things reset it: fixing the feed and waiting for the next attempt, or the
+reset control on `/admin/bots`, which clears the counter and makes the bot due
+immediately.
+
+What to grep:
+
+```bash
+journalctl -u baudrate --since "1 hour ago" | grep bots.syndication_feed_worker
+```
+
+That prefix changed in v1.28.0 — it was `bots.feed_worker` before
+[ADR 0041](adr/0041-rss-and-atom-are-syndication.md) renamed the RSS
+vocabulary to "syndication". The worker's heartbeat key in the health report
+changed with it, to `syndication_feed_worker`.
+
+### A bot's avatar never appears
+
+Favicon fetching gives up after **three** failures
+(`Bots.avatar_needs_refresh?/1` returns `false` once `favicon_fail_count >= 3`)
+and otherwise refreshes weekly. A site that blocks the fetch, or serves no
+favicon, will leave the bot on its default avatar permanently. Upload one by
+hand on `/admin/bots` if it matters.
+
+### An entry was posted twice, or not at all
+
+Deduplication is the `(bot_id, guid)` ledger in `bot_syndication_items`. A
+publisher that changes an entry's `<guid>` gets a second post — that is the
+feed's doing, not a bug here, and `Bots.already_posted?/3` also checks the URL
+to catch the common case. **Never delete rows from that table**: a deleted row
+is an entry the bot will publish again, and retention deliberately never
+touches it
+([ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md)).
+
+---
+
 ## Authentication & Sessions
 
 ### Session configuration
