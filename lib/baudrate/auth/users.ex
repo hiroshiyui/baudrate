@@ -380,8 +380,19 @@ defmodule Baudrate.Auth.Users do
       |> User.role_changeset(%{role_id: role_id})
       |> Repo.update()
       |> case do
-        {:ok, user} -> {:ok, Repo.preload(user, :role, force: true)}
-        error -> error
+        {:ok, user} ->
+          # Revoked like a ban, and for the same reason: authority is read from
+          # the user struct loaded at mount, and `on_mount` never runs again.
+          # A demoted admin's open `/admin/users` and `/invites` tabs went on
+          # banning accounts and minting unlimited invite codes until they
+          # happened to reload. `delete_all_sessions_for_user/1` broadcasts
+          # "disconnect" to `live_socket_id`, so those sockets die at once.
+          Baudrate.Auth.Sessions.delete_all_sessions_for_user(user.id)
+
+          {:ok, Repo.preload(user, :role, force: true)}
+
+        error ->
+          error
       end
     else
       {:error, :unauthorized}

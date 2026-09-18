@@ -249,7 +249,11 @@ defmodule BaudrateWeb.AuthHooks do
     user = socket.assigns[:current_user]
 
     cond do
-      # Non-admin users (e.g. moderators) pass through without TOTP re-verification
+      # Non-admin users (e.g. moderators) pass through without TOTP
+      # re-verification. This is deliberate and documented in CLAUDE.md and
+      # in the router; a security audit flagged it, but widening it would
+      # change how every moderator works, so it stays a decision for the
+      # operator rather than a fix.
       is_nil(user) || user.role.name != "admin" ->
         {:cont, socket}
 
@@ -263,13 +267,20 @@ defmodule BaudrateWeb.AuthHooks do
          )
          |> redirect(to: "/profile")}
 
-      # Check if admin_totp_verified_at is present and within timeout
       true ->
         verified_at = session["admin_totp_verified_at"]
         now = System.system_time(:second)
 
         if is_integer(verified_at) && now - verified_at < @admin_totp_timeout_seconds do
-          {:cont, socket}
+          # The mount-time check was the only one: `on_mount` never runs again,
+          # so a socket opened inside the window kept accepting admin events
+          # for as long as it stayed connected — hours after the ten minutes
+          # expired. `ProfileLive` already guards its own unlock this way and
+          # says why: events can be sent regardless of what is rendered.
+          {:cont,
+           socket
+           |> assign(:admin_sudo_expires_at, verified_at + @admin_totp_timeout_seconds)
+           |> attach_hook(:admin_sudo_deadline, :handle_event, &enforce_admin_sudo/3)}
         else
           return_to = admin_return_path(socket)
 
@@ -345,6 +356,17 @@ defmodule BaudrateWeb.AuthHooks do
   # the conn on the HTTP render and from the socket's connect info once
   # connected (the page the socket was opened on). Anything outside `/admin/`
   # falls back to the settings page; `/admin/verify` re-sanitizes it anyway.
+  defp enforce_admin_sudo(_event, _params, socket) do
+    if System.system_time(:second) < socket.assigns[:admin_sudo_expires_at] do
+      {:cont, socket}
+    else
+      {:halt,
+       socket
+       |> put_flash(:error, gettext("Please verify your identity again to continue."))
+       |> push_navigate(to: "/admin/verify")}
+    end
+  end
+
   defp admin_return_path(socket) do
     case get_connect_info(socket, :uri) do
       %URI{path: "/admin/" <> _ = path, query: query} when query in [nil, ""] -> path
