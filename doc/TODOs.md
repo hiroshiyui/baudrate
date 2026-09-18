@@ -171,21 +171,22 @@ permissions nor delete them*:
 records that roles are a fixed, totally ordered set of four and that
 capabilities are not configurable — the matrix has no write path, there is no
 roles screen, and only four of eleven permissions are consulted anywhere. Two
-authorization defects the audit turned up were fixed in v1.28.1 (a ban checked
-neither the permission nor the rank rule; article visibility had three
-implementations, two of them missing the remote refusals).
+authorization defects the audit turned up were fixed in v1.28.1 and v1.28.2 (a
+ban checked neither the permission nor the rank rule; article visibility had
+four implementations, three of them missing the remote refusals — the edit
+history page was the fourth and was found only after the first fix claimed
+three).
 
-Left open, each needing its own decision rather than a sweep:
+The two follow-on questions are closed, not open:
 
-- [ ] **Build `/admin/roles` and wire the seven dead permissions.** Not
-  foreclosed; it would supersede 0042. Hazard to design around: gating
-  `/admin/settings` on a permission an existing role row happens to lack locks
-  an operator out of their own instance, so wiring wants a migration that
-  backfills grants, not just a check.
-- [ ] **Rename or split `Baudrate.Content.Feed`** — recent-content listings
-  plus per-user statistics, a fifth sense of "feed". Left alone because after
-  ADR 0041 it collides with nothing and no single noun covers both halves;
-  splitting it is a cohesion change, not a naming one.
+- **No `/admin/roles` screen.** ADR 0042 stands. If it is ever revisited it
+  supersedes 0042 and needs a migration that backfills grants, not just a
+  check: gating `/admin/settings` on a permission an existing role row happens
+  to lack locks an operator out of their own instance.
+- **`Baudrate.Content.Feed` keeps its name** (operator's call, 2026-09-19).
+  It is recent-content listings plus per-user statistics — a fifth sense of
+  "feed" — but after ADR 0041 it collides with nothing, and splitting it would
+  be a cohesion change, not a naming one.
 
 ---
 
