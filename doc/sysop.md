@@ -1587,7 +1587,7 @@ MIX_ENV=prod mix release
 ```
 
 The release is written to `_build/prod/rel/baudrate/`. It includes the compiled
-BEAM code, the three Rust NIF `.so` files, ERTS, and the overlay scripts
+BEAM code, ERTS, the NIF `.so` files (Baudrate's three, plus its dependencies' — libvips, bcrypt, comrak), and the overlay scripts
 (`bin/server`, `bin/migrate`).
 
 > **Note:** When upgrading versions, remove `_build/prod/rel/` before running

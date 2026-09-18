@@ -80,7 +80,7 @@ out by P1-D1.
 
 **Goal.** No data loss goes unnoticed, the operator hears about problems before users do, and a bad deploy can be undone.
 
-**Done when:** production takes verified backups on a schedule and a restore has been rehearsed on a fresh host; a delivery or inbound backlog, a stalled worker or a full disk shows up in the detailed health report; no federated activity is lost to a restart; a release can be rolled back with one command. A fifth criterion — "the production host no longer compiles releases" — was withdrawn by [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md): moving the artifact cost more than compiling it.
+**Done when:** production takes verified backups on a schedule and a restore has been rehearsed on a fresh host; a delivery or inbound backlog, a stalled worker or a full disk shows up in the detailed health report; no federated activity is lost to a restart; a release can be rolled back with one command. One of the original five — "the production host no longer compiles releases" — was withdrawn by [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md): moving the artifact cost more than compiling it.
 
 ### Done
 
@@ -491,8 +491,9 @@ project has been.
   ([ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md)),
   with a rollback playbook that refuses a release the database has outgrown. It
   also closed a live hole: the co-hosted account could read Baudrate's Erlang
-  cookie while distribution listened on every interface, which was remote code
-  execution as the service account. Installing the tarball then turned out to
+  cookie while distribution listened on every interface, which was code
+  execution as the service account for any other account on the host — the
+  firewall kept it off the internet, not off the machine. Installing the tarball then turned out to
   cost 13 minutes against 2 for an incremental build, so
   [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md) reversed that
   one decision and the deploy compiles on the server again.
