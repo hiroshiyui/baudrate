@@ -927,7 +927,11 @@ URLs are allowed. The `AttachmentExtractor` extracts the attachment metadata and
 
 ### Media Proxy
 
-No page may emit a subresource pointing at a host we do not control: that would
+No page may emit a subresource pointing at a host we do not control — with one
+deliberate, user-initiated exception, the video player in
+[ADR 0045](adr/0045-the-video-player-loads-on-a-click.md), which is built by a
+hook on the reader's click and is never in the rendered document. Otherwise:
+that would
 disclose every viewer's IP address, User-Agent, and reading times to every remote
 instance whose content appears on the page. CSP enforces it with
 `img-src 'self' data: blob:`.
@@ -2173,7 +2177,7 @@ Exposed via `Federation.fetch_remote_object/1` (preview) and `Federation.lookup_
 - Optional authorized fetch mode — require HTTP signatures on GET requests to AP endpoints (exempt: WebFinger, NodeInfo)
 - Signed outbound GET requests — actor resolution falls back to signed GET when remote instances require authorized fetch
 - Session cookie `secure` flag handled by `force_ssl` / `Plug.SSL` in production
-- CSP `img-src` allows only `'self' data: blob:` — remote actor avatars and every other remote image are served through the local media proxy (`Baudrate.Media.Proxy`), so no page issues a third-party subresource request
+- CSP `img-src` allows only `'self' data: blob:` — remote actor avatars and every other remote image are served through the local media proxy (`Baudrate.Media.Proxy`), so no page issues a third-party subresource request on render. `frame-src` admits exactly one origin, `https://www.youtube-nocookie.com`, for the click-to-load video player ([ADR 0045](adr/0045-the-video-player-loads-on-a-click.md)); `no_hotlink_test.exs` asserts that directive is unchanged, so a second embed origin fails the build
 - CSP `script-src` is `'self'` plus one hash: the root layout's theme bootstrap (`BaudrateWeb.ThemeBootstrap`), hashed at compile time from the bytes the layout renders. Never add `'unsafe-inline'`; a new inline script needs its own hash the same way
 
 **Public API:**
@@ -3129,6 +3133,7 @@ Content Creation → Extract First URL → Async Fetch OG Metadata → Store Lin
 
 - **SSRF**: Reuses `HTTPClient` (HTTPS-only, private IP rejection, DNS pinning)
 - **Image proxy**: Remote images are never loaded in the browser — fetched server-side, re-encoded to WebP, served from `/uploads/link_preview_images/`
+- **YouTube previews are click-to-load** ([ADR 0045](adr/0045-the-video-player-loads-on-a-click.md)): a YouTube URL renders the thumbnail the fetcher already stored locally, plus a play button whose label says the player comes from YouTube. `YouTubeEmbedHook` builds the `<iframe>` on that click, so a reader who scrolls past a video makes no request to Google. The container needs `phx-update="ignore"` (a LiveView patch would otherwise replace a playing video with the poster) and a unique `id` per page — previews are deduplicated by URL, so two comments linking the same video share one row and callers pass a scoped id
 - **XSS**: All metadata sanitized with `Sanitizer.Native.strip_tags/1`, control chars stripped, truncated
 - **Rate limiting**: 10 fetches/min per target domain + 5/min per posting user
 - **Domain blocks**: Checked before fetching

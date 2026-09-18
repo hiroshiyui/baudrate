@@ -1,6 +1,8 @@
 # 0006 — No third-party subresources: proxy all remote media
 
-- **Status:** Accepted
+- **Status:** Accepted; the one thing a reader may deliberately load from
+  elsewhere — an embedded video player, behind a click — is recorded in
+  [0045](0045-the-video-player-loads-on-a-click.md)
 - **Date:** 2026-08-08 (v1.12.0)
 
 ## Context
