@@ -111,8 +111,9 @@ deploy builds the tag on the server (see the
 
 Recommended for operations: `HEALTH_DETAIL_PORT` serves a detailed health
 report (database, federation queues, workers, disk, backup age, encryption
-keys) on `127.0.0.1` only, for a monitor on the server to poll, and `LOG_FORMAT=json` switches the logs to one JSON object
-per line (see the [SysOp Guide](doc/sysop.md#detailed-health-report)).
+keys) on `127.0.0.1` only, and tells the admins when one of them has been
+failing for over an hour. `LOG_FORMAT=json` switches the logs to one JSON
+object per line (see the [SysOp Guide](doc/sysop.md#detailed-health-report)).
 
 TOTP secrets, recovery-code hashes, ActivityPub actor private keys and the Web
 Push key are encrypted or hashed at rest. Their keys default to being derived
