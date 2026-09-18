@@ -310,4 +310,23 @@ defmodule BaudrateWeb.FeedControllerTest do
 
     article
   end
+
+  describe "If-Modified-Since" do
+    test "a malformed date does not crash the feed", %{conn: conn} do
+      # The regex matches day 32 and hour 99, so `Date.new!`/`Time.new!` turned
+      # this into an ArgumentError and a 500 — unauthenticated, on every feed.
+      for bad <- [
+            "Sun, 32 Feb 2026 05:57:22 GMT",
+            "Sun, 23 Feb 2026 99:57:22 GMT",
+            "not a date at all"
+          ] do
+        conn =
+          conn
+          |> Plug.Conn.put_req_header("if-modified-since", bad)
+          |> get(~p"/feeds/rss")
+
+        assert conn.status in [200, 304]
+      end
+    end
+  end
 end

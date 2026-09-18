@@ -64,7 +64,21 @@ defmodule Baudrate.Logger.JSONFormatter do
 
     [Jason.encode_to_iodata!(fields), ?\n]
   rescue
-    _ -> ["{\"level\":\"error\",\"message\":\"log event could not be formatted\"}", ?\n]
+    _ -> [fallback_line(), ?\n]
+  catch
+    # `rescue` covers exceptions raised in the body, not a `throw` or `exit`
+    # from encoding someone else's term. `:logger` removes a handler that
+    # fails, which would end all logging — the one thing this must never do.
+    _kind, _value -> [fallback_line(), ?\n]
+  end
+
+  # A log event without `:level` or `:meta` (a hand-rolled `:logger.log/2`, or
+  # a future OTP change) would not match the clause above, and a head-match
+  # failure happens before `rescue` can catch anything.
+  def format(_event, _config), do: [fallback_line(), ?\n]
+
+  defp fallback_line do
+    "{\"level\":\"error\",\"message\":\"log event could not be formatted\"}"
   end
 
   defp put_metadata(fields, meta) do

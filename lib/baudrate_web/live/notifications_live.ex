@@ -18,7 +18,8 @@ defmodule BaudrateWeb.NotificationsLive do
       notification_text: 1,
       notification_icon: 1,
       translate_report_category: 1,
-      format_relative_time: 1
+      format_relative_time: 1,
+      parse_id: 1
     ]
 
   # Account security notices link to /profile; moderation notices do not, so
@@ -72,7 +73,13 @@ defmodule BaudrateWeb.NotificationsLive do
 
     user_id = user.id
 
-    case Notification.get_notification(id) do
+    notification =
+      case parse_id(id) do
+        {:ok, notification_id} -> Notification.get_notification(notification_id)
+        :error -> nil
+      end
+
+    case notification do
       %{user_id: ^user_id} = notif ->
         Notification.mark_as_read(notif)
 

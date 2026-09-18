@@ -139,13 +139,15 @@ defmodule Baudrate.Auth.Users do
             attrs
             |> Map.delete("status")
             |> Map.delete("invite_code")
-            |> Map.put("invited_by_id", invite.created_by_id)
+            |> Map.delete("invited_by_id")
 
           changeset =
             %User{}
             |> User.registration_changeset(reg_attrs)
             |> User.accept_terms()
             |> Ecto.Changeset.put_change(:status, "active")
+            # From the validated invite, never from the form.
+            |> Ecto.Changeset.put_change(:invited_by_id, invite.created_by_id)
 
           Repo.transaction(fn ->
             case Repo.insert(changeset) do

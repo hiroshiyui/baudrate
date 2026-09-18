@@ -90,4 +90,16 @@ defmodule Baudrate.Logger.JSONFormatterTest do
 
   defp format(event), do: event |> JSONFormatter.format(%{}) |> IO.iodata_to_binary()
   defp decode(event), do: event |> format() |> Jason.decode!()
+
+  describe "never takes logging down with it" do
+    test "an event missing :level and :meta still formats" do
+      # A head-match failure happens before `rescue` can catch anything, and
+      # `:logger` removes a handler that raises — ending all logging.
+      line = JSONFormatter.format(%{unexpected: true}, %{}) |> IO.iodata_to_binary()
+
+      assert line =~ "could not be formatted"
+      assert String.ends_with?(line, "\n")
+      assert {:ok, _} = Jason.decode(String.trim(line))
+    end
+  end
 end

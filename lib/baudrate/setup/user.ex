@@ -153,12 +153,17 @@ defmodule Baudrate.Setup.User do
       :password,
       :password_confirmation,
       :role_id,
-      :terms_accepted,
-      :invited_by_id
+      :terms_accepted
     ])
     |> validate_username()
     |> validate_password()
     |> assoc_constraint(:role)
+    # Deliberately not cast: the invite chain is a moderation signal ("an
+    # account that invited five spammers is a different case from one that
+    # invited none"), and it was settable from the registration form by an
+    # unauthenticated visitor. `Auth.Users.register_with_invite/1` puts it
+    # there from the validated invite instead.
+    |> foreign_key_constraint(:invited_by_id)
     |> hash_password()
   end
 

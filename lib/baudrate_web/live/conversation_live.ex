@@ -313,7 +313,15 @@ defmodule BaudrateWeb.ConversationLive do
   end
 
   defp resolve_conversation(%{"id" => id}, user) do
-    case Messaging.get_conversation_for_user(id, user) do
+    # A non-integer id used to reach Ecto and raise, so `/messages/abc` 500ed
+    # rather than 404ing.
+    conversation =
+      case parse_id(id) do
+        {:ok, conversation_id} -> Messaging.get_conversation_for_user(conversation_id, user)
+        :error -> nil
+      end
+
+    case conversation do
       nil ->
         {:error, :not_found}
 

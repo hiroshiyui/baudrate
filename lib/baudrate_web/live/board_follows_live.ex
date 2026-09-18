@@ -16,6 +16,8 @@ defmodule BaudrateWeb.BoardFollowsLive do
 
   use BaudrateWeb, :live_view
 
+  import BaudrateWeb.Helpers, only: [parse_id: 1]
+
   alias Baudrate.Content
   alias Baudrate.Content.Board
   alias Baudrate.Federation
@@ -130,8 +132,9 @@ defmodule BaudrateWeb.BoardFollowsLive do
   def handle_event("follow", %{"id" => id}, socket) do
     board = socket.assigns.board
 
-    with remote_actor when not is_nil(remote_actor) <-
-           Federation.get_remote_actor(id),
+    with {:ok, actor_id} <- parse_id(id),
+         remote_actor when not is_nil(remote_actor) <-
+           Federation.get_remote_actor(actor_id),
          {:ok, board} <- KeyStore.ensure_board_keypair(board),
          {:ok, _board_follow} <- Federation.follow_remote_actor_as_board(board, remote_actor) do
       follows = Federation.list_board_follows(board.id)
@@ -156,8 +159,9 @@ defmodule BaudrateWeb.BoardFollowsLive do
   def handle_event("unfollow", %{"id" => id}, socket) do
     board = socket.assigns.board
 
-    with remote_actor when not is_nil(remote_actor) <-
-           Federation.get_remote_actor(id),
+    with {:ok, actor_id} <- parse_id(id),
+         remote_actor when not is_nil(remote_actor) <-
+           Federation.get_remote_actor(actor_id),
          {:ok, board} <- KeyStore.ensure_board_keypair(board),
          {:ok, _follow} <- Federation.unfollow_remote_actor_as_board(board, remote_actor) do
       follows = Federation.list_board_follows(board.id)

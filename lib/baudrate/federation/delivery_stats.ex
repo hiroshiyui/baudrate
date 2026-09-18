@@ -75,7 +75,9 @@ defmodule Baudrate.Federation.DeliveryStats do
   """
   @spec retry_all_failed_for_domain(String.t()) :: {non_neg_integer(), nil}
   def retry_all_failed_for_domain(domain) when is_binary(domain) do
-    pattern = "%#{domain}%"
+    # Every other LIKE site escapes; an admin typing `%` here would
+    # otherwise match every job rather than one domain's.
+    pattern = "%" <> Repo.sanitize_like(domain) <> "%"
 
     from(j in DeliveryJob,
       where: j.status == "failed" and like(j.inbox_url, ^pattern)
@@ -89,7 +91,9 @@ defmodule Baudrate.Federation.DeliveryStats do
   """
   @spec abandon_all_for_domain(String.t()) :: {non_neg_integer(), nil}
   def abandon_all_for_domain(domain) when is_binary(domain) do
-    pattern = "%#{domain}%"
+    # Every other LIKE site escapes; an admin typing `%` here would
+    # otherwise match every job rather than one domain's.
+    pattern = "%" <> Repo.sanitize_like(domain) <> "%"
 
     from(j in DeliveryJob,
       where: j.status in ["pending", "failed"] and like(j.inbox_url, ^pattern)

@@ -41,7 +41,10 @@ defmodule BaudrateWeb.PushSubscriptionController do
       }
 
       # Upsert: if endpoint exists, update keys; otherwise insert
-      case Repo.one(from(s in PushSubscription, where: s.endpoint == ^params["endpoint"])) do
+      endpoint = params["endpoint"]
+
+      case is_binary(endpoint) &&
+             Repo.one(from(s in PushSubscription, where: s.endpoint == ^endpoint)) do
         nil ->
           case %PushSubscription{} |> PushSubscription.changeset(attrs) |> Repo.insert() do
             {:ok, _sub} ->

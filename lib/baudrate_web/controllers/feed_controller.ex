@@ -229,11 +229,18 @@ defmodule BaudrateWeb.FeedController do
            string
          ) do
       [_, day, month_str, year, hour, min, sec] ->
-        with month when is_integer(month) <- Map.get(@month_map, month_str) do
-          DateTime.new(
-            Date.new!(String.to_integer(year), month, String.to_integer(day)),
-            Time.new!(String.to_integer(hour), String.to_integer(min), String.to_integer(sec))
-          )
+        # Non-bang on purpose: the regex happily matches day 32 and hour 99, so
+        # `Date.new!`/`Time.new!` turned a malformed `If-Modified-Since` into an
+        # ArgumentError and a 500 on every /feeds/* route, unauthenticated.
+        with month when is_integer(month) <- Map.get(@month_map, month_str),
+             {:ok, date} <- Date.new(String.to_integer(year), month, String.to_integer(day)),
+             {:ok, time} <-
+               Time.new(
+                 String.to_integer(hour),
+                 String.to_integer(min),
+                 String.to_integer(sec)
+               ) do
+          DateTime.new(date, time)
         else
           _ -> :error
         end
