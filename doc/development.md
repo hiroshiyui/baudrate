@@ -232,6 +232,7 @@ lib/
 │   │   ├── vapid_vault.ex       # The VAPID private key, encrypted with the :signing key
 │   │   └── web_push.ex          # RFC 8291 content encryption + push delivery via Req
 │   ├── release.ex               # Release tasks: migrate, rollback, rotate_keys, key_census, backups, backfills
+│   ├── retention.ex             # Hourly purges: untouched timeline items, old announces, soft-deleted rows (ADR 0040)
 │   ├── setup.ex                 # Setup context: first-run wizard, RBAC seeding, settings
 │   ├── timezone.ex              # IANA timezone identifiers (compiled from tz library data)
 │   └── setup/

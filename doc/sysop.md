@@ -848,6 +848,45 @@ of the nineteen foreign keys were checked, and an account that had gone quiet
 for a month took its followers' follows and timeline items with it when it was
 swept.
 
+### Retention
+
+`Baudrate.Retention` runs hourly from the same worker as the other cleanups
+and deletes what the instance has agreed not to keep
+([ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md)):
+
+| What | Kept for | Kept anyway if |
+|------|----------|----------------|
+| Timeline items (posts from followed remote actors) | 90 days | somebody liked, boosted or replied to it |
+| `announces` (a remote actor boosted something) | 180 days | — |
+| Articles and comments with `deleted_at` set | 90 days after deletion | — |
+
+**Nothing a report points at is ever deleted**, at any age. The report's
+pointer would be emptied rather than the delete refused, leaving a moderation
+record whose subject cannot be read.
+
+Two things are deliberately never purged: `bot_feed_items`, the ledger that
+stops a feed bot re-posting its whole back catalogue, and the articles those
+bots created, which are ordinary board content.
+
+To see what a run would remove without removing it:
+
+```bash
+brpc "Baudrate.Retention.run(dry_run: true)"
+```
+
+(`brpc` is the wrapper from
+[Rotating an encryption key](#rotating-an-encryption-key).) It logs one line
+per pass — `retention: timeline_items=… announces=… articles=… comments=…
+files=…` — and each pass is batched and safe to interrupt; the next hour picks
+up where it stopped.
+
+The periods are module attributes in `lib/baudrate/retention.ex`, not
+settings. Changing them means editing and redeploying, which is deliberate:
+these decide when member content is destroyed.
+
+**A purge is not an erasure request.** Backups still hold the rows until they
+rotate out ([ADR 0028](adr/0028-backups-are-complete-folders-with-count-based-retention.md)).
+
 ---
 
 ## Security
@@ -2086,6 +2125,7 @@ points in `postgresql.conf`:
 | `shared_buffers` | 25% of RAM | PostgreSQL's own buffer cache. Takes effect after a restart |
 | `effective_cache_size` | 50–75% of RAM | The query planner's estimate of memory available for caching data, the OS page cache included. Allocates nothing |
 | `max_connections` | the default (100) | Enough while it stays well above `POOL_SIZE` |
+| `autovacuum_vacuum_scale_factor` | `0.05` on `timeline_items` and `announces` | The retention purges (ADR 0040) delete in bulk from these two, and the default 20% threshold leaves the dead rows — and the table's size on disk — far longer than it needs to |
 
 Baudrate holds `POOL_SIZE` connections (default 10), plus one more that the
 `DeliveryWorker` keeps open to `LISTEN` for new jobs. Keep `max_connections`
@@ -2095,6 +2135,19 @@ a pooler in transaction mode (PgBouncer) cannot carry `LISTEN`, and deliveries
 would then wait for the 60-second poll. Raise `POOL_SIZE` when the logs show
 `DBConnection.ConnectionError` under load. A pool much larger than about twice
 the number of CPU cores rarely makes a single host faster.
+
+Set the per-table autovacuum threshold on the two tables retention empties,
+rather than lowering it globally:
+
+```sql
+ALTER TABLE timeline_items SET (autovacuum_vacuum_scale_factor = 0.05);
+ALTER TABLE announces SET (autovacuum_vacuum_scale_factor = 0.05);
+```
+
+Without it a bulk purge leaves dead rows until the table has grown 20% again,
+so the disk never gives the space back and index scans keep reading pages that
+hold nothing. Everything else on this instance is written a row at a time,
+where the default is fine.
 
 ### Static assets and CDNs
 

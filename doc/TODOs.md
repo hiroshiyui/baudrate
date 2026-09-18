@@ -37,7 +37,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
-| **2** | **Operability** | 2A–2H | **Nearly complete** (v1.23.0 – v1.27.0). 2F is left, plus one 2A item: nothing tells a person when a backup fails |
+| ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0), bar one 2A item that needs a notifier |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
@@ -76,7 +76,7 @@ out by P1-D1.
 
 ---
 
-## Phase 2 — Operability — one stage left
+## Phase 2 — Operability — complete
 
 **Goal.** No data loss goes unnoticed, the operator hears about problems before users do, and a bad deploy can be undone.
 
@@ -130,24 +130,25 @@ been exercised anywhere but the machine that holds it. Off-host copies arrive
 only while the workstation is running. Both are accepted risks for one small
 instance, recorded so a later reader can tell a decision from an oversight.
 
-### 2F — Retention (S) — next
+### 2F — Retention — done
 
-- [ ] Purge on a schedule, with the periods set by P2-D4:
-  - `timeline_items` nobody has bookmarked or interacted with, after 90 days;
-  - `announces`, after 180 days;
-  - soft-deleted articles and comments, once past the 90-day evidence window (P1-D6).
-- **Never purge `bot_feed_items`, and never purge articles a bot created.**
-  `timeline_items` is the fediverse timeline — `Create` and `Announce` from
-  followed remote actors, whose originals still live on their own servers, so
-  dropping a row loses nothing that cannot be fetched again. RSS and Atom are
-  a different thing entirely: `Bots.FeedWorker` turns a feed entry into an
-  ordinary **article** in the bot's boards, which is permanent board content,
-  and `bot_feed_items` is the `(bot_id, guid)` ledger of what each bot has
-  already posted. Delete a ledger row and that bot re-posts the entry as a new
-  article. The tables were `feed_items` and `bot_feed_items` until
-  [ADR 0039](adr/0039-the-personal-stream-is-a-timeline.md) renamed the first,
-  which is why this warning exists at all.
-- [ ] Postgres guidance in `doc/sysop.md`: autovacuum for the tables the purges churn. (`shared_buffers`, `effective_cache_size` and pool sizing for a single host are in the Scaling section, from 2B.)
+Purges run hourly from `SessionCleaner`
+([ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md)): timeline items
+older than 90 days with no like, boost or reply; `announces` older than 180
+days; and articles and comments hard-deleted 90 days after `deleted_at`, with
+their image files unlinked. Nothing a report points at is deleted at any age.
+Autovacuum guidance for the two tables the purges empty in bulk is in
+`doc/sysop.md`.
+
+P2-D4 said "nobody has bookmarked or interacted with", but `bookmarks` only
+targets articles and comments — a timeline item cannot be bookmarked — so the
+keep rule is likes, boosts and replies.
+**Still never purge `bot_feed_items`, or the articles a bot created.** The
+ledger holds the `(bot_id, guid)` record of what each bot has posted; delete a
+row and that bot republishes the entry. The two tables were `feed_items` and
+`bot_feed_items` until [ADR 0039](adr/0039-the-personal-stream-is-a-timeline.md)
+renamed the first, and the near-miss is why this is written in both the ADR and
+the retention module.
 
 ### Decisions (made 2026-09-17)
 
