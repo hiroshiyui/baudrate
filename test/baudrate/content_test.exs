@@ -2555,7 +2555,7 @@ defmodule Baudrate.ContentTest do
     end
   end
 
-  # --- Forward Feed Item to Board ---
+  # --- Forward Timeline Item to Board ---
 
   describe "forward_timeline_item_to_board/3" do
     setup do
@@ -2596,7 +2596,7 @@ defmodule Baudrate.ContentTest do
       %{user: user, board: board, timeline_item: timeline_item, remote_actor: remote_actor}
     end
 
-    test "materializes feed item as article in board", %{
+    test "materializes timeline item as article in board", %{
       user: user,
       board: board,
       timeline_item: timeline_item
@@ -2642,7 +2642,7 @@ defmodule Baudrate.ContentTest do
       assert board.id in board_ids
     end
 
-    test "rejects followers_only feed item for non-admin", %{user: user, board: board} do
+    test "rejects followers_only timeline item for non-admin", %{user: user, board: board} do
       remote_actor =
         %Baudrate.Federation.RemoteActor{}
         |> Baudrate.Federation.RemoteActor.changeset(%{
@@ -2672,7 +2672,7 @@ defmodule Baudrate.ContentTest do
                Content.forward_timeline_item_to_board(fo_item, board, user)
     end
 
-    test "refuses to forward a followers_only feed item, even for an admin", %{board: board} do
+    test "refuses to forward a followers_only timeline item, even for an admin", %{board: board} do
       admin = create_user("admin")
 
       remote_actor =
@@ -2707,7 +2707,7 @@ defmodule Baudrate.ContentTest do
                Content.forward_timeline_item_to_board(fo_item, board, admin)
     end
 
-    test "refuses to forward a feed item from an actor the user does not follow", %{
+    test "refuses to forward a timeline item from an actor the user does not follow", %{
       board: board,
       timeline_item: timeline_item
     } do
@@ -2717,7 +2717,7 @@ defmodule Baudrate.ContentTest do
                Content.forward_timeline_item_to_board(timeline_item, board, stranger)
     end
 
-    test "refuses to resurrect a soft-deleted feed item", %{
+    test "refuses to resurrect a soft-deleted timeline item", %{
       user: user,
       board: board,
       timeline_item: timeline_item
@@ -3297,7 +3297,7 @@ defmodule Baudrate.ContentTest do
       refute Content.can_forward_timeline_item?(nil, build_timeline_item!(actor, "public"))
     end
 
-    test "not even an admin can forward a non-public feed item", %{actor: actor} do
+    test "not even an admin can forward a non-public timeline item", %{actor: actor} do
       admin = create_user("admin")
 
       # Forwarding calls `Publisher.publish_article_forwarded/2`, so allowing
@@ -3312,26 +3312,26 @@ defmodule Baudrate.ContentTest do
              )
     end
 
-    test "user can forward public feed item", %{user: user, actor: actor} do
+    test "user can forward public timeline item", %{user: user, actor: actor} do
       assert Content.can_forward_timeline_item?(user, build_timeline_item!(actor, "public"))
     end
 
-    test "user can forward unlisted feed item", %{user: user, actor: actor} do
+    test "user can forward unlisted timeline item", %{user: user, actor: actor} do
       assert Content.can_forward_timeline_item?(user, build_timeline_item!(actor, "unlisted"))
     end
 
-    test "user cannot forward followers_only feed item", %{user: user, actor: actor} do
+    test "user cannot forward followers_only timeline item", %{user: user, actor: actor} do
       refute Content.can_forward_timeline_item?(
                user,
                build_timeline_item!(actor, "followers_only")
              )
     end
 
-    test "user cannot forward direct feed item", %{user: user, actor: actor} do
+    test "user cannot forward direct timeline item", %{user: user, actor: actor} do
       refute Content.can_forward_timeline_item?(user, build_timeline_item!(actor, "direct"))
     end
 
-    test "user cannot forward a public feed item from an actor they do not follow", %{
+    test "user cannot forward a public timeline item from an actor they do not follow", %{
       user: user
     } do
       stranger = create_feed_remote_actor()

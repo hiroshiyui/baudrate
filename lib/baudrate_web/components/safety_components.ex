@@ -2,7 +2,7 @@ defmodule BaudrateWeb.SafetyComponents do
   @moduledoc """
   Menu items for the controls members use to protect themselves from a remote
   account: mute, block and report. Rendered inside the existing "More
-  actions" dropdowns on feed items, remote comments and remote conversations;
+  actions" dropdowns on timeline items, remote comments and remote conversations;
   the events are handled with `BaudrateWeb.SafetyActions`.
   """
 
@@ -11,7 +11,7 @@ defmodule BaudrateWeb.SafetyComponents do
   @doc """
   Renders the `<li>` items for a remote actor.
 
-  Blocking and muting hide the actor's content, so feed items and comments
+  Blocking and muting hide the actor's content, so timeline items and comments
   disappear afterwards and only need the "add" controls. A conversation stays
   on screen, so it passes `muted`/`blocked` to get the undo controls.
   """

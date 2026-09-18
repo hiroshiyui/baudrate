@@ -445,7 +445,7 @@ defmodule Baudrate.Federation.PublisherTest do
     actor
   end
 
-  # Replying to a feed item requires it to be reachable from the user's feed,
+  # Replying to a timeline item requires it to be reachable from the user's feed,
   # i.e. an accepted follow on the source actor.
   defp follow_remote!(user, actor) do
     {:ok, follow} =
@@ -869,7 +869,7 @@ defmodule Baudrate.Federation.PublisherTest do
   end
 
   describe "build_create_timeline_item_reply/3" do
-    test "builds a Create(Note) activity with inReplyTo pointing to feed item AP ID" do
+    test "builds a Create(Note) activity with inReplyTo pointing to timeline item AP ID" do
       user = create_user()
       remote = create_remote_actor()
       follow_remote!(user, remote)

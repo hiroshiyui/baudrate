@@ -12,7 +12,7 @@ defmodule BaudrateWeb.Features.LayoutTest do
   Pixel screenshots break with every browser update, so these are geometric
   assertions instead, aimed at the layout bugs that shipped: a long
   unbreakable token widening the page (the grid track blowout in CLAUDE.md),
-  and the Aqua themes clipping card menus so most feed item actions could not
+  and the Aqua themes clipping card menus so most timeline item actions could not
   be clicked (v1.19.1). An item is reachable when `elementFromPoint` at its
   centre lands inside the menu, which fails for clipped and covered items
   alike.

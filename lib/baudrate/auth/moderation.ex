@@ -191,7 +191,7 @@ defmodule Baudrate.Auth.Moderation do
   @doc """
   Returns `true` if a block stands between the local user and the author of
   `content` (any map with `user_id` and `remote_actor_id`, such as an article,
-  comment or feed item), in either direction for a local author.
+  comment or timeline item), in either direction for a local author.
   """
   @spec blocked_with_author?(integer(), map()) :: boolean()
   def blocked_with_author?(user_id, %{user_id: author_id}) when is_integer(author_id),

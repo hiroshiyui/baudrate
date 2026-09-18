@@ -87,7 +87,7 @@ defmodule BaudrateWeb.InteractionHelpers do
   end
 
   @doc """
-  Handles a toggle interaction on a feed item (like or boost),
+  Handles a toggle interaction on a timeline item (like or boost),
   updating only a MapSet of active IDs (no counts).
 
   ## Parameters

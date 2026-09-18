@@ -5,7 +5,7 @@ defmodule BaudrateWeb.ModerationLive do
   Board moderators are ordinary members (role `user`), so this page lives
   outside `/admin` and shows only what they may act on: reports about articles
   in the boards they moderate and comments on those articles. Never reports
-  about accounts, direct messages or feed items, and never another board's.
+  about accounts, direct messages or timeline items, and never another board's.
 
   The scope is `Content.moderated_board_ids/1` (every board for staff, so an
   admin sees the same page as a lighter view of `/admin/moderation`). Every

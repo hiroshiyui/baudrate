@@ -534,7 +534,7 @@ defmodule BaudrateWeb.CommentComponents do
   end
 
   @doc """
-  Renders the image upload area for a feed item reply form.
+  Renders the image upload area for a timeline item reply form.
 
   Identical layout to `comment_image_upload_area/1` but targets the
   `:reply_images` upload channel and `remove_reply_image` / `cancel_reply_image_upload`

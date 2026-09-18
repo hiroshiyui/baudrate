@@ -286,7 +286,7 @@ defmodule Baudrate.Federation.StaleActorCleanerTest do
   # The reference check used to be six hand-written queries against nineteen
   # foreign keys. An actor that only the other thirteen pointed at looked
   # unreferenced, and deleting it cascaded: a member lost a follow and every
-  # feed item from an account that had simply gone quiet for a month.
+  # timeline item from an account that had simply gone quiet for a month.
   describe "references the hand-written list used to miss" do
     setup do
       # Referenced actors are refreshed rather than deleted; the refresh fails
@@ -344,7 +344,7 @@ defmodule Baudrate.Federation.StaleActorCleanerTest do
       assert Repo.get(UserFollow, follow.id)
     end
 
-    test "feed items from a quiet actor survive the sweep" do
+    test "timeline items from a quiet actor survive the sweep" do
       actor = create_remote_actor(%{fetched_at: stale_fetched_at()})
 
       item =
@@ -383,7 +383,7 @@ defmodule Baudrate.Federation.StaleActorCleanerTest do
       assert Repo.get(Conversation, conversation.id).remote_actor_b_id == actor.id
     end
 
-    test "has_references?/1 sees a follow, a feed item and a conversation" do
+    test "has_references?/1 sees a follow, a timeline item and a conversation" do
       user = setup_user_with_role("user")
 
       followed = create_remote_actor(%{ap_id: "https://remote.example/users/f", username: "f"})

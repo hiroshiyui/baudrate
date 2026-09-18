@@ -82,7 +82,7 @@ defmodule Baudrate.Federation.TimelineItemContextTest do
   end
 
   describe "create_timeline_item/1" do
-    test "creates a feed item", %{actor: actor} do
+    test "creates a timeline item", %{actor: actor} do
       attrs = timeline_item_attrs(actor)
       {:ok, item} = Federation.create_timeline_item(attrs)
 

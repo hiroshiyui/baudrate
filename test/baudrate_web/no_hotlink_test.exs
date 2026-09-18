@@ -109,7 +109,7 @@ defmodule BaudrateWeb.NoHotlinkTest do
         remote_actor_id: actor.id
       })
 
-    # 4. A feed item with remote attachments.
+    # 4. A timeline item with remote attachments.
     {:ok, timeline_item} =
       Federation.create_timeline_item(%{
         remote_actor_id: actor.id,

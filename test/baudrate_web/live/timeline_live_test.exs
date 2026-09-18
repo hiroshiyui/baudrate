@@ -67,7 +67,7 @@ defmodule BaudrateWeb.TimelineLiveTest do
     item
   end
 
-  describe "safety menu on remote feed items" do
+  describe "safety menu on remote timeline items" do
     setup do
       BaudrateWeb.RateLimiter.Sandbox.set_global_response({:allow, 1})
       :ok
@@ -207,7 +207,7 @@ defmodule BaudrateWeb.TimelineLiveTest do
       assert html =~ "/search"
     end
 
-    test "shows feed items from followed actors", %{conn: conn, user: user} do
+    test "shows timeline items from followed actors", %{conn: conn, user: user} do
       actor =
         create_remote_actor(%{username: "alice", domain: "example.org", display_name: "Alice"})
 
@@ -549,8 +549,8 @@ defmodule BaudrateWeb.TimelineLiveTest do
     end
   end
 
-  describe "feed item replies" do
-    test "reply button appears on remote feed items", %{conn: conn, user: user} do
+  describe "timeline item replies" do
+    test "reply button appears on remote timeline items", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
       create_timeline_item(actor)
@@ -954,8 +954,8 @@ defmodule BaudrateWeb.TimelineLiveTest do
     end
   end
 
-  describe "feed item like/boost buttons" do
-    test "like button appears on remote feed items", %{conn: conn, user: user} do
+  describe "timeline item like/boost buttons" do
+    test "like button appears on remote timeline items", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
       item = create_timeline_item(actor)
@@ -968,7 +968,7 @@ defmodule BaudrateWeb.TimelineLiveTest do
       assert html =~ "hero-heart"
     end
 
-    test "boost button appears on remote feed items", %{conn: conn, user: user} do
+    test "boost button appears on remote timeline items", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
       item = create_timeline_item(actor)
@@ -981,7 +981,7 @@ defmodule BaudrateWeb.TimelineLiveTest do
       assert html =~ "hero-arrow-path-rounded-square"
     end
 
-    test "clicking like toggles feed item like", %{conn: conn, user: user} do
+    test "clicking like toggles timeline item like", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
       item = create_timeline_item(actor)
@@ -1017,7 +1017,7 @@ defmodule BaudrateWeb.TimelineLiveTest do
              )
     end
 
-    test "clicking boost toggles feed item boost", %{conn: conn, user: user} do
+    test "clicking boost toggles timeline item boost", %{conn: conn, user: user} do
       actor = create_remote_actor()
       create_accepted_follow(user, actor)
       item = create_timeline_item(actor)

@@ -1,7 +1,7 @@
 defmodule BaudrateWeb.SafetyActions do
   @moduledoc """
   Shared LiveView handlers for the controls members use to protect
-  themselves: blocking and muting remote accounts, and reporting feed items,
+  themselves: blocking and muting remote accounts, and reporting timeline items,
   received direct messages and remote accounts.
 
   Used by `TimelineLive`, `ArticleLive` (remote comments) and `ConversationLive`
@@ -134,7 +134,7 @@ defmodule BaudrateWeb.SafetyActions do
   end
 
   @doc """
-  Files the open report (a feed item, message or remote actor) through its
+  Files the open report (a timeline item, message or remote actor) through its
   `Moderation` function and closes the modal with a flash message.
   """
   def submit_report(socket, params) do

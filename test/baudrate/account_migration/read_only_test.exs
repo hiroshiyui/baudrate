@@ -151,7 +151,7 @@ defmodule Baudrate.AccountMigration.ReadOnlyTest do
     assert {:error, :account_moved} = Auth.generate_invite_code(mover)
   end
 
-  test "cannot like, boost or reply to feed items", %{mover: mover} do
+  test "cannot like, boost or reply to timeline items", %{mover: mover} do
     actor =
       %RemoteActor{}
       |> RemoteActor.changeset(%{

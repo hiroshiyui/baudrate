@@ -1,6 +1,6 @@
 defmodule Baudrate.Moderation.MemberReportsTest do
   @moduledoc """
-  Members report feed items, direct messages they received, and remote
+  Members report timeline items, direct messages they received, and remote
   accounts through context functions that check the reporter can see what
   they report. A message report copies that one message's text, nothing else.
   """
@@ -227,7 +227,7 @@ defmodule Baudrate.Moderation.MemberReportsTest do
     end
   end
 
-  test "a feed item report appears in the queue with its author",
+  test "a timeline item report appears in the queue with its author",
        %{user: user, actor: actor} do
     follow!(user, actor)
     item = create_timeline_item(actor)

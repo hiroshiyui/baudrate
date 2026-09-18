@@ -13,7 +13,7 @@ defmodule Baudrate.Moderation.Report do
     * `remote_actor_id` — the **reported** remote actor. Moderators can send
       it a `Flag` ("Send Flag"). Never the reporter.
     * `article_id`, `comment_id`, `reported_user_id` — reported local records
-    * `timeline_item_id` — a reported feed item (its author is `remote_actor_id`)
+    * `timeline_item_id` — a reported timeline item (its author is `remote_actor_id`)
     * `evidence_body` and `evidence_taken_at` — a copy of the reported article
       or comment, taken when a moderator removed it, so the report still
       explains itself afterwards. Purged 90 days after the report was closed
@@ -145,7 +145,7 @@ defmodule Baudrate.Moderation.Report do
       add_error(
         changeset,
         :base,
-        "must target at least one of: article, comment, remote actor, user, feed item, or message"
+        "must target at least one of: article, comment, remote actor, user, timeline item, or message"
       )
     else
       changeset

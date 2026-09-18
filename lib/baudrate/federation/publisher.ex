@@ -947,7 +947,7 @@ defmodule Baudrate.Federation.Publisher do
     end
   end
 
-  # --- Feed Item Like/Boost ---
+  # --- Timeline Item Like/Boost ---
 
   @doc """
   Builds a `Like` activity for a local user liking a remote timeline item.
@@ -1198,7 +1198,7 @@ defmodule Baudrate.Federation.Publisher do
     :ok
   end
 
-  # --- Feed Item Reply Builders ---
+  # --- Timeline Item Reply Builders ---
 
   @doc """
   Builds a `Create(Note)` activity for a local user's reply to a remote timeline item.

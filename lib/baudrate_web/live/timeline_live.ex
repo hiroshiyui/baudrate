@@ -61,7 +61,7 @@ defmodule BaudrateWeb.TimelineLive do
         forward_search_results: [],
         forward_search_query: "",
         uploaded_reply_images: [],
-        feed_live_status: ""
+        timeline_live_status: ""
       )
       |> SafetyActions.assign_report_modal()
       |> then(fn s ->
@@ -185,7 +185,7 @@ defmodule BaudrateWeb.TimelineLive do
   defp announce_new_items(socket, count) when count > 0 do
     assign(
       socket,
-      :feed_live_status,
+      :timeline_live_status,
       ngettext("%{count} new timeline item", "%{count} new timeline items", count, count: count)
     )
   end

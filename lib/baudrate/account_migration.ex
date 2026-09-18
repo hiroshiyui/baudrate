@@ -754,7 +754,7 @@ defmodule Baudrate.AccountMigration do
       local follow;
     * the follower gets an `actor_moved` notice.
 
-  Feed items are repointed to a remote destination
+  Timeline items are repointed to a remote destination
   (`Federation.migrate_timeline_items/2`), so the history shows again once the
   new follow is accepted. Board follows are never repointed: admins get a
   `board_actor_moved` notice instead.

@@ -8,7 +8,7 @@ defmodule Baudrate.Federation.BlockedDomainHidingTest do
   query. **Add every new listing query here.**
 
   The marker strings are the point: the test seeds an article, a comment and a
-  feed item from the blocked domain carrying a unique marker, and fails if the
+  timeline item from the blocked domain carrying a unique marker, and fails if the
   marker appears on any surface. A listing that forgets the filter shows the
   marker, whatever else it does.
   """
@@ -532,7 +532,7 @@ defmodule Baudrate.Federation.BlockedDomainHidingTest do
       boosted_by_actor_id: booster && booster.id,
       activity_type: if(booster, do: "Announce", else: "Create"),
       object_type: "Note",
-      body: "feed item saying #{marker}",
+      body: "timeline item saying #{marker}",
       published_at: DateTime.utc_now() |> DateTime.truncate(:second)
     })
     |> Repo.insert!()

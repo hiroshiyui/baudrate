@@ -429,7 +429,7 @@ defmodule Baudrate.Content.RemoteVisibilityTest do
       boosted_by_actor_id: booster && booster.id,
       activity_type: if(booster, do: "Announce", else: "Create"),
       object_type: "Note",
-      body: "feed item",
+      body: "timeline item",
       visibility: visibility,
       published_at: DateTime.utc_now() |> DateTime.truncate(:second)
     })

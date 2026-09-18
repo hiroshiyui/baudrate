@@ -420,7 +420,7 @@ defmodule Baudrate.Content.Articles do
     alias Baudrate.Content.TitleDeriver
 
     cond do
-      # A soft-deleted feed item (e.g. withdrawn by its remote author via
+      # A soft-deleted timeline item (e.g. withdrawn by its remote author via
       # `Delete`) must not be resurrected as a board article.
       not is_nil(timeline_item.deleted_at) ->
         {:error, :not_found}

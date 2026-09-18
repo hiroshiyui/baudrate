@@ -409,8 +409,8 @@ defmodule BaudrateWeb.Admin.ModerationLiveTest do
     end
   end
 
-  describe "member reports of feed items and messages" do
-    test "shows the reported feed item and only the copied message text", %{conn: conn} do
+  describe "member reports of timeline items and messages" do
+    test "shows the reported timeline item and only the copied message text", %{conn: conn} do
       admin = setup_user("admin")
       member = setup_user("user")
       sender = setup_user("user")

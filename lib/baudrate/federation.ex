@@ -215,7 +215,7 @@ defmodule Baudrate.Federation do
   defdelegate local_followers_of_user(followed_user_id), to: Follows
   defdelegate migrate_timeline_items(old_actor_id, new_actor_id), to: Timeline
 
-  # --- Feed Items ---
+  # --- Timeline Items ---
 
   defdelegate create_timeline_item(attrs), to: Timeline
   defdelegate list_timeline_items(user, opts \\ []), to: Timeline

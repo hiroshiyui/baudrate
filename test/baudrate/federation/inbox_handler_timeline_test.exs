@@ -111,8 +111,11 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
     }
   end
 
-  describe "Create(Note) feed item fallback" do
-    test "creates feed item from followed actor without inReplyTo", %{user: user, actor: actor} do
+  describe "Create(Note) timeline item fallback" do
+    test "creates timeline item from followed actor without inReplyTo", %{
+      user: user,
+      actor: actor
+    } do
       create_accepted_follow(user, actor)
       activity = note_activity(actor)
       ap_id = activity["object"]["id"]
@@ -185,7 +188,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       assert DateTime.compare(item.published_at, then) == :eq
     end
 
-    test "note replying to local article becomes comment, not feed item", %{
+    test "note replying to local article becomes comment, not timeline item", %{
       user: user,
       actor: actor
     } do
@@ -217,12 +220,12 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
 
       assert :ok = InboxHandler.handle(activity, actor, :shared)
 
-      # Should be a comment, not a feed item
+      # Should be a comment, not a timeline item
       assert Federation.get_timeline_item_by_ap_id(activity["object"]["id"]) == nil
       assert Baudrate.Content.get_comment_by_ap_id(activity["object"]["id"]) != nil
     end
 
-    test "DM note becomes DM, not feed item", %{user: user, actor: actor} do
+    test "DM note becomes DM, not timeline item", %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
       user_uri = Federation.actor_uri(:user, user.username)
 
@@ -237,8 +240,8 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
     end
   end
 
-  describe "Create(Article) feed item fallback" do
-    test "creates feed item when no board audience from followed actor", %{
+  describe "Create(Article) timeline item fallback" do
+    test "creates timeline item when no board audience from followed actor", %{
       user: user,
       actor: actor
     } do
@@ -280,14 +283,14 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
 
       assert :ok = InboxHandler.handle(activity, actor, :shared)
 
-      # Should be a board article, not a feed item
+      # Should be a board article, not a timeline item
       assert Federation.get_timeline_item_by_ap_id(activity["object"]["id"]) == nil
       assert Baudrate.Content.get_article_by_ap_id(activity["object"]["id"]) != nil
     end
   end
 
-  describe "Delete for feed items" do
-    test "soft-deletes feed item by ap_id", %{user: user, actor: actor} do
+  describe "Delete for timeline items" do
+    test "soft-deletes timeline item by ap_id", %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
       activity = note_activity(actor)
       ap_id = activity["object"]["id"]
@@ -309,8 +312,8 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
     end
   end
 
-  describe "Delete(actor) cleans up feed items" do
-    test "soft-deletes all feed items from actor", %{user: user, actor: actor} do
+  describe "Delete(actor) cleans up timeline items" do
+    test "soft-deletes all timeline items from actor", %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
 
       activity1 = note_activity(actor)
@@ -336,8 +339,8 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
     end
   end
 
-  describe "Announce feed item" do
-    test "creates feed item when followed actor boosts content", %{user: user, actor: actor} do
+  describe "Announce timeline item" do
+    test "creates timeline item when followed actor boosts content", %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
       Baudrate.Federation.KeyStore.ensure_site_keypair()
 
@@ -373,7 +376,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
 
       assert :ok = InboxHandler.handle(announce_activity, actor, :shared)
 
-      # Should create both announce record and feed item
+      # Should create both announce record and timeline item
       assert Federation.count_announces(object_uri) == 1
       item = Federation.get_timeline_item_by_ap_id(announce_ap_id)
       assert item != nil
@@ -429,7 +432,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       assert Enum.at(item.attachments, 1)["url"] == "https://remote.example/media/photo2.png"
     end
 
-    test "extracts image attachments from Create feed items", %{user: user, actor: actor} do
+    test "extracts image attachments from Create timeline items", %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
 
       activity =
@@ -459,7 +462,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       assert Enum.at(item.attachments, 0)["url"] == "https://remote.example/media/img.webp"
     end
 
-    test "does not create feed item when booster is not followed", %{actor: actor} do
+    test "does not create timeline item when booster is not followed", %{actor: actor} do
       announce_ap_id =
         "https://remote.example/activities/announce-#{System.unique_integer([:positive])}"
 
@@ -474,12 +477,12 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
 
       assert :ok = InboxHandler.handle(announce_activity, actor, :shared)
 
-      # Announce record created but no feed item (no followers)
+      # Announce record created but no timeline item (no followers)
       assert Federation.count_announces(object_uri) == 1
       assert Federation.get_timeline_item_by_ap_id(announce_ap_id) == nil
     end
 
-    test "creates feed item from embedded Announce object (Lemmy interop)", %{
+    test "creates timeline item from embedded Announce object (Lemmy interop)", %{
       user: user,
       actor: actor
     } do
@@ -506,7 +509,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
 
       assert :ok = InboxHandler.handle(announce_activity, actor, :shared)
 
-      # Should create a feed item with Announce type
+      # Should create a timeline item with Announce type
       item = Federation.get_timeline_item_by_ap_id(announce_ap_id)
       assert item != nil
       assert item.activity_type == "Announce"
@@ -514,14 +517,14 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       assert item.remote_actor_id == content_author.id
     end
 
-    test "Announce feed item appears in user's feed", %{user: user, actor: actor} do
+    test "Announce timeline item appears in user's feed", %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
 
       content_author = create_remote_actor()
       uid = System.unique_integer([:positive])
       announce_ap_id = "https://remote.example/activities/announce-feed-#{uid}"
 
-      # Directly create an Announce feed item
+      # Directly create an Announce timeline item
       {:ok, _timeline_item} =
         Federation.create_timeline_item(%{
           remote_actor_id: content_author.id,

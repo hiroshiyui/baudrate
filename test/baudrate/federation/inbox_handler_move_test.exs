@@ -240,7 +240,7 @@ defmodule Baudrate.Federation.InboxHandlerMoveTest do
       assert boosted.id in ids
     end
 
-    test "an unauthorized Move leaves feed items where they are",
+    test "an unauthorized Move leaves timeline items where they are",
          %{user: user, actor: actor} do
       create_accepted_follow(user, actor)
       new_actor = create_remote_actor(%{domain: "new.example"})

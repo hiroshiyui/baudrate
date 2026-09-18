@@ -45,7 +45,7 @@ defmodule Baudrate.Federation.TimelineItemReplyTest do
     actor
   end
 
-  # Replying to a feed item requires it to be reachable from the user's feed,
+  # Replying to a timeline item requires it to be reachable from the user's feed,
   # i.e. an accepted follow on the source actor.
   defp follow!(user, actor) do
     {:ok, follow} =
@@ -212,7 +212,7 @@ defmodule Baudrate.Federation.TimelineItemReplyTest do
       assert %{body: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "refuses to reply to a feed item the user does not follow" do
+    test "refuses to reply to a timeline item the user does not follow" do
       user = create_user()
       actor = create_remote_actor()
       timeline_item = create_timeline_item(actor)
@@ -223,7 +223,7 @@ defmodule Baudrate.Federation.TimelineItemReplyTest do
       assert Federation.list_timeline_item_replies(timeline_item.id) == []
     end
 
-    test "refuses to reply to a soft-deleted feed item" do
+    test "refuses to reply to a soft-deleted timeline item" do
       user = create_user()
       actor = create_remote_actor()
       follow!(user, actor)
@@ -306,7 +306,7 @@ defmodule Baudrate.Federation.TimelineItemReplyTest do
       assert reply.user.role != nil
     end
 
-    test "returns empty list for feed item with no replies" do
+    test "returns empty list for timeline item with no replies" do
       actor = create_remote_actor()
       timeline_item = create_timeline_item(actor)
 
@@ -336,7 +336,7 @@ defmodule Baudrate.Federation.TimelineItemReplyTest do
       assert Federation.count_timeline_item_replies([]) == %{}
     end
 
-    test "omits feed items with zero replies" do
+    test "omits timeline items with zero replies" do
       actor = create_remote_actor()
       fi = create_timeline_item(actor)
 
