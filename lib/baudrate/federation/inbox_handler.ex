@@ -114,7 +114,7 @@ defmodule Baudrate.Federation.InboxHandler do
         )
         |> case do
           {:ok, _follower} ->
-            notify_follow_target(target, remote_actor)
+            notify_follow_target(actor_uri, remote_actor)
             :ok
 
           {:error, %Ecto.Changeset{} = changeset} ->
@@ -1960,22 +1960,40 @@ defmodule Baudrate.Federation.InboxHandler do
   end
 
   defp follow_blocked_by_target?(actor_uri, remote_actor) do
+    case local_user_from_actor_uri(actor_uri) do
+      %{id: user_id} -> Baudrate.Auth.remote_actor_blocked_by?(remote_actor.id, user_id)
+      nil -> false
+    end
+  end
+
+  # The local user a `/ap/users/:username` actor URI names, or nil. The Follow
+  # names its target in the activity, so this works whichever inbox the
+  # activity arrived at — which is the point: see `notify_follow_target/2`.
+  defp local_user_from_actor_uri(actor_uri) do
     user_prefix = "#{Federation.base_url()}/ap/users/"
 
     with <<^user_prefix::binary, username::binary>> <- actor_uri,
-         %{id: user_id} <- Baudrate.Auth.get_user_by_username(username) do
-      Baudrate.Auth.remote_actor_blocked_by?(remote_actor.id, user_id)
+         %{} = user <- Baudrate.Auth.get_user_by_username(username) do
+      user
     else
-      _ -> false
+      _ -> nil
     end
   end
 
   # --- Notification helpers ---
 
-  defp notify_follow_target({:user, user}, remote_actor),
-    do: Baudrate.Notification.Hooks.notify_remote_follow(user.id, remote_actor.id)
-
-  defp notify_follow_target(_, _), do: :ok
+  # Resolved from the Follow's own target URI, not from which inbox it arrived
+  # at. This used to match only `{:user, user}`, the per-user inbox path — but
+  # an instance that advertises a `sharedInbox` gets its follows delivered
+  # there, which is what Mastodon does, so the person being followed was
+  # usually never told. The block check above has always resolved the target
+  # this way; only the notification did not (3F).
+  defp notify_follow_target(actor_uri, remote_actor) do
+    case local_user_from_actor_uri(actor_uri) do
+      %{id: user_id} -> Baudrate.Notification.Hooks.notify_remote_follow(user_id, remote_actor.id)
+      nil -> :ok
+    end
+  end
 
   # --- Flag helpers ---
 
