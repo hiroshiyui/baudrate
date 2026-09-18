@@ -7,6 +7,215 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.28.0] — 2026-09-18
+
+Phase 2, stage 2F: Baudrate now deletes what it has agreed not to keep. Until
+this release nothing was ever removed — a post its author deleted kept its body
+in the database indefinitely, and two federation tables only grew. See
+[ADR 0040](doc/adr/0040-retention-deletes-what-nobody-touched.md).
+
+It also settles a piece of vocabulary, in two steps. "Feed" named four
+different things here — the RSS and Atom the bots read, the syndication we
+publish, a feed bot's dedup ledger, and the personal fediverse stream. The last
+is now a **timeline**, in the URL, the code and the database
+([ADR 0039](doc/adr/0039-the-personal-stream-is-a-timeline.md)); the first two
+are now **syndication**
+([ADR 0041](doc/adr/0041-rss-and-atom-are-syndication.md)), because leaving them
+was not enough — the rename sweep itself mistook one for the other, on the one
+table whose loss would make every bot re-publish its back catalogue.
+
+The rest is hardening: a security audit, an accessibility sweep, a dependency
+review, a code review and a documentation audit, run back to back before the
+tag. The last of those found four code defects, all fixed here.
+
+**Upgrading:** five migrations. Three are quick and additive; the other two are
+renames — one moves five tables and their indexes, the other moves one more —
+and both are reversible. One of the additive ones
+(`unique_username_case_insensitively`) can **rename an existing account** — if
+two usernames differ only in case, the older keeps its name and the newer gets
+a numeric suffix. Nothing on this instance's scale should notice, but check
+`users` afterwards if you have ever allowed mixed-case registrations. A
+username is a fediverse handle, and nothing in the UI can change it back.
+
+**Retention starts deleting on the first hourly run after this deploy**, and it
+deletes permanently. Timeline items older than 90 days that nobody liked,
+boosted or replied to; `announces` older than 180 days; and articles and
+comments whose `deleted_at` passed 90 days ago, together with their revisions
+and image files. Nothing a moderation report points at is touched, whatever its
+age. The periods are in `doc/sysop.md` and in the privacy policy. Run
+`Baudrate.Retention.run(dry_run: true)` first if you want to see the counts
+before anything goes.
+
+**If you monitor the detailed health report**, `workers.feed_worker` is now
+`workers.syndication_feed_worker`. There is no compatibility alias: two names
+for one worker is the ambiguity this release is removing.
+
+**If you installed by hand from `doc/examples/nginx.conf.example`**, add the
+`/uploads/media_cache/` deny rule it was missing — see Security below. The
+Ansible deploy already had it.
+
+**Elixir 1.17 is now the minimum.** It already was in practice — a non-optional
+dependency requires it — but `mix.exs` said 1.15, so nobody on 1.15 could build
+and the error did not say why.
+
+### Added
+
+- **Retention** (`Baudrate.Retention`, hourly from `SessionCleaner`): three
+  purges, a `dry_run` mode that counts without deleting, and per-pass counts in
+  the log. Autovacuum guidance for the two tables emptied in bulk is in the
+  sysop guide.
+- `scripts/check-keyring.py` validates `BAUDRATE_AUTH_KEYS` /
+  `BAUDRATE_SIGNING_KEYS` **without disclosing them** — it reports each key's
+  id, that it decodes to 32 bytes, and a truncated fingerprint, and nothing
+  else. Checking a key set with `grep` over `sops --decrypt` prints the keys
+  themselves, and the only remedy for that is rotating them. The fingerprints
+  also prove a rotation replaced a key rather than relisting the same one under
+  a new id, which looks correct in the file and in the key census. The rotation
+  procedure now runs it before the deploy, where a malformed key is a typo
+  rather than a boot refusal on a live instance.
+- Usernames are unique without regard to case, and the timeline announces where
+  you are in it to a screen reader (`aria-posinset`/`aria-setsize`).
+
+### Changed
+
+- **The personal stream is a timeline.** `/feed` is now `/timeline` and answers
+  the old path with a 301, so bookmarks keep working. `feed_items` and its four
+  satellite tables became `timeline_items…`, `Federation.Feed` became
+  `Federation.Timeline`, and `FeedLive` became `TimelineLive`.
+- **RSS and Atom are syndication.** `Bots.FeedParser`, `FeedParserNative`,
+  `FeedWorker` and `BotFeedItem` became `Bots.SyndicationFeedParser`,
+  `SyndicationFeedParserNative`, `SyndicationFeedWorker` and
+  `BotSyndicationItem`; `FeedController` and `FeedXML` became
+  `SyndicationFeedController` and `SyndicationFeedXML`; `bot_feed_items` became
+  `bot_syndication_items`. The public URLs `/feeds/rss`, `/feeds/atom` and the
+  rest are **unchanged** — every subscriber has one saved, and an RSS URL saying
+  "feed" is not ambiguous to begin with. The WAI-ARIA `role="feed"` and a bot's
+  `feed_url` column keep the word too.
+- **An article in a guest-readable but AP-disabled board is no longer served
+  over ActivityPub** and no longer appears in its author's outbox. The
+  documented gate has always been "guest-viewable **and** `ap_enabled`"; five
+  surfaces were testing only the first half, so turning federation off for a
+  board did less than it said.
+- Elixir `~> 1.17`; phoenix 1.8.14, phoenix_live_view 1.2.12, tz 0.28.4.
+- The syndication-parser NIF no longer links a TLS stack it never calls (234
+  crates down to 114).
+
+### Security
+
+- **Articles in private and AP-disabled boards were federated to their author's
+  remote followers**, as `Create(Article)` addressed `as:Public`. One
+  unsolicited Follow was the whole attack: after that, every post its author
+  wrote in a staff-only board arrived on the follower's instance. The gate now
+  applies to the author's own followers, to user boosts (an `Announce` names the
+  article's URI, and the slug is derived from its title), and to the
+  `cc`/`audience` of the AP object itself — which three unauthenticated
+  endpoints serve verbatim, so a private board's name leaked through them too.
+- **`/ap/search` was the fifth surface, and it was missed until the
+  documentation audit read the API reference against the code.** The query
+  filtered the viewer's role and not `ap_enabled`, and every result was rendered
+  as a full Article object — title, body, attachments, stamped `as:Public` — to
+  anonymous callers, while the same article's own permalink answered 404. The
+  gate is opt-in per caller, because the site's own search must keep listing
+  content in boards whose federation is off, and it is a clause in the query
+  rather than a filter over the results, so the collection's `totalItems` cannot
+  advertise a count its pages are unable to fill.
+- **A withdrawal is never gated.** Closing the leak above initially dropped
+  `Delete(Tombstone)` as well, so an article that had left its last federated
+  board could no longer be withdrawn — moderation removing a post meant the
+  author's later delete never reached the servers that held it.
+- **The shipped nginx example did not deny `/uploads/media_cache/`.** Only the
+  Ansible template did, while `doc/sysop.md` told a manual installer to copy the
+  example and then asserted that "the shipped config" denied it. Anyone who
+  followed the guide had the HMAC-signed `/media/` route bypassable and every
+  cached third-party image readable by guessing a path — the one thing
+  [ADR 0006](doc/adr/0006-media-proxy-no-third-party-subresources.md) needs nginx to
+  enforce, because systemd's `ReadWritePaths` forces that cache under
+  `uploads/`.
+- **Retention could empty a moderation record and orphan image files.** A report
+  on a comment was silently blanked when its article was purged, and files
+  belonging to cascaded comments were never unlinked. Found and fixed before the
+  feature shipped.
+- **Image deletion did not work at all, in three places.** Each used a stored
+  absolute path into the release directory current at upload time, which the
+  deploy deletes — so the unlink silently did nothing while the row naming the
+  file was destroyed, leaving the image served forever with no way to find it.
+  Retention was the worst case (every file it purged); the orphan sweeps and
+  `ArticleImageStorage.delete_image/1` had the same defect in narrower windows,
+  and a deploy is exactly the event that lands inside them. All three rebuild
+  the path from the filename, confined under the uploads root, and log a missing
+  file instead of swallowing it — swallowing it is what hid all three.
+- **Usernames were case-sensitive**, so `Admin` could be registered alongside
+  `admin`. That is a distinct fediverse actor for impersonation, and it made the
+  mention lookup return two rows — a permanent crash for anyone who wrote
+  `@admin` in a post.
+- **Admin sudo mode was only checked at mount.** A socket opened inside the
+  ten-minute window kept accepting admin events for as long as it stayed
+  connected; it is now re-checked on every event. A role change revokes the
+  account's sessions, so a demoted admin's open tabs stop acting with authority
+  they no longer have.
+- **A domain block now stops us reaching out on every hop.** Two fetch paths
+  still reached a blocked instance: the actor resolver's signed retry, which a
+  redirect could steer, and the fetch behind an `Announce`, whose URI a verified
+  sender chooses freely. Signature and authorization headers are dropped on
+  every redirect.
+- **The personal timeline showed posts nobody had addressed to its viewers.** It
+  had no visibility filter, and for a boost the follow proves nothing about the
+  author — so a hostile instance could put a victim's followers-only post in
+  front of everyone who followed the booster. Direct posts never appear.
+- **A locked thread accepted replies from the fediverse**, and a peer could pin
+  its own post to the top of every follower's timeline indefinitely with a
+  `published` date in the future. Both refused now.
+- **A key named `legacy` silently destroyed what it encrypted.** That id is
+  reserved for the `SECRET_KEY_BASE` fallback, and nothing reserved it: a key
+  configured under that name was written with one key and read back with
+  another, so every TOTP secret enrolled afterwards became unreadable — while
+  the health check that exists to catch exactly this reported no problem. The id
+  is refused at boot, and two further defects in the same check are fixed: it
+  could report a lockout for a perfectly readable row (and crash the health
+  endpoint doing so), and it loaded every ciphertext in the database on each
+  scrape.
+- Poll voter counts collapsed a local member and a remote actor that happened to
+  share an id, under-reporting the count to every reader and to the fediverse.
+  An unauthenticated request could crash the `/feed` redirect with a crafted
+  query string. SSRF deny-list coverage for three further ranges
+  (`64:ff9b:1::/48`, `fec0::/10`, `192.88.99.0/24`).
+
+### Fixed
+
+- **A board's ActivityPub following collection discarded `?page`** — the only
+  collection action that did not thread its params through — so the `first` link
+  it advertises answered with the root collection again and a peer could never
+  walk it. Its documentation also still claimed the collection is always empty;
+  a board follows remote actors, and that is how remote content reaches it.
+- **Accessibility**: the "Remove from board" control, and four other places,
+  used a colour at 1.89:1 against its background in the default light theme;
+  fifteen more text elements sat at 3.22:1. Two breadcrumb landmarks had no
+  accessible name. Loading older direct messages read the whole conversation
+  aloud, because the live region was the entire list.
+- The privacy policy said deleted posts were kept indefinitely, which had
+  stopped being true; the retention periods and the report exemption are now
+  written down in both languages.
+- Three fuzzy mistranslations the gettext merge introduced ("Timeline" as
+  "Timezone" in two locales, among others), and a batch of missing translations.
+- **Two acceptance gates were not testing anything.** The permissions gate
+  searched the file that defines the permissions, so it could never fail — five
+  permissions had gone unenforced behind it. The LIKE-sanitization test asserted
+  only that a list came back. Both now fail when the behaviour they guard is
+  removed.
+- An hourly purge of soft-deleted content scanned `articles` and `comments`
+  whole, because the existing index on `deleted_at` covers only the rows the
+  purge never wants.
+- **The documentation audit corrected what a reader would have been told**, not
+  only what was missing: the ActivityPub reference predated both federation-gate
+  commits and never mentioned that the inbox answers 202 — the primary response
+  a federating peer gets; the NodeInfo, WebFinger and actor samples had drifted
+  from what we emit; the SSRF range list was missing seven entries; the
+  rate-limit table was missing thirteen live buckets; user actor keypairs were
+  documented as rotatable from `/admin/federation`, where no such control
+  renders; and the feed-bot subsystem had no entry in the operator guide at all.
+  Three docstrings in `lib/` had gone outright false, including one that
+  contradicted a comment five lines below it.
+
 ## [1.27.0] — 2026-09-18
 
 Phase 2, stage 2G: every secret Baudrate keeps at rest gets a key of its own,
