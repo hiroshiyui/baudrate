@@ -93,6 +93,24 @@ After the keys are separated and nothing is left under `legacy`, changing
 `SECRET_KEY_BASE` costs only in-flight things: sessions end, open pages
 reconnect, and rendered image URLs re-sign.
 
+#### The app refuses to start after setting the keys
+
+`BAUDRATE_AUTH_KEYS` and `BAUDRATE_SIGNING_KEYS` are validated at boot in
+production, and a bad value raises rather than starting with keys that would
+write secrets nobody can read back. The message names the variable and the
+position of the offending entry, never the key itself:
+
+| Message | Cause |
+|---------|-------|
+| `the id "legacy" is reserved for the SECRET_KEY_BASE fallback` | `legacy` labels the values still protected by `SECRET_KEY_BASE`. A configured key of that name would be written with one key and read with another, and neither `key_census` nor the `encryption_keys` health check could see it |
+| ``expected `id:key` `` | An entry has no colon. The format is `id:key`, current key first |
+| `bad id: expected 1-16 of [A-Za-z0-9_-]` | Usually the `id:key` order reversed — the id is everything before the first colon |
+| `the key for id … is not Base64` / `decodes to N bytes, not 32` | Each key is 32 random bytes in Base64: `openssl rand -base64 32` |
+| `lists the same id twice` | An id labels one key in stored values, so each must appear once |
+
+Pick any other id for a new key (`k1`, or a date such as `202609`). The id is
+written into every value encrypted under it, so it cannot change afterwards.
+
 ---
 
 ## Database
@@ -336,7 +354,8 @@ All federation actor URIs must be HTTPS. Baudrate will not:
 - Accept HTTP actor URIs in incoming activities
 - Deliver to HTTP inbox URLs
 
-**Exception:** Localhost (`127.0.0.1`, `::1`) is allowed in dev/test.
+**Exception:** plain HTTP to `localhost` or `127.0.0.1` is allowed in dev/test
+only (`allow_http_localhost`). `::1` is **not** — use `127.0.0.1`.
 
 ### PHX_HOST must match your public hostname
 
@@ -406,8 +425,11 @@ ORDER BY id DESC LIMIT 20;
   and one per remote account, so one account's backlog does not delay others.
   With federation switched off, nothing is processed.
 - `rejected` — the handler refused it; `last_error` gives the reason, such as
-  `:not_found` (the local account or board does not exist) or `:domain_blocked`
-  (the domain was blocked after the activity arrived).
+  `:not_found` (the local account or board does not exist), `:domain_blocked`
+  (the domain was blocked after the activity arrived) or `:actor_suspended`
+  (that one account was suspended instance-wide). The admission checks run
+  again at processing time, which is why a decision taken after the 202 still
+  takes effect.
 - `failed` — processing crashed or ran past 5 minutes three times; the log has
   `federation.inbound_crashed` or `federation.inbound_timeout` with the id.
 
@@ -437,7 +459,19 @@ Domains with a row in `domain_blocks` (managed at `/admin/federation`) are:
 
 - Rejected at inbox (incoming activities return 202 but are silently dropped)
 - Skipped during delivery (jobs marked as abandoned with reason `"domain_blocked"`)
+- Not fetched **from**: actor and object resolution refuse with `:domain_blocked`,
+  the reply-chain walk will not follow an `inReplyTo` into the domain
+  (`federation.reply_chain_domain_blocked`), and the media proxy serves
+  `/images/media-unavailable.svg` instead of its images
+- Hidden from listings at query time — nothing is deleted and nothing is stamped
+  on a row, so unblocking restores the content by itself
+  ([ADR 0030](adr/0030-domain-blocks-are-rows-and-hiding-is-reversible.md))
 - Domain comparison is case-insensitive
+
+A single account can be suspended instead of its whole domain, from
+`/admin/federation/instances/:domain`. It is the same predicate, so it hides and
+refuses the same way. Staff pages deliberately keep showing hidden content:
+moderators cannot judge what they cannot see.
 
 ---
 
@@ -485,6 +519,9 @@ To see what a run would remove without removing it, and to check whether one
 ran:
 
 ```bash
+# brpc is the wrapper from the SysOp Guide, "Rotating an encryption key"; it
+# sources the environment file so `rpc` has the server's RELEASE_COOKIE.
+brpc() { sudo -u baudrate sh -c "cd /opt/baudrate && set -a; . /opt/baudrate/env/baudrate.env; set +a; exec /opt/baudrate/current/bin/baudrate rpc \"$1\""; }
 brpc "Baudrate.Retention.run(dry_run: true)"
 journalctl -u baudrate | grep retention:
 ```
@@ -663,6 +700,12 @@ The report is on the server only: `curl -s http://127.0.0.1:4001/health | jq`
 - `backup` — the newest backup is over 26 hours old, or there is none:
   `systemctl list-timers baudrate-backup` and `journalctl -u baudrate-backup`.
   A backup refused for lack of disk space shows both this and `disk` failing.
+- `encryption_keys` — a stored secret names a key this instance does not have,
+  so those rows cannot be read. `missing_keys` in the details names the id: put
+  that key back in `BAUDRATE_AUTH_KEYS` / `BAUDRATE_SIGNING_KEYS` and restart.
+  The check is skipped while both classes are still derived from
+  `SECRET_KEY_BASE`. This is the one check whose failure locks members out of
+  their own accounts, so treat it as urgent.
 - A check reports `raised an error` — the check itself failed (for example a
   table missing because migrations did not run). The reason is deliberately
   generic; the log has the error.
