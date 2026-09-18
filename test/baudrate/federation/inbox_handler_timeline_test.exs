@@ -151,6 +151,40 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
       assert Federation.get_timeline_item_by_ap_id(ap_id) == nil
     end
 
+    test "clamps a future published date to now", %{user: user, actor: actor} do
+      # `published_at` is peer-supplied and the timeline orders on it, so
+      # `"published": "2099-01-01T00:00:00Z"` pinned the item to slot one of
+      # every follower's timeline — outranking local articles and comments in
+      # the same merge — and stayed there, because retention ages rows by
+      # `inserted_at` and so never reached it.
+      create_accepted_follow(user, actor)
+      activity = note_activity(actor, %{"published" => "2099-01-01T00:00:00Z"})
+      ap_id = activity["object"]["id"]
+
+      assert :ok = InboxHandler.handle(activity, actor, :shared)
+
+      item = Federation.get_timeline_item_by_ap_id(ap_id)
+      assert item != nil, "the item must be stored, with a date we can honour"
+
+      assert item.published_at.year == DateTime.utc_now().year,
+             "a future date is clamped to now, not stored as given"
+
+      assert abs(DateTime.diff(DateTime.utc_now(), item.published_at)) <= 60
+    end
+
+    test "keeps a published date in the past", %{user: user, actor: actor} do
+      # The clamp is one-sided: a genuinely older post keeps its date.
+      create_accepted_follow(user, actor)
+
+      then = DateTime.utc_now() |> DateTime.add(-2, :day) |> DateTime.truncate(:second)
+      activity = note_activity(actor, %{"published" => DateTime.to_iso8601(then)})
+
+      assert :ok = InboxHandler.handle(activity, actor, :shared)
+
+      item = Federation.get_timeline_item_by_ap_id(activity["object"]["id"])
+      assert DateTime.compare(item.published_at, then) == :eq
+    end
+
     test "note replying to local article becomes comment, not feed item", %{
       user: user,
       actor: actor

@@ -185,5 +185,37 @@ defmodule Baudrate.Federation.TimelineItemTest do
       changeset = TimelineItem.changeset(%TimelineItem{}, attrs)
       assert changeset.valid?
     end
+
+    test "rejects a published_at in the future", %{actor: actor} do
+      # The handler clamps a peer-supplied date; this is the backstop, so no
+      # other writer can pin a row to the top of every follower's timeline.
+      changeset =
+        TimelineItem.changeset(%TimelineItem{}, item_attrs(actor, ~U[2099-01-01 00:00:00Z]))
+
+      refute changeset.valid?
+      assert errors_on(changeset)[:published_at] == ["must not be in the future"]
+    end
+
+    test "rejects a published_at a day out, not just a century", %{actor: actor} do
+      future = DateTime.utc_now() |> DateTime.add(1, :day) |> DateTime.truncate(:second)
+      refute TimelineItem.changeset(%TimelineItem{}, item_attrs(actor, future)).valid?
+    end
+
+    test "allows a minute of clock skew between instances", %{actor: actor} do
+      # The hazard is a date years out, not seconds: ordinary skew must not
+      # cost us a legitimate post.
+      skewed = DateTime.utc_now() |> DateTime.add(30, :second) |> DateTime.truncate(:second)
+      assert TimelineItem.changeset(%TimelineItem{}, item_attrs(actor, skewed)).valid?
+    end
+  end
+
+  defp item_attrs(actor, published_at) do
+    %{
+      remote_actor_id: actor.id,
+      activity_type: "Create",
+      object_type: "Note",
+      ap_id: "https://remote.example/notes/future-#{System.unique_integer([:positive])}",
+      published_at: published_at
+    }
   end
 end

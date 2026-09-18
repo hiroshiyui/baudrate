@@ -127,7 +127,13 @@ defmodule Baudrate.Federation.ActorResolver do
       site_uri = Federation.actor_uri(:site, nil)
       key_id = "#{site_uri}#main-key"
 
-      case HTTPClient.signed_get(actor_ap_id, private_key, key_id) do
+      # `refuse_blocked: true`, like the unsigned path: `validate_fetchable/1`
+      # only covers the first hop, so without it a redirect from an allowed
+      # domain into a blocked one was followed — and answering the unsigned
+      # GET with 401/403/404 is the documented way to make us retry here.
+      # ADR 0030 decision 9: a block stops us reaching out, not only
+      # listening.
+      case HTTPClient.signed_get(actor_ap_id, private_key, key_id, refuse_blocked: true) do
         {:ok, %{body: body}} ->
           parse_and_upsert(body, actor_ap_id)
 

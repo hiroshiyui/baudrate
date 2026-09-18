@@ -739,6 +739,30 @@ defmodule Baudrate.Federation.InboxHandler do
 
           :ok
 
+        # A lock is a moderation decision, and it has to hold on the side the
+        # traffic comes from. `Permissions.can_comment_on_article?/2` refuses
+        # local members on a locked thread, and the lock is even published as
+        # `baudrate:locked` — but nothing checked it here, so a moderator who
+        # locked a heated thread in a federated board kept receiving remote
+        # replies, each of which rendered and notified the author.
+        article.locked ->
+          Logger.info(
+            "federation.activity: type=Create(Note) rejected locked_article ap_id=#{ap_id}"
+          )
+
+          :ok
+
+        # A withdrawn article accepts nothing either: the comment would be
+        # invisible, but the author would still be notified about a post they
+        # deleted. The resolvers use a bare `Repo.get`, which does not filter
+        # `deleted_at`, so this is the check.
+        not is_nil(article.deleted_at) ->
+          Logger.info(
+            "federation.activity: type=Create(Note) rejected deleted_article ap_id=#{ap_id}"
+          )
+
+          :ok
+
         # A reply to the content of a user who has blocked the sender is
         # refused, exactly like a local comment across a block.
         reply_blocked?(article, parent_id, remote_actor) ->
@@ -945,10 +969,33 @@ defmodule Baudrate.Federation.InboxHandler do
     handle_announce_object(announce_ap_id, embedded_object, booster_actor)
   end
 
+  # Mirrors the reply-chain walk's check, which is the same class of hazard:
+  # a URI supplied by a verified sender that names somebody else's host.
+  defp object_host_blocked?(uri) do
+    case URI.parse(uri) do
+      %URI{host: host} when is_binary(host) ->
+        if Baudrate.Federation.Validator.domain_blocked?(host) do
+          Logger.info("federation.announce_object_domain_blocked: host=#{host}")
+          true
+        else
+          false
+        end
+
+      _ ->
+        true
+    end
+  end
+
   defp fetch_and_handle_announce_object(announce_ap_id, object_uri, booster_actor) do
     alias Baudrate.Federation.{HTTPClient, KeyStore, Validator}
 
-    if not Validator.valid_https_url?(object_uri) or Validator.local_actor?(object_uri) do
+    # The domain check belongs here as well as in the transport: a followed
+    # actor on an allowed domain can Announce any URI it likes, so without it
+    # an attacker chose which host we signed a request to. This was the only
+    # remaining outbound fetch with neither the pre-check nor
+    # `refuse_blocked:` (ADR 0030 decision 9).
+    if not Validator.valid_https_url?(object_uri) or Validator.local_actor?(object_uri) or
+         object_host_blocked?(object_uri) do
       :ok
     else
       with {:ok, _} <- KeyStore.ensure_site_keypair(),
@@ -956,7 +1003,7 @@ defmodule Baudrate.Federation.InboxHandler do
         site_uri = Federation.actor_uri(:site, nil)
         key_id = "#{site_uri}#main-key"
 
-        case HTTPClient.signed_get(object_uri, private_key, key_id) do
+        case HTTPClient.signed_get(object_uri, private_key, key_id, refuse_blocked: true) do
           {:ok, %{body: body}} ->
             case Jason.decode(body) do
               {:ok, object} ->
@@ -1200,14 +1247,29 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp resolve_attributed_to(_), do: nil
 
-  defp parse_published(nil), do: DateTime.utc_now() |> DateTime.truncate(:second)
+  defp parse_published(nil), do: now_truncated()
 
+  # Clamped to now, like `Bots.FeedParser.clamp_published_at/1` does for the
+  # other ingest path. `published_at` is peer-supplied and the timeline orders
+  # on it, so `"published": "2099-01-01T00:00:00Z"` pinned an item to slot one
+  # of every follower's timeline — outranking local articles and comments too,
+  # since they sort by `inserted_at` in the same merge — and stayed there
+  # until retention removed it, which ages by `inserted_at` and so never came
+  # sooner. A date in the future is not a date we can honour.
   defp parse_published(str) when is_binary(str) do
+    now = now_truncated()
+
     case DateTime.from_iso8601(str) do
-      {:ok, dt, _offset} -> DateTime.truncate(dt, :second)
-      _ -> DateTime.utc_now() |> DateTime.truncate(:second)
+      {:ok, dt, _offset} ->
+        dt = DateTime.truncate(dt, :second)
+        if DateTime.compare(dt, now) == :gt, do: now, else: dt
+
+      _ ->
+        now
     end
   end
+
+  defp now_truncated, do: DateTime.utc_now() |> DateTime.truncate(:second)
 
   # --- Content processing helpers ---
 

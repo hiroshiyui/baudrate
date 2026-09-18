@@ -68,7 +68,23 @@ defmodule Baudrate.Federation.TimelineItem do
     |> validate_length(:body, max: @max_body_length)
     # `source_url` is rendered as an href; only https may reach the column.
     |> validate_format(:source_url, ~r{\Ahttps://}, message: "must be an https URL")
+    # The timeline orders on `published_at`, and a peer chooses it. The
+    # handler clamps it; this is the backstop, so no other writer can pin a
+    # row to the top of every follower's timeline with a future date.
+    |> validate_not_future(:published_at)
     |> foreign_key_constraint(:remote_actor_id)
     |> unique_constraint(:ap_id)
+  end
+
+  # A minute of slack absorbs ordinary clock skew between instances; the
+  # hazard is a date years out, not seconds.
+  defp validate_not_future(changeset, field) do
+    validate_change(changeset, field, fn ^field, value ->
+      if DateTime.compare(value, DateTime.add(DateTime.utc_now(), 60, :second)) == :gt do
+        [{field, "must not be in the future"}]
+      else
+        []
+      end
+    end)
   end
 end

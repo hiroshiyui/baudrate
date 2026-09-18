@@ -214,6 +214,57 @@ defmodule Baudrate.Federation.HTTPClientTest do
       assert {:error, {:http_error, 301, ""}} =
                HTTPClient.get("https://remote.example/users/alice")
     end
+
+    test "does not carry signature headers across a redirect" do
+      # A signature is computed over one `(request-target)` and `host`, so it
+      # is meaningless anywhere else — but the header list was forwarded
+      # verbatim to every hop, handing a third party a valid site-key
+      # signature and our `keyId` over a request they never received. A
+      # redirect is the cheapest way for one server to collect our signed
+      # credentials addressed to another.
+      test_pid = self()
+      {:ok, agent} = Agent.start_link(fn -> 0 end)
+
+      Req.Test.stub(HTTPClient, fn conn ->
+        call = Agent.get_and_update(agent, fn n -> {n, n + 1} end)
+        send(test_pid, {:hop, call, conn.req_headers})
+
+        if call == 0 do
+          conn
+          |> Plug.Conn.put_resp_header("location", "https://elsewhere.example/users/alice")
+          |> Plug.Conn.send_resp(302, "")
+        else
+          Plug.Conn.send_resp(conn, 200, ~s({"type":"Person"}))
+        end
+      end)
+
+      {_public, private} = Baudrate.Federation.KeyStore.generate_keypair()
+
+      assert {:ok, %{status: 200}} =
+               HTTPClient.signed_get(
+                 "https://remote.example/users/alice",
+                 private,
+                 "https://local.example/ap/site#main-key",
+                 headers: [{"digest", "SHA-256=deadbeef"}]
+               )
+
+      assert_received {:hop, 0, first_headers}
+      assert List.keyfind(first_headers, "signature", 0), "the first hop is signed"
+      assert List.keyfind(first_headers, "date", 0)
+      assert List.keyfind(first_headers, "digest", 0)
+
+      assert_received {:hop, 1, second_headers}
+      names = Enum.map(second_headers, fn {name, _} -> String.downcase(name) end)
+
+      refute "signature" in names, "the redirect target must not receive our signature"
+      refute "digest" in names
+      refute "date" in names
+
+      # The request itself still happened, with the headers that are not
+      # bound to the original request line.
+      assert "accept" in names
+      assert "user-agent" in names
+    end
   end
 
   describe "post/3" do
@@ -413,6 +464,40 @@ defmodule Baudrate.Federation.HTTPClientTest do
       assert HTTPClient.private_ip?({203, 0, 113, 1})
       assert HTTPClient.private_ip?({198, 18, 0, 1})
       assert HTTPClient.private_ip?({198, 19, 255, 255})
+    end
+
+    test "NAT64 local-use prefix 64:ff9b:1::/48 is refused outright" do
+      # RFC 8215. Unlike the well-known prefix, the embedded IPv4 sits at a
+      # deployment-chosen offset, so there is nothing reliable to decode — and
+      # an address in this range is by definition behind a local translator.
+      assert HTTPClient.private_ip?({0x64, 0xFF9B, 1, 0, 0, 0, 0x0808, 0x0808})
+      assert HTTPClient.private_ip?({0x64, 0xFF9B, 1, 0xFFFF, 0, 0, 0, 1})
+
+      # Adjacent, outside the /48: 64:ff9b:2:: is not reserved for NAT64, and
+      # 64:ff9b:: with a public embedded IPv4 stays reachable.
+      refute HTTPClient.private_ip?({0x64, 0xFF9B, 2, 0, 0, 0, 0x0808, 0x0808})
+      refute HTTPClient.private_ip?({0x64, 0xFF9B, 0, 0, 0, 0, 0x0808, 0x0808})
+    end
+
+    test "IPv6 fec0::/10 (deprecated site-local) is private" do
+      # Deprecated by RFC 3879 but still routed on some networks, so a host
+      # resolving here is still reaching inside.
+      assert HTTPClient.private_ip?({0xFEC0, 0, 0, 0, 0, 0, 0, 1})
+      assert HTTPClient.private_ip?({0xFEFF, 0, 0, 0, 0, 0, 0, 1})
+
+      # Both neighbours of fec0::/10 were already denied (fe80::/10 below,
+      # ff00::/8 above), so the check that it is still a range and not a
+      # blanket `fe*` is the fe00::/9 gap between fc00::/7 and fe80::/10.
+      refute HTTPClient.private_ip?({0xFE00, 0, 0, 0, 0, 0, 0, 1})
+    end
+
+    test "192.88.99.0/24 (deprecated 6to4 relay anycast) is private" do
+      # RFC 7526.
+      assert HTTPClient.private_ip?({192, 88, 99, 1})
+      assert HTTPClient.private_ip?({192, 88, 99, 255})
+
+      refute HTTPClient.private_ip?({192, 88, 98, 1})
+      refute HTTPClient.private_ip?({192, 88, 100, 1})
     end
 
     test "addresses adjacent to the new IPv4 ranges stay public" do

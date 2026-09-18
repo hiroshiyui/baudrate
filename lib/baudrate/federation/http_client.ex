@@ -336,9 +336,21 @@ defmodule Baudrate.Federation.HTTPClient do
   # usefully, but there is no reason to disclose it. Authorized-fetch peers do
   # not redirect their actor documents; one that does gets an unsigned retry,
   # which is the same outcome as before for anything that verifies.
+  # A signature is computed over the original request line and host, so it is
+  # meaningless to the redirect target and must not be handed to it — a
+  # redirect is the cheapest way for one server to collect our signed
+  # credentials addressed to another. `authorization` and `signature-input`
+  # are not set by any caller today; they are here so that adding one cannot
+  # quietly reintroduce the leak.
   defp drop_signature_headers(headers) do
     Enum.reject(headers, fn {name, _value} ->
-      String.downcase(name) in ["signature", "digest", "date"]
+      String.downcase(name) in [
+        "signature",
+        "signature-input",
+        "digest",
+        "date",
+        "authorization"
+      ]
     end)
   end
 

@@ -2874,4 +2874,74 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert length(Content.list_comments_for_article(article)) == 1
     end
   end
+
+  describe "Create(Note) — locked and withdrawn reply targets" do
+    # A lock is a moderation decision and a delete is a withdrawal; both have
+    # to hold on the side the traffic comes from. `can_comment_on_article?/2`
+    # refuses local members on a locked thread and the lock is even published
+    # as `baudrate:locked`, but nothing checked either here — so a moderator
+    # who locked a heated thread kept receiving remote replies, each of which
+    # rendered and notified the author, and a deleted article still notified
+    # its author about a post they had withdrawn.
+    #
+    # The refusal is `:ok`, not an error: a 4xx would make the sending
+    # instance retry the activity forever.
+    defp comment_rows(article) do
+      Repo.all(from(c in Baudrate.Content.Comment, where: c.article_id == ^article.id))
+    end
+
+    defp notification_rows(user) do
+      Repo.all(from(n in Baudrate.Notification.Notification, where: n.user_id == ^user.id))
+    end
+
+    test "an open article is the control: it takes the comment and notifies" do
+      user = setup_user_with_role("user")
+      article = create_article_for_board(user, create_board())
+      remote_actor = create_remote_actor()
+
+      activity =
+        note_reply_activity(remote_actor, Federation.actor_uri(:article, article.slug))
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      assert length(comment_rows(article)) == 1
+      assert Enum.any?(notification_rows(user), &(&1.type == "reply_to_article"))
+    end
+
+    test "drops a reply to a locked article, with :ok" do
+      user = setup_user_with_role("user")
+      article = create_article_for_board(user, create_board())
+      remote_actor = create_remote_actor()
+
+      article = article |> Ecto.Changeset.change(%{locked: true}) |> Repo.update!()
+
+      activity =
+        note_reply_activity(remote_actor, Federation.actor_uri(:article, article.slug))
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared),
+             "a refusal must not be an error: the sender would retry forever"
+
+      assert comment_rows(article) == []
+      assert notification_rows(user) == []
+    end
+
+    test "drops a reply to a soft-deleted article, with :ok" do
+      user = setup_user_with_role("user")
+      article = create_article_for_board(user, create_board())
+      remote_actor = create_remote_actor()
+
+      # The resolvers use a bare `Repo.get`, which does not filter
+      # `deleted_at`, so the handler is the only thing that can refuse this.
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      article = article |> Ecto.Changeset.change(%{deleted_at: now}) |> Repo.update!()
+
+      activity =
+        note_reply_activity(remote_actor, Federation.actor_uri(:article, article.slug))
+
+      assert :ok = InboxHandler.handle(activity, remote_actor, :shared)
+
+      assert comment_rows(article) == []
+      assert notification_rows(user) == []
+    end
+  end
 end
