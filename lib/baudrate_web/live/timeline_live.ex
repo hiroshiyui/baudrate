@@ -9,7 +9,7 @@ defmodule BaudrateWeb.TimelineLive do
   up to 4 images, optional polls, and a search-based multi-board picker
   backed by `Content.search_boards/2`) that can either cross-post to one or
   more boards or, when no board is selected, create a board-less personal
-  article. Also provides inline reply forms for responding to remote feed
+  article. Also provides inline reply forms for responding to remote timeline
   items via ActivityPub. Subscribes to `Federation.PubSub` for real-time
   updates.
 

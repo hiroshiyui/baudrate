@@ -38,6 +38,12 @@ defmodule Baudrate.Crypto.Keyring do
   are bound to their row, and a release older than ADR 0038 can no longer
   read them. That is the point at which a rollback needs the rotation task
   run backwards, and it is a step the operator takes deliberately.
+
+  `"legacy"` is therefore a **reserved id**: `config/runtime.exs` refuses it
+  in `BAUDRATE_AUTH_KEYS` / `BAUDRATE_SIGNING_KEYS` and the instance will not
+  boot with it. A key configured under that name was written with the
+  configured subkey and read back with the `SECRET_KEY_BASE` one, and both the
+  census and the health report called it fine.
   """
 
   require Logger

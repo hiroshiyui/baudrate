@@ -33,8 +33,11 @@ defmodule Baudrate.Federation.Collections do
   Without `?page`, returns the root collection with `totalItems` and `first` link.
   With `?page=N`, returns an `OrderedCollectionPage` with items.
 
-  The outbox contains `Create(Article)` activities for the user's published articles
-  in public boards.
+  The outbox contains `Create(Article)` activities for the user's published
+  articles in federated boards — `min_role_to_view == "guest"` **and**
+  `ap_enabled`, the same gate as `Baudrate.Content.Board.federated?/1`. An
+  article that lives only in a guest-readable board whose federation the admin
+  turned off is not listed here.
   """
   def user_outbox(user, page_params \\ %{}) do
     outbox_uri = "#{actor_uri(:user, user.username)}/outbox"

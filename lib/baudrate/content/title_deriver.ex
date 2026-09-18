@@ -2,7 +2,7 @@ defmodule Baudrate.Content.TitleDeriver do
   @moduledoc """
   Derives article titles from content when no explicit title is available.
 
-  Used when materializing feed items or comments into articles, and by
+  Used when materializing timeline items or comments into articles, and by
   the federation inbox handler when receiving AP objects without a `name`
   field.
   """

@@ -402,14 +402,14 @@ defmodule Baudrate.Content.Articles do
   end
 
   @doc """
-  Forwards a feed item to a board by materializing it as a remote article.
+  Forwards a timeline item to a board by materializing it as a remote article.
 
   If an article with the same `ap_id` already exists, links it to the
   target board instead of creating a duplicate. Requires the user to
-  have posting permission in the target board and the feed item to have
+  have posting permission in the target board and the timeline item to have
   `public` or `unlisted` visibility (or user is admin).
 
-  Returns `{:ok, article}` on success, `{:error, :not_found}` if the feed
+  Returns `{:ok, article}` on success, `{:error, :not_found}` if the timeline
   item is soft-deleted, or `{:error, reason}`.
   """
   def forward_timeline_item_to_board(

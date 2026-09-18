@@ -17,16 +17,23 @@ defmodule Baudrate.Federation do
     followers, following, boards index, article replies, and search
   - **User follows** — local users can follow remote actors via Follow/Undo(Follow)
     and local users via auto-accepted follows; both share the `user_follows` table
-  - **Personal feed** — incoming Create activities from followed actors stored as
-    `TimelineItem` records; union query merges remote feed, local articles from
-    followed users, and comment participation
+  - **Personal timeline** — incoming Create activities from followed actors stored
+    as `TimelineItem` records; union query merges remote timeline items, local
+    articles from followed users, and comment participation
   - **Public API** — AP endpoints double as public API; accepts `application/json`,
     CORS enabled on GET, `Vary: Accept` on content-negotiated endpoints
 
-  Private boards are excluded from all federation endpoints — WebFinger,
+  Non-federated boards are excluded from all federation endpoints — WebFinger,
   actor profiles, outbox, inbox, followers, and audience resolution all
-  return 404 or skip private boards. Articles exclusively in private
-  boards are also hidden from user outbox and article endpoints.
+  return 404 or skip them. The gate is `Baudrate.Content.Board.federated?/1`,
+  which requires `min_role_to_view == "guest"` **and** `ap_enabled`, so
+  turning federation off for a guest-readable board takes it out of all of
+  them. Articles that live only in non-federated boards are likewise hidden
+  from the user outbox and the article endpoints, and are not named in the
+  `cc`/`audience` of any object we build (ADR 0004). A withdrawal —
+  `Delete(Tombstone)` or `Undo` — is deliberately never gated, because it
+  carries no content and refusing one would leave the post published on every
+  follower's server for good.
 
   ## Actor Mapping
 

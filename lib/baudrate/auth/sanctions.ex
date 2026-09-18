@@ -20,7 +20,7 @@ defmodule Baudrate.Auth.Sanctions do
 
   ## What a silence stops, and what it leaves alone
 
-  Refused: articles, article edits, comments, feed replies, likes, boosts,
+  Refused: articles, article edits, comments, timeline replies, likes, boosts,
   forwards, poll votes, follows, direct messages, invites, and profile changes
   (display name, bio, avatar, links) — a bio is a billboard, and silencing
   someone who is then free to rewrite theirs at their target achieves nothing.

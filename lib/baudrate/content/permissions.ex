@@ -282,13 +282,16 @@ defmodule Baudrate.Content.Permissions do
   end
 
   @doc """
-  Returns true if the user can forward a feed item to a board.
+  Returns true if the user can forward a timeline item to a board.
 
-  Admins can always forward. Other authenticated users can forward feed items
-  with `public` or `unlisted` visibility that are reachable from their own
-  feed (`Federation.timeline_item_accessible?/2`) — `timeline_items` rows are global,
-  so without the reachability check any user could forward an item belonging
-  to an actor they do not follow.
+  **There is no admin exemption here**, unlike `can_forward_article?/2` and
+  `can_forward_comment?/2`: an authenticated user — admin or not — can forward
+  only a timeline item with `public` or `unlisted` visibility that is reachable
+  from their own timeline (`Federation.timeline_item_accessible?/2`).
+  `timeline_items` rows are global, so without the reachability check any user
+  could forward an item belonging to an actor they do not follow; and
+  forwarding re-publishes the item to a board's fediverse followers, which a
+  `followers_only` or `direct` item must never reach whoever asks for it.
   """
   def can_forward_timeline_item?(nil, _timeline_item), do: false
 
