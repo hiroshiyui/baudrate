@@ -176,13 +176,13 @@ lib/
 │   │   ├── domain_block.ex      # DomainBlock schema (one blocked domain, with reason and author)
 │   │   ├── domain_block_cache.ex # ETS-backed cache for domain blocking decisions
 │   │   ├── domain_blocks.ex     # Instance-level domain blocks: block, unblock, sever follows
-│   │   ├── feed.ex              # Personal feed logic: Create(Note/Article) routing, boost handling
-│   │   ├── feed_item.ex         # FeedItem schema (posts from followed remote actors)
-│   │   ├── feed_item_boost.ex   # FeedItemBoost schema (local boosts on remote feed items)
-│   │   ├── feed_item_like.ex    # FeedItemLike schema (local likes on remote feed items)
-│   │   ├── feed_item_reply.ex   # FeedItemReply schema (local replies to remote feed items)
-│   │   ├── feed_item_reply_image.ex # FeedItemReplyImage schema (image attachments on feed item replies)
-│   │   ├── reply_images.ex      # Helper for feed item reply images
+│   │   ├── timeline.ex          # Personal timeline logic: Create(Note/Article) routing, boost handling
+│   │   ├── timeline_item.ex         # TimelineItem schema (posts from followed remote actors)
+│   │   ├── timeline_item_boost.ex   # TimelineItemBoost schema (local boosts on remote timeline items)
+│   │   ├── timeline_item_like.ex    # TimelineItemLike schema (local likes on remote timeline items)
+│   │   ├── timeline_item_reply.ex   # TimelineItemReply schema (local replies to remote timeline items)
+│   │   ├── timeline_item_reply_image.ex # TimelineItemReplyImage schema (image attachments on timeline item replies)
+│   │   ├── reply_images.ex      # Helper for timeline item reply images
 │   │   ├── follower.ex          # Follower schema (remote → local follows)
 │   │   ├── follows.ex           # Local/remote follow logic, acceptance, and migration
 │   │   ├── http_client.ex       # SSRF-safe HTTP client for remote fetches (unsigned + signed GET)
@@ -197,7 +197,7 @@ lib/
 │   │   ├── object_builder.ex    # ActivityStreams JSON builders for articles, comments, polls
 │   │   ├── object_resolver.ex   # Two-phase remote object resolution (fetch/resolve)
 │   │   ├── publisher.ex         # High-level activity publishing API
-│   │   ├── pubsub.ex            # Federation PubSub (user feed events)
+│   │   ├── pubsub.ex            # Federation PubSub (user timeline events)
 │   │   ├── remote_actor.ex      # RemoteActor schema (cached remote profiles)
 │   │   ├── remote_actors.ex     # Instance-wide suspension of a single remote actor (ADR 0030, decision 6)
 │   │   ├── sanitizer.ex         # HTML sanitizer for federated content (Ammonia NIF)
@@ -221,7 +221,7 @@ lib/
 │   ├── moderation.ex            # Moderation context: reports, resolve/dismiss, audit log
 │   ├── moderation/
 │   │   ├── log.ex               # ModerationLog schema (audit trail of moderation actions)
-│   │   └── report.ex            # Report schema (article, comment, remote actor, user, feed item, DM targets)
+│   │   └── report.ex            # Report schema (article, comment, remote actor, user, timeline item, DM targets)
 │   ├── notification.ex          # Notification context: create, list, mark read, cleanup, admin announcements
 │   ├── notification/
 │   │   ├── hooks.ex             # Fire-and-forget notification creation hooks (comment, article, like, follow, report)
@@ -312,7 +312,7 @@ lib/
 │   │   ├── conversation_live.ex # Single DM conversation thread view
 │   │   ├── conversations_live.ex # DM conversation list
 │   │   ├── data_export_live.ex  # Self-service data export request and download (ADR 0023)
-│   │   ├── feed_live.ex          # Personal feed (remote posts, local articles, comment activity)
+│   │   ├── timeline_live.ex          # Personal timeline (remote posts, local articles, comment activity)
 │   │   ├── following_live.ex    # Following management (outbound remote actor follows)
 │   │   ├── home_live.ex         # Home page (board listing, public for guests)
 │   │   ├── interaction_helpers.ex # Shared like/boost toggle event handlers
@@ -327,7 +327,7 @@ lib/
 │   │   ├── recovery_code_verify_live.ex  # Recovery code login
 │   │   ├── recovery_codes_live.ex        # Recovery codes display
 │   │   ├── register_live.ex     # Public user registration (supports invite-only mode, terms notice, recovery codes)
-│   │   ├── safety_actions.ex    # Shared handlers: block/mute remote accounts, report feed items, DMs, accounts
+│   │   ├── safety_actions.ex    # Shared handlers: block/mute remote accounts, report timeline items, DMs, accounts
 │   │   ├── search_live.ex       # Full-text search + remote actor lookup (WebFinger/AP)
 │   │   ├── tag_live.ex          # Browse articles by hashtag (/tags/:tag)
 │   │   ├── user_invites_live.ex # User invite code management (quota-limited, generate, revoke)
@@ -759,7 +759,7 @@ can create articles. Two entry points:
 - `/boards/:slug/articles/new` — pre-selects the board via a fixed hidden input (no picker shown)
 - `/articles/new` — user picks one or more boards via a debounced search input backed by `Content.search_boards/2`. Selected boards render as removable chips with hidden `board_ids[]` inputs so the form submission carries the full selection. Both the search query and the add-board handler go through `can_post_in_board?/2`.
 
-The `/feed` quick-post composer uses the same search-and-chip pattern for its optional board selection. Leaving the picker empty creates a board-less personal article (the composer's default behavior); adding boards cross-posts the article to them.
+The `/timeline` quick-post composer uses the same search-and-chip pattern for its optional board selection. Leaving the picker empty creates a board-less personal article (the composer's default behavior); adding boards cross-posts the article to them.
 
 Articles are assigned a URL-safe slug generated from the title with a random
 suffix to avoid collisions. Articles can be cross-posted to multiple boards.
@@ -772,7 +772,7 @@ Authors and admins can also remove an article from specific boards via the
 edit form, potentially making it boardless again.
 
 All three forward paths (`Content.forward_article_to_board/3`,
-`forward_comment_to_board/3`, `forward_feed_item_to_board/3`) enforce two
+`forward_comment_to_board/3`, `forward_timeline_item_to_board/3`) enforce two
 invariants at the context boundary rather than relying on their callers:
 
 - **Source-board view gate** — the acting user must be able to view the board
@@ -783,20 +783,20 @@ invariants at the context boundary rather than relying on their callers:
 - **Soft-delete gate** — a source record with a non-nil `deleted_at` returns
   `{:error, :not_found}`. The LiveView handlers resolve the source from a
   client-supplied ID with a bare `Repo.get/2`, which does not filter
-  `deleted_at`, so a removed comment or a withdrawn feed item could otherwise
+  `deleted_at`, so a removed comment or a withdrawn timeline item could otherwise
   be resurrected as a permanent board article.
 
-For feed items specifically, a third gate applies. `feed_items` rows are
-global — feed membership is a query-time JOIN on `user_follows`, not a
-per-user column — so `Federation.feed_item_accessible?/2` is the single
-reachability predicate shared by every entry point that resolves a feed item
+For timeline items specifically, a third gate applies. `timeline_items` rows are
+global — timeline membership is a query-time JOIN on `user_follows`, not a
+per-user column — so `Federation.timeline_item_accessible?/2` is the single
+reachability predicate shared by every entry point that resolves a timeline item
 from a client-supplied ID: like, boost, reply, and forward-to-board. It
 requires an `accepted` follow on the item's **source** actor — the author for
 `Create`, the **booster** for `Announce` (for a boost, `remote_actor_id` is
 the original author, whom the user need not follow) — and rejects
 soft-deleted items. Admins bypass the follow requirement when forwarding.
 
-The `visibility` field on articles, comments, and feed items records the
+The `visibility` field on articles, comments, and timeline items records the
 ActivityPub visibility derived from `to`/`cc` addressing:
 - `public` — `as:Public` in `to` (default for local content)
 - `unlisted` — `as:Public` in `cc` only
@@ -1314,7 +1314,7 @@ a member past their time nor lift one early. `SessionCleaner` only sends the
 **One gate.** `Auth.ensure_can_interact/1` returns `:ok` or
 `{:error, :banned | :account_suspended | :account_silenced | :account_moved}`
 in a single query, and is what every context function calls before it lets an
-account create content or interact — articles, edits, comments, feed replies,
+account create content or interact — articles, edits, comments, timeline replies,
 likes, boosts, forwards, poll votes, follows, DMs, invites, and display name,
 bio, avatar, signature and profile fields. It replaced
 `AccountMigration.ensure_not_moved/1` at every call site, because two parallel
@@ -1365,10 +1365,10 @@ a moderator.
 Sanctions are **local**: nothing is sent over ActivityPub, following P1-D1.
 
 **User-facing reports:** Authenticated users can report articles, comments,
-other users, feed items, direct messages they received, and remote accounts
+other users, timeline items, direct messages they received, and remote accounts
 directly from the UI. Report controls appear on article pages (for articles and
 comments by other users), user profile pages, the "More actions" menu of remote
-feed items and remote comments, the header menu of a conversation with a remote
+timeline items and remote comments, the header menu of a conversation with a remote
 actor, and on every received message. Reports are submitted via a modal dialog
 with a required reason category (P1-D9: spam, harassment, illegal content,
 breaks a rule, other) and a required free-text reason (max 2000 chars). Only
@@ -1380,7 +1380,7 @@ open report per reporter per exact target (`Moderation.has_open_report?/2`
 compares every target field, so reporting a post does not count as reporting
 its author). Report creation is rate-limited to 5 per 15 minutes per user.
 Reports target `article_id`, `comment_id`, `remote_actor_id`,
-`reported_user_id`, `feed_item_id` or `message_id`.
+`reported_user_id`, `timeline_item_id` or `message_id`.
 
 **Board moderators** have their own queue at `/moderation`
 (`BaudrateWeb.ModerationLive`), outside `/admin` because they are ordinary
@@ -1388,7 +1388,7 @@ members (role `user`). It lists only reports about articles in the boards
 they moderate and comments on those articles
 (`Moderation.paginate_reports(boards: …)`, scoped by
 `Content.moderated_board_ids/1`, which returns every board for staff): never
-reports about accounts, direct messages or feed items, and never another
+reports about accounts, direct messages or timeline items, and never another
 board's. Every action re-checks the scope (`Moderation.report_in_boards?/2`)
 and the delete permission, since the report id comes from the client. Boards
 link to it for their moderators. Both queues render a report through
@@ -1439,10 +1439,10 @@ original post, and how many **other** open reports share that exact target
 (`Moderation.other_open_report_counts/1`, one grouped query per target field,
 so no N+1).
 
-Feed items, messages and remote accounts are reported through
-`Moderation.report_feed_item/3`, `report_message/3` and
+Timeline items, messages and remote accounts are reported through
+`Moderation.report_timeline_item/3`, `report_message/3` and
 `report_remote_actor/3`, which check that the reporter can see the target (a
-feed item must pass `Federation.feed_item_accessible?/2`; a message must be in
+timeline item must pass `Federation.timeline_item_accessible?/2`; a message must be in
 the reporter's conversation, sent by the other participant, and not deleted).
 The remote author or sender becomes `remote_actor_id`, so "Send Flag" works; it
 forwards the reported objects' `ap_id`s. A message report stores a copy of that
@@ -1550,9 +1550,9 @@ rules; `/profile/move` (`AccountMigrationLive`) only collects input.
 | Banner | `Layouts.account_move_banner/1` on every page while a move is pending (`:active_account_move`, from `active_move_summary/1` in `AuthHooks`) |
 | `AccountMigration.sweep_due_moves/0` / `send_move/1` | Hourly (`SessionCleaner`). Re-checks eligibility and the target at send time; failures mark the move `failed` (`failure_reason`) with an `account_move_failed` notice. Success: one transaction marks it `sent` (conditional on `pending`, so a concurrent cancel wins) and sets `moved_to`/`moved_at`; then an actor `Update` (with `movedTo`) and `Publisher.build_move/2` go to remote followers, local followers are moved, and `account_moved` is sent |
 | `AccountMigration.migrate_local_followers/2` | Each active local follower: remove the local follow, `follow_on_behalf/2` (pending `UserFollow` + `Follow` delivery, skipped if already following), `actor_moved` notice (configurable type) |
-| Read-only | `AccountMigration.ensure_not_moved/1` at the context boundary: `Content.create_article/3` (Multi-shaped `{:error, :account, :account_moved, _}`; `forwarded_comment: true` exempts a comment forwarded by someone else), `update_article/3` (editor), `create_comment/2`, the create branch of article/comment like and boost toggles and feed item like/boost, `create_feed_item_reply/4`, `cast_vote/3`, `Messaging.can_send_dm?/2`, `Auth.can_generate_invite?/1`, and `can_create_content?/1` (so board posting and forwards). `create_local_follow/2` refuses following a moved account. Undoing, deleting, following and reading stay allowed |
+| Read-only | `AccountMigration.ensure_not_moved/1` at the context boundary: `Content.create_article/3` (Multi-shaped `{:error, :account, :account_moved, _}`; `forwarded_comment: true` exempts a comment forwarded by someone else), `update_article/3` (editor), `create_comment/2`, the create branch of article/comment like and boost toggles and timeline item like/boost, `create_timeline_item_reply/4`, `cast_vote/3`, `Messaging.can_send_dm?/2`, `Auth.can_generate_invite?/1`, and `can_create_content?/1` (so board posting and forwards). `create_local_follow/2` refuses following a moved account. Undoing, deleting, following and reading stay allowed |
 | After the move | `Layouts.account_moved_notice/1` for the owner; `/users/:name` shows "moved" with a link and no Follow/Message; `AccountMigration.remove_redirect/3` (step-up) clears the redirect, publishes an actor `Update`, sends `account_redirect_removed`; the move still counts toward 30 days |
-| Inbound `Move` | `AccountMigration.handle_inbound_move/2` (called by `InboxHandler`): alias check, `Undo(Follow)` + pending `Follow` per local follower (`follow_on_behalf/2`), `actor_moved` notices, feed item migration, `board_actor_moved` to admins, 30-day bound per origin |
+| Inbound `Move` | `AccountMigration.handle_inbound_move/2` (called by `InboxHandler`): alias check, `Undo(Follow)` + pending `Follow` per local follower (`follow_on_behalf/2`), `actor_moved` notices, timeline item migration, `board_actor_moved` to admins, 30-day bound per origin |
 
 ### Bookmarks
 
@@ -1656,7 +1656,7 @@ regular user profile fields).
 - `update_bot/2` / `delete_bot/1` — update/delete bot and its user account
 - `list_due_bots/0` — bots with `next_fetch_at` nil or in the past
 - `already_posted?/2` — GUID dedup check
-- `record_feed_item/3` — records a posted entry
+- `record_timeline_item/3` — records a posted entry
 - `mark_fetch_success/1` / `mark_fetch_error/1` — update fetch state with backoff
 - `avatar_needs_refresh?/1` / `mark_avatar_refreshed/1` — favicon refresh tracking (gate + 7-day cooldown)
 - `increment_favicon_fail_count/1` — increments consecutive failure counter
@@ -1695,7 +1695,7 @@ and never need to know about the internal split.
 | `Federation.ObjectBuilder` | ActivityStreams JSON-LD serialization for articles, comments, and polls |
 | `Federation.Collections` | Paginated OrderedCollection endpoints (Outbox, Followers, Boards) |
 | `Federation.Follows` | Inbound follower management and outbound user/board follow lifecycle |
-| `Federation.Feed` | Inbound activity routing to personal user feeds, feed item interactions (likes, boosts) |
+| `Federation.Timeline` | Inbound activity routing to personal timelines, timeline item interactions (likes, boosts) |
 | `Federation.InboxHandler` | Dispatches incoming Activities (Follow, Create, Like, Delete, etc.) to sub-modules |
 | `Federation.Publisher` | High-level API for publishing activities (Create, Update, Delete, Announce, Like, Undo, Move, PollVote) |
 | `Federation.Delivery` | DB-backed delivery queue, background workers, and exponential backoff retry logic |
@@ -1777,7 +1777,7 @@ once; `:discard` stores it without processing. Handler tests call
 - `Create(Note)` — stored as threaded comments on local articles (with remote reply chain walking up to 5 hops across at most 3 hosts, rate-limited, to resolve intermediate replies), or as DMs if privately addressed (no `as:Public`, no followers collection)
 - `Create(Article)` / `Create(Page)` — stored as remote articles in target boards (Page for Lemmy interop)
 - `Like` / `Undo(Like)` — article favorites. Remote articles (`remote_actor_id` set) always accept likes regardless of their board's `ap_enabled`; local articles require membership in at least one public, AP-enabled board (enforced by `article_federated?/1` in `InboxHandler`).
-- `Announce` / `Undo(Announce)` — boosts/shares (bare URI or embedded object map); routes boosted Article/Page to boards following the booster, creates feed items for user followers with boost attribution (loop-safe). Article-target boosts follow the same remote-vs-local federation rule as Likes.
+- `Announce` / `Undo(Announce)` — boosts/shares (bare URI or embedded object map); routes boosted Article/Page to boards following the booster, creates timeline items for user followers with boost attribution (loop-safe). Article-target boosts follow the same remote-vs-local federation rule as Likes.
 - `Update(Note/Article/Page)` — content updates with authorship check
 - `Update(Person/Group)` — actor profile refresh
 - `Delete(content)` — soft-delete with authorship verification
@@ -1786,7 +1786,7 @@ once; `:discard` stores it without processing. Handler tests call
 - `Block` / `Undo(Block)` — remote actor blocks (logged for informational purposes)
 - Local user blocks (ADR 0026): a remote actor's `Follow` of a user who blocked it is answered with `Reject(Follow)`, and its `Like`, `Announce` and replies on that user's articles and comments are dropped with `:ok`
 - `Accept(Follow)` / `Reject(Follow)` — mark outbound user follows as accepted/rejected
-- `Move` — handled by `AccountMigration.handle_inbound_move/2` (ADR 0025). Authorized only when the signer matches the Move `actor` and `object`, **and** the target claims the moving actor in `alsoKnownAs` (force-refreshed with `ActorResolver.refresh/1`; a local target is checked against `users.also_known_as`), otherwise `{:error, :move_not_authorized}`, so a remote actor cannot redirect its local followers onto a non-consenting target. Each active local follower sends `Undo(Follow)` to the old actor and a pending `Follow` to the new one (a local target gets a local follow), with an `actor_moved` notice. Feed items are repointed (`migrate_feed_items/2`, both `remote_actor_id` and `boosted_by_actor_id`) so history shows again once the new follow is accepted. Board follows are not repointed; admins get `board_actor_moved`. A target that has itself moved is ignored, and one Move per origin is processed every 30 days (`remote_actors.moved_at`). Articles and comments keep their original `remote_actor_id`: they are board content with their own permalinks and remain published under the old actor upstream.
+- `Move` — handled by `AccountMigration.handle_inbound_move/2` (ADR 0025). Authorized only when the signer matches the Move `actor` and `object`, **and** the target claims the moving actor in `alsoKnownAs` (force-refreshed with `ActorResolver.refresh/1`; a local target is checked against `users.also_known_as`), otherwise `{:error, :move_not_authorized}`, so a remote actor cannot redirect its local followers onto a non-consenting target. Each active local follower sends `Undo(Follow)` to the old actor and a pending `Follow` to the new one (a local target gets a local follow), with an `actor_moved` notice. Timeline items are repointed (`migrate_timeline_items/2`, both `remote_actor_id` and `boosted_by_actor_id`) so history shows again once the new follow is accepted. Board follows are not repointed; admins get `board_actor_moved`. A target that has itself moved is ignored, and one Move per origin is processed every 30 days (`remote_actors.moved_at`). Articles and comments keep their original `remote_actor_id`: they are board content with their own permalinks and remain published under the old actor upstream.
 
 **Outbound delivery** (via `Publisher` + `Delivery` + `DeliveryWorker`):
 
@@ -1794,7 +1794,7 @@ Every publisher runs **inside the transaction that makes the change** (ADR
 0034): as a step of the change's `Ecto.Multi` (article create/update, comment
 create, DM send, poll vote) or through `Federation.federate/2`, which runs the
 change, calls the publisher with its result, and commits both or neither
-(likes, boosts, deletions, forwards, follows, feed item interactions, key
+(likes, boosts, deletions, forwards, follows, timeline item interactions, key
 rotation). A publisher that raises rolls the change back. Never publish from
 `schedule_federation_task/1` or a `Task`: a restart between the commit and the
 task silently loses the activity, which is exactly what this replaced.
@@ -1843,30 +1843,30 @@ fetches, media cache warming, link previews).
 - `Delivery.deliver_follow/3` — enqueue follow/unfollow delivery to remote inbox
 - Rate limited: 10 outbound follows per hour per user (`RateLimits.check_outbound_follow/1`)
 
-**Personal feed**:
-- `feed_items` table — stores incoming posts from followed actors that don't land in boards/comments/DMs
-- One row per activity (keyed by `ap_id`), feed membership via JOIN with `user_follows` at query time
+**Personal timeline**:
+- `timeline_items` table — stores incoming posts from followed actors that don't land in boards/comments/DMs
+- One row per activity (keyed by `ap_id`), timeline membership via JOIN with `user_follows` at query time
 - `visibility` field records AP visibility (`public`, `unlisted`, `followers_only`, `direct`) derived from `to`/`cc` addressing on ingest
-- `Federation.create_feed_item/1` — insert + broadcast to followers via `Federation.PubSub`
-- `Federation.list_feed_items/2` — paginated union query: remote feed items + local articles from followed users + comments on articles the user authored or participated in
-- Inbox handler fallback: Create(Note) without reply target, Create(Article/Page) without board → feed item
-- Announce → feed item: when a followed actor boosts content, the boosted object is fetched and stored as a feed item with `activity_type: "Announce"` and `boosted_by_actor_id` pointing to the booster. Original author is resolved via `attributedTo`. Board routing: if the booster is followed by a board, boosted Article/Page content is also routed to that board (loop-safe: `create_remote_article` does not trigger outbound federation).
-- Delete propagation: soft-deletes feed items on content or actor deletion
-- `Federation.migrate_feed_items/2` — Move activity support (repoint feed items to the new actor)
-- `/feed` LiveView — paginated personal timeline with real-time PubSub updates
+- `Federation.create_timeline_item/1` — insert + broadcast to followers via `Federation.PubSub`
+- `Federation.list_timeline_items/2` — paginated union query: remote timeline items + local articles from followed users + comments on articles the user authored or participated in
+- Inbox handler fallback: Create(Note) without reply target, Create(Article/Page) without board → timeline item
+- Announce → timeline item: when a followed actor boosts content, the boosted object is fetched and stored as a timeline item with `activity_type: "Announce"` and `boosted_by_actor_id` pointing to the booster. Original author is resolved via `attributedTo`. Board routing: if the booster is followed by a board, boosted Article/Page content is also routed to that board (loop-safe: `create_remote_article` does not trigger outbound federation).
+- Delete propagation: soft-deletes timeline items on content or actor deletion
+- `Federation.migrate_timeline_items/2` — Move activity support (repoint timeline items to the new actor)
+- `/timeline` LiveView — paginated personal timeline with real-time PubSub updates
 
-**Feed item replies**:
-- `feed_item_replies` table — local users can reply to remote feed items inline
-- `Federation.create_feed_item_reply/3` — renders Markdown body to HTML, generates AP ID, inserts record, schedules `Create(Note)` delivery with `inReplyTo` pointing to the feed item's AP ID
-- `Publisher.build_create_feed_item_reply/3` — builds the `Create(Note)` activity
-- `Publisher.publish_feed_item_reply/2` — ensures user keypair, delivers to remote actor inbox + user's AP followers
-- Rate limited: 20 feed item replies per 5 minutes per user (`RateLimits.check_feed_reply/1`)
+**Timeline item replies**:
+- `timeline_item_replies` table — local users can reply to remote timeline items inline
+- `Federation.create_timeline_item_reply/3` — renders Markdown body to HTML, generates AP ID, inserts record, schedules `Create(Note)` delivery with `inReplyTo` pointing to the timeline item's AP ID
+- `Publisher.build_create_timeline_item_reply/3` — builds the `Create(Note)` activity
+- `Publisher.publish_timeline_item_reply/2` — ensures user keypair, delivers to remote actor inbox + user's AP followers
+- Rate limited: 20 timeline item replies per 5 minutes per user (`RateLimits.check_timeline_reply/1`)
 
-**Feed item likes and boosts**:
-- `feed_item_likes` table — local users can like remote feed items inline
-- `feed_item_boosts` table — local users can boost remote feed items inline
-- `Federation.toggle_feed_item_like/2` — toggles like, schedules AP Like/Undo(Like) delivery to the remote actor
-- `Federation.toggle_feed_item_boost/2` — toggles boost, schedules AP Announce/Undo(Announce) delivery to the remote actor
+**Timeline item likes and boosts**:
+- `timeline_item_likes` table — local users can like remote timeline items inline
+- `timeline_item_boosts` table — local users can boost remote timeline items inline
+- `Federation.toggle_timeline_item_like/2` — toggles like, schedules AP Like/Undo(Like) delivery to the remote actor
+- `Federation.toggle_timeline_item_boost/2` — toggles boost, schedules AP Announce/Undo(Announce) delivery to the remote actor
 - Comment likes and boosts are federated outbound (Like/Undo(Like) and Announce/Undo(Announce) activities), matching the article federation pattern
 
 **Local user follows**:
@@ -1944,11 +1944,11 @@ directions and is enforced on this site only; no `Block` activity is sent:
 - `Auth.block_user/2` / `Auth.unblock_user/2` — local user blocks; blocking deletes the local follows in both directions
 - `Auth.block_remote_actor/2` / `Auth.unblock_remote_actor/2` — remote actor blocks; blocking a known actor sends `Undo(Follow)` and `Reject(Follow)` and deletes both follows. Unblocking restores no follows
 - `Auth.blocked?/2` — check if blocked (works with local users and AP IDs)
-- `Auth.blocked_between?/2` (either local user blocked the other), `Auth.remote_actor_blocked_by?/2`, and `Auth.blocked_with_author?/2` (a block between a user and the author of an article, comment or feed item)
-- Refused with `{:error, :blocked}` at the context boundary: comments on the other's articles and replies to their comments, likes and boosts (undo stays allowed), local and remote follows, and feed item likes, boosts and replies. Forwards are refused with `{:error, :unauthorized}`, and DMs by `Messaging.can_send_dm?/2`. Any new way to interact must add the same check
+- `Auth.blocked_between?/2` (either local user blocked the other), `Auth.remote_actor_blocked_by?/2`, and `Auth.blocked_with_author?/2` (a block between a user and the author of an article, comment or timeline item)
+- Refused with `{:error, :blocked}` at the context boundary: comments on the other's articles and replies to their comments, likes and boosts (undo stays allowed), local and remote follows, and timeline item likes, boosts and replies. Forwards are refused with `{:error, :unauthorized}`, and DMs by `Messaging.can_send_dm?/2`. Any new way to interact must add the same check
 - Inbound activities from a blocked remote actor on the blocker's content are refused (see Inbound handling)
-- Content filtering: blocked users' content is hidden from the blocker's article listings, comments, feed, and search results. The blocked account can still read the blocker's public content
-- UI: Block / Unblock in the user profile's "More actions" menu; Mute, Block and Report account in the "More actions" menu of remote feed items and remote comments and in the header of a conversation with a remote actor (`BaudrateWeb.SafetyActions`, `BaudrateWeb.SafetyComponents`); a Blocked Accounts list with unblock controls on `/profile`
+- Content filtering: blocked users' content is hidden from the blocker's article listings, comments, timeline, and search results. The blocked account can still read the blocker's public content
+- UI: Block / Unblock in the user profile's "More actions" menu; Mute, Block and Report account in the "More actions" menu of remote timeline items and remote comments and in the header of a conversation with a remote actor (`BaudrateWeb.SafetyActions`, `BaudrateWeb.SafetyComponents`); a Blocked Accounts list with unblock controls on `/profile`
 - Database: `user_blocks` table with partial unique indexes for local and remote blocks
 
 **User mutes:**
@@ -1963,7 +1963,7 @@ or sending any federation activity. Mutes are purely local:
 - Content filtering: muted users' content is combined with blocked users' content via `hidden_filters/1` and filtered from article listings, comments, and search results
 - SysOp board exemption: admin articles in the SysOp board (slug `"sysop"`) are never hidden, even if the admin is muted — this ensures system announcements are always visible
 - DM conversations with muted users are visually de-emphasized (reduced opacity, no unread badge) rather than hidden
-- Mute management: toggle on user profiles, mute remote accounts from feed items, remote comments and remote conversations, manage list on `/profile` settings page (remote actors shown as `@user@domain` when known)
+- Mute management: toggle on user profiles, mute remote accounts from timeline items, remote comments and remote conversations, manage list on `/profile` settings page (remote actors shown as `@user@domain` when known)
 - Database: `user_mutes` table with partial unique indexes for local and remote mutes
 
 **Authorized fetch mode:**
@@ -2007,7 +2007,7 @@ schema; a new table referencing remote actors is covered as soon as its
 migration runs. This is deliberate rather than incidental — the check used to
 be six hand-written queries against nineteen foreign keys, and because most of
 those keys are `ON DELETE CASCADE`, deleting an actor one of the unchecked
-thirteen still pointed at silently removed members' follows, feed items,
+thirteen still pointed at silently removed members' follows, timeline items,
 board follows, boosts, likes and poll votes. If the catalog query ever returns
 nothing the run is abandoned rather than treating every actor as unreferenced.
 
@@ -2219,7 +2219,7 @@ RateLimit (30/min per IP) → FeedController (XML response)
 | AP inbox | 60 / min | per remote domain |
 | Feeds (RSS/Atom) | 30 / min | per IP |
 | Direct messages | 20 / min | per user |
-| Feed item replies | 20 / 5 min | per user |
+| Timeline item replies | 20 / 5 min | per user |
 | LiveView mount | 60 / min | per IP |
 
 IP-based rate limits use `BaudrateWeb.Plugs.RateLimit` (Plug-based, in the

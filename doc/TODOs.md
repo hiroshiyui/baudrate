@@ -133,18 +133,20 @@ instance, recorded so a later reader can tell a decision from an oversight.
 ### 2F — Retention (S) — next
 
 - [ ] Purge on a schedule, with the periods set by P2-D4:
-  - `feed_items` nobody has bookmarked or interacted with, after 90 days;
+  - `timeline_items` nobody has bookmarked or interacted with, after 90 days;
   - `announces`, after 180 days;
   - soft-deleted articles and comments, once past the 90-day evidence window (P1-D6).
 - **Never purge `bot_feed_items`, and never purge articles a bot created.**
-  `feed_items` is the personal fediverse feed — `Create` and `Announce` from
-  followed remote actors, whose originals still live on their own servers.
-  RSS and Atom entries are not in it: `Bots.FeedWorker` turns a feed entry into
-  an ordinary **article** in the bot's boards, which is permanent board
-  content. The similarly named `bot_feed_items` holds no content at all, only
-  the `(bot_id, guid)` ledger of what a bot has already posted; delete a row
-  and that bot re-posts the entry as a new article, so a retention job that
-  matched on the name would flood every board with its own back catalogue.
+  `timeline_items` is the fediverse timeline — `Create` and `Announce` from
+  followed remote actors, whose originals still live on their own servers, so
+  dropping a row loses nothing that cannot be fetched again. RSS and Atom are
+  a different thing entirely: `Bots.FeedWorker` turns a feed entry into an
+  ordinary **article** in the bot's boards, which is permanent board content,
+  and `bot_feed_items` is the `(bot_id, guid)` ledger of what each bot has
+  already posted. Delete a ledger row and that bot re-posts the entry as a new
+  article. The tables were `feed_items` and `bot_feed_items` until
+  [ADR 0039](adr/0039-the-personal-stream-is-a-timeline.md) renamed the first,
+  which is why this warning exists at all.
 - [ ] Postgres guidance in `doc/sysop.md`: autovacuum for the tables the purges churn. (`shared_buffers`, `effective_cache_size` and pool sizing for a single host are in the Scaling section, from 2B.)
 
 ### Decisions (made 2026-09-17)
@@ -152,7 +154,7 @@ instance, recorded so a later reader can tell a decision from an oversight.
 - **P2-D1. No metrics endpoint.** The localhost-only detailed health view (2D) is the one place an operator polls. A metrics endpoint was declined: it is more surface to secure for history this instance does not yet need.
 - **P2-D2. No error reporting service.** Errors go to the logs. Sending them to a third party would leak request data, and with no metrics endpoint there is no error counter either.
 - **P2-D3. Releases are built in CI** on a project-owned Debian 12 image matching production, and attached to the GitHub release with a provenance attestation. **Amended by ADR 0037:** the deploy no longer installs that tarball — it builds the tag on the server — so the attestation now guards a manual install rather than the deploy.
-- **P2-D4. Retention periods:** feed items nobody interacted with, 90 days; announces, 180 days; soft-deleted rows, after the 90-day evidence window.
+- **P2-D4. Retention periods:** timeline items nobody interacted with, 90 days; announces, 180 days; soft-deleted rows, after the 90-day evidence window.
 
 ---
 
@@ -195,7 +197,7 @@ instance, recorded so a later reader can tell a decision from an oversight.
 
 ### 3E — Content warnings and media (M)
 
-- [ ] **Inbound:** store `summary` and `sensitive` in their own fields on articles, comments and feed items, and render the content collapsed behind its warning. Today they are merged into the body (`core/federation/inbox_handler.ex:1219`).
+- [ ] **Inbound:** store `summary` and `sensitive` in their own fields on articles, comments and timeline items, and render the content collapsed behind its warning. Today they are merged into the body (`core/federation/inbox_handler.ex:1219`).
 - [ ] **Outbound:** an optional content warning in the local composer (articles, comments, feed replies), sent as `summary` and `sensitive`.
 - [ ] **Video and audio attachments** render as a link card to the original, never embedded, following the no-third-party rule. They are dropped today.
 

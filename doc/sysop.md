@@ -531,7 +531,7 @@ The `sysop` board is a protected system board:
 ### Report Queue (`/admin/moderation`)
 
 - View open reports targeting articles, comments, local users, remote
-  accounts, feed items, or direct messages
+  accounts, timeline items, or direct messages
 - A reported direct message shows a copy of that one message, taken when it
   was reported. The rest of the conversation is never shown, and the copy
   stays even if the sender deletes the message
@@ -679,7 +679,7 @@ Blocking a domain:
 - **Follows** in both directions are deleted, for every actor on the domain.
   Nothing is sent — delivery to the domain is refused by our own gate. Follows
   are **not** restored by unblocking.
-- **Existing content** — its articles, comments and feed items — is hidden
+- **Existing content** — its articles, comments and timeline items — is hidden
   everywhere a guest or member can look, and stops being served over
   ActivityPub. It is **not deleted**.
 
@@ -845,7 +845,7 @@ The `StaleActorCleaner` GenServer runs daily (configurable via
 from the database catalog rather than from a list in the code. Deleting an
 actor cascades, so an incomplete list loses real data: before v1.21.0 only six
 of the nineteen foreign keys were checked, and an account that had gone quiet
-for a month took its followers' follows and feed items with it when it was
+for a month took its followers' follows and timeline items with it when it was
 swept.
 
 ---
@@ -887,7 +887,7 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 | Feeds (RSS/Atom) | 30 / min | per IP |
 | Data export download | 10 / 15 min | per IP |
 | Direct messages | 20 / min | per user |
-| Feed item replies | 20 / 5 min | per user |
+| Timeline item replies | 20 / 5 min | per user |
 
 Per-user rate limits are managed by `BaudrateWeb.RateLimits`. Admin users are
 exempt from per-user content rate limits (their actions are already audit-logged).
@@ -1396,7 +1396,7 @@ it.
 BK=$(ls -d /var/backups/baudrate/daily/*/ | tail -1)
 sudo -u postgres createdb -O baudrate -T template0 baudrate_restore_check
 sudo -u baudrate pg_restore -d baudrate_restore_check --no-owner "$BK/db.dump"
-for t in users articles comments feed_items remote_actors schema_migrations; do
+for t in users articles comments timeline_items remote_actors schema_migrations; do
   echo "$t $(sudo -u postgres psql -Atd baudrate_prod -c "select count(*) from $t")" \
        "$(sudo -u postgres psql -Atd baudrate_restore_check -c "select count(*) from $t")"
 done
@@ -1882,7 +1882,7 @@ fails is logged and the rest still run.
 | `cleanup_delivery_jobs` | Abandons jobs still waiting after 7 days, deletes delivered jobs after 7 days and abandoned jobs after 30 days, and removes circuit breaker rows not updated for 30 days |
 | `purge_inbound_activities` | Deletes processed, rejected and failed inbox activities after 7 days |
 | `refresh_stale_link_previews` | Re-fetches link previews older than 7 days |
-| `purge_orphan_link_previews` | Deletes link previews fetched more than 30 days ago that no article, comment, direct message or feed item references, with their images |
+| `purge_orphan_link_previews` | Deletes link previews fetched more than 30 days ago that no article, comment, direct message or timeline item references, with their images |
 | `purge_stale_media_cache` | Evicts media proxy cache files older than 30 days, then the oldest until the cache is under 2 GiB (`media_cache_ttl_days`, `media_cache_max_bytes`). A removed image is fetched again when next viewed |
 | `sweep_data_exports` | Marks export requests ready or expired as their windows pass, removes archive staging left by a crash, and deletes finished request history after 365 days |
 | `sweep_account_moves` | Sends account moves whose 24-hour cooling-off has passed |
