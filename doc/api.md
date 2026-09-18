@@ -44,6 +44,7 @@ surface.
   - [Shared Inbox](#shared-inbox)
   - [User Inbox](#user-inbox)
   - [Board Inbox](#board-inbox)
+  - [Inbox Responses](#inbox-responses)
   - [HTTP Signature Requirements](#http-signature-requirements)
   - [Supported Activity Types](#supported-activity-types)
   - [DM Detection](#dm-detection)
@@ -65,7 +66,7 @@ surface.
 | **Authorized fetch** | Optional setting `ap_authorized_fetch`. When enabled, unsigned GET requests to `/ap/*` return 401. Discovery endpoints are exempt. |
 | **Domain filtering** | `blocklist` mode (default): reject domains blocked at `/admin/federation`. `allowlist` mode: only accept domains in `ap_domain_allowlist` (empty list blocks all). |
 | **Payload size** | Inbox POST bodies capped at 256 KB (`413 Payload Too Large`). Content bodies capped at 64 KB. |
-| **JSON-LD contexts** | `https://www.w3.org/ns/activitystreams` and `https://w3id.org/security/v1` |
+| **JSON-LD contexts** | `https://www.w3.org/ns/activitystreams` and `https://w3id.org/security/v1`; Person actors add an inline `schema:` context for their `PropertyValue` profile fields |
 
 ---
 
@@ -103,7 +104,7 @@ GET /.well-known/webfinger?resource=acct:alice@example.com
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `resource` | Yes | `acct:username@host` for users, `acct:slug@host` for boards (also accepts `acct:!slug@host` with Lemmy-compatible `!` prefix) |
+| `resource` | Yes | `acct:site@host` for the instance actor (resolved first, so no user or board may take the name `site`), `acct:username@host` for users, `acct:slug@host` for boards (also accepts `acct:!slug@host` with Lemmy-compatible `!` prefix) |
 
 **Example response:**
 
@@ -116,11 +117,6 @@ GET /.well-known/webfinger?resource=acct:alice@example.com
       "rel": "self",
       "type": "application/activity+json",
       "href": "https://example.com/ap/users/alice"
-    },
-    {
-      "rel": "http://webfinger.net/rel/profile-page",
-      "type": "text/html",
-      "href": "https://example.com/@alice"
     }
   ]
 }
@@ -161,6 +157,8 @@ GET /.well-known/webfinger?resource=acct:general@example.com
 - Board WebFinger uses the bare slug in `subject` (matching `preferredUsername`) for Mastodon compatibility
 - The `properties` field with `type: "Group"` follows the Lemmy convention for actor type disambiguation
 - Queries with `!` prefix (`acct:!general@example.com`) are accepted for Lemmy backward compatibility
+- `acct:site@host` resolves to the instance actor, with `properties` carrying `type: "Organization"`; it is checked before user and board lookups
+- The response carries exactly one `links` entry (`rel: "self"`, `type: "application/activity+json"`) — there is no `profile-page` link for any actor type
 
 ---
 
@@ -204,10 +202,11 @@ GET /nodeinfo/2.1
   "version": "2.1",
   "software": {
     "name": "baudrate",
-    "version": "1.27.0",
+    "version": "1.28.0",
     "repository": "https://github.com/hiroshiyui/baudrate"
   },
   "protocols": ["activitypub"],
+  "services": { "inbound": [], "outbound": [] },
   "openRegistrations": true,
   "usage": {
     "users": { "total": 42 },
@@ -244,15 +243,22 @@ GET /ap/users/:username
 {
   "@context": [
     "https://www.w3.org/ns/activitystreams",
-    "https://w3id.org/security/v1"
+    "https://w3id.org/security/v1",
+    {
+      "schema": "http://schema.org/",
+      "PropertyValue": "schema:PropertyValue",
+      "value": "schema:value"
+    }
   ],
   "id": "https://example.com/ap/users/alice",
   "type": "Person",
   "preferredUsername": "alice",
-  "summary": "User's signature text",
+  "name": "Alice",
+  "summary": "Alice's profile bio, escaped, with newlines as &lt;br&gt;",
   "inbox": "https://example.com/ap/users/alice/inbox",
   "outbox": "https://example.com/ap/users/alice/outbox",
   "followers": "https://example.com/ap/users/alice/followers",
+  "following": "https://example.com/ap/users/alice/following",
   "url": "https://example.com/@alice",
   "published": "2026-01-15T10:30:00Z",
   "icon": {
@@ -260,6 +266,10 @@ GET /ap/users/:username
     "mediaType": "image/webp",
     "url": "https://example.com/uploads/avatars/abc123/48.webp"
   },
+  "attachment": [
+    { "type": "PropertyValue", "name": "Website", "value": "https://alice.example" }
+  ],
+  "alsoKnownAs": ["https://other.example/users/alice"],
   "endpoints": {
     "sharedInbox": "https://example.com/ap/inbox"
   },
@@ -277,9 +287,14 @@ GET /ap/users/:username
 |-------|------|-------------|
 | `type` | string | Always `"Person"` |
 | `preferredUsername` | string | The username |
-| `summary` | string | User's signature/bio (optional) |
+| `name` | string | Display name (optional, omitted when unset) |
+| `summary` | string | The user's profile **bio**, HTML-escaped with newlines as `<br>` (optional). `users.signature` is never federated |
 | `published` | ISO 8601 | Account creation timestamp |
 | `icon` | Image | Avatar as WebP (optional, present if user has avatar) |
+| `attachment` | array | Profile fields as `schema:PropertyValue` objects (optional) — which is why Person actors carry a third `@context` entry |
+| `following` | URI | Following collection URL |
+| `alsoKnownAs` | array of URIs | Account aliases, for migration (optional, ADR 0025) |
+| `movedTo` | URI | The account this one moved to (optional, ADR 0025) |
 | `publicKey` | object | RSA-SHA256 public key for HTTP Signature verification |
 | `endpoints.sharedInbox` | URI | Shared inbox URL |
 
@@ -321,6 +336,7 @@ GET /ap/boards/:slug
   "inbox": "https://example.com/ap/boards/general/inbox",
   "outbox": "https://example.com/ap/boards/general/outbox",
   "followers": "https://example.com/ap/boards/general/followers",
+  "following": "https://example.com/ap/boards/general/following",
   "url": "https://example.com/boards/general",
   "baudrate:parentBoard": "https://example.com/ap/boards/community",
   "baudrate:subBoards": [
@@ -407,7 +423,13 @@ GET /ap/articles/:slug
 **Rate limit:** 120 req/min per IP
 **Path validation:** Slug matches `[a-z0-9]+(?:-[a-z0-9]+)*`
 
-**Access control:** Returns 404 if the article only belongs to private boards.
+**Access control:** Returns 404 unless the article is board-less or sits in at
+least one **federated** board (`min_role_to_view == "guest"` **and**
+`ap_enabled == true`) — turning a board's federation off stops its articles
+being served as AP objects, not just announced. A remote article is also
+refused when it was ingested as `followers_only`/`direct`, and when its actor
+is suspended or its domain blocked (ADR 0030). These refusals apply to every
+requester, signed or not, including one whose signature belongs to an admin.
 
 **Example response:**
 
@@ -460,11 +482,12 @@ GET /ap/articles/:slug
 | `published` | ISO 8601 | Creation timestamp |
 | `updated` | ISO 8601 | Last modification timestamp |
 | `to` | array | Always `["https://www.w3.org/ns/activitystreams#Public"]` |
-| `cc` | array of URIs | Board actor URIs the article belongs to |
-| `audience` | array of URIs | Same as `cc` |
+| `cc` | array of URIs | Actor URIs of the article's **federated** boards only (`min_role_to_view == "guest"` and `ap_enabled == true`); private and AP-disabled boards are filtered out, so this can be empty |
+| `audience` | array of URIs | Same as `cc`, filtered the same way |
 | `url` | URI | Web UI URL for the article |
 | `replies` | URI | Replies collection endpoint |
 | `tag` | array | Hashtag objects extracted from body (optional, omitted if empty) |
+| `attachment` | array | Images (`Document`, `image/webp`, with `width`/`height`), an attached poll (a `Question` with `oneOf` for single-choice or `anyOf` for multiple-choice, `votersCount`, per-option `replies.totalItems`, and `endTime` when the poll closes), and a fetched link preview (`Document`, `text/html`). Omitted when the article has none |
 | `baudrate:pinned` | boolean | Whether the article is pinned in its board |
 | `baudrate:locked` | boolean | Whether the article is locked from new comments |
 | `baudrate:commentCount` | integer | Number of comments |
@@ -481,7 +504,7 @@ GET /ap/articles/:slug
 | Status | Condition |
 |--------|-----------|
 | 401 | Authorized fetch enabled and no valid HTTP Signature |
-| 404 | Article not found or only in private boards |
+| 404 | Article not found, or not servable: no federated board, non-public remote visibility, or a suspended actor / blocked domain |
 
 ---
 
@@ -532,13 +555,17 @@ GET /ap/users/:username/outbox?page=1
 **Auth:** HTTP Signature required if authorized fetch is enabled
 **Rate limit:** 120 req/min per IP
 
-Returns `Create` activities wrapping Article objects. Only includes articles
-in public boards.
+Returns `Create` activities wrapping Article objects. Only articles in
+**federated** boards (`min_role_to_view == "guest"` **and** `ap_enabled == true`)
+are listed; a board-less article is not listed here at all, because the query
+joins `board_articles`. `totalItems` and the pages apply the same filter.
 
 **Item structure:**
 
 ```json
 {
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "https://example.com/ap/articles/hello-world-a1b2c3#create",
   "type": "Create",
   "actor": "https://example.com/ap/users/alice",
   "published": "2026-02-20T08:00:00Z",
@@ -566,6 +593,8 @@ Returns `Announce` activities for articles posted to the board.
 
 ```json
 {
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "https://example.com/ap/articles/hello-world-a1b2c3#announce",
   "type": "Announce",
   "actor": "https://example.com/ap/boards/general",
   "published": "2026-02-20T08:00:00Z",
@@ -630,7 +659,11 @@ GET /ap/boards/:slug/following
 **Rate limit:** 120 req/min per IP
 **Access control:** Returns 404 if board is private or AP disabled.
 
-Returns an empty `OrderedCollection` (boards do not follow other actors).
+Returns an `OrderedCollection` root whose `totalItems` counts the remote actors
+the board follows (accepted board follows — this is how remote content is routed
+into a board). Unlike the other collections this endpoint **ignores `?page`** and
+always answers the root document, so its `first` link does not lead to a page of
+items.
 
 ---
 
@@ -668,10 +701,14 @@ GET /ap/articles/:slug/replies
 
 **Auth:** HTTP Signature required if authorized fetch is enabled
 **Rate limit:** 120 req/min per IP
-**Access control:** Returns 404 if article is only in private boards.
+**Access control:** Returns 404 under exactly the same conditions as
+`GET /ap/articles/:slug` (no federated board, non-public remote visibility, or a
+suspended actor / blocked domain).
 
 Returns an `OrderedCollection` of comments as Note objects. **Not paginated**
-— all comments are returned in a single response.
+— all comments are returned in a single response. Soft-deleted comments, and
+remote comments ingested as `followers_only`/`direct` or belonging to a
+suspended actor or blocked domain, are left out.
 
 **Item structure:**
 
@@ -745,6 +782,28 @@ POST /ap/boards/:slug/inbox
 Accepts activities targeting a specific board. Returns 404 if board is
 private or AP disabled.
 
+### Inbox Responses
+
+The inbox admits an activity, stores it and answers immediately; the work
+happens afterwards in a background worker (ADR 0034), so the sender never waits
+for reply-chain walks or object fetches.
+
+| Status | Body | Condition |
+|--------|------|-----------|
+| 202 | `{"status": "accepted"}` | Stored for processing — or already stored (a redelivery of the same activity id from the same signing actor), or dropped on purpose (a blocked domain is answered 202, not 401, so the sender stops retrying) |
+| 400 | `{"error": "Invalid JSON"}` | Body is not valid JSON |
+| 401 | `{"error": "Invalid signature"}` | HTTP Signature missing or invalid |
+| 413 | `{"error": "Payload too large"}` | Body over 256 KB |
+| 415 | `{"error": "Unsupported Media Type"}` | `Content-Type` is not an AP JSON type |
+| 422 | `{"error": "Unprocessable"}` | Failed **admission**: malformed activity, an activity `id` on a different host from the actor, a blocked domain, a suspended actor, claiming to be a local actor, or a signer/actor mismatch |
+| 429 | `{"error": "Rate limited"}` | Per-IP or per-domain rate limit exceeded |
+
+**What a handler makes of the activity is never reported to the sender.** A
+refusal after storage — a non-federated board, a locked or deleted article, a
+block — is recorded in `inbound_activities.last_error` and logged; the sender
+has already had its 202. Processing is at-least-once, so handlers are idempotent
+under redelivery.
+
 ---
 
 ### HTTP Signature Requirements
@@ -792,14 +851,16 @@ verification.
 |----------|-------------|--------|
 | `Follow` | actor URI | Creates follower relationship; auto-accepted with `Accept(Follow)` |
 | `Undo` | `Follow` | Removes follower relationship |
-| `Create` | `Article` or `Page` | Creates remote article in target board |
-| `Create` | `Note` (public) | Creates comment on local article (resolved via `inReplyTo`) |
+| `Create` | `Article`, `Page` or `Question` | Creates remote article in target board (a `Question` becomes an article with an attached poll) |
+| `Create` | `Note` (vote) | A Note whose `name` matches an option of the poll named by `inReplyTo` is counted as a poll vote, not a comment |
+| `Create` | `Note` (public) | Creates comment on local article (resolved via `inReplyTo`). Dropped silently when the target article is not in a federated board, is locked, or has been deleted |
 | `Create` | `Note` (DM) | Creates direct message (see [DM Detection](#dm-detection)) |
 | `Like` | article or comment URI | Records a like on the article or comment |
 | `Undo` | `Like` | Removes the like (from both article and comment likes) |
 | `Announce` | article or comment URI, or embedded object | Records a boost/share (creates article/comment boost for local content) |
 | `Undo` | `Announce` | Removes the boost (from announces and article/comment boosts) |
 | `Update` | `Article`, `Page`, or `Note` | Updates remote content (authorship verified) |
+| `Update` | `Question` | Refreshes a remote poll's vote and voter counts |
 | `Update` | `Person` or `Group` | Refreshes cached remote actor profile |
 | `Delete` | content URI or `Tombstone` | Soft-deletes matching article, comment, or DM (authorship verified) |
 | `Delete` | actor URI | Removes all follower relationships for the deleted actor |
@@ -814,6 +875,15 @@ verification.
 
 **Idempotency:** Duplicate activities (same `ap_id`) are silently accepted
 without error.
+
+**Peer-supplied `published` dates are clamped.** A `published` value in the
+future is replaced with the time of arrival (60 s of slack for clock skew): the
+timeline orders on it, so a date years ahead would pin an item to the top of
+every follower's timeline.
+
+**Refusals are not errors.** An activity a handler declines — a non-federated
+board, a locked or deleted article, a block, a suspended actor — is dropped with
+a log line, not a 4xx, so remote instances do not retry.
 
 ---
 
@@ -833,7 +903,8 @@ comments.
 
 ## Error Responses
 
-All AP endpoints return errors as JSON:
+All AP endpoints return errors as JSON, with one exception: when federation is
+switched off entirely, `/ap/*` answers 404 with an empty body.
 
 ```json
 {
@@ -848,7 +919,7 @@ All AP endpoints return errors as JSON:
 | 404 | Not found (resource doesn't exist, private, or federation disabled) |
 | 413 | Payload too large (inbox POST body exceeds 256 KB) |
 | 415 | Unsupported media type (inbox POST with non-AP content type) |
-| 422 | Unprocessable entity (activity validation or processing error) |
+| 422 | Unprocessable entity — the activity failed inbox admission (see [Inbox Responses](#inbox-responses)) |
 | 429 | Too many requests (rate limit exceeded) |
 
 ---
