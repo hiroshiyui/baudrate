@@ -352,12 +352,16 @@ defmodule BaudrateWeb.AuthHooks do
     end
   end
 
-  # The admin page to come back to after sudo verification. `:uri` comes from
-  # the conn on the HTTP render and from the socket's connect info once
-  # connected (the page the socket was opened on). Anything outside `/admin/`
-  # falls back to the settings page; `/admin/verify` re-sanitizes it anyway.
+  # Refuses an admin event once the sudo window has closed. Matched on
+  # `is_integer` so a missing assign halts rather than passing: under Elixir's
+  # term ordering a number sorts before every atom, so `deadline < nil` is
+  # `true` and the bare comparison let every event through. The assign and
+  # this hook are attached in one expression today, but a security check must
+  # not depend on that staying true.
   defp enforce_admin_sudo(_event, _params, socket) do
-    if System.system_time(:second) < socket.assigns[:admin_sudo_expires_at] do
+    deadline = socket.assigns[:admin_sudo_expires_at]
+
+    if is_integer(deadline) and System.system_time(:second) < deadline do
       {:cont, socket}
     else
       {:halt,
@@ -367,6 +371,10 @@ defmodule BaudrateWeb.AuthHooks do
     end
   end
 
+  # The admin page to come back to after sudo verification. `:uri` comes from
+  # the conn on the HTTP render and from the socket's connect info once
+  # connected (the page the socket was opened on). Anything outside `/admin/`
+  # falls back to the settings page; `/admin/verify` re-sanitizes it anyway.
   defp admin_return_path(socket) do
     case get_connect_info(socket, :uri) do
       %URI{path: "/admin/" <> _ = path, query: query} when query in [nil, ""] -> path

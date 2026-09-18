@@ -215,11 +215,18 @@ defmodule Baudrate.Content.Polls do
       [poll_id]
     )
 
-    # Update poll voters_count (distinct voters)
+    # Update poll voters_count (distinct voters).
+    #
+    # Counts the pair, not a coalesced string. `users.id` and
+    # `remote_actors.id` are independent sequences, so `COALESCE(user_id::text,
+    # remote_actor_id::text)` gave `'3'` for both local user 3 and remote actor
+    # 3 and counted them once — the common case on a small instance, where both
+    # sequences sit in the same low range. The undercount was shown to every
+    # reader and published to the fediverse as `votersCount`.
     repo.query!(
       """
       UPDATE polls SET voters_count = (
-        SELECT COUNT(DISTINCT COALESCE(user_id::text, remote_actor_id::text))
+        SELECT COUNT(DISTINCT (user_id, remote_actor_id))
         FROM poll_votes WHERE poll_votes.poll_id = $1
       )
       WHERE polls.id = $1

@@ -1,6 +1,8 @@
 defmodule Baudrate.Auth.UserManagementTest do
   use Baudrate.DataCase
 
+  import Ecto.Query
+
   alias Baudrate.Auth
   alias Baudrate.Repo
 
@@ -154,13 +156,47 @@ defmodule Baudrate.Auth.UserManagementTest do
   end
 
   describe "list_users/1 search sanitization" do
-    test "LIKE wildcards are escaped in search", %{user: _user} do
-      # Should not crash or match everything
-      results = Auth.list_users(search: "%")
-      assert is_list(results)
+    # `assert is_list(...)` proved nothing here: `list_users/1` is a
+    # `Repo.all/1`, so it returns a list whether or not the pattern is
+    # escaped. Dropping `Repo.sanitize_like/1` left the test green while `%`
+    # matched every account on the instance.
+    test "an underscore matches a literal underscore, not any character" do
+      n = System.unique_integer([:positive])
+      {:ok, plain} = create_user_named("alpha#{n}")
+      {:ok, scored} = create_user_named("beta#{n}x_y")
 
-      results = Auth.list_users(search: "_")
-      assert is_list(results)
+      found = Auth.list_users(search: "_") |> Enum.map(& &1.id)
+
+      # Unescaped, `_` is a single-character wildcard and `%_%` matches every
+      # username on the instance. Escaped, it matches only the one that
+      # really contains an underscore.
+      assert scored.id in found
+      refute plain.id in found
     end
+
+    test "a percent matches a literal percent, so it matches no username at all" do
+      n = System.unique_integer([:positive])
+      {:ok, plain} = create_user_named("gamma#{n}")
+
+      # Usernames are `[A-Za-z0-9_]` only, so no username can contain `%`.
+      # Unescaped, `%%%` matches all of them.
+      assert Auth.list_users(search: "%") == []
+
+      # Positive control: the search itself works.
+      assert Enum.any?(Auth.list_users(search: "gamma#{n}"), &(&1.id == plain.id))
+    end
+  end
+
+  defp create_user_named(username) do
+    role = Repo.one!(from(r in Baudrate.Setup.Role, where: r.name == "user"))
+
+    %Baudrate.Setup.User{}
+    |> Baudrate.Setup.User.registration_changeset(%{
+      "username" => username,
+      "password" => "Password123!x",
+      "password_confirmation" => "Password123!x",
+      "role_id" => role.id
+    })
+    |> Repo.insert()
   end
 end

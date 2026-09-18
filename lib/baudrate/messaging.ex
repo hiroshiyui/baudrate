@@ -538,12 +538,11 @@ defmodule Baudrate.Messaging do
     end
   end
 
-  @doc """
-  Gets a conversation by ID, returning nil if not found.
-  """
-  def get_conversation(id) do
-    Repo.get(Conversation, id)
-  end
+  # There is deliberately no `get_conversation/1`. An unscoped
+  # `Repo.get(Conversation, id)` had no callers and sat directly above the
+  # scoped function every caller does use, so the shorter, more obvious name
+  # returned anybody's conversation to whoever asked. Resolve a conversation
+  # only through `get_conversation_for_user/2`.
 
   @doc """
   Gets a conversation by ID, only if the user is a participant.

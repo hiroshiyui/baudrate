@@ -314,12 +314,21 @@ defmodule Baudrate.Content.Permissions do
   Admins and comment authors can always forward. Other authenticated
   users can forward comments with `public` or `unlisted` visibility.
   """
+  # `unrestricted?/1` on every clause, like its two siblings above. Forwarding
+  # is an interaction, so a silenced, suspended, moved or terms-pending
+  # account must not do it (ADR 0029). The outcome was already correct — the
+  # context's `can_post_in_board?/2` routes through `Auth.can_create_content?/1`
+  # — but the check was in the wrong place, so the day that stops being true
+  # comment forwarding would lose the gate silently while the other two kept
+  # it.
   def can_forward_comment?(nil, _comment), do: false
-  def can_forward_comment?(%{role: %{name: "admin"}}, _comment), do: true
-  def can_forward_comment?(%{id: uid}, %{user_id: uid}), do: true
 
-  def can_forward_comment?(_user, comment) do
-    comment.visibility in ["public", "unlisted"]
+  def can_forward_comment?(%{role: %{name: "admin"}} = user, _comment), do: unrestricted?(user)
+
+  def can_forward_comment?(%{id: uid} = user, %{user_id: uid}), do: unrestricted?(user)
+
+  def can_forward_comment?(user, comment) do
+    unrestricted?(user) and comment.visibility in ["public", "unlisted"]
   end
 
   @doc """

@@ -22,7 +22,19 @@ defmodule BaudrateWeb.PageController do
     # `~p` encodes what it interpolates, so hand it the params themselves: a
     # string pre-encoded with `URI.encode_query/1` comes back escaped again as
     # one opaque value, turning `?page=3` into `?page%3D3`.
-    params = Map.drop(params, ~w(controller action))
+    #
+    # An allow-list, not `Map.drop/2`: `~p` ultimately calls
+    # `Plug.Conn.Query.encode/2`, which *raises* on "maps inside lists when
+    # the map has 0 or more than 1 element" — a shape a query string can
+    # decode to. `GET /feed?a[][b]=1&a[][c]=2` therefore crashed the
+    # controller, and this route sits in the plain `:browser` pipeline with no
+    # per-IP limit, so it was an unauthenticated, repeatable 500. Only `page`
+    # has ever meant anything here.
+    params =
+      params
+      |> Map.take(["page"])
+      |> Map.filter(fn {_k, v} -> is_binary(v) end)
+
     target = if params == %{}, do: ~p"/timeline", else: ~p"/timeline?#{params}"
 
     conn
