@@ -45,6 +45,7 @@ native/
     └── src/
         └── lib.rs               # NIF function: parse_feed (RSS/Atom/JSON Feed → NifEntry list)
 lib/
+├── baudrate.ex                  # Context entry point (`use Baudrate, :...` macros)
 ├── baudrate/                    # Business logic (contexts)
 │   ├── application.ex           # Supervision tree
 │   ├── repo.ex                  # Ecto repository + sanitize_like/1 helper
@@ -63,6 +64,8 @@ lib/
 │   │   ├── recovery_code.ex     # Ecto schema for one-time recovery codes
 │   │   ├── reauthentication.ex  # Step-up re-authentication (password + TOTP) for factor changes
 │   │   ├── reserved_handle.ex   # Reserved username/handle list (system, sysop, admin, etc.)
+│   │   ├── sanction.ex          # Sanction schema: a warning, silence or suspension with an explicit end (ADR 0029)
+│   │   ├── sanctions.ex         # Issuing and lifting sanctions, and the active-sanction query behind the gate
 │   │   ├── second_factor.ex     # TOTP enrollment, verification, and recovery
 │   │   ├── session_cleaner.ex   # GenServer: hourly cleanup (sessions, login attempts, orphan images)
 │   │   ├── sessions.ex          # Session lifecycle: creation, rotation, eviction
@@ -122,6 +125,12 @@ lib/
 │   │   ├── comment_image.ex     # CommentImage schema (image attachments on comments)
 │   │   ├── interactions.ex      # Shared like/boost/bookmark interaction helpers
 │   │   ├── title_deriver.ex     # Title derivation for federation-imported articles
+│   │   ├── link_preview.ex      # LinkPreview schema: cached OG/Twitter Card metadata, deduplicated by URL hash
+│   │   ├── link_preview/
+│   │   │   ├── fetcher.ex       # Fetches and parses Open Graph / Twitter Card metadata
+│   │   │   ├── image_proxy.ex   # Fetches, validates and re-encodes preview images to WebP
+│   │   │   ├── url_extractor.ex # Extracts the first external HTTP(S) URL from rendered HTML
+│   │   │   └── worker.ex        # Schedules async preview fetches after content creation
 │   │   ├── markdown.ex          # Markdown → HTML rendering (MDEx + Ammonia NIF + hashtag/mention linkification + mention extraction)
 │   │   ├── pagination.ex        # Content-specific paginated query helpers
 │   │   ├── poll.ex              # Poll schema (inline polls attached to articles, single/multiple choice)
@@ -136,7 +145,7 @@ lib/
 │   ├── data_portability/
 │   │   ├── archive.ex           # Builds the archive at download time; none is ever stored
 │   │   ├── collector.ex         # What goes into an export, from explicit field allow-lists
-│   │   ├── download_nonces.ex   # Single-use download tokens, bound to the session row
+│   │   ├── download_nonces.ex   # Single-use download nonces, bound to the user and taken atomically
 │   │   ├── export_request.ex    # ExportRequest schema: request, claim, cancel
 │   │   ├── files.ex             # Confines export reads below the resolved uploads root
 │   │   └── user_agent.ex        # User-Agent reduced to a coarse, display-only family
@@ -190,6 +199,7 @@ lib/
 │   │   ├── publisher.ex         # High-level activity publishing API
 │   │   ├── pubsub.ex            # Federation PubSub (user feed events)
 │   │   ├── remote_actor.ex      # RemoteActor schema (cached remote profiles)
+│   │   ├── remote_actors.ex     # Instance-wide suspension of a single remote actor (ADR 0030, decision 6)
 │   │   ├── sanitizer.ex         # HTML sanitizer for federated content (Ammonia NIF)
 │   │   ├── stale_actor_cleaner.ex # GenServer: daily stale remote actor cleanup
 │   │   ├── user_follow.ex       # UserFollow schema (outbound follows: remote actors + local users)
@@ -225,14 +235,18 @@ lib/
 │   ├── setup.ex                 # Setup context: first-run wizard, RBAC seeding, settings
 │   ├── timezone.ex              # IANA timezone identifiers (compiled from tz library data)
 │   └── setup/
+│       ├── installation_key.ex  # Reads and enforces INSTALLATION_KEY, which gates the first-run wizard
 │       ├── permission.ex        # Permission schema (scope.action naming)
 │       ├── role.ex              # Role schema (admin/moderator/user/guest)
 │       ├── role_permission.ex   # Join table: role ↔ permission
+│       ├── rule.ex              # One numbered site rule, retired rather than deleted (ADR 0032)
 │       ├── setting.ex           # Key-value settings (site_name, timezone, setup_completed, etc.)
 │       ├── settings_cache.ex    # ETS-backed cache for settings (GenServer + :ets.lookup)
 │       └── user.ex              # User schema with password, TOTP, avatar, display_name, status, signature, is_bot, profile_fields
 ├── mix/
 │   └── tasks/
+│       ├── backfill_ap_ids.ex   # mix backfill_ap_ids — stamps missing ap_id on local articles, polls, comments
+│       ├── backfill_remote_urls.ex # mix backfill_remote_urls — re-fetches missing url on remote content
 │       ├── backup.ex            # mix backup — full instance backup (DB + files)
 │       ├── backup/
 │       │   ├── db.ex            # Database backup implementation
@@ -243,18 +257,22 @@ lib/
 │       │   ├── db.ex            # Database restore implementation
 │       │   └── files.ex         # File restore implementation
 │       └── selenium_setup.ex    # mix selenium.setup — download Selenium + GeckoDriver
+├── baudrate_web.ex              # Web entry point (`use BaudrateWeb, :live_view` and friends)
 ├── baudrate_web/                # Web layer
 │   ├── components/
 │   │   ├── comment_components.ex # Focused components for rendering comment threads
 │   │   ├── core_components.ex   # Shared UI components (avatar, flash, input, etc.)
 │   │   ├── layouts.ex           # App and setup layouts with nav, theme toggle, footer
+│   │   ├── moderation_components.ex # Shared report display, so /admin/moderation and /moderation cannot drift
 │   │   └── safety_components.ex # Mute / block / report menu items for remote accounts
 │   ├── controllers/
 │   │   ├── activity_pub_controller.ex  # ActivityPub endpoints (content-negotiated)
 │   │   ├── error_html.ex        # HTML error pages
 │   │   ├── error_json.ex        # JSON error responses
+│   │   ├── export_controller.ex # Serves a data export archive, built at download time (ADR 0023)
 │   │   ├── feed_controller.ex   # RSS 2.0 / Atom 1.0 syndication feeds
 │   │   ├── feed_xml.ex          # Feed XML rendering (EEx templates, helpers)
+│   │   ├── media_controller.ex  # Serves remote images from a local re-encoded copy (the media proxy)
 │   │   ├── feed_xml/            # EEx templates for RSS and Atom XML
 │   │   │   ├── rss.xml.eex     # RSS 2.0 channel + items template
 │   │   │   └── atom.xml.eex    # Atom 1.0 feed + entries template
@@ -268,15 +286,20 @@ lib/
 │   ├── live/
 │   │   ├── admin/
 │   │   │   ├── boards_live.ex          # Admin board CRUD + moderator management
+│   │   │   ├── data_exports_live.ex   # Admin view of data export requests (ADR 0023)
 │   │   │   ├── federation_live.ex      # Admin federation dashboard
 │   │   │   ├── invites_live.ex         # Admin invite code management (generate, revoke, invite chain)
+│   │   │   ├── instance_detail_live.ex # One remote instance: whether it is blocked, and its known actors
 │   │   │   ├── login_attempts_live.ex # Admin login attempts viewer (paginated, filterable)
 │   │   │   ├── moderation_live.ex     # Admin moderation queue (every report)
 │   │   │   ├── moderation_log_live.ex # Moderation audit log (filterable, paginated)
 │   │   │   ├── bots_live.ex           # Admin bot management (create, edit, delete RSS/Atom feed bots)
 │   │   │   ├── pending_users_live.ex  # Admin approval of pending registrations
+│   │   │   ├── rules_live.ex          # Site rules as an ordered list an admin can edit (ADR 0032)
 │   │   │   ├── settings_live.ex       # Admin site settings (name, timezone, registration, federation)
+│   │   │   ├── user_detail_live.ex    # One account: what staff need to decide, and the actions (ADR 0029)
 │   │   │   └── users_live.ex          # Admin user management (paginated, filterable, ban, unban, role change)
+│   │   ├── account_migration_live.ex # Account migration: aliases and moving away (ADR 0025)
 │   │   ├── article_edit_live.ex  # Article editing form
 │   │   ├── article_helpers.ex   # Pure helper logic extracted from ArticleLive
 │   │   ├── article_history_live.ex # Article edit history with inline diffs
@@ -288,11 +311,17 @@ lib/
 │   │   ├── bookmarks_live.ex    # User bookmarks list (articles + comments, paginated)
 │   │   ├── conversation_live.ex # Single DM conversation thread view
 │   │   ├── conversations_live.ex # DM conversation list
+│   │   ├── data_export_live.ex  # Self-service data export request and download (ADR 0023)
 │   │   ├── feed_live.ex          # Personal feed (remote posts, local articles, comment activity)
 │   │   ├── following_live.ex    # Following management (outbound remote actor follows)
 │   │   ├── home_live.ex         # Home page (board listing, public for guests)
+│   │   ├── interaction_helpers.ex # Shared like/boost toggle event handlers
 │   │   ├── login_live.ex        # Login form (phx-trigger-action pattern)
 │   │   ├── notifications_live.ex # Notification center (paginated, mark read, real-time)
+│   │   ├── moderation_live.ex   # The report queue for board moderators (/moderation)
+│   │   ├── password_change_live.ex # Changing the password while signed in (/profile/password)
+│   │   ├── policy_live.ex       # The public terms, rules and privacy documents
+│   │   ├── poll_composer.ex     # Keeps a composer's poll inputs in socket assigns while editing
 │   │   ├── password_reset_live.ex  # Password reset via recovery codes
 │   │   ├── profile_live.ex      # User profile with avatar upload/crop, locale prefs, signature, WebAuthn security key management, blocked and muted accounts
 │   │   ├── recovery_code_verify_live.ex  # Recovery code login
@@ -310,13 +339,16 @@ lib/
 │   │   ├── totp_verify_live.ex  # TOTP code verification
 │   │   ├── admin_totp_verify_live.ex       # Admin re-verification for sudo mode (TOTP or WebAuthn security key)
 │   │   ├── markdown_preview_hook.ex       # LiveView hook for markdown preview toggling
+│   │   ├── pagination_scroll_hook.ex      # Scrolls a paginated page back to its list on ?page changes
 │   │   ├── autocomplete_suggest_hook.ex   # LiveView hook answering #hashtag / @mention suggest events
 │   │   ├── sandbox_hook.ex                # Ecto sandbox hook for feature tests
 │   │   ├── unread_dm_count_hook.ex         # Real-time @unread_dm_count via PubSub
 │   │   └── unread_notification_count_hook.ex # Real-time @unread_notification_count via PubSub
 │   ├── plugs/
+│   │   ├── article_ap_content_neg.ex # Content-negotiates /articles/:slug so remote AP can discover it
 │   │   ├── authorized_fetch.ex  # Optional HTTP Signature verification on AP GET requests
 │   │   ├── cache_body.ex        # Cache raw request body (for HTTP signature verification)
+│   │   ├── cache_body_reader.ex # Body reader caching the raw body in conn.assigns.raw_body
 │   │   ├── cors.ex              # CORS headers for AP GET endpoints (Allow-Origin: *)
 │   │   ├── ensure_setup.ex      # Redirect to /setup until setup is done
 │   │   ├── rate_limit.ex        # IP-based rate limiting (Hammer)
@@ -337,6 +369,7 @@ lib/
 │   ├── rate_limiter.ex          # Rate limiter behaviour (Sandbox / Hammer backends)
 │   ├── rate_limiter/
 │   │   └── hammer.ex            # Hammer-based rate limiter backend
+│   ├── rate_limit.ex            # Hammer 7 ETS store, started in the supervision tree
 │   ├── rate_limits.ex           # Per-user rate limit checks (Hammer, fail-open)
 │   ├── router.ex                # Route scopes and pipelines
 │   ├── safe_html.ex             # Renders stored HTML, applying the media-proxy rewrite (use instead of raw/1)
