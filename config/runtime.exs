@@ -174,7 +174,25 @@ if config_env() == :prod do
 
             case String.split(entry, ":", parts: 2) do
               [id, encoded] ->
-                unless id =~ ~r/^[A-Za-z0-9_-]{1,16}$/, do: malformed.("bad id #{inspect(id)}")
+                # The id is reported by shape, never echoed: `id` is
+                # everything before the first colon, and a Base64 key
+                # contains none — so `"<key>:k1"`, the `id:key` order
+                # reversed, would otherwise print the whole key into stderr
+                # and the journal on a boot failure.
+                unless id =~ ~r/^[A-Za-z0-9_-]{1,16}$/,
+                  do:
+                    malformed.(
+                      "bad id: expected 1-16 of [A-Za-z0-9_-], got #{byte_size(id)} bytes"
+                    )
+
+                # "legacy" labels values protected by the SECRET_KEY_BASE
+                # fallback. A configured key of that name would be written to
+                # and read back with two different keys, and neither the
+                # census nor the health check could see it: the row's label
+                # would equal the current id, so rotation would skip it and
+                # the unknown-key check would call it known.
+                if id == "legacy",
+                  do: malformed.("the id \"legacy\" is reserved for the SECRET_KEY_BASE fallback")
 
                 key =
                   case Base.decode64(String.trim(encoded), padding: false) do

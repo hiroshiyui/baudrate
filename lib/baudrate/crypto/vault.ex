@@ -43,6 +43,11 @@ defmodule Baudrate.Crypto.Vault do
   @iv_bytes 12
   @tag_bytes 16
 
+  # The shape `config/runtime.exs` enforces on a configured key id. Kept here
+  # too so a stored header can be told apart from a random IV that happens to
+  # begin with the magic.
+  @id_format ~r/^[A-Za-z0-9_-]{1,16}$/
+
   @type context :: {:user, integer()} | {:board, integer()} | {:setting, String.t()}
 
   @doc """
@@ -55,13 +60,35 @@ defmodule Baudrate.Crypto.Vault do
     {id, key} = Keyring.current(purpose)
     iv = :crypto.strong_rand_bytes(@iv_bytes)
 
-    if id == Keyring.legacy_id() do
+    # Which format to write is decided by whether the class has configured
+    # keys at all, not by comparing the id to `"legacy"`. A configured key
+    # that happened to be named `legacy` would otherwise take this branch —
+    # writing the header-less legacy format sealed with the configured
+    # subkey, which the legacy reader then tries to open with the
+    # `secret_key_base` derivation.
+    if Keyring.separated?(Keyring.class_of(purpose)) do
+      header = @magic <> <<byte_size(id)::8>> <> id
+
+      # Raises rather than sealing under a degenerate AAD: writing a value
+      # whose row binding is wrong produces a blob nobody can ever read, and
+      # discovering that at decrypt time is far worse than a loud failure
+      # here. `decrypt/3` returns `:error` for the same input, so a bad
+      # context cannot take out a read path.
+      aad =
+        case aad(header, purpose, context) do
+          :error ->
+            raise ArgumentError,
+                  "invalid vault context #{inspect(context)} for purpose #{inspect(purpose)}"
+
+          aad ->
+            aad
+        end
+
+      {ciphertext, tag} = seal(key, iv, plaintext, aad)
+      header <> iv <> tag <> ciphertext
+    else
       {ciphertext, tag} = seal(key, iv, plaintext, Keyring.legacy_aad(purpose))
       iv <> tag <> ciphertext
-    else
-      header = @magic <> <<byte_size(id)::8>> <> id
-      {ciphertext, tag} = seal(key, iv, plaintext, aad(header, purpose, context))
-      header <> iv <> tag <> ciphertext
     end
   end
 
@@ -89,20 +116,38 @@ defmodule Baudrate.Crypto.Vault do
   still protected by the `secret_key_base` fallback.
   """
   @spec key_id(binary()) :: {:ok, Keyring.id()} | :error
-  def key_id(<<@magic, id_len::8, rest::binary>>) when id_len > 0 do
+  def key_id(<<@magic, id_len::8, rest::binary>> = blob) when id_len > 0 do
     case rest do
-      <<id::binary-size(id_len), body::binary>> when byte_size(body) >= @iv_bytes + @tag_bytes ->
-        {:ok, id}
+      <<id::binary-size(id_len), body::binary>>
+      when byte_size(body) >= @iv_bytes + @tag_bytes ->
+        # An IV is uniform random, so one legacy blob in ~2^24 begins with
+        # these four bytes by chance and parses as a header. `decrypt/3`
+        # survives that (it falls through to the legacy reader), but a census
+        # reading the id alone cannot — it would report the raw IV bytes as a
+        # key id, which `Keyring.fetch/2` cannot resolve, so the health check
+        # would announce a missing key for a row that reads perfectly, and
+        # those non-UTF-8 bytes would then crash `Jason` and take the whole
+        # detailed health report down with a 500. Requiring the id to look
+        # like an id — the same charset `runtime.exs` enforces — rejects that
+        # by construction, and anyone who can write bytes into an encrypted
+        # column cannot use it to disable the operator's diagnostics.
+        if id =~ @id_format, do: {:ok, id}, else: legacy_key_id(blob)
 
       _ ->
-        :error
+        legacy_key_id(blob)
     end
   end
 
-  def key_id(blob) when is_binary(blob) and byte_size(blob) > @iv_bytes + @tag_bytes,
-    do: {:ok, Keyring.legacy_id()}
+  def key_id(blob), do: legacy_key_id(blob)
 
-  def key_id(_), do: :error
+  # `>=`, not `>`: a legacy blob of exactly `iv + tag` bytes is the encryption
+  # of an empty plaintext, which `decrypt_legacy/2` reads. Being stricter here
+  # than the reader is what turns a readable row into a reported lockout.
+  defp legacy_key_id(blob)
+       when is_binary(blob) and byte_size(blob) >= @iv_bytes + @tag_bytes,
+       do: {:ok, Keyring.legacy_id()}
+
+  defp legacy_key_id(_), do: :error
 
   # --- internals ---
 
@@ -110,9 +155,10 @@ defmodule Baudrate.Crypto.Vault do
        when id_len > 0 do
     with <<id::binary-size(id_len), iv::binary-size(@iv_bytes), tag::binary-size(@tag_bytes),
            ciphertext::binary>> <- rest,
-         {:ok, key} <- Keyring.fetch(purpose, id) do
-      header = @magic <> <<id_len::8>> <> id
-      open(key, iv, ciphertext, aad(header, purpose, context), tag)
+         {:ok, key} <- Keyring.fetch(purpose, id),
+         header = @magic <> <<id_len::8>> <> id,
+         aad when is_binary(aad) <- aad(header, purpose, context) do
+      open(key, iv, ciphertext, aad, tag)
     else
       _ -> :error
     end
@@ -142,10 +188,21 @@ defmodule Baudrate.Crypto.Vault do
   end
 
   defp aad(header, purpose, context) do
-    header <> "|" <> Atom.to_string(purpose) <> "|" <> owner(context)
+    case owner(context) do
+      :error -> :error
+      owner -> header <> "|" <> Atom.to_string(purpose) <> "|" <> owner
+    end
   end
 
   defp owner({:user, id}) when is_integer(id), do: "user:#{id}"
   defp owner({:board, id}) when is_integer(id), do: "board:#{id}"
   defp owner({:setting, key}) when is_binary(key), do: "setting:#{key}"
+
+  # Fails closed instead of raising. ADR 0038 says the vaults return `:error`
+  # so that a key problem cannot take out a request, and nothing enforced
+  # that: an unpersisted struct (`id` still `nil`) reached here and raised
+  # `FunctionClauseError`. It would have passed every test on the
+  # `secret_key_base` fallback, which does not consult the context at all, and
+  # started returning 500s only once the operator separated the keys.
+  defp owner(_context), do: :error
 end

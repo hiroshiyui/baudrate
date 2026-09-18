@@ -40,6 +40,11 @@ defmodule Baudrate.Federation.KeyVault do
   def site_setting, do: @site_setting
 
   defp context(:site), do: {:setting, @site_setting}
-  defp context(%Baudrate.Setup.User{id: id}), do: {:user, id}
-  defp context(%Baudrate.Content.Board{id: id}), do: {:board, id}
+
+  # `is_integer(id)`: an unsaved struct carries `id: nil`, which would
+  # otherwise reach `Vault` as `{:user, nil}`.
+  defp context(%Baudrate.Setup.User{id: id}) when is_integer(id), do: {:user, id}
+  defp context(%Baudrate.Content.Board{id: id}) when is_integer(id), do: {:board, id}
+
+  defp context(other), do: {:invalid, other}
 end

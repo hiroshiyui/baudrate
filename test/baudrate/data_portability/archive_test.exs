@@ -17,7 +17,10 @@ defmodule Baudrate.DataPortability.ArchiveTest do
   alias Baudrate.Auth.{LoginAttempt, RecoveryCode, UserSession}
   alias Baudrate.Content.{ArticleImage, ArticleRevision, Board}
   alias Baudrate.DataPortability.{Archive, Files}
+  alias Baudrate.Federation.KeyVault
   alias Baudrate.Notification.PushSubscription
+  alias Baudrate.Notification.VapidVault
+  alias Baudrate.Setup
   alias Baudrate.Setup.User
 
   @base_url "https://bbs.example"
@@ -134,6 +137,9 @@ defmodule Baudrate.DataPortability.ArchiveTest do
       hashed_password: marker("PWHASH"),
       totp_secret: marker("TOTP"),
       ap_private_key: marker("APKEY"),
+      board_ap_private_key: marker("BOARDAPKEY"),
+      site_ap_private_key: marker("SITEAPKEY"),
+      vapid_private_key: marker("VAPIDKEY"),
       recovery_hash: marker("RECOVERY"),
       session_token: marker("SESSTOKEN"),
       session_refresh: marker("SESSREFRESH"),
@@ -167,6 +173,18 @@ defmodule Baudrate.DataPortability.ArchiveTest do
     Repo.insert_all(RecoveryCode, [
       %{user_id: user.id, code_hash: m.recovery_hash, inserted_at: now}
     ])
+
+    # The other three signing-key columns (ADR 0038). `Collector` has no
+    # boards or settings section, so nothing reaches the archive today — which
+    # is exactly why they belong here: the canary is what would catch an
+    # archive section added later that dumps a board row or the settings
+    # table wholesale.
+    Repo.update_all(from(b in Board, where: b.id == ^public.id),
+      set: [ap_private_key_encrypted: m.board_ap_private_key]
+    )
+
+    Setup.set_setting(KeyVault.site_setting(), Base.encode64(m.site_ap_private_key))
+    Setup.set_setting(VapidVault.setting(), Base.encode64(m.vapid_private_key))
 
     Repo.insert_all(UserSession, [
       %{

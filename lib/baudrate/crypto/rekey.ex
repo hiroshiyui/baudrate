@@ -75,13 +75,7 @@ defmodule Baudrate.Crypto.Rekey do
   def usage do
     columns =
       Map.new(column_targets(), fn target ->
-        counts =
-          target
-          |> blob_query()
-          |> Repo.all()
-          |> Enum.frequencies_by(fn %{blob: blob} -> id_of(target, blob) end)
-
-        {target.name, counts}
+        {target.name, prefix_counts(target)}
       end)
 
     settings =
@@ -405,6 +399,34 @@ defmodule Baudrate.Crypto.Rekey do
       where: not is_nil(field(r, ^field)),
       select: %{id: r.id, blob: field(r, ^field)}
     )
+  end
+
+  # A key id lives in the first few bytes, so the census groups on that prefix
+  # in the database instead of shipping every ciphertext here.
+  #
+  # `usage/0` runs on every `Baudrate.Health` report, and an encrypted RSA
+  # private key is ~1.7 KB: loading all of them meant a 100k-account instance
+  # transferred and heap-allocated hundreds of megabytes per loopback health
+  # request, inside a 5-second per-check budget. The check that stands between
+  # the operator and a key-related lockout would have started timing out as
+  # the instance grew, which ADR 0038 §8 is explicit about not wanting.
+  #
+  # The 48 in the fragment below is the most a header can need: `"BK1"` + the
+  # length byte + a 16-character id + the 12-byte IV and 16-byte tag that
+  # `Vault.key_id/1` requires to be present. A shorter blob is returned whole,
+  # so the prefix answers exactly as the full value would. It is written into
+  # the SQL rather than passed as a parameter because the fragment has to be
+  # identical in `group_by` and `select` for PostgreSQL to group on it.
+  defp prefix_counts(%{field: field} = target) do
+    from(r in target.schema,
+      where: not is_nil(field(r, ^field)),
+      group_by: fragment("substring(? from 1 for 48)", field(r, ^field)),
+      select: {fragment("substring(? from 1 for 48)", field(r, ^field)), count(r.id)}
+    )
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn {blob, count}, acc ->
+      Map.update(acc, id_of(target, blob), count, &(&1 + count))
+    end)
   end
 
   defp decrypt_blob(%{vault: :totp}, id, blob), do: TotpVault.decrypt(blob, %User{id: id})

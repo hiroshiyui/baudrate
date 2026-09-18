@@ -37,4 +37,9 @@ defmodule Baudrate.Auth.TotpVault do
 
   defp context(%{id: id}) when is_integer(id), do: {:user, id}
   defp context(id) when is_integer(id), do: {:user, id}
+
+  # An unpersisted user has `id: nil`. `Vault` turns an unrecognised context
+  # into `:error` on decrypt and a clear raise on encrypt, so hand it through
+  # rather than matching here — the invariant lives in one place.
+  defp context(other), do: {:invalid, other}
 end

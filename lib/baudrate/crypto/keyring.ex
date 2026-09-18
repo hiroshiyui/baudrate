@@ -106,16 +106,26 @@ defmodule Baudrate.Crypto.Keyring do
   be read, and saying so is better than silently trying the wrong key.
   """
   @spec fetch(purpose(), id()) :: {:ok, binary()} | :error
-  def fetch(purpose, @legacy_id), do: {:ok, legacy_key(purpose)}
-
   def fetch(purpose, id) when is_binary(id) do
+    # Configured keys are searched before the `"legacy"` fallback, not after.
+    # `runtime.exs` rejects `"legacy"` as a configured id, so the two cannot
+    # normally collide — but if the reservation is ever relaxed, an id
+    # matching the fallback first would hand back the `secret_key_base`
+    # derivation for a value sealed with the configured key, and nothing in
+    # the census or the health report would notice: the row's label would
+    # equal `current_id`, so rotation would skip it and `unknown?/2` would
+    # call it known. Ordering it this way makes that state round-trip
+    # instead of silently unreadable.
     case Enum.find(configured(class_of(purpose)), &(&1.id == id)) do
       %{} = entry -> {:ok, subkey(entry, purpose)}
-      nil -> :error
+      nil -> fetch_legacy(purpose, id)
     end
   end
 
   def fetch(_purpose, _id), do: :error
+
+  defp fetch_legacy(purpose, @legacy_id), do: {:ok, legacy_key(purpose)}
+  defp fetch_legacy(_purpose, _id), do: :error
 
   @doc """
   Every key a stored value for this purpose might have been made with:
@@ -143,12 +153,21 @@ defmodule Baudrate.Crypto.Keyring do
   @spec separated?(class()) :: boolean()
   def separated?(class), do: configured(class) != []
 
+  @doc "The class a purpose's key material belongs to."
+  @spec class_of(purpose()) :: class()
+  def class_of(purpose), do: purpose_config(purpose).class
+
   @doc """
-  The AAD legacy values were written with, or `nil` for a purpose that has no
+  The AAD legacy values were written with, or `""` for a purpose that has no
   AAD (the recovery-code HMAC covers the code itself).
   """
-  @spec legacy_aad(purpose()) :: String.t() | nil
-  def legacy_aad(purpose), do: purpose_config(purpose).legacy_aad
+  @spec legacy_aad(purpose()) :: String.t()
+  # `""`, never `nil`: the value goes straight to
+  # `:crypto.crypto_one_time_aead/6,7`, which rejects a non-binary AAD with
+  # `:badarg`. The recovery-code purpose has no AAD (the HMAC covers the code
+  # itself), so routing it through the vault used to raise rather than return
+  # `:error` — and the vaults are documented never to raise.
+  def legacy_aad(purpose), do: purpose_config(purpose).legacy_aad || ""
 
   @doc """
   Logs once per class that it is still on the `secret_key_base` fallback.
@@ -177,8 +196,6 @@ defmodule Baudrate.Crypto.Keyring do
 
   defp key_option(:auth), do: :auth_keys
   defp key_option(:signing), do: :signing_keys
-
-  defp class_of(purpose), do: purpose_config(purpose).class
 
   defp purpose_config(purpose) do
     case Map.fetch(@purposes, purpose) do
