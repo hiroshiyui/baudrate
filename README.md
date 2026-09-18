@@ -45,13 +45,14 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
 - **Rate limiting** on login, TOTP, registration, avatar uploads, and federation endpoints
 - **Security hardened** -- HSTS, CSP, signed + encrypted cookies, and secrets encrypted at rest under per-class keys that can be rotated without locking anyone out
 - **Retention** -- hourly purges destroy a deleted article or comment, its revisions and its image files 90 days after deletion, untouched timeline items after 90 days, and remote boost records after 180 days; anything a moderation report points at is kept at any age
-- **Notifications** -- real-time in-app notifications for replies, mentions, follows, likes, boosts, and moderator actions
+- **Notifications** -- real-time in-app notifications for replies, mentions, follows, likes, boosts, moderator actions and account-security events; admins are also told when a health check has been failing for over an hour, so a backup that stopped does not stay quiet
 - **Direct messages** -- 1-on-1 conversations with read cursors, mute controls, and federated delivery
 - **Search** -- full-text search across articles and comments with CJK support and search operators
 - **Polls** -- single/multi-choice polls with anonymous voting, expiration, and denormalized counters
 - **Bookmarks** -- bookmark articles and comments for later reference
 - **Emoji autocomplete** -- type `:shortcode` in any textarea for instant emoji suggestions
 - **Markdown toolbar** -- toolbar with formatting shortcuts for article and comment editing
+- **Syndication feeds** -- RSS 2.0 and Atom for the site, each board and each user
 - **RSS/Atom bot accounts** -- admin-managed feed bots that periodically fetch RSS 0.9x/2.0, RSS 1.0 (RDF), Atom, and JSON Feed sources and post articles to target boards; configurable fetch interval, per-bot bio and profile fields, automatic favicon avatar fetching, error tracking with exponential backoff, and manual reset-and-retry
 - **User blocking, muting and reporting** -- block local or remote accounts to stop replies, likes, boosts, follows and messages in both directions; mute to hide content locally; report posts, comments, timeline items, received messages and accounts to moderators
 - **Push notifications** -- PWA with Web Push support and service worker
@@ -62,11 +63,11 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
 
 ### Prerequisites
 
-- Elixir 1.17+
-- Erlang/OTP 26+
+- Elixir 1.19 and Erlang/OTP 28 — the versions in `.tool-versions`, which is
+  what CI, the release build and production all install
 - PostgreSQL 15+
 - libvips (for image processing)
-- Rust toolchain (to compile the html5ever, Ammonia, and feedparser-rs NIFs)
+- Rust toolchain (to compile the scraper, Ammonia, and feedparser-rs NIFs)
 
 ### Installation
 
@@ -109,8 +110,8 @@ deploy builds the tag on the server (see the
 [SysOp Guide](doc/sysop.md#release-artifacts)).
 
 Recommended for operations: `HEALTH_DETAIL_PORT` serves a detailed health
-report (queues, workers, disk, backup age) on `127.0.0.1` only, for a monitor on
-the server to poll, and `LOG_FORMAT=json` switches the logs to one JSON object
+report (database, federation queues, workers, disk, backup age, encryption
+keys) on `127.0.0.1` only, for a monitor on the server to poll, and `LOG_FORMAT=json` switches the logs to one JSON object
 per line (see the [SysOp Guide](doc/sysop.md#detailed-health-report)).
 
 TOTP secrets, recovery-code hashes, ActivityPub actor private keys and the Web
@@ -144,7 +145,7 @@ Built with these excellent open-source projects:
 - [Hammer](https://hexdocs.pm/hammer/)
 - [MDEx](https://hexdocs.pm/mdex/) (Markdown rendering, CommonMark + GFM via comrak)
 - [Req](https://hexdocs.pm/req/) (HTTP client for federation)
-- [html5ever](https://github.com/servo/html5ever) (Rust HTML parser NIF for link preview extraction)
+- [scraper](https://crates.io/crates/scraper) (Rust HTML parser NIF for link preview extraction, built on [html5ever](https://github.com/servo/html5ever))
 - [Ammonia](https://crates.io/crates/ammonia) (Rust HTML sanitizer)
 - [feedparser-rs](https://crates.io/crates/feedparser-rs) (Rust feed parser NIF for RSS/Atom/JSON Feed)
 - [Rustler](https://crates.io/crates/rustler) (Rust NIF bindings for Erlang/Elixir)

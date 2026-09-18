@@ -8,7 +8,7 @@ should remain visible to all; blocking controls interaction, not visibility.
 ## Quick Reference
 
 ```bash
-# Requires: Elixir 1.17+, PostgreSQL, libvips, Rust toolchain (Ammonia, html5ever, feedparser-rs NIFs)
+# Requires: Elixir 1.19 / OTP 28 (see .tool-versions), PostgreSQL 15, libvips, Rust toolchain (Ammonia, scraper, feedparser-rs NIFs)
 mix setup              # Install deps, create DB, build assets
 mix phx.server         # Start dev server (https://localhost:4001)
 mix test --seed 9527   # Run all tests (use seed 9527 for deterministic order)
@@ -24,10 +24,10 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Elixir 1.17+ / OTP 26+ |
+| Language | Elixir 1.19 / OTP 28 — pinned in `.tool-versions` |
 | Web | Phoenix 1.8 / LiveView 1.2 |
 | HTTP server | Bandit |
-| Database | PostgreSQL (Ecto) |
+| Database | PostgreSQL 15 (Ecto) — production's major; see the CI section |
 | CSS | Tailwind CSS + DaisyUI |
 | Asset bundler | esbuild (JS) + Tailwind CLI |
 | HTTP client | Req (never use HTTPoison, Tesla, or httpc) |
@@ -35,7 +35,7 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 | Rate limiting | Hammer |
 | Markdown | MDEx (comrak) |
 | 2FA / WebAuthn | NimbleTOTP + EQRCode + wax_ (FIDO2/WebAuthn relying party) |
-| HTML parsing | html5ever (Rust NIF via Rustler) |
+| HTML parsing | scraper, built on html5ever (Rust NIF via Rustler) |
 | HTML sanitization | Ammonia (Rust NIF via Rustler) — requires Rust toolchain |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
 | Timezone data | tz |
@@ -285,6 +285,8 @@ When creating a new release (on `current`):
 | `lib/baudrate/notification.ex` | Notification context: in-app notifications, PubSub |
 | `lib/baudrate/bots.ex` | Bots context: RSS/Atom feed bot CRUD, fetch scheduling, deduplication |
 | `lib/baudrate/retention.ex` | Retention context: the hourly purges, run from `Auth.SessionCleaner` (ADR 0040) |
+| `lib/baudrate/health.ex` | The detailed health report; `health/alerts.ex` tells the admins when a check fails (ADR 0035, ADR 0044) |
+| `lib/baudrate/crypto/keyring.ex` | The `:auth` and `:signing` keys, and which one encrypted a stored value (ADR 0038) |
 | `lib/baudrate_web/live/auth_hooks.ex` | LiveView auth on_mount hooks |
 | `lib/baudrate_web/components/core_components.ex` | Shared UI components |
 | `doc/development.md` | Full architecture & project structure |
