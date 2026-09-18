@@ -37,7 +37,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
-| **2** | **Operability** | 2A–2H | **Nearly complete** (v1.23.0 – v1.27.0). 2F is left, plus three 2A items that need another machine or a notifier |
+| **2** | **Operability** | 2A–2H | **Nearly complete** (v1.23.0 – v1.27.0). 2F is left, plus one 2A item: nothing tells a person when a backup fails |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
@@ -80,7 +80,7 @@ out by P1-D1.
 
 **Goal.** No data loss goes unnoticed, the operator hears about problems before users do, and a bad deploy can be undone.
 
-**Done when:** production takes verified backups on a schedule and a restore has been rehearsed on a fresh host; a delivery or inbound backlog, a stalled worker or a full disk shows up in the detailed health report; no federated activity is lost to a restart; a release can be rolled back with one command. One of the original five — "the production host no longer compiles releases" — was withdrawn by [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md): moving the artifact cost more than compiling it.
+**Done when:** production takes verified backups on a schedule and a restore has been rehearsed; a delivery or inbound backlog, a stalled worker or a full disk shows up in the detailed health report; no federated activity is lost to a restart; a release can be rolled back with one command. One of the original five — "the production host no longer compiles releases" — was withdrawn by [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md): moving the artifact cost more than compiling it.
 
 ### Done
 
@@ -114,13 +114,21 @@ again.
 
 Scheduled backups, retention, the pre-deploy dump, restore commands, per-file
 checksums verified off-host, and backup age in the health report are all built
-and running on production since 2026-09-16 (ADR 0028, `doc/sysop.md`). What is
-left needs a second machine, or someone to notify:
+and running on production since 2026-09-16 (ADR 0028, `doc/sysop.md`). One
+item is left:
 
-- [ ] **Rehearse a restore onto a freshly provisioned host.** The rehearsal so far restored into a scratch database on the same machine, which does not prove the host can be rebuilt.
-- [ ] **An always-on puller.** Off-host copies only arrive while the workstation is running.
 - [ ] **Alert on a failed or stale backup.** The health report fails on a stale backup and the puller exits non-zero on a bad checksum, a failed pull or a stale copy, but neither tells a person: for 2D the operator chose to document polling rather than ship a notifier (ADR 0035).
-- **Accepted when:** production has a backup less than 24 h old, and the rehearsal restored a working instance.
+- **Accepted when:** production has a backup less than 24 h old, and a restore has put the data back. Both hold.
+
+**Declined by the operator, 2026-09-18:** a restore rehearsal onto a freshly
+provisioned host, and an always-on puller. What the rehearsal proved is that
+the dump reads and the data comes back; it restored into a scratch database on
+the same machine, so rebuilding the host from nothing is untested — and since
+2G that also means the key set a restore needs
+([ADR 0038](adr/0038-encryption-keys-are-separate-and-rotatable.md)) has never
+been exercised anywhere but the machine that holds it. Off-host copies arrive
+only while the workstation is running. Both are accepted risks for one small
+instance, recorded so a later reader can tell a decision from an oversight.
 
 ### 2F — Retention (S) — next
 

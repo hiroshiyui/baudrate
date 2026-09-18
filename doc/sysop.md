@@ -1411,7 +1411,10 @@ f -print | wc -l`), and `sha256sum` a few saved files against their live copies.
 restore took 70 s, every row count matched (101,369 articles, 28 users,
 4,085 comments, 5,371 remote actors, schema version 20260914200000), all
 11,861 saved upload files were present and the sampled checksums matched.
-A rehearsal on a freshly provisioned host is still worth doing once.
+That restored into a scratch database on the same host, so what it proves is
+that the dump and the uploads come back — not that this host could be rebuilt
+from nothing, and not that the encryption keys a restore needs (ADR 0038)
+exist anywhere but the machine that holds them.
 
 ### Manual backups
 
