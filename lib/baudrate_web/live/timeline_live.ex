@@ -332,7 +332,7 @@ defmodule BaudrateWeb.TimelineLive do
            |> assign(:replies, %{})}
         else
           socket = clear_uploaded_reply_images(socket)
-          replies = Federation.list_timeline_item_replies(timeline_item_id)
+          replies = accessible_replies(socket.assigns.current_user, timeline_item_id)
 
           {:noreply,
            socket
@@ -610,6 +610,27 @@ defmodule BaudrateWeb.TimelineLive do
       end
     else
       _ -> {:noreply, put_flash(socket, :error, gettext("Board not found."))}
+    end
+  end
+
+  # Defence in depth, not a fix for a live leak: the id comes from the client,
+  # and although the template only renders replies for items on the viewer's
+  # own page — so nothing loaded for an inaccessible id reaches the browser
+  # today — that is a property of the template, not of this handler. Applying
+  # the same gate as liking, boosting and replying
+  # (`Federation.timeline_item_accessible?/2`) keeps the invariant local, so a
+  # future template that does render `@replies` cannot turn this into one.
+  defp accessible_replies(user, timeline_item_id) do
+    case Baudrate.Repo.get(Federation.TimelineItem, timeline_item_id) do
+      nil ->
+        []
+
+      timeline_item ->
+        if Federation.timeline_item_accessible?(user, timeline_item) do
+          Federation.list_timeline_item_replies(timeline_item_id)
+        else
+          []
+        end
     end
   end
 
