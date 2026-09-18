@@ -198,7 +198,10 @@ defmodule Baudrate.Setup.User do
     |> validate_format(:username, ~r/^[a-zA-Z0-9_]+$/,
       message: "only allows letters, numbers, and underscores"
     )
-    |> unique_constraint(:username)
+    # Case-folded: `Admin` alongside `admin` was a distinct fediverse actor
+    # (impersonation) and made `get_user_by_username_ci/1` return two rows,
+    # which crashed every mention of that name.
+    |> unique_constraint(:username, name: :users_lower_username_index)
     |> validate_username_not_board_slug()
   end
 

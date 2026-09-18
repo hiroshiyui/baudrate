@@ -35,7 +35,11 @@ defmodule Baudrate.Auth.Users do
     downcased = String.downcase(username)
 
     Repo.one(
-      from u in User, where: fragment("lower(?)", u.username) == ^downcased, preload: :role
+      from u in User,
+        where: fragment("lower(?)", u.username) == ^downcased,
+        order_by: [asc: u.id],
+        limit: 1,
+        preload: :role
     )
   end
 
