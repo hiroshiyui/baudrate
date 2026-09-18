@@ -292,9 +292,12 @@ defmodule Baudrate.Content.Permissions do
   """
   def can_forward_timeline_item?(nil, _timeline_item), do: false
 
-  def can_forward_timeline_item?(%{role: %{name: "admin"}} = user, _timeline_item),
-    do: unrestricted?(user)
-
+  # No admin branch. It used to skip both checks below, and forwarding calls
+  # `Publisher.publish_article_forwarded/2` — so an admin could take a
+  # `followers_only` or `direct` item they were never addressed and re-publish
+  # it to a board's fediverse followers. CLAUDE.md is explicit that the
+  # row-level gates refuse non-public remote rows to everyone including
+  # admins; an admin who wants an item can follow its actor.
   def can_forward_timeline_item?(user, timeline_item) do
     unrestricted?(user) and timeline_item.visibility in ["public", "unlisted"] and
       Baudrate.Federation.timeline_item_accessible?(user, timeline_item)

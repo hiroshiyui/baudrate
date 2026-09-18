@@ -3,6 +3,14 @@ defmodule Baudrate.Media.CacheTest do
 
   alias Baudrate.Media.Cache
 
+  # `fetch_and_store/1` refuses a redirect into a blocked domain, and that
+  # check reads the domain-block cache, which reads the Repo.
+  setup do
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Baudrate.Repo)
+    Ecto.Adapters.SQL.Sandbox.mode(Baudrate.Repo, {:shared, self()})
+    :ok
+  end
+
   # A 1x1 PNG — smallest input libvips will actually decode.
   @png Base.decode64!(
          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="

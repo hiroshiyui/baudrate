@@ -44,6 +44,7 @@ defmodule Baudrate.Federation.HTTPClient do
 
   @max_redirects 5
   @default_request_timeout 60_000
+  @default_max_payload_size 262_144
   @req_test_options Application.compile_env(:baudrate, :req_test_options, [])
   @bypass_ssrf Application.compile_env(:baudrate, :bypass_ssrf_check, false)
   @allow_http_localhost Application.compile_env(:baudrate, :allow_http_localhost, false)
@@ -68,15 +69,15 @@ defmodule Baudrate.Federation.HTTPClient do
       | headers
     ]
 
-    do_get(url, all_headers, config, @max_redirects)
+    do_get(url, all_headers, config, @max_redirects, Keyword.get(opts, :refuse_blocked, false))
   end
 
-  defp do_get(_url, _headers, _config, remaining) when remaining < 0 do
+  defp do_get(_url, _headers, _config, remaining, _block?) when remaining < 0 do
     {:error, :too_many_redirects}
   end
 
-  defp do_get(url, headers, config, remaining) do
-    with {:ok, resolved} <- validate_and_resolve(url) do
+  defp do_get(url, headers, config, remaining, block?) do
+    with {:ok, resolved} <- validate_and_resolve(url, block?) do
       req_opts = build_pinned_opts(resolved, headers, config)
 
       case Req.get(req_opts) |> finalize_streamed() do
@@ -86,8 +87,11 @@ defmodule Baudrate.Federation.HTTPClient do
         {:ok, %Req.Response{status: status, headers: resp_headers}}
         when status in [301, 302, 303, 307, 308] ->
           case get_redirect_location(resp_headers, resolved.uri) do
-            {:ok, location} -> do_get(location, headers, config, remaining - 1)
-            :error -> {:error, {:http_error, status, ""}}
+            {:ok, location} ->
+              do_get(location, drop_signature_headers(headers), config, remaining - 1, block?)
+
+            :error ->
+              {:error, {:http_error, status, ""}}
           end
 
         {:ok, %Req.Response{status: status, body: resp_body}} ->
@@ -117,7 +121,10 @@ defmodule Baudrate.Federation.HTTPClient do
   def get_html(url, opts \\ []) do
     config = federation_config()
     extra_headers = Keyword.get(opts, :headers, [])
-    max_size = Keyword.get(opts, :max_size, config[:max_payload_size])
+
+    max_size =
+      Keyword.get(opts, :max_size, config[:max_payload_size]) || @default_max_payload_size
+
     ua = Keyword.get(opts, :user_agent, generic_user_agent())
     config = Keyword.put(config, :max_payload_size, max_size)
 
@@ -127,15 +134,21 @@ defmodule Baudrate.Federation.HTTPClient do
       | extra_headers
     ]
 
-    do_get_html(url, all_headers, config, @max_redirects)
+    do_get_html(
+      url,
+      all_headers,
+      config,
+      @max_redirects,
+      Keyword.get(opts, :refuse_blocked, false)
+    )
   end
 
-  defp do_get_html(_url, _headers, _config, remaining) when remaining < 0 do
+  defp do_get_html(_url, _headers, _config, remaining, _block?) when remaining < 0 do
     {:error, :too_many_redirects}
   end
 
-  defp do_get_html(url, headers, config, remaining) do
-    with {:ok, resolved} <- validate_and_resolve(url) do
+  defp do_get_html(url, headers, config, remaining, block?) do
+    with {:ok, resolved} <- validate_and_resolve(url, block?) do
       req_opts = build_pinned_opts(resolved, headers, config)
 
       case Req.get(req_opts) |> finalize_streamed() do
@@ -146,8 +159,17 @@ defmodule Baudrate.Federation.HTTPClient do
         {:ok, %Req.Response{status: status, headers: resp_headers}}
         when status in [301, 302, 303, 307, 308] ->
           case get_redirect_location(resp_headers, resolved.uri) do
-            {:ok, location} -> do_get_html(location, headers, config, remaining - 1)
-            :error -> {:error, {:http_error, status, ""}}
+            {:ok, location} ->
+              do_get_html(
+                location,
+                drop_signature_headers(headers),
+                config,
+                remaining - 1,
+                block?
+              )
+
+            :error ->
+              {:error, {:http_error, status, ""}}
           end
 
         {:ok, %Req.Response{status: status, body: resp_body}} ->
@@ -244,7 +266,11 @@ defmodule Baudrate.Federation.HTTPClient do
     sig_headers = HTTPSignature.sign_get(url, private_key_pem, key_id)
     extra_headers = Map.to_list(sig_headers)
     existing_headers = Keyword.get(opts, :headers, [])
-    get(url, headers: extra_headers ++ existing_headers)
+
+    get(url,
+      headers: extra_headers ++ existing_headers,
+      refuse_blocked: Keyword.get(opts, :refuse_blocked, false)
+    )
   end
 
   @doc """
@@ -266,17 +292,55 @@ defmodule Baudrate.Federation.HTTPClient do
 
   # Parses, validates, and resolves a URL. Returns the resolved IP, host,
   # and URI so the caller can pin the connection to the resolved IP.
-  defp validate_and_resolve(url) when is_binary(url) do
+  defp validate_and_resolve(url, block_check? \\ false)
+
+  defp validate_and_resolve(url, block_check?) when is_binary(url) do
     uri = URI.parse(url)
 
     with :ok <- validate_scheme(uri),
          :ok <- validate_host(uri),
+         :ok <- validate_not_blocked(uri.host, block_check?),
          {:ok, ip} <- safe_resolve_ip(uri.host) do
       {:ok, %{ip: ip, host: uri.host, uri: uri}}
     end
   end
 
-  defp validate_and_resolve(_), do: {:error, :invalid_url}
+  defp validate_and_resolve(_, _block_check?), do: {:error, :invalid_url}
+
+  # Opt-in per caller, and re-applied on every redirect hop.
+  #
+  # The callers that check a domain block (`ActorResolver`, `ObjectResolver`,
+  # the reply-chain walk, `MediaController`) only ever see the *first* URL, so
+  # a redirect reached a blocked instance anyway: its operator had only to
+  # stand up an unblocked host that 302s to it, and the media proxy would
+  # fetch the image, cache it under `media_cache/` and re-serve it to every
+  # viewer — with the per-domain fetch limit keyed on the pre-redirect host
+  # too. ADR 0030 means a block stops us reaching out, on every hop.
+  #
+  # Deliberately not unconditional: `domain_blocked?/1` reads the database,
+  # and in allowlist mode it answers true for every domain that is not on the
+  # list — which is a statement about who may federate with us, not about
+  # whether we may fetch a link preview from a news site.
+  defp validate_not_blocked(host, true) when is_binary(host) do
+    if Baudrate.Federation.Validator.domain_blocked?(host),
+      do: {:error, :domain_blocked},
+      else: :ok
+  end
+
+  defp validate_not_blocked(_host, _block_check?), do: :ok
+
+  # An HTTP Signature is computed over one `(request-target)` and `host`, so it
+  # is meaningless anywhere else — but the header list was forwarded verbatim to
+  # every redirect hop, handing a third party a valid site-key signature (and
+  # our `keyId`) over a request they did not receive. It cannot be replayed
+  # usefully, but there is no reason to disclose it. Authorized-fetch peers do
+  # not redirect their actor documents; one that does gets an unsigned retry,
+  # which is the same outcome as before for anything that verifies.
+  defp drop_signature_headers(headers) do
+    Enum.reject(headers, fn {name, _value} ->
+      String.downcase(name) in ["signature", "digest", "date"]
+    end)
+  end
 
   # Builds Req options pinned to the resolved IP address. The connection
   # goes to the IP directly while SNI and Host header use the original hostname.
@@ -307,7 +371,7 @@ defmodule Baudrate.Federation.HTTPClient do
       max_retries: 0,
       compressed: false,
       decode_body: false,
-      into: body_collector(config[:max_payload_size])
+      into: body_collector(config[:max_payload_size] || @default_max_payload_size)
     ]
 
     Keyword.merge(base_opts, @req_test_options)
@@ -317,7 +381,10 @@ defmodule Baudrate.Federation.HTTPClient do
   # the connection as soon as the declared `content-length` or the received
   # bytes exceed `max`. Checking `byte_size(body)` after the fact would have
   # meant buffering an attacker's multi-GB body in RAM first.
-  defp body_collector(max) do
+  # Guarded on purpose: with `max` nil, `size > nil` is false under Elixir's
+  # term ordering, so the collector would accumulate an unbounded body and
+  # never halt — a silent fail-open, in the one place built to fail closed.
+  defp body_collector(max) when is_integer(max) and max > 0 do
     fn {:data, chunk}, {req, resp} ->
       declared = declared_content_length(resp)
       size = Req.Response.get_private(resp, :baudrate_size, 0) + byte_size(chunk)
@@ -455,6 +522,9 @@ defmodule Baudrate.Federation.HTTPClient do
   def private_ip?({a, _, _, _, _, _, _, _}) when a >= 0xFC00 and a <= 0xFDFF, do: true
   # IPv6 fe80::/10
   def private_ip?({a, _, _, _, _, _, _, _}) when a >= 0xFE80 and a <= 0xFEBF, do: true
+  # fec0::/10 — site-local unicast, deprecated by RFC 3879 but still routed on
+  # some networks, so a host resolving here is still reaching inside.
+  def private_ip?({a, _, _, _, _, _, _, _}) when a >= 0xFEC0 and a <= 0xFEFF, do: true
   # IPv6 ff00::/8 (multicast)
   def private_ip?({a, _, _, _, _, _, _, _}) when a >= 0xFF00 and a <= 0xFFFF, do: true
   # IPv4-mapped IPv6 (::ffff:x.y.z.w) — extract embedded IPv4 and re-check
@@ -469,6 +539,15 @@ defmodule Baudrate.Federation.HTTPClient do
     import Bitwise
     private_ip?({hi >>> 8, hi &&& 0xFF, lo >>> 8, lo &&& 0xFF})
   end
+
+  # NAT64 local-use prefix (64:ff9b:1::/48, RFC 8215). Unlike the well-known
+  # prefix above, the embedded IPv4 sits at a deployment-chosen offset, so
+  # there is nothing reliable to decode — and an address in this range is by
+  # definition behind a local NAT64 translator, so refuse the prefix outright.
+  def private_ip?({0x64, 0xFF9B, 1, _, _, _, _, _}), do: true
+
+  # 192.88.99.0/24 — deprecated 6to4 relay anycast (RFC 7526).
+  def private_ip?({192, 88, 99, _}), do: true
 
   # 6to4 (2002::/16, RFC 3056) — the second and third groups carry the embedded
   # IPv4, so 2002:7f00:1:: reaches 127.0.0.1 through a 6to4 relay. Same class of

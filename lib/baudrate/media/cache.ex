@@ -134,7 +134,11 @@ defmodule Baudrate.Media.Cache do
   defp path_for(url), do: Path.join(cache_dir(), digest(url) <> ".webp")
 
   defp fetch(url) do
-    HTTPClient.get_html(url, headers: [{"accept", "image/*"}], max_size: @max_image_size)
+    HTTPClient.get_html(url,
+      headers: [{"accept", "image/*"}],
+      max_size: @max_image_size,
+      refuse_blocked: true
+    )
   end
 
   defp validate_size(body) when byte_size(body) > @max_image_size, do: {:error, :image_too_large}

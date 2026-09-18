@@ -2672,7 +2672,7 @@ defmodule Baudrate.ContentTest do
                Content.forward_timeline_item_to_board(fo_item, board, user)
     end
 
-    test "admin can forward followers_only feed item", %{board: board} do
+    test "refuses to forward a followers_only feed item, even for an admin", %{board: board} do
       admin = create_user("admin")
 
       remote_actor =
@@ -2700,7 +2700,11 @@ defmodule Baudrate.ContentTest do
           published_at: DateTime.utc_now() |> DateTime.truncate(:second)
         })
 
-      assert {:ok, _article} = Content.forward_timeline_item_to_board(fo_item, board, admin)
+      # `forward_timeline_item_to_board/3` publishes an `Announce` to the
+      # board's fediverse followers, so an admin forwarding this would
+      # re-publish another instance's non-public content.
+      assert {:error, :unauthorized} =
+               Content.forward_timeline_item_to_board(fo_item, board, admin)
     end
 
     test "refuses to forward a feed item from an actor the user does not follow", %{
@@ -3293,9 +3297,19 @@ defmodule Baudrate.ContentTest do
       refute Content.can_forward_timeline_item?(nil, build_timeline_item!(actor, "public"))
     end
 
-    test "admin can forward any feed item", %{actor: actor} do
+    test "not even an admin can forward a non-public feed item", %{actor: actor} do
       admin = create_user("admin")
-      assert Content.can_forward_timeline_item?(admin, build_timeline_item!(actor, "direct"))
+
+      # Forwarding calls `Publisher.publish_article_forwarded/2`, so allowing
+      # this re-published another instance's `followers_only`/`direct` content
+      # to a board's fediverse followers. CLAUDE.md: the row-level gates refuse
+      # non-public remote rows to everyone, admins included.
+      refute Content.can_forward_timeline_item?(admin, build_timeline_item!(actor, "direct"))
+
+      refute Content.can_forward_timeline_item?(
+               admin,
+               build_timeline_item!(actor, "followers_only")
+             )
     end
 
     test "user can forward public feed item", %{user: user, actor: actor} do

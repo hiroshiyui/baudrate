@@ -134,7 +134,13 @@ defmodule Baudrate.Content.Comments do
       |> Repo.insert()
 
     with {:ok, comment} <- result do
-      touch_article_activity(comment.article_id)
+      # Only servable comments bump the article. Board listings order by
+      # `last_activity_at`, so a hidden remote reply moved a public article to
+      # the top of a public page for no reason a viewer could see — an
+      # existence signal, and attacker-controlled ordering.
+      if comment.visibility in ["public", "unlisted"] do
+        touch_article_activity(comment.article_id)
+      end
 
       ContentPubSub.broadcast_to_article(comment.article_id, :comment_created, %{
         comment_id: comment.id
@@ -392,11 +398,16 @@ defmodule Baudrate.Content.Comments do
   Returns the count of non-deleted comments for an article.
   """
   def count_comments_for_article(%Article{id: article_id}) do
+    # Filtered like the listings. Both callers are public — the AP `Article`
+    # object and the JSON-LD block on the article page — so counting a hidden
+    # `followers_only` remote reply told a guest it existed, and let them
+    # count them.
     Repo.one(
       from(c in Comment,
         where: c.article_id == ^article_id and is_nil(c.deleted_at),
         select: count(c.id)
       )
+      |> Filters.exclude_unservable_remote()
     ) || 0
   end
 

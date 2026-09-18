@@ -1432,7 +1432,10 @@ defmodule Baudrate.Federation.InboxHandler do
         }
 
         with {:ok, %{body: body}} when is_binary(body) <-
-               HTTPClient.get(uri, headers: [{"accept", "application/activity+json"}]),
+               HTTPClient.get(uri,
+                 headers: [{"accept", "application/activity+json"}],
+                 refuse_blocked: true
+               ),
              {:ok, %{"inReplyTo" => parent_uri}} when is_binary(parent_uri) <-
                Jason.decode(body) do
           case resolve_in_reply_to_locally(parent_uri) do

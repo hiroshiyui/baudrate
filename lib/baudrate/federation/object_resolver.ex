@@ -134,7 +134,7 @@ defmodule Baudrate.Federation.ObjectResolver do
       site_uri = Federation.actor_uri(:site, nil)
       key_id = "#{site_uri}#main-key"
 
-      case HTTPClient.signed_get(url, private_key, key_id) do
+      case HTTPClient.signed_get(url, private_key, key_id, refuse_blocked: true) do
         {:ok, %{body: body}} ->
           case Jason.decode(body) do
             {:ok, object} when is_map(object) -> {:ok, object}

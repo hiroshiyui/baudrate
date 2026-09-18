@@ -78,6 +78,10 @@ defmodule Baudrate.Federation.RemoteActor do
     |> validate_inclusion(:actor_type, ~w(Person Group Organization Application Service))
     |> validate_format(:moved_to_ap_id, ~r{\Ahttps://})
     |> validate_length(:moved_to_ap_id, max: 2048)
+    |> validate_length(:inbox, max: 2048)
+    |> validate_length(:shared_inbox, max: 2048)
+    |> validate_length(:url, max: 2048)
+    |> validate_length(:avatar_url, max: 2048)
     |> unique_constraint(:ap_id)
     |> unique_constraint([:username, :domain])
   end

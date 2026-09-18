@@ -69,7 +69,7 @@ defmodule Baudrate.Federation.ActorResolver do
 
   defp fetch_and_upsert(actor_ap_id) do
     with :ok <- validate_fetchable(actor_ap_id) do
-      case HTTPClient.get(actor_ap_id, headers: []) do
+      case HTTPClient.get(actor_ap_id, headers: [], refuse_blocked: true) do
         {:ok, %{body: body}} ->
           parse_and_upsert(body, actor_ap_id)
 
@@ -177,6 +177,7 @@ defmodule Baudrate.Federation.ActorResolver do
     with {:ok, ap_id} <- required_string(json, "id", :missing_id),
          {:ok, actor_type} <- required_string(json, "type", :missing_type),
          {:ok, inbox} <- required_string(json, "inbox", :missing_inbox),
+         {:ok, inbox} <- validate_inbox(inbox, ap_id),
          {:ok, public_key_pem} <- extract_public_key(json) do
       username =
         Sanitizer.sanitize_username(json["preferredUsername"]) ||
@@ -196,12 +197,40 @@ defmodule Baudrate.Federation.ActorResolver do
          profile_fields: extract_profile_fields(json),
          public_key_pem: public_key_pem,
          inbox: inbox,
-         shared_inbox: get_in(json, ["endpoints", "sharedInbox"]),
+         shared_inbox: extract_shared_inbox(json, ap_id),
          actor_type: actor_type,
          also_known_as: extract_also_known_as(json),
          moved_to_ap_id: extract_moved_to(json),
          fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
        }}
+    end
+  end
+
+  # `inbox` was only required to be a non-empty string, and `sharedInbox` was
+  # taken with a bare `get_in/2` — no https check, no origin binding, no
+  # length bound — and `Delivery` then POSTs to whatever was stored. The SSRF
+  # guard stops it reaching a private address, but it left this instance usable
+  # as a signed-request reflector: declare `"inbox": "https://victim/expensive"`,
+  # follow a busy local actor, and every activity we publish is POSTed to the
+  # victim with a valid Digest and a body we generate. Mastodon and Lemmy both
+  # host the inbox on the actor's own origin, so binding it breaks no real peer.
+  defp validate_inbox(inbox, ap_id) do
+    cond do
+      not Validator.valid_https_url?(inbox) -> {:error, :invalid_inbox}
+      not Validator.same_host?(inbox, ap_id) -> {:error, :inbox_origin_mismatch}
+      true -> {:ok, inbox}
+    end
+  end
+
+  defp extract_shared_inbox(json, ap_id) do
+    case get_in(json, ["endpoints", "sharedInbox"]) do
+      shared when is_binary(shared) ->
+        if Validator.valid_https_url?(shared) and Validator.same_host?(shared, ap_id),
+          do: shared,
+          else: nil
+
+      _ ->
+        nil
     end
   end
 
