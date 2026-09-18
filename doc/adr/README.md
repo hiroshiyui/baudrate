@@ -19,7 +19,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0001](0001-elixir-phoenix-liveview-platform.md) | Elixir / Phoenix / LiveView on Bandit as the application platform | Accepted |
 | [0002](0002-context-facades.md) | Context facades over focused sub-modules | Accepted |
 | [0003](0003-activitypub-federation.md) | Federate over ActivityPub, mapping boards to Group actors | Accepted |
-| [0004](0004-federation-gate-for-non-public-boards.md) | A single federation gate for every inbound interaction | Accepted |
+| [0004](0004-federation-gate-for-non-public-boards.md) | A single federation gate for every inbound interaction | Accepted; the outbound half is [0043](0043-the-outbound-federation-gate-and-withdrawals.md) |
 | [0005](0005-rust-nifs-for-untrusted-parsing.md) | Rust NIFs (Rustler) for sanitizing and parsing untrusted input | Accepted |
 | [0006](0006-media-proxy-no-third-party-subresources.md) | No third-party subresources: proxy all remote media | Accepted |
 | [0007](0007-single-ssrf-safe-http-client.md) | One SSRF-safe, DNS-pinned HTTP client for all outbound requests | Accepted |
@@ -58,6 +58,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0040](0040-retention-deletes-what-nobody-touched.md) | Retention deletes what nobody touched | Accepted |
 | [0041](0041-rss-and-atom-are-syndication.md) | RSS and Atom are syndication, not feeds | Accepted |
 | [0042](0042-roles-are-ordered-and-capabilities-are-not-configurable.md) | Roles are ordered, and capabilities are not configurable | Accepted |
+| [0043](0043-the-outbound-federation-gate-and-withdrawals.md) | The outbound federation gate, and the withdrawals it must not touch | Accepted |
 
 ## Writing a new ADR
 
