@@ -10,7 +10,7 @@ defmodule Baudrate.RetentionTest do
   import Ecto.Query
 
   alias Baudrate.Content
-  alias Baudrate.Content.{Article, ArticleImage, Board, Comment}
+  alias Baudrate.Content.{Article, ArticleImage, Board, Comment, CommentImage}
   alias Baudrate.Federation
   alias Baudrate.Federation.{Announce, RemoteActor, TimelineItem}
   alias Baudrate.Moderation.Report
@@ -279,6 +279,73 @@ defmodule Baudrate.RetentionTest do
       Retention.purge_soft_deleted()
 
       assert exists?(Article, article.id)
+    end
+
+    test "keeps an article when a report points at one of its comments", %{user: user} do
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "reported",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      soft_delete(Article, article.id, 400)
+
+      Repo.insert!(%Report{
+        reporter_id: user.id,
+        comment_id: comment.id,
+        reason: "spam",
+        status: "resolved",
+        resolved_at: DateTime.add(now(), -365 * 86_400, :second)
+      })
+
+      Retention.purge_soft_deleted()
+
+      assert exists?(Comment, comment.id),
+             "comments CASCADE when their article goes, so a report on a comment " <>
+               "must protect the article too — otherwise reports.comment_id is " <>
+               "nilified and the moderation record is emptied"
+
+      assert exists?(Article, article.id)
+    end
+
+    test "removes the image files of comments cascaded with their article", %{user: user} do
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "has an image",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      path =
+        Path.join(System.tmp_dir!(), "retention_c_#{System.unique_integer([:positive])}.webp")
+
+      File.write!(path, "not really an image")
+
+      Repo.insert!(%CommentImage{
+        comment_id: comment.id,
+        filename: Path.basename(path),
+        storage_path: path,
+        width: 1,
+        height: 1,
+        user_id: user.id
+      })
+
+      soft_delete(Article, article.id, 91)
+
+      Retention.purge_soft_deleted()
+
+      refute exists?(Comment, comment.id)
+
+      refute File.exists?(path),
+             "the comment cascades with its article, so its image row goes too — " <>
+               "nothing would ever find the file again"
     end
 
     test "hard-deletes a soft-deleted comment", %{user: user} do

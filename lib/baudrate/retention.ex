@@ -1,20 +1,28 @@
 defmodule Baudrate.Retention do
+  # Declared before the moduledoc so it can interpolate them: the numbers
+  # appeared as literals there, and changing a period would have left the
+  # documentation quietly describing the old one.
+  @timeline_days 90
+  @announce_days 180
+  @deleted_days 90
+  @batch 500
+
   @moduledoc """
   Deletes what the instance has agreed not to keep (Phase 2F, P2-D4).
 
   Three passes, run hourly from `Baudrate.Auth.SessionCleaner` and safe to run
   by hand:
 
-  - **Timeline items** older than #{90} days that nobody touched. The
+  - **Timeline items** older than #{@timeline_days} days that nobody touched. The
     fediverse timeline is a stream, and the originals stay on the servers that
     published them, so a row here is a cache. An item somebody liked, boosted
     or replied to is kept, and so is one a report points at.
-  - **Announce records** older than #{180} days. These track that a remote
+  - **Announce records** older than #{@announce_days} days. These track that a remote
     actor boosted something; `Federation.count_announces/1` reads them for a
     boost count, which therefore drifts down on content this old. That was
     accepted: the alternative is a table that only grows.
   - **Soft-deleted articles and comments** whose `deleted_at` is more than
-    #{90} days old, which is the evidence window a closed report's copy lives
+    #{@deleted_days} days old, which is the evidence window a closed report's copy lives
     for (P1-D6). Nothing a report references is deleted, whatever its age.
 
   ## What the cutoffs measure
@@ -50,11 +58,6 @@ defmodule Baudrate.Retention do
   alias Baudrate.Moderation.Report
   alias Baudrate.Repo
 
-  @timeline_days 90
-  @announce_days 180
-  @deleted_days 90
-  @batch 500
-
   @type counts :: %{
           timeline_items: non_neg_integer(),
           announces: non_neg_integer(),
@@ -69,8 +72,10 @@ defmodule Baudrate.Retention do
   Options:
 
     * `:dry_run` — count what would go without deleting anything.
-    * `:batch` — rows per delete statement (default #{@batch}); a smaller
-      batch holds shorter locks on a busy instance.
+    * `:batch` — rows per pass (default #{@batch}); a smaller batch holds
+      shorter locks on a busy instance. Timeline items and announces loop
+      until nothing is left; the soft-deleted pass takes one batch per run,
+      so a large backlog drains over several hours.
     * `:now` — the clock, for tests.
   """
   @spec run(keyword()) :: counts()
@@ -123,22 +128,27 @@ defmodule Baudrate.Retention do
   def purge_soft_deleted(opts \\ []) do
     cutoff = cutoff(opts, @deleted_days)
 
-    {article_ids, comment_ids} = purgeable_ids(cutoff)
+    {article_ids, comment_ids} = purgeable_ids(cutoff, opts)
+
+    # Comments CASCADE with their article, so the rows and files that go are
+    # not only the ones selected above — collect them before the delete.
+    cascaded = cascaded_comment_ids(article_ids, comment_ids)
 
     paths =
       image_paths(ArticleImage, :article_id, article_ids) ++
-        image_paths(CommentImage, :comment_id, comment_ids)
+        image_paths(CommentImage, :comment_id, comment_ids ++ cascaded)
 
     if Keyword.get(opts, :dry_run, false) do
-      {length(article_ids), length(comment_ids), length(paths)}
+      {length(article_ids), length(comment_ids) + length(cascaded), length(paths)}
     else
-      # Comments first: a comment on a purged article would go with it anyway,
-      # and deleting it here keeps the counts honest about what was removed.
-      comments = delete_by_id(Comment, comment_ids, opts)
-      articles = delete_by_id(Article, article_ids, opts)
+      direct = delete_by_id(Comment, comment_ids)
+      articles = delete_by_id(Article, article_ids)
       files = remove_files(paths)
 
-      {articles, comments, files}
+      # `cascaded` went with the articles rather than through `delete_by_id`,
+      # so add them: an operator reading "comments=1" when twelve were
+      # destroyed is being misled about what this ran.
+      {articles, direct + length(cascaded), files}
     end
   end
 
@@ -152,15 +162,40 @@ defmodule Baudrate.Retention do
     from(r in Report, where: r.timeline_item_id == parent_as(:target).id, select: 1)
   end
 
-  defp purgeable_ids(cutoff) do
+  defp reported_comment_of_article do
+    from(c in Comment,
+      join: r in Report,
+      on: r.comment_id == c.id,
+      where: c.article_id == parent_as(:target).id,
+      select: 1
+    )
+  end
+
+  defp cascaded_comment_ids([], _direct), do: []
+
+  defp cascaded_comment_ids(article_ids, direct) do
+    from(c in Comment, where: c.article_id in ^article_ids, select: c.id)
+    |> Repo.all()
+    |> Enum.reject(&(&1 in direct))
+  end
+
+  defp purgeable_ids(cutoff, opts) do
+    batch = Keyword.get(opts, :batch, @batch)
+
     articles =
       from(a in Article,
         as: :target,
         where: not is_nil(a.deleted_at) and a.deleted_at < ^cutoff,
         where:
           not exists(from(r in Report, where: r.article_id == parent_as(:target).id, select: 1)),
+        # A comment goes with its article, and `reports.comment_id` is
+        # `nilify_all` — so a report on any of its comments protects the
+        # article too. Without this the cascade would empty that moderation
+        # record instead of the delete refusing, which is exactly what this
+        # module promises never happens.
+        where: not exists(reported_comment_of_article()),
         select: a.id,
-        limit: @batch
+        limit: ^batch
       )
       |> Repo.all()
 
@@ -171,7 +206,7 @@ defmodule Baudrate.Retention do
         where:
           not exists(from(r in Report, where: r.comment_id == parent_as(:target).id, select: 1)),
         select: c.id,
-        limit: @batch
+        limit: ^batch
       )
       |> Repo.all()
 
@@ -215,9 +250,9 @@ defmodule Baudrate.Retention do
     end
   end
 
-  defp delete_by_id(_schema, [], _opts), do: 0
+  defp delete_by_id(_schema, []), do: 0
 
-  defp delete_by_id(schema, ids, _opts) do
+  defp delete_by_id(schema, ids) do
     {count, _} = Repo.delete_all(from(x in schema, where: x.id in ^ids))
     count
   end
