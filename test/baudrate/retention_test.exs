@@ -9,8 +9,11 @@ defmodule Baudrate.RetentionTest do
 
   import Ecto.Query
 
+  alias Baudrate.Bots
+  alias Baudrate.Bots.BotFeedItem
   alias Baudrate.Content
-  alias Baudrate.Content.{Article, ArticleImage, Board, Comment, CommentImage}
+  alias Baudrate.Content.{Article, ArticleImage, ArticleImageStorage, ArticleRevision}
+  alias Baudrate.Content.{Board, Comment, CommentImage}
   alias Baudrate.Federation
   alias Baudrate.Federation.{Announce, RemoteActor, TimelineItem}
   alias Baudrate.Moderation.Report
@@ -142,6 +145,44 @@ defmodule Baudrate.RetentionTest do
   defp soft_delete(schema, id, age_days) do
     stamp = DateTime.add(now(), -age_days * 86_400, :second)
     Repo.update_all(from(x in schema, where: x.id == ^id), set: [deleted_at: stamp])
+  end
+
+  # Stores an image the way the instance really stores one: a file named by 64
+  # hex characters sitting in `ArticleImageStorage.upload_dir()` — which is
+  # where `Baudrate.DataPortability.Files` rebuilds the path to — and a
+  # `storage_path` that points nowhere.
+  #
+  # That combination is what a row old enough to purge looks like in
+  # production. `storage_path` is absolute and names the release directory
+  # that was current at upload time, and the deploy keeps only the newest few
+  # releases, so ninety days later the column names a directory that no longer
+  # exists while the file itself is still being served out of `shared/uploads`.
+  # Fabricating both halves from one `System.tmp_dir!()` path (which is what
+  # these tests used to do) makes the two agree, so it cannot tell the
+  # implementations apart.
+  #
+  # Returns the path the file was actually written to.
+  defp store_image(schema, key, owner_id, user) do
+    filename = Base.encode16(:crypto.strong_rand_bytes(32), case: :lower) <> ".webp"
+    dir = ArticleImageStorage.upload_dir()
+    File.mkdir_p!(dir)
+
+    path = Path.join(dir, filename)
+    File.write!(path, "not really an image")
+    on_exit(fn -> File.rm(path) end)
+
+    Repo.insert!(
+      struct(schema, %{
+        key => owner_id,
+        :filename => filename,
+        :storage_path => Path.join(System.tmp_dir!(), "deleted-release-#{filename}"),
+        :width => 1,
+        :height => 1,
+        :user_id => user.id
+      })
+    )
+
+    path
   end
 
   defp exists?(schema, id), do: Repo.exists?(from(x in schema, where: x.id == ^id))
@@ -312,6 +353,105 @@ defmodule Baudrate.RetentionTest do
       assert exists?(Article, article.id)
     end
 
+    test "keeps a soft-deleted comment a report points at", %{user: user} do
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "reported and withdrawn",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      # The comment itself is what is soft-deleted here. The neighbouring
+      # "report points at one of its comments" case soft-deletes the *article*,
+      # so its comment is never in the candidate set and the comment half of
+      # `purgeable_ids/2` — its own `not exists(report)` clause — is not
+      # exercised by it at all.
+      soft_delete(Comment, comment.id, 400)
+
+      Repo.insert!(%Report{
+        reporter_id: user.id,
+        comment_id: comment.id,
+        reason: "spam",
+        status: "resolved",
+        resolved_at: DateTime.add(now(), -365 * 86_400, :second)
+      })
+
+      Retention.purge_soft_deleted()
+
+      assert exists?(Comment, comment.id),
+             "a reported comment must survive its own soft delete: " <>
+               "reports.comment_id nilifies, so purging it would empty the " <>
+               "moderation record instead of refusing"
+
+      assert exists?(Article, article.id)
+    end
+
+    test "deletes an article's revisions with the article", %{user: user} do
+      board = create_board()
+      article = create_article(user, board)
+
+      revision =
+        %ArticleRevision{}
+        |> ArticleRevision.changeset(%{
+          title: article.title,
+          body: "an earlier body",
+          article_id: article.id,
+          editor_id: user.id
+        })
+        |> Repo.insert!()
+
+      soft_delete(Article, article.id, 91)
+
+      {articles, _comments, _files} = Retention.purge_soft_deleted()
+
+      assert articles >= 1
+      refute exists?(Article, article.id)
+
+      refute exists?(ArticleRevision, revision.id),
+             "revisions hold full snapshots of the title and body, so an " <>
+               "article deleted for good whose revisions survived would keep " <>
+               "serving its own content back — and a reference that did not " <>
+               "cascade would raise instead, aborting the whole hourly pass"
+    end
+
+    test "purges a bot-posted article and keeps its feed ledger row" do
+      board = create_board()
+      uid = System.unique_integer([:positive])
+
+      {:ok, bot} =
+        Bots.create_bot(%{
+          username: "retbot_#{uid}",
+          feed_url: "https://feed.example/retention-#{uid}.xml",
+          board_ids: [board.id]
+        })
+
+      article = create_article(bot.user, board)
+      {:ok, ledger} = Bots.record_timeline_item(bot, "guid-#{uid}", article.id)
+
+      soft_delete(Article, article.id, 91)
+
+      {articles, _comments, _files} = Retention.purge_soft_deleted()
+
+      assert articles >= 1
+      refute exists?(Article, article.id)
+
+      ledger = Repo.get(BotFeedItem, ledger.id)
+
+      assert ledger,
+             "`bot_feed_items` is the (bot_id, guid) ledger that stops a feed " <>
+               "bot re-posting an entry, not a copy of the article — deleting " <>
+               "the row republishes that entry"
+
+      assert is_nil(ledger.article_id),
+             "`bot_feed_items.article_id` must be nilify_all: with no " <>
+               "on_delete it raises Ecto.ConstraintError on the first " <>
+               "bot-posted article, and SessionCleaner turns that into one " <>
+               "log line while every later purge never runs"
+    end
+
     test "removes the image files of comments cascaded with their article", %{user: user} do
       board = create_board()
       article = create_article(user, board)
@@ -323,19 +463,7 @@ defmodule Baudrate.RetentionTest do
           "user_id" => user.id
         })
 
-      path =
-        Path.join(System.tmp_dir!(), "retention_c_#{System.unique_integer([:positive])}.webp")
-
-      File.write!(path, "not really an image")
-
-      Repo.insert!(%CommentImage{
-        comment_id: comment.id,
-        filename: Path.basename(path),
-        storage_path: path,
-        width: 1,
-        height: 1,
-        user_id: user.id
-      })
+      path = store_image(CommentImage, :comment_id, comment.id, user)
 
       soft_delete(Article, article.id, 91)
 
@@ -367,21 +495,43 @@ defmodule Baudrate.RetentionTest do
       refute exists?(Comment, comment.id)
     end
 
+    test "removes the image files of a comment purged on its own", %{user: user} do
+      board = create_board()
+      article = create_article(user, board)
+
+      {:ok, comment} =
+        Content.create_comment(%{
+          "body" => "has an image",
+          "article_id" => article.id,
+          "user_id" => user.id
+        })
+
+      path = store_image(CommentImage, :comment_id, comment.id, user)
+
+      # Only the comment goes. The neighbouring cascade case soft-deletes the
+      # article, which reaches the comment's images through
+      # `cascaded_comment_ids/2` — this is the other half of
+      # `comment_ids ++ cascaded`, a comment withdrawn on an article that is
+      # still published.
+      soft_delete(Comment, comment.id, 91)
+
+      {_articles, comments, files} = Retention.purge_soft_deleted()
+
+      assert comments >= 1
+      assert files == 1
+      refute exists?(Comment, comment.id)
+      assert exists?(Article, article.id)
+
+      refute File.exists?(path),
+             "a comment purged on its own takes its images with it; " <>
+               "collecting only the cascaded ids leaves the file served forever"
+    end
+
     test "removes the image files a purged article leaves behind", %{user: user} do
       board = create_board()
       article = create_article(user, board)
 
-      path = Path.join(System.tmp_dir!(), "retention_#{System.unique_integer([:positive])}.webp")
-      File.write!(path, "not really an image")
-
-      Repo.insert!(%ArticleImage{
-        article_id: article.id,
-        filename: Path.basename(path),
-        storage_path: path,
-        width: 1,
-        height: 1,
-        user_id: user.id
-      })
+      path = store_image(ArticleImage, :article_id, article.id, user)
 
       soft_delete(Article, article.id, 91)
 
@@ -389,6 +539,33 @@ defmodule Baudrate.RetentionTest do
 
       assert files >= 1
       refute File.exists?(path), "the row cascades, so nothing would ever find the file again"
+    end
+
+    test "finds the file from filename, never from the stored storage_path", %{user: user} do
+      board = create_board()
+      article = create_article(user, board)
+
+      # `store_image/4` writes the file where the uploads root says it lives
+      # and points `storage_path` at a release directory that is gone.
+      path = store_image(ArticleImage, :article_id, article.id, user)
+      stored = Repo.one!(from(i in ArticleImage, where: i.article_id == ^article.id))
+
+      refute File.exists?(stored.storage_path),
+             "the premise of this test is a storage_path that no longer resolves"
+
+      soft_delete(Article, article.id, 91)
+
+      {_articles, _comments, files} = Retention.purge_soft_deleted()
+
+      assert files == 1,
+             "reading `storage_path` gives File.rm/1 a path into a deleted " <>
+               "release, which returns {:error, :enoent} and is counted as " <>
+               "nothing removed"
+
+      refute File.exists?(path),
+             "the file is still being served out of shared/uploads while the " <>
+               "row that named it is gone — the one state the orphan sweeps " <>
+               "cannot find, because they look for rows without a parent"
     end
 
     test "dry_run counts without deleting", %{user: user} do

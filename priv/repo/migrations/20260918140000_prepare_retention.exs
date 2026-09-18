@@ -11,9 +11,13 @@ defmodule Baudrate.Repo.Migrations.PrepareRetention do
   would make the bot publish that entry again).
 
   And nothing indexed the columns the first two passes select on, so each one
-  would have scanned `timeline_items` and `announces` whole. `articles` and
-  `comments` already carry a `deleted_at` index, so the third pass needs
-  nothing new.
+  would have scanned `timeline_items` and `announces` whole.
+
+  This record originally claimed the third pass needed nothing, because
+  `articles` and `comments` already carry a `deleted_at` index. They do, but
+  it is partial on `deleted_at IS NULL` — the complement of what the purge
+  selects — so it could never serve that pass.
+  `20260918170000_index_soft_deleted_for_retention` adds the indexes that can.
   """
 
   use Ecto.Migration

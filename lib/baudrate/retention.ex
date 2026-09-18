@@ -47,12 +47,19 @@ defmodule Baudrate.Retention do
   the files on disk with nothing pointing at them — `SessionCleaner`'s orphan
   sweeps find images whose row has no parent, not files whose row is gone. So
   the paths are collected before the delete and removed afterwards.
+
+  Those paths are rebuilt from `filename` through
+  `Baudrate.DataPortability.Files`, never read from `storage_path`: that
+  column holds an absolute path into whichever release directory was current
+  at upload time, and the deploy keeps only the newest few. Trusting it made
+  the unlink a silent no-op for every file old enough to purge.
   """
 
   import Ecto.Query
   require Logger
 
   alias Baudrate.Content.{Article, ArticleImage, Comment, CommentImage}
+  alias Baudrate.DataPortability.Files
   alias Baudrate.Federation.{Announce, TimelineItem, TimelineItemBoost}
   alias Baudrate.Federation.{TimelineItemLike, TimelineItemReply}
   alias Baudrate.Moderation.Report
@@ -141,8 +148,18 @@ defmodule Baudrate.Retention do
     if Keyword.get(opts, :dry_run, false) do
       {length(article_ids), length(comment_ids) + length(cascaded), length(paths)}
     else
-      direct = delete_by_id(Comment, comment_ids)
-      articles = delete_by_id(Article, article_ids)
+      # One transaction, because the paths were collected before either
+      # delete: a crash between the two (a deploy restart is enough) left the
+      # comment rows gone with their files never unlinked, and the next run
+      # could not find them again — `cascaded_comment_ids/2` has no rows left
+      # to look at. Files are removed after the commit, since unlinking is
+      # not something a rollback can undo.
+      {:ok, {direct, articles}} =
+        Repo.transaction(fn ->
+          direct = delete_by_id(Comment, comment_ids)
+          {direct, delete_by_id(Article, article_ids)}
+        end)
+
       files = remove_files(paths)
 
       # `cascaded` went with the articles rather than through `delete_by_id`,
@@ -215,10 +232,28 @@ defmodule Baudrate.Retention do
 
   defp image_paths(_schema, _key, []), do: []
 
+  # `storage_path` is deliberately ignored, for the reason
+  # `Baudrate.DataPortability.Files` already gives: it is an absolute path
+  # into the release directory that was current when the file was uploaded,
+  # and the deploy deletes all but the newest few releases. Ninety days on —
+  # which is every row this module targets — it points at nothing, so
+  # `File.rm/1` returned `{:error, :enoent}` and the file stayed served
+  # forever while the row that named it was gone. Rebuilding from `filename`
+  # also confines the path and rejects anything but a hex `.webp` name, so a
+  # tampered row cannot steer the unlink.
+  #
+  # Every image kind is written by `ArticleImageStorage.process_upload/1`, so
+  # they all live in `article_images` whatever table indexes them — the same
+  # assumption `DataPortability.Collector.image_media/5` makes.
   defp image_paths(schema, key, ids) do
-    from(i in schema, where: field(i, ^key) in ^ids, select: i.storage_path)
+    from(i in schema, where: field(i, ^key) in ^ids, select: i.filename)
     |> Repo.all()
-    |> Enum.reject(&is_nil/1)
+    |> Enum.flat_map(fn filename ->
+      case Files.image_path("article_images", filename) do
+        {:ok, path} -> [path]
+        :error -> []
+      end
+    end)
   end
 
   # --- deletion ---
@@ -257,6 +292,9 @@ defmodule Baudrate.Retention do
     count
   end
 
+  # `Files.image_path/2` has already confined the path and checked the
+  # filename, so the only names reaching here are `<uploads>/article_images/
+  # <64 hex>.webp`.
   # sobelow_skip ["Traversal.FileModule"]
   defp remove_files(paths) do
     Enum.count(paths, fn path ->
@@ -264,7 +302,12 @@ defmodule Baudrate.Retention do
         :ok ->
           true
 
+        # A file that is already gone is not an error, but it is not nothing
+        # either: a run reporting `files=0` while it destroyed the rows that
+        # named them is how a file-deletion bug stays invisible for a whole
+        # release. Say so, at info, once per miss.
         {:error, :enoent} ->
+          Logger.info("retention.file_already_gone: path=#{inspect(path)}")
           false
 
         {:error, reason} ->

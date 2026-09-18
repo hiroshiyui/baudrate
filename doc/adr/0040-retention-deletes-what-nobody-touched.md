@@ -68,6 +68,20 @@ orphan sweeps find images whose *row* has lost its parent, not files whose row
 is gone, so a cascade alone would leak the bytes forever. The paths are read
 before the delete and unlinked after.
 
+They are rebuilt from the `filename` column through
+`Baudrate.DataPortability.Files`, not read from `storage_path`. `storage_path`
+holds an absolute path into whichever release directory was current when the
+file was uploaded, and the deploy keeps only the newest few releases — so for
+any file old enough to purge it names a directory that no longer exists, and
+the unlink was a silent no-op while the row that pointed at the file was
+destroyed. `DataPortability.Files` already refused to trust that column, for
+the same reason, and says so in its moduledoc; retention went back to trusting
+it, for a destructive operation rather than a read. Rebuilding also confines
+the path under the uploads root and requires a hex `.webp` name, so a tampered
+row cannot steer the unlink. A missing file is logged at info: the original
+bug was invisible precisely because `{:error, :enoent}` was swallowed and the
+run reported `files=0`.
+
 ### Batched, and safe to interrupt
 
 PostgreSQL has no `DELETE … LIMIT`, so each pass selects ids and deletes by
@@ -112,3 +126,9 @@ untouched item goes, a liked, boosted or replied-to one stays, a reported one
 stays at 400 days old, a soft-deleted article inside the window stays, and the
 image file of a purged article is gone from disk. Add a test there for every
 new table the purges learn about.
+
+A file test must let the module derive the path itself, from a file written
+under the real `ArticleImageStorage.upload_dir()`. The first two file tests
+handed in a fabricated `System.tmp_dir!()` path, so they proved only that the
+code unlinks whatever path it is given — which is why the `storage_path` bug
+above survived them.
