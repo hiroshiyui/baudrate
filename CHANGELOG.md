@@ -7,6 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.28.2] — 2026-09-19
+
+Two defects a documentation audit turned up by reading the guides against the
+code, plus the corrections that found them.
+
+**Upgrading:** no migrations, no configuration changes, no behaviour changes.
+
+**If you monitor the detailed health report**, its `workers` check gains a
+fifth key, `stale_actor_cleaner`. Nothing else moves.
+
+### Security
+
+- **The edit-history page had a fourth copy of the article visibility check,
+  and it was the weak one.** v1.28.1 consolidated "may this user see this
+  article?" and reported three implementations; there were four.
+  `ArticleHistoryLive` tested board view roles only — no refusal for a remote
+  row ingested as followers-only or direct, and none for an author whose domain
+  is blocked or whose actor is suspended. `/articles/:slug/history` shares the
+  public route scope with `/articles/:slug`, so the leak that release set out to
+  close was still open one URL away: the article page refused such a row while
+  the history page rendered it, exposing the title through `page_title` even
+  when the revision list was empty. The local copy is deleted rather than
+  patched, so there is one definition again instead of two that agree.
+
+### Fixed
+
+- **The stale-actor cleaner was invisible to the health report's `workers`
+  check.** It never called `Health.Heartbeat.beat/1` and had no entry in the
+  worker list, so the check could not tell whether it had run this year — while
+  `doc/sysop.md` documented it as a worker in two places. The report was
+  quietly narrower than its own documentation, which is the failure
+  [ADR 0035](doc/adr/0035-operational-visibility-stays-on-the-host.md) exists to
+  prevent. It runs daily, so its staleness threshold is 72 hours.
+- **`doc/api.md` carried three statements the last two releases made false**, and
+  a federating peer would have been misled by all three: Board Following was
+  documented as ignoring `?page` and always answering the root (it paginates like
+  every other collection); `/ap/search` as covering "articles in public boards"
+  (it is federated boards — this doc line is what found that leak in 1.28.0);
+  and the WebFinger 404 rule named only private boards, omitting AP-disabled
+  ones.
+- **`doc/sysop.md` gave a manual-backup command that cannot run.**
+  `Release.backup("/root/manual-backup")` executes as the `baudrate` user and
+  starts with `File.mkdir_p!`, but `/root` is `drwx------ root root` — the only
+  copy-pasteable command in either guide that simply fails. It also claimed
+  every `/admin` page needs sudo mode, which is false for precisely the page it
+  must not cover (`/admin/verify` is where you go to satisfy it), documented
+  three `wax_` settings that appear in no config file, gave the `mix.exs`
+  version floor as though it were what a build host needs, and named one
+  renamed table in v1.28.0 when that release renamed two.
+- **`doc/development.md`** still pointed at four file paths ADR 0041's rename
+  swept past, never linked ADR 0043, listed four of the outbound gate's five
+  surfaces, and documented none of v1.28.1's changes.
+- New in `doc/troubleshooting.md`: a **Syndication bots** section. "The feeds
+  stopped" is a routine question that had no entry, and the answer is that
+  failures back off to a day, so a failing bot looks idle rather than broken.
+
+### Changed
+
+- `doc/TODOs.md` is 48 lines shorter and more current: the completed phases
+  point at their ADRs instead of restating them, and the roadmap now keeps only
+  what is recorded nowhere else — the numbered decisions, the open items, and
+  the risks the operator accepted knowingly.
+
 ## [1.28.1] — 2026-09-18
 
 Two authorization fixes found by an investigation into the permission system,
