@@ -220,6 +220,7 @@ Configure at `/admin/settings`:
 |---------|------|---------|---------|
 | `site_name` | string | (set at setup) | Display name in headers and NodeInfo |
 | `registration_mode` | enum | `"approval_required"` | Registration policy (see [Registration Modes](#registration-modes)) |
+| `timezone` | IANA zone | `"Etc/UTC"` | The zone every date and time on the site is displayed in (`BaudrateWeb.Helpers.format_datetime/2`); validated against the `tz` database |
 | `eua` | markdown | (empty) | Terms of service — shown at registration, published at `/terms` |
 | `privacy_policy` | markdown | (empty) | Privacy policy, published at `/privacy` |
 | `ap_federation_enabled` | boolean | `"true"` | Federation kill switch |
@@ -270,7 +271,16 @@ Higher roles inherit all lower role permissions. Permissions follow a
 
 ### Managing Users (`/admin/users`)
 
-- **Search & filter** by username and status (active/pending/banned)
+- **Search & filter** by username, status (active/pending/banned) and role
+- **Usernames are unique without regard to case.** `Admin` cannot be registered
+  while `admin` exists: `@Admin@host` is a genuinely distinct fediverse actor,
+  and a collision also broke every mention of that name. The v1.28.0 migration
+  renames the newer row of any pre-existing collision to
+  `<first 24 characters>_2` (counting up until the name is free) and leaves the
+  oldest row alone. After that upgrade, look for accounts whose name gained a
+  `_N` suffix and tell them: nothing in the UI can rename an account, and the
+  name is also their fediverse handle, so remote followers will have to follow
+  the new one
 - **Change roles** — assign any role to any user
 - **Ban/Unban** — banning invalidates all existing sessions immediately
 - **Self-protection** — admins cannot ban themselves or change their own role
@@ -371,6 +381,38 @@ publication.
   to any user, bypassing the 7-day account age restriction. The user's rolling
   30-day quota (max 5 codes) is still enforced. The generated code's "Created
   By" shows the target user, so the user can share it immediately.
+
+### Feed Bots (`/admin/bots`)
+
+A bot is an account that posts the entries of an RSS or Atom feed into one or
+more boards. Create and manage them at `/admin/bots` (admin only).
+
+- **The account.** Each bot is an ordinary `users` row with `is_bot: true`,
+  `dm_access: "nobody"` and a locked random password:
+  `authenticate_by_password/2` refuses bot accounts, so nobody can sign in as
+  one. It has a username, display name, bio and avatar like any member, and its
+  posts are subject to the target boards' posting permissions.
+- **Fetching.** Each bot has its own `fetch_interval_minutes` (default 60, at
+  most 1440). `FeedWorker` wakes every 60 s ± 10%, takes every bot that is due
+  and fetches up to 5 of them at a time, over the same HTTPS-only, DNS-pinned,
+  SSRF-guarded transport as federation, with the response body capped at 5 MB.
+- **No duplicates.** Every entry is recorded in `bot_feed_items` as
+  `(bot_id, guid)`, and an entry whose link matches one of the bot's live
+  articles is skipped as well. That ledger is **never purged** — deleting a row
+  makes the bot publish the entry again — which is why retention leaves it alone
+  even once the article itself is gone ([Retention](#retention)).
+- **Failures back off.** A failed fetch increments the bot's error counter and
+  pushes the next attempt out exponentially: 5 minutes, doubling per consecutive
+  failure, capped at 24 hours. The dashboard shows the last error and has a reset
+  control that clears the counter and makes the bot due at once. Automatic
+  favicon fetching gives up after 3 consecutive failures until you refresh it by
+  hand.
+- **Terms and sanctions.** Publishing new terms does not stop the feeds: a bot
+  cannot sign in to accept them, so bots are exempt inside the interaction gate
+  itself. Turning a bot's `active` flag off stops its fetches without deleting
+  the account or its posts.
+- Create, update, delete, the active toggle, error resets and favicon refreshes
+  are all recorded in the moderation log.
 
 ### Login Monitoring (`/admin/login-attempts`)
 
@@ -645,6 +687,18 @@ user and board keypairs (see [Key Rotation](#key-rotation)).
 
 - When disabled: board AP endpoints return 404, delivery skips board followers
 - WebFinger excludes the board
+- Since v1.28.0 the board's **articles** stop leaving the instance as well: they
+  are no longer served as ActivityPub objects (`GET /ap/articles/:slug` answers
+  404), no longer listed in their author's outbox, no longer delivered to the
+  author's own remote followers, and no longer announced or boosted outwards.
+  The board is also dropped from every object's `cc` and `audience`, so its slug
+  is not disclosed either. One predicate decides all of it —
+  `Baudrate.Content.Board.federated?/1`: `min_role_to_view == "guest"` **and**
+  `ap_enabled`
+- **Withdrawals are never gated.** A later `Delete` or `Undo` still goes out, so
+  an author can retract a post whose board was switched off afterwards. Turning
+  the toggle off does not recall copies remote servers already hold — it only
+  stops new activities
 
 ### Federation Modes
 
@@ -811,11 +865,17 @@ is `SELECT count(*) FROM inbound_activities WHERE status = 'pending';`.
 
 ### Key Rotation
 
-Actor RSA keypairs (users, boards, site) can be rotated from the federation
-dashboard (`/admin/federation`):
+Actor RSA keypairs can be rotated as follows:
 
-- **Site keys**: "Rotate Site Keys" button
-- **Board keys**: "Rotate Keys" per board
+- **Site keys**: "Rotate Site Keys" on `/admin/federation`
+- **Board keys**: "Rotate Keys" per board on `/admin/federation`
+- **User keys**: there is **no control in the UI**. Rotate one from a remote
+  console ([Erlang distribution](#erlang-distribution-and-the-remote-console)):
+
+  ```elixir
+  user = Baudrate.Repo.get_by(Baudrate.Setup.User, username: "alice")
+  Baudrate.Federation.rotate_keys(:user, user)
+  ```
 - New public keys are distributed to followers via `Update` activities
 - All rotations are recorded in the moderation log
 
@@ -858,7 +918,7 @@ and deletes what the instance has agreed not to keep
 |------|----------|----------------|
 | Timeline items (posts from followed remote actors) | 90 days | somebody liked, boosted or replied to it |
 | `announces` (a remote actor boosted something) | 180 days | — |
-| Articles and comments with `deleted_at` set | 90 days after deletion | — |
+| Articles and comments with `deleted_at` set | 90 days after deletion | a report points at it — and for an article, also a report on any of its comments, which go with it |
 
 **Nothing a report points at is ever deleted**, at any age. The report's
 pointer would be emptied rather than the delete refused, leaving a moderation
@@ -880,7 +940,20 @@ per run, not per pass — `retention: timeline_items=… announces=… articles=
 comments=… files=…` — and **nothing at all when every count is zero**, so
 silence in the log means there was nothing to remove rather than that the run
 did not happen. Each pass is batched and safe to interrupt; the next hour
-picks up where it stopped.
+picks up where it stopped. A dry run's line carries a `[dry]` marker
+(`retention: [dry] timeline_items=…`) and counts the timeline-item and announce
+passes in full, but the soft-deleted pass only one batch (500 articles and 500
+comments), because that is what one run takes — a large backlog is therefore
+under-reported and drains over several hours.
+
+Deleting an article or comment also unlinks its images. The path is rebuilt from
+the image row's `filename`, never from `storage_path`, which records the release
+directory the file was uploaded into and which the deploy has long since
+removed — trusting it made the unlink a silent no-op for every file old enough
+to purge. A file already gone is logged at info as
+`retention.file_already_gone`, and one that cannot be removed at warning as
+`retention.file_delete_failed`, so a run reporting `files=0` while `articles=`
+or `comments=` are non-zero is worth looking into.
 
 The periods are module attributes in `lib/baudrate/retention.ex`, not
 settings. Changing them means editing and redeploying, which is deliberate:
@@ -917,7 +990,8 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 | Article creation | 10 / 15 min | per user |
 | Article update | 20 / 5 min | per user |
 | Comment creation | 30 / 5 min | per user |
-| Content deletion | 20 / 5 min | per user |
+| Content deletion (own content) | 20 / 5 min | per user |
+| Content deletion from a moderation queue | 100 / 5 min | per user |
 | User muting | 10 / 5 min | per user |
 | Search (authenticated) | 15 / min | per user |
 | Search (guest) | 10 / min | per IP |
@@ -929,9 +1003,25 @@ that duration. Ensure HTTPS is fully working before enabling HSTS preloading.
 | Data export download | 10 / 15 min | per IP |
 | Direct messages | 20 / min | per user |
 | Timeline item replies | 20 / 5 min | per user |
+| Report creation | 5 / 15 min | per user |
+| Issuing or lifting a sanction | 20 / 5 min | per moderator |
+| Outbound follow | 10 / hour | per user |
+| Autocomplete suggest, Markdown preview | 60 / min each | per user |
+| Admin sudo verification | 5 / 15 min | per user |
+| Step-up re-authentication | 5 / 15 min | per user |
+| Installation key attempts | 10 / 15 min | per IP |
+| Media proxy requests (cache hits included) | 300 / min | per IP |
+| Media proxy outbound fetches | 20 / min | per IP, and per remote domain |
+| Media proxy outbound fetches | 600 / min | instance-wide |
+| `/health` | 120 / min | per IP |
+| Push subscription, PWA share target | 10 / min each | per IP |
 
-Per-user rate limits are managed by `BaudrateWeb.RateLimits`. Admin users are
-exempt from per-user content rate limits (their actions are already audit-logged).
+Per-user rate limits are managed by `BaudrateWeb.RateLimits`. Admins are exempt
+from the per-user limits on their **own** posting, editing and deletion (their
+actions are already audit-logged), but **not** from the moderation-queue
+deletion bucket: deletes from `/admin/moderation` and `/moderation` count
+against 100 per 5 minutes for everyone, so clearing a very large spam wave can
+pause with "Too many actions. Try again shortly."
 
 Rate limiting uses [Hammer](https://hexdocs.pm/hammer/) with an ETS backend:
 the counters live in the node's memory and start from zero after a restart.
@@ -988,7 +1078,7 @@ nginx -t && systemctl reload nginx
 | `X-Forwarded-For $remote_addr` | Rate limiting sees only the proxy's IP — all users share one limit |
 | `X-Forwarded-Proto $scheme` | `force_ssl` can't detect HTTPS → infinite redirect loop |
 | `Upgrade` + `Connection` | LiveView falls back to long-polling; real-time updates and form submissions break |
-| `proxy_read_timeout 600s` | Nginx closes idle WebSocket connections after 60s default, causing LiveView disconnects |
+| `proxy_read_timeout 86400s` on `/live/websocket` | Nginx closes idle WebSocket connections after its 60s default, causing LiveView disconnects |
 | `proxy_next_upstream` | Without retry, users see raw 502 errors during deploys instead of a brief wait |
 
 #### Critical Security Notes
@@ -1149,22 +1239,28 @@ assumes the request may come from a compromised account:
 
 - **HTML sanitization** — all federated content sanitized via Ammonia (Rust NIF,
   allowlist-based) before database storage
-- **SSRF protection** — DNS-pinned connections, reject private/loopback/link-local
-  IPs plus CGNAT (`100.64.0.0/10`), multicast/reserved (`224.0.0.0/4`,
-  `240.0.0.0/4`), IETF/TEST-NET/benchmarking ranges (`192.0.0.0/24`,
-  `192.0.2.0/24`, `198.18.0.0/15`, `198.51.100.0/24`, `203.0.113.0/24`), and
-  IPv4-over-IPv6 tunnel prefixes (`::ffff:0:0/96`, `64:ff9b::/96`, `2002::/16`,
-  `2001::/32`), HTTPS-only for remote fetches. Applies to ActivityPub
-  federation, link-preview fetches, and Web Push delivery (push endpoints are
-  validated and DNS-pinned on every send, closing the rebinding gap between
-  validation and connect)
+- **SSRF protection** — DNS-pinned connections, HTTPS-only for remote fetches,
+  and one deny-list (`Baudrate.Federation.HTTPClient.private_ip?/1`) covering:
+  IPv4 `0.0.0.0/8`, `10/8`, `127/8`, `169.254/16`, `172.16/12`, `192.168/16`,
+  CGNAT `100.64.0.0/10`, IETF protocol assignments `192.0.0.0/24`, TEST-NET
+  `192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`, benchmarking
+  `198.18.0.0/15`, the deprecated 6to4 relay anycast `192.88.99.0/24`, and
+  everything from `224.0.0.0` up (multicast, reserved, broadcast); IPv6 `::`,
+  `::1`, `fc00::/7`, `fe80::/10`, `fec0::/10`, `ff00::/8`, documentation
+  `2001:db8::/32` and discard `100::/64`. Every IPv4-over-IPv6 tunnel prefix
+  that carries its address in the clear is decoded and re-checked
+  (`::ffff:0:0/96`, `64:ff9b::/96`, `::a.b.c.d`, 6to4 `2002::/16`); the two that
+  do not are refused outright (Teredo `2001::/32`, NAT64 local-use
+  `64:ff9b:1::/48`). Applies to ActivityPub federation, RSS/Atom bot feeds,
+  link-preview fetches, media-proxy fetches, and Web Push delivery (push
+  endpoints are validated and DNS-pinned on every send, closing the rebinding
+  gap between validation and connect)
 - **Content size limits** — 256 KB AP payload, 64 KB content body
 - **File uploads** — magic byte validation, re-encoding as WebP (strips EXIF,
   destroys polyglots)
 - **CSP** — restrictive Content-Security-Policy: no eval, `img-src 'self' data: blob:`
   (remote images are served through the local media proxy, so no page contacts a
-  third-party host)
-  (`https:` is required for federated remote actor avatars), `object-src 'none'`
+  third-party host — there is deliberately no `https:` source), `object-src 'none'`
   (blocks plugins entirely), `frame-src https://www.youtube-nocookie.com`
   (YouTube embeds only, privacy-enhanced domain), `frame-ancestors 'none'`
 - **Referrer-Policy** — `strict-origin-when-cross-origin` prevents leaking full
@@ -1229,8 +1325,10 @@ Safari, Firefox).
 - Combined with the service worker (registered by `PushManagerHook`), browsers
   detect the app as installable and may show an install prompt
 
-No additional configuration is required. The manifest uses the SVG favicon as
-the app icon, which scales to any resolution.
+No additional configuration is required. The manifest declares four icons — the
+SVG favicon, `icon-192.png`, `icon-512.png`, and the same 512 px image again as
+`maskable` for Android launchers — so replacing the site icon means replacing
+`priv/static/favicon.svg` and both PNGs in `priv/static/images/`.
 
 ---
 
@@ -1515,7 +1613,7 @@ To install it by hand, verify it first. `--source-digest` is the commit the tag 
 clone, so a tag moved on GitHub after you fetched it fails verification:
 
 ```bash
-TAG=v1.27.0
+TAG=v1.28.0
 gh release download "$TAG" --repo hiroshiyui/baudrate --pattern "baudrate-${TAG#v}-debian12-x86_64.tar.gz"
 gh attestation verify "baudrate-${TAG#v}-debian12-x86_64.tar.gz" --repo hiroshiyui/baudrate \
   --signer-workflow hiroshiyui/baudrate/.github/workflows/release.yml \
@@ -1622,7 +1720,7 @@ this step, pages load without CSS styling and JavaScript doesn't execute.
 #### Build steps
 
 **Before building**, ensure the `version` in `mix.exs` matches the release tag
-(e.g. `"1.1.21"` for tag `v1.1.21`). This version appears in the release
+(e.g. `"1.28.0"` for tag `v1.28.0`). This version appears in the release
 directory name (`lib/baudrate-<version>/`) and in runtime diagnostics.
 
 ```bash
@@ -1670,8 +1768,19 @@ every instance whose content is on the page.
 
 - It is a **cache**: safe to delete at any time, and excluded from backups
   without loss. Entries are re-fetched on next view.
-- nginx must **deny** `/uploads/media_cache/` directly (the shipped config does)
-  so the bytes are only reachable through the signed `/media/` route.
+- nginx must **deny** `/uploads/media_cache/` directly, so the bytes are only
+  reachable through the signed `/media/` route and the HMAC cannot be bypassed.
+  Both shipped configs do — the Ansible template
+  (`ansible/roles/nginx/templates/baudrate.conf.j2`) and
+  `doc/examples/nginx.conf.example`, which was missing the rule until v1.28.0.
+  If your nginx config predates that, add the location yourself, **before**
+  `location /uploads/`:
+
+  ```nginx
+  location ^~ /uploads/media_cache/ {
+      return 404;
+  }
+  ```
 - Growth is bounded by `SessionCleaner`, which hourly evicts entries untouched
   for 30 days and then oldest-first until the directory fits within 2 GB. Tune
   with:
@@ -1713,8 +1822,18 @@ on the configured `PORT` (default 4000).
 The Ansible deploy playbook minimises downtime through three mechanisms:
 
 1. **Migrations before restart** — Database migrations run from the new release
-   directory *before* the symlink swap and service restart. Since Ecto migrations
-   are additive (new columns/tables), the old running code tolerates them.
+   directory *before* the symlink swap and service restart. Most Baudrate
+   migrations are additive (new columns, tables and indexes), which the old
+   running code tolerates, so only the swap and restart are visible. A migration
+   that **renames or removes** something is different: between the migration and
+   the restart the old code queries objects that are gone, and the affected pages
+   error. v1.28.0's rename of `feed_items` to `timeline_items` and its four
+   satellite tables is such a migration — the personal timeline and its likes,
+   boosts and replies error for the length of that window. Nothing is lost, but
+   for a release whose notes mention a rename, expect a moment's disruption, and
+   note that rolling back across one needs the pre-deploy dump
+   ([Rolling back a deploy](#rolling-back-a-deploy)): `-e force=true` does not
+   help, because the older code cannot run against the renamed schema.
 
 2. **Graceful shutdown** — Thousand Island's `shutdown_timeout: 30_000` (in `runtime.exs`)
    drains in-flight HTTP requests for up to 30 seconds on SIGTERM. The systemd
@@ -1778,6 +1897,17 @@ the moment a key is set, what is written afterwards needs it.
    # auth_keys: "202609:<first key>"
    # signing_keys: "202609:<second key>"
    ```
+
+   An id is 1–16 characters of `[A-Za-z0-9_-]`, it is written into every value
+   the key protects, and it must never change once anything has been written
+   with it. **`legacy` is reserved** and refused at boot: it is the label the
+   `SECRET_KEY_BASE` fallback uses, so a key of that name would be written
+   with one key and read back with another, and neither the census nor the
+   `encryption_keys` health check could tell — the stored label would match
+   the current id, so rotation would skip those values and the unknown-key
+   check would call them known. The app will not start, with
+   `BAUDRATE_AUTH_KEYS is malformed at entry 1: the id "legacy" is reserved
+   for the SECRET_KEY_BASE fallback`.
 
 3. Deploy. The boot log should stop saying `crypto.keys_not_separated`.
    Nothing is re-encrypted yet, and every existing secret still reads through
@@ -1844,10 +1974,11 @@ pages until they reconnect, and makes already-rendered image URLs re-sign on
 the next render. Nothing stored is lost.
 
 **If a value cannot be decrypted**, the task says which one and leaves it
-alone; it never overwrites something it could not read. For an actor's private
-key the fix is rotating that keypair from `/admin/federation`, which
-republishes the public key to the fediverse. For a TOTP secret it is the
-member re-enrolling.
+alone; it never overwrites something it could not read. For a board's or the
+site's private key the fix is rotating that keypair from `/admin/federation`,
+which republishes the public key to the fediverse; for a **user's** there is no
+control in the UI, so rotate it from a console (see
+[Key Rotation](#key-rotation)). For a TOTP secret it is the member re-enrolling.
 
 ### One-Shot Data Repair: `ap_id` Backfill
 
@@ -2177,17 +2308,27 @@ If you put one in front anyway:
 
 | Route | Purpose |
 |-------|---------|
-| `/admin/settings` | Site name, registration mode, federation settings; read-only system information (Baudrate, Elixir, Erlang/OTP and ERTS versions) |
+| `/admin/settings` | Site name, registration mode, timezone, federation settings; read-only system information (Baudrate, Elixir, Erlang/OTP and ERTS versions) |
+| `/admin/rules` | Site rules: create, edit, reorder, retire, restore |
 | `/admin/users` | User management (search, ban/unban, role changes) |
+| `/admin/users/:id` | One account: sanction history, warn/silence/suspend, lift ([Acting on an account](#acting-on-an-account)) |
 | `/admin/pending-users` | Approve pending registrations |
 | `/admin/boards` | Board CRUD, permissions, moderator assignment |
+| `/admin/bots` | RSS/Atom feed bot accounts ([Feed Bots](#feed-bots-adminbots)) |
 | `/admin/federation` | Delivery queue, known instances, domain blocking, key rotation |
+| `/admin/federation/instances/:domain` | One instance: the accounts we know there, suspend or unsuspend one ([Suspending One Remote Account](#suspending-one-remote-account)) |
 | `/admin/moderation` | Report queue (resolve, dismiss, delete content) |
 | `/admin/moderation-log` | Audit trail of all admin actions |
 | `/admin/invites` | Invite code generation and revocation |
 | `/admin/login-attempts` | Login attempt history (filterable, paginated) |
 | `/admin/data-exports` | Data export request history (admin-only, read-only; no export-on-behalf) |
 | `/admin/verify` | Admin TOTP re-verification (sudo mode, 10-min timeout) |
+
+Every `/admin` page needs sudo mode. Most are admin-only; `/admin/moderation`,
+`/admin/pending-users` (refusing a registration, not approving one) and
+`/admin/users/:id` are also open to global moderators, whose individual actions
+are checked against their permissions. Board moderators have their own queue at
+`/moderation`, outside `/admin`, scoped to the boards they moderate.
 
 ---
 

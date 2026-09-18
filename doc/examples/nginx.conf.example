@@ -137,6 +137,14 @@ server {
         access_log off;
     }
 
+    # --- Media proxy cache (deny direct access) ---
+    # Cached copies of remote images live under uploads/ because that is the
+    # only writable path, but they must be reachable only through the signed
+    # /media/ route so the HMAC cannot be bypassed. Must precede /uploads/.
+    location ^~ /uploads/media_cache/ {
+        return 404;
+    }
+
     # --- User uploads (avatars, article images) ---
     # Served directly by nginx. nosniff prevents MIME-type confusion attacks.
     location /uploads/ {

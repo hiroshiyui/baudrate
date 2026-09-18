@@ -207,7 +207,7 @@ defmodule BaudrateWeb.RateLimits do
     check("sanction:#{user_id}", 300_000, 20, :sanction)
   end
 
-  @doc "Feed item reply: 20 per 5 minutes per user."
+  @doc "Timeline item reply: 20 per 5 minutes per user."
   @spec check_timeline_reply(integer()) :: :ok | {:error, :rate_limited}
   def check_timeline_reply(user_id) do
     check("timeline_reply:#{user_id}", 300_000, 20, :timeline_reply)
