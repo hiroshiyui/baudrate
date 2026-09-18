@@ -248,9 +248,18 @@ defmodule Baudrate.Auth.SessionCleaner do
 
     for path <- paths do
       case File.rm(path) do
-        :ok -> :ok
-        {:error, :enoent} -> :ok
-        {:error, reason} -> Logger.warning("Failed to delete orphan image #{path}: #{reason}")
+        :ok ->
+          :ok
+
+        # Logged, not swallowed: a silent `:enoent` is what hid the
+        # `storage_path` bug in both this sweep and retention (ADR 0040).
+        # The row is already gone by the time we get here, so a missing file
+        # means the path was wrong, not that there was nothing to do.
+        {:error, :enoent} ->
+          Logger.info("images.orphan_file_already_gone: path=#{path}")
+
+        {:error, reason} ->
+          Logger.warning("Failed to delete orphan image #{path}: #{reason}")
       end
     end
   end
@@ -266,7 +275,7 @@ defmodule Baudrate.Auth.SessionCleaner do
           :ok
 
         {:error, :enoent} ->
-          :ok
+          Logger.info("images.orphan_comment_file_already_gone: path=#{path}")
 
         {:error, reason} ->
           Logger.warning("Failed to delete orphan comment image #{path}: #{reason}")

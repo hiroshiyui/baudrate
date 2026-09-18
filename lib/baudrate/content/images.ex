@@ -13,6 +13,7 @@ defmodule Baudrate.Content.Images do
   alias Baudrate.Content.ArticleImage
   alias Baudrate.Content.ArticleImageStorage
   alias Baudrate.Content.CommentImage
+  alias Baudrate.DataPortability.Files
   alias Baudrate.Federation.HTTPClient
 
   @doc """
@@ -99,17 +100,20 @@ defmodule Baudrate.Content.Images do
 
   @doc """
   Deletes orphan article images older than the given cutoff.
-  Returns the list of storage paths that were deleted from the database
+  Returns the list of absolute file paths whose rows were deleted
   (caller should delete the files from disk).
+
+  Paths are rebuilt from `filename`, never read from `storage_path` — see
+  `image_paths/1`.
   """
   def delete_orphan_article_images(cutoff) do
-    query =
+    paths =
       from(ai in ArticleImage,
         where: is_nil(ai.article_id) and ai.inserted_at < ^cutoff,
-        select: ai.storage_path
+        select: ai.filename
       )
-
-    paths = Repo.all(query)
+      |> Repo.all()
+      |> image_paths()
 
     from(ai in ArticleImage,
       where: is_nil(ai.article_id) and ai.inserted_at < ^cutoff
@@ -195,17 +199,20 @@ defmodule Baudrate.Content.Images do
 
   @doc """
   Deletes orphan comment images older than the given cutoff.
-  Returns the list of storage paths that were deleted from the database
+  Returns the list of absolute file paths whose rows were deleted
   (caller should delete the files from disk).
+
+  Paths are rebuilt from `filename`, never read from `storage_path` — see
+  `image_paths/1`.
   """
   def delete_orphan_comment_images(cutoff) do
-    query =
+    paths =
       from(ci in CommentImage,
         where: is_nil(ci.comment_id) and ci.inserted_at < ^cutoff,
-        select: ci.storage_path
+        select: ci.filename
       )
-
-    paths = Repo.all(query)
+      |> Repo.all()
+      |> image_paths()
 
     from(ci in CommentImage,
       where: is_nil(ci.comment_id) and ci.inserted_at < ^cutoff
@@ -291,5 +298,35 @@ defmodule Baudrate.Content.Images do
     after
       File.rm(tmp_path)
     end
+  end
+
+  # Absolute paths for the orphan sweeps, rebuilt from `filename`.
+  #
+  # `storage_path` is deliberately not read, for the same reason
+  # `Baudrate.Retention` does not read it (ADR 0040): it is an absolute path
+  # into the release directory that was current when the file was uploaded,
+  # and the deploy keeps only the newest few releases. A deploy inside the
+  # orphan window therefore made `File.rm/1` a silent no-op while the row
+  # naming the file was deleted, leaking the bytes in `shared/uploads` with
+  # nothing left to find them by. The window is narrower here than retention's
+  # ninety days — 24 hours plus the hourly sweep — but the shape is identical,
+  # and a deploy is exactly the event that lands inside it.
+  #
+  # Rebuilding through `DataPortability.Files` also confines every component
+  # below the uploads root and rejects anything but a hex `.webp` name, so a
+  # tampered row cannot steer the unlink. Comment images are written by
+  # `ArticleImageStorage.process_upload/1` too, so both kinds live in
+  # `article_images` whatever table indexes them.
+  defp image_paths(filenames) do
+    Enum.flat_map(filenames, fn filename ->
+      case Files.image_path("article_images", filename) do
+        {:ok, path} ->
+          [path]
+
+        :error ->
+          Logger.info("images.orphan_path_unresolvable: filename=#{inspect(filename)}")
+          []
+      end
+    end)
   end
 end

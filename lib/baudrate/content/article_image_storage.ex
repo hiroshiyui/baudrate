@@ -14,6 +14,8 @@ defmodule Baudrate.Content.ArticleImageStorage do
     * Uses `image` library (libvips NIF) — no CLI shelling, no command injection surface
   """
 
+  require Logger
+
   @max_dimension 1024
   @min_dimension 16
 
@@ -71,12 +73,41 @@ defmodule Baudrate.Content.ArticleImageStorage do
   end
 
   @doc """
-  Deletes an article image file from disk.
+  Deletes an article image file from disk, resolving it from `filename`.
+
+  Not from `storage_path`: that column holds an absolute path into the release
+  directory current when the file was uploaded, and the deploy keeps only the
+  newest few releases (ADR 0040 records the same defect in retention, and the
+  orphan sweeps in `Baudrate.Content.Images` had it too). Any deploy between
+  the upload and the delete made this a silent no-op — `File.exists?/1` was
+  false, so nothing was removed and nothing was reported, while the row
+  naming the file went away.
+
+  Used by article images, comment images and timeline-item reply images; all
+  three are written by `process_upload/1` and so live in `article_images`,
+  whatever table indexes them.
   """
   # sobelow_skip ["Traversal.FileModule"]
-  def delete_image(%{storage_path: path}) when is_binary(path) do
-    if File.exists?(path), do: File.rm!(path)
-    :ok
+  def delete_image(%{filename: filename}) when is_binary(filename) do
+    case Baudrate.DataPortability.Files.image_path("article_images", filename) do
+      {:ok, path} ->
+        case File.rm(path) do
+          :ok ->
+            :ok
+
+          {:error, :enoent} ->
+            Logger.info("images.file_already_gone: filename=#{filename}")
+            :ok
+
+          {:error, reason} ->
+            Logger.warning("images.delete_failed: filename=#{filename} reason=#{inspect(reason)}")
+            :ok
+        end
+
+      :error ->
+        Logger.info("images.unresolvable_filename: filename=#{inspect(filename)}")
+        :ok
+    end
   end
 
   def delete_image(_), do: :ok

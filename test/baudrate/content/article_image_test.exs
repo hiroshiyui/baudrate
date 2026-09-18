@@ -210,10 +210,47 @@ defmodule Baudrate.Content.ArticleImageTest do
       cutoff = DateTime.utc_now() |> DateTime.add(-24, :hour)
       paths = Content.delete_orphan_article_images(cutoff)
 
-      assert image.storage_path in paths
+      assert Enum.any?(paths, &(Path.basename(&1) == image.filename))
 
       # Clean up file
       for path <- paths, do: File.rm(path)
+    end
+
+    # The path must be rebuilt from `filename`. `storage_path` is an absolute
+    # path into the release directory current when the file was uploaded, and
+    # the deploy keeps only the newest few releases — so a deploy inside the
+    # 24-hour orphan window left it naming nothing, `File.rm/1` returned
+    # `:enoent`, and the file stayed on disk forever while the only row that
+    # named it was deleted. Same defect ADR 0040 fixed in `Baudrate.Retention`.
+    #
+    # The test has to make the two disagree. `process_upload/1` writes a real
+    # file and records a correct `storage_path`, so a test that keeps both
+    # halves consistent passes under either implementation and proves nothing.
+    test "resolves the file from filename, not the stored storage_path", %{img_path: img_path} do
+      user = create_user("user")
+      image = create_image(user, nil, img_path)
+
+      real_path = Path.join(ArticleImageStorage.upload_dir(), image.filename)
+      assert File.exists?(real_path)
+
+      stale = Path.join(System.tmp_dir!(), "deleted-release-#{image.filename}")
+      old_time = DateTime.utc_now() |> DateTime.add(-25, :hour) |> DateTime.truncate(:second)
+
+      from(ai in ArticleImage, where: ai.id == ^image.id)
+      |> Repo.update_all(set: [storage_path: stale, inserted_at: old_time])
+
+      cutoff = DateTime.utc_now() |> DateTime.add(-24, :hour)
+      paths = Content.delete_orphan_article_images(cutoff)
+
+      refute stale in paths
+      assert Enum.any?(paths, &(Path.basename(&1) == image.filename))
+
+      # Every path handed back names a file that is really there, which is the
+      # property the stale column silently lost.
+      assert Enum.all?(paths, &File.exists?/1)
+
+      for path <- paths, do: File.rm(path)
+      refute File.exists?(real_path)
     end
 
     test "does not delete recent orphan images", %{img_path: img_path} do
@@ -223,7 +260,7 @@ defmodule Baudrate.Content.ArticleImageTest do
       cutoff = DateTime.utc_now() |> DateTime.add(-24, :hour)
       paths = Content.delete_orphan_article_images(cutoff)
 
-      refute image.storage_path in paths
+      refute Enum.any?(paths, &(Path.basename(&1) == image.filename))
 
       ArticleImageStorage.delete_image(image)
     end
@@ -248,7 +285,7 @@ defmodule Baudrate.Content.ArticleImageTest do
       cutoff = DateTime.utc_now() |> DateTime.add(-24, :hour)
       paths = Content.delete_orphan_article_images(cutoff)
 
-      refute image.storage_path in paths
+      refute Enum.any?(paths, &(Path.basename(&1) == image.filename))
 
       ArticleImageStorage.delete_image(image)
     end
