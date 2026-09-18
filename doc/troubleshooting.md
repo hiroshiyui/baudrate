@@ -13,6 +13,7 @@ See the [SysOp Guide](sysop.md) for the comprehensive operational reference.
 - [Assets, Static Files & Build Dependencies](#assets-static-files--build-dependencies)
 - [Reverse Proxy](#reverse-proxy)
 - [Federation](#federation)
+- [Syndication bots](#syndication-bots)
 - [Authentication & Sessions](#authentication--sessions)
 - [Rate Limiting](#rate-limiting)
 - [A second node](#a-second-node)
@@ -481,7 +482,8 @@ moderators cannot judge what they cannot see.
 
 A bot that fails backs off **exponentially, up to a day**:
 `min(5 × 2^(errors−1), 1440)` minutes, so the fifth consecutive failure pushes
-the next attempt out by 80 minutes and the ninth by the full 24 hours
+the next attempt out by 80 minutes and the tenth by the full 24 hours (the
+ninth is already 21 h 20 m)
 (`Bots.mark_fetch_error/2`). A bot that has been failing for a while therefore
 looks idle rather than broken — check `error_count` and `last_error` on
 `/admin/bots` before assuming the worker is stuck.
@@ -506,8 +508,11 @@ changed with it, to `syndication_feed_worker`.
 Favicon fetching gives up after **three** failures
 (`Bots.avatar_needs_refresh?/1` returns `false` once `favicon_fail_count >= 3`)
 and otherwise refreshes weekly. A site that blocks the fetch, or serves no
-favicon, will leave the bot on its default avatar permanently. Upload one by
-hand on `/admin/bots` if it matters.
+favicon, will leave the bot on its default avatar permanently. There is no
+manual upload: the bot's account has a locked password, so nobody can sign in
+as it, and neither `/admin/bots` nor `/admin/users/:id` offers a file field.
+**Refresh Favicon** on `/admin/bots` re-tries the fetch, bypassing the
+three-failure pause and resetting the counter on success.
 
 ### An entry was posted twice, or not at all
 
@@ -536,11 +541,12 @@ touches it
 
 ### Session cleanup
 
-The `SessionCleaner` GenServer runs every hour and carries sixteen steps —
+The `SessionCleaner` GenServer runs every hour and carries seventeen steps —
 expired sessions, old login attempts, orphan images, delivery and inbox queue
 hygiene, link previews, the media cache, the data-export and account-move
-sweeps, old notifications, ended-sanction notices, closed-report evidence, and
-the retention purges below. `doc/sysop.md` has the full table. Each step is
+sweeps, old notifications, ended-sanction notices, closed-report evidence, the
+retention purges below, and the health-alert check (ADR 0044), which is the
+only one that keeps state between runs and so sits outside the uniform list. `doc/sysop.md` has the full table. Each step is
 isolated, so one failing step no longer skips the rest of the hour.
 
 ### Content disappeared from the database
@@ -719,6 +725,24 @@ Deliveries already sent twice cannot be recalled.
 The report is on the server only: `curl -s http://127.0.0.1:4001/health | jq`
 (see the sysop guide's Detailed Health Report section and
 [ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md)).
+
+### You do not have to poll it
+
+A check that keeps failing reaches the admins by itself
+([ADR 0044](adr/0044-the-instance-tells-its-admins-when-it-is-unwell.md)).
+`Baudrate.Health.Alerts` runs hourly from `SessionCleaner`; when the same set
+of checks fails on two consecutive polls it notifies every admin in-app — and
+by Web Push for admins who subscribed — as a `health_alert` naming the failing
+checks, repeated once a day while that set does not change. Recovery arrives
+once, as `health_recovered`. The log carries `health.alert:` with the reasons
+and `health.recovered`.
+
+It cannot tell you the instance is **down**, because it runs inside the
+instance, so an external check is still worth having — that is the half the
+`OnFailure=` example in `doc/sysop.md` covers.
+
+If you are reading this because an alert arrived, the notification names the
+failing checks and the report below has the detail.
 
 ### Nothing answers on port 4001
 
