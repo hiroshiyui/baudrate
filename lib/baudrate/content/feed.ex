@@ -1,9 +1,26 @@
 defmodule Baudrate.Content.Feed do
   @moduledoc """
-  Feed queries and user content statistics.
+  Recent-content listings and per-user content statistics.
 
-  Provides public feed listings, per-user article/comment queries,
-  and content statistics.
+  Three groups of query, behind one module:
+
+    * `list_recent_*` — the newest articles, comments and boosts, site-wide,
+      for one board, or for one user. These back the home page and the public
+      profile at `/users/:name`, and the per-user ones are viewer-gated.
+    * `count_*` — how much a user has posted, for the profile's counters.
+    * `paginate_*_by_user` — the paginated profile tabs.
+
+  **"Feed" here is neither of the senses the vocabulary settled.** It is not
+  the RSS and Atom this instance reads and publishes — that is *syndication*
+  ([ADR 0041](../../../doc/adr/0041-rss-and-atom-are-syndication.md)) — and it
+  is not the personal fediverse stream, which is the *timeline*
+  ([ADR 0039](../../../doc/adr/0039-the-personal-stream-is-a-timeline.md)) and
+  lives in `Baudrate.Federation.Timeline`. This module only ever meant "recent
+  content on this site", and nothing here touches either of those.
+
+  The name is the last unresolved one, deliberately: no single word covers
+  listings *and* statistics, which is a hint that this is two modules. ADR 0041
+  records it as an open question rather than answering it in passing.
   """
 
   import Ecto.Query

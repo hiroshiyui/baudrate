@@ -26,7 +26,7 @@ defmodule Baudrate.Content do
     * `Content.Images` — article image management
     * `Content.Tags` — hashtag extraction, syncing, and querying
     * `Content.Search` — full-text search across articles, comments, and boards
-    * `Content.Feed` — public timeline queries, user content statistics
+    * `Content.Feed` — recent-content listings (home page, profiles) and per-user content statistics; not RSS (that is `SyndicationFeed*`) and not the personal timeline (that is `Federation.Timeline`)
     * `Content.ReadTracking` — per-user read state for articles and boards
     * `Content.Polls` — poll creation, voting, and counter management
   """
