@@ -369,8 +369,16 @@ defmodule Baudrate.Federation.Delivery do
     article = Repo.preload(article, [:boards, :user])
 
     # Collect inboxes from user followers (skip for remote articles with no local user)
+    #
+    # The board gate applies to the author's followers too. Only the board
+    # fan-out below was filtered, so an article posted to a staff-only or
+    # AP-disabled board was still delivered to everyone following its author —
+    # with `to: as#Public`, because local articles are always `visibility:
+    # "public"`. One unsolicited Follow of a local user was enough to receive
+    # every private-board post they wrote. A board-less article stays public,
+    # matching `ArticleHelpers.user_can_view_article?/2`.
     user_inboxes =
-      if article.user do
+      if article.user && article_boards_federated?(article) do
         user_uri = Federation.actor_uri(:user, article.user.username)
         resolve_follower_inboxes(user_uri)
       else
@@ -405,6 +413,18 @@ defmodule Baudrate.Federation.Delivery do
       {:ok, 0}
     end
   end
+
+  # Whether an article may leave this instance at all: board-less (a personal
+  # post, public by definition here) or in at least one federated board.
+  # `author_inboxes` is deliberately not gated by this — a reply to a remote
+  # author must still reach them, since their article already exists on the
+  # fediverse with its own `ap_id` (the exception in CLAUDE.md's federation
+  # gate).
+  defp article_boards_federated?(%{boards: boards}) when is_list(boards) do
+    boards == [] or Enum.any?(boards, &Board.federated?/1)
+  end
+
+  defp article_boards_federated?(_article), do: true
 
   # --- Flag Delivery ---
 

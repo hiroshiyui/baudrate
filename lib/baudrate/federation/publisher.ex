@@ -49,8 +49,12 @@ defmodule Baudrate.Federation.Publisher do
   defp article_addressing(article, actor_uri) do
     {to, cc} = visibility_addressing(article.visibility, "#{actor_uri}/followers")
 
+    # Only federated boards go in `cc`. A private board's actor URI carries its
+    # slug, so listing it told every recipient that the board exists and what
+    # it is called.
     board_uris =
       article.boards
+      |> Enum.filter(&Board.federated?/1)
       |> Enum.map(&Federation.actor_uri(:board, &1.slug))
 
     {to, Enum.uniq(cc ++ board_uris)}

@@ -618,6 +618,72 @@ defmodule Baudrate.Federation.DeliveryTest do
       # Board is private, so its followers should not be included
       assert {:ok, 0} = Delivery.enqueue_for_article(activity, user_uri, article)
     end
+
+    test "does not deliver a private-board article to the author's own followers" do
+      user = create_user()
+
+      private_board =
+        %Baudrate.Content.Board{}
+        |> Baudrate.Content.Board.changeset(%{
+          name: "Staff Only",
+          slug: "staff-#{System.unique_integer([:positive])}",
+          min_role_to_view: "admin"
+        })
+        |> Repo.insert!()
+
+      {:ok, _} = KeyStore.ensure_board_keypair(private_board)
+
+      # The attack: one unsolicited Follow of the author, no board follow at all.
+      user_uri = Federation.actor_uri(:user, user.username)
+      remote = create_remote_actor()
+      create_follower(user_uri, remote)
+
+      {:ok, %{article: article}} =
+        Baudrate.Content.create_article(
+          %{
+            title: "Internal",
+            body: "Body",
+            slug: "art-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [private_board.id]
+        )
+
+      Repo.delete_all(DeliveryJob)
+
+      article = Repo.preload(article, [:boards, :user])
+      activity = Jason.encode!(%{"type" => "Create"})
+
+      assert {:ok, 0} = Delivery.enqueue_for_article(activity, user_uri, article),
+             "the board gate applies to the author's followers too, or following " <>
+               "any local user leaks every private-board post they write"
+    end
+
+    test "still delivers a board-less article to the author's followers" do
+      user = create_user()
+      user_uri = Federation.actor_uri(:user, user.username)
+      remote = create_remote_actor()
+      create_follower(user_uri, remote)
+
+      {:ok, %{article: article}} =
+        Baudrate.Content.create_article(
+          %{
+            title: "Personal",
+            body: "Body",
+            slug: "art-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          []
+        )
+
+      Repo.delete_all(DeliveryJob)
+
+      article = Repo.preload(article, [:boards, :user])
+      activity = Jason.encode!(%{"type" => "Create"})
+
+      assert {:ok, 1} = Delivery.enqueue_for_article(activity, user_uri, article),
+             "a board-less article is public by definition here"
+    end
   end
 
   describe "purge_completed_jobs/0" do
