@@ -7,7 +7,7 @@ contributors. Items marked **(confirmed)** were checked against the code, and
 `lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
 line numbers were correct as of v1.18.1.
 
-**Current state (v1.28.1).** The review named five gaps: broken promises (the
+**Current state (v1.28.2).** The review named five gaps: broken promises (the
 UI or docs saying something happens when it does not), moderation reach,
 operability, federation reach, and discovery and onboarding. The first three
 are closed — Phase 0 in v1.18.2, Phase 1 in v1.21.0, Phase 2 with the
@@ -52,18 +52,17 @@ Each phase settles its decisions and gets its own implementation plan before wor
 
 Everyone who has to act on abuse can act at the right level, everyone affected
 by a decision is told about it, and the site publishes the rules those
-decisions rest on. The decisions behind it (P1-D1 … P1-D9, made 2026-09-14)
-are all implemented; they live in the ADRs below, the `CLAUDE.md` invariants
-and — for who hears about a report's outcome — `doc/development.md`.
-
-| Stage | What | Released | Recorded in |
-|-------|------|----------|-------------|
-| 1A | Member self-protection: blocks stop interaction both ways, locally only | v1.19.0 | [ADR 0026](adr/0026-blocks-stop-interaction-locally.md) |
-| 1B | A report queue board moderators can use, with reason categories and outcome notices | v1.20.0 | `doc/development.md` |
-| 1C | Sanctions short of a ban: warn, silence, suspend — rows with an explicit end, one gate | v1.21.0 | [ADR 0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md) |
-| 1D | Instance-level federation moderation: domain blocks as rows, reversible hiding, per-actor suspension | v1.21.0 | [ADR 0030](adr/0030-domain-blocks-are-rows-and-hiding-is-reversible.md) |
-| 1E | Rules, terms and privacy pages; terms acceptance recorded and versioned | v1.21.0 | [ADR 0031](adr/0031-terms-acceptance-is-recorded-and-versioned.md) |
-| 1F | Rules as records, so a report can cite one | v1.21.0 | [ADR 0032](adr/0032-rules-are-records-and-retired-not-deleted.md) |
+decisions rest on. Shipped v1.19.0–v1.21.0: **1A** blocks
+([0026](adr/0026-blocks-stop-interaction-locally.md)), **1B** the report queue
+board moderators can use (`doc/development.md`), **1C** sanctions
+([0029](adr/0029-sanctions-are-rows-with-an-explicit-end.md)), **1D** domain
+blocks and per-actor suspension
+([0030](adr/0030-domain-blocks-are-rows-and-hiding-is-reversible.md)), **1E**
+terms acceptance ([0031](adr/0031-terms-acceptance-is-recorded-and-versioned.md))
+and **1F** rules as records
+([0032](adr/0032-rules-are-records-and-retired-not-deleted.md)). The decisions
+behind it (P1-D1 … P1-D9, made 2026-09-14) are all implemented and live in
+those records and the `CLAUDE.md` invariants.
 
 **Closed by 2F:** an article its author deletes used to keep its body in the
 row and in `article_revisions` indefinitely; both are destroyed 90 days later
@@ -85,90 +84,71 @@ out by P1-D1.
 
 ### Done
 
+Every stage's reasoning is in its record; this is only the index, so that
+"Phase 2D" in an ADR resolves to something.
+
 | Stage | What | Released | Recorded in |
 |-------|------|----------|-------------|
-| 2A | Backups and recovery: verified nightly folders with count-based retention, off-host pull with per-file checksums, restore and rollback — and an hourly check that tells the admins when one of the health report's checks has been failing for an hour | v1.23.0, alerting after v1.28.2 | [ADR 0028](adr/0028-backups-are-complete-folders-with-count-based-retention.md), [ADR 0044](adr/0044-the-instance-tells-its-admins-when-it-is-unwell.md) |
-| 2B | One node (D2): cluster discovery removed, the scaling guide rewritten around a bigger host, PostgreSQL tuning and a CDN | v1.23.0 | [ADR 0033](adr/0033-baudrate-runs-on-one-node.md) |
-| 2C | Federation work committed before it is acknowledged: delivery jobs inside the change's transaction, wake on commit, delivery deadlines, a per-domain circuit breaker, an inbound queue ordered per remote account | v1.24.0 | [ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md) |
-| 2D | Observability: a loopback-only detailed health report (queues, worker heartbeats, disk, backup age; 503 on failure) and optional JSON logs with a metadata allow-list | v1.25.0 | [ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md) |
-| 2E | Deploy safety: releases built on Debian 12 in CI, smoke-tested on every push and attested; a rollback playbook that refuses an incompatible schema; a per-server Erlang cookie with distribution on loopback; Sobelow and mix_audit in CI | v1.26.0 | [ADR 0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md), [ADR 0037](adr/0037-the-deploy-builds-on-the-server-again.md) |
-| 2G | Key separation: an `:auth` and a `:signing` key read from the environment, retired keys kept for reading, stored values that name their key and are bound to their row, a resumable rotation task with a census, a health check for a key that is gone, and key ids in the backup manifest | v1.27.0 | [ADR 0038](adr/0038-encryption-keys-are-separate-and-rotatable.md) |
-| 2F | Retention: hourly purges of untouched timeline items (90 days), `announces` (180 days) and soft-deleted articles and comments (90 days past `deleted_at`, with their image files); nothing a report references is deleted | v1.28.0 | [ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md) |
-| 2H | Drift: CI runs production's PostgreSQL 15, server and client, held together with Ansible by `verify-toolchain.sh`; the worker table, README clone URL and `INSTALLATION_KEY` fixed | v1.23.0 | `ci/image/README.md`, `doc/sysop.md` |
+| 2A | Backups, recovery, and the alert when a check fails | v1.23.0; alerting after v1.28.2 | [0028](adr/0028-backups-are-complete-folders-with-count-based-retention.md), [0044](adr/0044-the-instance-tells-its-admins-when-it-is-unwell.md) |
+| 2B | One node (D2) | v1.23.0 | [0033](adr/0033-baudrate-runs-on-one-node.md) |
+| 2C | Federation work commits before it is acknowledged | v1.24.0 | [0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md) |
+| 2D | The loopback-only health report, and JSON logs | v1.25.0 | [0035](adr/0035-operational-visibility-stays-on-the-host.md) |
+| 2E | Deploy safety: CI-built releases, rollback, per-server cookie | v1.26.0 | [0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md), [0037](adr/0037-the-deploy-builds-on-the-server-again.md) |
+| 2F | Retention: the hourly purges | v1.28.0 | [0040](adr/0040-retention-deletes-what-nobody-touched.md) |
+| 2G | Key separation, and every key rotatable | v1.27.0 | [0038](adr/0038-encryption-keys-are-separate-and-rotatable.md) |
+| 2H | Drift: CI runs production's PostgreSQL, server and client | v1.23.0 | `ci/image/README.md` |
 
-Production separated its keys on 2026-09-18 and has since rotated them once,
-end to end: 117 stored secrets re-keyed with none left unreadable, the retired
-key dropped from configuration, `encryption_keys` reporting `ok`. So the
-rotation path in `doc/sysop.md` is exercised, not theoretical.
+### Only recorded here
 
-`SECRET_KEY_BASE` is **not** rotatable yet, and this is why: 130
-recovery-code hashes still ride the old `SECRET_KEY_BASE` derivation. A
-recovery code is a keyed HMAC and cannot be re-keyed without the code, so they
-move only as members regenerate theirs. `Baudrate.Release.key_census/0` is how
-to tell when that number reaches zero.
+Everything else about Phase 2 is in its ADRs. These are the facts that are not.
 
-**Deferred by the operator, outside 2H:** production allows SSH login as root
-(key only). `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets
-`PermitRootLogin yes`, and sshd keeps the first value it reads, so the `common`
-role's `PermitRootLogin no` has no effect (`sshd -T`, found 2026-09-15). The fix
-would be for the role to manage the drop-ins and assert the effective value.
-
-**Left open by ADR 0037:** publishing the release to a registry, so the
-operator's machine verifies a digest and the server pulls the bytes over its
-own link. Only worth doing if the built artifact ever has to reach the server
-again.
-
-### 2A — Backups and recovery — done
-
-Scheduled backups, retention, the pre-deploy dump, restore commands, per-file
-checksums verified off-host, and backup age in the health report are all built
-and running on production since 2026-09-16 (ADR 0028, `doc/sysop.md`).
-
-The last item — nothing turned a failing check into a message — is closed
-([ADR 0044](adr/0044-the-instance-tells-its-admins-when-it-is-unwell.md));
-it ships in the next release.
-It watches the whole report rather than only the backup, because a full disk,
-a dead worker and a missing encryption key were equally silent. Two things
-this roadmap is the only record of:
-
-- **The alert cannot live inside the backup task.** That can only report a run
-  that failed, never a run that never happened — a masked timer, a disabled
-  unit, a host that was down at the hour — and those are the silent cases the
-  item was about.
+- **The rotation path is exercised, not theoretical.** Production separated its
+  keys on 2026-09-18 and has since rotated them once, end to end: 117 stored
+  secrets re-keyed with none left unreadable, the retired key dropped from
+  configuration, `encryption_keys` reporting `ok`.
+- **`SECRET_KEY_BASE` is still not rotatable,** because 130 recovery-code
+  hashes ride the old derivation. A recovery code is a keyed HMAC and cannot be
+  re-keyed without the code, so they move only as members regenerate theirs.
+  `Baudrate.Release.key_census/0` says when that reaches zero.
+- **Retention's first production pass** (2026-09-18) removed 717 timeline
+  items, 93 announces, 48 articles, 287 comments and 14 files, then settled.
+- **P2-D4 said "nobody has bookmarked or interacted with", but `bookmarks`
+  only targets articles and comments** — a timeline item cannot be bookmarked —
+  so the keep rule is likes, boosts and replies.
+- **Never purge `bot_syndication_items`,** the `(bot_id, guid)` ledger of what
+  each bot has posted: delete a row and that bot republishes the entry. It was
+  one character from `feed_items` until
+  [0039](adr/0039-the-personal-stream-is-a-timeline.md) and
+  [0041](adr/0041-rss-and-atom-are-syndication.md) renamed both, and the
+  near-miss is why the exclusion is written down rather than left to the names.
+- **The health alert cannot live inside the backup task.** That can only report
+  a run that failed, never one that never happened — a masked timer, a disabled
+  unit, a host down at the hour — and those are the silent cases 2A was about.
 - **It still cannot tell you the server is down,** because it runs inside the
   server. That half stays with an external monitor, which `doc/sysop.md`
   documents and nobody has to build until they want it.
 
-- **Accepted when:** production has a backup less than 24 h old, and a restore has put the data back. Both hold.
+### Accepted knowingly
 
-**Declined by the operator, 2026-09-18:** a restore rehearsal onto a freshly
-provisioned host, and an always-on puller. What the rehearsal proved is that
-the dump reads and the data comes back; it restored into a scratch database on
-the same machine, so rebuilding the host from nothing is untested — and since
-2G that also means the key set a restore needs
-([ADR 0038](adr/0038-encryption-keys-are-separate-and-rotatable.md)) has never
-been exercised anywhere but the machine that holds it. Off-host copies arrive
-only while the workstation is running. Both are accepted risks for one small
-instance, recorded so a later reader can tell a decision from an oversight.
+Recorded so a later reader can tell a decision from an oversight.
 
-### 2F — Retention — done
-
-Shipped in v1.28.0; the design and its reasoning are in
-[ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md), the periods and
-the dry run in `doc/sysop.md`. First production pass 2026-09-18: 717 timeline
-items, 93 announces, 48 articles, 287 comments, 14 files, then steady state.
-
-Two things this roadmap is the only record of:
-
-- **P2-D4 said "nobody has bookmarked or interacted with", but `bookmarks`
-  only targets articles and comments** — a timeline item cannot be bookmarked
-  — so the keep rule is likes, boosts and replies.
-- **Never purge `bot_syndication_items`,** the `(bot_id, guid)` ledger of what
-  each bot has posted: delete a row and that bot republishes the entry. It was
-  one character from `feed_items` until ADRs
-  [0039](adr/0039-the-personal-stream-is-a-timeline.md) and
-  [0041](adr/0041-rss-and-atom-are-syndication.md) renamed both, and the
-  near-miss is why the exclusion is written down rather than left to the names.
+- **Production allows SSH login as root** (key only), deferred by the operator.
+  `/etc/ssh/sshd_config.d/00-disable-password-auth.conf` sets
+  `PermitRootLogin yes`, and sshd keeps the first value it reads, so the
+  `common` role's `PermitRootLogin no` has no effect (`sshd -T`, 2026-09-15).
+  The fix would be for the role to manage the drop-ins and assert the effective
+  value.
+- **No restore rehearsal onto a fresh host, and no always-on puller** (declined
+  2026-09-18). The rehearsal that was done restored into a scratch database on
+  the same machine, so rebuilding the host from nothing is untested — and since
+  2G that also means the key set a restore needs
+  ([0038](adr/0038-encryption-keys-are-separate-and-rotatable.md)) has never
+  been exercised anywhere but the machine that holds it. Off-host copies arrive
+  only while the workstation is running.
+- **Publishing the release to a registry** is left open by
+  [0037](adr/0037-the-deploy-builds-on-the-server-again.md), so the operator's
+  machine could verify a digest and the server pull the bytes over its own
+  link. Only worth doing if the artifact ever has to reach the server again.
 
 ### Decisions (made 2026-09-17)
 
@@ -285,10 +265,10 @@ The two follow-on questions are closed, not open:
 - [ ] **Branding for guests.**
   - The welcome text uses `site_name` instead of the hardcoded "Baudrate" (`web/live/home_live.html.heex:14`).
   - Guests on mobile see the site name.
-  - The footer (1E) also links feeds.
+  - The footer (1E) also links the syndication feeds.
 - [ ] **New pages:** `/recent`, `/popular` (P4-D1) and `/unanswered`, plus a tag index at `/tags`.
 
-### 4B — SEO and feeds (S)
+### 4B — SEO and syndication feeds (S)
 
 - [ ] **`sitemap.xml`** for public boards and articles, paginated.
 - [ ] **Canonical links and metadata.**
@@ -297,10 +277,11 @@ The two follow-on questions are closed, not open:
   - `noindex` on search, login and registration pages.
   - A real `robots.txt`.
 - [ ] **Unknown users** return 404 instead of redirecting (`web/live/user_profile_live.ex:28-37`).
-- [ ] **Feed links.**
-  - Visible feed links on the home, board, user and tag pages.
+- [ ] **Syndication feed links** (`SyndicationFeedController` already serves
+  site, board and user RSS and Atom; this is about finding them).
+  - Visible links on the home, board, user and tag pages.
   - User feeds advertised in `<head>`.
-  - Tag feeds.
+  - Tag feeds, which do not exist yet.
 
 ### 4C — Search (S)
 
@@ -475,7 +456,7 @@ The two follow-on questions are closed, not open:
 - [ ] **Bots list:** show the next fetch time and post counts.
   - A "fetch now" separate from "reset errors".
   - A dry-run preview of the next fetch.
-- [ ] **What a bot posts:** include and exclude filters on title and content. The first fetch posts only the latest N entries, not the whole backlog (`core/bots/feed_worker.ex:118`).
+- [ ] **What a bot posts:** include and exclude filters on title and content. The first fetch posts only the latest N entries, not the whole backlog (`core/bots/syndication_feed_worker.ex`).
 - [ ] **Failures:** a bot is disabled automatically after N failed fetches, with an admin notice.
 - [ ] **Conditional GET** (ETag and Last-Modified).
 
@@ -544,7 +525,8 @@ shape of where the project has been.
 
 | Release | What | Recorded in |
 |---|---|---|
-| v1.28.1 | Two authorization fixes from the RBAC investigation: a ban checked neither the permission nor the rank rule; article visibility had three implementations, two missing the remote refusals | [0042](adr/0042-roles-are-ordered-and-capabilities-are-not-configurable.md), [0043](adr/0043-the-outbound-federation-gate-and-withdrawals.md) |
+| v1.28.2 | What a documentation audit found by reading the guides against the code: a fourth copy of the article visibility check on the edit-history page, and a periodic worker the health report could not see | [0035](adr/0035-operational-visibility-stays-on-the-host.md) |
+| v1.28.1 | Two authorization fixes from the RBAC investigation: a ban checked neither the permission nor the rank rule; article visibility had four implementations, three missing the remote refusals (the fourth was found in v1.28.2) | [0042](adr/0042-roles-are-ordered-and-capabilities-are-not-configurable.md), [0043](adr/0043-the-outbound-federation-gate-and-withdrawals.md) |
 | v1.28.0 | Phase 2F retention; the personal stream became the timeline and RSS/Atom became syndication; the outbound board gate completed at five surfaces; a security audit, an a11y sweep and a code review | [0039](adr/0039-the-personal-stream-is-a-timeline.md), [0040](adr/0040-retention-deletes-what-nobody-touched.md), [0041](adr/0041-rss-and-atom-are-syndication.md) |
 | v1.27.0 | Phase 2G: secrets at rest keyed per class and every key rotatable. `SECRET_KEY_BASE` had keyed all four at-rest secrets and could never be changed; two were written down nowhere — the recovery-code hashes, which made the documented remedy for a lost TOTP secret circular, and the Web Push key | [0038](adr/0038-encryption-keys-are-separate-and-rotatable.md) |
 | v1.26.0 | Phase 2E: releases built, smoke-tested and attested in CI on production's Debian. Closed a live hole — the co-hosted account could read the Erlang cookie while distribution listened on every interface. Installing the tarball then cost 13 minutes against 2 for an incremental build, so the deploy compiles on the server again | [0036](adr/0036-production-runs-releases-built-and-attested-in-ci.md), [0037](adr/0037-the-deploy-builds-on-the-server-again.md) |

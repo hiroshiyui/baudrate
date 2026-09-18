@@ -26,6 +26,12 @@ defmodule Baudrate.Health do
 
   The report holds counts, ages and statuses only: no content, account names
   or remote domains, since anyone with a shell on the host can read it.
+
+  Reading it is not the only way to hear about a failure:
+  `Baudrate.Health.Alerts` polls this hourly and tells the admins when a check
+  has been failing for over an hour (ADR 0044). It cannot report that the
+  instance is down — it runs inside it — so an external monitor is still worth
+  having, and `doc/sysop.md` documents one.
   """
 
   import Ecto.Query
