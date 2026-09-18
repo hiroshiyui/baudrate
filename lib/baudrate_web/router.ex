@@ -214,6 +214,8 @@ defmodule BaudrateWeb.Router do
     get "/boards/:slug/followers", ActivityPubController, :board_followers
     get "/boards/:slug/following", ActivityPubController, :board_following
     get "/site", ActivityPubController, :site_actor
+    get "/site/outbox", ActivityPubController, :site_outbox
+    get "/site/followers", ActivityPubController, :site_followers
     get "/articles/:slug", ActivityPubController, :article
     get "/articles/:slug/replies", ActivityPubController, :article_replies
     get "/search", ActivityPubController, :search
@@ -223,6 +225,9 @@ defmodule BaudrateWeb.Router do
     pipe_through :activity_pub_inbox
 
     post "/inbox", ActivityPubController, :shared_inbox
+    # The site actor advertises its own inbox; it resolves the target from the
+    # activity exactly as the shared inbox does.
+    post "/site/inbox", ActivityPubController, :shared_inbox
     post "/users/:username/inbox", ActivityPubController, :user_inbox
     post "/boards/:slug/inbox", ActivityPubController, :board_inbox
   end

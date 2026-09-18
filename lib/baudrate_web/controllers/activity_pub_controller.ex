@@ -190,7 +190,24 @@ defmodule BaudrateWeb.ActivityPubController do
     end
   end
 
+  @doc """
+  Returns the site actor's outbox. Always empty — the instance actor never
+  posts — but served, because the actor document advertises it.
+  """
+  def site_outbox(conn, params) do
+    conn
+    |> put_resp_content_type(@activity_json)
+    |> json(Federation.site_outbox(params))
+  end
+
   # --- Followers Collection ---
+
+  @doc "Returns the paginated followers collection for the site actor."
+  def site_followers(conn, params) do
+    conn
+    |> put_resp_content_type(@activity_json)
+    |> json(Federation.followers_collection(Federation.actor_uri(:site, nil), params))
+  end
 
   @doc "Returns the paginated followers collection for a user."
   def user_followers(conn, %{"username" => username} = params) do

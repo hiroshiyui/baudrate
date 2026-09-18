@@ -78,6 +78,23 @@ defmodule Baudrate.Federation.Collections do
   end
 
   @doc """
+  Returns the site actor's outbox: always empty.
+
+  The instance actor exists to sign outbound fetches and to be discoverable as
+  `acct:site@host`; it never posts. The collection is served rather than
+  omitted because the actor document advertises it, and an advertised endpoint
+  that answers 404 is a document a strict peer is entitled to reject.
+  """
+  def site_outbox(page_params \\ %{}) do
+    outbox_uri = "#{actor_uri(:site, nil)}/outbox"
+
+    case parse_page(page_params) do
+      nil -> build_collection_root(outbox_uri, 0)
+      page -> build_collection_page(outbox_uri, [], page, false)
+    end
+  end
+
+  @doc """
   Returns a paginated `OrderedCollection` for the given actor's followers.
 
   Without `?page`, returns the root collection with `totalItems` and `first` link.

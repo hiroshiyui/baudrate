@@ -156,6 +156,7 @@ defmodule Baudrate.Federation do
 
   defdelegate user_outbox(user, page_params \\ %{}), to: Collections
   defdelegate board_outbox(board, page_params \\ %{}), to: Collections
+  defdelegate site_outbox(page_params \\ %{}), to: Collections
   defdelegate followers_collection(actor_uri, page_params \\ %{}), to: Collections
   defdelegate following_collection(actor_uri, page_params \\ %{}), to: Collections
   defdelegate boards_collection(), to: Collections
