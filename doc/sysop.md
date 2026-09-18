@@ -265,9 +265,21 @@ be made in both.
 | **user** | 1 | Optional | Create content, edit own posts, manage profile |
 | **guest** | 0 | Disabled | View public content only |
 
-Higher roles inherit all lower role permissions. Permissions follow a
-`scope.action` naming convention (e.g., `admin.manage_users`,
-`user.create_content`).
+Permissions follow a `scope.action` naming convention (e.g.,
+`admin.manage_users`, `user.create_content`), and the table above is the whole
+story: **roles are a fixed, ordered set of four, and the permission matrix is
+not editable** (ADR 0042). There is no roles screen, nothing outside first-run
+seeding writes the role/permission tables, and there is no inheritance at
+runtime — a higher role holds a lower role's permission only because the seed
+lists it again.
+
+That matters if you are ever tempted to change authority by editing those
+tables in `psql`: it will not do what you expect. Only four of the eleven
+permissions are consulted anywhere (`admin.manage_roles`,
+`moderator.sanction_user`, `admin.manage_users`, `user.create_content`), and
+the rest describe capabilities that the route's role check enforces instead.
+Deleting a row for one of the seven changes nothing at all. To vary who can do
+what, change the account's **role**.
 
 ### Managing Users (`/admin/users`)
 
