@@ -158,6 +158,30 @@ the retention module.
 - **P2-D3. Releases are built in CI** on a project-owned Debian 12 image matching production, and attached to the GitHub release with a provenance attestation. **Amended by ADR 0037:** the deploy no longer installs that tarball — it builds the tag on the server — so the attestation now guards a manual install rather than the deploy.
 - **P2-D4. Retention periods:** timeline items nobody interacted with, 90 days; announces, 180 days; soft-deleted rows, after the 90-day evidence window.
 
+### Open — five permissions that enforce nothing
+
+`Setup.default_permissions/0` grants `admin.manage_settings`,
+`moderator.manage_comments`, `moderator.view_reports`,
+`user.edit_own_content` and `user.manage_profile`, and no code consults any of
+them. Each capability *is* guarded — by the route's role hook and an
+authorship or role check in the context — so none is an open door; the
+permission row simply is not what closes it. But ADR 0029 says a permission
+that enforces nothing is a false statement to the operator about who can do
+what: revoking `moderator.view_reports` from the moderator role changes
+nothing, and nothing says so.
+
+Its acceptance gate (`test/baudrate/setup/permissions_are_enforced_test.exs`)
+was a tautology — it searched `lib/**/*.ex`, which includes the file that
+*defines* the catalogue, so every permission was always "found". The gate now
+excludes that file, has an anti-vacuity test, and names these five
+explicitly, so a sixth fails the build.
+
+Each needs a decision: wire it to a real `Setup.has_permission?/2` check, or
+remove it from the catalogue. Wiring is the riskier half — gating
+`/admin/settings` on a permission an existing role row happens to lack would
+lock an operator out of their own instance — so it wants a migration that
+backfills the grants, not just a check.
+
 ---
 
 ## Phase 3 — Federation reach (scope)
