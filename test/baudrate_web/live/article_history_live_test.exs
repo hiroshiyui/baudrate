@@ -192,4 +192,66 @@ defmodule BaudrateWeb.ArticleHistoryLiveTest do
     assert html =~ ~s(href="/articles/#{article.slug}")
     assert html =~ "Back to article"
   end
+
+  # This page had a fourth copy of "may this user see this article?" that
+  # tested board view roles only. `/articles/:slug` refused a remote row
+  # ingested as followers-only, and this page — on the same public route scope
+  # — rendered its title and revisions. It delegates to
+  # `ArticleHelpers.user_can_view_article?/2` now.
+  describe "remote rows that were never public" do
+    test "a followers-only remote article's history is refused", %{conn: conn, board: board} do
+      article = remote_article(board, "followers_only")
+
+      assert {:error, {:redirect, %{to: "/"}}} =
+               live(conn, "/articles/#{article.slug}/history")
+    end
+
+    test "a direct remote article's history is refused", %{conn: conn, board: board} do
+      article = remote_article(board, "direct")
+
+      assert {:error, {:redirect, %{to: "/"}}} =
+               live(conn, "/articles/#{article.slug}/history")
+    end
+
+    test "a public remote article's history still renders", %{conn: conn, board: board} do
+      article = remote_article(board, "public")
+
+      {:ok, _lv, html} = live(conn, "/articles/#{article.slug}/history")
+      assert html =~ "Edit History"
+    end
+  end
+
+  defp remote_article(board, visibility) do
+    actor =
+      Repo.insert!(%Baudrate.Federation.RemoteActor{
+        ap_id: "https://remote.example/users/h#{System.unique_integer([:positive])}",
+        username: "h#{System.unique_integer([:positive])}",
+        domain: "remote.example",
+        inbox: "https://remote.example/inbox",
+        actor_type: "Person",
+        public_key_pem: "-----BEGIN PUBLIC KEY-----\nstub\n-----END PUBLIC KEY-----",
+        fetched_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+
+    author = setup_user("user")
+
+    {:ok, %{article: article}} =
+      Content.create_article(
+        %{
+          title: "Remote History",
+          body: "b",
+          slug: "hist-remote-#{System.unique_integer([:positive])}",
+          user_id: author.id
+        },
+        [board.id]
+      )
+
+    article
+    |> Ecto.Changeset.change(%{
+      remote_actor_id: actor.id,
+      user_id: nil,
+      visibility: visibility
+    })
+    |> Repo.update!()
+  end
 end

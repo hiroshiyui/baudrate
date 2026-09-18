@@ -13,13 +13,20 @@ defmodule BaudrateWeb.ArticleHistoryLive do
   use BaudrateWeb, :live_view
 
   alias Baudrate.Content
+  alias BaudrateWeb.ArticleHelpers
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
     article = Content.get_article_by_slug!(slug)
     current_user = socket.assigns.current_user
 
-    if not user_can_view_article?(article, current_user) do
+    # `ArticleHelpers.user_can_view_article?/2`, not a local copy. This module
+    # had a fourth implementation of "may this user see this article?" that
+    # tested board view roles only — no refusal for a remote row ingested as
+    # followers-only or direct, and none for an author whose domain is blocked.
+    # So `/articles/:slug` refused such an article while this page, on the same
+    # public route scope, rendered its title and revisions.
+    if not ArticleHelpers.user_can_view_article?(article, current_user) do
       redirect_to = if current_user, do: ~p"/", else: ~p"/login"
       {:ok, redirect(socket, to: redirect_to)}
     else
@@ -59,11 +66,5 @@ defmodule BaudrateWeb.ArticleHistoryLive do
   """
   def get_previous_revision(revisions, index) do
     Enum.at(revisions, index + 1)
-  end
-
-  defp user_can_view_article?(article, _user) when article.boards == [], do: true
-
-  defp user_can_view_article?(article, user) do
-    Enum.any?(article.boards, &Content.can_view_board?(&1, user))
   end
 end
