@@ -198,7 +198,7 @@ defmodule Baudrate.Auth.InviteSystemTest do
       assert code1.revoked == false
       assert code2.revoked == false
 
-      {:ok, _banned_user, revoked_count} = Auth.ban_user(user, admin.id, "spam")
+      {:ok, _banned_user, revoked_count} = Auth.ban_user(user, admin, "spam")
       assert revoked_count == 2
 
       # Verify codes are revoked
@@ -226,7 +226,7 @@ defmodule Baudrate.Auth.InviteSystemTest do
       # Active one
       {:ok, active_code} = Auth.generate_invite_code(user)
 
-      {:ok, _banned_user, revoked_count} = Auth.ban_user(user, admin.id, "spam")
+      {:ok, _banned_user, revoked_count} = Auth.ban_user(user, admin, "spam")
       # Only the active code should be revoked
       assert revoked_count == 1
 

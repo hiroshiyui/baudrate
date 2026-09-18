@@ -57,6 +57,58 @@ defmodule Baudrate.Auth.SanctionsTest do
     end
   end
 
+  # A ban is harsher than every sanction above, and until this release it was
+  # the one rung of the ladder that checked neither the permission nor the rank
+  # rule — only self-ban. So a moderator could not silence a peer for an hour,
+  # while `ban_user/3` would permanently ban an admin for any caller.
+  describe "banning authority" do
+    test "an admin may ban a member", %{admin: admin, member: member} do
+      assert {:ok, banned, _revoked} = Auth.ban_user(member, admin)
+      assert banned.status == "banned"
+    end
+
+    test "nobody bans themselves", %{admin: admin} do
+      assert Auth.ban_user(admin, admin) == {:error, :self_action}
+    end
+
+    test "a moderator cannot ban, though it may silence", %{moderator: mod, member: member} do
+      assert Auth.ban_user(member, mod) == {:error, :unauthorized}
+      assert Auth.authorize_sanction(mod, member, "silence") == :ok
+    end
+
+    test "an ordinary member cannot ban", %{member: member} do
+      assert Auth.ban_user(user("user"), member) == {:error, :unauthorized}
+    end
+
+    # The rank rule that every other sanction already applied. Banning a peer
+    # admin is now demote-then-ban: two deliberate acts rather than one.
+    test "an admin cannot ban another admin", %{admin: admin} do
+      assert Auth.ban_user(user("admin"), admin) == {:error, :role_too_high}
+    end
+
+    test "an admin may unban", %{admin: admin, member: member} do
+      {:ok, banned, _} = Auth.ban_user(member, admin)
+      assert {:ok, restored} = Auth.unban_user(banned, admin)
+      assert restored.status == "active"
+    end
+
+    test "a moderator cannot unban", %{admin: admin, moderator: mod, member: member} do
+      {:ok, banned, _} = Auth.ban_user(member, admin)
+      assert Auth.unban_user(banned, mod) == {:error, :unauthorized}
+    end
+
+    # Deliberately no rank rule on the way back: an account is demoted before
+    # it can be banned, so re-checking rank here would leave a banned admin
+    # unrestorable through the UI.
+    test "unbanning is not refused on rank", %{admin: admin} do
+      peer = user("admin")
+      Repo.update_all(from(u in Setup.User, where: u.id == ^peer.id), set: [status: "banned"])
+
+      assert {:ok, restored} = Auth.unban_user(reload(peer), admin)
+      assert restored.status == "active"
+    end
+  end
+
   describe "the duration cap" do
     test "a moderator is capped at 30 days", %{moderator: mod, member: member} do
       assert {:error, :duration_too_long} =

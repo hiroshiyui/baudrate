@@ -473,6 +473,52 @@ defmodule Baudrate.Auth.Sanctions do
   end
 
   @doc """
+  Returns `:ok` when `actor` may ban `target`, or `{:error, reason}`.
+
+  A ban is not a `sanctions` row — it is a `users.status` value, deliberately
+  (see the moduledoc) — but the *authority* question is the same one
+  `authorize/3` answers, so it is answered here rather than copied into
+  `Baudrate.Auth.Moderation`. Keeping both in this module is what stops the
+  rank rule existing in two places and drifting.
+
+  The permission is `#{@unrestricted_permission}`, not `#{@sanction_permission}`: a ban
+  is permanent and revokes sessions, exports, moves and invite codes, and in
+  the shipped matrix only `admin` holds it. Gating on the sanction permission
+  would hand every moderator the power to ban, which is wider than the UI has
+  ever offered.
+
+  The rank rule applies for the reason it applies to every other sanction:
+  nobody acts on an account at or above their own level. That makes banning a
+  peer admin a two-step, deliberate act — demote, then ban — rather than
+  something one compromised admin session can do to the others.
+  """
+  @spec authorize_ban(User.t(), User.t()) :: :ok | {:error, atom()}
+  def authorize_ban(%User{} = actor, %User{} = target) do
+    cond do
+      actor.id == target.id -> {:error, :self_action}
+      not permitted?(actor, @unrestricted_permission) -> {:error, :unauthorized}
+      outranks_or_equals?(target, actor) -> {:error, :role_too_high}
+      true -> :ok
+    end
+  end
+
+  @doc """
+  Returns `:ok` when `actor` may unban `target`.
+
+  Permission only, deliberately no rank rule: an account is demoted before it
+  can be banned, so re-checking rank on the way back would leave a banned
+  admin unrestorable through the UI.
+  """
+  @spec authorize_unban(User.t(), User.t()) :: :ok | {:error, atom()}
+  def authorize_unban(%User{} = actor, %User{} = target) do
+    cond do
+      actor.id == target.id -> {:error, :self_action}
+      not permitted?(actor, @unrestricted_permission) -> {:error, :unauthorized}
+      true -> :ok
+    end
+  end
+
+  @doc """
   Returns the furthest expiry `actor` may set, or `nil` when they may issue an
   indefinite sanction. The cap is #{@moderator_max_days} days without
   `#{@unrestricted_permission}`.

@@ -187,11 +187,12 @@ defmodule BaudrateWeb.Admin.UsersLive do
          |> put_flash(:error, gettext("User not found."))}
 
       user ->
-        admin_id = socket.assigns.current_user.id
+        actor = socket.assigns.current_user
+        admin_id = actor.id
         reason = socket.assigns.ban_reason
         reason = if reason == "", do: nil, else: reason
 
-        case Auth.ban_user(user, admin_id, reason) do
+        case Auth.ban_user(user, actor, reason) do
           {:ok, _user, revoked_count} ->
             Moderation.log_action(admin_id, "ban_user",
               target_type: "user",
@@ -325,7 +326,8 @@ defmodule BaudrateWeb.Admin.UsersLive do
 
   @impl true
   def handle_event("confirm_bulk_ban", _params, socket) do
-    admin_id = socket.assigns.current_user.id
+    actor = socket.assigns.current_user
+    admin_id = actor.id
     reason = socket.assigns.bulk_ban_reason
     reason = if reason == "", do: nil, else: reason
 
@@ -336,7 +338,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
             acc
 
           user ->
-            case Auth.ban_user(user, admin_id, reason) do
+            case Auth.ban_user(user, actor, reason) do
               {:ok, _, _revoked_count} ->
                 Moderation.log_action(admin_id, "ban_user",
                   target_type: "user",
@@ -428,7 +430,7 @@ defmodule BaudrateWeb.Admin.UsersLive do
         {:noreply, put_flash(socket, :error, gettext("User not found."))}
 
       user ->
-        case Auth.unban_user(user) do
+        case Auth.unban_user(user, socket.assigns.current_user) do
           {:ok, _user} ->
             Moderation.log_action(socket.assigns.current_user.id, "unban_user",
               target_type: "user",

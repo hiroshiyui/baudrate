@@ -76,7 +76,7 @@ defmodule BaudrateWeb.Admin.UsersLiveTest do
   test "admin can unban a user", %{conn: conn} do
     admin = setup_user("admin")
     user = setup_user("user")
-    {:ok, _, _} = Auth.ban_user(user, admin.id, "test")
+    {:ok, _, _} = Auth.ban_user(user, admin, "test")
     conn = log_in_admin(conn, admin)
 
     {:ok, lv, _html} = live(conn, "/admin/users")

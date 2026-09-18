@@ -6,48 +6,65 @@ defmodule Baudrate.Auth.Moderation do
   import Ecto.Query
   alias Baudrate.Repo
   alias Baudrate.Setup.User
-  alias Baudrate.Auth.{Sessions, Invites, UserBlock, UserMute}
+  alias Baudrate.Auth.{Sanctions, Sessions, Invites, UserBlock, UserMute}
 
   @doc """
-  Bans a user. Guards against self-ban.
+  Bans a user, if `actor` is allowed to.
 
   Sets status to `"banned"`, records `banned_at` and optional `ban_reason`,
-  then invalidates all existing sessions and revokes all active invite codes
-  for the user. Returns `{:ok, banned_user, revoked_codes_count}`.
+  then invalidates all existing sessions, cancels active exports and moves, and
+  revokes all active invite codes. Returns
+  `{:ok, banned_user, revoked_codes_count}`.
+
+  Authorization is `Sanctions.authorize_ban/2`, at this boundary rather than in
+  the LiveView (ADR 0016). It used to be a bare self-ban guard: a ban is the
+  harshest thing this codebase does to an account, and it was the one rung of
+  the ladder ADR 0029 built that checked neither the permission nor the rank
+  rule, while `Sanctions.issue/4` checked both. The practical shape of that was
+  that a moderator could not silence a peer for an hour, but this function
+  would permanently ban an admin for anyone who called it.
+
+  `actor` is a `User`, not an id, because authorization needs its role.
   """
-  @spec ban_user(User.t(), integer(), String.t() | nil) ::
-          {:ok, User.t(), non_neg_integer()} | {:error, :self_action}
-  def ban_user(user, admin_id, reason \\ nil)
+  @spec ban_user(User.t(), User.t(), String.t() | nil) ::
+          {:ok, User.t(), non_neg_integer()}
+          | {:error, :self_action | :unauthorized | :role_too_high}
+  def ban_user(user, actor, reason \\ nil)
 
-  def ban_user(%User{id: id}, admin_id, _reason) when id == admin_id do
-    {:error, :self_action}
-  end
+  def ban_user(%User{} = user, %User{} = actor, reason) do
+    with :ok <- Sanctions.authorize_ban(actor, user) do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-  def ban_user(%User{} = user, admin_id, reason)
-      when is_integer(admin_id) do
-    now = DateTime.utc_now() |> DateTime.truncate(:second)
+      result =
+        user
+        |> User.ban_changeset(%{status: "banned", banned_at: now, ban_reason: reason})
+        |> Repo.update()
 
-    result =
-      user
-      |> User.ban_changeset(%{status: "banned", banned_at: now, ban_reason: reason})
-      |> Repo.update()
-
-    with {:ok, banned_user} <- result do
-      Sessions.delete_all_sessions_for_user(banned_user.id)
-      Baudrate.DataPortability.cancel_active_exports(banned_user.id, "banned")
-      Baudrate.AccountMigration.cancel_active_moves(banned_user.id, "banned")
-      {revoked_count, _} = Invites.revoke_invite_codes_for_user(banned_user.id)
-      {:ok, banned_user, revoked_count}
+      with {:ok, banned_user} <- result do
+        Sessions.delete_all_sessions_for_user(banned_user.id)
+        Baudrate.DataPortability.cancel_active_exports(banned_user.id, "banned")
+        Baudrate.AccountMigration.cancel_active_moves(banned_user.id, "banned")
+        {revoked_count, _} = Invites.revoke_invite_codes_for_user(banned_user.id)
+        {:ok, banned_user, revoked_count}
+      end
     end
   end
 
   @doc """
   Unbans a user by setting status back to `"active"` and clearing ban fields.
+
+  Authorized by `Sanctions.authorize_unban/2`: the same permission as a ban,
+  deliberately without the rank rule, so a banned account can always be
+  restored through the UI.
   """
-  def unban_user(%User{} = user) do
-    user
-    |> User.unban_changeset()
-    |> Repo.update()
+  @spec unban_user(User.t(), User.t()) ::
+          {:ok, User.t()} | {:error, :self_action | :unauthorized | Ecto.Changeset.t()}
+  def unban_user(%User{} = user, %User{} = actor) do
+    with :ok <- Sanctions.authorize_unban(actor, user) do
+      user
+      |> User.unban_changeset()
+      |> Repo.update()
+    end
   end
 
   # --- User Blocks ---

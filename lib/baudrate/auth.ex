@@ -114,8 +114,8 @@ defmodule Baudrate.Auth do
   defdelegate revoke_invite_codes_for_user(user_id), to: Invites
 
   # --- Moderation ---
-  defdelegate ban_user(user, admin_id, reason \\ nil), to: Moderation
-  defdelegate unban_user(user), to: Moderation
+  defdelegate ban_user(user, actor, reason \\ nil), to: Moderation
+  defdelegate unban_user(user, actor), to: Moderation
   defdelegate block_user(user, target), to: Moderation
   defdelegate block_remote_actor(user, ap_id), to: Moderation
   defdelegate unblock_user(user, target), to: Moderation

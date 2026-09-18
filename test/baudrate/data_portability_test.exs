@@ -389,7 +389,7 @@ defmodule Baudrate.DataPortabilityTest do
       request = request!(user, secret)
       admin = create_user("admin")
 
-      {:ok, _, _} = Auth.ban_user(user, admin.id, "spam")
+      {:ok, _, _} = Auth.ban_user(user, admin, "spam")
 
       assert %{cancel_reason: "banned"} = Repo.reload!(request)
     end

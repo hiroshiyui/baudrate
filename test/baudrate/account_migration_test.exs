@@ -26,6 +26,24 @@ defmodule Baudrate.AccountMigrationTest do
     %{user: Repo.preload(user, :role)}
   end
 
+  # A ban is authorized against the actor's role now, so this needs a real
+  # admin rather than the fabricated id it used to pass.
+  defp admin_actor do
+    role = Repo.one!(from(r in Setup.Role, where: r.name == "admin"))
+
+    {:ok, admin} =
+      %Setup.User{}
+      |> Setup.User.registration_changeset(%{
+        "username" => "banadmin#{System.unique_integer([:positive])}",
+        "password" => "Password123!x",
+        "password_confirmation" => "Password123!x",
+        "role_id" => role.id
+      })
+      |> Repo.insert()
+
+    Repo.preload(admin, :role)
+  end
+
   # A freshly fetched actor is served from the cache, so no HTTP is needed.
   defp remote_actor(attrs \\ %{}) do
     uid = System.unique_integer([:positive])
@@ -418,7 +436,7 @@ defmodule Baudrate.AccountMigrationTest do
     end
 
     test "a ban cancels a pending move", %{user: user, move: move} do
-      {:ok, _, _} = Baudrate.Auth.ban_user(user, user.id + 1_000_000)
+      {:ok, _, _} = Baudrate.Auth.ban_user(user, admin_actor())
       assert %{status: "cancelled", cancel_reason: "banned"} = Repo.reload!(move)
     end
   end

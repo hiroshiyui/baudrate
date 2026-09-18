@@ -76,21 +76,21 @@ defmodule Baudrate.Auth.UserManagementTest do
 
   describe "ban_user/3" do
     test "bans a user", %{admin: admin, user: user} do
-      {:ok, banned, _revoked} = Auth.ban_user(user, admin.id, "spam")
+      {:ok, banned, _revoked} = Auth.ban_user(user, admin, "spam")
       assert banned.status == "banned"
       assert banned.banned_at != nil
       assert banned.ban_reason == "spam"
     end
 
     test "bans a user without reason", %{admin: admin, user: user} do
-      {:ok, banned, _revoked} = Auth.ban_user(user, admin.id)
+      {:ok, banned, _revoked} = Auth.ban_user(user, admin)
       assert banned.status == "banned"
       assert banned.ban_reason == nil
     end
 
     test "invalidates all sessions for banned user", %{admin: admin, user: user} do
       {:ok, _token, _refresh} = Auth.create_user_session(user.id)
-      {:ok, banned_user, _revoked} = Auth.ban_user(user, admin.id, "test")
+      {:ok, banned_user, _revoked} = Auth.ban_user(user, admin, "test")
 
       import Ecto.Query
       sessions = Repo.all(from(s in Auth.UserSession, where: s.user_id == ^banned_user.id))
@@ -98,31 +98,31 @@ defmodule Baudrate.Auth.UserManagementTest do
     end
 
     test "returns error on self-ban", %{admin: admin} do
-      assert {:error, :self_action} = Auth.ban_user(admin, admin.id, "self")
+      assert {:error, :self_action} = Auth.ban_user(admin, admin, "self")
     end
 
     test "rejects ban reason over 500 characters", %{admin: admin, user: user} do
       long_reason = String.duplicate("x", 501)
-      {:error, changeset} = Auth.ban_user(user, admin.id, long_reason)
+      {:error, changeset} = Auth.ban_user(user, admin, long_reason)
       assert changeset.errors[:ban_reason]
     end
   end
 
   describe "unban_user/1" do
     test "unbans a user and clears ban fields", %{admin: admin, user: user} do
-      {:ok, banned, _revoked} = Auth.ban_user(user, admin.id, "test")
+      {:ok, banned, _revoked} = Auth.ban_user(user, admin, "test")
       assert banned.status == "banned"
       assert banned.banned_at != nil
       assert banned.ban_reason == "test"
 
-      {:ok, unbanned} = Auth.unban_user(banned)
+      {:ok, unbanned} = Auth.unban_user(banned, admin)
       assert unbanned.status == "active"
       assert unbanned.banned_at == nil
       assert unbanned.ban_reason == nil
     end
 
-    test "unbanning an already active user is a no-op", %{user: user} do
-      {:ok, same} = Auth.unban_user(user)
+    test "unbanning an already active user is a no-op", %{user: user, admin: admin} do
+      {:ok, same} = Auth.unban_user(user, admin)
       assert same.status == "active"
       assert same.banned_at == nil
     end
@@ -148,7 +148,7 @@ defmodule Baudrate.Auth.UserManagementTest do
   describe "authenticate_by_password/2 with banned user" do
     test "returns :banned for banned user", %{admin: admin} do
       user = create_user("user")
-      {:ok, _, _} = Auth.ban_user(user, admin.id, "test")
+      {:ok, _, _} = Auth.ban_user(user, admin, "test")
 
       assert {:error, :banned} =
                Auth.authenticate_by_password(user.username, "Password123!x")
