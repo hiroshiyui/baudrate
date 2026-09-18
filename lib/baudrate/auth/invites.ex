@@ -137,8 +137,9 @@ defmodule Baudrate.Auth.Invites do
   @doc """
   Generates an invite code on behalf of a target user, callable only by admins.
 
-  Bypasses the account age restriction but still enforces the rolling
-  #{@invite_quota_window_days}-day quota (max #{@invite_quota_limit} codes).
+  Enforces the rolling #{@invite_quota_window_days}-day quota (max
+  #{@invite_quota_limit} codes). There is no account-age restriction to bypass
+  — one existed until March 2026 and was removed.
   The code's `created_by_id` is set to the target user.
 
   Uses admin expiry rules (no forced #{@invite_default_expiry_days}-day cap).

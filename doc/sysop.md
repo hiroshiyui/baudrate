@@ -390,7 +390,7 @@ publication.
 - Track who created and who used each code
 - Revoke active codes at any time
 - **Generate on behalf of a user** — admins can issue invite codes attributed
-  to any user, bypassing the 7-day account age restriction. The user's rolling
+  to any user. The user's rolling
   30-day quota (max 5 codes) is still enforced. The generated code's "Created
   By" shows the target user, so the user can share it immediately.
 
@@ -688,7 +688,8 @@ Both blocks and mutes support local users and remote actors.
 
 - When disabled: all `/ap/*` endpoints return 404, delivery worker skips jobs
 - WebFinger and NodeInfo remain available for discovery
-- Also togglable from `/admin/federation`
+- `/admin/federation` toggles federation **per board** (`ap_enabled`); the
+  instance-wide switch is only on `/admin/settings`
 
 **Instance actor**: Baudrate publishes an Organization actor at `/ap/site`
 representing the instance in the ActivityPub federation. It is discoverable
@@ -840,7 +841,9 @@ FROM delivery_circuits WHERE trips > 0 ORDER BY open_until;
 Admin actions:
 - **Retry** abandoned jobs
 - **Abandon** pending/failed jobs
-- **Abandon all for domain** (useful for unresponsive instances)
+
+There is no "abandon everything for one domain" button. From a remote console:
+`Baudrate.Federation.DeliveryStats.abandon_all_for_domain("example.social")`.
 
 Job deduplication: a partial unique index on `(inbox_url, actor_uri,
 activity_id)` for pending/failed jobs queues the same activity once per inbox.
@@ -1626,7 +1629,7 @@ To install it by hand, verify it first. `--source-digest` is the commit the tag 
 clone, so a tag moved on GitHub after you fetched it fails verification:
 
 ```bash
-TAG=v1.28.1
+TAG=v1.28.2
 gh release download "$TAG" --repo hiroshiyui/baudrate --pattern "baudrate-${TAG#v}-debian12-x86_64.tar.gz"
 gh attestation verify "baudrate-${TAG#v}-debian12-x86_64.tar.gz" --repo hiroshiyui/baudrate \
   --signer-workflow hiroshiyui/baudrate/.github/workflows/release.yml \
@@ -1733,7 +1736,7 @@ this step, pages load without CSS styling and JavaScript doesn't execute.
 #### Build steps
 
 **Before building**, ensure the `version` in `mix.exs` matches the release tag
-(e.g. `"1.28.1"` for tag `v1.28.1`). This version appears in the release
+(e.g. `"1.28.2"` for tag `v1.28.2`). This version appears in the release
 directory name (`lib/baudrate-<version>/`) and in runtime diagnostics.
 
 ```bash
@@ -2091,7 +2094,7 @@ underlying logic.
 
 | Worker | Interval | What it does |
 |--------|----------|--------------|
-| `SessionCleaner` | 1 hour | The housekeeping jobs listed below |
+| `SessionCleaner` | 1 hour | The housekeeping jobs listed below, and the health-alert poll (ADR 0044) |
 | `DeliveryWorker` | On commit, and every 60 s ± 10% | Delivers due federation jobs, 10 at a time, with a per-domain circuit breaker ([Delivery Queue](#delivery-queue-adminfederation)) |
 | `InboundWorker` | On arrival, and every 30 s | Processes stored inbox activities, 4 at a time and one per remote account ([Inbound Queue](#inbound-queue)) |
 | `SyndicationFeedWorker` | 60 s ± 10% | Fetches due RSS/Atom bot feeds, 5 bots at a time |
@@ -2116,6 +2119,7 @@ fails is logged and the rest still run.
 | `notify_ended_sanctions` | Tells members their silence or suspension has ended. Enforcement already stopped on its own, so a missed run only delays the notice |
 | `purge_closed_report_evidence` | Clears the evidence copies of reports closed more than 90 days ago |
 | `retention` | Deletes timeline items older than 90 days that nobody liked, boosted or replied to, `announces` older than 180 days, and articles and comments 90 days after `deleted_at` — with their image files. Nothing a report points at is deleted. See [Retention](#retention) |
+| `health_alerts` | Runs the detailed health report and notifies every admin when the same checks have failed on two polls in a row, and once more when they recover ([Detailed Health Report](#detailed-health-report)). Unlike the rows above it remembers state between runs, so it sits outside the uniform step list |
 
 Each worker runs exactly once, on the one node ([Scaling](#scaling)). They are
 not safe to run twice: two `DeliveryWorker`s would deliver the same jobs, and
@@ -2176,7 +2180,7 @@ report as JSON either way:
 | `delivery_queue` | a delivery has been due for more than 15 minutes. Jobs held back by an [open circuit](#delivery-queue-adminfederation) are waiting on purpose and not counted | `DeliveryWorker` in `journalctl -u baudrate` |
 | `inbound_queue` | an inbox activity has waited more than 10 minutes. `failed_last_24h` counts activities that crashed three times | [Inbound Queue](#inbound-queue) |
 | `encryption_keys` | a stored secret needs an encryption key that is not configured, so those rows cannot be read. `keys` counts values per key id, and `legacy` means still keyed off `SECRET_KEY_BASE`. Skipped while neither class is separated | [Rotating an encryption key](#rotating-an-encryption-key) |
-| `workers` | `DeliveryWorker`, `InboundWorker`, `SyndicationFeedWorker` or `SessionCleaner` has not completed a run for three of its intervals (at least 5 minutes; 3 hours for the hourly `SessionCleaner`). A worker that keeps crashing and being restarted counts as stopped | the log for crashes of that worker |
+| `workers` | `DeliveryWorker`, `InboundWorker`, `SyndicationFeedWorker`, `SessionCleaner` or `StaleActorCleaner` has not completed a run for three of its intervals (at least 5 minutes; 3 hours for the hourly `SessionCleaner`, 72 hours for the daily `StaleActorCleaner`). A worker that has never run is measured from boot instead. A worker that keeps crashing and being restarted counts as stopped | the log for crashes of that worker |
 | `disk` | free space under `shared/uploads` is below 1 GiB or 10% of the filesystem, the floor backups keep | `df -h`, the media cache size |
 | `backup` | the newest complete backup is more than 26 hours old, or there is none; skipped when `BAUDRATE_BACKUP_DIR` is unset | `journalctl -u baudrate-backup` |
 

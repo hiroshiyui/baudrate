@@ -705,8 +705,11 @@ All authenticated users can generate invite codes at `/invites`. Non-admin users
 are subject to abuse prevention controls:
 
 - **Quota**: 5 codes per rolling 30-day window
-- **Account age**: must be at least 7 days old
 - **Auto-expiry**: non-admin codes expire after 7 days
+
+There is **no account-age gate**: a member can generate a code the moment they
+register. One was removed deliberately in March 2026 (commit `dc7c0c7`), so the
+quota and the sanction gate are the whole of the abuse control.
 
 Admins have unlimited quota and optional expiry. When a user is banned, all their
 active invite codes are automatically revoked. Invite chain tracking records which
@@ -1053,7 +1056,7 @@ and never need to know about the internal split.
 | `Content.Images` | Article image creation, association, cleanup |
 | `Content.Tags` | Hashtag extraction from article bodies, tag syncing, tag-based browsing |
 | `Content.Search` | Full-text search across articles, comments, and boards (FTS + CJK ILIKE + operators) |
-| `Content.Feed` | Recent-content listings (home page, profiles) and per-user content statistics. Neither the syndication sense nor the timeline — the name is kept deliberately (ADR 0042) |
+| `Content.Feed` | Recent-content listings (home page, profiles) and per-user content statistics. Neither the syndication sense nor the timeline — the name is kept deliberately ([ADR 0039](adr/0039-the-personal-stream-is-a-timeline.md), restated in [ADR 0041](adr/0041-rss-and-atom-are-syndication.md)) |
 | `Content.ReadTracking` | Per-user article/board read state, unread indicators |
 | `Content.Polls` | Poll creation, voting (local + remote), denormalized counter management |
 
@@ -1585,8 +1588,9 @@ In-app notification system with real-time delivery via PubSub.
 - `signed_out_everywhere` — all other sessions were signed out (`data.count`)
 - `totp_login_failed` — the correct password was entered but the TOTP code failed 3 times within an hour at login; links to `/profile/password` (ADR 0024)
 
-**Account security notices** (the types from `security_key_added` on, and the
-`data_export_*` types; `Notification.Notification.security_types/0`)
+**Account security notices** (the account-security, account-migration and
+`data_export_*` types — `Notification.Notification.security_types/0` is the
+list, and the bullets above are a selection, not all 39 valid types)
 are emitted by the Auth context itself: `WebAuthn.create_webauthn_credential/2`,
 `WebAuthn.delete_webauthn_credential/2`, `SecondFactor.enable_totp/2` and
 `SecondFactor.disable_totp/1` (the latter only when TOTP was on) call
@@ -2382,8 +2386,9 @@ it, logging `crypto.keys_not_separated` for each class still deriving its key
 from `SECRET_KEY_BASE` (ADR 0038) — the line an operator watches for going
 quiet after setting the keys.
 
-**Health.** `DeliveryWorker`, `InboundWorker`, `SyndicationFeedWorker` and `SessionCleaner`
-call `Baudrate.Health.Heartbeat.beat/1` at the end of each completed run, and
+**Health.** `DeliveryWorker`, `InboundWorker`, `SyndicationFeedWorker`,
+`SessionCleaner` and `StaleActorCleaner` call `Baudrate.Health.Heartbeat.beat/1`
+at the end of each completed run, and
 `Baudrate.Health.report/1` counts a worker stale after three of its intervals
 (at least five minutes). A new periodic worker needs both: a beat after a
 successful run, and an entry in `Health`'s worker list. The report is served

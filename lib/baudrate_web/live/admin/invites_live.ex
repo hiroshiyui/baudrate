@@ -6,9 +6,8 @@ defmodule BaudrateWeb.Admin.InvitesLive do
   generation and revocation of invite codes, and shows invite chain
   information (which users were created from each code).
 
-  Admins can also generate invite codes on behalf of other users,
-  bypassing the account age restriction while still enforcing the
-  rolling 30-day quota.
+  Admins can also generate invite codes on behalf of other users, which still
+  enforces that user's rolling 30-day quota.
   """
 
   use BaudrateWeb, :live_view

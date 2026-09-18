@@ -149,10 +149,13 @@ defmodule Baudrate.Federation.Validator do
   @doc """
   Returns true if the domain is blocked based on the current federation mode.
 
-  In `"blocklist"` mode (default), the domain is blocked if it appears in
-  the `ap_domain_blocklist` setting. In `"allowlist"` mode, the domain is
-  blocked unless it appears in the `ap_domain_allowlist` setting. When the
-  allowlist is empty in allowlist mode, all domains are blocked (safe default).
+  In `"blocklist"` mode (default), the domain is blocked if it has a row in
+  `domain_blocks` (ADR 0030 replaced the old `ap_domain_blocklist` setting with
+  rows). In `"allowlist"` mode, the domain is blocked unless it appears in the
+  `ap_domain_allowlist` setting, which stays a setting deliberately: an
+  allowlist is configuration about who may reach us, not a record of moderation
+  decisions. When the allowlist is empty in allowlist mode, all domains are
+  blocked (safe default).
   """
   def domain_blocked?(domain) when is_binary(domain) do
     Baudrate.Federation.DomainBlockCache.domain_blocked?(domain)
