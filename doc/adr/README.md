@@ -66,8 +66,12 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 
 1. Copy the structure of an existing record; take the next free number.
 2. Status starts at `Proposed`, becomes `Accepted` when merged.
-3. To reverse a decision, write a **new** ADR and mark the old one
-   `Superseded by NNNN` — never rewrite an accepted record.
+3. To reverse a decision, write a **new** ADR and record the relationship in
+   the old record's Status — never rewrite an accepted record. The Status
+   keeps opening with `Accepted`: nothing here has ever been reversed whole,
+   so a bare `Superseded by NNNN` would retire decisions that still hold, and
+   `test/doc/adr_index_test.exs` fails a Status that opens with one. Rule 4
+   has the form; *How records relate* below has the verbs.
 4. When only part of a record is reversed, say which part, and leave the rest
    standing: [0036](0036-production-runs-releases-built-and-attested-in-ci.md)
    reads `Accepted, except decision 3 …, superseded by 0037`. Naming the
