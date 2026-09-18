@@ -7,6 +7,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.29.0] — 2026-09-19
+
+The instance now tells its admins when something is wrong with it, which
+closes the last open item of Phase 2 — the phase whose goal was that no data
+loss goes unnoticed.
+
+**Upgrading:** no migrations and no configuration changes. Admins will start
+receiving `health_alert` notifications; there is nothing to switch on.
+
+**If you build from source,** `mix.exs` now requires Elixir 1.19 (see Fixed).
+
+### Added
+
+- **A failing health check now reaches a person** ([ADR 0044](doc/adr/0044-the-instance-tells-its-admins-when-it-is-unwell.md)).
+  `Baudrate.Health` has always known when a backup went stale, a queue stuck, a
+  worker died, the disk filled or an encryption key went missing. Nothing told
+  anyone: the report answered `503` and `scripts/pull-backups.sh` exited
+  non-zero, and both waited for a monitor the operator had to build.
+  `Baudrate.Health.Alerts` runs hourly from `SessionCleaner` and notifies every
+  admin — in-app, and by Web Push for admins who subscribed — naming the checks
+  that are failing.
+
+  The alert is deliberately driven by a periodic check of the report rather
+  than by the backup itself. A backup can only report a run that *failed*; it
+  can never report one that **never happened** — a masked timer, a disabled
+  unit, a host that was down at the scheduled hour — and those are the silent
+  cases this exists for.
+
+  It watches all seven checks, not only the backup: a full disk and an
+  encryption key this instance no longer has were equally silent.
+
+  Restraint is part of the design, not tuning. A failing set must survive two
+  consecutive polls before anything is sent, the same set then repeats once a
+  day rather than hourly, and recovery is announced once. Whether something has
+  already been said is answered by querying the notification rows, so a restart
+  cannot re-announce a week-old problem. `health_alert` and `health_recovered`
+  bypass notification preferences, like the account-security notices: the
+  person who would mute them is the person who has to act on them.
+
+  It cannot report that the instance is **down**, because it runs inside the
+  instance. `doc/sysop.md` still documents an external monitor, which is now
+  the only part an operator has to build.
+
+### Fixed
+
+- **`mix.exs` declared an Elixir floor that nothing had built or tested.** It
+  asked for `~> 1.17` while `.tool-versions`, the CI image and the Ansible
+  inventory all install 1.19.5 — and the project block uses `listeners:`, a
+  `Mix.Project` key that does not exist before 1.18, so on the declared minimum
+  `Phoenix.CodeReloader` was silently never registered. Now `~> 1.19`, the
+  version everything actually uses. This project pins PostgreSQL to
+  production's major precisely so "passes here, fails in CI" cannot happen; a
+  language floor two versions below anything that runs was the same class of
+  claim.
+- **Three controls the guides described that do not exist.** A 7-day
+  account-age gate on invite generation, documented in four places including
+  two moduledocs — removed from the code on 2026-03-15 and never removed from
+  the docs; an instance federation kill switch on `/admin/federation`, which
+  only toggles boards; and an "Abandon all for domain" admin action, which is a
+  console function no UI calls. Same pattern as the `/admin/roles` finding in
+  v1.28.1.
+- **`doc/api.md` misdescribed hashtags twice** — the pattern as ASCII when it
+  is `\p{L}` (so `#日本語` federates), and the output as case-preserving when
+  every tag is downcased — and credited the `published` clamp with 60 seconds
+  of clock-skew slack it does not have. Also corrected: the 202 response body
+  for a blocked domain, the optionality of `updated`, and where a Person actor
+  redirects under HTML content negotiation.
+- **`doc/troubleshooting.md` gave a fix that cannot be carried out** ("upload a
+  bot avatar by hand on `/admin/bots`" — there is no upload, and the bot's
+  account has a locked password), and put the feed-bot backoff cap one failure
+  early.
+- **Three accepted ADRs named things ADR 0041 renamed** (`bot_feed_items`,
+  `FeedWorker`). Their Status lines now carry the caveat six other records
+  already had; the bodies are untouched.
+
+### Changed
+
+- `doc/TODOs.md` is shorter and better shaped: the completed phases are an
+  index plus the two lists that earn their place — what only that file knows,
+  and what the operator accepted knowingly.
+- ADR 0035's decision 5 ("Baudrate does not notify") is amended by 0044. Its
+  stated grounds included "no push channel", which was not true when it was
+  written: Web Push shipped in February 2026 and every notification has gone
+  through it since. The notifier was not waiting on a missing capability.
+
 ## [1.28.2] — 2026-09-19
 
 Two defects a documentation audit turned up by reading the guides against the
