@@ -239,8 +239,15 @@ defmodule BaudrateWeb.ActivityPubController do
     end
   end
 
-  @doc "Returns the (always empty) following collection for a public board."
-  def board_following(conn, %{"slug" => slug}) do
+  @doc """
+  Returns the paginated following collection for a public board.
+
+  Not empty: a board follows remote actors, and that is how remote content
+  reaches it. `params` must be threaded through like every other collection
+  action — without it `?page` was discarded, so the root's `first` link
+  (`?page=1`) answered with the root again and a peer could never walk past it.
+  """
+  def board_following(conn, %{"slug" => slug} = params) do
     with true <- Regex.match?(@slug_re, slug),
          board when not is_nil(board) <- Baudrate.Repo.get_by(Baudrate.Content.Board, slug: slug),
          true <- Board.federated?(board) do
@@ -248,7 +255,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
       conn
       |> put_resp_content_type(@activity_json)
-      |> json(Federation.following_collection(actor_uri))
+      |> json(Federation.following_collection(actor_uri, params))
     else
       _ -> not_found(conn)
     end
