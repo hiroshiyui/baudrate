@@ -7,7 +7,7 @@ Baudrate is an **ActivityPub-enabled Bulletin Board System (BBS)** and public in
 ## Quick Reference (Essential Commands)
 
 ```bash
-# Setup: Requires Elixir 1.15+, PostgreSQL, libvips, and Rust toolchain
+# Setup: Requires Elixir 1.17+, PostgreSQL, libvips, and Rust toolchain
 mix setup              # Install deps, create DB, build assets
 mix phx.server         # Start dev server (https://localhost:4001)
 
@@ -26,7 +26,7 @@ mix test --include feature --seed 9527
 
 ## Tech Stack
 
-- **Language:** Elixir 1.15+ (Erlang/OTP 26+)
+- **Language:** Elixir 1.17+ (Erlang/OTP 26+)
 - **Web Framework:** Phoenix 1.8 / LiveView 1.1 (Bandit server)
 - **Database:** PostgreSQL (via Ecto)
 - **Frontend:** Tailwind CSS 4 + DaisyUI, esbuild
