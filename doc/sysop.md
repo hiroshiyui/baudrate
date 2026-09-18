@@ -1909,11 +1909,41 @@ the moment a key is set, what is written afterwards needs it.
    `BAUDRATE_AUTH_KEYS is malformed at entry 1: the id "legacy" is reserved
    for the SECRET_KEY_BASE fallback`.
 
-3. Deploy. The boot log should stop saying `crypto.keys_not_separated`.
+3. Check the format **before** deploying — a malformed key is a boot refusal,
+   so it is much cheaper to catch here:
+
+   ```bash
+   cd ansible && sops --decrypt inventory/group_vars/all.sops.yml \
+     | ../scripts/check-keyring.py
+   ```
+
+   It reports one line per key: the id, that it decodes to 32 bytes, and a
+   truncated SHA-256 fingerprint. **Never inspect the decrypted file with
+   `grep`, `cat` or `head` instead.** Those print whole lines, and a line
+   holds the key itself; the script exists because it has no code path that
+   can emit a key, a base64 blob, or an input line. What it prints is safe to
+   paste into a ticket or a chat: a key id is already stored in the clear
+   inside every value the key protects, and eight hex characters of a hash
+   identify a 32-byte key without revealing it.
+
+   ```
+   auth_keys:
+     [0] id=202609           32 bytes  fp=1f4c9e02  (current)  ok
+
+   signing_keys:
+     [0] id=202609           32 bytes  fp=b3d70a55  (current)  ok
+
+   RESULT: all checks passed
+   ```
+
+   `scripts/check-keyring.py --selftest` checks that guarantee itself, against
+   synthetic keys, and fails if any key material reaches its output.
+
+4. Deploy. The boot log should stop saying `crypto.keys_not_separated`.
    Nothing is re-encrypted yet, and every existing secret still reads through
    the old derivation.
 
-4. Re-encrypt, dry run first. As root, with a wrapper for the invocation
+5. Re-encrypt, dry run first. As root, with a wrapper for the invocation
    ([Erlang distribution](#erlang-distribution-and-the-remote-console)
    explains why the `cd` and the sourced environment are both needed):
 
@@ -1935,7 +1965,7 @@ the moment a key is set, what is written afterwards needs it.
    Run it again and `rekeyed` should be `0`: that is the check that it
    finished, and it is safe to interrupt and repeat at any point.
 
-5. Check what is left:
+6. Check what is left:
 
    ```bash
    brpc "Baudrate.Release.key_census()"
@@ -1953,6 +1983,15 @@ the old id, then remove it and deploy again.
 ```
 auth_keys: "202703:<new key>,202609:<old key>"
 ```
+
+Run `scripts/check-keyring.py` again before deploying. On a rotation it
+answers three questions the file itself cannot: that the new key is the one
+listed **first** (so it is what gets written from now on), that the old id is
+still listed (so existing values stay readable), and — by comparing the old
+key's fingerprint with what the script reported last time — that the new key
+really is a different key. That last one matters: pasting the same key under a
+new id looks correct in the file and in the census, and would leave the key
+you were replacing in service.
 
 **Never remove a key while the census still lists values under it.** Those
 values become unreadable, which for TOTP secrets and recovery codes means
