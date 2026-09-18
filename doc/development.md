@@ -207,6 +207,7 @@ lib/
 │   │   └── visibility.ex        # ActivityPub visibility derivation from addressing
 │   ├── health.ex                # Detailed health report: queues, workers, disk, backups, encryption keys (ADR 0035, ADR 0038)
 │   ├── health/
+│   │   ├── alerts.ex            # Tells admins when a check has been failing for an hour (ADR 0044)
 │   │   └── heartbeat.ex         # ETS record of each worker's last completed run (monotonic ms)
 │   ├── html_parser/
 │   │   └── native.ex            # Rustler NIF bindings to the HTML parser (html5ever via scraper)
@@ -2389,6 +2390,16 @@ successful run, and an entry in `Health`'s worker list. The report is served
 only by `BaudrateWeb.HealthDetail` on `127.0.0.1` (ADR 0035); its checks take
 their probes as options (`:free_space`, `:last_beat`, `:database`, `:now`, …)
 so each can be broken in a test without touching the system.
+
+`Baudrate.Health.Alerts.run/2` is what turns a failing check into something a
+person receives ([ADR 0044](adr/0044-the-instance-tells-its-admins-when-it-is-unwell.md)):
+`SessionCleaner` calls it hourly with its own state, and after a check has
+failed twice in a row it sends an always-delivered `health_alert` to every
+admin (in-app, plus Web Push), repeated daily until a `health_recovered`
+follows. It takes `:report` and `:now` so a test drives it without a real
+report. A **new check needs a label** in
+`BaudrateWeb.Helpers.translate_health_check/1`, in all three locales — it joins
+the alert automatically, and without a label admins read a bare identifier.
 
 Every ETS table above, and every worker, assumes it is on the only node
 ([ADR 0033](adr/0033-baudrate-runs-on-one-node.md)): a cache refreshed after a

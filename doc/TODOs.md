@@ -10,8 +10,8 @@ line numbers were correct as of v1.18.1.
 **Current state (v1.28.1).** The review named five gaps: broken promises (the
 UI or docs saying something happens when it does not), moderation reach,
 operability, federation reach, and discovery and onboarding. The first three
-are closed — Phase 0 in v1.18.2, Phase 1 in v1.21.0, Phase 2 in v1.28.0 bar
-one 2A item that needs a notifier. **Phase 3 is next.**
+are closed — Phase 0 in v1.18.2, Phase 1 in v1.21.0, Phase 2 with the
+alerting item that followed v1.28.2. **Phase 3 is next.**
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -38,7 +38,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 | Phase | Theme | Stages | Why |
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
-| ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0), bar one 2A item that needs a notifier |
+| ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0, plus 2A's alerting item) |
 | 3 | Federation reach | 3A–3F | Threading, mentions, Lemmy groups and profile changes don't federate |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
@@ -87,6 +87,7 @@ out by P1-D1.
 
 | Stage | What | Released | Recorded in |
 |-------|------|----------|-------------|
+| 2A | Backups and recovery: verified nightly folders with count-based retention, off-host pull with per-file checksums, restore and rollback — and an hourly check that tells the admins when one of the health report's checks has been failing for an hour | v1.23.0, alerting after v1.28.2 | [ADR 0028](adr/0028-backups-are-complete-folders-with-count-based-retention.md), [ADR 0044](adr/0044-the-instance-tells-its-admins-when-it-is-unwell.md) |
 | 2B | One node (D2): cluster discovery removed, the scaling guide rewritten around a bigger host, PostgreSQL tuning and a CDN | v1.23.0 | [ADR 0033](adr/0033-baudrate-runs-on-one-node.md) |
 | 2C | Federation work committed before it is acknowledged: delivery jobs inside the change's transaction, wake on commit, delivery deadlines, a per-domain circuit breaker, an inbound queue ordered per remote account | v1.24.0 | [ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md) |
 | 2D | Observability: a loopback-only detailed health report (queues, worker heartbeats, disk, backup age; 503 on failure) and optional JSON logs with a metadata allow-list | v1.25.0 | [ADR 0035](adr/0035-operational-visibility-stays-on-the-host.md) |
@@ -117,14 +118,27 @@ operator's machine verifies a digest and the server pulls the bytes over its
 own link. Only worth doing if the built artifact ever has to reach the server
 again.
 
-### 2A — Backups and recovery (M)
+### 2A — Backups and recovery — done
 
 Scheduled backups, retention, the pre-deploy dump, restore commands, per-file
 checksums verified off-host, and backup age in the health report are all built
-and running on production since 2026-09-16 (ADR 0028, `doc/sysop.md`). One
-item is left:
+and running on production since 2026-09-16 (ADR 0028, `doc/sysop.md`).
 
-- [ ] **Alert on a failed or stale backup.** The health report fails on a stale backup and the puller exits non-zero on a bad checksum, a failed pull or a stale copy, but neither tells a person: for 2D the operator chose to document polling rather than ship a notifier (ADR 0035).
+The last item — nothing turned a failing check into a message — is closed
+([ADR 0044](adr/0044-the-instance-tells-its-admins-when-it-is-unwell.md));
+it ships in the next release.
+It watches the whole report rather than only the backup, because a full disk,
+a dead worker and a missing encryption key were equally silent. Two things
+this roadmap is the only record of:
+
+- **The alert cannot live inside the backup task.** That can only report a run
+  that failed, never a run that never happened — a masked timer, a disabled
+  unit, a host that was down at the hour — and those are the silent cases the
+  item was about.
+- **It still cannot tell you the server is down,** because it runs inside the
+  server. That half stays with an external monitor, which `doc/sysop.md`
+  documents and nobody has to build until they want it.
+
 - **Accepted when:** production has a backup less than 24 h old, and a restore has put the data back. Both hold.
 
 **Declined by the operator, 2026-09-18:** a restore rehearsal onto a freshly

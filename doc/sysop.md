@@ -2185,9 +2185,30 @@ The queue checks are `skipped` while federation is switched off. Each check has
 of a report that never comes. The report holds counts, ages and statuses only:
 no content, account names or remote domains.
 
-**Alerting.** Baudrate does not send notifications; poll the report with
-whatever already watches the server, and alert on a status other than `200`.
-Some ways to do it:
+**Alerting.** Baudrate tells its admins by itself, and you can also poll the
+report from outside. The two cover different failures, so most instances want
+both.
+
+**What happens on its own** (ADR 0044). Every hour the instance runs the same
+report and, when a check has been failing for over an hour, notifies every
+admin account — in the notification bell, and as a Web Push notification for
+admins who allowed them in their browser. The notice names which checks are
+unhappy and one more arrives when everything passes again. Nothing to install
+or configure.
+
+Three things worth knowing about it:
+
+- **It is deliberately slow.** A check must fail twice in a row before anyone
+  is told, so a queue that is briefly behind does not wake you. Once told, you
+  are reminded once a day, not every hour.
+- **It cannot be switched off** in notification preferences, like the account
+  security notices. The person who would mute it is the person who has to fix
+  the thing.
+- **It cannot report that the server is down** — it runs inside the server.
+  That is what an external check is for, and it is the only part you still
+  have to build.
+
+**Polling it from outside.** Alert on a status other than `200`. Some ways:
 
 - **A systemd timer.** `curl -fsS` exits non-zero on `503`, so the unit fails
   and `OnFailure=` can run any notifier you use (a mail command, a push
@@ -2225,8 +2246,35 @@ curl -s http://127.0.0.1:4001/health | jq -r '.checks | to_entries[] | select(.v
 ```
 
 The backup check covers the server side of backups. A copy that fails
-verification on the machine that pulls backups is reported by
-`scripts/pull-backups.sh` exiting non-zero there; alert on that unit too.
+verification on the machine that **pulls** backups is a separate failure, on a
+separate machine, and nothing on the server can see it: `scripts/pull-backups.sh`
+reports it by exiting non-zero (`1` a failed pull or a bad checksum, `2` the
+newest backup is older than `BAUDRATE_BACKUP_STALE_HOURS`). Run it from a
+user-level systemd timer there so the exit code reaches you:
+
+```ini
+# ~/.config/systemd/user/baudrate-pull.service
+[Unit]
+Description=Pull Baudrate backups
+OnFailure=baudrate-pull-failed.service
+
+[Service]
+Type=oneshot
+ExecStart=%h/path/to/baudrate/scripts/pull-backups.sh
+
+# ~/.config/systemd/user/baudrate-pull.timer
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+`baudrate-pull-failed.service` runs whatever notifier that machine has —
+`notify-send`, a mail command, anything. Enable with `systemctl --user enable
+--now baudrate-pull.timer`, and `loginctl enable-linger $USER` if it should run
+while you are not logged in.
 
 ### Logs
 
