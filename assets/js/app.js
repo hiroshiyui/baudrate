@@ -34,6 +34,7 @@ import DraftSaveHook from "./draft_save_hook"
 import FocusTrapHook from "./focus_trap_hook"
 import {WebAuthnRegister, WebAuthnAuthenticate} from "./hooks/webauthn"
 import WebShareHook from "./web_share_hook"
+import YouTubeEmbedHook from "./youtube_embed_hook"
 import "./emoji_autocomplete"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
@@ -66,7 +67,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
   dom: {onBeforeElUpdated: preserveClientAria},
-  hooks: {...colocatedHooks, AvatarCropHook, MarkdownToolbarHook, ScrollBottomHook, CopyToClipboardHook, HashtagAutocompleteHook, PushManagerHook, DraftSaveHook, FocusTrapHook, WebAuthnRegister, WebAuthnAuthenticate, WebShareHook},
+  hooks: {...colocatedHooks, AvatarCropHook, MarkdownToolbarHook, ScrollBottomHook, CopyToClipboardHook, HashtagAutocompleteHook, PushManagerHook, DraftSaveHook, FocusTrapHook, WebAuthnRegister, WebAuthnAuthenticate, WebShareHook, YouTubeEmbedHook},
 })
 
 const prefersReducedMotion = () =>

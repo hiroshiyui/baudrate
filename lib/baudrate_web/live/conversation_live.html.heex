@@ -227,6 +227,7 @@
               <% end %>
               <.link_preview
                 :if={msg.link_preview && msg.link_preview.status in ["fetched", "failed"]}
+                id={"message-#{msg.id}-link-preview"}
                 preview={msg.link_preview}
               />
             </div>

@@ -23,8 +23,24 @@ defmodule BaudrateWeb.NoHotlinkTest do
   alias Baudrate.Federation.{KeyStore, RemoteActor}
   alias Baudrate.Repo
 
-  # Any src that is absolute (http/https) or protocol-relative.
-  @hotlink_re ~r/<img[^>]+src="(?:https?:)?\/\//
+  # Any element that *fetches* something, pointing at an absolute (http/https)
+  # or protocol-relative URL. `<a href>` is navigation, not a subresource, so
+  # it is deliberately absent.
+  #
+  # This matched only `<img>` until v1.29.x, which is how a YouTube `<iframe>`
+  # lived on article, comment and DM pages for months without the gate
+  # noticing: the invariant is about subresources, and the test was about
+  # images.
+  @subresource_tags ~w(img iframe script source video audio embed track object input)
+  @hotlink_re ~r/<(?:#{Enum.join(@subresource_tags, "|")})[^>]+(?:src|data)="(?:https?:)?\/\//
+  # A `<link>` fetches only for some `rel` values. `alternate` and `canonical`
+  # are metadata — an article's `rel="alternate"` legitimately points at the
+  # remote original's `ap_id`, on the host that published it, and the browser
+  # never requests it.
+  @fetching_rels ~w(stylesheet preload modulepreload prefetch prerender icon apple-touch-icon manifest)
+  @link_tag_re ~r/<link[^>]*>/
+  # url(...) inside an inline style or a <style> block.
+  @css_hotlink_re ~r/url\(\s*['"]?(?:https?:)?\/\//
 
   setup do
     Repo.insert!(%Baudrate.Setup.Setting{key: "setup_completed", value: "true"})
@@ -63,8 +79,24 @@ defmodule BaudrateWeb.NoHotlinkTest do
 
   defp assert_no_hotlink(html, where) do
     refute Regex.match?(@hotlink_re, html),
-           "#{where} rendered a third-party <img>: " <>
-             inspect(Regex.run(~r/<img[^>]*>/, html))
+           "#{where} rendered a third-party subresource: " <>
+             inspect(Regex.run(@hotlink_re, html))
+
+    for tag <- Regex.scan(@link_tag_re, html) |> List.flatten() do
+      refute fetching_link?(tag) and Regex.match?(~r/href="(?:https?:)?\/\//, tag),
+             "#{where} rendered a third-party fetching <link>: #{inspect(tag)}"
+    end
+
+    refute Regex.match?(@css_hotlink_re, html),
+           "#{where} rendered a third-party url() in CSS: " <>
+             inspect(Regex.run(@css_hotlink_re, html))
+  end
+
+  defp fetching_link?(tag) do
+    case Regex.run(~r/rel="([^"]+)"/, tag) do
+      [_, rel] -> rel |> String.split() |> Enum.any?(&(&1 in @fetching_rels))
+      nil -> false
+    end
   end
 
   test "no page renders a third-party <img>", %{conn: conn} do
@@ -151,5 +183,78 @@ defmodule BaudrateWeb.NoHotlinkTest do
     # have rendered a proxied image, proving the fixtures reached the output.
     assert Enum.any?(rendered, &(&1 =~ ~s(src="/media/))),
            "no page rendered a proxied image — the fixtures are not reaching the templates"
+  end
+
+  describe "the YouTube link preview" do
+    test "renders a local poster and no player until the reader asks", %{conn: conn} do
+      user = setup_user("user")
+      b = board()
+
+      preview =
+        %Content.LinkPreview{}
+        |> Content.LinkPreview.changeset(%{url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"})
+        |> Repo.insert!()
+        |> Content.LinkPreview.fetched_changeset(%{
+          title: "A Video",
+          status: "fetched",
+          image_url: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+          image_path: "/uploads/link_previews/local-thumb.webp"
+        })
+        |> Repo.update!()
+
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Watch this",
+            body: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            slug: "yt-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [b.id]
+        )
+
+      article
+      |> Ecto.Changeset.change(link_preview_id: preview.id)
+      |> Repo.update!()
+
+      conn = log_in_user(conn, user)
+      {:ok, _view, html} = live(conn, "/articles/#{article.slug}")
+
+      assert_no_hotlink(html, "article with a YouTube link")
+
+      # The whole point of click-to-load: nothing addressed to Google is in the
+      # document. The player is built by the hook, on the click.
+      refute html =~ "<iframe", "the YouTube player was rendered before the reader asked for it"
+      refute html =~ "youtube-nocookie.com"
+
+      # And the poster really did render, so the assertions above are not
+      # passing because the fixture never reached the page.
+      assert html =~ "link-preview-video-play"
+      assert html =~ ~s(src="/uploads/link_previews/local-thumb.webp")
+      assert html =~ "YouTubeEmbedHook"
+    end
+  end
+
+  test "the CSP admits exactly one embed origin", %{conn: conn} do
+    [csp] =
+      conn
+      |> get(~p"/")
+      |> get_resp_header("content-security-policy")
+
+    [frame_src] =
+      csp
+      |> String.split(";")
+      |> Enum.map(&String.trim/1)
+      |> Enum.filter(&String.starts_with?(&1, "frame-src"))
+
+    assert frame_src == "frame-src https://www.youtube-nocookie.com",
+           """
+           The embed allow-list changed. Every origin here can see the IP and
+           User-Agent of every reader whose page carries one of its embeds, so
+           adding a second is a decision for an ADR, not a CSP edit
+           (ADR 0006, ADR 0045).
+
+           Found: #{frame_src}
+           """
   end
 end

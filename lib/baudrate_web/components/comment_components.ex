@@ -117,6 +117,7 @@ defmodule BaudrateWeb.CommentComponents do
 
         <.link_preview
           :if={@comment.link_preview && @comment.link_preview.status in ["fetched", "failed"]}
+          id={"comment-#{@comment.id}-link-preview"}
           preview={@comment.link_preview}
         />
 

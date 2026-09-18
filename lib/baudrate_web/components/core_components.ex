@@ -1042,8 +1042,13 @@ defmodule BaudrateWeb.CoreComponents do
   ## Attributes
 
     * `preview` — a `%LinkPreview{}` struct (required)
+    * `id` — unique per rendered page. A YouTube preview needs it for its
+      `phx-hook`, and previews are deduplicated by URL, so two comments linking
+      the same video share one `%LinkPreview{}` row and cannot derive a unique
+      id from it. Callers scope it with the article, comment or message id.
   """
   attr :preview, :map, required: true
+  attr :id, :string, default: nil
 
   def link_preview(%{preview: %{status: status, url: url}} = assigns)
       when status in ["fetched", "failed"] do
@@ -1055,20 +1060,42 @@ defmodule BaudrateWeb.CoreComponents do
 
   def link_preview(assigns), do: ~H""
 
+  # Click-to-load (ADR 0045). The poster is the thumbnail we already fetched and
+  # stored locally, so nothing is requested from Google until the reader asks.
+  # `phx-update="ignore"` keeps LiveView from patching the swapped-in player
+  # away when something else on the page changes — a PubSub update used to be
+  # enough to stop a playing video.
   defp link_preview_youtube(assigns) do
+    assigns = assign_new(assigns, :id, fn -> "link-preview-#{assigns.preview.id}" end)
+
     ~H"""
     <div class="link-preview-card link-preview-youtube not-prose mt-3 max-w-lg">
-      <div class="aspect-video rounded-lg overflow-hidden border border-base-300">
-        <iframe
-          src={"https://www.youtube-nocookie.com/embed/#{@video_id}"}
-          title={@preview.title || gettext("YouTube video")}
-          class="link-preview-video w-full h-full"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-          loading="lazy"
-          referrerpolicy="strict-origin"
-        ></iframe>
+      <div
+        id={"#{@id}-video"}
+        class="link-preview-video aspect-video rounded-lg overflow-hidden border border-base-300"
+        phx-hook="YouTubeEmbedHook"
+        phx-update="ignore"
+        data-video-id={@video_id}
+        data-frame-title={@preview.title || gettext("YouTube video")}
+      >
+        <button
+          type="button"
+          class="link-preview-video-play relative block h-full w-full cursor-pointer bg-base-300"
+          aria-label={youtube_play_label(@preview.title)}
+        >
+          <img
+            :if={@preview.image_path}
+            src={@preview.image_path}
+            alt=""
+            class="link-preview-video-poster object-cover h-full w-full"
+            loading="lazy"
+          />
+          <span class="link-preview-video-badge absolute inset-0 flex items-center justify-center">
+            <span class="rounded-full bg-base-100/80 p-4 shadow">
+              <.icon name="hero-play" class="size-8" />
+            </span>
+          </span>
+        </button>
       </div>
       <div :if={@preview.title && @preview.status == "fetched"} class="mt-1.5">
         <a
@@ -1083,6 +1110,13 @@ defmodule BaudrateWeb.CoreComponents do
     </div>
     """
   end
+
+  # Says where the player comes from, so the click is an informed one — that is
+  # the whole point of click-to-load, and a bare "Play" would not be.
+  defp youtube_play_label(nil), do: gettext("Play the video. The player loads from YouTube.")
+
+  defp youtube_play_label(title),
+    do: gettext("Play “%{title}”. The player loads from YouTube.", title: title)
 
   defp link_preview_card(%{preview: %{status: "failed"}} = assigns) do
     ~H"""
