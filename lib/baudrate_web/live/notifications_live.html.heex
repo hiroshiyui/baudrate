@@ -111,6 +111,20 @@
             )}
           </p>
 
+          <%!-- Which health checks are failing (ADR 0044) --%>
+          <p
+            :if={notif.type == "health_alert" and notif.data["checks"]}
+            id={"notification-health-checks-#{notif.id}"}
+            class="notification-health-checks text-sm text-base-content/70 mt-1"
+          >
+            {gettext("Needs attention: %{checks}",
+              checks:
+                notif.data["checks"]
+                |> Enum.map(&translate_health_check/1)
+                |> Enum.join(", ")
+            )}
+          </p>
+
           <%!-- Target link (article title or announcement message) --%>
           <.link
             :if={target_link(notif) && target_title(notif)}

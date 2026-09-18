@@ -55,6 +55,16 @@ defmodule Baudrate.Notification.Notification do
     * `data_export_downloaded` — the export was downloaded (`data.count`, `data.remaining`)
     * `data_export_cancelled` — an export request was cancelled (`data.reason`)
 
+  ### Operational notices
+
+  Also actorless and always delivered, but sent to admins rather than to the
+  account they concern (ADR 0044). An operator who muted announcements still
+  has to hear that the instance stopped backing itself up.
+
+    * `health_alert` — one or more health checks have been failing for over an
+      hour (`data.checks`, the failing check names)
+    * `health_recovered` — every check passes again
+
   ## Deduplication
 
   Unique indexes on `(user_id, type, actor_*, article_id, comment_id)` prevent
@@ -107,6 +117,8 @@ defmodule Baudrate.Notification.Notification do
     sanction_lifted
     sanction_ended
     pending_registration
+    health_alert
+    health_recovered
   )
 
   @security_types ~w(
@@ -136,6 +148,12 @@ defmodule Baudrate.Notification.Notification do
   # account was silenced, why and until when (P1-D4).
   @moderation_notice_types ~w(content_removed sanction_applied sanction_lifted sanction_ended)
 
+  # Operational notices to admins (ADR 0044). Always delivered for the same
+  # reason as the other two classes: the person who would switch these off is
+  # exactly the person who has to act on them, and an alert that can be muted
+  # by accident is not an alert.
+  @operational_notice_types ~w(health_alert health_recovered)
+
   @doc "Returns the list of valid notification type strings."
   def valid_types, do: @valid_types
 
@@ -146,10 +164,12 @@ defmodule Baudrate.Notification.Notification do
   def security_types, do: @security_types
 
   @doc """
-  Types that ignore notification preferences: account security notices and
-  moderation notices about the recipient's own content.
+  Types that ignore notification preferences: account security notices,
+  moderation notices about the recipient's own content, and the operational
+  notices admins get about the instance itself.
   """
-  def always_delivered_types, do: @security_types ++ @moderation_notice_types
+  def always_delivered_types,
+    do: @security_types ++ @moderation_notice_types ++ @operational_notice_types
 
   @doc """
   Returns the notification types a user can turn on or off in their

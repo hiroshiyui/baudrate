@@ -31,6 +31,8 @@ defmodule Baudrate.Notification.Hooks do
       account_moved, account_redirect_removed, data_export_*
     * `notify_actor_moved/3` — actor_moved
     * `notify_board_actor_moved/2` — board_actor_moved (all admins)
+    * `notify_health_alert/1` / `notify_health_recovered/0` — health_alert,
+      health_recovered (all admins, ADR 0044)
   """
 
   alias Baudrate.{Auth, Notification, Repo, Setup}
@@ -485,6 +487,45 @@ defmodule Baudrate.Notification.Hooks do
           :ok
       end
     end)
+  end
+
+  @doc """
+  Tells every admin that the health report has checks failing (ADR 0044).
+
+  `checks` is the sorted list of failing check names, e.g. `["backup",
+  "disk"]`. Only the names travel: the reasons stay in the report, which is
+  the authoritative place for them and needs no translating, and this way the
+  notification cannot carry anything the report itself would refuse to
+  (ADR 0035). Admins only — a moderator cannot fix a full disk.
+  """
+  @spec notify_health_alert([String.t()]) :: :ok
+  def notify_health_alert(checks) when is_list(checks) do
+    Enum.each(Setup.admin_user_ids(), fn admin_id ->
+      Notification.create_notification(%{
+        type: "health_alert",
+        user_id: admin_id,
+        data: %{"checks" => checks}
+      })
+    end)
+
+    :ok
+  end
+
+  @doc """
+  Tells every admin that every health check passes again (ADR 0044).
+
+  Sent only after an alert, so a quiet instance stays quiet.
+  """
+  @spec notify_health_recovered() :: :ok
+  def notify_health_recovered do
+    Enum.each(Setup.admin_user_ids(), fn admin_id ->
+      Notification.create_notification(%{
+        type: "health_recovered",
+        user_id: admin_id
+      })
+    end)
+
+    :ok
   end
 
   defp mentioned_article(nil), do: nil

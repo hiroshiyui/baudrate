@@ -18,6 +18,7 @@ defmodule BaudrateWeb.NotificationsLive do
       notification_text: 1,
       notification_icon: 1,
       translate_report_category: 1,
+      translate_health_check: 1,
       format_relative_time: 1,
       parse_id: 1
     ]

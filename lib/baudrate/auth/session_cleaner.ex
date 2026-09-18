@@ -42,6 +42,11 @@ defmodule Baudrate.Auth.SessionCleaner do
       (`Baudrate.Retention.run/1`, ADR 0040). This one destroys member
       content, so its rules live in the ADR and its acceptance gate is
       `test/baudrate/retention_test.exs`.
+    * **Health alerts** — tells the admins when a health check has been
+      failing for over an hour, and when everything passes again
+      (`Baudrate.Health.Alerts.run/2`, ADR 0044). This is the only step that
+      keeps state across runs, so it is called with the GenServer's state
+      rather than from the list below.
 
   Every step runs through `run_step/2`, which isolates a failure: a crash used
   to abort the whole hour, so one failing link-preview refetch silently skipped
@@ -67,7 +72,7 @@ defmodule Baudrate.Auth.SessionCleaner do
     # Archive staging directories left behind by a crash: remove at boot.
     Baudrate.DataPortability.Archive.sweep_temp()
     schedule_cleanup()
-    {:ok, %{}}
+    {:ok, Baudrate.Health.Alerts.initial_state()}
   end
 
   @impl true
@@ -95,6 +100,11 @@ defmodule Baudrate.Auth.SessionCleaner do
       retention: &retention/0
     ]
     |> Enum.each(fn {name, step} -> run_step(name, step) end)
+
+    # The one step that remembers something between runs, so it cannot join the
+    # uniform list above: it needs to know whether this is the *second* poll in
+    # a row that found the same thing broken (ADR 0044).
+    state = run_health_alerts(state)
 
     Baudrate.Health.Heartbeat.beat(:session_cleaner)
     schedule_cleanup()
@@ -126,6 +136,29 @@ defmodule Baudrate.Auth.SessionCleaner do
       )
 
       :error
+  end
+
+  # Isolated like every other step, but it carries state, so it keeps the old
+  # state on a failure rather than resetting the debounce: a raise here must
+  # not turn into an alert on the next poll that has only been seen once.
+  defp run_health_alerts(state) do
+    Baudrate.Health.Alerts.run(state)
+  rescue
+    exception ->
+      Logger.error(
+        "session_cleaner.step_failed: step=health_alerts " <>
+          Exception.format(:error, exception, __STACKTRACE__)
+      )
+
+      state
+  catch
+    kind, reason ->
+      Logger.error(
+        "session_cleaner.step_failed: step=health_alerts " <>
+          Exception.format(kind, reason, __STACKTRACE__)
+      )
+
+      state
   end
 
   defp sweep_data_exports do

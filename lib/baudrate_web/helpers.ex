@@ -310,6 +310,22 @@ defmodule BaudrateWeb.Helpers do
   def translate_report_category(other), do: other
 
   @doc """
+  Names a health check for an operational notice (ADR 0044).
+
+  What each name means, and what to do about it, is in `doc/sysop.md`; this is
+  only the short label an admin reads in their notifications. An unknown name
+  falls through unchanged, so a check added later still says something.
+  """
+  def translate_health_check("database"), do: gettext("the database")
+  def translate_health_check("delivery_queue"), do: gettext("the outgoing federation queue")
+  def translate_health_check("inbound_queue"), do: gettext("the incoming federation queue")
+  def translate_health_check("workers"), do: gettext("a background worker")
+  def translate_health_check("disk"), do: gettext("free disk space")
+  def translate_health_check("backup"), do: gettext("backups")
+  def translate_health_check("encryption_keys"), do: gettext("the encryption keys")
+  def translate_health_check(other), do: other
+
+  @doc """
   Builds a full invite link URL for the given invite code string.
 
   ## Examples
@@ -364,6 +380,15 @@ defmodule BaudrateWeb.Helpers do
 
   def notification_text("pending_registration"),
     do: gettext("registered and is waiting to be let in")
+
+  # Operational notices (ADR 0044). The check names follow on their own line,
+  # translated by `translate_health_check/1`; the reasons stay in the detailed
+  # health report, which is where an operator acts on them.
+  def notification_text("health_alert"),
+    do: gettext("Something on this server needs attention.")
+
+  def notification_text("health_recovered"),
+    do: gettext("Everything on this server is working again.")
 
   def notification_text("sanction_applied"),
     do: gettext("A moderator took action on your account.")
@@ -566,6 +591,8 @@ defmodule BaudrateWeb.Helpers do
   def notification_icon("report_reviewed"), do: "hero-flag"
   def notification_icon("content_removed"), do: "hero-trash"
   def notification_icon("pending_registration"), do: "hero-user-plus"
+  def notification_icon("health_alert"), do: "hero-exclamation-triangle"
+  def notification_icon("health_recovered"), do: "hero-check-badge"
   def notification_icon("sanction_applied"), do: "hero-exclamation-triangle"
   def notification_icon("sanction_lifted"), do: "hero-check-badge"
   def notification_icon("sanction_ended"), do: "hero-check-badge"
