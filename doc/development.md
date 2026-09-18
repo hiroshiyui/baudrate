@@ -22,7 +22,7 @@ visibility. Design decisions should reflect this philosophy.
 | HTML sanitization | Ammonia (Rust NIF via Rustler) |
 | Rate limiting | Hammer |
 | Timezone data | tz (`Baudrate.Timezone`) |
-| Feed parsing | feedparser-rs (Rust NIF via Rustler) — RSS 0.9x/2.0, RSS 1.0 (RDF), Atom 0.3/1.0, JSON Feed |
+| Syndication parsing | feedparser-rs (Rust NIF via Rustler) — RSS 0.9x/2.0, RSS 1.0 (RDF), Atom 0.3/1.0, JSON Feed |
 | i18n | Gettext (en, zh_TW, ja_JP) |
 | Federation | ActivityPub (HTTP Signatures, JSON-LD) |
 
@@ -271,10 +271,10 @@ lib/
 │   │   ├── error_html.ex        # HTML error pages
 │   │   ├── error_json.ex        # JSON error responses
 │   │   ├── export_controller.ex # Serves a data export archive, built at download time (ADR 0023)
-│   │   ├── feed_controller.ex   # RSS 2.0 / Atom 1.0 syndication feeds
-│   │   ├── feed_xml.ex          # Feed XML rendering (EEx templates, helpers)
+│   │   ├── syndication_feed_controller.ex   # RSS 2.0 / Atom 1.0 syndication feeds
+│   │   ├── syndication_feed_xml.ex          # Feed XML rendering (EEx templates, helpers)
 │   │   ├── media_controller.ex  # Serves remote images from a local re-encoded copy (the media proxy)
-│   │   ├── feed_xml/            # EEx templates for RSS and Atom XML
+│   │   ├── syndication_feed_xml/            # EEx templates for RSS and Atom XML
 │   │   │   ├── rss.xml.eex     # RSS 2.0 channel + items template
 │   │   │   └── atom.xml.eex    # Atom 1.0 feed + entries template
 │   │   ├── health_controller.ex # Health check endpoint
@@ -396,7 +396,7 @@ and never need to know about the internal split.
 | `Auth.WebAuthn` | FIDO2/WebAuthn credential registration and authentication (hardware security keys); ETS-backed challenge lifecycle |
 | `Auth.Invites` | Invite-only registration logic, quota management, and admin-issued invites |
 | `Auth.Profiles` | User preference updates: display name, bio, signature, profile fields, avatar association, and notification settings |
-| `Auth.Moderation` | Local user moderation: banning, blocking remote actors/users, and muting interactions |
+| `Auth.Moderation` | Local user moderation: banning (authorized by `Sanctions.authorize_ban/2`), blocking remote actors/users, and muting interactions |
 | `Auth.Sanctions` | Warnings, silences and suspensions, refusing a pending registration, and `ensure_can_interact/1` — the one gate every posting and interaction path calls (ADR 0029) |
 
 ### Authentication Flow
@@ -607,7 +607,12 @@ not configurable — and supersedes the capabilities half of
 | admin | 3 |
 
 `Setup.role_meets_minimum?/2` checks if a user's role meets a minimum
-requirement (e.g., `role_meets_minimum?("moderator", "user")` → `true`).
+requirement (e.g., `role_meets_minimum?("moderator", "user")` → `true`), and
+`Setup.roles_at_or_below/1` returns the role names a given role can see
+(`roles_at_or_below("user")` → `["guest", "user"]`) for queries that filter
+`min_role_to_view` by a list. All three read the same `@role_levels` map, which
+is the point: v1.28.1 deleted two hand-written copies of this hierarchy that
+had to be changed in step for a reordering to take effect everywhere.
 
 ### Board Permissions
 
@@ -1040,13 +1045,14 @@ and never need to know about the internal split.
 | `Content.Permissions` | Board access checks, granular article/comment permissions, slug generation |
 | `Content.Articles` | Article CRUD (local + remote), cross-posting, revisions, pin/lock |
 | `Content.Comments` | Comment CRUD (local + remote), threaded listing, article activity timestamps |
+| `Content.Interactions` | The one answer to "may this account touch this article?" — `article_visible_to_user?/2` and `remote_servable?/1`, used by likes, boosts, bookmarks, both forward paths and (via `ArticleHelpers.user_can_view_article?/2`) the article and history pages. Also AP-id stamping and federation task scheduling |
 | `Content.Likes` | Article and comment likes (local + remote), toggle, counts |
 | `Content.Boosts` | Article and comment boosts (local + remote), toggle, batch queries, federation via AP Announce/Undo(Announce) |
 | `Content.Bookmarks` | Article and comment bookmarks, toggle, paginated listing |
 | `Content.Images` | Article image creation, association, cleanup |
 | `Content.Tags` | Hashtag extraction from article bodies, tag syncing, tag-based browsing |
 | `Content.Search` | Full-text search across articles, comments, and boards (FTS + CJK ILIKE + operators) |
-| `Content.Feed` | Public feed listings, per-user article/comment queries, content statistics |
+| `Content.Feed` | Recent-content listings (home page, profiles) and per-user content statistics. Neither the syndication sense nor the timeline — the name is kept deliberately (ADR 0042) |
 | `Content.ReadTracking` | Per-user article/board read state, unread indicators |
 | `Content.Polls` | Poll creation, voting (local + remote), denormalized counter management |
 
@@ -1387,6 +1393,15 @@ account whose role level is at or above their own. Without
 against `issued_at`. Every issue and lift goes through `Moderation.log_action/3`
 (`warn_user`, `silence_user`, `suspend_user`, `lift_sanction`, `reject_user`)
 and `RateLimits.check_sanction/1`.
+
+**A ban answers the same authority question,** though it is a `users.status`
+value rather than a `sanctions` row. `Auth.ban_user/3` takes the acting
+`%User{}` — not an id — and goes through `Sanctions.authorize_ban/2`, which
+requires `admin.manage_users` and applies the same rank rule, so removing a
+peer admin is demote-then-ban. Until v1.28.1 it checked neither, which made it
+the one rung of this ladder that was gated only by the route hook in front of
+it. `Sanctions.authorize_unban/2` requires the same permission and
+deliberately skips the rank rule, so a banned account is always restorable.
 
 **The member is always told** (P1-D4), three ways: an always-delivered
 `sanction_applied` / `sanction_lifted` / `sanction_ended` notice, the refusal
@@ -1772,9 +1787,9 @@ regular user profile fields).
 - `lib/baudrate/bots.ex` — context (CRUD, scheduling, dedup)
 - `lib/baudrate/bots/bot.ex` — Bot schema
 - `lib/baudrate/bots/bot_syndication_item.ex` — BotSyndicationItem schema (GUID dedup)
-- `lib/baudrate/bots/feed_worker.ex` — GenServer poller
-- `lib/baudrate/bots/feed_parser.ex` — feed parser facade (normalizes NIF output)
-- `lib/baudrate/bots/feed_parser_native.ex` — Rustler NIF bindings to `baudrate_feed_parser`
+- `lib/baudrate/bots/syndication_feed_worker.ex` — GenServer poller
+- `lib/baudrate/bots/syndication_feed_parser.ex` — feed parser facade (normalizes NIF output)
+- `lib/baudrate/bots/syndication_feed_parser_native.ex` — Rustler NIF bindings to `baudrate_feed_parser`
 - `lib/baudrate/bots/favicon_fetcher.ex` — site favicon → bot avatar
 - `lib/baudrate_web/live/admin/bots_live.ex` — admin UI
 
@@ -1844,7 +1859,7 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `/ap/boards/:slug/outbox` — paginated `OrderedCollection` of `Announce(Article)`
 - `/ap/boards` — `OrderedCollection` of all public AP-enabled boards
 - `/ap/articles/:slug/replies` — `OrderedCollection` of comments as Note objects
-- `/ap/search?q=...` — paginated full-text article search
+- `/ap/search?q=...` — paginated full-text article search, over **federated** boards only (ADR 0043)
 
 **Inbox endpoints** (HTTP Signature verified, per-domain rate-limited):
 - `/ap/inbox` — shared inbox
@@ -2149,7 +2164,7 @@ Exposed via `Federation.fetch_remote_object/1` (preview) and `Federation.lookup_
 - Real client IP extraction — `RealIp` plug reads from configurable proxy header (e.g., `x-forwarded-for`) for accurate per-IP rate limiting behind reverse proxies; honored only when the immediate peer matches the `trusted_proxies` allow-list (exact IPs or CIDR ranges) so untrusted peers cannot spoof their IP. Fail closed: an unconfigured allow-list defaults to loopback only and an empty list trusts nobody, configurable at runtime via `BAUDRATE_TRUSTED_PROXIES`
 - Private keys encrypted at rest with AES-256-GCM
 - Recovery codes verified atomically via `Repo.update_all` to prevent TOCTOU race conditions
-- Boards federate only when `min_role_to_view == "guest"` **and** `ap_enabled == true` (`Board.federated?/1`), and that predicate applies in **both** directions. Inbound: the board actor, inbox, outbox, following/followers endpoints and WebFinger all 404, and a `Follow` of such a board is answered `Reject(Follow)`. Outbound: `ActivityPubController.publicly_servable?/1` refuses to serve the article object and its replies collection, the user outbox counts and lists only articles in federated boards, the board `Announce` and boost fan-outs skip them, `Delivery.enqueue_for_article/4` withholds even the *author's own* followers, and `ObjectBuilder` names only federated boards in `cc`/`audience`, so a private slug never leaves the instance. A `Delete` or `Undo` is never gated (`intent: :withdraw`), or turning `ap_enabled` off would strand an already-published post on the fediverse for good
+- Boards federate only when `min_role_to_view == "guest"` **and** `ap_enabled == true` (`Board.federated?/1`), and that predicate applies in **both** directions. Inbound: the board actor, inbox, outbox, following/followers endpoints and WebFinger all 404, and a `Follow` of such a board is answered `Reject(Follow)`. Outbound: `ActivityPubController.publicly_servable?/1` refuses to serve the article object and its replies collection, the user outbox counts and lists only articles in federated boards, the board `Announce` and boost fan-outs skip them, `Delivery.enqueue_for_article/4` withholds even the *author's own* followers, and `ObjectBuilder` names only federated boards in `cc`/`audience`, so a private slug never leaves the instance. The fifth surface is `/ap/search`: `Content.search_articles/2` takes `federated_only: true` from `Collections.search_collection/2`, opt-in because the same function backs the site's own search, which must keep listing content in boards that do not federate. A `Delete` or `Undo` is never gated — they pass `intent: :withdraw`, which defaults to `:publish` so a new activity is gated unless it says otherwise — because a withdrawal carries no content, and refusing one would strand an already-published post on the fediverse for good. See [ADR 0043](adr/0043-the-outbound-federation-gate-and-withdrawals.md)
 - Optional authorized fetch mode — require HTTP signatures on GET requests to AP endpoints (exempt: WebFinger, NodeInfo)
 - Signed outbound GET requests — actor resolution falls back to signed GET when remote instances require authorized fetch
 - Session cookie `secure` flag handled by `force_ssl` / `Plug.SSL` in production
