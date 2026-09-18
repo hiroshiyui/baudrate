@@ -17,7 +17,7 @@
   this comment behind. It is normally stripped when rendered, but a leading
   HTML block can swallow what follows it, so do not rely on that.
 
-  Every factual claim was checked against the code at v1.21.0 — the retention
+  Every factual claim was checked against the code at v1.28.0 — the retention
   periods, what federates, what the export omits, and the two third parties a
   visitor's browser can reach. **Re-check them when that behaviour changes**,
   particularly: the YouTube embed auto-loads (4F would add a click-to-play
@@ -130,13 +130,17 @@ This policy is provided in both 台灣漢語 (Taiwanese Mandarin) and English.
 | 待送出的聯邦投遞佇列（內含待投遞的訊息內容） | 已送達 7 天；放棄投遞 30 天 |
 | 遠端圖片的本機快取 | 30 天未被存取 |
 | 已完成的資料匯出申請 | 365 天 |
+| 您刪除的文章與留言，連同其圖片與舊版本 | 刪除後 90 天 |
+| 來自您在其他站台追蹤帳號的貼文，若無人按讚、轉發或回覆 | 90 天 |
+| 遠端帳號曾轉發某內容的紀錄 | 180 天 |
 
 **在您或站方刪除之前不會自動到期的：**
 
-- 您的帳號、個人檔案與文章；
+- 您的帳號與個人檔案；
+- 您未刪除的文章與留言；
 - 您的私訊——軟刪除會將內容替換為「[deleted]」，但保留寄件者與時間；
 - 您的閱讀紀錄；
-- 您編輯過的文章的舊版本；
+- 您編輯過的文章的舊版本，保存期限與該文章相同；
 - 書籤、按讚、轉發、追蹤、封鎖與靜音；
 - 誰邀請了誰的紀錄；
 - 您的推播通知註冊資料，直到推播服務拒絕為止。
@@ -146,7 +150,9 @@ This policy is provided in both 台灣漢語 (Taiwanese Mandarin) and English.
 - **管理日誌與檢舉紀錄**——已採取措施的紀錄與檢舉案，包含檢舉人自行填寫的內容與處理結果；
 - **處分紀錄**——警告、禁言或停權只會被解除，不會被抹除，以便站方看見長期的行為樣態。
 
-已刪除的文章與留言會立即隱藏，但資料列仍保留。
+您刪除的文章或留言會立即隱藏，並於 **90 天後自資料庫移除**，連同其圖片與舊版本。保留這 90 天是為了讓管理者在處理檢舉時仍能看見被移除的內容；若有檢舉案指向該內容，則會保存至該紀錄存續期間。
+
+來自您在其他站台所追蹤帳號的貼文，是他處已發布內容的副本。若本站無人按讚、轉發或回覆，該副本會在 90 天後移除；原始內容仍留在其發布的站台，那不在本站的控制範圍內。
 
 備份每晚執行，伺服器上保存約一週，異地副本保存約一個月，因此**您刪除的資料仍可能在備份中存續約一個月**才會輪替消失。備份僅供災難復原之用，不會被檢索或另作他用。
 
@@ -344,14 +350,18 @@ Cleared automatically:
 | Queued federation deliveries, which contain the message being delivered | 7 days delivered, 30 days abandoned |
 | Cached copies of remote images | 30 days untouched |
 | Completed data export requests | 365 days |
+| Posts and comments you deleted, and their images and earlier versions | 90 days after deletion |
+| Posts from accounts you follow elsewhere, if nobody liked, boosted or replied to them | 90 days |
+| The record that a remote account shared something | 180 days |
 
 **Kept until you or staff remove them, with no automatic expiry:**
 
-- your account, profile and posts;
+- your account and profile;
+- posts and comments you have not deleted;
 - your direct messages — soft deletion replaces the text with "[deleted]" but
   keeps the sender and the timestamp;
 - your reading history;
-- earlier versions of posts you have edited;
+- earlier versions of posts you have edited, for as long as the post itself;
 - bookmarks, likes, boosts, follows, blocks and mutes;
 - the record of who invited whom;
 - your push notification registrations, until the push service rejects them.
@@ -363,7 +373,15 @@ Cleared automatically:
 - **sanctions** — a warning, silence or suspension is lifted, never erased, so
   that a pattern remains visible to staff.
 
-Deleted posts and comments are hidden immediately but the row is retained.
+A post or comment you delete is hidden at once and **removed from the database
+90 days later**, together with its images and its earlier versions. The 90 days
+exist so that a moderator handling a report can still see what was removed; if
+a report refers to it, it is kept for as long as that record.
+
+Posts that reach you from accounts you follow on other servers are a copy of
+something published elsewhere. That copy is removed after 90 days unless
+somebody here liked, boosted or replied to it — the original stays wherever it
+was posted, which is not something this site controls.
 
 Backups run nightly, are kept about a week on the server and about a month
 off-site, so **data you delete can survive in backups for roughly a month**
