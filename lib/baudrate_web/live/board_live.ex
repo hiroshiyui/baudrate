@@ -39,7 +39,7 @@ defmodule BaudrateWeb.BoardLive do
       sub_board_ids = Enum.map(sub_boards, & &1.id)
       unread_sub_board_ids = Content.unread_board_ids(current_user, sub_board_ids)
 
-      feed_slug = if Board.public?(board), do: board.slug
+      syndication_slug = if Board.public?(board), do: board.slug
 
       parent_slug =
         case ancestors do
@@ -63,7 +63,7 @@ defmodule BaudrateWeb.BoardLive do
          sub_boards: sub_boards,
          unread_sub_board_ids: unread_sub_board_ids,
          page_title: board.name,
-         feed_board_slug: feed_slug,
+         syndication_board_slug: syndication_slug,
          linked_data_json: jsonld,
          dc_meta: dc_meta,
          og_meta: OpenGraph.board_tags(board)

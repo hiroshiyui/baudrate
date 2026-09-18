@@ -236,12 +236,12 @@ defmodule BaudrateWeb.Router do
   scope "/feeds", BaudrateWeb do
     pipe_through :feeds
 
-    get "/rss", FeedController, :site_rss
-    get "/atom", FeedController, :site_atom
-    get "/boards/:slug/rss", FeedController, :board_rss
-    get "/boards/:slug/atom", FeedController, :board_atom
-    get "/users/:username/rss", FeedController, :user_rss
-    get "/users/:username/atom", FeedController, :user_atom
+    get "/rss", SyndicationFeedController, :site_rss
+    get "/atom", SyndicationFeedController, :site_atom
+    get "/boards/:slug/rss", SyndicationFeedController, :board_rss
+    get "/boards/:slug/atom", SyndicationFeedController, :board_atom
+    get "/users/:username/rss", SyndicationFeedController, :user_rss
+    get "/users/:username/atom", SyndicationFeedController, :user_atom
   end
 
   # Public (redirect if already authenticated)

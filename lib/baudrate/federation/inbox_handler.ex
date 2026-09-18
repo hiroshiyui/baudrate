@@ -319,7 +319,7 @@ defmodule Baudrate.Federation.InboxHandler do
     # Also create article/comment boost if target is local content
     maybe_create_local_boost(object_uri, ap_id, remote_actor)
 
-    # Route boosted content to boards and/or personal feeds
+    # Route boosted content to boards and/or personal timelines
     handle_announce_content(ap_id, object_uri, remote_actor)
 
     :ok
@@ -947,7 +947,7 @@ defmodule Baudrate.Federation.InboxHandler do
   # --- Announce content routing ---
 
   # Routes boosted content to boards (if the booster is followed by a board)
-  # and/or to personal feeds (if the booster is followed by local users).
+  # and/or to personal timelines (if the booster is followed by local users).
   # Fetches the boosted object via signed GET to extract content metadata.
   #
   # Loop prevention: `create_remote_article` does NOT trigger outbound
@@ -1249,7 +1249,7 @@ defmodule Baudrate.Federation.InboxHandler do
 
   defp parse_published(nil), do: now_truncated()
 
-  # Clamped to now, like `Bots.FeedParser.clamp_published_at/1` does for the
+  # Clamped to now, like `Bots.SyndicationFeedParser.clamp_published_at/1` does for the
   # other ingest path. `published_at` is peer-supplied and the timeline orders
   # on it, so `"published": "2099-01-01T00:00:00Z"` pinned an item to slot one
   # of every follower's timeline — outranking local articles and comments too,
@@ -1340,7 +1340,7 @@ defmodule Baudrate.Federation.InboxHandler do
   # A timeline item's title is the remote object's `name` verbatim. Unlike
   # `content` it never passes through `Validator.validate_content_size/1`, so
   # without this an `Article`/`Page` could park a payload-sized string in the
-  # column and render it on every viewer's `/feed`. Truncating (rather than
+  # column and render it on every viewer's `/timeline`. Truncating (rather than
   # rejecting in the changeset) keeps a merely over-long legitimate title.
   defp timeline_item_title(object_type, object) when object_type in ["Article", "Page"] do
     case object["name"] do

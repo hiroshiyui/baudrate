@@ -1,4 +1,4 @@
-defmodule Baudrate.Bots.FeedParser do
+defmodule Baudrate.Bots.SyndicationFeedParser do
   @moduledoc """
   Parses RSS 2.0, RSS 1.0 (RDF), Atom 1.0, and JSON Feed documents.
 
@@ -21,7 +21,7 @@ defmodule Baudrate.Bots.FeedParser do
 
   require Logger
 
-  alias Baudrate.Bots.FeedParserNative
+  alias Baudrate.Bots.SyndicationFeedParserNative
 
   @max_title_length 255
 
@@ -40,7 +40,7 @@ defmodule Baudrate.Bots.FeedParser do
   """
   @spec parse(binary()) :: {:ok, [map()]} | {:error, term()}
   def parse(data) when is_binary(data) do
-    case FeedParserNative.parse_feed(data) do
+    case SyndicationFeedParserNative.parse_feed(data) do
       {:ok, raw_entries} ->
         entries =
           raw_entries
@@ -56,7 +56,7 @@ defmodule Baudrate.Bots.FeedParser do
 
   # --- Entry normalization ---
 
-  defp normalize_entry(%FeedParserNative.Entry{} = entry) do
+  defp normalize_entry(%SyndicationFeedParserNative.Entry{} = entry) do
     link = entry.link
     guid = if is_binary(entry.id) and entry.id != "", do: entry.id, else: link
 

@@ -69,7 +69,7 @@ defmodule Baudrate.Content.Markdown do
 
   # Inserts blank lines between consecutive block-level HTML elements so that
   # the Markdown parser treats each as a separate HTML block. Without this, HTML
-  # content stored by feed bots (where paragraphs are adjacent with no blank
+  # content stored by syndication bots (where paragraphs are adjacent with no blank
   # lines) causes the parser to drop all paragraphs after the first.
   defp normalize_html_blocks(text) do
     text

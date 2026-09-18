@@ -189,7 +189,7 @@ defmodule Baudrate.BotsTest do
       refute Bots.already_posted?(bot, "https://example.com/item/1", nil)
     end
 
-    test "returns true when guid matches a recorded feed item" do
+    test "returns true when guid matches a recorded syndication entry" do
       {:ok, bot} =
         Bots.create_bot(%{
           "username" => "seenbot2_#{System.unique_integer([:positive])}",
@@ -198,7 +198,7 @@ defmodule Baudrate.BotsTest do
         })
 
       guid = "https://example.com/item/#{System.unique_integer([:positive])}"
-      {:ok, _} = Bots.record_timeline_item(bot, guid, nil)
+      {:ok, _} = Bots.record_syndication_item(bot, guid, nil)
       assert Bots.already_posted?(bot, guid, nil)
     end
 
@@ -224,7 +224,7 @@ defmodule Baudrate.BotsTest do
             forwardable: true
           },
           [],
-          # Mirrors FeedWorker.post_entry/2: bots are the trusted caller that
+          # Mirrors SyndicationFeedWorker.post_entry/2: bots are the trusted caller that
           # may set `url`.
           trusted: true
         )
@@ -255,7 +255,7 @@ defmodule Baudrate.BotsTest do
             forwardable: true
           },
           [],
-          # Mirrors FeedWorker.post_entry/2: bots are the trusted caller that
+          # Mirrors SyndicationFeedWorker.post_entry/2: bots are the trusted caller that
           # may set `url`.
           trusted: true
         )

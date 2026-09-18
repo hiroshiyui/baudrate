@@ -1,4 +1,4 @@
-defmodule Baudrate.Bots.FeedParserNative do
+defmodule Baudrate.Bots.SyndicationFeedParserNative do
   @moduledoc """
   Rustler NIF bindings to the `baudrate_feed_parser` Rust crate.
 
@@ -8,7 +8,7 @@ defmodule Baudrate.Bots.FeedParserNative do
   The single public function `parse_feed/1` accepts raw feed bytes and returns a
   list of `Entry` structs with raw (unsanitized) field values.  Post-processing
   (HTML sanitization, title normalization, date clamping) is handled by
-  `Baudrate.Bots.FeedParser`.  The crate's own HTML sanitizer (on by default
+  `Baudrate.Bots.SyndicationFeedParser`.  The crate's own HTML sanitizer (on by default
   since feedparser-rs 0.6) is explicitly disabled in the NIF so that Ammonia
   remains the single sanitizer of record and plain-text titles are not
   double-escaped.

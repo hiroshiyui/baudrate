@@ -1,4 +1,4 @@
-defmodule BaudrateWeb.FeedController do
+defmodule BaudrateWeb.SyndicationFeedController do
   @moduledoc """
   Controller for RSS 2.0 and Atom 1.0 syndication feeds.
 
@@ -16,7 +16,7 @@ defmodule BaudrateWeb.FeedController do
   use BaudrateWeb, :controller
 
   alias Baudrate.{Auth, Content}
-  alias BaudrateWeb.FeedXML
+  alias BaudrateWeb.SyndicationFeedXML
 
   @slug_re ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/
   @username_re ~r/\A[a-zA-Z0-9_]+\z/
@@ -157,7 +157,7 @@ defmodule BaudrateWeb.FeedController do
           updated: last_modified
         })
 
-      xml = FeedXML.render(format, assigns)
+      xml = SyndicationFeedXML.render(format, assigns)
 
       conn
       |> put_resp_content_type(content_type)

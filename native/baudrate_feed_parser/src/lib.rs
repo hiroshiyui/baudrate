@@ -5,7 +5,7 @@ use feedparser_rs::{parse_with_options, Entry, ParseOptions};
 /// All date/times are encoded as RFC 3339 strings so that Elixir can
 /// parse them with `DateTime.from_iso8601/1`.
 #[derive(rustler::NifStruct)]
-#[module = "Baudrate.Bots.FeedParserNative.Entry"]
+#[module = "Baudrate.Bots.SyndicationFeedParserNative.Entry"]
 struct NifEntry {
     /// Unique identifier (guid / entry id).  `None` means the entry has no
     /// usable id and should be skipped on the Elixir side.
@@ -144,4 +144,4 @@ fn collect_tags(entry: &Entry) -> Vec<String> {
     tags
 }
 
-rustler::init!("Elixir.Baudrate.Bots.FeedParserNative");
+rustler::init!("Elixir.Baudrate.Bots.SyndicationFeedParserNative");

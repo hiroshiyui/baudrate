@@ -54,8 +54,9 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0036](0036-production-runs-releases-built-and-attested-in-ci.md) | Production runs releases built and attested in CI | Accepted; decision 3 superseded by [0037](0037-the-deploy-builds-on-the-server-again.md) |
 | [0037](0037-the-deploy-builds-on-the-server-again.md) | The deploy builds on the server again | Accepted |
 | [0038](0038-encryption-keys-are-separate-and-rotatable.md) | Encryption keys are separate, and rotatable | Accepted |
-| [0039](0039-the-personal-stream-is-a-timeline.md) | The personal stream is a timeline, not a feed | Accepted |
+| [0039](0039-the-personal-stream-is-a-timeline.md) | The personal stream is a timeline, not a feed | Accepted, except the RSS carve-out, superseded by [0041](0041-rss-and-atom-are-syndication.md) |
 | [0040](0040-retention-deletes-what-nobody-touched.md) | Retention deletes what nobody touched | Accepted |
+| [0041](0041-rss-and-atom-are-syndication.md) | RSS and Atom are syndication, not feeds | Accepted |
 
 ## Writing a new ADR
 

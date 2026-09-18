@@ -12,7 +12,7 @@ defmodule Baudrate.Bots do
 
   alias Baudrate.Repo
   alias Baudrate.Auth.ReservedHandle
-  alias Baudrate.Bots.{Bot, BotFeedItem}
+  alias Baudrate.Bots.{Bot, BotSyndicationItem}
   alias Baudrate.Content.Article
   alias Baudrate.Setup.{Role, User}
   alias Baudrate.Auth
@@ -175,17 +175,19 @@ defmodule Baudrate.Bots do
   end
 
   @doc """
-  Returns true if the bot has already posted a feed item matching `guid` or `url`.
+  Returns true if the bot has already posted a syndication entry matching `guid` or `url`.
 
   Checks both:
-  - `bot_feed_items` by `(bot_id, guid)` — primary dedup key
+  - `bot_syndication_items` by `(bot_id, guid)` — primary dedup key
   - `articles` by `(user_id, url)` — catches the same source article re-appearing
-    with a different GUID (e.g. after a feed publisher changes their `<guid>`)
+    with a different GUID (e.g. after a syndication publisher changes their `<guid>`)
   """
   @spec already_posted?(Bot.t(), String.t(), String.t() | nil) :: boolean()
   def already_posted?(%Bot{id: bot_id, user: %{id: user_id}}, guid, url) do
     guid_seen? =
-      Repo.exists?(from fi in BotFeedItem, where: fi.bot_id == ^bot_id and fi.guid == ^guid)
+      Repo.exists?(
+        from fi in BotSyndicationItem, where: fi.bot_id == ^bot_id and fi.guid == ^guid
+      )
 
     url_seen? =
       is_binary(url) and url != "" and
@@ -197,11 +199,11 @@ defmodule Baudrate.Bots do
     guid_seen? or url_seen?
   end
 
-  @doc "Records that a feed item was posted (or attempted)."
-  @spec record_timeline_item(Bot.t(), String.t(), integer() | nil) ::
-          {:ok, BotFeedItem.t()} | {:error, Ecto.Changeset.t()}
-  def record_timeline_item(%Bot{id: bot_id}, guid, article_id) do
-    %BotFeedItem{}
+  @doc "Records that a syndication entry was posted (or attempted)."
+  @spec record_syndication_item(Bot.t(), String.t(), integer() | nil) ::
+          {:ok, BotSyndicationItem.t()} | {:error, Ecto.Changeset.t()}
+  def record_syndication_item(%Bot{id: bot_id}, guid, article_id) do
+    %BotSyndicationItem{}
     |> Ecto.Changeset.cast(%{bot_id: bot_id, guid: guid, article_id: article_id}, [
       :bot_id,
       :guid,
@@ -267,7 +269,7 @@ defmodule Baudrate.Bots do
       ]
     )
 
-    send(Baudrate.Bots.FeedWorker, :poll)
+    send(Baudrate.Bots.SyndicationFeedWorker, :poll)
     :ok
   end
 

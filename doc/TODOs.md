@@ -144,12 +144,14 @@ Autovacuum guidance for the two tables the purges empty in bulk is in
 P2-D4 said "nobody has bookmarked or interacted with", but `bookmarks` only
 targets articles and comments — a timeline item cannot be bookmarked — so the
 keep rule is likes, boosts and replies.
-**Still never purge `bot_feed_items`, or the articles a bot created.** The
+**Still never purge `bot_syndication_items`, or the articles a bot created.** The
 ledger holds the `(bot_id, guid)` record of what each bot has posted; delete a
 row and that bot republishes the entry. The two tables were `feed_items` and
-`bot_feed_items` until [ADR 0039](adr/0039-the-personal-stream-is-a-timeline.md)
-renamed the first, and the near-miss is why this is written in both the ADR and
-the retention module.
+`bot_feed_items`, one character apart, until
+[ADR 0039](adr/0039-the-personal-stream-is-a-timeline.md) renamed the first to
+`timeline_items` and [ADR 0041](adr/0041-rss-and-atom-are-syndication.md) the
+second to `bot_syndication_items`. The near-miss is why this is written in the
+ADRs and in the retention module, not left to the names.
 
 ### Decisions (made 2026-09-17)
 

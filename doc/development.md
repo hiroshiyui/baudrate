@@ -84,11 +84,11 @@ lib/
 │   ├── bots.ex                  # Bots context: bot CRUD, feed scheduling, deduplication
 │   ├── bots/
 │   │   ├── bot.ex               # Bot schema (1:1 with User, feed config, fetch state)
-│   │   ├── bot_feed_item.ex     # BotFeedItem schema (posted GUID deduplication)
+│   │   ├── bot_syndication_item.ex  # BotSyndicationItem schema (posted GUID dedup)
 │   │   ├── favicon_fetcher.ex   # Fetch site favicon and set as bot avatar (best-effort)
-│   │   ├── feed_parser.ex       # Feed parser facade: delegates to NIF, normalizes entries
-│   │   ├── feed_parser_native.ex # Rustler NIF binding (baudrate_feed_parser crate)
-│   │   └── feed_worker.ex       # GenServer: polls due bots every 60s, creates articles
+│   │   ├── syndication_feed_parser.ex        # Syndication parser facade: NIF, normalizes entries
+│   │   ├── syndication_feed_parser_native.ex # Rustler NIF binding (baudrate_feed_parser crate)
+│   │   └── syndication_feed_worker.ex        # GenServer: polls due bots every 60s, creates articles
 │   ├── content.ex               # Content context facade: defdelegate to focused sub-modules
 │   ├── content/
 │   │   ├── articles.ex          # Article CRUD, cross-posting, revisions, pin/lock
@@ -1683,25 +1683,25 @@ Each bot consists of:
    rejects any user with `is_bot: true`.
 2. A `Bot` record linking the user to feed configuration (URL, target boards,
    fetch interval).
-3. `BotFeedItem` records tracking posted entry GUIDs for deduplication.
+3. `BotSyndicationItem` records tracking posted entry GUIDs for deduplication.
 
-**Workflow (FeedWorker → FeedParser → FaviconFetcher):**
+**Workflow (SyndicationFeedWorker → SyndicationFeedParser → FaviconFetcher):**
 
-1. `Baudrate.Bots.FeedWorker` (GenServer) polls `Bots.list_due_bots/0` every
+1. `Baudrate.Bots.SyndicationFeedWorker` (GenServer) polls `Bots.list_due_bots/0` every
    60 seconds (±10% jitter). Up to 5 bots are processed concurrently via
    `Task.Supervisor.async_stream_nolink/3` (120s per-bot timeout).
 2. For each due bot, the worker optionally triggers `FaviconFetcher.fetch_and_set/1`
    (best-effort, in a separate Task) to refresh the bot's avatar from the site favicon.
 3. The feed URL is validated (SSRF-safe via `HTTPClient.validate_url/1`) and
-   fetched (max 5 MB). The raw bytes are parsed by `FeedParser.parse/1`.
-4. `FeedParser` delegates to the `baudrate_feed_parser` Rustler NIF (backed by
+   fetched (max 5 MB). The raw bytes are parsed by `SyndicationFeedParser.parse/1`.
+4. `SyndicationFeedParser` delegates to the `baudrate_feed_parser` Rustler NIF (backed by
    the `feedparser-rs` Rust crate), which natively supports RSS 0.9x/2.0,
    RSS 1.0 (RDF), Atom 0.3/1.0, and JSON Feed in a single pass. Each entry is
    normalized to `%{guid, title, body, link, tags, published_at}`.
    HTML content is sanitized via `Baudrate.Sanitizer.Native.sanitize_markdown/1`.
    `published_at` is clamped: dates more than 10 years in the past or in the
    future are set to `nil`.
-5. For each new entry (not yet in `bot_feed_items`), the worker calls
+5. For each new entry (not yet in `bot_syndication_items`), the worker calls
    `Content.create_article/2` with the bot user as author. The `published_at`
    field on the article records the original feed entry publication date.
 6. On success, `Bots.mark_fetch_success/1` schedules the next fetch. On failure,
@@ -1730,7 +1730,7 @@ regular user profile fields).
 | Table | Purpose |
 |-------|---------|
 | `bots` | Bot config: `user_id`, `feed_url`, `board_ids` (int array), `fetch_interval_minutes`, `active`, `last_fetched_at`, `next_fetch_at`, `error_count`, `last_error`, `avatar_refreshed_at`, `favicon_fail_count` |
-| `bot_feed_items` | GUID deduplication: `bot_id`, `guid`, `article_id` (nullable on permanent failure) |
+| `bot_syndication_items` | GUID deduplication: `bot_id`, `guid`, `article_id` (nullable on permanent failure) |
 
 **Key functions in `Bots`:**
 
@@ -1739,7 +1739,7 @@ regular user profile fields).
 - `update_bot/2` / `delete_bot/1` — update/delete bot and its user account
 - `list_due_bots/0` — bots with `next_fetch_at` nil or in the past
 - `already_posted?/2` — GUID dedup check
-- `record_timeline_item/3` — records a posted entry
+- `record_syndication_item/3` — records a posted entry in the `bot_syndication_items` dedup ledger. This row is **not** a timeline item: deleting one republishes that entry, which is why retention never touches the table ([ADR 0040](adr/0040-retention-deletes-what-nobody-touched.md)) and why the name no longer says "feed" ([ADR 0041](adr/0041-rss-and-atom-are-syndication.md))
 - `mark_fetch_success/1` / `mark_fetch_error/2` — update fetch state with backoff
 - `avatar_needs_refresh?/1` / `mark_avatar_refreshed/1` — favicon refresh tracking (gate + 7-day cooldown)
 - `increment_favicon_fail_count/1` — increments consecutive failure counter
@@ -1757,7 +1757,7 @@ regular user profile fields).
 
 - `lib/baudrate/bots.ex` — context (CRUD, scheduling, dedup)
 - `lib/baudrate/bots/bot.ex` — Bot schema
-- `lib/baudrate/bots/bot_feed_item.ex` — BotFeedItem schema (GUID dedup)
+- `lib/baudrate/bots/bot_syndication_item.ex` — BotSyndicationItem schema (GUID dedup)
 - `lib/baudrate/bots/feed_worker.ex` — GenServer poller
 - `lib/baudrate/bots/feed_parser.ex` — feed parser facade (normalizes NIF output)
 - `lib/baudrate/bots/feed_parser_native.ex` — Rustler NIF bindings to `baudrate_feed_parser`
@@ -1936,7 +1936,7 @@ fetches, media cache warming, link previews).
 - Announce → timeline item: when a followed actor boosts content, the boosted object is fetched and stored as a timeline item with `activity_type: "Announce"` and `boosted_by_actor_id` pointing to the booster. Original author is resolved via `attributedTo`. Board routing: if the booster is followed by a board, boosted Article/Page content is also routed to that board (loop-safe: `create_remote_article` does not trigger outbound federation).
 - Delete propagation: soft-deletes timeline items on content or actor deletion
 - `Federation.migrate_timeline_items/2` — Move activity support (repoint timeline items to the new actor)
-- `/timeline` LiveView (`TimelineLive`) — paginated personal timeline with real-time PubSub updates. The page, its tables and `Federation.Timeline` were called "feed" until [ADR 0039](adr/0039-the-personal-stream-is-a-timeline.md): "feed" also names the RSS/Atom the bots read and this instance publishes, so the stream every other implementation calls a timeline is called one here too. `GET /feed` answers 301 to `/timeline` (`PageController.feed_redirect/2`, carrying `?page` across from an allow-list, because `~p` raises on some query shapes a URL can decode to), since members bookmark it. The RSS vocabulary deliberately keeps the word: `bot_feed_items`, `Bots.FeedParser`, `FeedController`, `/feeds/*` and the WAI-ARIA `role="feed"`
+- `/timeline` LiveView (`TimelineLive`) — paginated personal timeline with real-time PubSub updates. The page, its tables and `Federation.Timeline` were called "feed" until [ADR 0039](adr/0039-the-personal-stream-is-a-timeline.md): "feed" also names the RSS/Atom the bots read and this instance publishes, so the stream every other implementation calls a timeline is called one here too. `GET /feed` answers 301 to `/timeline` (`PageController.feed_redirect/2`, carrying `?page` across from an allow-list, because `~p` raises on some query shapes a URL can decode to), since members bookmark it. The RSS vocabulary then became **syndication** too ([ADR 0041](adr/0041-rss-and-atom-are-syndication.md)): `bot_syndication_items`, `Bots.SyndicationFeedParser`, `SyndicationFeedController`. Only the public URLs `/feeds/*` (every subscriber has one saved, and an RSS URL saying "feed" is unambiguous) and the WAI-ARIA `role="feed"` keep the word
 
 **Timeline item replies**:
 - `timeline_item_replies` table — local users can reply to remote timeline items inline
@@ -2276,7 +2276,7 @@ ActivityPubController (dispatch to InboxHandler)
 Feed requests use a lightweight pipeline (no session, no CSRF):
 
 ```
-ApiHeaders → RateLimit (30/min per IP) → FeedController (XML response)
+ApiHeaders → RateLimit (30/min per IP) → SyndicationFeedController (XML response)
 ```
 
 `BaudrateWeb.Plugs.ApiHeaders` heads the `:api`, `:feeds`, `:activity_pub` and
@@ -2340,7 +2340,7 @@ Baudrate.Supervisor (one_for_one)
 ├── Baudrate.Federation.DeliveryWorker      # Delivery queue: woken on commit (own LISTEN connection), polls every 60s
 ├── Baudrate.Federation.InboundWorker       # Inbound queue: woken by the inbox, polls every 30s
 ├── Baudrate.Federation.StaleActorCleaner   # Daily stale remote actor cleanup
-├── Baudrate.Bots.FeedWorker                # Polls RSS/Atom bots every 60s
+├── Baudrate.Bots.SyndicationFeedWorker                # Polls RSS/Atom bots every 60s
 ├── BaudrateWeb.HealthDetail (Bandit)       # 127.0.0.1:HEALTH_DETAIL_PORT, only when the port is set (ADR 0035)
 └── BaudrateWeb.Endpoint                    # HTTP server
 ```
@@ -2352,7 +2352,7 @@ it, logging `crypto.keys_not_separated` for each class still deriving its key
 from `SECRET_KEY_BASE` (ADR 0038) — the line an operator watches for going
 quiet after setting the keys.
 
-**Health.** `DeliveryWorker`, `InboundWorker`, `FeedWorker` and `SessionCleaner`
+**Health.** `DeliveryWorker`, `InboundWorker`, `SyndicationFeedWorker` and `SessionCleaner`
 call `Baudrate.Health.Heartbeat.beat/1` at the end of each completed run, and
 `Baudrate.Health.report/1` counts a worker stale after three of its intervals
 (at least five minutes). A new periodic worker needs both: a beat after a
@@ -2853,7 +2853,7 @@ Four things to know before changing it:
 - **A cascade does not remove uploaded files.** `SessionCleaner`'s orphan
   sweeps look for image rows whose parent is gone, not files whose row is
   gone, so paths are collected before the delete and unlinked after.
-- **`bot_feed_items` is never purged.** It is the `(bot_id, guid)` ledger that
+- **`bot_syndication_items` is never purged.** It is the `(bot_id, guid)` ledger that
   stops a feed bot re-posting; deleting a row republishes that entry. Its
   `article_id` is `nilify_all` so purging a bot's article cannot take the
   ledger row with it.

@@ -1,4 +1,4 @@
-defmodule Baudrate.Bots.FeedWorker do
+defmodule Baudrate.Bots.SyndicationFeedWorker do
   @moduledoc """
   GenServer that polls for due bots and fetches their RSS/Atom feeds.
 
@@ -14,7 +14,7 @@ defmodule Baudrate.Bots.FeedWorker do
   require Logger
 
   alias Baudrate.Bots
-  alias Baudrate.Bots.{FaviconFetcher, FeedParser}
+  alias Baudrate.Bots.{FaviconFetcher, SyndicationFeedParser}
   alias Baudrate.Content
   alias Baudrate.Federation.HTTPClient
 
@@ -36,14 +36,14 @@ defmodule Baudrate.Bots.FeedWorker do
 
   def handle_info(:poll, state) do
     process_due_bots()
-    Baudrate.Health.Heartbeat.beat(:feed_worker)
+    Baudrate.Health.Heartbeat.beat(:syndication_feed_worker)
     schedule_poll()
     {:noreply, state}
   end
 
   @impl true
   def terminate(reason, _state) do
-    Logger.info("bots.feed_worker: shutting down (reason: #{inspect(reason)})")
+    Logger.info("bots.syndication_feed_worker: shutting down (reason: #{inspect(reason)})")
     :ok
   end
 
@@ -58,7 +58,7 @@ defmodule Baudrate.Bots.FeedWorker do
     bots = Bots.list_due_bots()
 
     if bots != [] do
-      Logger.info("bots.feed_worker: processing #{length(bots)} due bots")
+      Logger.info("bots.syndication_feed_worker: processing #{length(bots)} due bots")
     end
 
     config = Application.get_env(:baudrate, Baudrate.Bots, [])
@@ -77,7 +77,7 @@ defmodule Baudrate.Bots.FeedWorker do
   end
 
   defp process_bot(bot) do
-    Logger.info("bots.feed_worker: fetching feed for bot #{bot.id} (#{bot.feed_url})")
+    Logger.info("bots.syndication_feed_worker: fetching feed for bot #{bot.id} (#{bot.feed_url})")
 
     # Best-effort avatar refresh
     if Bots.avatar_needs_refresh?(bot) do
@@ -94,7 +94,11 @@ defmodule Baudrate.Bots.FeedWorker do
 
       {:error, reason} ->
         error_msg = inspect(reason)
-        Logger.warning("bots.feed_worker: fetch failed for bot #{bot.id}: #{error_msg}")
+
+        Logger.warning(
+          "bots.syndication_feed_worker: fetch failed for bot #{bot.id}: #{error_msg}"
+        )
+
         Bots.mark_fetch_error(bot, error_msg)
     end
   end
@@ -104,7 +108,7 @@ defmodule Baudrate.Bots.FeedWorker do
       :ok ->
         case HTTPClient.get_html(bot.feed_url, max_size: 5 * 1024 * 1024) do
           {:ok, %{body: body}} ->
-            FeedParser.parse(body)
+            SyndicationFeedParser.parse(body)
 
           {:error, _} = err ->
             err
@@ -124,8 +128,8 @@ defmodule Baudrate.Bots.FeedWorker do
   end
 
   @doc false
-  # Public for unit testing — see test/baudrate/bots/feed_worker_test.exs.
-  # Creates an article for a single feed entry and records the feed item.
+  # Public for unit testing — see test/baudrate/bots/syndication_feed_worker_test.exs.
+  # Creates an article for a single feed entry and records the timeline item.
   # A failed insert (e.g. a slug `unique_constraint` collision) must record
   # the item and return normally rather than crash the bot's poll loop.
   def post_entry(bot, entry) do
@@ -147,8 +151,11 @@ defmodule Baudrate.Bots.FeedWorker do
         # Feed bodies are the highest-volume source of remote images; warm the
         # media cache so the first reader does not wait on the publisher's CDN.
         Baudrate.Media.Warmer.warm_html(entry.body)
-        Bots.record_timeline_item(bot, entry.guid, article.id)
-        Logger.debug("bots.feed_worker: posted article #{article.id} for bot #{bot.id}")
+        Bots.record_syndication_item(bot, entry.guid, article.id)
+
+        Logger.debug(
+          "bots.syndication_feed_worker: posted article #{article.id} for bot #{bot.id}"
+        )
 
       error ->
         # `create_article/3` surfaces failures from its `Ecto.Multi` as a 4-tuple
@@ -164,16 +171,16 @@ defmodule Baudrate.Bots.FeedWorker do
           end
 
         Logger.warning(
-          "bots.feed_worker: failed to post entry #{inspect(entry.guid)} for bot #{bot.id}: #{inspect(reason)}"
+          "bots.syndication_feed_worker: failed to post entry #{inspect(entry.guid)} for bot #{bot.id}: #{inspect(reason)}"
         )
 
         # Still record the item so we don't retry forever on permanent failures
-        Bots.record_timeline_item(bot, entry.guid, nil)
+        Bots.record_syndication_item(bot, entry.guid, nil)
     end
   end
 
   @doc false
-  # Public for unit testing — see test/baudrate/bots/feed_worker_test.exs.
+  # Public for unit testing — see test/baudrate/bots/syndication_feed_worker_test.exs.
   # Builds a deterministic, URL-safe slug from a feed entry's title and GUID:
   # the title is lowercased and stripped to `[a-z0-9-]`, then suffixed with
   # an 8-char SHA-256 hash of the GUID for uniqueness.

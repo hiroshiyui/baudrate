@@ -393,10 +393,10 @@ more boards. Create and manage them at `/admin/bots` (admin only).
   one. It has a username, display name, bio and avatar like any member, and its
   posts are subject to the target boards' posting permissions.
 - **Fetching.** Each bot has its own `fetch_interval_minutes` (default 60, at
-  most 1440). `FeedWorker` wakes every 60 s ± 10%, takes every bot that is due
+  most 1440). `SyndicationFeedWorker` wakes every 60 s ± 10%, takes every bot that is due
   and fetches up to 5 of them at a time, over the same HTTPS-only, DNS-pinned,
   SSRF-guarded transport as federation, with the response body capped at 5 MB.
-- **No duplicates.** Every entry is recorded in `bot_feed_items` as
+- **No duplicates.** Every entry is recorded in `bot_syndication_items` as
   `(bot_id, guid)`, and an entry whose link matches one of the bot's live
   articles is skipped as well. That ledger is **never purged** — deleting a row
   makes the bot publish the entry again — which is why retention leaves it alone
@@ -924,7 +924,7 @@ and deletes what the instance has agreed not to keep
 pointer would be emptied rather than the delete refused, leaving a moderation
 record whose subject cannot be read.
 
-Two things are deliberately never purged: `bot_feed_items`, the ledger that
+Two things are deliberately never purged: `bot_syndication_items`, the ledger that
 stops a feed bot re-posting its whole back catalogue, and the articles those
 bots created, which are ordinary board content.
 
@@ -2079,7 +2079,7 @@ underlying logic.
 | `SessionCleaner` | 1 hour | The housekeeping jobs listed below |
 | `DeliveryWorker` | On commit, and every 60 s ± 10% | Delivers due federation jobs, 10 at a time, with a per-domain circuit breaker ([Delivery Queue](#delivery-queue-adminfederation)) |
 | `InboundWorker` | On arrival, and every 30 s | Processes stored inbox activities, 4 at a time and one per remote account ([Inbound Queue](#inbound-queue)) |
-| `FeedWorker` | 60 s ± 10% | Fetches due RSS/Atom bot feeds, 5 bots at a time |
+| `SyndicationFeedWorker` | 60 s ± 10% | Fetches due RSS/Atom bot feeds, 5 bots at a time |
 | `StaleActorCleaner` | 24 hours | Remote actors not re-fetched for 30 days: refreshes them if anything in the database still references them, deletes them otherwise. Batches of 50; skipped while federation is off |
 
 `SessionCleaner` runs its jobs one after another, each on its own: a job that
@@ -2161,7 +2161,7 @@ report as JSON either way:
 | `delivery_queue` | a delivery has been due for more than 15 minutes. Jobs held back by an [open circuit](#delivery-queue-adminfederation) are waiting on purpose and not counted | `DeliveryWorker` in `journalctl -u baudrate` |
 | `inbound_queue` | an inbox activity has waited more than 10 minutes. `failed_last_24h` counts activities that crashed three times | [Inbound Queue](#inbound-queue) |
 | `encryption_keys` | a stored secret needs an encryption key that is not configured, so those rows cannot be read. `keys` counts values per key id, and `legacy` means still keyed off `SECRET_KEY_BASE`. Skipped while neither class is separated | [Rotating an encryption key](#rotating-an-encryption-key) |
-| `workers` | `DeliveryWorker`, `InboundWorker`, `FeedWorker` or `SessionCleaner` has not completed a run for three of its intervals (at least 5 minutes; 3 hours for the hourly `SessionCleaner`). A worker that keeps crashing and being restarted counts as stopped | the log for crashes of that worker |
+| `workers` | `DeliveryWorker`, `InboundWorker`, `SyndicationFeedWorker` or `SessionCleaner` has not completed a run for three of its intervals (at least 5 minutes; 3 hours for the hourly `SessionCleaner`). A worker that keeps crashing and being restarted counts as stopped | the log for crashes of that worker |
 | `disk` | free space under `shared/uploads` is below 1 GiB or 10% of the filesystem, the floor backups keep | `df -h`, the media cache size |
 | `backup` | the newest complete backup is more than 26 hours old, or there is none; skipped when `BAUDRATE_BACKUP_DIR` is unset | `journalctl -u baudrate-backup` |
 

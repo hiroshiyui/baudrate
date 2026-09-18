@@ -1,9 +1,9 @@
-defmodule Baudrate.Bots.BotFeedItem do
+defmodule Baudrate.Bots.BotSyndicationItem do
   @moduledoc """
-  Tracks which feed item GUIDs have already been posted by a bot.
+  Tracks which timeline item GUIDs have already been posted by a bot.
 
   Used for deduplication: before creating an article for a feed entry,
-  the worker checks `bot_feed_items` for `(bot_id, guid)`. If a record
+  the worker checks `bot_syndication_items` for `(bot_id, guid)`. If a record
   exists, the entry is skipped.
   """
 
@@ -12,7 +12,7 @@ defmodule Baudrate.Bots.BotFeedItem do
   alias Baudrate.Bots.Bot
   alias Baudrate.Content.Article
 
-  schema "bot_feed_items" do
+  schema "bot_syndication_items" do
     field :guid, :string
 
     belongs_to :bot, Bot

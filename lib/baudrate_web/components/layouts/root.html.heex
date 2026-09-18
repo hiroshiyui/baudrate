@@ -16,7 +16,7 @@
       {assigns[:page_title] || BaudrateWeb.ErrorHTML.page_title(assigns[:status])}
     </.live_title>
     <link rel="icon" type="image/svg+xml" href={~p"/favicon.svg"} />
-    <%= if assigns[:feed_site] do %>
+    <%= if assigns[:syndication_site] do %>
       <link
         rel="alternate"
         type="application/rss+xml"
@@ -30,18 +30,18 @@
         href={~p"/feeds/atom"}
       />
     <% end %>
-    <%= if assigns[:feed_board_slug] do %>
+    <%= if assigns[:syndication_board_slug] do %>
       <link
         rel="alternate"
         type="application/rss+xml"
         title={gettext("Board RSS Feed")}
-        href={~p"/feeds/boards/#{assigns[:feed_board_slug]}/rss"}
+        href={~p"/feeds/boards/#{assigns[:syndication_board_slug]}/rss"}
       />
       <link
         rel="alternate"
         type="application/atom+xml"
         title={gettext("Board Atom Feed")}
-        href={~p"/feeds/boards/#{assigns[:feed_board_slug]}/atom"}
+        href={~p"/feeds/boards/#{assigns[:syndication_board_slug]}/atom"}
       />
     <% end %>
     <%= if assigns[:ap_alternate_url] do %>

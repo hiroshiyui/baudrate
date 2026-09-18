@@ -1,7 +1,7 @@
 defmodule Baudrate.Bots.FeedParserTest do
   use ExUnit.Case, async: true
 
-  alias Baudrate.Bots.FeedParser
+  alias Baudrate.Bots.SyndicationFeedParser
 
   @rss_feed """
   <?xml version="1.0" encoding="UTF-8"?>
@@ -44,37 +44,37 @@ defmodule Baudrate.Bots.FeedParserTest do
 
   describe "parse/1 with RSS feed" do
     test "parses entries successfully" do
-      assert {:ok, entries} = FeedParser.parse(@rss_feed)
+      assert {:ok, entries} = SyndicationFeedParser.parse(@rss_feed)
       assert length(entries) == 2
     end
 
     test "extracts guid correctly" do
-      {:ok, entries} = FeedParser.parse(@rss_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@rss_feed)
       first = Enum.find(entries, &(&1.guid == "https://example.com/posts/1"))
       assert first != nil
     end
 
     test "extracts title as plain text" do
-      {:ok, entries} = FeedParser.parse(@rss_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@rss_feed)
       [first | _] = entries
       assert first.title == "First Post"
     end
 
     test "extracts link" do
-      {:ok, entries} = FeedParser.parse(@rss_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@rss_feed)
       [first | _] = entries
       assert first.link == "https://example.com/posts/1"
     end
 
     test "sanitizes HTML in description" do
-      {:ok, entries} = FeedParser.parse(@rss_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@rss_feed)
       [first | _] = entries
       # Should contain sanitized content
       assert is_binary(first.body)
     end
 
     test "parses RFC 2822 date" do
-      {:ok, entries} = FeedParser.parse(@rss_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@rss_feed)
       [first | _] = entries
       assert %DateTime{} = first.published_at
       assert first.published_at.year == 2024
@@ -85,17 +85,17 @@ defmodule Baudrate.Bots.FeedParserTest do
 
   describe "parse/1 with Atom feed" do
     test "parses Atom entries" do
-      assert {:ok, entries} = FeedParser.parse(@atom_feed)
+      assert {:ok, entries} = SyndicationFeedParser.parse(@atom_feed)
       assert length(entries) == 1
     end
 
     test "uses entry id as guid" do
-      {:ok, [entry]} = FeedParser.parse(@atom_feed)
+      {:ok, [entry]} = SyndicationFeedParser.parse(@atom_feed)
       assert entry.guid == "https://atom.example.com/entry/1"
     end
 
     test "parses ISO 8601 date" do
-      {:ok, [entry]} = FeedParser.parse(@atom_feed)
+      {:ok, [entry]} = SyndicationFeedParser.parse(@atom_feed)
       assert %DateTime{} = entry.published_at
       assert entry.published_at.year == 2024
     end
@@ -127,13 +127,13 @@ defmodule Baudrate.Bots.FeedParserTest do
     """
 
     test "extracts title from nested <a> tag without CDATA" do
-      {:ok, entries} = FeedParser.parse(@drupal_rss_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@drupal_rss_feed)
       first = Enum.find(entries, &(&1.guid == "https://example.com/news/123"))
       assert first.title == "Some Article Title"
     end
 
     test "strips HTML tags from title" do
-      {:ok, entries} = FeedParser.parse(@drupal_rss_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@drupal_rss_feed)
       second = Enum.find(entries, &(&1.guid == "https://example.com/news/456"))
       # feedparser-rs decodes &amp; → & but trims whitespace from individual text
       # segments, so spaces adjacent to entity references may be lost.
@@ -143,7 +143,7 @@ defmodule Baudrate.Bots.FeedParserTest do
     end
 
     test "still extracts CDATA body correctly" do
-      {:ok, entries} = FeedParser.parse(@drupal_rss_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@drupal_rss_feed)
       first = Enum.find(entries, &(&1.guid == "https://example.com/news/123"))
       assert first.body =~ "Article body text here."
     end
@@ -178,24 +178,24 @@ defmodule Baudrate.Bots.FeedParserTest do
     """
 
     test "parses entries successfully" do
-      assert {:ok, entries} = FeedParser.parse(@rss1_feed)
+      assert {:ok, entries} = SyndicationFeedParser.parse(@rss1_feed)
       assert length(entries) == 2
     end
 
     test "uses rdf:about as guid" do
-      {:ok, entries} = FeedParser.parse(@rss1_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@rss1_feed)
       first = Enum.find(entries, &(&1.guid == "https://example.com/articles/1"))
       assert first != nil
     end
 
     test "extracts title as plain text" do
-      {:ok, entries} = FeedParser.parse(@rss1_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@rss1_feed)
       first = Enum.find(entries, &(&1.guid == "https://example.com/articles/1"))
       assert first.title == "First RSS 1.0 Article"
     end
 
     test "decodes XML entities in title" do
-      {:ok, entries} = FeedParser.parse(@rss1_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@rss1_feed)
       second = Enum.find(entries, &(&1.guid == "https://example.com/articles/2"))
       # feedparser-rs resolves &amp; → & but trims whitespace from individual XML
       # text segments, so spaces adjacent to entity references may be collapsed.
@@ -205,26 +205,26 @@ defmodule Baudrate.Bots.FeedParserTest do
     end
 
     test "extracts link" do
-      {:ok, entries} = FeedParser.parse(@rss1_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@rss1_feed)
       first = Enum.find(entries, &(&1.guid == "https://example.com/articles/1"))
       assert first.link == "https://example.com/articles/1"
     end
 
     test "prefers content:encoded over description for body" do
-      {:ok, entries} = FeedParser.parse(@rss1_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@rss1_feed)
       second = Enum.find(entries, &(&1.guid == "https://example.com/articles/2"))
       assert second.body =~ "Full content body."
       refute second.body =~ "Summary only."
     end
 
     test "falls back to description when content:encoded is absent" do
-      {:ok, entries} = FeedParser.parse(@rss1_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@rss1_feed)
       first = Enum.find(entries, &(&1.guid == "https://example.com/articles/1"))
       assert first.body =~ "Article body text."
     end
 
     test "parses dc:date as ISO 8601" do
-      {:ok, entries} = FeedParser.parse(@rss1_feed)
+      {:ok, entries} = SyndicationFeedParser.parse(@rss1_feed)
       first = Enum.find(entries, &(&1.guid == "https://example.com/articles/1"))
       assert %DateTime{} = first.published_at
       assert first.published_at.year == 2024
@@ -255,7 +255,7 @@ defmodule Baudrate.Bots.FeedParserTest do
           </rss>
           """
 
-      assert {:ok, [entry]} = FeedParser.parse(feed)
+      assert {:ok, [entry]} = SyndicationFeedParser.parse(feed)
       assert entry.title == "BOM Article"
     end
   end
@@ -264,7 +264,7 @@ defmodule Baudrate.Bots.FeedParserTest do
     test "returns empty list for unrecognized content" do
       # feedparser-rs operates in lenient "bozo" mode: unrecognized content is
       # not rejected outright but returns an empty entry list instead.
-      assert {:ok, []} = FeedParser.parse("this is not xml")
+      assert {:ok, []} = SyndicationFeedParser.parse("this is not xml")
     end
 
     test "filters out entries with no guid" do
@@ -280,7 +280,7 @@ defmodule Baudrate.Bots.FeedParserTest do
       </rss>
       """
 
-      assert {:ok, entries} = FeedParser.parse(feed)
+      assert {:ok, entries} = SyndicationFeedParser.parse(feed)
       assert entries == []
     end
   end
@@ -302,7 +302,7 @@ defmodule Baudrate.Bots.FeedParserTest do
       </rss>
       """
 
-      {:ok, [entry]} = FeedParser.parse(feed)
+      {:ok, [entry]} = SyndicationFeedParser.parse(feed)
       assert is_nil(entry.published_at)
     end
 
@@ -325,7 +325,7 @@ defmodule Baudrate.Bots.FeedParserTest do
       </rss>
       """
 
-      {:ok, [entry]} = FeedParser.parse(feed)
+      {:ok, [entry]} = SyndicationFeedParser.parse(feed)
       assert is_nil(entry.published_at)
     end
   end

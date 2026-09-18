@@ -1,6 +1,8 @@
 # 0039 — The personal stream is a timeline, not a feed
 
-- **Status:** Accepted
+- **Status:** Accepted, except the "What deliberately does not change" carve-out
+  for the two RSS senses, superseded by
+  [0041](0041-rss-and-atom-are-syndication.md)
 - **Date:** 2026-09-18
 - **Deciders:** Baudrate maintainers
 - **Related:** renames the tables named in

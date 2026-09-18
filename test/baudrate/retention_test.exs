@@ -10,7 +10,7 @@ defmodule Baudrate.RetentionTest do
   import Ecto.Query
 
   alias Baudrate.Bots
-  alias Baudrate.Bots.BotFeedItem
+  alias Baudrate.Bots.BotSyndicationItem
   alias Baudrate.Content
   alias Baudrate.Content.{Article, ArticleImage, ArticleImageStorage, ArticleRevision}
   alias Baudrate.Content.{Board, Comment, CommentImage}
@@ -429,7 +429,7 @@ defmodule Baudrate.RetentionTest do
         })
 
       article = create_article(bot.user, board)
-      {:ok, ledger} = Bots.record_timeline_item(bot, "guid-#{uid}", article.id)
+      {:ok, ledger} = Bots.record_syndication_item(bot, "guid-#{uid}", article.id)
 
       soft_delete(Article, article.id, 91)
 
@@ -438,15 +438,15 @@ defmodule Baudrate.RetentionTest do
       assert articles >= 1
       refute exists?(Article, article.id)
 
-      ledger = Repo.get(BotFeedItem, ledger.id)
+      ledger = Repo.get(BotSyndicationItem, ledger.id)
 
       assert ledger,
-             "`bot_feed_items` is the (bot_id, guid) ledger that stops a feed " <>
+             "`bot_syndication_items` is the (bot_id, guid) ledger that stops a feed " <>
                "bot re-posting an entry, not a copy of the article — deleting " <>
                "the row republishes that entry"
 
       assert is_nil(ledger.article_id),
-             "`bot_feed_items.article_id` must be nilify_all: with no " <>
+             "`bot_syndication_items.article_id` must be nilify_all: with no " <>
                "on_delete it raises Ecto.ConstraintError on the first " <>
                "bot-posted article, and SessionCleaner turns that into one " <>
                "log line while every later purge never runs"

@@ -37,7 +37,7 @@ defmodule BaudrateWeb.HomeLive do
        board_ids: board_ids,
        unread_board_ids: unread_board_ids,
        page_title: gettext("Boards"),
-       feed_site: true,
+       syndication_site: true,
        linked_data_json: jsonld,
        og_meta: OpenGraph.home_tags(site_name)
      )}

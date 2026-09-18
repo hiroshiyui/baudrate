@@ -44,7 +44,7 @@ defmodule Baudrate.Application do
         Baudrate.Federation.DeliveryWorker,
         Baudrate.Federation.InboundWorker,
         Baudrate.Federation.StaleActorCleaner,
-        Baudrate.Bots.FeedWorker,
+        Baudrate.Bots.SyndicationFeedWorker,
         # The detailed health report on 127.0.0.1, when HEALTH_DETAIL_PORT is set.
         BaudrateWeb.HealthDetail.child_spec(),
         # Start to serve requests, typically the last entry

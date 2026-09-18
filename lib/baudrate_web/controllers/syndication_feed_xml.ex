@@ -1,4 +1,4 @@
-defmodule BaudrateWeb.FeedXML do
+defmodule BaudrateWeb.SyndicationFeedXML do
   @moduledoc """
   Renders RSS 2.0 and Atom 1.0 XML feeds from article data.
 
@@ -11,7 +11,7 @@ defmodule BaudrateWeb.FeedXML do
 
   require EEx
 
-  @template_dir Path.join(__DIR__, "feed_xml")
+  @template_dir Path.join(__DIR__, "syndication_feed_xml")
 
   EEx.function_from_file(:def, :render_rss, Path.join(@template_dir, "rss.xml.eex"), [:assigns])
   EEx.function_from_file(:def, :render_atom, Path.join(@template_dir, "atom.xml.eex"), [:assigns])

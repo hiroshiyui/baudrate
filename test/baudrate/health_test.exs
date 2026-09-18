@@ -106,14 +106,14 @@ defmodule Baudrate.HealthTest do
       assert %{status: :ok} = check(:workers, last_beat: fresh, monotonic_now_ms: now)
 
       stale = fn
-        :feed_worker -> now - 6 * 60_000
+        :syndication_feed_worker -> now - 6 * 60_000
         _ -> now - 1_000
       end
 
-      assert %{status: :fail, stale: [:feed_worker], workers: workers} =
+      assert %{status: :fail, stale: [:syndication_feed_worker], workers: workers} =
                check(:workers, last_beat: stale, monotonic_now_ms: now)
 
-      assert %{status: :fail, last_run_seconds: 360} = workers.feed_worker
+      assert %{status: :fail, last_run_seconds: 360} = workers.syndication_feed_worker
     end
 
     test "a worker that has not run yet is fine just after boot, and stale later" do
