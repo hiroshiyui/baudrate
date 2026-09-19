@@ -446,10 +446,15 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
-  Publishes an `Update` activity for an actor to all followers.
-  Used after key rotation to distribute the new public key.
+  Publishes an `Update` activity for an actor to all its followers.
+
+  One activity for every reason an actor document changes: a new public key
+  after rotation, a new display name, bio, avatar or profile field, a board's
+  new name or description. There is nothing to distinguish — the `Update`
+  carries the whole document either way, and a second function would be a
+  second thing to remember when a field is added.
   """
-  def publish_key_rotation(actor_type, entity) do
+  def publish_actor_updated(actor_type, entity) do
     {activity, actor_uri} = build_update_actor(actor_type, entity)
     Delivery.enqueue_for_followers(activity, actor_uri)
   end
@@ -1229,6 +1234,43 @@ defmodule Baudrate.Federation.Publisher do
 
       {activity, actor_uri}
     end)
+  end
+
+  @doc """
+  Builds an `Update(Question)` carrying a closed poll's final counts.
+
+  Returns `{activity_map, actor_uri}`.
+  """
+  def build_update_poll(poll, article) do
+    actor_uri = Federation.actor_uri(:user, article.user.username)
+    {to, cc} = article_addressing(article, actor_uri)
+
+    activity = %{
+      "@context" => @ap_context,
+      "id" => "#{actor_uri}#update-poll-#{Ecto.UUID.generate()}",
+      "type" => "Update",
+      "actor" => actor_uri,
+      "to" => to,
+      "cc" => cc,
+      "object" => Map.merge(Federation.poll_object(poll), %{"to" => to, "cc" => cc})
+    }
+
+    {activity, actor_uri}
+  end
+
+  @doc """
+  Publishes a closed poll's final counts to everyone the article reached.
+
+  Gated like any other publication: `enqueue_for_article/4` refuses an article
+  whose boards do not federate, so a poll in a private board announces
+  nothing. Mastodon shows a poll's results once it has closed, and refetches
+  the object to get them — this is what makes the numbers right for an
+  instance that does not.
+  """
+  def publish_poll_closed(poll, article) do
+    article = Repo.preload(article, [:boards, :user])
+    {activity, actor_uri} = build_update_poll(poll, article)
+    Delivery.enqueue_for_article(activity, actor_uri, article)
   end
 
   @doc """

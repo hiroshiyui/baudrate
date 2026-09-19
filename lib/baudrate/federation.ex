@@ -413,13 +413,52 @@ defmodule Baudrate.Federation do
   def rotate_keys(actor_type, entity) do
     federate(
       fn -> do_rotate(actor_type, entity) end,
-      &Publisher.publish_key_rotation(actor_type, &1)
+      &Publisher.publish_actor_updated(actor_type, &1)
     )
   end
 
   defp do_rotate(:user, user), do: KeyStore.rotate_user_keypair(user)
   defp do_rotate(:board, board), do: KeyStore.rotate_board_keypair(board)
   defp do_rotate(:site, _), do: KeyStore.rotate_site_keypair()
+
+  # --- Actor updates ---
+
+  @doc """
+  Runs a change to a user or board and tells its followers, if the change is
+  one they can see.
+
+  The test is the **rendered actor document**, not a list of fields: the change
+  is published when `Person`/`Group` JSON before and after differ, and
+  otherwise nothing is sent. That way a field added to `ActorRenderer`
+  tomorrow federates without anybody remembering to add it here, and a change
+  the document does not carry — a signature, a notification preference, a
+  `dm_access` narrowing — sends nothing, which is right: an `Update` fans out
+  to every follower's inbox.
+
+  The publish commits with the change (`federate/2`, ADR 0034), so a restart
+  cannot save a new display name and drop the activity announcing it.
+
+  There is deliberately **no debouncing**. `/profile` saves each section
+  separately, so editing four of them sends four `Update`s, and coalescing
+  them would mean holding an activity in memory — the one thing ADR 0034 says
+  publishing must not do. Profile edits are rare enough that the trade is
+  wrong in the other direction. If an instance ever sees queue pressure from
+  this, coalesce in the delivery queue where the jobs are durable, not here.
+  """
+  @spec update_actor(:user | :board, term(), (-> {:ok, term()} | {:error, term()})) ::
+          {:ok, term()} | {:error, term()}
+  def update_actor(actor_type, entity, change) when is_function(change, 0) do
+    before = render_actor(actor_type, entity)
+
+    federate(change, fn updated ->
+      if render_actor(actor_type, updated) != before do
+        Publisher.publish_actor_updated(actor_type, updated)
+      end
+    end)
+  end
+
+  defp render_actor(:user, user), do: user_actor(user)
+  defp render_actor(:board, board), do: board_actor(board)
 
   # --- Durable publishing ---
 

@@ -126,9 +126,18 @@ defmodule Baudrate.Auth.Profiles do
   end
 
   # A restricted account cannot change what other people read on its profile.
+  #
+  # The same wrapper tells the account's remote followers, because the parts a
+  # sanction protects and the parts an `Update(Person)` carries are the same
+  # parts — what other people read (ADR 0051's sibling case: the profile is
+  # published, so a change to it has to be). `Federation.update_actor/3`
+  # compares the rendered document and sends nothing when it is unchanged, so
+  # the three functions below that do *not* appear in a `Person` — locales,
+  # notification preferences, `dm_access` — keep going through the plain path
+  # and cost nothing.
   defp with_interaction(user, fun) do
     case Sanctions.ensure_can_interact(user) do
-      :ok -> fun.()
+      :ok -> Baudrate.Federation.update_actor(:user, user, fun)
       {:error, _reason} = error -> error
     end
   end

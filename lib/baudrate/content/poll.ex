@@ -28,6 +28,9 @@ defmodule Baudrate.Content.Poll do
     # The `<article-uri>#poll` URI this poll carried before Phase 3B rewrote
     # it (ADR 0050). Not castable: set only by the backfill.
     field :legacy_ap_id, :string
+    # When the closed poll's final counts were published. Not castable: the
+    # hourly sweep is the only writer.
+    field :final_update_sent_at, :utc_datetime
 
     belongs_to :article, Article
     has_many :options, PollOption, preload_order: [asc: :position]

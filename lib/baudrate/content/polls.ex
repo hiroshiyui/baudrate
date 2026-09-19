@@ -50,6 +50,52 @@ defmodule Baudrate.Content.Polls do
   end
 
   @doc """
+  Publishes final counts for every local poll that has closed since the last
+  run, and marks it so the announcement happens once.
+
+  Runs hourly from `Auth.SessionCleaner`. A poll has no "closed" state —
+  `Poll.closed?/1` reads the clock, deliberately — so this is the one place
+  that treats closing as an *event*, and `final_update_sent_at` is what makes
+  it happen exactly once rather than every hour or, on a missed run, never.
+
+  Remote polls are skipped: their counts are the originating instance's to
+  announce, and ours would be a claim about somebody else's object.
+
+  Returns the number of polls announced.
+  """
+  @spec sweep_closed_polls() :: non_neg_integer()
+  def sweep_closed_polls do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    from(p in Poll,
+      join: a in Baudrate.Content.Article,
+      on: a.id == p.article_id,
+      where:
+        is_nil(p.final_update_sent_at) and not is_nil(p.closes_at) and p.closes_at <= ^now and
+          is_nil(a.remote_actor_id) and is_nil(a.deleted_at),
+      select: p.id
+    )
+    |> Repo.all()
+    |> Enum.reduce(0, fn poll_id, sent -> announce_closed_poll(poll_id, now, sent) end)
+  end
+
+  defp announce_closed_poll(poll_id, now, sent) do
+    poll = Poll |> Repo.get(poll_id) |> Repo.preload([:options, article: [:boards, :user]])
+
+    if poll && poll.article do
+      # Stamped whether or not the gate lets the activity out: the question
+      # this column answers is "has this poll's close been handled", and a
+      # poll in a private board has been handled by deciding not to announce
+      # it. Stamping only on delivery would retry it every hour for ever.
+      Baudrate.Federation.Publisher.publish_poll_closed(poll, poll.article)
+      poll |> Ecto.Changeset.change(final_update_sent_at: now) |> Repo.update()
+      sent + 1
+    else
+      sent
+    end
+  end
+
+  @doc """
   Ensures a poll's `:options` association is loaded.
   """
   def preload_poll_options(%Poll{} = poll), do: Repo.preload(poll, :options)

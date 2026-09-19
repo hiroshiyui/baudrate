@@ -787,7 +787,7 @@ defmodule Baudrate.Federation.PublisherTest do
     end
   end
 
-  describe "publish_key_rotation/2" do
+  describe "publish_actor_updated/2" do
     test "creates delivery jobs with Update activity for board actor" do
       board = create_board()
       remote = create_remote_actor()
@@ -796,7 +796,7 @@ defmodule Baudrate.Federation.PublisherTest do
 
       Repo.delete_all(Baudrate.Federation.DeliveryJob)
 
-      Publisher.publish_key_rotation(:board, board)
+      Publisher.publish_actor_updated(:board, board)
 
       jobs = Repo.all(Baudrate.Federation.DeliveryJob)
       assert length(jobs) == 1

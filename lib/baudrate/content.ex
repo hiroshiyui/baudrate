@@ -338,6 +338,7 @@ defmodule Baudrate.Content do
 
   defdelegate get_poll_for_article(article_id), to: Polls
   defdelegate get_poll_by_ap_id(ap_id), to: Polls
+  defdelegate sweep_closed_polls(), to: Polls
   defdelegate preload_poll_options(poll), to: Polls
   defdelegate get_user_poll_votes(poll_id, user_id), to: Polls
   defdelegate cast_vote(poll, user, option_ids), to: Polls

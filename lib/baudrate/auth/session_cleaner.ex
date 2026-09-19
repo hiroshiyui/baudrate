@@ -36,6 +36,9 @@ defmodule Baudrate.Auth.SessionCleaner do
     * Ended sanctions — sends the "it has ended" notice (ADR 0029)
     * Closed report evidence — clears the kept copy 90 days after a report
       closes (P1-D6, `Moderation.purge_closed_report_evidence/0`)
+    * Closed polls — publishes `Update(Question)` with the final counts once
+      per poll (`Content.sweep_closed_polls/0`). A poll has no stored "closed"
+      state, so this is the one place that treats closing as an event.
     * **Retention** — deletes timeline items older than 90 days that nobody
       touched, `announces` older than 180 days, and articles and comments 90
       days after `deleted_at`, with their image files
@@ -97,6 +100,7 @@ defmodule Baudrate.Auth.SessionCleaner do
       cleanup_old_notifications: &cleanup_old_notifications/0,
       notify_ended_sanctions: &notify_ended_sanctions/0,
       purge_closed_report_evidence: &Baudrate.Moderation.purge_closed_report_evidence/0,
+      announce_closed_polls: &Baudrate.Content.sweep_closed_polls/0,
       retention: &retention/0
     ]
     |> Enum.each(fn {name, step} -> run_step(name, step) end)

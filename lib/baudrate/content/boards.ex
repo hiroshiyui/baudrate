@@ -156,13 +156,23 @@ defmodule Baudrate.Content.Boards do
 
   @doc """
   Updates a board using `update_changeset` (slug excluded).
+
+  A board is a `Group` actor, so a change to its name, description or avatar
+  is a change remote followers should see. `Federation.update_actor/3` sends
+  an `Update(Group)` when the rendered document differs and nothing when it
+  does not — so editing a board's `min_role_to_post`, which no peer can see,
+  costs no delivery. The activity commits with the change (ADR 0034); the
+  cache refresh stays outside, because it must happen after the commit and
+  has nothing to do with federation.
   """
   @spec update_board(%Board{}, map()) :: {:ok, %Board{}} | {:error, Ecto.Changeset.t()}
   def update_board(%Board{} = board, attrs) do
     result =
-      board
-      |> Board.update_changeset(attrs)
-      |> Repo.update()
+      Baudrate.Federation.update_actor(:board, board, fn ->
+        board
+        |> Board.update_changeset(attrs)
+        |> Repo.update()
+      end)
 
     with {:ok, _} <- result, true <- board_cache_enabled?() do
       BoardCache.refresh()
