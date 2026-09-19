@@ -214,15 +214,27 @@ a:focus-visible {
 }
 
 /* Touch/tap feedback for interactive cards (mirrors focus-visible highlight).
-   On release the shadow blurs outward and fades to transparent. */
-a.card,
-.card:has(> .card-body > .stretched-link) {
+   On release the shadow blurs outward and fades to transparent.
+
+   `.tappable-card` marks a card the reader can press as a whole, in the two
+   shapes that exist: the card *is* the link (board and sub-board cards, link
+   previews), or it holds a `.stretched-link` that covers it (board article
+   cards). Those two need different pressed selectors, which is why the second
+   rule is not simply `:active`: an article card also holds independently
+   clickable links (`board-article-author`, `relative z-10`), and `:active`
+   propagates to ancestors, so pressing the author would flash the whole card.
+   `:has(.stretched-link:active)` asks whether the *card's own* link is
+   pressed, and `:not(:has(.stretched-link))` is what tells the first shape
+   from the second. Previously written as `.card:has(> .card-body >
+   .stretched-link)` — the `.card > .card-body` chain ADR 0018 names as the
+   anti-pattern, by example. */
+.tappable-card {
   box-shadow: inset 0 0 0 0 transparent;
   transition: box-shadow 0.4s ease-out;
 }
 
-a.card:active,
-.card:has(> .card-body > .stretched-link:active) {
+.tappable-card:not(:has(.stretched-link)):active,
+.tappable-card:has(.stretched-link:active) {
   box-shadow: inset 0 0 0 1px var(--color-primary);
   border-radius: var(--radius-box);
   transition: none;
@@ -300,8 +312,7 @@ a.card:active,
    scroll-to-top FAB, no fade on the card tap feedback, no sliding theme-toggle
    indicator. State changes still happen — only the animation is dropped. */
 @media (prefers-reduced-motion: reduce) {
-  a.card,
-  .card:has(> .card-body > .stretched-link),
+  .tappable-card,
   #scroll-to-top-btn,
   #scroll-to-top-btn.visible,
   #theme-toggle,

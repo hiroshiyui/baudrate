@@ -1124,7 +1124,7 @@ defmodule BaudrateWeb.CoreComponents do
       href={@preview.url}
       target="_blank"
       rel="nofollow noopener noreferrer"
-      class="link-preview-card link-preview-failed card bg-base-200 not-prose overflow-hidden border border-base-300 mt-3 max-w-lg block"
+      class="link-preview-card link-preview-failed tappable-card card bg-base-200 not-prose overflow-hidden border border-base-300 mt-3 max-w-lg block"
       aria-label={gettext("Link preview")}
     >
       <div class="card-body p-3">
@@ -1141,7 +1141,7 @@ defmodule BaudrateWeb.CoreComponents do
       href={@preview.url}
       target="_blank"
       rel="nofollow noopener noreferrer"
-      class="link-preview-card link-preview-fetched card card-side bg-base-200 not-prose overflow-hidden border border-base-300 mt-3 max-w-lg"
+      class="link-preview-card link-preview-fetched tappable-card card card-side bg-base-200 not-prose overflow-hidden border border-base-300 mt-3 max-w-lg"
       aria-label={gettext("Link preview: %{title}", title: @preview.title || @preview.url)}
     >
       <figure :if={@preview.image_path} class="link-preview-figure w-32 shrink-0">
