@@ -213,7 +213,8 @@ The rendered page: accessibility, localisation, and the CSP.
 | Every phx-hook name used in a template is registered with the LiveSocket in assets/js/app.js | [0017](adr/0017-tailwind-daisyui-esbuild-asset-pipeline.md) | — | [`js_hooks_registered_test.exs`](../test/baudrate_web/js_hooks_registered_test.exs) |
 | The build depends on no npm package: the repo carries no package.json and no node_modules | [0017](adr/0017-tailwind-daisyui-esbuild-asset-pipeline.md) | — | **none** |
 | Every meaningful element in a page template carries a stable, semantic id and/or class | [0018](adr/0018-semantic-ids-and-classes-for-accessibility.md) | — | **none** |
-| Custom CSS targets semantic id/class selectors, never structural or positional ones | [0018](adr/0018-semantic-ids-and-classes-for-accessibility.md) | — | **none** |
+| An id is unique per rendered page, and a :for item derives its id from the record it renders | [0018](adr/0018-semantic-ids-and-classes-for-accessibility.md) | — | [`semantic_anchors_test.exs`](../test/baudrate_web/semantic_anchors_test.exs) |
+| Custom CSS targets semantic id/class selectors, never structural or positional ones | [0018](adr/0018-semantic-ids-and-classes-for-accessibility.md) | — | [`semantic_anchors_test.exs`](../test/baudrate_web/semantic_anchors_test.exs) |
 | No translation interpolates a binding its msgid does not provide | [0019](adr/0019-gettext-i18n-no-bare-strings.md) | — | [`gettext_interpolation_test.exs`](../test/baudrate_web/gettext_interpolation_test.exs) |
 | No user-visible string is written bare; every one goes through gettext() | [0019](adr/0019-gettext-i18n-no-bare-strings.md) | — | **none** |
 | A role or status enum value renders through the shared translate_* helper everywhere it appears | [0019](adr/0019-gettext-i18n-no-bare-strings.md) | `BaudrateWeb.Helpers.translate_role/1`, `BaudrateWeb.Helpers.translate_status/1` | [`helpers_test.exs`](../test/baudrate_web/helpers_test.exs) |
@@ -245,8 +246,7 @@ place where drift would be silent.
 | External callers use the context facade (Auth.f/n, Federation.f/n) and never reach into its sub-modules | [0002](adr/0002-context-facades.md) | Superseded in practice by [0047](adr/0047-the-facade-lists-every-way-a-context-changes-the-world.md), which narrows the rule and explains why it is a judgement rather than a test. |
 | Sanitization, Open Graph parsing and feed parsing are Rust NIFs via Rustler, not pure-Elixir libraries | [0005](adr/0005-rust-nifs-for-untrusted-parsing.md) | A dependency choice. The NIFs either compile or they do not. |
 | The build depends on no npm package: the repo carries no package.json and no node_modules | [0017](adr/0017-tailwind-daisyui-esbuild-asset-pipeline.md) | The absence of `package.json` is the invariant; a test asserting a file does not exist would pass vacuously forever. |
-| Every meaningful element in a page template carries a stable, semantic id and/or class | [0018](adr/0018-semantic-ids-and-classes-for-accessibility.md) | No automated check exists anywhere under `test/`. The rule is real and entirely review-held — the largest untested invariant in the project. |
-| Custom CSS targets semantic id/class selectors, never structural or positional ones | [0018](adr/0018-semantic-ids-and-classes-for-accessibility.md) | No automated check exists anywhere under `test/`. The rule is real and entirely review-held — the largest untested invariant in the project. |
+| Every meaningful element in a page template carries a stable, semantic id and/or class | [0018](adr/0018-semantic-ids-and-classes-for-accessibility.md) | "Meaningful" is a judgement — it excludes presentational wrappers and leaf components, and no test draws that line. Measured: 23 of 118 `:for` elements carry no class, nearly all legitimately, so an approximating gate would fail the build for correct code. The *uniqueness* and *stylesheet* halves of 0018 are gated; this half is review-held. |
 | No user-visible string is written bare; every one goes through gettext() | [0019](adr/0019-gettext-i18n-no-bare-strings.md) | `gettext_interpolation_test.exs` checks only that no translation interpolates a binding its msgid lacks. Nothing detects a bare English string, and there is no locale-parity check. |
 | CI jobs start only in the image digest recorded in image.lock, after attestation verification of that digest | [0027](adr/0027-ci-runs-in-a-pinned-attested-image.md) | Enforced by CI workflows and `verify-toolchain.sh`, outside the Elixir suite. |
 | Every job re-verifies the image's toolchain against the project's own version pins before running | [0027](adr/0027-ci-runs-in-a-pinned-attested-image.md) | Enforced by CI workflows and `verify-toolchain.sh`, outside the Elixir suite. |
@@ -262,4 +262,4 @@ place where drift would be silent.
 
 ---
 
-136 rows across 50 records, 83 distinct gates, 18 ungated. Generated and verified 2026-09-19.
+137 rows across 50 records, 84 distinct gates, 17 ungated. Generated and verified 2026-09-19.
