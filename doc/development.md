@@ -1915,6 +1915,30 @@ budget for the step. `HTTPClient.get/2`, `ActorResolver.resolve/2` and
 `Discovery.lookup_remote_actor/2` take an optional `:timeout` that can only
 shorten the configured ceiling.
 
+**Actor updates.** `Federation.update_actor/3` runs a change to a user or
+board and publishes `Update(Person)` / `Update(Group)` to its followers — but
+only when the **rendered actor document** differs before and after. Comparing
+documents rather than a list of fields means a field added to `ActorRenderer`
+federates with nothing to remember, and a change the document does not carry
+costs no fan-out:
+
+| Changed | Published? |
+|---|---|
+| display name, bio, avatar, profile fields | yes |
+| board name, description, avatar, parent | yes |
+| public key (rotation) | yes — the same activity, `Publisher.publish_actor_updated/2` |
+| signature, notification preferences, `dm_access`, preferred locales | no — not in a `Person` |
+| a board's `min_role_to_post` | no — not in a `Group` |
+
+The chokepoints are `Auth.Profiles`'s `with_interaction/2` (which already
+gates on sanctions: the parts a sanction protects and the parts an `Update`
+carries are the same parts) and `Content.Boards.update_board/2`. The publish
+commits with the change (`federate/2`), and there is deliberately no
+debouncing — see the function's own documentation for why.
+
+`Delete(Person)` is not sent, and ships with self-service account deletion
+(6E).
+
 **Discovery endpoints:**
 - `/.well-known/webfinger` — resolve `acct:site@host` (instance actor), `acct:user@host` (user), or `acct:board-slug@host` (board, also accepts `!` prefix for Lemmy compat); site and board responses include `properties` with actor type (`"Organization"` / `"Group"`)
 - `/.well-known/nodeinfo` → `/nodeinfo/2.1` — instance metadata

@@ -9,15 +9,46 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
-Phase 3 (federation reach), stages 3B and 3A.
+Phase 3 (federation reach), stages 3B, 3A and 3D.
 
-**Upgrading:** one migration, and **one release task that must be run**:
+**Upgrading:** two migrations, and **one release task that must be run**:
 `bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"` (see
 `doc/sysop.md`, "Data Repair: `ap_id` Backfill"). Until it runs, comments
 created before the upgrade keep their old IDs and stay unthreadable from other
 instances; nothing breaks either way, and the task is idempotent and resumable.
 
 ### Added
+
+- **A profile or board edit reaches followers.** Changing a display name, bio,
+  avatar or profile field now sends `Update(Person)`; changing a board's name,
+  description or avatar sends `Update(Group)`. Both were silent before, so a
+  remote instance kept whatever it first saw until it happened to refresh the
+  actor.
+
+  The test is the **rendered actor document**, not a list of fields: the
+  activity goes out when the `Person`/`Group` JSON differs before and after,
+  and otherwise nothing is sent. So a field added to `ActorRenderer` tomorrow
+  federates with nothing to remember, and a change the document does not carry
+  — a signature, a notification preference, a narrowed `dm_access`, a board's
+  `min_role_to_post` — costs no fan-out at all. The publish commits with the
+  change, so a restart cannot save a new name and drop the activity announcing
+  it.
+
+  There is deliberately **no debouncing**. `/profile` saves each section
+  separately, so editing four of them sends four `Update`s; coalescing them
+  would mean holding an activity in memory, which is the one thing ADR 0034
+  says publishing must not do. Profile edits are rare enough that the trade
+  goes the other way. An instance that ever sees queue pressure from this
+  should coalesce in the delivery queue, where the jobs are durable.
+
+- **A closed poll publishes its final counts**, once, from a new hourly
+  `announce_closed_polls` step. A poll has no stored "closed" state — it
+  closes by the clock, like a sanction expires — so this is the one place that
+  treats closing as an event, and a new `polls.final_update_sent_at` is what
+  makes it happen exactly once rather than every hour or, on a missed run,
+  never. Gated like any other publication: a poll in a private board announces
+  nothing (but is still marked, because deciding not to announce is a way of
+  having handled it).
 
 - **A reply threads where it belongs.** A comment's `inReplyTo` names its
   **parent comment** rather than the article, so a Mastodon user sees who is
@@ -135,6 +166,10 @@ instances; nothing breaks either way, and the task is idempotent and resumable.
   ADR 0051 gate, which is the argument for having one.
 - `Notification.Hooks` reads local mentions through `Mentions.extract/1`, so a
   member named in the long form `@alice@this.host` is notified like `@alice`.
+- `Publisher.publish_key_rotation/2` is now `publish_actor_updated/2`. A new
+  public key and a new display name are the same activity carrying the same
+  document, and two names for it would be two things to remember when a field
+  is added.
 
 ## [1.30.0] — 2026-09-19
 

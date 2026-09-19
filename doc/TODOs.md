@@ -225,12 +225,22 @@ Operators must run `Baudrate.Release.backfill_ap_ids()` once after the upgrade
   - Each wrapped activity passes the same origin checks as a direct delivery, and is fetched by id when it is not embedded.
 - [ ] **Interop tests** with recorded Lemmy fixtures, both for a Lemmy community a board follows and for a Lemmy user who follows a board.
 
-### 3D — Profile, board and poll updates (S)
+### ~~3D — Profile, board and poll updates~~ — **done** (unreleased)
 
-- [ ] **`Update(Person)`** when avatar, display name, bio or profile fields change, debounced.
-- [ ] **`Update(Group)`** when a board's name, description or avatar changes.
-- [ ] **`Update(Question)`** with final counts when a poll closes.
-- [ ] **`Delete(Person)`** ships with self-service account deletion (6E).
+`Update(Person)` and `Update(Group)` go out whenever the rendered actor
+document changes — comparing documents rather than listing fields, so a field
+added to `ActorRenderer` federates by itself and a change no peer can see
+costs no fan-out. `Update(Question)` with final counts is published once per
+poll by a new hourly `SessionCleaner` step.
+
+**Not debounced**, against the drafted plan: `/profile` saves each section
+separately, so editing four sends four `Update`s. Coalescing would mean
+holding an activity in memory, which [ADR 0034](adr/0034-federation-work-is-committed-before-it-is-acknowledged.md)
+forbids, and profile edits are rare enough that the trade goes the other way.
+If an instance ever sees queue pressure from this, coalesce in the delivery
+queue where the jobs are durable.
+
+**`Delete(Person)`** still ships with self-service account deletion (6E).
 
 ### 3E — Content warnings and media (M)
 
