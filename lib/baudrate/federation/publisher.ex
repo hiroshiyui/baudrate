@@ -178,39 +178,18 @@ defmodule Baudrate.Federation.Publisher do
 
   Returns `{activity_map, actor_uri}`.
   """
-  def build_create_comment(comment, article) do
-    comment = Repo.preload(comment, [:user, :images])
-    # `:boards` as well as `:user` — `mentioned_in_comment/2` asks the board
-    # gate, and `article_boards_federated?/1` fails closed on an unloaded
-    # association, so without this every comment mention was silently dropped.
-    article = Repo.preload(article, [:user, :boards])
+  def build_create_comment(comment, _article) do
+    comment = Repo.preload(comment, :user)
     actor_uri = Federation.actor_uri(:user, comment.user.username)
-    note_uri = comment_ap_id_or_derive(comment)
 
-    note_url =
-      comment.url ||
-        "#{Federation.base_url()}/articles/#{article.slug}#comment-#{comment.id}"
-
-    mentioned = mentioned_in_comment(comment, article)
-    {to, cc} = visibility_addressing(comment.visibility, "#{actor_uri}/followers")
-    cc = Enum.uniq(cc ++ Mentions.uris(mentioned))
-
-    note_object =
-      %{
-        "id" => note_uri,
-        "type" => "Note",
-        "url" => note_url,
-        "content" => comment.body_html || comment.body,
-        "attributedTo" => actor_uri,
-        # The parent comment when there is one, so the reply threads where it
-        # belongs instead of flat under the article (ADR 0051).
-        "inReplyTo" => ObjectBuilder.reply_target_uri(comment, article),
-        "published" => DateTime.to_iso8601(comment.inserted_at),
-        "to" => to,
-        "cc" => cc
-      }
-      |> maybe_put_mention_tags(mentioned)
-      |> maybe_put_comment_attachments(comment)
+    # `ObjectBuilder.comment_object/1` is the one definition of what a comment
+    # looks like as ActivityPub — the same map `/ap/comments/:id` serves. This
+    # used to build its own copy, and the copy is what made every addition
+    # (mention tags, then content warnings) a thing to remember twice.
+    # Addressing is the activity's to decide, so it is overwritten here, as
+    # `build_create_article/1` does.
+    object = ObjectBuilder.comment_object(comment)
+    {to, cc} = {object["to"], object["cc"]}
 
     activity = %{
       "@context" => Context.activity(),
@@ -220,7 +199,7 @@ defmodule Baudrate.Federation.Publisher do
       "published" => DateTime.to_iso8601(comment.inserted_at),
       "to" => to,
       "cc" => cc,
-      "object" => note_object
+      "object" => object
     }
 
     {activity, actor_uri}
@@ -1322,6 +1301,7 @@ defmodule Baudrate.Federation.Publisher do
         "to" => [@as_public],
         "cc" => ["#{actor_uri}/followers"]
       }
+      |> maybe_put_content_warning(reply)
       |> maybe_put_reply_attachments(reply)
 
     activity = %{
@@ -1529,24 +1509,22 @@ defmodule Baudrate.Federation.Publisher do
 
   defp maybe_add_in_reply_to(object, _message), do: object
 
-  defp maybe_put_comment_attachments(note_object, %{images: images})
-       when is_list(images) and images != [] do
-    Map.put(note_object, "attachment", build_image_attachments(images))
-  end
-
-  defp maybe_put_comment_attachments(note_object, _comment), do: note_object
-
-  defp maybe_put_mention_tags(note_object, []), do: note_object
-
-  defp maybe_put_mention_tags(note_object, mentioned),
-    do: Map.put(note_object, "tag", Mentions.tags(mentioned))
-
   defp maybe_put_reply_attachments(note_object, %{images: images})
        when is_list(images) and images != [] do
     Map.put(note_object, "attachment", build_image_attachments(images))
   end
 
   defp maybe_put_reply_attachments(note_object, _reply), do: note_object
+
+  defp maybe_put_content_warning(note_object, record) do
+    if Baudrate.Content.ContentWarning.warned?(record) do
+      note_object
+      |> Map.put("sensitive", true)
+      |> then(fn o -> if record.summary, do: Map.put(o, "summary", record.summary), else: o end)
+    else
+      note_object
+    end
+  end
 
   # Returns the comment's stored AP ID, or derives the canonical one when the
   # stored value is missing. Defends against publishers emitting

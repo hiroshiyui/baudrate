@@ -186,7 +186,7 @@ defmodule Baudrate.Federation.ObjectResolverTest do
       assert {:error, :missing_id} = ObjectResolver.fetch(@remote_object_ap_id)
     end
 
-    test "prepends content warning when sensitive with summary" do
+    test "carries a content warning as fields, not glued onto the body" do
       {_actor, public_pem} = insert_remote_actor()
 
       object_json =
@@ -200,8 +200,13 @@ defmodule Baudrate.Federation.ObjectResolverTest do
       stub_object_and_actor(object_json, actor_json)
 
       assert {:ok, preview} = ObjectResolver.fetch(@remote_object_ap_id)
-      assert preview.body =~ "[CW: Spoiler Alert]"
+
+      # ADR 0052: the warning is a field, so something can render the body
+      # behind it. Prefixing made the two indistinguishable.
+      assert preview.summary == "Spoiler Alert"
+      assert preview.sensitive
       assert preview.body =~ "Spoiler content"
+      refute preview.body =~ "[CW:"
     end
 
     test "returns error when fetch fails with HTTP error" do
@@ -358,7 +363,7 @@ defmodule Baudrate.Federation.ObjectResolverTest do
       assert article.forwardable == true
     end
 
-    test "content warning is included in materialized article body" do
+    test "a materialized article stores its content warning in its own fields" do
       {_actor, public_pem} = insert_remote_actor()
 
       object_json =
@@ -372,8 +377,11 @@ defmodule Baudrate.Federation.ObjectResolverTest do
       stub_object_and_actor(object_json, actor_json)
 
       assert {:ok, article} = ObjectResolver.resolve(@remote_object_ap_id)
-      assert article.body =~ "[CW: NSFW]"
+
+      assert article.summary == "NSFW"
+      assert article.sensitive
       assert article.body =~ "NSFW content"
+      refute article.body =~ "[CW:"
     end
   end
 end

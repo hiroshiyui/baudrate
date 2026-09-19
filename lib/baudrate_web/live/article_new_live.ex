@@ -284,7 +284,7 @@ defmodule BaudrateWeb.ArticleNewLive do
     # `published_at`, ...) is server-owned and must not come from the client.
     attrs =
       params
-      |> Map.take(~w(title body forwardable visibility))
+      |> Map.take(~w(title body forwardable visibility summary))
       |> Map.put("slug", slug)
       |> Map.put("user_id", user.id)
 

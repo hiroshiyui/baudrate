@@ -133,7 +133,11 @@ defmodule Baudrate.Federation.ObjectBuilderTest do
       assert object["source"]["content"] == "Some **body** text"
     end
 
-    test "summarises the body as plain text, stripped of Markdown", %{user: user, board: board} do
+    # `summary` is the content warning and nothing else (ADR 0052). It used to
+    # be a 500-character excerpt of the body, and Mastodon maps `summary` to
+    # `spoiler_text` for every object type — so every article arrived there
+    # hidden behind a "content warning" that was its own opening paragraph.
+    test "no content warning, no summary", %{user: user, board: board} do
       body = """
       # A heading
 
@@ -142,19 +146,25 @@ defmodule Baudrate.Federation.ObjectBuilderTest do
 
       object = create_article(user, board, %{body: body}) |> ObjectBuilder.article_object()
 
-      assert object["summary"] =~ "A heading"
-      assert object["summary"] =~ "link"
-      refute object["summary"] =~ "**"
-      refute object["summary"] =~ "https://example.com"
-      refute object["summary"] =~ "#"
+      refute Map.has_key?(object, "summary")
+      refute Map.has_key?(object, "sensitive")
+      assert object["content"] =~ "A heading"
     end
 
-    test "truncates a long summary at a word boundary", %{user: user, board: board} do
+    test "a long body is not turned into one", %{user: user, board: board} do
       body = String.duplicate("word ", 500)
       object = create_article(user, board, %{body: body}) |> ObjectBuilder.article_object()
 
-      assert String.length(object["summary"]) <= 501
-      assert String.ends_with?(object["summary"], "…")
+      refute Map.has_key?(object, "summary")
+    end
+
+    test "a content warning is published as summary plus sensitive",
+         %{user: user, board: board} do
+      article = create_article(user, board, %{body: "Body", summary: "Spoilers"})
+      object = ObjectBuilder.article_object(article)
+
+      assert object["summary"] == "Spoilers"
+      assert object["sensitive"] == true
     end
 
     test "omits `updated` until the article is genuinely edited", %{user: user, board: board} do

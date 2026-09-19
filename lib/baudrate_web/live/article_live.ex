@@ -929,7 +929,7 @@ defmodule BaudrateWeb.ArticleLive do
     # the author of) a comment in a board the user cannot see.
     attrs =
       params
-      |> Map.take(~w(body visibility))
+      |> Map.take(~w(body visibility summary))
       |> Map.put("article_id", article.id)
       |> Map.put("user_id", user.id)
       |> Map.put("parent_id", replying_to)

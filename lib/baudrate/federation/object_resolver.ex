@@ -68,6 +68,11 @@ defmodule Baudrate.Federation.ObjectResolver do
          body: body,
          body_html: body_html,
          visibility: visibility,
+         # The preview carries the warning as a field too, so the import
+         # screen can show it standing in front of the body rather than
+         # rendering the body with a label glued on (ADR 0052).
+         summary: object["summary"],
+         sensitive: object["sensitive"] == true,
          url: extract_source_url(object),
          published_at: parse_published(object),
          remote_actor: remote_actor,
@@ -216,7 +221,10 @@ defmodule Baudrate.Federation.ObjectResolver do
         remote_actor_id: remote_actor.id,
         visibility: visibility,
         url: source_url,
-        forwardable: visibility in ["public", "unlisted"]
+        forwardable: visibility in ["public", "unlisted"],
+        # Stored in its own fields, not glued onto the body (ADR 0052).
+        summary: object["summary"],
+        sensitive: object["sensitive"] == true
       }
 
       # Empty board_ids = no board routing = loop-safe
@@ -257,15 +265,8 @@ defmodule Baudrate.Federation.ObjectResolver do
           ""
       end
 
-    prepend_content_warning(raw, object)
+    raw
   end
-
-  defp prepend_content_warning(body, %{"sensitive" => true, "summary" => summary})
-       when is_binary(summary) and summary != "" do
-    "[CW: #{summary}]\n\n#{body}"
-  end
-
-  defp prepend_content_warning(body, _object), do: body
 
   defp strip_html(html) when is_binary(html) do
     html

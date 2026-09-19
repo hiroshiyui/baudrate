@@ -28,6 +28,9 @@ defmodule Baudrate.Federation.TimelineItemReply do
     field :body, :string
     field :body_html, :string
     field :ap_id, :string
+    # Content warning (ADR 0052) — see `Baudrate.Content.ContentWarning`.
+    field :summary, :string
+    field :sensitive, :boolean, default: false
 
     has_many :images, TimelineItemReplyImage, foreign_key: :reply_id
 
@@ -45,7 +48,11 @@ defmodule Baudrate.Federation.TimelineItemReply do
   """
   def changeset(reply, attrs) do
     reply
-    |> cast(attrs, @required_fields ++ @optional_fields)
+    |> cast(
+      attrs,
+      @required_fields ++ @optional_fields ++ Baudrate.Content.ContentWarning.fields()
+    )
+    |> Baudrate.Content.ContentWarning.validate()
     |> validate_required(@required_fields)
     |> validate_length(:body, max: 10_000)
     |> foreign_key_constraint(:timeline_item_id)

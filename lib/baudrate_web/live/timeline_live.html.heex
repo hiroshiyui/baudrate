@@ -478,16 +478,28 @@
             {item.timeline_item.title}
           </h2>
 
-          <p class="timeline-item-body text-sm text-base-content/80 line-clamp-3 break-words">
+          <.content_warning
+            :if={Baudrate.Content.ContentWarning.warned?(item.timeline_item)}
+            id={"timeline-item-#{item.timeline_item.id}-content-warning"}
+            summary={item.timeline_item.summary}
+          >
+            <p class="timeline-item-body text-sm text-base-content/80 break-words">
+              {digest(item.timeline_item.body_html)}
+            </p>
+          </.content_warning>
+          <p
+            :if={!Baudrate.Content.ContentWarning.warned?(item.timeline_item)}
+            class="timeline-item-body text-sm text-base-content/80 line-clamp-3 break-words"
+          >
             {digest(item.timeline_item.body_html)}
           </p>
 
           <div
-            :if={item.timeline_item.attachments != []}
+            :if={timeline_images(item.timeline_item) != []}
             class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"
           >
             <a
-              :for={att <- item.timeline_item.attachments}
+              :for={att <- timeline_images(item.timeline_item)}
               href={att["url"]}
               target="_blank"
               rel="nofollow noopener noreferrer"
@@ -498,6 +510,22 @@
                 class="w-full aspect-square object-cover rounded-lg border border-base-300"
                 loading="lazy"
               />
+            </a>
+          </div>
+
+          <%!-- Video and audio are links, never players: proxying arbitrarily
+          large files is not what the media proxy is for, and embedding them
+          would be the hotlink it exists to prevent (ADR 0052). --%>
+          <div :if={timeline_media(item.timeline_item) != []} class="flex flex-col gap-1 mt-2">
+            <a
+              :for={att <- timeline_media(item.timeline_item)}
+              href={att["url"]}
+              target="_blank"
+              rel="nofollow noopener noreferrer"
+              class="timeline-item-media-link btn btn-ghost btn-xs justify-start gap-2"
+            >
+              <.icon name="hero-play-circle" class="size-4 shrink-0" />
+              <span class="truncate">{att["name"] || gettext("Media attachment")}</span>
             </a>
           </div>
 
@@ -734,7 +762,20 @@
                   <span class="text-xs text-base-content/60 ml-1">
                     {format_datetime(reply.inserted_at)}
                   </span>
-                  <p class="text-sm text-base-content/80 mt-0.5">{digest(reply.body_html)}</p>
+                  <.content_warning
+                    :if={Baudrate.Content.ContentWarning.warned?(reply)}
+                    id={"timeline-reply-#{reply.id}-content-warning"}
+                    class="mt-0.5"
+                    summary={reply.summary}
+                  >
+                    <p class="text-sm text-base-content/80">{digest(reply.body_html)}</p>
+                  </.content_warning>
+                  <p
+                    :if={!Baudrate.Content.ContentWarning.warned?(reply)}
+                    class="text-sm text-base-content/80 mt-0.5"
+                  >
+                    {digest(reply.body_html)}
+                  </p>
                   <%!-- Reply image gallery --%>
                   <div
                     :if={is_list(reply.images) && reply.images != []}
@@ -789,6 +830,15 @@
                 rows={6}
                 placeholder={gettext("Write a reply...")}
                 aria-label={gettext("Write a reply...")}
+              />
+              <.input
+                id={"timeline-reply-content-warning-#{item.timeline_item.id}"}
+                field={@reply_form[:summary]}
+                type="text"
+                placeholder={gettext("Content warning (optional)")}
+                maxlength="512"
+                class="input-sm content-warning-input"
+                aria-label={gettext("Content warning")}
               />
               <%!-- Image upload for reply --%>
               <BaudrateWeb.CommentComponents.reply_image_upload_area

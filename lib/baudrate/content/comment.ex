@@ -33,6 +33,9 @@ defmodule Baudrate.Content.Comment do
     field :legacy_ap_id, :string
     field :url, :string
     field :visibility, :string, default: "public"
+    # Content warning (ADR 0052) — see `Baudrate.Content.ContentWarning`.
+    field :summary, :string
+    field :sensitive, :boolean, default: false
     field :deleted_at, :utc_datetime
     # Who deleted it: the author, or the moderator who removed it (1B).
     field :deleted_by_id, :id
@@ -60,7 +63,12 @@ defmodule Baudrate.Content.Comment do
   """
   def changeset(comment, attrs) do
     comment
-    |> cast(attrs, [:body, :body_html, :article_id, :parent_id, :user_id, :visibility])
+    |> cast(
+      attrs,
+      [:body, :body_html, :article_id, :parent_id, :user_id, :visibility] ++
+        Baudrate.Content.ContentWarning.fields()
+    )
+    |> Baudrate.Content.ContentWarning.validate()
     |> validate_required([:body, :article_id, :user_id])
     # Local comments are public on the article page, so only public/unlisted
     # addressing is offered (D1 in doc/TODOs.md).
@@ -82,8 +90,11 @@ defmodule Baudrate.Content.Comment do
       :article_id,
       :parent_id,
       :remote_actor_id,
-      :visibility
+      :visibility,
+      :summary,
+      :sensitive
     ])
+    |> Baudrate.Content.ContentWarning.validate()
     |> validate_required([:body, :ap_id, :article_id, :remote_actor_id])
     |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
     # Backstop for the ingest-time scheme check: `url` is rendered as an href.

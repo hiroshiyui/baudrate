@@ -45,6 +45,9 @@ defmodule Baudrate.Federation.TimelineItem do
     field :source_url, :string
     field :attachments, {:array, :map}, default: []
     field :visibility, :string, default: "public"
+    # Content warning (ADR 0052) — see `Baudrate.Content.ContentWarning`.
+    field :summary, :string
+    field :sensitive, :boolean, default: false
     field :published_at, :utc_datetime
     field :deleted_at, :utc_datetime
 
@@ -52,7 +55,7 @@ defmodule Baudrate.Federation.TimelineItem do
   end
 
   @required_fields ~w(remote_actor_id activity_type object_type ap_id published_at)a
-  @optional_fields ~w(title body body_html source_url attachments visibility deleted_at boosted_by_actor_id)a
+  @optional_fields ~w(title body body_html source_url attachments visibility deleted_at boosted_by_actor_id summary sensitive)a
 
   @doc """
   Builds a changeset for a timeline item.
@@ -64,6 +67,7 @@ defmodule Baudrate.Federation.TimelineItem do
     |> validate_inclusion(:activity_type, ~w(Create Announce))
     |> validate_inclusion(:object_type, ~w(Note Article Page))
     |> validate_inclusion(:visibility, ~w(public unlisted followers_only direct))
+    |> Baudrate.Content.ContentWarning.validate()
     |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
     # `source_url` is rendered as an href; only https may reach the column.

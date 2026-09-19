@@ -284,19 +284,22 @@ defmodule Baudrate.Federation.PublisherTest do
       assert board_uri in object["cc"]
     end
 
-    test "Article object includes summary field" do
+    # `summary` is the content warning and nothing else (ADR 0052). It used to
+    # carry a 500-character excerpt of the body, which Mastodon renders as
+    # `spoiler_text` — so every article arrived there hidden behind a "content
+    # warning" that was its own opening paragraph.
+    test "an article with no content warning publishes no summary" do
       user = create_user()
       board = create_board()
       article = create_article(user, board)
 
       {activity, _actor_uri} = Publisher.build_create_article(article)
 
-      object = activity["object"]
-      assert is_binary(object["summary"])
-      assert object["summary"] == "Body text"
+      refute Map.has_key?(activity["object"], "summary")
+      refute Map.has_key?(activity["object"], "sensitive")
     end
 
-    test "long article body produces truncated summary ending with ellipsis" do
+    test "a long body no longer becomes a summary" do
       user = create_user()
       board = create_board()
 
@@ -311,9 +314,7 @@ defmodule Baudrate.Federation.PublisherTest do
 
       article = Repo.preload(article, [:boards, :user])
 
-      object = Baudrate.Federation.article_object(article)
-      assert String.length(object["summary"]) <= 501
-      assert String.ends_with?(object["summary"], "…")
+      refute Map.has_key?(Baudrate.Federation.article_object(article), "summary")
     end
 
     test "Article with hashtags includes tag array with Hashtag objects" do

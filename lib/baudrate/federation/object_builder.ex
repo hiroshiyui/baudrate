@@ -15,6 +15,7 @@ defmodule Baudrate.Federation.ObjectBuilder do
 
   alias Baudrate.Content
   alias Baudrate.Content.Board
+  alias Baudrate.Content.ContentWarning
   alias Baudrate.Content.Markdown
   alias Baudrate.Federation.{Context, Delivery, Mentions, Visibility}
   alias Baudrate.Repo
@@ -59,7 +60,6 @@ defmodule Baudrate.Federation.ObjectBuilder do
       "id" => article.ap_id || actor_uri(:article, article.slug),
       "type" => "Article",
       "name" => article.title,
-      "summary" => build_article_summary(article.body),
       "content" => Markdown.to_html(article.body),
       "mediaType" => "text/html",
       "source" => %{
@@ -94,6 +94,7 @@ defmodule Baudrate.Federation.ObjectBuilder do
     map = if tags == [], do: map, else: Map.put(map, "tag", tags)
 
     map
+    |> put_content_warning(article)
     |> maybe_embed_images(article.article_images)
     |> maybe_embed_poll(article.poll)
     |> maybe_embed_link_preview(article)
@@ -136,7 +137,9 @@ defmodule Baudrate.Federation.ObjectBuilder do
 
     map = if mentioned == [], do: map, else: Map.put(map, "tag", Mentions.tags(mentioned))
 
-    maybe_embed_comment_images(map, comment.images)
+    map
+    |> put_content_warning(comment)
+    |> maybe_embed_comment_images(comment.images)
   end
 
   @doc """
@@ -202,6 +205,28 @@ defmodule Baudrate.Federation.ObjectBuilder do
   defp article_uri(article), do: article.ap_id || actor_uri(:article, article.slug)
 
   # --- Private ---
+
+  # `summary` is the **content warning**, and nothing else (ADR 0052).
+  #
+  # It used to carry a 500-character excerpt of the body, which is a defensible
+  # reading of AS2 for an `Article` and a bad one in practice: Mastodon maps
+  # `summary` to `spoiler_text` for every object type, so every Baudrate
+  # article arrived on Mastodon hidden behind a "content warning" that was
+  # actually its own opening paragraph. The excerpt is gone rather than moved
+  # — `name` already carries the title and `content` the body, so it was
+  # telling a reader nothing they could not see.
+  defp put_content_warning(map, record) do
+    if ContentWarning.warned?(record) do
+      map
+      |> Map.put("sensitive", true)
+      |> put_if_present("summary", record.summary)
+    else
+      map
+    end
+  end
+
+  defp put_if_present(map, _key, value) when value in [nil, ""], do: map
+  defp put_if_present(map, key, value), do: Map.put(map, key, value)
 
   defp maybe_embed_comment_images(map, images) when is_list(images) and images != [] do
     attachments =
@@ -299,45 +324,6 @@ defmodule Baudrate.Federation.ObjectBuilder do
   end
 
   defp maybe_embed_link_preview(map, _), do: map
-
-  defp build_article_summary(nil), do: ""
-
-  defp build_article_summary(body) do
-    body
-    |> strip_markdown()
-    |> truncate_text(500)
-  end
-
-  defp strip_markdown(text) do
-    text
-    |> String.replace(~r/```[\s\S]*?```/u, "")
-    |> String.replace(~r/`[^`]+`/, "")
-    |> String.replace(~r/!\[[^\]]*\]\([^)]*\)/, "")
-    |> String.replace(~r/\[[^\]]*\]\([^)]*\)/, fn m ->
-      case Regex.run(~r/\[([^\]]*)\]/, m) do
-        [_, text] -> text
-        _ -> m
-      end
-    end)
-    |> String.replace(~r/^\#{1,6}\s+/m, "")
-    |> String.replace(~r/[*_~]{1,3}/, "")
-    |> String.replace(~r/^>\s?/m, "")
-    |> String.replace(~r/^[-*+]\s/m, "")
-    |> String.replace(~r/^\d+\.\s/m, "")
-    |> String.replace(~r/\n{3,}/, "\n\n")
-    |> String.trim()
-  end
-
-  defp truncate_text(text, max_length) do
-    if String.length(text) <= max_length do
-      text
-    else
-      text
-      |> String.slice(0, max_length)
-      |> String.replace(~r/\s\S*$/, "")
-      |> Kernel.<>("…")
-    end
-  end
 
   defp extract_hashtags(nil), do: []
 

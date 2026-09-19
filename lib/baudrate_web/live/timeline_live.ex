@@ -382,7 +382,8 @@ defmodule BaudrateWeb.TimelineLive do
 
               timeline_item ->
                 do_create_reply(socket, timeline_item, user, params["body"] || "",
-                  image_ids: Enum.map(socket.assigns.uploaded_reply_images, & &1.id)
+                  image_ids: Enum.map(socket.assigns.uploaded_reply_images, & &1.id),
+                  summary: params["summary"]
                 )
             end
         end
@@ -700,7 +701,7 @@ defmodule BaudrateWeb.TimelineLive do
     # `published_at`, ...) is server-owned and must not come from the client.
     attrs =
       params
-      |> Map.take(~w(title body forwardable visibility))
+      |> Map.take(~w(title body forwardable visibility summary))
       |> Map.put("slug", slug)
       |> Map.put("user_id", user.id)
 
@@ -750,6 +751,16 @@ defmodule BaudrateWeb.TimelineLive do
       {:error, _, _, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to create article."))}
     end
+  end
+
+  # An `attachments` row carries both kinds since Phase 3E, told apart by
+  # `media_type`: an image is proxied, a video or audio file is a link.
+  defp timeline_images(%{attachments: attachments}) do
+    Enum.reject(attachments, &Baudrate.Federation.AttachmentExtractor.playable?(&1["media_type"]))
+  end
+
+  defp timeline_media(%{attachments: attachments}) do
+    Enum.filter(attachments, &Baudrate.Federation.AttachmentExtractor.playable?(&1["media_type"]))
   end
 
   defp digest(nil), do: ""

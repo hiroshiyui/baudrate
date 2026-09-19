@@ -932,6 +932,50 @@ defmodule BaudrateWeb.CoreComponents do
   end
 
   @doc """
+  Renders content behind its content warning, collapsed until the reader asks
+  for it (ADR 0052).
+
+  A `<details>` element, not a button and a JavaScript toggle: it is
+  keyboard-operable, announced correctly by screen readers and works with
+  scripting off, all without a hook. The whole point of a content warning is
+  that it holds even when something else has gone wrong.
+
+  `id` must be unique per rendered page (ADR 0018), so derive it from the
+  record. The class names deliberately avoid every word a cosmetic-filter list
+  targets — a warning hidden by a content blocker would show the content it
+  was standing in front of.
+
+  ## Example
+
+      <.content_warning id={"comment-cw-\#{comment.id}"} summary={comment.summary}>
+        <.body_html html={comment.body_html} />
+      </.content_warning>
+  """
+  attr :id, :string, required: true
+  attr :summary, :string, default: nil, doc: "the warning text; nil renders the generic one"
+  attr :class, :any, default: nil
+  slot :inner_block, required: true
+
+  def content_warning(assigns) do
+    ~H"""
+    <details id={@id} class={["content-warning", @class]}>
+      <summary class="content-warning-summary cursor-pointer list-none flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
+        <.icon name="hero-eye-slash" class="size-4 shrink-0 text-warning" />
+        <span class="content-warning-text font-medium break-words">
+          {@summary || gettext("Sensitive content")}
+        </span>
+        <span class="content-warning-action ml-auto shrink-0 text-xs underline">
+          {gettext("Show")}
+        </span>
+      </summary>
+      <div class="content-warning-body mt-2">
+        {render_slot(@inner_block)}
+      </div>
+    </details>
+    """
+  end
+
+  @doc """
   Renders the password policy checklist with a strength meter.
 
   `strength` is the map returned by `BaudrateWeb.Helpers.password_strength/1`

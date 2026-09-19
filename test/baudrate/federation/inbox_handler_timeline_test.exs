@@ -2,6 +2,7 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
   use Baudrate.DataCase, async: false
 
   alias Baudrate.Federation
+  alias Baudrate.Federation.AttachmentExtractor
   alias Baudrate.Federation.{InboxHandler, RemoteActor}
   alias Baudrate.Repo
 
@@ -457,9 +458,18 @@ defmodule Baudrate.Federation.InboxHandlerFeedTest do
 
       item = Federation.get_timeline_item_by_ap_id(activity["object"]["id"])
       assert item != nil
-      # Only images, not video
-      assert length(item.attachments) == 1
-      assert Enum.at(item.attachments, 0)["url"] == "https://remote.example/media/img.webp"
+
+      # Both kinds are stored, told apart by `media_type` (ADR 0052): an image
+      # is proxied, a video is a link. Video used to be dropped, so a post
+      # whose point was a video looked empty.
+      assert length(item.attachments) == 2
+
+      {media, images} =
+        Enum.split_with(item.attachments, &AttachmentExtractor.playable?(&1["media_type"]))
+
+      assert Enum.map(images, & &1["url"]) == ["https://remote.example/media/img.webp"]
+      assert Enum.map(media, & &1["url"]) == ["https://remote.example/media/video.mp4"]
+      assert Enum.map(media, & &1["name"]) == ["A video"]
     end
 
     test "does not create timeline item when booster is not followed", %{actor: actor} do

@@ -397,7 +397,10 @@ defmodule Baudrate.Federation.Timeline do
       user_id: user.id,
       body: body,
       body_html: body_html,
-      ap_id: ap_id
+      ap_id: ap_id,
+      # Optional content warning from the composer (ADR 0052); normalised and
+      # bounded by `Content.ContentWarning.validate/1` in the changeset.
+      summary: Keyword.get(opts, :summary)
     }
 
     # The reply, its images and its Create(Note) jobs commit together

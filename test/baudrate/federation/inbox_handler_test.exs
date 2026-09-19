@@ -1855,7 +1855,7 @@ defmodule Baudrate.Federation.InboxHandlerTest do
   end
 
   describe "sensitive + summary (content warning)" do
-    test "prepends CW to body when sensitive is true" do
+    test "stores a content warning in its own fields when sensitive is true" do
       user = setup_user_with_role("user")
       board = create_board()
       article = create_article_for_board(user, board)
@@ -1885,8 +1885,14 @@ defmodule Baudrate.Federation.InboxHandlerTest do
       assert length(comments) == 1
 
       comment = hd(comments)
-      assert comment.body =~ "[CW: Content Warning]"
+
+      # ADR 0052: a field, not a prefix. Prefixing made the warning
+      # indistinguishable from the thing it was warning about, so nothing
+      # could render the body behind it.
+      assert comment.summary == "Content Warning"
+      assert comment.sensitive
       assert comment.body =~ "Sensitive content here"
+      refute comment.body =~ "[CW:"
     end
 
     test "does not prepend CW when sensitive is false" do

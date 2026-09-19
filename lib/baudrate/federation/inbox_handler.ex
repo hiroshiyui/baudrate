@@ -622,9 +622,13 @@ defmodule Baudrate.Federation.InboxHandler do
       case Content.get_comment_by_ap_id(ap_id) do
         %{remote_actor_id: actor_id} = comment when actor_id == remote_actor.id ->
           {:ok, body, body_html} = sanitize_content(object)
-          body_html = append_attachment_images(body_html, object)
 
-          case Content.update_remote_comment(comment, %{body: body, body_html: body_html}) do
+          body_html =
+            body_html |> append_attachment_images(object) |> append_attachment_media(object)
+
+          attrs = Map.merge(%{body: body, body_html: body_html}, content_warning(object))
+
+          case Content.update_remote_comment(comment, attrs) do
             {:ok, _} ->
               Logger.info("federation.activity: type=Update(Note) ap_id=#{ap_id}")
               :ok
@@ -650,7 +654,9 @@ defmodule Baudrate.Federation.InboxHandler do
           {:ok, body, _body_html} = sanitize_content(object)
           title = object["name"] || article.title
 
-          case Content.update_remote_article(article, %{title: title, body: body}) do
+          attrs = Map.merge(%{title: title, body: body}, content_warning(object))
+
+          case Content.update_remote_article(article, attrs) do
             {:ok, _} ->
               Logger.info("federation.activity: type=Update(Article) ap_id=#{ap_id}")
               :ok
@@ -776,18 +782,26 @@ defmodule Baudrate.Federation.InboxHandler do
         true ->
           url = extract_url(object)
           visibility = Visibility.from_addressing(object)
-          body_html = append_attachment_images(body_html, object)
 
-          case Content.create_remote_comment(%{
-                 body: body,
-                 body_html: body_html,
-                 ap_id: ap_id,
-                 url: url,
-                 article_id: article.id,
-                 parent_id: parent_id,
-                 remote_actor_id: remote_actor.id,
-                 visibility: visibility
-               }) do
+          body_html =
+            body_html |> append_attachment_images(object) |> append_attachment_media(object)
+
+          attrs =
+            Map.merge(
+              %{
+                body: body,
+                body_html: body_html,
+                ap_id: ap_id,
+                url: url,
+                article_id: article.id,
+                parent_id: parent_id,
+                remote_actor_id: remote_actor.id,
+                visibility: visibility
+              },
+              content_warning(object)
+            )
+
+          case Content.create_remote_comment(attrs) do
             {:ok, _comment} ->
               Logger.info("federation.activity: type=Create(Note) ap_id=#{ap_id}")
 
@@ -913,19 +927,22 @@ defmodule Baudrate.Federation.InboxHandler do
               source_url = extract_url(object) || object["id"]
               visibility = Visibility.from_addressing(object)
 
-              case Federation.create_timeline_item(%{
-                     remote_actor_id: remote_actor.id,
-                     activity_type: "Create",
-                     object_type: object_type,
-                     ap_id: ap_id,
-                     title: title,
-                     body: body,
-                     body_html: body_html,
-                     source_url: source_url,
-                     attachments: extract_image_attachments(object),
-                     visibility: visibility,
-                     published_at: published_at
-                   }) do
+              case Federation.create_timeline_item(
+                     %{
+                       remote_actor_id: remote_actor.id,
+                       activity_type: "Create",
+                       object_type: object_type,
+                       ap_id: ap_id,
+                       title: title,
+                       body: body,
+                       body_html: body_html,
+                       source_url: source_url,
+                       attachments: extract_attachments(object),
+                       visibility: visibility,
+                       published_at: published_at
+                     }
+                     |> Map.merge(content_warning(object))
+                   ) do
                 {:ok, _timeline_item} ->
                   Logger.info(
                     "federation.activity: type=Create(#{object_type}/TimelineItem) ap_id=#{ap_id}"
@@ -1148,7 +1165,8 @@ defmodule Baudrate.Federation.InboxHandler do
                        url: url,
                        remote_actor_id: author_actor_id,
                        visibility: visibility
-                     },
+                     }
+                     |> Map.merge(content_warning(object)),
                      board_ids,
                      poll_opts ++ [image_attachments: image_attachments]
                    ) do
@@ -1206,7 +1224,7 @@ defmodule Baudrate.Federation.InboxHandler do
                    body: body,
                    body_html: body_html,
                    source_url: source_url,
-                   attachments: extract_image_attachments(object),
+                   attachments: extract_attachments(object),
                    visibility: visibility,
                    published_at: published_at
                  }) do
@@ -1318,17 +1336,22 @@ defmodule Baudrate.Federation.InboxHandler do
           ""
       end
 
-    prepend_content_warning(raw, object)
+    raw
   end
 
-  # When Mastodon marks a post as sensitive with a summary (content warning),
-  # prepend it so the warning is visible in the stored content.
-  defp prepend_content_warning(body, %{"sensitive" => true, "summary" => summary})
-       when is_binary(summary) and summary != "" do
-    "[CW: #{summary}]\n\n#{body}"
+  # A content warning is stored in its own fields, never glued onto the front
+  # of the body (ADR 0052). It used to be prefixed as `[CW: …]` onto the body,
+  # which made the warning indistinguishable from the thing it was warning
+  # about: nothing could render it collapsed, nothing could publish it back
+  # out as a warning, and the reader was shown the content with a label above
+  # it. Merge this into the attrs of anything built from a remote object.
+  #
+  # `summary` is truncated and `sensitive` derived by
+  # `Content.ContentWarning.validate/1` in the changeset; this only reads what
+  # the peer sent.
+  defp content_warning(object) do
+    %{summary: object["summary"], sensitive: object["sensitive"] == true}
   end
-
-  defp prepend_content_warning(body, _object), do: body
 
   defp derive_title(object, body),
     do: Baudrate.Content.TitleDeriver.derive_title(object, body)
@@ -1612,7 +1635,8 @@ defmodule Baudrate.Federation.InboxHandler do
                  url: url,
                  remote_actor_id: remote_actor.id,
                  visibility: visibility
-               },
+               }
+               |> Map.merge(content_warning(object)),
                [board.id],
                poll_opts ++ [image_attachments: image_attachments]
              ) do
@@ -1671,7 +1695,8 @@ defmodule Baudrate.Federation.InboxHandler do
                      url: url,
                      remote_actor_id: remote_actor.id,
                      visibility: visibility
-                   },
+                   }
+                   |> Map.merge(content_warning(object)),
                    board_ids,
                    poll_opts ++ [image_attachments: image_attachments]
                  ) do
@@ -2200,6 +2225,13 @@ defmodule Baudrate.Federation.InboxHandler do
   defp extract_image_attachments(object),
     do: AttachmentExtractor.extract_image_attachments(object)
 
+  # Images and playable media in one list, told apart by `media_type`. The
+  # renderer branches: an image is proxied, a video is a link.
+  defp extract_attachments(object) do
+    AttachmentExtractor.extract_image_attachments(object) ++
+      AttachmentExtractor.extract_media_attachments(object)
+  end
+
   # Appends image attachment tags to body_html for AP objects with image attachments.
   # This ensures remote comment images (sent as AP attachments, not inline HTML) are displayed.
   defp append_attachment_images(body_html, object) do
@@ -2231,6 +2263,36 @@ defmodule Baudrate.Federation.InboxHandler do
         if img_tags == "", do: body_html, else: (body_html || "") <> img_tags
     end
   end
+
+  # Video and audio become a **link** to the original, never an embed and
+  # never a proxied subresource (ADR 0052). Proxying would mean this instance
+  # downloading and re-serving arbitrarily large files; embedding would be the
+  # hotlink `Media.Proxy` exists to prevent. A link contacts nobody until the
+  # reader follows it — the same bargain as the click-to-load video player
+  # (ADR 0045). They used to be dropped, so a post whose point was a video
+  # looked empty.
+  defp append_attachment_media(body_html, object) do
+    links =
+      object
+      |> AttachmentExtractor.extract_media_attachments()
+      |> Enum.filter(&https_url?(&1["url"]))
+      |> Enum.map_join("", fn att ->
+        label = Baudrate.Sanitizer.Native.strip_tags(att["name"] || "") |> String.trim()
+        label = if label == "", do: media_label(att["media_type"]), else: label
+
+        ~s(<p><a href="#{escape_attr(att["url"])}" rel="nofollow noopener noreferrer" ) <>
+          ~s(target="_blank" class="attachment-media-link">#{escape_attr(label)}</a></p>)
+      end)
+
+    if links == "", do: body_html, else: (body_html || "") <> links
+  end
+
+  # Not translated: this text is baked into stored HTML at ingest time, so it
+  # cannot follow the reader's locale the way a template can. A generic noun
+  # is the honest fallback when the peer sent no name.
+  defp media_label("video/" <> _), do: "Video attachment"
+  defp media_label("audio/" <> _), do: "Audio attachment"
+  defp media_label(_), do: "Media attachment"
 
   defp https_url?(url) when is_binary(url), do: String.starts_with?(url, "https://")
   defp https_url?(_), do: false

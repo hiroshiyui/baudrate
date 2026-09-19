@@ -98,7 +98,19 @@
 
     <div class="divider"></div>
 
-    <div class="article-body prose max-w-none">
+    <.content_warning
+      :if={Baudrate.Content.ContentWarning.warned?(@article)}
+      id={"article-#{@article.id}-content-warning"}
+      summary={@article.summary}
+    >
+      <div class="article-body prose max-w-none">
+        {raw(Baudrate.Content.Markdown.to_html(@article.body))}
+      </div>
+    </.content_warning>
+    <div
+      :if={!Baudrate.Content.ContentWarning.warned?(@article)}
+      class="article-body prose max-w-none"
+    >
       {raw(Baudrate.Content.Markdown.to_html(@article.body))}
     </div>
 
@@ -571,6 +583,15 @@
           placeholder={gettext("Write a comment...")}
           toolbar
           rows="6"
+        />
+        <.input
+          id="comment-content-warning"
+          field={@comment_form[:summary]}
+          type="text"
+          placeholder={gettext("Content warning (optional)")}
+          maxlength="512"
+          class="input-sm content-warning-input"
+          aria-label={gettext("Content warning")}
         />
         <%!-- Image upload for new comment --%>
         <BaudrateWeb.CommentComponents.comment_image_upload_area

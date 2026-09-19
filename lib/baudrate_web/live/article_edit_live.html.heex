@@ -175,6 +175,16 @@
       </div>
     </div>
 
+    <.input
+      id="article-edit-content-warning"
+      field={@form[:summary]}
+      type="text"
+      label={gettext("Content warning")}
+      placeholder={gettext("Optional — what should a reader know before opening this?")}
+      maxlength="512"
+      class="content-warning-input"
+    />
+
     <div class="flex flex-wrap items-center gap-3 [&>.fieldset]:mb-0 [&>.fieldset]:p-0 [&_.label]:py-0">
       <.input
         field={@form[:forwardable]}

@@ -38,6 +38,11 @@ defmodule Baudrate.Content.Article do
     field :locked, :boolean, default: false
     field :forwardable, :boolean, default: true
     field :visibility, :string, default: "public"
+    # Content warning (ADR 0052). `summary` is the warning text, `sensitive`
+    # the flag Mastodon uses. Rows written before v1.31.0 carry `[CW: …]`
+    # inside `body` instead and were deliberately not rewritten.
+    field :summary, :string
+    field :sensitive, :boolean, default: false
     field :ap_id, :string
     field :url, :string
     field :deleted_at, :utc_datetime
@@ -65,7 +70,7 @@ defmodule Baudrate.Content.Article do
   @max_title_length 255
   @max_body_length 65_536
 
-  @user_fields [:title, :body, :slug, :user_id, :forwardable, :visibility]
+  @user_fields [:title, :body, :slug, :user_id, :forwardable, :visibility, :summary, :sensitive]
 
   # Local articles are board content, public on this site whatever their
   # federation addressing, so only `public` and `unlisted` are offered (D1 in
@@ -100,6 +105,7 @@ defmodule Baudrate.Content.Article do
     |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
     |> validate_inclusion(:visibility, @local_visibilities)
+    |> validate_content_warning()
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
       message: "must be lowercase alphanumeric with hyphens"
     )
@@ -111,11 +117,12 @@ defmodule Baudrate.Content.Article do
   @doc "Changeset for updating a local article (title and body only, slug stays fixed)."
   def update_changeset(article, attrs) do
     article
-    |> cast(attrs, [:title, :body, :forwardable, :visibility])
+    |> cast(attrs, [:title, :body, :forwardable, :visibility, :summary, :sensitive])
     |> validate_required([:title, :body])
     |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
     |> validate_inclusion(:visibility, @local_visibilities)
+    |> validate_content_warning()
   end
 
   @doc "Changeset for remote articles received via ActivityPub."
@@ -129,12 +136,15 @@ defmodule Baudrate.Content.Article do
       :url,
       :remote_actor_id,
       :visibility,
-      :forwardable
+      :forwardable,
+      :summary,
+      :sensitive
     ])
     |> validate_required([:title, :body, :slug, :ap_id, :remote_actor_id])
     |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
     |> validate_inclusion(:visibility, @remote_visibilities)
+    |> validate_content_warning()
     |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/,
       message: "must be lowercase alphanumeric with hyphens"
     )
@@ -148,11 +158,15 @@ defmodule Baudrate.Content.Article do
   @doc "Changeset for updating remote article content."
   def update_remote_changeset(article, attrs) do
     article
-    |> cast(attrs, [:title, :body])
+    |> cast(attrs, [:title, :body, :summary, :sensitive])
     |> validate_required([:title, :body])
     |> validate_length(:title, max: @max_title_length)
     |> validate_length(:body, max: @max_body_length)
+    |> validate_content_warning()
   end
+
+  defp validate_content_warning(changeset),
+    do: Baudrate.Content.ContentWarning.validate(changeset)
 
   @doc """
   Changeset for soft-deleting an article.

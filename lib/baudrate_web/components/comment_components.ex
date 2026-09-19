@@ -108,11 +108,20 @@ defmodule BaudrateWeb.CommentComponents do
           </button>
         </div>
 
-        <div :if={@comment.body_html} class="comment-body prose prose-sm max-w-none">
-          {BaudrateWeb.SafeHTML.body_html(@comment.body_html)}
-        </div>
-        <div :if={!@comment.body_html} class="comment-body prose prose-sm max-w-none">
-          {raw(Baudrate.Content.Markdown.to_html(@comment.body))}
+        <.content_warning
+          :if={Baudrate.Content.ContentWarning.warned?(@comment)}
+          id={"comment-#{@comment.id}-content-warning"}
+          summary={@comment.summary}
+        >
+          <div class="comment-body prose prose-sm max-w-none">
+            {comment_body(@comment)}
+          </div>
+        </.content_warning>
+        <div
+          :if={!Baudrate.Content.ContentWarning.warned?(@comment)}
+          class="comment-body prose prose-sm max-w-none"
+        >
+          {comment_body(@comment)}
         </div>
 
         <.link_preview
@@ -622,6 +631,14 @@ defmodule BaudrateWeb.CommentComponents do
     </div>
     """
   end
+
+  # Stored HTML when there is any (rewritten for the media proxy by
+  # `SafeHTML.body_html/1`), otherwise rendered from markdown. One definition,
+  # so the warned and unwarned branches cannot show different things.
+  defp comment_body(%{body_html: html}) when is_binary(html) and html != "",
+    do: BaudrateWeb.SafeHTML.body_html(html)
+
+  defp comment_body(comment), do: raw(Baudrate.Content.Markdown.to_html(comment.body))
 
   defp upload_error_to_string(err),
     do: BaudrateWeb.Helpers.upload_error_to_string(err, max_size: "8 MB", max_files: 4)
