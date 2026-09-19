@@ -33,8 +33,10 @@ surface.
 - [Collections](#collections)
   - [User Outbox](#user-outbox)
   - [Board Outbox](#board-outbox)
+  - [Site Outbox](#site-outbox)
   - [User Followers](#user-followers)
   - [Board Followers](#board-followers)
+  - [Site Followers](#site-followers)
   - [User Following](#user-following)
   - [Board Following](#board-following)
   - [Boards Index](#boards-index)
@@ -44,6 +46,7 @@ surface.
   - [Shared Inbox](#shared-inbox)
   - [User Inbox](#user-inbox)
   - [Board Inbox](#board-inbox)
+  - [Site Inbox](#site-inbox)
   - [Inbox Responses](#inbox-responses)
   - [HTTP Signature Requirements](#http-signature-requirements)
   - [Supported Activity Types](#supported-activity-types)
@@ -609,6 +612,23 @@ Returns `Announce` activities for articles posted to the board.
 
 ---
 
+### Site Outbox
+
+```
+GET /ap/site/outbox
+```
+
+**Auth:** HTTP Signature required if authorized fetch is enabled
+**Rate limit:** 120 req/min per IP
+
+Always an empty `OrderedCollection` (`totalItems: 0`). The site actor signs
+instance-level activities and publishes no content of its own, but an actor
+that advertises an `outbox` it does not serve fails a peer's discovery —
+Mastodon fetches it when the actor is first seen. An explicit empty collection
+is the answer, not a 404.
+
+---
+
 ### User Followers
 
 ```
@@ -635,6 +655,23 @@ GET /ap/boards/:slug/followers?page=1
 **Access control:** Returns 404 if board is private or AP disabled.
 
 Items are remote actor URIs (strings).
+
+---
+
+### Site Followers
+
+```
+GET /ap/site/followers
+```
+
+**Auth:** HTTP Signature required if authorized fetch is enabled
+**Rate limit:** 120 req/min per IP
+
+The site actor's genuine followers collection, served by the same code as the
+user and board ones — empty in practice, because remote instances follow users
+and boards rather than the instance actor. The endpoint exists because the
+actor document advertises it, and a peer that fetches an advertised collection
+must not get a 404.
 
 ---
 
@@ -794,6 +831,19 @@ POST /ap/boards/:slug/inbox
 
 Accepts activities targeting a specific board. Returns 404 if board is
 private or AP disabled.
+
+### Site Inbox
+
+```
+POST /ap/site/inbox
+```
+
+The site actor's own inbox, which its actor document advertises. It is handled
+by the same action as `/ap/inbox`: the target is resolved from the activity's
+addressing either way, so a `Follow` of a user or board delivered here behaves
+exactly as it would at the shared inbox. Before this route existed the actor
+advertised an endpoint that returned 404, and a peer that posted a `Follow`
+there was told nothing.
 
 ### Inbox Responses
 

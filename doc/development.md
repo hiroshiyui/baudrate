@@ -1825,6 +1825,10 @@ and never need to know about the internal split.
 | `Federation.KeyStore` | RSA-2048 keypair management for actors: generation, persistence, and rotation |
 | `Federation.Validator` | AP payload validation: size limits, attribution checks, and domain allowlist/blocklist |
 | `Federation.Visibility` | Derives ActivityPub visibility (`public`, `unlisted`, `followers_only`, `direct`) from addressing fields |
+| `Federation.Inbound` | Admits, stores and answers an inbound activity; `InboundWorker` processes it afterwards (ADR 0034) |
+| `Federation.ObjectResolver` | Fetches a single remote object for a user-triggered import, applying the same origin binding as actor resolution (ADR 0046) |
+| `Federation.DomainBlocks` | The only write path for `domain_blocks`; refreshes `DomainBlockCache` itself (ADR 0030). Reached through the facade for the mutations (ADR 0047) |
+| `Federation.RemoteActors` | Instance-wide suspension of a single remote actor — the same hiding predicate as a domain block, written only through `RemoteActor.suspension_changeset/2` (ADR 0030, decision 6) |
 
 ### ActivityPub Federation
 
@@ -1866,6 +1870,9 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `/articles/:slug` — content-negotiated: AP `Accept` headers (`application/activity+json`, `application/ld+json`, `application/json`) are forwarded to the AS2 article endpoint by `BaudrateWeb.Plugs.ArticleApContentNeg`; browser requests fall through to `ArticleLive`. The article LiveView also emits `<link rel="alternate" type="application/activity+json" href="…/ap/articles/:slug">` for federated articles, so remote implementations can discover the AP `id` from the human URL when content negotiation isn't attempted
 - `/ap/users/:username/outbox` — paginated `OrderedCollection` of `Create(Article)`, counting and listing only the user's articles in **federated** boards (`min_role_to_view == "guest"` and `ap_enabled`); a board-less article is not in the outbox at all, because the query joins `board_articles`
 - `/ap/boards/:slug/outbox` — paginated `OrderedCollection` of `Announce(Article)`
+- `/ap/site/outbox` — empty `OrderedCollection`. The site actor signs instance-level activities and publishes no content of its own, but an actor that advertises an `outbox` it does not serve fails a peer's discovery: Mastodon fetches it when the actor is first seen. An explicit empty collection is the answer, not a 404
+- `/ap/users/:username/followers`, `/ap/boards/:slug/followers`, `/ap/site/followers` — `OrderedCollection` of follower actor URIs (the site actor's is empty, for the same reason as its outbox)
+- `/ap/users/:username/following`, `/ap/boards/:slug/following` — `OrderedCollection` of outbound follows
 - `/ap/boards` — `OrderedCollection` of all public AP-enabled boards
 - `/ap/articles/:slug/replies` — `OrderedCollection` of comments as Note objects
 - `/ap/search?q=...` — paginated full-text article search, over **federated** boards only (ADR 0043)
@@ -1874,6 +1881,30 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `/ap/inbox` — shared inbox
 - `/ap/users/:username/inbox` — user inbox
 - `/ap/boards/:slug/inbox` — board inbox
+- `/ap/site/inbox` — the site actor's own inbox, which the actor document advertises. It routes to the same `shared_inbox` action: the target is resolved from the activity's addressing either way, so a `Follow` of a user or board delivered here is handled exactly as it would be at `/ap/inbox`. Before this route existed the actor advertised an endpoint that 404ed, and a peer that posted a `Follow` there was told nothing
+
+**Where origin binding is applied** ([ADR 0046](adr/0046-every-identity-claim-is-bound-to-the-host-that-can-prove-it.md)
+is the *why* — that a claim about an identity is honoured only from the host
+that could legitimately make it, and what each unchecked URI costs). Every
+check below uses `Validator.same_host?/2`, the one comparison, which requires
+both sides to parse to a non-empty host so a pair of hostless URIs is not "the
+same origin". `InboxHandler` delegates to it rather than keeping the private
+copy it used to have.
+
+| Claim | Checked in | Refusal |
+|---|---|---|
+| a fetched actor document's own `id` vs. the URL it came from | `ActorResolver` | `:actor_id_origin_mismatch` |
+| an activity's `id` vs. its `actor` | `Validator.validate_activity/1` | `:activity_id_origin_mismatch` |
+| a `Create`/`Update` object's `id` vs. the signer's host | `Validator.validate_object_origin/2`, on every `Create`/`Update` path | `:object_origin_mismatch` |
+| a user-imported object's `id` vs. its fetch URL, and its `attributedTo` vs. that `id` | `ObjectResolver` | `:object_id_origin_mismatch`, `:author_origin_mismatch` |
+| a boosted object's `attributedTo` vs. the object `id` host (and, when fetched, the object `id` vs. its fetch URL) | `InboxHandler.handle_announce_object/3` | dropped, logged |
+| an actor's `inbox` / `sharedInbox` vs. the actor | `ActorResolver` | `:inbox_origin_mismatch` |
+| the Follow named in an `Accept`/`Reject` vs. the signer | `Follows.accept_*_follow/2`, `reject_*_follow/2` (matched on `remote_actor_id` too) | ignored |
+| an Announce naming a **local** URI | `local_actor?/1`, refused outright rather than compared | dropped |
+
+A missing claim is not a failed claim: an Announce whose object has no
+`attributedTo` is attributed to the booster, the one actor whose signature was
+verified. Refusing it would break ordinary Mastodon and Lemmy boosts.
 
 **The inbound queue** (ADR 0034). The inbox does not process an activity while
 the sender waits. `Federation.Inbound.accept/4` runs `InboxHandler.admit/2`
