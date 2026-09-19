@@ -38,6 +38,7 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
   - Lemmy compatibility: `Page` object type, `Announce` with embedded objects, `!board@host` WebFinger
 - **Personal timeline** -- follow remote accounts and local users from `/following`, and read their posts at `/timeline`, merged with local articles from people you follow and with comments on threads you took part in; reply, like, boost, or forward an item to a board. Non-public posts stay out: a boost of a followers-only post is never shown, and a direct message never appears
 - **Link previews** -- server-side Open Graph / Twitter Card metadata fetching with image proxy for articles, comments, and DMs
+- **No page contacts a third party on your behalf** -- every remote image, avatar and preview thumbnail is re-encoded and served from this host, so reading a federated thread discloses nothing to the instance that wrote it; the one embed, the YouTube player, loads only when you press play, from a poster stored locally
 - **User public profiles** -- public profile pages with stats, recent articles, and clickable author names
 - **Avatar system** -- upload, crop, WebP conversion with server-side security
 - **Flexible registration** -- open, approval-required, or invite-only modes with admin-managed invite codes

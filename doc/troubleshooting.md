@@ -832,6 +832,27 @@ fails; this is what makes deploying a very old tag awkward, and why the
 rollback playbook exists. The deploy wipes `_build/prod` by itself when the
 tag's toolchain differs from the last build's.
 
+### "CI builds and tests on Debian 12/x86_64, and this host runs …"
+
+The deploy's pre-flight refuses a host whose Debian release or architecture
+disagrees with `debian_version` in `ansible/inventory/group_vars/all.yml`
+(ADR 0036 decision 1). Since the deploy builds on the server (ADR 0037), a
+mismatch no longer stops the release starting — which is exactly why the
+check matters: the host would silently become the system the binary is built
+against, while CI keeps building and testing on the other one.
+
+`debian_version` also fixes the PostgreSQL client major that
+`ci/image/Dockerfile` installs. A Debian 13 host ships a 17 client, whose
+`pg_dump` writes `SET transaction_timeout` — which the PostgreSQL 15 server
+rejects. So the first thing a drifted host breaks is not the deploy but the
+pre-deploy dump and the nightly backups (ADR 0028).
+
+Do not work around it by deleting the assert. Either move the host back, or
+change `debian_version`, `POSTGRES_MAJOR` in `ci/image/Dockerfile` and the
+digest-pinned `postgres:<major>` service images together, rebuild the CI image
+and merge the `image.lock` change — `ci/image/verify-toolchain.sh` fails until
+all of them agree.
+
 ### The rollback playbook refuses
 
 "The database has N migration(s) that release does not contain": rolling back

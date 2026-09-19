@@ -20,6 +20,9 @@ defmodule Baudrate.Federation do
   - **Personal timeline** — incoming Create activities from followed actors stored
     as `TimelineItem` records; union query merges remote timeline items, local
     articles from followed users, and comment participation
+  - **Instance moderation** — blocking a domain and suspending a single remote
+    actor (ADR 0030), both named on this facade because they change what every
+    visitor sees and who this instance will talk to (ADR 0047)
   - **Public API** — AP endpoints double as public API; accepts `application/json`,
     CORS enabled on GET, `Vary: Accept` on content-negotiated endpoints
 
