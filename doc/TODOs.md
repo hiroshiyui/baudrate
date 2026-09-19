@@ -498,63 +498,63 @@ The two follow-on questions are closed, not open:
 
 ---
 
-## Open from the ADR audit (2026-09-19)
+## Closed by the ADR audit (2026-09-19)
 
-A record-by-record check of all 46 ADRs against the code. Most held; these did
-not, and each needs a decision rather than a patch.
+A record-by-record check of all 46 ADRs against the code. Most held; seven did
+not, and all seven are now closed. Kept as a short index because each left
+something behind that is not obvious from the record it fixed.
 
-- [ ] **ADR 0036 decision 1 lost its third enforcer.** The record says the
-  image workflow, `verify-toolchain.sh` **and the deploy** each refuse a
-  Debian mismatch. The deploy's assert was deleted in `d63357b`, the ADR 0037
-  commit — but 0037 supersedes only decision 3 and says the rest of 0036
-  stands. It also matters more now than it did then: since 0037 the release is
-  *built on the server*, so the host's Debian release decides what the binary
-  links against, and nothing checks it. Either restore the assert (the facts
-  are already gathered) or amend 0037 to say it went with the tarball.
-- [ ] **ADR 0002's facade rule is stricter than the code.** "External callers …
-  never reach into a sub-module" is not what happens: `Content.Markdown.to_html`
-  has 15 web call sites, `ArticleImageStorage.image_url` 15 more, and none of
-  the bypassed functions is delegated on the facade at all — it never covered
-  them. The exempt categories are coherent (render helpers, admin read models,
-  the publish hooks Content calls on every write) but written down nowhere.
-  Either amend 0002 to name them, or add the delegates. The subset worth
-  treating as a defect either way is admin LiveViews calling *mutating*
-  federation operations directly: `DomainBlocks.block_domain/3`,
-  `RemoteActors.suspend/3`, `Delivery.deliver_flag/2`.
-- [x] **Origin binding had no ADR.** Now [0046](adr/0046-every-identity-claim-is-bound-to-the-host-that-can-prove-it.md), which also turned up a second, divergent `same_host?/2` that has been consolidated: Sixteen call sites across `validator.ex`,
-  `inbox_handler.ex` and `actor_resolver.ex` enforce that an actor document's
-  `id` host matches where it was fetched, an activity's `id` host matches its
-  actor, an object's `id` lives on the signer's host, a boosted object's
-  `attributedTo` matches its `id` host, `Accept`/`Reject(Follow)` are scoped to
-  the signer, and Announce never re-homes a local URI. Each stops a distinct
-  spoofing attack; none is recorded. This is the largest undocumented decision
-  in the codebase and the one most likely to be "simplified" by someone reading
-  it as redundant host comparisons.
-- [x] **ADR 0016's central invariant did not hold for article moderation.** Fixed:
-  The record says authorization is enforced "inside the context function that
-  performs the operation, against freshly loaded state" and that LiveView
-  checks "are never the enforcement point". But `toggle_pin_article/1` and
-  `toggle_lock_article/1` take no actor at all, `soft_delete_article/2` checks
-  nothing, and `ArticleLive` computes `can_pin`/`can_lock`/`can_delete` once in
-  `mount/3` and never recomputes them — the exact failure the record's Context
-  describes. A role change now revokes sessions, which closes the worst case
-  (a demoted admin), but **removing a board moderator does not**, so they keep
-  pin, lock and delete on any article page left open. Fix is the one the ADR
-  names: take the actor into those four context functions. It would also
-  remove the fourth independent copy of the rule.
-- [ ] **Two smaller invariants with no ADR:** poll votes are anonymous (a
-  privacy promise with a UI consequence) and user-facing changesets are
-  allow-lists (what stops `ap_id` pre-squatting and backdating).
-- [ ] **ADR 0018 is violated by `app.css`.** Three rule sets target
-  `.card:has(> .card-body > .stretched-link)` — the record names
-  `.card > .card-body` as the anti-pattern, by example. The card in
-  `board_live.html.heex:141` has no semantic class to hang them on, which is
-  the ADR's own stated remedy.
-- [ ] **ADR 0024 §6 says every TOTP field carries the single-use hint.** Eight
-  templates do; `totp_setup_live.html.heex` does not — and enrolment *consumes*
-  the code (`enable_totp(…, used_step:)`), so an admin who enrols and goes
-  straight to `/admin/verify` inside the same 30 seconds is refused with
-  nothing having warned them.
+- **Origin binding had no ADR** → [0046](adr/0046-every-identity-claim-is-bound-to-the-host-that-can-prove-it.md).
+  Sixteen call sites, seven distinct attacks, one rule. Writing it turned up a
+  second, divergent `same_host?/2` private to `InboxHandler` that accepted two
+  hostless URIs as same-origin where the Validator's rejects them — and it was
+  the copy guarding the fetched-Announce object id and the `attributedTo`
+  binding. It now delegates.
+- **ADR 0016's invariant did not hold for article moderation** → fixed by
+  taking the actor into `toggle_pin_article/2`, `toggle_lock_article/2`,
+  `soft_delete_article/2` and `soft_delete_comment/2`, which reload it.
+  Reloading is not incidental: `can_delete_article?` matches on
+  `%{role: %{name: "admin"}}`, so an admin passed in with `:role` unloaded
+  would have fallen to the board-moderator branch and been silently denied.
+  A delete must now name its actor or say `remote: true`.
+- **ADR 0002's facade rule was stricter than the code** →
+  [0047](adr/0047-the-facade-lists-every-way-a-context-changes-the-world.md)
+  narrows it to the operations that change the world and names the five exempt
+  categories; `Federation` gains the five mutating moderation delegates the
+  admin LiveViews were bypassing it for. Deliberately no acceptance gate —
+  "changes the world" is a judgement, and the record says so.
+- **Poll anonymity had no ADR** →
+  [0048](adr/0048-a-poll-records-who-voted-and-nothing-reads-it-back.md), with
+  `test/baudrate/content/poll_anonymity_test.exs` as the gate. The record is
+  explicit that this is anonymity from other members, not from the operator.
+- **Changeset allow-lists had no ADR** →
+  [0049](adr/0049-user-facing-changesets-are-allow-lists.md). It is the local
+  half of 0046: that record stops a remote host minting our URIs, this stops a
+  member minting theirs, and the unique `ap_id` column needs both.
+- **ADR 0036 decision 1 lost its third enforcer** → the deploy asserts the
+  host's Debian release again. What it defends changed with
+  [0037](adr/0037-the-deploy-builds-on-the-server-again.md) and got stronger:
+  the release is built here now, so a drifted host silently becomes the system
+  the binary is built against, and `debian_version` also fixes the PostgreSQL
+  client major — a 17+ `pg_dump` against the 15 server breaks the pre-deploy
+  dump and the nightly backups rather than the deploy.
+- **ADR 0018 was violated by `app.css`** → the three `.card:has(> .card-body >
+  .stretched-link)` rule sets now hang off a `tappable-card` semantic class on
+  the five cards that are pressable as a whole. The pressed selector keeps two
+  branches on purpose: an article card holds independently clickable links and
+  `:active` propagates to ancestors, so a bare `:active` would flash the card
+  when you press the author.
+- **ADR 0024 §6** → `totp_setup_live.html.heex` carries the single-use hint,
+  and `test/baudrate_web/totp_code_hint_test.exs` is the gate that notices the
+  next one. Eight templates had it and nothing checked the ninth.
+
+**Left open deliberately.** The Aqua themes carry four more
+`.card > .card-body` selectors (`aquaosx.css:235,245`,
+`aquaosx-dark.css:217,222`). They are a theme restyling the daisyUI `card`
+component generically, not custom CSS hooked onto a specific element, and ADR
+0018 does not draw that distinction. Giving every card body a semantic class
+would touch dozens of templates and the theme would still target the component.
+Decide whether 0018 should say so before changing either.
 
 ---
 

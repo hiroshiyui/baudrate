@@ -87,6 +87,27 @@ defmodule Baudrate.Content.CommentTest do
       refute changeset.valid?
       assert %{body: _, article_id: _, user_id: _} = errors_on(changeset)
     end
+
+    # ADR 0049 decision 4. `ap_id` is unique and stamped post-insert, so a
+    # member who could set it would squat a remote Note's URI — the genuine
+    # comment then arrives and is dropped as a duplicate, and this instance
+    # serves theirs in its place.
+    test "does not cast ap_id from user input" do
+      user = create_user()
+      board = create_board()
+      article = create_article(user, board)
+
+      changeset =
+        Comment.changeset(%Comment{}, %{
+          body: "Great post!",
+          article_id: article.id,
+          user_id: user.id,
+          ap_id: "https://mastodon.social/users/victim/statuses/1"
+        })
+
+      assert changeset.valid?
+      refute Map.has_key?(changeset.changes, :ap_id)
+    end
   end
 
   describe "remote_changeset/2" do

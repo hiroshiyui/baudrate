@@ -17,7 +17,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 |---|---|---|
 | [0000](0000-use-architecture-decision-records.md) | Use Architecture Decision Records | Accepted |
 | [0001](0001-elixir-phoenix-liveview-platform.md) | Elixir / Phoenix / LiveView on Bandit as the application platform | Accepted; `FeedWorker` renamed by [0041](0041-rss-and-atom-are-syndication.md) |
-| [0002](0002-context-facades.md) | Context facades over focused sub-modules | Accepted; `Federation.Feed` renamed by [0039](0039-the-personal-stream-is-a-timeline.md) and [0041](0041-rss-and-atom-are-syndication.md); the no-sub-module rule is narrower in practice |
+| [0002](0002-context-facades.md) | Context facades over focused sub-modules | Accepted; `Federation.Feed` renamed by [0039](0039-the-personal-stream-is-a-timeline.md) and [0041](0041-rss-and-atom-are-syndication.md); the no-sub-module rule amended by [0047](0047-the-facade-lists-every-way-a-context-changes-the-world.md) |
 | [0003](0003-activitypub-federation.md) | Federate over ActivityPub, mapping boards to Group actors | Accepted |
 | [0004](0004-federation-gate-for-non-public-boards.md) | A single federation gate for every inbound interaction | Accepted; the outbound half is [0043](0043-the-outbound-federation-gate-and-withdrawals.md) |
 | [0005](0005-rust-nifs-for-untrusted-parsing.md) | Rust NIFs (Rustler) for sanitizing and parsing untrusted input | Accepted; the NIF table is a 2026-08-09 snapshot and is now incomplete |
@@ -62,6 +62,9 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0044](0044-the-instance-tells-its-admins-when-it-is-unwell.md) | The instance tells its admins when it is unwell | Accepted |
 | [0045](0045-the-video-player-loads-on-a-click.md) | The video player loads on a click, and nothing else is embedded | Accepted |
 | [0046](0046-every-identity-claim-is-bound-to-the-host-that-can-prove-it.md) | Every identity claim is bound to the host that can prove it | Accepted |
+| [0047](0047-the-facade-lists-every-way-a-context-changes-the-world.md) | The facade lists every way a context changes the world | Accepted |
+| [0048](0048-a-poll-records-who-voted-and-nothing-reads-it-back.md) | A poll records who voted, and nothing reads it back | Accepted |
+| [0049](0049-user-facing-changesets-are-allow-lists.md) | User-facing changesets are allow-lists | Accepted |
 
 ## Writing a new ADR
 

@@ -3,8 +3,9 @@
 - **Status:** Accepted; the sub-module list names `Federation.Feed`, which
   [0041](0041-rss-and-atom-are-syndication.md) and
   [0039](0039-the-personal-stream-is-a-timeline.md) renamed to
-  `Federation.Timeline`. The "never reach into a sub-module" rule is also
-  narrower in practice than as written — see the audit note in `doc/TODOs.md`
+  `Federation.Timeline`. The "never reach into a sub-module" rule is amended by
+  [0047](0047-the-facade-lists-every-way-a-context-changes-the-world.md), which
+  narrows it to the operations that change the world and names what is exempt
 - **Date:** Recorded retroactively 2026-08-09
 
 ## Context
