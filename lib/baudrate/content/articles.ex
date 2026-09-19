@@ -159,6 +159,12 @@ defmodule Baudrate.Content.Articles do
     image_ids = Keyword.get(opts, :image_ids, [])
     poll_attrs = Keyword.get(opts, :poll)
 
+    # Learn any remote actor the body mentions *before* the transaction: the
+    # lookup is an HTTP request, and one inside a transaction holds a database
+    # connection open for the length of somebody else's timeout (ADR 0034).
+    # Best-effort and bounded — see `Federation.Mentions` (ADR 0051).
+    maybe_warm_mentions(attrs, board_ids, opts)
+
     # `trusted: true` is for system callers (bots) that legitimately set
     # `url`/`published_at`; user-facing callers must never pass it.
     changeset =
@@ -271,6 +277,14 @@ defmodule Baudrate.Content.Articles do
   end
 
   defp do_update_article(article, attrs, editor) do
+    # An edit can add a mention nobody here has seen, so the same
+    # before-the-transaction lookup applies (ADR 0051).
+    article = Repo.preload(article, :boards)
+
+    if Baudrate.Federation.Delivery.article_boards_federated?(article) do
+      Baudrate.Federation.Mentions.warm(attrs[:body] || attrs["body"], article.user_id)
+    end
+
     result =
       Ecto.Multi.new()
       |> maybe_snapshot_revision(article, editor)
@@ -951,6 +965,34 @@ defmodule Baudrate.Content.Articles do
         )
       end
     end
+  end
+
+  # A mention is resolved only for content that can actually leave (ADR 0051,
+  # decision 3). Resolving one is itself an outbound request, so doing it for
+  # an article in a private board would tell that server a member here typed
+  # the handle — a smaller leak than delivering the article, and the same
+  # decision governs both.
+  #
+  # Bots are skipped: a feed body is not the bot's writing, and an RSS item
+  # that happens to contain an address would make this instance fetch from
+  # whatever domain it named, on a schedule.
+  defp maybe_warm_mentions(attrs, board_ids, opts) do
+    author_id = attrs[:user_id] || attrs["user_id"]
+    body = attrs[:body] || attrs["body"]
+
+    if not Keyword.get(opts, :trusted, false) and boards_federated?(board_ids) do
+      Baudrate.Federation.Mentions.warm(body, author_id)
+    end
+
+    :ok
+  end
+
+  defp boards_federated?([]), do: true
+
+  defp boards_federated?(board_ids) do
+    from(b in Board, where: b.id in ^board_ids)
+    |> Repo.all()
+    |> Enum.any?(&Board.federated?/1)
   end
 
   # Builds a changeset that stamps the article's canonical AP ID inside the

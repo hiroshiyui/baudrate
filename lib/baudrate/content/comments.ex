@@ -74,6 +74,10 @@ defmodule Baudrate.Content.Comments do
     body_html = Baudrate.Content.Markdown.to_html(attrs["body"] || "")
     image_ids = Keyword.get(opts, :image_ids, [])
 
+    # Before the transaction, and only for a thread that can leave (ADR 0051).
+    # A comment inherits its article's reach, so the gate is the article's.
+    warm_comment_mentions(attrs)
+
     multi_result =
       Ecto.Multi.new()
       |> Ecto.Multi.insert(
@@ -488,6 +492,20 @@ defmodule Baudrate.Content.Comments do
       """,
       [article_id]
     )
+  end
+
+  defp warm_comment_mentions(attrs) do
+    with article_id when not is_nil(article_id) <- attrs["article_id"] || attrs[:article_id],
+         %{} = article <- Repo.get(Article, article_id),
+         article = Repo.preload(article, :boards),
+         true <- Baudrate.Federation.Delivery.article_boards_federated?(article) do
+      Baudrate.Federation.Mentions.warm(
+        attrs["body"] || attrs[:body],
+        attrs["user_id"] || attrs[:user_id]
+      )
+    end
+
+    :ok
   end
 
   # Builds an Ecto changeset that stamps the comment's canonical AP ID and

@@ -16,7 +16,7 @@ defmodule Baudrate.Federation.ObjectBuilder do
   alias Baudrate.Content
   alias Baudrate.Content.Board
   alias Baudrate.Content.Markdown
-  alias Baudrate.Federation.Visibility
+  alias Baudrate.Federation.{Delivery, Mentions, Visibility}
   alias Baudrate.Repo
 
   @as_context "https://www.w3.org/ns/activitystreams"
@@ -42,7 +42,18 @@ defmodule Baudrate.Federation.ObjectBuilder do
       |> Enum.filter(&Board.federated?/1)
       |> Enum.map(&actor_uri(:board, &1.slug))
 
-    tags = extract_hashtags(article.body)
+    # A mention addresses, and the board gate still decides (ADR 0051). An
+    # article that may not leave carries no `Mention` tag and no mentioned
+    # actor in `cc`, however many handles its body contains — otherwise typing
+    # one would be a one-step way to send a private board's article to any
+    # instance on the internet, and this object is served verbatim by three
+    # unauthenticated endpoints.
+    mentioned =
+      if Delivery.article_boards_federated?(article),
+        do: Mentions.known(article.body),
+        else: []
+
+    tags = extract_hashtags(article.body) ++ Mentions.tags(mentioned)
 
     map = %{
       "@context" => @as_context,
@@ -59,7 +70,9 @@ defmodule Baudrate.Federation.ObjectBuilder do
       "attributedTo" => actor_uri(:user, article.user.username),
       "published" => DateTime.to_iso8601(article.inserted_at),
       "to" => [@as_public],
-      "cc" => board_uris,
+      "cc" => board_uris ++ Mentions.uris(mentioned),
+      # `audience` stays the board context only: it says where the article
+      # lives, not who was addressed.
       "audience" => board_uris,
       "url" => "#{base_url()}/articles/#{article.slug}",
       "replies" => "#{article.ap_id || actor_uri(:article, article.slug)}/replies",
@@ -101,7 +114,14 @@ defmodule Baudrate.Federation.ObjectBuilder do
     actor_uri = actor_uri(:user, comment.user.username)
     {to, cc} = Visibility.to_addressing(comment.visibility, "#{actor_uri}/followers")
 
-    %{
+    # The comment inherits its article's reach, for mentions as for everything
+    # else (ADR 0051).
+    mentioned =
+      if Delivery.article_boards_federated?(article),
+        do: Mentions.known(comment.body),
+        else: []
+
+    map = %{
       "@context" => @as_context,
       "id" => comment.ap_id || actor_uri(:comment, comment.id),
       "type" => "Note",
@@ -109,12 +129,15 @@ defmodule Baudrate.Federation.ObjectBuilder do
       "content" => comment.body_html || comment.body || "",
       "mediaType" => "text/html",
       "attributedTo" => actor_uri,
-      "inReplyTo" => article.ap_id || actor_uri(:article, article.slug),
+      "inReplyTo" => reply_target_uri(comment, article),
       "published" => DateTime.to_iso8601(comment.inserted_at),
       "to" => to,
-      "cc" => cc
+      "cc" => cc ++ Mentions.uris(mentioned)
     }
-    |> maybe_embed_comment_images(comment.images)
+
+    map = if mentioned == [], do: map, else: Map.put(map, "tag", Mentions.tags(mentioned))
+
+    maybe_embed_comment_images(map, comment.images)
   end
 
   @doc """
@@ -150,6 +173,34 @@ defmodule Baudrate.Federation.ObjectBuilder do
       "cc" => board_uris
     })
   end
+
+  @doc """
+  The URI a comment replies to: its parent comment when it has one, otherwise
+  the article.
+
+  Threading on the receiving side is `inReplyTo`, and nothing else. Until
+  Phase 3A every comment named the article, so a remote instance had no way to
+  know a reply was a reply and rendered the whole discussion flat — and until
+  [ADR 0050](../../../doc/adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md)
+  gave a comment a dereferenceable id there was nothing it *could* have named.
+
+  A remote parent's own `ap_id` is used as it stands, which is what threads
+  the reply back into the conversation on the instance it started from. A
+  parent that has somehow lost its `ap_id`, or has been hard-deleted, falls
+  back to the article: a reply that lands in the right thread at the wrong
+  depth is better than one that names a URI nobody can resolve.
+  """
+  @spec reply_target_uri(map(), map()) :: String.t()
+  def reply_target_uri(%{parent_id: parent_id}, article) when is_integer(parent_id) do
+    case Repo.get(Content.Comment, parent_id) do
+      %{ap_id: ap_id} when is_binary(ap_id) and ap_id != "" -> ap_id
+      _ -> article_uri(article)
+    end
+  end
+
+  def reply_target_uri(_comment, article), do: article_uri(article)
+
+  defp article_uri(article), do: article.ap_id || actor_uri(:article, article.slug)
 
   # --- Private ---
 

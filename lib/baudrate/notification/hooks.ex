@@ -39,7 +39,7 @@ defmodule Baudrate.Notification.Hooks do
   alias BaudrateWeb.ArticleHelpers
   import Ecto.Query, only: [from: 2]
 
-  alias Baudrate.Content.{Article, BoardArticle, BoardModerator, Comment, Markdown}
+  alias Baudrate.Content.{Article, BoardArticle, BoardModerator, Comment}
   alias Baudrate.Moderation.Report
 
   @doc """
@@ -460,7 +460,10 @@ defmodule Baudrate.Notification.Hooks do
   # --- Private helpers ---
 
   defp notify_mentions(body, actor_user_id, article_id, comment_id) do
-    usernames = Markdown.extract_mentions(body)
+    # `Mentions.extract/1`, not `Markdown.extract_mentions/1`: a member may be
+    # named in the long form `@alice@this.host`, which is a local mention
+    # written out in full and has to notify like any other (ADR 0051).
+    usernames = Baudrate.Federation.Mentions.extract(body).local
     article = mentioned_article(article_id)
 
     Enum.each(usernames, fn username ->

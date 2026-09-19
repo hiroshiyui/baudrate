@@ -144,25 +144,35 @@ defmodule Baudrate.Federation.Discovery do
   resolves directly.
 
   Returns `{:ok, %RemoteActor{}}` or `{:error, reason}`.
+
+  ## Options
+
+    * `:timeout` — shortens the deadline for **both** fetches this makes (the
+      WebFinger document and the actor). `Federation.Mentions` passes one,
+      because it runs while a member's post is being saved and the federation
+      defaults are sized for background delivery. It can only shorten.
   """
-  @spec lookup_remote_actor(String.t()) :: {:ok, RemoteActor.t()} | {:error, term()}
-  def lookup_remote_actor("@" <> rest) do
-    lookup_remote_actor(rest)
+  @spec lookup_remote_actor(String.t(), keyword()) ::
+          {:ok, RemoteActor.t()} | {:error, term()}
+  def lookup_remote_actor(query, opts \\ [])
+
+  def lookup_remote_actor("@" <> rest, opts) do
+    lookup_remote_actor(rest, opts)
   end
 
-  def lookup_remote_actor(query) when is_binary(query) do
+  def lookup_remote_actor(query, opts) when is_binary(query) do
     cond do
       String.contains?(query, "@") && !String.contains?(query, "/") ->
         case String.split(query, "@", parts: 2) do
           [user, domain] when user != "" and domain != "" ->
-            webfinger_lookup(user, domain)
+            webfinger_lookup(user, domain, opts)
 
           _ ->
             {:error, :invalid_query}
         end
 
       String.starts_with?(query, "https://") ->
-        ActorResolver.resolve(query)
+        ActorResolver.resolve(query, opts)
 
       true ->
         {:error, :invalid_query}
@@ -262,15 +272,17 @@ defmodule Baudrate.Federation.Discovery do
     end
   end
 
-  defp webfinger_lookup(user, domain) do
+  defp webfinger_lookup(user, domain, opts) do
     resource = "acct:#{user}@#{domain}"
     url = "https://#{domain}/.well-known/webfinger?resource=#{URI.encode_www_form(resource)}"
 
-    case HTTPClient.get(url, headers: [{"accept", "application/jrd+json"}]) do
+    get_opts = [headers: [{"accept", "application/jrd+json"}], timeout: opts[:timeout]]
+
+    case HTTPClient.get(url, get_opts) do
       {:ok, %{body: body}} ->
         with {:ok, jrd} <- Jason.decode(body),
              {:ok, actor_url} <- extract_self_link(jrd) do
-          ActorResolver.resolve(actor_url)
+          ActorResolver.resolve(actor_url, opts)
         end
 
       {:error, reason} ->

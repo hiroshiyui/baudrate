@@ -69,7 +69,31 @@ defmodule Baudrate.Federation.HTTPClient do
       | headers
     ]
 
-    do_get(url, all_headers, config, @max_redirects, Keyword.get(opts, :refuse_blocked, false))
+    do_get(
+      url,
+      all_headers,
+      with_deadline(config, opts[:timeout]),
+      @max_redirects,
+      Keyword.get(opts, :refuse_blocked, false)
+    )
+  end
+
+  # Shortens this request's deadlines, for a caller that has somebody waiting
+  # on the answer — a mention lookup runs while a member's post is being
+  # saved, and the federation defaults (30 s per read, 60 s whole-request) are
+  # sized for a delivery retrying in the background, not for that.
+  #
+  # Only ever shortens: `min/2` means a caller cannot use this to sit on a
+  # connection for longer than the configured ceiling.
+  defp with_deadline(config, nil), do: config
+
+  defp with_deadline(config, timeout) when is_integer(timeout) and timeout > 0 do
+    receive_ceiling = config[:http_receive_timeout] || timeout
+    request_ceiling = config[:http_request_timeout] || @default_request_timeout
+
+    config
+    |> Keyword.put(:http_receive_timeout, min(receive_ceiling, timeout))
+    |> Keyword.put(:http_request_timeout, min(request_ceiling, timeout))
   end
 
   defp do_get(_url, _headers, _config, remaining, _block?) when remaining < 0 do
@@ -269,7 +293,8 @@ defmodule Baudrate.Federation.HTTPClient do
 
     get(url,
       headers: extra_headers ++ existing_headers,
-      refuse_blocked: Keyword.get(opts, :refuse_blocked, false)
+      refuse_blocked: Keyword.get(opts, :refuse_blocked, false),
+      timeout: opts[:timeout]
     )
   end
 

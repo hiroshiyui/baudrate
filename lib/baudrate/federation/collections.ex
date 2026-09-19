@@ -215,7 +215,7 @@ defmodule Baudrate.Federation.Collections do
           "id" => comment.ap_id || local_comment_uri(comment),
           "content" => comment.body_html || "",
           "attributedTo" => attributed_to,
-          "inReplyTo" => actor_uri(:article, article.slug),
+          "inReplyTo" => ObjectBuilder.reply_target_uri(comment, article),
           "published" => DateTime.to_iso8601(comment.inserted_at)
         }
       end)

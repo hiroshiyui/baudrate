@@ -26,6 +26,7 @@ defmodule BaudrateWeb.RateLimits do
   | `check_dm_send/1`       | `dm_send:`         | 1 min   | 20    |
   | `check_outbound_follow/1`| `outbound_follow:` | 1 hour  | 10    |
   | `check_create_report/1` | `report_create:`   | 15 min  | 5     |
+  | `check_mention_resolve/1` | `mention_resolve:` | 1 hour | 30   |
   | `check_timeline_reply/1`   | `timeline_reply:`      | 5 min   | 20    |
   | `check_link_preview_domain/1` | `lp_domain:` | 1 min   | 10    |
   | `check_link_preview_user/1`   | `lp_user:`   | 1 min   | 5     |
@@ -186,6 +187,26 @@ defmodule BaudrateWeb.RateLimits do
   @spec check_account_alias(integer()) :: :ok | {:error, :rate_limited}
   def check_account_alias(user_id) do
     check("account_alias:#{user_id}", 3_600_000, 10, :account_alias)
+  end
+
+  @doc """
+  Resolving an unknown `@user@domain` mention: 30 per hour per user
+  (ADR 0051).
+
+  Each unknown handle costs the named server a WebFinger request and an actor
+  fetch, and the handles come from text the author chose — so without a bound
+  a member could make this instance hammer someone else's, or scan a domain
+  for which accounts exist. `Federation.Mentions` also caps the lookups any
+  single post can trigger, so this limits the sustained rate and that limits
+  the burst.
+
+  Deliberately higher than `check_outbound_follow/1` (10/hour): mentioning
+  people is ordinary writing, and the first post of a conversation can
+  legitimately name several accounts nobody here has seen.
+  """
+  @spec check_mention_resolve(integer()) :: :ok | {:error, :rate_limited}
+  def check_mention_resolve(user_id) do
+    check("mention_resolve:#{user_id}", 3_600_000, 30, :mention_resolve)
   end
 
   @doc "Report creation: 5 per 15 minutes per user."

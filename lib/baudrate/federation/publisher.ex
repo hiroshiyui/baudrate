@@ -26,6 +26,8 @@ defmodule Baudrate.Federation.Publisher do
   alias Baudrate.Content.Board
   alias Baudrate.Federation
   alias Baudrate.Federation.Delivery
+  alias Baudrate.Federation.Mentions
+  alias Baudrate.Federation.ObjectBuilder
   alias Baudrate.Federation.{TimelineItemBoost, TimelineItemLike}
   alias Baudrate.Repo
 
@@ -41,7 +43,12 @@ defmodule Baudrate.Federation.Publisher do
   defp visibility_addressing(visibility, followers_uri),
     do: Baudrate.Federation.Visibility.to_addressing(visibility, followers_uri)
 
-  # Builds `{to, cc}` for article activities, merging board URIs into `cc`.
+  # Builds `{to, cc}` for article activities, merging board URIs and mentioned
+  # actors into `cc`.
+  #
+  # This overwrites whatever `ObjectBuilder.article_object/1` put there, so the
+  # two have to agree about mentions — they do, because both ask
+  # `Mentions.known/1` behind the same gate.
   defp article_addressing(article, actor_uri) do
     {to, cc} = visibility_addressing(article.visibility, "#{actor_uri}/followers")
 
@@ -53,7 +60,17 @@ defmodule Baudrate.Federation.Publisher do
       |> Enum.filter(&Board.federated?/1)
       |> Enum.map(&Federation.actor_uri(:board, &1.slug))
 
-    {to, Enum.uniq(cc ++ board_uris)}
+    {to, Enum.uniq(cc ++ board_uris ++ Mentions.uris(mentioned_in_article(article)))}
+  end
+
+  # A mention addresses; it never widens the audience (ADR 0051). An article
+  # that may not leave names nobody.
+  defp mentioned_in_article(article) do
+    if Delivery.article_boards_federated?(article), do: Mentions.known(article.body), else: []
+  end
+
+  defp mentioned_in_comment(comment, article) do
+    if Delivery.article_boards_federated?(article), do: Mentions.known(comment.body), else: []
   end
 
   # --- Activity Builders ---
@@ -165,16 +182,20 @@ defmodule Baudrate.Federation.Publisher do
   """
   def build_create_comment(comment, article) do
     comment = Repo.preload(comment, [:user, :images])
-    article = Repo.preload(article, [:user])
+    # `:boards` as well as `:user` — `mentioned_in_comment/2` asks the board
+    # gate, and `article_boards_federated?/1` fails closed on an unloaded
+    # association, so without this every comment mention was silently dropped.
+    article = Repo.preload(article, [:user, :boards])
     actor_uri = Federation.actor_uri(:user, comment.user.username)
-    article_uri = article.ap_id || Federation.actor_uri(:article, article.slug)
     note_uri = comment_ap_id_or_derive(comment)
 
     note_url =
       comment.url ||
         "#{Federation.base_url()}/articles/#{article.slug}#comment-#{comment.id}"
 
+    mentioned = mentioned_in_comment(comment, article)
     {to, cc} = visibility_addressing(comment.visibility, "#{actor_uri}/followers")
+    cc = Enum.uniq(cc ++ Mentions.uris(mentioned))
 
     note_object =
       %{
@@ -183,11 +204,14 @@ defmodule Baudrate.Federation.Publisher do
         "url" => note_url,
         "content" => comment.body_html || comment.body,
         "attributedTo" => actor_uri,
-        "inReplyTo" => article_uri,
+        # The parent comment when there is one, so the reply threads where it
+        # belongs instead of flat under the article (ADR 0051).
+        "inReplyTo" => ObjectBuilder.reply_target_uri(comment, article),
         "published" => DateTime.to_iso8601(comment.inserted_at),
         "to" => to,
         "cc" => cc
       }
+      |> maybe_put_mention_tags(mentioned)
       |> maybe_put_comment_attachments(comment)
 
     activity = %{
@@ -443,9 +467,13 @@ defmodule Baudrate.Federation.Publisher do
   def publish_article_created(article) do
     article = Repo.preload(article, [:boards, :user])
 
-    # Create(Article) from user → user's followers + board followers
+    # Create(Article) from user → user's followers + board followers, plus
+    # anyone the body mentions (ADR 0051).
     {activity, actor_uri} = build_create_article(article)
-    Delivery.enqueue_for_article(activity, actor_uri, article)
+
+    Delivery.enqueue_for_article(activity, actor_uri, article,
+      mentioned: mentioned_in_article(article)
+    )
 
     # Announce from each federated board → board's followers.
     # `federated?/1`, not `public?/1`: turning `ap_enabled` off does not
@@ -503,7 +531,8 @@ defmodule Baudrate.Federation.Publisher do
     {activity, actor_uri} = build_create_comment(comment, article)
 
     Delivery.enqueue_for_article(activity, actor_uri, article,
-      remote_authors: reply_authors(comment, article)
+      remote_authors: reply_authors(comment, article),
+      mentioned: mentioned_in_comment(comment, article)
     )
   end
 
@@ -585,7 +614,12 @@ defmodule Baudrate.Federation.Publisher do
   def publish_article_updated(article) do
     article = Repo.preload(article, [:boards, :user])
     {activity, actor_uri} = build_update_article(article)
-    Delivery.enqueue_for_article(activity, actor_uri, article)
+
+    # An edit can add a mention, and the mentioned actor has not seen the
+    # article at all — so an `Update` is delivered to them as well.
+    Delivery.enqueue_for_article(activity, actor_uri, article,
+      mentioned: mentioned_in_article(article)
+    )
   end
 
   # --- Article Like ---
@@ -1461,6 +1495,11 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   defp maybe_put_comment_attachments(note_object, _comment), do: note_object
+
+  defp maybe_put_mention_tags(note_object, []), do: note_object
+
+  defp maybe_put_mention_tags(note_object, mentioned),
+    do: Map.put(note_object, "tag", Mentions.tags(mentioned))
 
   defp maybe_put_reply_attachments(note_object, %{images: images})
        when is_list(images) and images != [] do

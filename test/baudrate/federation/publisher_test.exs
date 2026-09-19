@@ -1426,6 +1426,30 @@ defmodule Baudrate.Federation.PublisherTest do
       assert inbox_urls() == []
     end
 
+    # ADR 0051's sixth surface. A mention is the one place a *member* picks an
+    # outbound recipient, by typing a handle — so it is governed by this gate
+    # rather than being an exception to it. `mentions_test.exs` covers the
+    # behaviour; this is here because the list of surfaces lives here.
+    test "a mention does not carry the article out of a private board", %{
+      article: article,
+      user: user
+    } do
+      actor = create_remote_actor()
+
+      {:ok, mentioning} =
+        Baudrate.Content.update_article(
+          article,
+          %{body: "hi @#{actor.username}@#{actor.domain}"},
+          user
+        )
+
+      Repo.delete_all(Baudrate.Federation.DeliveryJob)
+      Publisher.publish_article_created(Repo.preload(mentioning, [:boards, :user]))
+
+      assert inbox_urls() == []
+      refute actor.ap_id in (Baudrate.Federation.article_object(mentioning)["cc"] || [])
+    end
+
     test "publish_article_deleted/1 delivers the Delete(Tombstone)", %{
       article: article,
       remote: remote

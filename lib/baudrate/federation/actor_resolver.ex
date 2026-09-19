@@ -30,17 +30,17 @@ defmodule Baudrate.Federation.ActorResolver do
   2. If found and `fetched_at` within TTL, returns cached
   3. Otherwise fetches via HTTP, validates, and upserts into DB
   """
-  def resolve(actor_ap_id) when is_binary(actor_ap_id) do
+  def resolve(actor_ap_id, opts \\ []) when is_binary(actor_ap_id) do
     case Repo.one(from r in RemoteActor, where: r.ap_id == ^actor_ap_id) do
       %RemoteActor{} = actor ->
         if stale?(actor) do
-          fetch_and_upsert(actor_ap_id)
+          fetch_and_upsert(actor_ap_id, opts)
         else
           {:ok, actor}
         end
 
       nil ->
-        fetch_and_upsert(actor_ap_id)
+        fetch_and_upsert(actor_ap_id, opts)
     end
   end
 
@@ -67,9 +67,17 @@ defmodule Baudrate.Federation.ActorResolver do
     age > ttl
   end
 
-  defp fetch_and_upsert(actor_ap_id) do
+  defp fetch_and_upsert(actor_ap_id, opts \\ []) do
     with :ok <- validate_fetchable(actor_ap_id) do
-      case HTTPClient.get(actor_ap_id, headers: [], refuse_blocked: true) do
+      # `:timeout` shortens the deadline for a caller with somebody waiting on
+      # the answer (a mention lookup during a post); absent, the federation
+      # defaults apply. `refuse_blocked: true` on **both** the unsigned fetch
+      # and the signed retry — answering the unsigned GET with 401/403/404 is
+      # the documented way to trigger the retry, so a first-hop-only check was
+      # bypassable (ADR 0030 decision 9).
+      fetch_opts = [headers: [], refuse_blocked: true, timeout: opts[:timeout]]
+
+      case HTTPClient.get(actor_ap_id, fetch_opts) do
         {:ok, %{body: body}} ->
           parse_and_upsert(body, actor_ap_id)
 
@@ -77,7 +85,7 @@ defmodule Baudrate.Federation.ActorResolver do
           # Remote requires authorized fetch — retry with signed request.
           # Some instances (e.g. Threads.net) return 404 instead of 401
           # for unsigned requests.
-          signed_fetch(actor_ap_id)
+          signed_fetch(actor_ap_id, opts)
 
         {:error, reason} = err ->
           Logger.warning(
@@ -121,7 +129,7 @@ defmodule Baudrate.Federation.ActorResolver do
     end
   end
 
-  defp signed_fetch(actor_ap_id) do
+  defp signed_fetch(actor_ap_id, opts) do
     with {:ok, _} <- KeyStore.ensure_site_keypair(),
          {:ok, private_key} <- KeyStore.decrypt_site_private_key() do
       site_uri = Federation.actor_uri(:site, nil)
@@ -133,7 +141,9 @@ defmodule Baudrate.Federation.ActorResolver do
       # GET with 401/403/404 is the documented way to make us retry here.
       # ADR 0030 decision 9: a block stops us reaching out, not only
       # listening.
-      case HTTPClient.signed_get(actor_ap_id, private_key, key_id, refuse_blocked: true) do
+      signed_opts = [refuse_blocked: true, timeout: opts[:timeout]]
+
+      case HTTPClient.signed_get(actor_ap_id, private_key, key_id, signed_opts) do
         {:ok, %{body: body}} ->
           parse_and_upsert(body, actor_ap_id)
 

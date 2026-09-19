@@ -38,6 +38,7 @@ defmodule Baudrate.Federation.Delivery do
     HTTPClient,
     HTTPSignature,
     KeyStore,
+    Mentions,
     Validator
   }
 
@@ -418,7 +419,22 @@ defmodule Baudrate.Federation.Delivery do
           []
       end)
 
-    all_inboxes = Enum.uniq(user_inboxes ++ board_inboxes ++ author_inboxes)
+    # Mentioned actors, and the board gate applies to them (ADR 0051,
+    # decision 3) — unlike `remote_authors` above, which is deliberately
+    # ungated because a reply or like on a *remote* actor's own article must
+    # reach them whatever board the local copy sits in. A mention is the other
+    # case entirely: the author picked the recipient by typing a handle, so
+    # without this an article in a staff-only board would be delivered, in
+    # full, to any instance on the internet on a member's say-so. Same
+    # condition as `user_inboxes`, and for the same reason.
+    mention_inboxes =
+      if not gated? or article_boards_federated?(article) do
+        opts |> Keyword.get(:mentioned, []) |> Mentions.inboxes()
+      else
+        []
+      end
+
+    all_inboxes = Enum.uniq(user_inboxes ++ board_inboxes ++ author_inboxes ++ mention_inboxes)
 
     if all_inboxes != [] do
       enqueue(activity_json, actor_uri, all_inboxes)
