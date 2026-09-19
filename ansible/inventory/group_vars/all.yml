@@ -3,7 +3,8 @@
 # Production's Debian release. CI builds and tests on it (ci/image/Dockerfile)
 # because a release carries its own Erlang runtime and NIFs, linked against
 # this system's glibc and OpenSSL; the image workflow and
-# ci/image/verify-toolchain.sh check that the two agree.
+# ci/image/verify-toolchain.sh check that the two agree, and the deploy
+# refuses a host that runs anything else.
 debian_version: "12"
 baudrate_user: baudrate
 baudrate_home: /opt/baudrate

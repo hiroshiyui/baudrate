@@ -122,7 +122,7 @@ root.
 
 | Phase | Description |
 |-------|-------------|
-| Pre-flight | Verify the `baudrate` user and asdf exist; warn if deploying an older version |
+| Pre-flight | Verify the `baudrate` user and asdf exist and that the host runs Debian `debian_version` on x86_64 (ADR 0036 decision 1); warn if deploying an older version |
 | Directories | Create `releases/`, `shared/uploads/`, `env/` |
 | Source | Clone repo and checkout the prompted release tag |
 | Build | Wipe `_build/prod` if the tag's `.tool-versions` differs from the last build → `mix deps.get` → `mix compile` → `mix assets.deploy` → clean stale rel → `mix release` |

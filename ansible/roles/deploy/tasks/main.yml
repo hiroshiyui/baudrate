@@ -26,6 +26,31 @@
     key: "{{ baudrate_user }}"
   register: baudrate_user_check
 
+# ADR 0036 decision 1 gives this check three enforcers: the image workflow,
+# ci/image/verify-toolchain.sh, and the deploy. ADR 0037 moved the build back
+# to the server, which changes what the check defends but not whether it is
+# needed — it needs it more. The release no longer arrives pre-linked, so it
+# cannot fail to start here; instead this host's Debian release silently
+# becomes the one the binary is built against, and nothing else would notice
+# that it is no longer the one CI builds and tests on. debian_version also
+# fixes the PostgreSQL client major (ci/image/Dockerfile): a 17+ pg_dump
+# writes SET transaction_timeout, which the 15 server rejects, so a drifted
+# host breaks the pre-deploy dump and the nightly backups (ADR 0028) rather
+# than the deploy.
+- name: Check the host runs what CI builds and tests on
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == 'Debian'
+      - ansible_facts.distribution_major_version == (debian_version | string)
+      - ansible_facts.architecture == 'x86_64'
+    fail_msg: >-
+      CI builds and tests on Debian {{ debian_version }}/x86_64, and this host
+      runs {{ ansible_facts.distribution }}
+      {{ ansible_facts.distribution_major_version }} on
+      {{ ansible_facts.architecture }}. Change debian_version, the CI image and
+      the PostgreSQL service images together (ci/image/README.md) before
+      deploying here.
+
 - name: Verify asdf is installed
   ansible.builtin.stat:
     path: "{{ baudrate_home }}/.asdf/bin/asdf"
