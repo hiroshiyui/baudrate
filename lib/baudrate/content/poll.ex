@@ -25,6 +25,9 @@ defmodule Baudrate.Content.Poll do
     field :closes_at, :utc_datetime
     field :voters_count, :integer, default: 0
     field :ap_id, :string
+    # The `<article-uri>#poll` URI this poll carried before Phase 3B rewrote
+    # it (ADR 0050). Not castable: set only by the backfill.
+    field :legacy_ap_id, :string
 
     belongs_to :article, Article
     has_many :options, PollOption, preload_order: [asc: :position]

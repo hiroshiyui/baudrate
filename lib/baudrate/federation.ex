@@ -129,11 +129,18 @@ defmodule Baudrate.Federation do
 
       iex> actor_uri(:site, nil)
       "https://example.com/ap/site"
+
+  `:article`, `:comment` and `:poll` are objects rather than actors; they live
+  here because every URI this instance mints is built in one place, and an id
+  that is minted in two places drifts. Each one is a path a remote server can
+  dereference — never a fragment (ADR 0050).
   """
   def actor_uri(:user, username), do: "#{base_url()}/ap/users/#{username}"
   def actor_uri(:board, slug), do: "#{base_url()}/ap/boards/#{slug}"
   def actor_uri(:site, _), do: "#{base_url()}/ap/site"
   def actor_uri(:article, slug), do: "#{base_url()}/ap/articles/#{slug}"
+  def actor_uri(:comment, id), do: "#{base_url()}/ap/comments/#{id}"
+  def actor_uri(:poll, id), do: "#{base_url()}/ap/polls/#{id}"
 
   # --- Discovery ---
 
@@ -154,9 +161,11 @@ defmodule Baudrate.Federation do
   defdelegate site_actor(), to: ActorRenderer
   defdelegate render_bio_html(bio), to: ActorRenderer
 
-  # --- Article Object ---
+  # --- Objects ---
 
   defdelegate article_object(article), to: ObjectBuilder
+  defdelegate comment_object(comment), to: ObjectBuilder
+  defdelegate poll_object(poll), to: ObjectBuilder
 
   # --- Collections ---
 

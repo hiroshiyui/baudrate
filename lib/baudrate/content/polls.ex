@@ -28,6 +28,28 @@ defmodule Baudrate.Content.Polls do
   end
 
   @doc """
+  Fetches a poll by its ActivityPub ID, current or previous, preloading
+  options.
+
+  Phase 3B rewrote every local poll's `ap_id` from `<article-uri>#poll` to
+  `/ap/polls/:id` (ADR 0050) and kept the old value in `legacy_ap_id`. A peer
+  that learned the poll before the rewrite still addresses it by the old URI,
+  so both have to resolve. `legacy_ap_id` is matched, never asserted.
+  """
+  def get_poll_by_ap_id(ap_id) when is_binary(ap_id) do
+    from(p in Poll,
+      where: p.ap_id == ^ap_id or p.legacy_ap_id == ^ap_id,
+      order_by: [asc: fragment("? = ?", p.legacy_ap_id, ^ap_id)],
+      limit: 1
+    )
+    |> Repo.one()
+    |> case do
+      nil -> nil
+      poll -> Repo.preload(poll, :options)
+    end
+  end
+
+  @doc """
   Ensures a poll's `:options` association is loaded.
   """
   def preload_poll_options(%Poll{} = poll), do: Repo.preload(poll, :options)

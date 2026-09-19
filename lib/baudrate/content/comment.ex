@@ -26,6 +26,11 @@ defmodule Baudrate.Content.Comment do
     field :body, :string
     field :body_html, :string
     field :ap_id, :string
+    # The `#note-N` URI this comment carried before Phase 3B rewrote it
+    # (ADR 0050). Never cast from params, never asserted outbound as the
+    # object's own id; it exists so a peer that knows only the old URI still
+    # resolves, and so a withdrawal can name what that peer knows.
+    field :legacy_ap_id, :string
     field :url, :string
     field :visibility, :string, default: "public"
     field :deleted_at, :utc_datetime

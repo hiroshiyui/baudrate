@@ -56,14 +56,24 @@ defmodule Baudrate.Release do
   end
 
   @doc """
-  Backfills missing `ap_id` fields on local articles, polls, and comments.
+  Brings local articles', polls' and comments' `ap_id` fields up to the
+  canonical scheme.
 
-  ap_id stamping is now part of the same transaction as the insert (since
-  v1.8.2), but pre-existing rows from earlier code paths may carry
-  `ap_id = nil` if a process crashed between transaction commit and the
-  separate post-commit `Repo.update!/1` that stamped them. This task heals
-  those rows in place using the canonical-URI scheme `Articles.create_article/3`
-  and `Comments.create_comment/2` apply at write time.
+  Two passes, both idempotent and resumable:
+
+    * **Missing ids.** ap_id stamping is part of the same transaction as the
+      insert (since v1.8.2), but rows from earlier code paths may carry
+      `ap_id = nil` if a process crashed between the commit and the separate
+      post-commit `Repo.update!/1` that stamped them.
+    * **Fragment ids (Phase 3B, ADR 0050).** Comments were stamped
+      `<actor>#note-N` and polls `<article-uri>#poll`. A fragment never reaches
+      the server, so dereferencing either returned the actor or the article and
+      no remote instance could resolve the object. Both are rewritten to
+      `/ap/comments/:id` and `/ap/polls/:id`, and the **previous id is kept in
+      `legacy_ap_id`** — it is the identity peers already hold, so inbound
+      lookups match either and a withdrawal names both. A row whose
+      `legacy_ap_id` is already set is left alone, which is what makes a
+      re-run after an interruption safe.
 
   Skipped:
     * Remote rows (`remote_actor_id` non-nil) — those carry the
@@ -76,7 +86,7 @@ defmodule Baudrate.Release do
     * `:dry_run` — when true, log what would be stamped without writing.
 
   Returns a map with `:articles`, `:polls`, and `:comments` keys, each a
-  `{found, stamped}` tuple.
+  `{found, written}` tuple, where `found` counts both passes.
 
   ## Implementation note
 
@@ -151,50 +161,106 @@ defmodule Baudrate.Release do
   end
 
   defp backfill_polls(dry_run, base) do
-    rows =
+    unstamped =
       from(p in Poll,
         join: a in Article,
         on: a.id == p.article_id,
         where: is_nil(p.ap_id) and is_nil(a.remote_actor_id) and not is_nil(a.slug),
-        select: %{id: p.id, article_ap_id: a.ap_id, slug: a.slug}
+        select: %{id: p.id}
       )
       |> Repo.all()
 
-    Logger.info("backfill_ap_ids: found #{length(rows)} local poll(s) with nil ap_id")
+    # `<article-uri>#poll`, the pre-ADR-0050 form. Only rows that have not been
+    # rewritten yet, so a re-run after an interruption resumes rather than
+    # overwriting a legacy id that is already recorded.
+    fragmented =
+      from(p in Poll,
+        join: a in Article,
+        on: a.id == p.article_id,
+        where:
+          is_nil(a.remote_actor_id) and is_nil(p.legacy_ap_id) and
+            like(p.ap_id, "%#poll"),
+        select: %{id: p.id, ap_id: p.ap_id}
+      )
+      |> Repo.all()
+
+    Logger.info(
+      "backfill_ap_ids: found #{length(unstamped)} local poll(s) with nil ap_id, " <>
+        "#{length(fragmented)} with a fragment ap_id"
+    )
 
     stamped =
-      Enum.reduce(rows, 0, fn %{id: id, article_ap_id: article_ap_id, slug: slug}, acc ->
-        article_uri = article_ap_id || "#{base}/ap/articles/#{slug}"
-        ap_id = "#{article_uri}#poll"
-        stamp_row(Poll, id, [ap_id: ap_id], "poll", dry_run, acc)
+      Enum.reduce(unstamped, 0, fn %{id: id}, acc ->
+        stamp_row(Poll, id, [ap_id: poll_uri(base, id)], "poll", dry_run, acc)
       end)
 
-    {length(rows), stamped}
+    stamped =
+      Enum.reduce(fragmented, stamped, fn %{id: id, ap_id: old}, acc ->
+        stamp_row(
+          Poll,
+          id,
+          [ap_id: poll_uri(base, id), legacy_ap_id: old],
+          "poll (rewrite)",
+          dry_run,
+          acc
+        )
+      end)
+
+    {length(unstamped) + length(fragmented), stamped}
   end
 
   defp backfill_comments(dry_run, base) do
-    rows =
+    unstamped =
       from(c in Comment,
         join: a in Article,
         on: a.id == c.article_id,
         join: u in User,
         on: u.id == c.user_id,
         where: is_nil(c.ap_id) and is_nil(c.remote_actor_id),
-        select: %{id: c.id, username: u.username, slug: a.slug}
+        select: %{id: c.id, slug: a.slug}
       )
       |> Repo.all()
 
-    Logger.info("backfill_ap_ids: found #{length(rows)} local comment(s) with nil ap_id")
+    # `<actor>#note-N`, the pre-ADR-0050 form. Matched on the fragment rather
+    # than on a prefix: the base URL may have changed since the row was
+    # written, and the fragment is what made the id undereferenceable.
+    fragmented =
+      from(c in Comment,
+        where:
+          is_nil(c.remote_actor_id) and is_nil(c.legacy_ap_id) and
+            like(c.ap_id, "%#note-%"),
+        select: %{id: c.id, ap_id: c.ap_id}
+      )
+      |> Repo.all()
+
+    Logger.info(
+      "backfill_ap_ids: found #{length(unstamped)} local comment(s) with nil ap_id, " <>
+        "#{length(fragmented)} with a fragment ap_id"
+    )
 
     stamped =
-      Enum.reduce(rows, 0, fn %{id: id, username: username, slug: slug}, acc ->
-        ap_id = "#{base}/ap/users/#{username}#note-#{id}"
-        url = "#{base}/articles/#{slug}#comment-#{id}"
-        stamp_row(Comment, id, [ap_id: ap_id, url: url], "comment", dry_run, acc)
+      Enum.reduce(unstamped, 0, fn %{id: id, slug: slug}, acc ->
+        changes = [ap_id: comment_uri(base, id), url: "#{base}/articles/#{slug}#comment-#{id}"]
+        stamp_row(Comment, id, changes, "comment", dry_run, acc)
       end)
 
-    {length(rows), stamped}
+    stamped =
+      Enum.reduce(fragmented, stamped, fn %{id: id, ap_id: old}, acc ->
+        stamp_row(
+          Comment,
+          id,
+          [ap_id: comment_uri(base, id), legacy_ap_id: old],
+          "comment (rewrite)",
+          dry_run,
+          acc
+        )
+      end)
+
+    {length(unstamped) + length(fragmented), stamped}
   end
+
+  defp comment_uri(base, id), do: "#{base}/ap/comments/#{id}"
+  defp poll_uri(base, id), do: "#{base}/ap/polls/#{id}"
 
   defp stamp_row(_schema, id, changes, label, true = _dry_run, acc) do
     Logger.info("backfill_ap_ids: [dry] #{label} ##{id} would set #{inspect(changes)}")
@@ -488,7 +554,27 @@ defmodule Baudrate.Release do
   # `Endpoint.url/0`, which reads from the endpoint's `:persistent_term`
   # cache that is only populated once the endpoint is started — so we
   # read the static config here directly.
+  # The running endpoint is the authority, because it is what every other URI
+  # this instance mints comes from (`Federation.base_url/0`). Release tasks run
+  # with only the repo started (see the implementation note on
+  # `backfill_ap_ids/1`), so there has to be a fallback — but preferring the
+  # endpoint when it *is* up removes a whole class of hazard: the backfill
+  # rewrites ids in bulk and publishes them, and two derivations that disagree
+  # would stamp a host the site does not answer on.
+  # `Endpoint.url/0` reads a cache only populated once the endpoint starts, and
+  # it may raise *or* exit depending on how far the supervision tree got —
+  # hence both clauses. Under `bin/baudrate eval` neither exists and the static
+  # config is the answer; under `bin/baudrate rpc` the endpoint is up and is
+  # the authority.
   defp base_url_from_config do
+    BaudrateWeb.Endpoint.url()
+  rescue
+    _ -> base_url_from_static_config()
+  catch
+    :exit, _ -> base_url_from_static_config()
+  end
+
+  defp base_url_from_static_config do
     config = Application.get_env(@app, BaudrateWeb.Endpoint, [])
     url = Keyword.get(config, :url, [])
     scheme = Keyword.get(url, :scheme, "https")

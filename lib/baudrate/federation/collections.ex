@@ -209,7 +209,10 @@ defmodule Baudrate.Federation.Collections do
 
         %{
           "type" => "Note",
-          "id" => comment.ap_id || "#{replies_uri}#comment-#{comment.id}",
+          # A local comment's fallback is its own canonical URI, never a
+          # fragment of this collection's (ADR 0050) — a peer that follows the
+          # id has to arrive at the Note.
+          "id" => comment.ap_id || local_comment_uri(comment),
           "content" => comment.body_html || "",
           "attributedTo" => attributed_to,
           "inReplyTo" => actor_uri(:article, article.slug),
@@ -225,6 +228,11 @@ defmodule Baudrate.Federation.Collections do
       "orderedItems" => items
     }
   end
+
+  defp local_comment_uri(%{remote_actor_id: nil, id: id}),
+    do: actor_uri(:comment, id)
+
+  defp local_comment_uri(_comment), do: nil
 
   @doc """
   Returns a paginated `OrderedCollection` of search results as Article objects.

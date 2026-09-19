@@ -164,10 +164,31 @@ defmodule Baudrate.Content.Comments do
   end
 
   @doc """
-  Fetches a comment by its ActivityPub ID.
+  Fetches a comment by its ActivityPub ID, current or previous.
+
+  Phase 3B rewrote every local comment's `ap_id` from `<actor>#note-N` to
+  `/ap/comments/:id` (ADR 0050) and kept the old value in `legacy_ap_id`. A
+  remote instance that received the comment before the rewrite still knows it
+  by the old URI, and ActivityPub has no way to tell it otherwise — so an
+  inbound `Like`, `Announce`, `Delete` or `inReplyTo` naming the old id has to
+  keep landing on the right row. This is the one lookup every inbound path
+  goes through, which is why the alias lives here rather than at seven call
+  sites in `InboxHandler`.
+
+  `legacy_ap_id` is matched, never asserted: the object we serve and the
+  activities we mint always carry the current `ap_id`.
   """
   def get_comment_by_ap_id(ap_id) when is_binary(ap_id) do
-    Repo.get_by(Comment, ap_id: ap_id)
+    Repo.one(
+      from(c in Comment,
+        where: c.ap_id == ^ap_id or c.legacy_ap_id == ^ap_id,
+        # A current id wins over another row's legacy id, which cannot happen
+        # today (both columns are unique) but must not become ambiguous if a
+        # later backfill ever reuses a URI.
+        order_by: [asc: fragment("? = ?", c.legacy_ap_id, ^ap_id)],
+        limit: 1
+      )
+    )
   end
 
   @doc """
@@ -482,9 +503,14 @@ defmodule Baudrate.Content.Comments do
 
   defp comment_ap_id_changeset(%Comment{user_id: user_id} = comment)
        when is_integer(user_id) do
-    with %{} = user <- Repo.get(Baudrate.Setup.User, user_id),
+    # `/ap/comments/:id`, never `<actor>#note-N` (ADR 0050). A fragment never
+    # reaches the server, so the old form dereferenced to the author's Person
+    # document and no remote instance could thread against it. The author is
+    # still loaded, because a comment with no readable author is not stamped
+    # at all — the same condition as before.
+    with %{} = _user <- Repo.get(Baudrate.Setup.User, user_id),
          %{} = article <- Repo.get(Article, comment.article_id) do
-      ap_id = Baudrate.Federation.actor_uri(:user, user.username) <> "#note-#{comment.id}"
+      ap_id = Baudrate.Federation.actor_uri(:comment, comment.id)
       url = "#{Baudrate.Federation.base_url()}/articles/#{article.slug}#comment-#{comment.id}"
 
       Ecto.Changeset.change(comment, ap_id: ap_id, url: url)

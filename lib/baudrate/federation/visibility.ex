@@ -11,6 +11,10 @@ defmodule Baudrate.Federation.Visibility do
     * `unlisted` — `as:Public` in `cc` (not in `to`)
     * `followers_only` — addressed to a followers collection, no `as:Public`
     * `direct` — addressed to specific actors only
+
+  `to_addressing/2` is the same mapping in the other direction. Both live here
+  so the round trip cannot drift: a value this module writes must be a value it
+  reads back the same way.
   """
 
   @as_public "https://www.w3.org/ns/activitystreams#Public"
@@ -39,6 +43,32 @@ defmodule Baudrate.Federation.Visibility do
       Enum.any?(cc, &public_collection?/1) -> "unlisted"
       has_followers_collection?(to ++ cc) -> "followers_only"
       true -> "direct"
+    end
+  end
+
+  @doc """
+  Builds `{to, cc}` for a local object of the given visibility.
+
+  The inverse of `from_addressing/1`: feeding the result back in returns the
+  visibility it was built from.
+
+  ## Examples
+
+      iex> to_addressing("public", "https://example.com/ap/users/alice/followers")
+      {["https://www.w3.org/ns/activitystreams#Public"],
+       ["https://example.com/ap/users/alice/followers"]}
+
+      iex> to_addressing("direct", "https://example.com/ap/users/alice/followers")
+      {[], []}
+  """
+  @spec to_addressing(String.t(), String.t()) :: {[String.t()], [String.t()]}
+  def to_addressing(visibility, followers_uri) do
+    case visibility do
+      "unlisted" -> {[followers_uri], [@as_public]}
+      "followers_only" -> {[followers_uri], []}
+      "direct" -> {[], []}
+      # "public" or default
+      _ -> {[@as_public], [followers_uri]}
     end
   end
 

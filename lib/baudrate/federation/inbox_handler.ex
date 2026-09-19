@@ -2070,17 +2070,41 @@ defmodule Baudrate.Federation.InboxHandler do
   # --- Poll helpers ---
 
   # Detects if a Create(Note) is a Mastodon-style poll vote.
-  # A vote Note has `name` (the option text) and `inReplyTo` pointing
-  # to a local article that has a poll.
+  # A vote Note has `name` (the option text) and `inReplyTo` naming the object
+  # being voted on.
   defp maybe_handle_poll_vote(%{"name" => name, "inReplyTo" => in_reply_to}, remote_actor)
        when is_binary(name) and is_binary(in_reply_to) do
-    case resolve_local_article_by_ap_or_uri(in_reply_to) do
+    case resolve_poll_vote_target(in_reply_to) do
       %{} = article -> handle_poll_vote_for_article(article, name, remote_actor)
       nil -> :not_a_vote
     end
   end
 
   defp maybe_handle_poll_vote(_object, _remote_actor), do: :not_a_vote
+
+  # A vote may address either URI, and both have to work.
+  #
+  # The **article** is what `Publisher.build_create_vote/3` has always sent and
+  # what the `Question` embedded in the Article object is reached through, so
+  # every peer that learned one of our polls before Phase 3B knows only that.
+  # The **poll** is what a peer votes against once it has fetched the
+  # standalone `Question` at `/ap/polls/:id` (ADR 0050) — which is the whole
+  # point of giving it an id. Accepting only the article would make the new
+  # object unvotable; accepting only the poll would silently drop every vote
+  # already in flight.
+  defp resolve_poll_vote_target(uri) do
+    case resolve_local_article_by_ap_or_uri(uri) do
+      %{} = article ->
+        article
+
+      nil ->
+        with %{article_id: article_id} <- Content.get_poll_by_ap_id(uri) do
+          Baudrate.Repo.get(Baudrate.Content.Article, article_id)
+        else
+          _ -> nil
+        end
+    end
+  end
 
   # Returns `:not_a_vote` only when the Note genuinely is not a poll vote (no
   # poll on the target, or no option matching `name`), so such Notes can still
@@ -2285,8 +2309,8 @@ defmodule Baudrate.Federation.InboxHandler do
 
   # Handle Update(Question) — refresh poll counts
   defp handle_update_question(object, remote_actor) do
-    # Find the poll by ap_id
-    case Baudrate.Repo.get_by(Content.Poll, ap_id: object["id"]) do
+    # Find the poll by ap_id, current or previous (ADR 0050).
+    case Content.get_poll_by_ap_id(object["id"] || "") do
       nil ->
         # Maybe it's an embedded question — try to find via the article's ap_id
         :ok

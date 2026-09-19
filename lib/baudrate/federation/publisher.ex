@@ -36,15 +36,10 @@ defmodule Baudrate.Federation.Publisher do
 
   # --- Visibility-aware addressing ---
 
-  defp visibility_addressing(visibility, followers_uri) do
-    case visibility do
-      "unlisted" -> {[followers_uri], [@as_public]}
-      "followers_only" -> {[followers_uri], []}
-      "direct" -> {[], []}
-      # "public" or default
-      _ -> {[@as_public], [followers_uri]}
-    end
-  end
+  # `Federation.Visibility` owns both directions of this mapping, so what we
+  # write is what `from_addressing/1` reads back.
+  defp visibility_addressing(visibility, followers_uri),
+    do: Baudrate.Federation.Visibility.to_addressing(visibility, followers_uri)
 
   # Builds `{to, cc}` for article activities, merging board URIs into `cc`.
   defp article_addressing(article, actor_uri) do
@@ -173,7 +168,7 @@ defmodule Baudrate.Federation.Publisher do
     article = Repo.preload(article, [:user])
     actor_uri = Federation.actor_uri(:user, comment.user.username)
     article_uri = article.ap_id || Federation.actor_uri(:article, article.slug)
-    note_uri = comment.ap_id || "#{actor_uri}#note-#{comment.id}"
+    note_uri = comment_ap_id_or_derive(comment)
 
     note_url =
       comment.url ||
@@ -217,7 +212,7 @@ defmodule Baudrate.Federation.Publisher do
   def build_delete_comment(comment, _article) do
     comment = Repo.preload(comment, [:user])
     actor_uri = Federation.actor_uri(:user, comment.user.username)
-    note_uri = comment.ap_id || "#{actor_uri}#note-#{comment.id}"
+    note_uri = comment_ap_id_or_derive(comment)
 
     activity = %{
       "@context" => @ap_context,
@@ -513,17 +508,47 @@ defmodule Baudrate.Federation.Publisher do
   end
 
   @doc """
-  Publishes a `Delete(Note)` activity for a soft-deleted comment to all relevant followers.
+  Publishes a `Delete(Note)` activity for a soft-deleted comment to all relevant
+  followers.
+
+  A comment that carries a `legacy_ap_id` is withdrawn **twice**: once under its
+  current URI and once under the `<actor>#note-N` one it had before ADR 0050
+  rewrote it. Instances that received the comment before the rewrite know it
+  only by the old id, and ActivityPub has no way to tell them the id changed —
+  a `Move` is for actors. Without the second activity, deleting a pre-backfill
+  comment would leave it standing on every instance that had it. A `Delete`
+  naming an object the receiver has never seen is a no-op, so the duplicate
+  costs one delivery job and risks nothing.
   """
   def publish_comment_deleted(comment, article) do
     article = Repo.preload(article, [:boards, :user])
     {activity, actor_uri} = build_delete_comment(comment, article)
+    authors = reply_authors(comment, article)
 
-    Delivery.enqueue_for_article(activity, actor_uri, article,
-      remote_authors: reply_authors(comment, article),
-      intent: :withdraw
-    )
+    for activity <- [activity | legacy_withdrawals(activity, comment)] do
+      Delivery.enqueue_for_article(activity, actor_uri, article,
+        remote_authors: authors,
+        intent: :withdraw
+      )
+    end
+
+    :ok
   end
+
+  # The same withdrawal, re-addressed to the object id peers knew before the
+  # ADR 0050 rewrite. Empty for every row created since, which is all of them
+  # after `legacy_ap_id` stops being filled.
+  defp legacy_withdrawals(_activity, %{legacy_ap_id: nil}), do: []
+
+  defp legacy_withdrawals(activity, %{legacy_ap_id: legacy}) when is_binary(legacy) do
+    [
+      activity
+      |> Map.put("id", "#{activity["actor"]}#delete-#{Ecto.UUID.generate()}")
+      |> Map.update!("object", &Map.put(&1, "id", legacy))
+    ]
+  end
+
+  defp legacy_withdrawals(_activity, _comment), do: []
 
   # Remote actors who should hear about a comment: the remote author of the
   # article and of the comment it replies to.
@@ -1444,18 +1469,15 @@ defmodule Baudrate.Federation.Publisher do
 
   defp maybe_put_reply_attachments(note_object, _reply), do: note_object
 
-  # Returns the comment's stored AP ID, or derives one from its author's
-  # actor URI + `#note-{id}` (matching `Content.Comments.stamp_local_ap_id/1`)
-  # when the stored value is missing. Defends against publishers emitting
+  # Returns the comment's stored AP ID, or derives the canonical one when the
+  # stored value is missing. Defends against publishers emitting
   # `"object" => null` if post-insert stamping ever fails or for legacy rows.
+  # The derivation needs no author lookup any more: since ADR 0050 a comment's
+  # URI is `/ap/comments/:id`, built from the row's own id.
   defp comment_ap_id_or_derive(%{ap_id: ap_id}) when is_binary(ap_id) and ap_id != "", do: ap_id
 
-  defp comment_ap_id_or_derive(%{user_id: user_id, id: id}) when is_integer(user_id) do
-    case Repo.get(Baudrate.Setup.User, user_id) do
-      %{username: username} -> "#{Federation.actor_uri(:user, username)}#note-#{id}"
-      _ -> nil
-    end
-  end
+  defp comment_ap_id_or_derive(%{id: id}) when is_integer(id),
+    do: Federation.actor_uri(:comment, id)
 
   defp comment_ap_id_or_derive(_), do: nil
 

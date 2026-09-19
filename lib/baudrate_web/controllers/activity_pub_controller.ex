@@ -40,6 +40,8 @@ defmodule BaudrateWeb.ActivityPubController do
 
   ### Objects (content-negotiated)
     * `GET /ap/articles/:slug` — Article object (requires public board)
+    * `GET /ap/comments/:id` — Note object for a local comment (ADR 0050)
+    * `GET /ap/polls/:id` — Question object for a local poll (ADR 0050)
 
   ### Inboxes (HTTP Signature verified)
     * `POST /ap/inbox` — shared inbox
@@ -308,6 +310,71 @@ defmodule BaudrateWeb.ActivityPubController do
     end
   end
 
+  # --- Comment and Poll Objects ---
+
+  @doc """
+  Returns the `Note` object for a local comment.
+
+  The gate is the **owning article's**, not the comment's: a comment inherits
+  the reach of the thread it is in, and `publicly_servable?/1` is the same
+  predicate `/ap/articles/:slug` applies. On top of that, three refusals that
+  belong to the comment itself:
+
+    * a **remote** comment is never served here. Its `ap_id` lives on another
+      host, and re-serving it under one of our URIs is the identity claim
+      ADR 0046 exists to refuse — a peer could then cite our URI as the origin
+      of somebody else's Note.
+    * a **soft-deleted** comment is gone, and `Repo.get/2` does not filter
+      `deleted_at`.
+    * a comment whose `visibility` is not public or unlisted is not published,
+      matching the article rule.
+  """
+  def comment(conn, %{"id" => id}) do
+    conn = put_resp_header(conn, "vary", "Accept")
+
+    with {comment_id, ""} <- Integer.parse(id),
+         %{} = comment <- Baudrate.Content.get_comment(comment_id),
+         %{} = article <- Baudrate.Content.get_article(comment.article_id),
+         true <- comment_servable?(comment, article) do
+      if wants_json?(conn) do
+        conn
+        |> put_resp_content_type(@activity_json)
+        |> json(Federation.comment_object(comment))
+      else
+        path = ~p"/articles/#{article.slug}"
+        redirect(conn, to: "#{path}#comment-#{comment.id}")
+      end
+    else
+      _ -> not_found(conn)
+    end
+  end
+
+  @doc """
+  Returns the standalone `Question` object for a local poll.
+
+  Same gate as its article, for the same reason: a poll is part of the article
+  it hangs off, so it reaches exactly as far.
+  """
+  def poll(conn, %{"id" => id}) do
+    conn = put_resp_header(conn, "vary", "Accept")
+
+    with {poll_id, ""} <- Integer.parse(id),
+         %{} = poll <- Baudrate.Repo.get(Baudrate.Content.Poll, poll_id),
+         %{} = article <- Baudrate.Content.get_article(poll.article_id),
+         true <- is_nil(article.remote_actor_id),
+         true <- publicly_servable?(Baudrate.Repo.preload(article, :boards)) do
+      if wants_json?(conn) do
+        conn
+        |> put_resp_content_type(@activity_json)
+        |> json(Federation.poll_object(poll))
+      else
+        redirect(conn, to: ~p"/articles/#{article.slug}")
+      end
+    else
+      _ -> not_found(conn)
+    end
+  end
+
   # --- Boards Index ---
 
   @doc "Returns a collection of all public AP-enabled boards."
@@ -431,6 +498,12 @@ defmodule BaudrateWeb.ActivityPubController do
     not_hidden = not Baudrate.Federation.DomainBlocks.actor_hidden?(article.remote_actor_id)
 
     board_ok and visibility_ok and not_hidden
+  end
+
+  defp comment_servable?(comment, article) do
+    is_nil(comment.remote_actor_id) and is_nil(comment.deleted_at) and
+      comment.visibility in ["public", "unlisted"] and
+      publicly_servable?(Baudrate.Repo.preload(article, :boards))
   end
 
   defp not_found(conn), do: conn |> put_status(404) |> json(%{error: "Not Found"})

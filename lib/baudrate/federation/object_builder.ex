@@ -4,12 +4,19 @@ defmodule Baudrate.Federation.ObjectBuilder do
 
   Produces `Article` objects with embedded polls, images, link previews,
   and hashtag tags, suitable for inclusion in outbox activities and for
-  serving at AP article endpoints.
+  serving at AP article endpoints, plus the `Note` and `Question` objects
+  served at `/ap/comments/:id` and `/ap/polls/:id` (ADR 0050).
+
+  Each object is built in exactly one place. The `Question` embedded in an
+  Article and the one served standalone are the same map with the same `id`,
+  so a peer that reads the poll from either sees one object rather than two
+  that drift.
   """
 
   alias Baudrate.Content
   alias Baudrate.Content.Board
   alias Baudrate.Content.Markdown
+  alias Baudrate.Federation.Visibility
   alias Baudrate.Repo
 
   @as_context "https://www.w3.org/ns/activitystreams"
@@ -80,7 +87,88 @@ defmodule Baudrate.Federation.ObjectBuilder do
     |> maybe_embed_link_preview(article)
   end
 
+  @doc """
+  Returns a `Note` JSON-LD map for a local comment, served at
+  `/ap/comments/:id`.
+
+  Callers are responsible for the gate: this builds the object, it does not
+  decide who may see it. `BaudrateWeb.ActivityPubController` applies the
+  article's `publicly_servable?/1` before calling.
+  """
+  def comment_object(comment) do
+    comment = Repo.preload(comment, [:user, :images, article: [:boards, :user]])
+    article = comment.article
+    actor_uri = actor_uri(:user, comment.user.username)
+    {to, cc} = Visibility.to_addressing(comment.visibility, "#{actor_uri}/followers")
+
+    %{
+      "@context" => @as_context,
+      "id" => comment.ap_id || actor_uri(:comment, comment.id),
+      "type" => "Note",
+      "url" => comment.url || "#{base_url()}/articles/#{article.slug}#comment-#{comment.id}",
+      "content" => comment.body_html || comment.body || "",
+      "mediaType" => "text/html",
+      "attributedTo" => actor_uri,
+      "inReplyTo" => article.ap_id || actor_uri(:article, article.slug),
+      "published" => DateTime.to_iso8601(comment.inserted_at),
+      "to" => to,
+      "cc" => cc
+    }
+    |> maybe_embed_comment_images(comment.images)
+  end
+
+  @doc """
+  Returns a standalone `Question` JSON-LD map for a local poll, served at
+  `/ap/polls/:id`.
+
+  The same body the owning Article embeds, plus the `@context`, addressing and
+  navigation an object needs when it is fetched on its own. `context` rather
+  than `inReplyTo`: the poll belongs to its article, it is not a reply to it,
+  and Mastodon would render an `inReplyTo` as one.
+  """
+  def poll_object(poll) do
+    poll = Repo.preload(poll, [:options, article: [:boards, :user]])
+    article = poll.article
+    article_uri = article.ap_id || actor_uri(:article, article.slug)
+
+    board_uris =
+      article.boards
+      |> Enum.filter(&Board.federated?/1)
+      |> Enum.map(&actor_uri(:board, &1.slug))
+
+    poll
+    |> question_body()
+    |> Map.merge(%{
+      "@context" => @as_context,
+      "id" => poll.ap_id || actor_uri(:poll, poll.id),
+      "name" => article.title,
+      "attributedTo" => actor_uri(:user, article.user.username),
+      "context" => article_uri,
+      "url" => "#{base_url()}/articles/#{article.slug}",
+      "published" => DateTime.to_iso8601(article.inserted_at),
+      "to" => [@as_public],
+      "cc" => board_uris
+    })
+  end
+
   # --- Private ---
+
+  defp maybe_embed_comment_images(map, images) when is_list(images) and images != [] do
+    attachments =
+      Enum.map(images, fn img ->
+        %{
+          "type" => "Image",
+          "mediaType" => "image/webp",
+          "url" => "#{base_url()}#{Content.ArticleImageStorage.image_url(img.filename)}",
+          "width" => img.width,
+          "height" => img.height
+        }
+      end)
+
+    Map.put(map, "attachment", attachments)
+  end
+
+  defp maybe_embed_comment_images(map, _images), do: map
 
   defp maybe_embed_images(map, []), do: map
   defp maybe_embed_images(map, nil), do: map
@@ -104,6 +192,18 @@ defmodule Baudrate.Federation.ObjectBuilder do
   defp maybe_embed_poll(map, nil), do: map
 
   defp maybe_embed_poll(map, %Content.Poll{} = poll) do
+    existing_attachment = Map.get(map, "attachment", [])
+    Map.put(map, "attachment", existing_attachment ++ [question_body(poll)])
+  end
+
+  # The `Question` itself, without the `@context` and addressing that only a
+  # standalone object needs. Carries the poll's `id`, so a peer reading the
+  # embedded copy can fetch, vote against and later re-read the same object
+  # rather than having to address the whole Article.
+  #
+  # Each option's `replies` Collection gives `totalItems` and deliberately no
+  # `items`: the count is public, the voters are not (ADR 0048).
+  defp question_body(%Content.Poll{} = poll) do
     choice_key = if poll.mode == "single", do: "oneOf", else: "anyOf"
 
     options =
@@ -124,15 +224,13 @@ defmodule Baudrate.Federation.ObjectBuilder do
       "votersCount" => poll.voters_count
     }
 
-    question =
-      if poll.closes_at do
-        Map.put(question, "endTime", DateTime.to_iso8601(poll.closes_at))
-      else
-        question
-      end
+    question = if poll.ap_id, do: Map.put(question, "id", poll.ap_id), else: question
 
-    existing_attachment = Map.get(map, "attachment", [])
-    Map.put(map, "attachment", existing_attachment ++ [question])
+    if poll.closes_at do
+      Map.put(question, "endTime", DateTime.to_iso8601(poll.closes_at))
+    else
+      question
+    end
   end
 
   defp maybe_embed_link_preview(

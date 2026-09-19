@@ -780,7 +780,8 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["actor"] == actor_uri
       assert activity["object"]["type"] == "Tombstone"
       assert activity["object"]["formerType"] == "Note"
-      assert activity["object"]["id"] == "#{actor_uri}#note-#{comment.id}"
+      # ADR 0050: a path, not a fragment — the old id dereferenced to the actor.
+      assert activity["object"]["id"] == Federation.actor_uri(:comment, comment.id)
       assert "#{actor_uri}/followers" in activity["cc"]
       assert activity["id"] =~ "#delete-"
     end
@@ -997,8 +998,7 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["actor"] == actor_uri
 
       assert activity["object"] ==
-               (comment.ap_id ||
-                  "#{Federation.actor_uri(:user, user.username)}#note-#{comment.id}")
+               Federation.actor_uri(:comment, comment.id)
 
       assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
       assert activity["id"] =~ "#comment-like-"
@@ -1050,8 +1050,7 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["object"]["actor"] == actor_uri
 
       assert activity["object"]["object"] ==
-               (comment.ap_id ||
-                  "#{Federation.actor_uri(:user, user.username)}#note-#{comment.id}")
+               Federation.actor_uri(:comment, comment.id)
 
       assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
       assert activity["id"] =~ "#undo-comment-like-"
@@ -1133,8 +1132,7 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["id"] == boost_ap_id
 
       assert activity["object"] ==
-               (comment.ap_id ||
-                  "#{Federation.actor_uri(:user, user.username)}#note-#{comment.id}")
+               Federation.actor_uri(:comment, comment.id)
 
       assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
       assert "#{actor_uri}/followers" in activity["cc"]
@@ -1189,8 +1187,7 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["object"]["actor"] == actor_uri
 
       assert activity["object"]["object"] ==
-               (comment.ap_id ||
-                  "#{Federation.actor_uri(:user, user.username)}#note-#{comment.id}")
+               Federation.actor_uri(:comment, comment.id)
 
       assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
       assert "#{actor_uri}/followers" in activity["cc"]
@@ -1450,7 +1447,9 @@ defmodule Baudrate.Federation.PublisherTest do
       comment = create_comment(article, user)
       Repo.delete_all(Baudrate.Federation.DeliveryJob)
 
-      assert {:ok, 1} = Publisher.publish_comment_deleted(comment, article)
+      # `:ok`, not `{:ok, count}`: a comment rewritten by the ADR 0050 backfill
+      # is withdrawn under both its ids, so there is no single job count.
+      assert :ok = Publisher.publish_comment_deleted(comment, article)
       assert inbox_urls() == [remote.inbox]
     end
 

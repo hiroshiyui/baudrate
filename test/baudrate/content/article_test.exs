@@ -171,7 +171,9 @@ defmodule Baudrate.Content.ArticleTest do
         )
 
       assert article.ap_id == Baudrate.Federation.actor_uri(:article, slug)
-      assert poll.ap_id == article.ap_id <> "#poll"
+      # ADR 0050: the poll is its own fetchable object, not a fragment of the
+      # article's URI.
+      assert poll.ap_id == Baudrate.Federation.actor_uri(:poll, poll.id)
     end
   end
 

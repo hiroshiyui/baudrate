@@ -1,6 +1,8 @@
 defmodule Mix.Tasks.BackfillApIds do
   @moduledoc """
-  Backfills missing `ap_id` fields on local articles, polls, and comments.
+  Brings local articles', polls' and comments' `ap_id` fields up to the
+  canonical scheme: rewrites the pre-ADR-0050 fragment ids and stamps any that
+  were never set.
 
   Thin wrapper around `Baudrate.Release.backfill_ap_ids/1` for dev / test.
   In production (an OTP release) Mix tasks aren't available — invoke the
@@ -19,7 +21,7 @@ defmodule Mix.Tasks.BackfillApIds do
 
   use Mix.Task
 
-  @shortdoc "Backfill missing ap_id fields on local articles, polls, and comments"
+  @shortdoc "Bring local ap_id fields up to the canonical scheme"
 
   @impl Mix.Task
   def run(args) do
@@ -34,8 +36,8 @@ defmodule Mix.Tasks.BackfillApIds do
     {c_total, c_stamped} = result.comments
 
     Mix.shell().info("\nSummary:")
-    Mix.shell().info("  Articles: #{a_stamped}/#{a_total} stamped")
-    Mix.shell().info("  Polls:    #{p_stamped}/#{p_total} stamped")
-    Mix.shell().info("  Comments: #{c_stamped}/#{c_total} stamped")
+    Mix.shell().info("  Articles: #{a_stamped}/#{a_total} written")
+    Mix.shell().info("  Polls:    #{p_stamped}/#{p_total} written")
+    Mix.shell().info("  Comments: #{c_stamped}/#{c_total} written")
   end
 end

@@ -218,6 +218,8 @@ defmodule BaudrateWeb.Router do
     get "/site/followers", ActivityPubController, :site_followers
     get "/articles/:slug", ActivityPubController, :article
     get "/articles/:slug/replies", ActivityPubController, :article_replies
+    get "/comments/:id", ActivityPubController, :comment
+    get "/polls/:id", ActivityPubController, :poll
     get "/search", ActivityPubController, :search
   end
 

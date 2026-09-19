@@ -4323,7 +4323,9 @@ defmodule Baudrate.ContentTest do
         )
 
       assert is_binary(article.ap_id)
-      assert poll.ap_id == "#{article.ap_id}#poll"
+      # ADR 0050: a path of its own, so a remote client has something to
+      # address a vote to.
+      assert poll.ap_id == Baudrate.Federation.actor_uri(:poll, poll.id)
 
       # DB row reflects the same ap_id
       assert Repo.get!(Baudrate.Content.Poll, poll.id).ap_id == poll.ap_id
@@ -4360,7 +4362,8 @@ defmodule Baudrate.ContentTest do
         })
 
       assert is_binary(comment.ap_id)
-      assert comment.ap_id =~ "#note-#{comment.id}"
+      assert comment.ap_id =~ "/ap/comments/#{comment.id}"
+      refute comment.ap_id =~ "#", "a fragment id is unresolvable (ADR 0050)"
       assert is_binary(comment.url)
       assert comment.url =~ "#comment-#{comment.id}"
 

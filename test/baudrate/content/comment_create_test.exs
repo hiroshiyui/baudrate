@@ -101,10 +101,9 @@ defmodule Baudrate.Content.CommentCreateTest do
           "user_id" => user.id
         })
 
-      expected_ap_id =
-        Baudrate.Federation.actor_uri(:user, user.username) <> "#note-#{comment.id}"
-
-      assert comment.ap_id == expected_ap_id
+      # A path, not a fragment: `<actor>#note-N` dereferenced to the author's
+      # Person document, so no peer could ever resolve the comment (ADR 0050).
+      assert comment.ap_id == Baudrate.Federation.actor_uri(:comment, comment.id)
     end
 
     test "validates required fields" do

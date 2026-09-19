@@ -964,14 +964,16 @@ defmodule Baudrate.Content.Articles do
 
   defp article_ap_id_changeset(%Article{} = article), do: Ecto.Changeset.change(article)
 
-  # Adds a Multi step that stamps the just-inserted poll with `<article-ap-id>#poll`.
+  # Adds a Multi step that stamps the just-inserted poll with `/ap/polls/:id`.
   # No-op when no poll was inserted, so callers can chain unconditionally.
+  # Not `<article-ap-id>#poll`: a fragment never reaches the server, so the old
+  # form dereferenced to the Article and a remote voter had nothing to address
+  # (ADR 0050).
   defp stamp_poll_ap_id_step(multi, nil), do: multi
 
   defp stamp_poll_ap_id_step(multi, _poll_attrs) do
     Ecto.Multi.update(multi, :poll_with_ap_id, fn changes ->
       poll = changes.poll
-      article = changes.article_with_ap_id
 
       cond do
         is_nil(poll) ->
@@ -983,7 +985,7 @@ defmodule Baudrate.Content.Articles do
           Ecto.Changeset.change(poll)
 
         true ->
-          Ecto.Changeset.change(poll, ap_id: "#{article.ap_id}#poll")
+          Ecto.Changeset.change(poll, ap_id: Baudrate.Federation.actor_uri(:poll, poll.id))
       end
     end)
   end
