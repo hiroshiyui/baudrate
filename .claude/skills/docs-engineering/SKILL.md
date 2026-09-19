@@ -9,6 +9,7 @@ When performing documentation engineering, always follow these steps:
    - `README.md` — features list, prerequisites, acknowledgements
    - `CLAUDE.md` — stack, architecture, key gotchas, project conventions
    - `doc/` — `development.md`, `sysop.md`, `api.md`, `troubleshooting.md`, `TODOs.md`
+   - `doc/baudrate-spec.md` — the conformance index (see step 4a)
    - `doc/adr/` — Architecture Decision Records (see step 4)
    - `@moduledoc` and `@doc` strings in changed or related modules
 
@@ -43,5 +44,34 @@ When performing documentation engineering, always follow these steps:
    - **Check for drift.** If the code no longer matches an `Accepted` ADR, that
      is either a regression to report or a decision that was silently changed and
      needs a superseding ADR — say which, do not quietly edit the old record.
+
+4a. **Audit the conformance index** in
+   [`doc/baudrate-spec.md`](../../../doc/baudrate-spec.md) — every invariant
+   with the record that explains it, the code that enforces it, and the gate
+   that fails if it breaks.
+
+   - **It states no rules of its own.** Every row is a one-line summary plus
+     pointers. Never let it become a fifth place an invariant is written: if a
+     row starts explaining *why*, that belongs in the ADR, and if it starts
+     explaining *how*, that belongs in `doc/development.md`.
+   - **Precedence when things disagree:** the code wins over the record, and
+     the record wins over the row. A row that contradicts the code is a bug in
+     the index; a record that contradicts the code is a defect in one of them —
+     say which, per step 4.
+   - **`test/doc/spec_index_test.exs` is the gate.** It checks that every ADR
+     has a row, that every named test file exists, that every named function
+     exists at the arity given, and that a gate an ADR declares for itself
+     appears in that ADR's rows. Run it; it is fast. What it cannot check is
+     whether a summary is *true* — only reading the record does that, which is
+     why this step exists at all.
+   - **New ADR in this pass? It needs rows,** and the test will fail until it
+     has them. An invariant with no automated gate gets a row in the
+     **Rules with no automated gate** table, with an honest reason. Do not
+     invent a plausible gate to fill the column: an index that claims coverage
+     it does not have is worse than one that admits the hole. The 2026-09-19
+     audit found eight real defects and most of them lived exactly where no
+     gate did.
+   - **Renamed a test or moved a function?** The index points at it. The gate
+     catches the rename; only you can judge whether the *invariant* still holds.
 
 5. **Commit** documentation changes in Git, grouped by topic. Do not mix unrelated documentation changes in a single commit.

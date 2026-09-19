@@ -3,6 +3,10 @@
 This directory records the significant architectural decisions behind Baudrate:
 what was decided, why, what was rejected, and what it costs to live with.
 
+For the *what* rather than the *why* — every invariant with its enforcement
+point and the test that proves it — see the conformance index at
+[`doc/baudrate-spec.md`](../baudrate-spec.md).
+
 `doc/development.md` documents **what** the system does. These ADRs document
 **why** it does it that way — which is the part that is expensive to
 reconstruct and easy to "simplify" away by accident.

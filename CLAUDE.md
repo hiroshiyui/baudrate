@@ -47,6 +47,13 @@ for p in 1 2 3 4; do MIX_TEST_PARTITION=$p mix test --partitions 4 --seed 9527 &
 See [`doc/development.md`](doc/development.md) for full architecture documentation
 (contexts, auth flow, sessions, RBAC, layout system, federation, etc.).
 
+See [`doc/baudrate-spec.md`](doc/baudrate-spec.md) for the **conformance
+index**: every invariant in one table, with the record that explains it, the
+code that enforces it and the test that fails if it breaks. It states no rules
+of its own — start there to find a rule, not to learn one. Eighteen rows have no
+automated gate and say so; those are the ones review has to catch.
+`test/doc/spec_index_test.exs` checks the table against the code.
+
 See [`doc/adr/`](doc/adr/README.md) for the Architecture Decision Records — the
 *why* behind the load-bearing constraints below (federation gate, media proxy,
 fail-closed proxy trust, context-boundary authorization, …), including the
@@ -292,5 +299,6 @@ When creating a new release (on `current`):
 | `lib/baudrate/crypto/keyring.ex` | The `:auth` and `:signing` keys, and which one encrypted a stored value (ADR 0038) |
 | `lib/baudrate_web/live/auth_hooks.ex` | LiveView auth on_mount hooks |
 | `lib/baudrate_web/components/core_components.ex` | Shared UI components |
+| `doc/baudrate-spec.md` | Conformance index: invariant → ADR → enforcement → gate |
 | `doc/development.md` | Full architecture & project structure |
 | `doc/sysop.md` | SysOp guide: installation, configuration, maintenance |
