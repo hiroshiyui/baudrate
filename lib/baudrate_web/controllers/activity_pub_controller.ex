@@ -20,7 +20,7 @@ defmodule BaudrateWeb.ActivityPubController do
   ### Discovery
     * `GET /.well-known/webfinger` — WebFinger resource resolution
     * `GET /.well-known/nodeinfo` — NodeInfo discovery links
-    * `GET /nodeinfo/2.1` — NodeInfo 2.1 document
+    * `GET /nodeinfo/2.0`, `GET /nodeinfo/2.1` — NodeInfo documents
 
   ### Actors (content-negotiated)
     * `GET /ap/users/:username` — Person actor
@@ -101,11 +101,19 @@ defmodule BaudrateWeb.ActivityPubController do
     |> json(Federation.nodeinfo_links())
   end
 
-  @doc "Returns the NodeInfo 2.1 document with software and usage statistics."
+  @doc """
+  Returns the NodeInfo document with software and usage statistics.
+
+  The schema version comes from the path, because the two documents differ:
+  `software.repository` exists only in 2.1, and a 2.0 document carrying it
+  fails validation.
+  """
   def nodeinfo(conn, _params) do
+    version = if String.ends_with?(conn.request_path, "2.0"), do: "2.0", else: "2.1"
+
     conn
     |> put_resp_content_type("application/json")
-    |> json(Federation.nodeinfo())
+    |> json(Federation.nodeinfo(version))
   end
 
   # --- Actors ---
@@ -120,6 +128,7 @@ defmodule BaudrateWeb.ActivityPubController do
              Baudrate.Repo.get_by(Baudrate.Setup.User, username: username),
            {:ok, user} <- KeyStore.ensure_user_keypair(user) do
         conn
+        |> cacheable()
         |> put_resp_content_type(@activity_json)
         |> json(Federation.user_actor(user))
       else
@@ -141,6 +150,7 @@ defmodule BaudrateWeb.ActivityPubController do
            true <- Board.federated?(board),
            {:ok, board} <- KeyStore.ensure_board_keypair(board) do
         conn
+        |> cacheable()
         |> put_resp_content_type(@activity_json)
         |> json(Federation.board_actor(board))
       else
@@ -157,6 +167,7 @@ defmodule BaudrateWeb.ActivityPubController do
 
     if wants_json?(conn) do
       conn
+      |> cacheable()
       |> put_resp_content_type(@activity_json)
       |> json(Federation.site_actor())
     else
@@ -524,7 +535,31 @@ defmodule BaudrateWeb.ActivityPubController do
       String.contains?(accept, "application/json")
   end
 
-  # Prevent CDN/proxy caching of actor endpoints — cached 404s or HTML
-  # redirects would break remote signature verification.
+  # `no-store` is the default for every actor response, and stays that way for
+  # the ones that are not a document: a cached 404 or HTML redirect breaks
+  # remote signature verification, because the verifier fetches the actor by
+  # the request's `keyId` and gets the cached wrong answer.
   defp no_store(conn), do: put_resp_header(conn, "cache-control", "no-store")
+
+  # A *successful* actor document may be cached briefly. It is the same bytes
+  # for every requester and is fetched on every signature verification, so a
+  # short window takes real load off both sides.
+  #
+  # Three minutes, matching what Mastodon serves, because the window is also
+  # how long a rotated public key can keep failing verification at a cache
+  # that has not expired it. Rotation publishes an `Update` as well, so this
+  # only bounds the caches nobody told.
+  #
+  # **`public` only when authorized fetch is off.** With it on, the same URL
+  # answers 401 to an unsigned request and the document to a signed one — a
+  # shared cache holding that document would hand it to unsigned requesters
+  # and defeat the setting entirely. `Vary: Accept` is already set, which is
+  # what keeps a cache from confusing the JSON and HTML forms.
+  defp cacheable(conn) do
+    if Baudrate.Setup.get_setting("ap_authorized_fetch") == "true" do
+      no_store(conn)
+    else
+      put_resp_header(conn, "cache-control", "public, max-age=180")
+    end
+  end
 end

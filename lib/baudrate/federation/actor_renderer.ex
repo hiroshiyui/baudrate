@@ -10,15 +10,8 @@ defmodule Baudrate.Federation.ActorRenderer do
   alias Baudrate.Content.Board
   alias Baudrate.Repo
   alias Baudrate.Setup
+  alias Baudrate.Federation.Context
   alias Baudrate.Federation.KeyStore
-
-  @as_context "https://www.w3.org/ns/activitystreams"
-  @security_context "https://w3id.org/security/v1"
-  @schema_context %{
-    "schema" => "http://schema.org/",
-    "PropertyValue" => "schema:PropertyValue",
-    "value" => "schema:value"
-  }
 
   @doc """
   Returns a Person JSON-LD map for the given user.
@@ -31,7 +24,7 @@ defmodule Baudrate.Federation.ActorRenderer do
     uri = actor_uri(:user, user.username)
 
     %{
-      "@context" => [@as_context, @security_context, @schema_context],
+      "@context" => Context.actor(),
       "id" => uri,
       "type" => "Person",
       "preferredUsername" => user.username,
@@ -79,7 +72,7 @@ defmodule Baudrate.Federation.ActorRenderer do
       end
 
     %{
-      "@context" => [@as_context, @security_context],
+      "@context" => Context.actor(),
       "id" => uri,
       "type" => "Group",
       "preferredUsername" => board.slug,
@@ -111,7 +104,7 @@ defmodule Baudrate.Federation.ActorRenderer do
     {:ok, %{public_pem: public_pem}} = KeyStore.ensure_site_keypair()
 
     %{
-      "@context" => [@as_context, @security_context],
+      "@context" => Context.actor(),
       "id" => uri,
       "type" => "Organization",
       "preferredUsername" => "site",

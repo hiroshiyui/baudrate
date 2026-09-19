@@ -127,6 +127,12 @@ defmodule Baudrate.Setup.User do
     field :notification_preferences, :map, default: %{}
     field :is_bot, :boolean, default: false
     field :profile_fields, {:array, :map}, default: []
+    # The day this account last signed in, for NodeInfo's active-user counts.
+    # A date rather than a timestamp on purpose: the question is which month
+    # somebody was last here, and a timestamp would record what time of day
+    # they read the site for six months. Never cast from params — `Sessions`
+    # stamps it, and only when it changes.
+    field :last_active_on, :date
 
     # Which version of the terms this account accepted, and when. Deliberately
     # outside every `cast/3` list: a member who could set these in the

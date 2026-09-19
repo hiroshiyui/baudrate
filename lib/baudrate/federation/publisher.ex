@@ -26,14 +26,12 @@ defmodule Baudrate.Federation.Publisher do
   alias Baudrate.Content.Board
   alias Baudrate.Federation
   alias Baudrate.Federation.Delivery
+  alias Baudrate.Federation.Context
   alias Baudrate.Federation.Mentions
   alias Baudrate.Federation.ObjectBuilder
   alias Baudrate.Federation.{TimelineItemBoost, TimelineItemLike}
   alias Baudrate.Repo
 
-  @as_context "https://www.w3.org/ns/activitystreams"
-  @security_context "https://w3id.org/security/v1"
-  @ap_context [@as_context, @security_context]
   @as_public "https://www.w3.org/ns/activitystreams#Public"
 
   # --- Visibility-aware addressing ---
@@ -87,7 +85,7 @@ defmodule Baudrate.Federation.Publisher do
     {to, cc} = article_addressing(article, actor_uri)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#create-#{Ecto.UUID.generate()}",
       "type" => "Create",
       "actor" => actor_uri,
@@ -111,7 +109,7 @@ defmodule Baudrate.Federation.Publisher do
     article_uri = article.ap_id || Federation.actor_uri(:article, article.slug)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#delete-#{Ecto.UUID.generate()}",
       "type" => "Delete",
       "actor" => actor_uri,
@@ -137,7 +135,7 @@ defmodule Baudrate.Federation.Publisher do
     article_uri = article.ap_id || Federation.actor_uri(:article, article.slug)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{board_uri}#announce-#{Ecto.UUID.generate()}",
       "type" => "Announce",
       "actor" => board_uri,
@@ -162,7 +160,7 @@ defmodule Baudrate.Federation.Publisher do
     {to, cc} = article_addressing(article, actor_uri)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#update-#{Ecto.UUID.generate()}",
       "type" => "Update",
       "actor" => actor_uri,
@@ -215,7 +213,7 @@ defmodule Baudrate.Federation.Publisher do
       |> maybe_put_comment_attachments(comment)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#create-#{Ecto.UUID.generate()}",
       "type" => "Create",
       "actor" => actor_uri,
@@ -239,7 +237,7 @@ defmodule Baudrate.Federation.Publisher do
     note_uri = comment_ap_id_or_derive(comment)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#delete-#{Ecto.UUID.generate()}",
       "type" => "Delete",
       "actor" => actor_uri,
@@ -264,7 +262,7 @@ defmodule Baudrate.Federation.Publisher do
     site_uri = Federation.actor_uri(:site, nil)
 
     %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{site_uri}#flag-#{Ecto.UUID.generate()}",
       "type" => "Flag",
       "actor" => site_uri,
@@ -284,7 +282,7 @@ defmodule Baudrate.Federation.Publisher do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#reject-follow-#{Ecto.UUID.generate()}",
       "type" => "Reject",
       "actor" => actor_uri,
@@ -308,7 +306,7 @@ defmodule Baudrate.Federation.Publisher do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => follow_ap_id,
       "type" => "Follow",
       "actor" => actor_uri,
@@ -328,7 +326,7 @@ defmodule Baudrate.Federation.Publisher do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#undo-follow-#{Ecto.UUID.generate()}",
       "type" => "Undo",
       "actor" => actor_uri,
@@ -352,7 +350,7 @@ defmodule Baudrate.Federation.Publisher do
     board_uri = Federation.actor_uri(:board, board.slug)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => follow_ap_id,
       "type" => "Follow",
       "actor" => board_uri,
@@ -372,7 +370,7 @@ defmodule Baudrate.Federation.Publisher do
     board_uri = Federation.actor_uri(:board, board.slug)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{board_uri}#undo-follow-#{Ecto.UUID.generate()}",
       "type" => "Undo",
       "actor" => board_uri,
@@ -409,7 +407,7 @@ defmodule Baudrate.Federation.Publisher do
       end
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#update-actor-#{Ecto.UUID.generate()}",
       "type" => "Update",
       "actor" => actor_uri,
@@ -433,7 +431,7 @@ defmodule Baudrate.Federation.Publisher do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#move-#{Ecto.UUID.generate()}",
       "type" => "Move",
       "actor" => actor_uri,
@@ -640,7 +638,7 @@ defmodule Baudrate.Federation.Publisher do
     like_id = like_ap_id || "#{actor_uri}#like-#{Ecto.UUID.generate()}"
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => like_id,
       "type" => "Like",
       "actor" => actor_uri,
@@ -662,7 +660,7 @@ defmodule Baudrate.Federation.Publisher do
     like_id = like_ap_id || "#{actor_uri}#like-#{Ecto.UUID.generate()}"
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#undo-like-#{Ecto.UUID.generate()}",
       "type" => "Undo",
       "actor" => actor_uri,
@@ -722,7 +720,7 @@ defmodule Baudrate.Federation.Publisher do
     like_id = like_ap_id || "#{actor_uri}#comment-like-#{Ecto.UUID.generate()}"
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => like_id,
       "type" => "Like",
       "actor" => actor_uri,
@@ -744,7 +742,7 @@ defmodule Baudrate.Federation.Publisher do
     like_id = like_ap_id || "#{actor_uri}#comment-like-#{Ecto.UUID.generate()}"
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#undo-comment-like-#{Ecto.UUID.generate()}",
       "type" => "Undo",
       "actor" => actor_uri,
@@ -806,7 +804,7 @@ defmodule Baudrate.Federation.Publisher do
     announce_id = boost_ap_id || "#{actor_uri}#announce-#{Ecto.UUID.generate()}"
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => announce_id,
       "type" => "Announce",
       "actor" => actor_uri,
@@ -829,7 +827,7 @@ defmodule Baudrate.Federation.Publisher do
     announce_id = boost_ap_id || "#{actor_uri}#announce-#{Ecto.UUID.generate()}"
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#undo-announce-#{Ecto.UUID.generate()}",
       "type" => "Undo",
       "actor" => actor_uri,
@@ -899,7 +897,7 @@ defmodule Baudrate.Federation.Publisher do
       boost_ap_id || "#{actor_uri}#comment-announce-#{Ecto.UUID.generate()}"
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => announce_id,
       "type" => "Announce",
       "actor" => actor_uri,
@@ -924,7 +922,7 @@ defmodule Baudrate.Federation.Publisher do
       boost_ap_id || "#{actor_uri}#comment-announce-#{Ecto.UUID.generate()}"
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#undo-comment-announce-#{Ecto.UUID.generate()}",
       "type" => "Undo",
       "actor" => actor_uri,
@@ -1022,7 +1020,7 @@ defmodule Baudrate.Federation.Publisher do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => like_ap_id || "#{actor_uri}#timeline-like-#{Ecto.UUID.generate()}",
       "type" => "Like",
       "actor" => actor_uri,
@@ -1042,7 +1040,7 @@ defmodule Baudrate.Federation.Publisher do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#undo-timeline-like-#{Ecto.UUID.generate()}",
       "type" => "Undo",
       "actor" => actor_uri,
@@ -1067,7 +1065,7 @@ defmodule Baudrate.Federation.Publisher do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => boost_ap_id || "#{actor_uri}#timeline-announce-#{Ecto.UUID.generate()}",
       "type" => "Announce",
       "actor" => actor_uri,
@@ -1088,7 +1086,7 @@ defmodule Baudrate.Federation.Publisher do
     actor_uri = Federation.actor_uri(:user, user.username)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#undo-timeline-announce-#{Ecto.UUID.generate()}",
       "type" => "Undo",
       "actor" => actor_uri,
@@ -1217,7 +1215,7 @@ defmodule Baudrate.Federation.Publisher do
 
     Enum.map(voted_options, fn option ->
       activity = %{
-        "@context" => @ap_context,
+        "@context" => Context.activity(),
         "id" => "#{actor_uri}#vote-#{Ecto.UUID.generate()}",
         "type" => "Create",
         "actor" => actor_uri,
@@ -1246,7 +1244,7 @@ defmodule Baudrate.Federation.Publisher do
     {to, cc} = article_addressing(article, actor_uri)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#update-poll-#{Ecto.UUID.generate()}",
       "type" => "Update",
       "actor" => actor_uri,
@@ -1327,7 +1325,7 @@ defmodule Baudrate.Federation.Publisher do
       |> maybe_put_reply_attachments(reply)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#create-#{Ecto.UUID.generate()}",
       "type" => "Create",
       "actor" => actor_uri,
@@ -1414,7 +1412,7 @@ defmodule Baudrate.Federation.Publisher do
       |> maybe_add_in_reply_to(message)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#create-dm-#{Ecto.UUID.generate()}",
       "type" => "Create",
       "actor" => actor_uri,
@@ -1437,7 +1435,7 @@ defmodule Baudrate.Federation.Publisher do
     recipient_uri = resolve_dm_recipient_uri(conversation, sender_user.id)
 
     activity = %{
-      "@context" => @ap_context,
+      "@context" => Context.activity(),
       "id" => "#{actor_uri}#delete-dm-#{Ecto.UUID.generate()}",
       "type" => "Delete",
       "actor" => actor_uri,

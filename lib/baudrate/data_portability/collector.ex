@@ -183,6 +183,10 @@ defmodule Baudrate.DataPortability.Collector do
       "notification_preferences" => user.notification_preferences || %{},
       "role" => user.role.name,
       "created_at" => iso(user.inserted_at),
+      # A date, not a timestamp — it is stored as one (Phase 3F), and it is
+      # the member's own record of when they were last here, so it belongs in
+      # their export.
+      "last_active_on" => user.last_active_on && Date.to_iso8601(user.last_active_on),
       "two_factor" => %{"totp_enabled" => user.totp_enabled == true},
       "also_known_as" => user.also_known_as || [],
       "moved_to" => user.moved_to,

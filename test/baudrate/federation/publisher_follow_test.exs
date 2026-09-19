@@ -60,10 +60,7 @@ defmodule Baudrate.Federation.PublisherFollowTest do
       assert activity["object"] == remote_actor.ap_id
       assert activity["id"] == follow_ap_id
 
-      assert activity["@context"] == [
-               "https://www.w3.org/ns/activitystreams",
-               "https://w3id.org/security/v1"
-             ]
+      assert activity["@context"] == Baudrate.Federation.Context.activity()
 
       assert actor_uri =~ user.username
     end
@@ -82,10 +79,7 @@ defmodule Baudrate.Federation.PublisherFollowTest do
       assert activity["actor"] == actor_uri
       assert activity["id"] =~ "#undo-follow-"
 
-      assert activity["@context"] == [
-               "https://www.w3.org/ns/activitystreams",
-               "https://w3id.org/security/v1"
-             ]
+      assert activity["@context"] == Baudrate.Federation.Context.activity()
 
       inner = activity["object"]
       assert inner["type"] == "Follow"

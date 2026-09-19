@@ -67,10 +67,7 @@ defmodule Baudrate.Federation.PublisherTest do
       assert activity["object"]["attributedTo"] == actor_uri
       assert actor_uri =~ user.username
 
-      assert activity["@context"] == [
-               "https://www.w3.org/ns/activitystreams",
-               "https://w3id.org/security/v1"
-             ]
+      assert activity["@context"] == Baudrate.Federation.Context.activity()
 
       assert "https://www.w3.org/ns/activitystreams#Public" in activity["to"]
       assert "#{actor_uri}/followers" in activity["cc"]
@@ -680,10 +677,7 @@ defmodule Baudrate.Federation.PublisherTest do
       assert result["type"] == "Flag"
       assert result["content"] == "Spam content"
 
-      assert result["@context"] == [
-               "https://www.w3.org/ns/activitystreams",
-               "https://w3id.org/security/v1"
-             ]
+      assert result["@context"] == Baudrate.Federation.Context.activity()
 
       site_uri = Baudrate.Federation.actor_uri(:site, nil)
       assert result["actor"] == site_uri
@@ -906,10 +900,7 @@ defmodule Baudrate.Federation.PublisherTest do
       assert "#{actor_uri}/followers" in activity["object"]["cc"]
       assert activity["id"] =~ "#create-"
 
-      assert activity["@context"] == [
-               "https://www.w3.org/ns/activitystreams",
-               "https://w3id.org/security/v1"
-             ]
+      assert activity["@context"] == Baudrate.Federation.Context.activity()
     end
   end
 

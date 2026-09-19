@@ -147,6 +147,7 @@ defmodule Baudrate.Federation do
   defdelegate webfinger(resource), to: Discovery
   defdelegate nodeinfo_links(), to: Discovery
   defdelegate nodeinfo(), to: Discovery
+  defdelegate nodeinfo(version), to: Discovery
   defdelegate get_remote_actor(id), to: Discovery
   defdelegate get_remote_actor_by_ap_id(ap_id), to: Discovery
   defdelegate remote_actors_by_ap_ids(ap_ids), to: Discovery

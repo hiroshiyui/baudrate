@@ -200,12 +200,20 @@ defmodule Baudrate.FederationTest do
   end
 
   describe "nodeinfo_links/0" do
-    test "returns links with nodeinfo 2.1 href" do
-      links = Federation.nodeinfo_links()
+    test "returns links for both schema versions" do
+      links = Federation.nodeinfo_links()["links"]
 
-      assert [%{"rel" => rel, "href" => href}] = links["links"]
-      assert rel == "http://nodeinfo.diaspora.software/ns/schema/2.1"
-      assert href =~ "/nodeinfo/2.1"
+      # 2.0 as well as 2.1 (Phase 3F): a crawler that only knows 2.0 finds
+      # nothing when only 2.1 is advertised.
+      for version <- ["2.0", "2.1"] do
+        assert %{"href" => href} =
+                 Enum.find(
+                   links,
+                   &(&1["rel"] == "http://nodeinfo.diaspora.software/ns/schema/#{version}")
+                 )
+
+        assert href =~ "/nodeinfo/#{version}"
+      end
     end
   end
 

@@ -197,6 +197,7 @@ defmodule BaudrateWeb.Router do
   scope "/nodeinfo", BaudrateWeb do
     pipe_through :activity_pub
 
+    get "/2.0", ActivityPubController, :nodeinfo
     get "/2.1", ActivityPubController, :nodeinfo
   end
 

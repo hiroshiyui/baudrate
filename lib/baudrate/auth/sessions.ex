@@ -76,8 +76,12 @@ defmodule Baudrate.Auth.Sessions do
         })
 
       case Repo.insert(changeset) do
-        {:ok, _session} -> {session_token, refresh_token, evicted_ids}
-        {:error, changeset} -> Repo.rollback(changeset)
+        {:ok, _session} ->
+          touch_last_active(user_id, now)
+          {session_token, refresh_token, evicted_ids}
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
       end
     end)
     |> case do
@@ -171,8 +175,12 @@ defmodule Baudrate.Auth.Sessions do
           })
           |> Repo.update()
           |> case do
-            {:ok, _} -> {:ok, new_session_token, new_refresh_token}
-            {:error, changeset} -> {:error, changeset}
+            {:ok, _} ->
+              touch_last_active(session.user_id, now)
+              {:ok, new_session_token, new_refresh_token}
+
+            {:error, changeset} ->
+              {:error, changeset}
           end
         else
           revoke(from(s in UserSession, where: s.id == ^session.id))
@@ -273,6 +281,30 @@ defmodule Baudrate.Auth.Sessions do
   # each one's LiveView sockets. The broadcast happens only after the rows are
   # gone: a socket that reconnects re-runs the auth hooks, which must already
   # see the session as deleted.
+  # Records the *day* this account was last signed in, for NodeInfo's
+  # active-user counts. Conditional, so it is at most one write per account
+  # per day however often the session is refreshed, and a plain `update_all`
+  # so it never contends with whatever else holds the user row.
+  #
+  # Best-effort by design: a failure here must not fail a login. The counts
+  # are statistics, and one missing day in them is not worth refusing someone
+  # their session.
+  defp touch_last_active(user_id, now) when is_integer(user_id) do
+    today = DateTime.to_date(now)
+
+    from(u in User,
+      where: u.id == ^user_id,
+      where: is_nil(u.last_active_on) or u.last_active_on < ^today
+    )
+    |> Repo.update_all(set: [last_active_on: today])
+
+    :ok
+  rescue
+    _ -> :ok
+  end
+
+  defp touch_last_active(_user_id, _now), do: :ok
+
   defp revoke(query) do
     {count, ids} = query |> select([s], s.id) |> Repo.delete_all()
     disconnect_sockets(ids)

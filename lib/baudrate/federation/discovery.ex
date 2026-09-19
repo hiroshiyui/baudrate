@@ -65,44 +65,117 @@ defmodule Baudrate.Federation.Discovery do
 
   @doc """
   Returns the well-known nodeinfo links document.
+
+  Both 2.0 and 2.1 are advertised. They describe the same instance and differ
+  only in what the schema permits — 2.0 has no place for `software.repository`
+  — but a consumer that only knows 2.0 finds nothing if only 2.1 is offered,
+  and several fediverse crawlers are still in that position.
   """
   def nodeinfo_links do
     %{
-      "links" => [
-        %{
-          "rel" => "http://nodeinfo.diaspora.software/ns/schema/2.1",
-          "href" => "#{base_url()}/nodeinfo/2.1"
-        }
-      ]
+      "links" =>
+        Enum.map(["2.0", "2.1"], fn version ->
+          %{
+            "rel" => "http://nodeinfo.diaspora.software/ns/schema/#{version}",
+            "href" => "#{base_url()}/nodeinfo/#{version}"
+          }
+        end)
     }
   end
 
   @doc """
-  Returns the NodeInfo 2.1 response map with usage stats.
-  """
-  def nodeinfo do
-    import Ecto.Query
-    user_count = Repo.one(from u in Baudrate.Setup.User, select: count(u.id)) || 0
-    article_count = Repo.one(from a in Baudrate.Content.Article, select: count(a.id)) || 0
+  Returns the NodeInfo response map for the given schema version.
 
+  ## What is counted, and what is not
+
+  `users.total` counts **people**: bots are excluded, because a feed reader
+  with a password nobody knows is not a member and counting one inflates
+  every instance-size comparison this document exists for, and banned
+  accounts are excluded, because a ban is a removal.
+
+  `localPosts` counts **local, undeleted articles**. It counted every row,
+  including articles mirrored from other instances — so an instance that
+  followed a busy community reported that community's output as its own.
+  `localComments` is the same rule for comments.
+
+  `activeMonth` and `activeHalfyear` come from `users.last_active_on`, which
+  is stamped on sign-in. They cannot come from `user_sessions`: a session
+  lives 14 days and is then purged, so that table cannot answer a question
+  about a month, let alone six. An account that has not signed in since the
+  column was added counts as inactive rather than as active, which
+  under-reports rather than over-reports.
+  """
+  @spec nodeinfo(String.t()) :: map()
+  def nodeinfo(version \\ "2.1") do
     %{
-      "version" => "2.1",
-      "software" => %{
-        "name" => "baudrate",
-        "version" => Application.spec(:baudrate, :vsn) |> to_string(),
-        "repository" => "https://github.com/hiroshiyui/baudrate"
-      },
+      "version" => version,
+      "software" => software(version),
       "protocols" => ["activitypub"],
       "services" => %{"inbound" => [], "outbound" => []},
       "openRegistrations" => Setup.registration_mode() == "open",
-      "usage" => %{
-        "users" => %{"total" => user_count},
-        "localPosts" => article_count
-      },
-      "metadata" => %{
-        "nodeName" => Setup.get_setting("site_name") || "Baudrate"
-      }
+      "usage" => usage(),
+      "metadata" => metadata()
     }
+  end
+
+  defp metadata do
+    %{"nodeName" => Setup.get_setting("site_name") || "Baudrate"}
+    |> put_present("nodeDescription", Setup.get_setting("site_description"))
+  end
+
+  defp put_present(map, _key, value) when value in [nil, ""], do: map
+  defp put_present(map, key, value), do: Map.put(map, key, value)
+
+  # `repository` and `homepage` were added in 2.1; a 2.0 document carrying
+  # them fails schema validation, which is the kind of thing a crawler reports
+  # as a broken instance.
+  defp software("2.0") do
+    %{"name" => "baudrate", "version" => version_string()}
+  end
+
+  defp software(_) do
+    %{
+      "name" => "baudrate",
+      "version" => version_string(),
+      "repository" => "https://github.com/hiroshiyui/baudrate"
+    }
+  end
+
+  defp version_string, do: Application.spec(:baudrate, :vsn) |> to_string()
+
+  defp usage do
+    import Ecto.Query
+
+    alias Baudrate.Content.{Article, Comment}
+    alias Baudrate.Setup.User
+
+    members = from(u in User, where: not u.is_bot and u.status != "banned")
+    today = Date.utc_today()
+
+    %{
+      "users" => %{
+        "total" => Repo.aggregate(members, :count, :id) || 0,
+        "activeMonth" => active_since(members, Date.add(today, -30)),
+        "activeHalfyear" => active_since(members, Date.add(today, -180))
+      },
+      "localPosts" =>
+        Repo.aggregate(
+          from(a in Article, where: is_nil(a.remote_actor_id) and is_nil(a.deleted_at)),
+          :count,
+          :id
+        ) || 0,
+      "localComments" =>
+        Repo.aggregate(
+          from(c in Comment, where: is_nil(c.remote_actor_id) and is_nil(c.deleted_at)),
+          :count,
+          :id
+        ) || 0
+    }
+  end
+
+  defp active_since(members, since) do
+    import Ecto.Query
+    Repo.aggregate(from(u in members, where: u.last_active_on >= ^since), :count, :id) || 0
   end
 
   @doc """

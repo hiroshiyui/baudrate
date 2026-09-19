@@ -141,13 +141,12 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
   # --- NodeInfo ---
 
   describe "GET /.well-known/nodeinfo" do
-    test "returns links to nodeinfo 2.1", %{conn: conn} do
+    test "returns links to nodeinfo 2.0 and 2.1", %{conn: conn} do
       conn = conn |> json_conn() |> get("/.well-known/nodeinfo")
-      body = json_response(conn, 200)
+      rels = json_response(conn, 200)["links"] |> Enum.map(& &1["rel"])
 
-      assert [%{"rel" => rel, "href" => href}] = body["links"]
-      assert rel == "http://nodeinfo.diaspora.software/ns/schema/2.1"
-      assert href =~ "/nodeinfo/2.1"
+      assert "http://nodeinfo.diaspora.software/ns/schema/2.0" in rels
+      assert "http://nodeinfo.diaspora.software/ns/schema/2.1" in rels
     end
   end
 
@@ -279,7 +278,9 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       assert body["preferredUsername"] == user.username
       assert body["publicKey"]["publicKeyPem"] =~ "BEGIN PUBLIC KEY"
       assert body["published"]
-      assert get_resp_header(conn, "cache-control") == ["no-store"]
+      # A successful actor document is cacheable since Phase 3F; `no-store`
+      # stays on 404s and redirects.
+      assert get_resp_header(conn, "cache-control") == ["public, max-age=180"]
     end
 
     test "returns Person JSON-LD for ld+json accept header", %{conn: conn} do
@@ -327,7 +328,9 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       assert body["preferredUsername"] == board.slug
       assert body["name"] == board.name
       assert body["publicKey"]["publicKeyPem"] =~ "BEGIN PUBLIC KEY"
-      assert get_resp_header(conn, "cache-control") == ["no-store"]
+      # A successful actor document is cacheable since Phase 3F; `no-store`
+      # stays on 404s and redirects.
+      assert get_resp_header(conn, "cache-control") == ["public, max-age=180"]
     end
 
     test "redirects to board HTML page for browser accept header", %{conn: conn} do
@@ -355,7 +358,9 @@ defmodule BaudrateWeb.ActivityPubControllerTest do
       assert body["type"] == "Organization"
       assert body["name"] == "Test Forum"
       assert body["publicKey"]["publicKeyPem"] =~ "BEGIN PUBLIC KEY"
-      assert get_resp_header(conn, "cache-control") == ["no-store"]
+      # A successful actor document is cacheable since Phase 3F; `no-store`
+      # stays on 404s and redirects.
+      assert get_resp_header(conn, "cache-control") == ["public, max-age=180"]
     end
 
     test "redirects to home for browser accept header", %{conn: conn} do

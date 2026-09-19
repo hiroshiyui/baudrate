@@ -16,10 +16,9 @@ defmodule Baudrate.Federation.ObjectBuilder do
   alias Baudrate.Content
   alias Baudrate.Content.Board
   alias Baudrate.Content.Markdown
-  alias Baudrate.Federation.{Delivery, Mentions, Visibility}
+  alias Baudrate.Federation.{Context, Delivery, Mentions, Visibility}
   alias Baudrate.Repo
 
-  @as_context "https://www.w3.org/ns/activitystreams"
   @as_public "https://www.w3.org/ns/activitystreams#Public"
 
   @doc """
@@ -56,7 +55,7 @@ defmodule Baudrate.Federation.ObjectBuilder do
     tags = extract_hashtags(article.body) ++ Mentions.tags(mentioned)
 
     map = %{
-      "@context" => @as_context,
+      "@context" => Context.object(),
       "id" => article.ap_id || actor_uri(:article, article.slug),
       "type" => "Article",
       "name" => article.title,
@@ -122,7 +121,7 @@ defmodule Baudrate.Federation.ObjectBuilder do
         else: []
 
     map = %{
-      "@context" => @as_context,
+      "@context" => Context.object(),
       "id" => comment.ap_id || actor_uri(:comment, comment.id),
       "type" => "Note",
       "url" => comment.url || "#{base_url()}/articles/#{article.slug}#comment-#{comment.id}",
@@ -162,7 +161,7 @@ defmodule Baudrate.Federation.ObjectBuilder do
     poll
     |> question_body()
     |> Map.merge(%{
-      "@context" => @as_context,
+      "@context" => Context.object(),
       "id" => poll.ap_id || actor_uri(:poll, poll.id),
       "name" => article.title,
       "attributedTo" => actor_uri(:user, article.user.username),
