@@ -440,7 +440,7 @@ defmodule BaudrateWeb.Admin.ModerationLive do
           report.reason
         )
 
-      Baudrate.Federation.Delivery.deliver_flag(flag, report.remote_actor)
+      Baudrate.Federation.deliver_flag(flag, report.remote_actor)
 
       Moderation.log_action(socket.assigns.current_user.id, "send_flag",
         target_type: "report",

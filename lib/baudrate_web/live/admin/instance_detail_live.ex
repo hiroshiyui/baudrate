@@ -13,6 +13,7 @@ defmodule BaudrateWeb.Admin.InstanceDetailLive do
 
   on_mount {BaudrateWeb.AuthHooks, :require_admin}
 
+  alias Baudrate.Federation
   alias Baudrate.Federation.{DomainBlock, DomainBlocks, RemoteActors}
   alias Baudrate.Moderation
   import BaudrateWeb.Helpers, only: [parse_id: 1]
@@ -62,7 +63,8 @@ defmodule BaudrateWeb.Admin.InstanceDetailLive do
     with {:ok, actor_id} <- parse_id(id),
          %{} = actor <- RemoteActors.get_remote_actor(actor_id),
          false <- reason == "",
-         {:ok, suspended} <- RemoteActors.suspend(actor, socket.assigns.current_user, reason) do
+         {:ok, suspended} <-
+           Federation.suspend_remote_actor(actor, socket.assigns.current_user, reason) do
       Moderation.log_action(socket.assigns.current_user.id, "suspend_remote_actor",
         details: %{actor: suspended.ap_id, domain: suspended.domain, reason: reason}
       )
@@ -93,7 +95,7 @@ defmodule BaudrateWeb.Admin.InstanceDetailLive do
   def handle_event("unsuspend_actor", %{"id" => id}, socket) do
     with {:ok, actor_id} <- parse_id(id),
          %{} = actor <- RemoteActors.get_remote_actor(actor_id),
-         {:ok, lifted} <- RemoteActors.unsuspend(actor) do
+         {:ok, lifted} <- Federation.unsuspend_remote_actor(actor) do
       Moderation.log_action(socket.assigns.current_user.id, "unsuspend_remote_actor",
         details: %{actor: lifted.ap_id, domain: lifted.domain}
       )

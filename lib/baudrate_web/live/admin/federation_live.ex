@@ -126,7 +126,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
   def handle_event("unblock_domain", %{"block_id" => id, "reason" => reason}, socket) do
     with {:ok, block_id} <- parse_id(id),
          %{} = block <- Enum.find(socket.assigns.domain_blocks, &(&1.id == block_id)),
-         {:ok, _} <- DomainBlocks.unblock_domain(block) do
+         {:ok, _} <- Federation.unblock_domain(block) do
       Moderation.log_action(socket.assigns.current_user.id, "unblock_domain",
         details: %{domain: block.domain, reason: String.trim(reason)}
       )
@@ -207,7 +207,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
   def handle_event("add_missing_domain", %{"domain" => domain}, socket) do
     # Audit the block only when one happened. The old code logged an entry for
     # a domain that was already blocked, and skipped one on the instance list.
-    case DomainBlocks.block_domain(domain, socket.assigns.current_user, audit_attrs()) do
+    case Federation.block_domain(domain, socket.assigns.current_user, audit_attrs()) do
       {:ok, block} ->
         Moderation.log_action(socket.assigns.current_user.id, "block_domain",
           details: %{domain: block.domain, reason: block.reason, source: "audit"}
@@ -243,7 +243,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
       %{missing: missing} when missing != [] ->
         blocked =
           Enum.flat_map(missing, fn domain ->
-            case DomainBlocks.block_domain(domain, socket.assigns.current_user, audit_attrs()) do
+            case Federation.block_domain(domain, socket.assigns.current_user, audit_attrs()) do
               {:ok, block} -> [block.domain]
               _ -> []
             end
@@ -285,7 +285,7 @@ defmodule BaudrateWeb.Admin.FederationLive do
   end
 
   defp do_block(socket, params, domain, reason, public_comment) do
-    case DomainBlocks.block_domain(domain, socket.assigns.current_user, %{
+    case Federation.block_domain(domain, socket.assigns.current_user, %{
            reason: String.trim(reason),
            public_comment: String.trim(public_comment)
          }) do

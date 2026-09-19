@@ -87,8 +87,11 @@ defmodule Baudrate.Federation do
 
   alias Baudrate.Federation.{
     Announce,
+    Delivery,
+    DomainBlocks,
     KeyStore,
-    Publisher
+    Publisher,
+    RemoteActors
   }
 
   alias Baudrate.Federation.{
@@ -344,6 +347,42 @@ defmodule Baudrate.Federation do
         :ok
     end
   end
+
+  # --- Instance moderation ---
+  #
+  # Blocking a domain and suspending a remote actor change what every visitor
+  # can see and who this instance will talk to, so they belong on the facade:
+  # it is the index of every way a context changes the world (ADR 0047). The
+  # read models behind the same screens — `DeliveryStats`, `InstanceStats`,
+  # `BlocklistAudit`, the listings — stay addressed directly, because nothing
+  # outside `/admin` asks for them.
+
+  @doc """
+  Blocks a domain instance-wide (ADR 0030). See `Federation.DomainBlocks`.
+  """
+  defdelegate block_domain(domain, blocked_by \\ nil, attrs \\ %{}), to: DomainBlocks
+
+  @doc """
+  Lifts a domain block. Content becomes visible again by itself (ADR 0030).
+  """
+  defdelegate unblock_domain(block), to: DomainBlocks
+
+  @doc """
+  Suspends one remote actor instance-wide (ADR 0030, decision 6).
+  """
+  defdelegate suspend_remote_actor(actor, suspended_by, reason),
+    to: RemoteActors,
+    as: :suspend
+
+  @doc """
+  Lifts a remote actor's suspension.
+  """
+  defdelegate unsuspend_remote_actor(actor), to: RemoteActors, as: :unsuspend
+
+  @doc """
+  Queues a `Flag` activity to a remote actor's instance. See `Federation.Delivery`.
+  """
+  defdelegate deliver_flag(flag, remote_actor), to: Delivery
 
   # --- Key Rotation ---
 
