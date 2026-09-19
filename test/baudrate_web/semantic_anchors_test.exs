@@ -26,11 +26,15 @@ defmodule BaudrateWeb.SemanticAnchorsTest do
       the id stable across both is *good* practice. So duplicates are checked
       against **rendered output**, never by counting literals in a template.
     * `search_live` and `admin/pending_users_live` each carry
-      `data-focus-target` *and* `autofocus`, which 0018's Consequences and
-      `CLAUDE.md` both forbid. `assets/js/app.js` already reconciles them —
-      the focus handler returns early when the page has an `[autofocus]` — so
-      the combination is inert, not a fight. No check here fails the build for
-      it; the rule is real as guidance and the code defends it at runtime.
+      `data-focus-target` *and* `autofocus`, which 0018's Consequences forbid
+      absolutely. `assets/js/app.js` has never been that strict: the focus
+      handler returns early while any `[autofocus]` sits inside
+      `#main-content`, so the marker is inert rather than fighting — and a
+      `?page` change bypasses that guard on purpose, which is what makes a
+      paginated page with a search box work. So no check here fails the build
+      for the combination. `CLAUDE.md` now describes the actual behaviour;
+      0018 is accepted and its body is not rewritten, so the divergence lives
+      here and there rather than in the record.
   """
 
   use BaudrateWeb.ConnCase, async: false
