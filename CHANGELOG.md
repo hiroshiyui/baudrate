@@ -9,15 +9,31 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
-Phase 3 (federation reach), stages 3B, 3A and 3D.
+Phase 3 (federation reach), stages 3B, 3A, 3D and 3F.
 
-**Upgrading:** two migrations, and **one release task that must be run**:
+**Upgrading:** three migrations, and **one release task that must be run**:
 `bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"` (see
 `doc/sysop.md`, "Data Repair: `ap_id` Backfill"). Until it runs, comments
 created before the upgrade keep their old IDs and stay unthreadable from other
 instances; nothing breaks either way, and the task is idempotent and resumable.
 
 ### Added
+
+- **NodeInfo is served at 2.0 as well as 2.1**, and reports
+  `usage.users.activeMonth`, `usage.users.activeHalfyear` and
+  `usage.localComments`. The 2.0 document omits `software.repository`, which
+  its schema has no place for. `metadata.nodeDescription` is included when the
+  `site_description` setting is set.
+
+- **`Baudrate.Federation.Context` declares the `baudrate:` extension terms.**
+  `baudrate:pinned`, `:locked`, `:commentCount`, `:likeCount`,
+  `:parentBoard` and `:subBoards` were published without appearing in any
+  `@context`, which makes them undefined terms in JSON-LD — dropped by any
+  consumer that expands the document rather than reading it as plain JSON.
+  One module now owns every context this instance publishes, where four each
+  held their own copy of the ActivityStreams URI. The namespace identifies the
+  software, not the instance, so the terms mean the same thing on every
+  Baudrate. Documented in `doc/api.md`.
 
 - **A profile or board edit reaches followers.** Changing a display name, bio,
   avatar or profile field now sends `Update(Person)`; changing a board's name,
@@ -72,6 +88,21 @@ instances; nothing breaks either way, and the task is idempotent and resumable.
   article. Documented in `doc/api.md`.
 
 ### Fixed
+
+- **NodeInfo counted things it should not have.** `usage.users.total` counted
+  feed bots and banned accounts, so every instance-size comparison this
+  document exists for was inflated. `usage.localPosts` counted *every* article
+  row, including ones mirrored from other instances — so an instance that
+  followed a busy community reported that community's output as its own — and
+  included soft-deleted articles.
+
+  Active-user counts are new rather than fixed, and needed a durable column:
+  `users.last_active_on`, stamped on sign-in and session refresh. They could
+  not come from `user_sessions`, where a session lives 14 days and is then
+  purged. It is a **date, not a timestamp**, deliberately — the question is
+  which month somebody was last here, and a timestamp would record what time
+  of day they read the site, every day, for six months. It appears in the
+  member's own data export.
 
 - **A mention of a remote person no longer links to a local stranger.**
   `Content.Markdown`'s mention pattern treated `@` as a word boundary, so
@@ -152,6 +183,14 @@ instances; nothing breaks either way, and the task is idempotent and resumable.
   addressed, though blocking deletes nothing and its row still exists.
 
 ### Changed
+
+- **Actor documents are cached for 180 seconds** instead of `no-store`, which
+  takes real load off both sides of a federation link — a verifier fetches the
+  actor on every signature check. `no-store` stays on every 404 and HTML
+  redirect, because a cached wrong answer there breaks signature verification
+  for everyone, and `public` is used **only while authorized fetch is off**:
+  with it on, the same URL answers 401 unsigned and the document signed, so a
+  shared cache holding it would defeat the setting.
 
 - `Baudrate.Federation.Visibility` now owns both directions of the `to`/`cc`
   mapping (`to_addressing/2` beside `from_addressing/1`), and `Publisher`

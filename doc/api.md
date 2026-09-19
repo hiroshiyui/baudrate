@@ -20,6 +20,7 @@ surface.
 ## Table of Contents
 
 - [Global Behavior](#global-behavior)
+  - [Extension terms](#extension-terms)
 - [Content Negotiation](#content-negotiation)
 - [Discovery](#discovery)
   - [WebFinger](#webfinger)
@@ -71,7 +72,40 @@ surface.
 | **Authorized fetch** | Optional setting `ap_authorized_fetch`. When enabled, unsigned GET requests to `/ap/*` return 401. Discovery endpoints are exempt. |
 | **Domain filtering** | `blocklist` mode (default): reject domains blocked at `/admin/federation`. `allowlist` mode: only accept domains in `ap_domain_allowlist` (empty list blocks all). |
 | **Payload size** | Inbox POST bodies capped at 256 KB (`413 Payload Too Large`). Content bodies capped at 64 KB. |
-| **JSON-LD contexts** | `https://www.w3.org/ns/activitystreams` and `https://w3id.org/security/v1`; Person actors add an inline `schema:` context for their `PropertyValue` profile fields |
+| **JSON-LD contexts** | `https://www.w3.org/ns/activitystreams`, `https://w3id.org/security/v1`, and an inline terms object declaring the `baudrate:` and `schema:` prefixes (see below) |
+| **Caching** | Actor documents are served `public, max-age=180` — but `no-store` on every 404, every HTML redirect, and on **all** actor responses while authorized fetch is enabled, because the answer then depends on the requester's signature |
+
+### Extension terms
+
+Fields outside the standard vocabulary carry the `baudrate:` prefix, declared
+in the `@context` of every object, activity and actor that may use them:
+
+```json
+"@context": [
+  "https://www.w3.org/ns/activitystreams",
+  "https://w3id.org/security/v1",
+  {
+    "baudrate": "https://github.com/hiroshiyui/baudrate/ns#",
+    "schema": "http://schema.org/",
+    "PropertyValue": "schema:PropertyValue",
+    "value": "schema:value"
+  }
+]
+```
+
+| Term | On | Meaning |
+|------|----|---------|
+| `baudrate:pinned` | `Article` | Pinned in its board |
+| `baudrate:locked` | `Article` | Closed to new comments |
+| `baudrate:commentCount` | `Article` | Comments, excluding deleted |
+| `baudrate:likeCount` | `Article` | Likes |
+| `baudrate:parentBoard` | `Group` | Actor URI of the board this one sits under |
+| `baudrate:subBoards` | `Group` | Actor URIs of the federated boards beneath it |
+
+The namespace identifies the **software**, not the instance — every Baudrate
+instance uses the same prefix, so the terms mean the same thing everywhere.
+Like Mastodon's `http://joinmastodon.org/ns#`, it is an identifier rather
+than a document and does not have to resolve.
 
 ---
 
@@ -169,7 +203,9 @@ GET /.well-known/webfinger?resource=acct:general@example.com
 
 ### NodeInfo
 
-Instance metadata per [NodeInfo 2.1](https://nodeinfo.diaspora.software/protocol).
+Instance metadata per [NodeInfo](https://nodeinfo.diaspora.software/protocol),
+served at both **2.0** and **2.1**. The two describe the same instance and
+differ only in what their schemas permit.
 
 #### Discovery document
 
@@ -180,11 +216,15 @@ GET /.well-known/nodeinfo
 **Content-Type:** `application/json`
 **Auth:** None (exempt from authorized fetch)
 
-Returns a links array pointing to the full NodeInfo document:
+Returns a links array pointing to both documents:
 
 ```json
 {
   "links": [
+    {
+      "rel": "http://nodeinfo.diaspora.software/ns/schema/2.0",
+      "href": "https://example.com/nodeinfo/2.0"
+    },
     {
       "rel": "http://nodeinfo.diaspora.software/ns/schema/2.1",
       "href": "https://example.com/nodeinfo/2.1"
@@ -196,6 +236,7 @@ Returns a links array pointing to the full NodeInfo document:
 #### Full document
 
 ```
+GET /nodeinfo/2.0
 GET /nodeinfo/2.1
 ```
 
@@ -214,18 +255,39 @@ GET /nodeinfo/2.1
   "services": { "inbound": [], "outbound": [] },
   "openRegistrations": true,
   "usage": {
-    "users": { "total": 42 },
-    "localPosts": 128
+    "users": { "total": 42, "activeMonth": 17, "activeHalfyear": 31 },
+    "localPosts": 128,
+    "localComments": 904
   },
   "metadata": {
-    "nodeName": "My Forum"
+    "nodeName": "My Forum",
+    "nodeDescription": "A small forum about radios"
   }
 }
 ```
 
+`software.repository` appears only in **2.1** — the 2.0 schema has no place
+for it, and a 2.0 document carrying it fails validation.
+
+**What the counts mean:**
+
+| Field | Counts | Excludes |
+|-------|--------|----------|
+| `users.total` | accounts | bot accounts, banned accounts |
+| `users.activeMonth` | accounts that signed in within 30 days | accounts that have not signed in since this instance upgraded to v1.31.0 |
+| `users.activeHalfyear` | the same, within 180 days | as above |
+| `localPosts` | articles written here | articles mirrored from other instances, soft-deleted articles |
+| `localComments` | comments written here | as above |
+
+Activity comes from a per-account **date** of last sign-in, not from session
+rows: a session lives 14 days and is then purged, so it cannot answer a
+question about a month. The date has no time component, deliberately — the
+question is which month somebody was last here.
+
 `software.version` reflects the running release (the `:baudrate` app version),
-`openRegistrations` mirrors the current registration mode, and `usage` /
-`metadata.nodeName` are computed live — the values above are illustrative.
+`openRegistrations` mirrors the current registration mode,
+`metadata.nodeDescription` is omitted when the `site_description` setting is
+unset, and every count is computed live — the values above are illustrative.
 
 ---
 

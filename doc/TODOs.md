@@ -248,16 +248,22 @@ queue where the jobs are durable.
 - [ ] **Outbound:** an optional content warning in the local composer (articles, comments, timeline replies), sent as `summary` and `sensitive`.
 - [ ] **Video and audio attachments** render as a link card to the original, never embedded, following the no-third-party rule. They are dropped today.
 
-### 3F — Protocol hygiene (S)
+### ~~3F — Protocol hygiene~~ — **done** (unreleased)
 
-- [ ] **NodeInfo:**
-  - `localPosts` counts only local articles;
-  - user totals exclude bots and banned users;
-  - add active-user counts for one month and half a year (`core/federation/discovery.ex:85-100`).
-  - Advertise NodeInfo 2.0 as well.
-- [ ] Declare a JSON-LD namespace for the `baudrate:*` extension fields.
-- [ ] Actor documents get a short cache lifetime instead of `no-store`.
-- ~~A `Follow` of a local user that arrives through the shared inbox creates no `new_follower` notification.~~ **Already fixed** while building 1A — `InboxHandler.notify_follow_target/2` resolves the user from the Follow's own target URI, as the block check always did. Struck 2026-09-19 after checking the code.
+NodeInfo counts people (no bots, no banned accounts) and local content (no
+mirrored or deleted rows), reports `activeMonth`/`activeHalfyear` from a new
+`users.last_active_on` **date**, and is served at 2.0 as well as 2.1. The
+`baudrate:*` terms are declared in `Baudrate.Federation.Context`, which is now
+the one owner of every `@context` this instance publishes — they had been
+published undeclared, so any consumer expanding the document dropped them.
+Actor documents are cached for 180 s, except on errors, redirects, and
+whenever authorized fetch is on. Gate `test/baudrate_web/protocol_hygiene_test.exs`.
+
+The active counts could not come from `user_sessions`: a session lives 14 days
+and is then purged, so the table cannot answer a question about a month.
+
+The `Follow` notification bullet was struck on 2026-09-19 — already fixed
+while building 1A.
 
 ### Decisions (made 2026-09-19)
 
