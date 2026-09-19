@@ -9,15 +9,33 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
-Phase 3 (federation reach), stages 3B, 3A, 3D and 3F.
+Phase 3 (federation reach), stages 3B, 3A, 3D, 3F and 3E.
 
-**Upgrading:** three migrations, and **one release task that must be run**:
+**Upgrading:** four migrations, and **one release task that must be run**:
 `bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"` (see
 `doc/sysop.md`, "Data Repair: `ap_id` Backfill"). Until it runs, comments
 created before the upgrade keep their old IDs and stay unthreadable from other
 instances; nothing breaks either way, and the task is idempotent and resumable.
 
 ### Added
+
+- **Content warnings, in both directions**
+  ([ADR 0052](doc/adr/0052-a-content-warning-is-a-field-not-a-prefix.md)).
+  Every composer — article, article edit, comment, timeline reply — offers an
+  optional warning, published as `summary` + `sensitive`. Warned content
+  renders collapsed behind a `<details>` element the reader opens: not a
+  JavaScript toggle, because a warning has to hold when scripting has gone
+  wrong, and with class names that no cosmetic-filter list targets, because a
+  warning hidden by a content blocker shows the content it was standing in
+  front of.
+
+- **Video and audio attachments arrive as a link** to the original instead of
+  being dropped. They cannot go through the media proxy — that would mean this
+  instance downloading and re-serving arbitrarily large files — and embedding
+  them would be the hotlink the proxy exists to prevent, so a link is the
+  honest form: it contacts nobody until the reader follows it, like the
+  click-to-load video player (ADR 0045). A post whose whole point was a video
+  used to arrive looking empty.
 
 - **NodeInfo is served at 2.0 as well as 2.1**, and reports
   `usage.users.activeMonth`, `usage.users.activeHalfyear` and
@@ -88,6 +106,30 @@ instances; nothing breaks either way, and the task is idempotent and resumable.
   article. Documented in `doc/api.md`.
 
 ### Fixed
+
+- **An inbound content warning no longer becomes the content.** A `sensitive`
+  object had its `summary` glued onto the front of the body as `[CW: …]`.
+  That is a one-way conversion, and it loses the only thing that matters: once
+  the warning is inside the body it is the first line of the text it was
+  supposed to stand in front of. Nothing could render the post collapsed,
+  nothing could publish the warning back out — and **the reader was shown the
+  content anyway**, with a label above it.
+
+  `summary` and `sensitive` are now columns on articles, comments, timeline
+  items and timeline replies, with one module
+  (`Baudrate.Content.ContentWarning`) holding the rules for all four: an empty
+  warning is `nil` rather than `""`, text implies the flag (a peer that sends
+  a `summary` and forgets `sensitive` meant to warn somebody), and the text is
+  bounded. **Rows written before this keep their `[CW: …]` prefix** — parsing
+  it back out would be guessing where the warning ends.
+
+- **Articles no longer arrive on Mastodon hidden behind their own first
+  paragraph.** `summary` carried a 500-character excerpt of the body, which is
+  a defensible reading of ActivityStreams for an `Article` and wrong in
+  practice: Mastodon maps `summary` to `spoiler_text` for every object type it
+  ingests. It now carries the content warning and nothing else. The excerpt is
+  gone rather than moved — `name` already carries the title and `content` the
+  body.
 
 - **NodeInfo counted things it should not have.** `usage.users.total` counted
   feed bots and banned accounts, so every instance-size comparison this
@@ -205,6 +247,10 @@ instances; nothing breaks either way, and the task is idempotent and resumable.
   ADR 0051 gate, which is the argument for having one.
 - `Notification.Hooks` reads local mentions through `Mentions.extract/1`, so a
   member named in the long form `@alice@this.host` is notified like `@alice`.
+- `Publisher.build_create_comment/2` builds its Note through
+  `ObjectBuilder.comment_object/1` rather than assembling its own copy. The
+  duplicate is what made mention tags, and then content warnings, a thing to
+  remember twice.
 - `Publisher.publish_key_rotation/2` is now `publish_actor_updated/2`. A new
   public key and a new display name are the same activity carrying the same
   document, and two names for it would be two things to remember when a field

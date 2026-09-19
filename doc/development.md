@@ -1939,6 +1939,33 @@ debouncing — see the function's own documentation for why.
 `Delete(Person)` is not sent, and ships with self-service account deletion
 (6E).
 
+**Content warnings** (ADR 0052) are `summary` + `sensitive` columns on
+`articles`, `comments`, `timeline_items` and `timeline_item_replies`.
+`Baudrate.Content.ContentWarning` holds the rules for all four — an empty
+warning normalises to `nil`, text implies the flag (not the reverse), and the
+text is bounded at 512 characters — because four schemas accepting the pair
+from three directions is four chances to disagree.
+
+Inbound, the warning is stored and the body is left alone. It used to be
+prefixed onto the body as `[CW: …]`, which made it indistinguishable from the
+content it warned about; rows written before v1.31.0 still carry that prefix
+and are deliberately not rewritten. Outbound, `summary` is the content warning
+and nothing else.
+
+Warned content renders behind `CoreComponents.content_warning/1`, a
+`<details>` rather than a hook: a warning has to hold when scripting has gone
+wrong.
+
+**Attachments** come in two kinds, in one `attachments` column, told apart by
+`media_type`:
+
+| Kind | Rendered as |
+|---|---|
+| `image/*` | an `<img>` through `Media.Proxy`, so the page never fetches from another host |
+| `video/*`, `audio/*` | a **link** to the origin — it cannot be proxied (arbitrarily large files) and must not be embedded (the hotlink the proxy prevents) |
+
+`AttachmentExtractor.playable?/1` is the predicate a renderer branches on.
+
 **Discovery endpoints:**
 - `/.well-known/webfinger` — resolve `acct:site@host` (instance actor), `acct:user@host` (user), or `acct:board-slug@host` (board, also accepts `!` prefix for Lemmy compat); site and board responses include `properties` with actor type (`"Organization"` / `"Group"`)
 - `/.well-known/nodeinfo` → `/nodeinfo/2.1` — instance metadata

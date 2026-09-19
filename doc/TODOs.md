@@ -242,11 +242,20 @@ queue where the jobs are durable.
 
 **`Delete(Person)`** still ships with self-service account deletion (6E).
 
-### 3E — Content warnings and media (M)
+### ~~3E — Content warnings and media~~ — **done** (unreleased)
 
-- [ ] **Inbound:** store `summary` and `sensitive` in their own fields on articles, comments and timeline items, and render the content collapsed behind its warning. Today they are merged into the body (`core/federation/inbox_handler.ex:1219`).
-- [ ] **Outbound:** an optional content warning in the local composer (articles, comments, timeline replies), sent as `summary` and `sensitive`.
-- [ ] **Video and audio attachments** render as a link card to the original, never embedded, following the no-third-party rule. They are dropped today.
+`summary` and `sensitive` are columns on four tables, the body is left as
+written, and warned content renders collapsed behind a `<details>`. Every
+local composer offers an optional warning. Outbound `summary` is the warning
+and nothing else — it had been carrying a body excerpt, which Mastodon renders
+as a spoiler, so every article arrived there hidden behind its own opening
+paragraph. Video and audio render as a link to the origin instead of being
+dropped.
+[ADR 0052](adr/0052-a-content-warning-is-a-field-not-a-prefix.md), gate
+`test/baudrate/federation/content_warning_test.exs`.
+
+Rows written before the upgrade keep their `[CW: …]` prefix; parsing it back
+out would be guessing where the warning ends.
 
 ### ~~3F — Protocol hygiene~~ — **done** (unreleased)
 

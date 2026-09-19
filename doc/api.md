@@ -546,6 +546,8 @@ requester, signed or not, including one whose signature belongs to an admin.
 | `mediaType` | string | Always `"text/html"` |
 | `source` | object | Original Markdown body with `mediaType: "text/markdown"` |
 | `attributedTo` | URI | Author's Person actor URI |
+| `summary` | string | The **content warning**, when the author set one. Omitted otherwise. It is not a body excerpt — it carried one until v1.31.0, and since Mastodon maps `summary` to `spoiler_text` for every object type, that made every article arrive there hidden behind its own opening paragraph (ADR 0052) |
+| `sensitive` | boolean | Present and `true` only alongside a content warning |
 | `published` | ISO 8601 | Creation timestamp |
 | `updated` | ISO 8601 | Last modification timestamp (optional — omitted unless the article was edited more than 5 s after it was created, so peers do not mark a freshly posted article as edited) |
 | `to` | array | Always `["https://www.w3.org/ns/activitystreams#Public"]` |
@@ -621,6 +623,9 @@ whose `visibility` is not `public`/`unlisted`.
   "cc": ["https://example.com/ap/users/alice/followers"]
 }
 ```
+
+`summary` and `sensitive` carry a content warning when the author set one,
+exactly as on an Article.
 
 `inReplyTo` names the **parent comment** when the comment is a reply, and the
 article only when it is top-level (ADR 0051). A reply to a remote comment

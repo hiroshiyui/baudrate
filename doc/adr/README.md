@@ -71,6 +71,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0049](0049-user-facing-changesets-are-allow-lists.md) | User-facing changesets are allow-lists | Accepted |
 | [0050](0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md) | A comment and a poll are objects with their own URI | Accepted |
 | [0051](0051-a-mention-addresses-and-the-board-gate-still-decides.md) | A mention addresses, and the board gate still decides | Accepted |
+| [0052](0052-a-content-warning-is-a-field-not-a-prefix.md) | A content warning is a field, not a prefix | Accepted |
 
 ## Writing a new ADR
 
