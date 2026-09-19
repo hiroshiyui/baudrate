@@ -548,13 +548,19 @@ something behind that is not obvious from the record it fixed.
   and `test/baudrate_web/totp_code_hint_test.exs` is the gate that notices the
   next one. Eight templates had it and nothing checked the ninth.
 
-**Left open deliberately.** The Aqua themes carry four more
-`.card > .card-body` selectors (`aquaosx.css:235,245`,
-`aquaosx-dark.css:217,222`). They are a theme restyling the daisyUI `card`
-component generically, not custom CSS hooked onto a specific element, and ADR
-0018 does not draw that distinction. Giving every card body a semantic class
-would touch dozens of templates and the theme would still target the component.
-Decide whether 0018 should say so before changing either.
+**Settled, not open: the Aqua themes keep their `.card > .card-body`
+selectors** (`aquaosx.css:235,245`, `aquaosx-dark.css:217,222`; operator's
+call, 2026-09-19). The audit listed them with the `app.css` rule sets, and
+that was an overreach. They are imported into `app.css`, so the file-scope
+reading does not save them — but their subject does: `[data-theme="aquaosx"]
+.card > .card-body:has(> .card-title)` normalises padding for **any** card
+carrying an Aqua title bar, so that the full-bleed bar below it meets the
+border flush whether the card uses `p-4` or daisyUI's default. The rule is
+about the component's shape, and naming a specific element is what would
+break it. ADR 0018's concern is custom CSS hooked onto structure *in place
+of* a semantic handle the element could have had; there is no such handle
+here, and adding one per card body would touch dozens of templates while the
+theme still had to target the component. Do not re-file this.
 
 ---
 
