@@ -7,6 +7,132 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.30.0] — 2026-09-19
+
+Things this instance told the fediverse, its members or its own records were
+true, and were not. A record-by-record audit of the 46 ADRs then on file,
+against the code, drove most of it: the site actor advertised three endpoints
+that answered 404, a YouTube link put a Google iframe on the page, article
+moderation was authorized at mount rather than at the act, and the rule
+binding every identity claim to its host had sixteen call sites and no record
+at all.
+
+**Upgrading:** no migrations and no configuration changes.
+
+**Operators:** the deploy refuses a host whose Debian release or architecture
+disagrees with `debian_version` (ADR 0036 decision 1, restored). Production is
+Debian 12 on x86_64 and is unaffected; a host that drifted will now be told
+so, which is the point.
+
+### Added
+
+- **The site actor serves the three endpoints it advertises.** `/ap/site`
+  published `outbox`, `followers` and `inbox` URIs, and all three returned 404.
+  Mastodon fetches an actor's collections when it first sees it, so the
+  instance actor failed discovery — and a peer that posted a `Follow` to the
+  advertised inbox was told nothing at all. `/ap/site/outbox` and
+  `/ap/site/followers` are now served (empty collections: the site actor signs
+  instance-level activities and publishes nothing of its own), and
+  `POST /ap/site/inbox` routes to the same handler as `/ap/inbox`, which
+  resolves the target from the activity's addressing either way.
+
+### Changed
+
+- **The YouTube player loads on a click**
+  ([ADR 0045](doc/adr/0045-the-video-player-loads-on-a-click.md)). The server
+  renders a poster frame — the thumbnail the link-preview fetcher had already
+  stored locally — and a play button that says the player comes from YouTube;
+  a hook builds the `<iframe>` when the reader presses it. One extra click to
+  watch a video, and that is the whole cost.
+- **`Federation` names the instance moderation operations**
+  ([ADR 0047](doc/adr/0047-the-facade-lists-every-way-a-context-changes-the-world.md)).
+  Blocking a domain and suspending a remote actor were reached by the admin
+  LiveViews directly, so nothing on the facade said this instance could do
+  either. They are now `Federation.block_domain/3`, `unblock_domain/1`,
+  `suspend_remote_actor/3`, `unsuspend_remote_actor/1` and `deliver_flag/2`.
+  No check is gained or lost: authorization stays in the sub-module that
+  performs the operation (ADR 0016), precisely so the facade can be bypassed
+  without bypassing it.
+- **The deploy checks the host's Debian release again** (ADR 0036 decision 1).
+  The assert went with the move back to building on the server, but that made
+  it matter more, not less: the release no longer arrives pre-linked, so a
+  drifted host silently becomes the system the binary is built against while
+  CI keeps testing on the other one. `debian_version` also fixes the
+  PostgreSQL client major, so the first thing a mismatch breaks is the
+  pre-deploy dump and the nightly backups (ADR 0028), not the deploy.
+- **Card tap feedback hangs off a semantic class**
+  ([ADR 0018](doc/adr/0018-semantic-ids-and-classes-for-accessibility.md)).
+  Three rule sets targeted `.card:has(> .card-body > .stretched-link)` — the
+  structural chain the record names as the anti-pattern. They now use
+  `tappable-card`. Behaviour is unchanged, deliberately: the pressed selector
+  keeps two branches so pressing an author link inside an article card does
+  not flash the whole card.
+
+### Fixed
+
+- **A follow through the shared inbox told nobody.** A `Follow` addressed to a
+  local user and delivered to `/ap/inbox` — which is where Mastodon sends it —
+  was accepted and recorded, and the user was never notified. Only the
+  per-user inbox route notified. Both paths now resolve the target the same
+  way.
+- **The TOTP enrolment form never said the code is single-use**
+  ([ADR 0024](doc/adr/0024-totp-codes-are-single-use-with-a-one-period-grace-window.md)
+  decision 6). Eight forms carried the hint; enrolment did not, and enrolment
+  *consumes* the code — so an admin who enabled TOTP and went straight to
+  `/admin/verify` inside the same 30 seconds was refused with nothing having
+  warned them.
+- **Reference documentation for the above.** `doc/api.md` gains the three site
+  actor endpoints and `doc/development.md` the followers and following routes
+  it had never listed, the eight places origin binding is applied, and four
+  Federation sub-modules missing from its table.
+
+### Security
+
+- **Article moderation is authorized at the act, not at mount**
+  ([ADR 0016](doc/adr/0016-authorization-at-the-context-boundary.md)).
+  `toggle_pin_article/1` and `toggle_lock_article/1` took no actor at all,
+  `soft_delete_article/2` checked nothing, and `ArticleLive` computed
+  `can_pin`/`can_lock`/`can_delete` once in `mount/3` and read them on events
+  that could arrive an hour later. Losing a *role* revokes sessions, so a
+  demoted admin was already stopped; losing a **board moderator** grant does
+  not, so they kept pin, lock and delete on any article page left open. All
+  four now authorize inside the context against a freshly reloaded actor, and
+  a delete must name its actor or declare itself remote.
+- **One definition of same-origin**
+  ([ADR 0046](doc/adr/0046-every-identity-claim-is-bound-to-the-host-that-can-prove-it.md)).
+  Writing the record for origin binding turned up a second, divergent
+  `same_host?/2` private to `InboxHandler` that accepted two hostless URIs as
+  same-origin where the shared one rejects them — and it was the copy guarding
+  the fetched-Announce object id and the `attributedTo` binding. It now
+  delegates. A security primitive with two definitions is one definition and
+  one liability.
+- **No page contacts a third party on render** (ADR 0045, refining
+  [ADR 0006](doc/adr/0006-media-proxy-no-third-party-subresources.md)). A
+  YouTube link preview embedded a Google-hosted `<iframe>` on article, comment
+  and DM pages, disclosing every reader's IP address and User-Agent simply for
+  opening a thread. The acceptance gate could not see it: it matched `<img>`
+  and nothing else, so it was blind to `<iframe>`, `<script>`, `<video>`,
+  `<link rel=stylesheet>` and `url()` in CSS. The gate now covers every
+  subresource element, and asserts `frame-src` admits exactly one origin, so a
+  second embed fails the build.
+
+### Records
+
+Five new ADRs, and the audit that asked for them. **0045** the click-to-load
+player; **0046** that every identity claim is bound to the host that can prove
+it — sixteen call sites, seven distinct spoofing attacks, and the largest
+undocumented decision in the codebase; **0047** what the facade rule actually
+governs, amending 0002, whose "never reach into a sub-module" had never been
+what the code does; **0048** why `poll_votes` carries a `user_id` when votes
+are anonymous, and that this is anonymity from other members, not from the
+operator; **0049** that user-facing changesets are allow-lists — the local
+half of 0046, since the unique `ap_id` column is squattable from both sides.
+
+`doc/adr/README.md` now names the relationship verbs (*superseded by*,
+*amended by*, *refined by*, *renamed by*) and `test/doc/adr_index_test.exs`
+fails when an index row drops an ADR number or a verb its record's Status line
+uses. Two claims that were no longer true were corrected in the process.
+
 ## [1.29.0] — 2026-09-19
 
 The instance now tells its admins when something is wrong with it, which
