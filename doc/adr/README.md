@@ -17,20 +17,20 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 |---|---|---|
 | [0000](0000-use-architecture-decision-records.md) | Use Architecture Decision Records | Accepted |
 | [0001](0001-elixir-phoenix-liveview-platform.md) | Elixir / Phoenix / LiveView on Bandit as the application platform | Accepted; `FeedWorker` renamed by [0041](0041-rss-and-atom-are-syndication.md) |
-| [0002](0002-context-facades.md) | Context facades over focused sub-modules | Accepted |
+| [0002](0002-context-facades.md) | Context facades over focused sub-modules | Accepted; `Federation.Feed` renamed by [0039](0039-the-personal-stream-is-a-timeline.md) and [0041](0041-rss-and-atom-are-syndication.md); the no-sub-module rule is narrower in practice |
 | [0003](0003-activitypub-federation.md) | Federate over ActivityPub, mapping boards to Group actors | Accepted |
 | [0004](0004-federation-gate-for-non-public-boards.md) | A single federation gate for every inbound interaction | Accepted; the outbound half is [0043](0043-the-outbound-federation-gate-and-withdrawals.md) |
-| [0005](0005-rust-nifs-for-untrusted-parsing.md) | Rust NIFs (Rustler) for sanitizing and parsing untrusted input | Accepted |
+| [0005](0005-rust-nifs-for-untrusted-parsing.md) | Rust NIFs (Rustler) for sanitizing and parsing untrusted input | Accepted; the NIF table is a 2026-08-09 snapshot and is now incomplete |
 | [0006](0006-media-proxy-no-third-party-subresources.md) | No third-party subresources: proxy all remote media | Accepted; click-to-load embeds refined by [0045](0045-the-video-player-loads-on-a-click.md) |
 | [0007](0007-single-ssrf-safe-http-client.md) | One SSRF-safe, DNS-pinned HTTP client for all outbound requests | Accepted |
 | [0008](0008-server-side-dual-token-sessions.md) | Server-side sessions with dual rotating tokens | Accepted |
 | [0009](0009-mandatory-2fa-and-admin-sudo-mode.md) | Mandatory 2FA for privileged roles, plus admin sudo mode | Accepted |
-| [0010](0010-encrypt-secrets-at-rest.md) | Encrypt TOTP secrets and federation private keys at rest | Accepted; amended by [0038](0038-encryption-keys-are-separate-and-rotatable.md) |
+| [0010](0010-encrypt-secrets-at-rest.md) | Encrypt TOTP secrets and federation private keys at rest | Accepted; amended by [0038](0038-encryption-keys-are-separate-and-rotatable.md); `send_accept`/`send_reject` queued by [0034](0034-federation-work-is-committed-before-it-is-acknowledged.md) |
 | [0011](0011-role-levels-for-board-authorization.md) | Ordered role levels plus per-board minimums for authorization | Accepted, except the configurable-capabilities half, superseded by [0042](0042-roles-are-ordered-and-capabilities-are-not-configurable.md) |
 | [0012](0012-rate-limiting-behaviour-and-failure-modes.md) | Hammer/ETS rate limiting behind a behaviour, with explicit failure modes | Accepted |
 | [0013](0013-database-backed-delivery-queue.md) | A database-backed delivery queue instead of a job framework | Accepted |
 | [0014](0014-ets-caches-for-settings-and-boards.md) | ETS caches for settings, boards and domain blocks | Accepted |
-| [0015](0015-soft-deletion.md) | Soft deletion via `deleted_at` | Accepted; tables renamed by [0039](0039-the-personal-stream-is-a-timeline.md); rows purged after 90 days by [0040](0040-retention-deletes-what-nobody-touched.md) |
+| [0015](0015-soft-deletion.md) | Soft deletion via `deleted_at` | Accepted; tables renamed by [0039](0039-the-personal-stream-is-a-timeline.md); articles and comments purged after 90 days by [0040](0040-retention-deletes-what-nobody-touched.md), direct messages never |
 | [0016](0016-authorization-at-the-context-boundary.md) | Enforce authorization at the context boundary, not in LiveViews | Accepted; tables renamed by [0039](0039-the-personal-stream-is-a-timeline.md) |
 | [0017](0017-tailwind-daisyui-esbuild-asset-pipeline.md) | Tailwind + DaisyUI + esbuild, with no Node.js in the build | Accepted |
 | [0018](0018-semantic-ids-and-classes-for-accessibility.md) | Every meaningful element carries a semantic `id` / `class` | Accepted |

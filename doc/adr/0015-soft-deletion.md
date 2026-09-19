@@ -1,6 +1,6 @@
 # 0015 — Soft deletion via `deleted_at`
 
-- **Status:** Accepted, with two later amendments. The `feed_items` tables and `feed_item_*` functions named below were renamed to `timeline_*` by [0039](0039-the-personal-stream-is-a-timeline.md). And the consequence recorded here — that these tables grow monotonically, purging being a separate deliberate operation — no longer holds: [0040](0040-retention-deletes-what-nobody-touched.md) hard-deletes a soft-deleted row 90 days after `deleted_at`, which is the alternative this record rejected. The reasons for deferring the delete stand; only its permanence changed.
+- **Status:** Accepted, with two later amendments. The `feed_items` tables and `feed_item_*` functions named below were renamed to `timeline_*` by [0039](0039-the-personal-stream-is-a-timeline.md). And the consequence recorded here — that these tables grow monotonically, purging being a separate deliberate operation — no longer holds: [0040](0040-retention-deletes-what-nobody-touched.md) hard-deletes a soft-deleted **article or comment** 90 days after `deleted_at`, which is the alternative this record rejected. Direct messages keep the original behaviour — the body is blanked and the row stays — so for them the monotonic-growth consequence still holds. The reasons for deferring the delete stand; only its permanence changed, and only for two of the three record types.
 - **Date:** Recorded retroactively 2026-08-09
 
 ## Context

@@ -1,6 +1,10 @@
 # 0010 — Encrypt TOTP secrets and federation private keys at rest
 
-- **Status:** Accepted; amended by
+- **Status:** Accepted; the signing chokepoint named below still exists, but
+  `send_accept`/`send_reject` do not —
+  [0034](0034-federation-work-is-committed-before-it-is-acknowledged.md)
+  queued Accept and Reject like every other activity, so every signature now
+  flows through `do_deliver`. Amended by
   [0038](0038-encryption-keys-are-separate-and-rotatable.md). The keys still
   come from application configuration, but no longer from `SECRET_KEY_BASE`:
   each class of secret has its own, rotatable key. Two things this record

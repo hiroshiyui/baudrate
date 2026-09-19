@@ -1,6 +1,10 @@
 # 0005 — Rust NIFs (Rustler) for sanitizing and parsing untrusted input
 
-- **Status:** Accepted
+- **Status:** Accepted; the NIF table is a snapshot of 2026-08-09 and has since
+  fallen behind — `baudrate_sanitizer` gained a fourth function,
+  `normalize_feed_html/1` (syndication body HTML), and the HTML parser's
+  `extract_first_url` takes an origin, so it is `/2`. `doc/development.md` has
+  the current list; the decision itself is unchanged
 - **Date:** Recorded retroactively 2026-08-09
 
 ## Context

@@ -27,6 +27,10 @@ defmodule Baudrate.Application do
         Baudrate.Auth.SessionCleaner,
         Baudrate.Auth.WebAuthnChallenges,
         Baudrate.DataPortability.DownloadNonces,
+        # Before Federation.DomainBlockCache below: that cache reads
+        # `ap_federation_mode` and `ap_domain_allowlist` through
+        # `Setup.get_setting/1` in its own `init/1`, so reordering these two
+        # breaks boot in a way the error does not explain (ADR 0014).
         Baudrate.Setup.SettingsCache,
         # Logs a banner when the setup wizard is locked by a missing
         # INSTALLATION_KEY. Logging only — never raises, so a database blip
