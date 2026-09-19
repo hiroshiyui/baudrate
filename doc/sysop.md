@@ -2037,15 +2037,32 @@ which republishes the public key to the fediverse; for a **user's** there is no
 control in the UI, so rotate it from a console (see
 [Key Rotation](#key-rotation)). For a TOTP secret it is the member re-enrolling.
 
-### One-Shot Data Repair: `ap_id` Backfill
+### Data Repair: `ap_id` Backfill
 
-Until v1.8.2, ActivityPub canonical IDs were stamped with a separate
-`Repo.update!/1` *after* the creation transaction committed. If the BEAM
-process or DB connection died between commit and stamp, the article
-(and any poll or comment) was durably persisted with `ap_id = nil`.
-Stamping is now part of the same `Ecto.Multi` as the insert, so new
-rows are always consistent — but instances that ran an earlier version
-may still have orphan rows.
+**Required once when upgrading to v1.31.0**, and harmless to re-run at any
+time. The task does two things.
+
+**1. It rewrites comment and poll IDs (v1.31.0, ADR 0050).** Until then a
+comment's ActivityPub ID was `https://your.host/ap/users/alice#note-42` and a
+poll's `https://your.host/ap/articles/some-slug#poll`. Both are URI *fragments*,
+and a fragment is never sent to the server — so any instance that tried to
+dereference one got the author's profile or the article back instead of the
+object. Nothing on your site was wrong; the damage was all on the other side of
+the wire, where replies could not thread and polls could not be voted on.
+
+The task moves each old ID into a new `legacy_ap_id` column and mints a real
+path (`/ap/comments/42`, `/ap/polls/7`). **The old ID keeps working**: inbound
+activities naming it still resolve, and deleting one of those comments
+publishes the deletion under *both* IDs, so instances that only know the old
+one are told. Run it after the deploy; until you do, older comments stay
+unthreadable but nothing breaks.
+
+**2. It heals IDs that were never stamped.** Until v1.8.2, canonical IDs were
+stamped with a separate `Repo.update!/1` *after* the creation transaction
+committed. If the BEAM process or DB connection died in between, the row was
+durably persisted with `ap_id = nil`. Stamping is now part of the same
+`Ecto.Multi` as the insert, so new rows are always consistent — but instances
+that ran an earlier version may still have orphan rows.
 
 The task can be invoked two ways. Both are equivalent; pick whichever
 fits your operational comfort:
@@ -2081,10 +2098,24 @@ bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"
 ```
 
 Either form is idempotent and skips remote rows (`remote_actor_id`
-non-nil), so it is safe to re-run. Both log a per-row line plus a
-final summary (`articles=N/N polls=N/N comments=N/N`). Locally during
-development you can use `mix backfill_ap_ids` (with `--dry-run`) — same
-underlying logic.
+non-nil) — a remote ID may legitimately contain a fragment, and it is that
+host's to define. A row that has already been rewritten is left alone, so an
+interrupted run resumes rather than recording the *new* ID as the legacy one.
+Both log a per-row line plus a final summary
+(`articles=N/N polls=N/N comments=N/N`), and the dry run names every row it
+would touch. Locally during development you can use `mix backfill_ap_ids`
+(with `--dry-run`) — same underlying logic.
+
+**Verifying the rewrite landed**, from any machine:
+
+```bash
+# Pick a comment ID from a public article, then:
+curl -H 'Accept: application/activity+json' https://your.host/ap/comments/42
+```
+
+A `Note` with `"id": "https://your.host/ap/comments/42"` means it worked. A 404
+means either the article is not in a federated board (expected — the comment
+inherits its article's reach) or the comment is remote or deleted.
 
 ---
 

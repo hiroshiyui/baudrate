@@ -7,6 +7,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [Unreleased]
+
+Phase 3 (federation reach), stage 3B.
+
+**Upgrading:** one migration, and **one release task that must be run**:
+`bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"` (see
+`doc/sysop.md`, "Data Repair: `ap_id` Backfill"). Until it runs, comments
+created before the upgrade keep their old IDs and stay unthreadable from other
+instances; nothing breaks either way, and the task is idempotent and resumable.
+
+### Added
+
+- **Comments and polls are fetchable objects** — `GET /ap/comments/:id` returns
+  the comment as a `Note`, `GET /ap/polls/:id` returns the poll as a standalone
+  `Question`. Both are content-negotiated: a browser is redirected to the
+  article. Documented in `doc/api.md`.
+
+### Fixed
+
+- **A comment's ActivityPub ID no longer resolves to the wrong object**
+  ([ADR 0050](doc/adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md)).
+  Local comments were stamped `https://host/ap/users/alice#note-42` and polls
+  `https://host/ap/articles/some-slug#poll`. Both are URI *fragments*, and a
+  fragment is never sent to the server: dereferencing the first returned the
+  author's Person document and the second returned the Article. So the ID this
+  instance published for an object reliably resolved to a **different object**,
+  and had done since comments first federated.
+
+  Everything that needs to dereference a comment therefore could not. A
+  Mastodon user replying to a comment sends `inReplyTo: <that comment's id>`;
+  the receiving instance fetched it, got an actor back, gave up, and threaded
+  the reply flat under the article. A `Question` embedded in an Article carried
+  no `id` at all, so a remote client had nothing to address a vote to. Nothing
+  was wrong locally, which is why it lasted: the IDs are unique, they round-trip
+  through our own inbox, and every test passed. The failure was only ever
+  visible from another server.
+
+  Both now use paths, minted by `Federation.actor_uri/2` like every other URI
+  this instance builds, and `Baudrate.Release.backfill_ap_ids/1` rewrites the
+  existing rows.
+
+- **The rewritten IDs do not orphan what peers already know.** An `ap_id` is a
+  public identity and ActivityPub has no way to announce that one has changed
+  (`Move` is for actors), so the old value is kept in a new `legacy_ap_id`
+  column and is load-bearing in both directions: `Content.get_comment_by_ap_id/1`
+  and `get_poll_by_ap_id/1` match either column — the single lookups all seven
+  inbound call sites go through — a poll vote may address the article or the
+  poll, and `Publisher.publish_comment_deleted/2` publishes the deletion under
+  **both** IDs. Without that last one, deleting a pre-upgrade comment would
+  have left it standing on every instance that had it. `legacy_ap_id` is
+  matched, never asserted, and never castable from params (ADR 0049).
+
+- **`Baudrate.Release.backfill_ap_ids/1` derives its base URL from the running
+  endpoint when there is one.** It kept its own derivation from static config
+  because release tasks run with only the repo started — correct, but it meant
+  two definitions of this instance's own URL. That was tolerable while the task
+  only healed the occasional `nil`; now that it rewrites in bulk and publishes
+  the result, a disagreement would stamp a host the site does not answer on.
+  The static derivation remains as the fallback for `bin/baudrate eval`.
+
+- **The article replies collection no longer invents an ID for a local comment
+  that has none** — the fallback was a fragment of the collection's own URI,
+  which a peer following it could not resolve either.
+
+### Changed
+
+- `Baudrate.Federation.Visibility` now owns both directions of the `to`/`cc`
+  mapping (`to_addressing/2` beside `from_addressing/1`), and `Publisher`
+  delegates to it. The comment object needs the same addressing the publisher
+  builds, and two copies of that mapping would have drifted.
+- `Publisher.publish_comment_deleted/2` returns `:ok` rather than
+  `{:ok, count}`: it may now enqueue two activities, so a single job count no
+  longer describes it.
+
 ## [1.30.0] — 2026-09-19
 
 Things this instance told the fediverse, its members or its own records were

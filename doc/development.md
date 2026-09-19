@@ -1843,20 +1843,48 @@ The `Baudrate.Federation` context handles all federation logic.
 | Board | Group | `/ap/boards/:slug` |
 | Site | Organization | `/ap/site` |
 | Article | Article | `/ap/articles/:slug` |
+| Comment | Note | `/ap/comments/:id` |
+| Poll | Question | `/ap/polls/:id` |
 
 **AP ID stamping** — all local AP objects receive a canonical `ap_id` immediately after creation:
 
-| Object | URI Pattern | Stamped In |
-|--------|-------------|------------|
-| Article | `{base}/ap/articles/{slug}` | `Content.Articles.create_article/2,3` |
-| Comment | `{actor_uri}#note-{id}` | `Content.Comments.create_comment/1` |
-| ArticleLike | `{actor_uri}#like-{id}` | `Content.Likes.like_article/2` |
-| Poll | `{article_ap_id}#poll` | `Content.Articles.create_article/2,3` |
-| DirectMessage | `{actor_uri}#dm-{id}` | `Messaging.create_message/3` |
+| Object | URI Pattern | Stamped In | Fetchable |
+|--------|-------------|------------|-----------|
+| Article | `{base}/ap/articles/{slug}` | `Content.Articles.create_article/2,3` | yes |
+| Comment | `{base}/ap/comments/{id}` | `Content.Comments.create_comment/1` | yes |
+| Poll | `{base}/ap/polls/{id}` | `Content.Articles.create_article/2,3` | yes |
+| ArticleLike | `{actor_uri}#like-{id}` | `Content.Likes.like_article/2` | no |
+| DirectMessage | `{actor_uri}#dm-{id}` | `Messaging.create_message/3` | no |
 
 AP IDs are generated post-insert (require the DB-assigned `id`) and stored via immediate
 `Repo.update!`. Publisher functions use the stored `ap_id` field with a fallback to
 `Federation.actor_uri/2` for backwards compatibility.
+
+**Objects a peer can dereference carry a path, never a fragment** (ADR 0050).
+Comments were `{actor_uri}#note-{id}` and polls `{article_ap_id}#poll` until
+v1.31.0. A fragment is never sent to the server, so both resolved to a
+*different object* — the Person document and the Article — and no instance
+could thread a reply, address a vote or cite either one. Likes and DMs keep
+fragment ids deliberately: neither is ever fetched, a `Like` is cited only in
+its own `Undo` and a DM only by its recipient, and both are addressed by the
+activity that carries them.
+
+The rewrite changed a public identity, which ActivityPub has no mechanism to
+announce (`Move` is for actors). So `comments.legacy_ap_id` and
+`polls.legacy_ap_id` record what peers already learned, and it is load-bearing
+in both directions:
+
+| Direction | What uses it |
+|---|---|
+| Inbound | `Content.get_comment_by_ap_id/1` and `get_poll_by_ap_id/1` match `ap_id` **or** `legacy_ap_id` — the single lookups every inbound path goes through, so an old `inReplyTo`, `Like`, `Announce` or `Delete` still lands on the right row |
+| Inbound | `InboxHandler`'s poll-vote path accepts an `inReplyTo` naming the article **or** the poll |
+| Outbound | `Publisher.publish_comment_deleted/2` emits a second `Delete` under the legacy id; a `Delete` of an unknown object is a no-op on the receiving side |
+
+`legacy_ap_id` is matched, never asserted — the object served and every
+activity minted carry the current `ap_id` — and it is never castable from
+params (ADR 0049). It is filled only by
+`Baudrate.Release.backfill_ap_ids/1`, which is idempotent, resumable, and
+never touches a remote row.
 
 **Discovery endpoints:**
 - `/.well-known/webfinger` — resolve `acct:site@host` (instance actor), `acct:user@host` (user), or `acct:board-slug@host` (board, also accepts `!` prefix for Lemmy compat); site and board responses include `properties` with actor type (`"Organization"` / `"Group"`)
@@ -1875,6 +1903,8 @@ AP IDs are generated post-insert (require the DB-assigned `id`) and stored via i
 - `/ap/users/:username/following`, `/ap/boards/:slug/following` — `OrderedCollection` of outbound follows
 - `/ap/boards` — `OrderedCollection` of all public AP-enabled boards
 - `/ap/articles/:slug/replies` — `OrderedCollection` of comments as Note objects
+- `/ap/comments/:id` — a local comment as a `Note`, gated by its **article's** `publicly_servable?/1` plus three refusals of its own: soft-deleted, remote (its id belongs to another host), or a non-public `visibility`
+- `/ap/polls/:id` — a local poll as a standalone `Question`, the same object the Article embeds and with the same `id`, gated by its article
 - `/ap/search?q=...` — paginated full-text article search, over **federated** boards only (ADR 0043)
 
 **Inbox endpoints** (HTTP Signature verified, per-domain rate-limited):

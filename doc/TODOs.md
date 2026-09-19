@@ -201,12 +201,18 @@ The two follow-on questions are closed, not open:
 - [ ] **`Mention` tags.** `@user@domain` mentions in local articles and comments become `Mention` tags plus `cc` addressing, delivered to the mentioned actors.
   - Unknown handles are resolved via WebFinger, rate limited (P3-D2).
 
-### 3B — Fetchable objects (M)
+### ~~3B — Fetchable objects~~ — **done** (unreleased)
 
-- [ ] **New local comments get a fetchable id,** `/ap/comments/:id`, served with the same visibility and federation gates as articles.
-  - Today their ids are `/ap/users/:name#note-N`, which returns the actor document when fetched.
-  - Existing comments keep their stored ids (P3-D1).
-- [ ] **Polls are fetchable** as `Question` objects.
+Comments are served at `/ap/comments/:id` and polls at `/ap/polls/:id`, gated
+by the owning article. Every existing row was rewritten from its fragment id
+(P3-D1 as decided: the backfill, not the conservative option), with
+`legacy_ap_id` keeping the identity peers already hold — matched on every
+inbound path, and named alongside the new id in a withdrawal.
+[ADR 0050](adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md),
+gate `test/baudrate/federation/object_identity_test.exs`.
+
+Operators must run `Baudrate.Release.backfill_ap_ids()` once after the upgrade
+(`doc/sysop.md`, "Data Repair: `ap_id` Backfill").
 
 ### 3C — Lemmy groups, FEP-1b12 (M)
 
@@ -236,12 +242,13 @@ The two follow-on questions are closed, not open:
   - Advertise NodeInfo 2.0 as well.
 - [ ] Declare a JSON-LD namespace for the `baudrate:*` extension fields.
 - [ ] Actor documents get a short cache lifetime instead of `no-store`.
-- [ ] A `Follow` of a local user that arrives through the shared inbox creates no `new_follower` notification: `InboxHandler.notify_follow_target/2` only notifies for the `{:user, user}` target. Resolve the user from the `object` URI, as the block check (`follow_blocked_by_target?/2`) already does. Found while building 1A.
+- ~~A `Follow` of a local user that arrives through the shared inbox creates no `new_follower` notification.~~ **Already fixed** while building 1A — `InboxHandler.notify_follow_target/2` resolves the user from the Follow's own target URI, as the block check always did. Struck 2026-09-19 after checking the code.
 
-### Decisions needed
+### Decisions (made 2026-09-19)
 
-- [ ] **P3-D1. Comment ids.** [New comments use `/ap/comments/:id`; existing rows keep their stored `ap_id`, because other servers already know them.]
-- [ ] **P3-D2. Resolving mentions of unknown handles.** [Resolve at post time with WebFinger, rate limited per user; leave the mention as plain text if it doesn't resolve.]
+- **P3-D1. Comment and poll ids: rewrite them all.** Every local comment and poll moves to a dereferenceable path, existing rows included — not just new ones, which was the option originally drafted here. Leaving old ids in place would have left every conversation this instance has already had permanently unthreadable. The cost of rewriting a public identity is covered by `legacy_ap_id`: inbound matches either id, and a withdrawal names both. [ADR 0050](adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md).
+- **P3-D2. Resolving mentions of unknown handles: WebFinger at post time, rate limited per user.** A handle that does not resolve stays plain text, silently. `@alice` with no domain remains a local mention.
+- **P3-D3. A mention addresses; it never widens the audience.** Not previously recorded. [ADR 0043](adr/0043-the-outbound-federation-gate-and-withdrawals.md)'s gate decides whether content leaves, and a `Mention` becomes a surface *of* that gate rather than an exception to it: in a private or AP-disabled board a remote mention produces no tag, no `cc` and no delivery. Otherwise typing a handle would be a one-step way to exfiltrate a private board's article to any instance.
 
 ---
 

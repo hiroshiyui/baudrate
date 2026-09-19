@@ -69,6 +69,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0047](0047-the-facade-lists-every-way-a-context-changes-the-world.md) | The facade lists every way a context changes the world | Accepted |
 | [0048](0048-a-poll-records-who-voted-and-nothing-reads-it-back.md) | A poll records who voted, and nothing reads it back | Accepted |
 | [0049](0049-user-facing-changesets-are-allow-lists.md) | User-facing changesets are allow-lists | Accepted |
+| [0050](0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md) | A comment and a poll are objects with their own URI | Accepted |
 
 ## Writing a new ADR
 

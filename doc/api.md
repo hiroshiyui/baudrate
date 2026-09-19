@@ -30,6 +30,8 @@ surface.
   - [Organization (Site)](#organization-site)
 - [Objects](#objects)
   - [Article](#article)
+  - [Comment](#comment)
+  - [Poll](#poll)
 - [Collections](#collections)
   - [User Outbox](#user-outbox)
   - [Board Outbox](#board-outbox)
@@ -512,6 +514,105 @@ requester, signed or not, including one whose signature belongs to an admin.
 |--------|-----------|
 | 401 | Authorized fetch enabled and no valid HTTP Signature |
 | 404 | Article not found, or not servable: no federated board, non-public remote visibility, or a suspended actor / blocked domain |
+
+---
+
+### Comment
+
+```
+GET /ap/comments/:id
+```
+
+**Content-Type:** `application/activity+json` (content-negotiated — an ordinary
+browser is redirected to `/articles/:slug#comment-:id`)
+**Auth:** HTTP Signature required if authorized fetch is enabled
+**Rate limit:** 120 req/min per IP
+
+Comments have been fetchable objects since v1.31.0 (ADR 0050). Before that
+their `ap_id` was `<actor-uri>#note-<id>`, a fragment, which dereferenced to
+the author's Person document — so no instance could resolve a comment, thread
+against it, or cite it. Comments created before the upgrade were rewritten to
+this scheme and **still answer to their old id** on every inbound path
+(`inReplyTo`, `Like`, `Announce`, `Delete`), and a deletion is published under
+both ids.
+
+**Access control:** the gate is the **owning article's** — exactly the
+conditions listed for `GET /ap/articles/:slug`. On top of that, 404 for a
+comment that is soft-deleted, that was authored remotely (its `id` belongs to
+another host, so serving it here would assert this instance as its origin), or
+whose `visibility` is not `public`/`unlisted`.
+
+**Example response:**
+
+```json
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "https://example.com/ap/comments/42",
+  "type": "Note",
+  "url": "https://example.com/articles/hello-world-a1b2c3#comment-42",
+  "content": "<p>Good point.</p>",
+  "mediaType": "text/html",
+  "attributedTo": "https://example.com/ap/users/alice",
+  "inReplyTo": "https://example.com/ap/articles/hello-world-a1b2c3",
+  "published": "2026-02-20T09:15:00Z",
+  "to": ["https://www.w3.org/ns/activitystreams#Public"],
+  "cc": ["https://example.com/ap/users/alice/followers"]
+}
+```
+
+`attachment` carries the comment's images (`Image`, `image/webp`, with
+`width`/`height`) and is omitted when there are none.
+
+---
+
+### Poll
+
+```
+GET /ap/polls/:id
+```
+
+**Content-Type:** `application/activity+json` (content-negotiated — a browser
+is redirected to the article)
+**Auth:** HTTP Signature required if authorized fetch is enabled
+**Rate limit:** 120 req/min per IP
+
+The same `Question` the owning Article embeds in its `attachment`, served on
+its own so a remote client can address a vote to it. Both carry the same `id`.
+
+**Access control:** the owning article's, unchanged.
+
+**Example response:**
+
+```json
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "https://example.com/ap/polls/7",
+  "type": "Question",
+  "name": "Hello World",
+  "attributedTo": "https://example.com/ap/users/alice",
+  "context": "https://example.com/ap/articles/hello-world-a1b2c3",
+  "url": "https://example.com/articles/hello-world-a1b2c3",
+  "published": "2026-02-20T08:00:00Z",
+  "to": ["https://www.w3.org/ns/activitystreams#Public"],
+  "cc": ["https://example.com/ap/boards/general"],
+  "votersCount": 17,
+  "endTime": "2026-02-27T08:00:00Z",
+  "oneOf": [
+    {"type": "Note", "name": "Yes", "replies": {"type": "Collection", "totalItems": 12}},
+    {"type": "Note", "name": "No", "replies": {"type": "Collection", "totalItems": 5}}
+  ]
+}
+```
+
+`context` rather than `inReplyTo`: the poll belongs to its article, it is not a
+reply to it. Each option's `replies` collection gives `totalItems` and
+deliberately **no** `items` — the counts are public, the voters are not
+(ADR 0048).
+
+**Voting:** send a `Create(Note)` whose `name` matches an option's `name` and
+whose `inReplyTo` is either this poll's `id` or the owning article's. Both are
+accepted: the article URI is what this instance published before polls had
+their own id.
 
 ---
 
