@@ -1886,6 +1886,35 @@ params (ADR 0049). It is filled only by
 `Baudrate.Release.backfill_ap_ids/1`, which is idempotent, resumable, and
 never touches a remote row.
 
+**Threading and mentions** (ADR 0051). A comment's `inReplyTo` names its
+parent comment when it has one, built by `ObjectBuilder.reply_target_uri/2` —
+one definition, shared by the published `Create(Note)`, the object at
+`/ap/comments/:id` and the `/ap/articles/:slug/replies` collection.
+
+`@user@domain` is parsed by a pattern of its own (`Content.Markdown`), links
+to `/search?q=…` so the actor resolves on this site rather than off it, and is
+turned into an actor by `Baudrate.Federation.Mentions`:
+
+| Function | When | Does it fetch? |
+|---|---|---|
+| `Mentions.warm/2` | once, before the write transaction | yes — WebFinger + actor, for handles nobody here knows |
+| `Mentions.known/1` | every time an object is built | no — one indexed query |
+
+The split is what keeps an HTTP call out of the write transaction and makes
+the object served on a later fetch identical to the one published. A handle
+that does not resolve stays plain text, silently.
+
+**Four places the board gate has to hold for a mention**, not three: the
+`Mention` tag, the `cc`, the delivery job, and the *lookup* — which is itself
+an outbound request. Callers ask `Delivery.article_boards_federated?/1` first,
+and must preload `:boards`, because that predicate fails closed.
+
+Bounds on resolution: `RateLimits.check_mention_resolve/1` (30/hour per user),
+8 unknown handles per post, a 3-second deadline per lookup and a 5-second
+budget for the step. `HTTPClient.get/2`, `ActorResolver.resolve/2` and
+`Discovery.lookup_remote_actor/2` take an optional `:timeout` that can only
+shorten the configured ceiling.
+
 **Discovery endpoints:**
 - `/.well-known/webfinger` — resolve `acct:site@host` (instance actor), `acct:user@host` (user), or `acct:board-slug@host` (board, also accepts `!` prefix for Lemmy compat); site and board responses include `properties` with actor type (`"Organization"` / `"Group"`)
 - `/.well-known/nodeinfo` → `/nodeinfo/2.1` — instance metadata

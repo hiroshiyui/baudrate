@@ -70,6 +70,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0048](0048-a-poll-records-who-voted-and-nothing-reads-it-back.md) | A poll records who voted, and nothing reads it back | Accepted |
 | [0049](0049-user-facing-changesets-are-allow-lists.md) | User-facing changesets are allow-lists | Accepted |
 | [0050](0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md) | A comment and a poll are objects with their own URI | Accepted |
+| [0051](0051-a-mention-addresses-and-the-board-gate-still-decides.md) | A mention addresses, and the board gate still decides | Accepted |
 
 ## Writing a new ADR
 

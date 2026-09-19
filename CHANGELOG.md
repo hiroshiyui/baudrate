@@ -9,7 +9,7 @@ Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](
 
 ## [Unreleased]
 
-Phase 3 (federation reach), stage 3B.
+Phase 3 (federation reach), stages 3B and 3A.
 
 **Upgrading:** one migration, and **one release task that must be run**:
 `bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"` (see
@@ -19,12 +19,39 @@ instances; nothing breaks either way, and the task is idempotent and resumable.
 
 ### Added
 
+- **A reply threads where it belongs.** A comment's `inReplyTo` names its
+  **parent comment** rather than the article, so a Mastodon user sees who is
+  answering whom instead of a flat list. One definition
+  (`ObjectBuilder.reply_target_uri/2`) is shared by the published
+  `Create(Note)`, the object at `/ap/comments/:id` and the replies collection.
+  A reply to a *remote* comment names that comment's own URI, threading it
+  back into the conversation on the instance it started from. This was not a
+  regression: until comments had a dereferenceable id (above) there was
+  nothing `inReplyTo` could have named.
+
+- **`@user@domain` mentions reach the person they name**
+  ([ADR 0051](doc/adr/0051-a-mention-addresses-and-the-board-gate-still-decides.md)).
+  Resolved remote handles become `Mention` tags plus `cc` addressing on
+  articles and comments, and the object is delivered to them. Unknown handles
+  are looked up once, when the content is written, via WebFinger.
+
 - **Comments and polls are fetchable objects** — `GET /ap/comments/:id` returns
   the comment as a `Note`, `GET /ap/polls/:id` returns the poll as a standalone
   `Question`. Both are content-negotiated: a browser is redirected to the
   article. Documented in `doc/api.md`.
 
 ### Fixed
+
+- **A mention of a remote person no longer links to a local stranger.**
+  `Content.Markdown`'s mention pattern treated `@` as a word boundary, so
+  `@alice@mastodon.social` matched `@alice` and linkified it to the **local**
+  `/users/alice`. Whoever happened to hold that name here got the link, the
+  remote person was told nothing, and the published object carried no mention
+  at all. `@user@domain` is now a pattern of its own, and links to this site's
+  own search, which resolves the actor and offers a follow — not to
+  `https://domain/@user`, which is a guess at another server's URL scheme.
+  An ordinary email address is still autolinked as `mailto:` and is never
+  mistaken for a handle.
 
 - **A comment's ActivityPub ID no longer resolves to the wrong object**
   ([ADR 0050](doc/adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md)).
@@ -71,6 +98,28 @@ instances; nothing breaks either way, and the task is idempotent and resumable.
   that has none** — the fallback was a fragment of the collection's own URI,
   which a peer following it could not resolve either.
 
+### Security
+
+- **A mention cannot carry a post out of a board that does not federate.**
+  A mention is the only place a *member* picks an outbound recipient, by
+  typing, so it is a sixth surface **of** ADR 0043's board gate rather than an
+  exception to it. The gate is applied at four points: the `Mention` tag, the
+  `cc`, the delivery job, and the **lookup** — resolving an unknown handle is
+  itself an outbound request, and doing it for a private-board article would
+  tell that server a member here typed the handle.
+
+- **Mention resolution is bounded four ways**, because the handles come from
+  text the author chose and each unknown one costs another server two
+  requests: 30 lookups per hour per user, 8 unknown handles per post, a
+  3-second deadline per lookup and a 5-second budget for the whole step.
+  `HTTPClient.get/2`, `ActorResolver.resolve/2` and
+  `Discovery.lookup_remote_actor/2` gained an optional `:timeout` for this; it
+  can only **shorten** the configured ceiling, never extend it. Bots never
+  resolve mentions — a feed body is not the bot's writing, and an RSS item
+  containing an address would otherwise make this instance fetch from whatever
+  domain it named, on a schedule. An actor on a blocked domain is never
+  addressed, though blocking deletes nothing and its row still exists.
+
 ### Changed
 
 - `Baudrate.Federation.Visibility` now owns both directions of the `to`/`cc`
@@ -80,6 +129,12 @@ instances; nothing breaks either way, and the task is idempotent and resumable.
 - `Publisher.publish_comment_deleted/2` returns `:ok` rather than
   `{:ok, count}`: it may now enqueue two activities, so a single job count no
   longer describes it.
+- `Publisher.build_create_comment/2` preloads the article's `:boards`. It did
+  not, and `Delivery.article_boards_federated?/1` fails closed on an unloaded
+  association — so every comment mention was silently dropped. Found by the
+  ADR 0051 gate, which is the argument for having one.
+- `Notification.Hooks` reads local mentions through `Mentions.extract/1`, so a
+  member named in the long form `@alice@this.host` is notified like `@alice`.
 
 ## [1.30.0] — 2026-09-19
 

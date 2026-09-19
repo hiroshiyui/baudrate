@@ -487,11 +487,11 @@ requester, signed or not, including one whose signature belongs to an admin.
 | `published` | ISO 8601 | Creation timestamp |
 | `updated` | ISO 8601 | Last modification timestamp (optional — omitted unless the article was edited more than 5 s after it was created, so peers do not mark a freshly posted article as edited) |
 | `to` | array | Always `["https://www.w3.org/ns/activitystreams#Public"]` |
-| `cc` | array of URIs | Actor URIs of the article's **federated** boards only (`min_role_to_view == "guest"` and `ap_enabled == true`); private and AP-disabled boards are filtered out, so this can be empty |
+| `cc` | array of URIs | Actor URIs of the article's **federated** boards only (`min_role_to_view == "guest"` and `ap_enabled == true`); private and AP-disabled boards are filtered out, so this can be empty. Plus the actor URI of each resolved remote mention, subject to the same gate |
 | `audience` | array of URIs | Same as `cc`, filtered the same way |
 | `url` | URI | Web UI URL for the article |
 | `replies` | URI | Replies collection endpoint |
-| `tag` | array | Hashtag objects extracted from body (optional, omitted if empty) |
+| `tag` | array | `Hashtag` objects extracted from the body, and a `Mention` object (`href` = the actor's URI, `name` = `@user@domain`) for each remote handle this instance could resolve. Optional, omitted if empty. Mentions appear only when the article may federate at all — an article whose boards are all private or AP-disabled carries none, and its mentioned actors are not in `cc` either (ADR 0043, ADR 0051) |
 | `attachment` | array | Images (`Document`, `image/webp`, with `width`/`height`), an attached poll (a `Question` with `oneOf` for single-choice or `anyOf` for multiple-choice, `votersCount`, per-option `replies.totalItems`, and `endTime` when the poll closes), and a fetched link preview (`Document`, `text/html`). Omitted when the article has none |
 | `baudrate:pinned` | boolean | Whether the article is pinned in its board |
 | `baudrate:locked` | boolean | Whether the article is locked from new comments |
@@ -560,8 +560,15 @@ whose `visibility` is not `public`/`unlisted`.
 }
 ```
 
+`inReplyTo` names the **parent comment** when the comment is a reply, and the
+article only when it is top-level (ADR 0051). A reply to a remote comment
+names that comment's own URI, so it threads back into the conversation on the
+instance it started from.
+
 `attachment` carries the comment's images (`Image`, `image/webp`, with
-`width`/`height`) and is omitted when there are none.
+`width`/`height`) and is omitted when there are none. `tag` carries a
+`Mention` object per resolved remote handle, subject to the owning article's
+federation gate.
 
 ---
 

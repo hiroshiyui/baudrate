@@ -195,11 +195,16 @@ The two follow-on questions are closed, not open:
 - profile and board edits reach followers;
 - content warnings survive in both directions.
 
-### 3A — Threading and mentions (M)
+### ~~3A — Threading and mentions~~ — **done** (unreleased)
 
-- [ ] **`inReplyTo` names the parent comment** when replying to a comment (`core/federation/publisher.ex:186`).
-- [ ] **`Mention` tags.** `@user@domain` mentions in local articles and comments become `Mention` tags plus `cc` addressing, delivered to the mentioned actors.
-  - Unknown handles are resolved via WebFinger, rate limited (P3-D2).
+`inReplyTo` names the parent comment, from one definition shared by the
+activity, the served object and the replies collection. `@user@domain` is a
+syntax of its own — it used to match `@alice` and link to the *local* user of
+that name — and resolves through `Federation.Mentions` into `Mention` tags,
+`cc` addressing and delivery, all behind ADR 0043's board gate, the lookup
+included.
+[ADR 0051](adr/0051-a-mention-addresses-and-the-board-gate-still-decides.md),
+gate `test/baudrate/federation/mentions_test.exs`.
 
 ### ~~3B — Fetchable objects~~ — **done** (unreleased)
 
