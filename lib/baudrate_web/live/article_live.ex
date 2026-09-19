@@ -214,7 +214,7 @@ defmodule BaudrateWeb.ArticleLive do
     article = socket.assigns.article
 
     if socket.assigns.can_pin do
-      case Content.toggle_pin_article(article) do
+      case Content.toggle_pin_article(article, socket.assigns.current_user) do
         {:ok, updated} ->
           Moderation.log_action(
             socket.assigns.current_user.id,
@@ -239,7 +239,7 @@ defmodule BaudrateWeb.ArticleLive do
     article = socket.assigns.article
 
     if socket.assigns.can_lock do
-      case Content.toggle_lock_article(article) do
+      case Content.toggle_lock_article(article, socket.assigns.current_user) do
         {:ok, updated} ->
           Moderation.log_action(
             socket.assigns.current_user.id,

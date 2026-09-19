@@ -330,7 +330,7 @@ defmodule Baudrate.Content.CommentTest do
     test "a deleted comment without replies is left out", %{user: user, article: article} do
       live = comment!(article, user)
       gone = comment!(article, user)
-      {:ok, _} = Baudrate.Content.soft_delete_comment(gone)
+      {:ok, _} = Baudrate.Content.soft_delete_comment(gone, deleted_by: gone.user_id)
 
       assert page_ids(article) == [{live.id, false}]
     end
@@ -340,8 +340,8 @@ defmodule Baudrate.Content.CommentTest do
       root = comment!(article, user)
       middle = comment!(article, user, root)
       leaf = comment!(article, user, middle)
-      {:ok, _} = Baudrate.Content.soft_delete_comment(root)
-      {:ok, _} = Baudrate.Content.soft_delete_comment(middle)
+      {:ok, _} = Baudrate.Content.soft_delete_comment(root, deleted_by: root.user_id)
+      {:ok, _} = Baudrate.Content.soft_delete_comment(middle, deleted_by: middle.user_id)
 
       assert page_ids(article) ==
                Enum.sort([{root.id, true}, {middle.id, true}, {leaf.id, false}])
@@ -353,7 +353,7 @@ defmodule Baudrate.Content.CommentTest do
       blocked = create_user()
       root = comment!(article, user)
       _reply = comment!(article, blocked, root)
-      {:ok, _} = Baudrate.Content.soft_delete_comment(root)
+      {:ok, _} = Baudrate.Content.soft_delete_comment(root, deleted_by: root.user_id)
       {:ok, _} = Baudrate.Auth.block_user(viewer, blocked)
 
       assert page_ids(article, Repo.preload(viewer, :role)) == []

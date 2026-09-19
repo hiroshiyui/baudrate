@@ -206,7 +206,7 @@ defmodule Baudrate.Content.SearchTest do
           body: "Erlang content"
         })
 
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
 
       result = Content.search_articles("Erlang", user: user)
       refute Enum.any?(result.articles, &(&1.id == article.id))
@@ -363,7 +363,7 @@ defmodule Baudrate.Content.SearchTest do
       article = create_article(user, board)
       _comment = create_comment(user, article, "Comment on deleted article xyz")
 
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
 
       result = Content.search_comments("deleted article xyz", user: user)
       assert result.comments == []
@@ -375,7 +375,7 @@ defmodule Baudrate.Content.SearchTest do
       article = create_article(user, board)
       comment = create_comment(user, article, "Soon to be deleted comment abc")
 
-      Content.soft_delete_comment(comment)
+      Content.soft_delete_comment(comment, deleted_by: comment.user_id)
 
       result = Content.search_comments("deleted comment abc", user: user)
       assert result.comments == []

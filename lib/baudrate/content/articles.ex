@@ -752,6 +752,24 @@ defmodule Baudrate.Content.Articles do
   @spec soft_delete_article(%Article{}, keyword()) ::
           {:ok, %Article{}} | {:error, Ecto.Changeset.t()}
   def soft_delete_article(%Article{} = article, opts \\ []) do
+    with :ok <- authorize_delete(article, opts) do
+      do_soft_delete_article(article, opts)
+    end
+  end
+
+  # A local deletion names its actor and is re-checked here; a remote one is
+  # authorized by the inbox (the signer owns the object) and says so with
+  # `remote: true`, so neither path can reach the delete without having been
+  # authorized somewhere explicit (ADR 0016).
+  defp authorize_delete(article, opts) do
+    if Keyword.get(opts, :remote, false) do
+      :ok
+    else
+      Permissions.authorize_delete_article(Keyword.get(opts, :deleted_by), article)
+    end
+  end
+
+  defp do_soft_delete_article(%Article{} = article, opts) do
     result =
       Baudrate.Federation.federate(
         fn ->
@@ -847,7 +865,13 @@ defmodule Baudrate.Content.Articles do
   @doc """
   Toggles the pinned status of an article.
   """
-  def toggle_pin_article(%Article{} = article) do
+  def toggle_pin_article(%Article{} = article, actor) do
+    with :ok <- Permissions.authorize_pin(actor, article) do
+      do_toggle_pin(article)
+    end
+  end
+
+  defp do_toggle_pin(%Article{} = article) do
     result =
       article
       |> Ecto.Changeset.change(pinned: !article.pinned)
@@ -868,7 +892,13 @@ defmodule Baudrate.Content.Articles do
   @doc """
   Toggles the locked status of an article.
   """
-  def toggle_lock_article(%Article{} = article) do
+  def toggle_lock_article(%Article{} = article, actor) do
+    with :ok <- Permissions.authorize_lock(actor, article) do
+      do_toggle_lock(article)
+    end
+  end
+
+  defp do_toggle_lock(%Article{} = article) do
     result =
       article
       |> Ecto.Changeset.change(locked: !article.locked)

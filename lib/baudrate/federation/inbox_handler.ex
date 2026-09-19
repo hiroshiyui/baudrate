@@ -675,7 +675,7 @@ defmodule Baudrate.Federation.InboxHandler do
     cond do
       article = Content.get_article_by_ap_id(object_uri) ->
         if article.remote_actor_id == remote_actor.id do
-          Content.soft_delete_article(article)
+          Content.soft_delete_article(article, remote: true)
           Logger.info("federation.activity: type=Delete(Article) ap_id=#{object_uri}")
           :ok
         else
@@ -684,7 +684,7 @@ defmodule Baudrate.Federation.InboxHandler do
 
       comment = Content.get_comment_by_ap_id(object_uri) ->
         if comment.remote_actor_id == remote_actor.id do
-          Content.soft_delete_comment(comment)
+          Content.soft_delete_comment(comment, remote: true)
           Logger.info("federation.activity: type=Delete(Note) ap_id=#{object_uri}")
           :ok
         else

@@ -124,7 +124,7 @@ defmodule Baudrate.PaginationTest do
       board = create_board()
       articles = create_articles(board, user, 3)
 
-      Content.soft_delete_article(hd(articles))
+      Content.soft_delete_article(hd(articles), deleted_by: hd(articles).user_id)
 
       result = Content.paginate_articles_for_board(board)
       assert result.total == 2

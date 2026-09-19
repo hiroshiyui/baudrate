@@ -102,7 +102,7 @@ defmodule Baudrate.Content.BoostsTest do
 
     test "rejects boost on deleted article", %{user: user, other: other} do
       article = create_test_article(user)
-      {:ok, _} = Content.soft_delete_article(article)
+      {:ok, _} = Content.soft_delete_article(article, deleted_by: article.user_id)
       assert {:error, :deleted} = Content.toggle_article_boost(other.id, article.id)
     end
   end
@@ -175,7 +175,7 @@ defmodule Baudrate.Content.BoostsTest do
     test "rejects boost on deleted comment", %{user: user, other: other} do
       article = create_test_article(user)
       comment = create_test_comment(user, article)
-      {:ok, _} = Content.soft_delete_comment(comment)
+      {:ok, _} = Content.soft_delete_comment(comment, deleted_by: comment.user_id)
       assert {:error, :deleted} = Content.toggle_comment_boost(other.id, comment.id)
     end
   end

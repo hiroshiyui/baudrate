@@ -202,7 +202,7 @@ defmodule Baudrate.Content.HashtagTest do
       article = create_article(user, board, %{body: "Will be deleted #softdelete"})
       Content.sync_article_tags(article)
 
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
 
       result = Content.articles_by_tag("softdelete")
       assert result.articles == []

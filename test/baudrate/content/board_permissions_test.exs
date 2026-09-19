@@ -569,7 +569,7 @@ defmodule Baudrate.Content.BoardPermissionsTest do
   end
 
   describe "toggle_pin_article/1" do
-    test "toggles pinned status", %{user: user} do
+    test "toggles pinned status", %{user: user, admin: admin} do
       {:ok, board} =
         Content.create_board(%{name: "Board", slug: "tp-#{System.unique_integer([:positive])}"})
 
@@ -585,15 +585,15 @@ defmodule Baudrate.Content.BoardPermissionsTest do
         )
 
       refute article.pinned
-      {:ok, pinned} = Content.toggle_pin_article(article)
+      {:ok, pinned} = Content.toggle_pin_article(article, admin)
       assert pinned.pinned
-      {:ok, unpinned} = Content.toggle_pin_article(pinned)
+      {:ok, unpinned} = Content.toggle_pin_article(pinned, admin)
       refute unpinned.pinned
     end
   end
 
   describe "toggle_lock_article/1" do
-    test "toggles locked status", %{user: user} do
+    test "toggles locked status", %{user: user, admin: admin} do
       {:ok, board} =
         Content.create_board(%{name: "Board", slug: "tl-#{System.unique_integer([:positive])}"})
 
@@ -609,9 +609,9 @@ defmodule Baudrate.Content.BoardPermissionsTest do
         )
 
       refute article.locked
-      {:ok, locked} = Content.toggle_lock_article(article)
+      {:ok, locked} = Content.toggle_lock_article(article, admin)
       assert locked.locked
-      {:ok, unlocked} = Content.toggle_lock_article(locked)
+      {:ok, unlocked} = Content.toggle_lock_article(locked, admin)
       refute unlocked.locked
     end
   end

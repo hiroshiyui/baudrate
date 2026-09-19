@@ -113,8 +113,8 @@ defmodule Baudrate.Content do
   defdelegate list_article_revisions(article_id), to: Articles
   defdelegate get_article_revision!(id), to: Articles
   defdelegate count_article_revisions(article_id), to: Articles
-  defdelegate toggle_pin_article(article), to: Articles
-  defdelegate toggle_lock_article(article), to: Articles
+  defdelegate toggle_pin_article(article, actor), to: Articles
+  defdelegate toggle_lock_article(article, actor), to: Articles
 
   def paginate_articles_for_board(board, opts \\ []),
     do: Articles.paginate_articles_for_board(board, opts)

@@ -48,7 +48,7 @@ defmodule BaudrateWeb.FeedControllerTest do
 
     test "excludes deleted articles", %{conn: conn, user: user, public_board: board} do
       {:ok, %{article: article}} = insert_article(user, board, "deleted-rss")
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
 
       body = conn |> get("/feeds/rss") |> response(200)
       refute body =~ "deleted-rss"

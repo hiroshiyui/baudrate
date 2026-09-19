@@ -74,7 +74,7 @@ defmodule BaudrateWeb.UserContentLiveTest do
         })
 
       article = create_article(user, board, "Deleted Article")
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
 
       {:ok, _lv, html} = live(conn, "/users/#{user.username}/articles")
       refute html =~ "Deleted Article"

@@ -141,7 +141,7 @@ defmodule BaudrateWeb.ArticleLiveTest do
     assert html =~ "Will be deleted remotely"
 
     # Delete the comment from another process
-    Content.soft_delete_comment(comment)
+    Content.soft_delete_comment(comment, deleted_by: comment.user_id)
 
     # The LiveView should re-render without the deleted comment
     refute render(lv) =~ "Will be deleted remotely"
@@ -471,7 +471,7 @@ defmodule BaudrateWeb.ArticleLiveTest do
           "parent_id" => parent.id
         })
 
-      {:ok, _} = Content.soft_delete_comment(parent)
+      {:ok, _} = Content.soft_delete_comment(parent, deleted_by: parent.user_id)
 
       {:ok, lv, html} = live(conn, "/articles/#{article.slug}")
 

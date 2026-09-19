@@ -362,6 +362,58 @@ defmodule Baudrate.Content.Permissions do
   def article_author_or_admin?(%{id: uid}, %{user_id: uid}), do: true
   def article_author_or_admin?(_, _), do: false
 
+  @typedoc "A local user, or the id of one. `nil` is never authorized."
+  @type actor :: %Baudrate.Setup.User{} | pos_integer() | nil
+
+  @doc """
+  Re-checks a moderation right at the moment it is used, against freshly
+  loaded actor state (ADR 0016).
+
+  The `can_*?` predicates above answer "should the UI offer this?". These
+  answer "may this happen?", and the difference is time: `ArticleLive` computed
+  `can_pin` once in `mount/3` and read it on an event that could arrive an hour
+  later, so a board moderator removed in between kept pin, lock and delete on
+  any page they had left open. A role change revokes sessions and so closed the
+  worst case; losing a board-moderator grant does not.
+
+  The actor is reloaded rather than trusted as passed. That is what "freshly
+  loaded" means, and it also stops a `%User{}` whose `:role` was never
+  preloaded from failing the admin clause and being judged a non-moderator.
+
+  Each returns `:ok` or `{:error, :unauthorized}`.
+  """
+  @spec authorize_pin(actor(), %Article{}) :: :ok | {:error, :unauthorized}
+  def authorize_pin(actor, %Article{} = article),
+    do: check(actor, &can_pin_article?(&1, article))
+
+  @spec authorize_lock(actor(), %Article{}) :: :ok | {:error, :unauthorized}
+  def authorize_lock(actor, %Article{} = article),
+    do: check(actor, &can_lock_article?(&1, article))
+
+  @spec authorize_delete_article(actor(), %Article{}) :: :ok | {:error, :unauthorized}
+  def authorize_delete_article(actor, %Article{} = article),
+    do: check(actor, &can_delete_article?(&1, article))
+
+  @spec authorize_edit_article(actor(), %Article{}) :: :ok | {:error, :unauthorized}
+  def authorize_edit_article(actor, %Article{} = article),
+    do: check(actor, &can_edit_article?(&1, article))
+
+  @spec authorize_delete_comment(actor(), %Comment{}, %Article{}) ::
+          :ok | {:error, :unauthorized}
+  def authorize_delete_comment(actor, %Comment{} = comment, %Article{} = article),
+    do: check(actor, &can_delete_comment?(&1, comment, article))
+
+  defp check(actor, predicate) do
+    case reload(actor) do
+      nil -> {:error, :unauthorized}
+      user -> if predicate.(user), do: :ok, else: {:error, :unauthorized}
+    end
+  end
+
+  defp reload(%Setup.User{id: id}), do: Auth.get_user(id)
+  defp reload(id) when is_integer(id) and id > 0, do: Auth.get_user(id)
+  defp reload(_), do: nil
+
   @doc """
   Generates a URL-safe slug from a title string.
 

@@ -235,8 +235,9 @@ defmodule Baudrate.ContentTest do
       {:ok, by_mod} = Content.soft_delete_article(article, deleted_by: mod.id)
       assert by_mod.deleted_by_id == mod.id
 
-      # Remote deletions pass no :deleted_by and stay unattributed.
-      {:ok, unattributed} = Content.soft_delete_article(article)
+      # Remote deletions are authorized by the inbox (the signer owns the
+      # object), carry no :deleted_by, and stay unattributed.
+      {:ok, unattributed} = Content.soft_delete_article(article, remote: true)
       assert is_nil(unattributed.deleted_by_id)
     end
 
@@ -247,7 +248,7 @@ defmodule Baudrate.ContentTest do
       other: other,
       article: article
     } do
-      {:ok, deleted} = Content.soft_delete_article(article)
+      {:ok, deleted} = Content.soft_delete_article(article, deleted_by: article.user_id)
 
       assert Content.can_edit_article?(admin, deleted)
       assert Content.can_edit_article?(author, deleted)
@@ -266,7 +267,7 @@ defmodule Baudrate.ContentTest do
       other: other,
       article: article
     } do
-      {:ok, locked} = Content.toggle_lock_article(article)
+      {:ok, locked} = Content.toggle_lock_article(article, admin)
 
       assert Content.can_edit_article?(admin, locked)
       assert Content.can_edit_article?(author, locked)
@@ -295,6 +296,7 @@ defmodule Baudrate.ContentTest do
 
     test "returns false when article is locked" do
       user = create_user("user")
+      admin = create_user("admin")
       board = create_board(%{name: "Locked Board", slug: "locked-comment-board"})
 
       {:ok, %{article: article}} =
@@ -303,7 +305,7 @@ defmodule Baudrate.ContentTest do
           [board.id]
         )
 
-      {:ok, locked} = Content.toggle_lock_article(article)
+      {:ok, locked} = Content.toggle_lock_article(article, admin)
       other = create_user("user")
 
       refute Content.can_comment_on_article?(other, locked)
@@ -557,6 +559,7 @@ defmodule Baudrate.ContentTest do
   describe "list_articles_for_board/1" do
     test "returns articles in a board, pinned first" do
       user = create_user("user")
+      admin = create_user("admin")
       board = create_board(%{name: "Board", slug: "list-board"})
 
       {:ok, %{article: _normal}} =
@@ -571,7 +574,7 @@ defmodule Baudrate.ContentTest do
           [board.id]
         )
 
-      Content.toggle_pin_article(pinned)
+      Content.toggle_pin_article(pinned, admin)
 
       articles = Content.list_articles_for_board(board)
       titles = Enum.map(articles, & &1.title)
@@ -757,7 +760,7 @@ defmodule Baudrate.ContentTest do
           [board.id]
         )
 
-      assert {:ok, deleted} = Content.soft_delete_article(article)
+      assert {:ok, deleted} = Content.soft_delete_article(article, deleted_by: article.user_id)
       assert deleted.deleted_at != nil
     end
 
@@ -771,10 +774,12 @@ defmodule Baudrate.ContentTest do
           [board.id]
         )
 
-      assert {:ok, first_del} = Content.soft_delete_article(article)
+      assert {:ok, first_del} = Content.soft_delete_article(article, deleted_by: article.user_id)
       assert first_del.deleted_at != nil
 
-      assert {:ok, second_del} = Content.soft_delete_article(first_del)
+      assert {:ok, second_del} =
+               Content.soft_delete_article(first_del, deleted_by: first_del.user_id)
+
       assert second_del.deleted_at != nil
     end
 
@@ -794,7 +799,7 @@ defmodule Baudrate.ContentTest do
           [board.id]
         )
 
-      Content.soft_delete_article(to_delete)
+      Content.soft_delete_article(to_delete, deleted_by: to_delete.user_id)
 
       articles = Content.list_articles_for_board(board)
       titles = Enum.map(articles, & &1.title)
@@ -812,7 +817,7 @@ defmodule Baudrate.ContentTest do
         )
 
       assert Content.get_article_by_slug!("gone-article")
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
 
       assert_raise Ecto.NoResultsError, fn ->
         Content.get_article_by_slug!("gone-article")
@@ -877,7 +882,7 @@ defmodule Baudrate.ContentTest do
           remote_actor_id: remote_actor.id
         })
 
-      Content.soft_delete_comment(c2)
+      Content.soft_delete_comment(c2, remote: true)
 
       comments = Content.list_comments_for_article(article)
       assert length(comments) == 1
@@ -906,11 +911,11 @@ defmodule Baudrate.ContentTest do
           remote_actor_id: remote_actor.id
         })
 
-      assert {:ok, first_del} = Content.soft_delete_comment(comment)
+      assert {:ok, first_del} = Content.soft_delete_comment(comment, remote: true)
       assert first_del.deleted_at != nil
       assert first_del.body == "[deleted]"
 
-      assert {:ok, second_del} = Content.soft_delete_comment(first_del)
+      assert {:ok, second_del} = Content.soft_delete_comment(first_del, remote: true)
       assert second_del.deleted_at != nil
       assert second_del.body == "[deleted]"
     end
@@ -992,7 +997,7 @@ defmodule Baudrate.ContentTest do
       after_comment = Repo.get!(Article, article.id)
       assert DateTime.compare(after_comment.last_activity_at, past) == :gt
 
-      {:ok, _} = Content.soft_delete_comment(comment)
+      {:ok, _} = Content.soft_delete_comment(comment, remote: true)
 
       after_delete = Repo.get!(Article, article.id)
       # Should fall back to article.inserted_at since no comments remain
@@ -1224,7 +1229,7 @@ defmodule Baudrate.ContentTest do
           [board.id]
         )
 
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
       article = Repo.get!(Article, article.id)
 
       assert {:error, :deleted} = Content.toggle_article_like(liker.id, article.id)
@@ -1351,7 +1356,7 @@ defmodule Baudrate.ContentTest do
           "user_id" => author.id
         })
 
-      Content.soft_delete_comment(comment)
+      Content.soft_delete_comment(comment, remote: true)
 
       assert {:error, :deleted} = Content.toggle_comment_like(liker.id, comment.id)
     end
@@ -1978,7 +1983,7 @@ defmodule Baudrate.ContentTest do
           "user_id" => user.id
         })
 
-      Content.soft_delete_comment(comment)
+      Content.soft_delete_comment(comment, remote: true)
 
       result = Content.search_comments("searchterm", user: user)
       assert result.total == 0
@@ -2025,7 +2030,7 @@ defmodule Baudrate.ContentTest do
       ContentPubSub.subscribe_board(board.id)
       ContentPubSub.subscribe_article(article.id)
 
-      {:ok, _} = Content.soft_delete_article(article)
+      {:ok, _} = Content.soft_delete_article(article, deleted_by: article.user_id)
 
       assert_receive {:article_deleted, %{article_id: ^article_id}}
       assert_receive {:article_deleted, %{article_id: ^article_id}}
@@ -2100,13 +2105,14 @@ defmodule Baudrate.ContentTest do
       comment_id = comment.id
       ContentPubSub.subscribe_article(article.id)
 
-      {:ok, _} = Content.soft_delete_comment(comment)
+      {:ok, _} = Content.soft_delete_comment(comment, remote: true)
 
       assert_receive {:comment_deleted, %{comment_id: ^comment_id}}
     end
 
     test "toggle_pin_article/1 broadcasts :article_pinned/:article_unpinned to board topic" do
       user = create_user("user")
+      admin = create_user("admin")
       board = create_board(%{name: "Pin PubSub", slug: "pin-pubsub"})
 
       {:ok, %{article: article}} =
@@ -2118,17 +2124,18 @@ defmodule Baudrate.ContentTest do
       article_id = article.id
       ContentPubSub.subscribe_board(board.id)
 
-      {:ok, _} = Content.toggle_pin_article(article)
+      {:ok, _} = Content.toggle_pin_article(article, admin)
       assert_receive {:article_pinned, %{article_id: ^article_id}}
 
       # Toggle again — should be unpinned
       pinned_article = %{article | pinned: true}
-      {:ok, _} = Content.toggle_pin_article(pinned_article)
+      {:ok, _} = Content.toggle_pin_article(pinned_article, admin)
       assert_receive {:article_unpinned, %{article_id: ^article_id}}
     end
 
     test "toggle_lock_article/1 broadcasts :article_locked/:article_unlocked to board topic" do
       user = create_user("user")
+      admin = create_user("admin")
       board = create_board(%{name: "Lock PubSub", slug: "lock-pubsub"})
 
       {:ok, %{article: article}} =
@@ -2140,12 +2147,12 @@ defmodule Baudrate.ContentTest do
       article_id = article.id
       ContentPubSub.subscribe_board(board.id)
 
-      {:ok, _} = Content.toggle_lock_article(article)
+      {:ok, _} = Content.toggle_lock_article(article, admin)
       assert_receive {:article_locked, %{article_id: ^article_id}}
 
       # Toggle again — should be unlocked
       locked_article = %{article | locked: true}
-      {:ok, _} = Content.toggle_lock_article(locked_article)
+      {:ok, _} = Content.toggle_lock_article(locked_article, admin)
       assert_receive {:article_unlocked, %{article_id: ^article_id}}
     end
   end
@@ -2514,7 +2521,7 @@ defmodule Baudrate.ContentTest do
       board: board,
       article: article
     } do
-      {:ok, deleted} = Content.soft_delete_article(article)
+      {:ok, deleted} = Content.soft_delete_article(article, deleted_by: article.user_id)
 
       assert {:error, :not_found} =
                Content.forward_article_to_board(deleted, board, author)
@@ -2923,7 +2930,7 @@ defmodule Baudrate.ContentTest do
           user_id: author.id
         })
 
-      {:ok, deleted} = Content.soft_delete_comment(comment)
+      {:ok, deleted} = Content.soft_delete_comment(comment, remote: true)
 
       assert {:error, :not_found} =
                Content.forward_comment_to_board(deleted, board, user)
@@ -3600,7 +3607,7 @@ defmodule Baudrate.ContentTest do
           [board.id]
         )
 
-      {:ok, _} = Content.soft_delete_article(article)
+      {:ok, _} = Content.soft_delete_article(article, deleted_by: article.user_id)
 
       assert {:error, :not_found} = Content.toggle_article_bookmark(user.id, article.id)
       assert {:error, :not_found} = Content.toggle_article_bookmark(user.id, -1)
@@ -3738,7 +3745,7 @@ defmodule Baudrate.ContentTest do
           "user_id" => user.id
         })
 
-      {:ok, _} = Content.soft_delete_comment(comment)
+      {:ok, _} = Content.soft_delete_comment(comment, remote: true)
 
       assert {:error, :not_found} = Content.toggle_comment_bookmark(user.id, comment.id)
       assert {:error, :not_found} = Content.toggle_comment_bookmark(user.id, -1)
@@ -3874,7 +3881,7 @@ defmodule Baudrate.ContentTest do
         )
 
       {:ok, _} = Content.bookmark_article(user.id, article.id)
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
 
       result = Content.list_bookmarks(user.id)
       assert result.bookmarks == []
@@ -3908,7 +3915,7 @@ defmodule Baudrate.ContentTest do
         })
 
       {:ok, _} = Content.bookmark_comment(user.id, comment.id)
-      Content.soft_delete_comment(comment)
+      Content.soft_delete_comment(comment, remote: true)
 
       result = Content.list_bookmarks(user.id)
       assert result.bookmarks == []

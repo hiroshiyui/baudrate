@@ -260,7 +260,7 @@ defmodule Baudrate.BotsTest do
           trusted: true
         )
 
-      {:ok, _} = Content.soft_delete_article(article)
+      {:ok, _} = Content.soft_delete_article(article, deleted_by: article.user_id)
       refute Bots.already_posted?(bot, "some-new-guid", url)
     end
   end

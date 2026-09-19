@@ -13,7 +13,8 @@ defmodule Baudrate.Content.Comments do
   alias Baudrate.Content.{
     Article,
     Comment,
-    Filters
+    Filters,
+    Permissions
   }
 
   alias Baudrate.Content.LinkPreview.Worker, as: PreviewWorker
@@ -359,6 +360,30 @@ defmodule Baudrate.Content.Comments do
   """
   @spec soft_delete_comment(%Comment{}) :: {:ok, %Comment{}} | {:error, Ecto.Changeset.t()}
   def soft_delete_comment(%Comment{} = comment, opts \\ []) do
+    with :ok <- authorize_delete(comment, opts) do
+      do_soft_delete_comment(comment, opts)
+    end
+  end
+
+  # As for articles (ADR 0016): a local deletion names its actor and is
+  # re-checked here against freshly loaded state; a remote one is authorized by
+  # the inbox and says `remote: true`. The article is loaded because the rule
+  # for a comment is the rule for the article it is on (P1-D5).
+  defp authorize_delete(comment, opts) do
+    if Keyword.get(opts, :remote, false) do
+      :ok
+    else
+      case Repo.get(Article, comment.article_id) do
+        nil ->
+          {:error, :unauthorized}
+
+        article ->
+          Permissions.authorize_delete_comment(Keyword.get(opts, :deleted_by), comment, article)
+      end
+    end
+  end
+
+  defp do_soft_delete_comment(%Comment{} = comment, opts) do
     result =
       Baudrate.Federation.federate(
         fn ->

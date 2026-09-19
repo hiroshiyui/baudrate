@@ -29,7 +29,7 @@ defmodule Baudrate.Content.FeedQueriesTest do
 
     test "excludes deleted articles", %{user: user, public_board: board} do
       {:ok, %{article: article}} = insert_article(user, board, "deleted-article")
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
 
       assert Content.list_recent_public_articles() == []
     end
@@ -86,7 +86,7 @@ defmodule Baudrate.Content.FeedQueriesTest do
 
     test "excludes deleted articles", %{user: user, public_board: board} do
       {:ok, %{article: article}} = insert_article(user, board, "board-deleted")
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
 
       assert {:ok, []} = Content.list_recent_articles_for_public_board(board)
     end
@@ -117,7 +117,7 @@ defmodule Baudrate.Content.FeedQueriesTest do
 
     test "excludes deleted articles", %{user: user, public_board: board} do
       {:ok, %{article: article}} = insert_article(user, board, "user-deleted")
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
 
       assert Content.list_recent_public_articles_by_user(user.id) == []
     end
@@ -189,7 +189,7 @@ defmodule Baudrate.Content.FeedQueriesTest do
       other_user = setup_user("user")
       {:ok, %{article: article}} = insert_article(other_user, board, "boosted-deleted")
       {:ok, _boost} = Content.boost_article(user.id, article.id)
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
 
       assert Content.list_recent_boosted_articles_by_user(user.id) == []
     end
@@ -259,7 +259,7 @@ defmodule Baudrate.Content.FeedQueriesTest do
       other_user = setup_user("user")
       {:ok, %{article: article}} = insert_article(other_user, board, "boosted-del")
       {:ok, _} = Content.boost_article(user.id, article.id)
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
 
       assert Content.list_recent_boosted_by_user(user.id) == []
     end

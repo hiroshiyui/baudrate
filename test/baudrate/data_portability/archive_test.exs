@@ -313,7 +313,8 @@ defmodule Baudrate.DataPortability.ArchiveTest do
     {:ok, _} = Content.soft_delete_article(mod_deleted, deleted_by: moderator.id)
 
     unknown = create_article(user, public, "Unknown", "u")
-    {:ok, _} = Content.soft_delete_article(unknown)
+    # Deleted with no attributed actor, the shape a remote Delete produces.
+    {:ok, _} = Content.soft_delete_article(unknown, remote: true)
 
     articles = user |> build!() |> json("articles.json")
     by_id = Map.new(articles, &{&1["id"], &1})

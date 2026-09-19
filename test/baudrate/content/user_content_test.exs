@@ -42,7 +42,7 @@ defmodule Baudrate.Content.UserContentTest do
           [board.id]
         )
 
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
       articles = Content.list_recent_articles_by_user(user.id)
       assert articles == []
     end
@@ -136,8 +136,8 @@ defmodule Baudrate.Content.UserContentTest do
           "user_id" => user.id
         })
 
-      Content.soft_delete_article(article)
-      Content.soft_delete_comment(comment)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
+      Content.soft_delete_comment(comment, deleted_by: comment.user_id)
 
       assert {0, 0} = Content.count_user_content_stats(user.id)
     end
@@ -176,7 +176,7 @@ defmodule Baudrate.Content.UserContentTest do
           [board.id]
         )
 
-      Content.soft_delete_article(article)
+      Content.soft_delete_article(article, deleted_by: article.user_id)
       result = Content.paginate_articles_by_user(user.id, page: 1)
       assert result.articles == []
       assert result.total == 0
@@ -248,7 +248,7 @@ defmodule Baudrate.Content.UserContentTest do
           "user_id" => user.id
         })
 
-      Content.soft_delete_comment(comment)
+      Content.soft_delete_comment(comment, deleted_by: comment.user_id)
       result = Content.paginate_comments_by_user(user.id, page: 1)
       assert result.comments == []
       assert result.total == 0

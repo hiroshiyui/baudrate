@@ -193,6 +193,6 @@ defmodule Baudrate.AccountMigration.ReadOnlyTest do
   test "it can still follow others and delete its own articles",
        %{author: author, mover: mover, mover_article: article} do
     assert {:ok, _} = Federation.create_local_follow(mover, author)
-    assert {:ok, _} = Content.soft_delete_article(article)
+    assert {:ok, _} = Content.soft_delete_article(article, deleted_by: article.user_id)
   end
 end
