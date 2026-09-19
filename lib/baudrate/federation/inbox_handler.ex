@@ -1082,16 +1082,12 @@ defmodule Baudrate.Federation.InboxHandler do
 
   # Case-insensitive host equality for two absolute HTTPS URIs. Returns false if
   # either is missing or unparseable (fail-closed).
-  defp same_host?(a, b) when is_binary(a) and is_binary(b) do
-    with %URI{host: host_a} when is_binary(host_a) <- URI.parse(a),
-         %URI{host: host_b} when is_binary(host_b) <- URI.parse(b) do
-      String.downcase(host_a) == String.downcase(host_b)
-    else
-      _ -> false
-    end
-  end
-
-  defp same_host?(_, _), do: false
+  # `Validator.same_host?/2`, not a copy. There were two, and they disagreed:
+  # this one accepted a pair of hostless URIs (`https:///x`, which `URI.parse`
+  # gives `host: ""`) as same-origin, where the Validator's rejects them. A
+  # security primitive with two definitions is one definition and one
+  # liability (ADR 0046).
+  defp same_host?(a, b), do: Validator.same_host?(a, b)
 
   # Routes boosted Article/Page content to boards that follow the booster.
   # Notes are not routed to boards (they become timeline items only).

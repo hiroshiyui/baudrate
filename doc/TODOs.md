@@ -521,7 +521,7 @@ not, and each needs a decision rather than a patch.
   treating as a defect either way is admin LiveViews calling *mutating*
   federation operations directly: `DomainBlocks.block_domain/3`,
   `RemoteActors.suspend/3`, `Delivery.deliver_flag/2`.
-- [ ] **Origin binding has no ADR.** Sixteen call sites across `validator.ex`,
+- [x] **Origin binding had no ADR.** Now [0046](adr/0046-every-identity-claim-is-bound-to-the-host-that-can-prove-it.md), which also turned up a second, divergent `same_host?/2` that has been consolidated: Sixteen call sites across `validator.ex`,
   `inbox_handler.ex` and `actor_resolver.ex` enforce that an actor document's
   `id` host matches where it was fetched, an activity's `id` host matches its
   actor, an object's `id` lives on the signer's host, a boosted object's
@@ -530,7 +530,7 @@ not, and each needs a decision rather than a patch.
   spoofing attack; none is recorded. This is the largest undocumented decision
   in the codebase and the one most likely to be "simplified" by someone reading
   it as redundant host comparisons.
-- [ ] **ADR 0016's central invariant does not hold for article moderation.**
+- [x] **ADR 0016's central invariant did not hold for article moderation.** Fixed:
   The record says authorization is enforced "inside the context function that
   performs the operation, against freshly loaded state" and that LiveView
   checks "are never the enforcement point". But `toggle_pin_article/1` and
