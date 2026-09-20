@@ -7,6 +7,121 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.32.0] — 2026-09-20
+
+Phase 4F (privacy and language), and the first pieces of 4A.
+
+Anyone can now change the site's language from the footer, signed in or not.
+Before this a guest could not change it at all — the answer came from
+`Accept-Language` and nothing else — and a member could only reorder a list on
+`/profile`.
+
+**Upgrading:** nothing to do. No migration, no release task, no setting an
+operator has to add. Visitors get one new cookie, `locale`, and only if they
+use the switcher.
+
+### Added
+
+- **A language switcher in the footer.** A `<details>` dropdown holding a
+  plain form. Both halves are deliberate: `<details>` is the one disclosure
+  widget the browser implements itself, so opening it needs no JavaScript and
+  no `aria-*` bookkeeping of ours to get wrong; and the form posts to a
+  controller because writing a cookie and the session is a controller's job.
+  A language control has to keep working when scripting has gone wrong — it is
+  what a reader reaches for when the page already makes no sense to them.
+
+  The choice lives in a named one-year `locale` cookie rather than in the
+  session, because the session is dropped at sign-out and a preference that
+  resets itself reads as a bug rather than as privacy. A member's click also
+  moves that language to the head of their preferred languages, so the footer
+  and `/profile` cannot disagree and the choice follows them to another
+  device. **Match my browser** deletes the cookie: a switcher with no way back
+  to automatic is a one-way door.
+
+  An unknown value is ignored — never handed to Gettext, never echoed back —
+  and the page it returns to comes from a CSRF-protected form field, with the
+  query string restored from a same-origin `Referer` only when it agrees with
+  that path, so a search or a page number survives the switch.
+
+- **An empty state on the home page.** "No boards" cannot happen — setup
+  seeds the SysOp board and `delete_board/1` refuses to remove it — but "no
+  board *this viewer* may see" can, and nothing stops an admin raising SysOp's
+  `min_role_to_view`. A guest then got a page whose welcome text said "Browse
+  the boards below" with nothing below it. The empty state never distinguishes
+  "none exist" from "none for you", because that difference is exactly what
+  `min_role_to_view` is keeping.
+
+- **A translation coverage gate.** `translation_coverage_test.exs` fails the
+  build on an empty `msgstr` in zh_TW or ja_JP. `en` is exempt: its `msgid`s
+  *are* the source text Gettext falls back to. A string whose translation
+  really is the English — an example value in a placeholder — is written out
+  in full with a translator comment, because an empty entry cannot be told
+  from an oversight.
+
+### Changed
+
+- **Nothing here is ranked by engagement, and it is now a record.**
+  [ADR 0054](doc/adr/0054-attention-follows-the-board-not-a-ranking.md): no
+  `/popular`, `/trending`, `/hot`, `/recent` or `/top`; the home page lists
+  boards, not the articles inside them; board cards carry no post count; the
+  order is the admin's, never activity. A ranking is a feedback loop rather
+  than a measurement — what it surfaces gets read, which keeps it surfaced —
+  and engagement cannot tell an argument from a conversation, so ranking on
+  activity promotes a flame war to the front page. Chronological order within
+  a board, search, tag pages, the feeds, the personal timeline, unread markers
+  and `/unanswered` are deliberately unaffected: none of them is the site
+  choosing for a reader. `no_content_ranking_test.exs` gates the four
+  falsifiable shapes; whether some *new* surface is a ranking is a judgement
+  review has to make.
+
+- **Locale resolution order.** The `locale` cookie, then the member's
+  preferred languages as cached at login, then `Accept-Language`, then `en`.
+  The cookie is first because it is the only one of these a person said out
+  loud.
+
+- **One definition of "is this a safe local path".**
+  `BaudrateWeb.Helpers.local_path/2`, extracted from `SessionController`.
+  An open-redirect guard kept in two places is one that gets fixed in one.
+
+### Fixed
+
+- **A member who changed their language kept being shown the old one.**
+  `SetLocale` reads a member's language from the session copy of their
+  preferred languages, which is written at login and nowhere else, and a
+  LiveView cannot write the session — so changing it on `/profile` reached the
+  database and stopped. Every later full page load rendered its dead HTML,
+  including `lang=` on `<html>`, in the language they had just left, and kept
+  doing so until they signed in again: a screen reader was told the wrong
+  language on every load. `/profile` now posts the change to the same
+  controller the switcher uses, and only when the *effective* language moved —
+  reordering the entries below the first changes nothing anyone reads.
+
+- **The zh_TW language is named 台灣漢語.** It read 正體中文, in the switcher
+  built to display it. Both 繁體中文 and 正體中文 name a *script* and frame
+  the variety as a typographic variant of something else. The site's own
+  governing-language clauses in `doc/eua.md` and `doc/privacy-policy.md`
+  already said 台灣漢語, so the switcher was offering a reader a different
+  thing from the one the terms are written in.
+
+- **`layout_test.exs` covers `<details>` menus.** It found menu triggers by
+  `aria-haspopup`, which a `<summary>` correctly does not carry — a disclosure
+  is not a menu widget, and labelling one as a pop-up so a test could find it
+  would be a lie told to screen readers. Its sandbox ownership timeout was
+  also tighter than the timeout those tests set for themselves, so an overrun
+  surfaced as a bewildering assertion about a missing theme attribute rather
+  than as a timeout.
+
+### Documentation
+
+- **The cookie inventory.** `doc/development.md` lists both cookies this
+  instance sets, with lifetimes and attributes, and `doc/sysop.md` points at
+  it from the section an operator sits in while writing the privacy policy
+  that has to describe them. Theme and text size are `localStorage` and never
+  reach the server.
+- `doc/troubleshooting.md` gains "A member says the site is in the wrong
+  language" — a year-long cookie that outranks `Accept-Language` is a new way
+  for the site to look broken while working as designed.
+
 ## [1.31.1] — 2026-09-20
 
 A lint annotation. No behaviour change, and nothing to do on upgrade beyond
