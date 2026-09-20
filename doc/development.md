@@ -1829,7 +1829,7 @@ and never need to know about the internal split.
 | `Federation.Validator` | AP payload validation: size limits, attribution checks, and domain allowlist/blocklist |
 | `Federation.Visibility` | Derives ActivityPub visibility (`public`, `unlisted`, `followers_only`, `direct`) from addressing fields, and builds the addressing back from a visibility |
 | `Federation.Mentions` | Turns `@user@domain` handles into the actors they name, and into `Mention` tags, `cc` entries and delivery targets — behind ADR 0043's board gate (ADR 0051) |
-| `Federation.Context` | The one owner of every JSON-LD `@context` this instance publishes, and of the `baudrate:` extension terms (ADR 0053's sibling, Phase 3F) |
+| `Federation.Context` | The one owner of every JSON-LD `@context` this instance publishes, and of the `baudrate:` extension terms — a term with no row in its table is one nobody outside this repository can interpret (Phase 3F, no ADR) |
 | `Federation.Inbound` | Admits, stores and answers an inbound activity; `InboundWorker` processes it afterwards (ADR 0034) |
 | `Federation.ObjectResolver` | Fetches a single remote object for a user-triggered import, applying the same origin binding as actor resolution (ADR 0046) |
 | `Federation.DomainBlocks` | The only write path for `domain_blocks`; refreshes `DomainBlockCache` itself (ADR 0030). Reached through the facade for the mutations (ADR 0047) |

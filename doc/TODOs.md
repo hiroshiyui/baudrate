@@ -7,12 +7,12 @@ contributors. Items marked **(confirmed)** were checked against the code, and
 `lib/baudrate_web/…` shortened to `web/…` and `lib/baudrate/…` to `core/…`;
 line numbers were correct as of v1.18.1.
 
-**Current state (v1.30.0, plus unreleased Phase 3).** The review named five
+**Current state (v1.31.1, deployed 2026-09-20).** The review named five
 gaps: broken promises (the UI or docs saying something happens when it does
 not), moderation reach, operability, federation reach, and discovery and
 onboarding. The first four are closed — Phase 0 in v1.18.2, Phase 1 in
 v1.21.0, Phase 2 with the alerting item that followed v1.28.2, and Phase 3 in
-the commits after v1.30.0. **Phase 4 is next.**
+v1.31.0. **Phase 4 is next.**
 
 Every open item belongs to one of Phases 3–8 below, or to the Backlog. Work
 phase by phase; within a phase, ship each stage as its own release. A completed
@@ -40,7 +40,7 @@ Each phase settles its decisions and gets its own implementation plan before wor
 |-------|-------|--------|-----|
 | ~~1~~ | ~~Trust and safety~~ | 1A–1F | **Complete** (v1.19.0 – v1.21.0) |
 | ~~2~~ | ~~Operability~~ | 2A–2H | **Complete** (v1.23.0 – v1.28.0, plus 2A's alerting item) |
-| ~~3~~ | ~~Federation reach~~ | 3A–3F | **Complete** (unreleased) |
+| ~~3~~ | ~~Federation reach~~ | 3A–3F | **Complete** (v1.31.0) |
 | 4 | Discovery and onboarding | 4A–4F | Turns visitors into members, and keeps them able to sign in |
 | 5 | Anti-spam | 5A–5E | Growth from Phase 4 attracts spam |
 | 6 | Member depth | 6A–6E | Retention |
@@ -185,7 +185,7 @@ The two follow-on questions are closed, not open:
 
 ---
 
-## Phase 3 — Federation reach — **complete** (unreleased)
+## Phase 3 — Federation reach — **complete** (v1.31.0)
 
 **Goal.** Conversations, mentions, profile changes and groups work the way Mastodon and Lemmy users expect.
 
@@ -206,13 +206,20 @@ Six new records: [0050](adr/0050-a-comment-and-a-poll-are-objects-with-their-own
 [0053](adr/0053-a-group-announce-is-a-carrier.md), plus protocol hygiene (3F)
 and actor updates (3D), neither of which needed one.
 
-**Before release:** `Baudrate.Release.backfill_ap_ids()` must be run once
-(`doc/sysop.md`). **After release:** interop against a real Mastodon account
-and a real Lemmy community — thread a reply, send a mention, edit a display
-name, post with a content warning, follow a community. Phase 4 (discovery and
+**Released as v1.31.0 and deployed 2026-09-20.** v1.31.1 followed the same
+day, adding a `sobelow_skip` annotation to the comment renderer 3E extracted
+out of its template and nothing else: the expression was unchanged, but
+Sobelow does not see a `raw/1` call inside a template and does see one inside
+a function, so an untouched line began failing CI. The required backfill has
+been run here — 47 comments rewritten, 0 articles, 0 polls, and a re-run
+reports `0/0`.
+
+**Outstanding:** the interop pass above — thread a reply, send a mention, edit
+a display name, post with a content warning, follow a community — against a
+real Mastodon account and a real Lemmy community. Phase 4 (discovery and
 onboarding) is next.
 
-### ~~3A — Threading and mentions~~ — **done** (unreleased)
+### ~~3A — Threading and mentions~~ — **done** (v1.31.0)
 
 `inReplyTo` names the parent comment, from one definition shared by the
 activity, the served object and the replies collection. `@user@domain` is a
@@ -223,7 +230,7 @@ included.
 [ADR 0051](adr/0051-a-mention-addresses-and-the-board-gate-still-decides.md),
 gate `test/baudrate/federation/mentions_test.exs`.
 
-### ~~3B — Fetchable objects~~ — **done** (unreleased)
+### ~~3B — Fetchable objects~~ — **done** (v1.31.0)
 
 Comments are served at `/ap/comments/:id` and polls at `/ap/polls/:id`, gated
 by the owning article. Every existing row was rewritten from its fragment id
@@ -233,10 +240,11 @@ inbound path, and named alongside the new id in a withdrawal.
 [ADR 0050](adr/0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md),
 gate `test/baudrate/federation/object_identity_test.exs`.
 
-Operators must run `Baudrate.Release.backfill_ap_ids()` once after the upgrade
-(`doc/sysop.md`, "Data Repair: `ap_id` Backfill").
+Operators must run `Baudrate.Release.backfill_ap_ids()` once after upgrading
+to v1.31.0 (`doc/sysop.md`, "Data Repair: `ap_id` Backfill"). Done on this
+instance on 2026-09-20.
 
-### ~~3C — Lemmy groups, FEP-1b12~~ — **done** (unreleased)
+### ~~3C — Lemmy groups, FEP-1b12~~ — **done** (v1.31.0)
 
 A group's `Announce` is unwrapped one level. A carried `Create` goes to the
 announced-content path — verified through its object's own origin and routed
@@ -251,7 +259,7 @@ payload under `test/support/fixtures/`.
 fetching an activity from a host in order to decide whether to trust that host
 is the same question with an extra request and an attacker-chosen URI in it.
 
-### ~~3D — Profile, board and poll updates~~ — **done** (unreleased)
+### ~~3D — Profile, board and poll updates~~ — **done** (v1.31.0)
 
 `Update(Person)` and `Update(Group)` go out whenever the rendered actor
 document changes — comparing documents rather than listing fields, so a field
@@ -268,7 +276,7 @@ queue where the jobs are durable.
 
 **`Delete(Person)`** still ships with self-service account deletion (6E).
 
-### ~~3E — Content warnings and media~~ — **done** (unreleased)
+### ~~3E — Content warnings and media~~ — **done** (v1.31.0)
 
 `summary` and `sensitive` are columns on four tables, the body is left as
 written, and warned content renders collapsed behind a `<details>`. Every
@@ -283,7 +291,7 @@ dropped.
 Rows written before the upgrade keep their `[CW: …]` prefix; parsing it back
 out would be guessing where the warning ends.
 
-### ~~3F — Protocol hygiene~~ — **done** (unreleased)
+### ~~3F — Protocol hygiene~~ — **done** (v1.31.0)
 
 NodeInfo counts people (no bots, no banned accounts) and local content (no
 mirrored or deleted rows), reports `activeMonth`/`activeHalfyear` from a new
@@ -295,7 +303,11 @@ Actor documents are cached for 180 s, except on errors, redirects, and
 whenever authorized fetch is on. Gate `test/baudrate_web/protocol_hygiene_test.exs`.
 
 The active counts could not come from `user_sessions`: a session lives 14 days
-and is then purged, so the table cannot answer a question about a month.
+and is then purged, so the table cannot answer a question about a month. They
+therefore start at zero after the upgrade and fill in as members sign in —
+`last_active_on` is deliberately not backfilled, because inventing a date for
+an account that has not been here would inflate the counts the column exists
+to make honest.
 
 The `Follow` notification bullet was struck on 2026-09-19 — already fixed
 while building 1A.
