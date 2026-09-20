@@ -53,7 +53,7 @@ defmodule BaudrateWeb.SearchLiveTest do
     {:ok, lv, _html} = live(conn, "/search")
 
     lv
-    |> form("form", q: "Elixir")
+    |> form("#search-form", q: "Elixir")
     |> render_submit()
 
     # After submit, LiveView patches to new URL
@@ -147,7 +147,7 @@ defmodule BaudrateWeb.SearchLiveTest do
     {:ok, lv, _html} = live(conn, "/search?q=old&tab=comments")
 
     lv
-    |> form("form", q: "new")
+    |> form("#search-form", q: "new")
     |> render_submit()
 
     assert_patch(lv)

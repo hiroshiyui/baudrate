@@ -345,7 +345,7 @@ defmodule BaudrateWeb.TimelineLiveTest do
 
       html =
         lv
-        |> form("form", article: %{title: "", body: ""})
+        |> form("#timeline-quick-post-form", article: %{title: "", body: ""})
         |> render_change()
 
       assert html =~ "can&#39;t be blank"
@@ -356,7 +356,9 @@ defmodule BaudrateWeb.TimelineLiveTest do
 
       html =
         lv
-        |> form("form", article: %{title: "My Quick Post", body: "Hello from the feed!"})
+        |> form("#timeline-quick-post-form",
+          article: %{title: "My Quick Post", body: "Hello from the feed!"}
+        )
         |> render_submit()
 
       assert html =~ "Article posted!"
@@ -369,7 +371,7 @@ defmodule BaudrateWeb.TimelineLiveTest do
       {:ok, lv, _html} = live(conn, "/timeline")
 
       lv
-      |> form("form", article: %{title: "Quick Post", body: "Body text"})
+      |> form("#timeline-quick-post-form", article: %{title: "Quick Post", body: "Body text"})
       |> render_submit()
 
       # Form inputs should be cleared (value should not remain in the input)
@@ -393,7 +395,9 @@ defmodule BaudrateWeb.TimelineLiveTest do
 
       html =
         lv
-        |> form("form", article: %{title: "Rate Limited Post", body: "Should fail"})
+        |> form("#timeline-quick-post-form",
+          article: %{title: "Rate Limited Post", body: "Should fail"}
+        )
         |> render_submit()
 
       assert html =~ "posting too frequently"
@@ -1077,7 +1081,9 @@ defmodule BaudrateWeb.TimelineLiveTest do
 
       # Create own article via the quick-post composer so it appears in the feed
       lv
-      |> form("form", article: %{title: "My Own Article For Buttons", body: "Own body"})
+      |> form("#timeline-quick-post-form",
+        article: %{title: "My Own Article For Buttons", body: "Own body"}
+      )
       |> render_submit()
 
       html = render(lv)

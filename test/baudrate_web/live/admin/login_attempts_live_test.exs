@@ -81,7 +81,9 @@ defmodule BaudrateWeb.Admin.LoginAttemptsLiveTest do
 
     {:ok, lv, _html} = live(conn, "/admin/login-attempts")
 
-    html = lv |> form("form", %{username: "alice"}) |> render_submit()
+    html =
+      lv |> form("#admin-login-attempts-search-form", %{username: "alice"}) |> render_submit()
+
     assert html =~ "alice"
     refute html =~ "bob"
   end

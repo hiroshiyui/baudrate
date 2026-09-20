@@ -50,7 +50,7 @@ defmodule BaudrateWeb.ArticleEditLiveTest do
     {:ok, lv, _html} = live(conn, "/articles/#{article.slug}/edit")
 
     lv
-    |> form("form", article: %{title: "Updated Title", body: "Updated body"})
+    |> form("#article-edit-form", article: %{title: "Updated Title", body: "Updated body"})
     |> render_submit()
 
     {path, _flash} = assert_redirect(lv)
@@ -80,7 +80,7 @@ defmodule BaudrateWeb.ArticleEditLiveTest do
 
     html =
       lv
-      |> form("form", article: %{title: "New Title", body: "New body"})
+      |> form("#article-edit-form", article: %{title: "New Title", body: "New body"})
       |> render_change()
 
     assert html =~ "New Title"
@@ -95,7 +95,7 @@ defmodule BaudrateWeb.ArticleEditLiveTest do
 
     html =
       lv
-      |> form("form", article: %{title: "", body: "Some body"})
+      |> form("#article-edit-form", article: %{title: "", body: "Some body"})
       |> render_change()
 
     assert html =~ "t be blank" or html =~ "required"

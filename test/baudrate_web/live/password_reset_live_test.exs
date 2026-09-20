@@ -61,7 +61,7 @@ defmodule BaudrateWeb.PasswordResetLiveTest do
     {:ok, lv, _html} = live(conn, "/password-reset")
 
     lv
-    |> form("form",
+    |> form("#password-reset-form",
       reset: %{
         username: "resetlive_user",
         recovery_code: code,
@@ -82,7 +82,7 @@ defmodule BaudrateWeb.PasswordResetLiveTest do
 
     html =
       lv
-      |> form("form",
+      |> form("#password-reset-form",
         reset: %{
           username: "invalidcred_user",
           recovery_code: "wrongcode",
@@ -100,7 +100,7 @@ defmodule BaudrateWeb.PasswordResetLiveTest do
 
     html =
       lv
-      |> form("form",
+      |> form("#password-reset-form",
         reset: %{
           username: "ghost_user_999",
           recovery_code: "anycode",
@@ -121,7 +121,7 @@ defmodule BaudrateWeb.PasswordResetLiveTest do
 
     html =
       lv
-      |> form("form",
+      |> form("#password-reset-form",
         reset: %{
           username: "pwerror_user",
           recovery_code: code,
@@ -145,7 +145,7 @@ defmodule BaudrateWeb.PasswordResetLiveTest do
     # Exhaust the rate limit (5 attempts per hour) via submitting
     for _i <- 1..5 do
       lv
-      |> form("form",
+      |> form("#password-reset-form",
         reset: %{
           username: "anyone",
           recovery_code: "anycode",
@@ -159,7 +159,7 @@ defmodule BaudrateWeb.PasswordResetLiveTest do
     # The 6th attempt should be rate limited
     html =
       lv
-      |> form("form",
+      |> form("#password-reset-form",
         reset: %{
           username: "anyone",
           recovery_code: "anycode",

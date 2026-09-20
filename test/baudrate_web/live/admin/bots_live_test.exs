@@ -64,7 +64,7 @@ defmodule BaudrateWeb.Admin.BotsLiveTest do
 
     html =
       lv
-      |> form("form",
+      |> form("#admin-bots-form",
         bot: %{
           username: username,
           feed_url: "https://example.com/feed.xml",
@@ -86,7 +86,7 @@ defmodule BaudrateWeb.Admin.BotsLiveTest do
 
     html =
       lv
-      |> form("form",
+      |> form("#admin-bots-form",
         bot: %{
           username: "badbot_#{System.unique_integer([:positive])}",
           feed_url: "not-a-url"
@@ -134,7 +134,7 @@ defmodule BaudrateWeb.Admin.BotsLiveTest do
 
     html =
       lv
-      |> form("form",
+      |> form("#admin-bots-form",
         bot: %{
           feed_url: "https://example.com/updated.xml",
           fetch_interval_minutes: 120
@@ -264,7 +264,7 @@ defmodule BaudrateWeb.Admin.BotsLiveTest do
       username = "biobot_#{System.unique_integer([:positive])}"
 
       lv
-      |> form("form",
+      |> form("#admin-bots-form",
         bot: %{
           username: username,
           feed_url: "https://example.com/feed.xml",
@@ -289,7 +289,7 @@ defmodule BaudrateWeb.Admin.BotsLiveTest do
       feed_url = "https://example.com/feed.xml"
 
       lv
-      |> form("form",
+      |> form("#admin-bots-form",
         bot: %{username: username, feed_url: feed_url, fetch_interval_minutes: 60}
       )
       |> render_submit()
@@ -354,7 +354,7 @@ defmodule BaudrateWeb.Admin.BotsLiveTest do
       |> render_click()
 
       lv
-      |> form("form",
+      |> form("#admin-bots-form",
         bot: %{
           feed_url: "https://example.com/feed.xml",
           bio: "Unofficial — not affiliated with the source."

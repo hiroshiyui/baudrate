@@ -87,7 +87,7 @@ defmodule BaudrateWeb.ConversationLiveTest do
       {:ok, view, _html} = live(conn, "/messages/new?to=#{other.username}")
 
       view
-      |> form("form", message: %{body: "Hello there!"})
+      |> form("#conversation-compose-form", message: %{body: "Hello there!"})
       |> render_submit()
 
       assert render(view) =~ "Hello there!"
@@ -98,7 +98,7 @@ defmodule BaudrateWeb.ConversationLiveTest do
       {:ok, view, _html} = live(conn, "/messages/new?to=#{other.username}")
 
       view
-      |> form("form", message: %{body: "  "})
+      |> form("#conversation-compose-form", message: %{body: "  "})
       |> render_submit()
 
       # Should not crash, no message added (match DaisyUI chat bubble class, not hero icon names)
@@ -161,7 +161,9 @@ defmodule BaudrateWeb.ConversationLiveTest do
 
       html =
         view
-        |> form("form", search: %{query: String.slice(other.username, 0, 5)})
+        |> form("#conversation-recipient-form",
+          search: %{query: String.slice(other.username, 0, 5)}
+        )
         |> render_change()
 
       assert html =~ other.username
@@ -179,7 +181,7 @@ defmodule BaudrateWeb.ConversationLiveTest do
       {:ok, view, _html} = live(conn, "/messages/new")
 
       view
-      |> form("form", search: %{query: other.username})
+      |> form("#conversation-recipient-form", search: %{query: other.username})
       |> render_change()
 
       {:ok, _view, html} =
@@ -199,7 +201,7 @@ defmodule BaudrateWeb.ConversationLiveTest do
 
       html =
         view
-        |> form("form", search: %{query: user.username})
+        |> form("#conversation-recipient-form", search: %{query: user.username})
         |> render_change()
 
       refute html =~ "phx-value-username=\"#{user.username}\""

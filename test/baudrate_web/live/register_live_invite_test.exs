@@ -34,7 +34,7 @@ defmodule BaudrateWeb.RegisterLiveInviteTest do
 
     html =
       lv
-      |> form("form",
+      |> form("#register-form",
         user: %{
           username: "newuser_#{System.unique_integer([:positive])}",
           password: "Password123!x",
@@ -52,7 +52,7 @@ defmodule BaudrateWeb.RegisterLiveInviteTest do
 
     html =
       lv
-      |> form("form",
+      |> form("#register-form",
         user: %{
           username: "newuser_#{System.unique_integer([:positive])}",
           password: "Password123!x",
@@ -73,7 +73,7 @@ defmodule BaudrateWeb.RegisterLiveInviteTest do
 
     html =
       lv
-      |> form("form",
+      |> form("#register-form",
         user: %{
           username: "invited_#{System.unique_integer([:positive])}",
           password: "Password123!x",

@@ -53,8 +53,18 @@ defmodule BaudrateWeb.FeatureCase do
   end
 
   setup _tags do
-    # Checkout Ecto sandbox in shared mode for browser tests
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Baudrate.Repo)
+    # Checkout Ecto sandbox in shared mode for browser tests.
+    #
+    # `ownership_timeout` is raised off its 120 s default because a browser
+    # feature holds one connection for its whole run, and these are minutes
+    # long by nature: `layout_test.exs` walks every page at two widths in two
+    # themes and opens every menu on each. At the default the connection was
+    # dropped mid-feature and the *next* page 500ed, so the failure arrived as
+    # a bewildering assertion about `data-theme` being nil rather than as a
+    # timeout. It now matches the ceiling those tests set for themselves with
+    # `@moduletag timeout:`; an ownership limit tighter than the test's own
+    # timeout can only turn a slow test into a confusing one.
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Baudrate.Repo, ownership_timeout: 600_000)
     Ecto.Adapters.SQL.Sandbox.mode(Baudrate.Repo, {:shared, self()})
 
     # Always allow rate limit checks in browser tests — all requests come from

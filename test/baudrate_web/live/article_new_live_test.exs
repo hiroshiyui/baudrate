@@ -46,7 +46,9 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
     {:ok, lv, _html} = live(conn, "/boards/#{board.slug}/articles/new")
 
     lv
-    |> form("form", article: %{title: "Board Article", body: "Posted from board page"})
+    |> form("#article-new-form",
+      article: %{title: "Board Article", body: "Posted from board page"}
+    )
     |> render_submit()
 
     {path, _flash} = assert_redirect(lv)
@@ -71,7 +73,7 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
     {:ok, lv, _html} = live(conn, "/articles/new")
 
     lv
-    |> form("form", article: %{title: "Test Article", body: "Test body content"})
+    |> form("#article-new-form", article: %{title: "Test Article", body: "Test body content"})
     |> render_submit(%{"board_ids" => ["#{board.id}"]})
 
     {path, _flash} = assert_redirect(lv)
@@ -83,7 +85,7 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
 
     html =
       lv
-      |> form("form", article: %{title: "No Board", body: "Test body"})
+      |> form("#article-new-form", article: %{title: "No Board", body: "Test body"})
       |> render_submit()
 
     assert html =~ "Please select at least one board"
@@ -111,7 +113,7 @@ defmodule BaudrateWeb.ArticleNewLiveTest do
     {:ok, lv, _html} = live(conn, "/articles/new?title=Shared+Article&text=Shared+body+content")
 
     lv
-    |> form("form", article: %{title: "Shared Article", body: "Shared body content"})
+    |> form("#article-new-form", article: %{title: "Shared Article", body: "Shared body content"})
     |> render_submit()
 
     {path, _flash} = assert_redirect(lv)

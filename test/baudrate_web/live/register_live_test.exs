@@ -41,7 +41,9 @@ defmodule BaudrateWeb.RegisterLiveTest do
 
     html =
       lv
-      |> form("form", user: %{username: "ab", password: "short", password_confirmation: ""})
+      |> form("#register-form",
+        user: %{username: "ab", password: "short", password_confirmation: ""}
+      )
       |> render_change()
 
     assert html =~ "should be at least 3"
@@ -54,7 +56,7 @@ defmodule BaudrateWeb.RegisterLiveTest do
 
     html =
       lv
-      |> form("form",
+      |> form("#register-form",
         user: %{
           username: "newuser",
           password: "SecurePass1!!",
@@ -74,7 +76,7 @@ defmodule BaudrateWeb.RegisterLiveTest do
 
     html =
       lv
-      |> form("form",
+      |> form("#register-form",
         user: %{
           username: "newuser",
           password: "SecurePass1!!",
@@ -94,7 +96,7 @@ defmodule BaudrateWeb.RegisterLiveTest do
     {:ok, lv, _html} = live(conn, "/register")
 
     lv
-    |> form("form",
+    |> form("#register-form",
       user: %{
         username: "newuser2",
         password: "SecurePass1!!",
@@ -112,7 +114,7 @@ defmodule BaudrateWeb.RegisterLiveTest do
     {:ok, lv, _html} = live(conn, "/register")
 
     lv
-    |> form("form",
+    |> form("#register-form",
       user: %{
         username: "pendinguser",
         password: "SecurePass1!!",
@@ -131,7 +133,7 @@ defmodule BaudrateWeb.RegisterLiveTest do
 
     html =
       lv
-      |> form("form",
+      |> form("#register-form",
         user: %{
           username: "",
           password: "short",

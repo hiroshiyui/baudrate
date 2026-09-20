@@ -77,13 +77,20 @@ defmodule BaudrateWeb.Features.LayoutTest do
       }
     };
     const problems = [];
-    const triggers = [...document.querySelectorAll(".dropdown > [aria-haspopup]")]
+    // Two shapes: the focus-driven menus (a button with aria-haspopup) and the
+    // <details> disclosures, which the browser opens by itself and which
+    // therefore carry no aria-haspopup — a disclosure is not a menu widget,
+    // and labelling one as a pop-up to be found here would be a lie told to
+    // screen readers for a test's convenience.
+    const triggers = [...document.querySelectorAll(".dropdown > [aria-haspopup], details.dropdown > summary")]
       .filter((t) => t.getClientRects().length > 0);
     for (const trigger of triggers) {
-      const menu = trigger.closest(".dropdown").querySelector(".dropdown-content");
+      const root = trigger.closest(".dropdown");
+      const menu = root.querySelector(".dropdown-content");
       if (!menu) continue;
+      const disclosure = root.tagName === "DETAILS" ? root : null;
       await centre(trigger);
-      trigger.focus();
+      if (disclosure) { disclosure.open = true; } else { trigger.focus(); }
       await sleep(200);
       const r = menu.getBoundingClientRect();
       if (r.width === 0 || getComputedStyle(menu).visibility === "hidden") {
@@ -102,7 +109,7 @@ defmodule BaudrateWeb.Features.LayoutTest do
           }
         }
       }
-      trigger.blur();
+      if (disclosure) { disclosure.open = false; } else { trigger.blur(); }
       await sleep(150);
     }
     window.__menuProblems = problems;
