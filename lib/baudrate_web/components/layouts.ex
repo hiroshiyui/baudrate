@@ -7,6 +7,7 @@ defmodule BaudrateWeb.Layouts do
   import BaudrateWeb.Helpers, only: [translate_role: 1]
 
   alias Baudrate.Setup
+  alias BaudrateWeb.Locale
   alias BaudrateWeb.PolicyLive
 
   # Embed all files in layouts/* within this module.
@@ -429,6 +430,8 @@ defmodule BaudrateWeb.Layouts do
           </li>
         </ul>
       </nav>
+
+      <.language_switcher current_locale={assigns[:locale]} current_path={assigns[:current_path]} />
     </footer>
 
     <.mobile_bottom_nav
@@ -754,6 +757,98 @@ defmodule BaudrateWeb.Layouts do
     </button>
     """
   end
+
+  @doc """
+  Renders the footer language switcher.
+
+  **A `<details>` holding a plain form**, and both halves are deliberate.
+
+  `<details>` is the one disclosure widget the browser implements itself: it
+  opens, closes and takes the keyboard with no JavaScript and no `aria-*`
+  bookkeeping of ours to get wrong. `dropdown-top` opens it upward, which in a
+  footer is also what keeps it clear of the mobile dock — see
+  `features/layout_test.exs`, which fails when a dropdown item is not the
+  topmost element at its own centre.
+
+  The form posts to `BaudrateWeb.LocaleController` rather than sending a
+  LiveView event, because writing the cookie and the session is a controller's
+  job here — and because a language control has to keep working when scripting
+  has gone wrong, the same judgement that makes a content warning a `<details>`
+  rather than a hook (ADR 0052). Nothing in this component needs JavaScript,
+  and nothing in it should come to need it.
+
+  The names avoid every word a cosmetic-filter list targets (`banner`,
+  `consent`, `cookie`, `popup`, `promo`…). A hidden language switcher is a dead
+  end for precisely the readers who came looking for one — the `#policy-accept`
+  lesson in `CLAUDE.md`.
+
+  `current_path` comes from `AuthHooks.attach_current_path_hook/1` and carries
+  no query string, so switching language on `/search?q=…` returns to `/search`.
+  """
+  attr :current_locale, :string, default: nil
+  attr :current_path, :string, default: nil
+
+  def language_switcher(assigns) do
+    ~H"""
+    <div class="site-footer-languages mt-4 flex justify-center">
+      <details id="locale-switcher" class="locale-switcher dropdown dropdown-top dropdown-end">
+        <summary id="locale-switcher-summary" class="locale-switcher-summary btn btn-ghost btn-sm">
+          <.icon name="hero-language" class="size-4" />
+          <%!-- Read out as "Site language, English": a lone language name is
+          not a control anyone can identify, and the visible text stays inside
+          the accessible name, which `aria-label` alone would not manage. --%>
+          <span class="locale-switcher-label sr-only">{gettext("Site language")}</span>
+          <span class="locale-switcher-current" lang={locale_tag(@current_locale || "en")}>
+            {Locale.locale_display_name(@current_locale || "en")}
+          </span>
+        </summary>
+        <form
+          id="locale-switcher-form"
+          method="post"
+          action={~p"/locale"}
+          class="locale-switcher-form"
+        >
+          <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+          <input type="hidden" name="return_to" value={@current_path || "/"} />
+          <ul class="locale-switcher-list menu dropdown-content bg-base-100 rounded-box z-10 mb-2 w-56 p-2 shadow">
+            <li class="locale-switcher-heading menu-title">{gettext("Site language")}</li>
+            <li :for={{code, name} <- Locale.available_locales()} class="locale-switcher-item">
+              <button
+                id={"locale-option-#{code}"}
+                type="submit"
+                name="locale"
+                value={code}
+                lang={locale_tag(code)}
+                class={[
+                  "locale-option",
+                  if(code == @current_locale, do: "locale-option-current")
+                ]}
+                aria-current={if code == @current_locale, do: "true"}
+              >
+                {name}
+              </button>
+            </li>
+            <li class="locale-switcher-item">
+              <button
+                id="locale-option-auto"
+                type="submit"
+                name="locale"
+                value={Locale.auto()}
+                class="locale-option locale-option-auto opacity-70"
+              >
+                {gettext("Match my browser")}
+              </button>
+            </li>
+          </ul>
+        </form>
+      </details>
+    </div>
+    """
+  end
+
+  # `zh_TW` is a Gettext locale name; `zh-TW` is what BCP 47 (and therefore
+  # `lang=`) wants. The root layout does the same to the document element.
+  defp locale_tag(code), do: String.replace(code, "_", "-")
 
   @doc """
   Provides dark vs light theme toggle based on themes defined in app.css.

@@ -88,6 +88,10 @@ defmodule BaudrateWeb.ProfileLive do
       |> assign(:webauthn_credentials, webauthn_credentials)
       |> assign(:webauthn_challenge_token, nil)
       |> assign(:trigger_webauthn_register, false)
+      # Set when a language change alters the *effective* locale, so the
+      # session copy `SetLocale` reads gets rewritten. See `save_locales/2`.
+      |> assign(:trigger_locale_sync, false)
+      |> assign(:locale_sync_value, nil)
       |> assign(:security_reauth_until, nil)
       |> assign(:security_reauth_form, empty_security_reauth_form())
       |> assign(:sign_out_form, to_form(%{"password" => "", "code" => ""}, as: :sign_out))
@@ -709,14 +713,12 @@ defmodule BaudrateWeb.ProfileLive do
 
   defp save_locales(socket, new_locales) do
     user = socket.assigns.current_user
+    was = Locale.resolve_from_preferences(socket.assigns.preferred_locales)
 
     case Auth.update_preferred_locales(user, new_locales) do
       {:ok, updated_user} ->
-        locale =
-          case Locale.resolve_from_preferences(new_locales) do
-            nil -> Gettext.get_locale()
-            l -> l
-          end
+        now = Locale.resolve_from_preferences(new_locales)
+        locale = now || Gettext.get_locale()
 
         Gettext.put_locale(locale)
 
@@ -725,6 +727,7 @@ defmodule BaudrateWeb.ProfileLive do
           |> assign(:current_user, updated_user)
           |> assign(:preferred_locales, updated_user.preferred_locales)
           |> assign(:locale, locale)
+          |> maybe_sync_session_locale(was, now)
           |> put_flash(:info, gettext("Language preferences updated."))
 
         {:noreply, socket}
@@ -732,6 +735,25 @@ defmodule BaudrateWeb.ProfileLive do
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to update language preferences."))}
     end
+  end
+
+  # `BaudrateWeb.Plugs.SetLocale` reads a member's language from
+  # `session[:preferred_locales]`, which is written at login and nowhere else,
+  # and a LiveView cannot write the session. So changing the language here left
+  # that copy stale: every later full page load rendered its dead HTML — and
+  # `lang=` on `<html>` — in the old language, telling a screen reader the
+  # wrong thing on every single load, until the member signed in again.
+  #
+  # Posting to `LocaleController` is the session write that was missing. Only
+  # when the *effective* locale moved: reordering the entries below the head
+  # changes the account without changing what anyone reads, and a page reload
+  # there would be gratuitous.
+  defp maybe_sync_session_locale(socket, same, same), do: socket
+
+  defp maybe_sync_session_locale(socket, _was, now) do
+    socket
+    |> assign(:locale_sync_value, now || Locale.auto())
+    |> assign(:trigger_locale_sync, true)
   end
 
   defp swap(list, i, j) do

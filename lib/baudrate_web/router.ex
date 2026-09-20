@@ -306,6 +306,18 @@ defmodule BaudrateWeb.Router do
     post "/admin-webauthn-verify", SessionController, :admin_webauthn_verify
   end
 
+  pipeline :rate_limit_locale do
+    plug BaudrateWeb.Plugs.RateLimit, action: :locale
+  end
+
+  # The footer language switcher. A plain form POST, so it works with
+  # scripting off; CSRF comes from `:protect_from_forgery` in `:browser`.
+  scope "/", BaudrateWeb do
+    pipe_through [:browser, :rate_limit_locale]
+
+    post "/locale", LocaleController, :update
+  end
+
   pipeline :rate_limit_data_export_download do
     plug BaudrateWeb.Plugs.RateLimit, action: :data_export_download
   end

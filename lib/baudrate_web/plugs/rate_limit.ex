@@ -19,6 +19,8 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     * `:media` — 300 requests per minute per IP (media proxy, cache hits included)
     * `:data_export_download` — 10 requests per 15 minutes per IP (a legitimate
       user downloads an export at most 3 times)
+    * `:locale` — 20 requests per minute per IP (the footer language switcher;
+      a reader trying each language in turn uses four)
 
   Registration and password reset are **not** listed here: those flows submit
   over the LiveView channel rather than a plug-routed request, so they check
@@ -49,6 +51,7 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     share_target: {60_000, 10},
     media: {60_000, 300},
     data_export_download: {900_000, 10},
+    locale: {60_000, 20},
     # Generous: a load balancer probing every few seconds stays well inside it,
     # and it was the only public route with no bucket at all.
     health: {60_000, 120}

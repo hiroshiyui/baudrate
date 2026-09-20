@@ -112,4 +112,61 @@ defmodule BaudrateWeb.Plugs.SetLocaleTest do
 
     assert Plug.Conn.get_session(conn, :locale) == "zh_TW"
   end
+
+  describe "the locale cookie (the footer switcher's answer)" do
+    test "beats the browser's Accept-Language", %{conn: conn} do
+      conn =
+        conn
+        |> with_session()
+        |> Plug.Test.put_req_cookie("locale", "ja_JP")
+        |> put_req_header("accept-language", "zh-TW")
+        |> call_plug()
+
+      assert conn.assigns[:locale] == "ja_JP"
+      assert Gettext.get_locale() == "ja_JP"
+    end
+
+    test "beats the member's account, because it is the more recent statement", %{conn: conn} do
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{preferred_locales: ["zh_TW"]})
+        |> Plug.Test.put_req_cookie("locale", "ja_JP")
+        |> call_plug()
+
+      assert conn.assigns[:locale] == "ja_JP"
+    end
+
+    test "an unknown value is ignored, never handed to Gettext", %{conn: conn} do
+      conn =
+        conn
+        |> with_session()
+        |> Plug.Test.put_req_cookie("locale", "../../etc/passwd")
+        |> put_req_header("accept-language", "zh-TW")
+        |> call_plug()
+
+      assert conn.assigns[:locale] == "zh_TW"
+      assert Gettext.get_locale() == "zh_TW"
+    end
+
+    test "a locale-shaped value we do not translate is ignored too", %{conn: conn} do
+      conn =
+        conn
+        |> with_session()
+        |> Plug.Test.put_req_cookie("locale", "fr_FR")
+        |> put_req_header("accept-language", "ja")
+        |> call_plug()
+
+      assert conn.assigns[:locale] == "ja_JP"
+    end
+
+    test "with no cookie, nothing about the old order changes", %{conn: conn} do
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{preferred_locales: ["zh_TW"]})
+        |> put_req_header("accept-language", "ja")
+        |> call_plug()
+
+      assert conn.assigns[:locale] == "zh_TW"
+    end
+  end
 end

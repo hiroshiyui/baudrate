@@ -30,18 +30,18 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:667
-#: lib/baudrate_web/components/layouts.ex:677
+#: lib/baudrate_web/components/layouts.ex:670
+#: lib/baudrate_web/components/layouts.ex:680
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:674
+#: lib/baudrate_web/components/layouts.ex:677
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:664
+#: lib/baudrate_web/components/layouts.ex:667
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr ""
@@ -262,8 +262,8 @@ msgstr ""
 msgid "Set Up Two-Factor Authentication"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:280
-#: lib/baudrate_web/components/layouts.ex:927
+#: lib/baudrate_web/components/layouts.ex:281
+#: lib/baudrate_web/components/layouts.ex:993
 #: lib/baudrate_web/live/login_live.ex:32
 #: lib/baudrate_web/live/login_live.html.heex:2
 #: lib/baudrate_web/live/login_live.html.heex:46
@@ -272,8 +272,8 @@ msgstr ""
 msgid "Sign In"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:153
-#: lib/baudrate_web/components/layouts.ex:388
+#: lib/baudrate_web/components/layouts.ex:154
+#: lib/baudrate_web/components/layouts.ex:389
 #, elixir-autogen, elixir-format
 msgid "Sign Out"
 msgstr ""
@@ -338,9 +338,9 @@ msgstr ""
 msgid "Boards"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:178
-#: lib/baudrate_web/components/layouts.ex:825
-#: lib/baudrate_web/components/layouts.ex:909
+#: lib/baudrate_web/components/layouts.ex:179
+#: lib/baudrate_web/components/layouts.ex:891
+#: lib/baudrate_web/components/layouts.ex:975
 #: lib/baudrate_web/live/board_follows_live.html.heex:8
 #: lib/baudrate_web/live/board_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -428,8 +428,8 @@ msgstr ""
 #: lib/baudrate_web/live/account_migration_live.ex:108
 #: lib/baudrate_web/live/data_export_live.ex:275
 #: lib/baudrate_web/live/password_change_live.ex:138
-#: lib/baudrate_web/live/profile_live.ex:498
-#: lib/baudrate_web/live/profile_live.ex:559
+#: lib/baudrate_web/live/profile_live.ex:502
+#: lib/baudrate_web/live/profile_live.ex:563
 #: lib/baudrate_web/live/totp_reset_live.ex:114
 #, elixir-autogen, elixir-format
 msgid "Invalid credentials. Please try again."
@@ -452,9 +452,9 @@ msgstr ""
 msgid "No articles yet."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:141
-#: lib/baudrate_web/components/layouts.ex:376
-#: lib/baudrate_web/live/profile_live.ex:98
+#: lib/baudrate_web/components/layouts.ex:142
+#: lib/baudrate_web/components/layouts.ex:377
+#: lib/baudrate_web/live/profile_live.ex:102
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #: lib/baudrate_web/live/timeline_live.html.heex:1461
 #: lib/baudrate_web/live/timeline_live.html.heex:1508
@@ -523,12 +523,12 @@ msgstr ""
 msgid "Are you sure you want to remove your avatar?"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:636
+#: lib/baudrate_web/live/profile_live.ex:640
 #, elixir-autogen, elixir-format
 msgid "Avatar removed."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:671
+#: lib/baudrate_web/live/profile_live.ex:675
 #, elixir-autogen, elixir-format
 msgid "Avatar updated successfully."
 msgstr ""
@@ -566,12 +566,12 @@ msgstr ""
 msgid "Crop Avatar"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:693
+#: lib/baudrate_web/live/profile_live.ex:697
 #, elixir-autogen, elixir-format
 msgid "Failed to process avatar image."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:684
+#: lib/baudrate_web/live/profile_live.ex:688
 #, elixir-autogen, elixir-format
 msgid "Invalid image file."
 msgstr ""
@@ -590,8 +590,8 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:140
-#: lib/baudrate_web/live/profile_live.ex:646
+#: lib/baudrate_web/live/profile_live.ex:144
+#: lib/baudrate_web/live/profile_live.ex:650
 #, elixir-autogen, elixir-format
 msgid "Too many avatar changes. Please try again later."
 msgstr ""
@@ -682,8 +682,8 @@ msgstr ""
 msgid "No pending users."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:82
-#: lib/baudrate_web/components/layouts.ex:323
+#: lib/baudrate_web/components/layouts.ex:83
+#: lib/baudrate_web/components/layouts.ex:324
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Pending Users"
@@ -767,12 +767,12 @@ msgstr ""
 msgid "Add Language"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:733
+#: lib/baudrate_web/live/profile_live.ex:736
 #, elixir-autogen, elixir-format
 msgid "Failed to update language preferences."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:728
+#: lib/baudrate_web/live/profile_live.ex:731
 #, elixir-autogen, elixir-format
 msgid "Language preferences updated."
 msgstr ""
@@ -787,8 +787,8 @@ msgstr ""
 msgid "Using browser language settings."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:75
-#: lib/baudrate_web/components/layouts.ex:316
+#: lib/baudrate_web/components/layouts.ex:76
+#: lib/baudrate_web/components/layouts.ex:317
 #: lib/baudrate_web/live/admin/boards_live.html.heex:66
 #: lib/baudrate_web/live/admin/boards_live.html.heex:77
 #, elixir-autogen, elixir-format
@@ -836,8 +836,8 @@ msgstr ""
 msgid "Saving..."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:78
-#: lib/baudrate_web/components/layouts.ex:319
+#: lib/baudrate_web/components/layouts.ex:79
+#: lib/baudrate_web/components/layouts.ex:320
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr ""
@@ -1033,8 +1033,8 @@ msgstr ""
 msgid "Failed to resolve report."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:87
-#: lib/baudrate_web/components/layouts.ex:328
+#: lib/baudrate_web/components/layouts.ex:88
+#: lib/baudrate_web/components/layouts.ex:329
 #: lib/baudrate_web/live/admin/boards_live.html.heex:99
 #: lib/baudrate_web/live/admin/boards_live.html.heex:259
 #: lib/baudrate_web/live/admin/federation_live.html.heex:383
@@ -1101,8 +1101,8 @@ msgstr ""
 msgid "Last Seen"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:92
-#: lib/baudrate_web/components/layouts.ex:333
+#: lib/baudrate_web/components/layouts.ex:93
+#: lib/baudrate_web/components/layouts.ex:334
 #: lib/baudrate_web/live/moderation_live.ex:46
 #, elixir-autogen, elixir-format
 msgid "Moderation"
@@ -1149,8 +1149,8 @@ msgstr ""
 msgid "Reason:"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:287
-#: lib/baudrate_web/components/layouts.ex:936
+#: lib/baudrate_web/components/layouts.ex:288
+#: lib/baudrate_web/components/layouts.ex:1002
 #: lib/baudrate_web/live/register_live.ex:42
 #, elixir-autogen, elixir-format
 msgid "Register"
@@ -1370,10 +1370,10 @@ msgstr ""
 msgid "Save Changes"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:198
-#: lib/baudrate_web/components/layouts.ex:277
-#: lib/baudrate_web/components/layouts.ex:843
-#: lib/baudrate_web/components/layouts.ex:918
+#: lib/baudrate_web/components/layouts.ex:199
+#: lib/baudrate_web/components/layouts.ex:278
+#: lib/baudrate_web/components/layouts.ex:909
+#: lib/baudrate_web/components/layouts.ex:984
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:26
 #: lib/baudrate_web/live/board_follows_live.html.heex:99
 #: lib/baudrate_web/live/search_live.ex:58
@@ -1639,14 +1639,14 @@ msgstr ""
 msgid "Filter by status"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:97
-#: lib/baudrate_web/components/layouts.ex:338
+#: lib/baudrate_web/components/layouts.ex:98
+#: lib/baudrate_web/components/layouts.ex:339
 #, elixir-autogen, elixir-format
 msgid "Manage Boards"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:102
-#: lib/baudrate_web/components/layouts.ex:343
+#: lib/baudrate_web/components/layouts.ex:103
+#: lib/baudrate_web/components/layouts.ex:344
 #, elixir-autogen, elixir-format
 msgid "Manage Users"
 msgstr ""
@@ -1672,22 +1672,22 @@ msgstr ""
 msgid "Change role for %{username}"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:801
+#: lib/baudrate_web/components/layouts.ex:867
 #, elixir-autogen, elixir-format
 msgid "Dark theme"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:790
+#: lib/baudrate_web/components/layouts.ex:856
 #, elixir-autogen, elixir-format
 msgid "Light theme"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:53
+#: lib/baudrate_web/components/layouts.ex:54
 #, elixir-autogen, elixir-format
 msgid "Open navigation menu"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:779
+#: lib/baudrate_web/components/layouts.ex:845
 #, elixir-autogen, elixir-format
 msgid "System theme"
 msgstr ""
@@ -1872,8 +1872,8 @@ msgstr ""
 msgid "Invite Code"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:112
-#: lib/baudrate_web/components/layouts.ex:353
+#: lib/baudrate_web/components/layouts.ex:113
+#: lib/baudrate_web/components/layouts.ex:354
 #: lib/baudrate_web/live/admin/invites_live.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "Invite Codes"
@@ -1896,8 +1896,8 @@ msgstr ""
 msgid "Invite code revoked."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:107
-#: lib/baudrate_web/components/layouts.ex:348
+#: lib/baudrate_web/components/layouts.ex:108
+#: lib/baudrate_web/components/layouts.ex:349
 #: lib/baudrate_web/live/admin/moderation_log_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Moderation Log"
@@ -2132,7 +2132,7 @@ msgstr ""
 msgid "Signature"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:275
+#: lib/baudrate_web/live/profile_live.ex:279
 #, elixir-autogen, elixir-format
 msgid "Signature updated."
 msgstr ""
@@ -2148,8 +2148,8 @@ msgstr ""
 #: lib/baudrate_web/live/data_export_live.ex:267
 #: lib/baudrate_web/live/password_change_live.ex:121
 #: lib/baudrate_web/live/password_reset_live.ex:53
-#: lib/baudrate_web/live/profile_live.ex:483
-#: lib/baudrate_web/live/profile_live.ex:544
+#: lib/baudrate_web/live/profile_live.ex:487
+#: lib/baudrate_web/live/profile_live.ex:548
 #: lib/baudrate_web/live/totp_reset_live.ex:94
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please try again later."
@@ -2547,12 +2547,12 @@ msgstr ""
 msgid "TOTP Verification"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:717
+#: lib/baudrate_web/components/layouts.ex:720
 #, elixir-autogen, elixir-format
 msgid "Decrease font size"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:726
+#: lib/baudrate_web/components/layouts.ex:729
 #, elixir-autogen, elixir-format
 msgid "Increase font size"
 msgstr ""
@@ -2562,12 +2562,12 @@ msgstr ""
 msgid "Avatar preview"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:710
+#: lib/baudrate_web/components/layouts.ex:713
 #, elixir-autogen, elixir-format
 msgid "Font size"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:768
+#: lib/baudrate_web/components/layouts.ex:834
 #: lib/baudrate_web/live/admin/settings_live.html.heex:120
 #, elixir-autogen, elixir-format
 msgid "Theme"
@@ -2702,12 +2702,12 @@ msgstr ""
 msgid "%{count}m ago"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:713
+#: lib/baudrate_web/live/profile_live.html.heex:730
 #, elixir-autogen, elixir-format
 msgid "Anyone"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:723
+#: lib/baudrate_web/live/profile_live.html.heex:740
 #, elixir-autogen, elixir-format
 msgid "Controls who can send you direct messages."
 msgstr ""
@@ -2717,7 +2717,7 @@ msgstr ""
 msgid "Conversation not found."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:356
+#: lib/baudrate_web/live/profile_live.ex:360
 #, elixir-autogen, elixir-format
 msgid "DM access setting updated."
 msgstr ""
@@ -2727,7 +2727,7 @@ msgstr ""
 msgid "Delete this message?"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:703
+#: lib/baudrate_web/live/profile_live.html.heex:720
 #, elixir-autogen, elixir-format
 msgid "Direct Messages"
 msgstr ""
@@ -2747,7 +2747,7 @@ msgstr ""
 msgid "Failed to send message."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:359
+#: lib/baudrate_web/live/profile_live.ex:363
 #, elixir-autogen, elixir-format
 msgid "Failed to update DM access setting."
 msgstr ""
@@ -2755,7 +2755,7 @@ msgstr ""
 #: lib/baudrate_web/helpers.ex:267
 #: lib/baudrate_web/live/admin/boards_live.html.heex:108
 #: lib/baudrate_web/live/board_follows_live.html.heex:49
-#: lib/baudrate_web/live/profile_live.html.heex:716
+#: lib/baudrate_web/live/profile_live.html.heex:733
 #, elixir-autogen, elixir-format
 msgid "Followers only"
 msgstr ""
@@ -2766,8 +2766,8 @@ msgstr ""
 msgid "Message"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:208
-#: lib/baudrate_web/components/layouts.ex:861
+#: lib/baudrate_web/components/layouts.ex:209
+#: lib/baudrate_web/components/layouts.ex:927
 #: lib/baudrate_web/live/conversation_live.html.heex:163
 #: lib/baudrate_web/live/conversations_live.ex:35
 #: lib/baudrate_web/live/conversations_live.html.heex:9
@@ -2793,7 +2793,7 @@ msgstr ""
 msgid "No messages yet. Send the first one!"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:719
+#: lib/baudrate_web/live/profile_live.html.heex:736
 #, elixir-autogen, elixir-format
 msgid "Nobody"
 msgstr ""
@@ -2823,7 +2823,7 @@ msgstr ""
 msgid "Type a message..."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:710
+#: lib/baudrate_web/live/profile_live.html.heex:727
 #, elixir-autogen, elixir-format
 msgid "Who can send you direct messages"
 msgstr ""
@@ -2881,8 +2881,8 @@ msgstr ""
 msgid "IP Address"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:117
-#: lib/baudrate_web/components/layouts.ex:358
+#: lib/baudrate_web/components/layouts.ex:118
+#: lib/baudrate_web/components/layouts.ex:359
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Login Attempts"
@@ -2929,17 +2929,17 @@ msgstr ""
 msgid "Mute this user? Their content will be hidden from your view."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:901
+#: lib/baudrate_web/live/profile_live.html.heex:918
 #, elixir-autogen, elixir-format
 msgid "Muted Users"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:907
+#: lib/baudrate_web/live/profile_live.html.heex:924
 #, elixir-autogen, elixir-format
 msgid "No muted users."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:938
+#: lib/baudrate_web/live/profile_live.html.heex:955
 #: lib/baudrate_web/live/user_profile_live.html.heex:106
 #, elixir-autogen, elixir-format
 msgid "Unmute"
@@ -2955,7 +2955,7 @@ msgstr ""
 msgid "User muted."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:317
+#: lib/baudrate_web/live/profile_live.ex:321
 #: lib/baudrate_web/live/user_profile_live.ex:219
 #, elixir-autogen, elixir-format
 msgid "User unmuted."
@@ -2993,13 +2993,13 @@ msgstr ""
 msgid "Breadcrumb"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:60
-#: lib/baudrate_web/components/layouts.ex:169
+#: lib/baudrate_web/components/layouts.ex:61
+#: lib/baudrate_web/components/layouts.ex:170
 #, elixir-autogen, elixir-format
 msgid "Main menu"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:309
+#: lib/baudrate_web/components/layouts.ex:310
 #, elixir-autogen, elixir-format
 msgid "User menu"
 msgstr ""
@@ -3404,8 +3404,8 @@ msgstr ""
 msgid "Invited User"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:150
-#: lib/baudrate_web/components/layouts.ex:385
+#: lib/baudrate_web/components/layouts.ex:151
+#: lib/baudrate_web/components/layouts.ex:386
 #: lib/baudrate_web/live/user_invites_live.ex:21
 #: lib/baudrate_web/live/user_invites_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -3491,7 +3491,7 @@ msgstr ""
 msgid "Show QR code"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:220
+#: lib/baudrate_web/components/layouts.ex:221
 #: lib/baudrate_web/live/conversations_live.ex:68
 #: lib/baudrate_web/live/conversations_live.html.heex:86
 #, elixir-autogen, elixir-format
@@ -3545,8 +3545,8 @@ msgstr ""
 msgid "Follow request sent."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:147
-#: lib/baudrate_web/components/layouts.ex:382
+#: lib/baudrate_web/components/layouts.ex:148
+#: lib/baudrate_web/components/layouts.ex:383
 #: lib/baudrate_web/live/following_live.ex:25
 #: lib/baudrate_web/live/following_live.html.heex:9
 #, elixir-autogen, elixir-format
@@ -3745,7 +3745,7 @@ msgstr ""
 msgid "Bio"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:242
+#: lib/baudrate_web/live/profile_live.ex:246
 #, elixir-autogen, elixir-format
 msgid "Bio updated."
 msgstr ""
@@ -3862,7 +3862,7 @@ msgstr ""
 msgid "Display Name"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:215
+#: lib/baudrate_web/live/profile_live.ex:219
 #, elixir-autogen, elixir-format
 msgid "Display name updated."
 msgstr ""
@@ -3941,7 +3941,7 @@ msgid "Comment not found."
 msgstr ""
 
 #: lib/baudrate_web/live/auth_hooks.ex:233
-#: lib/baudrate_web/plugs/rate_limit.ex:107
+#: lib/baudrate_web/plugs/rate_limit.ex:110
 #, elixir-autogen, elixir-format
 msgid "Too many requests. Please try again later."
 msgstr ""
@@ -4028,15 +4028,15 @@ msgstr ""
 msgid "Dark Theme"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:248
+#: lib/baudrate_web/components/layouts.ex:249
 #, elixir-autogen, elixir-format
 msgid "%{count} unread notification"
 msgid_plural "%{count} unread notifications"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/baudrate_web/components/layouts.ex:236
-#: lib/baudrate_web/components/layouts.ex:889
+#: lib/baudrate_web/components/layouts.ex:237
+#: lib/baudrate_web/components/layouts.ex:955
 #: lib/baudrate_web/live/notifications_live.ex:38
 #: lib/baudrate_web/live/notifications_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -4110,23 +4110,23 @@ msgstr ""
 msgid "submitted a moderation report"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:425
-#: lib/baudrate_web/live/profile_live.ex:446
+#: lib/baudrate_web/live/profile_live.ex:429
+#: lib/baudrate_web/live/profile_live.ex:450
 #, elixir-autogen, elixir-format
 msgid "Failed to update notification preferences."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:775
+#: lib/baudrate_web/live/profile_live.html.heex:792
 #, elixir-autogen, elixir-format
 msgid "Notification Preferences"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:737
+#: lib/baudrate_web/live/profile_live.html.heex:754
 #, elixir-autogen, elixir-format
 msgid "Browser Push Notifications"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:778
+#: lib/baudrate_web/live/profile_live.html.heex:795
 #, elixir-autogen, elixir-format
 msgid "Choose which notifications you receive."
 msgstr ""
@@ -4136,17 +4136,17 @@ msgstr ""
 msgid "Configured"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:747
+#: lib/baudrate_web/live/profile_live.html.heex:764
 #, elixir-autogen, elixir-format
 msgid "Disable Push"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:756
+#: lib/baudrate_web/live/profile_live.html.heex:773
 #, elixir-autogen, elixir-format
 msgid "Enable Push"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:403
+#: lib/baudrate_web/live/profile_live.ex:407
 #, elixir-autogen, elixir-format
 msgid "Failed to enable push notifications."
 msgstr ""
@@ -4156,7 +4156,7 @@ msgstr ""
 msgid "Generate VAPID Keys"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:785
+#: lib/baudrate_web/live/profile_live.html.heex:802
 #, elixir-autogen, elixir-format
 msgid "In-App"
 msgstr ""
@@ -4166,27 +4166,27 @@ msgstr ""
 msgid "Public Key"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:786
+#: lib/baudrate_web/live/profile_live.html.heex:803
 #, elixir-autogen, elixir-format
 msgid "Push"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:397
+#: lib/baudrate_web/live/profile_live.ex:401
 #, elixir-autogen, elixir-format
 msgid "Push notification permission was denied by the browser."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:761
+#: lib/baudrate_web/live/profile_live.html.heex:778
 #, elixir-autogen, elixir-format
 msgid "Push notifications are not supported by this browser."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:388
+#: lib/baudrate_web/live/profile_live.ex:392
 #, elixir-autogen, elixir-format
 msgid "Push notifications disabled."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:380
+#: lib/baudrate_web/live/profile_live.ex:384
 #, elixir-autogen, elixir-format
 msgid "Push notifications enabled."
 msgstr ""
@@ -4197,7 +4197,7 @@ msgid "This will generate new VAPID keys. Existing push subscriptions will stop 
 msgstr ""
 
 #: lib/baudrate_web/live/admin/instance_detail_live.html.heex:67
-#: lib/baudrate_web/live/profile_live.html.heex:784
+#: lib/baudrate_web/live/profile_live.html.heex:801
 #, elixir-autogen, elixir-format
 msgid "Type"
 msgstr ""
@@ -4234,8 +4234,8 @@ msgstr ""
 msgid "Bookmarked"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:144
-#: lib/baudrate_web/components/layouts.ex:379
+#: lib/baudrate_web/components/layouts.ex:145
+#: lib/baudrate_web/components/layouts.ex:380
 #: lib/baudrate_web/live/bookmarks_live.ex:16
 #: lib/baudrate_web/live/bookmarks_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -4635,12 +4635,12 @@ msgstr ""
 msgid "Select a user"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:641
+#: lib/baudrate_web/live/profile_live.ex:645
 #, elixir-autogen, elixir-format
 msgid "Failed to remove avatar."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:676
+#: lib/baudrate_web/live/profile_live.ex:680
 #, elixir-autogen, elixir-format
 msgid "Failed to update avatar."
 msgstr ""
@@ -4965,7 +4965,7 @@ msgstr ""
 msgid "TOTP must be configured before accessing admin pages."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:818
+#: lib/baudrate_web/components/layouts.ex:884
 #, elixir-autogen, elixir-format
 msgid "Mobile navigation"
 msgstr ""
@@ -5289,12 +5289,12 @@ msgstr ""
 msgid "Save Fields"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:294
+#: lib/baudrate_web/live/profile_live.ex:298
 #, elixir-autogen, elixir-format
 msgid "Profile fields updated."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:297
+#: lib/baudrate_web/live/profile_live.ex:301
 #, elixir-autogen, elixir-format
 msgid "Failed to update profile fields."
 msgstr ""
@@ -5411,7 +5411,7 @@ msgstr ""
 msgid "Failed to delete bot."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:618
+#: lib/baudrate_web/live/profile_live.ex:622
 #, elixir-autogen, elixir-format
 msgid "Failed to remove security key."
 msgstr ""
@@ -5452,8 +5452,8 @@ msgstr ""
 msgid "Last used %{date}"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:126
-#: lib/baudrate_web/components/layouts.ex:367
+#: lib/baudrate_web/components/layouts.ex:127
+#: lib/baudrate_web/components/layouts.ex:368
 #: lib/baudrate_web/live/admin/bots_live.ex:48
 #: lib/baudrate_web/live/admin/bots_live.html.heex:4
 #, elixir-autogen, elixir-format
@@ -5532,17 +5532,17 @@ msgid "Security key registered successfully."
 msgstr ""
 
 #: lib/baudrate_web/controllers/session_controller.ex:445
-#: lib/baudrate_web/live/profile_live.ex:590
+#: lib/baudrate_web/live/profile_live.ex:594
 #, elixir-autogen, elixir-format
 msgid "Security key registration failed. Please try again."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:588
+#: lib/baudrate_web/live/profile_live.ex:592
 #, elixir-autogen, elixir-format
 msgid "Security key registration was cancelled or timed out."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:614
+#: lib/baudrate_web/live/profile_live.ex:618
 #, elixir-autogen, elixir-format
 msgid "Security key removed."
 msgstr ""
@@ -5595,7 +5595,7 @@ msgid "Username cannot be changed after creation."
 msgstr ""
 
 #: lib/baudrate_web/live/admin_totp_verify_live.ex:97
-#: lib/baudrate_web/live/profile_live.ex:589
+#: lib/baudrate_web/live/profile_live.ex:593
 #, elixir-autogen, elixir-format
 msgid "WebAuthn is not supported by this browser."
 msgstr ""
@@ -5605,7 +5605,7 @@ msgstr ""
 msgid "or"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:445
+#: lib/baudrate_web/components/layouts.ex:448
 #, elixir-autogen, elixir-format
 msgid "Scroll to top"
 msgstr ""
@@ -5706,8 +5706,8 @@ msgstr[1] ""
 msgid "Page %{page} of %{total_pages} — %{count} results total"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:750
-#: lib/baudrate_web/components/layouts.ex:751
+#: lib/baudrate_web/components/layouts.ex:753
+#: lib/baudrate_web/components/layouts.ex:754
 #, elixir-autogen, elixir-format
 msgid "Share this page"
 msgstr ""
@@ -5722,7 +5722,7 @@ msgstr ""
 msgid "You are not allowed to comment on this article."
 msgstr ""
 
-#: lib/baudrate_web/plugs/rate_limit.ex:106
+#: lib/baudrate_web/plugs/rate_limit.ex:109
 #, elixir-autogen, elixir-format
 msgid "Too many requests"
 msgstr ""
@@ -5910,7 +5910,7 @@ msgstr ""
 msgid "Handled by %{name} — %{note}"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:808
+#: lib/baudrate_web/live/profile_live.html.heex:825
 #, elixir-autogen, elixir-format
 msgid "In-App: %{type}"
 msgstr ""
@@ -5939,7 +5939,7 @@ msgstr ""
 msgid "Matching users"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:855
+#: lib/baudrate_web/components/layouts.ex:921
 #, elixir-autogen, elixir-format
 msgid "Messages, %{count} unread"
 msgid_plural "Messages, %{count} unread"
@@ -5978,7 +5978,7 @@ msgstr[1] ""
 msgid "Note"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:883
+#: lib/baudrate_web/components/layouts.ex:949
 #, elixir-autogen, elixir-format
 msgid "Notifications, %{count} unread"
 msgid_plural "Notifications, %{count} unread"
@@ -6005,7 +6005,7 @@ msgstr ""
 msgid "Person"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:825
+#: lib/baudrate_web/live/profile_live.html.heex:842
 #, elixir-autogen, elixir-format
 msgid "Push: %{type}"
 msgstr ""
@@ -6121,12 +6121,12 @@ msgstr ""
 msgid "Confirming..."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:477
+#: lib/baudrate_web/live/profile_live.ex:481
 #, elixir-autogen, elixir-format
 msgid "Identity confirmed. You can manage your security keys for 5 minutes."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:757
+#: lib/baudrate_web/live/profile_live.ex:779
 #, elixir-autogen, elixir-format
 msgid "Please confirm your identity before managing security keys."
 msgstr ""
@@ -6144,8 +6144,8 @@ msgstr ""
 #: lib/baudrate_web/live/account_migration_live.ex:100
 #: lib/baudrate_web/live/data_export_live.ex:271
 #: lib/baudrate_web/live/password_change_live.ex:129
-#: lib/baudrate_web/live/profile_live.ex:490
-#: lib/baudrate_web/live/profile_live.ex:551
+#: lib/baudrate_web/live/profile_live.ex:494
+#: lib/baudrate_web/live/profile_live.ex:555
 #: lib/baudrate_web/live/totp_reset_live.ex:102
 #, elixir-autogen, elixir-format
 msgid "Too many failed attempts. Please try again in %{seconds} seconds."
@@ -6277,7 +6277,7 @@ msgstr ""
 msgid "Sign out of every other browser or device where your account is signed in. This one stays signed in."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:533
+#: lib/baudrate_web/live/profile_live.ex:537
 #, elixir-autogen, elixir-format
 msgid "Signed out %{count} other session."
 msgid_plural "Signed out %{count} other sessions."
@@ -6297,7 +6297,7 @@ msgstr ""
 
 #: lib/baudrate_web/live/data_export_live.ex:301
 #: lib/baudrate_web/live/password_change_live.ex:78
-#: lib/baudrate_web/live/profile_live.ex:564
+#: lib/baudrate_web/live/profile_live.ex:568
 #, elixir-autogen, elixir-format
 msgid "Your session has expired. Please sign in again."
 msgstr ""
@@ -6392,7 +6392,7 @@ msgstr ""
 msgid "Not included:"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:471
+#: lib/baudrate_web/components/layouts.ex:474
 #, elixir-autogen, elixir-format
 msgid "A data export of your account is in progress"
 msgstr ""
@@ -6552,12 +6552,12 @@ msgstr ""
 msgid "Requested"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:475
+#: lib/baudrate_web/components/layouts.ex:478
 #, elixir-autogen, elixir-format
 msgid "Requested %{time} from %{browser}. If this was not you, cancel it now."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:480
+#: lib/baudrate_web/components/layouts.ex:483
 #, elixir-autogen, elixir-format
 msgid "Requested %{time}. If this was not you, cancel it now."
 msgstr ""
@@ -6567,10 +6567,10 @@ msgstr ""
 msgid "Requesting..."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:491
-#: lib/baudrate_web/components/layouts.ex:541
-#: lib/baudrate_web/components/layouts.ex:574
-#: lib/baudrate_web/components/layouts.ex:602
+#: lib/baudrate_web/components/layouts.ex:494
+#: lib/baudrate_web/components/layouts.ex:544
+#: lib/baudrate_web/components/layouts.ex:577
+#: lib/baudrate_web/components/layouts.ex:605
 #, elixir-autogen, elixir-format
 msgid "Review"
 msgstr ""
@@ -6643,8 +6643,8 @@ msgstr ""
 msgid "two-factor authentication changed"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:122
-#: lib/baudrate_web/components/layouts.ex:363
+#: lib/baudrate_web/components/layouts.ex:123
+#: lib/baudrate_web/components/layouts.ex:364
 #: lib/baudrate_web/live/admin/data_exports_live.ex:25
 #: lib/baudrate_web/live/admin/data_exports_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -6972,7 +6972,7 @@ msgstr ""
 msgid "Request Move"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:521
+#: lib/baudrate_web/components/layouts.ex:524
 #, elixir-autogen, elixir-format
 msgid "Requested %{time} from %{browser}. Your followers will be moved after %{send_time}. If this was not you, cancel it now."
 msgstr ""
@@ -6982,7 +6982,7 @@ msgstr ""
 msgid "Requested %{time}. It will be sent after %{send_time}."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:528
+#: lib/baudrate_web/components/layouts.ex:531
 #, elixir-autogen, elixir-format
 msgid "Requested %{time}. Your followers will be moved after %{send_time}. If this was not you, cancel it now."
 msgstr ""
@@ -7050,7 +7050,7 @@ msgid_plural "Two-factor authentication must be enabled for 7 days first. You ca
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/baudrate_web/components/layouts.ex:517
+#: lib/baudrate_web/components/layouts.ex:520
 #, elixir-autogen, elixir-format
 msgid "Your account is about to move to %{account}"
 msgstr ""
@@ -7111,7 +7111,7 @@ msgstr ""
 msgid "Your account has moved and is read-only. Remove the redirect to post again."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:593
+#: lib/baudrate_web/components/layouts.ex:596
 #, elixir-autogen, elixir-format
 msgid "Your account has moved and is read-only. You can still read, export your data and manage your account."
 msgstr ""
@@ -7286,7 +7286,7 @@ msgstr ""
 msgid "Account not found."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.ex:340
+#: lib/baudrate_web/live/profile_live.ex:344
 #: lib/baudrate_web/live/safety_actions.ex:108
 #, elixir-autogen, elixir-format
 msgid "Account unblocked."
@@ -7322,12 +7322,12 @@ msgstr ""
 msgid "Block this user? You will stop following each other, and neither of you can reply to, like, boost, follow or message the other."
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:845
+#: lib/baudrate_web/live/profile_live.html.heex:862
 #, elixir-autogen, elixir-format
 msgid "Blocked Accounts"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:848
+#: lib/baudrate_web/live/profile_live.html.heex:865
 #, elixir-autogen, elixir-format
 msgid "Blocked accounts cannot reply to, like, boost, follow or message you, and their content is hidden from you."
 msgstr ""
@@ -7362,7 +7362,7 @@ msgstr ""
 msgid "Mute account"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:857
+#: lib/baudrate_web/live/profile_live.html.heex:874
 #, elixir-autogen, elixir-format
 msgid "No blocked accounts."
 msgstr ""
@@ -7413,7 +7413,7 @@ msgid "Reported Direct Message:"
 msgstr ""
 
 #: lib/baudrate_web/live/admin/federation_live.html.heex:295
-#: lib/baudrate_web/live/profile_live.html.heex:888
+#: lib/baudrate_web/live/profile_live.html.heex:905
 #: lib/baudrate_web/live/user_profile_live.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "Unblock"
@@ -7424,7 +7424,7 @@ msgstr ""
 msgid "Unblock %{handle}"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:878
+#: lib/baudrate_web/live/profile_live.html.heex:895
 #, elixir-autogen, elixir-format
 msgid "Unblock %{name}"
 msgstr ""
@@ -7444,7 +7444,7 @@ msgstr ""
 msgid "Unmute %{handle}"
 msgstr ""
 
-#: lib/baudrate_web/live/profile_live.html.heex:928
+#: lib/baudrate_web/live/profile_live.html.heex:945
 #, elixir-autogen, elixir-format
 msgid "Unmute %{name}"
 msgstr ""
@@ -7587,7 +7587,7 @@ msgstr ""
 msgid "Failed to refuse the registration."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:638
+#: lib/baudrate_web/components/layouts.ex:641
 #: lib/baudrate_web/helpers.ex:550
 #, elixir-autogen, elixir-format
 msgid "It ends %{at}."
@@ -7608,7 +7608,7 @@ msgstr ""
 msgid "Reason for refusing %{username}"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:635
+#: lib/baudrate_web/components/layouts.ex:638
 #: lib/baudrate_web/helpers.ex:549
 #, elixir-autogen, elixir-format
 msgid "Reason: %{reason}"
@@ -7675,13 +7675,13 @@ msgstr ""
 msgid "You cannot do that."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:631
+#: lib/baudrate_web/components/layouts.ex:634
 #: lib/baudrate_web/helpers.ex:519
 #, elixir-autogen, elixir-format
 msgid "Your account is silenced and cannot post."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:629
+#: lib/baudrate_web/components/layouts.ex:632
 #: lib/baudrate_web/helpers.ex:522
 #: lib/baudrate_web/helpers.ex:538
 #: lib/baudrate_web/live/auth_hooks.ex:72
@@ -8251,7 +8251,7 @@ msgstr ""
 msgid "Site Rules"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:417
+#: lib/baudrate_web/components/layouts.ex:418
 #, elixir-autogen, elixir-format
 msgid "Site policies"
 msgstr ""
@@ -8336,7 +8336,7 @@ msgstr ""
 msgid "The terms have changed. Read and accept them to post again."
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:567
+#: lib/baudrate_web/components/layouts.ex:570
 #, elixir-autogen, elixir-format
 msgid "The terms of service have changed"
 msgstr ""
@@ -8346,7 +8346,7 @@ msgstr ""
 msgid "These terms have changed since you accepted them"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:570
+#: lib/baudrate_web/components/layouts.ex:573
 #, elixir-autogen, elixir-format
 msgid "You can keep reading, but posting is paused until you accept them."
 msgstr ""
@@ -8553,8 +8553,8 @@ msgstr ""
 msgid "Reported Timeline Item:"
 msgstr ""
 
-#: lib/baudrate_web/components/layouts.ex:188
-#: lib/baudrate_web/components/layouts.ex:834
+#: lib/baudrate_web/components/layouts.ex:189
+#: lib/baudrate_web/components/layouts.ex:900
 #: lib/baudrate_web/live/timeline_live.ex:50
 #: lib/baudrate_web/live/timeline_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -8698,4 +8698,14 @@ msgstr ""
 #: lib/baudrate_web/live/home_live.html.heex:50
 #, elixir-autogen, elixir-format
 msgid "Signing in may show more."
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex:817
+#, elixir-autogen, elixir-format
+msgid "Match my browser"
+msgstr ""
+
+#: lib/baudrate_web/components/layouts.ex:793
+#, elixir-autogen, elixir-format
+msgid "Site language"
 msgstr ""

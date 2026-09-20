@@ -187,4 +187,97 @@ defmodule BaudrateWeb.LayoutsTest do
       assert html =~ "lg:hidden"
     end
   end
+
+  describe "language switcher" do
+    test "a guest is offered every language the site has" do
+      {:ok, _lv, html} = live(build_conn(), "/")
+
+      assert html =~ ~s(id="locale-switcher")
+
+      for {code, name} <- BaudrateWeb.Locale.available_locales() do
+        assert html =~ ~s(id="locale-option-#{code}")
+        assert html =~ name
+      end
+    end
+
+    test "a member is offered it too, not just guests", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/profile")
+
+      assert html =~ ~s(id="locale-switcher")
+    end
+
+    test "offers a way back to the browser's own answer", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/")
+
+      assert html =~ ~s(id="locale-option-auto")
+
+      assert html =~ ~s(value="#{BaudrateWeb.Locale.auto()}"),
+             "without this the switcher is a one-way door: a reader who tries " <>
+               "a language cannot get back to the one their browser asked for."
+    end
+
+    test "opens without JavaScript — a <details>, not a hook", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/")
+
+      [_, tag | _] = String.split(html, ~s(id="locale-switcher"))
+      tag = tag |> String.split(">") |> List.first()
+
+      assert html =~ ~r/<details[^>]*id="locale-switcher"/,
+             "the disclosure became something other than <details>, so opening " <>
+               "the menu now depends on scripting having loaded"
+
+      assert tag =~ "dropdown-top",
+             "a footer menu that opens downward is clipped by the viewport, " <>
+               "and on mobile it opens underneath the dock"
+    end
+
+    test "submits without JavaScript — a form, not a LiveView event", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/")
+
+      switcher = isolate(html, ~s(id="locale-switcher-form"), "</form>")
+
+      assert switcher =~ ~s(name="_csrf_token")
+      assert switcher =~ ~s(name="locale")
+
+      refute switcher =~ "phx-click",
+             "the switcher became a LiveView control. It posts a form on " <>
+               "purpose, so it keeps working when scripting has gone wrong."
+    end
+
+    test "marks the language being read, for a screen reader as well as an eye" do
+      {:ok, _lv, html} =
+        build_conn()
+        |> Plug.Test.put_req_cookie(BaudrateWeb.Locale.cookie_name(), "ja_JP")
+        |> live("/")
+
+      current = isolate(html, ~s(id="locale-option-ja_JP"), "</button>")
+
+      assert current =~ ~s(aria-current="true")
+      assert current =~ "locale-option-current"
+
+      refute isolate(html, ~s(id="locale-option-en"), "</button>") =~ "aria-current",
+             "more than one language is marked current"
+    end
+
+    test "names the current language on the closed control", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/")
+
+      summary = isolate(html, ~s(id="locale-switcher-summary"), "</summary>")
+
+      assert summary =~ "English",
+             "a reader who cannot read the current language needs to see which " <>
+               "one it is before opening the menu"
+    end
+
+    test "returns the reader to the page they were on", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, "/profile")
+
+      assert html =~ ~s(name="return_to" value="/profile")
+    end
+
+    defp isolate(html, marker, closing) do
+      [_, rest] = String.split(html, marker, parts: 2)
+      rest |> String.split(closing, parts: 2) |> List.first()
+    end
+  end
 end

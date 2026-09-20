@@ -200,6 +200,36 @@ a:focus-visible {
   outline-offset: -2px;
 }
 
+/* The footer language switcher is a <details> dropdown, so the browser gives
+   it open/close and keyboard support with no JavaScript. The cost is the
+   disclosure triangle, which would sit inside the button styling; both vendor
+   forms are needed because Safari still uses the WebKit pseudo-element. */
+.locale-switcher-summary {
+  list-style: none;
+}
+
+.locale-switcher-summary::-webkit-details-marker {
+  display: none;
+}
+
+/* `<button>` does not match the `a:focus-visible` rule above, and the menu
+   items here are buttons because they submit the form. Same ring, so keyboard
+   focus looks the same wherever it lands. */
+.locale-option:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--color-base-content);
+  border-radius: var(--radius-box);
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+}
+
+/* The language being read now. Weight rather than colour: a colour shift is
+   the one signal that would not survive the menu's muted palette, and it
+   carries no meaning at all for a reader who cannot see it. `aria-current` on
+   the same element is what actually says so. */
+.locale-option-current {
+  font-weight: 700;
+}
+
 /* Warning-coloured *text*. `--color-warning` is tuned as a background (it
    pairs with --color-warning-content at 8.30:1); as a foreground on base-100
    it is 1.89:1, which fails WCAG 1.4.3 — worst on the destructive "Remove

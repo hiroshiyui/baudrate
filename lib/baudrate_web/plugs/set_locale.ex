@@ -4,16 +4,28 @@ defmodule BaudrateWeb.Plugs.SetLocale do
 
   ## Locale Resolution Priority
 
-    1. User's `preferred_locales` from the cookie session (stored at login).
-       Resolved via `BaudrateWeb.Locale.resolve_from_preferences/1`.
-    2. `Accept-Language` header — parsed, sorted by quality, matched against
+    1. The `locale` **cookie** — an explicit choice made in the footer
+       switcher (`BaudrateWeb.LocaleController`). First, because it is the only
+       one of these a person actually said out loud. An unknown value is
+       ignored rather than trusted: `BaudrateWeb.Locale.known?/1` is the
+       allow-list, and nothing else reaches `Gettext.put_locale/1`.
+    2. User's `preferred_locales` from the cookie session (stored at login).
+       Resolved via `BaudrateWeb.Locale.resolve_from_preferences/1`. This copy
+       is a **cache**: only a session write refreshes it, which is why a
+       language change on `/profile` posts to `LocaleController`.
+    3. `Accept-Language` header — parsed, sorted by quality, matched against
        known Gettext locales (exact match first, then prefix fallback).
-    3. Default Gettext locale (`"en"`).
+    4. Default Gettext locale (`"en"`).
 
-  The detected locale is assigned to `conn.assigns.locale` for use in templates.
+  The detected locale is assigned to `conn.assigns.locale` for use in
+  templates, and stored in `session[:locale]` so `BaudrateWeb.AuthHooks` can
+  apply the same answer in a LiveView mount instead of flipping the language
+  after the dead render.
   """
 
   import Plug.Conn
+
+  alias BaudrateWeb.Locale
 
   @behaviour Plug
 
@@ -22,6 +34,10 @@ defmodule BaudrateWeb.Plugs.SetLocale do
 
   @impl true
   def call(conn, _opts) do
+    # Idempotent, and it keeps the plug correct wherever it is mounted: an
+    # unfetched conn answers `%Plug.Conn.Unfetched{}` for `cookies`, which
+    # would make the explicit choice silently unreadable.
+    conn = fetch_cookies(conn)
     locale = detect_locale(conn)
     Gettext.put_locale(locale)
 
@@ -43,19 +59,22 @@ defmodule BaudrateWeb.Plugs.SetLocale do
   end
 
   defp detect_locale(conn) do
-    # 1. Check user's preferred_locales from session
-    case conn |> Plug.Conn.get_session(:preferred_locales) |> resolve_session_locales() do
-      nil ->
-        # 2. Fall back to Accept-Language header
-        detect_from_accept_language(conn)
-
-      locale ->
-        locale
+    # 1. An explicit choice, from the footer switcher's cookie
+    with nil <- chosen_locale(conn),
+         # 2. The member's account, as cached in the session at login
+         nil <- conn |> Plug.Conn.get_session(:preferred_locales) |> resolve_session_locales() do
+      # 3. and 4. The browser's own answer, then the default
+      detect_from_accept_language(conn)
     end
   end
 
+  defp chosen_locale(conn) do
+    code = Map.get(conn.cookies, Locale.cookie_name())
+    if Locale.known?(code), do: code
+  end
+
   defp resolve_session_locales(locales) when is_list(locales) and locales != [] do
-    BaudrateWeb.Locale.resolve_from_preferences(locales)
+    Locale.resolve_from_preferences(locales)
   end
 
   defp resolve_session_locales(_), do: nil

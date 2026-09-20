@@ -692,6 +692,23 @@
             </ul>
           </div>
         <% end %>
+
+        <%!-- The session write a LiveView cannot make. `SetLocale` reads a
+        member's language out of `session[:preferred_locales]`, written only at
+        login, so without this the next full page load renders its dead HTML —
+        and `<html lang>` — in the old language. Submitted only when the
+        effective locale actually moved (see `save_locales/2`). --%>
+        <form
+          id="locale-sync-form"
+          method="post"
+          action={~p"/locale"}
+          class="hidden"
+          phx-trigger-action={@trigger_locale_sync}
+        >
+          <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+          <input type="hidden" name="locale" value={@locale_sync_value} />
+          <input type="hidden" name="return_to" value="/profile" />
+        </form>
       </section>
 
       <%!-- DM access setting --%>
