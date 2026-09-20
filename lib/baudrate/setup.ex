@@ -592,14 +592,15 @@ defmodule Baudrate.Setup do
   @valid_federation_modes ~w(blocklist allowlist)
 
   @doc """
-  Returns a virtual changeset for admin settings (site_name, registration_mode,
-  timezone, federation options).
+  Returns a virtual changeset for admin settings (site_name, site_description,
+  registration_mode, timezone, federation options).
 
   Used by `Admin.SettingsLive` for form validation.
   """
   def change_settings(attrs \\ %{}) do
     types = %{
       site_name: :string,
+      site_description: :string,
       registration_mode: :string,
       timezone: :string,
       ap_federation_enabled: :string,
@@ -613,6 +614,7 @@ defmodule Baudrate.Setup do
 
     defaults = %{
       site_name: get_setting("site_name") || "",
+      site_description: get_setting("site_description") || "",
       registration_mode: registration_mode(),
       timezone: get_setting("timezone") || "Etc/UTC",
       ap_federation_enabled: get_setting("ap_federation_enabled") || "true",
@@ -628,6 +630,9 @@ defmodule Baudrate.Setup do
     |> Ecto.Changeset.cast(attrs, Map.keys(types))
     |> Ecto.Changeset.validate_required([:site_name, :registration_mode])
     |> Ecto.Changeset.validate_length(:site_name, min: 1, max: 255)
+    # A sentence or two. It is the first thing a visitor reads and it is
+    # rendered as plain text, so there is no reason for it to be long.
+    |> Ecto.Changeset.validate_length(:site_description, max: 500)
     |> Ecto.Changeset.validate_inclusion(:registration_mode, @valid_registration_modes)
     |> Ecto.Changeset.validate_inclusion(:ap_federation_enabled, ["true", "false"])
     |> Ecto.Changeset.validate_inclusion(:ap_federation_mode, @valid_federation_modes)
@@ -661,6 +666,7 @@ defmodule Baudrate.Setup do
 
       Repo.transaction(fn ->
         set_setting("site_name", changes.site_name)
+        set_setting("site_description", changes.site_description || "")
         set_setting("registration_mode", changes.registration_mode)
         set_setting("timezone", changes.timezone || "Etc/UTC")
         set_setting("ap_federation_enabled", changes.ap_federation_enabled || "true")

@@ -30,18 +30,18 @@ msgstr ""
 msgid "Actions"
 msgstr "操作"
 
-#: lib/baudrate_web/components/layouts.ex:670
-#: lib/baudrate_web/components/layouts.ex:680
+#: lib/baudrate_web/components/layouts.ex:704
+#: lib/baudrate_web/components/layouts.ex:714
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "正在嘗試重新連線"
 
-#: lib/baudrate_web/components/layouts.ex:677
+#: lib/baudrate_web/components/layouts.ex:711
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "發生錯誤！"
 
-#: lib/baudrate_web/components/layouts.ex:667
+#: lib/baudrate_web/components/layouts.ex:701
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "找不到網路連線"
@@ -262,8 +262,8 @@ msgstr "使用驗證器應用程式掃描下方的 QR 碼以啟用雙因素驗�
 msgid "Set Up Two-Factor Authentication"
 msgstr "設定雙因素驗證"
 
-#: lib/baudrate_web/components/layouts.ex:281
-#: lib/baudrate_web/components/layouts.ex:993
+#: lib/baudrate_web/components/layouts.ex:285
+#: lib/baudrate_web/components/layouts.ex:1057
 #: lib/baudrate_web/live/login_live.ex:32
 #: lib/baudrate_web/live/login_live.html.heex:2
 #: lib/baudrate_web/live/login_live.html.heex:46
@@ -273,7 +273,7 @@ msgid "Sign In"
 msgstr "登入"
 
 #: lib/baudrate_web/components/layouts.ex:154
-#: lib/baudrate_web/components/layouts.ex:389
+#: lib/baudrate_web/components/layouts.ex:393
 #, elixir-autogen, elixir-format
 msgid "Sign Out"
 msgstr "登出"
@@ -331,16 +331,16 @@ msgstr "無法連線至資料庫，請檢查您的設定。"
 
 #: lib/baudrate_web/live/admin/bots_live.html.heex:180
 #: lib/baudrate_web/live/article_new_live.html.heex:21
-#: lib/baudrate_web/live/home_live.ex:39
-#: lib/baudrate_web/live/home_live.html.heex:34
+#: lib/baudrate_web/live/home_live.ex:44
+#: lib/baudrate_web/live/home_live.html.heex:43
 #: lib/baudrate_web/live/search_live.html.heex:415
 #, elixir-autogen, elixir-format
 msgid "Boards"
 msgstr "看板"
 
-#: lib/baudrate_web/components/layouts.ex:179
-#: lib/baudrate_web/components/layouts.ex:891
-#: lib/baudrate_web/components/layouts.ex:975
+#: lib/baudrate_web/components/layouts.ex:183
+#: lib/baudrate_web/components/layouts.ex:955
+#: lib/baudrate_web/components/layouts.ex:1039
 #: lib/baudrate_web/live/board_follows_live.html.heex:8
 #: lib/baudrate_web/live/board_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -378,7 +378,7 @@ msgstr "目前的 TOTP 驗證碼"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:100
 #: lib/baudrate_web/live/admin/federation_live.html.heex:472
-#: lib/baudrate_web/live/admin/settings_live.html.heex:61
+#: lib/baudrate_web/live/admin/settings_live.html.heex:76
 #: lib/baudrate_web/live/profile_live.html.heex:296
 #, elixir-autogen, elixir-format
 msgid "Disabled"
@@ -399,7 +399,7 @@ msgstr "啟用雙因素驗證"
 #: lib/baudrate_web/live/admin/boards_live.html.heex:100
 #: lib/baudrate_web/live/admin/federation_live.html.heex:401
 #: lib/baudrate_web/live/admin/federation_live.html.heex:472
-#: lib/baudrate_web/live/admin/settings_live.html.heex:60
+#: lib/baudrate_web/live/admin/settings_live.html.heex:75
 #: lib/baudrate_web/live/profile_live.html.heex:287
 #, elixir-autogen, elixir-format
 msgid "Enabled"
@@ -453,7 +453,7 @@ msgid "No articles yet."
 msgstr "目前沒有文章。"
 
 #: lib/baudrate_web/components/layouts.ex:142
-#: lib/baudrate_web/components/layouts.ex:377
+#: lib/baudrate_web/components/layouts.ex:381
 #: lib/baudrate_web/live/profile_live.ex:102
 #: lib/baudrate_web/live/profile_live.html.heex:3
 #: lib/baudrate_web/live/timeline_live.html.heex:1461
@@ -583,7 +583,7 @@ msgstr "移除頭像"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:128
 #: lib/baudrate_web/live/admin/rules_live.html.heex:112
-#: lib/baudrate_web/live/admin/settings_live.html.heex:136
+#: lib/baudrate_web/live/admin/settings_live.html.heex:151
 #: lib/baudrate_web/live/admin/users_live.html.heex:248
 #: lib/baudrate_web/live/profile_live.html.heex:92
 #, elixir-autogen, elixir-format
@@ -683,7 +683,7 @@ msgid "No pending users."
 msgstr "沒有待審核的使用者。"
 
 #: lib/baudrate_web/components/layouts.ex:83
-#: lib/baudrate_web/components/layouts.ex:324
+#: lib/baudrate_web/components/layouts.ex:328
 #: lib/baudrate_web/live/admin/pending_users_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Pending Users"
@@ -788,7 +788,7 @@ msgid "Using browser language settings."
 msgstr "使用瀏覽器語言設定。"
 
 #: lib/baudrate_web/components/layouts.ex:76
-#: lib/baudrate_web/components/layouts.ex:317
+#: lib/baudrate_web/components/layouts.ex:321
 #: lib/baudrate_web/live/admin/boards_live.html.heex:66
 #: lib/baudrate_web/live/admin/boards_live.html.heex:77
 #, elixir-autogen, elixir-format
@@ -801,20 +801,20 @@ msgstr "管理"
 msgid "Admin Settings"
 msgstr "管理設定"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:51
+#: lib/baudrate_web/live/admin/settings_live.html.heex:66
 #, elixir-autogen, elixir-format
 msgid "Approval Required"
 msgstr "需要審核"
 
 #: lib/baudrate_web/live/admin/boards_live.html.heex:109
 #: lib/baudrate_web/live/admin/moderation_live.html.heex:20
-#: lib/baudrate_web/live/admin/settings_live.html.heex:50
+#: lib/baudrate_web/live/admin/settings_live.html.heex:65
 #: lib/baudrate_web/live/board_follows_live.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Open"
 msgstr "開放"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:48
+#: lib/baudrate_web/live/admin/settings_live.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Registration Mode"
 msgstr "註冊模式"
@@ -822,9 +822,9 @@ msgstr "註冊模式"
 #: lib/baudrate_web/live/admin/boards_live.html.heex:126
 #: lib/baudrate_web/live/admin/rules_live.html.heex:45
 #: lib/baudrate_web/live/admin/rules_live.html.heex:110
-#: lib/baudrate_web/live/admin/settings_live.html.heex:135
-#: lib/baudrate_web/live/admin/settings_live.html.heex:221
-#: lib/baudrate_web/live/admin/settings_live.html.heex:280
+#: lib/baudrate_web/live/admin/settings_live.html.heex:150
+#: lib/baudrate_web/live/admin/settings_live.html.heex:236
+#: lib/baudrate_web/live/admin/settings_live.html.heex:295
 #: lib/baudrate_web/live/article_edit_live.html.heex:209
 #: lib/baudrate_web/live/password_change_live.html.heex:147
 #: lib/baudrate_web/live/policy_live.html.heex:66
@@ -837,7 +837,7 @@ msgid "Saving..."
 msgstr "儲存中..."
 
 #: lib/baudrate_web/components/layouts.ex:79
-#: lib/baudrate_web/components/layouts.ex:320
+#: lib/baudrate_web/components/layouts.ex:324
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr "設定"
@@ -862,12 +862,12 @@ msgstr "待處理工作"
 msgid "Actors"
 msgstr "參與者"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:86
+#: lib/baudrate_web/live/admin/settings_live.html.heex:101
 #, elixir-autogen, elixir-format
 msgid "Allowed Domains (federation)"
 msgstr "允許的網域（聯邦）"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:70
+#: lib/baudrate_web/live/admin/settings_live.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Allowlist (allow only specific domains)"
 msgstr "允許清單（僅允許指定網域）"
@@ -890,7 +890,7 @@ msgstr "嘗試次數"
 msgid "Block"
 msgstr "封鎖"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:69
+#: lib/baudrate_web/live/admin/settings_live.html.heex:84
 #, elixir-autogen, elixir-format
 msgid "Blocklist (block specific domains)"
 msgstr "封鎖清單（封鎖指定網域）"
@@ -900,12 +900,12 @@ msgstr "封鎖清單（封鎖指定網域）"
 msgid "Board Federation"
 msgstr "看板聯邦設定"
 
-#: lib/baudrate_web/live/home_live.html.heex:16
+#: lib/baudrate_web/live/home_live.html.heex:25
 #, elixir-autogen, elixir-format
 msgid "Browse the boards below, or"
 msgstr "瀏覽下方的看板，或"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:90
+#: lib/baudrate_web/live/admin/settings_live.html.heex:105
 #, elixir-autogen, elixir-format
 msgid "Comma-separated list of domains to allow. Only used in allowlist mode. When empty, all domains are blocked."
 msgstr "以逗號分隔的允許網域清單。僅在允許清單模式下使用。留空時將封鎖所有網域。"
@@ -1034,13 +1034,13 @@ msgid "Failed to resolve report."
 msgstr "處理檢舉失敗。"
 
 #: lib/baudrate_web/components/layouts.ex:88
-#: lib/baudrate_web/components/layouts.ex:329
+#: lib/baudrate_web/components/layouts.ex:333
 #: lib/baudrate_web/live/admin/boards_live.html.heex:99
 #: lib/baudrate_web/live/admin/boards_live.html.heex:259
 #: lib/baudrate_web/live/admin/federation_live.html.heex:383
 #: lib/baudrate_web/live/admin/federation_live.html.heex:441
 #: lib/baudrate_web/live/admin/instance_detail_live.html.heex:10
-#: lib/baudrate_web/live/admin/settings_live.html.heex:58
+#: lib/baudrate_web/live/admin/settings_live.html.heex:73
 #, elixir-autogen, elixir-format
 msgid "Federation"
 msgstr "聯邦"
@@ -1055,7 +1055,7 @@ msgstr "看板 %{board} 的聯邦功能已%{action}。"
 msgid "Federation Dashboard"
 msgstr "聯邦儀表板"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:67
+#: lib/baudrate_web/live/admin/settings_live.html.heex:82
 #, elixir-autogen, elixir-format
 msgid "Federation Mode"
 msgstr "聯邦模式"
@@ -1102,7 +1102,7 @@ msgid "Last Seen"
 msgstr "最後出現"
 
 #: lib/baudrate_web/components/layouts.ex:93
-#: lib/baudrate_web/components/layouts.ex:334
+#: lib/baudrate_web/components/layouts.ex:338
 #: lib/baudrate_web/live/moderation_live.ex:46
 #, elixir-autogen, elixir-format
 msgid "Moderation"
@@ -1149,8 +1149,8 @@ msgstr "待處理"
 msgid "Reason:"
 msgstr "原因："
 
-#: lib/baudrate_web/components/layouts.ex:288
-#: lib/baudrate_web/components/layouts.ex:1002
+#: lib/baudrate_web/components/layouts.ex:292
+#: lib/baudrate_web/components/layouts.ex:1066
 #: lib/baudrate_web/live/register_live.ex:42
 #, elixir-autogen, elixir-format
 msgid "Register"
@@ -1233,11 +1233,6 @@ msgstr "狀態"
 msgid "Visibility"
 msgstr "可見性"
 
-#: lib/baudrate_web/live/home_live.html.heex:12
-#, elixir-autogen, elixir-format
-msgid "Welcome to Baudrate"
-msgstr "歡迎來到 Baudrate"
-
 #: lib/baudrate_web/live/admin/federation_live.ex:388
 #, elixir-autogen, elixir-format
 msgid "disabled"
@@ -1248,17 +1243,17 @@ msgstr "停用"
 msgid "enabled"
 msgstr "啟用"
 
-#: lib/baudrate_web/live/home_live.html.heex:26
+#: lib/baudrate_web/live/home_live.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "register"
 msgstr "註冊"
 
-#: lib/baudrate_web/live/home_live.html.heex:22
+#: lib/baudrate_web/live/home_live.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "sign in"
 msgstr "登入"
 
-#: lib/baudrate_web/live/home_live.html.heex:28
+#: lib/baudrate_web/live/home_live.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "to participate."
 msgstr "來參與。"
@@ -1369,10 +1364,10 @@ msgstr "回覆"
 msgid "Save Changes"
 msgstr "儲存變更"
 
-#: lib/baudrate_web/components/layouts.ex:199
-#: lib/baudrate_web/components/layouts.ex:278
-#: lib/baudrate_web/components/layouts.ex:909
-#: lib/baudrate_web/components/layouts.ex:984
+#: lib/baudrate_web/components/layouts.ex:203
+#: lib/baudrate_web/components/layouts.ex:282
+#: lib/baudrate_web/components/layouts.ex:973
+#: lib/baudrate_web/components/layouts.ex:1048
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:26
 #: lib/baudrate_web/live/board_follows_live.html.heex:99
 #: lib/baudrate_web/live/search_live.ex:58
@@ -1639,13 +1634,13 @@ msgid "Filter by status"
 msgstr "依狀態篩選"
 
 #: lib/baudrate_web/components/layouts.ex:98
-#: lib/baudrate_web/components/layouts.ex:339
+#: lib/baudrate_web/components/layouts.ex:343
 #, elixir-autogen, elixir-format
 msgid "Manage Boards"
 msgstr "管理看板"
 
 #: lib/baudrate_web/components/layouts.ex:103
-#: lib/baudrate_web/components/layouts.ex:344
+#: lib/baudrate_web/components/layouts.ex:348
 #, elixir-autogen, elixir-format
 msgid "Manage Users"
 msgstr "管理使用者"
@@ -1671,12 +1666,12 @@ msgstr "無法刪除含有子看板的看板。"
 msgid "Change role for %{username}"
 msgstr "更改 %{username} 的角色"
 
-#: lib/baudrate_web/components/layouts.ex:867
+#: lib/baudrate_web/components/layouts.ex:931
 #, elixir-autogen, elixir-format
 msgid "Dark theme"
 msgstr "深色主題"
 
-#: lib/baudrate_web/components/layouts.ex:856
+#: lib/baudrate_web/components/layouts.ex:920
 #, elixir-autogen, elixir-format
 msgid "Light theme"
 msgstr "淺色主題"
@@ -1686,7 +1681,7 @@ msgstr "淺色主題"
 msgid "Open navigation menu"
 msgstr "開啟導覽選單"
 
-#: lib/baudrate_web/components/layouts.ex:845
+#: lib/baudrate_web/components/layouts.ex:909
 #, elixir-autogen, elixir-format
 msgid "System theme"
 msgstr "系統主題"
@@ -1872,13 +1867,13 @@ msgid "Invite Code"
 msgstr "邀請碼"
 
 #: lib/baudrate_web/components/layouts.ex:113
-#: lib/baudrate_web/components/layouts.ex:354
+#: lib/baudrate_web/components/layouts.ex:358
 #: lib/baudrate_web/live/admin/invites_live.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "Invite Codes"
 msgstr "邀請碼管理"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:52
+#: lib/baudrate_web/live/admin/settings_live.html.heex:67
 #, elixir-autogen, elixir-format
 msgid "Invite Only"
 msgstr "僅限邀請"
@@ -1896,7 +1891,7 @@ msgid "Invite code revoked."
 msgstr "邀請碼已撤銷。"
 
 #: lib/baudrate_web/components/layouts.ex:108
-#: lib/baudrate_web/components/layouts.ex:349
+#: lib/baudrate_web/components/layouts.ex:353
 #: lib/baudrate_web/live/admin/moderation_log_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Moderation Log"
@@ -2024,13 +2019,13 @@ msgstr "返回登入"
 msgid "Confirm New Password"
 msgstr "確認新密碼"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:185
+#: lib/baudrate_web/live/admin/settings_live.html.heex:200
 #: lib/baudrate_web/live/register_live.html.heex:115
 #, elixir-autogen, elixir-format
 msgid "End User Agreement"
 msgstr "使用者條款"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:196
+#: lib/baudrate_web/live/admin/settings_live.html.heex:211
 #, elixir-autogen, elixir-format
 msgid "End User Agreement (Markdown)"
 msgstr "使用者條款（Markdown）"
@@ -2040,7 +2035,7 @@ msgstr "使用者條款（Markdown）"
 msgid "End User Agreement saved."
 msgstr "使用者條款已儲存。"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:199
+#: lib/baudrate_web/live/admin/settings_live.html.heex:214
 #, elixir-autogen, elixir-format
 msgid "Enter your site-specific terms here..."
 msgstr "在此輸入網站專屬條款..."
@@ -2082,7 +2077,7 @@ msgstr "使用者名稱或救援碼無效。"
 msgid "New Password"
 msgstr "新密碼"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:188
+#: lib/baudrate_web/live/admin/settings_live.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "Optional site-specific terms shown during registration. Supports Markdown formatting."
 msgstr "在註冊時顯示的網站專屬條款（選填），支援 Markdown 格式。"
@@ -2108,7 +2103,7 @@ msgstr "預覽："
 msgid "Reset Password"
 msgstr "重設密碼"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:222
+#: lib/baudrate_web/live/admin/settings_live.html.heex:237
 #, elixir-autogen, elixir-format
 msgid "Save Agreement"
 msgstr "儲存條款"
@@ -2310,7 +2305,7 @@ msgstr "將所有 %{count} 個缺少的網域新增至封鎖名單？"
 msgid "Added %{count} domains to blocklist."
 msgstr "已將 %{count} 個網域新增至封鎖名單。"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:97
+#: lib/baudrate_web/live/admin/settings_live.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Authorized Fetch (Secure Mode)"
 msgstr "驗證擷取（安全模式）"
@@ -2320,7 +2315,7 @@ msgstr "驗證擷取（安全模式）"
 msgid "Blocklist Audit"
 msgstr "封鎖名單稽核"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:111
+#: lib/baudrate_web/live/admin/settings_live.html.heex:126
 #, elixir-autogen, elixir-format
 msgid "Blocklist Audit URL"
 msgstr "封鎖名單稽核 URL"
@@ -2340,7 +2335,7 @@ msgstr "看板金鑰"
 msgid "Compare your local domain blocklist against an external known-bad-actor list. Configure the audit URL in Admin Settings."
 msgstr "將本地網域封鎖名單與外部惡意行為者名單進行比對。請在管理設定中設定稽核 URL。"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:99
+#: lib/baudrate_web/live/admin/settings_live.html.heex:114
 #, elixir-autogen, elixir-format
 msgid "Disabled (public GETs allowed)"
 msgstr "停用（允許公開 GET 請求）"
@@ -2356,7 +2351,7 @@ msgstr "已將網域 %{domain} 新增至封鎖名單。"
 msgid "Domains you block that are not in the external list (informational only)."
 msgstr "您封鎖的但不在外部名單中的網域（僅供參考）。"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:100
+#: lib/baudrate_web/live/admin/settings_live.html.heex:115
 #, elixir-autogen, elixir-format
 msgid "Enabled (require HTTP signatures on GETs)"
 msgstr "啟用（GET 請求需要 HTTP 簽名）"
@@ -2447,12 +2442,12 @@ msgstr "輪替站台金鑰對？這將使現有的簽名失效。"
 msgid "Run Audit"
 msgstr "執行稽核"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:115
+#: lib/baudrate_web/live/admin/settings_live.html.heex:130
 #, elixir-autogen, elixir-format
 msgid "URL to an external domain blocklist (CSV or JSON). Used by the federation dashboard audit feature."
 msgstr "外部網域封鎖名單的 URL（CSV 或 JSON）。用於聯盟儀表板的稽核功能。"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:104
+#: lib/baudrate_web/live/admin/settings_live.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "When enabled, unsigned GET requests to ActivityPub endpoints return 401. WebFinger and NodeInfo remain public."
 msgstr "啟用後，未簽名的 GET 請求在 ActivityPub 端點將返回 401。WebFinger 和 NodeInfo 仍保持公開。"
@@ -2546,12 +2541,12 @@ msgstr "TOTP 設定"
 msgid "TOTP Verification"
 msgstr "TOTP 驗證"
 
-#: lib/baudrate_web/components/layouts.ex:720
+#: lib/baudrate_web/components/layouts.ex:754
 #, elixir-autogen, elixir-format
 msgid "Decrease font size"
 msgstr "縮小字體"
 
-#: lib/baudrate_web/components/layouts.ex:729
+#: lib/baudrate_web/components/layouts.ex:763
 #, elixir-autogen, elixir-format
 msgid "Increase font size"
 msgstr "放大字體"
@@ -2561,13 +2556,13 @@ msgstr "放大字體"
 msgid "Avatar preview"
 msgstr "頭像預覽"
 
-#: lib/baudrate_web/components/layouts.ex:713
+#: lib/baudrate_web/components/layouts.ex:747
 #, elixir-autogen, elixir-format
 msgid "Font size"
 msgstr "字體大小"
 
-#: lib/baudrate_web/components/layouts.ex:834
-#: lib/baudrate_web/live/admin/settings_live.html.heex:120
+#: lib/baudrate_web/components/layouts.ex:898
+#: lib/baudrate_web/live/admin/settings_live.html.heex:135
 #, elixir-autogen, elixir-format
 msgid "Theme"
 msgstr "佈景主題"
@@ -2765,8 +2760,8 @@ msgstr "僅追蹤者"
 msgid "Message"
 msgstr "訊息"
 
-#: lib/baudrate_web/components/layouts.ex:209
-#: lib/baudrate_web/components/layouts.ex:927
+#: lib/baudrate_web/components/layouts.ex:213
+#: lib/baudrate_web/components/layouts.ex:991
 #: lib/baudrate_web/live/conversation_live.html.heex:163
 #: lib/baudrate_web/live/conversations_live.ex:35
 #: lib/baudrate_web/live/conversations_live.html.heex:9
@@ -2881,7 +2876,7 @@ msgid "IP Address"
 msgstr "IP 位址"
 
 #: lib/baudrate_web/components/layouts.ex:118
-#: lib/baudrate_web/components/layouts.ex:359
+#: lib/baudrate_web/components/layouts.ex:363
 #: lib/baudrate_web/live/admin/login_attempts_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Login Attempts"
@@ -2993,12 +2988,12 @@ msgid "Breadcrumb"
 msgstr "導覽路徑"
 
 #: lib/baudrate_web/components/layouts.ex:61
-#: lib/baudrate_web/components/layouts.ex:170
+#: lib/baudrate_web/components/layouts.ex:174
 #, elixir-autogen, elixir-format
 msgid "Main menu"
 msgstr "主選單"
 
-#: lib/baudrate_web/components/layouts.ex:310
+#: lib/baudrate_web/components/layouts.ex:314
 #, elixir-autogen, elixir-format
 msgid "User menu"
 msgstr "使用者選單"
@@ -3396,7 +3391,7 @@ msgid "Invited User"
 msgstr "受邀使用者"
 
 #: lib/baudrate_web/components/layouts.ex:151
-#: lib/baudrate_web/components/layouts.ex:386
+#: lib/baudrate_web/components/layouts.ex:390
 #: lib/baudrate_web/live/user_invites_live.ex:21
 #: lib/baudrate_web/live/user_invites_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -3482,7 +3477,7 @@ msgstr "邀請 QR 碼"
 msgid "Show QR code"
 msgstr "顯示 QR 碼"
 
-#: lib/baudrate_web/components/layouts.ex:221
+#: lib/baudrate_web/components/layouts.ex:225
 #: lib/baudrate_web/live/conversations_live.ex:68
 #: lib/baudrate_web/live/conversations_live.html.heex:86
 #, elixir-autogen, elixir-format
@@ -3536,7 +3531,7 @@ msgid "Follow request sent."
 msgstr "已發送追蹤請求。"
 
 #: lib/baudrate_web/components/layouts.ex:148
-#: lib/baudrate_web/components/layouts.ex:383
+#: lib/baudrate_web/components/layouts.ex:387
 #: lib/baudrate_web/live/following_live.ex:25
 #: lib/baudrate_web/live/following_live.html.heex:9
 #, elixir-autogen, elixir-format
@@ -3910,7 +3905,7 @@ msgstr "留言"
 msgid "commented on"
 msgstr "留言於"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:42
+#: lib/baudrate_web/live/admin/settings_live.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Timezone"
 msgstr "時區"
@@ -4007,24 +4002,24 @@ msgstr "%{username} 的留言"
 msgid "in %{article}"
 msgstr "於 %{article}"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:125
+#: lib/baudrate_web/live/admin/settings_live.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Light Theme"
 msgstr "亮色主題"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:131
+#: lib/baudrate_web/live/admin/settings_live.html.heex:146
 #, elixir-autogen, elixir-format
 msgid "Dark Theme"
 msgstr "暗色主題"
 
-#: lib/baudrate_web/components/layouts.ex:249
+#: lib/baudrate_web/components/layouts.ex:253
 #, elixir-autogen, elixir-format
 msgid "%{count} unread notification"
 msgid_plural "%{count} unread notifications"
 msgstr[0] "%{count} 則未讀通知"
 
-#: lib/baudrate_web/components/layouts.ex:237
-#: lib/baudrate_web/components/layouts.ex:955
+#: lib/baudrate_web/components/layouts.ex:241
+#: lib/baudrate_web/components/layouts.ex:1019
 #: lib/baudrate_web/live/notifications_live.ex:38
 #: lib/baudrate_web/live/notifications_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -4119,7 +4114,7 @@ msgstr "瀏覽器推播通知"
 msgid "Choose which notifications you receive."
 msgstr "選擇要接收哪些通知。"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:154
+#: lib/baudrate_web/live/admin/settings_live.html.heex:169
 #, elixir-autogen, elixir-format
 msgid "Configured"
 msgstr "已設定"
@@ -4139,7 +4134,7 @@ msgstr "啟用推播"
 msgid "Failed to enable push notifications."
 msgstr "啟用推播通知失敗。"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:176
+#: lib/baudrate_web/live/admin/settings_live.html.heex:191
 #, elixir-autogen, elixir-format
 msgid "Generate VAPID Keys"
 msgstr "產生 VAPID 金鑰"
@@ -4149,7 +4144,7 @@ msgstr "產生 VAPID 金鑰"
 msgid "In-App"
 msgstr "應用程式內"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:157
+#: lib/baudrate_web/live/admin/settings_live.html.heex:172
 #, elixir-autogen, elixir-format
 msgid "Public Key"
 msgstr "公鑰"
@@ -4179,7 +4174,7 @@ msgstr "推播通知已停用。"
 msgid "Push notifications enabled."
 msgstr "推播通知已啟用。"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:171
+#: lib/baudrate_web/live/admin/settings_live.html.heex:186
 #, elixir-autogen, elixir-format
 msgid "This will generate new VAPID keys. Existing push subscriptions will stop working. Continue?"
 msgstr "這將產生新的 VAPID 金鑰。現有的推播訂閱將會失效。確定要繼續嗎？"
@@ -4190,7 +4185,7 @@ msgstr "這將產生新的 VAPID 金鑰。現有的推播訂閱將會失效。�
 msgid "Type"
 msgstr "類型"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:149
+#: lib/baudrate_web/live/admin/settings_live.html.heex:164
 #, elixir-autogen, elixir-format
 msgid "VAPID keys are required for sending browser push notifications."
 msgstr "發送瀏覽器推播通知需要 VAPID 金鑰。"
@@ -4200,7 +4195,7 @@ msgstr "發送瀏覽器推播通知需要 VAPID 金鑰。"
 msgid "VAPID keys generated successfully."
 msgstr "VAPID 金鑰產生成功。"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:146
+#: lib/baudrate_web/live/admin/settings_live.html.heex:161
 #, elixir-autogen, elixir-format
 msgid "Web Push Notifications (VAPID)"
 msgstr "網頁推播通知 (VAPID)"
@@ -4223,7 +4218,7 @@ msgid "Bookmarked"
 msgstr "已加入書籤"
 
 #: lib/baudrate_web/components/layouts.ex:145
-#: lib/baudrate_web/components/layouts.ex:380
+#: lib/baudrate_web/components/layouts.ex:384
 #: lib/baudrate_web/live/bookmarks_live.ex:16
 #: lib/baudrate_web/live/bookmarks_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -4247,8 +4242,8 @@ msgstr "移除書籤"
 #: lib/baudrate_web/live/board_live.html.heex:115
 #: lib/baudrate_web/live/board_live.html.heex:149
 #: lib/baudrate_web/live/board_live.html.heex:151
-#: lib/baudrate_web/live/home_live.html.heex:72
-#: lib/baudrate_web/live/home_live.html.heex:74
+#: lib/baudrate_web/live/home_live.html.heex:81
+#: lib/baudrate_web/live/home_live.html.heex:83
 #: lib/baudrate_web/live/notifications_live.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "Unread"
@@ -4951,7 +4946,7 @@ msgstr "為了安全起見，請重新輸入 TOTP 驗證碼以存取管理功能
 msgid "TOTP must be configured before accessing admin pages."
 msgstr "在存取管理頁面之前必須設定 TOTP。"
 
-#: lib/baudrate_web/components/layouts.ex:884
+#: lib/baudrate_web/components/layouts.ex:948
 #, elixir-autogen, elixir-format
 msgid "Mobile navigation"
 msgstr "行動導覽列"
@@ -5439,7 +5434,7 @@ msgid "Last used %{date}"
 msgstr "最後使用於 %{date}"
 
 #: lib/baudrate_web/components/layouts.ex:127
-#: lib/baudrate_web/components/layouts.ex:368
+#: lib/baudrate_web/components/layouts.ex:372
 #: lib/baudrate_web/live/admin/bots_live.ex:48
 #: lib/baudrate_web/live/admin/bots_live.html.heex:4
 #, elixir-autogen, elixir-format
@@ -5591,7 +5586,7 @@ msgstr "此瀏覽器不支援 WebAuthn。"
 msgid "or"
 msgstr "或"
 
-#: lib/baudrate_web/components/layouts.ex:448
+#: lib/baudrate_web/components/layouts.ex:482
 #, elixir-autogen, elixir-format
 msgid "Scroll to top"
 msgstr "回到頂部"
@@ -5608,7 +5603,7 @@ msgstr "abcd-ef23"
 # Example value shown in a form placeholder, not prose. It is the same
 # in every language, so the translation is the value itself — an empty
 # msgstr here would be indistinguishable from an oversight.
-#: lib/baudrate_web/live/admin/settings_live.html.heex:112
+#: lib/baudrate_web/live/admin/settings_live.html.heex:127
 #, elixir-autogen, elixir-format
 msgid "https://example.com/blocklist.csv"
 msgstr "https://example.com/blocklist.csv"
@@ -5624,7 +5619,7 @@ msgstr "https://example.com/feed.xml"
 # Example value shown in a form placeholder, not prose. It is the same
 # in every language, so the translation is the value itself — an empty
 # msgstr here would be indistinguishable from an oversight.
-#: lib/baudrate_web/live/admin/settings_live.html.heex:87
+#: lib/baudrate_web/live/admin/settings_live.html.heex:102
 #, elixir-autogen, elixir-format
 msgid "trusted.example, friend.example"
 msgstr "trusted.example, friend.example"
@@ -5703,8 +5698,8 @@ msgstr[0] "共 %{count} 筆結果"
 msgid "Page %{page} of %{total_pages} — %{count} results total"
 msgstr "第 %{page} / %{total_pages} 頁 — 共 %{count} 筆結果"
 
-#: lib/baudrate_web/components/layouts.ex:753
-#: lib/baudrate_web/components/layouts.ex:754
+#: lib/baudrate_web/components/layouts.ex:787
+#: lib/baudrate_web/components/layouts.ex:788
 #, elixir-autogen, elixir-format
 msgid "Share this page"
 msgstr "分享此頁面"
@@ -5931,7 +5926,7 @@ msgstr "符合的看板"
 msgid "Matching users"
 msgstr "符合的使用者"
 
-#: lib/baudrate_web/components/layouts.ex:921
+#: lib/baudrate_web/components/layouts.ex:985
 #, elixir-autogen, elixir-format
 msgid "Messages, %{count} unread"
 msgid_plural "Messages, %{count} unread"
@@ -5968,7 +5963,7 @@ msgstr[0] "新通知。%{count} 則未讀通知"
 msgid "Note"
 msgstr "貼文"
 
-#: lib/baudrate_web/components/layouts.ex:949
+#: lib/baudrate_web/components/layouts.ex:1013
 #, elixir-autogen, elixir-format
 msgid "Notifications, %{count} unread"
 msgid_plural "Notifications, %{count} unread"
@@ -6379,7 +6374,7 @@ msgstr "包含："
 msgid "Not included:"
 msgstr "不包含："
 
-#: lib/baudrate_web/components/layouts.ex:474
+#: lib/baudrate_web/components/layouts.ex:508
 #, elixir-autogen, elixir-format
 msgid "A data export of your account is in progress"
 msgstr "您的帳號有一筆資料匯出正在進行中"
@@ -6538,12 +6533,12 @@ msgstr "找不到該申請。"
 msgid "Requested"
 msgstr "申請時間"
 
-#: lib/baudrate_web/components/layouts.ex:478
+#: lib/baudrate_web/components/layouts.ex:512
 #, elixir-autogen, elixir-format
 msgid "Requested %{time} from %{browser}. If this was not you, cancel it now."
 msgstr "於 %{time} 從 %{browser} 申請。若不是您本人，請立即取消。"
 
-#: lib/baudrate_web/components/layouts.ex:483
+#: lib/baudrate_web/components/layouts.ex:517
 #, elixir-autogen, elixir-format
 msgid "Requested %{time}. If this was not you, cancel it now."
 msgstr "於 %{time} 申請。若不是您本人，請立即取消。"
@@ -6553,10 +6548,10 @@ msgstr "於 %{time} 申請。若不是您本人，請立即取消。"
 msgid "Requesting..."
 msgstr "申請中..."
 
-#: lib/baudrate_web/components/layouts.ex:494
-#: lib/baudrate_web/components/layouts.ex:544
-#: lib/baudrate_web/components/layouts.ex:577
-#: lib/baudrate_web/components/layouts.ex:605
+#: lib/baudrate_web/components/layouts.ex:528
+#: lib/baudrate_web/components/layouts.ex:578
+#: lib/baudrate_web/components/layouts.ex:611
+#: lib/baudrate_web/components/layouts.ex:639
 #, elixir-autogen, elixir-format
 msgid "Review"
 msgstr "檢視"
@@ -6629,7 +6624,7 @@ msgid "two-factor authentication changed"
 msgstr "雙因素驗證已變更"
 
 #: lib/baudrate_web/components/layouts.ex:123
-#: lib/baudrate_web/components/layouts.ex:364
+#: lib/baudrate_web/components/layouts.ex:368
 #: lib/baudrate_web/live/admin/data_exports_live.ex:25
 #: lib/baudrate_web/live/admin/data_exports_live.html.heex:7
 #, elixir-autogen, elixir-format
@@ -6957,7 +6952,7 @@ msgstr "只有啟用中的帳號可以遷移。請聯絡管理員。"
 msgid "Request Move"
 msgstr "要求遷移"
 
-#: lib/baudrate_web/components/layouts.ex:524
+#: lib/baudrate_web/components/layouts.ex:558
 #, elixir-autogen, elixir-format
 msgid "Requested %{time} from %{browser}. Your followers will be moved after %{send_time}. If this was not you, cancel it now."
 msgstr "於 %{time} 從 %{browser} 提出要求。您的追蹤者將在 %{send_time} 之後被轉移。若這不是您本人，請立即取消。"
@@ -6967,7 +6962,7 @@ msgstr "於 %{time} 從 %{browser} 提出要求。您的追蹤者將在 %{send_t
 msgid "Requested %{time}. It will be sent after %{send_time}."
 msgstr "於 %{time} 提出要求。將在 %{send_time} 之後送出。"
 
-#: lib/baudrate_web/components/layouts.ex:531
+#: lib/baudrate_web/components/layouts.ex:565
 #, elixir-autogen, elixir-format
 msgid "Requested %{time}. Your followers will be moved after %{send_time}. If this was not you, cancel it now."
 msgstr "於 %{time} 提出要求。您的追蹤者將在 %{send_time} 之後被轉移。若這不是您本人，請立即取消。"
@@ -7034,7 +7029,7 @@ msgid "Two-factor authentication must be enabled for 7 days first. You can move 
 msgid_plural "Two-factor authentication must be enabled for 7 days first. You can move in %{count} days."
 msgstr[0] "雙因素驗證必須先啟用 7 天。您可以在 %{count} 天後遷移。"
 
-#: lib/baudrate_web/components/layouts.ex:520
+#: lib/baudrate_web/components/layouts.ex:554
 #, elixir-autogen, elixir-format
 msgid "Your account is about to move to %{account}"
 msgstr "您的帳號即將遷移至 %{account}"
@@ -7095,7 +7090,7 @@ msgstr "此帳號已遷移。新帳號："
 msgid "Your account has moved and is read-only. Remove the redirect to post again."
 msgstr "您的帳號已遷移，目前為唯讀。移除轉址後即可再次發文。"
 
-#: lib/baudrate_web/components/layouts.ex:596
+#: lib/baudrate_web/components/layouts.ex:630
 #, elixir-autogen, elixir-format
 msgid "Your account has moved and is read-only. You can still read, export your data and manage your account."
 msgstr "您的帳號已遷移，目前為唯讀。您仍可閱讀、匯出資料並管理帳號。"
@@ -7570,7 +7565,7 @@ msgstr "您帳號上的限制已被解除。"
 msgid "Failed to refuse the registration."
 msgstr "拒絕註冊失敗。"
 
-#: lib/baudrate_web/components/layouts.ex:641
+#: lib/baudrate_web/components/layouts.ex:675
 #: lib/baudrate_web/helpers.ex:550
 #, elixir-autogen, elixir-format
 msgid "It ends %{at}."
@@ -7591,7 +7586,7 @@ msgstr "原因（會記錄於日誌）"
 msgid "Reason for refusing %{username}"
 msgstr "拒絕 %{username} 的原因"
 
-#: lib/baudrate_web/components/layouts.ex:638
+#: lib/baudrate_web/components/layouts.ex:672
 #: lib/baudrate_web/helpers.ex:549
 #, elixir-autogen, elixir-format
 msgid "Reason: %{reason}"
@@ -7658,13 +7653,13 @@ msgstr "您目前無法執行此操作。"
 msgid "You cannot do that."
 msgstr "您無權執行此操作。"
 
-#: lib/baudrate_web/components/layouts.ex:634
+#: lib/baudrate_web/components/layouts.ex:668
 #: lib/baudrate_web/helpers.ex:519
 #, elixir-autogen, elixir-format
 msgid "Your account is silenced and cannot post."
 msgstr "您的帳號已被禁言，無法發表內容。"
 
-#: lib/baudrate_web/components/layouts.ex:632
+#: lib/baudrate_web/components/layouts.ex:666
 #: lib/baudrate_web/helpers.ex:522
 #: lib/baudrate_web/helpers.ex:538
 #: lib/baudrate_web/live/auth_hooks.ex:72
@@ -8025,7 +8020,7 @@ msgstr "封鎖者"
 msgid "Blocked Instances"
 msgstr "已封鎖的站台"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:74
+#: lib/baudrate_web/live/admin/settings_live.html.heex:89
 #, elixir-autogen, elixir-format
 msgid "Blocked domains are managed on the Federation page, with a reason."
 msgstr "已封鎖的網域在聯邦宇宙頁面管理，並須填寫原因。"
@@ -8040,7 +8035,7 @@ msgstr "封鎖後將拒絕與該網域聯邦互通，並隱藏它先前送來的
 msgid "Enter a domain to block."
 msgstr "請輸入要封鎖的網域。"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:80
+#: lib/baudrate_web/live/admin/settings_live.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Go to Federation"
 msgstr "前往聯邦宇宙設定"
@@ -8190,7 +8185,7 @@ msgstr "請輸入網域名稱，例如 spam.example。"
 msgid "That is this instance's own domain."
 msgstr "這是本站自己的網域。"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:277
+#: lib/baudrate_web/live/admin/settings_live.html.heex:292
 #, elixir-autogen, elixir-format
 msgid "Describe what your site records and why..."
 msgstr "描述本站記錄訪客哪些資料、以及記錄的原因……"
@@ -8200,13 +8195,13 @@ msgstr "描述本站記錄訪客哪些資料、以及記錄的原因……"
 msgid "Failed to save the privacy policy."
 msgstr "儲存隱私權政策失敗。"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:258
+#: lib/baudrate_web/live/admin/settings_live.html.heex:273
 #: lib/baudrate_web/live/policy_live.ex:67
 #, elixir-autogen, elixir-format
 msgid "Privacy Policy"
 msgstr "隱私權政策"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:274
+#: lib/baudrate_web/live/admin/settings_live.html.heex:289
 #, elixir-autogen, elixir-format
 msgid "Privacy Policy (Markdown)"
 msgstr "隱私權政策（Markdown）"
@@ -8221,20 +8216,20 @@ msgstr "隱私權政策已儲存。"
 msgid "Read the full terms of service"
 msgstr "閱讀完整的服務條款"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:281
+#: lib/baudrate_web/live/admin/settings_live.html.heex:296
 #, elixir-autogen, elixir-format
 msgid "Save Privacy Policy"
 msgstr "儲存隱私權政策"
 
 #: lib/baudrate_web/live/admin/rules_live.ex:28
 #: lib/baudrate_web/live/admin/rules_live.html.heex:3
-#: lib/baudrate_web/live/admin/settings_live.html.heex:236
+#: lib/baudrate_web/live/admin/settings_live.html.heex:251
 #: lib/baudrate_web/live/policy_live.ex:66
 #, elixir-autogen, elixir-format
 msgid "Site Rules"
 msgstr "站規"
 
-#: lib/baudrate_web/components/layouts.ex:418
+#: lib/baudrate_web/components/layouts.ex:422
 #, elixir-autogen, elixir-format
 msgid "Site policies"
 msgstr "網站政策"
@@ -8264,7 +8259,7 @@ msgstr "服務條款尚未發布。"
 msgid "Update Privacy Policy"
 msgstr "更新隱私權政策"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:261
+#: lib/baudrate_web/live/admin/settings_live.html.heex:276
 #, elixir-autogen, elixir-format
 msgid "What this site records about its visitors and what happens to it, published at /privacy and linked from the footer. Supports Markdown formatting."
 msgstr "本站記錄訪客哪些資料、這些資料的用途與去向；發布於 /privacy，並由頁尾連結。支援 Markdown 格式。"
@@ -8279,7 +8274,7 @@ msgstr "條款已儲存並發布。系統將要求成員重新接受。"
 msgid "I accept these terms"
 msgstr "我接受這些條款"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:216
+#: lib/baudrate_web/live/admin/settings_live.html.heex:231
 #, elixir-autogen, elixir-format
 msgid "Members are currently being asked to accept version %{version}."
 msgstr "目前要求成員接受的是第 %{version} 版。"
@@ -8294,7 +8289,7 @@ msgstr "在您接受之前，發文與互動會暫停；閱讀不受影響。"
 msgid "Publish New Terms Version"
 msgstr "發布新版條款"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:210
+#: lib/baudrate_web/live/admin/settings_live.html.heex:225
 #, elixir-autogen, elixir-format
 msgid "Require every member to accept again. Leave this off for a typo or a reworded sentence."
 msgstr "要求每位成員重新接受。若只是修正錯字或調整措辭，請不要勾選。"
@@ -8319,7 +8314,7 @@ msgstr "條款已儲存，但未要求成員重新接受。"
 msgid "The terms have changed. Read and accept them to post again."
 msgstr "條款已變更。請閱讀並接受後再發文。"
 
-#: lib/baudrate_web/components/layouts.ex:570
+#: lib/baudrate_web/components/layouts.ex:604
 #, elixir-autogen, elixir-format
 msgid "The terms of service have changed"
 msgstr "服務條款已變更"
@@ -8329,7 +8324,7 @@ msgstr "服務條款已變更"
 msgid "These terms have changed since you accepted them"
 msgstr "自您上次接受之後，這些條款已經變更"
 
-#: lib/baudrate_web/components/layouts.ex:573
+#: lib/baudrate_web/components/layouts.ex:607
 #, elixir-autogen, elixir-format
 msgid "You can keep reading, but posting is paused until you accept them."
 msgstr "您仍然可以閱讀，但在您接受之前發文會暫停。"
@@ -8377,7 +8372,7 @@ msgstr "編輯 %{title}"
 msgid "Edit Site Rule"
 msgstr "編輯站規"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:249
+#: lib/baudrate_web/live/admin/settings_live.html.heex:264
 #, elixir-autogen, elixir-format
 msgid "Edit Site Rules"
 msgstr "編輯站規"
@@ -8504,7 +8499,7 @@ msgstr "無法停用該站規。"
 msgid "That rule could not be saved."
 msgstr "無法儲存該站規。"
 
-#: lib/baudrate_web/live/admin/settings_live.html.heex:239
+#: lib/baudrate_web/live/admin/settings_live.html.heex:254
 #, elixir-autogen, elixir-format
 msgid "The rules are a numbered list rather than one document, so a report can point at the rule it says was broken."
 msgstr "站規是編號清單而非單一文件，因此檢舉可以指出被違反的是哪一條。"
@@ -8535,8 +8530,8 @@ msgstr "- articles.json、comments.json、timeline_replies.json：您撰寫且�
 msgid "Reported Timeline Item:"
 msgstr "被檢舉的時間軸項目："
 
-#: lib/baudrate_web/components/layouts.ex:189
-#: lib/baudrate_web/components/layouts.ex:900
+#: lib/baudrate_web/components/layouts.ex:193
+#: lib/baudrate_web/components/layouts.ex:964
 #: lib/baudrate_web/live/timeline_live.ex:50
 #: lib/baudrate_web/live/timeline_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -8666,27 +8661,63 @@ msgstr "敏感內容"
 msgid "Show"
 msgstr "顯示"
 
-#: lib/baudrate_web/live/home_live.html.heex:19
+#: lib/baudrate_web/live/home_live.html.heex:28
 #, elixir-autogen, elixir-format
 msgid "No boards are open to visitors yet —"
 msgstr "目前沒有開放給訪客的看板 —"
 
-#: lib/baudrate_web/live/home_live.html.heex:43
+#: lib/baudrate_web/live/home_live.html.heex:52
 #, elixir-autogen, elixir-format
 msgid "No boards to show."
 msgstr "沒有可顯示的看板。"
 
-#: lib/baudrate_web/live/home_live.html.heex:50
+#: lib/baudrate_web/live/home_live.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "Signing in may show more."
 msgstr "登入後可能會看到更多。"
 
-#: lib/baudrate_web/components/layouts.ex:817
+#: lib/baudrate_web/components/layouts.ex:874
 #, elixir-autogen, elixir-format
 msgid "Match my browser"
 msgstr "依照瀏覽器語言設定"
 
-#: lib/baudrate_web/components/layouts.ex:793
+#: lib/baudrate_web/components/layouts.ex:835
+#: lib/baudrate_web/components/layouts.ex:849
 #, elixir-autogen, elixir-format
 msgid "Site language"
 msgstr "網站語言"
+
+#: lib/baudrate_web/components/layouts.ex:462
+#, elixir-autogen, elixir-format
+msgid "Atom"
+msgstr "Atom"
+
+#: lib/baudrate_web/live/home_live.html.heex:97
+#, elixir-autogen, elixir-format
+msgid "Last active"
+msgstr "最後活動"
+
+#: lib/baudrate_web/components/layouts.ex:453
+#, elixir-autogen, elixir-format
+msgid "RSS"
+msgstr "RSS"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:52
+#, elixir-autogen, elixir-format
+msgid "Shown to visitors on the home page, and used for link previews. Plain text."
+msgstr "顯示在首頁給訪客閱讀，也用於連結預覽。純文字。"
+
+#: lib/baudrate_web/live/admin/settings_live.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "Site Description"
+msgstr "網站簡介"
+
+#: lib/baudrate_web/components/layouts.ex:443
+#, elixir-autogen, elixir-format
+msgid "Syndication feeds"
+msgstr "訂閱來源"
+
+#: lib/baudrate_web/live/home_live.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "Welcome to %{site_name}"
+msgstr "歡迎來到 %{site_name}"

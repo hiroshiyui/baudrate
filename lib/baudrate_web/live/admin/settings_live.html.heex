@@ -36,6 +36,21 @@
     <div class="card-body">
       <.form for={@form} id="settings-form" phx-change="validate" phx-submit="save">
         <.input field={@form[:site_name]} type="text" label={gettext("Site Name")} required />
+        <%!-- What the site is for, in a sentence. The home page shows it to
+        guests and `OpenGraph` uses it for link previews. --%>
+        <.input
+          field={@form[:site_description]}
+          type="textarea"
+          rows="2"
+          label={gettext("Site Description")}
+          value={@form[:site_description].value}
+        />
+        <p
+          id="settings-site-description-hint"
+          class="admin-settings-hint text-sm text-base-content/70 mb-2"
+        >
+          {gettext("Shown to visitors on the home page, and used for link previews. Plain text.")}
+        </p>
         <.input
           field={@form[:timezone]}
           type="select"

@@ -158,8 +158,12 @@ defmodule BaudrateWeb.Layouts do
         </div>
       </div>
 
-      <%!-- Logo (hidden on mobile — site name moves into hamburger menu) --%>
-      <div class="flex-1 hidden lg:block">
+      <%!-- Logo. A signed-in member's mobile site name lives in the hamburger
+      menu, so the logo hides below `lg` for them. A guest has no hamburger —
+      their mobile nav is the bottom dock, which carries icons and no name — so
+      for a guest it stays visible at every width, or the site never says what
+      it is called on a phone. --%>
+      <div class={["flex-1", if(@current_user, do: "hidden lg:block", else: "block")]}>
         <.link navigate="/" id="nav-logo" class="nav-logo btn btn-ghost text-xl site-name">
           {Baudrate.Setup.get_setting("site_name") || "Baudrate"}
         </.link>
@@ -426,6 +430,36 @@ defmodule BaudrateWeb.Layouts do
               class="site-footer-policy-link link link-hover"
             >
               {PolicyLive.title(name)}
+            </.link>
+          </li>
+        </ul>
+      </nav>
+
+      <%!-- The feeds have existed since v1.x and nothing linked them, so the
+      only way to find one was to know the path. Site-wide here; board and user
+      feeds are advertised on their own pages. --%>
+      <nav
+        id="site-footer-feeds"
+        aria-label={gettext("Syndication feeds")}
+        class="site-footer-feeds mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-4"
+      >
+        <ul class="site-footer-feed-list flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm opacity-70">
+          <li class="site-footer-feed-item">
+            <.link
+              id="site-footer-feed-rss"
+              href={~p"/feeds/rss"}
+              class="site-footer-feed-link link link-hover"
+            >
+              {gettext("RSS")}
+            </.link>
+          </li>
+          <li class="site-footer-feed-item">
+            <.link
+              id="site-footer-feed-atom"
+              href={~p"/feeds/atom"}
+              class="site-footer-feed-link link link-hover"
+            >
+              {gettext("Atom")}
             </.link>
           </li>
         </ul>

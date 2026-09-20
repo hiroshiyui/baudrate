@@ -227,4 +227,158 @@ defmodule BaudrateWeb.HomeLiveTest do
       assert html =~ "You are signed in as user."
     end
   end
+
+  describe "branding and purpose (4A)" do
+    test "the welcome heading uses the site's own name, not \"Baudrate\"" do
+      Repo.insert!(%Setting{key: "site_name", value: "Hsinchu BBS"})
+
+      {:ok, _lv, html} = live(build_conn(), "/")
+
+      assert html =~ "Welcome to Hsinchu BBS"
+      refute html =~ "Welcome to Baudrate"
+    end
+
+    test "a guest is told what the site is for" do
+      Repo.insert!(%Setting{key: "site_description", value: "A quiet board for radio amateurs."})
+
+      {:ok, _lv, html} = live(build_conn(), "/")
+
+      assert html =~ ~s(id="home-site-description")
+      assert html =~ "A quiet board for radio amateurs."
+    end
+
+    test "an unset description renders nothing rather than an empty box" do
+      {:ok, _lv, html} = live(build_conn(), "/")
+
+      refute html =~ ~s(id="home-site-description")
+    end
+
+    test "a member is not told, every visit, what the site they are on is", %{conn: conn} do
+      Repo.insert!(%Setting{key: "site_description", value: "A quiet board for radio amateurs."})
+      conn = log_in_user(conn, setup_user("user"))
+
+      {:ok, _lv, html} = live(conn, "/")
+
+      refute html =~ ~s(id="home-site-description")
+    end
+  end
+
+  describe "last activity on a board card (ADR 0054)" do
+    test "a board with a post says when it was last active" do
+      board = insert_board("Busy Board", "guest")
+      user = setup_user("user")
+
+      {:ok, _} =
+        Content.create_article(
+          %{
+            title: "Something",
+            body: "body",
+            slug: "activity-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      {:ok, _lv, html} = live(build_conn(), "/")
+
+      card = isolate_card(html, board.slug)
+      assert card =~ "Last active"
+      assert card =~ "<time"
+    end
+
+    test "a board nobody has posted in shows nothing, not a zero" do
+      board = insert_board("Empty Board", "guest")
+
+      {:ok, _lv, html} = live(build_conn(), "/")
+
+      card = isolate_card(html, board.slug)
+      assert card =~ "Empty Board", "could not isolate the card"
+
+      refute card =~ "Last active",
+             "an empty board claimed a last-active time"
+
+      refute card =~ ~r/\b0\b/,
+             "a board with nothing in it rendered a zero. ADR 0054: a count " <>
+               "is a scoreboard between boards, and zero is the loudest entry " <>
+               "on it."
+    end
+
+    test "activity rolls up from a sub-board, matching the unread dot" do
+      parent = insert_board("Parent Board", "guest")
+
+      child =
+        %Board{}
+        |> Board.changeset(%{
+          name: "Child Board",
+          slug: "child-#{System.unique_integer([:positive])}",
+          min_role_to_view: "guest",
+          parent_id: parent.id
+        })
+        |> Repo.insert!()
+
+      user = setup_user("user")
+
+      {:ok, _} =
+        Content.create_article(
+          %{
+            title: "In the child",
+            body: "body",
+            slug: "child-activity-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [child.id]
+        )
+
+      # The parent is what the home page lists; a post in the child is still
+      # activity in the parent, which is how the unread badge already behaves.
+      assert %{} = activity = Content.last_activity_by_board([parent.id])
+      assert Map.has_key?(activity, parent.id)
+
+      {:ok, _lv, html} = live(build_conn(), "/")
+      assert isolate_card(html, parent.slug) =~ "Last active"
+    end
+
+    test "a soft-deleted article stops counting as activity" do
+      board = insert_board("Deleted Board", "guest")
+      user = setup_user("user")
+
+      # `create_article/2` answers with the Ecto.Multi result map, not a bare
+      # article.
+      {:ok, %{article: article}} =
+        Content.create_article(
+          %{
+            title: "Doomed",
+            body: "body",
+            slug: "doomed-#{System.unique_integer([:positive])}",
+            user_id: user.id
+          },
+          [board.id]
+        )
+
+      assert Map.has_key?(Content.last_activity_by_board([board.id]), board.id)
+
+      Repo.update_all(from(a in Baudrate.Content.Article, where: a.id == ^article.id),
+        set: [deleted_at: DateTime.utc_now() |> DateTime.truncate(:second)]
+      )
+
+      refute Map.has_key?(Content.last_activity_by_board([board.id]), board.id),
+             "a withdrawn article kept the board looking active"
+    end
+  end
+
+  defp insert_board(name, min_role_to_view) do
+    %Board{}
+    |> Board.changeset(%{
+      name: name,
+      slug:
+        "#{String.downcase(String.replace(name, " ", "-"))}-#{System.unique_integer([:positive])}",
+      min_role_to_view: min_role_to_view
+    })
+    |> Repo.insert!()
+  end
+
+  defp isolate_card(html, slug) do
+    [_, rest] = String.split(html, ~s(id="board-#{slug}"), parts: 2)
+    rest |> String.split("</a>", parts: 2) |> List.first()
+  end
 end

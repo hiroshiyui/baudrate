@@ -337,13 +337,26 @@ at today.
 
 ### 4A — Home and navigation (M)
 
-- [ ] **Home page.** Boards, not a feed of articles across them (P4-D1).
-  - Board cards with last activity, and no post count (P4-D1).
-  - A site description, from a new admin setting `site_description`, which `web/open_graph.ex:151` already reads.
-- [ ] **Branding for guests.**
-  - The welcome text uses `site_name` instead of the hardcoded "Baudrate" (`web/live/home_live.html.heex:14`).
-  - Guests on mobile see the site name.
-  - The footer (1E) also links the syndication feeds.
+- ~~**Home page.**~~ **Done (2026-09-20).** Boards, not a feed of articles
+  across them (P4-D1).
+  - Board cards carry last activity and no post count.
+    `Content.last_activity_by_board/1` rolls sub-board activity up to the
+    parent and **shares `unread_board_ids/2`'s filters deliberately**: an
+    article nobody can open must not make a board look busy, or the timestamp
+    becomes an existence signal a remote instance can drive. Both gates carry
+    a case for it (`remote_visibility_test.exs`,
+    `blocked_domain_hiding_test.exs`). A board with nothing in it renders
+    nothing — not a zero, which is the loudest entry on a scoreboard.
+  - `site_description`, a new admin setting, shown to guests on the home page.
+    `OpenGraph` already read the key; nothing wrote it.
+- ~~**Branding for guests.**~~ **Done (2026-09-20).**
+  - The welcome heading is `Welcome to %{site_name}`.
+  - A guest sees the site name at every width. Their mobile nav is the bottom
+    dock, which carries icons and no name, and the logo was `hidden lg:block`
+    for everyone — so on a phone the site never said what it was called.
+  - The footer links the site RSS and Atom feeds. They had existed since v1.x
+    with nothing linking them, so the only way to find one was to know the
+    path.
 - ~~**New pages.**~~ **Dropped, 2026-09-20**
   ([ADR 0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)). All
   four are refused, and 4A adds no page at all.
