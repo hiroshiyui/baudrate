@@ -353,6 +353,36 @@ defmodule Baudrate.Content.RemoteVisibilityTest do
       recent.(ctx.hidden, now)
       refute MapSet.member?(ReadTracking.unread_board_ids(reader, [ctx.board.id]), ctx.board.id)
     end
+
+    test "a followers-only article does not date the board's last activity", ctx do
+      # The home page prints this as "Last active <time>". A hidden article
+      # must not move it, for the same reason it must not light the unread
+      # dot: the timestamp is an existence signal, and it is one a remote
+      # instance could drive — it could keep a board looking busy with posts
+      # nobody here is ever shown.
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      old = DateTime.add(now, -30 * 86_400, :second)
+
+      recent = fn article, at ->
+        Repo.update_all(from(a in Article, where: a.id == ^article.id),
+          set: [last_activity_at: at]
+        )
+      end
+
+      # Positive control: the public article decides the timestamp.
+      recent.(ctx.shown, now)
+      recent.(ctx.hidden, old)
+      assert %{} = activity = Content.last_activity_by_board([ctx.board.id])
+      assert DateTime.compare(activity[ctx.board.id], now) == :eq
+
+      # The hidden article is now the newest row in the board, and is ignored.
+      recent.(ctx.shown, old)
+      recent.(ctx.hidden, now)
+      activity = Content.last_activity_by_board([ctx.board.id])
+
+      assert DateTime.compare(activity[ctx.board.id], old) == :eq,
+             "a followers-only remote article set the board's last-active time"
+    end
   end
 
   describe "the personal feed" do

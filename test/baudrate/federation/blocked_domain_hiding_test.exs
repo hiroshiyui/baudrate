@@ -342,6 +342,34 @@ defmodule Baudrate.Federation.BlockedDomainHidingTest do
       recent.(ctx.hidden, now)
       refute MapSet.member?(ReadTracking.unread_board_ids(reader, [ctx.board.id]), ctx.board.id)
     end
+
+    test "last_activity_by_board/1 does not date a board from it", ctx do
+      # The home page's "Last active <time>". A blocked domain's post must not
+      # move it: blocking hides the content, and a board that keeps looking
+      # busy because of hidden posts is the block failing in the one place a
+      # reader would notice.
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      old = ~U[2000-01-01 00:00:00Z]
+
+      recent = fn article, at ->
+        Repo.update_all(from(a in Article, where: a.id == ^article.id),
+          set: [last_activity_at: at]
+        )
+      end
+
+      recent.(ctx.shown, now)
+      recent.(ctx.hidden, old)
+      block!()
+      activity = Content.last_activity_by_board([ctx.board.id])
+      assert DateTime.compare(activity[ctx.board.id], now) == :eq
+
+      recent.(ctx.shown, old)
+      recent.(ctx.hidden, now)
+      activity = Content.last_activity_by_board([ctx.board.id])
+
+      assert DateTime.compare(activity[ctx.board.id], old) == :eq,
+             "a blocked domain's article set the board's last-active time"
+    end
   end
 
   describe "the personal feed" do

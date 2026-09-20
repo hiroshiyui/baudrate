@@ -166,6 +166,13 @@ defmodule BaudrateWeb.NoContentRankingTest do
            "could not isolate the board card; the probe below would pass on " <>
              "an empty string."
 
+    # The card carries a last-active time, which ADR 0054 permits and which
+    # contains digits — "3 days ago" would answer the probe below and the
+    # invariant would look broken by a timestamp. Strip it, and assert it was
+    # there, so this stays a test about counts.
+    assert card =~ "<time", "the last-active time vanished from the board card"
+    card = String.replace(card, ~r{<time.*?</time>}s, "")
+
     refute card =~ ~r/\b3\b/,
            "the board card rendered what looks like a post count. ADR 0054: " <>
              "a count is a scoreboard between boards, and it delivers a " <>

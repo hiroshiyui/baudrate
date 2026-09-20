@@ -9,8 +9,17 @@
 
 <div :if={!@current_user} id="welcome-section-guest" class="home-welcome-guest text-center">
   <h1 id="home-welcome-guest-heading" class="home-welcome-heading text-2xl font-bold mb-4">
-    {gettext("Welcome to Baudrate")}
+    {gettext("Welcome to %{site_name}", site_name: @site_name)}
   </h1>
+  <%!-- What the site is for, in the admin's own words. Guests only: a member
+  who is signing in for the hundredth time does not need telling. --%>
+  <p
+    :if={@site_description not in [nil, ""]}
+    id="home-site-description"
+    class="home-site-description text-base-content/80 max-w-2xl mx-auto mb-6"
+  >
+    {@site_description}
+  </p>
   <p id="home-welcome-guest-intro" class="home-welcome-intro text-base-content/70 mb-8">
     <span :if={@boards != []} id="home-welcome-browse-hint" class="home-welcome-browse-hint">
       {gettext("Browse the boards below, or")}
@@ -76,6 +85,22 @@
         </h3>
         <p :if={board.description} class="home-board-description text-sm text-base-content/70">
           {board.description}
+        </p>
+        <%!-- Last activity, never a post count (ADR 0054): a count is a
+        scoreboard between boards. A board nobody has written in yet renders
+        nothing rather than a zero, for the same reason. --%>
+        <p
+          :if={Map.has_key?(@last_activity, board.id)}
+          id={"board-activity-#{board.slug}"}
+          class="home-board-activity text-xs text-base-content/60"
+        >
+          {gettext("Last active")}
+          <time
+            datetime={datetime_attr(@last_activity[board.id])}
+            class="home-board-activity-time"
+          >
+            {format_relative_time(@last_activity[board.id])}
+          </time>
         </p>
       </div>
     </.link>

@@ -335,6 +335,7 @@ defmodule Baudrate.Content do
   defdelegate mark_board_read(user_id, board_id), to: ReadTracking
   defdelegate unread_article_ids(user, article_ids, board_id), to: ReadTracking
   defdelegate unread_board_ids(user, board_ids), to: ReadTracking
+  defdelegate last_activity_by_board(board_ids), to: Boards
 
   # --- Polls ---
 

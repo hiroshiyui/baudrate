@@ -15,7 +15,8 @@ defmodule BaudrateWeb.HomeLive do
   alias BaudrateWeb.LinkedData
   alias BaudrateWeb.OpenGraph
 
-  import BaudrateWeb.Helpers, only: [translate_role: 1]
+  # `datetime_attr/1` already arrives via CoreComponents.
+  import BaudrateWeb.Helpers, only: [translate_role: 1, format_relative_time: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -26,6 +27,7 @@ defmodule BaudrateWeb.HomeLive do
 
     board_ids = Enum.map(boards, & &1.id)
     unread_board_ids = Content.unread_board_ids(current_user, board_ids)
+    last_activity = Content.last_activity_by_board(board_ids)
 
     if connected?(socket) && current_user != nil do
       Enum.each(board_ids, &ContentPubSub.subscribe_board/1)
@@ -34,8 +36,11 @@ defmodule BaudrateWeb.HomeLive do
     {:ok,
      assign(socket,
        boards: boards,
+       site_name: site_name,
+       site_description: Setup.get_setting("site_description"),
        board_ids: board_ids,
        unread_board_ids: unread_board_ids,
+       last_activity: last_activity,
        page_title: gettext("Boards"),
        syndication_site: true,
        linked_data_json: jsonld,
@@ -45,10 +50,13 @@ defmodule BaudrateWeb.HomeLive do
 
   @impl true
   def handle_info({:article_created, _payload}, socket) do
-    unread_board_ids =
-      Content.unread_board_ids(socket.assigns.current_user, socket.assigns.board_ids)
+    board_ids = socket.assigns.board_ids
 
-    {:noreply, assign(socket, unread_board_ids: unread_board_ids)}
+    {:noreply,
+     assign(socket,
+       unread_board_ids: Content.unread_board_ids(socket.assigns.current_user, board_ids),
+       last_activity: Content.last_activity_by_board(board_ids)
+     )}
   end
 
   def handle_info(_event, socket), do: {:noreply, socket}

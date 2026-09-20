@@ -13,8 +13,8 @@ defmodule Baudrate.Content.ReadTracking do
     Article,
     ArticleRead,
     BoardArticle,
-    BoardCache,
     BoardRead,
+    Boards,
     Filters
   }
 
@@ -106,7 +106,7 @@ defmodule Baudrate.Content.ReadTracking do
 
   def unread_board_ids(%{id: user_id, inserted_at: user_registered_at} = _user, board_ids) do
     # Build map of each input board -> all descendant board IDs (including itself)
-    descendants = descendant_board_ids_map(board_ids)
+    descendants = Boards.descendant_board_ids_map(board_ids)
     all_desc_ids = descendants |> Map.values() |> List.flatten() |> Enum.uniq()
 
     # Single batch query: find all descendant board IDs that have >=1 unread article.
@@ -150,36 +150,6 @@ defmodule Baudrate.Content.ReadTracking do
     |> MapSet.new()
   end
 
-  # Returns a map: %{board_id => [board_id | descendant_ids]}
-  # When cache is enabled, reads pre-computed descendants from ETS.
-  # Otherwise, uses a recursive CTE to find all descendants.
-  defp descendant_board_ids_map([]), do: %{}
-
-  defp descendant_board_ids_map(board_ids) do
-    if board_cache_enabled?() do
-      Map.new(board_ids, fn id -> {id, BoardCache.descendant_ids(id)} end)
-    else
-      result =
-        Repo.query!(
-          """
-          WITH RECURSIVE tree AS (
-            SELECT id, id AS root_id FROM boards WHERE id = ANY($1)
-            UNION ALL
-            SELECT b.id, t.root_id FROM boards b JOIN tree t ON b.parent_id = t.id
-          )
-          SELECT root_id, array_agg(id) FROM tree GROUP BY root_id
-          """,
-          [board_ids]
-        )
-
-      Map.new(result.rows, fn [root_id, ids] -> {root_id, ids} end)
-    end
-  end
-
   defp latest_datetime(nil, b), do: b
   defp latest_datetime(a, b), do: if(DateTime.compare(a, b) == :gt, do: a, else: b)
-
-  defp board_cache_enabled? do
-    Application.get_env(:baudrate, :settings_cache_enabled, true)
-  end
 end

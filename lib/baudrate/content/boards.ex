@@ -13,10 +13,12 @@ defmodule Baudrate.Content.Boards do
   alias Baudrate.Auth.ReservedHandle
 
   alias Baudrate.Content.{
+    Article,
     Board,
     BoardArticle,
     BoardCache,
-    BoardModerator
+    BoardModerator,
+    Filters
   }
 
   # --- Boards ---
@@ -43,6 +45,103 @@ defmodule Baudrate.Content.Boards do
     list_top_boards()
     |> Enum.filter(&(Setup.role_level(&1.min_role_to_view) <= level))
   end
+
+  @doc """
+  Returns `%{board_id => DateTime}` for the newest activity in each board.
+
+  A board with nothing in it is absent from the map rather than present with
+  `nil`, so a caller renders "no activity yet" by missing key rather than by
+  comparing against a sentinel.
+
+  Activity rolls up from sub-boards: a parent is as recent as its most recent
+  descendant, which matches how the unread badge already behaves.
+
+  **The filters are `ReadTracking.unread_board_ids/2`'s, deliberately and for
+  the same reason.** An article nobody can open must not make a board look
+  busy: the timestamp would be an existence signal for a followers-only post
+  or for content from a blocked domain, and it would be attacker-controlled —
+  a remote instance could keep a board looking alive with posts the reader is
+  never shown. Keeping the two in step also keeps the card honest: the unread
+  dot and the "last active" line are computed from the same set of rows, so
+  they cannot contradict each other.
+
+  Per-viewer blocks and mutes are **not** applied, again matching the unread
+  badge. They would make this per-viewer, and a board does not become quiet
+  because one of its posters is muted — the posts are still there for everyone
+  else.
+
+  `Article.last_activity_at` is maintained by `Comments`, which already
+  declines to bump it for a non-servable remote reply, so a hidden comment
+  cannot move a board to the top of this map either.
+  """
+  def last_activity_by_board([]), do: %{}
+
+  def last_activity_by_board(board_ids) do
+    descendants = descendant_board_ids_map(board_ids)
+    all_desc_ids = descendants |> Map.values() |> List.flatten() |> Enum.uniq()
+
+    by_descendant =
+      from(a in Article,
+        join: ba in BoardArticle,
+        on: ba.article_id == a.id,
+        where: ba.board_id in ^all_desc_ids and is_nil(a.deleted_at),
+        where: is_nil(a.remote_actor_id) or a.visibility in ["public", "unlisted"],
+        where:
+          is_nil(a.remote_actor_id) or
+            a.remote_actor_id not in subquery(Filters.hidden_actor_ids()),
+        group_by: ba.board_id,
+        select: {ba.board_id, max(a.last_activity_at)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    board_ids
+    |> Enum.reduce(%{}, fn board_id, acc ->
+      descendants
+      |> Map.get(board_id, [board_id])
+      |> Enum.reduce(nil, fn desc_id, latest ->
+        latest_datetime(latest, Map.get(by_descendant, desc_id))
+      end)
+      |> case do
+        nil -> acc
+        latest -> Map.put(acc, board_id, latest)
+      end
+    end)
+  end
+
+  @doc """
+  Returns `%{board_id => [board_id | descendant_ids]}` for the given boards.
+
+  Public because more than one caller needs the same rollup: the unread badge
+  (`ReadTracking`) and `last_activity_by_board/1`, which must agree about what
+  a board contains or the card contradicts itself.
+  """
+  def descendant_board_ids_map([]), do: %{}
+
+  def descendant_board_ids_map(board_ids) do
+    if board_cache_enabled?() do
+      Map.new(board_ids, fn id -> {id, BoardCache.descendant_ids(id)} end)
+    else
+      result =
+        Repo.query!(
+          """
+          WITH RECURSIVE tree AS (
+            SELECT id, id AS root_id FROM boards WHERE id = ANY($1)
+            UNION ALL
+            SELECT b.id, t.root_id FROM boards b JOIN tree t ON b.parent_id = t.id
+          )
+          SELECT root_id, array_agg(id) FROM tree GROUP BY root_id
+          """,
+          [board_ids]
+        )
+
+      Map.new(result.rows, fn [root_id, ids] -> {root_id, ids} end)
+    end
+  end
+
+  defp latest_datetime(a, nil), do: a
+  defp latest_datetime(nil, b), do: b
+  defp latest_datetime(a, b), do: if(DateTime.compare(a, b) == :gt, do: a, else: b)
 
   @doc """
   Returns child boards of the given board, ordered by position.
