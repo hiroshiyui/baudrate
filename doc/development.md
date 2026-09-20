@@ -166,6 +166,7 @@ lib/
 │   │   ├── blocklist_audit.ex   # Audit local blocklist against external known-bad-actor lists
 │   │   ├── board_follow.ex      # BoardFollow schema (outbound board follows)
 │   │   ├── collections.ex       # ActivityPub collection builders (Outbox, Followers, Following)
+│   │   ├── context.ex           # Every JSON-LD @context this instance publishes, and the baudrate: terms
 │   │   ├── delivery.ex          # Outgoing activity delivery (enqueue on commit, sign + POST, retry, block delivery)
 │   │   ├── delivery_circuit.ex  # DeliveryCircuit schema (per-domain breaker state)
 │   │   ├── delivery_circuits.ex # Per-domain circuit breaker: classify outcomes, open/probe/close
@@ -194,6 +195,7 @@ lib/
 │   │   ├── instance_stats.ex    # Per-domain instance statistics
 │   │   ├── key_store.ex         # RSA-2048 keypair management for actors (generate, ensure, rotate)
 │   │   ├── key_vault.ex         # Actor private keys, encrypted with the :signing key
+│   │   ├── mentions.ex          # Resolves @user@domain handles into Mention tags and recipients (ADR 0051)
 │   │   ├── object_builder.ex    # ActivityStreams JSON builders for articles, comments, polls
 │   │   ├── object_resolver.ex   # Two-phase remote object resolution (fetch/resolve)
 │   │   ├── publisher.ex         # High-level activity publishing API
@@ -1062,7 +1064,8 @@ and never need to know about the internal split.
 | `Content.Search` | Full-text search across articles, comments, and boards (FTS + CJK ILIKE + operators) |
 | `Content.Feed` | Recent-content listings (home page, profiles) and per-user content statistics. Neither the syndication sense nor the timeline — the name is kept deliberately ([ADR 0039](adr/0039-the-personal-stream-is-a-timeline.md), restated in [ADR 0041](adr/0041-rss-and-atom-are-syndication.md)) |
 | `Content.ReadTracking` | Per-user article/board read state, unread indicators |
-| `Content.Polls` | Poll creation, voting (local + remote), denormalized counter management |
+| `Content.Polls` | Poll creation, voting (local + remote), denormalized counter management, and the hourly sweep that announces a closed poll's final counts once |
+| `Content.ContentWarning` | The rules for `summary`/`sensitive`, shared by every schema that carries them (ADR 0052) |
 
 ### Content Model
 
@@ -1824,7 +1827,9 @@ and never need to know about the internal split.
 | `Federation.HTTPSignature` | HTTP Signature signing (outgoing) and cryptographic verification (incoming POSTs) |
 | `Federation.KeyStore` | RSA-2048 keypair management for actors: generation, persistence, and rotation |
 | `Federation.Validator` | AP payload validation: size limits, attribution checks, and domain allowlist/blocklist |
-| `Federation.Visibility` | Derives ActivityPub visibility (`public`, `unlisted`, `followers_only`, `direct`) from addressing fields |
+| `Federation.Visibility` | Derives ActivityPub visibility (`public`, `unlisted`, `followers_only`, `direct`) from addressing fields, and builds the addressing back from a visibility |
+| `Federation.Mentions` | Turns `@user@domain` handles into the actors they name, and into `Mention` tags, `cc` entries and delivery targets — behind ADR 0043's board gate (ADR 0051) |
+| `Federation.Context` | The one owner of every JSON-LD `@context` this instance publishes, and of the `baudrate:` extension terms (ADR 0053's sibling, Phase 3F) |
 | `Federation.Inbound` | Admits, stores and answers an inbound activity; `InboundWorker` processes it afterwards (ADR 0034) |
 | `Federation.ObjectResolver` | Fetches a single remote object for a user-triggered import, applying the same origin binding as actor resolution (ADR 0046) |
 | `Federation.DomainBlocks` | The only write path for `domain_blocks`; refreshes `DomainBlockCache` itself (ADR 0030). Reached through the facade for the mutations (ADR 0047) |
@@ -2158,14 +2163,15 @@ fetches, media cache warming, link previews).
 
 **Mastodon/Lemmy compatibility:**
 - `attributedTo` arrays — extracts first binary URI for validation
-- `sensitive` + `summary` — content warnings prepended as `[CW: summary]`
+- `sensitive` + `summary` — content warnings stored in their own columns and rendered collapsed (ADR 0052); rows written before v1.31.0 keep the `[CW: …]` prefix they were ingested with
 - Lemmy `Page` objects treated identically to `Article` (Create and Update)
 - Lemmy `Announce` with embedded object maps — extracts inner `id`
+- Lemmy group relays (FEP-1b12): an `Announce` wrapping a `Create`, `Update`, `Delete`, `Like` or `Undo` is unwrapped one level. A `Create` is verified through its object's own origin and routed to the boards following the **group**; the rest are honoured only when their actor is on the group's own host (ADR 0053)
+- `Mention` tags with `cc` addressing for `@user@domain` handles, resolved once at post time (ADR 0051)
 - `<span>` tags with safe classes (`h-card`, `hashtag`, `mention`, `invisible`) preserved by sanitizer
 - Outbound activities use visibility-aware `to`/`cc` addressing (respects stored `visibility` field; `Federation.Visibility` derives visibility from AP addressing on ingest)
 - Outbound Article objects include board actor URIs merged into `cc` (improves discoverability)
 - Interactions with remote posts also go to the remote author: comments (and their deletion) reach the remote article author and the remote author of the parent comment; likes/unlikes reach the liked article's or comment's remote author; boosts/unboosts reach the boosted post's remote author as well as the booster's followers (`Delivery.enqueue_for_article/4` `:remote_authors`). Before v1.18.2 they went only to followers, so remote authors never saw them
-- Outbound Article objects include plain-text `summary` (≤ 500 chars) for Mastodon preview display
 - Outbound Article objects include `tag` array with `Hashtag` objects (extracted from body, code blocks excluded)
 - Cross-post deduplication: same remote article arriving via multiple board inboxes links to all boards
 - Forwarding an article to a board sends `Create(Article)` to board followers and `Announce` from the board actor (works for both boardless and cross-board forwarding)

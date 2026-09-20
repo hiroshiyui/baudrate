@@ -15,7 +15,9 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
 - **Hierarchical boards** -- nested board structure with breadcrumb navigation, sub-board display, per-board role-based access (`min_role_to_view`, `min_role_to_post`), and board moderator management
 - **Guest browsing** -- guest-visible boards and articles are accessible without login
 - **Cross-posted articles** -- articles can span multiple boards, with author-controlled forwarding (`forwardable` toggle) and cross-board forwarding by any user; authors can remove their articles from specific boards
-- **Threaded comments** -- with support for remote replies via ActivityPub
+- **Threaded comments** -- with support for remote replies via ActivityPub, threading correctly in both directions
+- **Content warnings** -- an optional warning on any article, comment or reply; content behind one stays collapsed until the reader opens it, and a warning from another instance is kept as a warning rather than pasted into the text
+- **Mentions** -- `@name` for members here and `@user@domain` for anyone on the fediverse; a remote mention is delivered to the person named, and never carries a post out of a board that does not federate
 - **Role-based access control** -- admin, moderator, user, and guest roles with per-board permission levels
 - **Board moderation** -- board moderators can pin/lock threads and delete articles/comments
 - **TOTP two-factor authentication** -- required for admin/moderator, optional for users, with recovery codes
@@ -27,6 +29,9 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
   - WebFinger and NodeInfo discovery
   - Incoming follows, comments, likes, boosts, updates, deletes, and Flag reports
   - Outbound delivery of articles, deletes, announces, and Flag reports to remote instances
+  - Threaded conversations: a reply names the comment it answers, so discussions keep their shape on Mastodon instead of arriving flat
+  - Comments and polls are fetchable objects with URIs of their own (`/ap/comments/:id`, `/ap/polls/:id`)
+  - Profile and board edits reach followers as `Update(Person)` / `Update(Group)`; a closed poll publishes its final counts
   - DB-backed delivery queue written in the same transaction as the post, sent as soon as it commits, with exponential backoff retry and a per-instance circuit breaker
   - Inbound activities stored and acknowledged at once, then processed in order per remote account with bounded concurrency
   - Shared inbox deduplication for efficient delivery
@@ -34,8 +39,8 @@ Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.o
   - Domain blocklist and allowlist modes for instance-level federation control
   - Federation kill switch and per-board federation toggle
   - Cross-post deduplication for articles arriving via multiple board inboxes
-  - Mastodon compatibility: `attributedTo` arrays, `sensitive`/`summary` content warnings, `to`/`cc` addressing, `<span>` tag preservation, article summary and hashtag tags
-  - Lemmy compatibility: `Page` object type, `Announce` with embedded objects, `!board@host` WebFinger
+  - Mastodon compatibility: `attributedTo` arrays, `to`/`cc` addressing, `<span>` tag preservation, `Mention` and hashtag tags
+  - Lemmy compatibility: `Page` object type, `Announce` with embedded objects, group-relayed activities (FEP-1b12), `!board@host` WebFinger
 - **Personal timeline** -- follow remote accounts and local users from `/following`, and read their posts at `/timeline`, merged with local articles from people you follow and with comments on threads you took part in; reply, like, boost, or forward an item to a board. Non-public posts stay out: a boost of a followers-only post is never shown, and a direct message never appears
 - **Link previews** -- server-side Open Graph / Twitter Card metadata fetching with image proxy for articles, comments, and DMs
 - **No page contacts a third party on your behalf** -- every remote image, avatar and preview thumbnail is re-encoded and served from this host, so reading a federated thread discloses nothing to the instance that wrote it; the one embed, the YouTube player, loads only when you press play, from a poster stored locally

@@ -437,6 +437,65 @@ ORDER BY id DESC LIMIT 20;
 An activity refused at the door is answered `422` and never stored: the log
 line is `federation.inbox_error` with the reason (for example `:actor_mismatch`).
 
+### Replies from this instance arrive flat on Mastodon
+
+A comment's `inReplyTo` names the comment it answers, and a remote instance
+can only follow that if the id resolves. Until v1.31.0 a comment's id was
+`https://your.host/ap/users/alice#note-42` — a URI *fragment*, which is never
+sent to the server, so dereferencing it returned the author's profile.
+
+**Fix:** run the backfill once after upgrading to v1.31.0:
+
+```bash
+bin/baudrate eval "Baudrate.Release.backfill_ap_ids(dry_run: true)"
+bin/baudrate eval "Baudrate.Release.backfill_ap_ids()"
+```
+
+See [`doc/sysop.md`](sysop.md), "Data Repair: `ap_id` Backfill". Comments
+written *before* the rewrite keep answering to their old id as well, so
+nothing already federated breaks; comments written after it thread correctly
+whether or not the task has run.
+
+### A `@user@domain` mention does not reach the person
+
+Three ordinary reasons, in the order worth checking:
+
+1. **The board does not federate.** A mention is a surface of the outbound
+   gate, not an exception to it (ADR 0051): an article whose boards are all
+   private or AP-disabled produces no `Mention` tag, no `cc`, no delivery —
+   and does not even look the handle up. This is deliberate, and it is what
+   stops a member sending a staff-only post anywhere by typing a handle.
+2. **The handle did not resolve.** An unknown handle is looked up once, when
+   the post is written, with a 3-second deadline and a 5-second budget for the
+   whole step. A slow or unreachable server means the mention stays plain
+   text, silently. `grep federation.mention_unresolved` in the log.
+3. **The member is out of lookups.** 30 per hour per account, for handles
+   nobody here has seen before. `grep federation.mention_resolve_throttled`.
+
+A handle that has resolved once is cached in `remote_actors` and costs
+nothing afterwards.
+
+### Posts in a followed Lemmy community never appear
+
+The board follows the community, the activities arrive, and nothing shows up.
+Before v1.31.0 this was expected: a Lemmy community relays its members'
+activities (`Announce` wrapping a `Create`), and only `Announce` wrapping an
+*object* was understood, so every post was discarded (ADR 0053).
+
+After v1.31.0, check in this order:
+
+- the board follow is **accepted**, not pending (`/admin/federation`);
+- the board is AP-enabled and guest-readable — the same gate as everything
+  else;
+- `grep federation.group_announce_refused` for a rejected relay, and
+  `federation.group_announce_cross_origin_dropped` for one this instance
+  deliberately would not honour.
+
+The last is not a fault. A community may speak for actors **on its own host**;
+a `Delete` or `Like` it relays on behalf of some third instance's user is
+dropped, because the signature on the Announce proves only the community's own
+host. A `Create` is unaffected — its object is verified through its own origin.
+
 ### Federation kill switch
 
 Setting `ap_federation_enabled` to `false` (via `/admin/settings` or

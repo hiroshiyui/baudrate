@@ -69,7 +69,7 @@ defmodule Baudrate.Federation do
 
     * `Federation.Discovery` — WebFinger, NodeInfo, remote actor lookup
     * `Federation.ActorRenderer` — JSON-LD actor representations (Person, Group, Organization)
-    * `Federation.ObjectBuilder` — JSON-LD article object serialization
+    * `Federation.ObjectBuilder` — JSON-LD objects for articles, comments and polls
     * `Federation.Collections` — outbox, followers/following, boards, search collections
     * `Federation.Follows` — inbound followers, user/board follows, local follows
     * `Federation.Timeline` — timeline items CRUD, timeline item replies, likes, boosts
@@ -80,7 +80,11 @@ defmodule Baudrate.Federation do
     * `Federation.HTTPSignature` — HTTP Signature signing and verification
     * `Federation.KeyStore` / `KeyVault` — keypair management, encrypted storage
     * `Federation.Validator` — AP payload validation
-    * `Federation.Visibility` — visibility derivation from to/cc addressing
+    * `Federation.Visibility` — visibility derivation from to/cc addressing, and back
+    * `Federation.Mentions` — `@user@domain` handles into `Mention` tags, `cc`
+      and delivery targets, behind the board gate (ADR 0051)
+    * `Federation.Context` — every JSON-LD `@context` this instance publishes,
+      and the `baudrate:` extension terms
   """
 
   import Ecto.Query

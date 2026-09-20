@@ -68,7 +68,7 @@ when the row drops an ADR number or a relationship verb the Status line uses.
 
 - **Auth** (`lib/baudrate/auth.ex`) — authentication (login, registration, TOTP, WebAuthn/FIDO2 security keys, sessions, password reset), user management (avatars, invite codes, blocks, mutes)
 - **Content** (`lib/baudrate/content.ex`) — boards, articles, comments, likes, boosts, polls, permissions, board moderators, search, link previews
-- **Federation** (`lib/baudrate/federation.ex`) — AP actors, outbox, followers, announces, delivery, user outbound follows, timeline item replies, timeline item likes/boosts
+- **Federation** (`lib/baudrate/federation.ex`) — AP actors, outbox, followers, announces, delivery, user outbound follows, timeline item replies, timeline item likes/boosts, mentions, actor updates
 - **Messaging** (`lib/baudrate/messaging.ex`) — 1-on-1 direct messages, conversations, DM access control, federation
 - **Setup** (`lib/baudrate/setup.ex`) — first-run wizard, RBAC seeding, settings, role level utilities
 - **Moderation** (`lib/baudrate/moderation.ex`) — reports (including member reports of timeline items, received DMs and remote accounts), resolve/dismiss, audit log
@@ -307,6 +307,9 @@ When creating a new release (on `current`):
 | `lib/baudrate/retention.ex` | Retention context: the hourly purges, run from `Auth.SessionCleaner` (ADR 0040) |
 | `lib/baudrate/health.ex` | The detailed health report; `health/alerts.ex` tells the admins when a check fails (ADR 0035, ADR 0044) |
 | `lib/baudrate/crypto/keyring.ex` | The `:auth` and `:signing` keys, and which one encrypted a stored value (ADR 0038) |
+| `lib/baudrate/federation/mentions.ex` | `@user@domain` handles into `Mention` tags, `cc` and recipients — behind the board gate (ADR 0051) |
+| `lib/baudrate/federation/context.ex` | Every JSON-LD `@context` this instance publishes, and the `baudrate:` extension terms |
+| `lib/baudrate/content/content_warning.ex` | The `summary`/`sensitive` rules every schema that carries them shares (ADR 0052) |
 | `lib/baudrate_web/live/auth_hooks.ex` | LiveView auth on_mount hooks |
 | `lib/baudrate_web/components/core_components.ex` | Shared UI components |
 | `doc/baudrate-spec.md` | Conformance index: invariant → ADR → enforcement → gate |

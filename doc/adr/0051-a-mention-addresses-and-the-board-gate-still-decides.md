@@ -3,10 +3,12 @@
 - **Status:** Accepted
 - **Date:** 2026-09-20
 - **Deciders:** Baudrate maintainers
-- **Related:** adds a sixth surface to
-  [0043](0043-the-outbound-federation-gate-and-withdrawals.md), which decides
-  whether content may leave at all — a surface *of* that gate, never an
-  exception to it. Threading is only possible because
+- **Refines** [0043](0043-the-outbound-federation-gate-and-withdrawals.md),
+  which decides whether content may leave at all, by adding a sixth surface to
+  the five it enumerates — a surface *of* that gate, never an exception to it.
+  It does not reverse anything: a mention widens who is *addressed*, never who
+  may read.
+- **Related:** threading is only possible because
   [0050](0050-a-comment-and-a-poll-are-objects-with-their-own-uri.md) gave a
   comment a URI a peer can dereference. Resolution obeys
   [0030](0030-domain-blocks-are-rows-and-hiding-is-reversible.md) decision 9

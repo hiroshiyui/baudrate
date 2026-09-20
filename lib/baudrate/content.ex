@@ -29,6 +29,8 @@ defmodule Baudrate.Content do
     * `Content.Feed` — recent-content listings (home page, profiles) and per-user content statistics; not RSS (that is `SyndicationFeed*`) and not the personal timeline (that is `Federation.Timeline`)
     * `Content.ReadTracking` — per-user read state for articles and boards
     * `Content.Polls` — poll creation, voting, and counter management
+    * `Content.ContentWarning` — the `summary`/`sensitive` rules every schema
+      that carries a content warning shares (ADR 0052)
   """
 
   alias Baudrate.Content.{

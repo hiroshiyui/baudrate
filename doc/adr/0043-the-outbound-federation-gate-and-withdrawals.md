@@ -1,6 +1,6 @@
 # 0043 — The outbound federation gate, and the withdrawals it must not touch
 
-- **Status:** Accepted
+- **Status:** Accepted; refined by [0051](0051-a-mention-addresses-and-the-board-gate-still-decides.md), which adds a sixth surface — a mention — to the five this record enumerates
 - **Date:** 2026-09-18
 - **Deciders:** Baudrate maintainers
 - **Complements** [0004](0004-federation-gate-for-non-public-boards.md),

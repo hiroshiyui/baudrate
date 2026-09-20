@@ -502,11 +502,20 @@ requester, signed or not, including one whose signature belongs to an admin.
 
 ```json
 {
-  "@context": "https://www.w3.org/ns/activitystreams",
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    {
+      "baudrate": "https://github.com/hiroshiyui/baudrate/ns#",
+      "schema": "http://schema.org/",
+      "PropertyValue": "schema:PropertyValue",
+      "value": "schema:value"
+    }
+  ],
   "id": "https://example.com/ap/articles/hello-world-a1b2c3",
   "type": "Article",
   "name": "Hello World",
-  "summary": "This is a plain-text preview of the article body...",
+  "summary": "Spoilers for episode 4",
+  "sensitive": true,
   "content": "<p>This is the <strong>rendered HTML</strong> content.</p>",
   "mediaType": "text/html",
   "source": {
@@ -541,7 +550,6 @@ requester, signed or not, including one whose signature belongs to an admin.
 |-------|------|-------------|
 | `type` | string | Always `"Article"` |
 | `name` | string | Article title |
-| `summary` | string | Plain-text preview (max 500 chars, markdown stripped) |
 | `content` | string | HTML rendered from Markdown body |
 | `mediaType` | string | Always `"text/html"` |
 | `source` | object | Original Markdown body with `mediaType: "text/markdown"` |
@@ -1214,9 +1222,12 @@ Baudrate handles several compatibility concerns with popular Fediverse
 software:
 
 - **`attributedTo` arrays** — Extracts the first binary URI (Mastodon may send arrays)
-- **Content warnings** — `sensitive: true` + `summary` fields are prepended as `[CW: summary]` to the body
+- **Content warnings** — `sensitive` + `summary` are stored in their own fields and rendered collapsed, and are published back the same way. Objects ingested before v1.31.0 carry the warning inside the body as `[CW: …]`, and were deliberately not rewritten (ADR 0052)
+- **Mentions** — `@user@domain` handles become `Mention` tags with `cc` addressing, resolved once when the post is written (ADR 0051)
+- **Threading** — a comment's `inReplyTo` names the comment it answers, so a discussion keeps its shape rather than arriving flat
 - **Lemmy `Page` objects** — Treated identically to `Article` for `Create` and `Update`
 - **Lemmy `Announce` with embedded objects** — Extracts the inner `id` field (not just bare URIs)
+- **Lemmy group relays (FEP-1b12)** — An `Announce` wrapping a `Create`, `Update`, `Delete`, `Like` or `Undo` is unwrapped one level. A `Create` is verified through its object's own origin and routed to the boards following the group; the others are honoured only when the inner actor is on the group's own host, which is all the group's signature can prove (ADR 0053)
 - **Board WebFinger** — Uses bare slug in `subject` (matching `preferredUsername`) for Mastodon compatibility; includes `properties` with `type: "Group"` for Lemmy-compatible disambiguation; accepts `!` prefix in queries for backward compatibility
 - **Mastodon HTML classes** — `<span>` tags with safe classes (`h-card`, `hashtag`, `mention`, `invisible`) are preserved through the HTML sanitizer
 - **Cross-post deduplication** — The same remote article arriving via multiple board inboxes is linked to all boards (not duplicated)

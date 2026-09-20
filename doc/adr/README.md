@@ -62,7 +62,7 @@ template and conventions. ADRs 0001–0021 were written retroactively on
 | [0040](0040-retention-deletes-what-nobody-touched.md) | Retention deletes what nobody touched | Accepted; `bot_feed_items` renamed by [0041](0041-rss-and-atom-are-syndication.md) |
 | [0041](0041-rss-and-atom-are-syndication.md) | RSS and Atom are syndication, not feeds | Accepted |
 | [0042](0042-roles-are-ordered-and-capabilities-are-not-configurable.md) | Roles are ordered, and capabilities are not configurable | Accepted |
-| [0043](0043-the-outbound-federation-gate-and-withdrawals.md) | The outbound federation gate, and the withdrawals it must not touch | Accepted |
+| [0043](0043-the-outbound-federation-gate-and-withdrawals.md) | The outbound federation gate, and the withdrawals it must not touch | Accepted; refined by [0051](0051-a-mention-addresses-and-the-board-gate-still-decides.md) |
 | [0044](0044-the-instance-tells-its-admins-when-it-is-unwell.md) | The instance tells its admins when it is unwell | Accepted |
 | [0045](0045-the-video-player-loads-on-a-click.md) | The video player loads on a click, and nothing else is embedded | Accepted |
 | [0046](0046-every-identity-claim-is-bound-to-the-host-that-can-prove-it.md) | Every identity claim is bound to the host that can prove it | Accepted |
