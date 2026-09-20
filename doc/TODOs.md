@@ -396,11 +396,41 @@ because that difference is exactly what `min_role_to_view` is keeping.
 - [ ] **Copy-link fallback** when `navigator.share` is missing (`assets/js/web_share_hook.js:15`).
 - [ ] **"Follow from your instance":** a visitor enters their instance and is sent to its remote-follow page for a user or board.
 
-### 4F — Privacy and language (S)
+### ~~4F — Privacy and language~~ — **done** (2026-09-20)
 
-- [ ] **YouTube embeds** load only after a click (`web/components/core_components.ex:1011`).
-- [ ] **Language switcher** for guests, kept in a cookie.
-- [ ] **Translations:** fill the 5 empty strings in each of zh_TW and ja_JP.
+Three items, and reading them against the code changed what the stage was.
+
+- ~~**YouTube embeds** load only after a click.~~ **Already done** when this
+  was written: it shipped during the Phase 3 ADR audit as
+  [ADR 0045](adr/0045-the-video-player-loads-on-a-click.md). The line even
+  pointed at the click-to-load component itself. Struck, not re-implemented.
+- ~~**Language switcher** for guests, kept in a cookie.~~ Done, and for
+  everyone rather than guests only: a control that vanishes at sign-in reads
+  as a bug, and members had no way to change language mid-session either.
+  A `<details>` dropdown in the footer holding a plain form POST — no
+  JavaScript on either half, because a language control has to survive
+  scripting having gone wrong — writing a named one-year `locale` cookie. A member's click also moves that language to the head of
+  their `preferred_locales`, so the footer and `/profile` cannot disagree and
+  the choice follows them to another device. **Match my browser** is the way
+  back out. Order, cookie inventory and the reasoning: `doc/development.md`.
+- ~~**Translations:** fill the 5 empty strings.~~ The count was wrong when it
+  was written — it included the PO header. The four real ones were *example
+  values* (`abcd-ef23`, two `example.com` URLs, `trusted.example,
+  friend.example`), identical in every language, so they needed a decision
+  rather than a translator: each is now written out in full with a comment
+  saying why. **A number in a TODO cannot say which strings, and goes stale
+  the next time anyone runs `gettext.extract`**, so the chore became a gate:
+  `test/baudrate_web/translation_coverage_test.exs` fails when zh_TW or ja_JP
+  carries an empty `msgstr`. `en` is excluded, and the test says why.
+
+**Found and fixed on the way.** `SetLocale` read a member's language from
+`session[:preferred_locales]`, written at login and nowhere else, and a
+LiveView cannot write the session — so changing language on `/profile` reached
+the database and stopped. Every later full page load rendered its dead HTML,
+including `lang=` on `<html>`, in the language the member had just left, and
+kept doing so until they signed in again: a screen reader told the wrong
+language on every load. The switcher's controller is the session write that
+was missing, and `/profile` now posts to it when the *effective* locale moves.
 
 ### Decisions (made 2026-09-20)
 

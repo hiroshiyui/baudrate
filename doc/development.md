@@ -281,6 +281,7 @@ lib/
 │   │   │   ├── rss.xml.eex     # RSS 2.0 channel + items template
 │   │   │   └── atom.xml.eex    # Atom 1.0 feed + entries template
 │   │   ├── health_controller.ex # Health check endpoint
+│   │   ├── locale_controller.ex # POST /locale — the footer language switcher's cookie and session write
 │   │   ├── page_controller.ex   # Static page controller
 │   │   ├── page_html.ex         # Page HTML view module
 │   │   ├── handle_redirect_controller.ex  # Redirects /@username to /users/:username (Mastodon compat)
@@ -361,14 +362,14 @@ lib/
 │   │   ├── real_ip.ex           # Real client IP extraction from proxy headers
 │   │   ├── refresh_session.ex   # Token rotation every 24h
 │   │   ├── require_ap_content_type.ex  # AP content-type validation (415 on non-AP types)
-│   │   ├── set_locale.ex        # Accept-Language + user preference locale detection
+│   │   ├── set_locale.ex        # Locale: cookie choice → account → Accept-Language
 │   │   ├── set_theme.ex         # Inject admin-configured DaisyUI theme assigns
 │   │   └── verify_http_signature.ex  # HTTP Signature verification for AP inboxes
 │   ├── endpoint.ex              # HTTP entry point, session config
 │   ├── gettext.ex               # Gettext i18n configuration
 │   ├── health_detail.ex         # Loopback-only listener serving Baudrate.Health (HEALTH_DETAIL_PORT)
 │   ├── helpers.ex               # Shared translation helpers (translate_role/1, translate_status/1, etc.)
-│   ├── locale.ex                # Locale resolution (Accept-Language + user prefs)
+│   ├── locale.ex                # Locale resolution order, the known-locale allow-list, the cookie's facts
 │   ├── linked_data.ex          # JSON-LD + Dublin Core metadata builders (SIOC/FOAF/DC)
 │   ├── open_graph.ex            # Open Graph + Twitter Card meta tag builders
 │   ├── rate_limiter.ex          # Rate limiter behaviour (Sandbox / Hammer backends)
@@ -2436,9 +2437,63 @@ Every browser request passes through these plugs in order:
 ```
 :accepts → :fetch_session → :fetch_live_flash → :put_root_layout →
 :protect_from_forgery → :put_secure_browser_headers (CSP, X-Frame-Options) →
-SetLocale (Accept-Language) → EnsureSetup (redirect to /setup) →
+SetLocale (cookie → account → Accept-Language) → EnsureSetup (redirect to /setup) →
 SetTheme (inject admin-configured DaisyUI themes) → RefreshSession (token rotation)
 ```
+
+### Language
+
+`BaudrateWeb.Plugs.SetLocale` answers "which language is this request in?" in
+this order, and `BaudrateWeb.Locale` is where the order is written down:
+
+| # | Source | Set by |
+|---|--------|--------|
+| 1 | The `locale` cookie | The footer switcher, via `BaudrateWeb.LocaleController` |
+| 2 | `session[:preferred_locales]` | `SessionController` **at login, and nowhere else** |
+| 3 | `Accept-Language` | The reader's browser |
+| 4 | `"en"` | The Gettext default |
+
+The cookie is first because it is the only one of these a person said out
+loud. An unknown value is ignored rather than trusted — `Locale.known?/1` is
+the allow-list, and nothing else reaches `Gettext.put_locale/1`.
+
+Step 2 is a **cache**, and only a session write refreshes it. That is why
+`/profile` posts to `LocaleController` after a language change (`save_locales/2`
+→ the hidden `locale-sync-form`): before it did, the database held the new
+language while the session still held the old one, so every later full page
+load rendered its dead HTML — and `lang=` on `<html>` — in the language the
+member had just left. The resolved answer is also written to `session[:locale]`,
+which `AuthHooks` reads so a LiveView mount does not flip the language after
+the dead render.
+
+The switcher is a `<details>` dropdown in the footer holding a plain form
+POST, not a LiveView event. Both halves are deliberate: `<details>` is the one
+disclosure widget the browser implements itself, so opening the menu needs no
+JavaScript and no `aria-*` bookkeeping of ours; and writing a cookie and the
+session is a controller's job here. A language control has to keep working
+when scripting has gone wrong — it is the control a reader reaches for when
+the page is already making no sense to them. `dropdown-top` opens it upward,
+which is also what keeps it clear of the mobile dock.
+
+### Cookies this instance sets
+
+Two, and no others. Both are strictly necessary in the sense the ePrivacy
+guidance uses — one carries the session, the other exists only because the
+reader asked for it — so neither needs a consent prompt. An operator writing a
+privacy policy can copy this table.
+
+| Name | Contents | Lifetime | Attributes |
+|------|----------|----------|------------|
+| `_baudrate_key` | The session: auth tokens, `live_socket_id`, cached locale. Signed **and** encrypted | 14 days | `HttpOnly`, `SameSite=Lax`, `Secure` in production |
+| `locale` | A language code the reader chose in the footer, or absent | 1 year | `HttpOnly`, `SameSite=Lax`, `Secure` in production |
+
+The `locale` cookie is deliberately *not* kept in the session: signing out
+drops the session (`configure_session(drop: true)`), and a language preference
+that resets itself at sign-out reads as a bug rather than as privacy. Pressing
+**Match my browser** deletes it.
+
+Theme and font-size preferences are **not** cookies — they live in the
+browser's `localStorage` and never reach the server.
 
 ActivityPub GET requests use the `:activity_pub` pipeline:
 
