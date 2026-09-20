@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <%= for {loc, lastmod} <- @sitemaps do %>
+  <sitemap>
+    <loc><%= xml_escape(loc) %></loc><%= if lastmod do %>
+    <lastmod><%= w3c_datetime(lastmod) %></lastmod><% end %>
+  </sitemap>
+  <% end %>
+</sitemapindex>

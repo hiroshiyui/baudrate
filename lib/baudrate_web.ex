@@ -17,9 +17,12 @@ defmodule BaudrateWeb do
   those modules here.
   """
 
+  # `robots.txt` is deliberately absent: it is a route
+  # (`BaudrateWeb.SitemapController`), because its `Sitemap:` directive needs
+  # an absolute URL that a static file cannot know (ADR 0057). Plug.Static
+  # would shadow the route if it were listed here.
   def static_paths,
-    do:
-      ~w(assets fonts images uploads favicon.ico favicon.svg robots.txt service_worker.js site.webmanifest)
+    do: ~w(assets fonts images uploads favicon.ico favicon.svg service_worker.js site.webmanifest)
 
   def router do
     quote do

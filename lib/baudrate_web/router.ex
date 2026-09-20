@@ -252,6 +252,22 @@ defmodule BaudrateWeb.Router do
     get "/users/:username/atom", SyndicationFeedController, :user_atom
   end
 
+  # What this instance tells a crawler, before it reads a page (ADR 0057).
+  # `robots.txt` is a route rather than a file in priv/static because the
+  # `Sitemap:` directive takes an absolute URL, which a file cannot know.
+  pipeline :crawlers do
+    plug BaudrateWeb.Plugs.ApiHeaders
+    plug BaudrateWeb.Plugs.RateLimit, action: :sitemap
+  end
+
+  scope "/", BaudrateWeb do
+    pipe_through :crawlers
+
+    get "/robots.txt", SitemapController, :robots
+    get "/sitemap.xml", SitemapController, :index
+    get "/sitemap/:name", SitemapController, :child
+  end
+
   # Public (redirect if already authenticated)
   scope "/", BaudrateWeb do
     pipe_through :browser

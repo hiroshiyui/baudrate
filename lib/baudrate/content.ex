@@ -47,6 +47,7 @@ defmodule Baudrate.Content do
     Polls,
     ReadTracking,
     Search,
+    Sitemap,
     Tags
   }
 
@@ -336,6 +337,14 @@ defmodule Baudrate.Content do
   defdelegate unread_article_ids(user, article_ids, board_id), to: ReadTracking
   defdelegate unread_board_ids(user, board_ids), to: ReadTracking
   defdelegate last_activity_by_board(board_ids), to: Boards
+
+  # --- Sitemap inventory (ADR 0057) ---
+
+  defdelegate sitemap_public_boards(), to: Sitemap, as: :public_boards
+  defdelegate count_sitemap_public_articles(), to: Sitemap, as: :count_public_articles
+  defdelegate sitemap_public_article_slugs(offset, limit), to: Sitemap, as: :public_article_slugs
+  defdelegate sitemap_public_tags(), to: Sitemap, as: :public_tags
+  defdelegate sitemap_newest_article_date(), to: Sitemap, as: :newest_article_date
 
   # --- Polls ---
 

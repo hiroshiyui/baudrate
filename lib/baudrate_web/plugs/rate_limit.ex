@@ -52,6 +52,9 @@ defmodule BaudrateWeb.Plugs.RateLimit do
     media: {60_000, 300},
     data_export_download: {900_000, 10},
     locale: {60_000, 20},
+    # robots.txt and the sitemap documents (ADR 0057). Each sitemap request
+    # runs a count and a page query, and the page number is client-supplied.
+    sitemap: {60_000, 10},
     # Generous: a load balancer probing every few seconds stays well inside it,
     # and it was the only public route with no bucket at all.
     health: {60_000, 120}
