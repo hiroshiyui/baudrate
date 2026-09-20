@@ -333,7 +333,7 @@ while building 1A.
 ### 4A — Home and navigation (M)
 
 - [ ] **Home page.** Boards, not a feed of articles across them (P4-D1).
-  - Board cards with post counts and last activity.
+  - Board cards with last activity, and no post count (P4-D1).
   - A site description, from a new admin setting `site_description`, which `web/open_graph.ex:151` already reads.
   - An empty state when there are no boards.
 - [ ] **Branding for guests.**
@@ -408,10 +408,17 @@ while building 1A.
   sees. Baudrate is a public information hub whose unit is the **board**; a
   visitor picks one and reads it in order. That is slower than a river of the
   newest posts, and it is the trade this makes on purpose.
+  **No counts on the board cards either.** A post count is a scoreboard
+  between boards, and it reads as a verdict on the quiet ones before a visitor
+  has opened either. Last activity stays — it answers "is anyone here", which
+  a newcomer needs and which no board loses by telling. The cards are ordered
+  by the admin's `Board.position`, and that is the whole ordering: if they are
+  ever sorted by activity instead, the ranking is back, arranged by the
+  site rather than chosen by it.
   **Unaffected:** `/unanswered`, which spends attention where none has been
   and is the opposite loop; chronological order *within* a board; search; tag
   pages; and the site-wide RSS and Atom feeds, which a reader pulls instead of
-  being handed. Reversing this needs a new decision here, not a patch.
+  being handed. Reversing any of this needs a new decision here, not a patch.
 
 ### Decisions needed
 
