@@ -325,15 +325,14 @@ while building 1A.
 **Goal.** A first-time visitor understands what the site is and finds something to read; a new member gets to a first post without a dead end, and can always get back into the account.
 
 **Done when:**
-- a guest's first page shows recent content and the site's purpose;
+- a guest's first page shows the site's purpose and the boards it has (P4-D1);
 - search engines index public content without duplicates;
 - a new member is signed in and guided after registering;
 - a locked-out member has a documented way back in (D3).
 
 ### 4A — Home and navigation (M)
 
-- [ ] **Home page.**
-  - Latest articles from public boards.
+- [ ] **Home page.** Boards, not a feed of articles across them (P4-D1).
   - Board cards with post counts and last activity.
   - A site description, from a new admin setting `site_description`, which `web/open_graph.ex:151` already reads.
   - An empty state when there are no boards.
@@ -341,7 +340,8 @@ while building 1A.
   - The welcome text uses `site_name` instead of the hardcoded "Baudrate" (`web/live/home_live.html.heex:14`).
   - Guests on mobile see the site name.
   - The footer (1E) also links the syndication feeds.
-- [ ] **New pages:** `/recent`, `/popular` (P4-D1) and `/unanswered`, plus a tag index at `/tags`.
+- [ ] **New pages:** `/unanswered`, plus a tag index at `/tags`. No `/recent`
+  or `/popular` (P4-D1).
 
 ### 4B — SEO and syndication feeds (S)
 
@@ -392,9 +392,29 @@ while building 1A.
 - [ ] **Language switcher** for guests, kept in a cookie.
 - [ ] **Translations:** fill the 5 empty strings in each of zh_TW and ja_JP.
 
+### Decisions (made 2026-09-20)
+
+- **P4-D1. The site does not rank content, and there is no river of posts
+  across boards.** The question recorded here was what "popular" should mean —
+  likes, boosts and comments over some window. The answer is that it means
+  nothing here: `/popular` is dropped rather than defined, `/recent` with it,
+  and the home page lists boards rather than the latest articles inside them.
+  Two reasons, both about what such a list *does* rather than what it shows.
+  It is a feedback loop — what it surfaces gets read, which keeps it surfaced,
+  so attention concentrates on whoever already had it and a quiet board never
+  appears. And the activity it would rank on cannot tell an argument from a
+  conversation: a flame war is the highest-engagement thing a forum produces,
+  so ranking by engagement promotes it, to everyone, on the first page anyone
+  sees. Baudrate is a public information hub whose unit is the **board**; a
+  visitor picks one and reads it in order. That is slower than a river of the
+  newest posts, and it is the trade this makes on purpose.
+  **Unaffected:** `/unanswered`, which spends attention where none has been
+  and is the opposite loop; chronological order *within* a board; search; tag
+  pages; and the site-wide RSS and Atom feeds, which a reader pulls instead of
+  being handed. Reversing this needs a new decision here, not a patch.
+
 ### Decisions needed
 
-- [ ] **P4-D1. What "popular" means.** [Likes, boosts and comments in the last 7 days, public boards only.]
 - [ ] **P4-D2. Signing in after registering.** [Open mode: sign in at once. Approval mode: sign in as pending, which can read and edit the profile, as today after login. Invite mode: like open mode.]
 
 ---
