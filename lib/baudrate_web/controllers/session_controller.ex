@@ -636,25 +636,10 @@ defmodule BaudrateWeb.SessionController do
     conn.remote_ip |> :inet.ntoa() |> to_string()
   end
 
-  # Sanitizes a return_to path stored by ShareTargetController.
-  # Only allows local paths starting with "/" — rejects schemes, double slashes,
-  # path traversal, control characters, and "@" (authority component).
-  defp sanitize_return_to(path) when is_binary(path) do
-    if String.starts_with?(path, "/") &&
-         !String.starts_with?(path, "//") &&
-         !String.contains?(path, "..") &&
-         !String.contains?(path, "\\") &&
-         !String.contains?(path, "\n") &&
-         !String.contains?(path, "\r") &&
-         !String.contains?(path, "@") &&
-         !String.contains?(path, "\0") do
-      path
-    else
-      "/"
-    end
-  end
-
-  defp sanitize_return_to(_), do: "/"
+  # Sanitizes a return_to path stored by ShareTargetController. The rule lives
+  # in `BaudrateWeb.Helpers.local_path/2` because `LocaleController` needs the
+  # same one, and an open-redirect guard kept in two places is kept in one.
+  defp sanitize_return_to(path), do: BaudrateWeb.Helpers.local_path(path, "/")
 
   defp sanitize_admin_return_to(nil), do: "/admin/settings"
 

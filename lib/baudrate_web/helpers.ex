@@ -708,4 +708,53 @@ defmodule BaudrateWeb.Helpers do
 
   def format_file_size(bytes),
     do: gettext("%{n} MB", n: Float.round(bytes / 1_048_576, 1))
+
+  @doc """
+  Returns `path` when it is a safe same-origin path, otherwise `fallback`.
+
+  **This is the one definition.** Every controller that redirects to a path it
+  was handed — the share target's stored `:return_to`, the language switcher's
+  form field — asks here, because an open-redirect guard that exists twice is
+  one that gets fixed once.
+
+  A value passes only if it starts with a single `/` and carries none of the
+  ways a string can stop being a local path:
+
+    * `//host` — protocol-relative, so the browser leaves the site;
+    * `..` — traversal, which can climb out of a scope a caller assumed;
+    * `\\` — some parsers fold it to `/`, so `/\\evil.example` is `//evil.example`;
+    * `@` — the authority separator, so `/@evil.example` can be read as a host;
+    * CR, LF, NUL — header and terminator injection.
+
+  It deliberately does **not** try to parse the value as a URI and inspect the
+  host: a rejection list of shapes is what the rest of the codebase already
+  used, and `URI.parse/1` accepts several strings a browser resolves
+  differently from Elixir.
+
+  ## Examples
+
+      iex> BaudrateWeb.Helpers.local_path("/boards/sysop", "/")
+      "/boards/sysop"
+
+      iex> BaudrateWeb.Helpers.local_path("//evil.example", "/")
+      "/"
+  """
+  def local_path(path, fallback)
+
+  def local_path(path, fallback) when is_binary(path) do
+    if String.starts_with?(path, "/") and
+         not String.starts_with?(path, "//") and
+         not String.contains?(path, "..") and
+         not String.contains?(path, "\\") and
+         not String.contains?(path, "\n") and
+         not String.contains?(path, "\r") and
+         not String.contains?(path, "@") and
+         not String.contains?(path, "\0") do
+      path
+    else
+      fallback
+    end
+  end
+
+  def local_path(_path, fallback), do: fallback
 end
