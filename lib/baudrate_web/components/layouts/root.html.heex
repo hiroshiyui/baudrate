@@ -16,6 +16,18 @@
       {assigns[:page_title] || BaudrateWeb.ErrorHTML.page_title(assigns[:status])}
     </.live_title>
     <link rel="icon" type="image/svg+xml" href={~p"/favicon.svg"} />
+    <%!--
+      What this page tells a search engine about itself (ADR 0057). A page that
+      must not be indexed gets no canonical: the two directives contradict.
+      The description is the `og:description` the page already computed, so
+      there is one description here rather than two that can drift.
+    --%>
+    <% noindex? = BaudrateWeb.Crawlers.noindex?(assigns) %>
+    <% meta_description =
+      assigns[:meta_description] || BaudrateWeb.OpenGraph.description(assigns[:og_meta]) %>
+    <meta :if={noindex?} name="robots" content="noindex, follow" />
+    <link :if={not noindex? and assigns[:canonical_url]} rel="canonical" href={@canonical_url} />
+    <meta :if={meta_description} name="description" content={meta_description} />
     <%= if assigns[:syndication_site] do %>
       <link
         rel="alternate"

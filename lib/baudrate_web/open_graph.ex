@@ -26,6 +26,23 @@ defmodule BaudrateWeb.OpenGraph do
   @default_image "/images/icon-512.png"
 
   @doc """
+  Returns the page's description, or `nil`.
+
+  There is **one** description per page, not two: the root layout's
+  `<meta name="description">` reads the `og:description` these builders
+  already computed, rather than a second assign that could drift from it.
+  """
+  @spec description([{String.t(), String.t()}] | nil) :: String.t() | nil
+  def description(nil), do: nil
+
+  def description(og_meta) when is_list(og_meta) do
+    case List.keyfind(og_meta, "og:description", 0) do
+      {_, text} when is_binary(text) and text != "" -> text
+      _ -> nil
+    end
+  end
+
+  @doc """
   Builds OG/Twitter tags for an article page.
 
   Uses the first attached image for `og:image` (with `twitter:card` "summary_large_image"),

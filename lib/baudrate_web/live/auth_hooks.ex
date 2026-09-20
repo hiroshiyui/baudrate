@@ -44,6 +44,7 @@ defmodule BaudrateWeb.AuthHooks do
   alias Baudrate.Messaging
   alias Baudrate.Notification
   alias BaudrateWeb.AutocompleteSuggestHook
+  alias BaudrateWeb.Crawlers
   alias BaudrateWeb.MarkdownPreviewHook
   alias BaudrateWeb.UnreadDmCountHook
   alias BaudrateWeb.UnreadNotificationCountHook
@@ -100,7 +101,7 @@ defmodule BaudrateWeb.AuthHooks do
                 |> AutocompleteSuggestHook.attach()
                 |> UnreadDmCountHook.attach(user)
                 |> UnreadNotificationCountHook.attach(user)
-                |> attach_current_path_hook()
+                |> attach_page_metadata_hook()
 
               {:cont, socket}
           end
@@ -152,7 +153,7 @@ defmodule BaudrateWeb.AuthHooks do
               |> AutocompleteSuggestHook.attach()
               |> UnreadDmCountHook.attach(user)
               |> UnreadNotificationCountHook.attach(user)
-              |> attach_current_path_hook()
+              |> attach_page_metadata_hook()
 
             {:cont, socket}
           end
@@ -163,7 +164,7 @@ defmodule BaudrateWeb.AuthHooks do
            |> assign(:current_user, nil)
            |> assign(:locale, locale)
            |> MarkdownPreviewHook.attach()
-           |> attach_current_path_hook()}
+           |> attach_page_metadata_hook()}
       end
     else
       {:cont,
@@ -171,7 +172,7 @@ defmodule BaudrateWeb.AuthHooks do
        |> assign(:current_user, nil)
        |> assign(:locale, locale)
        |> MarkdownPreviewHook.attach()
-       |> attach_current_path_hook()}
+       |> attach_page_metadata_hook()}
     end
   end
 
@@ -189,7 +190,7 @@ defmodule BaudrateWeb.AuthHooks do
           socket
           |> assign(:current_user, user)
           |> assign(:locale, locale)
-          |> attach_current_path_hook()
+          |> attach_page_metadata_hook()
 
         {:cont, socket}
       else
@@ -208,16 +209,16 @@ defmodule BaudrateWeb.AuthHooks do
       case Auth.get_user_by_session_token(session_token) do
         {:ok, user} ->
           if user.status == "banned" do
-            {:cont, attach_current_path_hook(socket)}
+            {:cont, attach_page_metadata_hook(socket)}
           else
             {:halt, redirect(socket, to: "/")}
           end
 
         {:error, _} ->
-          {:cont, attach_current_path_hook(socket)}
+          {:cont, attach_page_metadata_hook(socket)}
       end
     else
-      {:cont, attach_current_path_hook(socket)}
+      {:cont, attach_page_metadata_hook(socket)}
     end
   end
 
@@ -313,13 +314,21 @@ defmodule BaudrateWeb.AuthHooks do
     end
   end
 
-  defp attach_current_path_hook(%{private: %{lifecycle: _}} = socket) do
-    attach_hook(socket, :set_current_path, :handle_params, fn _params, uri, socket ->
-      {:cont, assign(socket, :current_path, URI.parse(uri).path)}
+  # The path a page is on, and the URL it calls its own. Attached hooks run
+  # before the LiveView's own `handle_params/3`, so a page can still override
+  # either (an unlisted article assigns `:noindex`; ADR 0057).
+  defp attach_page_metadata_hook(%{private: %{lifecycle: _}} = socket) do
+    attach_hook(socket, :set_page_metadata, :handle_params, fn params, uri, socket ->
+      path = URI.parse(uri).path
+
+      {:cont,
+       socket
+       |> assign(:current_path, path)
+       |> assign(:canonical_url, Crawlers.canonical_url(path, params))}
     end)
   end
 
-  defp attach_current_path_hook(socket), do: socket
+  defp attach_page_metadata_hook(socket), do: socket
 
   # Applies the locale stored in the session by `BaudrateWeb.Plugs.SetLocale`
   # to the current LiveView process. Without this, anonymous LV mounts run
