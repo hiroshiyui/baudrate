@@ -3,10 +3,14 @@
 Public BBS / Web Forum built with Elixir/Phoenix + LiveView, federating via **ActivityPub**.
 Baudrate is a **public information hub**, not a social network — public content
 should remain visible to all; blocking controls interaction, not visibility.
-Nothing here is ranked by engagement and there is no river of posts across
-boards ([ADR 0054](doc/adr/0054-attention-follows-the-board-not-a-ranking.md)):
-a hub helps you find the board you want, it does not decide what you should
-look at today.
+**The aim is a boring but friendly environment for online discussion**
+([ADR 0056](doc/adr/0056-boring-but-friendly.md)) — read it before adding any
+feature whose purpose is the return visit. Nothing here is ranked by
+engagement and there is no river of posts across boards
+([ADR 0054](doc/adr/0054-attention-follows-the-board-not-a-ranking.md), with
+[0055](doc/adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md) removing
+its one exception that crossed boards): a hub helps you find the board you
+want, it does not decide what you should look at today.
 **Information security is the top priority** — this is a public-facing system.
 
 ## Quick Reference
@@ -54,7 +58,7 @@ See [`doc/development.md`](doc/development.md) for full architecture documentati
 See [`doc/baudrate-spec.md`](doc/baudrate-spec.md) for the **conformance
 index**: every invariant in one table, with the record that explains it, the
 code that enforces it and the test that fails if it breaks. It states no rules
-of its own — start there to find a rule, not to learn one. Eighteen rows have no
+of its own — start there to find a rule, not to learn one. Nineteen rows have no
 automated gate and say so; those are the ones review has to catch.
 `test/doc/spec_index_test.exs` checks the table against the code.
 
@@ -84,7 +88,7 @@ when the row drops an ADR number or a relationship verb the Status line uses.
 
 ### Key Gotchas
 
-- **Nothing is ranked by engagement, and no page rivers posts across boards** (ADR 0054). No `/popular`, `/trending`, `/hot`, `/recent` or `/top`; the home page lists boards, not the articles inside them; board cards carry no post count; the order is the admin's `Board.position`, never activity. A ranking is not a measurement but a feedback loop — what it surfaces gets read, which keeps it surfaced, so attention settles on whoever already had it and a quiet board never appears — and engagement cannot tell an argument from a conversation, so ranking on activity promotes a flame war to the front page, to everyone. Deliberately **unaffected**, because none of it is the site choosing for a reader: chronological order *within* a board, search, tag pages, the syndication feeds, the personal timeline (ADR 0039), per-viewer unread markers, and `/unanswered`, which is the inverse loop and is kept on purpose. **`test/baudrate_web/no_content_ranking_test.exs` is the acceptance gate**; it covers the four falsifiable shapes, and whether some *new* surface is a ranking is a judgement review has to make.
+- **Nothing is ranked by engagement, and no page rivers posts across boards** (ADR 0054). No `/popular`, `/trending`, `/hot`, `/recent` or `/top`; the home page lists boards, not the articles inside them; board cards carry no post count; the order is the admin's `Board.position`, never activity. A ranking is not a measurement but a feedback loop — what it surfaces gets read, which keeps it surfaced, so attention settles on whoever already had it and a quiet board never appears — and engagement cannot tell an argument from a conversation, so ranking on activity promotes a flame war to the front page, to everyone. Deliberately **unaffected**, because none of it is the site choosing for a reader: chronological order *within* a board, search, tag pages, the syndication feeds, the personal timeline (ADR 0039), and per-viewer unread markers. **`/unanswered` is refused too** (ADR 0055, amending 0054): it ranks nothing, but a cross-board list of articles is a river whatever orders it, and filtering by reply count is mostly filtering by age — newest-first it is `/recent` with a filter that removes almost nothing, oldest-first it is a scoreboard of neglect. A per-board `/boards/:slug/unanswered` would violate nothing and is simply not built. **`test/baudrate_web/no_content_ranking_test.exs` is the acceptance gate**; it covers the four falsifiable shapes, and whether some *new* surface is a ranking is a judgement review has to make.
 - Layout receives `@inner_content` (NOT `@inner_block`) — use `{@inner_content}`
 - Do NOT wrap templates with `<Layouts.app>` — causes duplicate flash IDs
 - LiveView uses `phx-trigger-action` for session writes (POST to `SessionController`)

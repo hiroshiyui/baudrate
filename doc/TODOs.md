@@ -322,6 +322,11 @@ while building 1A.
 
 ## Phase 4 — Discovery and onboarding (scope)
 
+**The aim all of this serves:** a boring but friendly environment for online
+discussion ([ADR 0056](adr/0056-boring-but-friendly.md)). Discovery here means
+helping someone find the board they want, never deciding what they should look
+at today.
+
 **Goal.** A first-time visitor understands what the site is and finds something to read; a new member gets to a first post without a dead end, and can always get back into the account.
 
 **Done when:**
@@ -339,8 +344,20 @@ while building 1A.
   - The welcome text uses `site_name` instead of the hardcoded "Baudrate" (`web/live/home_live.html.heex:14`).
   - Guests on mobile see the site name.
   - The footer (1E) also links the syndication feeds.
-- [ ] **New pages:** `/unanswered`, plus a tag index at `/tags`. No `/recent`
-  or `/popular` (P4-D1).
+- ~~**New pages.**~~ **Dropped, 2026-09-20**
+  ([ADR 0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md)). All
+  four are refused, and 4A adds no page at all.
+  - `/recent` and `/popular` went with P4-D1 (ADR 0054).
+  - `/unanswered` ranks nothing, but a cross-board list of articles is a river
+    whatever orders it, and a post with no replies is mostly a post nobody has
+    read yet — so newest-first it is `/recent`, and oldest-first it is a
+    scoreboard of neglect. A per-board `/boards/:slug/unanswered` would
+    violate nothing; nobody has asked for one.
+  - A tag index at `/tags`: by use count it ranks topics, and a tag is a thing
+    people write *toward*, so the loop closes on production as well as
+    attention. Alphabetically it is a sitemap, which is 4B's `sitemap.xml`.
+    `/tags/:tag` already exists and is untouched — the reader named the tag.
+  - Both are in `@ranking_paths`, so mounting either fails the build.
 
 **Done early (2026-09-20): the empty state**, and the item was mis-stated.
 "When there are no boards" cannot happen — setup seeds the SysOp board and
@@ -440,8 +457,10 @@ was missing, and `/profile` now posts to it when the *effective* locale moves.
   defined, `/recent` with it, the home page lists boards rather than the
   latest articles inside them, and the cards carry no post count. Promoted to
   [ADR 0054](adr/0054-attention-follows-the-board-not-a-ranking.md), which
-  holds the reasoning, what is deliberately unaffected (`/unanswered`, search,
-  tags, the feeds, the personal timeline, unread markers) and the gate.
+  holds the reasoning, what is deliberately unaffected (search, tags, the
+  feeds, the personal timeline, unread markers) and the gate. Its one
+  exception that *did* cross boards, `/unanswered`, was removed by
+  [ADR 0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md).
   Reversing it needs a superseding record, not a patch.
 
 ### Decisions needed

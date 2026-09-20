@@ -1,6 +1,7 @@
 # 0054 — Attention follows the board, not a ranking
 
-- **Status:** Accepted
+- **Status:** Accepted, except decision 5's `/unanswered` bullet, amended by
+  [0055](0055-unanswered-is-a-river-and-tags-is-a-ranking.md)
 - **Date:** 2026-09-20
 - **Deciders:** Baudrate maintainers
 - **Related:** states the reason behind `CLAUDE.md`'s opening line — a public

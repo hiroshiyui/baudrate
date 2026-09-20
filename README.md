@@ -9,6 +9,14 @@
 
 Baudrate is an ActivityPub-enabled BBS built with [Elixir](https://elixir-lang.org/) and [Phoenix](https://www.phoenixframework.org/).
 
+It aims to be **a boring but friendly environment for online discussion**
+([ADR 0056](doc/adr/0056-boring-but-friendly.md)). Boring: nothing here is
+ranked by engagement, there is no river of posts, and no score compares one
+person or board with another — a forum that is exciting to *open* is usually
+exciting because someone is fighting in it. Friendly: blocks, sanctions,
+domain blocks and published rules are load-bearing, and no page contacts a
+third party on your behalf.
+
 ### Features
 
 - **Real-time UI** with Phoenix LiveView

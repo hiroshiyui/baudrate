@@ -23,12 +23,20 @@ defmodule BaudrateWeb.NoContentRankingTest do
   alias Baudrate.Repo
   alias Baudrate.Setup.Setting
 
-  @ranking_paths ~w(/popular /trending /hot /recent /top)
+  # The last two are ADR 0055's, and are here for different reasons from the
+  # rest: `/unanswered` ranks nothing, but a cross-board list of articles is a
+  # river whatever orders it; a `/tags` index ranks topics by use, and the
+  # alphabetical alternative is a sitemap. `/tags/:tag` is a different route
+  # and stays — the reader named the tag.
+  @ranking_paths ~w(/popular /trending /hot /recent /top /unanswered /tags)
 
   setup %{conn: conn} do
     Repo.insert!(%Setting{key: "setup_completed", value: "true"})
     {:ok, conn: conn}
   end
+
+  defp record_for(path) when path in ["/unanswered", "/tags"], do: "ADR 0055"
+  defp record_for(_path), do: "ADR 0054"
 
   # Letters only. The post-count probe below looks for a bare "3" inside a
   # rendered card, and a numeric slug suffix would answer it.
@@ -59,12 +67,16 @@ defmodule BaudrateWeb.NoContentRankingTest do
     for path <- @ranking_paths do
       refute path in mounted,
              """
-             #{path} is mounted, which ADR 0054 decided against.
+             #{path} is mounted, which #{record_for(path)} decided against.
 
              A popularity list is a feedback loop — what it surfaces gets read,
              which keeps it surfaced — and engagement cannot tell an argument
-             from a conversation. If this is a deliberate reversal it needs a
-             superseding ADR, not a route.
+             from a conversation. A river ranks nothing and is refused anyway:
+             it takes articles out of the board they were written in, and
+             `/unanswered` is that case wearing the face of kindness.
+
+             If this is a deliberate reversal it needs a superseding ADR, not
+             a route.
              """
     end
   end

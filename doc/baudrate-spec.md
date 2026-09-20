@@ -29,7 +29,7 @@ question.
 - **Changing code under a row?** The gate is the fastest way to find out what
   the rule actually is; it is more precise than any prose here, including the
   record.
-- **The gate column is the point.** Eighteen rows have no automated gate. Those
+- **The gate column is the point.** Nineteen rows have no automated gate. Those
   are listed here rather than left to be rediscovered: a 2026-09-19 audit of
   all 46 records then on file found eight real defects, and most of them lived
   exactly where no gate did.
@@ -182,6 +182,8 @@ What a member may write, and what happens to it afterwards.
 | Comment.changeset/2 never casts ap_id; only remote_changeset/2 accepts a peer-supplied URI | [0049](adr/0049-user-facing-changesets-are-allow-lists.md) | `Baudrate.Content.Comment.changeset/2` | [`comment_test.exs`](../test/baudrate/content/comment_test.exs) |
 | Local content accepts only public or unlisted; trusted fields need trusted_changeset/2 | [0049](adr/0049-user-facing-changesets-are-allow-lists.md) | `Baudrate.Content.Article.trusted_changeset/2` | [`article_test.exs`](../test/baudrate/content/article_test.exs) |
 | No route ranks content or rivers it across boards: no /popular, /trending, /hot, /recent or /top | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md) | `BaudrateWeb.Router` | [`no_content_ranking_test.exs`](../test/baudrate_web/no_content_ranking_test.exs) |
+| /unanswered is refused too: a cross-board list of articles is a river whatever orders it | [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md) | `BaudrateWeb.Router` | [`no_content_ranking_test.exs`](../test/baudrate_web/no_content_ranking_test.exs) |
+| No tag index at /tags: by use it ranks topics, alphabetically it is a sitemap; /tags/:tag is unaffected | [0055](adr/0055-unanswered-is-a-river-and-tags-is-a-ranking.md) | `BaudrateWeb.Router` | [`no_content_ranking_test.exs`](../test/baudrate_web/no_content_ranking_test.exs) |
 | The home page lists boards, never the articles inside them | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md) | `BaudrateWeb.HomeLive.mount/3` | [`no_content_ranking_test.exs`](../test/baudrate_web/no_content_ranking_test.exs) |
 | Board order is the admin's position, never activity | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md) | `Baudrate.Content.Boards.list_top_boards/0` | [`no_content_ranking_test.exs`](../test/baudrate_web/no_content_ranking_test.exs) |
 | A board card carries no post count, so nothing on the page compares one board with another | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md) | `BaudrateWeb.HomeLive.mount/3` | [`no_content_ranking_test.exs`](../test/baudrate_web/no_content_ranking_test.exs) |
@@ -254,6 +256,7 @@ How the project keeps its own records and structure honest.
 | The two RSS senses are named syndication: parser, worker, controller, XML view and the ledger table | [0041](adr/0041-rss-and-atom-are-syndication.md) | `Baudrate.Bots.BotSyndicationItem` | [`syndication_feed_controller_test.exs`](../test/baudrate_web/controllers/syndication_feed_controller_test.exs) |
 | Every context operation that writes state anyone can observe is named on the context facade | [0047](adr/0047-the-facade-lists-every-way-a-context-changes-the-world.md) | `Baudrate.Federation.block_domain/3`, `Baudrate.Federation.suspend_remote_actor/3` | **none** |
 | Render helpers, schemas, PubSub topics, web-tier plumbing and admin read models may bypass the facade | [0047](adr/0047-the-facade-lists-every-way-a-context-changes-the-world.md) | `Baudrate.Content.Markdown.to_html/1` | **none** |
+| Baudrate aims to be a boring but friendly environment for online discussion: nothing decides for the reader what to look at, nothing scores people against each other, nothing manufactures urgency, and being here costs the reader nothing they did not agree to | [0056](adr/0056-boring-but-friendly.md) | — | **none** |
 
 ## Rules with no automated gate
 
@@ -280,8 +283,9 @@ place where drift would be silent.
 | The deploy refuses a host whose Debian release differs from the one CI builds and tests on | [0037](adr/0037-the-deploy-builds-on-the-server-again.md) | Enforced by Ansible pre-flight asserts, outside the Elixir suite. |
 | Every context operation that writes state anyone can observe is named on the context facade | [0047](adr/0047-the-facade-lists-every-way-a-context-changes-the-world.md) | Deliberate. "Changes the world" is a judgement; the record says an approximating test would either fail on render helpers or pass on what it should catch. |
 | Render helpers, schemas, PubSub topics, web-tier plumbing and admin read models may bypass the facade | [0047](adr/0047-the-facade-lists-every-way-a-context-changes-the-world.md) | Deliberate. "Changes the world" is a judgement; the record says an approximating test would either fail on render helpers or pass on what it should catch. |
+| Baudrate aims to be a boring but friendly environment for online discussion: nothing decides for the reader, nothing scores people against each other, nothing manufactures urgency, and being here costs the reader nothing they did not agree to | [0056](adr/0056-boring-but-friendly.md) | Unfalsifiable by construction. Whether a feature manufactures urgency or compares people is a judgement, which is why the record is four questions for a reviewer. The records that *apply* it (0054, 0055, 0006/0045) are gated. |
 | No surface anywhere allocates attention by engagement, however it is computed | [0054](adr/0054-attention-follows-the-board-not-a-ranking.md) | The four falsifiable shapes are gated. Whether some *future* surface is a ranking is a judgement: a decayed score, a "most active" list and an activity-sorted board list are all rankings, and no test recognises one it has not been told about. Review is what catches it. |
 
 ---
 
-176 rows across 55 records, 90 distinct gates, 18 ungated. Counted 2026-09-20.
+180 rows across 57 records, 90 distinct gates, 19 ungated. Counted 2026-09-20.
