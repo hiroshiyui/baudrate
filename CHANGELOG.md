@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Older releases: [1.2.x](CHANGELOG-1.2.md) | [1.1.x](CHANGELOG-1.1.md) | [1.0.x](CHANGELOG-1.0.md)
 
+## [1.31.1] — 2026-09-20
+
+A lint annotation. No behaviour change, and nothing to do on upgrade beyond
+what v1.31.0 already asks for.
+
+### Fixed
+
+- **The Security checks job passes again.** v1.31.0 extracted an existing
+  `raw(Markdown.to_html(...))` call out of a template and into a named
+  function (`CommentComponents.comment_body/1`), so that the warned and
+  unwarned branches of a comment could not render different things. Sobelow
+  does not see the call inside a template but does see it inside a function,
+  so it reported `XSS.Raw` and failed CI on an unchanged expression.
+
+  It is a false positive: `Content.Markdown.to_html/1` ends with the Ammonia
+  sanitizer and the media-proxy rewrite, which is precisely why `raw/1` is
+  correct there and is stated in that module's own documentation. Marked with
+  `# sobelow_skip ["XSS.Raw"]` where it lives, per `.sobelow-conf` — skip
+  means "someone checked this function", so a new function is checked again.
+
+  v1.31.0's own CI keeps the red job; the tag was already published and
+  nothing about the release artifact was wrong, so it was left alone rather
+  than rewritten.
+
 ## [1.31.0] — 2026-09-20
 
 Phase 3 (federation reach), complete: stages 3A–3F.

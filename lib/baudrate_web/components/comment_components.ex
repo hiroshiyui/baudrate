@@ -638,6 +638,12 @@ defmodule BaudrateWeb.CommentComponents do
   defp comment_body(%{body_html: html}) when is_binary(html) and html != "",
     do: BaudrateWeb.SafeHTML.body_html(html)
 
+  # `Markdown.to_html/1` ends with the Ammonia sanitizer and the media-proxy
+  # rewrite — step 3 and step 4 of its documented pipeline — so its output is
+  # already the allow-listed HTML `raw/1` requires. The same call sat inline in
+  # the template before it was extracted here; giving it a name is what made
+  # Sobelow see it.
+  # sobelow_skip ["XSS.Raw"]
   defp comment_body(comment), do: raw(Baudrate.Content.Markdown.to_html(comment.body))
 
   defp upload_error_to_string(err),
